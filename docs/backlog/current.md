@@ -93,9 +93,31 @@ after Story 003b GPU-first governance completion.
   - Follow-up operational task created:
     - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
   - Story 003c remains `in_progress` pending successful Hemma deployment/tunnel smoke outcome.
+- 2026-02-11 — Committed and pushed consolidated Story 003c + timeout hardening state:
+  - `git commit` -> `8c5bd46` on `main`
+  - `git push origin main` completed
+- 2026-02-11 — Task 07 planning kickoff completed:
+  - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
+    moved to `status: in_progress` with explicit execution plan, command plan, and risks.
+- 2026-02-11 — Task 07 executed and completed:
+  - Canonical Hemma repo placement established and verified:
+    - `/home/paunchygent/apps/sir-convert-a-lot`
+  - Remote service bootstrap on `127.0.0.1:28085` succeeded.
+  - Tunnel smoke and adapter `submit -> poll -> result` evidence captured successfully.
+  - Task closed:
+    - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
+  - Story 003c handoff reference updated with successful smoke evidence:
+    - `docs/reference/ref-story-003c-consumer-integration-handoff.md`
+- 2026-02-11 — Lessons learned distilled into governance artifacts:
+  - Runbook refined with explicit `~/apps` repo placement policy and migration guidance:
+    - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+  - Hemma DevOps skill updated with mandatory first-step path guard:
+    - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+  - Conversion workflow rule updated with Hemma repo placement invariant:
+    - `.agents/rules/030-conversion-workflows.md`
 
 ## Next Actions
 
-1. Execute Task 07 to establish Sir Convert-a-Lot Hemma service readiness on expected port.
-1. Capture successful tunnel smoke transcript (`health + submit/poll/result`) and update Story 003c docs.
+1. Decide Story 003c closure readiness vs remaining cross-repo adoption work.
 1. Complete consumer-repo adoption PRs using the canonical adapter contract and handoff checklist.
+1. Update epic/programme checklists if Story 003c is accepted as complete.

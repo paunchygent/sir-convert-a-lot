@@ -109,18 +109,19 @@ Supporting smoke path (manual, non-invasive):
 
 ## Executed Smoke Notes (2026-02-11)
 
-Captured evidence from this repository:
+Captured evidence from this repository and Hemma host:
 
-- Adapter conformance smoke is passing locally in
-  `tests/sir_convert_a_lot/test_integration_adapter_conformance.py`.
-- Hemma/tunnel operational smoke attempt was executed, but Sir Convert-a-Lot
-  service endpoint was not available on expected port (`28085`) at the time.
-- Remote `8085` health endpoint responded with `language-tool-service`, which is
-  outside this service scope.
-
-Follow-up operational task:
-
-- `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
+- Repo placement verified under canonical path:
+  - `/home/paunchygent/apps/sir-convert-a-lot`
+- Local tunnel health check:
+  - `curl -i http://127.0.0.1:28085/healthz` -> `200 OK`, body `{"status":"ok"}`
+- Adapter smoke via `adapter_profiles.py` through tunnel:
+  - `submit -> poll -> result` succeeded
+  - `job_id`: `job_0b5fa957472441f597883644d3`
+  - `status`: `succeeded`
+  - `correlation_id`: `corr_story003c_task07_smoke`
+- Conformance harness remains green in:
+  - `tests/sir_convert_a_lot/test_integration_adapter_conformance.py`
 
 ## Status Note
 

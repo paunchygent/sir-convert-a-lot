@@ -39,6 +39,9 @@ Compatibility facades remain at package root for stable imports.
 - API is async job-based; no separate sync endpoint in v1.
 - `POST /v1/convert/jobs` must enforce idempotency semantics.
 - Standard error envelope is mandatory for all non-2xx responses.
+- Hemma repo placement invariant for operational workflows:
+  - canonical path is `/home/paunchygent/apps/sir-convert-a-lot`
+  - do not execute service operations from ad hoc non-`~/apps` clones
 - Batch CLI runs must emit deterministic manifest fields:
   - `source_file_path`
   - `job_id`

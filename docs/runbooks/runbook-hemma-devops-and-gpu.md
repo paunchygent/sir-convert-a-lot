@@ -33,6 +33,30 @@ remaining aligned with existing HuleEdu and Skriptoteket server patterns.
 - `~/apps/shared-postgres` (container-level service): shared DB host via Docker network.
 - `/home/paunchygent/llama.cpp-rocm`: ROCm llama.cpp build context (shared GPU tooling).
 
+## Repo Placement Policy (`~/apps`)
+
+- Sir Convert-a-Lot must be hosted at:
+  - `/home/paunchygent/apps/sir-convert-a-lot`
+- Do not run production/devops commands from ad hoc copies in `/home/paunchygent` root.
+- If the repo is missing from `~/apps`, create/repair it first:
+
+```bash
+ssh hemma "/bin/bash -lc 'mkdir -p /home/paunchygent/apps && cd /home/paunchygent/apps && git clone git@github.com:paunchygent/sir-convert-a-lot.git'"
+```
+
+- If a misplaced copy exists outside `~/apps`, prefer reclone or clean move to `~/apps` and
+  then set:
+
+```bash
+export SIR_CONVERT_A_LOT_HEMMA_ROOT=/home/paunchygent/apps/sir-convert-a-lot
+```
+
+- Verification command:
+
+```bash
+ssh hemma "/bin/bash -lc 'find /home/paunchygent -maxdepth 4 -type d -name sir-convert-a-lot 2>/dev/null | sort'"
+```
+
 ## Command Context Rules
 
 - Local PDM wrappers:

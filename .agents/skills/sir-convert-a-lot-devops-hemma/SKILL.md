@@ -50,6 +50,27 @@ pdm run run-hemma --shell "<command with shell operators>"
 - `~/apps/skriptoteket`: Skriptoteket stack.
 - `~/infrastructure`: shared nginx/certbot edge infra.
 
+## Mandatory First Step (Path Guard)
+
+Before any deployment/smoke actions:
+
+1. Verify repo location is under `~/apps`:
+
+```bash
+pdm run run-hemma --shell 'find /home/paunchygent -maxdepth 4 -type d -name "sir-convert-a-lot" 2>/dev/null | sort'
+```
+
+2. If missing, bootstrap canonical path:
+
+```bash
+ssh hemma "/bin/bash -lc 'mkdir -p /home/paunchygent/apps && cd /home/paunchygent/apps && git clone git@github.com:paunchygent/sir-convert-a-lot.git'"
+```
+
+3. If multiple copies exist, standardize on:
+
+- `/home/paunchygent/apps/sir-convert-a-lot`
+- set `SIR_CONVERT_A_LOT_HEMMA_ROOT` accordingly for wrappers.
+
 ## GPU-First Guardrails
 
 - Prefer GPU execution path by default for conversion service workloads.

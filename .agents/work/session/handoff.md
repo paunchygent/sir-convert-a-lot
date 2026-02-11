@@ -1,5 +1,62 @@
 # Session Handoff
 
+## 2026-02-11: Task 07 Execution + Governance Refinement
+
+### Completed
+
+- Executed Task 07 and closed it as completed:
+  - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
+- Confirmed canonical Hemma repo placement under `~/apps`:
+  - `/home/paunchygent/apps/sir-convert-a-lot`
+- Captured successful tunnel smoke evidence:
+  - `http://127.0.0.1:28085/healthz` -> `200 {"status":"ok"}`
+  - Adapter smoke (`submit -> poll -> result`) succeeded with
+    `job_0b5fa957472441f597883644d3`.
+- Updated Story 003c consumer handoff reference to remove stale failure caveat:
+  - `docs/reference/ref-story-003c-consumer-integration-handoff.md`
+
+### Lessons Learned Applied
+
+- Runbook update:
+  - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+  - Added explicit `~/apps` repo placement policy + migration/verification steps.
+- Skill update:
+  - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+  - Added mandatory first-step path guard and bootstrap commands.
+- Rule update:
+  - `.agents/rules/030-conversion-workflows.md`
+  - Added Hemma repo placement invariant for operational workflows.
+
+### Next Focus
+
+- Determine whether Story 003c is ready for closure now that Task 06 and Task 07 are both complete.
+- If yes, update story/epic/programme checklists and close docs-as-code loop.
+
+## 2026-02-11: Commit/Push and Task 07 Planning Kickoff
+
+### Completed
+
+- Committed and pushed consolidated changes on `main`:
+  - Commit: `8c5bd46`
+  - Push target: `origin/main`
+- Activated Task 07 planning:
+  - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
+  - Status updated to `in_progress`
+  - Added baseline context, execution plan, command plan, and risk mitigations.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm typecheck-all --no-incremental` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass)
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Next Focus
+
+- Execute Task 07 operational steps on Hemma to obtain successful tunnel smoke evidence.
+- Update Story 003c reference docs with successful `health + submit/poll/result` transcript.
+
 ## 2026-02-11: Story 003c Docs-As-Code Synchronization
 
 ### Completed
