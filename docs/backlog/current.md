@@ -57,9 +57,45 @@ after Story 003b GPU-first governance completion.
   - `pdm run run-local-pdm validate-tasks`
   - `pdm run run-local-pdm validate-docs`
   - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- 2026-02-11 — Completed fix `fix-01-harden-cli-timeout-handling-for-long-running-background-jobs`:
+  - CLI timeout hardening in `scripts/sir_convert_a_lot/interfaces/cli_app.py`:
+    - `ClientError(code="job_timeout")` now records manifest `status: running` with `job_id`.
+    - CLI no longer exits non-zero for timeout-only outcomes.
+  - Added regression test:
+    - `tests/sir_convert_a_lot/test_convert_a_lot_cli.py::test_convert_command_timeout_marks_job_running_without_cli_failure`
+  - Updated operator/user docs:
+    - `docs/converters/sir_convert_a_lot.md`
+    - `scripts/sir_convert_a_lot/README.md`
+  - Validation gates run for this fix:
+    - `pdm run run-local-pdm format-all`
+    - `pdm run run-local-pdm lint-fix`
+    - `pdm run mypy --config-file pyproject.toml --no-incremental`
+    - `pdm run run-local-pdm typecheck-all --no-incremental`
+    - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+    - `pdm run run-local-pdm validate-tasks`
+    - `pdm run run-local-pdm validate-docs`
+    - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- 2026-02-11 — Story 003c docs-as-code synchronization completed for active slice:
+  - Task details hardened in:
+    - `docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md`
+  - Normative contract published in:
+    - `docs/converters/internal_adapter_contract_v1.md`
+  - Consumer handoff reference completed in:
+    - `docs/reference/ref-story-003c-consumer-integration-handoff.md`
+  - Story state moved to `in_progress`:
+    - `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
+- 2026-02-11 — Backlog metadata alignment after docs audit:
+  - `docs/backlog/epics/epic-03-unified-conversion-service.md` moved to `status: in_progress`
+    to reflect Story 003a/003b completion and active Story 003c execution.
+- 2026-02-11 — Story 003c Task 06 closed with operational follow-up split:
+  - `docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md`
+    moved to `status: completed` after documenting executed Hemma/tunnel smoke evidence.
+  - Follow-up operational task created:
+    - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
+  - Story 003c remains `in_progress` pending successful Hemma deployment/tunnel smoke outcome.
 
 ## Next Actions
 
-1. Start Story 003c with a dedicated PR-sized task linked to shared v1 contract docs.
-1. Define thin integration adapter requirements for HuleEdu and Skriptoteket with correlation ID propagation.
-1. Add Story 003c contract tests and local tunnel integration validation path.
+1. Execute Task 07 to establish Sir Convert-a-Lot Hemma service readiness on expected port.
+1. Capture successful tunnel smoke transcript (`health + submit/poll/result`) and update Story 003c docs.
+1. Complete consumer-repo adoption PRs using the canonical adapter contract and handoff checklist.

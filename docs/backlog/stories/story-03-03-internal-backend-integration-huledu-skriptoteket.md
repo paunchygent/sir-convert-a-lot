@@ -2,13 +2,17 @@
 id: 003c-huledu-skriptoteket-internal-integration-story
 title: Internal backend integration for HuleEdu and Skriptoteket
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
   - docs/backlog/epics/epic-03-unified-conversion-service.md
   - docs/converters/pdf_to_md_service_api_v1.md
+  - docs/converters/internal_adapter_contract_v1.md
+  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md
+  - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md
+  - docs/reference/ref-story-003c-consumer-integration-handoff.md
 labels:
   - integration
   - huledu
@@ -50,4 +54,4 @@ Provide one shared internal conversion backend contract that both HuleEdu and Sk
 
 - [ ] Implementation complete
 - [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Docs synchronized

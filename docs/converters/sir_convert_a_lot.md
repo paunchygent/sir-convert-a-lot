@@ -94,3 +94,11 @@ Each batch writes `sir_convert_a_lot_manifest.json` in `--output-dir` with entri
 - `error_code`
 
 This manifest is the canonical audit artifact for assistant-driven batch conversions.
+
+Long-running note:
+
+- If `--max-poll-seconds` is exceeded, CLI records the entry as `status: running` with `job_id`
+  and `error_code: job_timeout` instead of marking it as failed.
+- Conversion continues server-side; callers can query:
+  - `GET /v1/convert/jobs/{job_id}`
+  - `GET /v1/convert/jobs/{job_id}/result`

@@ -158,6 +158,22 @@ def convert_command(
                 )
                 typer.echo(f"✓ Converted {relative_label} -> {target_markdown}")
             except ClientError as exc:
+                if exc.code == "job_timeout" and exc.job_id is not None:
+                    manifest_entries.append(
+                        CliManifestEntry(
+                            source_file_path=relative_label,
+                            job_id=exc.job_id,
+                            status=JobStatus.RUNNING,
+                            output_path=None,
+                            error_code=exc.code,
+                        )
+                    )
+                    typer.echo(
+                        "… Submitted and still running "
+                        f"{relative_label}: {exc.job_id}. "
+                        "Use status/result endpoints to fetch completion later."
+                    )
+                    continue
                 has_failures = True
                 manifest_entries.append(
                     CliManifestEntry(

@@ -2,7 +2,7 @@
 id: 003-unified-conversion-service-epic
 title: Unified conversion service (Hemma-first, multi-format, cross-repo)
 type: epic
-status: proposed
+status: in_progress
 priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'

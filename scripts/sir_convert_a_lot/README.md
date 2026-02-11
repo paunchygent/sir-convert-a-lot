@@ -81,6 +81,14 @@ Each batch writes a JSON manifest to `--output-dir`:
 }
 ```
 
+Long-running behavior:
+
+- If a job exceeds `--max-poll-seconds`, CLI now records `status: "running"` with `job_id` and
+  `error_code: "job_timeout"` in the manifest, and exits non-error unless there are terminal
+  failures.
+- This supports background completion flows where conversion continues server-side and result
+  retrieval can happen later via status/result endpoints.
+
 ## Architecture
 
 ```text
@@ -106,6 +114,7 @@ DDD-oriented package layout. Compatibility facades at the root preserve stable i
 | `SIR_CONVERT_A_LOT_GPU_AVAILABLE` | `1` | GPU availability flag |
 
 Rollout lock note:
+
 - CPU unlock env vars (`SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY`, `SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK`)
   are disabled in normal startup paths during Story 003b governance lock.
 - CPU unlock behavior is available only through explicit test configuration in `ServiceConfig`.
