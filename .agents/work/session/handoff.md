@@ -24,6 +24,14 @@
   - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
   - `pdm run run-local-pdm validate-tasks`
   - `pdm run run-local-pdm validate-docs`
+- Validation evidence for Story 003b completion:
+  - `pdm run run-local-pdm format-all`
+  - `pdm run run-local-pdm lint-fix`
+  - `pdm run run-local-pdm typecheck-all`
+  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+  - `pdm run run-local-pdm validate-tasks`
+  - `pdm run run-local-pdm validate-docs`
+  - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ### Next Focus
 

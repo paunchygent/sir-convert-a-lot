@@ -17,6 +17,7 @@ import statistics
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TypedDict
 
 from fastapi.testclient import TestClient
 
@@ -26,6 +27,72 @@ from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
 DEFAULT_FIXTURES_DIR = Path("tests/fixtures/benchmark_pdfs")
 DEFAULT_OUTPUT_JSON = Path("docs/reference/benchmark-story-003b-gpu-governance-local.json")
 DEFAULT_DATA_ROOT = Path("build/benchmarks/story-003b-local")
+
+
+class BenchmarkJobRecord(TypedDict):
+    """One benchmark job result entry."""
+
+    source_file: str
+    source_size_bytes: int
+    job_id: str | None
+    status: str
+    error_code: str | None
+    latency_seconds: float
+    backend_used: str | None
+    acceleration_used: str | None
+
+
+class BenchmarkLatencySummary(TypedDict):
+    """Latency summary shape for benchmark artifacts."""
+
+    min: float
+    mean: float
+    p50: float
+    p95: float
+    max: float
+
+
+class BenchmarkSummary(TypedDict):
+    """Top-level benchmark summary shape."""
+
+    total_jobs: int
+    succeeded_jobs: int
+    failed_jobs: int
+    success_rate: float
+    throughput_jobs_per_minute: float
+    latency_seconds: BenchmarkLatencySummary
+
+
+class RuntimeConfigSummary(TypedDict):
+    """Runtime configuration echo included in benchmark output."""
+
+    gpu_available: bool
+    allow_cpu_only: bool
+    allow_cpu_fallback: bool
+    acceleration_policy: str
+    processing_delay_seconds: float
+
+
+class ResourceProfileSummary(TypedDict):
+    """Observed resource profile for benchmark output."""
+
+    fixtures_count: int
+    fixtures_total_bytes: int
+    acceleration_observed: list[str]
+    backend_observed: list[str]
+
+
+class BenchmarkPayload(TypedDict):
+    """Canonical benchmark payload shape."""
+
+    benchmark_id: str
+    stage: str
+    generated_at: str
+    fixtures_dir: str
+    runtime_config: RuntimeConfigSummary
+    summary: BenchmarkSummary
+    resource_profile: ResourceProfileSummary
+    jobs: list[BenchmarkJobRecord]
 
 
 def _utc_now_iso() -> str:
@@ -102,7 +169,7 @@ def run_benchmark(
     processing_delay_seconds: float,
     max_poll_seconds: float,
     data_root: Path,
-) -> dict[str, object]:
+) -> BenchmarkPayload:
     """Run benchmark jobs and return the output payload."""
     fixture_paths = sorted(fixtures_dir.glob("*.pdf"))
     if not fixture_paths:
@@ -118,7 +185,7 @@ def run_benchmark(
     )
     client = TestClient(create_app(runtime))
 
-    jobs: list[dict[str, object]] = []
+    jobs: list[BenchmarkJobRecord] = []
     batch_start = time.monotonic()
     total_fixture_bytes = sum(path.stat().st_size for path in fixture_paths)
 
@@ -139,7 +206,7 @@ def run_benchmark(
             },
         )
 
-        job_record: dict[str, object] = {
+        job_record: BenchmarkJobRecord = {
             "source_file": fixture_path.name,
             "source_size_bytes": len(file_bytes),
             "job_id": None,
@@ -151,8 +218,8 @@ def run_benchmark(
         }
 
         if create_response.status_code not in {200, 202}:
-            payload = create_response.json()
-            job_record["error_code"] = payload.get("error", {}).get("code")
+            error_payload = create_response.json()
+            job_record["error_code"] = error_payload.get("error", {}).get("code")
             job_record["latency_seconds"] = round(time.monotonic() - start_time, 6)
             jobs.append(job_record)
             continue
@@ -194,11 +261,11 @@ def run_benchmark(
         jobs.append(job_record)
 
     total_duration_seconds = max(time.monotonic() - batch_start, 1e-9)
-    latencies = [float(job["latency_seconds"]) for job in jobs]
+    latencies = [job["latency_seconds"] for job in jobs]
     succeeded = [job for job in jobs if job["status"] == JobStatus.SUCCEEDED.value]
     failed = [job for job in jobs if job["status"] == JobStatus.FAILED.value]
 
-    payload: dict[str, object] = {
+    payload: BenchmarkPayload = {
         "benchmark_id": "story-003b-gpu-governance",
         "stage": stage,
         "generated_at": _utc_now_iso(),

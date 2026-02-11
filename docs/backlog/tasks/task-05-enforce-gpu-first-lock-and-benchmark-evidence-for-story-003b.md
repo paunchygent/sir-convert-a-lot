@@ -35,13 +35,13 @@ execution (local deterministic run + Hemma runbook path).
 
 ## Deliverables
 
-- [ ] Hard GPU-first lock defaults implemented (no env-controlled CPU fallback toggles in normal startup).
-- [ ] API/runtime tests cover GPU unavailable + policy behavior for `gpu_required`, `gpu_prefer`, and
+- [x] Hard GPU-first lock defaults implemented (no env-controlled CPU fallback toggles in normal startup).
+- [x] API/runtime tests cover GPU unavailable + policy behavior for `gpu_required`, `gpu_prefer`, and
   `cpu_only`.
-- [ ] Test-only explicit CPU unlock path validated and documented.
-- [ ] Benchmark runner script created with deterministic JSON output.
-- [ ] Canonical benchmark PDF fixture set (5 files) added under `tests/fixtures/`.
-- [ ] Benchmark evidence committed under `docs/reference/` (report + JSON appendix).
+- [x] Test-only explicit CPU unlock path validated and documented.
+- [x] Benchmark runner script created with deterministic JSON output.
+- [x] Canonical benchmark PDF fixture set (5 files) added under `tests/fixtures/`.
+- [x] Benchmark evidence committed under `docs/reference/` (report + JSON appendix).
 
 ## Acceptance Criteria
 

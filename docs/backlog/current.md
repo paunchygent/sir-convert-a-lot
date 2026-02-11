@@ -49,6 +49,14 @@ after Story 003b GPU-first governance completion.
   - Benchmark artifacts:
     - `docs/reference/benchmark-story-003b-gpu-governance-local.json`
     - `docs/reference/ref-story-003b-gpu-governance-benchmark-evidence.md`
+- 2026-02-11 — Story 003b validation and docs gates passed:
+  - `pdm run run-local-pdm format-all`
+  - `pdm run run-local-pdm lint-fix`
+  - `pdm run run-local-pdm typecheck-all`
+  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+  - `pdm run run-local-pdm validate-tasks`
+  - `pdm run run-local-pdm validate-docs`
+  - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Next Actions
 
