@@ -1,13 +1,13 @@
 ---
 id: 003b-gpu-first-execution-and-fallback-governance-story
-title: GPU-first execution and fallback governance
+title: 'Story 003b: GPU-first execution and fallback governance'
 type: story
 status: proposed
 priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/tasks/003-unified-conversion-service-epic.md
   - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
   - docs/converters/pdf_to_md_service_api_v1.md
 labels:
@@ -52,9 +52,3 @@ Guarantee that initial service behavior validates and uses GPU execution as the 
 
 - GPU-first behavior proven by tests and benchmark artifacts.
 - Governance rule for fallback changes documented and linked from active task docs.
-
-## Checklist
-
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized

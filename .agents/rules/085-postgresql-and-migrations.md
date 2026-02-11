@@ -3,8 +3,8 @@ trigger: model_decision
 rule_id: RULE-085
 title: PostgreSQL and Migration Standards
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -12,7 +12,6 @@ tags:
   - migrations
 scope: repo
 ---
-# PostgreSQL and Migration Standards
 
 - Use PostgreSQL as canonical relational backend.
 - Keep migration workflow deterministic and reversible.

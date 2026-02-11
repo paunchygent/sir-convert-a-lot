@@ -3,8 +3,8 @@ trigger: always_on
 rule_id: RULE-010
 title: Foundational Principles
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -12,7 +12,6 @@ tags:
   - quality
 scope: repo
 ---
-# Foundational Principles
 
 - Contract-first delivery: API/docs contracts are normative and code follows them.
 - GPU-first rollout for heavy PDF workloads; no silent fallback drift.

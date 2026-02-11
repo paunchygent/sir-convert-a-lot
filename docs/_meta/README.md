@@ -3,17 +3,16 @@ type: meta
 id: META-docs-contract
 title: Docs Contract
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
   - docs-as-code
   - contract
 links:
-  - docs/_meta/docs-contract.yaml
+  - docs/\_meta/docs-contract.yaml
 ---
-# Docs Contract
 
 Documentation in this repository is governed by a strict, machine-validated contract.
 

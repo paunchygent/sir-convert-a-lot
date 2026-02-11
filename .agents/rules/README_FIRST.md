@@ -3,15 +3,14 @@ trigger: always_on
 rule_id: RULE-README-FIRST
 title: Rules Readme First
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
   - onboarding
 scope: repo
 ---
-# README_FIRST
 
 - Start with `.agents/rules/000-rule-index.md`.
 - Review `.agents/work/session/readme-first.md` and `.agents/work/session/handoff.md`.

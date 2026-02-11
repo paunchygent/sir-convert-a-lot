@@ -3,8 +3,8 @@ trigger: always_on
 rule_id: RULE-070
 title: Testing and Quality Gates
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -12,7 +12,6 @@ tags:
   - quality
 scope: repo
 ---
-# Testing and Quality Gates
 
 Run these gates for behavior-changing work:
 
@@ -32,6 +31,7 @@ pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md"
 ```
 
 Rules:
+
 - No `typing.Any`, casts, or ignore-based shortcuts in new code.
 - No shims/hacks for lint/typecheck bypass.
 - Split files before 500 LoC.

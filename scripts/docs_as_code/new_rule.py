@@ -37,7 +37,7 @@ def main() -> None:
 
     prefix = next_numeric_prefix(RULES_DIR)
     slug = slugify(args.name)
-    target = RULES_DIR / f"{prefix}-{slug}.mdc"
+    target = RULES_DIR / f"{prefix}-{slug}.md"
 
     owners = args.owner if args.owner else ["platform"]
     owners_yaml = "\n".join(f"  - {owner}" for owner in owners)
@@ -55,8 +55,6 @@ owners:
 tags: []
 scope: repo
 ---
-# {prefix} {args.name}
-
 ## Purpose
 
 TBD.

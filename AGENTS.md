@@ -8,18 +8,18 @@ reliable, LLM-friendly document conversion workflows with Hemma offloading and G
 ## Golden Rules
 
 1. No behavior change without docs-as-code planning.
-2. Contract-first delivery: docs/API/ADR are normative.
-3. Preserve SRP and split modules before ~500 LoC.
-4. No typing shortcuts (`Any`, casts, `# type: ignore`, lint ignores) in new code.
-5. Use canonical wrappers for local vs remote command context.
+1. Contract-first delivery: docs/API/ADR are normative.
+1. Preserve SRP and split modules before ~500 LoC.
+1. No typing shortcuts (`Any`, casts, `# type: ignore`, lint ignores) in new code.
+1. Use canonical wrappers for local vs remote command context.
 
 ## Session Start (Mandatory)
 
 1. Read `.agents/rules/000-rule-index.md`.
-2. Read task-relevant rules from the index.
-3. Read `.agents/work/session/readme-first.md` and `.agents/work/session/handoff.md`.
-4. Confirm active planning context in `docs/backlog/current.md`.
-5. Validate docs-as-code state before implementation:
+1. Read task-relevant rules from the index.
+1. Read `.agents/work/session/readme-first.md` and `.agents/work/session/handoff.md`.
+1. Confirm active planning context in `docs/backlog/current.md`.
+1. Validate docs-as-code state before implementation:
    - `pdm run validate-tasks`
    - `pdm run validate-docs`
 
@@ -30,9 +30,11 @@ reliable, LLM-friendly document conversion workflows with Hemma offloading and G
 `programme -> epic -> story -> task`
 
 Canonical location:
+
 - `docs/backlog/`
 
 Task policy:
+
 - Tasks are small PR-sized execution units.
 - A task may be linked to a story, or exist independently when the change is scoped and coherent.
 
@@ -67,6 +69,7 @@ pdm run run-hemma --shell "<command with operators>"
 ```
 
 Environment overrides:
+
 - `SIR_CONVERT_A_LOT_HEMMA_HOST`
 - `SIR_CONVERT_A_LOT_HEMMA_ROOT`
 
@@ -118,18 +121,24 @@ pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md"
 ## Hemma Operations and GPU (Greatest Hits)
 
 Canonical runbook:
+
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
 Repo-specific DevOps skill:
+
 - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+- `.agents/skills/sir-convert-a-lot-docs-governance/SKILL.md`
+- `.agents/skills/sir-convert-a-lot-session-handoff/SKILL.md`
 
 Cross-repo topology awareness on Hemma:
+
 - `~/apps/sir-convert-a-lot`
 - `~/apps/huleedu`
 - `~/apps/skriptoteket`
 - `~/infrastructure`
 
 Policy:
+
 - GPU-first execution is default and decision-governed.
 - No silent CPU fallback.
 - Use tunnels for local dev access by default.
@@ -145,5 +154,6 @@ Policy:
 - Rules: `.agents/rules/`
 - Session context: `.agents/work/session/`
 - Skills: `.agents/skills/`
+- Local skills mirror: `.codex/skills -> .agents/skills`
 - Planning: `docs/backlog/`
 - Product/ops docs: `docs/`

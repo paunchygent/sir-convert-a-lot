@@ -3,6 +3,7 @@
 Standalone conversion platform for LLM-friendly document conversion workflows.
 
 Canonical intent:
+
 - one stable CLI/API surface,
 - deterministic and auditable output,
 - GPU-first remote execution path,
@@ -38,6 +39,7 @@ pdm run convert-a-lot convert ./pdfs --output-dir ./research
 ## Architecture
 
 See:
+
 - `scripts/sir_convert_a_lot/README.md`
 - `docs/converters/pdf_to_md_service_api_v1.md`
 - `docs/converters/sir_convert_a_lot.md`

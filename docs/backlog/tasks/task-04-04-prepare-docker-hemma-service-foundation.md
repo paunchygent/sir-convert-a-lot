@@ -1,21 +1,20 @@
 ---
-id: '007-prepare-docker-hemma-service-foundation'
-title: 'Prepare Docker + Hemma service foundation'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: 007-prepare-docker-hemma-service-foundation
+title: Prepare Docker + Hemma service foundation
+type: task
+status: in_progress
+priority: high
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - 'docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md'
-  - 'docs/runbooks/runbook-hemma-devops-and-gpu.md'
-  - '.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md'
+  - docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md
+  - docs/runbooks/runbook-hemma-devops-and-gpu.md
+  - .agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md
 labels:
-  - 'docker'
-  - 'hemma'
-  - 'gpu'
+  - docker
+  - hemma
+  - gpu
 ---
-# Prepare Docker + Hemma service foundation
 
 ## Objective
 
@@ -36,8 +35,8 @@ local tunnel-based development.
 ## Acceptance Criteria
 
 1. Runbook exists and defines canonical host paths, command wrappers, and GPU checks.
-2. DevOps skill references runbook and cross-repo Hemma topology.
-3. `run-local-pdm` and `run-hemma` scripts exist and are documented.
+1. DevOps skill references runbook and cross-repo Hemma topology.
+1. `run-local-pdm` and `run-hemma` scripts exist and are documented.
 
 ## Checklist
 

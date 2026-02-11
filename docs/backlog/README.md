@@ -1,19 +1,18 @@
 ---
-id: 'backlog-readme'
-title: 'Backlog Guide'
-type: 'reference'
-status: 'active'
-priority: 'medium'
+id: backlog-readme
+title: Backlog Guide
+type: reference
+status: active
+priority: medium
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - 'docs/_meta/docs-contract.yaml'
-  - 'docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md'
+  - docs/\_meta/docs-contract.yaml
+  - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
 labels:
-  - 'planning'
-  - 'guide'
+  - planning
+  - guide
 ---
-# Backlog Guide
 
 ## Purpose
 

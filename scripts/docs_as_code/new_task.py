@@ -109,8 +109,6 @@ last_updated: '{today}'
 related: []
 labels: []
 ---
-# {args.title}
-
 {template.intro}
 
 {render_sections(args.type)}"""

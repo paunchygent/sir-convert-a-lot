@@ -3,8 +3,8 @@ type: converter
 id: CONV-pdf-to-md-service-api-v1
 title: PDF to Markdown Service API v1
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -15,7 +15,6 @@ links:
   - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
   - docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md
 ---
-# PDF to Markdown Service API v1
 
 ## Status
 
@@ -34,23 +33,28 @@ links:
 ## Decision Lock (Phase 0)
 
 1. Endpoint shape
+
 - No separate synchronous endpoint in v1.
 - Use async job endpoints only.
 - `POST /v1/convert/jobs` supports optional bounded wait (`wait_seconds`) for small files.
 
 2. Auth
+
 - Service is internal-network scoped and requires `X-API-Key` on all endpoints.
 
 3. Storage backend v1
+
 - Filesystem-backed job storage with a storage adapter boundary.
 - Object storage is a v2 backend option without API contract changes.
 
 4. Retention
+
 - Raw uploads: 24h default TTL.
 - Result artifacts + manifests: 7d default TTL.
 - Pinned jobs are exempt until manually unpinned.
 
 5. Acceleration policy
+
 - **GPU-first is mandatory default objective**.
 - Initial v1 rollout enforces GPU execution path before any CPU fallback is enabled.
 - CPU fallback is decision-gated and may only be enabled after documented GPU exploration and benchmarks.
@@ -73,6 +77,7 @@ X-API-Key: <service_api_key>
 ```
 
 Error semantics:
+
 - Missing or invalid key: `401 Unauthorized`, `error.code = "auth_invalid_api_key"`
 
 ## Idempotency (Create Job)
@@ -84,6 +89,7 @@ Idempotency-Key: <opaque-client-key>
 ```
 
 Semantics:
+
 - Scope: `(api_key, method, path, idempotency_key)`
 - Request fingerprint: normalized request JSON + uploaded PDF SHA256
 - TTL: 24h
@@ -133,6 +139,7 @@ Semantics:
 ```
 
 Field rules:
+
 - `source.kind`: v1 requires `upload`
 - `conversion.output_format`: `md` only in v1
 - `conversion.backend_strategy`: `auto | docling | pymupdf`
@@ -145,6 +152,7 @@ Field rules:
 - `retention.pin`: boolean (default `false`)
 
 Server policy constraints (Phase 0 lock):
+
 - `ALLOW_CPU_ONLY=false`
 - `ALLOW_CPU_FALLBACK=false`
 - Requests resulting in CPU execution while lock is active must fail with `gpu_not_available`.
@@ -209,14 +217,17 @@ Server policy constraints (Phase 0 lock):
 Creates a conversion job.
 
 Query parameters:
+
 - `wait_seconds` (optional, integer `0..20`, default `0`)
 
 Request:
+
 - `Content-Type: multipart/form-data`
 - Part `file`: PDF binary (`application/pdf`)
 - Part `job_spec`: JSON matching `JobSpec`
 
 Responses:
+
 - `202 Accepted`: job queued/running
 - `200 OK`: job reached terminal state within `wait_seconds`
 - `400 Bad Request`: malformed request/spec
@@ -233,6 +244,7 @@ Responses:
 Returns job status and progress.
 
 Responses:
+
 - `200 OK`: `JobRecord`
 - `401 Unauthorized`
 - `404 Not Found`: unknown/expired job
@@ -242,13 +254,16 @@ Responses:
 Returns terminal result for succeeded jobs.
 
 Query parameters:
+
 - `inline` (optional, boolean, default `false`)
 
 Behavior:
+
 - If `inline=false`: returns `JobResult` metadata (artifact info only)
-- If `inline=true`: includes `markdown_content` when artifact size <= configured inline limit
+- If `inline=true`: includes `markdown_content` when artifact size \<= configured inline limit
 
 Responses:
+
 - `200 OK`: result payload
 - `202 Accepted`: job not yet terminal
 - `401 Unauthorized`
@@ -261,6 +276,7 @@ Responses:
 Requests cancellation for `queued` or `running` jobs.
 
 Responses:
+
 - `202 Accepted`: cancellation requested
 - `200 OK`: already canceled (idempotent)
 - `401 Unauthorized`
@@ -287,6 +303,7 @@ All non-2xx responses return:
 ```
 
 Canonical error codes:
+
 - `auth_invalid_api_key`
 - `validation_error`
 - `unsupported_media_type`
@@ -318,6 +335,7 @@ jobs/
 ```
 
 `manifest.json` minimum fields:
+
 - `job_id`
 - `job_spec` (normalized)
 - `status`
@@ -335,6 +353,7 @@ jobs/
 ## Queue Compatibility Guarantees
 
 This v1 schema is transport-independent:
+
 - HTTP layer validates input and emits `JobSpec`
 - Executor consumes `JobSpec`, produces `JobResult`
 - Future queue worker adoption must preserve endpoint and payload contract unchanged

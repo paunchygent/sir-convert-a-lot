@@ -3,8 +3,8 @@ trigger: model_decision
 rule_id: RULE-035
 title: Docling PDF Conversion Guidance
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -12,7 +12,6 @@ tags:
   - docling
 scope: repo
 ---
-# Docling PDF Conversion Guidance
 
 ## Purpose
 

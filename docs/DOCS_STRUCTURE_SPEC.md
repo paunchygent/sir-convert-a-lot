@@ -3,18 +3,17 @@ type: spec
 id: SPEC-docs-structure
 title: Docs Structure Spec
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
   - docs-as-code
   - structure
 links:
-  - docs/_meta/docs-contract.yaml
-  - .agents/rules/090-documentation-standards.mdc
+  - docs/\_meta/docs-contract.yaml
+  - .agents/rules/090-documentation-standards.md
 ---
-# Docs Structure Spec
 
 ## Layout
 

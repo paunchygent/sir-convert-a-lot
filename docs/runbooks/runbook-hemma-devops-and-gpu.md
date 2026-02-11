@@ -3,8 +3,8 @@ type: runbook
 id: RUN-hemma-devops-and-gpu
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 system: hemma.hule.education
@@ -18,7 +18,6 @@ links:
   - /Users/olofs_mba/Documents/Repos/huledu-reboot/docs/operations/hemma-server-operations-huleedu.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-home-server.md
 ---
-# Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 
 ## Purpose
 
@@ -43,10 +42,12 @@ remaining aligned with existing HuleEdu and Skriptoteket server patterns.
   - `pdm run run-hemma --shell "<command with operators>"`
 
 Default remote context is:
+
 - host: `hemma`
 - repo root: `/home/paunchygent/apps/sir-convert-a-lot`
 
 Overrides:
+
 - `SIR_CONVERT_A_LOT_HEMMA_HOST`
 - `SIR_CONVERT_A_LOT_HEMMA_ROOT`
 

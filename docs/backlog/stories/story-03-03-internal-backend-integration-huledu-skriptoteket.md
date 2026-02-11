@@ -1,21 +1,20 @@
 ---
-id: '003c-huledu-skriptoteket-internal-integration-story'
-title: 'Internal backend integration for HuleEdu and Skriptoteket'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: 003c-huledu-skriptoteket-internal-integration-story
+title: Internal backend integration for HuleEdu and Skriptoteket
+type: story
+status: proposed
+priority: high
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - 'docs/backlog/epics/epic-03-unified-conversion-service.md'
-  - 'docs/converters/pdf_to_md_service_api_v1.md'
+  - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/converters/pdf_to_md_service_api_v1.md
 labels:
-  - 'integration'
-  - 'huledu'
-  - 'skriptoteket'
-  - 'internal-api'
+  - integration
+  - huledu
+  - skriptoteket
+  - internal-api
 ---
-# Internal backend integration for HuleEdu and Skriptoteket
 
 ## Objective
 
@@ -30,10 +29,10 @@ Provide one shared internal conversion backend contract that both HuleEdu and Sk
 ## Acceptance Criteria
 
 1. Both HuleEdu and Skriptoteket integration docs reference the same canonical v1 contract.
-2. Both systems can submit and retrieve conversion jobs through the same endpoint set and auth model.
-3. Correlation IDs are propagated from caller to conversion logs/metadata.
-4. Integration wrappers in consumer repos are thin adapters only (no business logic forks).
-5. Local tunnel-based development workflow is documented with troubleshooting basics.
+1. Both systems can submit and retrieve conversion jobs through the same endpoint set and auth model.
+1. Correlation IDs are propagated from caller to conversion logs/metadata.
+1. Integration wrappers in consumer repos are thin adapters only (no business logic forks).
+1. Local tunnel-based development workflow is documented with troubleshooting basics.
 
 ## Test Requirements
 

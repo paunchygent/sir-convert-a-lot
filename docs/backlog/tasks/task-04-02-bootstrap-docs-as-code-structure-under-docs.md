@@ -1,19 +1,18 @@
 ---
-id: '005-bootstrap-docs-as-code-structure-under-docs'
-title: 'Bootstrap docs-as-code structure under docs/'
-type: 'task'
-status: 'completed'
-priority: 'critical'
+id: 005-bootstrap-docs-as-code-structure-under-docs
+title: Bootstrap docs-as-code structure under docs/
+type: task
+status: completed
+priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - 'docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md'
-  - 'docs/_meta/docs-contract.yaml'
+  - docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md
+  - docs/\_meta/docs-contract.yaml
 labels:
-  - 'docs-as-code'
-  - 'contract'
+  - docs-as-code
+  - contract
 ---
-# Bootstrap docs-as-code structure under docs/
 
 ## Objective
 
@@ -34,8 +33,8 @@ hierarchy and frontmatter constraints.
 ## Acceptance Criteria
 
 1. `pdm run validate-docs` passes with zero violations.
-2. Planning hierarchy supports `programme`, `epic`, `story`, and `task`.
-3. Docs taxonomy includes runbooks, reference docs, ADRs, and PDRs.
+1. Planning hierarchy supports `programme`, `epic`, `story`, and `task`.
+1. Docs taxonomy includes runbooks, reference docs, ADRs, and PDRs.
 
 ## Checklist
 

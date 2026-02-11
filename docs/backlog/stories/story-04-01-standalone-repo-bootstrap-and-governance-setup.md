@@ -1,22 +1,21 @@
 ---
-id: '004-standalone-repo-bootstrap-and-governance-setup'
-title: 'Standalone repo bootstrap and governance setup'
-type: 'story'
-status: 'in_progress'
-priority: 'critical'
+id: 004-standalone-repo-bootstrap-and-governance-setup
+title: Standalone repo bootstrap and governance setup
+type: story
+status: in_progress
+priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - 'docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md'
-  - 'docs/backlog/tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md'
-  - 'docs/backlog/tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md'
-  - 'docs/backlog/tasks/task-04-04-prepare-docker-hemma-service-foundation.md'
+  - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
+  - docs/backlog/tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md
+  - docs/backlog/tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md
+  - docs/backlog/tasks/task-04-04-prepare-docker-hemma-service-foundation.md
 labels:
-  - 'story'
-  - 'bootstrap'
-  - 'governance'
+  - story
+  - bootstrap
+  - governance
 ---
-# Standalone repo bootstrap and governance setup
 
 ## Objective
 
@@ -33,9 +32,9 @@ quality gates, and operational runbooks aligned with your Skriptoteket/HuleEdu s
 ## Acceptance Criteria
 
 1. All docs and rules are frontmatter-validated by contract.
-2. AGENTS.md includes canonical standards for docs, testing, PDM, Docker v2, PostgreSQL, and Hemma.
-3. New setup tasks (005-007) are linked and track execution state.
-4. Runbook and skill exist for repo-specific Hemma/GPU operations.
+1. AGENTS.md includes canonical standards for docs, testing, PDM, Docker v2, PostgreSQL, and Hemma.
+1. New setup tasks (005-007) are linked and track execution state.
+1. Runbook and skill exist for repo-specific Hemma/GPU operations.
 
 ## Test Requirements
 

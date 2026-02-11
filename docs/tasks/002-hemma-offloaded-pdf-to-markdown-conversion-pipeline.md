@@ -1,13 +1,13 @@
 ---
 id: 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline
 title: Hemma offloaded PDF-to-Markdown conversion pipeline
-type: story
+type: task
 status: proposed
 priority: high
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/tasks/003-unified-conversion-service-epic.md
   - .agents/rules/030-conversion-workflows.md
   - .agents/rules/035-docling-pdf-conversion.md
   - scripts/converters/convert_pdf_to_md.py
@@ -25,34 +25,6 @@ labels:
 
 Build a robust, test-covered PDF-to-Markdown conversion pipeline that can run remotely on Hemma
 and be triggered from local development so research-paper ingestion does not saturate the laptop.
-
-## Scope
-
-- Canonical PDF-to-Markdown conversion contract and implementation.
-- Robustness for noisy/scanned PDFs with deterministic outputs.
-- Hemma-hosted async HTTP conversion service and local tunnel workflow.
-- GPU-first execution policy with decision-gated fallback governance.
-
-## Acceptance Criteria
-
-- Canonical converter entrypoint exists and is test-covered.
-- Pipeline handles noisy/scanned PDFs with documented behavior.
-- Hemma HTTP conversion service is operational and callable from local machine.
-- GPU-first policy is enforced for initial rollout with no silent fallback.
-- Redundant converter drift is removed after stabilization gate.
-
-## Test Requirements
-
-- Unit and integration tests cover conversion contract and output expectations.
-- API contract tests cover async job endpoints and idempotency behavior.
-- Regression fixtures include noisy/scanned/multi-column/image-heavy PDFs.
-- Benchmark evidence is captured for accelerator policy decisions.
-
-## Done Definition
-
-- Scope delivered and acceptance criteria met.
-- Validation gates pass (`format`, `lint`, `typecheck`, `test`).
-- Related docs, ADR references, and migration notes are updated.
 
 ## Context
 
@@ -94,7 +66,7 @@ Docling acceleration note (decision-relevant):
 - asynchronous job state model (`queued`, `running`, `succeeded`, `failed`, `canceled`),
 - result and error payload schema.
 
-2. Lock remote architecture target to HTTP API first (not tunnel/SSH-first orchestration).
+1. Lock remote architecture target to HTTP API first (not tunnel/SSH-first orchestration).
 1. Publish and freeze v1 API schema before implementation:
 
 - `docs/converters/pdf_to_md_service_api_v1.md`
@@ -102,12 +74,12 @@ Docling acceleration note (decision-relevant):
 - authentication and idempotency semantics,
 - error model and queue-compatible `JobSpec` / `JobResult`.
 
-4. Add ADR for conversion service boundaries and async API contract before implementation:
+1. Add ADR for conversion service boundaries and async API contract before implementation:
 
 - `docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md`
 - lock decisions for endpoint shape, auth, storage v1, retention policy.
 
-5. Lock acceleration policy for Phase 0:
+1. Lock acceleration policy for Phase 0:
 
 - GPU-first is the explicit default objective.
 - CPU fallback is disabled until GPU exploration/benchmark gate is completed and documented.
@@ -120,14 +92,14 @@ Docling acceleration note (decision-relevant):
 - backend B: Docling high-fidelity path for complex tables/figures,
 - backend fallback when backend initialization fails.
 
-2. Add deterministic cleanup/normalization pipeline for noisy PDFs:
+1. Add deterministic cleanup/normalization pipeline for noisy PDFs:
 
 - whitespace normalization,
 - heading/section heuristics with bounded rules,
 - table and figure handling policy,
 - scanned-PDF OCR toggle behavior.
 
-3. Emit stable conversion metadata (source path, backend, timestamp, options fingerprint).
+1. Emit stable conversion metadata (source path, backend, timestamp, options fingerprint).
 
 ### Phase 2 - Test hardening
 
@@ -138,14 +110,14 @@ Docling acceleration note (decision-relevant):
 - multi-column + tables,
 - image-heavy pages.
 
-2. Add unit tests for normalization and heading/table logic.
+1. Add unit tests for normalization and heading/table logic.
 1. Add integration tests for end-to-end conversion outputs with assertions on:
 
 - non-empty markdown,
 - expected section/table presence,
 - deterministic metadata header fields.
 
-4. Add regression fixtures for previously failing/noisy documents.
+1. Add regression fixtures for previously failing/noisy documents.
 1. Add contract tests for API response schema and job state transitions.
 
 ### Phase 3 - Hemma HTTP service deployment (primary path)
@@ -158,7 +130,7 @@ Docling acceleration note (decision-relevant):
 - `GET /v1/convert/jobs/{job_id}/result` (artifacts/metadata),
 - `POST /v1/convert/jobs/{job_id}/cancel` (optional).
 
-3. Persist job metadata/artifacts in a storage layout that is transport-agnostic.
+1. Persist job metadata/artifacts in a storage layout that is transport-agnostic.
 1. Add client command wrappers in this repo that call HTTP endpoints.
 1. Record operational limits:
 
@@ -166,7 +138,7 @@ Docling acceleration note (decision-relevant):
 - timeout policy,
 - expected throughput by document size/class.
 
-6. Validate local->tunnel->Hemma end-to-end conversion flow on sample corpus.
+1. Validate local->tunnel->Hemma end-to-end conversion flow on sample corpus.
 
 ### Phase 3.5 - Queue-ready architecture constraints (future Option 3)
 
@@ -175,12 +147,12 @@ Docling acceleration note (decision-relevant):
 - HTTP handler should only validate request, enqueue/dispatch, and return job IDs.
 - Worker entrypoint should consume a job spec and produce standardized artifacts.
 
-2. Define `JobSpec` and `JobResult` as versioned contracts reusable by both:
+1. Define `JobSpec` and `JobResult` as versioned contracts reusable by both:
 
 - in-process async executor (Option 2),
 - external queue worker (Option 3).
 
-3. Add idempotency key support for job creation to make future queue retries safe.
+1. Add idempotency key support for job creation to make future queue retries safe.
 1. Add tracing/correlation IDs in all job lifecycle events.
 
 ### Phase 4 - GPU decision gate (Docling on Hemma)
@@ -194,7 +166,7 @@ Docling acceleration note (decision-relevant):
   - allow CPU fallback policy for resilience,
   - document rationale (e.g., runtime mismatch) and impact.
 
-3. Capture benchmark evidence (latency, memory, quality) for CPU vs accelerator mode.
+1. Capture benchmark evidence (latency, memory, quality) for CPU vs accelerator mode.
 
 ### Phase 5 - Cross-repo local availability
 
@@ -211,17 +183,17 @@ Docling acceleration note (decision-relevant):
 - noisy/scanned regression suite green,
 - Hemma deployment validated on representative corpus.
 
-2. Remove redundant converter implementations and repo-local drift:
+1. Remove redundant converter implementations and repo-local drift:
 
 - deprecate/remove duplicate converter CLI surfaces in `huledu-reboot`,
 - keep only thin wrappers that call canonical CLI/API contract.
 
-3. Publish one cohesive and versioned converter surface:
+1. Publish one cohesive and versioned converter surface:
 
 - versioned CLI/API contract (`v1`),
 - changelog + migration notes for compatibility aliases and removals.
 
-4. Enforce canonical ownership in docs:
+1. Enforce canonical ownership in docs:
 
 - mark this repo as source of truth for conversion logic,
 - keep other repos integration-only for conversion workflows.

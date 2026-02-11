@@ -1,21 +1,21 @@
 ---
 id: 003-unified-conversion-service-epic
-title: Unified conversion service (Hemma-first, multi-format, cross-repo)
+title: Unified conversion service epic (Hemma-first, multi-format, cross-repo)
 type: epic
 status: proposed
 priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
-  - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
+  - docs/tasks/001-sir-convert-a-lot-platform-foundation-programme.md
+  - docs/tasks/002-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
-  - docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md
-  - docs/backlog/stories/story-03-02-gpu-first-execution-and-fallback-governance.md
-  - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
-  - docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md
-  - docs/backlog/stories/story-03-05-quality-performance-reliability-validation-gates.md
+  - docs/tasks/003a-conversion-service-v1-contract-and-dev-experience-story.md
+  - docs/tasks/003b-gpu-first-execution-and-fallback-governance-story.md
+  - docs/tasks/003c-huledu-skriptoteket-internal-integration-story.md
+  - docs/tasks/003d-multi-format-converter-consolidation-story.md
+  - docs/tasks/003e-quality-performance-and-reliability-validation-story.md
 labels:
   - epic
   - conversion-platform
@@ -62,13 +62,13 @@ retries, and failure reasons, without selecting backends manually or rewriting i
 
 ## Stories
 
-1. `docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md`
-1. `docs/backlog/stories/story-03-02-gpu-first-execution-and-fallback-governance.md`
-1. `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
-1. `docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md`
-1. `docs/backlog/stories/story-03-05-quality-performance-reliability-validation-gates.md`
+1. `docs/tasks/003a-conversion-service-v1-contract-and-dev-experience-story.md`
+1. `docs/tasks/003b-gpu-first-execution-and-fallback-governance-story.md`
+1. `docs/tasks/003c-huledu-skriptoteket-internal-integration-story.md`
+1. `docs/tasks/003d-multi-format-converter-consolidation-story.md`
+1. `docs/tasks/003e-quality-performance-and-reliability-validation-story.md`
 
-## Acceptance Criteria
+## Epic Acceptance Criteria
 
 1. One canonical API + CLI contract is documented, test-enforced, and used across repos.
 1. Local usage from tunnel/internal HTTP is stable and documented as default dev workflow.

@@ -3,8 +3,8 @@ type: converter
 id: CONV-sir-convert-a-lot
 title: Sir Convert-a-Lot CLI and Service Usage
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -15,7 +15,6 @@ links:
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 ---
-# Sir Convert-a-Lot (convert-a-lot)
 
 ## Purpose
 
@@ -23,6 +22,7 @@ links:
 Hemma-hosted conversion service over internal HTTP/tunnel.
 
 Natural-language usage convention for assistants:
+
 - `Please, tell Sir Convert-a-Lot to convert x to y.`
 - `Please, tell convert-a-lot to convert x to y.`
 
@@ -73,8 +73,8 @@ pdm run sir-convert-a-lot convert ./pdfs --output-dir ./research
 ## Tunnel-Oriented Development Flow
 
 1. Start service on Hemma (or locally for testing).
-2. Expose the service through your local tunnel endpoint.
-3. Run from any repo directory:
+1. Expose the service through your local tunnel endpoint.
+1. Run from any repo directory:
 
 ```bash
 pdm run convert-a-lot convert ./folder_with_pdfs \

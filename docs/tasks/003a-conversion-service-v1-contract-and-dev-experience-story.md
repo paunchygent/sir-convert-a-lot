@@ -1,14 +1,14 @@
 ---
 id: 003a-conversion-service-v1-contract-and-dev-experience-story
-title: Lock v1 contract and no-hassle local dev UX
+title: 'Story 003a: Lock v1 contract and no-hassle local dev UX'
 type: story
 status: completed
 priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - docs/backlog/epics/epic-03-unified-conversion-service.md
-  - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
+  - docs/tasks/003-unified-conversion-service-epic.md
+  - docs/tasks/002-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/converters/pdf_to_md_service_api_v1.md
 labels:
   - contract
@@ -61,12 +61,6 @@ Ensure local developers and coding assistants can use one predictable command pa
 - Acceptance criteria met.
 - Test suite green for contract + CLI integration behavior.
 - Docs updated in repo start points (README_FIRST/HANDOFF/CURRENT_TASK links where needed).
-
-## Checklist
-
-- [x] Implementation complete
-- [x] Tests and validations complete
-- [x] Docs synchronized
 
 ## Implementation Notes (2026-02-11)
 

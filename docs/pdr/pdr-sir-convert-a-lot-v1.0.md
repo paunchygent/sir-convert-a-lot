@@ -3,8 +3,8 @@ type: pdr
 id: PDR-sir-convert-a-lot-v1.0
 title: Sir Convert-a-Lot Product Description v1.0
 status: draft
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -15,7 +15,6 @@ links:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
 ---
-# Sir Convert-a-Lot Product Description v1.0
 
 ## High-Level Value
 

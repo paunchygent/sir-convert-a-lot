@@ -3,8 +3,8 @@ trigger: model_decision
 rule_id: RULE-030
 title: Conversion Workflows
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -12,7 +12,6 @@ tags:
   - service
 scope: repo
 ---
-# Conversion Workflows
 
 ## Canonical Surfaces
 

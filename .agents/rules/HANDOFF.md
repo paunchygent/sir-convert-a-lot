@@ -3,15 +3,14 @@ trigger: model_decision
 rule_id: RULE-HANDOFF
 title: Rules Handoff Notes
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
   - handoff
 scope: repo
 ---
-# Rule Handoff Notes
 
 ## 2026-02-11
 

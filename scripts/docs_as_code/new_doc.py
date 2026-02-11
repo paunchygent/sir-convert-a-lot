@@ -121,8 +121,6 @@ owners:
 tags: []
 links: []
 ---
-# {title}
-
 ## Purpose
 
 TBD.

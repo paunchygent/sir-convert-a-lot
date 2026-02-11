@@ -2,7 +2,7 @@
 
 Purpose:
     Enforce strict planning-document quality for `docs/backlog/` by validating
-    required frontmatter keys, type values, title/H1 consistency, required
+    required frontmatter keys, type values, required
     template sections, and folder/type alignment.
 
 Relationships:
@@ -54,8 +54,10 @@ def parse_frontmatter(text: str) -> tuple[dict[str, object] | None, str | None]:
 
 
 def extract_h1(text: str) -> str | None:
-    """Extract first markdown H1 value."""
-    match = re.search(r"^#\s+(.+)$", text, flags=re.MULTILINE)
+    """Extract first markdown H1 value from body after frontmatter."""
+    match = FRONTMATTER_RE.match(text)
+    body = text[match.end() :] if match is not None else text
+    match = re.search(r"^#\s+(.+)$", body, flags=re.MULTILINE)
     return match.group(1).strip() if match else None
 
 
@@ -143,10 +145,11 @@ def validate_file(path: Path) -> list[str]:
                 break
 
     h1 = extract_h1(text)
-    if h1 is None:
-        errors.append(f"{repo_relative(path)}: missing H1 heading")
-    elif title and h1 != title:
-        errors.append(f"{repo_relative(path)}: H1 must exactly match frontmatter title")
+    if h1 is not None:
+        errors.append(
+            f"{repo_relative(path)}: top-level markdown H1 headings are not allowed; "
+            "frontmatter title is canonical"
+        )
 
     errors.extend(validate_location(path, item_type))
     errors.extend(validate_sections(path, text, item_type))

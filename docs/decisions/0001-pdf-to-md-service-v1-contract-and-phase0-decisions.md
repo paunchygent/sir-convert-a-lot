@@ -3,8 +3,8 @@ type: decision
 id: ADR-0001
 title: PDF-to-MD Service v1 Contract and Phase 0 Decisions
 status: accepted
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -15,7 +15,6 @@ links:
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md
 ---
-# ADR 0001: PDF-to-MD Service v1 Contract and Phase 0 Decisions
 
 ## Status
 
@@ -24,7 +23,7 @@ links:
 
 ## Context
 
-PDF-to-Markdown conversion is currently split across scripts and repos.  
+PDF-to-Markdown conversion is currently split across scripts and repos.\
 We need one canonical contract for Hemma-offloaded conversion that is:
 
 - robust for noisy/scanned research PDFs,
@@ -32,14 +31,17 @@ We need one canonical contract for Hemma-offloaded conversion that is:
 - compatible with future queue-worker execution without API breakage.
 
 The governing implementation task is:
+
 - `docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md`
 
 The normative API schema is:
+
 - `docs/converters/pdf_to_md_service_api_v1.md`
 
 ## Decision
 
 1. Endpoint model
+
 - v1 uses async job endpoints only:
   - `POST /v1/convert/jobs`
   - `GET /v1/convert/jobs/{job_id}`
@@ -49,24 +51,29 @@ The normative API schema is:
 - Small-file convenience is handled by `wait_seconds` on job creation.
 
 2. Auth model
+
 - Hemma service remains internal-network scoped.
 - `X-API-Key` is mandatory on every endpoint.
 
 3. Storage model (v1)
+
 - Filesystem backend is canonical in v1.
 - Storage adapter boundary is mandatory so object storage can be introduced without API changes.
 
 4. Retention model
+
 - Raw uploads TTL: 24h.
 - Artifacts + manifests TTL: 7d.
 - Pin/unpin support controls exemption from cleanup.
 
 5. Idempotency
+
 - `Idempotency-Key` is mandatory for `POST /v1/convert/jobs`.
 - Same key + same payload fingerprint must return same job identity.
 - Same key + different payload fingerprint must fail with `409`.
 
 6. Acceleration policy (mandatory)
+
 - GPU-first is the default objective and default execution policy for initial rollout.
 - CPU fallback must not be silently enabled during initial rollout.
 - CPU fallback can only be enabled after explicit GPU exploration and benchmark evidence is documented and approved in task/docs updates.

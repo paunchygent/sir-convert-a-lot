@@ -95,6 +95,18 @@ def parse_frontmatter(text: str) -> tuple[YamlMapping | None, str | None]:
     return frontmatter, None
 
 
+def extract_body(text: str) -> str:
+    """Return file body content after frontmatter."""
+    match = FRONTMATTER_RE.match(text)
+    return text[match.end() :] if match is not None else text
+
+
+def first_h1(body: str) -> str | None:
+    """Return the first markdown H1 heading text when present."""
+    match = re.search(r"^#\s+(.+)$", body, flags=re.MULTILINE)
+    return match.group(1).strip() if match else None
+
+
 def is_iso_date(value: object) -> bool:
     """Return True when value is an ISO date (YYYY-MM-DD)."""
     if isinstance(value, date):
@@ -160,6 +172,15 @@ def validate_doc(path: Path, docs_contract: YamlMapping) -> list[Violation]:
     if error is not None:
         return [Violation(norm, error)]
     assert frontmatter is not None
+
+    h1 = first_h1(extract_body(text))
+    if h1 is not None:
+        violations.append(
+            Violation(
+                norm,
+                "Top-level markdown H1 headings are not allowed; frontmatter title is canonical.",
+            )
+        )
 
     raw_sections = docs_contract.get("sections")
     if not isinstance(raw_sections, list):
@@ -265,6 +286,15 @@ def validate_rule(path: Path, rules_contract: YamlMapping) -> list[Violation]:
         return [Violation(norm, error)]
     assert frontmatter is not None
 
+    h1 = first_h1(extract_body(text))
+    if h1 is not None:
+        violations.append(
+            Violation(
+                norm,
+                "Top-level markdown H1 headings are not allowed; frontmatter title is canonical.",
+            )
+        )
+
     required = to_str_list(rules_contract.get("required"))
     optional = set(to_str_list(rules_contract.get("optional")))
 
@@ -320,7 +350,7 @@ def filter_user_paths(paths: list[str]) -> tuple[list[Path], list[Path]]:
         norm = normalize_path(candidate)
         if norm.startswith("docs/") and candidate.suffix == ".md":
             docs_targets.append(candidate)
-        if norm.startswith(".agents/rules/") and candidate.suffix in {".md", ".mdc"}:
+        if norm.startswith(".agents/rules/") and candidate.suffix == ".md":
             rule_targets.append(candidate)
 
     return docs_targets, rule_targets

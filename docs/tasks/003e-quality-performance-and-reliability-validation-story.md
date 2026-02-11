@@ -1,16 +1,16 @@
 ---
 id: 003e-quality-performance-and-reliability-validation-story
-title: Quality, performance, and reliability validation gates
+title: 'Story 003e: Quality, performance, and reliability validation gates'
 type: story
 status: proposed
 priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - docs/backlog/epics/epic-03-unified-conversion-service.md
-  - docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md
-  - docs/backlog/stories/story-03-02-gpu-first-execution-and-fallback-governance.md
-  - docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md
+  - docs/tasks/003-unified-conversion-service-epic.md
+  - docs/tasks/003a-conversion-service-v1-contract-and-dev-experience-story.md
+  - docs/tasks/003b-gpu-first-execution-and-fallback-governance-story.md
+  - docs/tasks/003d-multi-format-converter-consolidation-story.md
 labels:
   - qa
   - performance
@@ -40,6 +40,8 @@ Establish non-negotiable validation gates so rollout and consolidation are safe,
 
 2. Reliability thresholds are met:
 
+>
+
 - > = 99% success rate for valid benchmark conversions.
 - 0 idempotency correctness failures in test suite.
 
@@ -62,9 +64,3 @@ Establish non-negotiable validation gates so rollout and consolidation are safe,
 
 - Validation gates are codified, reproducible, and required for rollout decisions.
 - Evidence artifacts exist for latest benchmark run and are linked from task docs.
-
-## Checklist
-
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized

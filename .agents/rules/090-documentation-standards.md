@@ -3,15 +3,14 @@ trigger: always_on
 rule_id: RULE-090
 title: Documentation Standards
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
   - docs-as-code
 scope: repo
 ---
-# Documentation Standards
 
 - Keep `docs/backlog/current.md` updated after each major implementation phase.
 - New behavior requires a `programme`/`epic`/`story`/`task` document in `docs/backlog/`.

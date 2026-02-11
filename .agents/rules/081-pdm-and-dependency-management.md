@@ -3,8 +3,8 @@ trigger: always_on
 rule_id: RULE-081
 title: PDM and Dependency Management
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -12,7 +12,6 @@ tags:
   - dependencies
 scope: repo
 ---
-# PDM and Dependency Management
 
 - Use PDM for all Python dependency and script execution.
 - Run PDM commands from repository root.

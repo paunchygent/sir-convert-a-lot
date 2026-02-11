@@ -1,20 +1,19 @@
 ---
-id: '003d-multi-format-converter-consolidation-story'
-title: 'Consolidate html/pdf/md/docx/xlsx/csv conversion capabilities'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: 003d-multi-format-converter-consolidation-story
+title: Consolidate html/pdf/md/docx/xlsx/csv conversion capabilities
+type: story
+status: proposed
+priority: high
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - 'docs/backlog/epics/epic-03-unified-conversion-service.md'
-  - 'docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md'
+  - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
 labels:
-  - 'consolidation'
-  - 'multi-format'
-  - 'platform'
+  - consolidation
+  - multi-format
+  - platform
 ---
-# Consolidate html/pdf/md/docx/xlsx/csv conversion capabilities
 
 ## Objective
 
@@ -29,13 +28,15 @@ Subsume current conversion scripts into one cohesive and versioned service/CLI s
 ## Acceptance Criteria
 
 1. Capability matrix exists and maps all listed formats to canonical operations.
-2. Each existing converter script is classified as:
-  - platform implementation,
-  - compatibility wrapper,
-  - deprecated/removed.
+1. Each existing converter script is classified as:
+
+- platform implementation,
+- compatibility wrapper,
+- deprecated/removed.
+
 3. Consumer repositories use canonical CLI/API and stop adding ad hoc converter ownership.
-4. Migration notes exist for renamed/replaced commands.
-5. Post-stabilization cleanup is executed per gate in task 002 phase 6.
+1. Migration notes exist for renamed/replaced commands.
+1. Post-stabilization cleanup is executed per gate in task 002 phase 6.
 
 ## Test Requirements
 

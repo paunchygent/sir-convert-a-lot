@@ -1,19 +1,18 @@
 ---
-id: 'current-task'
-title: 'Current Task Log'
-type: 'task-log'
-status: 'active'
-priority: 'critical'
+id: current-task
+title: Current Task Log
+type: task-log
+status: active
+priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
-  - 'docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md'
-  - 'docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md'
+  - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
+  - docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md
 labels:
-  - 'session-log'
-  - 'active-work'
+  - session-log
+  - active-work
 ---
-# Current Task Log
 
 ## Context
 
@@ -41,5 +40,5 @@ Active focus is Story 004 (standalone bootstrap/governance) and preparation for 
 ## Next Actions
 
 1. Finish frontmatter normalization for remaining docs/rules and confirm `validate-docs` passes.
-2. Finalize AGENTS.md “greatest hits” standards and taxonomy guidance.
-3. Run full quality/doc validation gates and mark setup tasks complete where applicable.
+1. Finalize AGENTS.md “greatest hits” standards and taxonomy guidance.
+1. Run full quality/doc validation gates and mark setup tasks complete where applicable.

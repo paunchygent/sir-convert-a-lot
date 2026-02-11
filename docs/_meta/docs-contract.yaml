@@ -2,7 +2,14 @@ version: 1
 
 docs:
   include_globs:
-    - "docs/**/*.md"
+    - "docs/*.md"
+    - "docs/_meta/*.md"
+    - "docs/backlog/**/*.md"
+    - "docs/converters/*.md"
+    - "docs/decisions/*.md"
+    - "docs/pdr/*.md"
+    - "docs/reference/*.md"
+    - "docs/runbooks/*.md"
   frontmatter_exempt: []
   common_required:
     - type
@@ -140,7 +147,6 @@ docs:
 rules:
   include_globs:
     - ".agents/rules/*.md"
-    - ".agents/rules/*.mdc"
   frontmatter_exempt: []
   required:
     - trigger

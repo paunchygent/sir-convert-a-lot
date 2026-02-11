@@ -24,6 +24,8 @@ dev = [
     "ruff>=0.14.0",
     "mypy>=1.18.2",
     "types-pyyaml>=6.0.12.20250915",
+    "mdformat>=1.0.0",
+    "mdformat-frontmatter>=2.0.10",
 ]
 
 [tool.ruff]
@@ -87,14 +89,25 @@ distribution = false
 "docs-validate" = "python -m scripts.docs_as_code.validate_docs"
 "index-tasks" = "python -m scripts.docs_as_code.index_tasks"
 "format" = "ruff format ."
-"format-all" = "ruff format ."
+"format-md" = "mdformat --extensions frontmatter README.md AGENTS.md docs .agents"
+"format-all" = { composite = [
+    "ruff format .",
+    "mdformat --extensions frontmatter README.md AGENTS.md docs .agents",
+] }
 "lint" = { composite = [
     "ruff format --check --diff .",
     "ruff check .",
+    "mdformat --check --extensions frontmatter README.md AGENTS.md docs .agents",
     "python -m scripts.docs_as_code.validate_docs",
     "python -m scripts.docs_as_code.validate_tasks",
 ] }
-"lint-fix" = "ruff check --fix --unsafe-fixes ."
+"lint-fix" = { composite = [
+    "ruff check --fix --unsafe-fixes .",
+    "ruff format .",
+    "mdformat --extensions frontmatter README.md AGENTS.md docs .agents",
+    "python -m scripts.docs_as_code.validate_docs",
+    "python -m scripts.docs_as_code.validate_tasks",
+] }
 "typecheck" = "mypy --config-file pyproject.toml"
 "typecheck-all" = "mypy --config-file pyproject.toml"
 "test" = "pytest -s"

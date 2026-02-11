@@ -3,8 +3,8 @@ trigger: model_decision
 rule_id: RULE-046
 title: Docker Compose v2 and Container Debugging
 status: active
-created: 2026-02-11
-updated: 2026-02-11
+created: '2026-02-11'
+updated: '2026-02-11'
 owners:
   - platform
 tags:
@@ -12,7 +12,6 @@ tags:
   - compose
 scope: repo
 ---
-# Docker Compose v2 and Container Debugging
 
 - Use Docker Compose v2 syntax (`docker compose`, never `docker-compose`).
 - Keep service definitions deterministic and environment-driven.
