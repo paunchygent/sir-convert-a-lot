@@ -1,0 +1,157 @@
+version: 1
+
+docs:
+  include_globs:
+    - "docs/**/*.md"
+  frontmatter_exempt: []
+  common_required:
+    - type
+    - id
+    - title
+    - status
+    - created
+  common_optional:
+    - updated
+    - owners
+    - tags
+    - links
+    - related
+    - labels
+    - priority
+    - last_updated
+    - system
+  sections:
+    - name: spec
+      folder: docs
+      filename_regex: "^[A-Za-z0-9_.-]+\\.md$"
+      type: spec
+      status_allowed: [draft, active, deprecated]
+      required: [owners]
+      optional: []
+
+    - name: converter
+      folder: docs/converters
+      filename_regex: "^[a-z0-9_-]+\\.md$"
+      type: converter
+      id_regex: "^CONV-[a-z0-9-]+$"
+      status_allowed: [draft, active, deprecated]
+      required: [owners]
+      optional: []
+
+    - name: decision
+      folder: docs/decisions
+      filename_regex: "^\\d{4}-[a-z0-9-]+\\.md$"
+      type: decision
+      id_regex: "^ADR-\\d{4}$"
+      status_allowed: [proposed, accepted, superseded, deprecated]
+      required: [owners]
+      optional: []
+
+    - name: pdr
+      folder: docs/pdr
+      filename_regex: "^pdr-[a-z0-9-]+-v\\d+\\.\\d+(?:\\.\\d+)?\\.md$"
+      type: pdr
+      id_regex: "^PDR-[a-z0-9-]+-v\\d+\\.\\d+(?:\\.\\d+)?$"
+      status_allowed: [draft, active, superseded]
+      required: [owners]
+      optional: []
+
+    - name: runbook
+      folder: docs/runbooks
+      filename_regex: "^runbook-[a-z0-9-]+\\.md$"
+      type: runbook
+      id_regex: "^RUN-[a-z0-9-]+$"
+      status_allowed: [draft, active, deprecated]
+      required: [owners, system]
+      optional: []
+
+    - name: reference
+      folder: docs/reference
+      filename_regex: "^ref-[a-z0-9-]+\\.md$"
+      type: reference
+      id_regex: "^REF-[a-z0-9-]+$"
+      status_allowed: [draft, active, deprecated]
+      required: [owners]
+      optional: []
+
+    - name: backlog-programme
+      folder: docs/backlog/programmes
+      filename_regex: "^programme-[a-z0-9-]+\\.md$"
+      type: programme
+      id_regex: "^[a-z0-9][a-z0-9._-]*$"
+      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
+      required: [priority, last_updated]
+      optional: []
+
+    - name: backlog-epic
+      folder: docs/backlog/epics
+      filename_regex: "^epic-[a-z0-9-]+\\.md$"
+      type: epic
+      id_regex: "^[a-z0-9][a-z0-9._-]*$"
+      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
+      required: [priority, last_updated]
+      optional: []
+
+    - name: backlog-story
+      folder: docs/backlog/stories
+      filename_regex: "^story-[a-z0-9-]+\\.md$"
+      type: story
+      id_regex: "^[a-z0-9][a-z0-9._-]*$"
+      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
+      required: [priority, last_updated]
+      optional: []
+
+    - name: backlog-task
+      folder: docs/backlog/tasks
+      filename_regex: "^(task|fix)-[a-z0-9-]+\\.md$"
+      type_one_of: [task, fix]
+      id_regex: "^[a-z0-9][a-z0-9._-]*$"
+      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
+      required: [priority, last_updated]
+      optional: []
+
+    - name: backlog-review
+      folder: docs/backlog/reviews
+      filename_regex: "^review-[a-z0-9-]+\\.md$"
+      type: review
+      id_regex: "^[a-z0-9][a-z0-9._-]*$"
+      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
+      required: [priority, last_updated]
+      optional: []
+
+    - name: backlog-meta
+      folder: docs/backlog
+      filename_regex: "^(README|current)\\.md$"
+      type_one_of: [task-log, reference]
+      id_regex: "^[a-z0-9][a-z0-9._-]*$"
+      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
+      required: [priority, last_updated]
+      optional: []
+
+    - name: meta
+      folder: docs/_meta
+      filename_regex: "^[A-Za-z0-9_.-]+\\.md$"
+      type: meta
+      id_regex: "^META-[a-z0-9-]+$"
+      status_allowed: [active, deprecated]
+      required: [owners]
+      optional: []
+
+rules:
+  include_globs:
+    - ".agents/rules/*.md"
+    - ".agents/rules/*.mdc"
+  frontmatter_exempt: []
+  required:
+    - trigger
+    - rule_id
+    - title
+    - status
+    - owners
+    - created
+  optional:
+    - updated
+    - tags
+    - scope
+  status_allowed: [draft, active, deprecated]
+  rule_id_regex: "^RULE-[0-9A-Z-]+$"

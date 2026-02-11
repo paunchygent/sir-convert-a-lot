@@ -1,0 +1,37 @@
+---
+trigger: always_on
+rule_id: RULE-070
+title: Testing and Quality Gates
+status: active
+created: 2026-02-11
+updated: 2026-02-11
+owners:
+  - platform
+tags:
+  - testing
+  - quality
+scope: repo
+---
+# Testing and Quality Gates
+
+Run these gates for behavior-changing work:
+
+```bash
+pdm run format-all
+pdm run lint-fix
+pdm run typecheck-all
+pdm run pytest-root <path-or-nodeid>
+```
+
+Pre-commit safety gate:
+
+```bash
+pdm run validate-tasks
+pdm run validate-docs
+pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing
+```
+
+Rules:
+- No `typing.Any`, casts, or ignore-based shortcuts in new code.
+- No shims/hacks for lint/typecheck bypass.
+- Split files before 500 LoC.

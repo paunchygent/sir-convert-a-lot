@@ -1,0 +1,105 @@
+[project]
+name = "sir-convert-a-lot"
+version = "0.1.0"
+description = "Standalone, LLM-friendly conversion platform with canonical CLI/API surfaces."
+authors = [
+    { name = "Olof Larsson", email = "paunchygent@gmail.com" },
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.128.8",
+    "uvicorn>=0.40.0",
+    "python-multipart>=0.0.22",
+    "httpx>=0.28.1",
+    "typer>=0.16.0",
+    "pydantic>=2.11.7",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "ruff>=0.14.0",
+    "mypy>=1.18.2",
+    "types-pyyaml>=6.0.12.20250915",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+ignore = ["E203"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_return_any = true
+check_untyped_defs = true
+ignore_missing_imports = true
+explicit_package_bases = true
+files = [
+    "scripts/sir_convert_a_lot",
+    "scripts/docs_as_code",
+    "tests/sir_convert_a_lot",
+]
+
+[tool.pytest.ini_options]
+addopts = "-s -v"
+python_files = "test_*.py *_test.py"
+pythonpath = "."
+testpaths = ["tests"]
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.scripts]
+"serve:sir-convert-a-lot" = "uvicorn scripts.sir_convert_a_lot.service:app --host 0.0.0.0 --port 8085"
+"convert-a-lot" = "python -m scripts.sir_convert_a_lot.cli"
+"sir-convert-a-lot" = "python -m scripts.sir_convert_a_lot.cli"
+"run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
+"run-hemma" = "bash scripts/devops/run-hemma.sh"
+"new-task" = "python -m scripts.docs_as_code.new_task"
+"new-programme" = "python -m scripts.docs_as_code.new_task --type programme"
+"new-epic" = "python -m scripts.docs_as_code.new_task --type epic"
+"new-story" = "python -m scripts.docs_as_code.new_task --type story"
+"new-review" = "python -m scripts.docs_as_code.new_task --type review"
+"new-fix" = "python -m scripts.docs_as_code.new_task --type fix"
+"new-doc" = "python -m scripts.docs_as_code.new_doc"
+"new-rule" = "python -m scripts.docs_as_code.new_rule"
+"validate-tasks" = "python -m scripts.docs_as_code.validate_tasks"
+"validate-docs" = "python -m scripts.docs_as_code.validate_docs"
+"docs-validate" = "python -m scripts.docs_as_code.validate_docs"
+"index-tasks" = "python -m scripts.docs_as_code.index_tasks"
+"format" = "ruff format ."
+"format-all" = "ruff format ."
+"lint" = { composite = [
+    "ruff format --check --diff .",
+    "ruff check .",
+    "python -m scripts.docs_as_code.validate_docs",
+    "python -m scripts.docs_as_code.validate_tasks",
+] }
+"lint-fix" = "ruff check --fix --unsafe-fixes ."
+"typecheck" = "mypy --config-file pyproject.toml"
+"typecheck-all" = "mypy --config-file pyproject.toml"
+"test" = "pytest -s"
+"pytest-root" = "pytest -s"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

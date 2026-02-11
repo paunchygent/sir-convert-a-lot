@@ -1,0 +1,21 @@
+---
+trigger: model_decision
+rule_id: RULE-085
+title: PostgreSQL and Migration Standards
+status: active
+created: 2026-02-11
+updated: 2026-02-11
+owners:
+  - platform
+tags:
+  - postgres
+  - migrations
+scope: repo
+---
+# PostgreSQL and Migration Standards
+
+- Use PostgreSQL as canonical relational backend.
+- Keep migration workflow deterministic and reversible.
+- Never edit applied migrations in-place; create follow-up migrations.
+- Validate schema changes with integration tests and representative data.
+- For Hemma operations, use explicit database target and command context.
