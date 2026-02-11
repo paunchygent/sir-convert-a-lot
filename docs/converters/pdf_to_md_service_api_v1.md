@@ -58,6 +58,7 @@ links:
 - **GPU-first is mandatory default objective**.
 - Initial v1 rollout enforces GPU execution path before any CPU fallback is enabled.
 - CPU fallback is decision-gated and may only be enabled after documented GPU exploration and benchmarks.
+- CPU unlock env vars are disabled in standard startup paths during rollout lock.
 
 ## Base Conventions
 
@@ -153,8 +154,9 @@ Field rules:
 
 Server policy constraints (Phase 0 lock):
 
-- `ALLOW_CPU_ONLY=false`
-- `ALLOW_CPU_FALLBACK=false`
+- `SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY` and `SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK`
+  are rejected when set to `1` in normal startup paths.
+- CPU unlock behavior may be used only via explicit test configuration overrides in `ServiceConfig`.
 - Requests resulting in CPU execution while lock is active must fail with `gpu_not_available`.
 
 ### JobRecord (status payload)

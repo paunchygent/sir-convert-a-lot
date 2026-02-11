@@ -1,6 +1,9 @@
-______________________________________________________________________
-
-## name: sir-convert-a-lot-docs-governance description: > Enforce Sir Convert-a-Lot documentation-as-code governance across backlog, ADR/PDR/runbooks, and docs/rules frontmatter contracts.
+---
+name: sir-convert-a-lot-docs-governance
+description: >-
+  Enforce Sir Convert-a-Lot documentation-as-code governance across backlog,
+  ADR/PDR/runbooks, and docs/rules frontmatter contracts.
+---
 
 # Sir Convert-a-Lot Docs Governance
 

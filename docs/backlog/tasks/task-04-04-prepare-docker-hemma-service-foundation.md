@@ -2,7 +2,7 @@
 id: 007-prepare-docker-hemma-service-foundation
 title: Prepare Docker + Hemma service foundation
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-11'
 last_updated: '2026-02-11'
@@ -43,4 +43,4 @@ local tunnel-based development.
 - [x] Runbook created
 - [x] DevOps skill created
 - [x] Wrapper scripts added
-- [ ] Task status moved to completed
+- [x] Task status moved to completed

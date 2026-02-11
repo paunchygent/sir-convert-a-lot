@@ -2,7 +2,7 @@
 id: 004-standalone-repo-bootstrap-and-governance-setup
 title: Standalone repo bootstrap and governance setup
 type: story
-status: in_progress
+status: completed
 priority: critical
 created: '2026-02-11'
 last_updated: '2026-02-11'
@@ -51,5 +51,5 @@ quality gates, and operational runbooks aligned with your Skriptoteket/HuleEdu s
 ## Checklist
 
 - [x] Story created and linked to setup tasks
-- [ ] All acceptance criteria met
-- [ ] Story marked completed
+- [x] All acceptance criteria met
+- [x] Story marked completed

@@ -2,7 +2,7 @@
 id: 006-migrate-canonical-converter-code-and-quality-gates
 title: Migrate canonical converter code and quality gates
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-11'
 last_updated: '2026-02-11'
@@ -38,6 +38,18 @@ quality gates.
 
 ## Checklist
 
-- [ ] Code migration quality audit complete
-- [ ] Quality gates green
-- [ ] Task status moved to completed
+- [x] Code migration quality audit complete
+- [x] Quality gates green
+- [x] Task status moved to completed
+
+## Implementation Notes (2026-02-11)
+
+- Verified canonical conversion modules and tests are present under `scripts/sir_convert_a_lot/`
+  and `tests/sir_convert_a_lot/`.
+- Confirmed maintained module sizes remain under 500 LoC.
+- Validation and quality evidence (local wrapper execution):
+  - `pdm run run-local-pdm lint`
+  - `pdm run run-local-pdm typecheck-all`
+  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+  - `pdm run run-local-pdm validate-tasks`
+  - `pdm run run-local-pdm validate-docs`

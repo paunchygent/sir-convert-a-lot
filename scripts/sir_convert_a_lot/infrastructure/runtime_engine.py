@@ -29,6 +29,11 @@ from scripts.sir_convert_a_lot.domain.specs import (
     JobStatus,
 )
 
+CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
+    "SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY",
+    "SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK",
+)
+
 
 def utc_now() -> datetime:
     """Return the current UTC timestamp."""
@@ -47,7 +52,9 @@ class ServiceConfig:
     upload_ttl_seconds: int = 24 * 3600
     result_ttl_seconds: int = 7 * 24 * 3600
     gpu_available: bool = True
+    # Test-only override for explicit CPU-only behavior checks.
     allow_cpu_only: bool = False
+    # Test-only override for explicit GPU fallback behavior checks.
     allow_cpu_fallback: bool = False
     processing_delay_seconds: float = 0.2
 
@@ -370,13 +377,17 @@ def service_config_from_env() -> ServiceConfig:
     api_key = os.getenv("SIR_CONVERT_A_LOT_API_KEY", "dev-only-key")
     data_root = Path(os.getenv("SIR_CONVERT_A_LOT_DATA_DIR", "build/sir_convert_a_lot"))
     gpu_available = os.getenv("SIR_CONVERT_A_LOT_GPU_AVAILABLE", "1") == "1"
-    allow_cpu_only = os.getenv("SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY", "0") == "1"
-    allow_cpu_fallback = os.getenv("SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK", "0") == "1"
+
+    enabled_unlock_envs = [name for name in CPU_UNLOCK_ENV_VARS if os.getenv(name) == "1"]
+    if enabled_unlock_envs:
+        joined_names = ", ".join(enabled_unlock_envs)
+        raise ValueError(
+            "CPU unlock env vars are disabled during GPU-first rollout lock: "
+            f"{joined_names}. Use explicit ServiceConfig test overrides instead."
+        )
 
     return ServiceConfig(
         api_key=api_key,
         data_root=data_root,
         gpu_available=gpu_available,
-        allow_cpu_only=allow_cpu_only,
-        allow_cpu_fallback=allow_cpu_fallback,
     )

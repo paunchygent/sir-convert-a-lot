@@ -1,6 +1,9 @@
-______________________________________________________________________
-
-## name: sir-convert-a-lot-session-handoff description: > Create high-signal next-session handoffs for Sir Convert-a-Lot with explicit backlog context, validation state, and concrete next actions.
+---
+name: sir-convert-a-lot-session-handoff
+description: >-
+  Create high-signal next-session handoffs for Sir Convert-a-Lot with explicit
+  backlog context, validation state, and concrete next actions.
+---
 
 # Sir Convert-a-Lot Session Handoff
 

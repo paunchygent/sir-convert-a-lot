@@ -8,7 +8,7 @@ created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
-  - docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md
+  - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
 labels:
   - session-log
   - active-work
@@ -16,8 +16,8 @@ labels:
 
 ## Context
 
-Active focus is Story 004 (standalone bootstrap/governance) and preparation for Story 003b
-(GPU-first execution governance) in the new `sir-convert-a-lot` repository.
+Active focus has moved to Story 003c (internal backend integration for HuleEdu and Skriptoteket)
+after Story 003b GPU-first governance completion.
 
 ## Worklog
 
@@ -36,9 +36,22 @@ Active focus is Story 004 (standalone bootstrap/governance) and preparation for 
   - `pdm run pytest-root tests`
   - `pdm run validate-tasks`
   - `pdm run validate-docs`
+- 2026-02-11 — Closed Story 004 bootstrap/governance execution:
+  - `docs/backlog/tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md`
+  - `docs/backlog/tasks/task-04-04-prepare-docker-hemma-service-foundation.md`
+  - `docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md`
+- 2026-02-11 — Opened Story 003b execution task:
+  - `docs/backlog/tasks/task-05-enforce-gpu-first-lock-and-benchmark-evidence-for-story-003b.md`
+- 2026-02-11 — Completed Story 003b implementation and evidence capture:
+  - Runtime policy lock hardening (`runtime_engine.py`) with env unlock rejection.
+  - Expanded API/runtime policy tests and benchmark runner tests.
+  - Benchmark corpus added under `tests/fixtures/benchmark_pdfs/`.
+  - Benchmark artifacts:
+    - `docs/reference/benchmark-story-003b-gpu-governance-local.json`
+    - `docs/reference/ref-story-003b-gpu-governance-benchmark-evidence.md`
 
 ## Next Actions
 
-1. Finish frontmatter normalization for remaining docs/rules and confirm `validate-docs` passes.
-1. Finalize AGENTS.md “greatest hits” standards and taxonomy guidance.
-1. Run full quality/doc validation gates and mark setup tasks complete where applicable.
+1. Start Story 003c with a dedicated PR-sized task linked to shared v1 contract docs.
+1. Define thin integration adapter requirements for HuleEdu and Skriptoteket with correlation ID propagation.
+1. Add Story 003c contract tests and local tunnel integration validation path.

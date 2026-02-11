@@ -215,6 +215,7 @@ def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) 
     assert payload["job_id"] == job_id
     assert payload["status"] == "succeeded"
     assert isinstance(payload["result"]["artifact"]["sha256"], str)
+    assert payload["result"]["conversion_metadata"]["acceleration_used"] == "cuda"
     assert "Converted by Sir Convert-a-Lot" in payload["result"]["markdown_content"]
 
 
@@ -238,6 +239,62 @@ def test_gpu_required_returns_503_when_gpu_unavailable(tmp_path: Path) -> None:
         file_name="paper.pdf",
         file_bytes=_pdf_bytes("gpu"),
         spec=_job_spec(filename="paper.pdf", acceleration_policy="gpu_required"),
+    )
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["error"]["code"] == "gpu_not_available"
+    assert payload["error"]["retryable"] is True
+
+
+def test_gpu_prefer_returns_503_when_gpu_unavailable_under_rollout_lock(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_only=False,
+            allow_cpu_fallback=False,
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-gpu-prefer",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("gpu-prefer"),
+        spec=_job_spec(filename="paper.pdf", acceleration_policy="gpu_prefer"),
+    )
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["error"]["code"] == "gpu_not_available"
+    assert payload["error"]["retryable"] is True
+
+
+def test_cpu_only_returns_503_when_rollout_lock_active(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_only=False,
+            allow_cpu_fallback=False,
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-cpu-only-locked",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("cpu-only"),
+        spec=_job_spec(filename="paper.pdf", acceleration_policy="cpu_only"),
     )
 
     assert response.status_code == 503

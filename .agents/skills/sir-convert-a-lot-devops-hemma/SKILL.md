@@ -1,6 +1,10 @@
-______________________________________________________________________
-
-## name: sir-convert-a-lot-devops-hemma description: > Repo-specific DevOps skill for running Sir Convert-a-Lot on Hemma with GPU-first policy, tunnel-first local development, and cross-repo awareness of HuleEdu and Skriptoteket server layout.
+---
+name: sir-convert-a-lot-devops-hemma
+description: >-
+  Repo-specific DevOps skill for running Sir Convert-a-Lot on Hemma with
+  GPU-first policy, tunnel-first local development, and cross-repo awareness
+  of HuleEdu and Skriptoteket server layout.
+---
 
 # Sir Convert-a-Lot DevOps (Hemma + GPU)
 

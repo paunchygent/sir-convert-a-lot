@@ -108,7 +108,7 @@ Epic is complete only when:
 ## Checklist
 
 - [x] Story 003a completed
-- [ ] Story 003b completed
+- [x] Story 003b completed
 - [ ] Story 003c completed
 - [ ] Story 003d completed
 - [ ] Story 003e completed

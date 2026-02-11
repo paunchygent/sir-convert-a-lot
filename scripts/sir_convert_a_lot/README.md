@@ -9,7 +9,7 @@ Scattered converter scripts accumulate across projects. Each has its own invocat
 ## Current Capabilities (v1)
 
 - **PDF → Markdown** via Docling or PyMuPDF backends
-- GPU-first execution policy (configurable fallback)
+- GPU-first execution policy (rollout lock by default)
 - Async job API with polling and bounded wait
 - Idempotent job creation (SHA256-based fingerprinting)
 - Deterministic JSON manifest per batch run
@@ -37,6 +37,14 @@ pdm run convert-a-lot convert ./pdfs \
   --output-dir ./output \
   --service-url http://127.0.0.1:18085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+```
+
+### Run Story 003b benchmark
+
+```bash
+pdm run benchmark:story-003b \
+  --fixtures-dir tests/fixtures/benchmark_pdfs \
+  --output-json docs/reference/benchmark-story-003b-gpu-governance-local.json
 ```
 
 ### CLI Options
@@ -96,8 +104,11 @@ DDD-oriented package layout. Compatibility facades at the root preserve stable i
 | `SIR_CONVERT_A_LOT_API_KEY` | `dev-only-key` | Service API key |
 | `SIR_CONVERT_A_LOT_DATA_DIR` | `build/sir_convert_a_lot` | Storage root for uploads and artifacts |
 | `SIR_CONVERT_A_LOT_GPU_AVAILABLE` | `1` | GPU availability flag |
-| `SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY` | `0` | Allow CPU-only execution |
-| `SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK` | `0` | Allow CPU fallback when GPU unavailable |
+
+Rollout lock note:
+- CPU unlock env vars (`SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY`, `SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK`)
+  are disabled in normal startup paths during Story 003b governance lock.
+- CPU unlock behavior is available only through explicit test configuration in `ServiceConfig`.
 
 ## API Reference
 
