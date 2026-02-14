@@ -17,7 +17,7 @@ import os
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 from uuid import uuid4
@@ -27,6 +27,12 @@ from scripts.sir_convert_a_lot.domain.specs import (
     AccelerationPolicy,
     JobSpec,
     JobStatus,
+)
+from scripts.sir_convert_a_lot.infrastructure.job_store import (
+    IdempotencyStore,
+    JobExpired,
+    JobMissing,
+    JobStore,
 )
 
 CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
@@ -51,6 +57,9 @@ class ServiceConfig:
     idempotency_ttl_seconds: int = 24 * 3600
     upload_ttl_seconds: int = 24 * 3600
     result_ttl_seconds: int = 7 * 24 * 3600
+    max_workers: int = 1
+    supervisor_poll_seconds: float = 0.2
+    enable_supervisor: bool = True
     gpu_available: bool = True
     # Test-only override for explicit CPU-only behavior checks.
     allow_cpu_only: bool = False
@@ -68,15 +77,6 @@ class ServiceError(Exception):
     message: str
     retryable: bool
     details: dict[str, object] | None = None
-
-
-@dataclass(frozen=True)
-class IdempotencyRecord:
-    """Idempotency map record for create-job replay and collision behavior."""
-
-    fingerprint: str
-    job_id: str
-    created_at: datetime
 
 
 @dataclass
@@ -112,82 +112,116 @@ class ServiceRuntime:
 
     def __init__(self, config: ServiceConfig) -> None:
         self.config = config
-        self.uploads_dir = config.data_root / "uploads"
-        self.artifacts_dir = config.data_root / "artifacts"
-        self.uploads_dir.mkdir(parents=True, exist_ok=True)
-        self.artifacts_dir.mkdir(parents=True, exist_ok=True)
-
-        self._jobs: dict[str, StoredJob] = {}
-        self._idempotency: dict[str, IdempotencyRecord] = {}
+        self.job_store = JobStore(
+            data_root=config.data_root,
+            raw_ttl_seconds=config.upload_ttl_seconds,
+            artifact_ttl_seconds=config.result_ttl_seconds,
+        )
+        self.idempotency_store = IdempotencyStore(
+            data_root=config.data_root,
+            ttl_seconds=config.idempotency_ttl_seconds,
+        )
         self._lock = threading.Lock()
+        self._active_job_ids: set[str] = set()
+
+        self.job_store.sweep_expired()
+        self.job_store.recover_running_jobs_to_queued(active_job_ids=self._active_job_ids)
+
+        if self.config.enable_supervisor:
+            thread = threading.Thread(target=self._supervisor_loop, daemon=True)
+            thread.start()
+
+    def _supervisor_loop(self) -> None:
+        """Background supervisor that runs queued jobs and re-runs recovered jobs."""
+        while True:
+            try:
+                self.job_store.sweep_expired()
+                self.job_store.recover_running_jobs_to_queued(active_job_ids=self._active_job_ids)
+
+                with self._lock:
+                    active_count = len(self._active_job_ids)
+                    max_workers = max(1, self.config.max_workers)
+                if active_count < max_workers:
+                    for job_id in self.job_store.list_job_ids():
+                        with self._lock:
+                            if len(self._active_job_ids) >= max_workers:
+                                break
+                            if job_id in self._active_job_ids:
+                                continue
+                        try:
+                            record = self.job_store.get_job(job_id)
+                        except (JobMissing, JobExpired):
+                            continue
+                        if record.status != JobStatus.QUEUED:
+                            continue
+                        self.run_job_async(job_id)
+            except Exception:
+                # Defensive: keep supervisor alive.
+                pass
+
+            time.sleep(max(0.05, self.config.supervisor_poll_seconds))
 
     def _new_job_id(self) -> str:
         return f"job_{uuid4().hex[:26]}"
 
-    def _is_expired(self, job: StoredJob, now: datetime) -> bool:
-        return job.expires_at is not None and now > job.expires_at
-
     def get_job(self, job_id: str) -> StoredJob | None:
-        now = utc_now()
-        with self._lock:
-            job = self._jobs.get(job_id)
-            if job is None:
-                return None
-            if self._is_expired(job, now):
-                self._jobs.pop(job_id, None)
-                return None
-            return job
+        self.job_store.sweep_expired()
+        try:
+            record = self.job_store.get_job(job_id)
+        except JobExpired as exc:
+            raise ServiceError(
+                status_code=404,
+                code="job_expired",
+                message="Job has expired and is no longer available.",
+                retryable=False,
+                details={"job_id": exc.job_id},
+            ) from exc
+        except JobMissing:
+            return None
 
-    def get_idempotency(self, scope_key: str) -> IdempotencyRecord | None:
-        now = utc_now()
-        with self._lock:
-            record = self._idempotency.get(scope_key)
-            if record is None:
-                return None
-            record_ttl = timedelta(seconds=self.config.idempotency_ttl_seconds)
-            if now - record.created_at > record_ttl:
-                self._idempotency.pop(scope_key, None)
-                return None
-            return record
+        return StoredJob(
+            job_id=record.job_id,
+            spec=record.spec,
+            source_filename=record.source_filename,
+            upload_path=record.upload_path,
+            artifact_path=record.artifact_path,
+            status=record.status,
+            created_at=record.created_at,
+            updated_at=record.updated_at,
+            expires_at=record.expires_at,
+            progress_stage=record.progress_stage,
+            pages_total=record.pages_total,
+            pages_processed=record.pages_processed,
+            warnings=list(record.warnings),
+            artifact_sha256=record.artifact_sha256,
+            artifact_size_bytes=record.artifact_size_bytes,
+            backend_used=record.backend_used,
+            acceleration_used=record.acceleration_used,
+            options_fingerprint=record.options_fingerprint,
+            failure_code=record.failure_code,
+            failure_message=record.failure_message,
+            failure_retryable=record.failure_retryable,
+            failure_details=record.failure_details,
+        )
+
+    def get_idempotency(self, scope_key: str):
+        return self.idempotency_store.get(scope_key)
 
     def put_idempotency(self, scope_key: str, fingerprint: str, job_id: str) -> None:
-        with self._lock:
-            self._idempotency[scope_key] = IdempotencyRecord(
-                fingerprint=fingerprint,
-                job_id=job_id,
-                created_at=utc_now(),
-            )
+        self.idempotency_store.put(scope_key, fingerprint, job_id)
 
     def create_job(self, spec: JobSpec, upload_bytes: bytes, source_filename: str) -> StoredJob:
-        now = utc_now()
         job_id = self._new_job_id()
-        upload_path = self.uploads_dir / f"{job_id}.pdf"
-        artifact_path = self.artifacts_dir / f"{job_id}.md"
-        upload_path.write_bytes(upload_bytes)
-
-        expires_at: datetime | None
-        if spec.retention.pin:
-            expires_at = None
-        else:
-            expires_at = now + timedelta(seconds=self.config.result_ttl_seconds)
-
-        job = StoredJob(
+        record = self.job_store.create_job(
             job_id=job_id,
             spec=spec,
             source_filename=source_filename,
-            upload_path=upload_path,
-            artifact_path=artifact_path,
-            status=JobStatus.QUEUED,
-            created_at=now,
-            updated_at=now,
-            expires_at=expires_at,
-            progress_stage="queued",
+            upload_bytes=upload_bytes,
         )
-
-        with self._lock:
-            self._jobs[job_id] = job
-
-        return job
+        stored = self.get_job(record.job_id)
+        if stored is None:
+            raise RuntimeError("created job must be loadable immediately")
+        return stored
 
     def _set_job_status(
         self,
@@ -198,34 +232,33 @@ class ServiceRuntime:
         pages_processed: int | None = None,
         pages_total: int | None = None,
     ) -> StoredJob | None:
-        with self._lock:
-            job = self._jobs.get(job_id)
-            if job is None:
-                return None
-            job.status = status
-            job.progress_stage = stage
-            job.updated_at = utc_now()
-            if pages_processed is not None:
-                job.pages_processed = pages_processed
-            if pages_total is not None:
-                job.pages_total = pages_total
-            return job
+        try:
+            record = self.job_store.update_progress(
+                job_id,
+                status=status,
+                stage=stage,
+                pages_processed=pages_processed,
+                pages_total=pages_total,
+            )
+        except (JobMissing, JobExpired):
+            return None
+        return self.get_job(record.job_id)
 
     def cancel_job(
         self, job_id: str
     ) -> Literal["missing", "accepted", "already_canceled", "conflict"]:
-        with self._lock:
-            job = self._jobs.get(job_id)
-            if job is None:
+        job = self.get_job(job_id)
+        if job is None:
+            return "missing"
+        if job.status in {JobStatus.QUEUED, JobStatus.RUNNING}:
+            try:
+                self.job_store.mark_canceled(job_id)
+            except (JobMissing, JobExpired):
                 return "missing"
-            if job.status in {JobStatus.QUEUED, JobStatus.RUNNING}:
-                job.status = JobStatus.CANCELED
-                job.progress_stage = "canceled"
-                job.updated_at = utc_now()
-                return "accepted"
-            if job.status == JobStatus.CANCELED:
-                return "already_canceled"
-            return "conflict"
+            return "accepted"
+        if job.status == JobStatus.CANCELED:
+            return "already_canceled"
+        return "conflict"
 
     def validate_acceleration_policy(self, spec: JobSpec) -> None:
         """Enforce GPU-first rollout policy constraints."""
@@ -300,13 +333,19 @@ class ServiceRuntime:
 
     def run_job_async(self, job_id: str) -> None:
         """Run a conversion job asynchronously in a background thread."""
+        with self._lock:
+            self._active_job_ids.add(job_id)
         thread = threading.Thread(target=self._run_job, args=(job_id,), daemon=True)
         thread.start()
 
     def _run_job(self, job_id: str) -> None:
-        job = self._set_job_status(job_id, JobStatus.RUNNING, "starting")
-        if job is None:
-            return
+        try:
+            job = self._set_job_status(job_id, JobStatus.RUNNING, "starting")
+            if job is None:
+                return
+        finally:
+            # Ensure we always clear "active" even if early failures occur.
+            pass
 
         time.sleep(self.config.processing_delay_seconds)
 
@@ -323,47 +362,39 @@ class ServiceRuntime:
         try:
             markdown_content, metadata, warnings = self._execute_conversion(job)
             artifact_bytes = markdown_content.encode("utf-8")
-            job.artifact_path.write_bytes(artifact_bytes)
-            artifact_sha = hashlib.sha256(artifact_bytes).hexdigest()
-
-            with self._lock:
-                stored = self._jobs.get(job_id)
-                if stored is None:
-                    return
-                if stored.status == JobStatus.CANCELED:
-                    return
-                stored.status = JobStatus.SUCCEEDED
-                stored.progress_stage = "completed"
-                stored.updated_at = utc_now()
-                stored.backend_used = metadata.backend_used
-                stored.acceleration_used = metadata.acceleration_used
-                stored.options_fingerprint = metadata.options_fingerprint
-                stored.artifact_sha256 = artifact_sha
-                stored.artifact_size_bytes = len(artifact_bytes)
-                stored.warnings = warnings
+            self.job_store.mark_succeeded(
+                job_id,
+                markdown_bytes=artifact_bytes,
+                backend_used=metadata.backend_used,
+                acceleration_used=metadata.acceleration_used,
+                options_fingerprint=metadata.options_fingerprint,
+                warnings=warnings,
+            )
         except ServiceError as exc:
-            with self._lock:
-                stored = self._jobs.get(job_id)
-                if stored is None:
-                    return
-                stored.status = JobStatus.FAILED
-                stored.progress_stage = "failed"
-                stored.updated_at = utc_now()
-                stored.failure_code = exc.code
-                stored.failure_message = exc.message
-                stored.failure_retryable = exc.retryable
-                stored.failure_details = exc.details
+            try:
+                self.job_store.mark_failed(
+                    job_id,
+                    code=exc.code,
+                    message=exc.message,
+                    retryable=exc.retryable,
+                    details=exc.details,
+                )
+            except (JobMissing, JobExpired):
+                return
         except Exception as exc:  # pragma: no cover - defensive fallback
+            try:
+                self.job_store.mark_failed(
+                    job_id,
+                    code="conversion_internal_error",
+                    message=f"Unexpected conversion error: {exc}",
+                    retryable=True,
+                    details=None,
+                )
+            except (JobMissing, JobExpired):
+                return
+        finally:
             with self._lock:
-                stored = self._jobs.get(job_id)
-                if stored is None:
-                    return
-                stored.status = JobStatus.FAILED
-                stored.progress_stage = "failed"
-                stored.updated_at = utc_now()
-                stored.failure_code = "conversion_internal_error"
-                stored.failure_message = f"Unexpected conversion error: {exc}"
-                stored.failure_retryable = True
+                self._active_job_ids.discard(job_id)
 
 
 def fingerprint_for_request(spec_payload: dict[str, object], file_sha256: str) -> str:
@@ -375,7 +406,11 @@ def fingerprint_for_request(spec_payload: dict[str, object], file_sha256: str) -
 def service_config_from_env() -> ServiceConfig:
     """Load service configuration from environment variables."""
     api_key = os.getenv("SIR_CONVERT_A_LOT_API_KEY", "dev-only-key")
-    data_root = Path(os.getenv("SIR_CONVERT_A_LOT_DATA_DIR", "build/sir_convert_a_lot"))
+    data_root = Path(
+        os.getenv("CONVERTER_STORAGE_ROOT")
+        or os.getenv("SIR_CONVERT_A_LOT_DATA_DIR")
+        or "build/sir_convert_a_lot"
+    )
     gpu_available = os.getenv("SIR_CONVERT_A_LOT_GPU_AVAILABLE", "1") == "1"
 
     enabled_unlock_envs = [name for name in CPU_UNLOCK_ENV_VARS if os.getenv(name) == "1"]

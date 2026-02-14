@@ -8,8 +8,8 @@ Relationships:
     - Re-exports from `infrastructure.runtime_engine`.
 """
 
+from scripts.sir_convert_a_lot.infrastructure.job_store import IdempotencyRecord
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
-    IdempotencyRecord,
     ServiceConfig,
     ServiceError,
     ServiceRuntime,
