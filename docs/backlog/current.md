@@ -115,9 +115,16 @@ after Story 003b GPU-first governance completion.
     - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
   - Conversion workflow rule updated with Hemma repo placement invariant:
     - `.agents/rules/030-conversion-workflows.md`
+- 2026-02-11 — Story 003c closure gate decision updated:
+  - HuleEdu adoption is mandatory before Story 003c close-out.
+  - New active task created:
+    - `docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md`
+  - Story criteria updated to require demanding scientific-paper workload validation evidence.
+  - Default workload corpus path for Task 08 specified:
+    - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
 
 ## Next Actions
 
-1. Decide Story 003c closure readiness vs remaining cross-repo adoption work.
-1. Complete consumer-repo adoption PRs using the canonical adapter contract and handoff checklist.
-1. Update epic/programme checklists if Story 003c is accepted as complete.
+1. Execute Task 08 in HuleEdu repo and capture demanding scientific-paper workload evidence.
+1. Update Story 003c docs with HuleEdu adoption links/results once Task 08 is complete.
+1. Close Story 003c and update epic/programme checklists only after Task 08 evidence is accepted.

@@ -12,6 +12,7 @@ related:
   - docs/converters/internal_adapter_contract_v1.md
   - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md
   - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md
+  - docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md
   - docs/reference/ref-story-003c-consumer-integration-handoff.md
 labels:
   - integration
@@ -37,6 +38,7 @@ Provide one shared internal conversion backend contract that both HuleEdu and Sk
 1. Correlation IDs are propagated from caller to conversion logs/metadata.
 1. Integration wrappers in consumer repos are thin adapters only (no business logic forks).
 1. Local tunnel-based development workflow is documented with troubleshooting basics.
+1. HuleEdu adoption is validated on real, demanding scientific-paper PDFs with evidence that the flow is easy to operate without per-document logic forks.
 
 ## Test Requirements
 
@@ -44,11 +46,13 @@ Provide one shared internal conversion backend contract that both HuleEdu and Sk
 - Integration contract tests from Skriptoteket integration adapter.
 - End-to-end test: local dev machine -> tunnel -> Hemma -> output retrieval.
 - Error propagation tests: auth failure, validation failure, timeout/failure states.
+- HuleEdu demanding scientific-paper workload validation run with summarized results and failure taxonomy.
 
 ## Done Definition
 
 - Cross-repo integration tests pass against the same contract.
 - No consumer-specific schema drift exists in wrappers/docs.
+- HuleEdu adoption evidence on demanding scientific-paper workload is recorded and linked.
 
 ## Checklist
 

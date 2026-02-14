@@ -23,7 +23,7 @@ links:
 - `docs/backlog/`: planning and execution artifacts.
 - `docs/_meta/`: docs-as-code contract metadata.
 - `.agents/rules/`: operational rules and conventions.
-- `.agents/work/session/`: session handoff + readme-first context.
+- `.agents/session/`: session handoff + readme-first context.
 
 ## Invariants
 

@@ -5,7 +5,7 @@ id: META-agents-skills-readme
 title: Agent Skills Index
 status: active
 created: 2026-02-11
-updated: 2026-02-11
+updated: 2026-02-14
 owners:
 
 - platform
@@ -23,7 +23,6 @@ Index repo-local skills for Sir Convert-a-Lot and document global visibility via
 - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
 - `.agents/skills/sir-convert-a-lot-docs-governance/SKILL.md`
 - `.agents/skills/sir-convert-a-lot-session-handoff/SKILL.md`
-- `.agents/skills/docs-as-code/SKILL.md`
 
 ## Global Visibility
 
@@ -34,3 +33,5 @@ ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-devops-hemma" ~/.codex/skills/sir
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-docs-governance" ~/.codex/skills/sir-convert-a-lot-docs-governance
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-session-handoff" ~/.codex/skills/sir-convert-a-lot-session-handoff
 ```
+
+General cross-repo skills (for example `docs-as-code`) live directly in `~/.codex/skills` and should not be duplicated under `.agents/skills/` in this repo.

@@ -22,6 +22,7 @@ links:
   - scripts/sir_convert_a_lot/integrations/adapter_profiles.py
   - tests/sir_convert_a_lot/test_integration_adapter_conformance.py
   - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md
+  - docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md
 ---
 
 ## Purpose
@@ -91,6 +92,7 @@ with SirConvertALotClient(base_url="http://127.0.0.1:28085", api_key="...") as c
 1. Route submit/poll/result via canonical v1 endpoints.
 1. Preserve returned `job_id` for background completion workflows.
 1. Run conformance scenarios against canonical service before merge.
+1. Validate demanding scientific-paper workload in consumer context before Story 003c close-out.
 
 ## Validation and Smoke Flow
 
@@ -127,3 +129,10 @@ Captured evidence from this repository and Hemma host:
 
 This repository contains the canonical contract and conformance harness for Story
 003c slice 1. Consumer repo integration PRs are executed separately.
+
+## Closure Gate
+
+Story 003c must not be closed until HuleEdu adoption evidence is captured for
+demanding scientific-paper PDFs, tracked in:
+
+- `docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md`

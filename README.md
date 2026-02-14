@@ -48,7 +48,7 @@ See:
 ## Governance
 
 - Agent rules: `.agents/rules/`
-- Session state: `.agents/work/session/`
+- Session state: `.agents/session/`
 - Skills: `.agents/skills/`
 - Active planning/tasks: `docs/backlog/`
 - Docs contract: `docs/_meta/docs-contract.yaml`

@@ -1,5 +1,30 @@
 # Session Handoff
 
+## 2026-02-11: Story 003c Closure Gate Updated (HuleEdu Required)
+
+### Decision
+
+- Story 003c cannot be closed without HuleEdu adoption evidence.
+- Evidence must include real, demanding scientific-paper PDF workload validation and ease-of-use confirmation.
+
+### Docs-As-Code Updates
+
+- New active task:
+  - `docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md`
+- Default corpus path locked for workload validation:
+  - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+- Story criteria strengthened:
+  - `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
+- Consumer handoff closure gate added:
+  - `docs/reference/ref-story-003c-consumer-integration-handoff.md`
+- Active context updated:
+  - `docs/backlog/current.md`
+
+### Next Focus
+
+- Execute Task 08 in HuleEdu repo and capture demanding scientific-paper workload evidence.
+- Use Task 08 evidence to drive Story 003c final close-out decision.
+
 ## 2026-02-11: Task 07 Execution + Governance Refinement
 
 ### Completed

@@ -17,7 +17,7 @@ reliable, LLM-friendly document conversion workflows with Hemma offloading and G
 
 1. Read `.agents/rules/000-rule-index.md`.
 1. Read task-relevant rules from the index.
-1. Read `.agents/work/session/readme-first.md` and `.agents/work/session/handoff.md`.
+1. Read `.agents/session/readme-first.md` and `.agents/session/handoff.md`.
 1. Confirm active planning context in `docs/backlog/current.md`.
 1. Validate docs-as-code state before implementation:
    - `pdm run validate-tasks`
@@ -152,8 +152,8 @@ Policy:
 ## Key Paths
 
 - Rules: `.agents/rules/`
-- Session context: `.agents/work/session/`
+- Session context: `.agents/session/`
 - Skills: `.agents/skills/`
-- Local skills mirror: `.codex/skills -> .agents/skills`
+- Global skills registry: `~/.codex/skills/` (repo skills must be symlinked there)
 - Planning: `docs/backlog/`
 - Product/ops docs: `docs/`

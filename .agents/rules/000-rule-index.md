@@ -20,5 +20,8 @@ scope: repo
 - `081-pdm-and-dependency-management.md`: PDM workflow and dependency standards.
 - `085-postgresql-and-migrations.md`: PostgreSQL and migration invariants.
 - `090-documentation-standards.md`: Documentation-as-code requirements and update cadence.
-- `README_FIRST.md`: Rule onboarding pointers.
-- `HANDOFF.md`: Rule-level handoff notes.
+
+Session context (non-rule):
+
+- `../session/readme-first.md`: Session onboarding pointers.
+- `../session/handoff.md`: Session handoff notes and validation evidence.
