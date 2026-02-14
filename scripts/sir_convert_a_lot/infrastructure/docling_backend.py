@@ -11,6 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
+import threading
 import warnings
 from dataclasses import dataclass
 from io import BytesIO
@@ -23,10 +24,13 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.exceptions import ConversionError as DoclingConversionError
 from docling_core.types.io import DocumentStream
 
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
+    BackendExecutionError,
+    BackendInputError,
     ConversionBackend,
     ConversionRequest,
     ConversionResultData,
@@ -39,6 +43,12 @@ _DOCLING_DEPRECATED_TABLE_IMAGES_WARNING = (
     r"`TableItem\.get_image\(\)` to extract table images from page images\."
 )
 
+warnings.filterwarnings(
+    "ignore",
+    message=_DOCLING_DEPRECATED_TABLE_IMAGES_WARNING,
+    category=DeprecationWarning,
+)
+
 
 @dataclass(frozen=True)
 class _DoclingAttempt:
@@ -47,22 +57,52 @@ class _DoclingAttempt:
     low_confidence: bool
 
 
+@dataclass(frozen=True)
+class _ConverterKey:
+    table_mode: TableMode
+    ocr_enabled: bool
+    force_full_page_ocr: bool
+    acceleration_device: AcceleratorDevice
+
+
 class DoclingConversionBackend(ConversionBackend):
     """Docling implementation of the conversion backend protocol."""
+
+    def __init__(self) -> None:
+        self._thread_local = threading.local()
 
     def convert(self, request: ConversionRequest) -> ConversionResultData:
         if request.backend_strategy not in {BackendStrategy.AUTO, BackendStrategy.DOCLING}:
             raise ValueError(f"unsupported backend for docling adapter: {request.backend_strategy}")
 
         warnings: list[str] = []
+        acceleration_device, acceleration_used = self._resolve_acceleration(request.gpu_available)
+        if request.gpu_available and acceleration_used == "cpu":
+            warnings.append("docling_cuda_unavailable_fallback_cpu")
+
         if request.ocr_mode == OcrMode.OFF:
-            attempt = self._convert_once(request, ocr_enabled=False, force_full_page_ocr=False)
+            attempt = self._convert_once(
+                request,
+                ocr_enabled=False,
+                force_full_page_ocr=False,
+                acceleration_device=acceleration_device,
+            )
             ocr_enabled = False
         elif request.ocr_mode == OcrMode.FORCE:
-            attempt = self._convert_once(request, ocr_enabled=True, force_full_page_ocr=True)
+            attempt = self._convert_once(
+                request,
+                ocr_enabled=True,
+                force_full_page_ocr=True,
+                acceleration_device=acceleration_device,
+            )
             ocr_enabled = True
         else:
-            first = self._convert_once(request, ocr_enabled=False, force_full_page_ocr=False)
+            first = self._convert_once(
+                request,
+                ocr_enabled=False,
+                force_full_page_ocr=False,
+                acceleration_device=acceleration_device,
+            )
             stripped = first.markdown_content.strip()
             chars_per_page = len(stripped) / max(1, first.page_count)
             needs_ocr_retry = (
@@ -71,7 +111,12 @@ class DoclingConversionBackend(ConversionBackend):
                 or first.low_confidence
             )
             if needs_ocr_retry:
-                attempt = self._convert_once(request, ocr_enabled=True, force_full_page_ocr=True)
+                attempt = self._convert_once(
+                    request,
+                    ocr_enabled=True,
+                    force_full_page_ocr=True,
+                    acceleration_device=acceleration_device,
+                )
                 warnings.append("docling_auto_ocr_retry_applied")
                 ocr_enabled = True
             else:
@@ -81,7 +126,7 @@ class DoclingConversionBackend(ConversionBackend):
         return ConversionResultData(
             markdown_content=attempt.markdown_content,
             backend_used="docling",
-            acceleration_used="cuda" if request.gpu_available else "cpu",
+            acceleration_used=acceleration_used,
             ocr_enabled=ocr_enabled,
             warnings=warnings,
         )
@@ -92,38 +137,31 @@ class DoclingConversionBackend(ConversionBackend):
         *,
         ocr_enabled: bool,
         force_full_page_ocr: bool,
+        acceleration_device: AcceleratorDevice,
     ) -> _DoclingAttempt:
-        pipeline_options = PdfPipelineOptions()
-        pipeline_options.do_ocr = ocr_enabled
-        pipeline_options.do_table_structure = True
-        pipeline_options.table_structure_options = TableStructureOptions(
-            mode=TableFormerMode(request.table_mode.value),
-            do_cell_matching=request.table_mode == TableMode.ACCURATE,
+        key = _ConverterKey(
+            table_mode=request.table_mode,
+            ocr_enabled=ocr_enabled,
+            force_full_page_ocr=force_full_page_ocr,
+            acceleration_device=acceleration_device,
         )
-        pipeline_options.accelerator_options.device = (
-            AcceleratorDevice.CUDA if request.gpu_available else AcceleratorDevice.CPU
-        )
-
-        if hasattr(pipeline_options.ocr_options, "force_full_page_ocr"):
-            pipeline_options.ocr_options.force_full_page_ocr = force_full_page_ocr
-
-        converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
-            }
-        )
+        converter = self._get_converter(key)
         document_stream = DocumentStream(
             name=request.source_filename,
             stream=BytesIO(request.source_bytes),
         )
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message=_DOCLING_DEPRECATED_TABLE_IMAGES_WARNING,
-                category=DeprecationWarning,
-                module=r"docling\.pipeline\.standard_pdf_pipeline",
-            )
-            result = converter.convert(document_stream)
+        try:
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=_DOCLING_DEPRECATED_TABLE_IMAGES_WARNING,
+                    category=DeprecationWarning,
+                )
+                result = converter.convert(document_stream)
+        except DoclingConversionError as exc:
+            raise BackendInputError(str(exc)) from exc
+        except Exception as exc:  # pragma: no cover - defensive guard for backend runtime issues.
+            raise BackendExecutionError(f"Docling backend execution failed: {exc}") from exc
         markdown_content = result.document.export_to_markdown()
 
         raw_pages = getattr(result, "pages", None)
@@ -147,3 +185,58 @@ class DoclingConversionBackend(ConversionBackend):
         else:
             grade_value = str(low_grade).lower()
         return grade_value in _LOW_CONFIDENCE_GRADES
+
+    def _resolve_acceleration(self, gpu_available: bool) -> tuple[AcceleratorDevice, str]:
+        if not gpu_available:
+            return AcceleratorDevice.CPU, "cpu"
+        if self._cuda_available():
+            return AcceleratorDevice.CUDA, "cuda"
+        return AcceleratorDevice.CPU, "cpu"
+
+    def _cuda_available(self) -> bool:
+        try:
+            import torch
+        except Exception:  # pragma: no cover - defensive fallback when torch import fails.
+            return False
+        try:
+            return bool(torch.cuda.is_available())
+        except Exception:  # pragma: no cover - defensive fallback when cuda probe fails.
+            return False
+
+    def _get_converter(self, key: _ConverterKey) -> DocumentConverter:
+        cache = self._converter_cache()
+        converter = cache.get(key)
+        if converter is None:
+            converter = self._build_converter(key)
+            cache[key] = converter
+        return converter
+
+    def _converter_cache(self) -> dict[_ConverterKey, DocumentConverter]:
+        cache = getattr(self._thread_local, "converter_cache", None)
+        if cache is None:
+            cache = {}
+            self._thread_local.converter_cache = cache
+        return cache
+
+    def _build_converter(self, key: _ConverterKey) -> DocumentConverter:
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_ocr = key.ocr_enabled
+        pipeline_options.do_table_structure = True
+        pipeline_options.table_structure_options = TableStructureOptions(
+            mode=TableFormerMode(key.table_mode.value),
+            do_cell_matching=key.table_mode == TableMode.ACCURATE,
+        )
+        pipeline_options.accelerator_options.device = key.acceleration_device
+        if hasattr(pipeline_options.ocr_options, "force_full_page_ocr"):
+            pipeline_options.ocr_options.force_full_page_ocr = key.force_full_page_ocr
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=_DOCLING_DEPRECATED_TABLE_IMAGES_WARNING,
+                category=DeprecationWarning,
+            )
+            return DocumentConverter(
+                format_options={
+                    InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
+                }
+            )

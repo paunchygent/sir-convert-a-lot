@@ -28,8 +28,13 @@ from scripts.sir_convert_a_lot.domain.specs import (
     BackendStrategy,
     JobSpec,
     JobStatus,
+    OcrMode,
 )
-from scripts.sir_convert_a_lot.infrastructure.conversion_backend import ConversionRequest
+from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
+    BackendExecutionError,
+    BackendInputError,
+    ConversionRequest,
+)
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
 from scripts.sir_convert_a_lot.infrastructure.job_store import (
@@ -38,6 +43,7 @@ from scripts.sir_convert_a_lot.infrastructure.job_store import (
     JobStore,
 )
 from scripts.sir_convert_a_lot.infrastructure.markdown_normalizer import normalize_markdown
+from scripts.sir_convert_a_lot.infrastructure.pymupdf_backend import PyMuPdfConversionBackend
 
 CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
     "SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY",
@@ -127,6 +133,7 @@ class ServiceRuntime:
             ttl_seconds=config.idempotency_ttl_seconds,
         )
         self.docling_backend = DoclingConversionBackend()
+        self.pymupdf_backend = PyMuPdfConversionBackend()
         self._lock = threading.Lock()
         self._active_job_ids: set[str] = set()
 
@@ -270,18 +277,36 @@ class ServiceRuntime:
         return "conflict"
 
     def validate_backend_strategy(self, spec: JobSpec) -> None:
-        """Enforce currently available conversion backend strategies."""
-        if spec.conversion.backend_strategy == BackendStrategy.PYMUPDF:
+        """Enforce backend compatibility constraints for the active rollout."""
+        if spec.conversion.backend_strategy != BackendStrategy.PYMUPDF:
+            return
+
+        if spec.execution.acceleration_policy in {
+            AccelerationPolicy.GPU_REQUIRED,
+            AccelerationPolicy.GPU_PREFER,
+        }:
             raise ServiceError(
                 status_code=422,
                 code="validation_error",
-                message="Requested backend is not available in this rollout slice.",
+                message="Requested backend is incompatible with the selected acceleration policy.",
                 retryable=False,
                 details={
                     "field": "conversion.backend_strategy",
-                    "reason": "backend_not_available",
-                    "requested": "pymupdf",
-                    "available": ["auto", "docling"],
+                    "reason": "backend_incompatible_with_gpu_policy",
+                },
+            )
+
+        if spec.conversion.ocr_mode != OcrMode.OFF:
+            raise ServiceError(
+                status_code=422,
+                code="validation_error",
+                message="Requested OCR mode is incompatible with the selected backend.",
+                retryable=False,
+                details={
+                    "field": "conversion.ocr_mode",
+                    "reason": "backend_option_incompatible",
+                    "backend": "pymupdf",
+                    "supported": ["off"],
                 },
             )
 
@@ -333,14 +358,26 @@ class ServiceRuntime:
             table_mode=job.spec.conversion.table_mode,
             gpu_available=self.config.gpu_available,
         )
+        backend = (
+            self.pymupdf_backend
+            if job.spec.conversion.backend_strategy == BackendStrategy.PYMUPDF
+            else self.docling_backend
+        )
         try:
-            backend_result = self.docling_backend.convert(request)
-        except Exception as exc:
+            backend_result = backend.convert(request)
+        except BackendInputError as exc:
             raise ServiceError(
                 status_code=422,
                 code="pdf_unreadable",
                 message=f"Uploaded PDF could not be converted: {exc}",
                 retryable=False,
+            ) from exc
+        except BackendExecutionError as exc:
+            raise ServiceError(
+                status_code=500,
+                code="conversion_internal_error",
+                message=f"Unexpected backend conversion failure: {exc}",
+                retryable=True,
             ) from exc
 
         markdown_content = normalize_markdown(

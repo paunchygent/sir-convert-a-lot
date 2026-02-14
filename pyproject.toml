@@ -17,6 +17,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pyyaml>=6.0.3",
     "docling==2.73.1",
+    "pymupdf4llm==0.3.4",
 ]
 
 [dependency-groups]
@@ -67,6 +68,11 @@ addopts = "-s -v"
 python_files = "test_*.py *_test.py"
 pythonpath = "."
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+]
 
 [tool.pdm]
 distribution = false

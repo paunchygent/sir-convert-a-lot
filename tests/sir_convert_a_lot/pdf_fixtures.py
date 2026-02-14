@@ -26,3 +26,20 @@ def fixture_pdf_bytes(filename: str = "paper_alpha.pdf") -> bytes:
 
 def copy_fixture_pdf(target_path: Path, filename: str = "paper_alpha.pdf") -> None:
     target_path.write_bytes(fixture_pdf_bytes(filename))
+
+
+def docling_cuda_available() -> bool:
+    """Return whether CUDA is available in the current execution environment."""
+    try:
+        import torch
+    except Exception:
+        return False
+    try:
+        return bool(torch.cuda.is_available())
+    except Exception:
+        return False
+
+
+def expected_acceleration_for_gpu_requested() -> str:
+    """Return expected backend acceleration label when GPU is requested."""
+    return "cuda" if docling_cuda_available() else "cpu"

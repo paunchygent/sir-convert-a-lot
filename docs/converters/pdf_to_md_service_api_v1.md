@@ -152,15 +152,23 @@ Field rules:
 - `execution.document_timeout_seconds`: integer `30..7200`
 - `retention.pin`: boolean (default `false`)
 
-Backend rollout note (Task 10):
+Backend compatibility matrix (Task 11):
 
-- Current production implementation accepts `backend_strategy` values:
-  - `auto`
-  - `docling`
-- `backend_strategy="pymupdf"` is temporarily rejected with:
-  - `422`
-  - `error.code = "validation_error"`
-  - `error.details = {"field":"conversion.backend_strategy","reason":"backend_not_available","requested":"pymupdf","available":["auto","docling"]}`
+- `backend_strategy="auto"` -> Docling backend.
+- `backend_strategy="docling"` -> Docling backend.
+- `backend_strategy="pymupdf"` is supported with constraints:
+  - `execution.acceleration_policy` must be `cpu_only` (with rollout lock override enabled in
+    runtime/test configuration when required).
+  - `conversion.ocr_mode` must be `off`.
+- Deterministic validation rejections:
+  - `backend_strategy="pymupdf"` with `acceleration_policy in {"gpu_required","gpu_prefer"}`:
+    - `422`
+    - `error.code = "validation_error"`
+    - `error.details = {"field":"conversion.backend_strategy","reason":"backend_incompatible_with_gpu_policy"}`
+  - `backend_strategy="pymupdf"` with `ocr_mode in {"auto","force"}`:
+    - `422`
+    - `error.code = "validation_error"`
+    - `error.details = {"field":"conversion.ocr_mode","reason":"backend_option_incompatible","backend":"pymupdf","supported":["off"]}`
 
 Server policy constraints (Phase 0 lock):
 

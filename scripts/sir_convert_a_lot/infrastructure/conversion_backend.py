@@ -46,3 +46,11 @@ class ConversionBackend(Protocol):
     def convert(self, request: ConversionRequest) -> ConversionResultData:
         """Convert one PDF request into markdown with metadata."""
         raise NotImplementedError
+
+
+class BackendInputError(Exception):
+    """Raised when conversion input is invalid/unreadable for the backend."""
+
+
+class BackendExecutionError(Exception):
+    """Raised when backend execution fails for internal/runtime reasons."""

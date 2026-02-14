@@ -8,8 +8,9 @@ Scattered converter scripts accumulate across projects. Each has its own invocat
 
 ## Current Capabilities (v1)
 
-- **PDF → Markdown** via Docling backend (`backend_strategy=auto|docling`)
-- Temporary rollout guard: `backend_strategy=pymupdf` returns `422 validation_error` until Task 11
+- **PDF → Markdown** via Docling or PyMuPDF backends:
+  - Docling: `backend_strategy=auto|docling`
+  - PyMuPDF: `backend_strategy=pymupdf` (CPU-only compatibility path)
 - GPU-first execution policy (rollout lock by default)
 - Async job API with polling and bounded wait
 - Idempotent job creation (SHA256-based fingerprinting)
@@ -121,6 +122,13 @@ Rollout lock note:
 - CPU unlock env vars (`SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY`, `SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK`)
   are disabled in normal startup paths during Story 003b governance lock.
 - CPU unlock behavior is available only through explicit test configuration in `ServiceConfig`.
+
+Backend compatibility note:
+
+- `backend_strategy=pymupdf` is rejected with `422 validation_error` when:
+  - `acceleration_policy` is `gpu_required` or `gpu_prefer`, or
+  - `ocr_mode` is `auto` or `force`.
+- `pymupdf` path requires `ocr_mode=off` and CPU-compatible policy.
 
 ## API Reference
 

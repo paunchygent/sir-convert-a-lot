@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md
+  - docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md
 labels:
   - session-log
   - active-work
@@ -21,7 +22,8 @@ labels:
 Active focus is Story 02-01 execution:
 
 - Task 10 is completed (Docling backend + OCR policy mapping + deterministic markdown normalization).
-- Next implementation slice is Task 11 (PyMuPDF backend and compatibility governance).
+- Task 11 is completed (PyMuPDF backend + deterministic compatibility governance).
+- Next implementation slice is Task 12 (scientific-paper workload evidence harness + Hemma report).
 
 ## Worklog
 
@@ -153,8 +155,27 @@ Active focus is Story 02-01 execution:
     - `pdm run run-local-pdm validate-tasks`
     - `pdm run run-local-pdm validate-docs`
     - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- 2026-02-14 — Task 11 moved to `in_progress` with locked implementation plan:
+  - Added execution-plan section and compatibility constraints in:
+    - `docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md`
+  - Locked behavior:
+    - `backend_strategy="auto"` remains Docling-first
+    - `backend_strategy="pymupdf"` is explicit-only
+    - `pymupdf` requires `ocr_mode="off"` and CPU-compatible execution policy
+- 2026-02-14 — Task 11 completed and validated:
+  - Added PyMuPDF backend and runtime routing/compatibility validation.
+  - Added deterministic PyMuPDF backend tests and updated API/runtime compatibility tests.
+  - Updated converter/API docs for Task 11 compatibility matrix.
+  - Validation gates passed:
+    - `pdm run run-local-pdm format-all`
+    - `pdm run run-local-pdm lint-fix`
+    - `pdm run run-local-pdm typecheck-all`
+    - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+    - `pdm run run-local-pdm validate-tasks`
+    - `pdm run run-local-pdm validate-docs`
+    - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Next Actions
 
-1. Execute Task 11 and Task 12 after Task 10 merge/review.
+1. Execute Task 12 (scientific-paper workload evidence harness + Hemma 10/10 acceptance report).
 1. Continue Task 08 evidence capture in Huledu repo for Story 003c close-out.

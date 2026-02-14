@@ -19,7 +19,10 @@ from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.models import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
-from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
+from tests.sir_convert_a_lot.pdf_fixtures import (
+    expected_acceleration_for_gpu_requested,
+    fixture_pdf_bytes,
+)
 
 
 def _job_spec(
@@ -27,14 +30,16 @@ def _job_spec(
     filename: str,
     table_mode: str = "fast",
     acceleration_policy: str = "gpu_required",
+    backend_strategy: str = "auto",
+    ocr_mode: str = "auto",
 ) -> dict[str, object]:
     return {
         "api_version": "v1",
         "source": {"kind": "upload", "filename": filename},
         "conversion": {
             "output_format": "md",
-            "backend_strategy": "auto",
-            "ocr_mode": "auto",
+            "backend_strategy": backend_strategy,
+            "ocr_mode": ocr_mode,
             "table_mode": table_mode,
             "normalize": "standard",
         },
@@ -218,13 +223,16 @@ def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) 
     assert payload["job_id"] == job_id
     assert payload["status"] == "succeeded"
     assert isinstance(payload["result"]["artifact"]["sha256"], str)
-    assert payload["result"]["conversion_metadata"]["acceleration_used"] == "cuda"
+    assert (
+        payload["result"]["conversion_metadata"]["acceleration_used"]
+        == expected_acceleration_for_gpu_requested()
+    )
     markdown_content = payload["result"]["markdown_content"]
     assert isinstance(markdown_content, str)
     assert "fixture line one" in markdown_content.lower()
 
 
-def test_pymupdf_backend_is_rejected_until_task_11(tmp_path: Path) -> None:
+def test_pymupdf_gpu_required_is_rejected_with_compatibility_error(tmp_path: Path) -> None:
     app = create_app(
         ServiceConfig(
             api_key="secret-key",
@@ -234,17 +242,18 @@ def test_pymupdf_backend_is_rejected_until_task_11(tmp_path: Path) -> None:
     )
     client = TestClient(app)
 
-    spec = _job_spec(filename="paper.pdf")
-    conversion = spec["conversion"]
-    assert isinstance(conversion, dict)
-    conversion["backend_strategy"] = "pymupdf"
     response = _post_create(
         client,
         api_key="secret-key",
-        idempotency_key="idem-pymupdf-blocked",
+        idempotency_key="idem-pymupdf-gpu-required",
         file_name="paper.pdf",
         file_bytes=_pdf_bytes("research"),
-        spec=spec,
+        spec=_job_spec(
+            filename="paper.pdf",
+            backend_strategy="pymupdf",
+            ocr_mode="off",
+            acceleration_policy="gpu_required",
+        ),
     )
 
     assert response.status_code == 422
@@ -252,10 +261,155 @@ def test_pymupdf_backend_is_rejected_until_task_11(tmp_path: Path) -> None:
     assert payload["error"]["code"] == "validation_error"
     assert payload["error"]["details"] == {
         "field": "conversion.backend_strategy",
-        "reason": "backend_not_available",
-        "requested": "pymupdf",
-        "available": ["auto", "docling"],
+        "reason": "backend_incompatible_with_gpu_policy",
     }
+
+
+def test_pymupdf_gpu_prefer_is_rejected_with_compatibility_error(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-pymupdf-gpu-prefer",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=_job_spec(
+            filename="paper.pdf",
+            backend_strategy="pymupdf",
+            ocr_mode="off",
+            acceleration_policy="gpu_prefer",
+        ),
+    )
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["error"]["code"] == "validation_error"
+    assert payload["error"]["details"] == {
+        "field": "conversion.backend_strategy",
+        "reason": "backend_incompatible_with_gpu_policy",
+    }
+
+
+def test_pymupdf_ocr_mode_force_is_rejected(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-pymupdf-ocr-force",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=_job_spec(
+            filename="paper.pdf",
+            backend_strategy="pymupdf",
+            ocr_mode="force",
+            acceleration_policy="cpu_only",
+        ),
+    )
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["error"]["code"] == "validation_error"
+    assert payload["error"]["details"] == {
+        "field": "conversion.ocr_mode",
+        "reason": "backend_option_incompatible",
+        "backend": "pymupdf",
+        "supported": ["off"],
+    }
+
+
+def test_pymupdf_ocr_mode_auto_is_rejected(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-pymupdf-ocr-auto",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=_job_spec(
+            filename="paper.pdf",
+            backend_strategy="pymupdf",
+            ocr_mode="auto",
+            acceleration_policy="cpu_only",
+        ),
+    )
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["error"]["code"] == "validation_error"
+    assert payload["error"]["details"] == {
+        "field": "conversion.ocr_mode",
+        "reason": "backend_option_incompatible",
+        "backend": "pymupdf",
+        "supported": ["off"],
+    }
+
+
+def test_pymupdf_cpu_only_succeeds_when_cpu_unlock_enabled(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_only=True,
+            allow_cpu_fallback=False,
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    create_response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-pymupdf-cpu-only",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=_job_spec(
+            filename="paper.pdf",
+            backend_strategy="pymupdf",
+            ocr_mode="off",
+            acceleration_policy="cpu_only",
+        ),
+    )
+    assert create_response.status_code in {200, 202}
+    job_id = create_response.json()["job"]["job_id"]
+
+    terminal_status = _wait_for_terminal(client, "secret-key", job_id)
+    assert terminal_status == JobStatus.SUCCEEDED
+
+    result_response = client.get(
+        f"/v1/convert/jobs/{job_id}/result?inline=true",
+        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_result_pymupdf"},
+    )
+    assert result_response.status_code == 200
+    payload = result_response.json()
+    metadata = payload["result"]["conversion_metadata"]
+    assert metadata["backend_used"] == "pymupdf"
+    assert metadata["acceleration_used"] == "cpu"
+    assert metadata["ocr_enabled"] is False
 
 
 def test_gpu_required_returns_503_when_gpu_unavailable(tmp_path: Path) -> None:

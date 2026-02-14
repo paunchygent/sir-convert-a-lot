@@ -33,15 +33,26 @@ In v1, `x` must be PDF input and `y` is Markdown (`md`).
 - Normative API: `docs/converters/pdf_to_md_service_api_v1.md`
 - Decision lock: `docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md`
 
-## Task 10 Backend Availability
+## Task 11 Backend Availability
 
-- Available now:
-  - `conversion.backend_strategy="auto"`
+- Docling path:
+  - `conversion.backend_strategy="auto"` (Docling-first routing)
   - `conversion.backend_strategy="docling"`
-- Temporarily unavailable until Task 11:
-  - `conversion.backend_strategy="pymupdf"` returns `422 validation_error`
-  - error details:
-    `{"field":"conversion.backend_strategy","reason":"backend_not_available","requested":"pymupdf","available":["auto","docling"]}`
+- PyMuPDF path:
+  - `conversion.backend_strategy="pymupdf"` is available with strict compatibility rules:
+    - `conversion.ocr_mode` must be `off`
+    - `execution.acceleration_policy` must be CPU-compatible (`cpu_only`)
+
+Deterministic validation behavior:
+
+- `pymupdf` + `acceleration_policy in {"gpu_required","gpu_prefer"}` ->
+  - `422 validation_error`
+  - details:
+    `{"field":"conversion.backend_strategy","reason":"backend_incompatible_with_gpu_policy"}`
+- `pymupdf` + `ocr_mode in {"auto","force"}` ->
+  - `422 validation_error`
+  - details:
+    `{"field":"conversion.ocr_mode","reason":"backend_option_incompatible","backend":"pymupdf","supported":["off"]}`
 
 ## OCR and Normalization Semantics
 

@@ -76,3 +76,49 @@ def test_strict_mode_preserves_fences_tables_headings_lists_and_quotes() -> None
     ]
     assert paragraph_lines
     assert all(len(line) <= 100 for line in paragraph_lines)
+
+
+def test_strict_mode_preserves_list_continuation_indentation() -> None:
+    raw = (
+        "- First list item heading\n"
+        "  continuation line should remain nested under the same list item\n"
+        "  second continuation line should also remain nested and not be merged into plain prose\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "\n  continuation line should remain nested" in normalized
+    assert (
+        "\n  second continuation line should also remain nested and not be merged into plain prose"
+        in normalized
+    )
+
+
+def test_strict_mode_preserves_reference_definitions() -> None:
+    raw = (
+        "[very_long_reference_identifier_that_should_not_wrap]: "
+        "https://example.com/some/really/long/path/that/should/stay/on/one/line\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert (
+        "[very_long_reference_identifier_that_should_not_wrap]: "
+        "https://example.com/some/really/long/path/that/should/stay/on/one/line\n"
+    ) == normalized
+
+
+def test_strict_mode_preserves_pipe_table_without_leading_pipe() -> None:
+    header = (
+        "This Is A Very Long Header Column Name That Exceeds One Hundred Characters Significantly "
+        "For Demonstration Purposes | Another Very Long Header Column Name Also Exceeding One "
+        "Hundred Characters For This Check"
+    )
+    raw = f"{header}\n--- | ---\nvalue one | value two\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    lines = normalized.splitlines()
+    assert lines[0] == header
+    assert lines[1] == "--- | ---"
+    assert lines[2] == "value one | value two"

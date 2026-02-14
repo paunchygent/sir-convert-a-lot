@@ -1,5 +1,43 @@
 # Session Handoff
 
+## 2026-02-14: Task 11 Completed (PyMuPDF Backend + Compatibility Governance)
+
+### Completed
+
+- Closed Task 11 as `completed`:
+  - `docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md`
+- Added PyMuPDF backend implementation:
+  - `scripts/sir_convert_a_lot/infrastructure/pymupdf_backend.py`
+- Updated runtime routing and compatibility validation:
+  - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+- Updated tests for Task 11 behavior:
+  - `tests/sir_convert_a_lot/test_pymupdf_backend.py`
+  - `tests/sir_convert_a_lot/test_api_contract_v1.py`
+  - `tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py`
+- Updated docs/context:
+  - `docs/converters/pdf_to_md_service_api_v1.md`
+  - `docs/converters/sir_convert_a_lot.md`
+  - `scripts/sir_convert_a_lot/README.md`
+  - `docs/backlog/current.md`
+
+### Locked Behavior
+
+- `backend_strategy="auto"` remains Docling-first.
+- PyMuPDF path is explicit-only (`backend_strategy="pymupdf"`).
+- `pymupdf` compatibility constraints:
+  - `ocr_mode` must be `off`,
+  - `acceleration_policy in {"gpu_required","gpu_prefer"}` rejects with deterministic `422 validation_error`.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; 66 passed)
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
 ## 2026-02-14: Task 10 Completed (Docling Backend + Deterministic Normalization)
 
 ### Completed

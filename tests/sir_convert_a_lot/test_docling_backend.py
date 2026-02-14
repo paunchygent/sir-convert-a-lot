@@ -10,8 +10,13 @@ Relationships:
 
 from __future__ import annotations
 
+import pytest
+
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
-from scripts.sir_convert_a_lot.infrastructure.conversion_backend import ConversionRequest
+from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
+    BackendInputError,
+    ConversionRequest,
+)
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     DoclingConversionBackend,
     _DoclingAttempt,
@@ -22,7 +27,7 @@ from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
 def _request(
     *,
     ocr_mode: OcrMode = OcrMode.AUTO,
-    gpu_available: bool = True,
+    gpu_available: bool = False,
 ) -> ConversionRequest:
     return ConversionRequest(
         source_filename="paper_alpha.pdf",
@@ -36,10 +41,10 @@ def _request(
 
 def test_docling_backend_real_fixture_reports_truthful_metadata() -> None:
     backend = DoclingConversionBackend()
-    result = backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=True))
+    result = backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=False))
 
     assert result.backend_used == "docling"
-    assert result.acceleration_used == "cuda"
+    assert result.acceleration_used == "cpu"
     assert result.ocr_enabled is False
     assert isinstance(result.markdown_content, str)
     assert result.markdown_content.strip() != ""
@@ -54,6 +59,7 @@ def test_auto_mode_retries_when_first_pass_is_sparse(monkeypatch) -> None:
         *,
         ocr_enabled: bool,
         force_full_page_ocr: bool,
+        acceleration_device,
     ) -> _DoclingAttempt:
         calls.append((ocr_enabled, force_full_page_ocr))
         if len(calls) == 1:
@@ -83,6 +89,7 @@ def test_auto_mode_skips_retry_when_dense_and_confident(monkeypatch) -> None:
         *,
         ocr_enabled: bool,
         force_full_page_ocr: bool,
+        acceleration_device,
     ) -> _DoclingAttempt:
         calls.append((ocr_enabled, force_full_page_ocr))
         return _DoclingAttempt(
@@ -108,6 +115,7 @@ def test_force_mode_runs_single_ocr_pass(monkeypatch) -> None:
         *,
         ocr_enabled: bool,
         force_full_page_ocr: bool,
+        acceleration_device,
     ) -> _DoclingAttempt:
         calls.append((ocr_enabled, force_full_page_ocr))
         return _DoclingAttempt(
@@ -122,3 +130,60 @@ def test_force_mode_runs_single_ocr_pass(monkeypatch) -> None:
     assert calls == [(True, True)]
     assert result.ocr_enabled is True
     assert result.warnings == []
+
+
+def test_auto_mode_retries_when_low_confidence_even_if_dense(monkeypatch) -> None:
+    backend = DoclingConversionBackend()
+    calls: list[tuple[bool, bool]] = []
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+    ) -> _DoclingAttempt:
+        calls.append((ocr_enabled, force_full_page_ocr))
+        if len(calls) == 1:
+            return _DoclingAttempt(
+                markdown_content=" ".join(["dense"] * 200),
+                page_count=1,
+                low_confidence=True,
+            )
+        return _DoclingAttempt(
+            markdown_content="Recovered text after low confidence retry.",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+    result = backend.convert(_request(ocr_mode=OcrMode.AUTO))
+
+    assert calls == [(False, False), (True, True)]
+    assert result.ocr_enabled is True
+    assert "docling_auto_ocr_retry_applied" in result.warnings
+
+
+def test_gpu_requested_falls_back_to_cpu_when_cuda_unavailable(monkeypatch) -> None:
+    backend = DoclingConversionBackend()
+
+    monkeypatch.setattr(backend, "_cuda_available", lambda: False)
+    result = backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=True))
+
+    assert result.acceleration_used == "cpu"
+    assert "docling_cuda_unavailable_fallback_cpu" in result.warnings
+
+
+def test_invalid_pdf_raises_backend_input_error() -> None:
+    backend = DoclingConversionBackend()
+    request = ConversionRequest(
+        source_filename="broken.pdf",
+        source_bytes=b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n",
+        backend_strategy=BackendStrategy.DOCLING,
+        ocr_mode=OcrMode.OFF,
+        table_mode=TableMode.FAST,
+        gpu_available=False,
+    )
+
+    with pytest.raises(BackendInputError):
+        backend.convert(request)
