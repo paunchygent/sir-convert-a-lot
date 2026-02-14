@@ -31,6 +31,7 @@ class ClientError(Exception):
     retryable: bool
     status_code: int
     job_id: str | None = None
+    details: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -92,7 +93,7 @@ class SirConvertALotClient:
             headers["X-Correlation-ID"] = correlation_id
         return headers
 
-    def _extract_error(self, response: httpx.Response) -> ClientError:
+    def _extract_error(self, response: httpx.Response, *, job_id: str | None = None) -> ClientError:
         payload: object
         try:
             payload = response.json()
@@ -105,6 +106,7 @@ class SirConvertALotClient:
                 code_obj = error_obj.get("code")
                 message_obj = error_obj.get("message")
                 retryable_obj = error_obj.get("retryable")
+                details_obj = error_obj.get("details")
                 code = code_obj if isinstance(code_obj, str) else "unknown_error"
                 message = (
                     message_obj
@@ -112,11 +114,14 @@ class SirConvertALotClient:
                     else f"HTTP {response.status_code} request failed"
                 )
                 retryable = retryable_obj if isinstance(retryable_obj, bool) else False
+                details = details_obj if isinstance(details_obj, dict) else None
                 return ClientError(
                     code=code,
                     message=message,
                     retryable=retryable,
                     status_code=response.status_code,
+                    job_id=job_id,
+                    details=details,
                 )
 
         return ClientError(
@@ -124,7 +129,30 @@ class SirConvertALotClient:
             message=f"HTTP {response.status_code} request failed with non-standard error payload.",
             retryable=False,
             status_code=response.status_code,
+            job_id=job_id,
+            details=None,
         )
+
+    def get_job_payload(
+        self, job_id: str, *, correlation_id: str | None = None
+    ) -> dict[str, object]:
+        """Fetch raw job payload for a submitted conversion job."""
+        response = self._client.get(
+            f"/v1/convert/jobs/{job_id}",
+            headers=self._headers(correlation_id=correlation_id),
+        )
+        if response.status_code != 200:
+            raise self._extract_error(response, job_id=job_id)
+        payload: object = response.json()
+        if not isinstance(payload, dict):
+            raise ClientError(
+                code="invalid_response",
+                message="Job response is not a JSON object.",
+                retryable=False,
+                status_code=500,
+                job_id=job_id,
+            )
+        return payload
 
     def _read_job_status(self, payload: object) -> SubmittedJob:
         if not isinstance(payload, dict):
@@ -195,14 +223,7 @@ class SirConvertALotClient:
 
     def get_job_status(self, job_id: str, *, correlation_id: str | None = None) -> JobStatus:
         """Fetch current job status for a submitted conversion job."""
-        response = self._client.get(
-            f"/v1/convert/jobs/{job_id}",
-            headers=self._headers(correlation_id=correlation_id),
-        )
-        if response.status_code != 200:
-            raise self._extract_error(response)
-
-        payload: object = response.json()
+        payload = self.get_job_payload(job_id, correlation_id=correlation_id)
         submitted = self._read_job_status(payload)
         return submitted.status
 
@@ -230,16 +251,22 @@ class SirConvertALotClient:
             job_id=job_id,
         )
 
-    def fetch_markdown_result(self, job_id: str, *, correlation_id: str | None = None) -> str:
-        """Fetch successful markdown artifact content for a job."""
+    def fetch_result_payload(
+        self,
+        job_id: str,
+        *,
+        correlation_id: str | None = None,
+        inline: bool = True,
+    ) -> dict[str, object]:
+        """Fetch raw successful result payload for a job."""
         response = self._client.get(
             f"/v1/convert/jobs/{job_id}/result",
-            params={"inline": "true"},
+            params={"inline": "true" if inline else "false"},
             headers=self._headers(correlation_id=correlation_id),
         )
 
         if response.status_code != 200:
-            raise self._extract_error(response)
+            raise self._extract_error(response, job_id=job_id)
 
         payload: object = response.json()
         if not isinstance(payload, dict):
@@ -250,6 +277,11 @@ class SirConvertALotClient:
                 status_code=500,
                 job_id=job_id,
             )
+        return payload
+
+    def fetch_markdown_result(self, job_id: str, *, correlation_id: str | None = None) -> str:
+        """Fetch successful markdown artifact content for a job."""
+        payload = self.fetch_result_payload(job_id, correlation_id=correlation_id, inline=True)
 
         result_obj = payload.get("result")
         if not isinstance(result_obj, dict):

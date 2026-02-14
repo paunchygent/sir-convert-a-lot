@@ -23,10 +23,15 @@ Active focus is Story 02-01 execution:
 
 - Task 10 is completed (Docling backend + OCR policy mapping + deterministic markdown normalization).
 - Task 11 is completed (PyMuPDF backend + deterministic compatibility governance).
-- Next implementation slice is Task 12 (scientific-paper workload evidence harness + Hemma report).
+- Task 12 is in progress (scientific-paper workload evidence harness + Hemma report).
 
 ## Worklog
 
+- 2026-02-14 — Task 12 moved to `in_progress` with decision-locked execution:
+  - Added dual-lane topology lock (acceptance + evaluation A/B) to:
+    - `docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`
+  - Locked quality-first ranking and artifact policy for backend selection.
+  - Added execution plan/checklist scope for harness, eval profile, evidence outputs, and close-out docs.
 - 2026-02-11 — Bootstrapped standalone repo structure (`.agents/`, `docs/`, canonical scripts, service/tests/docs migration).
 - 2026-02-11 — Added Sir Convert-a-Lot v1 service surfaces and DDD-oriented module split.
 - 2026-02-11 — Created Programme 001 and setup story/tasks (004–007) to enforce planning hierarchy.

@@ -2,7 +2,7 @@
 id: task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus
 title: Scientific-paper workload evidence harness + Hemma tunnel acceptance report (10/10 corpus)
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-02-14'
 last_updated: '2026-02-14'
@@ -34,6 +34,45 @@ Lock evaluation priority for this task:
 1. Stability/reliability under realistic workload conditions.
 1. Latency/throughput as secondary tie-breakers.
 
+## Decision Lock (2026-02-14)
+
+1. Topology:
+   - Use dual-lane execution:
+     - acceptance lane (production-lock tunnel path),
+     - evaluation lane (A/B backend comparison).
+1. Acceptance lane profile (governance-compatible default):
+   - `backend_strategy=auto`
+   - `ocr_mode=auto`
+   - `table_mode=accurate`
+   - `normalize=standard`
+   - `acceleration_policy=gpu_required`
+1. Evaluation lane profiles:
+   - Docling:
+     - `backend_strategy=docling`
+     - `ocr_mode=auto`
+     - `table_mode=accurate`
+     - `normalize=standard`
+     - `acceleration_policy=gpu_required`
+   - PyMuPDF:
+     - `backend_strategy=pymupdf`
+     - `ocr_mode=off`
+     - `table_mode=accurate`
+     - `normalize=standard`
+     - `acceleration_policy=cpu_only`
+1. Artifact policy:
+   - Commit full A/B markdown outputs for reproducible manual quality review.
+1. Decision policy:
+   - If quality winner conflicts with production governance constraints, keep governance-compatible
+     production recommendation and record follow-up decision/task.
+
+## Execution Plan
+
+1. Add Task 12 harness module and evaluation-only service entrypoint.
+1. Add deterministic output schema/report generation and artifact writing.
+1. Add unit tests for ordering, metrics, lane behavior, decision tie-breakers, and report sections.
+1. Run local quality/docs gates and targeted Hemma lane runs.
+1. Commit evidence JSON/report/artifacts and close-out docs updates.
+
 ## PR Scope
 
 - Add a harness runner that can:
@@ -54,9 +93,11 @@ Lock evaluation priority for this task:
 ## Deliverables
 
 - [ ] Harness runner script and smoke/unit tests for deterministic output structure.
+- [ ] Evaluation service entrypoint for isolated A/B runs (`serve:sir-convert-a-lot-eval`).
 - [ ] `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json` (machine-readable evidence).
 - [ ] `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md` (human-readable report).
 - [ ] Documented Hemma tunnel invocation that can be replayed by other developers/agents.
+- [ ] Committed markdown artifacts for acceptance + A/B lanes.
 
 ## Acceptance Criteria
 
@@ -80,6 +121,10 @@ Lock evaluation priority for this task:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [ ] Docs kickoff updated (`status: in_progress`, decision lock, execution plan)
+- [ ] Harness and eval service implementation complete
+- [ ] Tests added and passing
+- [ ] Local quality gates complete
+- [ ] Hemma acceptance + evaluation runs complete
+- [ ] Evidence JSON/report/artifacts committed
+- [ ] Close-out docs updated

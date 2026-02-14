@@ -79,9 +79,11 @@ distribution = false
 
 [tool.pdm.scripts]
 "serve:sir-convert-a-lot" = "uvicorn scripts.sir_convert_a_lot.service:app --host 0.0.0.0 --port 8085"
+"serve:sir-convert-a-lot-eval" = "uvicorn scripts.sir_convert_a_lot.service_eval:app --host 0.0.0.0 --port 8086"
 "convert-a-lot" = "python -m scripts.sir_convert_a_lot.cli"
 "sir-convert-a-lot" = "python -m scripts.sir_convert_a_lot.cli"
 "benchmark:story-003b" = "python -m scripts.sir_convert_a_lot.benchmark_gpu_governance"
+"benchmark:task-12" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
 "run-hemma" = "bash scripts/devops/run-hemma.sh"
 "new-task" = "python -m scripts.docs_as_code.new_task"
