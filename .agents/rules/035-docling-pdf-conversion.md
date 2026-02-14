@@ -30,3 +30,5 @@ Use Docling-oriented settings when high-fidelity PDF understanding is required
 - Never add Docling-only side channels that bypass the v1 contract.
 - Any CPU fallback policy change requires explicit ADR update.
 - Performance or quality changes must update benchmark/task docs before rollout.
+- Hemma ROCm note:
+  - Docling documentation does not explicitly name ROCm support; validate on Hemma and record evidence before treating GPU acceleration as guaranteed.

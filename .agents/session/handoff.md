@@ -1,5 +1,31 @@
 # Session Handoff
 
+## 2026-02-14: Story 02-01 Activated (Production-Ready PDF->MD + Deterministic Line Breaks)
+
+### Decision
+
+- Story 02-01 is now `in_progress` to replace the runtime conversion stub with a production-grade,
+  restart-durable, long-running conversion pipeline.
+- Markdown output determinism includes deterministic, readable line breaks:
+  - `conversion.normalize="strict"` is strong reflow at width 100 (Markdown-safe; no reflow inside fences/tables/headings).
+
+### Docs-As-Code Updates
+
+- Story activated:
+  - `docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md`
+- New PR-sized tasks created:
+  - `docs/backlog/tasks/task-09-durable-filesystem-job-store-restart-recovery-retention-sweeper-story-02-01.md`
+  - `docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md`
+  - `docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md`
+  - `docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`
+- Acceptance gate corpus path (external, not vendored):
+  - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+
+### Next Focus
+
+- Implement Task 09 first (durable job store + restart recovery + retention).
+- Then implement conversion backends + normalization, and finally capture Hemma tunnel evidence (10/10).
+
 ## 2026-02-11: Story 003c Closure Gate Updated (HuleEdu Required)
 
 ### Decision

@@ -122,9 +122,15 @@ after Story 003b GPU-first governance completion.
   - Story criteria updated to require demanding scientific-paper workload validation evidence.
   - Default workload corpus path for Task 08 specified:
     - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+- 2026-02-14 — Activated Story 02-01 execution slice for production-ready PDF->MD:
+  - Story status moved to `in_progress` and wired to new PR-sized tasks (09–12).
+  - Locked deterministic Markdown line breaks:
+    - `conversion.normalize="strict"` is strong reflow at width 100 (Markdown-safe).
+  - Acceptance gate corpus path (external, not vendored):
+    - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
 
 ## Next Actions
 
-1. Execute Task 08 in HuleEdu repo and capture demanding scientific-paper workload evidence.
-1. Update Story 003c docs with HuleEdu adoption links/results once Task 08 is complete.
-1. Close Story 003c and update epic/programme checklists only after Task 08 evidence is accepted.
+1. Execute Task 09–12 for Story 02-01 (production-ready PDF->MD pipeline + durability + evidence).
+1. Execute Task 08 in HuleEdu repo and capture demanding scientific-paper workload evidence for Story 003c.
+1. Close Story 003c only after Task 08 evidence is accepted.

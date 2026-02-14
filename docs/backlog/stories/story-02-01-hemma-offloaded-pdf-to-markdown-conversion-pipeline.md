@@ -2,23 +2,32 @@
 id: 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline
 title: Hemma offloaded PDF-to-Markdown conversion pipeline
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-02-11'
-last_updated: '2026-02-11'
+last_updated: '2026-02-14'
 related:
   - docs/backlog/epics/epic-03-unified-conversion-service.md
   - .agents/rules/030-conversion-workflows.md
   - .agents/rules/035-docling-pdf-conversion.md
-  - scripts/converters/convert_pdf_to_md.py
-  - scripts/converters/convert_pdf_to_md_advanced.py
+  - scripts/sir_convert_a_lot/infrastructure/runtime_engine.py
+  - scripts/sir_convert_a_lot/interfaces/http_api.py
+  - scripts/sir_convert_a_lot/interfaces/http_client.py
+  - scripts/sir_convert_a_lot/interfaces/cli_app.py
   - docs/converters/pdf_to_md_service_api_v1.md
+  - docs/converters/sir_convert_a_lot.md
   - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
+  - docs/runbooks/runbook-hemma-devops-and-gpu.md
+  - docs/backlog/tasks/task-09-durable-filesystem-job-store-restart-recovery-retention-sweeper-story-02-01.md
+  - docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md
+  - docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md
+  - docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md
 labels:
   - research-ingestion
   - pdf-to-markdown
   - hemma-offload
   - llm-judge
+  - production-readiness
 ---
 
 ## Objective
@@ -39,12 +48,23 @@ and be triggered from local development so research-paper ingestion does not sat
 - Pipeline handles noisy/scanned PDFs with documented behavior.
 - Hemma HTTP conversion service is operational and callable from local machine.
 - GPU-first policy is enforced for initial rollout with no silent fallback.
+- Markdown output uses deterministic, Markdown-best-practice line breaks:
+  - `conversion.normalize="standard"`: stable whitespace cleanup without aggressive paragraph reflow.
+  - `conversion.normalize="strict"`: strong paragraph reflow to width 100 while preserving Markdown structure (no reflow inside fenced code blocks, tables, or headings).
+- Durable job persistence:
+  - Jobs survive service restarts and remain queryable until retention expiry.
+  - A crashed/interrupted `running` job deterministically recovers to `queued` and can be rerun.
+- Production-readiness gate:
+  - Hemma tunnel acceptance run converts 10/10 PDFs from:
+    `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
 - Redundant converter drift is removed after stabilization gate.
 
 ## Test Requirements
 
 - Unit and integration tests cover conversion contract and output expectations.
 - API contract tests cover async job endpoints and idempotency behavior.
+- Normalization tests cover deterministic line breaks (width 100 strict strong-reflow) and Markdown safety (fences/lists/headings).
+- Restart recovery tests prove job persistence across runtime re-instantiation.
 - Regression fixtures include noisy/scanned/multi-column/image-heavy PDFs.
 - Benchmark evidence is captured for accelerator policy decisions.
 
@@ -64,12 +84,8 @@ Current conversion utilities are split across repos and are not yet standardized
 
 Relevant existing assets:
 
-- Existing local converters:
-  - `scripts/converters/convert_pdf_to_md.py` (PyMuPDF)
-  - `scripts/converters/convert_pdf_to_md_advanced.py` (Docling)
-- Existing command aliases:
-  - `pdm run convert:pdf-md`
-  - `pdm run convert:pdf-md-advanced`
+- Current v1 service surfaces exist in this repo (HTTP + CLI), but runtime conversion is still a stub:
+  - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py` currently emits placeholder Markdown content.
 
 Platform alignment:
 
@@ -82,6 +98,19 @@ Docling acceleration note (decision-relevant):
 - ROCm compatibility for Hemma runtime is not assumed and must be validated explicitly.
 
 ## Plan
+
+### 2026-02-14 execution slice (production-ready internal tool)
+
+This story is being executed through these PR-sized tasks:
+
+1. Durable filesystem job store + restart recovery + retention sweeper:
+   - `docs/backlog/tasks/task-09-durable-filesystem-job-store-restart-recovery-retention-sweeper-story-02-01.md`
+1. Docling backend + OCR mapping + deterministic Markdown normalization (width 100 strict strong-reflow):
+   - `docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md`
+1. PyMuPDF4LLM backend + deterministic output + governance compatibility rules:
+   - `docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md`
+1. Workload evidence harness + Hemma tunnel acceptance report (10/10 real scientific PDFs):
+   - `docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`
 
 ### Phase 0 - Contract and scope freeze (docs-as-code first)
 

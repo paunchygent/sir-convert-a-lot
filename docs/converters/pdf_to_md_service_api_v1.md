@@ -320,9 +320,23 @@ Canonical error codes:
 - `rate_limited`
 - `internal_error`
 
+Error details note:
+
+- `409 job_not_succeeded` may include additional fields in `error.details` to aid internal debugging,
+  for example:
+  - `status`
+  - `failure_code`
+  - `failure_message`
+  - `retryable`
+
 ## Storage Layout (v1 Filesystem Backend)
 
 Base directory (service env): `CONVERTER_STORAGE_ROOT`
+
+Compatibility note:
+
+- Implementation also supports `SIR_CONVERT_A_LOT_DATA_DIR` as an alias for the same storage root.
+- When both are present, `CONVERTER_STORAGE_ROOT` is preferred.
 
 ```text
 jobs/
@@ -359,3 +373,16 @@ This v1 schema is transport-independent:
 - HTTP layer validates input and emits `JobSpec`
 - Executor consumes `JobSpec`, produces `JobResult`
 - Future queue worker adoption must preserve endpoint and payload contract unchanged
+
+## Markdown Normalization (Deterministic Line Breaks)
+
+The service produces Markdown that is deterministic for the same input PDF and identical `JobSpec`.
+
+Normalization is controlled by `job_spec.conversion.normalize`:
+
+- `none`: Preserve backend output as-is (no reflow).
+- `standard`: Normalize whitespace and blank lines in a Markdown-safe way without aggressive paragraph reflow.
+- `strict`: Strong paragraph reflow to **width 100** for readability while preserving Markdown structure:
+  - Do not reflow inside fenced code blocks.
+  - Do not reflow Markdown tables.
+  - Do not reflow headings or list markers.
