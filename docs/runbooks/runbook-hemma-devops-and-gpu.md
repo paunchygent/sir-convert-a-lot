@@ -75,12 +75,23 @@ Overrides:
 - `SIR_CONVERT_A_LOT_HEMMA_HOST`
 - `SIR_CONVERT_A_LOT_HEMMA_ROOT`
 
+Wrapper guarantees:
+
+- Remote root is validated before execution (directory exists and is a git repo).
+- Effective remote cwd is asserted to match the configured root.
+- Wrapper fails fast on context mismatch:
+  - `66`: remote root missing
+  - `67`: remote root is not a git repo
+  - `68`: remote cwd mismatch
+- Commands run in deterministic shell mode (`bash --noprofile --norc`).
+- Remote script is streamed over stdin to avoid quoting drift across SSH command parsing.
+
 ## SSH and Service Health
 
 ```bash
 pdm run run-hemma -- pwd
-pdm run run-hemma -- /bin/bash -lc 'command -v docker && docker --version'
-pdm run run-hemma -- /bin/bash -lc 'sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+pdm run run-hemma --shell 'command -v docker && docker --version'
+pdm run run-hemma --shell 'sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
 ```
 
 ## GPU Verification (ROCm/HIP)

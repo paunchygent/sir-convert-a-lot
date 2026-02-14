@@ -43,6 +43,17 @@ pdm run run-hemma -- <command> [args]
 pdm run run-hemma --shell "<command with shell operators>"
 ```
 
+Wrapper behavior is deterministic:
+
+- validates `SIR_CONVERT_A_LOT_HEMMA_ROOT` exists and is a git repo before command execution.
+- asserts effective remote cwd equals configured root.
+- runs commands in `bash --noprofile --norc`.
+- streams the prepared script over stdin to avoid SSH quoting/argv ambiguity.
+- fails with explicit exit codes:
+  - `66` root missing
+  - `67` root is not a git repo
+  - `68` cwd mismatch
+
 ## Hemma Repo Topology Awareness
 
 - `~/apps/sir-convert-a-lot`: this service repo.
