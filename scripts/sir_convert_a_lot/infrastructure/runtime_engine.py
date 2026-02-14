@@ -28,8 +28,8 @@ from scripts.sir_convert_a_lot.domain.specs import (
     JobSpec,
     JobStatus,
 )
+from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
 from scripts.sir_convert_a_lot.infrastructure.job_store import (
-    IdempotencyStore,
     JobExpired,
     JobMissing,
     JobStore,
@@ -343,55 +343,52 @@ class ServiceRuntime:
             job = self._set_job_status(job_id, JobStatus.RUNNING, "starting")
             if job is None:
                 return
-        finally:
-            # Ensure we always clear "active" even if early failures occur.
-            pass
 
-        time.sleep(self.config.processing_delay_seconds)
+            time.sleep(self.config.processing_delay_seconds)
 
-        job = self.get_job(job_id)
-        if job is None:
-            return
-        if job.status == JobStatus.CANCELED:
-            return
+            job = self.get_job(job_id)
+            if job is None:
+                return
+            if job.status == JobStatus.CANCELED:
+                return
 
-        self._set_job_status(
-            job_id, JobStatus.RUNNING, "converting", pages_processed=1, pages_total=1
-        )
-
-        try:
-            markdown_content, metadata, warnings = self._execute_conversion(job)
-            artifact_bytes = markdown_content.encode("utf-8")
-            self.job_store.mark_succeeded(
-                job_id,
-                markdown_bytes=artifact_bytes,
-                backend_used=metadata.backend_used,
-                acceleration_used=metadata.acceleration_used,
-                options_fingerprint=metadata.options_fingerprint,
-                warnings=warnings,
+            self._set_job_status(
+                job_id, JobStatus.RUNNING, "converting", pages_processed=1, pages_total=1
             )
-        except ServiceError as exc:
+
             try:
-                self.job_store.mark_failed(
+                markdown_content, metadata, warnings = self._execute_conversion(job)
+                artifact_bytes = markdown_content.encode("utf-8")
+                self.job_store.mark_succeeded(
                     job_id,
-                    code=exc.code,
-                    message=exc.message,
-                    retryable=exc.retryable,
-                    details=exc.details,
+                    markdown_bytes=artifact_bytes,
+                    backend_used=metadata.backend_used,
+                    acceleration_used=metadata.acceleration_used,
+                    options_fingerprint=metadata.options_fingerprint,
+                    warnings=warnings,
                 )
-            except (JobMissing, JobExpired):
-                return
-        except Exception as exc:  # pragma: no cover - defensive fallback
-            try:
-                self.job_store.mark_failed(
-                    job_id,
-                    code="conversion_internal_error",
-                    message=f"Unexpected conversion error: {exc}",
-                    retryable=True,
-                    details=None,
-                )
-            except (JobMissing, JobExpired):
-                return
+            except ServiceError as exc:
+                try:
+                    self.job_store.mark_failed(
+                        job_id,
+                        code=exc.code,
+                        message=exc.message,
+                        retryable=exc.retryable,
+                        details=exc.details,
+                    )
+                except (JobMissing, JobExpired):
+                    return
+            except Exception as exc:  # pragma: no cover - defensive fallback
+                try:
+                    self.job_store.mark_failed(
+                        job_id,
+                        code="conversion_internal_error",
+                        message=f"Unexpected conversion error: {exc}",
+                        retryable=True,
+                        details=None,
+                    )
+                except (JobMissing, JobExpired):
+                    return
         finally:
             with self._lock:
                 self._active_job_ids.discard(job_id)

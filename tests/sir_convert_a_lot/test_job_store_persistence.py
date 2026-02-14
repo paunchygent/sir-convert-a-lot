@@ -23,7 +23,7 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
 )
 
 
-def _spec(filename: str) -> JobSpec:
+def _spec(filename: str, *, pin: bool = False) -> JobSpec:
     return JobSpec.model_validate(
         {
             "api_version": "v1",
@@ -40,7 +40,7 @@ def _spec(filename: str) -> JobSpec:
                 "priority": "normal",
                 "document_timeout_seconds": 1800,
             },
-            "retention": {"pin": False},
+            "retention": {"pin": pin},
         }
     )
 
@@ -52,7 +52,10 @@ def _pdf_bytes(label: str) -> bytes:
 def test_idempotency_survives_runtime_restart(tmp_path: Path) -> None:
     data_root = tmp_path / "service_data"
     config = ServiceConfig(
-        api_key="k", data_root=data_root, processing_delay_seconds=0.0, enable_supervisor=False
+        api_key="k",
+        data_root=data_root,
+        processing_delay_seconds=0.0,
+        enable_supervisor=False,
     )
 
     runtime = ServiceRuntime(config)
@@ -110,3 +113,75 @@ def test_expired_job_returns_job_expired_error_code(tmp_path: Path) -> None:
     with pytest.raises(ServiceError) as excinfo:
         runtime.get_job(job.job_id)
     assert excinfo.value.code == "job_expired"
+
+
+def test_pinned_job_is_exempt_from_expiry(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    config = ServiceConfig(
+        api_key="k",
+        data_root=data_root,
+        processing_delay_seconds=0.0,
+        result_ttl_seconds=1,
+        upload_ttl_seconds=1,
+        enable_supervisor=False,
+    )
+
+    runtime = ServiceRuntime(config)
+    job = runtime.create_job(_spec("paper.pdf", pin=True), _pdf_bytes("x"), "paper.pdf")
+
+    manifest_path = data_root / "jobs" / job.job_id / "manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    retention = payload.get("retention")
+    assert isinstance(retention, dict)
+    retention["artifact_expires_at"] = "2000-01-01T00:00:00Z"
+    retention["raw_expires_at"] = "2000-01-01T00:00:00Z"
+    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+    loaded = runtime.get_job(job.job_id)
+    assert loaded is not None
+    assert loaded.expires_at is None
+
+
+def test_sweeper_deletes_raw_after_raw_ttl_but_keeps_job(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    config = ServiceConfig(
+        api_key="k", data_root=data_root, processing_delay_seconds=0.0, enable_supervisor=False
+    )
+
+    runtime = ServiceRuntime(config)
+    job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("x"), "paper.pdf")
+
+    manifest_path = data_root / "jobs" / job.job_id / "manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    retention = payload.get("retention")
+    assert isinstance(retention, dict)
+    retention["raw_expires_at"] = "2000-01-01T00:00:00Z"
+    retention["artifact_expires_at"] = "2999-01-01T00:00:00Z"
+    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+    runtime.job_store.sweep_expired()
+
+    raw_path = data_root / "jobs" / job.job_id / "raw" / "input.pdf"
+    assert not raw_path.exists()
+
+    loaded = runtime.get_job(job.job_id)
+    assert loaded is not None
+    assert loaded.status.value == "queued"
+
+
+def test_run_job_clears_active_slot_when_job_missing(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    config = ServiceConfig(
+        api_key="k",
+        data_root=data_root,
+        processing_delay_seconds=0.0,
+        enable_supervisor=False,
+    )
+    runtime = ServiceRuntime(config)
+
+    job_id = "job_missing"
+    runtime._active_job_ids.add(job_id)
+    runtime._run_job(job_id)
+    assert job_id not in runtime._active_job_ids

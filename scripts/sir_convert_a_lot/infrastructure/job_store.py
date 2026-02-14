@@ -13,45 +13,18 @@ Relationships:
 from __future__ import annotations
 
 import hashlib
-import json
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
-
-
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
-
-
-def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-    tmp.replace(path)
-
-
-def _read_json(path: Path) -> dict[str, object]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"manifest must be a JSON object: {path}")
-    return payload
-
-
-def _dt_to_rfc3339(dt: datetime | None) -> str | None:
-    if dt is None:
-        return None
-    return dt.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def _dt_from_rfc3339(value: object) -> datetime | None:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise ValueError(f"invalid datetime value: {value!r}")
-    # Python 3.11 accepts Z with fromisoformat only after normalization.
-    normalized = value.replace("Z", "+00:00")
-    return datetime.fromisoformat(normalized).astimezone(UTC)
+from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
+    atomic_write_json,
+    dt_from_rfc3339,
+    dt_to_rfc3339,
+    read_json,
+    utc_now,
+)
 
 
 @dataclass(frozen=True)
@@ -137,7 +110,7 @@ class JobStore:
         source_filename: str,
         upload_bytes: bytes,
     ) -> StoredJobRecord:
-        now = _utc_now()
+        now = utc_now()
 
         job_dir = self._job_dir(job_id)
         (job_dir / "raw").mkdir(parents=True, exist_ok=True)
@@ -162,19 +135,19 @@ class JobStore:
             "source_filename": source_filename,
             "progress": {"stage": "queued", "pages_total": None, "pages_processed": None},
             "timestamps": {
-                "created_at": _dt_to_rfc3339(now),
-                "updated_at": _dt_to_rfc3339(now),
+                "created_at": dt_to_rfc3339(now),
+                "updated_at": dt_to_rfc3339(now),
                 "completed_at": None,
             },
             "retention": {
                 "pinned": pinned,
-                "raw_expires_at": _dt_to_rfc3339(raw_expires_at),
-                "artifact_expires_at": _dt_to_rfc3339(artifact_expires_at),
+                "raw_expires_at": dt_to_rfc3339(raw_expires_at),
+                "artifact_expires_at": dt_to_rfc3339(artifact_expires_at),
             },
             "result_metadata": None,
             "error": None,
         }
-        _atomic_write_json(self._manifest_path(job_id), manifest)
+        atomic_write_json(self._manifest_path(job_id), manifest)
 
         return self.get_job(job_id)
 
@@ -186,7 +159,7 @@ class JobStore:
                 raise JobExpired(job_id=job_id)
             raise JobMissing(job_id=job_id)
 
-        payload = _read_json(manifest_path)
+        payload = read_json(manifest_path)
         job_id_obj = payload.get("job_id")
         if job_id_obj != job_id:
             raise ValueError(f"manifest job_id mismatch: {manifest_path}")
@@ -204,9 +177,9 @@ class JobStore:
         timestamps = payload.get("timestamps")
         if not isinstance(timestamps, dict):
             raise ValueError(f"manifest missing timestamps: {manifest_path}")
-        created_at = _dt_from_rfc3339(timestamps.get("created_at"))
-        updated_at = _dt_from_rfc3339(timestamps.get("updated_at"))
-        completed_at = _dt_from_rfc3339(timestamps.get("completed_at"))
+        created_at = dt_from_rfc3339(timestamps.get("created_at"))
+        updated_at = dt_from_rfc3339(timestamps.get("updated_at"))
+        completed_at = dt_from_rfc3339(timestamps.get("completed_at"))
         if created_at is None or updated_at is None:
             raise ValueError(f"manifest missing required timestamps: {manifest_path}")
 
@@ -215,8 +188,8 @@ class JobStore:
             raise ValueError(f"manifest missing retention object: {manifest_path}")
         pinned_obj = retention.get("pinned")
         pinned = bool(pinned_obj) if isinstance(pinned_obj, bool) else False
-        raw_expires_at = _dt_from_rfc3339(retention.get("raw_expires_at"))
-        artifact_expires_at = _dt_from_rfc3339(retention.get("artifact_expires_at"))
+        raw_expires_at = dt_from_rfc3339(retention.get("raw_expires_at"))
+        artifact_expires_at = dt_from_rfc3339(retention.get("artifact_expires_at"))
         if raw_expires_at is None or artifact_expires_at is None:
             raise ValueError(f"manifest missing retention timestamps: {manifest_path}")
 
@@ -307,7 +280,7 @@ class JobStore:
             failure_details=failure_details,
         )
 
-        now = _utc_now()
+        now = utc_now()
         if not record.pinned and now > record.artifact_expires_at:
             # Job exists but is expired.
             raise JobExpired(job_id=job_id)
@@ -324,8 +297,14 @@ class JobStore:
         pages_total: int | None = None,
     ) -> StoredJobRecord:
         manifest_path = self._manifest_path(job_id)
-        payload = _read_json(manifest_path)
-        now = _utc_now()
+        if not manifest_path.exists():
+            tombstone = self._tombstone_path(job_id)
+            if tombstone.exists():
+                raise JobExpired(job_id=job_id)
+            raise JobMissing(job_id=job_id)
+
+        payload = read_json(manifest_path)
+        now = utc_now()
 
         payload["status"] = status.value
         progress = payload.get("progress")
@@ -342,9 +321,9 @@ class JobStore:
         if not isinstance(timestamps, dict):
             timestamps = {}
             payload["timestamps"] = timestamps
-        timestamps["updated_at"] = _dt_to_rfc3339(now)
+        timestamps["updated_at"] = dt_to_rfc3339(now)
 
-        _atomic_write_json(manifest_path, payload)
+        atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
 
     def mark_succeeded(
@@ -357,21 +336,28 @@ class JobStore:
         options_fingerprint: str,
         warnings: list[str],
     ) -> StoredJobRecord:
+        manifest_path = self._manifest_path(job_id)
+        if not manifest_path.exists():
+            tombstone = self._tombstone_path(job_id)
+            if tombstone.exists():
+                raise JobExpired(job_id=job_id)
+            raise JobMissing(job_id=job_id)
+
+        payload = read_json(manifest_path)
+
         artifact_path = self._artifact_path(job_id)
         artifact_path.write_bytes(markdown_bytes)
         sha = hashlib.sha256(markdown_bytes).hexdigest()
 
-        manifest_path = self._manifest_path(job_id)
-        payload = _read_json(manifest_path)
-        now = _utc_now()
+        now = utc_now()
 
         payload["status"] = JobStatus.SUCCEEDED.value
         timestamps = payload.get("timestamps")
         if not isinstance(timestamps, dict):
             timestamps = {}
             payload["timestamps"] = timestamps
-        timestamps["updated_at"] = _dt_to_rfc3339(now)
-        timestamps["completed_at"] = _dt_to_rfc3339(now)
+        timestamps["updated_at"] = dt_to_rfc3339(now)
+        timestamps["completed_at"] = dt_to_rfc3339(now)
 
         payload["error"] = None
         payload["result_metadata"] = {
@@ -388,7 +374,7 @@ class JobStore:
             "warnings": list(warnings),
         }
 
-        _atomic_write_json(manifest_path, payload)
+        atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
 
     def mark_failed(
@@ -401,16 +387,22 @@ class JobStore:
         details: dict[str, object] | None,
     ) -> StoredJobRecord:
         manifest_path = self._manifest_path(job_id)
-        payload = _read_json(manifest_path)
-        now = _utc_now()
+        if not manifest_path.exists():
+            tombstone = self._tombstone_path(job_id)
+            if tombstone.exists():
+                raise JobExpired(job_id=job_id)
+            raise JobMissing(job_id=job_id)
+
+        payload = read_json(manifest_path)
+        now = utc_now()
 
         payload["status"] = JobStatus.FAILED.value
         timestamps = payload.get("timestamps")
         if not isinstance(timestamps, dict):
             timestamps = {}
             payload["timestamps"] = timestamps
-        timestamps["updated_at"] = _dt_to_rfc3339(now)
-        timestamps["completed_at"] = _dt_to_rfc3339(now)
+        timestamps["updated_at"] = dt_to_rfc3339(now)
+        timestamps["completed_at"] = dt_to_rfc3339(now)
 
         payload["result_metadata"] = None
         payload["error"] = {
@@ -420,7 +412,7 @@ class JobStore:
             "details": details,
         }
 
-        _atomic_write_json(manifest_path, payload)
+        atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
 
     def mark_canceled(self, job_id: str) -> StoredJobRecord:
@@ -449,14 +441,14 @@ class JobStore:
 
     def sweep_expired(self) -> None:
         """Sweep expired jobs and retain tombstones so the API can return job_expired."""
-        now = _utc_now()
+        now = utc_now()
 
         # Expire old tombstones.
         tombstone_ttl = timedelta(seconds=self.tombstone_ttl_seconds)
         for tombstone in self.expired_dir.glob("*.json"):
             try:
-                payload = _read_json(tombstone)
-                expired_at = _dt_from_rfc3339(payload.get("expired_at"))
+                payload = read_json(tombstone)
+                expired_at = dt_from_rfc3339(payload.get("expired_at"))
             except Exception:
                 continue
             if expired_at is not None and now - expired_at > tombstone_ttl:
@@ -472,9 +464,9 @@ class JobStore:
                 # Create/refresh tombstone and remove directory contents.
                 tombstone_payload: dict[str, object] = {
                     "job_id": job_id,
-                    "expired_at": _dt_to_rfc3339(now),
+                    "expired_at": dt_to_rfc3339(now),
                 }
-                _atomic_write_json(self._tombstone_path(job_id), tombstone_payload)
+                atomic_write_json(self._tombstone_path(job_id), tombstone_payload)
                 # Remove job directory (best-effort).
                 for child in self._job_dir(job_id).rglob("*"):
                     if child.is_file():
@@ -512,51 +504,6 @@ class JobStore:
                         raw_dir.rmdir()
                     except OSError:
                         pass
-
-
-@dataclass(frozen=True)
-class IdempotencyRecord:
-    """Durable idempotency record for create-job replay and collision behavior."""
-
-    fingerprint: str
-    job_id: str
-    created_at: datetime
-
-
-class IdempotencyStore:
-    """Filesystem-backed idempotency store."""
-
-    def __init__(self, *, data_root: Path, ttl_seconds: int) -> None:
-        self.dir = data_root / "idempotency"
-        self.dir.mkdir(parents=True, exist_ok=True)
-        self.ttl = timedelta(seconds=ttl_seconds)
-
-    def _path_for_scope(self, scope_key: str) -> Path:
-        digest = hashlib.sha256(scope_key.encode("utf-8")).hexdigest()
-        return self.dir / f"{digest}.json"
-
-    def get(self, scope_key: str) -> IdempotencyRecord | None:
-        path = self._path_for_scope(scope_key)
-        if not path.exists():
-            return None
-        payload = _read_json(path)
-        fingerprint = payload.get("fingerprint")
-        job_id = payload.get("job_id")
-        created_at = _dt_from_rfc3339(payload.get("created_at"))
-        if not isinstance(fingerprint, str) or not isinstance(job_id, str) or created_at is None:
-            return None
-        if _utc_now() - created_at > self.ttl:
-            path.unlink(missing_ok=True)
-            return None
-        return IdempotencyRecord(fingerprint=fingerprint, job_id=job_id, created_at=created_at)
-
-    def put(self, scope_key: str, fingerprint: str, job_id: str) -> None:
-        payload: dict[str, object] = {
-            "fingerprint": fingerprint,
-            "job_id": job_id,
-            "created_at": _dt_to_rfc3339(_utc_now()),
-        }
-        _atomic_write_json(self._path_for_scope(scope_key), payload)
 
 
 @dataclass(frozen=True)
