@@ -22,6 +22,7 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceRuntime,
     service_config_from_env,
 )
+from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
 
 
 def _job_spec(filename: str, acceleration_policy: str) -> JobSpec:
@@ -47,7 +48,7 @@ def _job_spec(filename: str, acceleration_policy: str) -> JobSpec:
 
 
 def _wait_for_terminal(
-    runtime: ServiceRuntime, job_id: str, timeout_seconds: float = 4.0
+    runtime: ServiceRuntime, job_id: str, timeout_seconds: float = 20.0
 ) -> JobStatus:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
@@ -80,7 +81,7 @@ def test_test_only_cpu_unlock_path_sets_cpu_acceleration(tmp_path: Path) -> None
     spec = _job_spec("cpu-mode.pdf", "cpu_only")
     job = runtime.create_job(
         spec=spec,
-        upload_bytes=b"%PDF-1.4\n% cpu-mode\n%%EOF\n",
+        upload_bytes=fixture_pdf_bytes("paper_gamma.pdf"),
         source_filename="cpu-mode.pdf",
     )
 

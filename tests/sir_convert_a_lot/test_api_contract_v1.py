@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.models import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
+from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
 
 
 def _job_spec(
@@ -47,7 +48,9 @@ def _job_spec(
 
 
 def _pdf_bytes(label: str) -> bytes:
-    return f"%PDF-1.4\n% {label}\n%%EOF\n".encode("utf-8")
+    if label == "research":
+        return fixture_pdf_bytes("paper_alpha.pdf")
+    return fixture_pdf_bytes("paper_beta.pdf")
 
 
 def _post_create(
@@ -75,7 +78,7 @@ def _post_create(
 
 
 def _wait_for_terminal(
-    client: TestClient, api_key: str, job_id: str, timeout_seconds: float = 4.0
+    client: TestClient, api_key: str, job_id: str, timeout_seconds: float = 20.0
 ) -> JobStatus:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
@@ -216,7 +219,43 @@ def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) 
     assert payload["status"] == "succeeded"
     assert isinstance(payload["result"]["artifact"]["sha256"], str)
     assert payload["result"]["conversion_metadata"]["acceleration_used"] == "cuda"
-    assert "Converted by Sir Convert-a-Lot" in payload["result"]["markdown_content"]
+    markdown_content = payload["result"]["markdown_content"]
+    assert isinstance(markdown_content, str)
+    assert "fixture line one" in markdown_content.lower()
+
+
+def test_pymupdf_backend_is_rejected_until_task_11(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    spec = _job_spec(filename="paper.pdf")
+    conversion = spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["backend_strategy"] = "pymupdf"
+    response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-pymupdf-blocked",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=spec,
+    )
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["error"]["code"] == "validation_error"
+    assert payload["error"]["details"] == {
+        "field": "conversion.backend_strategy",
+        "reason": "backend_not_available",
+        "requested": "pymupdf",
+        "available": ["auto", "docling"],
+    }
 
 
 def test_gpu_required_returns_503_when_gpu_unavailable(tmp_path: Path) -> None:

@@ -1,5 +1,46 @@
 # Session Handoff
 
+## 2026-02-14: Task 10 Completed (Docling Backend + Deterministic Normalization)
+
+### Completed
+
+- Closed Task 10 as `completed`:
+  - `docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md`
+- Delivered Docling-first conversion seam and deterministic normalization stack:
+  - `scripts/sir_convert_a_lot/infrastructure/conversion_backend.py`
+  - `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
+  - `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py`
+  - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+  - `scripts/sir_convert_a_lot/interfaces/http_api.py`
+- Persisted conversion metadata truth updates in durable store:
+  - `scripts/sir_convert_a_lot/infrastructure/job_store.py`
+  - `scripts/sir_convert_a_lot/infrastructure/job_store_models.py`
+- Added Task 10 test coverage and fixture helpers:
+  - `tests/sir_convert_a_lot/test_docling_backend.py`
+  - `tests/sir_convert_a_lot/test_markdown_normalizer.py`
+  - `tests/sir_convert_a_lot/pdf_fixtures.py`
+  - Updated API/runtime/integration/benchmark tests to valid fixture PDFs.
+- Updated user/contract documentation:
+  - `docs/converters/pdf_to_md_service_api_v1.md`
+  - `docs/converters/sir_convert_a_lot.md`
+  - `scripts/sir_convert_a_lot/README.md`
+
+### Validation Evidence
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; 39 passed)
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Notes
+
+- The 12 warning events observed during tests were traced to a Docling deprecation warning in
+  `standard_pdf_pipeline.py`; conversion call-site filtering now removes this third-party noise
+  without suppressing unrelated warnings.
+
 ## 2026-02-14: Story 02-01 Activated (Production-Ready PDF->MD + Deterministic Line Breaks)
 
 ### Decision

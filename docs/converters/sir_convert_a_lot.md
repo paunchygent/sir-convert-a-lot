@@ -4,7 +4,7 @@ id: CONV-sir-convert-a-lot
 title: Sir Convert-a-Lot CLI and Service Usage
 status: active
 created: '2026-02-11'
-updated: '2026-02-11'
+updated: '2026-02-14'
 owners:
   - platform
 tags:
@@ -32,6 +32,31 @@ In v1, `x` must be PDF input and `y` is Markdown (`md`).
 
 - Normative API: `docs/converters/pdf_to_md_service_api_v1.md`
 - Decision lock: `docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md`
+
+## Task 10 Backend Availability
+
+- Available now:
+  - `conversion.backend_strategy="auto"`
+  - `conversion.backend_strategy="docling"`
+- Temporarily unavailable until Task 11:
+  - `conversion.backend_strategy="pymupdf"` returns `422 validation_error`
+  - error details:
+    `{"field":"conversion.backend_strategy","reason":"backend_not_available","requested":"pymupdf","available":["auto","docling"]}`
+
+## OCR and Normalization Semantics
+
+- OCR mode mapping:
+  - `off`: single pass with OCR disabled.
+  - `force`: single pass with OCR enabled + full-page OCR forced.
+  - `auto`: deterministic pass-1 without OCR, followed by one OCR retry only when:
+    - markdown is empty, or
+    - chars/page is below `120`, or
+    - confidence low-grade is `poor`/`fair` (when confidence is available).
+- Markdown normalization:
+  - `none`: preserve backend output.
+  - `standard`: deterministic whitespace/blank-line cleanup.
+  - `strict`: strong prose reflow to width `100` while preserving markdown structure
+    (no reflow in fences/tables/headings/lists/quotes/horizontal rules).
 
 ## DDD-Oriented Package Layout
 

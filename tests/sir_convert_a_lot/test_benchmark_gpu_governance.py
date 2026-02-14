@@ -14,10 +14,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmark_gpu_governance import run_benchmark
+from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf
 
 
 def _write_fixture(path: Path, label: str) -> None:
-    path.write_bytes(f"%PDF-1.4\n% {label}\n%%EOF\n".encode("utf-8"))
+    fixture_name = "paper_alpha.pdf" if label.endswith("a") else "paper_beta.pdf"
+    copy_fixture_pdf(path, fixture_name)
 
 
 def test_run_benchmark_writes_expected_json_payload(tmp_path: Path) -> None:
@@ -38,7 +40,7 @@ def test_run_benchmark_writes_expected_json_payload(tmp_path: Path) -> None:
         allow_cpu_only=False,
         allow_cpu_fallback=False,
         processing_delay_seconds=0.01,
-        max_poll_seconds=5.0,
+        max_poll_seconds=20.0,
         data_root=tmp_path / "runtime_data",
     )
 

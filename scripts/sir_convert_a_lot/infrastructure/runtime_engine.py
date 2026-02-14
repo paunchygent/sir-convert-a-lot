@@ -25,15 +25,19 @@ from uuid import uuid4
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import (
     AccelerationPolicy,
+    BackendStrategy,
     JobSpec,
     JobStatus,
 )
+from scripts.sir_convert_a_lot.infrastructure.conversion_backend import ConversionRequest
+from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
 from scripts.sir_convert_a_lot.infrastructure.job_store import (
     JobExpired,
     JobMissing,
     JobStore,
 )
+from scripts.sir_convert_a_lot.infrastructure.markdown_normalizer import normalize_markdown
 
 CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
     "SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY",
@@ -100,6 +104,7 @@ class StoredJob:
     artifact_size_bytes: int | None = None
     backend_used: str | None = None
     acceleration_used: str | None = None
+    ocr_enabled: bool | None = None
     options_fingerprint: str | None = None
     failure_code: str | None = None
     failure_message: str | None = None
@@ -121,6 +126,7 @@ class ServiceRuntime:
             data_root=config.data_root,
             ttl_seconds=config.idempotency_ttl_seconds,
         )
+        self.docling_backend = DoclingConversionBackend()
         self._lock = threading.Lock()
         self._active_job_ids: set[str] = set()
 
@@ -197,6 +203,7 @@ class ServiceRuntime:
             artifact_size_bytes=record.artifact_size_bytes,
             backend_used=record.backend_used,
             acceleration_used=record.acceleration_used,
+            ocr_enabled=record.ocr_enabled,
             options_fingerprint=record.options_fingerprint,
             failure_code=record.failure_code,
             failure_message=record.failure_message,
@@ -211,6 +218,8 @@ class ServiceRuntime:
         self.idempotency_store.put(scope_key, fingerprint, job_id)
 
     def create_job(self, spec: JobSpec, upload_bytes: bytes, source_filename: str) -> StoredJob:
+        self.validate_backend_strategy(spec)
+        self.validate_acceleration_policy(spec)
         job_id = self._new_job_id()
         record = self.job_store.create_job(
             job_id=job_id,
@@ -260,6 +269,22 @@ class ServiceRuntime:
             return "already_canceled"
         return "conflict"
 
+    def validate_backend_strategy(self, spec: JobSpec) -> None:
+        """Enforce currently available conversion backend strategies."""
+        if spec.conversion.backend_strategy == BackendStrategy.PYMUPDF:
+            raise ServiceError(
+                status_code=422,
+                code="validation_error",
+                message="Requested backend is not available in this rollout slice.",
+                retryable=False,
+                details={
+                    "field": "conversion.backend_strategy",
+                    "reason": "backend_not_available",
+                    "requested": "pymupdf",
+                    "available": ["auto", "docling"],
+                },
+            )
+
     def validate_acceleration_policy(self, spec: JobSpec) -> None:
         """Enforce GPU-first rollout policy constraints."""
         policy = spec.execution.acceleration_policy
@@ -288,10 +313,11 @@ class ServiceRuntime:
                 )
 
     def _execute_conversion(self, job: StoredJob) -> tuple[str, ConversionMetadata, list[str]]:
+        self.validate_backend_strategy(job.spec)
         self.validate_acceleration_policy(job.spec)
 
-        file_bytes = job.upload_path.read_bytes()
-        if not file_bytes.startswith(b"%PDF"):
+        source_bytes = job.upload_path.read_bytes()
+        if not source_bytes.startswith(b"%PDF"):
             raise ServiceError(
                 status_code=422,
                 code="pdf_unreadable",
@@ -299,37 +325,42 @@ class ServiceRuntime:
                 retryable=False,
             )
 
-        backend_used = (
-            "docling"
-            if job.spec.conversion.backend_strategy.value == "auto"
-            else job.spec.conversion.backend_strategy.value
+        request = ConversionRequest(
+            source_filename=job.source_filename,
+            source_bytes=source_bytes,
+            backend_strategy=job.spec.conversion.backend_strategy,
+            ocr_mode=job.spec.conversion.ocr_mode,
+            table_mode=job.spec.conversion.table_mode,
+            gpu_available=self.config.gpu_available,
         )
-        acceleration_used = "cuda" if self.config.gpu_available else "cpu"
+        try:
+            backend_result = self.docling_backend.convert(request)
+        except Exception as exc:
+            raise ServiceError(
+                status_code=422,
+                code="pdf_unreadable",
+                message=f"Uploaded PDF could not be converted: {exc}",
+                retryable=False,
+            ) from exc
+
+        markdown_content = normalize_markdown(
+            backend_result.markdown_content,
+            job.spec.conversion.normalize,
+        )
         options_fingerprint = hashlib.sha256(
             json.dumps(
                 job.spec.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
             ).encode("utf-8")
         ).hexdigest()
 
-        title = Path(job.source_filename).stem.replace("_", " ").replace("-", " ").strip()
-        markdown_content = (
-            f"# {title or 'Document'}\n\n"
-            "Converted by Sir Convert-a-Lot.\n\n"
-            f"- source: {job.source_filename}\n"
-            f"- backend: {backend_used}\n"
-            f"- acceleration: {acceleration_used}\n"
-            f"- ocr_mode: {job.spec.conversion.ocr_mode.value}\n"
-            f"- table_mode: {job.spec.conversion.table_mode.value}\n"
-        )
-
         metadata = ConversionMetadata(
-            backend_used=backend_used,
-            acceleration_used=acceleration_used,
-            ocr_enabled=job.spec.conversion.ocr_mode.value != "off",
+            backend_used=backend_result.backend_used,
+            acceleration_used=backend_result.acceleration_used,
+            ocr_enabled=backend_result.ocr_enabled,
             table_mode=job.spec.conversion.table_mode,
             options_fingerprint=f"sha256:{options_fingerprint}",
         )
-        return markdown_content, metadata, []
+        return markdown_content, metadata, list(backend_result.warnings)
 
     def run_job_async(self, job_id: str) -> None:
         """Run a conversion job asynchronously in a background thread."""
@@ -364,6 +395,7 @@ class ServiceRuntime:
                     markdown_bytes=artifact_bytes,
                     backend_used=metadata.backend_used,
                     acceleration_used=metadata.acceleration_used,
+                    ocr_enabled=metadata.ocr_enabled,
                     options_fingerprint=metadata.options_fingerprint,
                     warnings=warnings,
                 )

@@ -8,11 +8,13 @@ Scattered converter scripts accumulate across projects. Each has its own invocat
 
 ## Current Capabilities (v1)
 
-- **PDF → Markdown** via Docling or PyMuPDF backends
+- **PDF → Markdown** via Docling backend (`backend_strategy=auto|docling`)
+- Temporary rollout guard: `backend_strategy=pymupdf` returns `422 validation_error` until Task 11
 - GPU-first execution policy (rollout lock by default)
 - Async job API with polling and bounded wait
 - Idempotent job creation (SHA256-based fingerprinting)
 - Deterministic JSON manifest per batch run
+- Deterministic markdown normalization (`none|standard|strict`, strict width=100)
 
 Planned: HTML, DOCX, XLSX, CSV conversion routes (see [Story 003d](../../docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md)).
 
@@ -110,7 +112,8 @@ DDD-oriented package layout. Compatibility facades at the root preserve stable i
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SIR_CONVERT_A_LOT_API_KEY` | `dev-only-key` | Service API key |
-| `SIR_CONVERT_A_LOT_DATA_DIR` | `build/sir_convert_a_lot` | Storage root for uploads and artifacts |
+| `CONVERTER_STORAGE_ROOT` | `build/sir_convert_a_lot` | Canonical storage root for uploads/artifacts/manifests |
+| `SIR_CONVERT_A_LOT_DATA_DIR` | `build/sir_convert_a_lot` | Compatibility alias for storage root |
 | `SIR_CONVERT_A_LOT_GPU_AVAILABLE` | `1` | GPU availability flag |
 
 Rollout lock note:

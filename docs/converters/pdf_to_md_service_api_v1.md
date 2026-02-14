@@ -4,7 +4,7 @@ id: CONV-pdf-to-md-service-api-v1
 title: PDF to Markdown Service API v1
 status: active
 created: '2026-02-11'
-updated: '2026-02-11'
+updated: '2026-02-14'
 owners:
   - platform
 tags:
@@ -151,6 +151,16 @@ Field rules:
 - `execution.priority`: `normal | high`
 - `execution.document_timeout_seconds`: integer `30..7200`
 - `retention.pin`: boolean (default `false`)
+
+Backend rollout note (Task 10):
+
+- Current production implementation accepts `backend_strategy` values:
+  - `auto`
+  - `docling`
+- `backend_strategy="pymupdf"` is temporarily rejected with:
+  - `422`
+  - `error.code = "validation_error"`
+  - `error.details = {"field":"conversion.backend_strategy","reason":"backend_not_available","requested":"pymupdf","available":["auto","docling"]}`
 
 Server policy constraints (Phase 0 lock):
 
@@ -328,6 +338,12 @@ Error details note:
   - `failure_code`
   - `failure_message`
   - `retryable`
+- `422 validation_error` may include backend availability details during rollout,
+  for example:
+  - `field`
+  - `reason`
+  - `requested`
+  - `available`
 
 ## Storage Layout (v1 Filesystem Backend)
 
@@ -386,3 +402,22 @@ Normalization is controlled by `job_spec.conversion.normalize`:
   - Do not reflow inside fenced code blocks.
   - Do not reflow Markdown tables.
   - Do not reflow headings or list markers.
+  - Do not reflow blockquotes or horizontal rules.
+
+## OCR Policy Mapping (Docling)
+
+OCR behavior is controlled by `job_spec.conversion.ocr_mode`:
+
+- `off`: single pass with OCR disabled.
+- `force`: single pass with OCR enabled and full-page OCR forced.
+- `auto`: deterministic two-step policy:
+  1. Run first pass with OCR disabled.
+  1. Compute:
+     - `md_len = len(markdown.strip())`
+     - `page_count = max(1, detected_page_count)`
+     - `chars_per_page = md_len / page_count`
+     - `low_confidence = true` when confidence grade is `poor` or `fair` (if confidence is available)
+  1. Retry exactly once with OCR enabled + full-page OCR forced when any condition is true:
+     - `md_len == 0`
+     - `chars_per_page < 120`
+     - `low_confidence == true`

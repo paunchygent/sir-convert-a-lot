@@ -13,8 +13,7 @@ Relationships:
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
@@ -25,43 +24,11 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     read_json,
     utc_now,
 )
-
-
-@dataclass(frozen=True)
-class StoredJobRecord:
-    """Durable job record loaded from the filesystem journal."""
-
-    job_id: str
-    spec: JobSpec
-    source_filename: str
-    status: JobStatus
-    created_at: datetime
-    updated_at: datetime
-    completed_at: datetime | None
-    raw_expires_at: datetime
-    artifact_expires_at: datetime
-    pinned: bool
-    progress_stage: str
-    pages_total: int | None
-    pages_processed: int | None
-    warnings: list[str]
-    artifact_path: Path
-    upload_path: Path
-    artifact_sha256: str | None
-    artifact_size_bytes: int | None
-    backend_used: str | None
-    acceleration_used: str | None
-    options_fingerprint: str | None
-    failure_code: str | None
-    failure_message: str | None
-    failure_retryable: bool
-    failure_details: dict[str, object] | None
-
-    @property
-    def expires_at(self) -> datetime | None:
-        # v1 API exposes a single expires_at; use artifact expiry as the canonical
-        # "job visible" TTL.
-        return None if self.pinned else self.artifact_expires_at
+from scripts.sir_convert_a_lot.infrastructure.job_store_models import (
+    JobExpired,
+    JobMissing,
+    StoredJobRecord,
+)
 
 
 class JobStore:
@@ -215,6 +182,7 @@ class JobStore:
         artifact_size_bytes: int | None = None
         backend_used: str | None = None
         acceleration_used: str | None = None
+        ocr_enabled: bool | None = None
         options_fingerprint: str | None = None
         failure_code: str | None = None
         failure_message: str | None = None
@@ -237,9 +205,11 @@ class JobStore:
             if isinstance(meta_obj, dict):
                 backend_obj = meta_obj.get("backend_used")
                 accel_obj = meta_obj.get("acceleration_used")
+                ocr_obj = meta_obj.get("ocr_enabled")
                 options_obj = meta_obj.get("options_fingerprint")
                 backend_used = backend_obj if isinstance(backend_obj, str) else None
                 acceleration_used = accel_obj if isinstance(accel_obj, str) else None
+                ocr_enabled = ocr_obj if isinstance(ocr_obj, bool) else None
                 options_fingerprint = options_obj if isinstance(options_obj, str) else None
 
         if isinstance(error_obj, dict):
@@ -273,6 +243,7 @@ class JobStore:
             artifact_size_bytes=artifact_size_bytes,
             backend_used=backend_used,
             acceleration_used=acceleration_used,
+            ocr_enabled=ocr_enabled,
             options_fingerprint=options_fingerprint,
             failure_code=failure_code,
             failure_message=failure_message,
@@ -333,6 +304,7 @@ class JobStore:
         markdown_bytes: bytes,
         backend_used: str,
         acceleration_used: str,
+        ocr_enabled: bool,
         options_fingerprint: str,
         warnings: list[str],
     ) -> StoredJobRecord:
@@ -369,6 +341,7 @@ class JobStore:
             "conversion_metadata": {
                 "backend_used": backend_used,
                 "acceleration_used": acceleration_used,
+                "ocr_enabled": ocr_enabled,
                 "options_fingerprint": options_fingerprint,
             },
             "warnings": list(warnings),
@@ -504,13 +477,3 @@ class JobStore:
                         raw_dir.rmdir()
                     except OSError:
                         pass
-
-
-@dataclass(frozen=True)
-class JobMissing(Exception):
-    job_id: str
-
-
-@dataclass(frozen=True)
-class JobExpired(Exception):
-    job_id: str

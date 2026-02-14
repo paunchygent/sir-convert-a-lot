@@ -5,10 +5,12 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-02-11'
+last_updated: '2026-02-14'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
+  - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
+  - docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md
 labels:
   - session-log
   - active-work
@@ -16,8 +18,10 @@ labels:
 
 ## Context
 
-Active focus has moved to Story 003c (internal backend integration for HuleEdu and Skriptoteket)
-after Story 003b GPU-first governance completion.
+Active focus is Story 02-01 execution:
+
+- Task 10 is completed (Docling backend + OCR policy mapping + deterministic markdown normalization).
+- Next implementation slice is Task 11 (PyMuPDF backend and compatibility governance).
 
 ## Worklog
 
@@ -128,9 +132,29 @@ after Story 003b GPU-first governance completion.
     - `conversion.normalize="strict"` is strong reflow at width 100 (Markdown-safe).
   - Acceptance gate corpus path (external, not vendored):
     - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+- 2026-02-14 — Task 09 completed and Task 10 implementation started:
+  - Durable filesystem job store + restart recovery + retention sweep behavior closed in Task 09.
+  - Task 10 moved to `in_progress` with docs-as-code execution plan.
+  - Implementation target locked for this slice:
+    - `docling==2.73.1`
+    - deterministic OCR auto retry (balanced heuristic)
+    - deterministic markdown normalization (`none|standard|strict`, strict width 100)
+    - temporary `backend_strategy="pymupdf"` `422 validation_error` until Task 11.
+- 2026-02-14 — Task 10 completed and validated:
+  - Runtime conversion path refactored to Docling backend seam + deterministic normalizer.
+  - API/runtime enforce temporary backend availability guard for `backend_strategy="pymupdf"` (`422 validation_error`).
+  - Added/updated Task 10 test coverage with valid checked-in PDF fixtures for conversion-success paths.
+  - Resolved 12 runtime warnings from Docling deprecation noise via narrow call-site warning filter.
+  - Validation gates passed:
+    - `pdm run run-local-pdm format-all`
+    - `pdm run run-local-pdm lint-fix`
+    - `pdm run run-local-pdm typecheck-all`
+    - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+    - `pdm run run-local-pdm validate-tasks`
+    - `pdm run run-local-pdm validate-docs`
+    - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Next Actions
 
-1. Execute Task 09–12 for Story 02-01 (production-ready PDF->MD pipeline + durability + evidence).
-1. Execute Task 08 in HuleEdu repo and capture demanding scientific-paper workload evidence for Story 003c.
-1. Close Story 003c only after Task 08 evidence is accepted.
+1. Execute Task 11 and Task 12 after Task 10 merge/review.
+1. Continue Task 08 evidence capture in Huledu repo for Story 003c close-out.

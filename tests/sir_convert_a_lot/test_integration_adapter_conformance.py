@@ -31,10 +31,12 @@ from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
 from scripts.sir_convert_a_lot.interfaces.http_client import ClientError, SirConvertALotClient
 from scripts.sir_convert_a_lot.models import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
+from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf
 
 
 def _write_pdf(path: Path, label: str) -> None:
-    path.write_bytes(f"%PDF-1.4\n% {label}\n%%EOF\n".encode("utf-8"))
+    fixture_name = "paper_alpha.pdf" if label == "huledu" else "paper_beta.pdf"
+    copy_fixture_pdf(path, fixture_name)
 
 
 @contextmanager
@@ -194,7 +196,7 @@ def test_adapter_integration_smoke_submit_poll_fetch(
         pdf_path=pdf_path,
         source_label=f"inbound/{profile.value}/{pdf_path.name}",
         caller_correlation_id="corr_external_preserved",
-        max_poll_seconds=5.0,
+        max_poll_seconds=20.0,
     )
 
     prepared = prepare_submission(context)
@@ -205,4 +207,4 @@ def test_adapter_integration_smoke_submit_poll_fetch(
 
     assert outcome.status == JobStatus.SUCCEEDED
     assert outcome.job_id.startswith("job_")
-    assert "Converted by Sir Convert-a-Lot" in outcome.markdown_content
+    assert "fixture line one" in outcome.markdown_content.lower()

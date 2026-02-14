@@ -237,6 +237,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
                 details={"field": "source.kind"},
             )
 
+        runtime.validate_backend_strategy(spec)
         runtime.validate_acceleration_policy(spec)
 
         api_key = request.headers.get("X-API-Key", "")
@@ -359,6 +360,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
         if (
             job.backend_used is None
             or job.acceleration_used is None
+            or job.ocr_enabled is None
             or job.options_fingerprint is None
         ):
             raise ServiceError(
@@ -379,7 +381,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
                 conversion_metadata=ConversionMetadata(
                     backend_used=job.backend_used,
                     acceleration_used=job.acceleration_used,
-                    ocr_enabled=job.spec.conversion.ocr_mode.value != "off",
+                    ocr_enabled=job.ocr_enabled,
                     table_mode=job.spec.conversion.table_mode,
                     options_fingerprint=job.options_fingerprint,
                 ),
