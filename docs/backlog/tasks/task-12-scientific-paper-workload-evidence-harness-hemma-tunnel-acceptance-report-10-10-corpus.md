@@ -28,6 +28,12 @@ Provide reproducible, machine-readable workload evidence that the service is pro
 real scientific-paper PDFs, with the hard acceptance gate being 10/10 successful conversions on
 Hemma through the tunnel workflow.
 
+Lock evaluation priority for this task:
+
+1. Layout fidelity + information retention + legibility.
+1. Stability/reliability under realistic workload conditions.
+1. Latency/throughput as secondary tie-breakers.
+
 ## PR Scope
 
 - Add a harness runner that can:
@@ -56,12 +62,20 @@ Hemma through the tunnel workflow.
 
 - [ ] Evidence uses this exact external corpus path (do not vendor PDFs into this repo):
   - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
-- [ ] Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary committed.
+- [ ] Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary committed. All resulting .mds are high quality and pass manual review for accuracy, completeness, and formatting.
+- [ ] Backend decision for scientific PDFs is explicitly quality-first:
+  - A/B comparison is recorded for available backend paths on the same 10/10 corpus.
+  - Primary ranking metric is layout fidelity + information retention + legibility.
+  - Latency/throughput are used only as secondary criteria when quality is materially equivalent.
 - [ ] Evidence artifacts include:
   - service revision (git SHA),
   - backend and acceleration usage,
   - normalization mode used (width 100 strict strong-reflow when strict selected),
   - any retries and warnings.
+- [ ] Selected backend path remains governance-compatible:
+  - no silent policy bypasses,
+  - deterministic validation behavior for incompatible options,
+  - truthful conversion metadata (`backend_used`, `acceleration_used`, `ocr_enabled`).
 - [ ] Quality gates pass (format/lint/typecheck/tests + docs validators and backlog index).
 
 ## Checklist

@@ -24,11 +24,17 @@ from uuid import uuid4
 
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import (
-    AccelerationPolicy,
-    BackendStrategy,
     JobSpec,
     JobStatus,
-    OcrMode,
+)
+from scripts.sir_convert_a_lot.infrastructure.backend_routing import (
+    select_backend,
+)
+from scripts.sir_convert_a_lot.infrastructure.backend_routing import (
+    validate_acceleration_policy as validate_acceleration_policy_rule,
+)
+from scripts.sir_convert_a_lot.infrastructure.backend_routing import (
+    validate_backend_strategy as validate_backend_strategy_rule,
 )
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
@@ -278,64 +284,34 @@ class ServiceRuntime:
 
     def validate_backend_strategy(self, spec: JobSpec) -> None:
         """Enforce backend compatibility constraints for the active rollout."""
-        if spec.conversion.backend_strategy != BackendStrategy.PYMUPDF:
+        violation = validate_backend_strategy_rule(spec)
+        if violation is None:
             return
-
-        if spec.execution.acceleration_policy in {
-            AccelerationPolicy.GPU_REQUIRED,
-            AccelerationPolicy.GPU_PREFER,
-        }:
-            raise ServiceError(
-                status_code=422,
-                code="validation_error",
-                message="Requested backend is incompatible with the selected acceleration policy.",
-                retryable=False,
-                details={
-                    "field": "conversion.backend_strategy",
-                    "reason": "backend_incompatible_with_gpu_policy",
-                },
-            )
-
-        if spec.conversion.ocr_mode != OcrMode.OFF:
-            raise ServiceError(
-                status_code=422,
-                code="validation_error",
-                message="Requested OCR mode is incompatible with the selected backend.",
-                retryable=False,
-                details={
-                    "field": "conversion.ocr_mode",
-                    "reason": "backend_option_incompatible",
-                    "backend": "pymupdf",
-                    "supported": ["off"],
-                },
-            )
+        raise ServiceError(
+            status_code=violation.status_code,
+            code=violation.code,
+            message=violation.message,
+            retryable=violation.retryable,
+            details=violation.details,
+        )
 
     def validate_acceleration_policy(self, spec: JobSpec) -> None:
         """Enforce GPU-first rollout policy constraints."""
-        policy = spec.execution.acceleration_policy
-
-        if policy == AccelerationPolicy.CPU_ONLY and not self.config.allow_cpu_only:
-            raise ServiceError(
-                status_code=503,
-                code="gpu_not_available",
-                message=(
-                    "CPU-only execution is disabled during GPU-first rollout. "
-                    "Retry when GPU execution is available."
-                ),
-                retryable=True,
-            )
-
-        if self.config.gpu_available:
+        violation = validate_acceleration_policy_rule(
+            spec,
+            gpu_available=self.config.gpu_available,
+            allow_cpu_only=self.config.allow_cpu_only,
+            allow_cpu_fallback=self.config.allow_cpu_fallback,
+        )
+        if violation is None:
             return
-
-        if policy in {AccelerationPolicy.GPU_REQUIRED, AccelerationPolicy.GPU_PREFER}:
-            if not self.config.allow_cpu_fallback:
-                raise ServiceError(
-                    status_code=503,
-                    code="gpu_not_available",
-                    message="GPU execution is required and no fallback is currently allowed.",
-                    retryable=True,
-                )
+        raise ServiceError(
+            status_code=violation.status_code,
+            code=violation.code,
+            message=violation.message,
+            retryable=violation.retryable,
+            details=violation.details,
+        )
 
     def _execute_conversion(self, job: StoredJob) -> tuple[str, ConversionMetadata, list[str]]:
         self.validate_backend_strategy(job.spec)
@@ -358,10 +334,10 @@ class ServiceRuntime:
             table_mode=job.spec.conversion.table_mode,
             gpu_available=self.config.gpu_available,
         )
-        backend = (
-            self.pymupdf_backend
-            if job.spec.conversion.backend_strategy == BackendStrategy.PYMUPDF
-            else self.docling_backend
+        backend = select_backend(
+            backend_strategy=job.spec.conversion.backend_strategy,
+            docling_backend=self.docling_backend,
+            pymupdf_backend=self.pymupdf_backend,
         )
         try:
             backend_result = backend.convert(request)

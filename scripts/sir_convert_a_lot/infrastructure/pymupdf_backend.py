@@ -47,12 +47,17 @@ class PyMuPdfConversionBackend(ConversionBackend):
         table_strategy = _TABLE_STRATEGY_BY_MODE[request.table_mode]
 
         try:
-            with self._open_document(request.source_bytes) as document:
-                markdown_content = self._to_markdown(document, table_strategy)
+            document = self._open_document(request.source_bytes)
         except (pymupdf.EmptyFileError, pymupdf.FileDataError, pymupdf.FileNotFoundError) as exc:
             raise BackendInputError(str(exc)) from exc
         except ValueError as exc:
             raise BackendInputError(str(exc)) from exc
+        except Exception as exc:  # pragma: no cover - defensive backend open guard.
+            raise BackendExecutionError(f"PyMuPDF backend document-open failed: {exc}") from exc
+
+        try:
+            with document:
+                markdown_content = self._to_markdown(document, table_strategy)
         except Exception as exc:  # pragma: no cover - defensive backend runtime guard.
             raise BackendExecutionError(f"PyMuPDF backend execution failed: {exc}") from exc
 

@@ -223,6 +223,7 @@ def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) 
     assert payload["job_id"] == job_id
     assert payload["status"] == "succeeded"
     assert isinstance(payload["result"]["artifact"]["sha256"], str)
+    assert payload["result"]["conversion_metadata"]["backend_used"] == "docling"
     assert (
         payload["result"]["conversion_metadata"]["acceleration_used"]
         == expected_acceleration_for_gpu_requested()
@@ -230,6 +231,41 @@ def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) 
     markdown_content = payload["result"]["markdown_content"]
     assert isinstance(markdown_content, str)
     assert "fixture line one" in markdown_content.lower()
+
+
+def test_explicit_docling_backend_strategy_succeeds_and_reports_docling(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            processing_delay_seconds=0.1,
+        )
+    )
+    client = TestClient(app)
+
+    create_response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-result-docling",
+        file_name="research-paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=_job_spec(filename="research-paper.pdf", backend_strategy="docling"),
+    )
+    assert create_response.status_code in {200, 202}
+    job_id = create_response.json()["job"]["job_id"]
+
+    terminal_status = _wait_for_terminal(client, "secret-key", job_id)
+    assert terminal_status == JobStatus.SUCCEEDED
+
+    result_response = client.get(
+        f"/v1/convert/jobs/{job_id}/result?inline=true",
+        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_result_docling"},
+    )
+    assert result_response.status_code == 200
+    payload = result_response.json()
+    metadata = payload["result"]["conversion_metadata"]
+    assert metadata["backend_used"] == "docling"
+    assert metadata["acceleration_used"] == expected_acceleration_for_gpu_requested()
 
 
 def test_pymupdf_gpu_required_is_rejected_with_compatibility_error(tmp_path: Path) -> None:

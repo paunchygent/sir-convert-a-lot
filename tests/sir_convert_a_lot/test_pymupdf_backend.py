@@ -103,3 +103,15 @@ def test_unexpected_markdown_failure_raises_backend_execution_error(monkeypatch)
 
     with pytest.raises(BackendExecutionError):
         backend.convert(_request(table_mode=TableMode.FAST))
+
+
+def test_markdown_value_error_is_classified_as_backend_execution_error(monkeypatch) -> None:
+    backend = PyMuPdfConversionBackend()
+
+    def _explode_value_error(_document, _table_strategy: str) -> str:
+        raise ValueError("markdown-generation-value-error")
+
+    monkeypatch.setattr(backend, "_to_markdown", _explode_value_error)
+
+    with pytest.raises(BackendExecutionError):
+        backend.convert(_request(table_mode=TableMode.FAST))
