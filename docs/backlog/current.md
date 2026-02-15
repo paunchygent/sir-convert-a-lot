@@ -37,11 +37,34 @@ Active focus is Story 02-01 execution:
 - Task 15 is completed (output governance for benchmark/eval/runtime artifacts).
 - Task 16 is completed (canonical Hemma live-runner + shell guardrails).
 - Task 17 is completed (async dedupe guard + strict pagination cleanup).
-- Task 18 is in progress (root-cause deterministic service execution + artifact integrity fixes + observability closure).
+- Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes + observability closure).
 - Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
 
 ## Worklog
 
+- 2026-02-15 — Task 18 completed (observability closure + Hemma revalidation):
+  - Added deterministic runtime heartbeat and phase timing diagnostics:
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+    - `scripts/sir_convert_a_lot/infrastructure/job_store.py`
+    - `scripts/sir_convert_a_lot/infrastructure/job_store_models.py`
+    - `scripts/sir_convert_a_lot/infrastructure/conversion_backend.py`
+    - `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
+  - Added deterministic persistence/runtime regression coverage:
+    - `tests/sir_convert_a_lot/test_job_store_persistence.py`
+    - `tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py`
+  - Local quality/docs gates re-run clean, including:
+    - `pdm run run-local-pdm format-all`
+    - `pdm run run-local-pdm lint-fix`
+    - `pdm run run-local-pdm typecheck-all`
+    - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+    - `pdm run run-local-pdm validate-tasks`
+    - `pdm run run-local-pdm validate-docs`
+    - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+  - Deployed and revalidated on Hemma:
+    - pushed `d854d5e`, pulled fast-forward on Hemma, restarted services on `28085` and `28086`,
+    - `pdm run run-local-pdm hemma-verify-gpu-runtime` passed on `d854d5e`,
+    - local tunnel call to `http://127.0.0.1:28085` succeeded with
+      `backend_used=docling`, `acceleration_used=cuda`.
 - 2026-02-15 — Task 18 reopened for observability closure:
   - Added explicit scope for conversion heartbeat and phase timing telemetry so long-running jobs
     can be classified deterministically as slow vs stalled.

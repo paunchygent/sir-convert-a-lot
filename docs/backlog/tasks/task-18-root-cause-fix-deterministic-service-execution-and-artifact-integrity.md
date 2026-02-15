@@ -2,7 +2,7 @@
 id: task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity
 title: Root-Cause Fix Deterministic Service Execution and Artifact Integrity
 type: task
-status: in_progress
+status: completed
 priority: critical
 created: '2026-02-15'
 last_updated: '2026-02-15'
@@ -55,8 +55,8 @@ Ops hardening:
 - [x] Live runner validates hash/size consistency for inline result vs manifest artifact
 - [x] Hemma verification checks include process freshness and data-root isolation
 - [x] Service `/healthz` exposes deterministic revision/start metadata for freshness checks
-- [ ] Runtime emits deterministic conversion heartbeat timestamps during `_execute_conversion`
-- [ ] Runtime persists per-job phase timing diagnostics for root-cause analysis
+- [x] Runtime emits deterministic conversion heartbeat timestamps during `_execute_conversion`
+- [x] Runtime persists per-job phase timing diagnostics for root-cause analysis
 
 ## Acceptance Criteria
 
@@ -66,7 +66,7 @@ Ops hardening:
 - [x] Live validation run fails if any job is not manifest-consistent
 - [x] Live validation/verify tooling fails when service revision != Hemma `HEAD`
 - [x] Existing runtime/API/job-store suites remain green with new determinism semantics
-- [ ] Long-running conversion can be classified deterministically as slow vs stalled from telemetry
+- [x] Long-running conversion can be classified deterministically as slow vs stalled from telemetry
 
 ## Implementation Plan
 
@@ -97,10 +97,10 @@ Ops hardening:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete (local)
+- [x] Implementation complete
+- [x] Validation complete (local)
 - [x] Docs updated
-- [ ] Patched revision deployed on Hemma and `hemma-verify-gpu-runtime` re-run clean
+- [x] Patched revision deployed on Hemma and `hemma-verify-gpu-runtime` re-run clean
 
 ## Validation Evidence
 
@@ -112,3 +112,6 @@ Ops hardening:
 - `pdm run run-local-pdm validate-docs`
 - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - `pdm run run-local-pdm hemma-verify-gpu-runtime` (pass after Hemma pull+restart on `fbc559e`)
+- `pdm run run-local-pdm hemma-verify-gpu-runtime` (pass on `d854d5e` after pull+restart)
+- Local tunnel confirmation run (`http://127.0.0.1:28085`) produced
+  `backend_used=docling`, `acceleration_used=cuda`, terminal `succeeded`.

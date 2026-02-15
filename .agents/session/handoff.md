@@ -1,5 +1,46 @@
 # Session Handoff
 
+## 2026-02-15: Task 18 Completed (Observability Closure + Hemma Revalidation)
+
+### Completed
+
+- Closed Task 18 after observability scope:
+  - `docs/backlog/tasks/task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity.md`
+- Added deterministic runtime heartbeat and phase timing diagnostics:
+  - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+  - `scripts/sir_convert_a_lot/infrastructure/job_store.py`
+  - `scripts/sir_convert_a_lot/infrastructure/job_store_models.py`
+  - `scripts/sir_convert_a_lot/infrastructure/conversion_backend.py`
+  - `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
+- Added regression coverage:
+  - `tests/sir_convert_a_lot/test_job_store_persistence.py`
+  - `tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py`
+
+### Validation Evidence (local)
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; 110 passed, 7 skipped)
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Hemma Operational Evidence
+
+- Commit pushed: `d854d5e`
+- Hemma sync:
+  - `pdm run run-local-pdm run-hemma -- git pull --ff-only`
+- Services restarted on Hemma:
+  - prod `127.0.0.1:28085` (`scripts.sir_convert_a_lot.service:app`)
+  - eval `127.0.0.1:28086` (`scripts.sir_convert_a_lot.service_eval:app`)
+- Runtime compliance recheck:
+  - `pdm run run-local-pdm hemma-verify-gpu-runtime` (pass on `d854d5e`)
+- Local tunnel live confirmation:
+  - `curl -fsS http://127.0.0.1:28085/healthz` (revision `d854d5e`)
+  - one real PDF submission via local tunnel succeeded with metadata
+    `backend_used=docling`, `acceleration_used=cuda`.
+
 ## 2026-02-15: Task 15 Completed (Generated Output Governance)
 
 ### Completed
