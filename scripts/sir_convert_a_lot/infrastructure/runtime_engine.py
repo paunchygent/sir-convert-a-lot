@@ -11,14 +11,8 @@ Relationships:
 
 from __future__ import annotations
 
-import hashlib
-import json
-import os
 import threading
 import time
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
@@ -30,9 +24,6 @@ from scripts.sir_convert_a_lot.domain.specs import (
     JobStatus,
 )
 from scripts.sir_convert_a_lot.infrastructure.backend_routing import (
-    select_backend,
-)
-from scripts.sir_convert_a_lot.infrastructure.backend_routing import (
     validate_acceleration_policy as validate_acceleration_policy_rule,
 )
 from scripts.sir_convert_a_lot.infrastructure.backend_routing import (
@@ -42,10 +33,12 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
     BackendGpuUnavailableError,
     BackendInputError,
-    ConversionRequest,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
-from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
+    GpuRuntimeProbeResult,
+    probe_torch_gpu_runtime,
+)
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
 from scripts.sir_convert_a_lot.infrastructure.job_store import (
     JobExpired,
@@ -53,84 +46,29 @@ from scripts.sir_convert_a_lot.infrastructure.job_store import (
     JobStateConflict,
     JobStore,
 )
-from scripts.sir_convert_a_lot.infrastructure.markdown_normalizer import normalize_markdown
 from scripts.sir_convert_a_lot.infrastructure.pymupdf_backend import PyMuPdfConversionBackend
-
-CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
-    "SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY",
-    "SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK",
+from scripts.sir_convert_a_lot.infrastructure.runtime_config import (
+    fingerprint_for_request,
+    service_config_from_env,
+)
+from scripts.sir_convert_a_lot.infrastructure.runtime_conversion import execute_job_conversion
+from scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat import start_conversion_heartbeat
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import (
+    ServiceConfig,
+    ServiceError,
+    StoredJob,
+    utc_now,
 )
 
-
-def utc_now() -> datetime:
-    """Return the current UTC timestamp."""
-    return datetime.now(UTC)
-
-
-@dataclass(frozen=True)
-class ServiceConfig:
-    """Runtime configuration values for Sir Convert-a-Lot service."""
-
-    api_key: str
-    data_root: Path
-    max_upload_bytes: int = 50 * 1024 * 1024
-    inline_max_bytes: int = 2 * 1024 * 1024
-    idempotency_ttl_seconds: int = 24 * 3600
-    upload_ttl_seconds: int = 24 * 3600
-    result_ttl_seconds: int = 7 * 24 * 3600
-    max_workers: int = 1
-    supervisor_poll_seconds: float = 0.2
-    enable_supervisor: bool = True
-    gpu_available: bool = True
-    # Test-only override for explicit CPU-only behavior checks.
-    allow_cpu_only: bool = False
-    # Test-only override for explicit GPU fallback behavior checks.
-    allow_cpu_fallback: bool = False
-    processing_delay_seconds: float = 0.2
-    heartbeat_interval_seconds: float = 5.0
-
-
-@dataclass
-class ServiceError(Exception):
-    """Structured service exception converted to standard error envelopes."""
-
-    status_code: int
-    code: str
-    message: str
-    retryable: bool
-    details: dict[str, object] | None = None
-
-
-@dataclass
-class StoredJob:
-    """Internal mutable job state stored by the service runtime."""
-
-    job_id: str
-    spec: JobSpec
-    source_filename: str
-    upload_path: Path
-    artifact_path: Path
-    status: JobStatus
-    created_at: datetime
-    updated_at: datetime
-    expires_at: datetime | None
-    progress_stage: str
-    pages_total: int | None = None
-    pages_processed: int | None = None
-    last_heartbeat_at: datetime | None = None
-    current_phase_started_at: datetime | None = None
-    phase_timings_ms: dict[str, int] = field(default_factory=dict)
-    warnings: list[str] = field(default_factory=list)
-    artifact_sha256: str | None = None
-    artifact_size_bytes: int | None = None
-    backend_used: str | None = None
-    acceleration_used: str | None = None
-    ocr_enabled: bool | None = None
-    options_fingerprint: str | None = None
-    failure_code: str | None = None
-    failure_message: str | None = None
-    failure_retryable: bool = False
-    failure_details: dict[str, object] | None = None
+__all__ = [
+    "ServiceConfig",
+    "ServiceError",
+    "StoredJob",
+    "ServiceRuntime",
+    "fingerprint_for_request",
+    "service_config_from_env",
+    "utc_now",
+]
 
 
 class ServiceRuntime:
@@ -307,7 +245,7 @@ class ServiceRuntime:
             details=violation.details,
         )
 
-    def validate_acceleration_policy(self, spec: JobSpec) -> None:
+    def validate_acceleration_policy(self, spec: JobSpec) -> GpuRuntimeProbeResult | None:
         """Enforce GPU-first rollout policy constraints."""
         violation = validate_acceleration_policy_rule(
             spec,
@@ -324,6 +262,7 @@ class ServiceRuntime:
                 details=violation.details,
             )
 
+        probe: GpuRuntimeProbeResult | None = None
         if (
             self.config.gpu_available
             and spec.execution.acceleration_policy
@@ -348,12 +287,13 @@ class ServiceRuntime:
                         "cuda_version": probe.cuda_version,
                     },
                 )
+        return probe
 
     def _execute_conversion(
         self, job: StoredJob
     ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
         self.validate_backend_strategy(job.spec)
-        self.validate_acceleration_policy(job.spec)
+        runtime_probe = self.validate_acceleration_policy(job.spec)
 
         source_bytes = job.upload_path.read_bytes()
         if not source_bytes.startswith(b"%PDF"):
@@ -363,25 +303,16 @@ class ServiceRuntime:
                 message="Uploaded file is not a readable PDF.",
                 retryable=False,
             )
-
-        request = ConversionRequest(
-            source_filename=job.source_filename,
-            source_bytes=source_bytes,
-            backend_strategy=job.spec.conversion.backend_strategy,
-            ocr_mode=job.spec.conversion.ocr_mode,
-            table_mode=job.spec.conversion.table_mode,
-            gpu_available=self.config.gpu_available,
-        )
-        backend = select_backend(
-            backend_strategy=job.spec.conversion.backend_strategy,
-            docling_backend=self.docling_backend,
-            pymupdf_backend=self.pymupdf_backend,
-        )
-        phase_timings_ms: dict[str, int] = {}
-
-        backend_started = time.perf_counter()
         try:
-            backend_result = backend.convert(request)
+            return execute_job_conversion(
+                spec=job.spec,
+                source_filename=job.source_filename,
+                source_bytes=source_bytes,
+                gpu_available=self.config.gpu_available,
+                gpu_runtime_probe=runtime_probe,
+                docling_backend=self.docling_backend,
+                pymupdf_backend=self.pymupdf_backend,
+            )
         except BackendGpuUnavailableError as exc:
             raise ServiceError(
                 status_code=503,
@@ -412,54 +343,6 @@ class ServiceRuntime:
                 message=f"Unexpected backend conversion failure: {exc}",
                 retryable=True,
             ) from exc
-        phase_timings_ms["backend_convert_ms"] = max(
-            0, int((time.perf_counter() - backend_started) * 1000)
-        )
-        for key, value in backend_result.phase_timings_ms.items():
-            if key in phase_timings_ms:
-                phase_timings_ms[key] += value
-            else:
-                phase_timings_ms[key] = value
-
-        normalize_started = time.perf_counter()
-        markdown_content = normalize_markdown(
-            backend_result.markdown_content,
-            job.spec.conversion.normalize,
-        )
-        phase_timings_ms["normalize_ms"] = max(
-            0, int((time.perf_counter() - normalize_started) * 1000)
-        )
-        options_fingerprint = hashlib.sha256(
-            json.dumps(
-                job.spec.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-            ).encode("utf-8")
-        ).hexdigest()
-
-        metadata = ConversionMetadata(
-            backend_used=backend_result.backend_used,
-            acceleration_used=backend_result.acceleration_used,
-            ocr_enabled=backend_result.ocr_enabled,
-            table_mode=job.spec.conversion.table_mode,
-            options_fingerprint=f"sha256:{options_fingerprint}",
-        )
-        return markdown_content, metadata, list(backend_result.warnings), phase_timings_ms
-
-    def _start_conversion_heartbeat(self, job_id: str) -> tuple[threading.Event, threading.Thread]:
-        stop_event = threading.Event()
-
-        def _heartbeat_loop() -> None:
-            interval = max(0.01, self.config.heartbeat_interval_seconds)
-            while not stop_event.wait(interval):
-                try:
-                    updated = self.job_store.touch_heartbeat(job_id)
-                except (JobMissing, JobExpired):
-                    return
-                if not updated:
-                    return
-
-        heartbeat_thread = threading.Thread(target=_heartbeat_loop, daemon=True)
-        heartbeat_thread.start()
-        return stop_event, heartbeat_thread
 
     def run_job_async(self, job_id: str) -> None:
         """Run a conversion job asynchronously in a background thread."""
@@ -495,11 +378,19 @@ class ServiceRuntime:
                 job_id, JobStatus.RUNNING, "converting", pages_processed=1, pages_total=1
             )
             self.job_store.touch_heartbeat(job_id)
-            heartbeat_stop, heartbeat_thread = self._start_conversion_heartbeat(job_id)
+            heartbeat_stop, heartbeat_thread = start_conversion_heartbeat(
+                job_store=self.job_store,
+                job_id=job_id,
+                heartbeat_interval_seconds=self.config.heartbeat_interval_seconds,
+            )
 
             try:
+                conversion_started = time.perf_counter()
                 markdown_content, metadata, warnings, phase_timings_ms = self._execute_conversion(
                     job
+                )
+                phase_timings_ms["conversion_attempt_ms"] = max(
+                    0, int((time.perf_counter() - conversion_started) * 1000)
                 )
                 artifact_bytes = markdown_content.encode("utf-8")
                 heartbeat_stop.set()
@@ -517,6 +408,9 @@ class ServiceRuntime:
             except JobStateConflict:
                 return
             except ServiceError as exc:
+                conversion_elapsed_ms = max(
+                    0, int((time.perf_counter() - conversion_started) * 1000)
+                )
                 heartbeat_stop.set()
                 heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
                 try:
@@ -526,11 +420,14 @@ class ServiceRuntime:
                         message=exc.message,
                         retryable=exc.retryable,
                         details=exc.details,
-                        phase_timings_ms={},
+                        phase_timings_ms={"conversion_attempt_ms": conversion_elapsed_ms},
                     )
                 except (JobMissing, JobExpired, JobStateConflict):
                     return
             except Exception as exc:  # pragma: no cover - defensive fallback
+                conversion_elapsed_ms = max(
+                    0, int((time.perf_counter() - conversion_started) * 1000)
+                )
                 heartbeat_stop.set()
                 heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
                 try:
@@ -540,41 +437,10 @@ class ServiceRuntime:
                         message=f"Unexpected conversion error: {exc}",
                         retryable=True,
                         details=None,
-                        phase_timings_ms={},
+                        phase_timings_ms={"conversion_attempt_ms": conversion_elapsed_ms},
                     )
                 except (JobMissing, JobExpired, JobStateConflict):
                     return
         finally:
             with self._lock:
                 self._active_job_ids.discard(job_id)
-
-
-def fingerprint_for_request(spec_payload: dict[str, object], file_sha256: str) -> str:
-    """Create deterministic idempotency fingerprint for a create-job request."""
-    normalized = json.dumps(spec_payload, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(f"{normalized}:{file_sha256}".encode("utf-8")).hexdigest()
-
-
-def service_config_from_env() -> ServiceConfig:
-    """Load service configuration from environment variables."""
-    api_key = os.getenv("SIR_CONVERT_A_LOT_API_KEY", "dev-only-key")
-    data_root = Path(
-        os.getenv("CONVERTER_STORAGE_ROOT")
-        or os.getenv("SIR_CONVERT_A_LOT_DATA_DIR")
-        or "build/sir_convert_a_lot"
-    )
-    gpu_available = os.getenv("SIR_CONVERT_A_LOT_GPU_AVAILABLE", "1") == "1"
-
-    enabled_unlock_envs = [name for name in CPU_UNLOCK_ENV_VARS if os.getenv(name) == "1"]
-    if enabled_unlock_envs:
-        joined_names = ", ".join(enabled_unlock_envs)
-        raise ValueError(
-            "CPU unlock env vars are disabled during GPU-first rollout lock: "
-            f"{joined_names}. Use explicit ServiceConfig test overrides instead."
-        )
-
-    return ServiceConfig(
-        api_key=api_key,
-        data_root=data_root,
-        gpu_available=gpu_available,
-    )

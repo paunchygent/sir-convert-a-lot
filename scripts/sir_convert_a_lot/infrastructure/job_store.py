@@ -1,13 +1,6 @@
 """Filesystem-backed job store for Sir Convert-a-Lot v1.
 
-Purpose:
-    Provide a durable, contract-aligned job persistence layer for the v1 async
-    conversion API. The job store is the source of truth for job status, job
-    metadata, retention, and recovery after service restarts.
-
-Relationships:
-    - Used by `infrastructure.runtime_engine.ServiceRuntime` as the canonical job state store.
-    - Storage layout is aligned with `docs/converters/pdf_to_md_service_api_v1.md`.
+Provides durable v1 job-state persistence and recovery for runtime orchestration.
 """
 
 from __future__ import annotations
@@ -27,6 +20,12 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_to_rfc3339,
     read_json,
     utc_now,
+)
+from scripts.sir_convert_a_lot.infrastructure.job_store_manifest import (
+    build_initial_manifest,
+    ensure_diagnostics,
+    merge_phase_timings,
+    parse_stored_job_record,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models import (
     JobExpired,
@@ -121,48 +120,6 @@ class JobStore:
                 actual_status=actual_status,
             )
 
-    def _ensure_diagnostics(self, payload: dict[str, object]) -> dict[str, object]:
-        diagnostics = payload.get("diagnostics")
-        if not isinstance(diagnostics, dict):
-            diagnostics = {}
-            payload["diagnostics"] = diagnostics
-        return diagnostics
-
-    def _parse_phase_timings(
-        self,
-        diagnostics: dict[str, object],
-    ) -> dict[str, int]:
-        phase_timings_obj = diagnostics.get("phase_timings_ms")
-        if not isinstance(phase_timings_obj, dict):
-            return {}
-        parsed: dict[str, int] = {}
-        for key, value in phase_timings_obj.items():
-            if isinstance(key, str) and isinstance(value, int):
-                parsed[key] = value
-        return parsed
-
-    def _set_phase_timings(
-        self,
-        *,
-        diagnostics: dict[str, object],
-        phase_timings_ms: dict[str, int],
-    ) -> None:
-        diagnostics["phase_timings_ms"] = {
-            key: int(value) for key, value in phase_timings_ms.items()
-        }
-
-    def _merge_phase_timings(
-        self,
-        *,
-        diagnostics: dict[str, object],
-        additional_phase_timings_ms: dict[str, int],
-    ) -> dict[str, int]:
-        merged = self._parse_phase_timings(diagnostics)
-        for key, value in additional_phase_timings_ms.items():
-            merged[key] = merged.get(key, 0) + int(value)
-        self._set_phase_timings(diagnostics=diagnostics, phase_timings_ms=merged)
-        return merged
-
     def create_job(
         self,
         *,
@@ -189,30 +146,15 @@ class JobStore:
         raw_expires_at = now + timedelta(seconds=self.raw_ttl_seconds)
         artifact_expires_at = now + timedelta(seconds=self.artifact_ttl_seconds)
 
-        manifest: dict[str, object] = {
-            "job_id": job_id,
-            "job_spec": spec.model_dump(mode="json"),
-            "status": JobStatus.QUEUED.value,
-            "source_filename": source_filename,
-            "progress": {"stage": "queued", "pages_total": None, "pages_processed": None},
-            "timestamps": {
-                "created_at": dt_to_rfc3339(now),
-                "updated_at": dt_to_rfc3339(now),
-                "completed_at": None,
-            },
-            "retention": {
-                "pinned": pinned,
-                "raw_expires_at": dt_to_rfc3339(raw_expires_at),
-                "artifact_expires_at": dt_to_rfc3339(artifact_expires_at),
-            },
-            "result_metadata": None,
-            "error": None,
-            "diagnostics": {
-                "last_heartbeat_at": dt_to_rfc3339(now),
-                "current_phase_started_at": dt_to_rfc3339(now),
-                "phase_timings_ms": {},
-            },
-        }
+        manifest = build_initial_manifest(
+            job_id=job_id,
+            spec=spec,
+            source_filename=source_filename,
+            now=now,
+            pinned=pinned,
+            raw_expires_at=raw_expires_at,
+            artifact_expires_at=artifact_expires_at,
+        )
         atomic_write_json(self._manifest_path(job_id), manifest)
 
         return self.get_job(job_id)
@@ -226,136 +168,12 @@ class JobStore:
             raise JobMissing(job_id=job_id)
 
         payload = read_json(manifest_path)
-        job_id_obj = payload.get("job_id")
-        if job_id_obj != job_id:
-            raise ValueError(f"manifest job_id mismatch: {manifest_path}")
-
-        spec_payload = payload.get("job_spec")
-        if not isinstance(spec_payload, dict):
-            raise ValueError(f"manifest missing job_spec object: {manifest_path}")
-        spec = JobSpec.model_validate(spec_payload)
-
-        status_value = payload.get("status")
-        if not isinstance(status_value, str):
-            raise ValueError(f"manifest missing status: {manifest_path}")
-        status = JobStatus(status_value)
-
-        timestamps = payload.get("timestamps")
-        if not isinstance(timestamps, dict):
-            raise ValueError(f"manifest missing timestamps: {manifest_path}")
-        created_at = dt_from_rfc3339(timestamps.get("created_at"))
-        updated_at = dt_from_rfc3339(timestamps.get("updated_at"))
-        completed_at = dt_from_rfc3339(timestamps.get("completed_at"))
-        if created_at is None or updated_at is None:
-            raise ValueError(f"manifest missing required timestamps: {manifest_path}")
-
-        retention = payload.get("retention")
-        if not isinstance(retention, dict):
-            raise ValueError(f"manifest missing retention object: {manifest_path}")
-        pinned_obj = retention.get("pinned")
-        pinned = bool(pinned_obj) if isinstance(pinned_obj, bool) else False
-        raw_expires_at = dt_from_rfc3339(retention.get("raw_expires_at"))
-        artifact_expires_at = dt_from_rfc3339(retention.get("artifact_expires_at"))
-        if raw_expires_at is None or artifact_expires_at is None:
-            raise ValueError(f"manifest missing retention timestamps: {manifest_path}")
-
-        source_filename = payload.get("source_filename")
-        if not isinstance(source_filename, str) or source_filename.strip() == "":
-            raise ValueError(f"manifest missing source_filename: {manifest_path}")
-
-        progress = payload.get("progress")
-        if not isinstance(progress, dict):
-            raise ValueError(f"manifest missing progress: {manifest_path}")
-        stage_obj = progress.get("stage")
-        stage = stage_obj if isinstance(stage_obj, str) else "unknown"
-        pages_total = progress.get("pages_total")
-        pages_processed = progress.get("pages_processed")
-        pages_total_val = pages_total if isinstance(pages_total, int) else None
-        pages_processed_val = pages_processed if isinstance(pages_processed, int) else None
-        diagnostics = payload.get("diagnostics")
-        diagnostics_obj = diagnostics if isinstance(diagnostics, dict) else {}
-        last_heartbeat_at = dt_from_rfc3339(diagnostics_obj.get("last_heartbeat_at"))
-        current_phase_started_at = dt_from_rfc3339(diagnostics_obj.get("current_phase_started_at"))
-        phase_timings_ms = self._parse_phase_timings(diagnostics_obj)
-
-        result_obj = payload.get("result_metadata")
-        error_obj = payload.get("error")
-
-        warnings: list[str] = []
-        artifact_sha256: str | None = None
-        artifact_size_bytes: int | None = None
-        backend_used: str | None = None
-        acceleration_used: str | None = None
-        ocr_enabled: bool | None = None
-        options_fingerprint: str | None = None
-        failure_code: str | None = None
-        failure_message: str | None = None
-        failure_retryable = False
-        failure_details: dict[str, object] | None = None
-
-        if isinstance(result_obj, dict):
-            warnings_obj = result_obj.get("warnings")
-            if isinstance(warnings_obj, list):
-                warnings = [w for w in warnings_obj if isinstance(w, str)]
-
-            artifact_obj = result_obj.get("artifact")
-            if isinstance(artifact_obj, dict):
-                sha_obj = artifact_obj.get("sha256")
-                size_obj = artifact_obj.get("size_bytes")
-                artifact_sha256 = sha_obj if isinstance(sha_obj, str) else None
-                artifact_size_bytes = size_obj if isinstance(size_obj, int) else None
-
-            meta_obj = result_obj.get("conversion_metadata")
-            if isinstance(meta_obj, dict):
-                backend_obj = meta_obj.get("backend_used")
-                accel_obj = meta_obj.get("acceleration_used")
-                ocr_obj = meta_obj.get("ocr_enabled")
-                options_obj = meta_obj.get("options_fingerprint")
-                backend_used = backend_obj if isinstance(backend_obj, str) else None
-                acceleration_used = accel_obj if isinstance(accel_obj, str) else None
-                ocr_enabled = ocr_obj if isinstance(ocr_obj, bool) else None
-                options_fingerprint = options_obj if isinstance(options_obj, str) else None
-
-        if isinstance(error_obj, dict):
-            code_obj = error_obj.get("code")
-            message_obj = error_obj.get("message")
-            retryable_obj = error_obj.get("retryable")
-            details_obj = error_obj.get("details")
-            failure_code = code_obj if isinstance(code_obj, str) else None
-            failure_message = message_obj if isinstance(message_obj, str) else None
-            failure_retryable = retryable_obj if isinstance(retryable_obj, bool) else False
-            failure_details = details_obj if isinstance(details_obj, dict) else None
-
-        record = StoredJobRecord(
-            job_id=job_id,
-            spec=spec,
-            source_filename=source_filename,
-            status=status,
-            created_at=created_at,
-            updated_at=updated_at,
-            completed_at=completed_at,
-            raw_expires_at=raw_expires_at,
-            artifact_expires_at=artifact_expires_at,
-            pinned=pinned,
-            progress_stage=stage,
-            pages_total=pages_total_val,
-            pages_processed=pages_processed_val,
-            last_heartbeat_at=last_heartbeat_at,
-            current_phase_started_at=current_phase_started_at,
-            phase_timings_ms=phase_timings_ms,
-            warnings=warnings,
+        record = parse_stored_job_record(
+            payload=payload,
+            manifest_path=manifest_path,
+            expected_job_id=job_id,
             upload_path=self._raw_path(job_id),
             artifact_path=self._artifact_path(job_id),
-            artifact_sha256=artifact_sha256,
-            artifact_size_bytes=artifact_size_bytes,
-            backend_used=backend_used,
-            acceleration_used=acceleration_used,
-            ocr_enabled=ocr_enabled,
-            options_fingerprint=options_fingerprint,
-            failure_code=failure_code,
-            failure_message=failure_message,
-            failure_retryable=failure_retryable,
-            failure_details=failure_details,
         )
 
         now = utc_now()
@@ -395,7 +213,7 @@ class JobStore:
                 timestamps = {}
                 payload["timestamps"] = timestamps
             timestamps["updated_at"] = dt_to_rfc3339(now)
-            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
 
@@ -420,8 +238,11 @@ class JobStore:
                 payload["timestamps"] = timestamps
             timestamps["updated_at"] = dt_to_rfc3339(now)
 
-            diagnostics = self._ensure_diagnostics(payload)
-            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
+            diagnostics = ensure_diagnostics(payload)
+            new_heartbeat_at = dt_to_rfc3339(now)
+            if diagnostics.get("last_heartbeat_at") == new_heartbeat_at:
+                return True
+            diagnostics["last_heartbeat_at"] = new_heartbeat_at
 
             atomic_write_json(manifest_path, payload)
             return True
@@ -450,7 +271,7 @@ class JobStore:
                 timestamps = {}
                 payload["timestamps"] = timestamps
             timestamps["updated_at"] = dt_to_rfc3339(now)
-            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
 
@@ -509,22 +330,23 @@ class JobStore:
                 },
                 "warnings": list(warnings),
             }
-            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             if phase_timings_ms is not None:
-                self._merge_phase_timings(
+                merge_phase_timings(
                     diagnostics=diagnostics,
                     additional_phase_timings_ms=phase_timings_ms,
                 )
+            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
+
+            atomic_write_json(manifest_path, payload)
             persist_elapsed_ms = max(
                 0, int((time.perf_counter() - persist_started_monotonic) * 1000)
             )
-            self._merge_phase_timings(
+            merge_phase_timings(
                 diagnostics=diagnostics,
                 additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
             )
-            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
-
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
 
@@ -566,22 +388,23 @@ class JobStore:
                 "retryable": retryable,
                 "details": details,
             }
-            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             if phase_timings_ms is not None:
-                self._merge_phase_timings(
+                merge_phase_timings(
                     diagnostics=diagnostics,
                     additional_phase_timings_ms=phase_timings_ms,
                 )
+            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
+
+            atomic_write_json(manifest_path, payload)
             persist_elapsed_ms = max(
                 0, int((time.perf_counter() - persist_started_monotonic) * 1000)
             )
-            self._merge_phase_timings(
+            merge_phase_timings(
                 diagnostics=diagnostics,
                 additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
             )
-            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
-
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
 

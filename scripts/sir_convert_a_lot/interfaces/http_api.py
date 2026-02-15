@@ -117,6 +117,9 @@ def _job_record_response(job: StoredJob) -> JobRecordResponse:
                 stage=job.progress_stage,
                 pages_total=job.pages_total,
                 pages_processed=job.pages_processed,
+                last_heartbeat_at=job.last_heartbeat_at,
+                current_phase_started_at=job.current_phase_started_at,
+                phase_timings_ms=job.phase_timings_ms,
             ),
             links=_make_job_links(job.job_id),
         )

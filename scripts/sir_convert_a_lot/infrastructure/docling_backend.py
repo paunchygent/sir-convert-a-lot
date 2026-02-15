@@ -37,7 +37,10 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     ConversionRequest,
     ConversionResultData,
 )
-from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
+    GpuRuntimeProbeResult,
+    probe_torch_gpu_runtime,
+)
 
 _AUTO_OCR_CHARS_PER_PAGE_THRESHOLD = 120.0
 _LOW_CONFIDENCE_GRADES = {"poor", "fair"}
@@ -98,7 +101,10 @@ class DoclingConversionBackend(ConversionBackend):
 
         warnings: list[str] = []
         phase_timings_ms: dict[str, int] = {}
-        acceleration_device, acceleration_used = self._resolve_acceleration(request.gpu_available)
+        acceleration_device, acceleration_used = self._resolve_acceleration(
+            request.gpu_available,
+            request.gpu_runtime_probe,
+        )
 
         if request.ocr_mode == OcrMode.OFF:
             attempt, attempt_warnings, attempt_timings = self._convert_once_guarded_formula(
@@ -345,9 +351,13 @@ class DoclingConversionBackend(ConversionBackend):
             grade_value = str(low_grade).lower()
         return grade_value in _LOW_CONFIDENCE_GRADES
 
-    def _resolve_acceleration(self, gpu_available: bool) -> tuple[AcceleratorDevice, str]:
+    def _resolve_acceleration(
+        self,
+        gpu_available: bool,
+        runtime_probe: GpuRuntimeProbeResult | None,
+    ) -> tuple[AcceleratorDevice, str]:
         del gpu_available
-        probe = probe_torch_gpu_runtime()
+        probe = runtime_probe if runtime_probe is not None else probe_torch_gpu_runtime()
         if probe.is_available and probe.runtime_kind in {"rocm", "cuda"}:
             return AcceleratorDevice.CUDA, "cuda"
         raise BackendGpuUnavailableError(backend="docling", probe=probe)

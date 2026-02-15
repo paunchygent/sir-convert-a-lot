@@ -198,7 +198,14 @@ Server policy constraints (Phase 0 lock):
     "progress": {
       "stage": "layout_analysis",
       "pages_total": 18,
-      "pages_processed": 6
+      "pages_processed": 6,
+      "last_heartbeat_at": "2026-02-11T17:00:10Z",
+      "current_phase_started_at": "2026-02-11T17:00:09Z",
+      "phase_timings_ms": {
+        "backend_convert_ms": 2412,
+        "normalize_ms": 17,
+        "persist_ms": 8
+      }
     },
     "links": {
       "self": "/v1/convert/jobs/job_01K2S8CXH3BWV7S6E5B7P4Y2ZR",
@@ -273,6 +280,9 @@ Responses:
 ### `GET /v1/convert/jobs/{job_id}`
 
 Returns job status and progress.
+
+Progress diagnostics fields (`last_heartbeat_at`, `current_phase_started_at`,
+`phase_timings_ms`) are included to distinguish slow conversions from stalled jobs.
 
 Responses:
 

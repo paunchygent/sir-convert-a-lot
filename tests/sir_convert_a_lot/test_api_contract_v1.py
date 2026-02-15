@@ -602,3 +602,46 @@ def test_cpu_only_returns_503_when_rollout_lock_active(tmp_path: Path) -> None:
     payload = response.json()
     assert payload["error"]["code"] == "gpu_not_available"
     assert payload["error"]["retryable"] is True
+
+
+def test_job_status_exposes_heartbeat_and_phase_timings(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_only=True,
+            processing_delay_seconds=0.01,
+            heartbeat_interval_seconds=0.02,
+        )
+    )
+    client = TestClient(app)
+
+    create_response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-diagnostics-fields",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=_job_spec(
+            filename="paper.pdf",
+            backend_strategy="pymupdf",
+            ocr_mode="off",
+            acceleration_policy="cpu_only",
+        ),
+    )
+    assert create_response.status_code in {200, 202}
+    job_id = create_response.json()["job"]["job_id"]
+
+    terminal = _wait_for_terminal(client, "secret-key", job_id)
+    assert terminal == JobStatus.SUCCEEDED
+
+    status_response = client.get(
+        f"/v1/convert/jobs/{job_id}",
+        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_diag"},
+    )
+    assert status_response.status_code == 200
+    progress = status_response.json()["job"]["progress"]
+    assert isinstance(progress["phase_timings_ms"], dict)
+    assert isinstance(progress["last_heartbeat_at"], str)
+    assert isinstance(progress["current_phase_started_at"], str)

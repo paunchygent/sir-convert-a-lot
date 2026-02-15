@@ -28,6 +28,7 @@ class ConversionRequest:
     ocr_mode: OcrMode
     table_mode: TableMode
     gpu_available: bool
+    gpu_runtime_probe: GpuRuntimeProbeResult | None = None
 
 
 @dataclass(frozen=True)

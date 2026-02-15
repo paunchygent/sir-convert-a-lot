@@ -57,6 +57,8 @@ Ops hardening:
 - [x] Service `/healthz` exposes deterministic revision/start metadata for freshness checks
 - [x] Runtime emits deterministic conversion heartbeat timestamps during `_execute_conversion`
 - [x] Runtime persists per-job phase timing diagnostics for root-cause analysis
+- [x] Runtime/API expose heartbeat and phase diagnostics in `job.progress`
+- [x] `job_store.py` and `runtime_engine.py` are split to sub-500 LoC modules
 
 ## Acceptance Criteria
 

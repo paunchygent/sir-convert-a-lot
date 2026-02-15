@@ -27,6 +27,9 @@ class JobProgress(BaseModel):
     stage: str
     pages_total: int | None = None
     pages_processed: int | None = None
+    last_heartbeat_at: datetime | None = None
+    current_phase_started_at: datetime | None = None
+    phase_timings_ms: dict[str, int] = Field(default_factory=dict)
 
 
 class JobLinks(BaseModel):

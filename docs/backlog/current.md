@@ -42,6 +42,22 @@ Active focus is Story 02-01 execution:
 
 ## Worklog
 
+- 2026-02-15 — Task 18 hardening follow-up completed (P0/P1/P2 + modular SRP split):
+  - Fixed persistence timing correctness (`persist_ms` now measured after durable write commit).
+  - Added API-visible diagnostics in job progress:
+    - `last_heartbeat_at`, `current_phase_started_at`, `phase_timings_ms`.
+  - Removed redundant GPU probing path by forwarding runtime probe to Docling backend request.
+  - Preserved failure diagnostics by recording `conversion_attempt_ms` on failed jobs.
+  - Applied optional I/O optimization: heartbeat touch skips manifest rewrite when timestamp second is unchanged.
+  - Split runtime/store into focused modules (DDD/SRP):
+    - `scripts/sir_convert_a_lot/infrastructure/job_store_manifest.py`
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_models.py`
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_config.py`
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_conversion.py`
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_heartbeat.py`
+  - LoC targets after split:
+    - `job_store.py` = 499 lines
+    - `runtime_engine.py` = 446 lines
 - 2026-02-15 — Task 18 completed (observability closure + Hemma revalidation):
   - Added deterministic runtime heartbeat and phase timing diagnostics:
     - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
