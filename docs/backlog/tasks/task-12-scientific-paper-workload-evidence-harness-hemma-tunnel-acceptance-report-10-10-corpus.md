@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-02-14'
-last_updated: '2026-02-14'
+last_updated: '2026-02-15'
 related:
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/converters/pdf_to_md_service_api_v1.md
@@ -108,41 +108,60 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 
 ## Deliverables
 
-- [ ] Harness runner script and smoke/unit tests for deterministic output structure.
-- [ ] Evaluation service entrypoint for isolated A/B runs (`serve:sir-convert-a-lot-eval`).
-- [ ] `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json` (machine-readable evidence).
-- [ ] `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md` (human-readable report).
-- [ ] Documented Hemma tunnel invocation that can be replayed by other developers/agents.
-- [ ] Committed markdown artifacts for acceptance + A/B lanes.
+- [x] Harness runner script and smoke/unit tests for deterministic output structure.
+- [x] Evaluation service entrypoint for isolated A/B runs (`serve:sir-convert-a-lot-eval`).
+- [x] `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json` (machine-readable evidence).
+- [x] `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md` (human-readable report).
+- [x] Documented Hemma tunnel invocation that can be replayed by other developers/agents.
+- [x] Committed markdown artifacts for acceptance + A/B lanes.
 
 ## Acceptance Criteria
 
-- [ ] Evidence uses this exact external corpus path (do not vendor PDFs into this repo):
+- [x] Evidence uses this exact external corpus path (do not vendor PDFs into this repo):
   - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
 - [ ] Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary committed. All resulting .mds are high quality and pass manual review for accuracy, completeness, and formatting.
-- [ ] Backend decision for scientific PDFs is explicitly quality-first:
+- [x] Backend decision for scientific PDFs is explicitly quality-first:
   - A/B comparison is recorded for available backend paths on the same 10/10 corpus.
   - Primary ranking metric is layout fidelity + information retention + legibility.
   - Latency/throughput are used only as secondary criteria when quality is materially equivalent.
-- [ ] Evidence artifacts include:
+- [x] Evidence artifacts include:
   - service revision (git SHA),
   - backend and acceleration usage,
   - normalization mode used (width 100 strict strong-reflow when strict selected),
   - any retries and warnings.
-- [ ] Selected backend path remains governance-compatible:
+- [x] Selected backend path remains governance-compatible:
   - no silent policy bypasses,
   - deterministic validation behavior for incompatible options,
   - truthful conversion metadata (`backend_used`, `acceleration_used`, `ocr_enabled`).
-- [ ] Quality gates pass (format/lint/typecheck/tests + docs validators and backlog index).
+- [x] Quality gates pass (format/lint/typecheck/tests + docs validators and backlog index).
 
 ## Checklist
 
-- [ ] Docs kickoff updated (`status: in_progress`, decision lock, execution plan)
-- [ ] GPU runtime compliance gate passed on Hemma (`hemma-verify-gpu-runtime`)
-- [ ] Fail-closed behavior validated (`backend_gpu_runtime_unavailable` -> deterministic `503`)
-- [ ] Harness and eval service implementation complete
-- [ ] Tests added and passing
-- [ ] Local quality gates complete
-- [ ] Hemma acceptance + evaluation runs complete
-- [ ] Evidence JSON/report/artifacts committed
+- [x] Docs kickoff updated (`status: in_progress`, decision lock, execution plan)
+- [x] GPU runtime compliance gate passed on Hemma (`hemma-verify-gpu-runtime`)
+- [x] Fail-closed behavior validated (`backend_gpu_runtime_unavailable` -> deterministic `503`)
+- [x] Harness and eval service implementation complete
+- [x] Tests added and passing
+- [x] Local quality gates complete
+- [x] Hemma acceptance + evaluation runs complete
+- [x] Evidence JSON/report/artifacts committed
 - [ ] Close-out docs updated
+
+## Execution Evidence (2026-02-15)
+
+- Hemma runtime gate:
+  - `pdm run run-local-pdm hemma-verify-gpu-runtime` (pass)
+  - probe: `runtime_kind=rocm`, `torch_version=2.10.0+rocm7.1`,
+    `device_name=AMD Radeon AI PRO R9700`
+- Task 12 benchmark run:
+  - `pdm run run-local-pdm benchmark:task-12 --api-key dev-only-key`
+  - output:
+    - `task12-benchmark-written docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json`
+    - `acceptance_success=10/10`
+    - `quality_winner=pymupdf`
+    - `recommended=docling` (governance-compatible production path)
+- Local quality gates:
+  - `pdm run run-local-pdm format-all` (pass)
+  - `pdm run run-local-pdm lint-fix` (pass)
+  - `pdm run run-local-pdm typecheck-all` (pass)
+  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; `87` tests)

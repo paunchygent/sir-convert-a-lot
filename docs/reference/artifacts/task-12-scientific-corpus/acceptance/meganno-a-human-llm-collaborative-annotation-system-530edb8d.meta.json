@@ -1,0 +1,16 @@
+{
+  "acceleration_used": "cuda",
+  "backend_profile": "auto",
+  "backend_used": "docling",
+  "document_slug": "meganno-a-human-llm-collaborative-annotation-system-530edb8d",
+  "error_code": null,
+  "job_id": "job_8e97ba7114614198a95573fca0",
+  "latency_seconds": 4.176517,
+  "output_markdown_path": "docs/reference/artifacts/task-12-scientific-corpus/acceptance/meganno-a-human-llm-collaborative-annotation-system-530edb8d.md",
+  "output_metadata_path": "docs/reference/artifacts/task-12-scientific-corpus/acceptance/meganno-a-human-llm-collaborative-annotation-system-530edb8d.meta.json",
+  "retry_warnings_count": 0,
+  "source_file": "MEGAnno+- A Human-LLM Collaborative Annotation System.pdf",
+  "source_size_bytes": 831814,
+  "status": "succeeded",
+  "warnings": []
+}

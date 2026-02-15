@@ -1,0 +1,16 @@
+{
+  "acceleration_used": "cuda",
+  "backend_profile": "docling",
+  "backend_used": "docling",
+  "document_slug": "can-large-language-models-capture-human-annotator-disagreeme-cf75b84f",
+  "error_code": null,
+  "job_id": "job_3619d486e7044951901e485399",
+  "latency_seconds": 21.300569,
+  "output_markdown_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/docling/can-large-language-models-capture-human-annotator-disagreeme-cf75b84f.md",
+  "output_metadata_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/docling/can-large-language-models-capture-human-annotator-disagreeme-cf75b84f.meta.json",
+  "retry_warnings_count": 0,
+  "source_file": "Can Large Language Models Capture Human Annotator Disagreements?.pdf",
+  "source_size_bytes": 611707,
+  "status": "succeeded",
+  "warnings": []
+}

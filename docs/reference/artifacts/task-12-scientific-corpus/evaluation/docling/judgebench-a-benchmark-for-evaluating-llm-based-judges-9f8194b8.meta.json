@@ -1,0 +1,16 @@
+{
+  "acceleration_used": "cuda",
+  "backend_profile": "docling",
+  "backend_used": "docling",
+  "document_slug": "judgebench-a-benchmark-for-evaluating-llm-based-judges-9f8194b8",
+  "error_code": null,
+  "job_id": "job_5505ceab89ea4b2f9d10777520",
+  "latency_seconds": 11.387951,
+  "output_markdown_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/docling/judgebench-a-benchmark-for-evaluating-llm-based-judges-9f8194b8.md",
+  "output_metadata_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/docling/judgebench-a-benchmark-for-evaluating-llm-based-judges-9f8194b8.meta.json",
+  "retry_warnings_count": 0,
+  "source_file": "JUDGEBENCH- A BENCHMARK FOR EVALUATING  LLM-BASED JUDGES.pdf",
+  "source_size_bytes": 1079243,
+  "status": "succeeded",
+  "warnings": []
+}

@@ -39,7 +39,9 @@ def _write_pdf(path: Path, label: str) -> None:
     copy_fixture_pdf(path, fixture_name)
 
 
-def _conversion_runtime_config(*, data_root: Path, processing_delay_seconds: float) -> ServiceConfig:
+def _conversion_runtime_config(
+    *, data_root: Path, processing_delay_seconds: float
+) -> ServiceConfig:
     return ServiceConfig(
         api_key="secret-key",
         data_root=data_root,

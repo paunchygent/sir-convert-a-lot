@@ -1,0 +1,16 @@
+{
+  "acceleration_used": "cuda",
+  "backend_profile": "auto",
+  "backend_used": "docling",
+  "document_slug": "prompt-stability-scoring-for-text-annotation-with-large-lang-99b12312",
+  "error_code": null,
+  "job_id": "job_9859209c46eb437faed2e3ebf7",
+  "latency_seconds": 14.162607,
+  "output_markdown_path": "docs/reference/artifacts/task-12-scientific-corpus/acceptance/prompt-stability-scoring-for-text-annotation-with-large-lang-99b12312.md",
+  "output_metadata_path": "docs/reference/artifacts/task-12-scientific-corpus/acceptance/prompt-stability-scoring-for-text-annotation-with-large-lang-99b12312.meta.json",
+  "retry_warnings_count": 0,
+  "source_file": "Prompt Stability Scoring for Text Annotation  with Large Language Models.pdf",
+  "source_size_bytes": 6043317,
+  "status": "succeeded",
+  "warnings": []
+}

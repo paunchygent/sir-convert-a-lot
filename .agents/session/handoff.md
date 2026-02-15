@@ -1,5 +1,35 @@
 # Session Handoff
 
+## 2026-02-15: Task 12 In Progress (Scientific Corpus Evidence Run Executed)
+
+### Completed This Slice
+
+- Ran dual-lane Task 12 benchmark after Task 13 runtime gate validation:
+  - `pdm run run-local-pdm benchmark:task-12 --api-key dev-only-key`
+- Hemma lane topology was active during run:
+  - production-lock service: `127.0.0.1:28085`
+  - eval service: `127.0.0.1:28086`
+- Generated evidence artifacts:
+  - `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json`
+  - `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md`
+  - `docs/reference/artifacts/task-12-scientific-corpus/` (acceptance + docling + pymupdf markdown/meta)
+- Run outcome:
+  - acceptance lane: `10/10` succeeded
+  - decision quality winner: `pymupdf`
+  - governance-compatible production recommendation: `docling`
+
+### Validation Evidence (local)
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; 87 passed)
+
+### Remaining for Task 12 Close-Out
+
+- Commit Task 12 generated artifacts and docs updates.
+- Complete manual quality review pass for generated markdown outputs, then close Task 12.
+
 ## 2026-02-15: Task 13 Completed (GPU Runtime Compliance Gate + Hemma ROCm Verification)
 
 ### Completed

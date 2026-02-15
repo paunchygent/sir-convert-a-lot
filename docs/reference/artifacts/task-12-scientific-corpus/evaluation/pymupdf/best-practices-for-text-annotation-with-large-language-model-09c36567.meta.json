@@ -1,0 +1,16 @@
+{
+  "acceleration_used": "cpu",
+  "backend_profile": "pymupdf",
+  "backend_used": "pymupdf",
+  "document_slug": "best-practices-for-text-annotation-with-large-language-model-09c36567",
+  "error_code": null,
+  "job_id": "job_3be99160b1d248f592ebf617a8",
+  "latency_seconds": 2.798653,
+  "output_markdown_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/pymupdf/best-practices-for-text-annotation-with-large-language-model-09c36567.md",
+  "output_metadata_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/pymupdf/best-practices-for-text-annotation-with-large-language-model-09c36567.meta.json",
+  "retry_warnings_count": 0,
+  "source_file": "Best Practices for Text Annotation with Large Language Models.pdf",
+  "source_size_bytes": 357435,
+  "status": "succeeded",
+  "warnings": []
+}

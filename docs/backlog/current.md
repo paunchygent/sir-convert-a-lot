@@ -30,6 +30,22 @@ Active focus is Story 02-01 execution:
 
 ## Worklog
 
+- 2026-02-15 — Task 12 benchmark evidence run executed after Task 13 runtime gate close-out:
+  - Hemma services confirmed on `127.0.0.1:28085` (prod-lock) and `127.0.0.1:28086` (eval).
+  - Tunnel flow validated for both lanes (`/healthz` pass on local forwarded ports).
+  - Ran:
+    - `pdm run run-local-pdm benchmark:task-12 --api-key dev-only-key`
+  - Result:
+    - acceptance lane: `10/10` succeeded
+    - quality winner: `pymupdf`
+    - governance-compatible production recommendation: `docling`
+  - Artifacts generated:
+    - `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json`
+    - `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md`
+    - `docs/reference/artifacts/task-12-scientific-corpus/`
+  - Remaining Task 12 close-out:
+    - commit generated artifacts and close-out docs
+    - manual quality review completion for all generated markdown outputs.
 - 2026-02-15 — Task 13 completed with runtime-gated Hemma evidence on patched revision:
   - Main branch commit and push:
     - `6ee1a27` (`Enforce GPU runtime compliance gate and pin ROCm torch runtime`)

@@ -1,0 +1,16 @@
+{
+  "acceleration_used": "cpu",
+  "backend_profile": "pymupdf",
+  "backend_used": "pymupdf",
+  "document_slug": "meganno-a-human-llm-collaborative-annotation-system-530edb8d",
+  "error_code": null,
+  "job_id": "job_46258e3a941841b3bb034f7012",
+  "latency_seconds": 2.638564,
+  "output_markdown_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/pymupdf/meganno-a-human-llm-collaborative-annotation-system-530edb8d.md",
+  "output_metadata_path": "docs/reference/artifacts/task-12-scientific-corpus/evaluation/pymupdf/meganno-a-human-llm-collaborative-annotation-system-530edb8d.meta.json",
+  "retry_warnings_count": 0,
+  "source_file": "MEGAnno+- A Human-LLM Collaborative Annotation System.pdf",
+  "source_size_bytes": 831814,
+  "status": "succeeded",
+  "warnings": []
+}
