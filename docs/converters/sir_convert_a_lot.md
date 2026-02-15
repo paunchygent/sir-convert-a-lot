@@ -59,6 +59,12 @@ Deterministic validation behavior:
 For GPU-governed Docling execution, runtime now fails closed when a usable GPU runtime
 is unavailable for the backend.
 
+Docling is GPU-only by invariant in all paths:
+
+- service runtime execution,
+- direct backend execution,
+- tests and harnesses.
+
 Deterministic failure path:
 
 - `503 gpu_not_available`

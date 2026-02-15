@@ -1,5 +1,36 @@
 # Session Handoff
 
+## 2026-02-15: Task 14 Completed (Strict Global Docling GPU-Only Invariant)
+
+### Completed
+
+- Closed Task 14:
+  - `docs/backlog/tasks/task-14-enforce-global-docling-gpu-only-invariant-and-remove-cpu-execution-paths.md`
+- Enforced Docling GPU-only acceleration in backend:
+  - `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
+  - `_resolve_acceleration` now requires probe runtime in `{"rocm","cuda"}` and never returns CPU.
+- Updated docs:
+  - `docs/converters/sir_convert_a_lot.md`
+  - `docs/converters/pdf_to_md_service_api_v1.md`
+  - `docs/backlog/current.md`
+- Updated tests to remove Docling CPU assumptions and keep deterministic behavior:
+  - `tests/sir_convert_a_lot/test_docling_backend.py`
+  - `tests/sir_convert_a_lot/test_api_contract_v1.py`
+  - `tests/sir_convert_a_lot/test_integration_adapter_conformance.py`
+  - `tests/sir_convert_a_lot/test_runtime_engine_gpu_policy.py`
+  - `tests/sir_convert_a_lot/test_benchmark_gpu_governance.py`
+  - `tests/sir_convert_a_lot/pdf_fixtures.py`
+
+### Validation Evidence (local)
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; 84 passed, 7 skipped)
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
 ## 2026-02-15: Task 12 In Progress (Scientific Corpus Evidence Run Executed)
 
 ### Completed This Slice

@@ -31,7 +31,7 @@ from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
 from scripts.sir_convert_a_lot.interfaces.http_client import ClientError, SirConvertALotClient
 from scripts.sir_convert_a_lot.models import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
-from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf
+from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf, docling_cuda_available
 
 
 def _write_pdf(path: Path, label: str) -> None:
@@ -162,6 +162,10 @@ def test_adapter_propagates_validation_error_without_remap(tmp_path: Path) -> No
     assert exc_info.value.status_code == 415
 
 
+@pytest.mark.skipif(
+    not docling_cuda_available(),
+    reason="Docling integration conversion tests require a GPU runtime.",
+)
 def test_adapter_timeout_error_is_not_consumer_remapped(tmp_path: Path) -> None:
     app = create_app(
         _conversion_runtime_config(
@@ -189,6 +193,10 @@ def test_adapter_timeout_error_is_not_consumer_remapped(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("profile", [ConsumerProfile.HULEDU, ConsumerProfile.SKRIPTOTEKET])
+@pytest.mark.skipif(
+    not docling_cuda_available(),
+    reason="Docling integration conversion tests require a GPU runtime.",
+)
 def test_adapter_integration_smoke_submit_poll_fetch(
     profile: ConsumerProfile, tmp_path: Path
 ) -> None:

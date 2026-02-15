@@ -25,15 +25,21 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
 from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
 
 
-def _job_spec(filename: str, acceleration_policy: str) -> JobSpec:
+def _job_spec(
+    filename: str,
+    acceleration_policy: str,
+    *,
+    backend_strategy: str = "auto",
+    ocr_mode: str = "auto",
+) -> JobSpec:
     return JobSpec.model_validate(
         {
             "api_version": "v1",
             "source": {"kind": "upload", "filename": filename},
             "conversion": {
                 "output_format": "md",
-                "backend_strategy": "auto",
-                "ocr_mode": "auto",
+                "backend_strategy": backend_strategy,
+                "ocr_mode": ocr_mode,
                 "table_mode": "fast",
                 "normalize": "standard",
             },
@@ -78,7 +84,12 @@ def test_test_only_cpu_unlock_path_sets_cpu_acceleration(tmp_path: Path) -> None
         )
     )
 
-    spec = _job_spec("cpu-mode.pdf", "cpu_only")
+    spec = _job_spec(
+        "cpu-mode.pdf",
+        "cpu_only",
+        backend_strategy="pymupdf",
+        ocr_mode="off",
+    )
     job = runtime.create_job(
         spec=spec,
         upload_bytes=fixture_pdf_bytes("paper_gamma.pdf"),
@@ -92,3 +103,4 @@ def test_test_only_cpu_unlock_path_sets_cpu_acceleration(tmp_path: Path) -> None
     stored = runtime.get_job(job.job_id)
     assert stored is not None
     assert stored.acceleration_used == "cpu"
+    assert stored.backend_used == "pymupdf"

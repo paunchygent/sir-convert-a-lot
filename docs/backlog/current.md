@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md
   - docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md
   - docs/backlog/tasks/task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification.md
+  - docs/backlog/tasks/task-14-enforce-global-docling-gpu-only-invariant-and-remove-cpu-execution-paths.md
 labels:
   - session-log
   - active-work
@@ -27,9 +28,23 @@ Active focus is Story 02-01 execution:
 - Task 11 is completed (PyMuPDF backend + deterministic compatibility governance).
 - Task 12 is in progress (scientific-paper workload evidence harness + Hemma report).
 - Task 13 is completed (GPU runtime compliance gate + ROCm verification/remediation).
+- Task 14 is completed (strict global Docling GPU-only invariant enforcement).
 
 ## Worklog
 
+- 2026-02-15 — Task 14 activated for strict global Docling GPU-only invariant:
+  - Created and moved to `in_progress`:
+    - `docs/backlog/tasks/task-14-enforce-global-docling-gpu-only-invariant-and-remove-cpu-execution-paths.md`
+  - Locked scope:
+    - remove all successful Docling CPU execution paths (service + direct backend + tests),
+    - preserve deterministic `503 gpu_not_available` behavior when runtime probe fails.
+- 2026-02-15 — Task 14 completed:
+  - `DoclingConversionBackend` now rejects CPU execution unconditionally and requires a
+    usable ROCm/CUDA probe result.
+  - Added regression coverage for strict invariant (`gpu_available=False` still fail-closed or
+    reports `acceleration_used="cuda"` when runtime is available).
+  - Updated API/integration benchmark tests to remove Docling CPU assumptions and
+    mark real Docling success-path tests as GPU-runtime-required.
 - 2026-02-15 — Task 12 benchmark evidence run executed after Task 13 runtime gate close-out:
   - Hemma services confirmed on `127.0.0.1:28085` (prod-lock) and `127.0.0.1:28086` (eval).
   - Tunnel flow validated for both lanes (`/healthz` pass on local forwarded ports).

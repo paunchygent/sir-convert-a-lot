@@ -24,13 +24,13 @@ from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     _DoclingAttempt,
 )
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
-from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
+from tests.sir_convert_a_lot.pdf_fixtures import docling_cuda_available, fixture_pdf_bytes
 
 
 def _request(
     *,
     ocr_mode: OcrMode = OcrMode.AUTO,
-    gpu_available: bool = False,
+    gpu_available: bool = True,
     table_mode: TableMode = TableMode.FAST,
 ) -> ConversionRequest:
     return ConversionRequest(
@@ -43,12 +43,33 @@ def _request(
     )
 
 
+@pytest.fixture(autouse=True)
+def _probe_gpu_available(monkeypatch: pytest.MonkeyPatch) -> None:
+    probe = GpuRuntimeProbeResult(
+        runtime_kind="rocm",
+        torch_version="2.10.0+rocm7.1",
+        hip_version="7.1.25424",
+        cuda_version=None,
+        is_available=True,
+        device_count=1,
+        device_name="AMD Radeon AI PRO R9700",
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.docling_backend.probe_torch_gpu_runtime",
+        lambda: probe,
+    )
+
+
+@pytest.mark.skipif(
+    not docling_cuda_available(),
+    reason="Docling real-conversion tests require a GPU runtime.",
+)
 def test_docling_backend_real_fixture_reports_truthful_metadata() -> None:
     backend = DoclingConversionBackend()
-    result = backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=False))
+    result = backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=True))
 
     assert result.backend_used == "docling"
-    assert result.acceleration_used == "cpu"
+    assert result.acceleration_used == "cuda"
     assert result.ocr_enabled is False
     assert isinstance(result.markdown_content, str)
     assert result.markdown_content.strip() != ""
@@ -77,13 +98,13 @@ def test_auto_mode_retries_when_first_pass_is_sparse(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
-    result = backend.convert(_request(ocr_mode=OcrMode.AUTO, gpu_available=False))
+    result = backend.convert(_request(ocr_mode=OcrMode.AUTO, gpu_available=True))
 
     assert calls == [(False, False), (True, True)]
     assert result.ocr_enabled is True
     assert "docling_auto_ocr_retry_applied" in result.warnings
     assert "Recovered text after OCR retry." in result.markdown_content
-    assert result.acceleration_used == "cpu"
+    assert result.acceleration_used == "cuda"
 
 
 def test_auto_mode_skips_retry_when_dense_and_confident(monkeypatch) -> None:
@@ -176,7 +197,7 @@ def test_auto_mode_retries_when_low_confidence_even_if_dense(monkeypatch) -> Non
     assert "docling_auto_ocr_retry_applied" in result.warnings
 
 
-def test_gpu_requested_fails_closed_when_runtime_unavailable(monkeypatch) -> None:
+def test_gpu_runtime_unavailable_fails_closed_even_when_gpu_flag_false(monkeypatch) -> None:
     backend = DoclingConversionBackend()
     probe = GpuRuntimeProbeResult(
         runtime_kind="none",
@@ -193,7 +214,30 @@ def test_gpu_requested_fails_closed_when_runtime_unavailable(monkeypatch) -> Non
     )
 
     with pytest.raises(BackendGpuUnavailableError):
-        backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=True))
+        backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=False))
+
+
+def test_gpu_flag_false_still_reports_cuda_when_runtime_available(monkeypatch) -> None:
+    backend = DoclingConversionBackend()
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+        formula_enrichment: bool,
+    ) -> _DoclingAttempt:
+        del request, ocr_enabled, force_full_page_ocr, acceleration_device, formula_enrichment
+        return _DoclingAttempt(
+            markdown_content="ok",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+    result = backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=False))
+    assert result.acceleration_used == "cuda"
 
 
 def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
@@ -220,7 +264,7 @@ def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
     result = backend.convert(
         _request(
             ocr_mode=OcrMode.OFF,
-            gpu_available=False,
+            gpu_available=True,
             table_mode=TableMode.ACCURATE,
         )
     )
@@ -258,7 +302,7 @@ def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> 
     result = backend.convert(
         _request(
             ocr_mode=OcrMode.OFF,
-            gpu_available=False,
+            gpu_available=True,
             table_mode=TableMode.ACCURATE,
         )
     )
@@ -268,6 +312,10 @@ def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> 
     assert result.warnings == ["docling_formula_enrichment_unavailable_fallback"]
 
 
+@pytest.mark.skipif(
+    not docling_cuda_available(),
+    reason="Docling real-conversion tests require a GPU runtime.",
+)
 def test_invalid_pdf_raises_backend_input_error() -> None:
     backend = DoclingConversionBackend()
     request = ConversionRequest(
@@ -276,7 +324,7 @@ def test_invalid_pdf_raises_backend_input_error() -> None:
         backend_strategy=BackendStrategy.DOCLING,
         ocr_mode=OcrMode.OFF,
         table_mode=TableMode.FAST,
-        gpu_available=False,
+        gpu_available=True,
     )
 
     with pytest.raises(BackendInputError):

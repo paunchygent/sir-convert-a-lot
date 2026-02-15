@@ -42,4 +42,4 @@ def docling_cuda_available() -> bool:
 
 def expected_acceleration_for_gpu_requested() -> str:
     """Return expected backend acceleration label when GPU is requested."""
-    return "cuda" if docling_cuda_available() else "cpu"
+    return "cuda"

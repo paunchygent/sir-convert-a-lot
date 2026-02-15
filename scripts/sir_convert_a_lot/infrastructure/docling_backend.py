@@ -255,9 +255,7 @@ class DoclingConversionBackend(ConversionBackend):
         return grade_value in _LOW_CONFIDENCE_GRADES
 
     def _resolve_acceleration(self, gpu_available: bool) -> tuple[AcceleratorDevice, str]:
-        if not gpu_available:
-            return AcceleratorDevice.CPU, "cpu"
-
+        del gpu_available
         probe = probe_torch_gpu_runtime()
         if probe.is_available and probe.runtime_kind in {"rocm", "cuda"}:
             return AcceleratorDevice.CUDA, "cuda"

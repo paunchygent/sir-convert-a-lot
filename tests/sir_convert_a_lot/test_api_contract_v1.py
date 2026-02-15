@@ -15,12 +15,14 @@ import json
 import time
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 from scripts.sir_convert_a_lot.models import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
 from tests.sir_convert_a_lot.pdf_fixtures import (
+    docling_cuda_available,
     expected_acceleration_for_gpu_requested,
     fixture_pdf_bytes,
 )
@@ -193,6 +195,10 @@ def test_create_job_idempotency_collision_returns_conflict(tmp_path: Path) -> No
     assert collision.json()["error"]["code"] == "idempotency_key_reused_with_different_payload"
 
 
+@pytest.mark.skipif(
+    not docling_cuda_available(),
+    reason="Docling success-path contract tests require a GPU runtime.",
+)
 def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) -> None:
     app = create_app(
         ServiceConfig(
@@ -240,6 +246,10 @@ def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) 
     assert "fixture line one" in markdown_content.lower()
 
 
+@pytest.mark.skipif(
+    not docling_cuda_available(),
+    reason="Docling success-path contract tests require a GPU runtime.",
+)
 def test_explicit_docling_backend_strategy_succeeds_and_reports_docling(tmp_path: Path) -> None:
     app = create_app(
         ServiceConfig(

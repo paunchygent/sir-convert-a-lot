@@ -50,13 +50,14 @@ def test_run_benchmark_writes_expected_json_payload(tmp_path: Path) -> None:
 
     summary = payload["summary"]
     assert summary["total_jobs"] == 3
-    assert summary["succeeded_jobs"] == 3
-    assert summary["failed_jobs"] == 0
-    assert summary["success_rate"] == 1.0
+    assert summary["succeeded_jobs"] == 0
+    assert summary["failed_jobs"] == 3
+    assert summary["success_rate"] == 0.0
 
     jobs = payload["jobs"]
     assert [job["source_file"] for job in jobs] == ["a.pdf", "b.pdf", "c.pdf"]
-    assert all(job["acceleration_used"] == "cpu" for job in jobs)
+    assert all(job["acceleration_used"] is None for job in jobs)
+    assert all(job["error_code"] is not None for job in jobs)
 
     latency = summary["latency_seconds"]
     assert set(latency.keys()) == {"min", "mean", "p50", "p95", "max"}

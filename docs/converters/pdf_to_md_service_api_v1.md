@@ -180,6 +180,8 @@ Server policy constraints (Phase 0 lock):
   - when GPU policy is requested but backend runtime probe is unavailable,
     request fails with deterministic `503 gpu_not_available` details:
     `{"reason":"backend_gpu_runtime_unavailable","backend":"docling","runtime_kind":"...","hip_version":"...","cuda_version":"..."}`
+- Docling CPU execution is unsupported by invariant (service and direct backend paths).
+  If a usable ROCm/CUDA runtime is unavailable, Docling conversion must fail closed.
 
 ### JobRecord (status payload)
 
