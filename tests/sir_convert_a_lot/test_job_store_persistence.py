@@ -242,3 +242,46 @@ def test_terminal_overwrite_is_rejected_and_artifact_kept(tmp_path: Path) -> Non
     assert persisted is not None
     assert persisted.status == JobStatus.SUCCEEDED
     assert persisted.artifact_path.read_bytes() == b"first artifact"
+
+
+def test_touch_heartbeat_only_updates_running_jobs(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    runtime = ServiceRuntime(_runtime_config(data_root))
+    job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("heartbeat"), "paper.pdf")
+
+    assert runtime.job_store.touch_heartbeat(job.job_id) is False
+    assert runtime.job_store.claim_queued_job(job.job_id) is True
+
+    running_before = runtime.get_job(job.job_id)
+    assert running_before is not None
+    assert running_before.last_heartbeat_at is not None
+
+    assert runtime.job_store.touch_heartbeat(job.job_id) is True
+    running_after = runtime.get_job(job.job_id)
+    assert running_after is not None
+    assert running_after.last_heartbeat_at is not None
+    assert running_after.last_heartbeat_at >= running_before.last_heartbeat_at
+
+
+def test_mark_succeeded_persists_phase_timings(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    runtime = ServiceRuntime(_runtime_config(data_root))
+    job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("timings"), "paper.pdf")
+
+    assert runtime.job_store.claim_queued_job(job.job_id) is True
+    runtime.job_store.mark_succeeded(
+        job.job_id,
+        markdown_bytes=b"artifact",
+        backend_used="docling",
+        acceleration_used="cuda",
+        ocr_enabled=False,
+        options_fingerprint="sha256:timing",
+        warnings=[],
+        phase_timings_ms={"backend_convert_ms": 123, "normalize_ms": 2},
+    )
+
+    persisted = runtime.get_job(job.job_id)
+    assert persisted is not None
+    assert persisted.phase_timings_ms["backend_convert_ms"] == 123
+    assert persisted.phase_timings_ms["normalize_ms"] == 2
+    assert persisted.phase_timings_ms["persist_ms"] >= 0

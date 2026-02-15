@@ -35,6 +35,9 @@ class StoredJobRecord:
     progress_stage: str
     pages_total: int | None
     pages_processed: int | None
+    last_heartbeat_at: datetime | None
+    current_phase_started_at: datetime | None
+    phase_timings_ms: dict[str, int]
     warnings: list[str]
     artifact_path: Path
     upload_path: Path

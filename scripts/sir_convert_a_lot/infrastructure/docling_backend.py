@@ -12,6 +12,7 @@ Relationships:
 from __future__ import annotations
 
 import threading
+import time
 import warnings
 from dataclasses import dataclass
 from io import BytesIO
@@ -96,34 +97,38 @@ class DoclingConversionBackend(ConversionBackend):
             raise ValueError(f"unsupported backend for docling adapter: {request.backend_strategy}")
 
         warnings: list[str] = []
+        phase_timings_ms: dict[str, int] = {}
         acceleration_device, acceleration_used = self._resolve_acceleration(request.gpu_available)
 
         if request.ocr_mode == OcrMode.OFF:
-            attempt, attempt_warnings = self._convert_once_guarded_formula(
+            attempt, attempt_warnings, attempt_timings = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=False,
                 force_full_page_ocr=False,
                 acceleration_device=acceleration_device,
             )
             warnings.extend(attempt_warnings)
+            phase_timings_ms.update(attempt_timings)
             ocr_enabled = False
         elif request.ocr_mode == OcrMode.FORCE:
-            attempt, attempt_warnings = self._convert_once_guarded_formula(
+            attempt, attempt_warnings, attempt_timings = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=True,
                 force_full_page_ocr=True,
                 acceleration_device=acceleration_device,
             )
             warnings.extend(attempt_warnings)
+            phase_timings_ms.update(attempt_timings)
             ocr_enabled = True
         else:
-            first, first_warnings = self._convert_once_guarded_formula(
+            first, first_warnings, first_timings = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=False,
                 force_full_page_ocr=False,
                 acceleration_device=acceleration_device,
             )
             warnings.extend(first_warnings)
+            phase_timings_ms = self._merge_phase_timings(phase_timings_ms, first_timings)
             stripped = first.markdown_content.strip()
             chars_per_page = len(stripped) / max(1, first.page_count)
             needs_ocr_retry = (
@@ -132,7 +137,7 @@ class DoclingConversionBackend(ConversionBackend):
                 or first.low_confidence
             )
             if needs_ocr_retry:
-                attempt, retry_warnings = self._convert_once_guarded_formula(
+                attempt, retry_warnings, retry_timings = self._convert_once_guarded_formula(
                     request,
                     ocr_enabled=True,
                     force_full_page_ocr=True,
@@ -140,6 +145,7 @@ class DoclingConversionBackend(ConversionBackend):
                 )
                 warnings.extend(retry_warnings)
                 warnings.append("docling_auto_ocr_retry_applied")
+                phase_timings_ms = self._merge_phase_timings(phase_timings_ms, retry_timings)
                 ocr_enabled = True
             else:
                 attempt = first
@@ -151,6 +157,7 @@ class DoclingConversionBackend(ConversionBackend):
             acceleration_used=acceleration_used,
             ocr_enabled=ocr_enabled,
             warnings=warnings,
+            phase_timings_ms=phase_timings_ms,
         )
 
     def _convert_once_guarded_formula(
@@ -160,8 +167,9 @@ class DoclingConversionBackend(ConversionBackend):
         ocr_enabled: bool,
         force_full_page_ocr: bool,
         acceleration_device: AcceleratorDevice,
-    ) -> tuple[_DoclingAttempt, list[str]]:
+    ) -> tuple[_DoclingAttempt, list[str], dict[str, int]]:
         formula_enrichment = request.table_mode == TableMode.ACCURATE
+        formula_enrichment_ms = 0
         if not formula_enrichment:
             return (
                 self._convert_once(
@@ -173,18 +181,20 @@ class DoclingConversionBackend(ConversionBackend):
                     formula_preset=_FORMULA_PRIMARY_PRESET,
                 ),
                 [],
+                {},
             )
         warnings: list[str] = []
         primary_error: BackendExecutionError | None = None
         try:
-            primary_attempt = self._convert_once(
-                request,
+            primary_attempt, primary_timing_ms = self._timed_convert_once(
+                request=request,
                 ocr_enabled=ocr_enabled,
                 force_full_page_ocr=force_full_page_ocr,
                 acceleration_device=acceleration_device,
                 formula_enrichment=True,
                 formula_preset=_FORMULA_PRIMARY_PRESET,
             )
+            formula_enrichment_ms += primary_timing_ms
         except BackendExecutionError as exc:
             if not self._is_formula_runtime_unavailable(exc):
                 raise
@@ -198,22 +208,24 @@ class DoclingConversionBackend(ConversionBackend):
         )
         if needs_fallback_attempt:
             try:
-                fallback_attempt = self._convert_once(
-                    request,
+                fallback_attempt, fallback_timing_ms = self._timed_convert_once(
+                    request=request,
                     ocr_enabled=ocr_enabled,
                     force_full_page_ocr=force_full_page_ocr,
                     acceleration_device=acceleration_device,
                     formula_enrichment=True,
                     formula_preset=_FORMULA_FALLBACK_PRESET,
                 )
+                formula_enrichment_ms += fallback_timing_ms
             except BackendExecutionError as exc:
                 if not self._is_formula_runtime_unavailable(exc):
                     raise
                 fallback_error = exc
+        timings = {"formula_enrichment_ms": formula_enrichment_ms}
 
         if primary_attempt is None and fallback_attempt is not None:
             warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
-            return fallback_attempt, warnings
+            return fallback_attempt, warnings, timings
 
         if primary_attempt is not None and fallback_attempt is not None:
             primary_placeholder_count = self._formula_placeholder_count(
@@ -224,11 +236,11 @@ class DoclingConversionBackend(ConversionBackend):
             )
             if fallback_placeholder_count < primary_placeholder_count:
                 warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
-                return fallback_attempt, warnings
-            return primary_attempt, warnings
+                return fallback_attempt, warnings, timings
+            return primary_attempt, warnings, timings
 
         if primary_attempt is not None:
-            return primary_attempt, warnings
+            return primary_attempt, warnings, timings
 
         if primary_error is not None or fallback_error is not None:
             return (
@@ -241,11 +253,34 @@ class DoclingConversionBackend(ConversionBackend):
                     formula_preset=_FORMULA_PRIMARY_PRESET,
                 ),
                 [_DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING],
+                timings,
             )
 
         raise BackendExecutionError(
             "Docling formula enrichment failed without runtime diagnostics."
         )
+
+    def _timed_convert_once(
+        self,
+        *,
+        request: ConversionRequest,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device: AcceleratorDevice,
+        formula_enrichment: bool,
+        formula_preset: str,
+    ) -> tuple[_DoclingAttempt, int]:
+        start = time.perf_counter()
+        attempt = self._convert_once(
+            request,
+            ocr_enabled=ocr_enabled,
+            force_full_page_ocr=force_full_page_ocr,
+            acceleration_device=acceleration_device,
+            formula_enrichment=formula_enrichment,
+            formula_preset=formula_preset,
+        )
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        return attempt, max(0, elapsed_ms)
 
     def _is_formula_runtime_unavailable(self, error: BackendExecutionError) -> bool:
         message = str(error).lower()
@@ -316,6 +351,16 @@ class DoclingConversionBackend(ConversionBackend):
         if probe.is_available and probe.runtime_kind in {"rocm", "cuda"}:
             return AcceleratorDevice.CUDA, "cuda"
         raise BackendGpuUnavailableError(backend="docling", probe=probe)
+
+    def _merge_phase_timings(
+        self,
+        current: dict[str, int],
+        next_timings: dict[str, int],
+    ) -> dict[str, int]:
+        merged = dict(current)
+        for key, value in next_timings.items():
+            merged[key] = merged.get(key, 0) + value
+        return merged
 
     def _get_converter(self, key: _ConverterKey) -> DocumentConverter:
         cache = self._converter_cache()

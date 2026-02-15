@@ -39,6 +39,7 @@ class ConversionResultData:
     acceleration_used: str
     ocr_enabled: bool
     warnings: list[str] = field(default_factory=list)
+    phase_timings_ms: dict[str, int] = field(default_factory=dict)
 
 
 class ConversionBackend(Protocol):

@@ -318,15 +318,15 @@ def test_cross_runtime_same_job_only_one_execution_owner(monkeypatch, tmp_path: 
         options_fingerprint="sha256:test",
     )
 
-    def _execute_a(_job) -> tuple[str, ConversionMetadata, list[str]]:
+    def _execute_a(_job) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
         count_a["value"] += 1
         time.sleep(0.05)
-        return ("runtime-a", metadata, [])
+        return ("runtime-a", metadata, [], {})
 
-    def _execute_b(_job) -> tuple[str, ConversionMetadata, list[str]]:
+    def _execute_b(_job) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
         count_b["value"] += 1
         time.sleep(0.05)
-        return ("runtime-b", metadata, [])
+        return ("runtime-b", metadata, [], {})
 
     monkeypatch.setattr(runtime_a, "_execute_conversion", _execute_a)
     monkeypatch.setattr(runtime_b, "_execute_conversion", _execute_b)
@@ -337,3 +337,63 @@ def test_cross_runtime_same_job_only_one_execution_owner(monkeypatch, tmp_path: 
     status = _wait_for_terminal(runtime_a, job.job_id)
     assert status == JobStatus.SUCCEEDED
     assert count_a["value"] + count_b["value"] == 1
+
+
+def test_runtime_emits_heartbeat_and_phase_timings(monkeypatch, tmp_path: Path) -> None:
+    runtime = ServiceRuntime(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "runtime_data",
+            gpu_available=False,
+            allow_cpu_only=True,
+            processing_delay_seconds=0.01,
+            heartbeat_interval_seconds=0.02,
+            enable_supervisor=False,
+        )
+    )
+    job = runtime.create_job(
+        spec=_job_spec("paper.pdf", backend_strategy=BackendStrategy.PYMUPDF),
+        upload_bytes=fixture_pdf_bytes("paper_alpha.pdf"),
+        source_filename="paper.pdf",
+    )
+
+    metadata = ConversionMetadata(
+        backend_used="pymupdf",
+        acceleration_used="cpu",
+        ocr_enabled=False,
+        table_mode=job.spec.conversion.table_mode,
+        options_fingerprint="sha256:test",
+    )
+    heartbeat_update_count = 0
+    original_touch_heartbeat = runtime.job_store.touch_heartbeat
+
+    def _slow_execute(_job) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
+        time.sleep(0.3)
+        return (
+            "# converted",
+            metadata,
+            [],
+            {"backend_convert_ms": 300, "normalize_ms": 1},
+        )
+
+    def _count_touch(job_id: str) -> bool:
+        nonlocal heartbeat_update_count
+        updated = original_touch_heartbeat(job_id)
+        if updated:
+            heartbeat_update_count += 1
+        return updated
+
+    monkeypatch.setattr(runtime.job_store, "touch_heartbeat", _count_touch)
+    monkeypatch.setattr(runtime, "_execute_conversion", _slow_execute)
+
+    runtime.run_job_async(job.job_id)
+
+    terminal_status = _wait_for_terminal(runtime, job.job_id)
+    assert terminal_status == JobStatus.SUCCEEDED
+    assert heartbeat_update_count >= 2
+
+    completed = runtime.get_job(job.job_id)
+    assert completed is not None
+    assert completed.phase_timings_ms["backend_convert_ms"] >= 300
+    assert completed.phase_timings_ms["normalize_ms"] >= 1
+    assert completed.phase_timings_ms["persist_ms"] >= 0

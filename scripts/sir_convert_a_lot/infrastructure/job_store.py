@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import fcntl
 import hashlib
+import time
 from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
@@ -120,6 +121,48 @@ class JobStore:
                 actual_status=actual_status,
             )
 
+    def _ensure_diagnostics(self, payload: dict[str, object]) -> dict[str, object]:
+        diagnostics = payload.get("diagnostics")
+        if not isinstance(diagnostics, dict):
+            diagnostics = {}
+            payload["diagnostics"] = diagnostics
+        return diagnostics
+
+    def _parse_phase_timings(
+        self,
+        diagnostics: dict[str, object],
+    ) -> dict[str, int]:
+        phase_timings_obj = diagnostics.get("phase_timings_ms")
+        if not isinstance(phase_timings_obj, dict):
+            return {}
+        parsed: dict[str, int] = {}
+        for key, value in phase_timings_obj.items():
+            if isinstance(key, str) and isinstance(value, int):
+                parsed[key] = value
+        return parsed
+
+    def _set_phase_timings(
+        self,
+        *,
+        diagnostics: dict[str, object],
+        phase_timings_ms: dict[str, int],
+    ) -> None:
+        diagnostics["phase_timings_ms"] = {
+            key: int(value) for key, value in phase_timings_ms.items()
+        }
+
+    def _merge_phase_timings(
+        self,
+        *,
+        diagnostics: dict[str, object],
+        additional_phase_timings_ms: dict[str, int],
+    ) -> dict[str, int]:
+        merged = self._parse_phase_timings(diagnostics)
+        for key, value in additional_phase_timings_ms.items():
+            merged[key] = merged.get(key, 0) + int(value)
+        self._set_phase_timings(diagnostics=diagnostics, phase_timings_ms=merged)
+        return merged
+
     def create_job(
         self,
         *,
@@ -164,6 +207,11 @@ class JobStore:
             },
             "result_metadata": None,
             "error": None,
+            "diagnostics": {
+                "last_heartbeat_at": dt_to_rfc3339(now),
+                "current_phase_started_at": dt_to_rfc3339(now),
+                "phase_timings_ms": {},
+            },
         }
         atomic_write_json(self._manifest_path(job_id), manifest)
 
@@ -224,6 +272,11 @@ class JobStore:
         pages_processed = progress.get("pages_processed")
         pages_total_val = pages_total if isinstance(pages_total, int) else None
         pages_processed_val = pages_processed if isinstance(pages_processed, int) else None
+        diagnostics = payload.get("diagnostics")
+        diagnostics_obj = diagnostics if isinstance(diagnostics, dict) else {}
+        last_heartbeat_at = dt_from_rfc3339(diagnostics_obj.get("last_heartbeat_at"))
+        current_phase_started_at = dt_from_rfc3339(diagnostics_obj.get("current_phase_started_at"))
+        phase_timings_ms = self._parse_phase_timings(diagnostics_obj)
 
         result_obj = payload.get("result_metadata")
         error_obj = payload.get("error")
@@ -287,6 +340,9 @@ class JobStore:
             progress_stage=stage,
             pages_total=pages_total_val,
             pages_processed=pages_processed_val,
+            last_heartbeat_at=last_heartbeat_at,
+            current_phase_started_at=current_phase_started_at,
+            phase_timings_ms=phase_timings_ms,
             warnings=warnings,
             upload_path=self._raw_path(job_id),
             artifact_path=self._artifact_path(job_id),
@@ -339,9 +395,36 @@ class JobStore:
                 timestamps = {}
                 payload["timestamps"] = timestamps
             timestamps["updated_at"] = dt_to_rfc3339(now)
+            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
+            diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
 
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
+
+    def touch_heartbeat(self, job_id: str) -> bool:
+        """Update heartbeat timestamp for running jobs; return False when not running."""
+        manifest_path = self._manifest_path(job_id)
+        with self._job_manifest_lock(job_id):
+            payload = self._read_manifest_locked(job_id)
+            status_obj = payload.get("status")
+            if not isinstance(status_obj, str):
+                raise ValueError(f"manifest missing status for job_id={job_id}")
+            if JobStatus(status_obj) != JobStatus.RUNNING:
+                return False
+
+            now = utc_now()
+            timestamps = payload.get("timestamps")
+            if not isinstance(timestamps, dict):
+                timestamps = {}
+                payload["timestamps"] = timestamps
+            timestamps["updated_at"] = dt_to_rfc3339(now)
+
+            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
+
+            atomic_write_json(manifest_path, payload)
+            return True
 
     def claim_queued_job(self, job_id: str) -> bool:
         """Atomically claim a queued job for execution ownership."""
@@ -367,6 +450,9 @@ class JobStore:
                 timestamps = {}
                 payload["timestamps"] = timestamps
             timestamps["updated_at"] = dt_to_rfc3339(now)
+            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
+            diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
 
             atomic_write_json(manifest_path, payload)
             return True
@@ -381,7 +467,11 @@ class JobStore:
         ocr_enabled: bool,
         options_fingerprint: str,
         warnings: list[str],
+        phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecord:
+        persist_started = utc_now()
+        persist_started_monotonic = time.perf_counter()
+
         manifest_path = self._manifest_path(job_id)
         with self._job_manifest_lock(job_id):
             payload = self._read_manifest_locked(job_id)
@@ -419,6 +509,21 @@ class JobStore:
                 },
                 "warnings": list(warnings),
             }
+            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
+            if phase_timings_ms is not None:
+                self._merge_phase_timings(
+                    diagnostics=diagnostics,
+                    additional_phase_timings_ms=phase_timings_ms,
+                )
+            persist_elapsed_ms = max(
+                0, int((time.perf_counter() - persist_started_monotonic) * 1000)
+            )
+            self._merge_phase_timings(
+                diagnostics=diagnostics,
+                additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
+            )
+            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
 
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
@@ -431,7 +536,11 @@ class JobStore:
         message: str,
         retryable: bool,
         details: dict[str, object] | None,
+        phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecord:
+        persist_started = utc_now()
+        persist_started_monotonic = time.perf_counter()
+
         manifest_path = self._manifest_path(job_id)
         with self._job_manifest_lock(job_id):
             payload = self._read_manifest_locked(job_id)
@@ -457,6 +566,21 @@ class JobStore:
                 "retryable": retryable,
                 "details": details,
             }
+            diagnostics = self._ensure_diagnostics(payload)
+            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
+            if phase_timings_ms is not None:
+                self._merge_phase_timings(
+                    diagnostics=diagnostics,
+                    additional_phase_timings_ms=phase_timings_ms,
+                )
+            persist_elapsed_ms = max(
+                0, int((time.perf_counter() - persist_started_monotonic) * 1000)
+            )
+            self._merge_phase_timings(
+                diagnostics=diagnostics,
+                additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
+            )
+            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
 
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)

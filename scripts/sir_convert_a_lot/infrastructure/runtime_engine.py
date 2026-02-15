@@ -87,6 +87,7 @@ class ServiceConfig:
     # Test-only override for explicit GPU fallback behavior checks.
     allow_cpu_fallback: bool = False
     processing_delay_seconds: float = 0.2
+    heartbeat_interval_seconds: float = 5.0
 
 
 @dataclass
@@ -116,6 +117,9 @@ class StoredJob:
     progress_stage: str
     pages_total: int | None = None
     pages_processed: int | None = None
+    last_heartbeat_at: datetime | None = None
+    current_phase_started_at: datetime | None = None
+    phase_timings_ms: dict[str, int] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     artifact_sha256: str | None = None
     artifact_size_bytes: int | None = None
@@ -216,6 +220,9 @@ class ServiceRuntime:
             progress_stage=record.progress_stage,
             pages_total=record.pages_total,
             pages_processed=record.pages_processed,
+            last_heartbeat_at=record.last_heartbeat_at,
+            current_phase_started_at=record.current_phase_started_at,
+            phase_timings_ms=dict(record.phase_timings_ms),
             warnings=list(record.warnings),
             artifact_sha256=record.artifact_sha256,
             artifact_size_bytes=record.artifact_size_bytes,
@@ -342,7 +349,9 @@ class ServiceRuntime:
                     },
                 )
 
-    def _execute_conversion(self, job: StoredJob) -> tuple[str, ConversionMetadata, list[str]]:
+    def _execute_conversion(
+        self, job: StoredJob
+    ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
         self.validate_backend_strategy(job.spec)
         self.validate_acceleration_policy(job.spec)
 
@@ -368,6 +377,9 @@ class ServiceRuntime:
             docling_backend=self.docling_backend,
             pymupdf_backend=self.pymupdf_backend,
         )
+        phase_timings_ms: dict[str, int] = {}
+
+        backend_started = time.perf_counter()
         try:
             backend_result = backend.convert(request)
         except BackendGpuUnavailableError as exc:
@@ -400,10 +412,22 @@ class ServiceRuntime:
                 message=f"Unexpected backend conversion failure: {exc}",
                 retryable=True,
             ) from exc
+        phase_timings_ms["backend_convert_ms"] = max(
+            0, int((time.perf_counter() - backend_started) * 1000)
+        )
+        for key, value in backend_result.phase_timings_ms.items():
+            if key in phase_timings_ms:
+                phase_timings_ms[key] += value
+            else:
+                phase_timings_ms[key] = value
 
+        normalize_started = time.perf_counter()
         markdown_content = normalize_markdown(
             backend_result.markdown_content,
             job.spec.conversion.normalize,
+        )
+        phase_timings_ms["normalize_ms"] = max(
+            0, int((time.perf_counter() - normalize_started) * 1000)
         )
         options_fingerprint = hashlib.sha256(
             json.dumps(
@@ -418,7 +442,24 @@ class ServiceRuntime:
             table_mode=job.spec.conversion.table_mode,
             options_fingerprint=f"sha256:{options_fingerprint}",
         )
-        return markdown_content, metadata, list(backend_result.warnings)
+        return markdown_content, metadata, list(backend_result.warnings), phase_timings_ms
+
+    def _start_conversion_heartbeat(self, job_id: str) -> tuple[threading.Event, threading.Thread]:
+        stop_event = threading.Event()
+
+        def _heartbeat_loop() -> None:
+            interval = max(0.01, self.config.heartbeat_interval_seconds)
+            while not stop_event.wait(interval):
+                try:
+                    updated = self.job_store.touch_heartbeat(job_id)
+                except (JobMissing, JobExpired):
+                    return
+                if not updated:
+                    return
+
+        heartbeat_thread = threading.Thread(target=_heartbeat_loop, daemon=True)
+        heartbeat_thread.start()
+        return stop_event, heartbeat_thread
 
     def run_job_async(self, job_id: str) -> None:
         """Run a conversion job asynchronously in a background thread."""
@@ -453,10 +494,16 @@ class ServiceRuntime:
             self._set_job_status(
                 job_id, JobStatus.RUNNING, "converting", pages_processed=1, pages_total=1
             )
+            self.job_store.touch_heartbeat(job_id)
+            heartbeat_stop, heartbeat_thread = self._start_conversion_heartbeat(job_id)
 
             try:
-                markdown_content, metadata, warnings = self._execute_conversion(job)
+                markdown_content, metadata, warnings, phase_timings_ms = self._execute_conversion(
+                    job
+                )
                 artifact_bytes = markdown_content.encode("utf-8")
+                heartbeat_stop.set()
+                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
                 self.job_store.mark_succeeded(
                     job_id,
                     markdown_bytes=artifact_bytes,
@@ -465,10 +512,13 @@ class ServiceRuntime:
                     ocr_enabled=metadata.ocr_enabled,
                     options_fingerprint=metadata.options_fingerprint,
                     warnings=warnings,
+                    phase_timings_ms=phase_timings_ms,
                 )
             except JobStateConflict:
                 return
             except ServiceError as exc:
+                heartbeat_stop.set()
+                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
                 try:
                     self.job_store.mark_failed(
                         job_id,
@@ -476,10 +526,13 @@ class ServiceRuntime:
                         message=exc.message,
                         retryable=exc.retryable,
                         details=exc.details,
+                        phase_timings_ms={},
                     )
                 except (JobMissing, JobExpired, JobStateConflict):
                     return
             except Exception as exc:  # pragma: no cover - defensive fallback
+                heartbeat_stop.set()
+                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
                 try:
                     self.job_store.mark_failed(
                         job_id,
@@ -487,6 +540,7 @@ class ServiceRuntime:
                         message=f"Unexpected conversion error: {exc}",
                         retryable=True,
                         details=None,
+                        phase_timings_ms={},
                     )
                 except (JobMissing, JobExpired, JobStateConflict):
                     return

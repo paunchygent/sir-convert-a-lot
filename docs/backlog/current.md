@@ -37,11 +37,16 @@ Active focus is Story 02-01 execution:
 - Task 15 is completed (output governance for benchmark/eval/runtime artifacts).
 - Task 16 is completed (canonical Hemma live-runner + shell guardrails).
 - Task 17 is completed (async dedupe guard + strict pagination cleanup).
-- Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes).
+- Task 18 is in progress (root-cause deterministic service execution + artifact integrity fixes + observability closure).
 - Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
 
 ## Worklog
 
+- 2026-02-15 — Task 18 reopened for observability closure:
+  - Added explicit scope for conversion heartbeat and phase timing telemetry so long-running jobs
+    can be classified deterministically as slow vs stalled.
+  - Operational closure from previous slice remains valid; this reopen is for missing root-cause
+    observability guarantees, not rollback.
 - 2026-02-15 — Task 18 completed with Hemma operational closure:
   - Removed import-time runtime side effects:
     - `scripts/sir_convert_a_lot/interfaces/http_api.py`

@@ -2,7 +2,7 @@
 id: task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity
 title: Root-Cause Fix Deterministic Service Execution and Artifact Integrity
 type: task
-status: completed
+status: in_progress
 priority: critical
 created: '2026-02-15'
 last_updated: '2026-02-15'
@@ -37,7 +37,8 @@ P0 service/runtime correctness:
 P1 deterministic evidence and observability:
 
 - harden live validation runner to require inline-result/artifact manifest consistency,
-- add bounded retry for transient protocol disconnects and deterministic fail behavior.
+- add bounded retry for transient protocol disconnects and deterministic fail behavior,
+- add conversion-phase heartbeat and timing observability to distinguish slow vs stalled jobs.
 
 Ops hardening:
 
@@ -54,6 +55,8 @@ Ops hardening:
 - [x] Live runner validates hash/size consistency for inline result vs manifest artifact
 - [x] Hemma verification checks include process freshness and data-root isolation
 - [x] Service `/healthz` exposes deterministic revision/start metadata for freshness checks
+- [ ] Runtime emits deterministic conversion heartbeat timestamps during `_execute_conversion`
+- [ ] Runtime persists per-job phase timing diagnostics for root-cause analysis
 
 ## Acceptance Criteria
 
@@ -63,6 +66,7 @@ Ops hardening:
 - [x] Live validation run fails if any job is not manifest-consistent
 - [x] Live validation/verify tooling fails when service revision != Hemma `HEAD`
 - [x] Existing runtime/API/job-store suites remain green with new determinism semantics
+- [ ] Long-running conversion can be classified deterministically as slow vs stalled from telemetry
 
 ## Implementation Plan
 
@@ -75,6 +79,11 @@ Ops hardening:
    revision parity checks against Hemma `HEAD`.
 1. Harden live validation runner acceptance rules to enforce manifest integrity invariants.
 1. Add focused race/import/integrity regression tests plus targeted existing-suite updates.
+1. Add runtime conversion heartbeat (`last_heartbeat_at`) and periodic progress update during
+   `_execute_conversion` path.
+1. Add conversion phase timing capture (backend call / formula enrichment / normalize / persist)
+   into durable job diagnostics.
+1. Add tests that assert heartbeat progression and diagnostic timing presence for long-running jobs.
 
 ## Validation Plan
 
@@ -88,10 +97,10 @@ Ops hardening:
 
 ## Checklist
 
-- [x] Implementation complete
-- [x] Validation complete (local)
+- [ ] Implementation complete
+- [ ] Validation complete (local)
 - [x] Docs updated
-- [x] Patched revision deployed on Hemma and `hemma-verify-gpu-runtime` re-run clean
+- [ ] Patched revision deployed on Hemma and `hemma-verify-gpu-runtime` re-run clean
 
 ## Validation Evidence
 
