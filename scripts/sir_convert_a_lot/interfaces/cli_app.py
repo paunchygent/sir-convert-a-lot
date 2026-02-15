@@ -33,16 +33,24 @@ def _discover_pdf_files(source: Path, recursive: bool) -> list[Path]:
     return sorted(path for path in source.glob(pattern) if path.is_file())
 
 
-def _default_job_spec(filename: str, acceleration_policy: str) -> dict[str, object]:
+def _default_job_spec(
+    *,
+    filename: str,
+    acceleration_policy: str,
+    backend_strategy: str,
+    ocr_mode: str,
+    table_mode: str,
+    normalize: str,
+) -> dict[str, object]:
     return {
         "api_version": "v1",
         "source": {"kind": "upload", "filename": filename},
         "conversion": {
             "output_format": "md",
-            "backend_strategy": "auto",
-            "ocr_mode": "auto",
-            "table_mode": "fast",
-            "normalize": "standard",
+            "backend_strategy": backend_strategy,
+            "ocr_mode": ocr_mode,
+            "table_mode": table_mode,
+            "normalize": normalize,
         },
         "execution": {
             "acceleration_policy": acceleration_policy,
@@ -96,6 +104,26 @@ def convert_command(
         "--acceleration-policy",
         help="Execution acceleration policy for submitted jobs.",
     ),
+    backend_strategy: str = typer.Option(
+        "auto",
+        "--backend-strategy",
+        help="Conversion backend strategy: auto, docling, or pymupdf.",
+    ),
+    ocr_mode: str = typer.Option(
+        "auto",
+        "--ocr-mode",
+        help="OCR mode: off, force, or auto.",
+    ),
+    table_mode: str = typer.Option(
+        "accurate",
+        "--table-mode",
+        help="Table extraction mode: fast or accurate.",
+    ),
+    normalize: str = typer.Option(
+        "strict",
+        "--normalize",
+        help="Markdown normalization mode: none, standard, or strict.",
+    ),
     manifest_name: str = typer.Option(
         "sir_convert_a_lot_manifest.json",
         "--manifest-name",
@@ -125,7 +153,14 @@ def convert_command(
     with SirConvertALotClient(base_url=service_url, api_key=resolved_api_key) as client:
         for pdf_path in source_files:
             relative_label = _relative_source_label(source, pdf_path)
-            job_spec = _default_job_spec(pdf_path.name, acceleration_policy=acceleration_policy)
+            job_spec = _default_job_spec(
+                filename=pdf_path.name,
+                acceleration_policy=acceleration_policy,
+                backend_strategy=backend_strategy,
+                ocr_mode=ocr_mode,
+                table_mode=table_mode,
+                normalize=normalize,
+            )
             idempotency_key = _idempotency_key_for_file(pdf_path, job_spec)
             correlation_id = (
                 f"corr_{hashlib.sha256(relative_label.encode('utf-8')).hexdigest()[:16]}"

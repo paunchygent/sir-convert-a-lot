@@ -126,6 +126,14 @@ Run conversion client:
 pdm run convert-a-lot convert ./pdfs --output-dir ./research
 ```
 
+Default CLI submission profile is production-quality:
+
+- `conversion.backend_strategy=auto`
+- `conversion.ocr_mode=auto`
+- `conversion.table_mode=accurate`
+- `conversion.normalize=strict`
+- `execution.acceleration_policy=gpu_required`
+
 Alias command (same behavior):
 
 ```bash
@@ -142,7 +150,12 @@ pdm run sir-convert-a-lot convert ./pdfs --output-dir ./research
 pdm run convert-a-lot convert ./folder_with_pdfs \
   --output-dir ./research \
   --service-url http://127.0.0.1:18085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
+  --backend-strategy auto \
+  --ocr-mode auto \
+  --table-mode accurate \
+  --normalize strict \
+  --acceleration-policy gpu_required
 ```
 
 ## Deterministic Manifest

@@ -61,6 +61,10 @@ pdm run benchmark:story-003b \
 | `--max-poll-seconds` | `120` | Max polling time per job |
 | `--recursive` / `--no-recursive` | `--recursive` | Recurse into subdirectories |
 | `--acceleration-policy` | `gpu_required` | `gpu_required`, `gpu_prefer`, or `cpu_only` |
+| `--backend-strategy` | `auto` | `auto`, `docling`, or `pymupdf` |
+| `--ocr-mode` | `auto` | `off`, `force`, or `auto` |
+| `--table-mode` | `accurate` | `fast` or `accurate` |
+| `--normalize` | `strict` | `none`, `standard`, or `strict` |
 | `--manifest-name` | `sir_convert_a_lot_manifest.json` | Output manifest filename |
 
 ## Manifest

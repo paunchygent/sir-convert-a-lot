@@ -42,6 +42,12 @@ Active focus is Story 02-01 execution:
 
 ## Worklog
 
+- 2026-02-15 — CLI production parity fix:
+  - `convert-a-lot` defaults now align with hardened service profile:
+    - `backend_strategy=auto`, `ocr_mode=auto`, `table_mode=accurate`,
+      `normalize=strict`, `acceleration_policy=gpu_required`.
+  - Added explicit CLI flags for all conversion profile fields so runs are reproducible.
+  - Added CLI tests asserting default profile and explicit override pass-through.
 - 2026-02-15 — Task 18 hardening follow-up completed (P0/P1/P2 + modular SRP split):
   - Fixed persistence timing correctness (`persist_ms` now measured after durable write commit).
   - Added API-visible diagnostics in job progress:

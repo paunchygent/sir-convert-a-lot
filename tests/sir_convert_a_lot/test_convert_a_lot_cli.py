@@ -92,6 +92,30 @@ class FakeTimeoutClient(FakeClient):
         )
 
 
+class CapturingClient(FakeClient):
+    """Test double that captures submitted job specifications."""
+
+    captured_specs: list[dict[str, object]] = []
+
+    def convert_pdf_to_markdown(
+        self,
+        *,
+        pdf_path: Path,
+        job_spec: dict[str, object],
+        idempotency_key: str,
+        wait_seconds: int,
+        max_poll_seconds: float,
+        correlation_id: str | None = None,
+    ) -> ConversionOutcome:
+        del idempotency_key, wait_seconds, max_poll_seconds, correlation_id
+        self.captured_specs.append(job_spec)
+        return ConversionOutcome(
+            job_id=f"job_ok_{pdf_path.stem}",
+            status=JobStatus.SUCCEEDED,
+            markdown_content=f"# Converted {pdf_path.name}\n",
+        )
+
+
 runner = CliRunner()
 
 
@@ -228,3 +252,83 @@ def test_convert_command_timeout_marks_job_running_without_cli_failure(
     assert by_source["paper_slow.pdf"]["job_id"] == "job_running_paper_slow"
     assert by_source["paper_slow.pdf"]["output_path"] is None
     assert by_source["paper_slow.pdf"]["error_code"] == "job_timeout"
+
+
+def test_convert_command_uses_hardened_defaults_for_job_spec(tmp_path: Path, monkeypatch) -> None:
+    source_file = tmp_path / "default_spec.pdf"
+    source_file.write_bytes(b"%PDF-1.4\n% default-spec\n%%EOF\n")
+    output_dir = tmp_path / "default_spec_out"
+
+    CapturingClient.captured_specs = []
+    monkeypatch.setattr(cli, "SirConvertALotClient", CapturingClient)
+    monkeypatch.setattr(cli_app, "SirConvertALotClient", CapturingClient)
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--api-key",
+            "dev-key",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert len(CapturingClient.captured_specs) == 1
+    spec = CapturingClient.captured_specs[0]
+    conversion = spec["conversion"]
+    execution = spec["execution"]
+    assert isinstance(conversion, dict)
+    assert isinstance(execution, dict)
+    assert conversion["backend_strategy"] == "auto"
+    assert conversion["ocr_mode"] == "auto"
+    assert conversion["table_mode"] == "accurate"
+    assert conversion["normalize"] == "strict"
+    assert execution["acceleration_policy"] == "gpu_required"
+
+
+def test_convert_command_allows_explicit_job_spec_flags(tmp_path: Path, monkeypatch) -> None:
+    source_file = tmp_path / "explicit_spec.pdf"
+    source_file.write_bytes(b"%PDF-1.4\n% explicit-spec\n%%EOF\n")
+    output_dir = tmp_path / "explicit_spec_out"
+
+    CapturingClient.captured_specs = []
+    monkeypatch.setattr(cli, "SirConvertALotClient", CapturingClient)
+    monkeypatch.setattr(cli_app, "SirConvertALotClient", CapturingClient)
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--api-key",
+            "dev-key",
+            "--backend-strategy",
+            "pymupdf",
+            "--ocr-mode",
+            "off",
+            "--table-mode",
+            "fast",
+            "--normalize",
+            "standard",
+            "--acceleration-policy",
+            "cpu_only",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert len(CapturingClient.captured_specs) == 1
+    spec = CapturingClient.captured_specs[0]
+    conversion = spec["conversion"]
+    execution = spec["execution"]
+    assert isinstance(conversion, dict)
+    assert isinstance(execution, dict)
+    assert conversion["backend_strategy"] == "pymupdf"
+    assert conversion["ocr_mode"] == "off"
+    assert conversion["table_mode"] == "fast"
+    assert conversion["normalize"] == "standard"
+    assert execution["acceleration_policy"] == "cpu_only"
