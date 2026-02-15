@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:f81a3cc4776c767ee755a6562491b990371a929e65574dfc5174aaf7954dac56"
+content_hash = "sha256:03cb98a185ed71e964f0c26ab33ff691255d283dc9ee2f60d1d7b69b9c310e22"
 
 [[metadata.targets]]
 requires_python = ">=3.11,<3.13"
@@ -822,6 +822,23 @@ dependencies = [
 files = [
     {file = "mdformat_frontmatter-2.0.10-py3-none-any.whl", hash = "sha256:c99f7c52de0403e39f48b6a1c2bb79a4c8ce69304a799ff0e403e3957aa3669b"},
     {file = "mdformat_frontmatter-2.0.10.tar.gz", hash = "sha256:decefcb4beb66cf111f17e8c0d82e60b208104c7922ec09564d05365db551bd8"},
+]
+
+[[package]]
+name = "mdformat-gfm"
+version = "1.0.0"
+requires_python = ">=3.10"
+summary = "Mdformat plugin for GitHub Flavored Markdown compatibility"
+groups = ["dev"]
+dependencies = [
+    "markdown-it-py",
+    "mdformat>=0.7.5",
+    "mdit-py-plugins>=0.2.0",
+    "wcwidth>=0.2.13",
+]
+files = [
+    {file = "mdformat_gfm-1.0.0-py3-none-any.whl", hash = "sha256:7305a50efd2a140d7c83505b58e3ac5df2b09e293f9bbe72f6c7bee8c678b005"},
+    {file = "mdformat_gfm-1.0.0.tar.gz", hash = "sha256:d1d49a409a6acb774ce7635c72d69178df7dce1dc8cdd10e19f78e8e57b72623"},
 ]
 
 [[package]]
@@ -2623,6 +2640,17 @@ dependencies = [
 files = [
     {file = "uvicorn-0.40.0-py3-none-any.whl", hash = "sha256:c6c8f55bc8bf13eb6fa9ff87ad62308bbbc33d0b67f84293151efe87e0d5f2ee"},
     {file = "uvicorn-0.40.0.tar.gz", hash = "sha256:839676675e87e73694518b5574fd0f24c9d97b46bea16df7b8c05ea1a51071ea"},
+]
+
+[[package]]
+name = "wcwidth"
+version = "0.6.0"
+requires_python = ">=3.8"
+summary = "Measures the displayed width of unicode strings in a terminal"
+groups = ["dev"]
+files = [
+    {file = "wcwidth-0.6.0-py3-none-any.whl", hash = "sha256:1a3a1e510b553315f8e146c54764f4fb6264ffad731b3d78088cdb1478ffbdad"},
+    {file = "wcwidth-0.6.0.tar.gz", hash = "sha256:cdc4e4262d6ef9a1a57e018384cbeb1208d8abbc64176027e2c2455c81313159"},
 ]
 
 [[package]]

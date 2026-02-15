@@ -60,6 +60,84 @@ adding brittle ad hoc replacements.
 - [ ] Regression tests cover hard excerpts and pass.
 - [ ] CLI run of hard corpus succeeds with reduced malformed output signatures.
 
+## Markdown Lint Normalization (Addendum 2026-02-15)
+
+### Problem Statement
+
+Converted markdown output triggers common linter complaints that reduce output
+quality and downstream tooling compatibility. These are deterministic issues that
+should be addressed in the `strict` normalization mode.
+
+### Research: Markdownlint Rules
+
+Reference: [davidanson/markdownlint](https://github.com/davidanson/markdownlint)
+
+| Rule | Name | Issue | Fix Strategy |
+| ---- | ---- | ----- | ------------ |
+| MD034 | no-bare-urls | Bare URLs not converted to links by some parsers | Wrap URLs in angle brackets `<https://...>` |
+| MD040 | fenced-code-language | Fenced code blocks without language specifier | Add default language identifier (e.g. `text`) |
+| MD004 | ul-style | Inconsistent unordered list markers (`*`, `+`, `-`) | Normalize to single marker (prefer `-`) |
+| MD041 | first-line-heading | First line should be top-level heading | Document-level concern, not line normalization |
+| MD060 | table-column-style | Inconsistent table pipe spacing | Normalize to compact style |
+
+### Research: Python Formatting Libraries
+
+**mdformat** (<https://github.com/hukkin/mdformat>):
+
+- CommonMark compliant markdown formatter with Python API
+- Plugin architecture: `mdformat-gfm` for GFM tables/autolinks
+- `mdformat.text(content, options={...}, extensions={...})` API
+- Handles: word wrap, list numbering, consistent formatting
+- Does NOT handle: MD034 bare URL wrapping, MD040 fence language defaults
+
+**Conclusion**: mdformat is already a project dependency but doesn't cover all lint
+rules. Empirical testing (2026-02-15) shows:
+
+- MD034 (bare URLs): NOT handled by mdformat
+- MD040 (fence language): NOT handled by mdformat
+- MD004 (list markers): Partially handled but inconsistent
+- MD060 (tables): NOT handled without `mdformat-gfm` extension
+
+### Implementation Decision
+
+1. **Add `mdformat-gfm` dependency** for GFM table formatting
+1. **Custom lint normalization module** for rules mdformat doesn't cover:
+   - `markdown_lint_normalizer.py` in `infrastructure/`
+   - State-machine approach respecting code fences and math blocks
+   - Each rule implemented as a discrete, testable function
+
+### Implementation Strategy
+
+1. **Dependency addition**:
+
+   - Add `mdformat-gfm>=0.4.1` to `pyproject.toml`
+   - Verify compatibility with existing `mdformat>=1.0.0`
+
+1. **Custom lint rule handlers**:
+
+   - MD034: Regex-based URL detection with state tracking to exclude:
+     - Code fences (track fence open/close state)
+     - Inline code spans (`` `...` ``)
+     - Existing markdown links (`[text](url)`)
+     - Already-wrapped URLs (`<url>`)
+   - MD040: Match bare fence openings (```` ^(\s*)(```|~~~)\s*$ ````) and append `text`
+   - MD004: Normalize `*`/`+` list markers to `-` (line-start only)
+   - MD060: Delegate to mdformat with GFM extension for table normalization
+
+1. **Testing requirements**:
+
+   - Unit tests for each lint rule with edge cases
+   - Integration tests with real converter output
+   - Regression tests for false-positive prevention (code blocks, links, etc.)
+
+### Risks and Mitigations
+
+- **False positives in code blocks**: Must exclude fenced code block content
+  from URL/list marker normalization
+- **Math content interference**: Must preserve math delimiters and content
+- **Performance**: mdformat parsing overhead; benchmark before adoption
+- **Link syntax preservation**: Must not double-wrap already-formatted links
+
 ## Checklist
 
 - [ ] Implementation complete

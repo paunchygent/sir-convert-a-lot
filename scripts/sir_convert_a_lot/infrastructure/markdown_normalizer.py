@@ -15,6 +15,9 @@ import re
 import textwrap
 
 from scripts.sir_convert_a_lot.domain.specs import NormalizeMode
+from scripts.sir_convert_a_lot.infrastructure.markdown_lint_normalizer import (
+    normalize_lint_rules,
+)
 
 _BLANKS_RE = re.compile(r"\n{3,}")
 _HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s")
@@ -48,7 +51,8 @@ def normalize_markdown(markdown_content: str, mode: NormalizeMode) -> str:
     if mode == NormalizeMode.STANDARD:
         return normalized
     if mode == NormalizeMode.STRICT:
-        return _strict_reflow(normalized)
+        reflowed = _strict_reflow(normalized)
+        return normalize_lint_rules(reflowed)
     return normalized
 
 

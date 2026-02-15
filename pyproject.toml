@@ -28,6 +28,7 @@ dev = [
     "types-pyyaml>=6.0.12.20250915",
     "mdformat>=1.0.0",
     "mdformat-frontmatter>=2.0.10",
+    "mdformat-gfm>=0.4.1",
 ]
 
 [tool.ruff]

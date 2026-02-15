@@ -20,8 +20,8 @@ from scripts.sir_convert_a_lot.domain.specs import (
     NormalizeMode,
     OcrMode,
     Priority,
-    SourceSpec,
     SourceKind,
+    SourceSpec,
     TableMode,
 )
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
