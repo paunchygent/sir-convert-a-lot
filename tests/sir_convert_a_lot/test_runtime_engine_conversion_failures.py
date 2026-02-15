@@ -11,6 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
+import threading
 import time
 from pathlib import Path
 
@@ -253,3 +254,36 @@ def test_backend_gpu_unavailable_maps_to_gpu_not_available(monkeypatch, tmp_path
         "hip_version": None,
         "cuda_version": "12.8",
     }
+
+
+def test_run_job_async_ignores_duplicate_active_job_id(monkeypatch, tmp_path: Path) -> None:
+    runtime = ServiceRuntime(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "runtime_data",
+            gpu_available=False,
+            allow_cpu_only=True,
+            processing_delay_seconds=0.01,
+        )
+    )
+    run_started = threading.Event()
+    release_run = threading.Event()
+    call_count = 0
+
+    def _fake_run_job(job_id: str) -> None:
+        nonlocal call_count
+        call_count += 1
+        run_started.set()
+        release_run.wait(timeout=2.0)
+        with runtime._lock:
+            runtime._active_job_ids.discard(job_id)
+
+    monkeypatch.setattr(runtime, "_run_job", _fake_run_job)
+
+    runtime.run_job_async("job_duplicate_check")
+    assert run_started.wait(timeout=1.0)
+    runtime.run_job_async("job_duplicate_check")
+    time.sleep(0.05)
+    release_run.set()
+
+    assert call_count == 1

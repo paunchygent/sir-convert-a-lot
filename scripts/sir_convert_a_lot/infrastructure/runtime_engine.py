@@ -422,6 +422,8 @@ class ServiceRuntime:
     def run_job_async(self, job_id: str) -> None:
         """Run a conversion job asynchronously in a background thread."""
         with self._lock:
+            if job_id in self._active_job_ids:
+                return
             self._active_job_ids.add(job_id)
         thread = threading.Thread(target=self._run_job, args=(job_id,), daemon=True)
         thread.start()

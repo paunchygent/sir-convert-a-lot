@@ -16,6 +16,8 @@ related:
   - docs/backlog/tasks/task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification.md
   - docs/backlog/tasks/task-14-enforce-global-docling-gpu-only-invariant-and-remove-cpu-execution-paths.md
   - docs/backlog/tasks/task-15-govern-benchmark-and-processing-outputs-outside-docs-reference.md
+  - docs/backlog/tasks/task-16-add-canonical-hemma-docling-gpu-live-test-runner-and-shell-usage-guardrails.md
+  - docs/backlog/tasks/task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup.md
 labels:
   - session-log
   - active-work
@@ -31,9 +33,23 @@ Active focus is Story 02-01 execution:
 - Task 13 is completed (GPU runtime compliance gate + ROCm verification/remediation).
 - Task 14 is completed (strict global Docling GPU-only invariant enforcement).
 - Task 15 is completed (output governance for benchmark/eval/runtime artifacts).
+- Task 16 is in progress (canonical Hemma live-runner + shell guardrails).
+- Task 17 is in progress (async dedupe guard + strict pagination cleanup).
 
 ## Worklog
 
+- 2026-02-15 — Task 17 moved to `in_progress`:
+  - Created:
+    - `docs/backlog/tasks/task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup.md`
+  - Scope locked:
+    - prevent duplicate async worker launch for identical active `job_id`,
+    - expand strict normalizer pagination cleanup to standalone 4-digit line-number runs.
+- 2026-02-15 — Task 16 moved to `in_progress`:
+  - Created:
+    - `docs/backlog/tasks/task-16-add-canonical-hemma-docling-gpu-live-test-runner-and-shell-usage-guardrails.md`
+  - Scope locked:
+    - add committed canonical live-runner command for real Hemma Docling+GPU tests,
+    - prohibit fragile multiline inline `run-hemma --shell` execution pattern in AGENTS.
 - 2026-02-15 — Task 15 completed:
   - Removed generated benchmark/test outputs from `docs/reference`.
   - Added programmatic guard:

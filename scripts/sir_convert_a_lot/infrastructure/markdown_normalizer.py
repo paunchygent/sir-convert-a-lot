@@ -27,7 +27,7 @@ _TABLE_SEPARATOR_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?
 _REFERENCE_DEF_RE = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*\S+")
 _FOOTNOTE_DEF_RE = re.compile(r"^\s{0,3}\[\^[^\]]+\]:\s*")
 _INDENTED_RE = re.compile(r"^( {2,}|\t)")
-_STANDALONE_PAGE_NUMBER_RE = re.compile(r"^\s*\d{2,3}\s*$")
+_STANDALONE_PAGE_NUMBER_RE = re.compile(r"^\s*\d{1,6}\s*$")
 _PAGINATION_NUMERIC_LINES_THRESHOLD = 20
 
 

@@ -136,6 +136,18 @@ def test_strict_mode_removes_long_standalone_page_number_blocks() -> None:
     assert "Next paragraph." in normalized
 
 
+def test_strict_mode_removes_long_standalone_four_digit_number_blocks() -> None:
+    number_block = "\n".join(f"{index}\n" for index in range(1001, 1036))
+    raw = f"Before paragraph.\n\n{number_block}\n\nAfter paragraph.\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "1001" not in normalized
+    assert "1035" not in normalized
+    assert "Before paragraph." in normalized
+    assert "After paragraph." in normalized
+
+
 def test_strict_mode_preserves_short_numeric_lines() -> None:
     raw = "1\n\n2\n\n3\n\nkeep this paragraph intact\n"
 

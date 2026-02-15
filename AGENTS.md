@@ -68,6 +68,14 @@ pdm run run-hemma -- <command> [args]
 pdm run run-hemma --shell "<command with operators>"
 ```
 
+Strict execution policy:
+
+- Default to argv mode: `pdm run run-hemma -- <command> [args]`.
+- Treat `--shell` as exception-only; use it only for short operator usage that cannot be expressed in argv mode.
+- For any non-trivial remote workflow (multi-step checks, probes, reports, loops, JSON parsing), commit a script in this repo and invoke that script via argv mode.
+- Never run inline heredoc Python/Bash payloads through `run-hemma --shell` for routine operations.
+- Never use `run-hemma --shell` as an ad hoc command transport layer when a committed script surface exists or should exist.
+
 Environment overrides:
 
 - `SIR_CONVERT_A_LOT_HEMMA_HOST`
@@ -148,6 +156,8 @@ Policy:
 - Do not create ad hoc converter scripts outside canonical service/CLI surfaces.
 - Do not bypass docs contract or task hierarchy.
 - Do not use `scp` for tracked repo code sync to Hemma (use `git pull` on host repo).
+- Do not execute multiline or heavily quoted payloads through `pdm run run-hemma --shell`; promote them to committed scripts.
+- Do not use raw `ssh hemma ...` for normal repo operations when `run-hemma` wrappers are available.
 
 ## Key Paths
 
