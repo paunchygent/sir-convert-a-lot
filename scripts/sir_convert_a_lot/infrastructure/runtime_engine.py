@@ -24,6 +24,8 @@ from uuid import uuid4
 
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import (
+    AccelerationPolicy,
+    BackendStrategy,
     JobSpec,
     JobStatus,
 )
@@ -38,10 +40,12 @@ from scripts.sir_convert_a_lot.infrastructure.backend_routing import (
 )
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
+    BackendGpuUnavailableError,
     BackendInputError,
     ConversionRequest,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
 from scripts.sir_convert_a_lot.infrastructure.job_store import (
     JobExpired,
@@ -84,7 +88,7 @@ class ServiceConfig:
     processing_delay_seconds: float = 0.2
 
 
-@dataclass(frozen=True)
+@dataclass
 class ServiceError(Exception):
     """Structured service exception converted to standard error envelopes."""
 
@@ -303,15 +307,39 @@ class ServiceRuntime:
             allow_cpu_only=self.config.allow_cpu_only,
             allow_cpu_fallback=self.config.allow_cpu_fallback,
         )
-        if violation is None:
-            return
-        raise ServiceError(
-            status_code=violation.status_code,
-            code=violation.code,
-            message=violation.message,
-            retryable=violation.retryable,
-            details=violation.details,
-        )
+        if violation is not None:
+            raise ServiceError(
+                status_code=violation.status_code,
+                code=violation.code,
+                message=violation.message,
+                retryable=violation.retryable,
+                details=violation.details,
+            )
+
+        if (
+            self.config.gpu_available
+            and spec.execution.acceleration_policy
+            in {AccelerationPolicy.GPU_REQUIRED, AccelerationPolicy.GPU_PREFER}
+            and spec.conversion.backend_strategy in {BackendStrategy.AUTO, BackendStrategy.DOCLING}
+        ):
+            probe = probe_torch_gpu_runtime()
+            if not (probe.is_available and probe.runtime_kind in {"rocm", "cuda"}):
+                raise ServiceError(
+                    status_code=503,
+                    code="gpu_not_available",
+                    message=(
+                        "GPU runtime is unavailable for the selected backend "
+                        "under GPU-required policy."
+                    ),
+                    retryable=True,
+                    details={
+                        "reason": "backend_gpu_runtime_unavailable",
+                        "backend": "docling",
+                        "runtime_kind": probe.runtime_kind,
+                        "hip_version": probe.hip_version,
+                        "cuda_version": probe.cuda_version,
+                    },
+                )
 
     def _execute_conversion(self, job: StoredJob) -> tuple[str, ConversionMetadata, list[str]]:
         self.validate_backend_strategy(job.spec)
@@ -341,6 +369,22 @@ class ServiceRuntime:
         )
         try:
             backend_result = backend.convert(request)
+        except BackendGpuUnavailableError as exc:
+            raise ServiceError(
+                status_code=503,
+                code="gpu_not_available",
+                message=(
+                    "GPU runtime is unavailable for the selected backend under GPU-required policy."
+                ),
+                retryable=True,
+                details={
+                    "reason": "backend_gpu_runtime_unavailable",
+                    "backend": "docling",
+                    "runtime_kind": exc.probe.runtime_kind,
+                    "hip_version": exc.probe.hip_version,
+                    "cuda_version": exc.probe.cuda_version,
+                },
+            ) from exc
         except BackendInputError as exc:
             raise ServiceError(
                 status_code=422,

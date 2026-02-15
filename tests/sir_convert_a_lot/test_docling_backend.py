@@ -14,6 +14,7 @@ import pytest
 
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
+    BackendGpuUnavailableError,
     BackendInputError,
     ConversionRequest,
 )
@@ -21,6 +22,7 @@ from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     DoclingConversionBackend,
     _DoclingAttempt,
 )
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
 
 
@@ -164,14 +166,24 @@ def test_auto_mode_retries_when_low_confidence_even_if_dense(monkeypatch) -> Non
     assert "docling_auto_ocr_retry_applied" in result.warnings
 
 
-def test_gpu_requested_falls_back_to_cpu_when_cuda_unavailable(monkeypatch) -> None:
+def test_gpu_requested_fails_closed_when_runtime_unavailable(monkeypatch) -> None:
     backend = DoclingConversionBackend()
+    probe = GpuRuntimeProbeResult(
+        runtime_kind="none",
+        torch_version="2.10.0+cu128",
+        hip_version=None,
+        cuda_version="12.8",
+        is_available=False,
+        device_count=0,
+        device_name=None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.docling_backend.probe_torch_gpu_runtime",
+        lambda: probe,
+    )
 
-    monkeypatch.setattr(backend, "_cuda_available", lambda: False)
-    result = backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=True))
-
-    assert result.acceleration_used == "cpu"
-    assert "docling_cuda_unavailable_fallback_cpu" in result.warnings
+    with pytest.raises(BackendGpuUnavailableError):
+        backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=True))
 
 
 def test_invalid_pdf_raises_backend_input_error() -> None:

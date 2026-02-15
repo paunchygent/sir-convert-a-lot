@@ -14,10 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmark_gpu_governance import run_benchmark
-from tests.sir_convert_a_lot.pdf_fixtures import (
-    copy_fixture_pdf,
-    expected_acceleration_for_gpu_requested,
-)
+from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf
 
 
 def _write_fixture(path: Path, label: str) -> None:
@@ -39,9 +36,9 @@ def test_run_benchmark_writes_expected_json_payload(tmp_path: Path) -> None:
         stage="local-test",
         acceleration_policy="gpu_required",
         api_key="benchmark-key",
-        gpu_available=True,
+        gpu_available=False,
         allow_cpu_only=False,
-        allow_cpu_fallback=False,
+        allow_cpu_fallback=True,
         processing_delay_seconds=0.01,
         max_poll_seconds=20.0,
         data_root=tmp_path / "runtime_data",
@@ -59,9 +56,7 @@ def test_run_benchmark_writes_expected_json_payload(tmp_path: Path) -> None:
 
     jobs = payload["jobs"]
     assert [job["source_file"] for job in jobs] == ["a.pdf", "b.pdf", "c.pdf"]
-    assert all(
-        job["acceleration_used"] == expected_acceleration_for_gpu_requested() for job in jobs
-    )
+    assert all(job["acceleration_used"] == "cpu" for job in jobs)
 
     latency = summary["latency_seconds"]
     assert set(latency.keys()) == {"min", "mean", "p50", "p95", "max"}

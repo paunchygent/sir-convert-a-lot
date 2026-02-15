@@ -284,6 +284,44 @@ def test_summary_metrics_shape_and_counts(tmp_path: Path) -> None:
     assert latency["min"] <= latency["p50"] <= latency["p90"] <= latency["p99"] <= latency["max"]
 
 
+def test_harness_records_gpu_runtime_unavailable_failures_deterministically(tmp_path: Path) -> None:
+    corpus_dir, filenames = _build_corpus(tmp_path)
+    scenario = _default_scenario(filenames)
+    for filename in filenames:
+        scenario[(DEFAULT_ACCEPTANCE_URL, "auto", filename)] = {
+            "status": "failed",
+            "backend_used": "docling",
+            "acceleration_used": "cuda",
+            "warnings": [],
+            "markdown_content": "",
+            "error_code": "gpu_not_available",
+        }
+    FakeScientificClient.scenario = scenario
+
+    payload = run_benchmark(
+        corpus_dir=corpus_dir,
+        acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
+        evaluation_service_url=DEFAULT_EVALUATION_URL,
+        api_key="task12-key",
+        output_json=tmp_path / "task12.json",
+        output_report=tmp_path / "task12.md",
+        artifacts_root=tmp_path / "artifacts",
+        rubric_path=tmp_path / "rubric.json",
+        local_sha="local-sha",
+        hemma_sha="hemma-sha",
+        max_poll_seconds=20.0,
+        client_factory=FakeScientificClient,
+    )
+
+    acceptance = payload["acceptance_lane"]
+    assert acceptance["gate_passed"] is False
+    assert acceptance["summary"]["failed_jobs"] == len(filenames)
+    for profile in acceptance["profiles"]:
+        for record in profile["jobs"]:
+            assert record["error_code"] == "gpu_not_available"
+            assert record["output_markdown_path"] is None
+
+
 def test_acceptance_lane_records_warnings_retries_backend_and_acceleration(tmp_path: Path) -> None:
     corpus_dir, filenames = _build_corpus(tmp_path)
     scenario = _default_scenario(filenames)

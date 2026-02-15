@@ -30,11 +30,13 @@ from docling_core.types.io import DocumentStream
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
+    BackendGpuUnavailableError,
     BackendInputError,
     ConversionBackend,
     ConversionRequest,
     ConversionResultData,
 )
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
 
 _AUTO_OCR_CHARS_PER_PAGE_THRESHOLD = 120.0
 _LOW_CONFIDENCE_GRADES = {"poor", "fair"}
@@ -77,8 +79,6 @@ class DoclingConversionBackend(ConversionBackend):
 
         warnings: list[str] = []
         acceleration_device, acceleration_used = self._resolve_acceleration(request.gpu_available)
-        if request.gpu_available and acceleration_used == "cpu":
-            warnings.append("docling_cuda_unavailable_fallback_cpu")
 
         if request.ocr_mode == OcrMode.OFF:
             attempt = self._convert_once(
@@ -189,19 +189,11 @@ class DoclingConversionBackend(ConversionBackend):
     def _resolve_acceleration(self, gpu_available: bool) -> tuple[AcceleratorDevice, str]:
         if not gpu_available:
             return AcceleratorDevice.CPU, "cpu"
-        if self._cuda_available():
-            return AcceleratorDevice.CUDA, "cuda"
-        return AcceleratorDevice.CPU, "cpu"
 
-    def _cuda_available(self) -> bool:
-        try:
-            import torch
-        except Exception:  # pragma: no cover - defensive fallback when torch import fails.
-            return False
-        try:
-            return bool(torch.cuda.is_available())
-        except Exception:  # pragma: no cover - defensive fallback when cuda probe fails.
-            return False
+        probe = probe_torch_gpu_runtime()
+        if probe.is_available and probe.runtime_kind in {"rocm", "cuda"}:
+            return AcceleratorDevice.CUDA, "cuda"
+        raise BackendGpuUnavailableError(backend="docling", probe=probe)
 
     def _get_converter(self, key: _ConverterKey) -> DocumentConverter:
         cache = self._converter_cache()

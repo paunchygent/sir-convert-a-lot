@@ -65,6 +65,22 @@ Lock evaluation priority for this task:
    - If quality winner conflicts with production governance constraints, keep governance-compatible
      production recommendation and record follow-up decision/task.
 
+## GPU Runtime Compliance Gate (2026-02-15)
+
+Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU runtime validation:
+
+1. Run Hemma verification:
+   - `pdm run run-local-pdm hemma-verify-gpu-runtime`
+1. If runtime probe fails (`runtime_kind!=rocm` or `is_available=false`), run remediation:
+   - `pdm run run-local-pdm hemma-repair-rocm-runtime`
+1. Re-run verification and block Task 12 lane execution unless verification passes.
+1. Verification must prove:
+   - deterministic probe outcome (`runtime_kind=rocm`, `is_available=true`),
+   - successful GPU-required Docling conversion with
+     `conversion_metadata.acceleration_used="cuda"`,
+   - no CPU fallback warning,
+   - non-zero `rocm-smi` GPU busy observed during conversion.
+
 ## Execution Plan
 
 1. Add Task 12 harness module and evaluation-only service entrypoint.
@@ -122,6 +138,8 @@ Lock evaluation priority for this task:
 ## Checklist
 
 - [ ] Docs kickoff updated (`status: in_progress`, decision lock, execution plan)
+- [ ] GPU runtime compliance gate passed on Hemma (`hemma-verify-gpu-runtime`)
+- [ ] Fail-closed behavior validated (`backend_gpu_runtime_unavailable` -> deterministic `503`)
 - [ ] Harness and eval service implementation complete
 - [ ] Tests added and passing
 - [ ] Local quality gates complete

@@ -176,6 +176,10 @@ Server policy constraints (Phase 0 lock):
   are rejected when set to `1` in normal startup paths.
 - CPU unlock behavior may be used only via explicit test configuration overrides in `ServiceConfig`.
 - Requests resulting in CPU execution while lock is active must fail with `gpu_not_available`.
+- Docling GPU runtime is fail-closed:
+  - when GPU policy is requested but backend runtime probe is unavailable,
+    request fails with deterministic `503 gpu_not_available` details:
+    `{"reason":"backend_gpu_runtime_unavailable","backend":"docling","runtime_kind":"...","hip_version":"...","cuda_version":"..."}`
 
 ### JobRecord (status payload)
 
@@ -230,6 +234,9 @@ Server policy constraints (Phase 0 lock):
 }
 ```
 
+`conversion_metadata.acceleration_used` uses normalized value `"cuda"` for successful GPU execution,
+including ROCm-backed torch runtimes.
+
 ## Endpoints
 
 ### `POST /v1/convert/jobs`
@@ -258,6 +265,8 @@ Responses:
 - `422 Unprocessable Entity`: unreadable/corrupt PDF
 - `429 Too Many Requests`: rate limit
 - `503 Service Unavailable`: GPU required but unavailable
+  - includes fail-closed backend runtime details when applicable:
+    `reason=backend_gpu_runtime_unavailable`
 
 ### `GET /v1/convert/jobs/{job_id}`
 
@@ -352,6 +361,12 @@ Error details note:
   - `reason`
   - `requested`
   - `available`
+- `503 gpu_not_available` may include backend runtime probe details, for example:
+  - `reason` (`backend_gpu_runtime_unavailable`)
+  - `backend`
+  - `runtime_kind`
+  - `hip_version`
+  - `cuda_version`
 
 ## Storage Layout (v1 Filesystem Backend)
 

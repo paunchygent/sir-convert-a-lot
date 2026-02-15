@@ -5,13 +5,15 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-02-14'
+last_updated: '2026-02-15'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md
   - docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md
+  - docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md
+  - docs/backlog/tasks/task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification.md
 labels:
   - session-log
   - active-work
@@ -24,9 +26,18 @@ Active focus is Story 02-01 execution:
 - Task 10 is completed (Docling backend + OCR policy mapping + deterministic markdown normalization).
 - Task 11 is completed (PyMuPDF backend + deterministic compatibility governance).
 - Task 12 is in progress (scientific-paper workload evidence harness + Hemma report).
+- Task 13 is in progress (GPU runtime compliance gate + ROCm verification/remediation).
 
 ## Worklog
 
+- 2026-02-15 — Task 13 moved to `in_progress` to unblock Task 12 with a fail-closed GPU
+  runtime compliance gate:
+  - Created and activated:
+    - `docs/backlog/tasks/task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification.md`
+  - Locked implementation slices:
+    - typed GPU runtime probe in infrastructure,
+    - deterministic `503 gpu_not_available` mapping for backend GPU-runtime unavailability,
+    - Hemma verify/repair script surfaces and runbook updates.
 - 2026-02-14 — Task 12 moved to `in_progress` with decision-locked execution:
   - Added dual-lane topology lock (acceptance + evaluation A/B) to:
     - `docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`

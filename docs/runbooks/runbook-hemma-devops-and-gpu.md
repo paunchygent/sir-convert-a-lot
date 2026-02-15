@@ -102,6 +102,29 @@ pdm run run-hemma -- rocm-smi
 pdm run run-hemma --shell 'sudo docker exec -it <container_name> python -c "import torch; print(torch.cuda.is_available()); print(getattr(torch.version, \"hip\", None))"'
 ```
 
+## GPU Runtime Compliance Gate (Task 12+)
+
+Use deterministic compliance checks before GPU-governed conversion workloads:
+
+```bash
+pdm run run-local-pdm hemma-verify-gpu-runtime
+```
+
+If verification fails due a non-ROCm torch runtime in the project environment:
+
+```bash
+pdm run run-local-pdm hemma-repair-rocm-runtime
+pdm run run-local-pdm hemma-verify-gpu-runtime
+```
+
+Compliance pass conditions:
+
+- `rocm-smi` detects the GPU.
+- `probe_torch_gpu_runtime()` reports `runtime_kind="rocm"` and `is_available=true`.
+- Live `gpu_required` conversion succeeds with `conversion_metadata.acceleration_used="cuda"`.
+- No `docling_cuda_unavailable_fallback_cpu` warning.
+- `rocm-smi` observes non-zero GPU busy during conversion.
+
 ## Tunnel Workflow (Local Dev from Any Repo)
 
 Use a dedicated local-only service port to avoid collisions with other stacks.

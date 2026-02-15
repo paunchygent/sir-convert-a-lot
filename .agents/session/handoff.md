@@ -1,5 +1,70 @@
 # Session Handoff
 
+## 2026-02-15: Task 13 In Progress (GPU Runtime Compliance Gate + Hemma ROCm Verification)
+
+### Completed
+
+- Created and activated Task 13:
+  - `docs/backlog/tasks/task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification.md`
+- Added typed GPU runtime probe:
+  - `scripts/sir_convert_a_lot/infrastructure/gpu_runtime_probe.py`
+- Enforced fail-closed Docling behavior when GPU runtime probe is unavailable:
+  - `scripts/sir_convert_a_lot/infrastructure/conversion_backend.py`
+  - `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
+  - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+- Added deterministic error mapping:
+  - `503 gpu_not_available` with
+    `details.reason="backend_gpu_runtime_unavailable"` and runtime probe fields.
+- Added Hemma operational scripts + PDM surfaces:
+  - `scripts/devops/verify-hemma-gpu-runtime.sh`
+  - `scripts/devops/repair-hemma-rocm-runtime.sh`
+  - `pyproject.toml` scripts:
+    - `hemma-verify-gpu-runtime`
+    - `hemma-repair-rocm-runtime`
+- Updated docs and active context:
+  - `docs/backlog/current.md`
+  - `docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`
+  - `docs/converters/pdf_to_md_service_api_v1.md`
+  - `docs/converters/sir_convert_a_lot.md`
+  - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+
+### Test Coverage Added/Updated
+
+- Added:
+  - `tests/sir_convert_a_lot/test_gpu_runtime_probe.py`
+- Updated:
+  - `tests/sir_convert_a_lot/test_docling_backend.py`
+  - `tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py`
+  - `tests/sir_convert_a_lot/test_api_contract_v1.py`
+  - `tests/sir_convert_a_lot/test_benchmark_scientific_corpus.py`
+  - supporting test configuration updates in:
+    - `tests/sir_convert_a_lot/test_benchmark_gpu_governance.py`
+    - `tests/sir_convert_a_lot/test_integration_adapter_conformance.py`
+    - `tests/sir_convert_a_lot/test_job_store_persistence.py`
+
+### Validation Evidence (local)
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; 87 passed)
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Hemma Verification Status
+
+- Attempted:
+  - `pdm run run-local-pdm hemma-verify-gpu-runtime`
+- Current blocker:
+  - remote Hemma checkout is not yet on this patched revision, so runtime probe import is missing
+    in remote env (`ModuleNotFoundError` for `scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe`).
+- Next step after pushing this revision:
+  1. `pdm run run-local-pdm run-hemma -- git pull --ff-only`
+  1. `pdm run run-local-pdm hemma-verify-gpu-runtime`
+  1. if needed: `pdm run run-local-pdm hemma-repair-rocm-runtime`
+  1. rerun `pdm run run-local-pdm hemma-verify-gpu-runtime`
+
 ## 2026-02-14: Task 11 Completed (PyMuPDF Backend + Compatibility Governance)
 
 ### Completed

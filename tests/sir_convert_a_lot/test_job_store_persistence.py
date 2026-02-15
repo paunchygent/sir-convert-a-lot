@@ -49,14 +49,27 @@ def _pdf_bytes(label: str) -> bytes:
     return f"%PDF-1.4\n% {label}\n%%EOF\n".encode("utf-8")
 
 
-def test_idempotency_survives_runtime_restart(tmp_path: Path) -> None:
-    data_root = tmp_path / "service_data"
-    config = ServiceConfig(
+def _runtime_config(
+    data_root: Path,
+    *,
+    result_ttl_seconds: int = 7 * 24 * 3600,
+    upload_ttl_seconds: int = 24 * 3600,
+) -> ServiceConfig:
+    return ServiceConfig(
         api_key="k",
         data_root=data_root,
         processing_delay_seconds=0.0,
         enable_supervisor=False,
+        gpu_available=False,
+        allow_cpu_fallback=True,
+        result_ttl_seconds=result_ttl_seconds,
+        upload_ttl_seconds=upload_ttl_seconds,
     )
+
+
+def test_idempotency_survives_runtime_restart(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    config = _runtime_config(data_root)
 
     runtime = ServiceRuntime(config)
     job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("x"), "paper.pdf")
@@ -74,9 +87,7 @@ def test_idempotency_survives_runtime_restart(tmp_path: Path) -> None:
 
 def test_running_job_is_recovered_to_queued_on_restart(tmp_path: Path) -> None:
     data_root = tmp_path / "service_data"
-    config = ServiceConfig(
-        api_key="k", data_root=data_root, processing_delay_seconds=0.0, enable_supervisor=False
-    )
+    config = _runtime_config(data_root)
 
     runtime = ServiceRuntime(config)
     job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("x"), "paper.pdf")
@@ -90,14 +101,7 @@ def test_running_job_is_recovered_to_queued_on_restart(tmp_path: Path) -> None:
 
 def test_expired_job_returns_job_expired_error_code(tmp_path: Path) -> None:
     data_root = tmp_path / "service_data"
-    config = ServiceConfig(
-        api_key="k",
-        data_root=data_root,
-        processing_delay_seconds=0.0,
-        result_ttl_seconds=1,
-        upload_ttl_seconds=1,
-        enable_supervisor=False,
-    )
+    config = _runtime_config(data_root, result_ttl_seconds=1, upload_ttl_seconds=1)
 
     runtime = ServiceRuntime(config)
     job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("x"), "paper.pdf")
@@ -117,14 +121,7 @@ def test_expired_job_returns_job_expired_error_code(tmp_path: Path) -> None:
 
 def test_pinned_job_is_exempt_from_expiry(tmp_path: Path) -> None:
     data_root = tmp_path / "service_data"
-    config = ServiceConfig(
-        api_key="k",
-        data_root=data_root,
-        processing_delay_seconds=0.0,
-        result_ttl_seconds=1,
-        upload_ttl_seconds=1,
-        enable_supervisor=False,
-    )
+    config = _runtime_config(data_root, result_ttl_seconds=1, upload_ttl_seconds=1)
 
     runtime = ServiceRuntime(config)
     job = runtime.create_job(_spec("paper.pdf", pin=True), _pdf_bytes("x"), "paper.pdf")
@@ -145,9 +142,7 @@ def test_pinned_job_is_exempt_from_expiry(tmp_path: Path) -> None:
 
 def test_sweeper_deletes_raw_after_raw_ttl_but_keeps_job(tmp_path: Path) -> None:
     data_root = tmp_path / "service_data"
-    config = ServiceConfig(
-        api_key="k", data_root=data_root, processing_delay_seconds=0.0, enable_supervisor=False
-    )
+    config = _runtime_config(data_root)
 
     runtime = ServiceRuntime(config)
     job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("x"), "paper.pdf")
@@ -173,12 +168,7 @@ def test_sweeper_deletes_raw_after_raw_ttl_but_keeps_job(tmp_path: Path) -> None
 
 def test_run_job_clears_active_slot_when_job_missing(tmp_path: Path) -> None:
     data_root = tmp_path / "service_data"
-    config = ServiceConfig(
-        api_key="k",
-        data_root=data_root,
-        processing_delay_seconds=0.0,
-        enable_supervisor=False,
-    )
+    config = _runtime_config(data_root)
     runtime = ServiceRuntime(config)
 
     job_id = "job_missing"

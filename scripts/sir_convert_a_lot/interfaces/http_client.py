@@ -22,7 +22,7 @@ import httpx
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
 
 
-@dataclass(frozen=True)
+@dataclass
 class ClientError(Exception):
     """HTTP/service-level error returned by Sir Convert-a-Lot endpoints."""
 

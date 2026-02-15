@@ -17,8 +17,10 @@ from pathlib import Path
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, JobSpec, JobStatus
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
+    BackendGpuUnavailableError,
     BackendInputError,
 )
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import ServiceConfig, ServiceRuntime
 from tests.sir_convert_a_lot.pdf_fixtures import fixture_pdf_bytes
 
@@ -27,6 +29,7 @@ def _job_spec(
     filename: str,
     *,
     backend_strategy: BackendStrategy = BackendStrategy.AUTO,
+    acceleration_policy: str = "cpu_only",
 ) -> JobSpec:
     return JobSpec.model_validate(
         {
@@ -40,7 +43,7 @@ def _job_spec(
                 "normalize": "standard",
             },
             "execution": {
-                "acceleration_policy": "cpu_only",
+                "acceleration_policy": acceleration_policy,
                 "priority": "normal",
                 "document_timeout_seconds": 1800,
             },
@@ -188,3 +191,65 @@ def test_pymupdf_input_error_maps_to_pdf_unreadable(monkeypatch, tmp_path: Path)
     assert stored is not None
     assert stored.failure_code == "pdf_unreadable"
     assert stored.failure_retryable is False
+
+
+def test_backend_gpu_unavailable_maps_to_gpu_not_available(monkeypatch, tmp_path: Path) -> None:
+    available_probe = GpuRuntimeProbeResult(
+        runtime_kind="rocm",
+        torch_version="2.10.0+rocm7.2",
+        hip_version="7.2.0",
+        cuda_version=None,
+        is_available=True,
+        device_count=1,
+        device_name="AMD Radeon AI PRO R9700",
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.runtime_engine.probe_torch_gpu_runtime",
+        lambda: available_probe,
+    )
+    runtime = ServiceRuntime(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "runtime_data",
+            gpu_available=True,
+            allow_cpu_only=True,
+            processing_delay_seconds=0.01,
+        )
+    )
+    spec = _job_spec("paper.pdf", acceleration_policy="gpu_required")
+    job = runtime.create_job(
+        spec=spec,
+        upload_bytes=fixture_pdf_bytes("paper_alpha.pdf"),
+        source_filename="paper.pdf",
+    )
+
+    probe = GpuRuntimeProbeResult(
+        runtime_kind="none",
+        torch_version="2.10.0+cu128",
+        hip_version=None,
+        cuda_version="12.8",
+        is_available=False,
+        device_count=0,
+        device_name=None,
+    )
+
+    def _raise_gpu_unavailable(_request) -> None:
+        raise BackendGpuUnavailableError(backend="docling", probe=probe)
+
+    monkeypatch.setattr(runtime.docling_backend, "convert", _raise_gpu_unavailable)
+    runtime.run_job_async(job.job_id)
+
+    status = _wait_for_terminal(runtime, job.job_id)
+    assert status == JobStatus.FAILED
+
+    stored = runtime.get_job(job.job_id)
+    assert stored is not None
+    assert stored.failure_code == "gpu_not_available"
+    assert stored.failure_retryable is True
+    assert stored.failure_details == {
+        "reason": "backend_gpu_runtime_unavailable",
+        "backend": "docling",
+        "runtime_kind": "none",
+        "hip_version": None,
+        "cuda_version": "12.8",
+    }

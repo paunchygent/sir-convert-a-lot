@@ -39,6 +39,16 @@ def _write_pdf(path: Path, label: str) -> None:
     copy_fixture_pdf(path, fixture_name)
 
 
+def _conversion_runtime_config(*, data_root: Path, processing_delay_seconds: float) -> ServiceConfig:
+    return ServiceConfig(
+        api_key="secret-key",
+        data_root=data_root,
+        gpu_available=False,
+        allow_cpu_fallback=True,
+        processing_delay_seconds=processing_delay_seconds,
+    )
+
+
 @contextmanager
 def _service_client(app: FastAPI, *, api_key: str) -> Iterator[SirConvertALotClient]:
     with TestClient(app, base_url="http://testserver") as http_client:
@@ -152,8 +162,7 @@ def test_adapter_propagates_validation_error_without_remap(tmp_path: Path) -> No
 
 def test_adapter_timeout_error_is_not_consumer_remapped(tmp_path: Path) -> None:
     app = create_app(
-        ServiceConfig(
-            api_key="secret-key",
+        _conversion_runtime_config(
             data_root=tmp_path / "service_data_timeout",
             processing_delay_seconds=0.5,
         )
@@ -182,8 +191,7 @@ def test_adapter_integration_smoke_submit_poll_fetch(
     profile: ConsumerProfile, tmp_path: Path
 ) -> None:
     app = create_app(
-        ServiceConfig(
-            api_key="secret-key",
+        _conversion_runtime_config(
             data_root=tmp_path / f"service_data_smoke_{profile.value}",
             processing_delay_seconds=0.02,
         )

@@ -54,6 +54,26 @@ Deterministic validation behavior:
   - details:
     `{"field":"conversion.ocr_mode","reason":"backend_option_incompatible","backend":"pymupdf","supported":["off"]}`
 
+## GPU Runtime Compliance Gate
+
+For GPU-governed Docling execution, runtime now fails closed when a usable GPU runtime
+is unavailable for the backend.
+
+Deterministic failure path:
+
+- `503 gpu_not_available`
+- `error.details.reason = "backend_gpu_runtime_unavailable"`
+- details include `backend`, `runtime_kind`, `hip_version`, `cuda_version`.
+
+Hemma verification/remediation commands:
+
+```bash
+pdm run run-local-pdm hemma-verify-gpu-runtime
+pdm run run-local-pdm hemma-repair-rocm-runtime
+```
+
+`acceleration_used` remains normalized as `"cuda"` for successful GPU execution, including ROCm.
+
 ## OCR and Normalization Semantics
 
 - OCR mode mapping:

@@ -86,6 +86,8 @@ distribution = false
 "benchmark:task-12" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
 "run-hemma" = "bash scripts/devops/run-hemma.sh"
+"hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"
+"hemma-repair-rocm-runtime" = "bash scripts/devops/repair-hemma-rocm-runtime.sh"
 "new-task" = "python -m scripts.docs_as_code.new_task"
 "new-programme" = "python -m scripts.docs_as_code.new_task --type programme"
 "new-epic" = "python -m scripts.docs_as_code.new_task --type epic"
@@ -122,6 +124,12 @@ distribution = false
 "typecheck-all" = "mypy --config-file pyproject.toml"
 "test" = "pytest -s"
 "pytest-root" = "pytest -s"
+
+[tool.sir_convert_a_lot.rocm_runtime]
+torch_index_url = "https://download.pytorch.org/whl/rocm7.1"
+torch_version = "2.10.0+rocm7.1"
+torchvision_version = "0.25.0+rocm7.1"
+torchaudio_version = "2.10.0+rocm7.1"
 
 [build-system]
 requires = ["pdm-backend"]

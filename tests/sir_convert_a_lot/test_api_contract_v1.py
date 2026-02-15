@@ -17,6 +17,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 from scripts.sir_convert_a_lot.models import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
 from tests.sir_convert_a_lot.pdf_fixtures import (
@@ -124,6 +125,8 @@ def test_create_job_idempotency_replay_returns_same_job_id(tmp_path: Path) -> No
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=True,
             processing_delay_seconds=0.25,
         )
     )
@@ -158,6 +161,8 @@ def test_create_job_idempotency_collision_returns_conflict(tmp_path: Path) -> No
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=True,
             processing_delay_seconds=0.05,
         )
     )
@@ -193,6 +198,8 @@ def test_result_endpoint_returns_inline_markdown_when_succeeded(tmp_path: Path) 
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=True,
             processing_delay_seconds=0.1,
         )
     )
@@ -238,6 +245,8 @@ def test_explicit_docling_backend_strategy_succeeds_and_reports_docling(tmp_path
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=True,
             processing_delay_seconds=0.1,
         )
     )
@@ -266,6 +275,59 @@ def test_explicit_docling_backend_strategy_succeeds_and_reports_docling(tmp_path
     metadata = payload["result"]["conversion_metadata"]
     assert metadata["backend_used"] == "docling"
     assert metadata["acceleration_used"] == expected_acceleration_for_gpu_requested()
+
+
+def test_docling_gpu_runtime_unavailable_returns_deterministic_503(
+    monkeypatch, tmp_path: Path
+) -> None:
+    probe = GpuRuntimeProbeResult(
+        runtime_kind="none",
+        torch_version="2.10.0+cu128",
+        hip_version=None,
+        cuda_version="12.8",
+        is_available=False,
+        device_count=0,
+        device_name=None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.runtime_engine.probe_torch_gpu_runtime",
+        lambda: probe,
+    )
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=True,
+            processing_delay_seconds=0.05,
+        )
+    )
+    client = TestClient(app)
+
+    response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-docling-gpu-runtime-unavailable",
+        file_name="paper.pdf",
+        file_bytes=_pdf_bytes("research"),
+        spec=_job_spec(
+            filename="paper.pdf",
+            backend_strategy="auto",
+            ocr_mode="off",
+            acceleration_policy="gpu_required",
+        ),
+    )
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["error"]["code"] == "gpu_not_available"
+    assert payload["error"]["retryable"] is True
+    assert payload["error"]["details"] == {
+        "reason": "backend_gpu_runtime_unavailable",
+        "backend": "docling",
+        "runtime_kind": "none",
+        "hip_version": None,
+        "cuda_version": "12.8",
+    }
 
 
 def test_pymupdf_gpu_required_is_rejected_with_compatibility_error(tmp_path: Path) -> None:
