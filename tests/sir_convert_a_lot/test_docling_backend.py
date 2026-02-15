@@ -86,8 +86,9 @@ def test_auto_mode_retries_when_first_pass_is_sparse(monkeypatch) -> None:
         force_full_page_ocr: bool,
         acceleration_device,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
-        del request, acceleration_device, formula_enrichment
+        del request, acceleration_device, formula_enrichment, formula_preset
         calls.append((ocr_enabled, force_full_page_ocr))
         if len(calls) == 1:
             return _DoclingAttempt(markdown_content="", page_count=1, low_confidence=False)
@@ -118,8 +119,9 @@ def test_auto_mode_skips_retry_when_dense_and_confident(monkeypatch) -> None:
         force_full_page_ocr: bool,
         acceleration_device,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
-        del request, acceleration_device, formula_enrichment
+        del request, acceleration_device, formula_enrichment, formula_preset
         calls.append((ocr_enabled, force_full_page_ocr))
         return _DoclingAttempt(
             markdown_content=" ".join(["dense"] * 200),
@@ -146,8 +148,9 @@ def test_force_mode_runs_single_ocr_pass(monkeypatch) -> None:
         force_full_page_ocr: bool,
         acceleration_device,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
-        del request, acceleration_device, formula_enrichment
+        del request, acceleration_device, formula_enrichment, formula_preset
         calls.append((ocr_enabled, force_full_page_ocr))
         return _DoclingAttempt(
             markdown_content="OCR forced content.",
@@ -174,8 +177,9 @@ def test_auto_mode_retries_when_low_confidence_even_if_dense(monkeypatch) -> Non
         force_full_page_ocr: bool,
         acceleration_device,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
-        del request, acceleration_device, formula_enrichment
+        del request, acceleration_device, formula_enrichment, formula_preset
         calls.append((ocr_enabled, force_full_page_ocr))
         if len(calls) == 1:
             return _DoclingAttempt(
@@ -227,8 +231,16 @@ def test_gpu_flag_false_still_reports_cuda_when_runtime_available(monkeypatch) -
         force_full_page_ocr: bool,
         acceleration_device,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
-        del request, ocr_enabled, force_full_page_ocr, acceleration_device, formula_enrichment
+        del (
+            request,
+            ocr_enabled,
+            force_full_page_ocr,
+            acceleration_device,
+            formula_enrichment,
+            formula_preset,
+        )
         return _DoclingAttempt(
             markdown_content="ok",
             page_count=1,
@@ -242,7 +254,7 @@ def test_gpu_flag_false_still_reports_cuda_when_runtime_available(monkeypatch) -
 
 def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
     backend = DoclingConversionBackend()
-    formula_flags: list[bool] = []
+    formula_flags: list[tuple[bool, str]] = []
 
     def _fake_convert_once(
         request: ConversionRequest,
@@ -251,9 +263,10 @@ def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
         force_full_page_ocr: bool,
         acceleration_device,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
         del request, ocr_enabled, force_full_page_ocr, acceleration_device
-        formula_flags.append(formula_enrichment)
+        formula_flags.append((formula_enrichment, formula_preset))
         return _DoclingAttempt(
             markdown_content="formula-enriched-output",
             page_count=1,
@@ -270,13 +283,13 @@ def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
     )
 
     assert result.markdown_content == "formula-enriched-output"
-    assert formula_flags == [True]
+    assert formula_flags == [(True, "codeformulav2")]
     assert "docling_formula_enrichment_unavailable_fallback" not in result.warnings
 
 
 def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> None:
     backend = DoclingConversionBackend()
-    formula_flags: list[bool] = []
+    formula_flags: list[tuple[bool, str]] = []
 
     def _fake_convert_once(
         request: ConversionRequest,
@@ -285,9 +298,10 @@ def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> 
         force_full_page_ocr: bool,
         acceleration_device,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
         del request, ocr_enabled, force_full_page_ocr, acceleration_device
-        formula_flags.append(formula_enrichment)
+        formula_flags.append((formula_enrichment, formula_preset))
         if formula_enrichment:
             raise BackendExecutionError(
                 "Docling backend execution failed: CodeFormulaV2 model unavailable"
@@ -308,8 +322,59 @@ def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> 
     )
 
     assert result.markdown_content == "fallback-without-formula"
-    assert formula_flags == [True, False]
+    assert formula_flags == [
+        (True, "codeformulav2"),
+        (True, "granite_docling"),
+        (False, "codeformulav2"),
+    ]
     assert result.warnings == ["docling_formula_enrichment_unavailable_fallback"]
+
+
+def test_formula_enrichment_switches_to_granite_when_primary_has_placeholders(monkeypatch) -> None:
+    backend = DoclingConversionBackend()
+    calls: list[str] = []
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+        formula_enrichment: bool,
+        formula_preset: str,
+    ) -> _DoclingAttempt:
+        del request, ocr_enabled, force_full_page_ocr, acceleration_device
+        calls.append(formula_preset)
+        if formula_enrichment and formula_preset == "codeformulav2":
+            return _DoclingAttempt(
+                markdown_content="before\n<!-- formula-not-decoded -->\nafter\n",
+                page_count=1,
+                low_confidence=False,
+            )
+        if formula_enrichment and formula_preset == "granite_docling":
+            return _DoclingAttempt(
+                markdown_content="formula resolved output",
+                page_count=1,
+                low_confidence=False,
+            )
+        return _DoclingAttempt(
+            markdown_content="fallback-without-formula",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+    result = backend.convert(
+        _request(
+            ocr_mode=OcrMode.OFF,
+            gpu_available=True,
+            table_mode=TableMode.ACCURATE,
+        )
+    )
+
+    assert calls == ["codeformulav2", "granite_docling"]
+    assert result.markdown_content == "formula resolved output"
+    assert result.warnings == ["docling_formula_preset_switched_to_granite_docling"]
 
 
 @pytest.mark.skipif(

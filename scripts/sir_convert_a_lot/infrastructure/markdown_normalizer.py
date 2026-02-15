@@ -27,6 +27,8 @@ _TABLE_SEPARATOR_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?
 _REFERENCE_DEF_RE = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*\S+")
 _FOOTNOTE_DEF_RE = re.compile(r"^\s{0,3}\[\^[^\]]+\]:\s*")
 _INDENTED_RE = re.compile(r"^( {2,}|\t)")
+_STANDALONE_PAGE_NUMBER_RE = re.compile(r"^\s*\d{2,3}\s*$")
+_PAGINATION_NUMERIC_LINES_THRESHOLD = 20
 
 
 def normalize_markdown(markdown_content: str, mode: NormalizeMode) -> str:
@@ -131,6 +133,8 @@ def _strict_reflow(markdown_content: str) -> str:
 
     flush_paragraph()
 
+    output_lines = _strip_pagination_noise(output_lines)
+
     collapsed: list[str] = []
     for line in output_lines:
         if line == "" and collapsed and collapsed[-1] == "":
@@ -196,3 +200,38 @@ def _is_protected_line(line: str, previous_nonempty_line: str) -> bool:
     if _HR_RE.match(stripped) is not None:
         return True
     return False
+
+
+def _strip_pagination_noise(lines: list[str]) -> list[str]:
+    """Drop long standalone page-number blocks from strict-normalized output."""
+    if not lines:
+        return lines
+    cleaned: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if not _STANDALONE_PAGE_NUMBER_RE.match(line):
+            cleaned.append(line)
+            index += 1
+            continue
+
+        block_start = index
+        numeric_line_count = 0
+        while index < len(lines):
+            block_line = lines[index]
+            if _STANDALONE_PAGE_NUMBER_RE.match(block_line):
+                numeric_line_count += 1
+                index += 1
+                continue
+            if block_line.strip() == "":
+                index += 1
+                continue
+            break
+
+        if numeric_line_count >= _PAGINATION_NUMERIC_LINES_THRESHOLD:
+            if cleaned and cleaned[-1] != "":
+                cleaned.append("")
+            continue
+
+        cleaned.extend(lines[block_start:index])
+    return cleaned

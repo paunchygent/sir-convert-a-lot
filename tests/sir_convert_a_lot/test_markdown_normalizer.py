@@ -122,3 +122,26 @@ def test_strict_mode_preserves_pipe_table_without_leading_pipe() -> None:
     assert lines[0] == header
     assert lines[1] == "--- | ---"
     assert lines[2] == "value one | value two"
+
+
+def test_strict_mode_removes_long_standalone_page_number_blocks() -> None:
+    number_block = "\n".join(f"{index:03d}\n" for index in range(39, 69))
+    raw = f"Intro paragraph.\n\n{number_block}\n\nNext paragraph.\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "039" not in normalized
+    assert "068" not in normalized
+    assert "Intro paragraph." in normalized
+    assert "Next paragraph." in normalized
+
+
+def test_strict_mode_preserves_short_numeric_lines() -> None:
+    raw = "1\n\n2\n\n3\n\nkeep this paragraph intact\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "1" in normalized
+    assert "2" in normalized
+    assert "3" in normalized
+    assert "keep this paragraph intact" in normalized

@@ -45,6 +45,10 @@ _DOCLING_DEPRECATED_TABLE_IMAGES_WARNING = (
     r"`TableItem\.get_image\(\)` to extract table images from page images\."
 )
 _DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING = "docling_formula_enrichment_unavailable_fallback"
+_DOCLING_FORMULA_PRESET_SWITCH_WARNING = "docling_formula_preset_switched_to_granite_docling"
+_FORMULA_PLACEHOLDER_MARKER = "<!-- formula-not-decoded -->"
+_FORMULA_PRIMARY_PRESET = "codeformulav2"
+_FORMULA_FALLBACK_PRESET = "granite_docling"
 _FORMULA_RUNTIME_UNAVAILABLE_HINTS: tuple[str, ...] = (
     "codeformula",
     "formula",
@@ -78,6 +82,7 @@ class _ConverterKey:
     force_full_page_ocr: bool
     acceleration_device: AcceleratorDevice
     formula_enrichment: bool
+    formula_preset: str
 
 
 class DoclingConversionBackend(ConversionBackend):
@@ -165,32 +170,81 @@ class DoclingConversionBackend(ConversionBackend):
                     force_full_page_ocr=force_full_page_ocr,
                     acceleration_device=acceleration_device,
                     formula_enrichment=False,
+                    formula_preset=_FORMULA_PRIMARY_PRESET,
                 ),
                 [],
             )
+        warnings: list[str] = []
+        primary_error: BackendExecutionError | None = None
         try:
+            primary_attempt = self._convert_once(
+                request,
+                ocr_enabled=ocr_enabled,
+                force_full_page_ocr=force_full_page_ocr,
+                acceleration_device=acceleration_device,
+                formula_enrichment=True,
+                formula_preset=_FORMULA_PRIMARY_PRESET,
+            )
+        except BackendExecutionError as exc:
+            if not self._is_formula_runtime_unavailable(exc):
+                raise
+            primary_error = exc
+            primary_attempt = None
+
+        fallback_error: BackendExecutionError | None = None
+        fallback_attempt: _DoclingAttempt | None = None
+        needs_fallback_attempt = primary_attempt is None or (
+            self._formula_placeholder_count(primary_attempt.markdown_content) > 0
+        )
+        if needs_fallback_attempt:
+            try:
+                fallback_attempt = self._convert_once(
+                    request,
+                    ocr_enabled=ocr_enabled,
+                    force_full_page_ocr=force_full_page_ocr,
+                    acceleration_device=acceleration_device,
+                    formula_enrichment=True,
+                    formula_preset=_FORMULA_FALLBACK_PRESET,
+                )
+            except BackendExecutionError as exc:
+                if not self._is_formula_runtime_unavailable(exc):
+                    raise
+                fallback_error = exc
+
+        if primary_attempt is None and fallback_attempt is not None:
+            warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
+            return fallback_attempt, warnings
+
+        if primary_attempt is not None and fallback_attempt is not None:
+            primary_placeholder_count = self._formula_placeholder_count(
+                primary_attempt.markdown_content
+            )
+            fallback_placeholder_count = self._formula_placeholder_count(
+                fallback_attempt.markdown_content
+            )
+            if fallback_placeholder_count < primary_placeholder_count:
+                warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
+                return fallback_attempt, warnings
+            return primary_attempt, warnings
+
+        if primary_attempt is not None:
+            return primary_attempt, warnings
+
+        if primary_error is not None or fallback_error is not None:
             return (
                 self._convert_once(
                     request,
                     ocr_enabled=ocr_enabled,
                     force_full_page_ocr=force_full_page_ocr,
                     acceleration_device=acceleration_device,
-                    formula_enrichment=True,
+                    formula_enrichment=False,
+                    formula_preset=_FORMULA_PRIMARY_PRESET,
                 ),
-                [],
+                [_DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING],
             )
-        except BackendExecutionError as exc:
-            if not self._is_formula_runtime_unavailable(exc):
-                raise
-        return (
-            self._convert_once(
-                request,
-                ocr_enabled=ocr_enabled,
-                force_full_page_ocr=force_full_page_ocr,
-                acceleration_device=acceleration_device,
-                formula_enrichment=False,
-            ),
-            [_DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING],
+
+        raise BackendExecutionError(
+            "Docling formula enrichment failed without runtime diagnostics."
         )
 
     def _is_formula_runtime_unavailable(self, error: BackendExecutionError) -> bool:
@@ -205,6 +259,7 @@ class DoclingConversionBackend(ConversionBackend):
         force_full_page_ocr: bool,
         acceleration_device: AcceleratorDevice,
         formula_enrichment: bool,
+        formula_preset: str,
     ) -> _DoclingAttempt:
         key = _ConverterKey(
             table_mode=request.table_mode,
@@ -212,6 +267,7 @@ class DoclingConversionBackend(ConversionBackend):
             force_full_page_ocr=force_full_page_ocr,
             acceleration_device=acceleration_device,
             formula_enrichment=formula_enrichment,
+            formula_preset=formula_preset,
         )
         converter = self._get_converter(key)
         document_stream = DocumentStream(
@@ -282,6 +338,9 @@ class DoclingConversionBackend(ConversionBackend):
         pipeline_options.do_table_structure = True
         pipeline_options.do_formula_enrichment = key.formula_enrichment
         if key.formula_enrichment:
+            pipeline_options.code_formula_options = (
+                pipeline_options.code_formula_options.from_preset(key.formula_preset)
+            )
             pipeline_options.code_formula_options.extract_formulas = True
             pipeline_options.code_formula_options.extract_code = False
         pipeline_options.table_structure_options = TableStructureOptions(
@@ -302,3 +361,7 @@ class DoclingConversionBackend(ConversionBackend):
                     InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
                 }
             )
+
+    def _formula_placeholder_count(self, markdown_content: str) -> int:
+        """Return number of unresolved Docling formula placeholder markers."""
+        return markdown_content.count(_FORMULA_PLACEHOLDER_MARKER)
