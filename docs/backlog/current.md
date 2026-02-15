@@ -26,10 +26,20 @@ Active focus is Story 02-01 execution:
 - Task 10 is completed (Docling backend + OCR policy mapping + deterministic markdown normalization).
 - Task 11 is completed (PyMuPDF backend + deterministic compatibility governance).
 - Task 12 is in progress (scientific-paper workload evidence harness + Hemma report).
-- Task 13 is in progress (GPU runtime compliance gate + ROCm verification/remediation).
+- Task 13 is completed (GPU runtime compliance gate + ROCm verification/remediation).
 
 ## Worklog
 
+- 2026-02-15 — Task 13 completed with runtime-gated Hemma evidence on patched revision:
+  - Main branch commit and push:
+    - `6ee1a27` (`Enforce GPU runtime compliance gate and pin ROCm torch runtime`)
+  - Hemma fast-forward sync:
+    - `pdm run run-local-pdm run-hemma -- git pull --ff-only`
+  - Deterministic runtime verification pass:
+    - `pdm run run-local-pdm hemma-verify-gpu-runtime`
+    - probe evidence: `runtime_kind=rocm`, `torch_version=2.10.0+rocm7.1`,
+      `device_name=AMD Radeon AI PRO R9700`
+    - live conversion evidence: `acceleration_used="cuda"`, `gpu_busy_peak=97`
 - 2026-02-15 — Task 13 moved to `in_progress` to unblock Task 12 with a fail-closed GPU
   runtime compliance gate:
   - Created and activated:

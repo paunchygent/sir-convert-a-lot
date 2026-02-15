@@ -1,6 +1,6 @@
 # Session Handoff
 
-## 2026-02-15: Task 13 In Progress (GPU Runtime Compliance Gate + Hemma ROCm Verification)
+## 2026-02-15: Task 13 Completed (GPU Runtime Compliance Gate + Hemma ROCm Verification)
 
 ### Completed
 
@@ -21,6 +21,12 @@
   - `pyproject.toml` scripts:
     - `hemma-verify-gpu-runtime`
     - `hemma-repair-rocm-runtime`
+- Added deterministic ROCm torch pins in project config:
+  - `pyproject.toml` (`tool.sir_convert_a_lot.rocm_runtime`)
+  - `torch_index_url=https://download.pytorch.org/whl/rocm7.1`
+  - `torch==2.10.0+rocm7.1`
+  - `torchvision==0.25.0+rocm7.1`
+  - `torchaudio==2.10.0+rocm7.1`
 - Updated docs and active context:
   - `docs/backlog/current.md`
   - `docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`
@@ -54,16 +60,19 @@
 
 ### Hemma Verification Status
 
-- Attempted:
+- Completed on patched `main` revision:
+  - local commit + push: `6ee1a27`
+  - remote sync: `pdm run run-local-pdm run-hemma -- git pull --ff-only`
+- Runtime repair + verification evidence:
+  - `pdm run run-local-pdm hemma-repair-rocm-runtime`
   - `pdm run run-local-pdm hemma-verify-gpu-runtime`
-- Current blocker:
-  - remote Hemma checkout is not yet on this patched revision, so runtime probe import is missing
-    in remote env (`ModuleNotFoundError` for `scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe`).
-- Next step after pushing this revision:
-  1. `pdm run run-local-pdm run-hemma -- git pull --ff-only`
-  1. `pdm run run-local-pdm hemma-verify-gpu-runtime`
-  1. if needed: `pdm run run-local-pdm hemma-repair-rocm-runtime`
-  1. rerun `pdm run run-local-pdm hemma-verify-gpu-runtime`
+  - probe output confirms ROCm runtime:
+    - `{"runtime_kind":"rocm","torch_version":"2.10.0+rocm7.1","hip_version":"7.1.25424","device_name":"AMD Radeon AI PRO R9700","is_available":true}`
+  - live conversion output confirms GPU execution:
+    - `{"acceleration_used":"cuda","gpu_busy_peak":97,...}`
+- Service availability note:
+  - verification requires service listener on `127.0.0.1:28085`; started via uvicorn on Hemma
+    before the successful verification run.
 
 ## 2026-02-14: Task 11 Completed (PyMuPDF Backend + Compatibility Governance)
 

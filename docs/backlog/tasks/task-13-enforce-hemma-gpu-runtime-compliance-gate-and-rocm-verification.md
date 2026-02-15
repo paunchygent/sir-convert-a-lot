@@ -2,7 +2,7 @@
 id: task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification
 title: Enforce Hemma GPU runtime compliance gate and ROCm verification
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-15'
 last_updated: '2026-02-15'
@@ -37,26 +37,26 @@ acceptance/evaluation runs are trustworthy.
 
 ## Deliverables
 
-- [ ] `scripts/sir_convert_a_lot/infrastructure/gpu_runtime_probe.py`
-- [ ] Updated backend/runtime mapping for GPU-runtime unavailability
-- [ ] `scripts/devops/verify-hemma-gpu-runtime.sh`
-- [ ] `scripts/devops/repair-hemma-rocm-runtime.sh`
-- [ ] Updated docs in task/runbook/converter/API references
-- [ ] Updated targeted tests for probe + fail-closed behavior
+- [x] `scripts/sir_convert_a_lot/infrastructure/gpu_runtime_probe.py`
+- [x] Updated backend/runtime mapping for GPU-runtime unavailability
+- [x] `scripts/devops/verify-hemma-gpu-runtime.sh`
+- [x] `scripts/devops/repair-hemma-rocm-runtime.sh`
+- [x] Updated docs in task/runbook/converter/API references
+- [x] Updated targeted tests for probe + fail-closed behavior
 
 ## Acceptance Criteria
 
-- [ ] GPU-required Docling requests do not silently execute on CPU when GPU runtime probe is unavailable.
-- [ ] Runtime/API returns deterministic `503 gpu_not_available` with
+- [x] GPU-required Docling requests do not silently execute on CPU when GPU runtime probe is unavailable.
+- [x] Runtime/API returns deterministic `503 gpu_not_available` with
   `details.reason=backend_gpu_runtime_unavailable`.
-- [ ] Hemma verification command proves `conversion_metadata.acceleration_used == "cuda"` on
+- [x] Hemma verification command proves `conversion_metadata.acceleration_used == "cuda"` on
   a real PDF conversion and records non-zero GPU busy during conversion.
-- [ ] Validation gates pass for code + docs.
+- [x] Validation gates pass for code + docs.
 
 ## Checklist
 
-- [ ] Docs kickoff and context updates complete
-- [ ] Implementation complete
-- [ ] Hemma verification/remediation scripts validated
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs kickoff and context updates complete
+- [x] Implementation complete
+- [x] Hemma verification/remediation scripts validated
+- [x] Validation complete
+- [x] Docs updated
