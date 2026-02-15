@@ -33,6 +33,7 @@ _TABLE_STRATEGY_BY_MODE: dict[TableMode, str] = {
     TableMode.FAST: "lines",
     TableMode.ACCURATE: "lines_strict",
 }
+_USE_GLYPHS_FOR_INVALID_UNICODE = True
 
 
 class PyMuPdfConversionBackend(ConversionBackend):
@@ -81,5 +82,6 @@ class PyMuPdfConversionBackend(ConversionBackend):
                 document,
                 page_chunks=False,
                 table_strategy=table_strategy,
+                use_glyphs=_USE_GLYPHS_FOR_INVALID_UNICODE,
             )
         )

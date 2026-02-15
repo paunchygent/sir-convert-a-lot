@@ -44,6 +44,18 @@ _DOCLING_DEPRECATED_TABLE_IMAGES_WARNING = (
     r"This field is deprecated\. Use `generate_page_images=True` and call "
     r"`TableItem\.get_image\(\)` to extract table images from page images\."
 )
+_DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING = "docling_formula_enrichment_unavailable_fallback"
+_FORMULA_RUNTIME_UNAVAILABLE_HINTS: tuple[str, ...] = (
+    "codeformula",
+    "formula",
+    "vlm",
+    "transformers",
+    "huggingface",
+    "snapshot",
+    "tokenizer",
+    "checkpoint",
+    "weights",
+)
 
 warnings.filterwarnings(
     "ignore",
@@ -65,6 +77,7 @@ class _ConverterKey:
     ocr_enabled: bool
     force_full_page_ocr: bool
     acceleration_device: AcceleratorDevice
+    formula_enrichment: bool
 
 
 class DoclingConversionBackend(ConversionBackend):
@@ -81,28 +94,31 @@ class DoclingConversionBackend(ConversionBackend):
         acceleration_device, acceleration_used = self._resolve_acceleration(request.gpu_available)
 
         if request.ocr_mode == OcrMode.OFF:
-            attempt = self._convert_once(
+            attempt, attempt_warnings = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=False,
                 force_full_page_ocr=False,
                 acceleration_device=acceleration_device,
             )
+            warnings.extend(attempt_warnings)
             ocr_enabled = False
         elif request.ocr_mode == OcrMode.FORCE:
-            attempt = self._convert_once(
+            attempt, attempt_warnings = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=True,
                 force_full_page_ocr=True,
                 acceleration_device=acceleration_device,
             )
+            warnings.extend(attempt_warnings)
             ocr_enabled = True
         else:
-            first = self._convert_once(
+            first, first_warnings = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=False,
                 force_full_page_ocr=False,
                 acceleration_device=acceleration_device,
             )
+            warnings.extend(first_warnings)
             stripped = first.markdown_content.strip()
             chars_per_page = len(stripped) / max(1, first.page_count)
             needs_ocr_retry = (
@@ -111,12 +127,13 @@ class DoclingConversionBackend(ConversionBackend):
                 or first.low_confidence
             )
             if needs_ocr_retry:
-                attempt = self._convert_once(
+                attempt, retry_warnings = self._convert_once_guarded_formula(
                     request,
                     ocr_enabled=True,
                     force_full_page_ocr=True,
                     acceleration_device=acceleration_device,
                 )
+                warnings.extend(retry_warnings)
                 warnings.append("docling_auto_ocr_retry_applied")
                 ocr_enabled = True
             else:
@@ -131,6 +148,55 @@ class DoclingConversionBackend(ConversionBackend):
             warnings=warnings,
         )
 
+    def _convert_once_guarded_formula(
+        self,
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device: AcceleratorDevice,
+    ) -> tuple[_DoclingAttempt, list[str]]:
+        formula_enrichment = request.table_mode == TableMode.ACCURATE
+        if not formula_enrichment:
+            return (
+                self._convert_once(
+                    request,
+                    ocr_enabled=ocr_enabled,
+                    force_full_page_ocr=force_full_page_ocr,
+                    acceleration_device=acceleration_device,
+                    formula_enrichment=False,
+                ),
+                [],
+            )
+        try:
+            return (
+                self._convert_once(
+                    request,
+                    ocr_enabled=ocr_enabled,
+                    force_full_page_ocr=force_full_page_ocr,
+                    acceleration_device=acceleration_device,
+                    formula_enrichment=True,
+                ),
+                [],
+            )
+        except BackendExecutionError as exc:
+            if not self._is_formula_runtime_unavailable(exc):
+                raise
+        return (
+            self._convert_once(
+                request,
+                ocr_enabled=ocr_enabled,
+                force_full_page_ocr=force_full_page_ocr,
+                acceleration_device=acceleration_device,
+                formula_enrichment=False,
+            ),
+            [_DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING],
+        )
+
+    def _is_formula_runtime_unavailable(self, error: BackendExecutionError) -> bool:
+        message = str(error).lower()
+        return any(hint in message for hint in _FORMULA_RUNTIME_UNAVAILABLE_HINTS)
+
     def _convert_once(
         self,
         request: ConversionRequest,
@@ -138,12 +204,14 @@ class DoclingConversionBackend(ConversionBackend):
         ocr_enabled: bool,
         force_full_page_ocr: bool,
         acceleration_device: AcceleratorDevice,
+        formula_enrichment: bool,
     ) -> _DoclingAttempt:
         key = _ConverterKey(
             table_mode=request.table_mode,
             ocr_enabled=ocr_enabled,
             force_full_page_ocr=force_full_page_ocr,
             acceleration_device=acceleration_device,
+            formula_enrichment=formula_enrichment,
         )
         converter = self._get_converter(key)
         document_stream = DocumentStream(
@@ -214,6 +282,10 @@ class DoclingConversionBackend(ConversionBackend):
         pipeline_options = PdfPipelineOptions()
         pipeline_options.do_ocr = key.ocr_enabled
         pipeline_options.do_table_structure = True
+        pipeline_options.do_formula_enrichment = key.formula_enrichment
+        if key.formula_enrichment:
+            pipeline_options.code_formula_options.extract_formulas = True
+            pipeline_options.code_formula_options.extract_code = False
         pipeline_options.table_structure_options = TableStructureOptions(
             mode=TableFormerMode(key.table_mode.value),
             do_cell_matching=key.table_mode == TableMode.ACCURATE,

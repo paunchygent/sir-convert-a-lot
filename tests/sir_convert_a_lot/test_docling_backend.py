@@ -14,6 +14,7 @@ import pytest
 
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
+    BackendExecutionError,
     BackendGpuUnavailableError,
     BackendInputError,
     ConversionRequest,
@@ -30,13 +31,14 @@ def _request(
     *,
     ocr_mode: OcrMode = OcrMode.AUTO,
     gpu_available: bool = False,
+    table_mode: TableMode = TableMode.FAST,
 ) -> ConversionRequest:
     return ConversionRequest(
         source_filename="paper_alpha.pdf",
         source_bytes=fixture_pdf_bytes("paper_alpha.pdf"),
         backend_strategy=BackendStrategy.DOCLING,
         ocr_mode=ocr_mode,
-        table_mode=TableMode.FAST,
+        table_mode=table_mode,
         gpu_available=gpu_available,
     )
 
@@ -62,7 +64,9 @@ def test_auto_mode_retries_when_first_pass_is_sparse(monkeypatch) -> None:
         ocr_enabled: bool,
         force_full_page_ocr: bool,
         acceleration_device,
+        formula_enrichment: bool,
     ) -> _DoclingAttempt:
+        del request, acceleration_device, formula_enrichment
         calls.append((ocr_enabled, force_full_page_ocr))
         if len(calls) == 1:
             return _DoclingAttempt(markdown_content="", page_count=1, low_confidence=False)
@@ -92,7 +96,9 @@ def test_auto_mode_skips_retry_when_dense_and_confident(monkeypatch) -> None:
         ocr_enabled: bool,
         force_full_page_ocr: bool,
         acceleration_device,
+        formula_enrichment: bool,
     ) -> _DoclingAttempt:
+        del request, acceleration_device, formula_enrichment
         calls.append((ocr_enabled, force_full_page_ocr))
         return _DoclingAttempt(
             markdown_content=" ".join(["dense"] * 200),
@@ -118,7 +124,9 @@ def test_force_mode_runs_single_ocr_pass(monkeypatch) -> None:
         ocr_enabled: bool,
         force_full_page_ocr: bool,
         acceleration_device,
+        formula_enrichment: bool,
     ) -> _DoclingAttempt:
+        del request, acceleration_device, formula_enrichment
         calls.append((ocr_enabled, force_full_page_ocr))
         return _DoclingAttempt(
             markdown_content="OCR forced content.",
@@ -144,7 +152,9 @@ def test_auto_mode_retries_when_low_confidence_even_if_dense(monkeypatch) -> Non
         ocr_enabled: bool,
         force_full_page_ocr: bool,
         acceleration_device,
+        formula_enrichment: bool,
     ) -> _DoclingAttempt:
+        del request, acceleration_device, formula_enrichment
         calls.append((ocr_enabled, force_full_page_ocr))
         if len(calls) == 1:
             return _DoclingAttempt(
@@ -184,6 +194,78 @@ def test_gpu_requested_fails_closed_when_runtime_unavailable(monkeypatch) -> Non
 
     with pytest.raises(BackendGpuUnavailableError):
         backend.convert(_request(ocr_mode=OcrMode.OFF, gpu_available=True))
+
+
+def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
+    backend = DoclingConversionBackend()
+    formula_flags: list[bool] = []
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+        formula_enrichment: bool,
+    ) -> _DoclingAttempt:
+        del request, ocr_enabled, force_full_page_ocr, acceleration_device
+        formula_flags.append(formula_enrichment)
+        return _DoclingAttempt(
+            markdown_content="formula-enriched-output",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+    result = backend.convert(
+        _request(
+            ocr_mode=OcrMode.OFF,
+            gpu_available=False,
+            table_mode=TableMode.ACCURATE,
+        )
+    )
+
+    assert result.markdown_content == "formula-enriched-output"
+    assert formula_flags == [True]
+    assert "docling_formula_enrichment_unavailable_fallback" not in result.warnings
+
+
+def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> None:
+    backend = DoclingConversionBackend()
+    formula_flags: list[bool] = []
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+        formula_enrichment: bool,
+    ) -> _DoclingAttempt:
+        del request, ocr_enabled, force_full_page_ocr, acceleration_device
+        formula_flags.append(formula_enrichment)
+        if formula_enrichment:
+            raise BackendExecutionError(
+                "Docling backend execution failed: CodeFormulaV2 model unavailable"
+            )
+        return _DoclingAttempt(
+            markdown_content="fallback-without-formula",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+    result = backend.convert(
+        _request(
+            ocr_mode=OcrMode.OFF,
+            gpu_available=False,
+            table_mode=TableMode.ACCURATE,
+        )
+    )
+
+    assert result.markdown_content == "fallback-without-formula"
+    assert formula_flags == [True, False]
+    assert result.warnings == ["docling_formula_enrichment_unavailable_fallback"]
 
 
 def test_invalid_pdf_raises_backend_input_error() -> None:

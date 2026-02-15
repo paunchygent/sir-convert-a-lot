@@ -62,8 +62,10 @@ Lock evaluation priority for this task:
 1. Artifact policy:
    - Commit full A/B markdown outputs for reproducible manual quality review.
 1. Decision policy:
-   - If quality winner conflicts with production governance constraints, keep governance-compatible
-     production recommendation and record follow-up decision/task.
+   - No automatic quality winner or weighted ranking is allowed.
+   - Backend selection must come from explicit manual review notes/verdict on generated artifacts.
+   - If manual quality winner conflicts with production governance constraints, keep
+     governance-compatible production recommendation and record follow-up decision/task.
 
 ## GPU Runtime Compliance Gate (2026-02-15)
 
@@ -122,8 +124,8 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 - [ ] Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary committed. All resulting .mds are high quality and pass manual review for accuracy, completeness, and formatting.
 - [x] Backend decision for scientific PDFs is explicitly quality-first:
   - A/B comparison is recorded for available backend paths on the same 10/10 corpus.
-  - Primary ranking metric is layout fidelity + information retention + legibility.
-  - Latency/throughput are used only as secondary criteria when quality is materially equivalent.
+  - Manual review verdict is required for layout fidelity + information retention + legibility.
+  - Latency/throughput are descriptive evidence only and must not auto-select winner/recommendation.
 - [x] Evidence artifacts include:
   - service revision (git SHA),
   - backend and acceleration usage,
@@ -165,3 +167,18 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
   - `pdm run run-local-pdm lint-fix` (pass)
   - `pdm run run-local-pdm typecheck-all` (pass)
   - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot` (pass; `87` tests)
+
+## Policy Update (2026-02-15)
+
+- Automatic weighted ranking/heuristic winner selection is removed from Task 12 harness outputs.
+- Harness must emit execution evidence + manual rubric scaffold only.
+- Final winner/recommendation must be manual verdict-driven, never inferred by scoring multipliers.
+
+## Equation Fidelity Hardening Slice (2026-02-15)
+
+- Scope for this slice:
+  - enable glyph-safe extraction in PyMuPDF backend to remove replacement-character corruption,
+  - add guarded Docling formula enrichment path for scientific PDFs in accurate mode,
+  - add targeted backend tests for both behaviors.
+- Constraint:
+  - fallback behavior must remain deterministic and must not change API envelope contracts.

@@ -115,3 +115,34 @@ def test_markdown_value_error_is_classified_as_backend_execution_error(monkeypat
 
     with pytest.raises(BackendExecutionError):
         backend.convert(_request(table_mode=TableMode.FAST))
+
+
+def test_pymupdf_backend_enables_use_glyphs_on_markdown_export(monkeypatch) -> None:
+    backend = PyMuPdfConversionBackend()
+    observed_kwargs: dict[str, object] = {}
+
+    class _DummyDocument:
+        def __enter__(self) -> "_DummyDocument":
+            return self
+
+        def __exit__(self, exc_type, exc, traceback) -> None:
+            del exc_type, exc, traceback
+
+    monkeypatch.setattr(backend, "_open_document", lambda _source_bytes: _DummyDocument())
+
+    def _fake_to_markdown(document, **kwargs) -> str:
+        del document
+        observed_kwargs.update(kwargs)
+        return "mock markdown"
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.pymupdf_backend.pymupdf4llm.to_markdown",
+        _fake_to_markdown,
+    )
+
+    result = backend.convert(_request(table_mode=TableMode.ACCURATE))
+
+    assert result.markdown_content == "mock markdown"
+    assert observed_kwargs["table_strategy"] == "lines_strict"
+    assert observed_kwargs["page_chunks"] is False
+    assert observed_kwargs["use_glyphs"] is True
