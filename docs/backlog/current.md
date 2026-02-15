@@ -42,10 +42,29 @@ Active focus is Story 02-01 execution:
 - Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes + observability closure).
 - Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
 - Task 20 is completed (math-safe markdown normalization + Docling export escaping hardening).
-- Task 21 is in progress (structural quality gate + hard-case normalization).
+- Task 21 is completed (structural quality gate + hard-case normalization + lint hardening follow-up).
 
 ## Worklog
 
+- 2026-02-15 — Task 21 hardening follow-up completed:
+  - Enforced MD060 table normalization in strict lint flow using runtime-required
+    `mdformat` + `mdformat-gfm` (no soft fallback path).
+  - Hardened fenced code tracking for 4+ backtick/tilde fences so post-fence
+    normalization remains deterministic.
+  - Hardened MD034 URL wrapping to preserve trailing punctuation outside
+    autolink wrappers.
+  - Added focused regression coverage:
+    - `tests/sir_convert_a_lot/test_markdown_lint_normalizer.py`
+    - `tests/sir_convert_a_lot/test_markdown_normalizer.py`
+  - Synced dependency graph and reran quality/docs gates:
+    - `pdm lock`
+    - `pdm run format-all`
+    - `pdm run lint-fix`
+    - `pdm run typecheck-all`
+    - `pdm run pytest-root tests/sir_convert_a_lot`
+    - `pdm run validate-tasks`
+    - `pdm run validate-docs`
+    - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - 2026-02-15 — Task 21 moved to `in_progress`:
   - Created:
     - `docs/backlog/tasks/task-21-structural-markdown-quality-gate-and-hard-case-normalization.md`

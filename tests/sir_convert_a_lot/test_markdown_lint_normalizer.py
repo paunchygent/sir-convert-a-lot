@@ -4,6 +4,7 @@ Covers:
 - MD034 (no-bare-urls): Bare URL wrapping
 - MD040 (fenced-code-language): Fence language defaults
 - MD004 (ul-style): List marker normalization
+- MD060 (table-column-style): GFM table normalization
 - State machine for code fence/math block exclusion
 """
 
@@ -88,6 +89,11 @@ class TestMD034NoBareUrls:
         assert "https://example.com" in result
         assert "<https://example.com>" not in result
 
+    def test_trailing_url_punctuation_stays_outside_autolink(self) -> None:
+        input_md = "Visit https://example.com, then continue."
+        result = normalize_lint_rules(input_md)
+        assert result == "Visit <https://example.com>, then continue."
+
 
 class TestMD004UlStyle:
     """Tests for MD004: ul-style rule."""
@@ -123,6 +129,20 @@ class TestMD004UlStyle:
         assert "* code comment" in result
 
 
+class TestMD060TableColumnStyle:
+    """Tests for MD060: table-column-style rule."""
+
+    def test_table_columns_normalized_with_compact_gfm_style(self) -> None:
+        input_md = "| left|right |\n|:---|---:|\n|1|2|"
+        result = normalize_lint_rules(input_md)
+        assert result == "| left | right |\n| :- | -: |\n| 1 | 2 |"
+
+    def test_table_inside_fence_not_modified(self) -> None:
+        input_md = "```markdown\n|left|right|\n|---|---|\n|1|2|\n```"
+        result = normalize_lint_rules(input_md)
+        assert result == "```markdown\n|left|right|\n|---|---|\n|1|2|\n```"
+
+
 class TestStateMachineCodeFence:
     """Tests for code fence state machine."""
 
@@ -140,6 +160,12 @@ class TestStateMachineCodeFence:
         input_md = "```\ncode\n```\n* list after"
         result = normalize_lint_rules(input_md)
         assert "- list after" in result
+
+    def test_long_backtick_fence_closes_and_normalizes_following_content(self) -> None:
+        input_md = "````\ncode\n````\n* list after"
+        result = normalize_lint_rules(input_md)
+        assert result.startswith(f"````{DEFAULT_FENCE_LANGUAGE}\ncode\n````\n")
+        assert result.endswith("- list after")
 
 
 class TestStateMachineMathBlock:

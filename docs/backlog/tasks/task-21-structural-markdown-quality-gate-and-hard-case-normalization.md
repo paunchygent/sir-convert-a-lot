@@ -2,7 +2,7 @@
 id: task-21-structural-markdown-quality-gate-and-hard-case-normalization
 title: Structural markdown quality gate and hard-case normalization
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-15'
 last_updated: '2026-02-15'
@@ -41,24 +41,27 @@ adding brittle ad hoc replacements.
 
 ## Deliverables
 
-- [ ] Structural markdown quality scoring in
-  `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
-- [ ] Marker-line sanitation in
+- [x] Structural markdown quality scoring in
+  `scripts/sir_convert_a_lot/infrastructure/markdown_quality_report.py`
+- [x] Marker-line sanitation in
   `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py`
-- [ ] Hard-case regression tests under `tests/sir_convert_a_lot/`
-- [ ] Production-surface CLI evidence in `build/manual-validation-quality-control`
+- [x] Lint normalization module in
+  `scripts/sir_convert_a_lot/infrastructure/markdown_lint_normalizer.py`
+- [x] Hard-case regression tests under `tests/sir_convert_a_lot/`
+- [x] Production-surface CLI evidence in `build/quality-test-lint-20260215T231050Z`
 
 ## Acceptance Criteria
 
-- [ ] Candidate selection prefers structurally cleaner formula output when
+- [x] Candidate selection prefers structurally cleaner formula output when
   placeholders are tied.
-- [ ] Inline display-math lines with pathological trailing slash padding are
+- [x] Inline display-math lines with pathological trailing slash padding are
   normalized deterministically.
-- [ ] Reserved protocol/control tokens (e.g. `/negationslash`, `<formula>`,
+- [x] Reserved protocol/control tokens (e.g. `/negationslash`, `<formula>`,
   `</formula`, `<loc_...>`) are stripped deterministically in `strict` mode,
   regardless of math adjacency, while preserving code-fence blocks.
-- [ ] Regression tests cover hard excerpts and pass.
-- [ ] CLI run of hard corpus succeeds with reduced malformed output signatures.
+- [x] Regression tests cover hard excerpts and pass.
+- [x] CLI run of hard corpus succeeds with reduced malformed output signatures.
+- [x] MD034 (bare URLs), MD040 (fence language), MD004 (list markers) normalized.
 
 ## Markdown Lint Normalization (Addendum 2026-02-15)
 
@@ -138,8 +141,46 @@ rules. Empirical testing (2026-02-15) shows:
 - **Performance**: mdformat parsing overhead; benchmark before adoption
 - **Link syntax preservation**: Must not double-wrap already-formatted links
 
+## Hardening Follow-Up (2026-02-15)
+
+Additional hardening scope requested after professional review of the initial
+implementation:
+
+- Apply library-backed table auto-fix (MD060) in strict lint normalization using
+  required runtime dependencies `mdformat` + `mdformat-gfm` (compact table
+  style), without soft fallback paths.
+- Harden fenced-code state tracking to correctly support 4+ tick/tilde fences
+  so post-fence normalization remains deterministic.
+- Harden MD034 URL wrapping to keep trailing punctuation outside autolinks.
+- Add regression tests for each hardening item.
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+- [x] Hardening follow-up complete (MD060 + fence/URL edge-case fixes)
+
+## Validation Evidence
+
+- Commit `a3f1ad6` deployed on Hemma with `pdm install` for new dependencies
+- Local quality gates:
+  - `pdm run format-all` (pass)
+  - `pdm run lint-fix` (pass)
+  - `pdm run typecheck-all` (pass)
+  - `pdm run pytest-root tests/sir_convert_a_lot` (156 passed, 7 skipped)
+  - `pdm run validate-tasks` (pass)
+  - `pdm run validate-docs` (pass)
+- Production CLI evidence:
+  - 10/10 conversions succeeded on scientific corpus
+  - Lint normalization confirmed: bare fences=0, asterisk lists=0, dash lists normalized
+  - Output: `build/quality-test-lint-20260215T231050Z/`
+- Hardening follow-up validation:
+  - `pdm lock` (pass; lockfile synchronized after dependency-group move)
+  - `pdm run format-all` (pass)
+  - `pdm run lint-fix` (pass)
+  - `pdm run typecheck-all` (pass)
+  - `pdm run pytest-root tests/sir_convert_a_lot` (161 passed, 7 skipped)
+  - `pdm run validate-tasks` (pass)
+  - `pdm run validate-docs` (pass)
+  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)

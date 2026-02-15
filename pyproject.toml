@@ -16,6 +16,8 @@ dependencies = [
     "typer>=0.16.0",
     "pydantic>=2.11.7",
     "pyyaml>=6.0.3",
+    "mdformat>=1.0.0",
+    "mdformat-gfm>=0.4.1",
     "docling==2.73.1",
     "pymupdf4llm==0.3.4",
 ]
@@ -26,9 +28,7 @@ dev = [
     "ruff>=0.14.0",
     "mypy>=1.18.2",
     "types-pyyaml>=6.0.12.20250915",
-    "mdformat>=1.0.0",
     "mdformat-frontmatter>=2.0.10",
-    "mdformat-gfm>=0.4.1",
 ]
 
 [tool.ruff]

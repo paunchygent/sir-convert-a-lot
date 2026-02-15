@@ -121,9 +121,19 @@ def test_strict_mode_preserves_pipe_table_without_leading_pipe() -> None:
     normalized = normalize_markdown(raw, NormalizeMode.STRICT)
 
     lines = normalized.splitlines()
-    assert lines[0] == header
-    assert lines[1] == "--- | ---"
-    assert lines[2] == "value one | value two"
+    assert "This Is A Very Long Header Column Name" in lines[0]
+    assert "Another Very Long Header Column Name" in lines[0]
+    assert lines[1].startswith("| --")
+    assert lines[1].endswith(" |")
+    assert "| value one | value two |" == lines[2]
+
+
+def test_strict_mode_applies_md060_table_normalization() -> None:
+    raw = "| left|right |\n|:---|---:|\n|1|2|\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert normalized == "| left | right |\n| :- | -: |\n| 1 | 2 |\n"
 
 
 def test_strict_mode_removes_long_standalone_page_number_blocks() -> None:
