@@ -27,7 +27,6 @@
 
 ### Remaining for Task 12 Close-Out
 
-- Commit Task 12 generated artifacts and docs updates.
 - Complete manual quality review pass for generated markdown outputs, then close Task 12.
 
 ## 2026-02-15: Task 13 Completed (GPU Runtime Compliance Gate + Hemma ROCm Verification)

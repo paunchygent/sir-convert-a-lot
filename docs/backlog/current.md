@@ -43,8 +43,9 @@ Active focus is Story 02-01 execution:
     - `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json`
     - `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md`
     - `docs/reference/artifacts/task-12-scientific-corpus/`
+  - Artifacts committed on `main`:
+    - `e19ec82` (`Add Task 12 scientific corpus evidence artifacts and run report`)
   - Remaining Task 12 close-out:
-    - commit generated artifacts and close-out docs
     - manual quality review completion for all generated markdown outputs.
 - 2026-02-15 — Task 13 completed with runtime-gated Hemma evidence on patched revision:
   - Main branch commit and push:
