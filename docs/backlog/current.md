@@ -40,10 +40,26 @@ Active focus is Story 02-01 execution:
 - Task 17 is completed (async dedupe guard + strict pagination cleanup).
 - Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes + observability closure).
 - Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
-- Task 20 is in progress (math-safe markdown normalization + Docling export escaping hardening).
+- Task 20 is completed (math-safe markdown normalization + Docling export escaping hardening).
 
 ## Worklog
 
+- 2026-02-15 — Task 20 completed:
+  - Hardened strict normalization for display-math safety and bounded cleanup of
+    pathological slash-padding artifacts:
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py`
+  - Hardened Docling markdown export to prefer unescaped symbol output where
+    supported (`escape_html=False`, with deterministic fallback):
+    - `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
+  - Added regression coverage:
+    - `tests/sir_convert_a_lot/test_markdown_normalizer.py`
+    - `tests/sir_convert_a_lot/test_docling_backend.py`
+  - Deployed and verified on Hemma revision `2d8cd29`:
+    - `pdm run run-local-pdm hemma-verify-gpu-runtime` (pass).
+  - Production-surface CLI evidence (fresh idempotency keys via renamed PDFs):
+    - `build/manual-validation-quality-control/prod-cli-three-hard-task20-fresh-20260215T191729Z`
+    - all three conversions succeeded with
+      `formula-not-decoded=0`, heavy padding lines `=0`, escaped entity artifacts `=0`.
 - 2026-02-15 — Task 20 moved to `in_progress`:
   - Created:
     - `docs/backlog/tasks/task-20-harden-markdown-normalization-for-math-artifacts-and-docling-export-escaping.md`

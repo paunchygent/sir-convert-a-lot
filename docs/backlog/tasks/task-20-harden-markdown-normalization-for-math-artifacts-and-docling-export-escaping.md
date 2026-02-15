@@ -2,7 +2,7 @@
 id: task-20-harden-markdown-normalization-for-math-artifacts-and-docling-export-escaping
 title: Harden markdown normalization for math artifacts and Docling export escaping
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-15'
 last_updated: '2026-02-15'
@@ -55,6 +55,30 @@ escaped HTML symbol noise from Docling export.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Validation Evidence
+
+- Local quality gates:
+  - `pdm run run-local-pdm format-all`
+  - `pdm run run-local-pdm lint-fix`
+  - `pdm run mypy --config-file pyproject.toml --no-incremental`
+  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot`
+  - `pdm run run-local-pdm validate-tasks`
+  - `pdm run run-local-pdm validate-docs`
+  - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- Hemma runtime verification:
+  - `pdm run run-local-pdm run-hemma -- git pull --ff-only`
+  - restart services on ports `28085` and `28086`
+  - `pdm run run-local-pdm hemma-verify-gpu-runtime` (pass on revision `2d8cd29`)
+- Production-surface CLI evidence:
+  - `pdm run run-local-pdm convert-a-lot convert <fresh-renamed-3-pdf-corpus> --service-url http://127.0.0.1:28085 ...`
+  - Output root:
+    `build/manual-validation-quality-control/prod-cli-three-hard-task20-fresh-20260215T191729Z`
+  - Result summary:
+    - all three files succeeded,
+    - `formula-not-decoded` markers: `0`,
+    - heavy slash-padding lines: `0`,
+    - escaped entities (`&lt;`, `&gt;`, `&amp;`): `0`.
