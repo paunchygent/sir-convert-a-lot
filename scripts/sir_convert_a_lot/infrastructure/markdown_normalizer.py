@@ -28,6 +28,8 @@ _REFERENCE_DEF_RE = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*\S+")
 _FOOTNOTE_DEF_RE = re.compile(r"^\s{0,3}\[\^[^\]]+\]:\s*")
 _INDENTED_RE = re.compile(r"^( {2,}|\t)")
 _STANDALONE_PAGE_NUMBER_RE = re.compile(r"^\s*\d{1,6}\s*$")
+_HEAVY_MATH_PADDING_LINE_RE = re.compile(r"^\s*(?:\\\s+){16,}\\?\s*$")
+_HEAVY_MATH_PADDING_SUFFIX_RE = re.compile(r"(?:\s+\\){16,}\s*\\?\s*$")
 _PAGINATION_NUMERIC_LINES_THRESHOLD = 20
 
 
@@ -59,6 +61,7 @@ def _strict_reflow(markdown_content: str) -> str:
     output_lines: list[str] = []
     paragraph_lines: list[str] = []
     in_fence = False
+    in_display_math = False
     previous_nonempty_line = ""
 
     def flush_paragraph() -> None:
@@ -93,6 +96,36 @@ def _strict_reflow(markdown_content: str) -> str:
             output_lines.append(line)
             if stripped != "":
                 previous_nonempty_line = line
+            index += 1
+            continue
+
+        if _is_math_block_delimiter(stripped):
+            flush_paragraph()
+            output_lines.append(stripped)
+            in_display_math = _next_math_block_state(
+                delimiter_line=stripped,
+                in_display_math=in_display_math,
+            )
+            previous_nonempty_line = stripped
+            index += 1
+            continue
+
+        if in_display_math:
+            flush_paragraph()
+            normalized_math_line = _normalize_math_line(line)
+            if _should_drop_math_padding_line(normalized_math_line):
+                index += 1
+                continue
+            output_lines.append(normalized_math_line)
+            if normalized_math_line.strip() != "":
+                previous_nonempty_line = normalized_math_line
+            index += 1
+            continue
+
+        if _contains_math_expression_marker(stripped):
+            flush_paragraph()
+            output_lines.append(line)
+            previous_nonempty_line = line
             index += 1
             continue
 
@@ -159,6 +192,32 @@ def _is_table_line(line: str) -> bool:
     if "|" in stripped and (_TABLE_RULE_RE.match(stripped) is not None):
         return True
     return False
+
+
+def _is_math_block_delimiter(stripped_line: str) -> bool:
+    return stripped_line in {"$$", r"\[", r"\]"}
+
+
+def _next_math_block_state(*, delimiter_line: str, in_display_math: bool) -> bool:
+    if delimiter_line == "$$":
+        return not in_display_math
+    if delimiter_line == r"\[":
+        return True
+    if delimiter_line == r"\]":
+        return False
+    return in_display_math
+
+
+def _contains_math_expression_marker(stripped_line: str) -> bool:
+    return "$$" in stripped_line or r"\[" in stripped_line or r"\]" in stripped_line
+
+
+def _normalize_math_line(line: str) -> str:
+    return _HEAVY_MATH_PADDING_SUFFIX_RE.sub("", line).rstrip()
+
+
+def _should_drop_math_padding_line(line: str) -> bool:
+    return _HEAVY_MATH_PADDING_LINE_RE.match(line) is not None
 
 
 def _is_table_row_line(line: str) -> bool:

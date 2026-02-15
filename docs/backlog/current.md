@@ -20,6 +20,7 @@ related:
   - docs/backlog/tasks/task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup.md
   - docs/backlog/tasks/task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity.md
   - docs/backlog/tasks/task-19-fastapi-lifecycle-and-readiness-contract-replacing-script-band-aids.md
+  - docs/backlog/tasks/task-20-harden-markdown-normalization-for-math-artifacts-and-docling-export-escaping.md
 labels:
   - session-log
   - active-work
@@ -39,9 +40,17 @@ Active focus is Story 02-01 execution:
 - Task 17 is completed (async dedupe guard + strict pagination cleanup).
 - Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes + observability closure).
 - Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
+- Task 20 is in progress (math-safe markdown normalization + Docling export escaping hardening).
 
 ## Worklog
 
+- 2026-02-15 — Task 20 moved to `in_progress`:
+  - Created:
+    - `docs/backlog/tasks/task-20-harden-markdown-normalization-for-math-artifacts-and-docling-export-escaping.md`
+  - Scope locked:
+    - harden strict normalizer for display-math safety and bounded slash-padding cleanup,
+    - reduce escaped-symbol artifacts via Docling markdown export settings,
+    - validate with targeted tests and production-surface CLI evidence on hard PDFs.
 - 2026-02-15 — CLI production parity fix:
   - `convert-a-lot` defaults now align with hardened service profile:
     - `backend_strategy=auto`, `ocr_mode=auto`, `table_mode=accurate`,

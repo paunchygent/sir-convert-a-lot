@@ -327,7 +327,7 @@ class DoclingConversionBackend(ConversionBackend):
             raise BackendInputError(str(exc)) from exc
         except Exception as exc:  # pragma: no cover - defensive guard for backend runtime issues.
             raise BackendExecutionError(f"Docling backend execution failed: {exc}") from exc
-        markdown_content = result.document.export_to_markdown()
+        markdown_content = self._export_markdown(result.document)
 
         raw_pages = getattr(result, "pages", None)
         page_count = len(raw_pages) if raw_pages is not None else 1
@@ -420,3 +420,18 @@ class DoclingConversionBackend(ConversionBackend):
     def _formula_placeholder_count(self, markdown_content: str) -> int:
         """Return number of unresolved Docling formula placeholder markers."""
         return markdown_content.count(_FORMULA_PLACEHOLDER_MARKER)
+
+    def _export_markdown(self, document: object) -> str:
+        """Export markdown with deterministic escaping policy.
+
+        Prefers `escape_html=False` when supported by the installed Docling
+        version to reduce escaped symbol artifacts in scientific text.
+        """
+        export_to_markdown = getattr(document, "export_to_markdown")
+        try:
+            exported = export_to_markdown(escape_html=False)
+        except TypeError:
+            exported = export_to_markdown()
+        if not isinstance(exported, str):
+            raise BackendExecutionError("Docling backend returned non-string markdown content.")
+        return exported

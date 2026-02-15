@@ -157,3 +157,36 @@ def test_strict_mode_preserves_short_numeric_lines() -> None:
     assert "2" in normalized
     assert "3" in normalized
     assert "keep this paragraph intact" in normalized
+
+
+def test_strict_mode_preserves_display_math_block_without_reflow() -> None:
+    long_math_line = (
+        r"\text {DistAlign} = \frac { 1 } { | D | } \sum _ { d \in D } \| "
+        r"p _ { d } - \hat { p } _ { d } \| _ { 1 }"
+    )
+    raw = f"Before text.\n\n$$\n{long_math_line}\n$$\n\nAfter text.\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert long_math_line in normalized
+    assert "Before text." in normalized
+    assert "After text." in normalized
+
+
+def test_strict_mode_drops_heavy_math_padding_and_trims_suffix() -> None:
+    heavy_padding = " ".join(["\\"] * 22)
+    raw = (
+        "$$\n"
+        r"\rho _ { j } ^ { f , \pi } = \frac { a } { b } "
+        + heavy_padding
+        + "\n"
+        + heavy_padding
+        + "\n$$\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+    normalized_lines = normalized.splitlines()
+
+    assert "$$" in normalized_lines
+    assert heavy_padding not in normalized
+    assert r"\rho _ { j } ^ { f , \pi } = \frac { a } { b }" in normalized

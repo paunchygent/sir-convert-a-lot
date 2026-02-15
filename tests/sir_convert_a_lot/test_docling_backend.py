@@ -377,6 +377,46 @@ def test_formula_enrichment_switches_to_granite_when_primary_has_placeholders(mo
     assert result.warnings == ["docling_formula_preset_switched_to_granite_docling"]
 
 
+def test_export_markdown_prefers_escape_html_false() -> None:
+    backend = DoclingConversionBackend()
+
+    class _Document:
+        def __init__(self) -> None:
+            self.kwargs_history: list[dict[str, bool]] = []
+
+        def export_to_markdown(self, **kwargs: bool) -> str:
+            self.kwargs_history.append(kwargs)
+            return "markdown"
+
+    document = _Document()
+
+    markdown = backend._export_markdown(document)
+
+    assert markdown == "markdown"
+    assert document.kwargs_history == [{"escape_html": False}]
+
+
+def test_export_markdown_falls_back_when_escape_html_unsupported() -> None:
+    backend = DoclingConversionBackend()
+
+    class _Document:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def export_to_markdown(self, **kwargs: bool) -> str:
+            self.calls += 1
+            if kwargs:
+                raise TypeError("escape_html unsupported")
+            return "fallback-markdown"
+
+    document = _Document()
+
+    markdown = backend._export_markdown(document)
+
+    assert markdown == "fallback-markdown"
+    assert document.calls == 2
+
+
 @pytest.mark.skipif(
     not docling_cuda_available(),
     reason="Docling real-conversion tests require a GPU runtime.",
