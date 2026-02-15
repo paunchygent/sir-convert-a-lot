@@ -20,6 +20,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Callable, Protocol
 
 import httpx
 
@@ -64,6 +65,19 @@ def sample_gpu_busy_peak(previous_peak: int) -> int:
     return max(previous_peak, parse_gpu_busy_peak(result.stdout))
 
 
+def try_read_git_head() -> str | None:
+    """Best-effort read of repository `HEAD` revision."""
+    try:
+        output = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return output if output != "" else None
+
+
 @dataclass(frozen=True)
 class LiveRunSettings:
     """Runtime settings for Docling GPU live conversion run."""
@@ -80,6 +94,7 @@ class LiveRunSettings:
     document_timeout_seconds: int
     poll_interval_seconds: float
     max_wait_seconds: float
+    expected_service_revision: str | None
 
 
 @dataclass
@@ -100,6 +115,7 @@ class LiveJobRecord:
     latency_seconds: float = 0.0
     markdown_path: str | None = None
     metadata_path: str | None = None
+    manifest_consistent: bool | None = None
 
 
 @dataclass
@@ -109,6 +125,7 @@ class LiveRunSummary:
     started_at: str
     finished_at: str | None
     service_url: str
+    service_revision: str | None
     corpus_dir: str
     output_root: str
     settings: dict[str, object]
@@ -116,6 +133,7 @@ class LiveRunSummary:
     succeeded: int
     failed: int
     metadata_mismatch: int
+    manifest_inconsistent: int
     jobs: list[LiveJobRecord]
 
 
@@ -153,6 +171,76 @@ def read_error_code(response: httpx.Response) -> str | None:
     return code_obj if isinstance(code_obj, str) else None
 
 
+def manifest_is_consistent(result_payload: dict[str, object]) -> bool:
+    """Return `True` when inline markdown matches declared artifact hash and size."""
+    artifact_obj = result_payload.get("artifact")
+    markdown_obj = result_payload.get("markdown_content")
+    if not isinstance(artifact_obj, dict) or not isinstance(markdown_obj, str):
+        return False
+
+    sha_obj = artifact_obj.get("sha256")
+    size_obj = artifact_obj.get("size_bytes")
+    if not isinstance(sha_obj, str) or not isinstance(size_obj, int):
+        return False
+
+    markdown_bytes = markdown_obj.encode("utf-8")
+    inline_sha = hashlib.sha256(markdown_bytes).hexdigest()
+    inline_size = len(markdown_bytes)
+    return inline_sha == sha_obj and inline_size == size_obj
+
+
+def fetch_result_with_manifest_check(
+    *,
+    fetch_result: Callable[[str, dict[str, str]], FetchResultResponse],
+    job_id: str,
+    api_key: str,
+    max_attempts: int = 3,
+    retry_delay_seconds: float = 0.2,
+) -> tuple[dict[str, object], bool]:
+    """Fetch inline result and validate manifest consistency with bounded retries."""
+    attempts = max(1, max_attempts)
+    last_result_payload: dict[str, object] | None = None
+
+    for attempt in range(attempts):
+        try:
+            response = fetch_result(
+                f"/v1/convert/jobs/{job_id}/result?inline=true",
+                {"X-API-Key": api_key},
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except (httpx.HTTPError, ValueError):
+            if attempt >= attempts - 1:
+                raise
+            time.sleep(retry_delay_seconds)
+            continue
+
+        if not isinstance(payload, dict):
+            if attempt >= attempts - 1:
+                raise ValueError("result response payload is not a JSON object")
+            time.sleep(retry_delay_seconds)
+            continue
+
+        result_obj = payload.get("result")
+        if not isinstance(result_obj, dict):
+            if attempt >= attempts - 1:
+                raise ValueError("result response is missing result object")
+            time.sleep(retry_delay_seconds)
+            continue
+
+        normalized_result = {str(k): v for k, v in result_obj.items()}
+        last_result_payload = normalized_result
+        if manifest_is_consistent(normalized_result):
+            return normalized_result, True
+
+        if attempt < attempts - 1:
+            time.sleep(retry_delay_seconds)
+
+    if last_result_payload is None:
+        raise ValueError("unable to fetch conversion result payload")
+    return last_result_payload, False
+
+
 def run_live_test(settings: LiveRunSettings) -> tuple[LiveRunSummary, Path]:
     """Execute live conversion run and return summary + summary file path."""
     pdf_paths = sorted(path for path in settings.corpus_dir.glob("*.pdf") if path.is_file())
@@ -170,6 +258,7 @@ def run_live_test(settings: LiveRunSettings) -> tuple[LiveRunSummary, Path]:
         started_at=utc_now_iso(),
         finished_at=None,
         service_url=settings.service_url,
+        service_revision=None,
         corpus_dir=str(settings.corpus_dir),
         output_root=str(run_output_root),
         settings={
@@ -178,16 +267,35 @@ def run_live_test(settings: LiveRunSettings) -> tuple[LiveRunSummary, Path]:
             "table_mode": settings.table_mode,
             "normalize": settings.normalize,
             "acceleration_policy": settings.acceleration_policy,
+            "expected_service_revision": settings.expected_service_revision,
         },
         total=len(pdf_paths),
         succeeded=0,
         failed=0,
         metadata_mismatch=0,
+        manifest_inconsistent=0,
         jobs=[],
     )
 
     timeout = httpx.Timeout(timeout=60.0, connect=10.0)
     with httpx.Client(base_url=settings.service_url, timeout=timeout) as client:
+        health_response = client.get("/healthz")
+        health_response.raise_for_status()
+        health_payload = health_response.json()
+        if not isinstance(health_payload, dict) or health_payload.get("status") != "ok":
+            raise ValueError("Service health endpoint did not return status=ok payload.")
+        revision_obj = health_payload.get("service_revision")
+        if not isinstance(revision_obj, str) or revision_obj.strip() == "":
+            raise ValueError("Service health payload is missing service_revision.")
+        summary.service_revision = revision_obj
+        if settings.expected_service_revision is not None and (
+            revision_obj != settings.expected_service_revision
+        ):
+            raise ValueError(
+                "Service revision mismatch: "
+                f"expected={settings.expected_service_revision} actual={revision_obj}"
+            )
+
         for index, pdf_path in enumerate(pdf_paths, start=1):
             file_bytes = pdf_path.read_bytes()
             document_slug = slug_for_pdf(pdf_path)
@@ -250,15 +358,40 @@ def run_live_test(settings: LiveRunSettings) -> tuple[LiveRunSummary, Path]:
             record.latency_seconds = round(time.monotonic() - started, 6)
 
             if final_status == "succeeded":
-                result_response = client.get(
-                    f"/v1/convert/jobs/{record.job_id}/result?inline=true",
-                    headers={"X-API-Key": settings.api_key},
-                )
-                result_response.raise_for_status()
-                result_payload = result_response.json()["result"]
-                conversion_metadata = result_payload["conversion_metadata"]
+                try:
+                    result_payload, manifest_consistent = fetch_result_with_manifest_check(
+                        fetch_result=lambda url, headers: client.get(url, headers=headers),
+                        job_id=record.job_id,
+                        api_key=settings.api_key,
+                    )
+                except (httpx.HTTPError, ValueError):
+                    record.error_code = "result_fetch_failed"
+                    summary.failed += 1
+                    summary.jobs.append(record)
+                    print(
+                        f"[live] result fetch failed: {pdf_path.name} job_id={record.job_id}",
+                        flush=True,
+                    )
+                    continue
+
+                conversion_metadata_obj = result_payload.get("conversion_metadata")
+                if not isinstance(conversion_metadata_obj, dict):
+                    record.error_code = "result_metadata_missing"
+                    summary.failed += 1
+                    summary.jobs.append(record)
+                    print(
+                        f"[live] metadata missing: {pdf_path.name} job_id={record.job_id}",
+                        flush=True,
+                    )
+                    continue
+
+                conversion_metadata = conversion_metadata_obj
                 warnings_obj = result_payload.get("warnings", [])
                 markdown_content = str(result_payload["markdown_content"])
+                record.manifest_consistent = manifest_consistent
+                if not manifest_consistent:
+                    summary.manifest_inconsistent += 1
+                    record.error_code = "manifest_inconsistent"
 
                 record.backend_used = str(conversion_metadata.get("backend_used"))
                 record.acceleration_used = str(conversion_metadata.get("acceleration_used"))
@@ -283,7 +416,15 @@ def run_live_test(settings: LiveRunSettings) -> tuple[LiveRunSummary, Path]:
                     summary.metadata_mismatch += 1
                     print(
                         "[live] metadata mismatch "
-                        f"{pdf_path.name}: backend={record.backend_used} acceleration={record.acceleration_used}",
+                        + (
+                            f"{pdf_path.name}: backend={record.backend_used} "
+                            f"acceleration={record.acceleration_used}"
+                        ),
+                        flush=True,
+                    )
+                elif not manifest_consistent:
+                    print(
+                        f"[live] manifest mismatch {pdf_path.name}: job_id={record.job_id}",
                         flush=True,
                     )
                 else:
@@ -331,7 +472,13 @@ def parse_args() -> LiveRunSettings:
     parser.add_argument("--document-timeout-seconds", type=int, default=7200)
     parser.add_argument("--poll-interval-seconds", type=float, default=0.5)
     parser.add_argument("--max-wait-seconds", type=float, default=7200.0)
+    parser.add_argument("--expected-service-revision", default=None)
     args = parser.parse_args()
+    expected_service_revision: str | None
+    if args.expected_service_revision is None or args.expected_service_revision.strip() == "":
+        expected_service_revision = try_read_git_head()
+    else:
+        expected_service_revision = str(args.expected_service_revision)
 
     return LiveRunSettings(
         service_url=args.service_url,
@@ -346,6 +493,7 @@ def parse_args() -> LiveRunSettings:
         document_timeout_seconds=args.document_timeout_seconds,
         poll_interval_seconds=args.poll_interval_seconds,
         max_wait_seconds=args.max_wait_seconds,
+        expected_service_revision=expected_service_revision,
     )
 
 
@@ -362,14 +510,23 @@ def main() -> None:
                 "succeeded": summary.succeeded,
                 "failed": summary.failed,
                 "metadata_mismatch": summary.metadata_mismatch,
+                "manifest_inconsistent": summary.manifest_inconsistent,
             },
             sort_keys=True,
         ),
         flush=True,
     )
-    if summary.failed > 0 or summary.metadata_mismatch > 0:
+    if summary.failed > 0 or summary.metadata_mismatch > 0 or summary.manifest_inconsistent > 0:
         raise SystemExit(2)
 
 
 if __name__ == "__main__":
     main()
+
+
+class FetchResultResponse(Protocol):
+    """Protocol for result response methods used by manifest integrity checks."""
+
+    def raise_for_status(self) -> object: ...
+
+    def json(self) -> object: ...

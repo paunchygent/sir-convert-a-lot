@@ -119,6 +119,9 @@ pdm run run-local-pdm hemma-verify-gpu-runtime
 
 Compliance pass conditions:
 
+- `/healthz` reports deterministic service metadata:
+  - `service_revision` equals Hemma repo `HEAD`,
+  - `started_at` is newer than current `HEAD` commit timestamp.
 - `rocm-smi` detects the GPU.
 - `probe_torch_gpu_runtime()` reports `runtime_kind="rocm"` and `is_available=true`.
 - Live `gpu_required` conversion succeeds with `conversion_metadata.acceleration_used="cuda"`.
@@ -142,6 +145,17 @@ pdm run convert-a-lot convert ./pdfs \
   --output-dir ./research \
   --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+```
+
+## Canonical Live Docling GPU Validation
+
+Run the committed live-runner surface (argv mode, no inline shell payloads):
+
+```bash
+pdm run run-hemma -- pdm run validate:docling-gpu-live \
+  --service-url http://127.0.0.1:28085 \
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
+  --output-root build/manual-validation-quality-control
 ```
 
 ## Deployment Pattern

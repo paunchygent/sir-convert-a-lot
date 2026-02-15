@@ -66,3 +66,12 @@ class JobExpired(Exception):
     """Raised when a job id was known but has passed retention visibility."""
 
     job_id: str
+
+
+@dataclass
+class JobStateConflict(Exception):
+    """Raised when a state transition is invalid for the current job status."""
+
+    job_id: str
+    expected_statuses: tuple[JobStatus, ...]
+    actual_status: JobStatus

@@ -15,6 +15,7 @@ import threading
 import time
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, JobSpec, JobStatus
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
@@ -287,3 +288,52 @@ def test_run_job_async_ignores_duplicate_active_job_id(monkeypatch, tmp_path: Pa
     release_run.set()
 
     assert call_count == 1
+
+
+def test_cross_runtime_same_job_only_one_execution_owner(monkeypatch, tmp_path: Path) -> None:
+    shared_root = tmp_path / "shared_runtime_data"
+    config = ServiceConfig(
+        api_key="secret-key",
+        data_root=shared_root,
+        gpu_available=False,
+        allow_cpu_only=True,
+        processing_delay_seconds=0.01,
+        enable_supervisor=False,
+    )
+    runtime_a = ServiceRuntime(config)
+    runtime_b = ServiceRuntime(config)
+    job = runtime_a.create_job(
+        spec=_job_spec("paper.pdf"),
+        upload_bytes=fixture_pdf_bytes("paper_alpha.pdf"),
+        source_filename="paper.pdf",
+    )
+
+    count_a = {"value": 0}
+    count_b = {"value": 0}
+    metadata = ConversionMetadata(
+        backend_used="docling",
+        acceleration_used="cuda",
+        ocr_enabled=False,
+        table_mode=job.spec.conversion.table_mode,
+        options_fingerprint="sha256:test",
+    )
+
+    def _execute_a(_job) -> tuple[str, ConversionMetadata, list[str]]:
+        count_a["value"] += 1
+        time.sleep(0.05)
+        return ("runtime-a", metadata, [])
+
+    def _execute_b(_job) -> tuple[str, ConversionMetadata, list[str]]:
+        count_b["value"] += 1
+        time.sleep(0.05)
+        return ("runtime-b", metadata, [])
+
+    monkeypatch.setattr(runtime_a, "_execute_conversion", _execute_a)
+    monkeypatch.setattr(runtime_b, "_execute_conversion", _execute_b)
+
+    runtime_a.run_job_async(job.job_id)
+    runtime_b.run_job_async(job.job_id)
+
+    status = _wait_for_terminal(runtime_a, job.job_id)
+    assert status == JobStatus.SUCCEEDED
+    assert count_a["value"] + count_b["value"] == 1

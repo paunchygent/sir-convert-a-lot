@@ -67,6 +67,107 @@ run_remote_shell "set -euo pipefail; ss -ltn | grep -q ':28085 '; curl -fsS '${S
 echo "[verify] checking optional evaluation listener + health"
 run_remote_shell "set -euo pipefail; if ss -ltn | grep -q ':28086 '; then curl -fsS '${EVAL_URL}/healthz' >/dev/null; else echo '[verify] eval service not running on 28086 (optional)'; fi"
 
+echo "[verify] checking service revision freshness + data-root isolation"
+run_remote_shell "set -euo pipefail; VERIFY_SERVICE_URL='${SERVICE_URL}' VERIFY_EVAL_URL='${EVAL_URL}' pdm run python - <<'PY'
+import json
+import os
+import subprocess
+from datetime import UTC, datetime
+
+import httpx
+
+
+def _require_health_payload(payload: object, *, label: str) -> dict[str, object]:
+    if not isinstance(payload, dict):
+        raise SystemExit(f'{label} health payload is not an object')
+    status = payload.get('status')
+    if status != 'ok':
+        raise SystemExit(f'{label} health status is not ok: {status!r}')
+    return payload
+
+
+def _parse_started_epoch(value: object, *, label: str) -> int:
+    if not isinstance(value, str) or value.strip() == '':
+        raise SystemExit(f'{label} started_at is missing')
+    normalized = value.replace('Z', '+00:00')
+    try:
+        started = datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise SystemExit(f'{label} started_at is invalid: {value!r}') from exc
+    return int(started.astimezone(UTC).timestamp())
+
+
+service_url = os.environ['VERIFY_SERVICE_URL'].rstrip('/')
+eval_url = os.environ['VERIFY_EVAL_URL'].rstrip('/')
+
+head_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+head_epoch = int(subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD'], text=True).strip())
+
+with httpx.Client(timeout=10.0) as client:
+    prod_response = client.get(f'{service_url}/healthz')
+    prod_response.raise_for_status()
+    prod_payload = _require_health_payload(prod_response.json(), label='prod')
+
+    prod_revision_obj = prod_payload.get('service_revision')
+    if not isinstance(prod_revision_obj, str) or prod_revision_obj.strip() == '':
+        raise SystemExit('prod service_revision missing')
+    if prod_revision_obj == 'unknown':
+        raise SystemExit('prod service_revision is unknown')
+    if prod_revision_obj != head_sha:
+        raise SystemExit(
+            f'prod service revision mismatch: service={prod_revision_obj!r} repo_head={head_sha!r}'
+        )
+    prod_started_epoch = _parse_started_epoch(prod_payload.get('started_at'), label='prod')
+    if prod_started_epoch < head_epoch:
+        raise SystemExit(
+            f'prod service started before current HEAD commit: started={prod_started_epoch} head={head_epoch}'
+        )
+
+    prod_data_root_obj = prod_payload.get('data_root')
+    if not isinstance(prod_data_root_obj, str) or prod_data_root_obj.strip() == '':
+        raise SystemExit('prod data_root missing')
+
+    eval_payload: dict[str, object] | None = None
+    try:
+        eval_response = client.get(f'{eval_url}/healthz')
+        eval_response.raise_for_status()
+    except httpx.HTTPError:
+        print('[verify] eval service not reachable on configured URL (optional)')
+    else:
+        eval_payload = _require_health_payload(eval_response.json(), label='eval')
+        eval_revision_obj = eval_payload.get('service_revision')
+        if not isinstance(eval_revision_obj, str) or eval_revision_obj.strip() == '':
+            raise SystemExit('eval service_revision missing')
+        if eval_revision_obj == 'unknown':
+            raise SystemExit('eval service_revision is unknown')
+        if eval_revision_obj != head_sha:
+            raise SystemExit(
+                f'eval service revision mismatch: service={eval_revision_obj!r} repo_head={head_sha!r}'
+            )
+        eval_started_epoch = _parse_started_epoch(eval_payload.get('started_at'), label='eval')
+        if eval_started_epoch < head_epoch:
+            raise SystemExit(
+                f'eval service started before current HEAD commit: started={eval_started_epoch} head={head_epoch}'
+            )
+        eval_data_root_obj = eval_payload.get('data_root')
+        if not isinstance(eval_data_root_obj, str) or eval_data_root_obj.strip() == '':
+            raise SystemExit('eval data_root missing')
+        if eval_data_root_obj == prod_data_root_obj:
+            raise SystemExit(
+                f'eval/prod data_root collision detected: {eval_data_root_obj!r}'
+            )
+
+result: dict[str, object] = {
+    'repo_head': head_sha,
+    'prod_revision': prod_revision_obj,
+    'prod_data_root': prod_data_root_obj,
+}
+if eval_payload is not None:
+    result['eval_revision'] = eval_payload.get('service_revision')
+    result['eval_data_root'] = eval_payload.get('data_root')
+print(json.dumps(result, sort_keys=True))
+PY"
+
 echo "[verify] running live conversion + GPU utilization sampling"
 run_remote_shell "set -euo pipefail; VERIFY_API_KEY='${API_KEY}' VERIFY_SERVICE_URL='${SERVICE_URL}' VERIFY_FIXTURE='${VERIFY_FIXTURE}' VERIFY_TIMEOUT_SECONDS='${VERIFY_TIMEOUT_SECONDS}' pdm run python - <<'PY'
 import hashlib

@@ -50,6 +50,7 @@ from scripts.sir_convert_a_lot.infrastructure.idempotency_store import Idempoten
 from scripts.sir_convert_a_lot.infrastructure.job_store import (
     JobExpired,
     JobMissing,
+    JobStateConflict,
     JobStore,
 )
 from scripts.sir_convert_a_lot.infrastructure.markdown_normalizer import normalize_markdown
@@ -430,7 +431,14 @@ class ServiceRuntime:
 
     def _run_job(self, job_id: str) -> None:
         try:
-            job = self._set_job_status(job_id, JobStatus.RUNNING, "starting")
+            try:
+                claimed = self.job_store.claim_queued_job(job_id)
+            except (JobMissing, JobExpired):
+                return
+            if not claimed:
+                return
+
+            job = self.get_job(job_id)
             if job is None:
                 return
 
@@ -458,6 +466,8 @@ class ServiceRuntime:
                     options_fingerprint=metadata.options_fingerprint,
                     warnings=warnings,
                 )
+            except JobStateConflict:
+                return
             except ServiceError as exc:
                 try:
                     self.job_store.mark_failed(
@@ -467,7 +477,7 @@ class ServiceRuntime:
                         retryable=exc.retryable,
                         details=exc.details,
                     )
-                except (JobMissing, JobExpired):
+                except (JobMissing, JobExpired, JobStateConflict):
                     return
             except Exception as exc:  # pragma: no cover - defensive fallback
                 try:
@@ -478,7 +488,7 @@ class ServiceRuntime:
                         retryable=True,
                         details=None,
                     )
-                except (JobMissing, JobExpired):
+                except (JobMissing, JobExpired, JobStateConflict):
                     return
         finally:
             with self._lock:

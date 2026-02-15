@@ -12,9 +12,12 @@ Relationships:
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
+from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
+from typing import Iterator
 
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
 from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
@@ -27,6 +30,7 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
 from scripts.sir_convert_a_lot.infrastructure.job_store_models import (
     JobExpired,
     JobMissing,
+    JobStateConflict,
     StoredJobRecord,
 )
 
@@ -68,6 +72,53 @@ class JobStore:
 
     def _tombstone_path(self, job_id: str) -> Path:
         return self.expired_dir / f"{job_id}.json"
+
+    def _lock_path(self, job_id: str) -> Path:
+        return self._job_dir(job_id) / ".manifest.lock"
+
+    def _raise_missing_or_expired(self, job_id: str) -> None:
+        tombstone = self._tombstone_path(job_id)
+        if tombstone.exists():
+            raise JobExpired(job_id=job_id)
+        raise JobMissing(job_id=job_id)
+
+    @contextmanager
+    def _job_manifest_lock(self, job_id: str) -> Iterator[None]:
+        job_dir = self._job_dir(job_id)
+        if not job_dir.exists():
+            self._raise_missing_or_expired(job_id)
+
+        lock_path = self._lock_path(job_id)
+        with lock_path.open("a+", encoding="utf-8") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    def _read_manifest_locked(self, job_id: str) -> dict[str, object]:
+        manifest_path = self._manifest_path(job_id)
+        if not manifest_path.exists():
+            self._raise_missing_or_expired(job_id)
+        return read_json(manifest_path)
+
+    def _require_status(
+        self,
+        *,
+        payload: dict[str, object],
+        job_id: str,
+        expected_statuses: tuple[JobStatus, ...],
+    ) -> None:
+        status_obj = payload.get("status")
+        if not isinstance(status_obj, str):
+            raise ValueError(f"manifest missing status for job_id={job_id}")
+        actual_status = JobStatus(status_obj)
+        if actual_status not in expected_statuses:
+            raise JobStateConflict(
+                job_id=job_id,
+                expected_statuses=expected_statuses,
+                actual_status=actual_status,
+            )
 
     def create_job(
         self,
@@ -268,34 +319,57 @@ class JobStore:
         pages_total: int | None = None,
     ) -> StoredJobRecord:
         manifest_path = self._manifest_path(job_id)
-        if not manifest_path.exists():
-            tombstone = self._tombstone_path(job_id)
-            if tombstone.exists():
-                raise JobExpired(job_id=job_id)
-            raise JobMissing(job_id=job_id)
+        with self._job_manifest_lock(job_id):
+            payload = self._read_manifest_locked(job_id)
+            now = utc_now()
 
-        payload = read_json(manifest_path)
-        now = utc_now()
+            payload["status"] = status.value
+            progress = payload.get("progress")
+            if not isinstance(progress, dict):
+                progress = {}
+                payload["progress"] = progress
+            progress["stage"] = stage
+            if pages_processed is not None:
+                progress["pages_processed"] = pages_processed
+            if pages_total is not None:
+                progress["pages_total"] = pages_total
 
-        payload["status"] = status.value
-        progress = payload.get("progress")
-        if not isinstance(progress, dict):
-            progress = {}
-            payload["progress"] = progress
-        progress["stage"] = stage
-        if pages_processed is not None:
-            progress["pages_processed"] = pages_processed
-        if pages_total is not None:
-            progress["pages_total"] = pages_total
+            timestamps = payload.get("timestamps")
+            if not isinstance(timestamps, dict):
+                timestamps = {}
+                payload["timestamps"] = timestamps
+            timestamps["updated_at"] = dt_to_rfc3339(now)
 
-        timestamps = payload.get("timestamps")
-        if not isinstance(timestamps, dict):
-            timestamps = {}
-            payload["timestamps"] = timestamps
-        timestamps["updated_at"] = dt_to_rfc3339(now)
-
-        atomic_write_json(manifest_path, payload)
+            atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
+
+    def claim_queued_job(self, job_id: str) -> bool:
+        """Atomically claim a queued job for execution ownership."""
+        manifest_path = self._manifest_path(job_id)
+        with self._job_manifest_lock(job_id):
+            payload = self._read_manifest_locked(job_id)
+            status_obj = payload.get("status")
+            if not isinstance(status_obj, str):
+                raise ValueError(f"manifest missing status for job_id={job_id}")
+            if JobStatus(status_obj) != JobStatus.QUEUED:
+                return False
+
+            now = utc_now()
+            payload["status"] = JobStatus.RUNNING.value
+            progress = payload.get("progress")
+            if not isinstance(progress, dict):
+                progress = {}
+                payload["progress"] = progress
+            progress["stage"] = "starting"
+
+            timestamps = payload.get("timestamps")
+            if not isinstance(timestamps, dict):
+                timestamps = {}
+                payload["timestamps"] = timestamps
+            timestamps["updated_at"] = dt_to_rfc3339(now)
+
+            atomic_write_json(manifest_path, payload)
+            return True
 
     def mark_succeeded(
         self,
@@ -309,45 +383,44 @@ class JobStore:
         warnings: list[str],
     ) -> StoredJobRecord:
         manifest_path = self._manifest_path(job_id)
-        if not manifest_path.exists():
-            tombstone = self._tombstone_path(job_id)
-            if tombstone.exists():
-                raise JobExpired(job_id=job_id)
-            raise JobMissing(job_id=job_id)
+        with self._job_manifest_lock(job_id):
+            payload = self._read_manifest_locked(job_id)
+            self._require_status(
+                payload=payload,
+                job_id=job_id,
+                expected_statuses=(JobStatus.RUNNING,),
+            )
 
-        payload = read_json(manifest_path)
+            artifact_path = self._artifact_path(job_id)
+            artifact_path.write_bytes(markdown_bytes)
+            sha = hashlib.sha256(markdown_bytes).hexdigest()
 
-        artifact_path = self._artifact_path(job_id)
-        artifact_path.write_bytes(markdown_bytes)
-        sha = hashlib.sha256(markdown_bytes).hexdigest()
+            now = utc_now()
+            payload["status"] = JobStatus.SUCCEEDED.value
+            timestamps = payload.get("timestamps")
+            if not isinstance(timestamps, dict):
+                timestamps = {}
+                payload["timestamps"] = timestamps
+            timestamps["updated_at"] = dt_to_rfc3339(now)
+            timestamps["completed_at"] = dt_to_rfc3339(now)
 
-        now = utc_now()
+            payload["error"] = None
+            payload["result_metadata"] = {
+                "artifact": {
+                    "markdown_filename": artifact_path.name,
+                    "size_bytes": len(markdown_bytes),
+                    "sha256": sha,
+                },
+                "conversion_metadata": {
+                    "backend_used": backend_used,
+                    "acceleration_used": acceleration_used,
+                    "ocr_enabled": ocr_enabled,
+                    "options_fingerprint": options_fingerprint,
+                },
+                "warnings": list(warnings),
+            }
 
-        payload["status"] = JobStatus.SUCCEEDED.value
-        timestamps = payload.get("timestamps")
-        if not isinstance(timestamps, dict):
-            timestamps = {}
-            payload["timestamps"] = timestamps
-        timestamps["updated_at"] = dt_to_rfc3339(now)
-        timestamps["completed_at"] = dt_to_rfc3339(now)
-
-        payload["error"] = None
-        payload["result_metadata"] = {
-            "artifact": {
-                "markdown_filename": artifact_path.name,
-                "size_bytes": len(markdown_bytes),
-                "sha256": sha,
-            },
-            "conversion_metadata": {
-                "backend_used": backend_used,
-                "acceleration_used": acceleration_used,
-                "ocr_enabled": ocr_enabled,
-                "options_fingerprint": options_fingerprint,
-            },
-            "warnings": list(warnings),
-        }
-
-        atomic_write_json(manifest_path, payload)
+            atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
 
     def mark_failed(
@@ -360,32 +433,32 @@ class JobStore:
         details: dict[str, object] | None,
     ) -> StoredJobRecord:
         manifest_path = self._manifest_path(job_id)
-        if not manifest_path.exists():
-            tombstone = self._tombstone_path(job_id)
-            if tombstone.exists():
-                raise JobExpired(job_id=job_id)
-            raise JobMissing(job_id=job_id)
+        with self._job_manifest_lock(job_id):
+            payload = self._read_manifest_locked(job_id)
+            self._require_status(
+                payload=payload,
+                job_id=job_id,
+                expected_statuses=(JobStatus.RUNNING,),
+            )
+            now = utc_now()
 
-        payload = read_json(manifest_path)
-        now = utc_now()
+            payload["status"] = JobStatus.FAILED.value
+            timestamps = payload.get("timestamps")
+            if not isinstance(timestamps, dict):
+                timestamps = {}
+                payload["timestamps"] = timestamps
+            timestamps["updated_at"] = dt_to_rfc3339(now)
+            timestamps["completed_at"] = dt_to_rfc3339(now)
 
-        payload["status"] = JobStatus.FAILED.value
-        timestamps = payload.get("timestamps")
-        if not isinstance(timestamps, dict):
-            timestamps = {}
-            payload["timestamps"] = timestamps
-        timestamps["updated_at"] = dt_to_rfc3339(now)
-        timestamps["completed_at"] = dt_to_rfc3339(now)
+            payload["result_metadata"] = None
+            payload["error"] = {
+                "code": code,
+                "message": message,
+                "retryable": retryable,
+                "details": details,
+            }
 
-        payload["result_metadata"] = None
-        payload["error"] = {
-            "code": code,
-            "message": message,
-            "retryable": retryable,
-            "details": details,
-        }
-
-        atomic_write_json(manifest_path, payload)
+            atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
 
     def mark_canceled(self, job_id: str) -> StoredJobRecord:

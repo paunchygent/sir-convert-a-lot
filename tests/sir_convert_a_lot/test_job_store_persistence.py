@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
+from scripts.sir_convert_a_lot.infrastructure.job_store_models import JobStateConflict
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceConfig,
     ServiceError,
@@ -175,3 +176,69 @@ def test_run_job_clears_active_slot_when_job_missing(tmp_path: Path) -> None:
     runtime._active_job_ids.add(job_id)
     runtime._run_job(job_id)
     assert job_id not in runtime._active_job_ids
+
+
+def test_claim_queued_job_is_atomic_and_single_owner(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    runtime = ServiceRuntime(_runtime_config(data_root))
+    job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("claim"), "paper.pdf")
+
+    first_claim = runtime.job_store.claim_queued_job(job.job_id)
+    second_claim = runtime.job_store.claim_queued_job(job.job_id)
+
+    assert first_claim is True
+    assert second_claim is False
+    claimed = runtime.get_job(job.job_id)
+    assert claimed is not None
+    assert claimed.status == JobStatus.RUNNING
+    assert claimed.progress_stage == "starting"
+
+
+def test_mark_succeeded_requires_running_state(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    runtime = ServiceRuntime(_runtime_config(data_root))
+    job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("queued"), "paper.pdf")
+
+    with pytest.raises(JobStateConflict):
+        runtime.job_store.mark_succeeded(
+            job.job_id,
+            markdown_bytes=b"not allowed",
+            backend_used="docling",
+            acceleration_used="cuda",
+            ocr_enabled=False,
+            options_fingerprint="sha256:queued",
+            warnings=[],
+        )
+
+
+def test_terminal_overwrite_is_rejected_and_artifact_kept(tmp_path: Path) -> None:
+    data_root = tmp_path / "service_data"
+    runtime = ServiceRuntime(_runtime_config(data_root))
+    job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("terminal"), "paper.pdf")
+
+    assert runtime.job_store.claim_queued_job(job.job_id) is True
+    runtime.job_store.mark_succeeded(
+        job.job_id,
+        markdown_bytes=b"first artifact",
+        backend_used="docling",
+        acceleration_used="cuda",
+        ocr_enabled=False,
+        options_fingerprint="sha256:first",
+        warnings=[],
+    )
+
+    with pytest.raises(JobStateConflict):
+        runtime.job_store.mark_succeeded(
+            job.job_id,
+            markdown_bytes=b"second artifact",
+            backend_used="docling",
+            acceleration_used="cuda",
+            ocr_enabled=False,
+            options_fingerprint="sha256:second",
+            warnings=[],
+        )
+
+    persisted = runtime.get_job(job.job_id)
+    assert persisted is not None
+    assert persisted.status == JobStatus.SUCCEEDED
+    assert persisted.artifact_path.read_bytes() == b"first artifact"

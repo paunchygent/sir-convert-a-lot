@@ -1,9 +1,9 @@
 ---
-id: 'task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup'
-title: 'Async duplicate scheduling and strict numeric pagination cleanup'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup
+title: Async duplicate scheduling and strict numeric pagination cleanup
+type: task
+status: completed
+priority: high
 created: '2026-02-15'
 last_updated: '2026-02-15'
 related:
@@ -14,6 +14,7 @@ labels:
   - normalization
   - bugfix
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -21,7 +22,7 @@ PR-sized execution unit; may be linked to a story or standalone.
 Close two reliability gaps found during live Hemma validation:
 
 1. prevent duplicate async execution start for the same active `job_id`,
-2. strip long standalone numeric pagination blocks that use 4+ digit numbering.
+1. strip long standalone numeric pagination blocks that use 4+ digit numbering.
 
 ## PR Scope
 
@@ -35,18 +36,22 @@ Close two reliability gaps found during live Hemma validation:
 
 ## Deliverables
 
-- [ ] Duplicate `run_job_async(job_id)` calls do not launch parallel threads for the same active job
-- [ ] Strict normalizer removes long standalone pagination runs with 4-digit numbers
-- [ ] Targeted tests added and passing
+- [x] Duplicate `run_job_async(job_id)` calls do not launch parallel threads for the same active job
+- [x] Strict normalizer removes long standalone pagination runs with 4-digit numbers
+- [x] Targeted tests added and passing
 
 ## Acceptance Criteria
 
-- [ ] Runtime dedupe behavior is deterministic and test-covered
-- [ ] Strict normalization removes long numeric blocks while preserving short numeric lines
-- [ ] No regressions in targeted runtime/normalizer test suites
+- [x] Runtime dedupe behavior is deterministic and test-covered
+- [x] Strict normalization removes long numeric blocks while preserving short numeric lines
+- [x] No regressions in targeted runtime/normalizer test suites
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Validation Evidence
+
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py::test_run_job_async_ignores_duplicate_active_job_id tests/sir_convert_a_lot/test_markdown_normalizer.py::test_strict_mode_removes_long_standalone_four_digit_number_blocks tests/sir_convert_a_lot/test_markdown_normalizer.py::test_strict_mode_preserves_short_numeric_lines -q`

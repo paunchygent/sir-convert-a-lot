@@ -13,13 +13,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import subprocess
 import time
+from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from starlette.types import Receive, Scope, Send
 
 from scripts.sir_convert_a_lot.application.contracts import (
     ArtifactMetadata,
@@ -47,6 +52,48 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     fingerprint_for_request,
     service_config_from_env,
 )
+
+
+def _utc_now_iso() -> str:
+    """Return current UTC timestamp as RFC3339 string."""
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _resolve_service_revision() -> str:
+    """Resolve service revision from env override or repository git metadata."""
+    configured_revision = os.getenv("SIR_CONVERT_A_LOT_SERVICE_REVISION")
+    if configured_revision is not None and configured_revision.strip() != "":
+        return configured_revision.strip()
+
+    repo_root = Path(__file__).resolve().parents[3]
+    try:
+        output = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_root,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return output if output != "" else "unknown"
+
+
+class _LazyAsgiApp:
+    """Lazy ASGI proxy that defers FastAPI app instantiation until first use."""
+
+    def __init__(self) -> None:
+        self._app: FastAPI | None = None
+
+    def _get_app(self) -> FastAPI:
+        if self._app is None:
+            self._app = create_app()
+        return self._app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self._get_app()(scope, receive, send)
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._get_app(), name)
 
 
 def _make_job_links(job_id: str) -> JobLinks:
@@ -95,9 +142,12 @@ def _error_envelope(
     )
 
 
-def create_app(config: ServiceConfig | None = None) -> FastAPI:
+def create_app(config: ServiceConfig | None = None, *, service_profile: str = "prod") -> FastAPI:
     """Create a FastAPI app instance for the Sir Convert-a-Lot v1 API."""
     runtime = ServiceRuntime(config or service_config_from_env())
+    started_at = _utc_now_iso()
+    service_revision = _resolve_service_revision()
+    resolved_data_root = runtime.config.data_root.resolve()
     app = FastAPI(title="Sir Convert-a-Lot API", version="1.0.0")
 
     @app.middleware("http")
@@ -424,10 +474,16 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
         return JSONResponse(status_code=status_code, content=payload)
 
     @app.get("/healthz")
-    async def healthcheck() -> dict[str, str]:
-        return {"status": "ok"}
+    async def healthcheck() -> dict[str, object]:
+        return {
+            "status": "ok",
+            "service_revision": service_revision,
+            "started_at": started_at,
+            "data_root": resolved_data_root.as_posix(),
+            "service_profile": service_profile,
+        }
 
     return app
 
 
-app = create_app()
+app = _LazyAsgiApp()

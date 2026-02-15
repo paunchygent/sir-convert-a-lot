@@ -18,6 +18,8 @@ related:
   - docs/backlog/tasks/task-15-govern-benchmark-and-processing-outputs-outside-docs-reference.md
   - docs/backlog/tasks/task-16-add-canonical-hemma-docling-gpu-live-test-runner-and-shell-usage-guardrails.md
   - docs/backlog/tasks/task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup.md
+  - docs/backlog/tasks/task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity.md
+  - docs/backlog/tasks/task-19-fastapi-lifecycle-and-readiness-contract-replacing-script-band-aids.md
 labels:
   - session-log
   - active-work
@@ -33,11 +35,71 @@ Active focus is Story 02-01 execution:
 - Task 13 is completed (GPU runtime compliance gate + ROCm verification/remediation).
 - Task 14 is completed (strict global Docling GPU-only invariant enforcement).
 - Task 15 is completed (output governance for benchmark/eval/runtime artifacts).
-- Task 16 is in progress (canonical Hemma live-runner + shell guardrails).
-- Task 17 is in progress (async dedupe guard + strict pagination cleanup).
+- Task 16 is completed (canonical Hemma live-runner + shell guardrails).
+- Task 17 is completed (async dedupe guard + strict pagination cleanup).
+- Task 18 is in progress (root-cause deterministic service execution + artifact integrity fixes).
+- Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
 
 ## Worklog
 
+- 2026-02-15 — Task 18 implementation slice completed locally (pending Hemma deploy verification):
+  - Removed import-time runtime side effects:
+    - `scripts/sir_convert_a_lot/interfaces/http_api.py`
+    - `scripts/sir_convert_a_lot/service.py`
+    - `scripts/sir_convert_a_lot/service_eval.py`
+  - Added persistent single-owner execution semantics:
+    - `scripts/sir_convert_a_lot/infrastructure/job_store.py`
+    - `scripts/sir_convert_a_lot/infrastructure/job_store_models.py`
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+  - Hardened live result manifest integrity checks:
+    - `scripts/sir_convert_a_lot/live_docling_gpu_quality.py`
+  - Added regression coverage:
+    - `tests/sir_convert_a_lot/test_service_import_side_effects.py`
+    - `tests/sir_convert_a_lot/test_job_store_persistence.py`
+    - `tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py`
+    - `tests/sir_convert_a_lot/test_live_docling_gpu_quality.py`
+  - Hemma verification script now enforces revision/data-root freshness checks:
+    - `scripts/devops/verify-hemma-gpu-runtime.sh`
+  - Local validation passed; remote verification currently blocked until patched revision is
+    deployed (`hemma-verify-gpu-runtime` reports `prod service_revision missing` on old running service).
+- 2026-02-15 — Task 17 completed:
+  - Runtime async dedupe guard is active for active `job_id` duplicates:
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+  - Strict normalizer strips long standalone 4-digit pagination blocks:
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py`
+  - Focused regression tests:
+    - `tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py::test_run_job_async_ignores_duplicate_active_job_id`
+    - `tests/sir_convert_a_lot/test_markdown_normalizer.py::test_strict_mode_removes_long_standalone_four_digit_number_blocks`
+    - `tests/sir_convert_a_lot/test_markdown_normalizer.py::test_strict_mode_preserves_short_numeric_lines`
+- 2026-02-15 — Task 19 created as post-Task-18 architectural slice:
+  - Created:
+    - `docs/backlog/tasks/task-19-fastapi-lifecycle-and-readiness-contract-replacing-script-band-aids.md`
+  - Locked direction:
+    - no additional brittle script-only guards,
+    - move correctness enforcement into canonical FastAPI lifecycle + `/readyz` contract,
+    - reduce wrapper checks to transport/orchestration.
+- 2026-02-15 — Task 16 completed:
+  - Added canonical live-runner command surface:
+    - `pdm run validate:docling-gpu-live`
+  - Added focused live-runner helper tests:
+    - `tests/sir_convert_a_lot/test_live_docling_gpu_quality.py`
+  - Updated runbook with argv-mode canonical command (no ad hoc inline shell payloads):
+    - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+  - Validation evidence:
+    - `pdm run run-local-pdm format-all`
+    - `pdm run run-local-pdm lint-fix`
+    - `pdm run run-local-pdm typecheck-all`
+    - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_live_docling_gpu_quality.py tests/sir_convert_a_lot/test_run_hemma_wrapper.py -q`
+    - `pdm run run-local-pdm validate-tasks`
+    - `pdm run run-local-pdm validate-docs`
+    - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- 2026-02-15 — Task 18 moved to `in_progress`:
+  - Created:
+    - `docs/backlog/tasks/task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity.md`
+  - Scope locked:
+    - remove import-time app/runtime side effects from service modules,
+    - enforce atomic store-level queued-job ownership + terminal overwrite protection,
+    - harden live runner manifest integrity checks and Hemma freshness/isolation verification.
 - 2026-02-15 — Task 17 moved to `in_progress`:
   - Created:
     - `docs/backlog/tasks/task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup.md`

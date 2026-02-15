@@ -2,7 +2,7 @@
 id: task-16-add-canonical-hemma-docling-gpu-live-test-runner-and-shell-usage-guardrails
 title: add canonical hemma docling gpu live-test runner and shell-usage guardrails
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-15'
 last_updated: '2026-02-15'
@@ -35,21 +35,31 @@ agent guardrails against fragile inline `run-hemma --shell` payloads.
 
 ## Deliverables
 
-- [ ] Canonical live-runner command exists and is executable via `run-hemma --` argv mode.
-- [ ] Output summary captures backend/acceleration invariants and per-file result metadata.
-- [ ] GPU utilization parsing is tested with representative `rocm-smi` output.
-- [ ] AGENTS guidance tightened in both repos with explicit anti-pattern prohibition.
+- [x] Canonical live-runner command exists and is executable via `run-hemma --` argv mode.
+- [x] Output summary captures backend/acceleration invariants and per-file result metadata.
+- [x] GPU utilization parsing is tested with representative `rocm-smi` output.
+- [x] AGENTS guidance tightened with explicit anti-pattern prohibition.
 
 ## Acceptance Criteria
 
-- [ ] Live runner enforces `backend_strategy=docling` + `acceleration_policy=gpu_required`.
-- [ ] Successful run summary flags any non-Docling/non-cuda metadata as mismatch.
-- [ ] No dependence on ad hoc inline heredoc/python blobs through `run-hemma --shell` for routine
+- [x] Live runner enforces `backend_strategy=docling` + `acceleration_policy=gpu_required`.
+- [x] Successful run summary flags any non-Docling/non-cuda metadata as mismatch.
+- [x] No dependence on ad hoc inline heredoc/python blobs through `run-hemma --shell` for routine
   live-run execution.
-- [ ] Focused tests and docs validators pass.
+- [x] Focused tests and docs validators pass.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Validation Evidence
+
+- `pdm run run-local-pdm format-all`
+- `pdm run run-local-pdm lint-fix`
+- `pdm run run-local-pdm typecheck-all`
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_live_docling_gpu_quality.py tests/sir_convert_a_lot/test_run_hemma_wrapper.py -q`
+- `pdm run run-local-pdm validate-tasks`
+- `pdm run run-local-pdm validate-docs`
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

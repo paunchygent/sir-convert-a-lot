@@ -84,6 +84,7 @@ distribution = false
 "sir-convert-a-lot" = "python -m scripts.sir_convert_a_lot.cli"
 "benchmark:story-003b" = "python -m scripts.sir_convert_a_lot.benchmark_gpu_governance"
 "benchmark:task-12" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
+"validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"
 "run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
 "run-hemma" = "bash scripts/devops/run-hemma.sh"
 "hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"

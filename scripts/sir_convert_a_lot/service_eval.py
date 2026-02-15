@@ -16,7 +16,6 @@ import os
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import ServiceConfig
-from scripts.sir_convert_a_lot.interfaces.http_api import app as _default_app
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 
@@ -37,6 +36,12 @@ def eval_service_config_from_env() -> ServiceConfig:
     inline_max_bytes = int(os.getenv("SIR_CONVERT_A_LOT_INLINE_MAX_BYTES", str(2 * 1024 * 1024)))
     data_root_raw = os.getenv("SIR_CONVERT_A_LOT_EVAL_DATA_DIR", "build/sir_convert_a_lot_eval")
     data_root = Path(data_root_raw)
+    prod_data_root_raw = os.getenv("SIR_CONVERT_A_LOT_DATA_DIR", "build/sir_convert_a_lot")
+    if data_root.resolve() == Path(prod_data_root_raw).resolve():
+        raise RuntimeError(
+            "Eval data root must be isolated from production data root: "
+            f"eval={data_root.resolve().as_posix()}"
+        )
     return ServiceConfig(
         api_key=api_key,
         data_root=data_root,
@@ -48,6 +53,6 @@ def eval_service_config_from_env() -> ServiceConfig:
     )
 
 
-app = create_app(eval_service_config_from_env())
+app = create_app(eval_service_config_from_env(), service_profile="eval")
 
-__all__ = ["app", "create_app", "eval_service_config_from_env", "_default_app"]
+__all__ = ["app", "create_app", "eval_service_config_from_env"]
