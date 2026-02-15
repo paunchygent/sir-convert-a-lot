@@ -190,3 +190,21 @@ def test_strict_mode_drops_heavy_math_padding_and_trims_suffix() -> None:
     assert "$$" in normalized_lines
     assert heavy_padding not in normalized
     assert r"\rho _ { j } ^ { f , \pi } = \frac { a } { b }" in normalized
+
+
+def test_strict_mode_handles_inline_display_math_opening_marker() -> None:
+    heavy_padding = " ".join(["\\"] * 24)
+    raw = (
+        r"$$\rho _ { j } ^ { f , \pi } = \frac { a } { b }"
+        + "\n"
+        + heavy_padding
+        + "\n"
+        + heavy_padding
+        + " $$\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert heavy_padding not in normalized
+    assert "$$\\rho" in normalized
+    assert "\n$$\n" in normalized
