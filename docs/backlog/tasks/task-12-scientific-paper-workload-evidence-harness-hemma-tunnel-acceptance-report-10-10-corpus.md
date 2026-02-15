@@ -60,7 +60,8 @@ Lock evaluation priority for this task:
      - `normalize=standard`
      - `acceleration_policy=cpu_only`
 1. Artifact policy:
-   - Commit full A/B markdown outputs for reproducible manual quality review.
+   - Generated A/B markdown/meta/json outputs are written under `build/` and are not committed.
+   - `docs/reference/` remains reserved for curated, human-maintained reference docs.
 1. Decision policy:
    - No automatic quality winner or weighted ranking is allowed.
    - Backend selection must come from explicit manual review notes/verdict on generated artifacts.
@@ -97,7 +98,7 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
   - submit jobs for a directory of PDFs,
   - poll until completion (or record `running`),
   - fetch results and write outputs,
-  - emit a JSON summary suitable for `docs/reference/` appendices.
+  - emit deterministic JSON/Markdown summaries under `build/benchmarks/`.
 - Add a reference report describing:
   - corpus path used (must be external to this repo),
   - success/failure counts,
@@ -112,16 +113,21 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 
 - [x] Harness runner script and smoke/unit tests for deterministic output structure.
 - [x] Evaluation service entrypoint for isolated A/B runs (`serve:sir-convert-a-lot-eval`).
-- [x] `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json` (machine-readable evidence).
-- [x] `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md` (human-readable report).
+- [x] `build/benchmarks/task-12-scientific-corpus/benchmark-pdf-md-scientific-corpus-hemma.json`
+  (machine-readable evidence).
+- [x] `build/benchmarks/task-12-scientific-corpus/ref-production-pdf-md-scientific-corpus-validation.md`
+  (human-readable report).
 - [x] Documented Hemma tunnel invocation that can be replayed by other developers/agents.
-- [x] Committed markdown artifacts for acceptance + A/B lanes.
+- [x] Markdown artifacts for acceptance + A/B lanes generated under
+  `build/benchmarks/task-12-scientific-corpus/artifacts/`.
 
 ## Acceptance Criteria
 
 - [x] Evidence uses this exact external corpus path (do not vendor PDFs into this repo):
   - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
-- [ ] Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary committed. All resulting .mds are high quality and pass manual review for accuracy, completeness, and formatting.
+- [ ] Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary
+  generated under `build/benchmarks/task-12-scientific-corpus/`. All resulting .mds are high
+  quality and pass manual review for accuracy, completeness, and formatting.
 - [x] Backend decision for scientific PDFs is explicitly quality-first:
   - A/B comparison is recorded for available backend paths on the same 10/10 corpus.
   - Manual review verdict is required for layout fidelity + information retention + legibility.
@@ -146,7 +152,7 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 - [x] Tests added and passing
 - [x] Local quality gates complete
 - [x] Hemma acceptance + evaluation runs complete
-- [x] Evidence JSON/report/artifacts committed
+- [x] Evidence JSON/report/artifacts generated in canonical `build/` output location
 - [ ] Close-out docs updated
 
 ## Execution Evidence (2026-02-15)
@@ -158,7 +164,7 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 - Task 12 benchmark run:
   - `pdm run run-local-pdm benchmark:task-12 --api-key dev-only-key`
   - output:
-    - `task12-benchmark-written docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json`
+    - `task12-benchmark-written build/benchmarks/task-12-scientific-corpus/benchmark-pdf-md-scientific-corpus-hemma.json`
     - `acceptance_success=10/10`
     - `quality_winner=pymupdf`
     - `recommended=docling` (governance-compatible production path)

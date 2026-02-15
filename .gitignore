@@ -7,3 +7,9 @@ __pycache__/
 .pdm-python
 build/
 .DS_Store
+
+# Generated benchmark/evaluation output (policy: never track under docs/reference)
+docs/reference/artifacts/
+docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json
+docs/reference/benchmark-story-003b-gpu-governance-local.json
+docs/reference/ref-production-pdf-md-scientific-corpus-validation.md

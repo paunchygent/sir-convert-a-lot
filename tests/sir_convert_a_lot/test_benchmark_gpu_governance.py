@@ -13,7 +13,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.benchmark_gpu_governance import run_benchmark
+import pytest
+
+from scripts.sir_convert_a_lot.benchmark_gpu_governance import DEFAULT_OUTPUT_JSON, run_benchmark
 from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf
 
 
@@ -61,3 +63,30 @@ def test_run_benchmark_writes_expected_json_payload(tmp_path: Path) -> None:
 
     latency = summary["latency_seconds"]
     assert set(latency.keys()) == {"min", "mean", "p50", "p95", "max"}
+
+
+def test_default_output_json_path_is_outside_docs_reference() -> None:
+    output_path = DEFAULT_OUTPUT_JSON.as_posix()
+    assert output_path.startswith("build/")
+    assert "docs/reference" not in output_path
+
+
+def test_run_benchmark_rejects_docs_reference_output_path(tmp_path: Path) -> None:
+    fixtures_dir = tmp_path / "fixtures"
+    fixtures_dir.mkdir(parents=True)
+    _write_fixture(fixtures_dir / "a.pdf", "bench-a")
+
+    with pytest.raises(ValueError, match="must not target docs/reference"):
+        run_benchmark(
+            fixtures_dir=fixtures_dir,
+            output_json=Path("docs/reference/forbidden.json"),
+            stage="local-test",
+            acceleration_policy="gpu_required",
+            api_key="benchmark-key",
+            gpu_available=False,
+            allow_cpu_only=False,
+            allow_cpu_fallback=True,
+            processing_delay_seconds=0.01,
+            max_poll_seconds=20.0,
+            data_root=tmp_path / "runtime_data",
+        )

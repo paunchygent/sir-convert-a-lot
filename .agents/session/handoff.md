@@ -1,5 +1,32 @@
 # Session Handoff
 
+## 2026-02-15: Task 15 Completed (Generated Output Governance)
+
+### Completed
+
+- Closed Task 15:
+  - `docs/backlog/tasks/task-15-govern-benchmark-and-processing-outputs-outside-docs-reference.md`
+- Enforced output policy in code (not runbook-only):
+  - `scripts/sir_convert_a_lot/benchmarking/output_policy.py`
+  - benchmark runners now reject generated output paths under `docs/reference`.
+- Updated benchmark defaults to `build/` outputs:
+  - `scripts/sir_convert_a_lot/benchmark_scientific_corpus.py`
+  - `scripts/sir_convert_a_lot/benchmark_gpu_governance.py`
+- Removed high-churn generated artifacts from docs tree:
+  - deleted `docs/reference/artifacts/task-12-scientific-corpus/`
+  - deleted generated benchmark/report JSON/MD files under `docs/reference/`
+- Updated tests and docs references for the new policy.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_benchmark_scientific_corpus.py tests/sir_convert_a_lot/test_benchmark_gpu_governance.py -q` (pass)
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
 ## 2026-02-15: Task 14 Completed (Strict Global Docling GPU-Only Invariant)
 
 ### Completed
@@ -41,9 +68,9 @@
   - production-lock service: `127.0.0.1:28085`
   - eval service: `127.0.0.1:28086`
 - Generated evidence artifacts:
-  - `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json`
-  - `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md`
-  - `docs/reference/artifacts/task-12-scientific-corpus/` (acceptance + docling + pymupdf markdown/meta)
+  - `build/benchmarks/task-12-scientific-corpus/benchmark-pdf-md-scientific-corpus-hemma.json`
+  - `build/benchmarks/task-12-scientific-corpus/ref-production-pdf-md-scientific-corpus-validation.md`
+  - `build/benchmarks/task-12-scientific-corpus/artifacts/` (acceptance + docling + pymupdf markdown/meta)
 - Run outcome:
   - acceptance lane: `10/10` succeeded
   - decision quality winner: `pymupdf`
@@ -402,7 +429,7 @@
   - `tests/sir_convert_a_lot/test_runtime_engine_gpu_policy.py`
   - `tests/sir_convert_a_lot/test_benchmark_gpu_governance.py`
   - `scripts/sir_convert_a_lot/benchmark_gpu_governance.py`
-  - `docs/reference/benchmark-story-003b-gpu-governance-local.json`
+  - `build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json`
   - `docs/reference/ref-story-003b-gpu-governance-benchmark-evidence.md`
 - Validation evidence for bootstrap close-out:
   - `pdm run run-local-pdm lint`

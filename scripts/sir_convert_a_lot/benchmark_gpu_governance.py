@@ -21,11 +21,14 @@ from typing import TypedDict
 
 from fastapi.testclient import TestClient
 
+from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
 
 DEFAULT_FIXTURES_DIR = Path("tests/fixtures/benchmark_pdfs")
-DEFAULT_OUTPUT_JSON = Path("docs/reference/benchmark-story-003b-gpu-governance-local.json")
+DEFAULT_OUTPUT_JSON = Path(
+    "build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json"
+)
 DEFAULT_DATA_ROOT = Path("build/benchmarks/story-003b-local")
 
 
@@ -171,6 +174,9 @@ def run_benchmark(
     data_root: Path,
 ) -> BenchmarkPayload:
     """Run benchmark jobs and return the output payload."""
+    enforce_generated_output_path(output_json, label="output_json")
+    enforce_generated_output_path(data_root, label="data_root")
+
     fixture_paths = sorted(fixtures_dir.glob("*.pdf"))
     if not fixture_paths:
         raise ValueError(f"No PDF fixtures found in {fixtures_dir}")

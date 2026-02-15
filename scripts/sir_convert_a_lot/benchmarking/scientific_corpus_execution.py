@@ -41,6 +41,7 @@ def run_profile(
     client: BenchmarkClient,
     lane: str,
     profile: BackendProfile,
+    run_scope: str,
     pdf_paths: list[Path],
     artifacts_root: Path,
     max_poll_seconds: float,
@@ -57,7 +58,7 @@ def run_profile(
         request_idempotency_key = idempotency_key(
             pdf_path,
             job_spec,
-            scope=f"{lane}:{profile.profile_name}:{index:03d}",
+            scope=f"{run_scope}:{lane}:{profile.profile_name}:{index:03d}",
         )
         correlation_id = f"corr_task12_{lane}_{profile.profile_name}_{index:03d}"
         markdown_path, metadata_path = artifact_paths(
@@ -162,6 +163,7 @@ def run_profile(
 def run_lane(
     *,
     lane: str,
+    run_scope: str,
     service_url: str,
     api_key: str,
     profiles: list[BackendProfile],
@@ -180,6 +182,7 @@ def run_lane(
                     client=client,
                     lane=lane,
                     profile=profile,
+                    run_scope=run_scope,
                     pdf_paths=pdf_paths,
                     artifacts_root=artifacts_root,
                     max_poll_seconds=max_poll_seconds,

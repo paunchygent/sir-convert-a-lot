@@ -6,7 +6,8 @@ Purpose:
 
 Relationships:
     - Orchestrates lane execution via `benchmarking/scientific_corpus_execution.py`.
-    - Applies rubric + decision logic via `benchmarking/scientific_corpus_quality.py`.
+    - Applies rubric scaffolding + manual-verdict logic via
+      `benchmarking/scientific_corpus_quality.py`.
     - Writes report artifact via `benchmarking/scientific_corpus_report.py`.
 """
 
@@ -14,8 +15,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_execution import run_lane
 from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_quality import (
     compute_decision,
@@ -38,10 +41,13 @@ from scripts.sir_convert_a_lot.interfaces.http_client import SirConvertALotClien
 DEFAULT_CORPUS_DIR = Path(
     "/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater"
 )
-DEFAULT_OUTPUT_JSON = Path("docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json")
-DEFAULT_OUTPUT_REPORT = Path("docs/reference/ref-production-pdf-md-scientific-corpus-validation.md")
-DEFAULT_ARTIFACTS_ROOT = Path("docs/reference/artifacts/task-12-scientific-corpus")
-DEFAULT_RUBRIC_PATH = DEFAULT_ARTIFACTS_ROOT / "manual-quality-rubric.json"
+DEFAULT_OUTPUT_ROOT = Path("build/benchmarks/task-12-scientific-corpus")
+DEFAULT_OUTPUT_JSON = DEFAULT_OUTPUT_ROOT / "benchmark-pdf-md-scientific-corpus-hemma.json"
+DEFAULT_OUTPUT_REPORT = (
+    DEFAULT_OUTPUT_ROOT / "ref-production-pdf-md-scientific-corpus-validation.md"
+)
+DEFAULT_ARTIFACTS_ROOT = DEFAULT_OUTPUT_ROOT / "artifacts"
+DEFAULT_RUBRIC_PATH = DEFAULT_OUTPUT_ROOT / "manual-quality-rubric.json"
 DEFAULT_ACCEPTANCE_URL = "http://127.0.0.1:28085"
 DEFAULT_EVALUATION_URL = "http://127.0.0.1:28086"
 
@@ -96,15 +102,25 @@ def run_benchmark(
     local_sha: str | None,
     hemma_sha: str | None,
     max_poll_seconds: float,
+    run_scope: str | None = None,
     client_factory: BenchmarkClientFactory = SirConvertALotClient,
 ) -> BenchmarkPayload:
     """Run Task 12 dual-lane evidence benchmark and return payload."""
+    enforce_generated_output_path(output_json, label="output_json")
+    enforce_generated_output_path(output_report, label="output_report")
+    enforce_generated_output_path(artifacts_root, label="artifacts_root")
+    enforce_generated_output_path(rubric_path, label="rubric_path")
+
     pdf_paths, corpus_summary = discover_corpus(corpus_dir)
     acceptance_profiles = _acceptance_profiles()
     evaluation_profiles = _evaluation_profiles()
+    resolved_run_scope = (
+        run_scope if run_scope is not None and run_scope != "" else str(time.time_ns())
+    )
 
     acceptance_lane = run_lane(
         lane="acceptance",
+        run_scope=resolved_run_scope,
         service_url=acceptance_service_url,
         api_key=api_key,
         profiles=acceptance_profiles,
@@ -115,6 +131,7 @@ def run_benchmark(
     )
     evaluation_lane = run_lane(
         lane="evaluation",
+        run_scope=resolved_run_scope,
         service_url=evaluation_service_url,
         api_key=api_key,
         profiles=evaluation_profiles,
@@ -157,7 +174,7 @@ def run_benchmark(
 
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_json.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    write_report(report_path=output_report, payload=payload)
+    write_report(report_path=output_report, benchmark_json_path=output_json, payload=payload)
     return payload
 
 
@@ -177,6 +194,7 @@ def main() -> None:
     parser.add_argument("--local-sha", default="")
     parser.add_argument("--hemma-sha", default="")
     parser.add_argument("--max-poll-seconds", type=float, default=1200.0)
+    parser.add_argument("--run-scope", default="")
     args = parser.parse_args()
 
     api_key = args.api_key
@@ -195,6 +213,7 @@ def main() -> None:
         local_sha=args.local_sha,
         hemma_sha=args.hemma_sha,
         max_poll_seconds=args.max_poll_seconds,
+        run_scope=args.run_scope,
     )
     acceptance = payload["acceptance_lane"]["summary"]
     decision = payload["decision"]
@@ -202,8 +221,9 @@ def main() -> None:
         "task12-benchmark-written",
         args.output_json,
         f"acceptance_success={acceptance['succeeded_jobs']}/{acceptance['total_jobs']}",
-        f"quality_winner={decision['quality_winner']}",
-        f"recommended={decision['recommended_production_backend']}",
+        f"manual_review_completed={decision['manual_review_completed']}",
+        f"quality_winner={decision['quality_winner'] or 'pending'}",
+        f"recommended={decision['recommended_production_backend'] or 'pending'}",
     )
 
 

@@ -1,8 +1,8 @@
-"""Rubric and decision logic for Task 12 scientific-corpus benchmarking.
+"""Rubric and manual-verdict logic for Task 12 scientific-corpus benchmarking.
 
 Purpose:
-    Create/load deterministic manual rubric payloads and compute the
-    quality-first backend decision with governance compatibility evaluation.
+    Create/load deterministic manual rubric payloads and produce
+    manual-review-driven decision and governance compatibility sections.
 
 Relationships:
     - Consumes evaluation lane outputs from `scientific_corpus_execution.py`.
@@ -12,20 +12,15 @@ Relationships:
 from __future__ import annotations
 
 import json
-import statistics
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.domain.specs import JobStatus
-
 from .scientific_corpus_types import (
-    RUBRIC_WEIGHTS,
     CorpusFileInfo,
     DecisionSummary,
     GovernanceSummary,
     JobSpecProfile,
-    LaneJobRecord,
     LaneResult,
-    RankingEntry,
+    ManualVerdict,
     RubricEntry,
     RubricPayload,
 )
@@ -58,6 +53,8 @@ def load_or_initialize_rubric(
             }
 
     auto_generated = not rubric_path.exists()
+    manual_review_completed = False
+    manual_verdict: ManualVerdict | None = None
     provided_keys: set[tuple[str, str]] = set()
     if rubric_path.exists():
         payload_obj = json.loads(rubric_path.read_text(encoding="utf-8"))
@@ -101,6 +98,37 @@ def load_or_initialize_rubric(
             else:
                 auto_generated = True
 
+        manual_review_obj = payload_obj.get("manual_review_completed")
+        if isinstance(manual_review_obj, bool):
+            manual_review_completed = manual_review_obj
+        else:
+            auto_generated = True
+
+        verdict_obj = payload_obj.get("manual_verdict")
+        if verdict_obj is None:
+            manual_verdict = None
+        elif isinstance(verdict_obj, dict):
+            winner_obj = verdict_obj.get("quality_winner")
+            recommended_obj = verdict_obj.get("recommended_production_backend")
+            follow_up_required_obj = verdict_obj.get("follow_up_required")
+            follow_up_note_obj = verdict_obj.get("follow_up_note")
+            if (
+                isinstance(winner_obj, str)
+                and isinstance(recommended_obj, str)
+                and isinstance(follow_up_required_obj, bool)
+                and (follow_up_note_obj is None or isinstance(follow_up_note_obj, str))
+            ):
+                manual_verdict = {
+                    "quality_winner": winner_obj,
+                    "recommended_production_backend": recommended_obj,
+                    "follow_up_required": follow_up_required_obj,
+                    "follow_up_note": follow_up_note_obj,
+                }
+            else:
+                auto_generated = True
+        else:
+            auto_generated = True
+
     expected_keys = set(expected_entries.keys())
     if expected_keys.difference(provided_keys):
         auto_generated = True
@@ -112,7 +140,8 @@ def load_or_initialize_rubric(
     rubric_payload: RubricPayload = {
         "generated_at": utc_now_iso(),
         "auto_generated": auto_generated,
-        "weights": dict(RUBRIC_WEIGHTS),
+        "manual_review_completed": manual_review_completed,
+        "manual_verdict": manual_verdict,
         "entries": entries,
     }
     rubric_path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,25 +151,6 @@ def load_or_initialize_rubric(
     return rubric_payload
 
 
-def _weighted_score(entry: RubricEntry) -> float:
-    weighted = (
-        RUBRIC_WEIGHTS["layout_fidelity"] * entry["layout_fidelity"]
-        + RUBRIC_WEIGHTS["information_retention"] * entry["information_retention"]
-        + RUBRIC_WEIGHTS["legibility"] * entry["legibility"]
-    )
-    return round(weighted, 6)
-
-
-def _build_profile_record_map(evaluation_lane: LaneResult) -> dict[str, dict[str, LaneJobRecord]]:
-    profile_records: dict[str, dict[str, LaneJobRecord]] = {}
-    for profile in evaluation_lane["profiles"]:
-        mapping: dict[str, LaneJobRecord] = {}
-        for record in profile["jobs"]:
-            mapping[record["document_slug"]] = record
-        profile_records[profile["profile_name"]] = mapping
-    return profile_records
-
-
 def compute_decision(
     *,
     evaluation_lane: LaneResult,
@@ -148,75 +158,50 @@ def compute_decision(
     corpus_files: list[CorpusFileInfo],
     production_profile: JobSpecProfile,
 ) -> tuple[DecisionSummary, GovernanceSummary]:
-    """Compute quality-first backend decision and governance compatibility payloads."""
-    rubric_lookup: dict[tuple[str, str], RubricEntry] = {}
-    for entry in rubric_payload["entries"]:
-        rubric_lookup[(entry["document_slug"], entry["backend"])] = entry
+    """Compute manual-review-driven decision and governance payloads."""
+    del evaluation_lane, corpus_files
 
-    profile_records = _build_profile_record_map(evaluation_lane)
-    ranking: list[RankingEntry] = []
-    for profile_name, records_by_slug in sorted(profile_records.items()):
-        scores: list[float] = []
-        severe_failures = 0
-        for file_info in corpus_files:
-            slug = file_info["document_slug"]
-            record = records_by_slug.get(slug)
-            rubric = rubric_lookup.get((slug, profile_name))
-            if record is None or record["status"] != JobStatus.SUCCEEDED.value or rubric is None:
-                scores.append(0.0)
-                severe_failures += 1
-                continue
+    review_completed = rubric_payload["manual_review_completed"]
+    verdict = rubric_payload["manual_verdict"]
+    quality_winner: str | None = None
+    recommended_backend: str | None = None
+    follow_up_required = False
+    follow_up_note: str | None = None
 
-            scores.append(_weighted_score(rubric))
-            if (
-                rubric["layout_fidelity"] <= 2
-                or rubric["information_retention"] <= 2
-                or rubric["legibility"] <= 2
-            ):
-                severe_failures += 1
+    if review_completed and verdict is not None:
+        quality_winner = verdict["quality_winner"]
+        recommended_backend = verdict["recommended_production_backend"]
+        follow_up_required = verdict["follow_up_required"]
+        follow_up_note = verdict["follow_up_note"]
 
-        profile_summary = next(
-            profile["summary"]
-            for profile in evaluation_lane["profiles"]
-            if profile["profile_name"] == profile_name
+    winner_compatible: bool | None = None
+    governance_notes: list[str] = []
+
+    if quality_winner is None or recommended_backend is None:
+        governance_notes.append(
+            "Manual quality verdict pending; no automatic winner/recommendation generated."
         )
-        ranking.append(
-            {
-                "backend": profile_name,
-                "median_weighted_score": round(statistics.median(scores), 6) if scores else 0.0,
-                "severe_quality_failures": severe_failures,
-                "success_rate": profile_summary["success_rate"],
-                "latency_p50": profile_summary["latency_seconds"]["p50"],
-            }
+    else:
+        winner_compatible = not (
+            quality_winner == "pymupdf"
+            and production_profile["acceleration_policy"] in {"gpu_required", "gpu_prefer"}
         )
-
-    ranking.sort(
-        key=lambda entry: (
-            -entry["median_weighted_score"],
-            entry["severe_quality_failures"],
-            -entry["success_rate"],
-            entry["latency_p50"],
-            entry["backend"],
-        )
-    )
-
-    quality_winner = ranking[0]["backend"] if ranking else "docling"
-    winner_compatible = not (
-        quality_winner == "pymupdf"
-        and production_profile["acceleration_policy"] in {"gpu_required", "gpu_prefer"}
-    )
-    recommended_backend = quality_winner if winner_compatible else "docling"
-    follow_up_required = not winner_compatible
-    follow_up_note = (
-        "Quality winner requires non-default governance profile; keep production recommendation "
-        "governance-compatible and track follow-up decision task/ADR."
-        if follow_up_required
-        else None
-    )
+        if winner_compatible:
+            governance_notes.append("Manual quality winner is governance-compatible.")
+        else:
+            recommended_backend = "docling"
+            follow_up_required = True
+            if follow_up_note is None:
+                follow_up_note = (
+                    "Manual quality winner conflicts with production governance profile; "
+                    "keep production recommendation governance-compatible and track follow-up "
+                    "decision task/ADR."
+                )
+            governance_notes.append(follow_up_note)
 
     decision: DecisionSummary = {
-        "algorithm": "quality_first_v1",
-        "ranking": ranking,
+        "mode": "manual_review_only",
+        "manual_review_completed": review_completed,
         "quality_winner": quality_winner,
         "recommended_production_backend": recommended_backend,
         "follow_up_required": follow_up_required,
@@ -227,8 +212,6 @@ def compute_decision(
         "quality_winner": quality_winner,
         "quality_winner_compatible_for_production": winner_compatible,
         "recommended_production_backend": recommended_backend,
-        "notes": [follow_up_note]
-        if follow_up_note is not None
-        else ["Quality winner is governance-compatible."],
+        "notes": governance_notes,
     }
     return decision, governance

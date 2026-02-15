@@ -1,8 +1,8 @@
 """Task 12 scientific corpus harness tests.
 
 Purpose:
-    Validate deterministic schema/ordering, lane behavior, quality-decision
-    ranking, and report composition for the scientific corpus benchmark harness.
+    Validate deterministic schema/ordering, lane behavior, manual-review
+    decision flow, and report composition for the scientific corpus benchmark harness.
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.benchmark_scientific_corpus`.
@@ -15,9 +15,15 @@ import json
 from pathlib import Path
 from typing import TypedDict
 
+import pytest
+
 from scripts.sir_convert_a_lot.benchmark_scientific_corpus import (
     DEFAULT_ACCEPTANCE_URL,
+    DEFAULT_ARTIFACTS_ROOT,
     DEFAULT_EVALUATION_URL,
+    DEFAULT_OUTPUT_JSON,
+    DEFAULT_OUTPUT_REPORT,
+    DEFAULT_RUBRIC_PATH,
     run_benchmark,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
@@ -166,7 +172,11 @@ def _write_rubric(
     corpus_dir: Path,
     score_docling: tuple[int, int, int],
     score_pymupdf: tuple[int, int, int],
-    pymupdf_severe_for_slug: str | None = None,
+    manual_review_completed: bool = False,
+    quality_winner: str | None = None,
+    recommended_backend: str | None = None,
+    follow_up_required: bool = False,
+    follow_up_note: str | None = None,
 ) -> None:
     from scripts.sir_convert_a_lot.benchmark_scientific_corpus import _slug_for_pdf
 
@@ -185,8 +195,6 @@ def _write_rubric(
             }
         )
         p_layout, p_retention, p_legibility = score_pymupdf
-        if pymupdf_severe_for_slug is not None and slug == pymupdf_severe_for_slug:
-            p_legibility = 2
         entries.append(
             {
                 "source_file": file_path.name,
@@ -198,14 +206,20 @@ def _write_rubric(
                 "notes": "pymupdf score",
             }
         )
+    manual_verdict: dict[str, object] | None = None
+    if manual_review_completed and quality_winner is not None and recommended_backend is not None:
+        manual_verdict = {
+            "quality_winner": quality_winner,
+            "recommended_production_backend": recommended_backend,
+            "follow_up_required": follow_up_required,
+            "follow_up_note": follow_up_note,
+        }
+
     rubric_payload = {
         "generated_at": "2026-02-14T00:00:00Z",
         "auto_generated": False,
-        "weights": {
-            "layout_fidelity": 0.45,
-            "information_retention": 0.35,
-            "legibility": 0.20,
-        },
+        "manual_review_completed": manual_review_completed,
+        "manual_verdict": manual_verdict,
         "entries": entries,
     }
     rubric_path.parent.mkdir(parents=True, exist_ok=True)
@@ -251,7 +265,38 @@ def test_deterministic_ordering_and_output_keys(tmp_path: Path) -> None:
     ]
     corpus_files = payload["corpus"]["files"]
     assert [entry["source_file"] for entry in corpus_files] == sorted(filenames)
+    assert payload["decision"]["mode"] == "manual_review_only"
+    assert payload["decision"]["manual_review_completed"] is False
+    assert payload["decision"]["quality_winner"] is None
+    assert payload["decision"]["recommended_production_backend"] is None
     assert output_json.exists()
+
+
+def test_default_output_paths_are_outside_docs_reference() -> None:
+    assert DEFAULT_OUTPUT_JSON.as_posix().startswith("build/")
+    assert DEFAULT_OUTPUT_REPORT.as_posix().startswith("build/")
+    assert DEFAULT_ARTIFACTS_ROOT.as_posix().startswith("build/")
+    assert DEFAULT_RUBRIC_PATH.as_posix().startswith("build/")
+    assert "docs/reference" not in DEFAULT_OUTPUT_JSON.as_posix()
+    assert "docs/reference" not in DEFAULT_OUTPUT_REPORT.as_posix()
+
+
+def test_rejects_docs_reference_output_paths() -> None:
+    with pytest.raises(ValueError, match="must not target docs/reference"):
+        run_benchmark(
+            corpus_dir=Path("."),
+            acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
+            evaluation_service_url=DEFAULT_EVALUATION_URL,
+            api_key="task12-key",
+            output_json=Path("docs/reference/forbidden.json"),
+            output_report=Path("build/task12.md"),
+            artifacts_root=Path("build/task12-artifacts"),
+            rubric_path=Path("build/task12-rubric.json"),
+            local_sha="local-sha",
+            hemma_sha="hemma-sha",
+            max_poll_seconds=20.0,
+            client_factory=FakeScientificClient,
+        )
 
 
 def test_summary_metrics_shape_and_counts(tmp_path: Path) -> None:
@@ -385,19 +430,20 @@ def test_evaluation_lane_emits_backend_profiles_and_artifacts(tmp_path: Path) ->
             assert Path(metadata_path).exists()
 
 
-def test_decision_tie_breaker_prefers_lower_severe_failures(tmp_path: Path) -> None:
+def test_manual_verdict_is_governance_checked_without_auto_ranking(tmp_path: Path) -> None:
     corpus_dir, filenames = _build_corpus(tmp_path)
     FakeScientificClient.scenario = _default_scenario(filenames)
     rubric_path = tmp_path / "rubric.json"
-    from scripts.sir_convert_a_lot.benchmark_scientific_corpus import _slug_for_pdf
-
-    severe_slug = _slug_for_pdf(corpus_dir / "paper_a.pdf")
     _write_rubric(
         rubric_path=rubric_path,
         corpus_dir=corpus_dir,
         score_docling=(4, 4, 4),
         score_pymupdf=(4, 4, 4),
-        pymupdf_severe_for_slug=severe_slug,
+        manual_review_completed=True,
+        quality_winner="pymupdf",
+        recommended_backend="pymupdf",
+        follow_up_required=False,
+        follow_up_note=None,
     )
 
     payload = run_benchmark(
@@ -416,9 +462,14 @@ def test_decision_tie_breaker_prefers_lower_severe_failures(tmp_path: Path) -> N
     )
 
     decision = payload["decision"]
-    assert decision["quality_winner"] == "docling"
-    assert decision["ranking"][0]["backend"] == "docling"
-    assert decision["ranking"][1]["backend"] == "pymupdf"
+    governance = payload["governance_compatibility"]
+    assert decision["mode"] == "manual_review_only"
+    assert decision["manual_review_completed"] is True
+    assert decision["quality_winner"] == "pymupdf"
+    assert governance["quality_winner_compatible_for_production"] is False
+    assert decision["recommended_production_backend"] == "docling"
+    assert decision["follow_up_required"] is True
+    assert decision["follow_up_note"] is not None
 
 
 def test_document_slug_is_deterministic_and_collision_safe() -> None:
@@ -436,13 +487,14 @@ def test_report_contains_required_sections_and_recommendation(tmp_path: Path) ->
     corpus_dir, filenames = _build_corpus(tmp_path)
     FakeScientificClient.scenario = _default_scenario(filenames)
     report_path = tmp_path / "task12-report.md"
+    output_json = tmp_path / "task12.json"
 
     run_benchmark(
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
         api_key="task12-key",
-        output_json=tmp_path / "task12.json",
+        output_json=output_json,
         output_report=report_path,
         artifacts_root=tmp_path / "artifacts",
         rubric_path=tmp_path / "rubric.json",
@@ -456,7 +508,9 @@ def test_report_contains_required_sections_and_recommendation(tmp_path: Path) ->
     assert "## Corpus and Run Context" in report
     assert "## Lane Methodology" in report
     assert "## Acceptance 10/10 Gate" in report
-    assert "## A/B Quality Results" in report
+    assert "## A/B Execution Results" in report
+    assert "## Manual Quality Verdict" in report
     assert "## Governance Compatibility" in report
     assert "## Final Recommendation" in report
     assert "## Follow-up Actions" in report
+    assert output_json.as_posix() in report

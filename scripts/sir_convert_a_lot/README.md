@@ -47,7 +47,7 @@ pdm run convert-a-lot convert ./pdfs \
 ```bash
 pdm run benchmark:story-003b \
   --fixtures-dir tests/fixtures/benchmark_pdfs \
-  --output-json docs/reference/benchmark-story-003b-gpu-governance-local.json
+  --output-json build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json
 ```
 
 ### CLI Options

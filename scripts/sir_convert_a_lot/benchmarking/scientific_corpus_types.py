@@ -20,12 +20,6 @@ from typing import Protocol, TypedDict
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.interfaces.http_client import SubmittedJob
 
-RUBRIC_WEIGHTS: dict[str, float] = {
-    "layout_fidelity": 0.45,
-    "information_retention": 0.35,
-    "legibility": 0.20,
-}
-
 
 class CorpusFileInfo(TypedDict):
     """Per-document corpus metadata."""
@@ -136,27 +130,27 @@ class RubricPayload(TypedDict):
 
     generated_at: str
     auto_generated: bool
-    weights: dict[str, float]
+    manual_review_completed: bool
+    manual_verdict: "ManualVerdict | None"
     entries: list[RubricEntry]
 
 
-class RankingEntry(TypedDict):
-    """Ranked backend entry from decision logic."""
+class ManualVerdict(TypedDict):
+    """Manual backend selection verdict from human review."""
 
-    backend: str
-    median_weighted_score: float
-    severe_quality_failures: int
-    success_rate: float
-    latency_p50: float
+    quality_winner: str
+    recommended_production_backend: str
+    follow_up_required: bool
+    follow_up_note: str | None
 
 
 class DecisionSummary(TypedDict):
-    """Task 12 quality-first decision payload."""
+    """Task 12 manual-review decision payload."""
 
-    algorithm: str
-    ranking: list[RankingEntry]
-    quality_winner: str
-    recommended_production_backend: str
+    mode: str
+    manual_review_completed: bool
+    quality_winner: str | None
+    recommended_production_backend: str | None
     follow_up_required: bool
     follow_up_note: str | None
 
@@ -165,9 +159,9 @@ class GovernanceSummary(TypedDict):
     """Governance compatibility assessment payload."""
 
     production_profile: JobSpecProfile
-    quality_winner: str
-    quality_winner_compatible_for_production: bool
-    recommended_production_backend: str
+    quality_winner: str | None
+    quality_winner_compatible_for_production: bool | None
+    recommended_production_backend: str | None
     notes: list[str]
 
 

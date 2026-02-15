@@ -2,7 +2,7 @@
 
 Purpose:
     Convert benchmark payloads into deterministic human-readable markdown
-    reference artifacts for Task 12 acceptance/evaluation evidence.
+    artifacts for Task 12 acceptance/evaluation evidence.
 
 Relationships:
     - Consumes `BenchmarkPayload` from benchmark orchestration.
@@ -14,28 +14,38 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .scientific_corpus_types import BenchmarkPayload, RankingEntry
+from .scientific_corpus_types import BenchmarkPayload, LaneProfileResult
 
 
-def render_quality_table(ranking: list[RankingEntry]) -> str:
-    """Render deterministic markdown table from ranking entries."""
+def _render_usage(usage: dict[str, int]) -> str:
+    return ", ".join(f"{name}:{count}" for name, count in sorted(usage.items()))
+
+
+def render_profile_metrics_table(profiles: list[LaneProfileResult]) -> str:
+    """Render deterministic markdown table from profile execution summaries."""
     lines = [
-        "| Backend | Median Score | Severe Failures | Success Rate | p50 Latency |",
-        "|---|---:|---:|---:|---:|",
+        "| Backend | Success Rate | Succeeded/Total | "
+        "p50 Latency | Backend Usage | Acceleration Usage |",
+        "|---|---:|---:|---:|---|---|",
     ]
-    for entry in ranking:
+    for profile in profiles:
+        summary = profile["summary"]
+        succeeded_ratio = f"{summary['succeeded_jobs']}/{summary['total_jobs']}"
         lines.append(
             "| "
-            f"{entry['backend']} | "
-            f"{entry['median_weighted_score']:.3f} | "
-            f"{entry['severe_quality_failures']} | "
-            f"{entry['success_rate']:.3f} | "
-            f"{entry['latency_p50']:.3f} |"
+            f"{profile['profile_name']} | "
+            f"{summary['success_rate']:.3f} | "
+            f"{succeeded_ratio} | "
+            f"{summary['latency_seconds']['p50']:.3f} | "
+            f"{_render_usage(summary['backend_usage'])} | "
+            f"{_render_usage(summary['acceleration_usage'])} |"
         )
     return "\n".join(lines)
 
 
-def write_report(*, report_path: Path, payload: BenchmarkPayload) -> None:
+def write_report(
+    *, report_path: Path, benchmark_json_path: Path, payload: BenchmarkPayload
+) -> None:
     """Write deterministic markdown report for Task 12 evidence output."""
     acceptance_summary = payload["acceptance_lane"]["summary"]
     evaluation_summary = payload["evaluation_lane"]["summary"]
@@ -59,11 +69,21 @@ def write_report(*, report_path: Path, payload: BenchmarkPayload) -> None:
         "- Evaluation lane runs A/B (`docling` vs `pymupdf`) with isolated "
         "eval profile for CPU-only pymupdf."
     )
-    succeeded_ratio = f"{acceptance_summary['succeeded_jobs']}/{acceptance_summary['total_jobs']}"
-    recommendation_line = (
-        f"- Adopt `{decision['recommended_production_backend']}` for production "
-        "path based on quality-first ranking and governance constraints."
+    manual_method_line = (
+        "- Backend winner/recommendation is manual-review driven; no weighted "
+        "automatic ranking is applied."
     )
+    succeeded_ratio = f"{acceptance_summary['succeeded_jobs']}/{acceptance_summary['total_jobs']}"
+    recommendation_line = "- Recommendation pending manual quality verdict."
+    if decision["recommended_production_backend"] is not None:
+        recommendation_line = (
+            f"- Adopt `{decision['recommended_production_backend']}` for production "
+            "path based on manual quality review and governance constraints."
+        )
+    manual_review_status_line = (
+        f"- Manual review completed: `{decision['manual_review_completed']}`"
+    )
+    quality_winner_line = f"- Manual quality winner: `{decision['quality_winner'] or 'pending'}`"
 
     report_text = "\n".join(
         [
@@ -83,7 +103,7 @@ def write_report(*, report_path: Path, payload: BenchmarkPayload) -> None:
             "  - hemma",
             "links:",
             task_12_doc_link,
-            "  - docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json",
+            f"  - {benchmark_json_path.as_posix()}",
             "---",
             "",
             "## Corpus and Run Context",
@@ -96,7 +116,7 @@ def write_report(*, report_path: Path, payload: BenchmarkPayload) -> None:
             "## Lane Methodology",
             acceptance_method_line,
             evaluation_method_line,
-            "- Quality ranking uses weighted rubric and deterministic tie-breakers.",
+            manual_method_line,
             "",
             "## Acceptance 10/10 Gate",
             f"- Gate passed: `{payload['acceptance_lane']['gate_passed']}`",
@@ -104,18 +124,29 @@ def write_report(*, report_path: Path, payload: BenchmarkPayload) -> None:
             f"- p50 latency: `{acceptance_summary['latency_seconds']['p50']}` seconds",
             f"- Retry warnings: `{acceptance_summary['retry_warnings_total']}`",
             "",
-            "## A/B Quality Results",
-            render_quality_table(decision["ranking"]),
+            "## A/B Execution Results",
+            render_profile_metrics_table(payload["evaluation_lane"]["profiles"]),
             "",
             f"- Evaluation lane success rate: `{evaluation_summary['success_rate']}`",
             "",
+            "## Manual Quality Verdict",
+            manual_review_status_line,
+            quality_winner_line,
+            (
+                f"- Manual recommended production backend: "
+                f"`{decision['recommended_production_backend'] or 'pending'}`"
+            ),
+            "",
             "## Governance Compatibility",
-            f"- Quality winner: `{governance['quality_winner']}`",
+            f"- Quality winner: `{governance['quality_winner'] or 'pending'}`",
             (
                 "- Winner compatible for production profile: "
                 f"`{governance['quality_winner_compatible_for_production']}`"
             ),
-            f"- Recommended production backend: `{governance['recommended_production_backend']}`",
+            (
+                f"- Recommended production backend: "
+                f"`{governance['recommended_production_backend'] or 'pending'}`"
+            ),
             "",
             "## Final Recommendation",
             recommendation_line,

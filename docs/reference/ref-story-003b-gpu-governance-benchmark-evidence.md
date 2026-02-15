@@ -14,7 +14,7 @@ tags:
 links:
   - docs/backlog/tasks/task-05-enforce-gpu-first-lock-and-benchmark-evidence-for-story-003b.md
   - docs/backlog/stories/story-03-02-gpu-first-execution-and-fallback-governance.md
-  - docs/reference/benchmark-story-003b-gpu-governance-local.json
+  - build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 ---
 
@@ -34,7 +34,7 @@ baseline results and the canonical Hemma execution path for production-profile v
 
 Source artifact:
 
-- `docs/reference/benchmark-story-003b-gpu-governance-local.json`
+- `build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json`
 
 Runtime config:
 
@@ -69,7 +69,7 @@ Resource profile summary:
 Canonical command path:
 
 ```bash
-pdm run run-hemma -- /bin/bash -lc 'pdm run benchmark:story-003b --fixtures-dir tests/fixtures/benchmark_pdfs --output-json docs/reference/benchmark-story-003b-gpu-governance-hemma.json --stage hemma --data-root build/benchmarks/story-003b-hemma'
+pdm run run-hemma -- /bin/bash -lc 'pdm run benchmark:story-003b --fixtures-dir tests/fixtures/benchmark_pdfs --output-json build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-hemma.json --stage hemma --data-root build/benchmarks/story-003b-hemma'
 ```
 
 Tunnel validation path:

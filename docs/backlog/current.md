@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md
   - docs/backlog/tasks/task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification.md
   - docs/backlog/tasks/task-14-enforce-global-docling-gpu-only-invariant-and-remove-cpu-execution-paths.md
+  - docs/backlog/tasks/task-15-govern-benchmark-and-processing-outputs-outside-docs-reference.md
 labels:
   - session-log
   - active-work
@@ -29,9 +30,22 @@ Active focus is Story 02-01 execution:
 - Task 12 is in progress (scientific-paper workload evidence harness + Hemma report).
 - Task 13 is completed (GPU runtime compliance gate + ROCm verification/remediation).
 - Task 14 is completed (strict global Docling GPU-only invariant enforcement).
+- Task 15 is completed (output governance for benchmark/eval/runtime artifacts).
 
 ## Worklog
 
+- 2026-02-15 — Task 15 completed:
+  - Removed generated benchmark/test outputs from `docs/reference`.
+  - Added programmatic guard:
+    - `scripts/sir_convert_a_lot/benchmarking/output_policy.py`
+  - `benchmark:task-12` and `benchmark:story-003b` now default to `build/benchmarks/...`.
+  - Benchmark runners now fail fast if generated outputs target `docs/reference`.
+- 2026-02-15 — Task 15 moved to `in_progress`:
+  - Created:
+    - `docs/backlog/tasks/task-15-govern-benchmark-and-processing-outputs-outside-docs-reference.md`
+  - Scope locked:
+    - move high-churn generated benchmark artifacts out of `docs/reference`,
+    - enforce deterministic output policy for benchmark/eval/runtime outputs.
 - 2026-02-15 — Task 14 activated for strict global Docling GPU-only invariant:
   - Created and moved to `in_progress`:
     - `docs/backlog/tasks/task-14-enforce-global-docling-gpu-only-invariant-and-remove-cpu-execution-paths.md`
@@ -55,11 +69,12 @@ Active focus is Story 02-01 execution:
     - quality winner: `pymupdf`
     - governance-compatible production recommendation: `docling`
   - Artifacts generated:
-    - `docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json`
-    - `docs/reference/ref-production-pdf-md-scientific-corpus-validation.md`
-    - `docs/reference/artifacts/task-12-scientific-corpus/`
-  - Artifacts committed on `main`:
-    - `e19ec82` (`Add Task 12 scientific corpus evidence artifacts and run report`)
+    - `build/benchmarks/task-12-scientific-corpus/benchmark-pdf-md-scientific-corpus-hemma.json`
+    - `build/benchmarks/task-12-scientific-corpus/ref-production-pdf-md-scientific-corpus-validation.md`
+    - `build/benchmarks/task-12-scientific-corpus/artifacts/`
+  - Historical note:
+    - `e19ec82` committed Task 12 generated artifacts under `docs/reference/`;
+      Task 15 retires that storage pattern in favor of `build/benchmarks/`.
   - Remaining Task 12 close-out:
     - manual quality review completion for all generated markdown outputs.
 - 2026-02-15 — Task 13 completed with runtime-gated Hemma evidence on patched revision:
@@ -111,7 +126,7 @@ Active focus is Story 02-01 execution:
   - Expanded API/runtime policy tests and benchmark runner tests.
   - Benchmark corpus added under `tests/fixtures/benchmark_pdfs/`.
   - Benchmark artifacts:
-    - `docs/reference/benchmark-story-003b-gpu-governance-local.json`
+    - `build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json`
     - `docs/reference/ref-story-003b-gpu-governance-benchmark-evidence.md`
 - 2026-02-11 — Story 003b validation and docs gates passed:
   - `pdm run run-local-pdm format-all`
