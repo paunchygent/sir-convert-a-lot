@@ -233,12 +233,14 @@ def test_strict_mode_drops_math_adjacent_control_sentinel_lines() -> None:
     assert "$$c=d$$" in normalized
 
 
-def test_strict_mode_preserves_non_math_control_sentinel_lines() -> None:
+def test_strict_mode_strips_non_math_control_sentinel_lines() -> None:
     raw = "Intro paragraph.\n\n/negationslash\n\nAnother paragraph.\n"
 
     normalized = normalize_markdown(raw, NormalizeMode.STRICT)
 
-    assert "/negationslash" in normalized
+    assert "/negationslash" not in normalized
+    assert "Intro paragraph." in normalized
+    assert "Another paragraph." in normalized
 
 
 def test_strict_mode_normalizes_real_hard_case_excerpt() -> None:
@@ -255,3 +257,15 @@ def test_strict_mode_normalizes_real_hard_case_excerpt() -> None:
     assert "/negationslash" not in normalized
     assert " \\" * 40 not in normalized
     assert max((line.count("\\") for line in normalized.splitlines()), default=0) < 120
+
+
+def test_strict_mode_strips_docling_formula_tags_and_loc_tokens() -> None:
+    raw = "$$<formula><loc_34><loc_114>\\alpha + \\beta</formula$$\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "<formula>" not in normalized
+    assert "</formula" not in normalized
+    assert "<loc_34>" not in normalized
+    assert "<loc_114>" not in normalized
+    assert "$$\\alpha + \\beta$$" in normalized

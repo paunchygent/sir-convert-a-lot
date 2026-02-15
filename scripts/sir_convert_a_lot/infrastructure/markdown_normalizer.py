@@ -29,6 +29,9 @@ _FOOTNOTE_DEF_RE = re.compile(r"^\s{0,3}\[\^[^\]]+\]:\s*")
 _INDENTED_RE = re.compile(r"^( {2,}|\t)")
 _STANDALONE_PAGE_NUMBER_RE = re.compile(r"^\s*\d{1,6}\s*$")
 _MATH_CONTROL_SENTINEL_RE = re.compile(r"^/[a-z_]+slash$", re.IGNORECASE)
+_DOCLING_FORMULA_OPEN_TAG_RE = re.compile(r"<formula>", re.IGNORECASE)
+_DOCLING_FORMULA_CLOSE_TAG_RE = re.compile(r"</formula\b>?", re.IGNORECASE)
+_DOCLING_LOC_TOKEN_RE = re.compile(r"<loc_\d+>", re.IGNORECASE)
 _HEAVY_MATH_PADDING_LINE_RE = re.compile(r"^\s*\\(?:\s+\\){15,}\s*$")
 _HEAVY_MATH_PADDING_WITH_CLOSER_RE = re.compile(r"^\s*\\(?:\s+\\){15,}\s*\$\$\s*$")
 _HEAVY_MATH_PADDING_SUFFIX_RE = re.compile(r"(?:\s+\\){15,}\s*$")
@@ -103,6 +106,14 @@ def _strict_reflow(markdown_content: str) -> str:
             index += 1
             continue
 
+        if _MATH_CONTROL_SENTINEL_RE.match(stripped) is not None:
+            flush_paragraph()
+            index += 1
+            continue
+
+        line = _strip_reserved_protocol_tokens(line)
+        stripped = line.strip()
+
         if in_display_math:
             flush_paragraph()
             normalized_math_line = _normalize_math_line(line)
@@ -142,14 +153,6 @@ def _strict_reflow(markdown_content: str) -> str:
             index += 1
             continue
 
-        if _MATH_CONTROL_SENTINEL_RE.match(stripped) is not None and _is_math_adjacent(
-            previous_nonempty_line=previous_nonempty_line,
-            next_nonempty_line=_next_nonempty_line(lines, index + 1),
-        ):
-            flush_paragraph()
-            index += 1
-            continue
-
         if stripped == "":
             flush_paragraph()
             if output_lines and output_lines[-1] != "":
@@ -160,11 +163,12 @@ def _strict_reflow(markdown_content: str) -> str:
         if _starts_table_block(lines=lines, index=index):
             flush_paragraph()
             output_lines.append(line)
-            output_lines.append(lines[index + 1])
-            previous_nonempty_line = lines[index + 1]
+            separator_line = _strip_reserved_protocol_tokens(lines[index + 1])
+            output_lines.append(separator_line)
+            previous_nonempty_line = separator_line
             index += 2
             while index < len(lines):
-                table_line = lines[index]
+                table_line = _strip_reserved_protocol_tokens(lines[index])
                 if table_line.strip() == "":
                     break
                 if not _is_table_row_line(table_line):
@@ -229,6 +233,19 @@ def _contains_math_expression_marker(line: str, stripped_line: str) -> bool:
     return "$$" in line or r"\[" in line or r"\]" in line or stripped_line in {r"\[", r"\]"}
 
 
+def _strip_reserved_protocol_tokens(line: str) -> str:
+    end_token_index = line.find("<end_of_utterance>")
+    if end_token_index == -1:
+        end_token_index = line.find("<end_of_utterance")
+    if end_token_index != -1:
+        line = line[:end_token_index]
+    line = _DOCLING_LOC_TOKEN_RE.sub("", line)
+    line = _DOCLING_FORMULA_OPEN_TAG_RE.sub("", line)
+    line = _DOCLING_FORMULA_CLOSE_TAG_RE.sub("", line)
+    line = line.replace("</code>", "")
+    return line
+
+
 def _normalize_math_line(line: str) -> str:
     if _HEAVY_MATH_TRAIL_BEFORE_CLOSER_RE.search(line) is not None:
         line = _HEAVY_MATH_TRAIL_BEFORE_CLOSER_RE.sub(" $$", line)
@@ -241,24 +258,6 @@ def _normalize_math_line(line: str) -> str:
 
 def _should_drop_math_padding_line(line: str) -> bool:
     return _HEAVY_MATH_PADDING_LINE_RE.match(line) is not None
-
-
-def _is_math_adjacent(*, previous_nonempty_line: str, next_nonempty_line: str | None) -> bool:
-    if _contains_math_expression_marker(previous_nonempty_line, previous_nonempty_line.strip()):
-        return True
-    if next_nonempty_line is None:
-        return False
-    return _contains_math_expression_marker(next_nonempty_line, next_nonempty_line.strip())
-
-
-def _next_nonempty_line(lines: list[str], start_index: int) -> str | None:
-    index = start_index
-    while index < len(lines):
-        candidate = lines[index]
-        if candidate.strip() != "":
-            return candidate
-        index += 1
-    return None
 
 
 def _is_table_row_line(line: str) -> bool:

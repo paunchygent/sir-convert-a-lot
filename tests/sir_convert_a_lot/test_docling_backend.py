@@ -432,6 +432,56 @@ def test_formula_enrichment_switches_to_granite_on_structural_quality(monkeypatc
     ]
 
 
+def test_formula_enrichment_switches_to_granite_on_leaked_formula_tags(monkeypatch) -> None:
+    backend = DoclingConversionBackend()
+    calls: list[str] = []
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+        formula_enrichment: bool,
+        formula_preset: str,
+    ) -> _DoclingAttempt:
+        del request, ocr_enabled, force_full_page_ocr, acceleration_device
+        calls.append(formula_preset)
+        if formula_enrichment and formula_preset == "codeformulav2":
+            return _DoclingAttempt(
+                markdown_content="$$<formula><loc_34>\\alpha</formula$$\n",
+                page_count=1,
+                low_confidence=False,
+            )
+        if formula_enrichment and formula_preset == "granite_docling":
+            return _DoclingAttempt(
+                markdown_content="$$\\alpha$$\n",
+                page_count=1,
+                low_confidence=False,
+            )
+        return _DoclingAttempt(
+            markdown_content="fallback-without-formula",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+    result = backend.convert(
+        _request(
+            ocr_mode=OcrMode.OFF,
+            gpu_available=True,
+            table_mode=TableMode.ACCURATE,
+        )
+    )
+
+    assert calls == ["codeformulav2", "granite_docling"]
+    assert result.markdown_content == "$$\\alpha$$\n"
+    assert result.warnings == [
+        "docling_formula_preset_switched_to_granite_docling",
+        "docling_formula_quality_switch_applied",
+    ]
+
+
 def test_formula_enrichment_switches_to_granite_on_real_hard_case_excerpt(monkeypatch) -> None:
     backend = DoclingConversionBackend()
     calls: list[str] = []
@@ -505,7 +555,7 @@ def test_export_markdown_prefers_escape_html_false() -> None:
     markdown = backend._export_markdown(document)
 
     assert markdown == "markdown"
-    assert document.kwargs_history == [{"escape_html": False}]
+    assert document.kwargs_history == [{"escape_html": False, "compact_tables": True}]
 
 
 def test_export_markdown_falls_back_when_escape_html_unsupported() -> None:

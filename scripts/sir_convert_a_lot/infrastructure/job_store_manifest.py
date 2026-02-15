@@ -159,6 +159,8 @@ def parse_stored_job_record(
     last_heartbeat_at = dt_from_rfc3339(diagnostics_obj.get("last_heartbeat_at"))
     current_phase_started_at = dt_from_rfc3339(diagnostics_obj.get("current_phase_started_at"))
     phase_timings_ms = parse_phase_timings(diagnostics_obj)
+    if status in {JobStatus.SUCCEEDED, JobStatus.FAILED} and "persist_ms" not in phase_timings_ms:
+        phase_timings_ms["persist_ms"] = 0
 
     result_obj = payload.get("result_metadata")
     error_obj = payload.get("error")

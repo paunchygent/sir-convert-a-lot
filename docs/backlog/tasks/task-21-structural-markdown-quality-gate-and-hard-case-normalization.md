@@ -27,9 +27,14 @@ adding brittle ad hoc replacements.
 
 - Add structural quality scoring for Docling formula-enrichment candidate
   selection (primary/fallback).
+- Prefer Docling native markdown export options when available (e.g.
+  `compact_tables=True`) to reduce ultra-wide markdown table rows and improve
+  downstream processing compatibility.
 - Harden strict normalization for inline display-math marker lines and
-  deterministic leakage cleanup for known parser control-sentinel lines near
-  math contexts.
+  deterministic leakage cleanup for reserved parser/control tokens (e.g.
+  `/negationslash`, `<formula>`, `<loc_...>`), excluding code-fence blocks.
+- Add deterministic quality-contract checks (reserved-token count, malformed-tag
+  count, extreme line-length count) surfaced as warnings in results metadata.
 - Add regression tests using hard problematic markdown excerpts derived from
   actual service output.
 - Validate end-to-end with canonical CLI against the three hard PDFs.
@@ -49,8 +54,9 @@ adding brittle ad hoc replacements.
   placeholders are tied.
 - [ ] Inline display-math lines with pathological trailing slash padding are
   normalized deterministically.
-- [ ] Standalone parser-control leakage lines (e.g. `/negationslash`) are
-  removed only under math-adjacent structural conditions.
+- [ ] Reserved protocol/control tokens (e.g. `/negationslash`, `<formula>`,
+  `</formula`, `<loc_...>`) are stripped deterministically in `strict` mode,
+  regardless of math adjacency, while preserving code-fence blocks.
 - [ ] Regression tests cover hard excerpts and pass.
 - [ ] CLI run of hard corpus succeeds with reduced malformed output signatures.
 

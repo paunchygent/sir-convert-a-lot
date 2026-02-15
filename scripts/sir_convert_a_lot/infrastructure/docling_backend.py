@@ -67,6 +67,8 @@ _FORMULA_RUNTIME_UNAVAILABLE_HINTS: tuple[str, ...] = (
     "weights",
 )
 _LEAKED_CONTROL_SENTINEL_RE = re.compile(r"^\s*/[a-z_]+slash\s*$", re.IGNORECASE)
+_LEAKED_FORMULA_TAG_RE = re.compile(r"</?formula\b", re.IGNORECASE)
+_LEAKED_LOC_TOKEN_RE = re.compile(r"<loc_\d+>", re.IGNORECASE)
 _RUNAWAY_INLINE_MATH_BACKSLASH_RE = re.compile(r"(?:\s+\\){120,}\s*\$\$\s*$")
 _INLINE_MATH_BACKSLASH_THRESHOLD = 240
 _INLINE_MATH_LINE_LENGTH_THRESHOLD = 1200
@@ -452,12 +454,20 @@ class DoclingConversionBackend(ConversionBackend):
         leaked_control_sentinels = sum(
             1 for line in lines if _LEAKED_CONTROL_SENTINEL_RE.match(line) is not None
         )
+        leaked_formula_tags = sum(
+            1 for line in lines if _LEAKED_FORMULA_TAG_RE.search(line) is not None
+        )
+        leaked_loc_tokens = sum(
+            1 for line in lines if _LEAKED_LOC_TOKEN_RE.search(line) is not None
+        )
         malformed_inline_math_lines = sum(
             1 for line in lines if self._is_malformed_inline_math_line(line)
         )
         unbalanced_display_math_blocks = sum(line.count("$$") for line in lines) % 2
         return (
             leaked_control_sentinels * 20
+            + leaked_formula_tags * 25
+            + leaked_loc_tokens * 25
             + malformed_inline_math_lines * 20
             + unbalanced_display_math_blocks * 5
         )
@@ -482,7 +492,7 @@ class DoclingConversionBackend(ConversionBackend):
         """
         export_to_markdown = getattr(document, "export_to_markdown")
         try:
-            exported = export_to_markdown(escape_html=False)
+            exported = export_to_markdown(escape_html=False, compact_tables=True)
         except TypeError:
             exported = export_to_markdown()
         if not isinstance(exported, str):
