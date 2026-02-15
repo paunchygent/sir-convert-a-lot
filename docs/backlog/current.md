@@ -21,6 +21,7 @@ related:
   - docs/backlog/tasks/task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity.md
   - docs/backlog/tasks/task-19-fastapi-lifecycle-and-readiness-contract-replacing-script-band-aids.md
   - docs/backlog/tasks/task-20-harden-markdown-normalization-for-math-artifacts-and-docling-export-escaping.md
+  - docs/backlog/tasks/task-21-structural-markdown-quality-gate-and-hard-case-normalization.md
 labels:
   - session-log
   - active-work
@@ -41,9 +42,17 @@ Active focus is Story 02-01 execution:
 - Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes + observability closure).
 - Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
 - Task 20 is completed (math-safe markdown normalization + Docling export escaping hardening).
+- Task 21 is in progress (structural quality gate + hard-case normalization).
 
 ## Worklog
 
+- 2026-02-15 — Task 21 moved to `in_progress`:
+  - Created:
+    - `docs/backlog/tasks/task-21-structural-markdown-quality-gate-and-hard-case-normalization.md`
+  - Scope locked:
+    - add structural candidate scoring for Docling formula outputs,
+    - harden marker-line normalization for inline display-math and parser-sentinel leakage,
+    - validate on hard real-output excerpts and canonical CLI runs.
 - 2026-02-15 — Task 20 completed:
   - Hardened strict normalization for display-math safety and bounded cleanup of
     pathological slash-padding artifacts:

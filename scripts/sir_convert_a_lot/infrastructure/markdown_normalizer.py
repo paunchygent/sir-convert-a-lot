@@ -28,9 +28,12 @@ _REFERENCE_DEF_RE = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*\S+")
 _FOOTNOTE_DEF_RE = re.compile(r"^\s{0,3}\[\^[^\]]+\]:\s*")
 _INDENTED_RE = re.compile(r"^( {2,}|\t)")
 _STANDALONE_PAGE_NUMBER_RE = re.compile(r"^\s*\d{1,6}\s*$")
+_MATH_CONTROL_SENTINEL_RE = re.compile(r"^/[a-z_]+slash$", re.IGNORECASE)
 _HEAVY_MATH_PADDING_LINE_RE = re.compile(r"^\s*\\(?:\s+\\){15,}\s*$")
 _HEAVY_MATH_PADDING_WITH_CLOSER_RE = re.compile(r"^\s*\\(?:\s+\\){15,}\s*\$\$\s*$")
 _HEAVY_MATH_PADDING_SUFFIX_RE = re.compile(r"(?:\s+\\){15,}\s*$")
+_HEAVY_MATH_TRAIL_BEFORE_CLOSER_RE = re.compile(r"(?:\s+\\){15,}\s*\\?\s*\$\$\s*$")
+_MATH_CLOSER_WITH_LEADING_SLASHES_RE = re.compile(r"^\s*(?:\\\s*)+\$\$\s*$")
 _PAGINATION_NUMERIC_LINES_THRESHOLD = 20
 
 
@@ -124,13 +127,26 @@ def _strict_reflow(markdown_content: str) -> str:
 
         if _contains_math_expression_marker(line, stripped):
             flush_paragraph()
-            output_lines.append(line)
+            normalized_marker_line = _normalize_math_line(line)
+            normalized_marker_stripped = normalized_marker_line.strip()
+            if _should_drop_math_padding_line(normalized_marker_line):
+                index += 1
+                continue
+            output_lines.append(normalized_marker_line)
             in_display_math = _next_math_block_state(
-                line=line,
-                stripped_line=stripped,
+                line=normalized_marker_line,
+                stripped_line=normalized_marker_stripped,
                 in_display_math=in_display_math,
             )
-            previous_nonempty_line = line
+            previous_nonempty_line = normalized_marker_line
+            index += 1
+            continue
+
+        if _MATH_CONTROL_SENTINEL_RE.match(stripped) is not None and _is_math_adjacent(
+            previous_nonempty_line=previous_nonempty_line,
+            next_nonempty_line=_next_nonempty_line(lines, index + 1),
+        ):
+            flush_paragraph()
             index += 1
             continue
 
@@ -214,6 +230,10 @@ def _contains_math_expression_marker(line: str, stripped_line: str) -> bool:
 
 
 def _normalize_math_line(line: str) -> str:
+    if _HEAVY_MATH_TRAIL_BEFORE_CLOSER_RE.search(line) is not None:
+        line = _HEAVY_MATH_TRAIL_BEFORE_CLOSER_RE.sub(" $$", line)
+    if _MATH_CLOSER_WITH_LEADING_SLASHES_RE.match(line) is not None:
+        return "$$"
     if _HEAVY_MATH_PADDING_WITH_CLOSER_RE.match(line) is not None:
         return "$$"
     return _HEAVY_MATH_PADDING_SUFFIX_RE.sub("", line).rstrip()
@@ -221,6 +241,24 @@ def _normalize_math_line(line: str) -> str:
 
 def _should_drop_math_padding_line(line: str) -> bool:
     return _HEAVY_MATH_PADDING_LINE_RE.match(line) is not None
+
+
+def _is_math_adjacent(*, previous_nonempty_line: str, next_nonempty_line: str | None) -> bool:
+    if _contains_math_expression_marker(previous_nonempty_line, previous_nonempty_line.strip()):
+        return True
+    if next_nonempty_line is None:
+        return False
+    return _contains_math_expression_marker(next_nonempty_line, next_nonempty_line.strip())
+
+
+def _next_nonempty_line(lines: list[str], start_index: int) -> str | None:
+    index = start_index
+    while index < len(lines):
+        candidate = lines[index]
+        if candidate.strip() != "":
+            return candidate
+        index += 1
+    return None
 
 
 def _is_table_row_line(line: str) -> bool:

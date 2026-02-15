@@ -11,6 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 import warnings
@@ -50,6 +51,7 @@ _DOCLING_DEPRECATED_TABLE_IMAGES_WARNING = (
 )
 _DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING = "docling_formula_enrichment_unavailable_fallback"
 _DOCLING_FORMULA_PRESET_SWITCH_WARNING = "docling_formula_preset_switched_to_granite_docling"
+_DOCLING_FORMULA_QUALITY_SWITCH_WARNING = "docling_formula_quality_switch_applied"
 _FORMULA_PLACEHOLDER_MARKER = "<!-- formula-not-decoded -->"
 _FORMULA_PRIMARY_PRESET = "codeformulav2"
 _FORMULA_FALLBACK_PRESET = "granite_docling"
@@ -64,6 +66,10 @@ _FORMULA_RUNTIME_UNAVAILABLE_HINTS: tuple[str, ...] = (
     "checkpoint",
     "weights",
 )
+_LEAKED_CONTROL_SENTINEL_RE = re.compile(r"^\s*/[a-z_]+slash\s*$", re.IGNORECASE)
+_RUNAWAY_INLINE_MATH_BACKSLASH_RE = re.compile(r"(?:\s+\\){120,}\s*\$\$\s*$")
+_INLINE_MATH_BACKSLASH_THRESHOLD = 240
+_INLINE_MATH_LINE_LENGTH_THRESHOLD = 1200
 
 warnings.filterwarnings(
     "ignore",
@@ -191,6 +197,7 @@ class DoclingConversionBackend(ConversionBackend):
             )
         warnings: list[str] = []
         primary_error: BackendExecutionError | None = None
+        primary_quality_penalty = 0
         try:
             primary_attempt, primary_timing_ms = self._timed_convert_once(
                 request=request,
@@ -201,6 +208,9 @@ class DoclingConversionBackend(ConversionBackend):
                 formula_preset=_FORMULA_PRIMARY_PRESET,
             )
             formula_enrichment_ms += primary_timing_ms
+            primary_quality_penalty = self._markdown_quality_penalty(
+                primary_attempt.markdown_content
+            )
         except BackendExecutionError as exc:
             if not self._is_formula_runtime_unavailable(exc):
                 raise
@@ -209,8 +219,10 @@ class DoclingConversionBackend(ConversionBackend):
 
         fallback_error: BackendExecutionError | None = None
         fallback_attempt: _DoclingAttempt | None = None
-        needs_fallback_attempt = primary_attempt is None or (
-            self._formula_placeholder_count(primary_attempt.markdown_content) > 0
+        needs_fallback_attempt = (
+            primary_attempt is None
+            or (self._formula_placeholder_count(primary_attempt.markdown_content) > 0)
+            or primary_quality_penalty > 0
         )
         if needs_fallback_attempt:
             try:
@@ -240,8 +252,21 @@ class DoclingConversionBackend(ConversionBackend):
             fallback_placeholder_count = self._formula_placeholder_count(
                 fallback_attempt.markdown_content
             )
+            primary_quality_penalty = self._markdown_quality_penalty(
+                primary_attempt.markdown_content
+            )
+            fallback_quality_penalty = self._markdown_quality_penalty(
+                fallback_attempt.markdown_content
+            )
             if fallback_placeholder_count < primary_placeholder_count:
                 warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
+                return fallback_attempt, warnings, timings
+            if (
+                fallback_placeholder_count == primary_placeholder_count
+                and fallback_quality_penalty < primary_quality_penalty
+            ):
+                warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
+                warnings.append(_DOCLING_FORMULA_QUALITY_SWITCH_WARNING)
                 return fallback_attempt, warnings, timings
             return primary_attempt, warnings, timings
 
@@ -420,6 +445,34 @@ class DoclingConversionBackend(ConversionBackend):
     def _formula_placeholder_count(self, markdown_content: str) -> int:
         """Return number of unresolved Docling formula placeholder markers."""
         return markdown_content.count(_FORMULA_PLACEHOLDER_MARKER)
+
+    def _markdown_quality_penalty(self, markdown_content: str) -> int:
+        """Compute structural markdown penalty for formula candidate selection."""
+        lines = markdown_content.splitlines()
+        leaked_control_sentinels = sum(
+            1 for line in lines if _LEAKED_CONTROL_SENTINEL_RE.match(line) is not None
+        )
+        malformed_inline_math_lines = sum(
+            1 for line in lines if self._is_malformed_inline_math_line(line)
+        )
+        unbalanced_display_math_blocks = sum(line.count("$$") for line in lines) % 2
+        return (
+            leaked_control_sentinels * 20
+            + malformed_inline_math_lines * 20
+            + unbalanced_display_math_blocks * 5
+        )
+
+    def _is_malformed_inline_math_line(self, line: str) -> bool:
+        stripped = line.strip()
+        if "$$" not in stripped:
+            return False
+        if line.count("\\") < _INLINE_MATH_BACKSLASH_THRESHOLD:
+            return False
+        if len(line) < _INLINE_MATH_LINE_LENGTH_THRESHOLD:
+            return False
+        if _RUNAWAY_INLINE_MATH_BACKSLASH_RE.search(line) is not None:
+            return True
+        return line.count("$$") >= 1
 
     def _export_markdown(self, document: object) -> str:
         """Export markdown with deterministic escaping policy.

@@ -10,6 +10,8 @@ Relationships:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from scripts.sir_convert_a_lot.domain.specs import NormalizeMode
 from scripts.sir_convert_a_lot.infrastructure.markdown_normalizer import normalize_markdown
 
@@ -207,4 +209,49 @@ def test_strict_mode_handles_inline_display_math_opening_marker() -> None:
 
     assert heavy_padding not in normalized
     assert "$$\\rho" in normalized
-    assert "\n$$\n" in normalized
+    assert normalized.strip().endswith("$$")
+
+
+def test_strict_mode_trims_runaway_inline_math_trailing_padding() -> None:
+    runaway_padding = " \\" * 180
+    raw = "$$\\rho _ { j } ^ { f , \\pi } = \\frac { a } { b }" + runaway_padding + " $$\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "\\rho _ { j } ^ { f , \\pi } = \\frac { a } { b }" in normalized
+    assert normalized.strip().endswith("$$")
+    assert " \\" * 20 not in normalized
+
+
+def test_strict_mode_drops_math_adjacent_control_sentinel_lines() -> None:
+    raw = "$$a=b$$\n\n/negationslash\n\n$$c=d$$\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "/negationslash" not in normalized
+    assert "$$a=b$$" in normalized
+    assert "$$c=d$$" in normalized
+
+
+def test_strict_mode_preserves_non_math_control_sentinel_lines() -> None:
+    raw = "Intro paragraph.\n\n/negationslash\n\nAnother paragraph.\n"
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "/negationslash" in normalized
+
+
+def test_strict_mode_normalizes_real_hard_case_excerpt() -> None:
+    fixture_path = (
+        Path(__file__).resolve().parents[1]
+        / "fixtures"
+        / "markdown_hardcases"
+        / "alt_annotator_problem_excerpt.md"
+    )
+    raw = fixture_path.read_text()
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "/negationslash" not in normalized
+    assert " \\" * 40 not in normalized
+    assert max((line.count("\\") for line in normalized.splitlines()), default=0) < 120
