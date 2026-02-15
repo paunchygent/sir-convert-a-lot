@@ -37,12 +37,12 @@ Active focus is Story 02-01 execution:
 - Task 15 is completed (output governance for benchmark/eval/runtime artifacts).
 - Task 16 is completed (canonical Hemma live-runner + shell guardrails).
 - Task 17 is completed (async dedupe guard + strict pagination cleanup).
-- Task 18 is in progress (root-cause deterministic service execution + artifact integrity fixes).
+- Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes).
 - Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
 
 ## Worklog
 
-- 2026-02-15 — Task 18 implementation slice completed locally (pending Hemma deploy verification):
+- 2026-02-15 — Task 18 completed with Hemma operational closure:
   - Removed import-time runtime side effects:
     - `scripts/sir_convert_a_lot/interfaces/http_api.py`
     - `scripts/sir_convert_a_lot/service.py`
@@ -60,8 +60,11 @@ Active focus is Story 02-01 execution:
     - `tests/sir_convert_a_lot/test_live_docling_gpu_quality.py`
   - Hemma verification script now enforces revision/data-root freshness checks:
     - `scripts/devops/verify-hemma-gpu-runtime.sh`
-  - Local validation passed; remote verification currently blocked until patched revision is
-    deployed (`hemma-verify-gpu-runtime` reports `prod service_revision missing` on old running service).
+  - Deployed and verified on Hemma:
+    - `git push origin main` on commit `fbc559e`
+    - `pdm run run-local-pdm run-hemma -- git pull --ff-only`
+    - restarted both services on `127.0.0.1:28085` and `127.0.0.1:28086`
+    - `pdm run run-local-pdm hemma-verify-gpu-runtime` passed (revision parity + GPU conversion)
 - 2026-02-15 — Task 17 completed:
   - Runtime async dedupe guard is active for active `job_id` duplicates:
     - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`

@@ -2,7 +2,7 @@
 id: task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity
 title: Root-Cause Fix Deterministic Service Execution and Artifact Integrity
 type: task
-status: in_progress
+status: completed
 priority: critical
 created: '2026-02-15'
 last_updated: '2026-02-15'
@@ -91,7 +91,7 @@ Ops hardening:
 - [x] Implementation complete
 - [x] Validation complete (local)
 - [x] Docs updated
-- [ ] Patched revision deployed on Hemma and `hemma-verify-gpu-runtime` re-run clean
+- [x] Patched revision deployed on Hemma and `hemma-verify-gpu-runtime` re-run clean
 
 ## Validation Evidence
 
@@ -102,4 +102,4 @@ Ops hardening:
 - `pdm run run-local-pdm validate-tasks`
 - `pdm run run-local-pdm validate-docs`
 - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- `pdm run run-local-pdm hemma-verify-gpu-runtime` (expected fail before deploy: `prod service_revision missing`)
+- `pdm run run-local-pdm hemma-verify-gpu-runtime` (pass after Hemma pull+restart on `fbc559e`)
