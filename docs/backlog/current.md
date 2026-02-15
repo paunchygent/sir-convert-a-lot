@@ -46,6 +46,17 @@ Active focus is Story 02-01 execution:
 
 ## Worklog
 
+- 2026-02-15 — Task 21 URL hardening follow-up:
+  - Added deterministic OCR-broken URL repair pre-pass in strict lint
+    normalization before MD034 autolink wrapping:
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_lint_normalizer.py`
+  - Added regression coverage:
+    - `tests/sir_convert_a_lot/test_markdown_lint_normalizer.py`
+  - Validation:
+    - `pdm run pytest-root tests/sir_convert_a_lot/test_markdown_lint_normalizer.py tests/sir_convert_a_lot/test_markdown_normalizer.py -q`
+    - `pdm run format-all`
+    - `pdm run lint-fix`
+    - `pdm run typecheck-all`
 - 2026-02-15 — Task 21 hardening follow-up completed:
   - Enforced MD060 table normalization in strict lint flow using runtime-required
     `mdformat` + `mdformat-gfm` (no soft fallback path).

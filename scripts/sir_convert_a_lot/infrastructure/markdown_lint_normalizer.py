@@ -68,6 +68,10 @@ _BARE_URL_RE = re.compile(
     r"(?![>)\]`])"  # not followed by > ) ] or backtick
 )
 _TRAILING_URL_PUNCTUATION = ".,;:!?"
+_BROKEN_PROTOCOL_SPACE_RE = re.compile(r"(https?://)\s+")
+_BROKEN_DOMAIN_DOT_RE = re.compile(
+    r"(https?://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*)\s*\.\s*([A-Za-z0-9-])"
+)
 
 _INLINE_CODE_RE = re.compile(r"`[^`]+`")
 _MARKDOWN_LINK_RE = re.compile(r"\[[^\]]*\]\([^)]*\)")
@@ -139,6 +143,7 @@ def _process_line(line: str, state: _ParserState) -> str:
         return line
 
     line = _normalize_ul_marker(line)
+    line = _repair_broken_urls(line)
     line = _normalize_bare_urls(line)
 
     return line
@@ -235,6 +240,24 @@ def _normalize_bare_urls(line: str) -> str:
         return f"<{trimmed_url}>{trailing_punctuation}"
 
     return _BARE_URL_RE.sub(replace_if_not_protected, line)
+
+
+def _repair_broken_urls(line: str) -> str:
+    """Repair common OCR-broken URL tokenization before MD034 wrapping.
+
+    Examples:
+    - `https:// openreview.net/...` -> `https://openreview.net/...`
+    - `https://vicuna. lmsys. org` -> `https://vicuna.lmsys.org`
+    """
+    if "http" not in line:
+        return line
+    repaired = _BROKEN_PROTOCOL_SPACE_RE.sub(r"\1", line)
+    while True:
+        next_repaired = _BROKEN_DOMAIN_DOT_RE.sub(r"\1.\2", repaired)
+        if next_repaired == repaired:
+            break
+        repaired = next_repaired
+    return repaired
 
 
 def _split_trailing_url_punctuation(url: str) -> tuple[str, str]:

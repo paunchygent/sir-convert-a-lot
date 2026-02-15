@@ -152,6 +152,9 @@ implementation:
 - Harden fenced-code state tracking to correctly support 4+ tick/tilde fences
   so post-fence normalization remains deterministic.
 - Harden MD034 URL wrapping to keep trailing punctuation outside autolinks.
+- Harden MD034 preprocessing to repair common OCR-broken URL tokens (e.g.
+  `https:// openreview.net/...`, `https://vicuna. lmsys. org`) before
+  autolink wrapping.
 - Add regression tests for each hardening item.
 
 ## Checklist

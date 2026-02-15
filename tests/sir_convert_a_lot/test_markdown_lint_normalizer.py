@@ -94,6 +94,16 @@ class TestMD034NoBareUrls:
         result = normalize_lint_rules(input_md)
         assert result == "Visit <https://example.com>, then continue."
 
+    def test_space_after_protocol_is_repaired_then_wrapped(self) -> None:
+        input_md = "URL https:// openreview.net/forum?id=Q9SKS5k8io ."
+        result = normalize_lint_rules(input_md)
+        assert result == "URL <https://openreview.net/forum?id=Q9SKS5k8io> ."
+
+    def test_spaced_domain_dots_are_repaired_then_wrapped(self) -> None:
+        input_md = "See https://vicuna. lmsys. org for details."
+        result = normalize_lint_rules(input_md)
+        assert result == "See <https://vicuna.lmsys.org> for details."
+
 
 class TestMD004UlStyle:
     """Tests for MD004: ul-style rule."""
