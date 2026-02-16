@@ -56,6 +56,28 @@ Active focus is Story 02-01 execution:
 
 ## Worklog
 
+- 2026-02-16 — Task 25 modularization hardening (strict markdown normalization):
+
+  - Split oversized normalization internals into focused modules:
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/common.py`
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/strict_reflow.py`
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/strict_structure.py`
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/__init__.py`
+  - Kept `normalize_markdown(...)` contract stable with a thin facade:
+    - `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py`
+  - Preserved and extended defect-focused coverage:
+    - exam MCQ misordering and standalone-number merge safeguards,
+    - section-scoped references numbering reorder in `## References`,
+    - non-reference numbered-list non-regression.
+  - Validation:
+    - `pdm run format-all`
+    - `pdm run pytest-root tests/sir_convert_a_lot/test_markdown_normalizer.py tests/sir_convert_a_lot/test_markdown_lint_normalizer.py -q`
+    - `pdm run lint-fix`
+    - `pdm run typecheck-all`
+    - `pdm run validate-tasks`
+    - `pdm run validate-docs`
+    - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - 2026-02-16 — Task 25 moved to `in_progress`:
 
   - Created and scoped execution unit:

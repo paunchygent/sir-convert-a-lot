@@ -31,6 +31,8 @@ question/alternative ordering defects observed for:
 - Keep canonical CLI defaults aligned with quality-first conversion behavior.
 - Add targeted post-normalization correction for exam-style question blocks if
   ordering remains inverted (alternatives before question).
+- Modularize markdown normalization internals to keep files below repository size
+  guardrails and preserve readability/maintainability.
 - Validate locally and on Hemma lanes after push/pull/rebuild/restart.
 
 Out of scope:
@@ -47,6 +49,10 @@ Out of scope:
 1. Conversion correctness target:
    - For the target exam PDF, question heading should precede alternatives.
    - Numbering progression must remain monotonic and non-duplicated.
+1. Maintainability target:
+   - `markdown_normalizer.py` remains a thin contract surface; heavy strict-mode
+     internals are split into focused modules.
+   - Normalization modules stay below 400 LoC each.
 1. Validation path:
    - Must include Hemma deployment cycle:
      - commit + push,
@@ -57,7 +63,8 @@ Out of scope:
 ## Deliverables
 
 - [ ] Heavier default Docling configuration in service code.
-- [ ] Regression tests for heavier-default config and exam-order normalization.
+- [x] Regression tests for heavier-default config and exam-order normalization.
+- [x] Modularized normalization implementation with unchanged public contract.
 - [ ] Hemma lane execution evidence including target PDF output review.
 
 ## Acceptance Criteria
@@ -65,6 +72,8 @@ Out of scope:
 - [ ] Default conversion path uses heavier Docling layout profile by contract.
 - [ ] Target PDF conversion output keeps question lines before alternatives.
 - [ ] Target PDF conversion output has consistent question numbering order.
+- [x] `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py` stays below
+  400 LoC with behavior preserved by tests.
 - [ ] Full quality/docs gates pass after implementation.
 - [ ] Hemma deploy/rebuild/lane verification pass on pushed revision.
 
@@ -73,3 +82,23 @@ Out of scope:
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated
+
+## Implementation and Evidence (2026-02-16, modularization slice)
+
+- Split strict normalization internals into focused modules:
+  - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/common.py`
+  - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/strict_reflow.py`
+  - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/strict_structure.py`
+  - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization/__init__.py`
+- Kept public contract as a thin facade:
+  - `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py`
+- Added/kept regression coverage for exam-ordering and references numbering defects:
+  - `tests/sir_convert_a_lot/test_markdown_normalizer.py`
+- Validation:
+  - `pdm run format-all`
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_markdown_normalizer.py tests/sir_convert_a_lot/test_markdown_lint_normalizer.py -q`
+  - `pdm run lint-fix`
+  - `pdm run typecheck-all`
+  - `pdm run validate-tasks`
+  - `pdm run validate-docs`
+  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

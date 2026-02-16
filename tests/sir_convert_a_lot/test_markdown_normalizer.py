@@ -279,3 +279,134 @@ def test_strict_mode_strips_docling_formula_tags_and_loc_tokens() -> None:
     assert "<loc_34>" not in normalized
     assert "<loc_114>" not in normalized
     assert "$$\\alpha + \\beta$$" in normalized
+
+
+def test_strict_mode_reorders_misordered_exam_mcq_blocks() -> None:
+    raw = (
+        "- [ ] Homerisk liknelse\n"
+        "- [ ] Stående epitet\n"
+        "- [ ] Hexameter\n"
+        "- [ ] Ringkomposition\n"
+        "- Vilket av följande är ett typiskt homeriskt stildrag? 2.\n"
+        "\n"
+        "- [ ] Svar A\n"
+        "- [ ] Svar B\n"
+        "- [ ] Svar C\n"
+        "- [ ] Svar D\n"
+        "- Vilken händelse utlöste det trojanska kriget? * 3.\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+    lines = normalized.splitlines()
+
+    assert lines[0] == "2. Vilket av följande är ett typiskt homeriskt stildrag?"
+    assert lines[2] == "- [ ] Homerisk liknelse"
+    assert "3. Vilken händelse utlöste det trojanska kriget? *" in normalized
+
+
+def test_strict_mode_merges_standalone_question_number_line() -> None:
+    raw = (
+        "- [ ] Alternativ 1\n"
+        "- [ ] Alternativ 2\n"
+        "- [ ] Alternativ 3\n"
+        "- [ ] Alternativ 4\n"
+        "- Vad är ett återkommande budskap i riddarromanerna om riddarens roll i samhället?\n"
+        "- 13.\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert (
+        "13. Vad är ett återkommande budskap i riddarromanerna om riddarens roll i samhället?"
+        in normalized
+    )
+    assert "\n13.\n" not in normalized
+
+
+def test_strict_mode_preserves_already_ordered_mcq_blocks() -> None:
+    raw = (
+        "1. Fråga ett?\n"
+        "- [ ] Ett A\n"
+        "- [ ] Ett B\n"
+        "- [ ] Ett C\n"
+        "- [ ] Ett D\n"
+        "2. Fråga två?\n"
+        "- [ ] Två A\n"
+        "- [ ] Två B\n"
+        "- [ ] Två C\n"
+        "- [ ] Två D\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+    lines = normalized.splitlines()
+
+    q1_idx = lines.index("1. Fråga ett?")
+    q2_idx = lines.index("2. Fråga två?")
+    q1_option_idx = lines.index("- [ ] Ett A")
+    q2_option_idx = lines.index("- [ ] Två A")
+
+    assert q1_idx < q1_option_idx < q2_idx < q2_option_idx
+
+
+def test_strict_mode_does_not_reassociate_options_when_next_number_is_separated() -> None:
+    raw = (
+        "12. Fråga tolv?\n"
+        "- [ ] Tolv A\n"
+        "- [ ] Tolv B\n"
+        "- [ ] Tolv C\n"
+        "- [ ] Tolv D\n"
+        "- Vad är fråga tretton? * (1 poäng)\n"
+        "\n"
+        "- 13.\n"
+        "- [ ] Tretton A\n"
+        "- [ ] Tretton B\n"
+        "- [ ] Tretton C\n"
+        "- [ ] Tretton D\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+    lines = normalized.splitlines()
+
+    q13_prompt_idx = lines.index("- Vad är fråga tretton? * (1 poäng)")
+    q12_option_idx = lines.index("- [ ] Tolv A")
+    q13_option_idx = lines.index("- [ ] Tretton A")
+
+    assert q12_option_idx < q13_prompt_idx < q13_option_idx
+
+
+def test_strict_mode_sorts_scrambled_references_numbering() -> None:
+    raw = (
+        "## References\n"
+        "1. Ref one\n"
+        "3. Ref three\n"
+        "2. Ref two\n"
+        "4. Ref four\n"
+        "\n"
+        "## Appendix\n"
+        "1. Keep appendix list order as-is\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+    lines = normalized.splitlines()
+
+    references_start = lines.index("## References")
+    assert lines[references_start + 1] == "1. Ref one"
+    assert lines[references_start + 2] == "2. Ref two"
+    assert lines[references_start + 3] == "3. Ref three"
+    assert lines[references_start + 4] == "4. Ref four"
+    assert "1. Keep appendix list order as-is" in normalized
+
+
+def test_strict_mode_does_not_sort_non_reference_numbered_lists() -> None:
+    raw = (
+        "## Notes\n"
+        "3. Third step intentionally first\n"
+        "1. First step intentionally second\n"
+        "2. Second step intentionally third\n"
+    )
+
+    normalized = normalize_markdown(raw, NormalizeMode.STRICT)
+
+    assert "3. Third step intentionally first" in normalized
+    assert "1. First step intentionally second" in normalized
+    assert "2. Second step intentionally third" in normalized
