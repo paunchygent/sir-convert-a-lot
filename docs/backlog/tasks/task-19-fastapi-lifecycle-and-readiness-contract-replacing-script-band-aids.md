@@ -2,10 +2,10 @@
 id: task-19-fastapi-lifecycle-and-readiness-contract-replacing-script-band-aids
 title: FastAPI lifecycle and readiness contract replacing script band-aids
 type: task
-status: proposed
+status: completed
 priority: critical
 created: '2026-02-15'
-last_updated: '2026-02-15'
+last_updated: '2026-02-16'
 related:
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/backlog/tasks/task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity.md
@@ -51,21 +51,21 @@ Out of scope:
 
 ## Deliverables
 
-- [ ] `http_api` exposes canonical factory-only setup with deterministic lifespan hooks
-- [ ] `service.py` and `service_eval.py` are explicit profile entrypoints only
-- [ ] `/readyz` endpoint returns deterministic readiness verdict + reasons
-- [ ] `verify-hemma-gpu-runtime` consumes `/readyz` contract rather than bespoke checks
-- [ ] Tests cover readiness mismatch cases (revision/profile/data-root/isolation)
-- [ ] Runbook updated to the new canonical deploy-verification flow
+- [x] `http_api` exposes canonical factory-only setup with deterministic lifespan hooks
+- [x] `service.py` and `service_eval.py` are explicit profile entrypoints only
+- [x] `/readyz` endpoint returns deterministic readiness verdict + reasons
+- [x] `verify-hemma-gpu-runtime` consumes `/readyz` contract rather than bespoke checks
+- [x] Tests cover readiness mismatch cases (revision/profile/data-root/isolation)
+- [x] Runbook updated to the new canonical deploy-verification flow
 
 ## Acceptance Criteria
 
-- [ ] Service fails readiness when running stale revision after `git pull`
-- [ ] Service fails readiness when eval/prod data roots collide
-- [ ] Service fails readiness when profile does not match configured entrypoint
-- [ ] Startup/import side-effects are absent and regression tested
-- [ ] Existing API v1 behavior remains contract-compatible
-- [ ] Task 18 script complexity can be reduced without loss of safety guarantees
+- [x] Service fails readiness when running stale revision after `git pull`
+- [x] Service fails readiness when eval/prod data roots collide
+- [x] Service fails readiness when profile does not match configured entrypoint
+- [x] Startup/import side-effects are absent and regression tested
+- [x] Existing API v1 behavior remains contract-compatible
+- [x] Task 18 script complexity can be reduced without loss of safety guarantees
 
 ## Implementation Plan
 
@@ -87,6 +87,29 @@ Out of scope:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Validation Evidence
+
+- Refactor surfaces (HuleEdu-aligned app/route split):
+  - `scripts/sir_convert_a_lot/interfaces/http_api.py`
+  - `scripts/sir_convert_a_lot/interfaces/http_app_state.py`
+  - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs.py`
+  - `scripts/sir_convert_a_lot/interfaces/http_routes_health.py`
+  - `scripts/sir_convert_a_lot/infrastructure/runtime_models.py`
+  - `scripts/sir_convert_a_lot/service.py`
+  - `scripts/sir_convert_a_lot/service_eval.py`
+  - `scripts/devops/verify-hemma-gpu-runtime.sh`
+- Readiness coverage added:
+  - `tests/sir_convert_a_lot/test_api_contract_v1.py`
+  - `tests/sir_convert_a_lot/test_service_import_side_effects.py`
+- Local quality/docs gates:
+  - `pdm run format-all` (pass)
+  - `pdm run lint-fix` (pass)
+  - `pdm run typecheck-all` (pass)
+  - `pdm run pytest-root tests/sir_convert_a_lot -q` (pass; 167 passed, 7 skipped)
+  - `pdm run validate-tasks` (pass)
+  - `pdm run validate-docs` (pass)
+  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)

@@ -141,6 +141,44 @@ class ErrorEnvelope(BaseModel):
     error: ErrorBody
 
 
+class ServiceHealthResponse(BaseModel):
+    """Liveness payload for `/healthz`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["ok"]
+    service_revision: str
+    started_at: str
+    data_root: str
+    service_profile: str
+
+
+class ServiceReadinessReason(BaseModel):
+    """Structured readiness failure reason for `/readyz`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    message: str
+    details: dict[str, object] | None = None
+
+
+class ServiceReadinessResponse(BaseModel):
+    """Readiness payload for `/readyz`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["ready", "not_ready"]
+    ready: bool
+    service_revision: str
+    expected_revision: str
+    service_profile: str
+    expected_service_profile: str
+    started_at: str
+    data_root: str
+    reasons: list[ServiceReadinessReason] = Field(default_factory=list)
+
+
 class CliManifestEntry(BaseModel):
     """Deterministic manifest entry emitted by the convert-a-lot CLI."""
 

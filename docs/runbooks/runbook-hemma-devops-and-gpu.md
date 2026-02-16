@@ -119,9 +119,12 @@ pdm run run-local-pdm hemma-verify-gpu-runtime
 
 Compliance pass conditions:
 
-- `/healthz` reports deterministic service metadata:
+- `/readyz` passes with deterministic service invariants:
   - `service_revision` equals Hemma repo `HEAD`,
-  - `started_at` is newer than current `HEAD` commit timestamp.
+  - `service_profile` matches entrypoint profile,
+  - prod/eval data roots do not collide.
+- `/healthz` remains liveness-only and should return `{"status":"ok",...}` when process is alive.
+- `/metrics` is available for Prometheus scraping on the service listener.
 - `rocm-smi` detects the GPU.
 - `probe_torch_gpu_runtime()` reports `runtime_kind="rocm"` and `is_available=true`.
 - Live `gpu_required` conversion succeeds with `conversion_metadata.acceleration_used="cuda"`.
@@ -135,7 +138,8 @@ Recommended first assignment for Sir Convert-a-Lot: `28085`.
 
 ```bash
 ssh hemma -L 28085:127.0.0.1:28085 -N
-curl -fsS http://127.0.0.1:28085/healthz
+curl -fsS http://127.0.0.1:28085/readyz
+curl -fsS http://127.0.0.1:28085/metrics >/dev/null
 ```
 
 Then run conversion from any repository:

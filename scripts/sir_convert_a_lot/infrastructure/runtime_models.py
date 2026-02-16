@@ -44,6 +44,16 @@ class ServiceConfig:
     heartbeat_interval_seconds: float = 5.0
 
 
+@dataclass(frozen=True)
+class ServiceRuntimeMetadata:
+    """Runtime identity metadata used by liveness/readiness surfaces."""
+
+    service_profile: str
+    service_revision: str
+    started_at: str
+    data_root: Path
+
+
 @dataclass
 class ServiceError(Exception):
     """Structured service exception converted to standard error envelopes."""

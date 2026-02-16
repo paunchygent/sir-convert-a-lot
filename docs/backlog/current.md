@@ -5,11 +5,12 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-02-15'
+last_updated: '2026-02-16'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
+  - docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md
   - docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md
   - docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md
   - docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md
@@ -22,6 +23,9 @@ related:
   - docs/backlog/tasks/task-19-fastapi-lifecycle-and-readiness-contract-replacing-script-band-aids.md
   - docs/backlog/tasks/task-20-harden-markdown-normalization-for-math-artifacts-and-docling-export-escaping.md
   - docs/backlog/tasks/task-21-structural-markdown-quality-gate-and-hard-case-normalization.md
+  - docs/backlog/tasks/task-22-docker-compose-service-packaging-and-readiness-gated-startup.md
+  - docs/backlog/tasks/task-23-durable-persistence-layout-retention-and-recovery-for-containerized-runtime.md
+  - docs/backlog/tasks/task-24-container-operations-runbook-and-hemma-deployment-verification-for-dockerized-service.md
 labels:
   - session-log
   - active-work
@@ -40,13 +44,96 @@ Active focus is Story 02-01 execution:
 - Task 16 is completed (canonical Hemma live-runner + shell guardrails).
 - Task 17 is completed (async dedupe guard + strict pagination cleanup).
 - Task 18 is completed (root-cause deterministic service execution + artifact integrity fixes + observability closure).
-- Task 19 is proposed (FastAPI lifecycle/readiness contract to replace script-heavy guards).
+- Task 19 is completed (FastAPI lifecycle/readiness contract replaced script-heavy guards).
 - Task 20 is completed (math-safe markdown normalization + Docling export escaping hardening).
 - Task 21 is completed (structural quality gate + hard-case normalization + lint hardening follow-up).
+- Story 05 is proposed (dockerized service hardening + robust persistence extension).
+- Task 22 is proposed (Docker packaging and readiness-gated startup).
+- Task 23 is proposed (durable persistence layout, retention, and restart recovery).
+- Task 24 is proposed (container operations runbook + Hemma deployment verification).
 
 ## Worklog
 
+- 2026-02-16 — Standards-alignment hardening patch completed (Task 19 follow-up):
+
+  - Removed async request-loop blocking in job create wait path:
+    - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs.py`
+  - Added startup-cached expected-revision readiness contract:
+    - `scripts/sir_convert_a_lot/interfaces/http_api.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_app_state.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_routes_health.py`
+  - Added typed health/readiness response contracts:
+    - `scripts/sir_convert_a_lot/application/contracts.py`
+  - Added `/metrics` endpoint + route-normalized HTTP metrics instrumentation:
+    - `scripts/sir_convert_a_lot/interfaces/http_api.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_routes_health.py`
+  - Added graceful runtime shutdown hook in FastAPI lifespan:
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_app_state.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_api.py`
+  - Updated Hemma verification to enforce repo-head revision parity while using readiness contract:
+    - `scripts/devops/verify-hemma-gpu-runtime.sh`
+  - Added regression coverage:
+    - `tests/sir_convert_a_lot/test_api_contract_v1.py`
+    - `tests/sir_convert_a_lot/test_service_import_side_effects.py`
+  - Updated API/runbook docs for `/metrics` and startup-cached revision semantics:
+    - `docs/converters/pdf_to_md_service_api_v1.md`
+    - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+  - Validation:
+    - `pdm lock`
+    - `pdm sync -d`
+    - `pdm run format-all`
+    - `pdm run lint-fix`
+    - `pdm run typecheck-all`
+    - `pdm run pytest-root tests/sir_convert_a_lot -q`
+    - `pdm run validate-tasks`
+    - `pdm run validate-docs`
+    - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+- 2026-02-16 — Story 05 planning extension created from Task 19 outcomes:
+
+  - Added story-level planning artifact:
+    - `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`
+  - Added execution task slices:
+    - `docs/backlog/tasks/task-22-docker-compose-service-packaging-and-readiness-gated-startup.md`
+    - `docs/backlog/tasks/task-23-durable-persistence-layout-retention-and-recovery-for-containerized-runtime.md`
+    - `docs/backlog/tasks/task-24-container-operations-runbook-and-hemma-deployment-verification-for-dockerized-service.md`
+  - Scope focus:
+    - Dockerized startup/readiness semantics aligned to Task 19 lifecycle contract,
+    - durable container persistence + retention/recovery invariants,
+    - canonical Hemma runbook/deployment verification flow for containerized runtime.
+
+- 2026-02-16 — Task 19 completed (HuleEdu-aligned FastAPI app/route pattern + readiness contract):
+
+  - Refactored HTTP surface into thin app factory + dedicated route/state modules:
+    - `scripts/sir_convert_a_lot/interfaces/http_api.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_app_state.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs.py`
+    - `scripts/sir_convert_a_lot/interfaces/http_routes_health.py`
+  - Added fail-closed `/readyz` invariants:
+    - stale revision mismatch,
+    - profile mismatch,
+    - prod/eval data-root collision or profile-root mismatch.
+  - Kept `/healthz` as liveness-only metadata surface.
+  - Updated entrypoints for explicit profile expectations:
+    - `scripts/sir_convert_a_lot/service.py`
+    - `scripts/sir_convert_a_lot/service_eval.py`
+  - Simplified Hemma verifier to consume `/readyz` contract:
+    - `scripts/devops/verify-hemma-gpu-runtime.sh`
+  - Added readiness/import-side-effect regression coverage:
+    - `tests/sir_convert_a_lot/test_api_contract_v1.py`
+    - `tests/sir_convert_a_lot/test_service_import_side_effects.py`
+  - Validation:
+    - `pdm run format-all`
+    - `pdm run lint-fix`
+    - `pdm run typecheck-all`
+    - `pdm run pytest-root tests/sir_convert_a_lot -q`
+    - `pdm run validate-tasks`
+    - `pdm run validate-docs`
+    - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - 2026-02-15 — Task 21 URL hardening follow-up:
+
   - Added deterministic OCR-broken URL repair pre-pass in strict lint
     normalization before MD034 autolink wrapping:
     - `scripts/sir_convert_a_lot/infrastructure/markdown_lint_normalizer.py`
@@ -57,7 +144,9 @@ Active focus is Story 02-01 execution:
     - `pdm run format-all`
     - `pdm run lint-fix`
     - `pdm run typecheck-all`
+
 - 2026-02-15 — Task 21 hardening follow-up completed:
+
   - Enforced MD060 table normalization in strict lint flow using runtime-required
     `mdformat` + `mdformat-gfm` (no soft fallback path).
   - Hardened fenced code tracking for 4+ backtick/tilde fences so post-fence
@@ -76,14 +165,18 @@ Active focus is Story 02-01 execution:
     - `pdm run validate-tasks`
     - `pdm run validate-docs`
     - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - 2026-02-15 — Task 21 moved to `in_progress`:
+
   - Created:
     - `docs/backlog/tasks/task-21-structural-markdown-quality-gate-and-hard-case-normalization.md`
   - Scope locked:
     - add structural candidate scoring for Docling formula outputs,
     - harden marker-line normalization for inline display-math and parser-sentinel leakage,
     - validate on hard real-output excerpts and canonical CLI runs.
+
 - 2026-02-15 — Task 20 completed:
+
   - Hardened strict normalization for display-math safety and bounded cleanup of
     pathological slash-padding artifacts:
     - `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py`
@@ -99,20 +192,26 @@ Active focus is Story 02-01 execution:
     - `build/manual-validation-quality-control/prod-cli-three-hard-task20-fresh-20260215T191729Z`
     - all three conversions succeeded with
       `formula-not-decoded=0`, heavy padding lines `=0`, escaped entity artifacts `=0`.
+
 - 2026-02-15 — Task 20 moved to `in_progress`:
+
   - Created:
     - `docs/backlog/tasks/task-20-harden-markdown-normalization-for-math-artifacts-and-docling-export-escaping.md`
   - Scope locked:
     - harden strict normalizer for display-math safety and bounded slash-padding cleanup,
     - reduce escaped-symbol artifacts via Docling markdown export settings,
     - validate with targeted tests and production-surface CLI evidence on hard PDFs.
+
 - 2026-02-15 — CLI production parity fix:
+
   - `convert-a-lot` defaults now align with hardened service profile:
     - `backend_strategy=auto`, `ocr_mode=auto`, `table_mode=accurate`,
       `normalize=strict`, `acceleration_policy=gpu_required`.
   - Added explicit CLI flags for all conversion profile fields so runs are reproducible.
   - Added CLI tests asserting default profile and explicit override pass-through.
+
 - 2026-02-15 — Task 18 hardening follow-up completed (P0/P1/P2 + modular SRP split):
+
   - Fixed persistence timing correctness (`persist_ms` now measured after durable write commit).
   - Added API-visible diagnostics in job progress:
     - `last_heartbeat_at`, `current_phase_started_at`, `phase_timings_ms`.
@@ -128,7 +227,9 @@ Active focus is Story 02-01 execution:
   - LoC targets after split:
     - `job_store.py` = 499 lines
     - `runtime_engine.py` = 446 lines
+
 - 2026-02-15 — Task 18 completed (observability closure + Hemma revalidation):
+
   - Added deterministic runtime heartbeat and phase timing diagnostics:
     - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
     - `scripts/sir_convert_a_lot/infrastructure/job_store.py`
@@ -151,12 +252,16 @@ Active focus is Story 02-01 execution:
     - `pdm run run-local-pdm hemma-verify-gpu-runtime` passed on `d854d5e`,
     - local tunnel call to `http://127.0.0.1:28085` succeeded with
       `backend_used=docling`, `acceleration_used=cuda`.
+
 - 2026-02-15 — Task 18 reopened for observability closure:
+
   - Added explicit scope for conversion heartbeat and phase timing telemetry so long-running jobs
     can be classified deterministically as slow vs stalled.
   - Operational closure from previous slice remains valid; this reopen is for missing root-cause
     observability guarantees, not rollback.
+
 - 2026-02-15 — Task 18 completed with Hemma operational closure:
+
   - Removed import-time runtime side effects:
     - `scripts/sir_convert_a_lot/interfaces/http_api.py`
     - `scripts/sir_convert_a_lot/service.py`
@@ -179,7 +284,9 @@ Active focus is Story 02-01 execution:
     - `pdm run run-local-pdm run-hemma -- git pull --ff-only`
     - restarted both services on `127.0.0.1:28085` and `127.0.0.1:28086`
     - `pdm run run-local-pdm hemma-verify-gpu-runtime` passed (revision parity + GPU conversion)
+
 - 2026-02-15 — Task 17 completed:
+
   - Runtime async dedupe guard is active for active `job_id` duplicates:
     - `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
   - Strict normalizer strips long standalone 4-digit pagination blocks:
@@ -188,14 +295,18 @@ Active focus is Story 02-01 execution:
     - `tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py::test_run_job_async_ignores_duplicate_active_job_id`
     - `tests/sir_convert_a_lot/test_markdown_normalizer.py::test_strict_mode_removes_long_standalone_four_digit_number_blocks`
     - `tests/sir_convert_a_lot/test_markdown_normalizer.py::test_strict_mode_preserves_short_numeric_lines`
+
 - 2026-02-15 — Task 19 created as post-Task-18 architectural slice:
+
   - Created:
     - `docs/backlog/tasks/task-19-fastapi-lifecycle-and-readiness-contract-replacing-script-band-aids.md`
   - Locked direction:
     - no additional brittle script-only guards,
     - move correctness enforcement into canonical FastAPI lifecycle + `/readyz` contract,
     - reduce wrapper checks to transport/orchestration.
+
 - 2026-02-15 — Task 16 completed:
+
   - Added canonical live-runner command surface:
     - `pdm run validate:docling-gpu-live`
   - Added focused live-runner helper tests:
@@ -210,51 +321,67 @@ Active focus is Story 02-01 execution:
     - `pdm run run-local-pdm validate-tasks`
     - `pdm run run-local-pdm validate-docs`
     - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - 2026-02-15 — Task 18 moved to `in_progress`:
+
   - Created:
     - `docs/backlog/tasks/task-18-root-cause-fix-deterministic-service-execution-and-artifact-integrity.md`
   - Scope locked:
     - remove import-time app/runtime side effects from service modules,
     - enforce atomic store-level queued-job ownership + terminal overwrite protection,
     - harden live runner manifest integrity checks and Hemma freshness/isolation verification.
+
 - 2026-02-15 — Task 17 moved to `in_progress`:
+
   - Created:
     - `docs/backlog/tasks/task-17-fix-async-duplicate-scheduling-and-strict-numeric-pagination-cleanup.md`
   - Scope locked:
     - prevent duplicate async worker launch for identical active `job_id`,
     - expand strict normalizer pagination cleanup to standalone 4-digit line-number runs.
+
 - 2026-02-15 — Task 16 moved to `in_progress`:
+
   - Created:
     - `docs/backlog/tasks/task-16-add-canonical-hemma-docling-gpu-live-test-runner-and-shell-usage-guardrails.md`
   - Scope locked:
     - add committed canonical live-runner command for real Hemma Docling+GPU tests,
     - prohibit fragile multiline inline `run-hemma --shell` execution pattern in AGENTS.
+
 - 2026-02-15 — Task 15 completed:
+
   - Removed generated benchmark/test outputs from `docs/reference`.
   - Added programmatic guard:
     - `scripts/sir_convert_a_lot/benchmarking/output_policy.py`
   - `benchmark:task-12` and `benchmark:story-003b` now default to `build/benchmarks/...`.
   - Benchmark runners now fail fast if generated outputs target `docs/reference`.
+
 - 2026-02-15 — Task 15 moved to `in_progress`:
+
   - Created:
     - `docs/backlog/tasks/task-15-govern-benchmark-and-processing-outputs-outside-docs-reference.md`
   - Scope locked:
     - move high-churn generated benchmark artifacts out of `docs/reference`,
     - enforce deterministic output policy for benchmark/eval/runtime outputs.
+
 - 2026-02-15 — Task 14 activated for strict global Docling GPU-only invariant:
+
   - Created and moved to `in_progress`:
     - `docs/backlog/tasks/task-14-enforce-global-docling-gpu-only-invariant-and-remove-cpu-execution-paths.md`
   - Locked scope:
     - remove all successful Docling CPU execution paths (service + direct backend + tests),
     - preserve deterministic `503 gpu_not_available` behavior when runtime probe fails.
+
 - 2026-02-15 — Task 14 completed:
+
   - `DoclingConversionBackend` now rejects CPU execution unconditionally and requires a
     usable ROCm/CUDA probe result.
   - Added regression coverage for strict invariant (`gpu_available=False` still fail-closed or
     reports `acceleration_used="cuda"` when runtime is available).
   - Updated API/integration benchmark tests to remove Docling CPU assumptions and
     mark real Docling success-path tests as GPU-runtime-required.
+
 - 2026-02-15 — Task 12 benchmark evidence run executed after Task 13 runtime gate close-out:
+
   - Hemma services confirmed on `127.0.0.1:28085` (prod-lock) and `127.0.0.1:28086` (eval).
   - Tunnel flow validated for both lanes (`/healthz` pass on local forwarded ports).
   - Ran:
@@ -272,7 +399,9 @@ Active focus is Story 02-01 execution:
       Task 15 retires that storage pattern in favor of `build/benchmarks/`.
   - Remaining Task 12 close-out:
     - manual quality review completion for all generated markdown outputs.
+
 - 2026-02-15 — Task 13 completed with runtime-gated Hemma evidence on patched revision:
+
   - Main branch commit and push:
     - `6ee1a27` (`Enforce GPU runtime compliance gate and pin ROCm torch runtime`)
   - Hemma fast-forward sync:
@@ -282,48 +411,69 @@ Active focus is Story 02-01 execution:
     - probe evidence: `runtime_kind=rocm`, `torch_version=2.10.0+rocm7.1`,
       `device_name=AMD Radeon AI PRO R9700`
     - live conversion evidence: `acceleration_used="cuda"`, `gpu_busy_peak=97`
+
 - 2026-02-15 — Task 13 moved to `in_progress` to unblock Task 12 with a fail-closed GPU
   runtime compliance gate:
+
   - Created and activated:
     - `docs/backlog/tasks/task-13-enforce-hemma-gpu-runtime-compliance-gate-and-rocm-verification.md`
   - Locked implementation slices:
     - typed GPU runtime probe in infrastructure,
     - deterministic `503 gpu_not_available` mapping for backend GPU-runtime unavailability,
     - Hemma verify/repair script surfaces and runbook updates.
+
 - 2026-02-14 — Task 12 moved to `in_progress` with decision-locked execution:
+
   - Added dual-lane topology lock (acceptance + evaluation A/B) to:
     - `docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`
   - Locked quality-first ranking and artifact policy for backend selection.
   - Added execution plan/checklist scope for harness, eval profile, evidence outputs, and close-out docs.
+
 - 2026-02-11 — Bootstrapped standalone repo structure (`.agents/`, `docs/`, canonical scripts, service/tests/docs migration).
+
 - 2026-02-11 — Added Sir Convert-a-Lot v1 service surfaces and DDD-oriented module split.
+
 - 2026-02-11 — Created Programme 001 and setup story/tasks (004–007) to enforce planning hierarchy.
+
 - 2026-02-11 — Added docs contract metadata (`docs/_meta/docs-contract.yaml`) and upgraded validator to enforce YAML frontmatter for docs and rules.
+
 - 2026-02-11 — Added repo-specific Hemma/GPU runbook (`docs/runbooks/runbook-hemma-devops-and-gpu.md`) and DevOps skill (`.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`).
+
 - 2026-02-11 — Added Skriptoteket/HuleEdu-style wrapper scripts:
+
   - `pdm run run-local-pdm`
   - `pdm run run-hemma`
+
 - 2026-02-11 — Passed full quality and docs gates:
+
   - `pdm run format-all`
   - `pdm run lint`
   - `pdm run typecheck-all`
   - `pdm run pytest-root tests`
   - `pdm run validate-tasks`
   - `pdm run validate-docs`
+
 - 2026-02-11 — Closed Story 004 bootstrap/governance execution:
+
   - `docs/backlog/tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md`
   - `docs/backlog/tasks/task-04-04-prepare-docker-hemma-service-foundation.md`
   - `docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md`
+
 - 2026-02-11 — Opened Story 003b execution task:
+
   - `docs/backlog/tasks/task-05-enforce-gpu-first-lock-and-benchmark-evidence-for-story-003b.md`
+
 - 2026-02-11 — Completed Story 003b implementation and evidence capture:
+
   - Runtime policy lock hardening (`runtime_engine.py`) with env unlock rejection.
   - Expanded API/runtime policy tests and benchmark runner tests.
   - Benchmark corpus added under `tests/fixtures/benchmark_pdfs/`.
   - Benchmark artifacts:
     - `build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json`
     - `docs/reference/ref-story-003b-gpu-governance-benchmark-evidence.md`
+
 - 2026-02-11 — Story 003b validation and docs gates passed:
+
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`
   - `pdm run run-local-pdm typecheck-all`
@@ -331,7 +481,9 @@ Active focus is Story 02-01 execution:
   - `pdm run run-local-pdm validate-tasks`
   - `pdm run run-local-pdm validate-docs`
   - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - 2026-02-11 — Completed fix `fix-01-harden-cli-timeout-handling-for-long-running-background-jobs`:
+
   - CLI timeout hardening in `scripts/sir_convert_a_lot/interfaces/cli_app.py`:
     - `ClientError(code="job_timeout")` now records manifest `status: running` with `job_id`.
     - CLI no longer exits non-zero for timeout-only outcomes.
@@ -349,7 +501,9 @@ Active focus is Story 02-01 execution:
     - `pdm run run-local-pdm validate-tasks`
     - `pdm run run-local-pdm validate-docs`
     - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - 2026-02-11 — Story 003c docs-as-code synchronization completed for active slice:
+
   - Task details hardened in:
     - `docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md`
   - Normative contract published in:
@@ -358,22 +512,32 @@ Active focus is Story 02-01 execution:
     - `docs/reference/ref-story-003c-consumer-integration-handoff.md`
   - Story state moved to `in_progress`:
     - `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
+
 - 2026-02-11 — Backlog metadata alignment after docs audit:
+
   - `docs/backlog/epics/epic-03-unified-conversion-service.md` moved to `status: in_progress`
     to reflect Story 003a/003b completion and active Story 003c execution.
+
 - 2026-02-11 — Story 003c Task 06 closed with operational follow-up split:
+
   - `docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md`
     moved to `status: completed` after documenting executed Hemma/tunnel smoke evidence.
   - Follow-up operational task created:
     - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
   - Story 003c remains `in_progress` pending successful Hemma deployment/tunnel smoke outcome.
+
 - 2026-02-11 — Committed and pushed consolidated Story 003c + timeout hardening state:
+
   - `git commit` -> `8c5bd46` on `main`
   - `git push origin main` completed
+
 - 2026-02-11 — Task 07 planning kickoff completed:
+
   - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
     moved to `status: in_progress` with explicit execution plan, command plan, and risks.
+
 - 2026-02-11 — Task 07 executed and completed:
+
   - Canonical Hemma repo placement established and verified:
     - `/home/paunchygent/apps/sir-convert-a-lot`
   - Remote service bootstrap on `127.0.0.1:28085` succeeded.
@@ -382,27 +546,35 @@ Active focus is Story 02-01 execution:
     - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
   - Story 003c handoff reference updated with successful smoke evidence:
     - `docs/reference/ref-story-003c-consumer-integration-handoff.md`
+
 - 2026-02-11 — Lessons learned distilled into governance artifacts:
+
   - Runbook refined with explicit `~/apps` repo placement policy and migration guidance:
     - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
   - Hemma DevOps skill updated with mandatory first-step path guard:
     - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
   - Conversion workflow rule updated with Hemma repo placement invariant:
     - `.agents/rules/030-conversion-workflows.md`
+
 - 2026-02-11 — Story 003c closure gate decision updated:
+
   - HuleEdu adoption is mandatory before Story 003c close-out.
   - New active task created:
     - `docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md`
   - Story criteria updated to require demanding scientific-paper workload validation evidence.
   - Default workload corpus path for Task 08 specified:
     - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+
 - 2026-02-14 — Activated Story 02-01 execution slice for production-ready PDF->MD:
+
   - Story status moved to `in_progress` and wired to new PR-sized tasks (09–12).
   - Locked deterministic Markdown line breaks:
     - `conversion.normalize="strict"` is strong reflow at width 100 (Markdown-safe).
   - Acceptance gate corpus path (external, not vendored):
     - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+
 - 2026-02-14 — Task 09 completed and Task 10 implementation started:
+
   - Durable filesystem job store + restart recovery + retention sweep behavior closed in Task 09.
   - Task 10 moved to `in_progress` with docs-as-code execution plan.
   - Implementation target locked for this slice:
@@ -410,7 +582,9 @@ Active focus is Story 02-01 execution:
     - deterministic OCR auto retry (balanced heuristic)
     - deterministic markdown normalization (`none|standard|strict`, strict width 100)
     - temporary `backend_strategy="pymupdf"` `422 validation_error` until Task 11.
+
 - 2026-02-14 — Task 10 completed and validated:
+
   - Runtime conversion path refactored to Docling backend seam + deterministic normalizer.
   - API/runtime enforce temporary backend availability guard for `backend_strategy="pymupdf"` (`422 validation_error`).
   - Added/updated Task 10 test coverage with valid checked-in PDF fixtures for conversion-success paths.
@@ -423,14 +597,18 @@ Active focus is Story 02-01 execution:
     - `pdm run run-local-pdm validate-tasks`
     - `pdm run run-local-pdm validate-docs`
     - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - 2026-02-14 — Task 11 moved to `in_progress` with locked implementation plan:
+
   - Added execution-plan section and compatibility constraints in:
     - `docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md`
   - Locked behavior:
     - `backend_strategy="auto"` remains Docling-first
     - `backend_strategy="pymupdf"` is explicit-only
     - `pymupdf` requires `ocr_mode="off"` and CPU-compatible execution policy
+
 - 2026-02-14 — Task 11 completed and validated:
+
   - Added PyMuPDF backend and runtime routing/compatibility validation.
   - Added deterministic PyMuPDF backend tests and updated API/runtime compatibility tests.
   - Updated converter/API docs for Task 11 compatibility matrix.

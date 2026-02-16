@@ -1,129 +1,50 @@
-"""Sir Convert-a-Lot HTTP interface.
+"""Sir Convert-a-Lot HTTP app factory.
 
 Purpose:
-    Expose the v1 HTTP API contract and map request/response handling to the
-    runtime engine while enforcing auth and standard error envelopes.
+    Build the FastAPI application shell (middleware, error handlers, lifespan,
+    and routers) for the v1 conversion API.
 
 Relationships:
-    - Delegates execution/state handling to `infrastructure.runtime_engine`.
-    - Uses `domain.specs` and `application.contracts` as interface contracts.
+    - Uses runtime/lifecycle helpers from `interfaces.http_app_state`.
+    - Includes routers from `interfaces.http_routes_jobs` and
+      `interfaces.http_routes_health`.
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
-import os
-import subprocess
-import time
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from pathlib import Path
+from time import perf_counter
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Form, Query, Request, UploadFile
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
-from starlette.types import Receive, Scope, Send
+from prometheus_client import CollectorRegistry, Counter, Histogram
 
 from scripts.sir_convert_a_lot.application.contracts import (
-    ArtifactMetadata,
-    ConversionMetadata,
     ErrorBody,
     ErrorEnvelope,
-    JobLinks,
-    JobPendingResultResponse,
-    JobProgress,
-    JobRecordData,
-    JobRecordResponse,
-    JobResultResponse,
-    ResultPayload,
-)
-from scripts.sir_convert_a_lot.domain.specs import (
-    TERMINAL_JOB_STATUSES,
-    JobSpec,
-    JobStatus,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceConfig,
     ServiceError,
-    ServiceRuntime,
-    StoredJob,
-    fingerprint_for_request,
     service_config_from_env,
 )
+from scripts.sir_convert_a_lot.interfaces.http_app_state import (
+    ensure_runtime_state,
+    initialize_service_state,
+    resolve_expected_revision,
+    resolve_service_revision,
+    shutdown_runtime_state,
+)
+from scripts.sir_convert_a_lot.interfaces.http_routes_health import build_health_router
+from scripts.sir_convert_a_lot.interfaces.http_routes_jobs import build_job_router
 
 
 def _utc_now_iso() -> str:
     """Return current UTC timestamp as RFC3339 string."""
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def _resolve_service_revision() -> str:
-    """Resolve service revision from env override or repository git metadata."""
-    configured_revision = os.getenv("SIR_CONVERT_A_LOT_SERVICE_REVISION")
-    if configured_revision is not None and configured_revision.strip() != "":
-        return configured_revision.strip()
-
-    repo_root = Path(__file__).resolve().parents[3]
-    try:
-        output = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=repo_root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-    except (OSError, subprocess.CalledProcessError):
-        return "unknown"
-    return output if output != "" else "unknown"
-
-
-class _LazyAsgiApp:
-    """Lazy ASGI proxy that defers FastAPI app instantiation until first use."""
-
-    def __init__(self) -> None:
-        self._app: FastAPI | None = None
-
-    def _get_app(self) -> FastAPI:
-        if self._app is None:
-            self._app = create_app()
-        return self._app
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self._get_app()(scope, receive, send)
-
-    def __getattr__(self, name: str) -> object:
-        return getattr(self._get_app(), name)
-
-
-def _make_job_links(job_id: str) -> JobLinks:
-    return JobLinks(
-        self=f"/v1/convert/jobs/{job_id}",
-        result=f"/v1/convert/jobs/{job_id}/result",
-        cancel=f"/v1/convert/jobs/{job_id}/cancel",
-    )
-
-
-def _job_record_response(job: StoredJob) -> JobRecordResponse:
-    return JobRecordResponse(
-        job=JobRecordData(
-            job_id=job.job_id,
-            status=job.status,
-            created_at=job.created_at,
-            updated_at=job.updated_at,
-            expires_at=job.expires_at,
-            source_filename=job.source_filename,
-            progress=JobProgress(
-                stage=job.progress_stage,
-                pages_total=job.pages_total,
-                pages_processed=job.pages_processed,
-                last_heartbeat_at=job.last_heartbeat_at,
-                current_phase_started_at=job.current_phase_started_at,
-                phase_timings_ms=job.phase_timings_ms,
-            ),
-            links=_make_job_links(job.job_id),
-        )
-    )
 
 
 def _error_envelope(
@@ -145,21 +66,71 @@ def _error_envelope(
     )
 
 
-def create_app(config: ServiceConfig | None = None, *, service_profile: str = "prod") -> FastAPI:
+def create_app(
+    config: ServiceConfig | None = None,
+    *,
+    service_profile: str = "prod",
+    expected_service_profile: str | None = None,
+) -> FastAPI:
     """Create a FastAPI app instance for the Sir Convert-a-Lot v1 API."""
-    runtime = ServiceRuntime(config or service_config_from_env())
-    started_at = _utc_now_iso()
-    service_revision = _resolve_service_revision()
-    resolved_data_root = runtime.config.data_root.resolve()
-    app = FastAPI(title="Sir Convert-a-Lot API", version="1.0.0")
+    runtime_config = config or service_config_from_env()
+    service_revision = resolve_service_revision()
+    expected_service_revision = resolve_expected_revision(default_revision=service_revision)
+    service_started_at = _utc_now_iso()
+
+    resolved_expected_profile = expected_service_profile or service_profile
+    metrics_registry = CollectorRegistry()
+    request_counter = Counter(
+        "sir_convert_a_lot_http_requests_total",
+        "Total HTTP requests by method, normalized path, and status code.",
+        ["method", "path", "status_code"],
+        registry=metrics_registry,
+    )
+    request_duration = Histogram(
+        "sir_convert_a_lot_http_request_duration_seconds",
+        "HTTP request duration in seconds by method and normalized path.",
+        ["method", "path"],
+        registry=metrics_registry,
+    )
+
+    @asynccontextmanager
+    async def _lifespan(lifespan_app: FastAPI):
+        ensure_runtime_state(lifespan_app, utc_now_iso=service_started_at)
+        try:
+            yield
+        finally:
+            shutdown_runtime_state(lifespan_app)
+
+    app = FastAPI(title="Sir Convert-a-Lot API", version="1.0.0", lifespan=_lifespan)
+    initialize_service_state(
+        app,
+        runtime_config=runtime_config,
+        service_profile=service_profile,
+        expected_service_profile=resolved_expected_profile,
+        expected_service_revision=expected_service_revision,
+        service_revision=service_revision,
+        metrics_registry=metrics_registry,
+        request_counter=request_counter,
+        request_duration=request_duration,
+    )
 
     @app.middleware("http")
     async def correlation_middleware(request: Request, call_next):
+        started_at = perf_counter()
         incoming = request.headers.get("X-Correlation-ID")
         correlation_id = incoming if incoming else f"corr_{uuid4().hex}"
         request.state.correlation_id = correlation_id
         response = await call_next(request)
         response.headers["X-Correlation-ID"] = correlation_id
+        route_obj = request.scope.get("route")
+        path_template = request.url.path
+        if route_obj is not None:
+            route_path = getattr(route_obj, "path", None)
+            if isinstance(route_path, str) and route_path.strip() != "":
+                path_template = route_path
+        duration_seconds = max(0.0, perf_counter() - started_at)
+        request_duration.labels(request.method, path_template).observe(duration_seconds)
+        request_counter.labels(request.method, path_template, str(response.status_code)).inc()
         return response
 
     @app.exception_handler(ServiceError)
@@ -188,305 +159,6 @@ def create_app(config: ServiceConfig | None = None, *, service_profile: str = "p
         )
         return JSONResponse(status_code=422, content=envelope.model_dump(mode="json"))
 
-    def _require_api_key(request: Request) -> None:
-        api_key = request.headers.get("X-API-Key")
-        if api_key != runtime.config.api_key:
-            raise ServiceError(
-                status_code=401,
-                code="auth_invalid_api_key",
-                message="Missing or invalid X-API-Key.",
-                retryable=False,
-            )
-
-    @app.post("/v1/convert/jobs")
-    async def create_job(
-        request: Request,
-        file: UploadFile = File(...),
-        job_spec: str = Form(...),
-        wait_seconds: int = Query(default=0, ge=0, le=20),
-    ) -> JSONResponse:
-        _require_api_key(request)
-
-        idempotency_key = request.headers.get("Idempotency-Key")
-        if idempotency_key is None or idempotency_key.strip() == "":
-            raise ServiceError(
-                status_code=400,
-                code="idempotency_key_missing",
-                message="Missing required Idempotency-Key header.",
-                retryable=False,
-            )
-
-        if file.filename is None or file.filename.strip() == "":
-            raise ServiceError(
-                status_code=400,
-                code="validation_error",
-                message="Uploaded file must include a filename.",
-                retryable=False,
-                details={"field": "file.filename"},
-            )
-
-        file_name = file.filename.rsplit("/", maxsplit=1)[-1].rsplit("\\", maxsplit=1)[-1]
-        if not file_name.lower().endswith(".pdf"):
-            raise ServiceError(
-                status_code=415,
-                code="unsupported_media_type",
-                message="Only PDF uploads are supported.",
-                retryable=False,
-            )
-
-        payload_bytes = await file.read()
-        if len(payload_bytes) == 0:
-            raise ServiceError(
-                status_code=422,
-                code="pdf_unreadable",
-                message="Uploaded PDF is empty or unreadable.",
-                retryable=False,
-            )
-        if len(payload_bytes) > runtime.config.max_upload_bytes:
-            raise ServiceError(
-                status_code=413,
-                code="payload_too_large",
-                message="Uploaded PDF exceeds configured size limit.",
-                retryable=False,
-            )
-
-        try:
-            raw_spec_object = json.loads(job_spec)
-        except json.JSONDecodeError as exc:
-            raise ServiceError(
-                status_code=400,
-                code="validation_error",
-                message=f"Invalid job_spec JSON: {exc.msg}",
-                retryable=False,
-            ) from exc
-
-        if not isinstance(raw_spec_object, dict):
-            raise ServiceError(
-                status_code=400,
-                code="validation_error",
-                message="job_spec must decode into a JSON object.",
-                retryable=False,
-            )
-
-        raw_spec: dict[str, object] = raw_spec_object
-
-        try:
-            spec = JobSpec.model_validate(raw_spec)
-        except ValidationError as exc:
-            raise ServiceError(
-                status_code=422,
-                code="validation_error",
-                message="Job specification failed validation.",
-                retryable=False,
-                details={"errors": exc.errors()},
-            ) from exc
-
-        if spec.source.kind.value != "upload":
-            raise ServiceError(
-                status_code=422,
-                code="validation_error",
-                message="source.kind must be 'upload' in v1.",
-                retryable=False,
-                details={"field": "source.kind"},
-            )
-
-        runtime.validate_backend_strategy(spec)
-        runtime.validate_acceleration_policy(spec)
-
-        api_key = request.headers.get("X-API-Key", "")
-        scope_key = f"{api_key}:POST:/v1/convert/jobs:{idempotency_key}"
-        file_sha256 = hashlib.sha256(payload_bytes).hexdigest()
-        request_fingerprint = fingerprint_for_request(raw_spec, file_sha256)
-
-        existing_record = runtime.get_idempotency(scope_key)
-        if existing_record is not None:
-            if existing_record.fingerprint != request_fingerprint:
-                raise ServiceError(
-                    status_code=409,
-                    code="idempotency_key_reused_with_different_payload",
-                    message=(
-                        "Idempotency-Key was already used with a different request payload "
-                        "within the idempotency window."
-                    ),
-                    retryable=False,
-                )
-            existing_job = runtime.get_job(existing_record.job_id)
-            if existing_job is None:
-                raise ServiceError(
-                    status_code=404,
-                    code="job_not_found",
-                    message="Idempotent job no longer exists.",
-                    retryable=False,
-                )
-            body = _job_record_response(existing_job).model_dump(mode="json")
-            replay_status_code = 200 if existing_job.status in TERMINAL_JOB_STATUSES else 202
-            response = JSONResponse(status_code=replay_status_code, content=body)
-            response.headers["X-Idempotent-Replay"] = "true"
-            return response
-
-        job = runtime.create_job(spec=spec, upload_bytes=payload_bytes, source_filename=file_name)
-        runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
-        runtime.run_job_async(job.job_id)
-
-        deadline = time.monotonic() + wait_seconds
-        current = runtime.get_job(job.job_id)
-        while (
-            current is not None
-            and current.status not in TERMINAL_JOB_STATUSES
-            and time.monotonic() < deadline
-        ):
-            time.sleep(0.05)
-            current = runtime.get_job(job.job_id)
-
-        if current is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job expired or was removed before response could be returned.",
-                retryable=False,
-            )
-
-        response_status = 200 if current.status in TERMINAL_JOB_STATUSES else 202
-        payload = _job_record_response(current).model_dump(mode="json")
-        return JSONResponse(status_code=response_status, content=payload)
-
-    @app.get("/v1/convert/jobs/{job_id}")
-    async def get_job(job_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request)
-        job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
-        payload = _job_record_response(job).model_dump(mode="json")
-        return JSONResponse(status_code=200, content=payload)
-
-    @app.get("/v1/convert/jobs/{job_id}/result")
-    async def get_result(
-        job_id: str, request: Request, inline: bool = Query(default=False)
-    ) -> JSONResponse:
-        _require_api_key(request)
-        job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
-
-        if job.status not in TERMINAL_JOB_STATUSES:
-            pending = JobPendingResultResponse(job_id=job.job_id, status=job.status)
-            return JSONResponse(status_code=202, content=pending.model_dump(mode="json"))
-
-        if job.status != JobStatus.SUCCEEDED:
-            raise ServiceError(
-                status_code=409,
-                code="job_not_succeeded",
-                message="Job is terminal but has no successful conversion result.",
-                retryable=False,
-                details={"status": job.status.value},
-            )
-
-        if job.artifact_sha256 is None or job.artifact_size_bytes is None:
-            raise ServiceError(
-                status_code=500,
-                code="result_missing_artifact",
-                message="Successful job is missing artifact metadata.",
-                retryable=False,
-            )
-
-        markdown_content: str | None = None
-        if inline:
-            if job.artifact_size_bytes > runtime.config.inline_max_bytes:
-                raise ServiceError(
-                    status_code=413,
-                    code="result_inline_too_large",
-                    message="Result artifact exceeds inline response size limit.",
-                    retryable=False,
-                )
-            markdown_content = job.artifact_path.read_text(encoding="utf-8")
-
-        if (
-            job.backend_used is None
-            or job.acceleration_used is None
-            or job.ocr_enabled is None
-            or job.options_fingerprint is None
-        ):
-            raise ServiceError(
-                status_code=500,
-                code="result_missing_metadata",
-                message="Successful job is missing conversion metadata.",
-                retryable=False,
-            )
-
-        payload = JobResultResponse(
-            job_id=job.job_id,
-            result=ResultPayload(
-                artifact=ArtifactMetadata(
-                    markdown_filename=job.artifact_path.name,
-                    size_bytes=job.artifact_size_bytes,
-                    sha256=job.artifact_sha256,
-                ),
-                conversion_metadata=ConversionMetadata(
-                    backend_used=job.backend_used,
-                    acceleration_used=job.acceleration_used,
-                    ocr_enabled=job.ocr_enabled,
-                    table_mode=job.spec.conversion.table_mode,
-                    options_fingerprint=job.options_fingerprint,
-                ),
-                warnings=job.warnings,
-                markdown_content=markdown_content,
-            ),
-        )
-        return JSONResponse(status_code=200, content=payload.model_dump(mode="json"))
-
-    @app.post("/v1/convert/jobs/{job_id}/cancel")
-    async def cancel_job(job_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request)
-        result = runtime.cancel_job(job_id)
-        if result == "missing":
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
-        if result == "conflict":
-            raise ServiceError(
-                status_code=409,
-                code="job_not_cancelable",
-                message="Terminal jobs cannot be canceled.",
-                retryable=False,
-            )
-
-        job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
-
-        status_code = 202 if result == "accepted" else 200
-        payload = _job_record_response(job).model_dump(mode="json")
-        return JSONResponse(status_code=status_code, content=payload)
-
-    @app.get("/healthz")
-    async def healthcheck() -> dict[str, object]:
-        return {
-            "status": "ok",
-            "service_revision": service_revision,
-            "started_at": started_at,
-            "data_root": resolved_data_root.as_posix(),
-            "service_profile": service_profile,
-        }
-
+    app.include_router(build_health_router(app=app, service_started_at=service_started_at))
+    app.include_router(build_job_router(service_started_at=service_started_at))
     return app
-
-
-app = _LazyAsgiApp()

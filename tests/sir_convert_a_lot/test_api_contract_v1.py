@@ -645,3 +645,173 @@ def test_job_status_exposes_heartbeat_and_phase_timings(tmp_path: Path) -> None:
     assert isinstance(progress["phase_timings_ms"], dict)
     assert isinstance(progress["last_heartbeat_at"], str)
     assert isinstance(progress["current_phase_started_at"], str)
+
+
+def test_readyz_reports_ready_for_matching_revision_profile_and_data_root(
+    monkeypatch, tmp_path: Path
+) -> None:
+    service_data = tmp_path / "service_data"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_SERVICE_REVISION", "rev_ready")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION", "rev_ready")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DATA_DIR", service_data.as_posix())
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=service_data,
+            enable_supervisor=False,
+            gpu_available=False,
+            allow_cpu_only=True,
+        ),
+        service_profile="prod",
+        expected_service_profile="prod",
+    )
+    client = TestClient(app)
+
+    response = client.get("/readyz")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ready"] is True
+    assert payload["service_revision"] == "rev_ready"
+    assert payload["expected_revision"] == "rev_ready"
+    assert payload["service_profile"] == "prod"
+    assert payload["reasons"] == []
+
+
+def test_readyz_fails_closed_on_stale_revision(monkeypatch, tmp_path: Path) -> None:
+    service_data = tmp_path / "service_data"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_SERVICE_REVISION", "rev_old")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION", "rev_new")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DATA_DIR", service_data.as_posix())
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=service_data,
+            enable_supervisor=False,
+            gpu_available=False,
+            allow_cpu_only=True,
+        ),
+        service_profile="prod",
+        expected_service_profile="prod",
+    )
+    client = TestClient(app)
+
+    response = client.get("/readyz")
+
+    assert response.status_code == 503
+    reasons = response.json()["reasons"]
+    assert any(reason["code"] == "stale_revision" for reason in reasons)
+
+
+def test_readyz_fails_when_profile_mismatches_expected_profile(monkeypatch, tmp_path: Path) -> None:
+    service_data = tmp_path / "service_data"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_SERVICE_REVISION", "rev_profile")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION", "rev_profile")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DATA_DIR", service_data.as_posix())
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=service_data,
+            enable_supervisor=False,
+            gpu_available=False,
+            allow_cpu_only=True,
+        ),
+        service_profile="prod",
+        expected_service_profile="eval",
+    )
+    client = TestClient(app)
+
+    response = client.get("/readyz")
+
+    assert response.status_code == 503
+    reasons = response.json()["reasons"]
+    assert any(reason["code"] == "profile_mismatch" for reason in reasons)
+
+
+def test_readyz_fails_when_prod_eval_data_roots_collide(monkeypatch, tmp_path: Path) -> None:
+    shared_root = tmp_path / "shared_data"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_SERVICE_REVISION", "rev_roots")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION", "rev_roots")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DATA_DIR", shared_root.as_posix())
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EVAL_DATA_DIR", shared_root.as_posix())
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=shared_root,
+            enable_supervisor=False,
+            gpu_available=False,
+            allow_cpu_only=True,
+        ),
+        service_profile="eval",
+        expected_service_profile="eval",
+    )
+    client = TestClient(app)
+
+    response = client.get("/readyz")
+
+    assert response.status_code == 503
+    reasons = response.json()["reasons"]
+    assert any(reason["code"] == "data_root_configuration_collision" for reason in reasons)
+
+
+def test_readyz_uses_startup_cached_expected_revision(monkeypatch, tmp_path: Path) -> None:
+    service_data = tmp_path / "service_data"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_SERVICE_REVISION", "rev_cached")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION", "rev_cached")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DATA_DIR", service_data.as_posix())
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=service_data,
+            enable_supervisor=False,
+            gpu_available=False,
+            allow_cpu_only=True,
+        ),
+        service_profile="prod",
+        expected_service_profile="prod",
+    )
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION", "rev_changed_after_startup")
+
+    client = TestClient(app)
+    response = client.get("/readyz")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ready"] is True
+    assert payload["expected_revision"] == "rev_cached"
+
+
+def test_metrics_endpoint_exposes_http_metrics(monkeypatch, tmp_path: Path) -> None:
+    service_data = tmp_path / "service_data"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_SERVICE_REVISION", "rev_metrics")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION", "rev_metrics")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DATA_DIR", service_data.as_posix())
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=service_data,
+            enable_supervisor=False,
+            gpu_available=False,
+            allow_cpu_only=True,
+        ),
+        service_profile="prod",
+        expected_service_profile="prod",
+    )
+    client = TestClient(app)
+
+    assert client.get("/healthz").status_code == 200
+    assert client.get("/readyz").status_code == 200
+
+    metrics_response = client.get("/metrics")
+    assert metrics_response.status_code == 200
+    assert "text/plain" in metrics_response.headers.get("content-type", "")
+    content = metrics_response.text
+    assert "sir_convert_a_lot_http_requests_total" in content
+    assert "sir_convert_a_lot_http_request_duration_seconds" in content
+    assert 'path="/healthz"' in content

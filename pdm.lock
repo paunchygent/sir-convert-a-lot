@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:4772627b4bd70e848c7594c498b99eff913d29ca3c1fa30923c10e444a7af11a"
+content_hash = "sha256:91aaf85fff18003db89a981f69e16518fd0119ad83d38f60818e0b239413d69f"
 
 [[metadata.targets]]
 requires_python = ">=3.11,<3.13"
@@ -1412,6 +1412,17 @@ dependencies = [
 files = [
     {file = "polyfactory-3.2.0-py3-none-any.whl", hash = "sha256:5945799cce4c56cd44ccad96fb0352996914553cc3efaa5a286930599f569571"},
     {file = "polyfactory-3.2.0.tar.gz", hash = "sha256:879242f55208f023eee1de48522de5cb1f9fd2d09b2314e999a9592829d596d1"},
+]
+
+[[package]]
+name = "prometheus-client"
+version = "0.24.1"
+requires_python = ">=3.9"
+summary = "Python client for the Prometheus monitoring system."
+groups = ["default"]
+files = [
+    {file = "prometheus_client-0.24.1-py3-none-any.whl", hash = "sha256:150db128af71a5c2482b36e588fc8a6b95e498750da4b17065947c16070f4055"},
+    {file = "prometheus_client-0.24.1.tar.gz", hash = "sha256:7e0ced7fbbd40f7b84962d5d2ab6f17ef88a72504dcf7c0b40737b43b2a461f9"},
 ]
 
 [[package]]

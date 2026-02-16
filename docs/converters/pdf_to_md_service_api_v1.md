@@ -324,6 +324,69 @@ Responses:
 - `404 Not Found`
 - `409 Conflict`: terminal state cannot be canceled
 
+### `GET /healthz`
+
+Liveness endpoint for process/alive checks.
+
+Behavior:
+
+- Returns `200` when HTTP service is responsive.
+- Does not enforce deploy-correctness invariants.
+
+Response fields include:
+
+- `status` (`"ok"`)
+- `service_revision`
+- `started_at`
+- `data_root`
+- `service_profile`
+
+### `GET /readyz`
+
+Readiness endpoint for deploy-correctness invariants.
+
+Behavior:
+
+- Returns `200` only when all readiness checks pass.
+- Returns `503` fail-closed when any invariant fails.
+
+Invariant checks:
+
+- service revision matches expected revision,
+- service profile matches expected entrypoint profile,
+- prod/eval data-root configuration is isolated and profile-compatible.
+
+Expected revision contract:
+
+- expected revision is resolved at service startup from
+  `SIR_CONVERT_A_LOT_EXPECTED_REVISION` (fallback: service startup revision),
+- value is cached for deterministic readiness evaluation across requests.
+
+Response fields include:
+
+- `status` (`"ready"` or `"not_ready"`)
+- `ready` (boolean)
+- `service_revision`
+- `expected_revision`
+- `service_profile`
+- `expected_service_profile`
+- `data_root`
+- `reasons` (array of structured readiness failures)
+
+### `GET /metrics`
+
+Prometheus metrics endpoint for HTTP observability.
+
+Behavior:
+
+- Returns `200` with `text/plain; version=0.0.4` content.
+- Exposes route-normalized request count and latency metrics.
+
+Current metric names:
+
+- `sir_convert_a_lot_http_requests_total`
+- `sir_convert_a_lot_http_request_duration_seconds`
+
 ## Standard Error Model
 
 All non-2xx responses return:

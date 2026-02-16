@@ -88,18 +88,20 @@ class ServiceRuntime:
         self.docling_backend = DoclingConversionBackend()
         self.pymupdf_backend = PyMuPdfConversionBackend()
         self._lock = threading.Lock()
+        self._shutdown_event = threading.Event()
+        self._supervisor_thread: threading.Thread | None = None
         self._active_job_ids: set[str] = set()
 
         self.job_store.sweep_expired()
         self.job_store.recover_running_jobs_to_queued(active_job_ids=self._active_job_ids)
 
         if self.config.enable_supervisor:
-            thread = threading.Thread(target=self._supervisor_loop, daemon=True)
-            thread.start()
+            self._supervisor_thread = threading.Thread(target=self._supervisor_loop, daemon=True)
+            self._supervisor_thread.start()
 
     def _supervisor_loop(self) -> None:
         """Background supervisor that runs queued jobs and re-runs recovered jobs."""
-        while True:
+        while not self._shutdown_event.is_set():
             try:
                 self.job_store.sweep_expired()
                 self.job_store.recover_running_jobs_to_queued(active_job_ids=self._active_job_ids)
@@ -125,7 +127,17 @@ class ServiceRuntime:
                 # Defensive: keep supervisor alive.
                 pass
 
-            time.sleep(max(0.05, self.config.supervisor_poll_seconds))
+            self._shutdown_event.wait(timeout=max(0.05, self.config.supervisor_poll_seconds))
+
+    def shutdown(self) -> None:
+        """Stop background supervisor loops and release runtime resources."""
+        self._shutdown_event.set()
+        if self._supervisor_thread is None:
+            return
+        if not self._supervisor_thread.is_alive():
+            return
+        join_timeout_seconds = max(1.0, self.config.supervisor_poll_seconds * 4)
+        self._supervisor_thread.join(timeout=join_timeout_seconds)
 
     def _new_job_id(self) -> str:
         return f"job_{uuid4().hex[:26]}"

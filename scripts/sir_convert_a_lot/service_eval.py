@@ -53,6 +53,10 @@ def eval_service_config_from_env() -> ServiceConfig:
     )
 
 
-app = create_app(eval_service_config_from_env(), service_profile="eval")
+app = create_app(
+    eval_service_config_from_env(),
+    service_profile="eval",
+    expected_service_profile="eval",
+)
 
 __all__ = ["app", "create_app", "eval_service_config_from_env"]

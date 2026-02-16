@@ -12,6 +12,6 @@ Relationships:
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
-app = create_app(service_profile="prod")
+app = create_app(service_profile="prod", expected_service_profile="prod")
 
 __all__ = ["ServiceConfig", "app", "create_app"]
