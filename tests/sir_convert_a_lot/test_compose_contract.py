@@ -130,6 +130,35 @@ def test_compose_enforces_lane_isolation_and_restart_policy() -> None:
     assert eval_command == ["pdm", "run", "serve:sir-convert-a-lot-eval"]
 
 
+def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:
+    compose = _load_compose()
+    for service_name in ("sir_convert_a_lot_prod", "sir_convert_a_lot_eval"):
+        service = _require_service(compose, service_name)
+        build_obj = service.get("build")
+        assert isinstance(build_obj, dict)
+        args_obj = build_obj.get("args")
+        assert isinstance(args_obj, list)
+        assert (
+            "SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL=${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.1}"
+            in args_obj
+        )
+        assert (
+            "SIR_CONVERT_A_LOT_TORCH_VERSION=${SIR_CONVERT_A_LOT_TORCH_VERSION:-2.10.0+rocm7.1}"
+            in args_obj
+        )
+        assert (
+            "SIR_CONVERT_A_LOT_TORCHVISION_VERSION=${SIR_CONVERT_A_LOT_TORCHVISION_VERSION:-0.25.0+rocm7.1}"
+            in args_obj
+        )
+        assert (
+            "SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION=${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION:-2.10.0+rocm7.1}"
+            in args_obj
+        )
+
+        assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+        assert service.get("group_add") == ["video", "render"]
+
+
 def test_compose_declares_named_volumes_for_prod_and_eval_lanes() -> None:
     compose = _load_compose()
     volumes_obj = compose.get("volumes")
@@ -142,3 +171,7 @@ def test_dockerfile_uses_supported_pdm_sync_arguments() -> None:
     dockerfile_text = DOCKERFILE.read_text(encoding="utf-8")
     assert "pdm sync --prod --no-editable --no-self" in dockerfile_text
     assert "--frozen-lockfile" not in dockerfile_text
+    assert "SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL" in dockerfile_text
+    assert "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}" in dockerfile_text
+    assert "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}" in dockerfile_text
+    assert "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}" in dockerfile_text

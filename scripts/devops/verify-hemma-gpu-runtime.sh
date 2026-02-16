@@ -24,10 +24,30 @@ PY
 }
 
 API_KEY="${SIR_CONVERT_A_LOT_API_KEY:-dev-only-key}"
-SERVICE_URL="${SIR_CONVERT_A_LOT_VERIFY_SERVICE_URL:-http://127.0.0.1:28085}"
-EVAL_URL="${SIR_CONVERT_A_LOT_VERIFY_EVAL_URL:-http://127.0.0.1:28086}"
+VERIFY_LANE="${SIR_CONVERT_A_LOT_VERIFY_LANE:-host}"
 VERIFY_FIXTURE="${SIR_CONVERT_A_LOT_VERIFY_FIXTURE:-tests/fixtures/benchmark_pdfs/paper_alpha.pdf}"
 VERIFY_TIMEOUT_SECONDS="${SIR_CONVERT_A_LOT_VERIFY_TIMEOUT_SECONDS:-180}"
+DOCKER_PROD_CONTAINER="${SIR_CONVERT_A_LOT_VERIFY_DOCKER_PROD_CONTAINER:-sir_convert_a_lot_prod}"
+DOCKER_EVAL_CONTAINER="${SIR_CONVERT_A_LOT_VERIFY_DOCKER_EVAL_CONTAINER:-sir_convert_a_lot_eval}"
+
+case "${VERIFY_LANE}" in
+  host)
+    SERVICE_URL="${SIR_CONVERT_A_LOT_VERIFY_SERVICE_URL:-http://127.0.0.1:28085}"
+    EVAL_URL="${SIR_CONVERT_A_LOT_VERIFY_EVAL_URL:-http://127.0.0.1:28086}"
+    REQUIRED_LISTENER_PORT=28085
+    OPTIONAL_EVAL_LISTENER_PORT=28086
+    ;;
+  docker)
+    SERVICE_URL="${SIR_CONVERT_A_LOT_VERIFY_SERVICE_URL:-http://127.0.0.1:8085}"
+    EVAL_URL="${SIR_CONVERT_A_LOT_VERIFY_EVAL_URL:-http://127.0.0.1:8086}"
+    REQUIRED_LISTENER_PORT=8085
+    OPTIONAL_EVAL_LISTENER_PORT=8086
+    ;;
+  *)
+    echo "[verify] unsupported lane '${VERIFY_LANE}' (expected: host or docker)" >&2
+    exit 2
+    ;;
+esac
 
 run_remote_shell() {
   local command="$1"
@@ -40,8 +60,14 @@ PINNED_TORCH_VERSION="${SIR_CONVERT_A_LOT_VERIFY_TORCH_VERSION_PIN:-$(read_pypro
 echo "[verify] checking ROCm visibility"
 run_remote_shell "set -euo pipefail; rocm-smi --showproductname --showuse --showmemuse >/tmp/sir_rocm_verify.log; grep -Eq 'GPU\\[[0-9]+\\]' /tmp/sir_rocm_verify.log"
 
-echo "[verify] checking torch runtime probe"
-run_remote_shell "set -euo pipefail; VERIFY_TORCH_VERSION_PIN='${PINNED_TORCH_VERSION}' pdm run python - <<'PY'
+if [[ "${VERIFY_LANE}" == "docker" ]]; then
+  echo "[verify] checking docker lane container + ROCm device passthrough"
+  run_remote_shell "set -euo pipefail; sudo docker ps --format '{{.Names}}' | grep -qx '${DOCKER_PROD_CONTAINER}'"
+  run_remote_shell "set -euo pipefail; sudo docker ps --format '{{.Names}}' | grep -qx '${DOCKER_EVAL_CONTAINER}'"
+  run_remote_shell "set -euo pipefail; sudo docker exec '${DOCKER_PROD_CONTAINER}' test -e /dev/kfd"
+  run_remote_shell "set -euo pipefail; sudo docker exec '${DOCKER_PROD_CONTAINER}' test -d /dev/dri"
+  echo "[verify] checking in-container torch runtime probe"
+  run_remote_shell "set -euo pipefail; VERIFY_TORCH_VERSION_PIN='${PINNED_TORCH_VERSION}' sudo docker exec -e VERIFY_TORCH_VERSION_PIN='${PINNED_TORCH_VERSION}' '${DOCKER_PROD_CONTAINER}' pdm run python - <<'PY'
 import json
 import os
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
@@ -60,12 +86,34 @@ if expected_torch_version and probe.torch_version != expected_torch_version:
         f'torch version mismatch: expected={expected_torch_version!r} actual={probe.torch_version!r}'
     )
 PY"
+else
+  echo "[verify] checking torch runtime probe"
+  run_remote_shell "set -euo pipefail; VERIFY_TORCH_VERSION_PIN='${PINNED_TORCH_VERSION}' pdm run python - <<'PY'
+import json
+import os
+from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
+
+probe = probe_torch_gpu_runtime()
+print(json.dumps(probe.as_details(), sort_keys=True))
+if probe.runtime_kind != 'rocm':
+    raise SystemExit('runtime_kind is not rocm')
+if not probe.is_available:
+    raise SystemExit('torch runtime is not GPU-available')
+if '+rocm' not in (probe.torch_version or ''):
+    raise SystemExit(f'torch build is not ROCm-tagged: {probe.torch_version!r}')
+expected_torch_version = os.environ['VERIFY_TORCH_VERSION_PIN']
+if expected_torch_version and probe.torch_version != expected_torch_version:
+    raise SystemExit(
+        f'torch version mismatch: expected={expected_torch_version!r} actual={probe.torch_version!r}'
+    )
+PY"
+fi
 
 echo "[verify] checking service listener + readiness"
-run_remote_shell "set -euo pipefail; ss -ltn | grep -q ':28085 '; curl -fsS '${SERVICE_URL}/readyz' >/dev/null"
+run_remote_shell "set -euo pipefail; ss -ltn | grep -q ':${REQUIRED_LISTENER_PORT} '; curl -fsS '${SERVICE_URL}/readyz' >/dev/null"
 
 echo "[verify] checking optional evaluation listener + readiness"
-run_remote_shell "set -euo pipefail; if ss -ltn | grep -q ':28086 '; then curl -fsS '${EVAL_URL}/readyz' >/dev/null; else echo '[verify] eval service not running on 28086 (optional)'; fi"
+run_remote_shell "set -euo pipefail; if ss -ltn | grep -q ':${OPTIONAL_EVAL_LISTENER_PORT} '; then curl -fsS '${EVAL_URL}/readyz' >/dev/null; else echo '[verify] eval service not running on optional port ${OPTIONAL_EVAL_LISTENER_PORT}'; fi"
 
 echo "[verify] checking readiness contract details"
 run_remote_shell "set -euo pipefail; VERIFY_SERVICE_URL='${SERVICE_URL}' VERIFY_EVAL_URL='${EVAL_URL}' pdm run python - <<'PY'
@@ -97,7 +145,7 @@ with httpx.Client(timeout=10.0) as client:
     if prod_payload.get('service_revision') != repo_head:
         raise SystemExit(
             'prod service_revision does not match repo HEAD: '
-            f'service={prod_payload.get("service_revision")!r} repo_head={repo_head!r}'
+            f'service={prod_payload.get(\"service_revision\")!r} repo_head={repo_head!r}'
         )
 
     eval_payload: dict[str, object] | None = None
@@ -111,7 +159,7 @@ with httpx.Client(timeout=10.0) as client:
         if eval_payload.get('service_revision') != repo_head:
             raise SystemExit(
                 'eval service_revision does not match repo HEAD: '
-                f'service={eval_payload.get("service_revision")!r} repo_head={repo_head!r}'
+                f'service={eval_payload.get(\"service_revision\")!r} repo_head={repo_head!r}'
             )
 
 result: dict[str, object] = {
@@ -222,7 +270,9 @@ with httpx.Client(base_url=service_url, timeout=30.0) as client:
     metadata = result_obj.get('conversion_metadata', {})
     warnings_obj = result_obj.get('warnings', [])
     if metadata.get('acceleration_used') != 'cuda':
-        raise SystemExit(f'acceleration_used mismatch: {metadata.get(\"acceleration_used\")!r}')
+        raise SystemExit(
+            f'acceleration_used mismatch: {metadata.get(\"acceleration_used\")!r}'
+        )
     if any('docling_cuda_unavailable_fallback_cpu' in str(item) for item in warnings_obj):
         raise SystemExit('unexpected cpu-fallback warning found in result')
     if gpu_busy_seen <= 0:

@@ -142,6 +142,20 @@ Use deterministic compliance checks before GPU-governed conversion workloads:
 pdm run run-local-pdm hemma-verify-gpu-runtime
 ```
 
+For dockerized lane verification (`8085`/`8086`) with compose services:
+
+```bash
+SIR_CONVERT_A_LOT_VERIFY_LANE=docker \
+  pdm run run-local-pdm hemma-verify-gpu-runtime
+```
+
+ROCm torch pin source of truth remains:
+
+- `pyproject.toml` `tool.sir_convert_a_lot.rocm_runtime`
+  - `torch==2.10.0+rocm7.1`
+  - `torchvision==0.25.0+rocm7.1`
+  - `torchaudio==2.10.0+rocm7.1`
+
 If verification fails due a non-ROCm torch runtime in the project environment:
 
 ```bash

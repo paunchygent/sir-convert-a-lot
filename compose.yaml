@@ -3,6 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL=${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.1}
+        - SIR_CONVERT_A_LOT_TORCH_VERSION=${SIR_CONVERT_A_LOT_TORCH_VERSION:-2.10.0+rocm7.1}
+        - SIR_CONVERT_A_LOT_TORCHVISION_VERSION=${SIR_CONVERT_A_LOT_TORCHVISION_VERSION:-0.25.0+rocm7.1}
+        - SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION=${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION:-2.10.0+rocm7.1}
     container_name: sir_convert_a_lot_prod
     restart: unless-stopped
     env_file:
@@ -19,6 +24,12 @@ services:
       - serve:sir-convert-a-lot
     ports:
       - "${SIR_CONVERT_A_LOT_PROD_PORT:-8085}:8085"
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
     healthcheck:
@@ -38,6 +49,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL=${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.1}
+        - SIR_CONVERT_A_LOT_TORCH_VERSION=${SIR_CONVERT_A_LOT_TORCH_VERSION:-2.10.0+rocm7.1}
+        - SIR_CONVERT_A_LOT_TORCHVISION_VERSION=${SIR_CONVERT_A_LOT_TORCHVISION_VERSION:-0.25.0+rocm7.1}
+        - SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION=${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION:-2.10.0+rocm7.1}
     container_name: sir_convert_a_lot_eval
     restart: unless-stopped
     env_file:
@@ -54,6 +70,12 @@ services:
       - serve:sir-convert-a-lot-eval
     ports:
       - "${SIR_CONVERT_A_LOT_EVAL_PORT:-8086}:8086"
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
     volumes:
       - sir-convert-a-lot-eval-data:/var/lib/sir-convert-a-lot/eval
     healthcheck:

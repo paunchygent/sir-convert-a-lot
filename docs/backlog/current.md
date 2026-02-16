@@ -10,7 +10,9 @@ related:
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/backlog/tasks/task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md
   - docs/backlog/tasks/task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback.md
+  - docs/backlog/tasks/task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning.md
   - docs/reference/ref-docling-form-ordering-exam-pdf-2026-02-16.md
+  - docs/reference/ref-dockerized-hemma-gpu-passthrough-gap-2026-02-16.md
 labels:
   - session-log
   - active-work
@@ -25,8 +27,20 @@ PDFs with source-level Docling mitigation and deterministic fallback behavior.
   `docs/backlog/tasks/task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md`
 - Task 26 is in progress:
   `docs/backlog/tasks/task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback.md`
+- Task 27 is in progress:
+  `docs/backlog/tasks/task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning.md`
 
 ## Worklog
+
+- 2026-02-16:
+
+  - Task 27 created to close docker-lane GPU gap on Hemma.
+  - Baseline recorded:
+    - dockerized `8085/8086` lane is revision-ready but not GPU-ready,
+    - container probe showed `torch==2.10.0+cu128`, `is_available=false`,
+    - `/dev/kfd` and `/dev/dri` missing in container.
+  - Reference:
+    - `docs/reference/ref-dockerized-hemma-gpu-passthrough-gap-2026-02-16.md`
 
 - 2026-02-16:
 
@@ -58,10 +72,9 @@ PDFs with source-level Docling mitigation and deterministic fallback behavior.
 ## Next Actions
 
 - Execute Task 26 Hemma lane verification:
-  - push latest revision,
-  - pull/rebuild/restart on Hemma,
-  - run target exam conversion and confirm quality-gate/fallback behavior.
-- Update Task 26 with Hemma evidence and close validation checklist once
-  operational proof is captured.
-- Keep `current.md` as the concise long-term canonical log; keep
-  `.agents/session/handoff.md` for between-session transient handoff only.
+  - capture output evidence for source-order fallback behavior and close checklist.
+- Execute Task 27 end-to-end on docker lane:
+  - enforce ROCm wheel pins in image,
+  - add compose GPU passthrough mappings,
+  - fix verification script bug,
+  - verify GPU-required conversions via `8085/8086`.
