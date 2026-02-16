@@ -86,12 +86,14 @@ Out of scope:
     - install Docling shared libs (`libxcb1` and related X/GL runtime libs),
   - optimized compose topology to use one shared runtime image for prod+eval lanes
     (runtime overlays only, no duplicate image build by default).
-- Hemma docker-lane evidence (`99e736e`):
+- Hemma docker-lane evidence (`b7c59c2`):
+  - both services run from shared image `sir-convert-a-lot-runtime:local`
+    (single-image build topology),
   - `pdm run run-local-pdm run-hemma -- sudo docker exec sir_convert_a_lot_prod pdm run python -c "...torch probe..."`
     reported `2.10.0+rocm7.1`, HIP `7.1.25424`, `torch.cuda.is_available() == True`,
   - `curl -fsS http://127.0.0.1:8085/readyz` and `:8086/readyz` returned
-    `ready=true` with revision `99e736e...`,
+    `ready=true` with revision `b7c59c2...`,
   - `SIR_CONVERT_A_LOT_VERIFY_LANE=docker pdm run run-local-pdm hemma-verify-gpu-runtime`
     passed with:
-    - `{"acceleration_used":"cuda","gpu_busy_peak":99,...}`,
+    - `{"acceleration_used":"cuda","gpu_busy_peak":97,...}`,
     - no CPU fallback warning.
