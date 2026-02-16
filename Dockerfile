@@ -25,6 +25,7 @@ RUN python -m pip install --no-cache-dir "pdm==2.26.4"
 
 COPY pyproject.toml pdm.lock ./
 RUN pdm sync --prod --no-editable --no-self
+RUN pdm run python -m ensurepip --upgrade
 RUN pdm run python -m pip uninstall -y torch torchvision torchaudio >/dev/null 2>&1 || true
 RUN pdm run python -m pip install --upgrade --no-cache-dir \
     --index-url "${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL}" \
