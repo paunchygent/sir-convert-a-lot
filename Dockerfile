@@ -22,6 +22,8 @@ ARG SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION="2.10.0+rocm7.1"
 WORKDIR /app
 
 RUN python -m pip install --no-cache-dir "pdm==2.26.4"
+RUN getent group video >/dev/null || groupadd --system video
+RUN getent group render >/dev/null || groupadd --system render
 
 COPY pyproject.toml pdm.lock ./
 RUN pdm sync --prod --no-editable --no-self
