@@ -132,31 +132,44 @@ def test_compose_enforces_lane_isolation_and_restart_policy() -> None:
 
 def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:
     compose = _load_compose()
-    for service_name in ("sir_convert_a_lot_prod", "sir_convert_a_lot_eval"):
-        service = _require_service(compose, service_name)
-        build_obj = service.get("build")
-        assert isinstance(build_obj, dict)
-        args_obj = build_obj.get("args")
-        assert isinstance(args_obj, list)
-        assert (
-            "SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL=${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.1}"
-            in args_obj
-        )
-        assert (
-            "SIR_CONVERT_A_LOT_TORCH_VERSION=${SIR_CONVERT_A_LOT_TORCH_VERSION:-2.10.0+rocm7.1}"
-            in args_obj
-        )
-        assert (
-            "SIR_CONVERT_A_LOT_TORCHVISION_VERSION=${SIR_CONVERT_A_LOT_TORCHVISION_VERSION:-0.25.0+rocm7.1}"
-            in args_obj
-        )
-        assert (
-            "SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION=${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION:-2.10.0+rocm7.1}"
-            in args_obj
-        )
+    prod_service = _require_service(compose, "sir_convert_a_lot_prod")
+    eval_service = _require_service(compose, "sir_convert_a_lot_eval")
 
-        assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
-        assert service.get("group_add") == ["video", "render"]
+    assert (
+        prod_service.get("image")
+        == "sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}"
+    )
+    assert (
+        eval_service.get("image")
+        == "sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}"
+    )
+    assert eval_service.get("build") is None
+
+    build_obj = prod_service.get("build")
+    assert isinstance(build_obj, dict)
+    args_obj = build_obj.get("args")
+    assert isinstance(args_obj, list)
+    assert (
+        "SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL=${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.1}"
+        in args_obj
+    )
+    assert (
+        "SIR_CONVERT_A_LOT_TORCH_VERSION=${SIR_CONVERT_A_LOT_TORCH_VERSION:-2.10.0+rocm7.1}"
+        in args_obj
+    )
+    assert (
+        "SIR_CONVERT_A_LOT_TORCHVISION_VERSION=${SIR_CONVERT_A_LOT_TORCHVISION_VERSION:-0.25.0+rocm7.1}"
+        in args_obj
+    )
+    assert (
+        "SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION=${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION:-2.10.0+rocm7.1}"
+        in args_obj
+    )
+
+    assert prod_service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+    assert prod_service.get("group_add") == ["video", "render"]
+    assert eval_service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+    assert eval_service.get("group_add") == ["video", "render"]
 
 
 def test_compose_declares_named_volumes_for_prod_and_eval_lanes() -> None:

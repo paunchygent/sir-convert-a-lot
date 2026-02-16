@@ -1,5 +1,6 @@
 services:
   sir_convert_a_lot_prod:
+    image: sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: Dockerfile
@@ -46,14 +47,7 @@ services:
       start_period: 15s
 
   sir_convert_a_lot_eval:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL=${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.1}
-        - SIR_CONVERT_A_LOT_TORCH_VERSION=${SIR_CONVERT_A_LOT_TORCH_VERSION:-2.10.0+rocm7.1}
-        - SIR_CONVERT_A_LOT_TORCHVISION_VERSION=${SIR_CONVERT_A_LOT_TORCHVISION_VERSION:-0.25.0+rocm7.1}
-        - SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION=${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION:-2.10.0+rocm7.1}
+    image: sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}
     container_name: sir_convert_a_lot_eval
     restart: unless-stopped
     env_file:

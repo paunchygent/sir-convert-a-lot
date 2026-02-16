@@ -27,10 +27,28 @@ PDFs with source-level Docling mitigation and deterministic fallback behavior.
   `docs/backlog/tasks/task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md`
 - Task 26 is in progress:
   `docs/backlog/tasks/task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback.md`
-- Task 27 is in progress:
+- Task 27 is completed:
   `docs/backlog/tasks/task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning.md`
 
 ## Worklog
+
+- 2026-02-16:
+
+  - Task 27 completed with docker-lane GPU runtime compliance on Hemma.
+  - Delivered docker lane runtime fixes:
+    - pinned ROCm wheel installation in image build (`2.10.0+rocm7.1` stack),
+    - ROCm device passthrough (`/dev/kfd`, `/dev/dri`),
+    - verifier lane support (`host|docker`) and readiness-check reliability fixes,
+    - container runtime fixes (`ensurepip`, required `video`/`render` groups,
+      Docling shared runtime libs including `libxcb1`).
+  - Hemma evidence:
+    - in-container probe: `torch==2.10.0+rocm7.1`, HIP present, GPU available,
+    - `8085/8086` `readyz` returned `ready=true` with revision match,
+    - docker-lane verify passed:
+      - `SIR_CONVERT_A_LOT_VERIFY_LANE=docker pdm run run-local-pdm hemma-verify-gpu-runtime`
+      - live result: `acceleration_used="cuda"`, `gpu_busy_peak=99`.
+  - Compose build topology optimized to one shared runtime image for prod/eval
+    runtime overlays, removing duplicate image builds by default.
 
 - 2026-02-16:
 
@@ -73,8 +91,3 @@ PDFs with source-level Docling mitigation and deterministic fallback behavior.
 
 - Execute Task 26 Hemma lane verification:
   - capture output evidence for source-order fallback behavior and close checklist.
-- Execute Task 27 end-to-end on docker lane:
-  - enforce ROCm wheel pins in image,
-  - add compose GPU passthrough mappings,
-  - fix verification script bug,
-  - verify GPU-required conversions via `8085/8086`.

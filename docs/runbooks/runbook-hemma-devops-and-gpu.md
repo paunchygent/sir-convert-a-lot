@@ -111,6 +111,8 @@ pdm run dev-stop
 Command-surface guarantees:
 
 - `docker compose` v2 only (never `docker-compose`).
+- Compose builds one shared runtime image (`sir-convert-a-lot-runtime:*`) and
+  runs prod/eval as runtime overlays (different command/profile/ports).
 - Wrapper auto-derives `SIR_CONVERT_A_LOT_SERVICE_REVISION` from `git rev-parse HEAD`
   when unset, and defaults `SIR_CONVERT_A_LOT_EXPECTED_REVISION` to the same value.
 - Health remains `/readyz`-gated, so stale/mismatched revision/profile/data-root
