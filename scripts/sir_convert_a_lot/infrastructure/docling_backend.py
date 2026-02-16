@@ -11,25 +11,13 @@ Relationships:
 
 from __future__ import annotations
 
-import os
-import re
 import threading
-import time
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.layout_model_specs import (
-    DOCLING_LAYOUT_EGRET_LARGE,
-    DOCLING_LAYOUT_EGRET_MEDIUM,
-    DOCLING_LAYOUT_EGRET_XLARGE,
-    DOCLING_LAYOUT_HERON,
-    DOCLING_LAYOUT_HERON_101,
-    DOCLING_LAYOUT_V2,
-    LayoutModelConfig,
-)
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
@@ -48,6 +36,36 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     ConversionRequest,
     ConversionResultData,
 )
+from scripts.sir_convert_a_lot.infrastructure.docling_formula_fallback import (
+    convert_once_guarded_formula,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
+    DEFAULT_LAYOUT_MODEL_KEY as _DEFAULT_LAYOUT_MODEL_KEY,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
+    DOCLING_ORDERING_PATCH_ENV_VAR as _DOCLING_ORDERING_PATCH_ENV_VAR,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
+    DOCLING_ORDERING_QUALITY_GATE_ENV_VAR as _DOCLING_ORDERING_QUALITY_GATE_ENV_VAR,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
+    is_env_flag_enabled as _is_env_flag_enabled,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
+    resolve_layout_model_candidate_keys as _resolve_layout_model_candidate_keys,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
+    resolve_layout_model_config as _resolve_layout_model_config,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_ordering import (
+    OrderingQualityReport,
+    evaluate_docling_ordering_quality,
+    install_docling_form_ordering_patch,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_ordering_fallback import (
+    ordering_warnings_for_attempt,
+    select_best_ordering_attempt,
+)
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
     GpuRuntimeProbeResult,
     probe_torch_gpu_runtime,
@@ -62,36 +80,6 @@ _DOCLING_DEPRECATED_TABLE_IMAGES_WARNING = (
 _DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING = "docling_formula_enrichment_unavailable_fallback"
 _DOCLING_FORMULA_PRESET_SWITCH_WARNING = "docling_formula_preset_switched_to_granite_docling"
 _DOCLING_FORMULA_QUALITY_SWITCH_WARNING = "docling_formula_quality_switch_applied"
-_FORMULA_PLACEHOLDER_MARKER = "<!-- formula-not-decoded -->"
-_FORMULA_PRIMARY_PRESET = "codeformulav2"
-_FORMULA_FALLBACK_PRESET = "granite_docling"
-_FORMULA_RUNTIME_UNAVAILABLE_HINTS: tuple[str, ...] = (
-    "codeformula",
-    "formula",
-    "vlm",
-    "transformers",
-    "huggingface",
-    "snapshot",
-    "tokenizer",
-    "checkpoint",
-    "weights",
-)
-_LEAKED_CONTROL_SENTINEL_RE = re.compile(r"^\s*/[a-z_]+slash\s*$", re.IGNORECASE)
-_LEAKED_FORMULA_TAG_RE = re.compile(r"</?formula\b", re.IGNORECASE)
-_LEAKED_LOC_TOKEN_RE = re.compile(r"<loc_\d+>", re.IGNORECASE)
-_RUNAWAY_INLINE_MATH_BACKSLASH_RE = re.compile(r"(?:\s+\\){120,}\s*\$\$\s*$")
-_INLINE_MATH_BACKSLASH_THRESHOLD = 240
-_INLINE_MATH_LINE_LENGTH_THRESHOLD = 1200
-_DOCLING_LAYOUT_MODEL_ENV_VAR = "SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL"
-_DEFAULT_LAYOUT_MODEL_KEY = "docling_layout_egret_large"
-_LAYOUT_MODEL_BY_KEY: dict[str, LayoutModelConfig] = {
-    "docling_layout_v2": DOCLING_LAYOUT_V2,
-    "docling_layout_heron": DOCLING_LAYOUT_HERON,
-    "docling_layout_heron_101": DOCLING_LAYOUT_HERON_101,
-    "docling_layout_egret_medium": DOCLING_LAYOUT_EGRET_MEDIUM,
-    "docling_layout_egret_large": DOCLING_LAYOUT_EGRET_LARGE,
-    "docling_layout_egret_xlarge": DOCLING_LAYOUT_EGRET_XLARGE,
-}
 
 warnings.filterwarnings(
     "ignore",
@@ -100,33 +88,14 @@ warnings.filterwarnings(
 )
 
 
-def _resolve_layout_model_config() -> LayoutModelConfig:
-    """Resolve deterministic Docling layout model selection.
-
-    Defaults to `docling_layout_egret_large` for higher-fidelity reading-order
-    extraction while allowing explicit override through:
-    `SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL`.
-    """
-    raw_value = os.getenv(_DOCLING_LAYOUT_MODEL_ENV_VAR)
-    requested_key = (
-        raw_value.strip().lower()
-        if raw_value is not None and raw_value.strip() != ""
-        else _DEFAULT_LAYOUT_MODEL_KEY
-    )
-    resolved_config = _LAYOUT_MODEL_BY_KEY.get(requested_key)
-    if resolved_config is None:
-        supported = ", ".join(sorted(_LAYOUT_MODEL_BY_KEY))
-        raise BackendExecutionError(
-            f"Unsupported Docling layout model '{requested_key}'. Use one of: {supported}."
-        )
-    return resolved_config.model_copy(deep=True)
-
-
 @dataclass(frozen=True)
 class _DoclingAttempt:
     markdown_content: str
     page_count: int
     low_confidence: bool
+    layout_model_key: str = _DEFAULT_LAYOUT_MODEL_KEY
+    ordering_quality: OrderingQualityReport | None = None
+    ordering_retry_applied: bool = False
 
 
 @dataclass(frozen=True)
@@ -135,6 +104,7 @@ class _ConverterKey:
     ocr_enabled: bool
     force_full_page_ocr: bool
     acceleration_device: AcceleratorDevice
+    layout_model_key: str
     formula_enrichment: bool
     formula_preset: str
 
@@ -144,6 +114,16 @@ class DoclingConversionBackend(ConversionBackend):
 
     def __init__(self) -> None:
         self._thread_local = threading.local()
+        self._ordering_patch_enabled = _is_env_flag_enabled(
+            env_var=_DOCLING_ORDERING_PATCH_ENV_VAR,
+            default=True,
+        )
+        self._ordering_quality_gate_enabled = _is_env_flag_enabled(
+            env_var=_DOCLING_ORDERING_QUALITY_GATE_ENV_VAR,
+            default=True,
+        )
+        if self._ordering_patch_enabled:
+            install_docling_form_ordering_patch()
 
     def convert(self, request: ConversionRequest) -> ConversionResultData:
         if request.backend_strategy not in {BackendStrategy.AUTO, BackendStrategy.DOCLING}:
@@ -224,142 +204,17 @@ class DoclingConversionBackend(ConversionBackend):
         force_full_page_ocr: bool,
         acceleration_device: AcceleratorDevice,
     ) -> tuple[_DoclingAttempt, list[str], dict[str, int]]:
-        formula_enrichment = request.table_mode == TableMode.ACCURATE
-        formula_enrichment_ms = 0
-        if not formula_enrichment:
-            return (
-                self._convert_once(
-                    request,
-                    ocr_enabled=ocr_enabled,
-                    force_full_page_ocr=force_full_page_ocr,
-                    acceleration_device=acceleration_device,
-                    formula_enrichment=False,
-                    formula_preset=_FORMULA_PRIMARY_PRESET,
-                ),
-                [],
-                {},
-            )
-        warnings: list[str] = []
-        primary_error: BackendExecutionError | None = None
-        primary_quality_penalty = 0
-        try:
-            primary_attempt, primary_timing_ms = self._timed_convert_once(
-                request=request,
-                ocr_enabled=ocr_enabled,
-                force_full_page_ocr=force_full_page_ocr,
-                acceleration_device=acceleration_device,
-                formula_enrichment=True,
-                formula_preset=_FORMULA_PRIMARY_PRESET,
-            )
-            formula_enrichment_ms += primary_timing_ms
-            primary_quality_penalty = self._markdown_quality_penalty(
-                primary_attempt.markdown_content
-            )
-        except BackendExecutionError as exc:
-            if not self._is_formula_runtime_unavailable(exc):
-                raise
-            primary_error = exc
-            primary_attempt = None
-
-        fallback_error: BackendExecutionError | None = None
-        fallback_attempt: _DoclingAttempt | None = None
-        needs_fallback_attempt = (
-            primary_attempt is None
-            or (self._formula_placeholder_count(primary_attempt.markdown_content) > 0)
-            or primary_quality_penalty > 0
-        )
-        if needs_fallback_attempt:
-            try:
-                fallback_attempt, fallback_timing_ms = self._timed_convert_once(
-                    request=request,
-                    ocr_enabled=ocr_enabled,
-                    force_full_page_ocr=force_full_page_ocr,
-                    acceleration_device=acceleration_device,
-                    formula_enrichment=True,
-                    formula_preset=_FORMULA_FALLBACK_PRESET,
-                )
-                formula_enrichment_ms += fallback_timing_ms
-            except BackendExecutionError as exc:
-                if not self._is_formula_runtime_unavailable(exc):
-                    raise
-                fallback_error = exc
-        timings = {"formula_enrichment_ms": formula_enrichment_ms}
-
-        if primary_attempt is None and fallback_attempt is not None:
-            warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
-            return fallback_attempt, warnings, timings
-
-        if primary_attempt is not None and fallback_attempt is not None:
-            primary_placeholder_count = self._formula_placeholder_count(
-                primary_attempt.markdown_content
-            )
-            fallback_placeholder_count = self._formula_placeholder_count(
-                fallback_attempt.markdown_content
-            )
-            primary_quality_penalty = self._markdown_quality_penalty(
-                primary_attempt.markdown_content
-            )
-            fallback_quality_penalty = self._markdown_quality_penalty(
-                fallback_attempt.markdown_content
-            )
-            if fallback_placeholder_count < primary_placeholder_count:
-                warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
-                return fallback_attempt, warnings, timings
-            if (
-                fallback_placeholder_count == primary_placeholder_count
-                and fallback_quality_penalty < primary_quality_penalty
-            ):
-                warnings.append(_DOCLING_FORMULA_PRESET_SWITCH_WARNING)
-                warnings.append(_DOCLING_FORMULA_QUALITY_SWITCH_WARNING)
-                return fallback_attempt, warnings, timings
-            return primary_attempt, warnings, timings
-
-        if primary_attempt is not None:
-            return primary_attempt, warnings, timings
-
-        if primary_error is not None or fallback_error is not None:
-            return (
-                self._convert_once(
-                    request,
-                    ocr_enabled=ocr_enabled,
-                    force_full_page_ocr=force_full_page_ocr,
-                    acceleration_device=acceleration_device,
-                    formula_enrichment=False,
-                    formula_preset=_FORMULA_PRIMARY_PRESET,
-                ),
-                [_DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING],
-                timings,
-            )
-
-        raise BackendExecutionError(
-            "Docling formula enrichment failed without runtime diagnostics."
-        )
-
-    def _timed_convert_once(
-        self,
-        *,
-        request: ConversionRequest,
-        ocr_enabled: bool,
-        force_full_page_ocr: bool,
-        acceleration_device: AcceleratorDevice,
-        formula_enrichment: bool,
-        formula_preset: str,
-    ) -> tuple[_DoclingAttempt, int]:
-        start = time.perf_counter()
-        attempt = self._convert_once(
-            request,
+        return convert_once_guarded_formula(
+            request=request,
             ocr_enabled=ocr_enabled,
             force_full_page_ocr=force_full_page_ocr,
             acceleration_device=acceleration_device,
-            formula_enrichment=formula_enrichment,
-            formula_preset=formula_preset,
+            convert_once=self._convert_once,
+            ordering_warnings_resolver=self._ordering_warnings_for_attempt,
+            formula_enrichment_fallback_warning=_DOCLING_FORMULA_ENRICHMENT_FALLBACK_WARNING,
+            formula_preset_switch_warning=_DOCLING_FORMULA_PRESET_SWITCH_WARNING,
+            formula_quality_switch_warning=_DOCLING_FORMULA_QUALITY_SWITCH_WARNING,
         )
-        elapsed_ms = int((time.perf_counter() - start) * 1000)
-        return attempt, max(0, elapsed_ms)
-
-    def _is_formula_runtime_unavailable(self, error: BackendExecutionError) -> bool:
-        message = str(error).lower()
-        return any(hint in message for hint in _FORMULA_RUNTIME_UNAVAILABLE_HINTS)
 
     def _convert_once(
         self,
@@ -371,11 +226,65 @@ class DoclingConversionBackend(ConversionBackend):
         formula_enrichment: bool,
         formula_preset: str,
     ) -> _DoclingAttempt:
+        candidate_layout_keys = _resolve_layout_model_candidate_keys()
+        primary_layout_key = candidate_layout_keys[0]
+        primary_attempt = self._convert_once_with_layout(
+            request=request,
+            ocr_enabled=ocr_enabled,
+            force_full_page_ocr=force_full_page_ocr,
+            acceleration_device=acceleration_device,
+            formula_enrichment=formula_enrichment,
+            formula_preset=formula_preset,
+            layout_model_key=primary_layout_key,
+            evaluate_ordering_quality=self._ordering_quality_gate_enabled,
+        )
+        if not self._ordering_quality_gate_enabled or len(candidate_layout_keys) == 1:
+            return primary_attempt
+
+        primary_quality = primary_attempt.ordering_quality
+        if primary_quality is not None and primary_quality.passes:
+            return primary_attempt
+
+        attempts: list[_DoclingAttempt] = [primary_attempt]
+        for fallback_layout_key in candidate_layout_keys[1:]:
+            fallback_attempt = self._convert_once_with_layout(
+                request=request,
+                ocr_enabled=ocr_enabled,
+                force_full_page_ocr=force_full_page_ocr,
+                acceleration_device=acceleration_device,
+                formula_enrichment=formula_enrichment,
+                formula_preset=formula_preset,
+                layout_model_key=fallback_layout_key,
+                evaluate_ordering_quality=True,
+            )
+            attempts.append(fallback_attempt)
+            fallback_quality = fallback_attempt.ordering_quality
+            if fallback_quality is not None and fallback_quality.passes:
+                return replace(fallback_attempt, ordering_retry_applied=True)
+
+        selected_attempt = select_best_ordering_attempt(attempts)
+        if selected_attempt.layout_model_key != primary_layout_key:
+            return replace(selected_attempt, ordering_retry_applied=True)
+        return selected_attempt
+
+    def _convert_once_with_layout(
+        self,
+        *,
+        request: ConversionRequest,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device: AcceleratorDevice,
+        formula_enrichment: bool,
+        formula_preset: str,
+        layout_model_key: str,
+        evaluate_ordering_quality: bool,
+    ) -> _DoclingAttempt:
         key = _ConverterKey(
             table_mode=request.table_mode,
             ocr_enabled=ocr_enabled,
             force_full_page_ocr=force_full_page_ocr,
             acceleration_device=acceleration_device,
+            layout_model_key=layout_model_key,
             formula_enrichment=formula_enrichment,
             formula_preset=formula_preset,
         )
@@ -401,10 +310,15 @@ class DoclingConversionBackend(ConversionBackend):
         raw_pages = getattr(result, "pages", None)
         page_count = len(raw_pages) if raw_pages is not None else 1
         low_confidence = self._is_low_confidence(result)
+        ordering_quality: OrderingQualityReport | None = None
+        if evaluate_ordering_quality:
+            ordering_quality = evaluate_docling_ordering_quality(markdown_content)
         return _DoclingAttempt(
             markdown_content=markdown_content,
             page_count=max(1, page_count),
             low_confidence=low_confidence,
+            layout_model_key=layout_model_key,
+            ordering_quality=ordering_quality,
         )
 
     def _is_low_confidence(self, result: object) -> bool:
@@ -441,6 +355,10 @@ class DoclingConversionBackend(ConversionBackend):
             merged[key] = merged.get(key, 0) + value
         return merged
 
+    def _ordering_warnings_for_attempt(self, attempt: _DoclingAttempt) -> list[str]:
+        del self
+        return ordering_warnings_for_attempt(attempt)
+
     def _get_converter(self, key: _ConverterKey) -> DocumentConverter:
         cache = self._converter_cache()
         converter = cache.get(key)
@@ -460,7 +378,11 @@ class DoclingConversionBackend(ConversionBackend):
         pipeline_options = PdfPipelineOptions()
         layout_options = pipeline_options.layout_options
         if hasattr(layout_options, "model_spec"):
-            setattr(layout_options, "model_spec", _resolve_layout_model_config())
+            setattr(
+                layout_options,
+                "model_spec",
+                _resolve_layout_model_config(layout_model_key=key.layout_model_key),
+            )
         pipeline_options.do_ocr = key.ocr_enabled
         pipeline_options.do_table_structure = True
         pipeline_options.do_formula_enrichment = key.formula_enrichment
@@ -488,46 +410,6 @@ class DoclingConversionBackend(ConversionBackend):
                     InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
                 }
             )
-
-    def _formula_placeholder_count(self, markdown_content: str) -> int:
-        """Return number of unresolved Docling formula placeholder markers."""
-        return markdown_content.count(_FORMULA_PLACEHOLDER_MARKER)
-
-    def _markdown_quality_penalty(self, markdown_content: str) -> int:
-        """Compute structural markdown penalty for formula candidate selection."""
-        lines = markdown_content.splitlines()
-        leaked_control_sentinels = sum(
-            1 for line in lines if _LEAKED_CONTROL_SENTINEL_RE.match(line) is not None
-        )
-        leaked_formula_tags = sum(
-            1 for line in lines if _LEAKED_FORMULA_TAG_RE.search(line) is not None
-        )
-        leaked_loc_tokens = sum(
-            1 for line in lines if _LEAKED_LOC_TOKEN_RE.search(line) is not None
-        )
-        malformed_inline_math_lines = sum(
-            1 for line in lines if self._is_malformed_inline_math_line(line)
-        )
-        unbalanced_display_math_blocks = sum(line.count("$$") for line in lines) % 2
-        return (
-            leaked_control_sentinels * 20
-            + leaked_formula_tags * 25
-            + leaked_loc_tokens * 25
-            + malformed_inline_math_lines * 20
-            + unbalanced_display_math_blocks * 5
-        )
-
-    def _is_malformed_inline_math_line(self, line: str) -> bool:
-        stripped = line.strip()
-        if "$$" not in stripped:
-            return False
-        if line.count("\\") < _INLINE_MATH_BACKSLASH_THRESHOLD:
-            return False
-        if len(line) < _INLINE_MATH_LINE_LENGTH_THRESHOLD:
-            return False
-        if _RUNAWAY_INLINE_MATH_BACKSLASH_RE.search(line) is not None:
-            return True
-        return line.count("$$") >= 1
 
     def _export_markdown(self, document: object) -> str:
         """Export markdown with deterministic escaping policy.

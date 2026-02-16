@@ -102,3 +102,16 @@ Out of scope:
   - `pdm run validate-tasks`
   - `pdm run validate-docs`
   - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+## Task 26 Follow-Up (2026-02-16)
+
+- Source-level ordering now handles primary repair path:
+  - Docling form ordering patch + structural quality-gated layout fallback in
+    backend (`task-26`) is now the primary mechanism for question/option order.
+- Strict normalization retained as safety net only:
+  - standalone-number coalescing for residual malformed prompt fragments,
+  - references section numbering reorder (section-scoped),
+  - pagination noise cleanup.
+- Strict normalization no longer primary for this defect class:
+  - exam question-before-options correction is now source-level first,
+    normalization second.

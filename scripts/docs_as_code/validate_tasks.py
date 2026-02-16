@@ -30,6 +30,10 @@ REQUIRED_KEYS = (
     "last_updated",
 )
 FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+TASK_LOG_REQUIRED_SECTIONS: tuple[str, ...] = ("Context", "Worklog", "Next Actions")
+TASK_LOG_MAX_LINES = 220
+TASK_LOG_MAX_WORKLOG_ENTRIES = 12
+WORKLOG_DATE_ENTRY_RE = re.compile(r"^- \d{4}-\d{2}-\d{2}\b")
 
 
 def parse_frontmatter(text: str) -> tuple[dict[str, object] | None, str | None]:
@@ -78,6 +82,44 @@ def validate_sections(path: Path, text: str, item_type: str) -> list[str]:
         if section_marker not in text:
             errors.append(f"{repo_relative(path)}: missing required section '{section_marker}'")
 
+    return errors
+
+
+def validate_task_log_invariants(path: Path, text: str) -> list[str]:
+    """Validate hard template and compression invariants for current task log."""
+    errors: list[str] = []
+    line_count = len(text.splitlines())
+    if line_count > TASK_LOG_MAX_LINES:
+        errors.append(
+            f"{repo_relative(path)}: exceeds {TASK_LOG_MAX_LINES} lines ({line_count}); "
+            "compress and archive older detail into task/reference docs."
+        )
+
+    headings = [
+        match.group(1).strip() for match in re.finditer(r"^##\s+(.+)$", text, flags=re.MULTILINE)
+    ]
+    if tuple(headings) != TASK_LOG_REQUIRED_SECTIONS:
+        expected = ", ".join(TASK_LOG_REQUIRED_SECTIONS)
+        found = ", ".join(headings) if headings else "(none)"
+        errors.append(
+            f"{repo_relative(path)}: task-log must use exact H2 template/order "
+            f"({expected}); found ({found})."
+        )
+        return errors
+
+    worklog_start = text.find("## Worklog")
+    next_actions_start = text.find("## Next Actions")
+    if worklog_start == -1 or next_actions_start == -1 or next_actions_start <= worklog_start:
+        return errors
+    worklog_block = text[worklog_start:next_actions_start]
+    worklog_entry_count = sum(
+        1 for line in worklog_block.splitlines() if WORKLOG_DATE_ENTRY_RE.match(line) is not None
+    )
+    if worklog_entry_count > TASK_LOG_MAX_WORKLOG_ENTRIES:
+        errors.append(
+            f"{repo_relative(path)}: Worklog has {worklog_entry_count} dated entries; "
+            f"max is {TASK_LOG_MAX_WORKLOG_ENTRIES}. Compress older entries."
+        )
     return errors
 
 
@@ -153,6 +195,8 @@ def validate_file(path: Path) -> list[str]:
 
     errors.extend(validate_location(path, item_type))
     errors.extend(validate_sections(path, text, item_type))
+    if item_type == "task-log":
+        errors.extend(validate_task_log_invariants(path, text))
 
     return errors
 
