@@ -4,7 +4,7 @@ id: RUN-hemma-devops-and-gpu
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 status: active
 created: '2026-02-11'
-updated: '2026-02-11'
+updated: '2026-02-16'
 owners:
   - platform
 system: hemma.hule.education
@@ -92,6 +92,38 @@ Wrapper guarantees:
 pdm run run-hemma -- pwd
 pdm run run-hemma --shell 'command -v docker && docker --version'
 pdm run run-hemma --shell 'sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+```
+
+## Containerized Runtime (Task 22 Command Surface)
+
+Local canonical compose commands (repo root):
+
+```bash
+pdm run dev-build
+pdm run dev-start
+pdm run dev-check
+pdm run dev-ps
+pdm run dev-logs sir_convert_a_lot_prod
+pdm run dev-config
+pdm run dev-stop
+```
+
+Command-surface guarantees:
+
+- `docker compose` v2 only (never `docker-compose`).
+- Wrapper auto-derives `SIR_CONVERT_A_LOT_SERVICE_REVISION` from `git rev-parse HEAD`
+  when unset, and defaults `SIR_CONVERT_A_LOT_EXPECTED_REVISION` to the same value.
+- Health remains `/readyz`-gated, so stale/mismatched revision/profile/data-root
+  configurations stay non-ready by contract.
+
+Remote Hemma execution stays wrapper-driven (`run-hemma` argv mode):
+
+```bash
+pdm run run-hemma -- pdm run dev-build
+pdm run run-hemma -- pdm run dev-start
+pdm run run-hemma -- pdm run dev-check
+pdm run run-hemma -- pdm run dev-logs sir_convert_a_lot_prod
+pdm run run-hemma -- pdm run dev-stop
 ```
 
 ## GPU Verification (ROCm/HIP)

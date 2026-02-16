@@ -1,0 +1,74 @@
+services:
+  sir_convert_a_lot_prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sir_convert_a_lot_prod
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
+      - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
+      - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
+      - SIR_CONVERT_A_LOT_EVAL_DATA_DIR=/var/lib/sir-convert-a-lot/eval
+    command:
+      - pdm
+      - run
+      - serve:sir-convert-a-lot
+    ports:
+      - "${SIR_CONVERT_A_LOT_PROD_PORT:-8085}:8085"
+    volumes:
+      - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8085/readyz')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  sir_convert_a_lot_eval:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sir_convert_a_lot_eval
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
+      - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
+      - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
+      - SIR_CONVERT_A_LOT_EVAL_DATA_DIR=/var/lib/sir-convert-a-lot/eval
+    command:
+      - pdm
+      - run
+      - serve:sir-convert-a-lot-eval
+    ports:
+      - "${SIR_CONVERT_A_LOT_EVAL_PORT:-8086}:8086"
+    volumes:
+      - sir-convert-a-lot-eval-data:/var/lib/sir-convert-a-lot/eval
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8086/readyz')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  sir-convert-a-lot-prod-data:
+  sir-convert-a-lot-eval-data:

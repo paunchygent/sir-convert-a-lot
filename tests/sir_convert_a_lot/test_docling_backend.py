@@ -24,6 +24,7 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     DoclingConversionBackend,
     _DoclingAttempt,
+    _resolve_layout_model_config,
 )
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 from tests.sir_convert_a_lot.pdf_fixtures import docling_cuda_available, fixture_pdf_bytes
@@ -43,6 +44,24 @@ def _request(
         table_mode=table_mode,
         gpu_available=gpu_available,
     )
+
+
+def test_layout_model_default_is_heavier_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL", raising=False)
+    selected = _resolve_layout_model_config()
+    assert selected.name == "docling_layout_egret_large"
+
+
+def test_layout_model_env_override_is_applied(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL", "docling_layout_heron")
+    selected = _resolve_layout_model_config()
+    assert selected.name == "docling_layout_heron"
+
+
+def test_layout_model_env_invalid_value_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL", "not_a_real_layout_model")
+    with pytest.raises(BackendExecutionError):
+        _resolve_layout_model_config()
 
 
 @pytest.fixture(autouse=True)

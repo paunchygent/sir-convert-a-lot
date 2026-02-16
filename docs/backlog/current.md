@@ -26,6 +26,7 @@ related:
   - docs/backlog/tasks/task-22-docker-compose-service-packaging-and-readiness-gated-startup.md
   - docs/backlog/tasks/task-23-durable-persistence-layout-retention-and-recovery-for-containerized-runtime.md
   - docs/backlog/tasks/task-24-container-operations-runbook-and-hemma-deployment-verification-for-dockerized-service.md
+  - docs/backlog/tasks/task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md
 labels:
   - session-log
   - active-work
@@ -48,11 +49,71 @@ Active focus is Story 02-01 execution:
 - Task 20 is completed (math-safe markdown normalization + Docling export escaping hardening).
 - Task 21 is completed (structural quality gate + hard-case normalization + lint hardening follow-up).
 - Story 05 is proposed (dockerized service hardening + robust persistence extension).
-- Task 22 is proposed (Docker packaging and readiness-gated startup).
+- Task 22 is completed (docker packaging + compose readiness-gated startup contract).
 - Task 23 is proposed (durable persistence layout, retention, and restart recovery).
 - Task 24 is proposed (container operations runbook + Hemma deployment verification).
+- Task 25 is in progress (heavier default profile + exam question-order normalization).
 
 ## Worklog
+
+- 2026-02-16 — Task 25 moved to `in_progress`:
+
+  - Created and scoped execution unit:
+    - `docs/backlog/tasks/task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md`
+  - Locked implementation/validation direction:
+    - heavier default Docling layout profile,
+    - correction of exam question/alternative ordering defects,
+    - mandatory Hemma deploy cycle validation on target document.
+
+- 2026-02-16 — Task 22 completed (Docker packaging + readiness-gated compose startup):
+
+  - Added container/runtime packaging surfaces:
+    - `Dockerfile`
+    - `.dockerignore`
+    - `compose.yaml`
+  - Added canonical compose wrapper + PDM command surface:
+    - `scripts/devops/dev-compose.sh`
+    - `pyproject.toml` (`dev-start`, `dev-stop`, `dev-build`, `dev-build-clean`,
+      `dev-recreate`, `dev-logs`, `dev-ps`, `dev-config`, `dev-check`)
+  - Enforced deterministic startup contract:
+    - `/readyz` healthchecks for prod/eval services,
+    - lane-isolated named volumes and data-root env wiring,
+    - revision defaults auto-derived from repo `HEAD` when unset.
+  - Fixed Docker runtime packaging incompatibility discovered during live probe:
+    - `Dockerfile` switched to supported `pdm sync --prod --no-editable --no-self`
+      for pinned `pdm==2.26.4`.
+  - Added focused regression coverage:
+    - `tests/sir_convert_a_lot/test_compose_contract.py`
+    - `tests/sir_convert_a_lot/test_dev_compose_wrapper.py`
+  - Synced runbook command surfaces:
+    - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+  - Validation:
+    - `pdm run dev-start`
+    - `pdm run dev-ps`
+    - `curl -fsS http://127.0.0.1:8085/readyz`
+    - `curl -fsS http://127.0.0.1:8086/readyz`
+    - `pdm run dev-stop`
+    - `pdm run dev-config`
+    - `pdm run dev-check`
+    - `pdm run format-all`
+    - `pdm run lint-fix`
+    - `pdm run typecheck-all`
+    - `pdm run pytest-root tests/sir_convert_a_lot -q`
+    - `pdm run validate-tasks`
+    - `pdm run validate-docs`
+    - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+- 2026-02-16 — Task 22 moved to `in_progress` (planning kickoff):
+
+  - Status update:
+    - `docs/backlog/tasks/task-22-docker-compose-service-packaging-and-readiness-gated-startup.md`
+  - Locked implementation direction:
+    - create Docker/compose surfaces from scratch in this repo,
+    - enforce `/readyz`-based health checks for container readiness gating,
+    - keep prod/eval lane isolation deterministic in compose env + data roots,
+    - expose canonical compose operations via committed scripts/PDM surfaces.
+  - Sequencing lock:
+    - Task 22 (packaging/startup) precedes Task 23 (persistence semantics) and Task 24 (Hemma ops close-out).
 
 - 2026-02-16 — Standards-alignment hardening patch completed (Task 19 follow-up):
 

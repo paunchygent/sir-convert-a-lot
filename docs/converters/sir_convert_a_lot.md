@@ -4,7 +4,7 @@ id: CONV-sir-convert-a-lot
 title: Sir Convert-a-Lot CLI and Service Usage
 status: active
 created: '2026-02-11'
-updated: '2026-02-14'
+updated: '2026-02-16'
 owners:
   - platform
 tags:
@@ -133,6 +133,18 @@ Default CLI submission profile is production-quality:
 - `conversion.table_mode=accurate`
 - `conversion.normalize=strict`
 - `execution.acceleration_policy=gpu_required`
+
+Docling default layout profile is quality-first:
+
+- service default layout model: `docling_layout_egret_large`
+- optional override env var: `SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL`
+- supported override values:
+  - `docling_layout_v2`
+  - `docling_layout_heron`
+  - `docling_layout_heron_101`
+  - `docling_layout_egret_medium`
+  - `docling_layout_egret_large`
+  - `docling_layout_egret_xlarge`
 
 Alias command (same behavior):
 

@@ -76,6 +76,13 @@ def test_job_spec_shape_is_canonical_and_identical_across_profiles(
         "priority": "normal",
         "document_timeout_seconds": 1800,
     }
+    assert candidate["conversion"] == {
+        "output_format": "md",
+        "backend_strategy": "auto",
+        "ocr_mode": "auto",
+        "table_mode": "accurate",
+        "normalize": "strict",
+    }
 
 
 @pytest.mark.parametrize("profile", [ConsumerProfile.HULEDU, ConsumerProfile.SKRIPTOTEKET])

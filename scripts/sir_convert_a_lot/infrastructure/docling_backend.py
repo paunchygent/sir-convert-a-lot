@@ -11,6 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
+import os
 import re
 import threading
 import time
@@ -20,6 +21,15 @@ from io import BytesIO
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
+from docling.datamodel.layout_model_specs import (
+    DOCLING_LAYOUT_EGRET_LARGE,
+    DOCLING_LAYOUT_EGRET_MEDIUM,
+    DOCLING_LAYOUT_EGRET_XLARGE,
+    DOCLING_LAYOUT_HERON,
+    DOCLING_LAYOUT_HERON_101,
+    DOCLING_LAYOUT_V2,
+    LayoutModelConfig,
+)
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
@@ -72,12 +82,44 @@ _LEAKED_LOC_TOKEN_RE = re.compile(r"<loc_\d+>", re.IGNORECASE)
 _RUNAWAY_INLINE_MATH_BACKSLASH_RE = re.compile(r"(?:\s+\\){120,}\s*\$\$\s*$")
 _INLINE_MATH_BACKSLASH_THRESHOLD = 240
 _INLINE_MATH_LINE_LENGTH_THRESHOLD = 1200
+_DOCLING_LAYOUT_MODEL_ENV_VAR = "SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL"
+_DEFAULT_LAYOUT_MODEL_KEY = "docling_layout_egret_large"
+_LAYOUT_MODEL_BY_KEY: dict[str, LayoutModelConfig] = {
+    "docling_layout_v2": DOCLING_LAYOUT_V2,
+    "docling_layout_heron": DOCLING_LAYOUT_HERON,
+    "docling_layout_heron_101": DOCLING_LAYOUT_HERON_101,
+    "docling_layout_egret_medium": DOCLING_LAYOUT_EGRET_MEDIUM,
+    "docling_layout_egret_large": DOCLING_LAYOUT_EGRET_LARGE,
+    "docling_layout_egret_xlarge": DOCLING_LAYOUT_EGRET_XLARGE,
+}
 
 warnings.filterwarnings(
     "ignore",
     message=_DOCLING_DEPRECATED_TABLE_IMAGES_WARNING,
     category=DeprecationWarning,
 )
+
+
+def _resolve_layout_model_config() -> LayoutModelConfig:
+    """Resolve deterministic Docling layout model selection.
+
+    Defaults to `docling_layout_egret_large` for higher-fidelity reading-order
+    extraction while allowing explicit override through:
+    `SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL`.
+    """
+    raw_value = os.getenv(_DOCLING_LAYOUT_MODEL_ENV_VAR)
+    requested_key = (
+        raw_value.strip().lower()
+        if raw_value is not None and raw_value.strip() != ""
+        else _DEFAULT_LAYOUT_MODEL_KEY
+    )
+    resolved_config = _LAYOUT_MODEL_BY_KEY.get(requested_key)
+    if resolved_config is None:
+        supported = ", ".join(sorted(_LAYOUT_MODEL_BY_KEY))
+        raise BackendExecutionError(
+            f"Unsupported Docling layout model '{requested_key}'. Use one of: {supported}."
+        )
+    return resolved_config.model_copy(deep=True)
 
 
 @dataclass(frozen=True)
@@ -416,6 +458,9 @@ class DoclingConversionBackend(ConversionBackend):
 
     def _build_converter(self, key: _ConverterKey) -> DocumentConverter:
         pipeline_options = PdfPipelineOptions()
+        layout_options = pipeline_options.layout_options
+        if hasattr(layout_options, "model_spec"):
+            setattr(layout_options, "model_spec", _resolve_layout_model_config())
         pipeline_options.do_ocr = key.ocr_enabled
         pipeline_options.do_table_structure = True
         pipeline_options.do_formula_enrichment = key.formula_enrichment

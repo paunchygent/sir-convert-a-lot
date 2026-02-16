@@ -84,8 +84,8 @@ def build_job_spec_for_profile(
             "output_format": "md",
             "backend_strategy": "auto",
             "ocr_mode": "auto",
-            "table_mode": "fast",
-            "normalize": "standard",
+            "table_mode": "accurate",
+            "normalize": "strict",
         },
         "execution": {
             "acceleration_policy": acceleration_policy,
