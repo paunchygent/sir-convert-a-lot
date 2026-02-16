@@ -21,6 +21,17 @@ ARG SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION="2.10.0+rocm7.1"
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libgl1 \
+        libglib2.0-0 \
+        libsm6 \
+        libx11-6 \
+        libxext6 \
+        libxcb1 \
+        libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN python -m pip install --no-cache-dir "pdm==2.26.4"
 RUN getent group video >/dev/null || groupadd --system video
 RUN getent group render >/dev/null || groupadd --system render
