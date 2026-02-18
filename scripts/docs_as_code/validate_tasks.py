@@ -65,6 +65,33 @@ def extract_h1(text: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def extract_section(text: str, section: str) -> str | None:
+    """Extract a section body for a given H2 heading."""
+    pattern = re.compile(
+        rf"^##\s+{re.escape(section)}\s*\n(.*?)(?=^##\s+|\Z)",
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    match = pattern.search(text)
+    return match.group(1).strip() if match else None
+
+
+def is_placeholder_block(text: str | None) -> bool:
+    """Return True when a section body appears to be an unfilled placeholder."""
+    if text is None:
+        return True
+    compact = text.strip()
+    if compact == "":
+        return True
+    lowered = compact.lower()
+    if lowered in {"tbd.", "tbd"}:
+        return True
+    if lowered.startswith("tbd"):
+        return True
+    if lowered.startswith("pending"):
+        return True
+    return False
+
+
 def repo_relative(path: Path) -> str:
     """Return repository-relative path string."""
     return str(path.relative_to(ROOT)).replace("\\", "/")
@@ -173,6 +200,16 @@ def validate_file(path: Path) -> list[str]:
         errors.append(f"{repo_relative(path)}: unsupported type '{item_type}'")
         return errors
 
+    if item_type == "review":
+        status_value = str(frontmatter.get("status", "")).strip()
+        allowed_statuses = {"pending", "responded", "completed"}
+        if status_value not in allowed_statuses:
+            allowed_rendered = ", ".join(sorted(allowed_statuses))
+            errors.append(
+                f"{repo_relative(path)}: review status must be one of ({allowed_rendered}); "
+                f"found '{status_value}'"
+            )
+
     title = str(frontmatter.get("title", "")).strip()
     if not title:
         errors.append(f"{repo_relative(path)}: title must be non-empty")
@@ -197,6 +234,48 @@ def validate_file(path: Path) -> list[str]:
     errors.extend(validate_sections(path, text, item_type))
     if item_type == "task-log":
         errors.extend(validate_task_log_invariants(path, text))
+    if item_type == "review":
+        related_obj = frontmatter.get("related")
+        if not isinstance(related_obj, list) or not related_obj:
+            errors.append(f"{repo_relative(path)}: review must include non-empty related list")
+        else:
+            for entry in related_obj:
+                if not isinstance(entry, str) or entry.strip() == "":
+                    errors.append(
+                        f"{repo_relative(path)}: review related list must contain non-empty strings"
+                    )
+                    break
+
+        rel = path.relative_to(BACKLOG_DIR)
+        if rel.parts[0] != "reviews" or len(rel.parts) != 3 or rel.name != "README.md":
+            errors.append(
+                f"{repo_relative(path)}: review must be stored at "
+                "docs/backlog/reviews/<review-id>/README.md"
+            )
+        else:
+            expected_dir = str(frontmatter.get("id", "")).strip()
+            review_dir = rel.parts[1]
+            if expected_dir and review_dir != expected_dir:
+                errors.append(
+                    f"{repo_relative(path)}: review folder '{review_dir}' must match "
+                    f"frontmatter id '{expected_dir}'"
+                )
+
+        if status_value in {"responded", "completed"}:
+            response_body = extract_section(text, "Response")
+            if is_placeholder_block(response_body):
+                errors.append(
+                    f"{repo_relative(path)}: review status '{status_value}' requires a filled "
+                    "Response section"
+                )
+
+        if status_value == "completed":
+            completion_body = extract_section(text, "Completion")
+            if is_placeholder_block(completion_body):
+                errors.append(
+                    f"{repo_relative(path)}: review status 'completed' requires a filled "
+                    "Completion section"
+                )
 
     return errors
 

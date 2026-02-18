@@ -19,6 +19,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "mdformat>=1.0.0",
     "mdformat-gfm>=0.4.1",
+    "weasyprint>=63.0",
     "docling==2.73.1",
     "pymupdf4llm==0.3.4",
 ]
@@ -90,6 +91,7 @@ distribution = false
 "run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
 "run-hemma" = "bash scripts/devops/run-hemma.sh"
 "hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"
+"hemma-verify-v2-conversions" = "bash scripts/devops/verify-hemma-v2-conversions.sh"
 "hemma-repair-rocm-runtime" = "bash scripts/devops/repair-hemma-rocm-runtime.sh"
 "dev-start" = "bash scripts/devops/dev-compose.sh start"
 "dev-stop" = "bash scripts/devops/dev-compose.sh stop"

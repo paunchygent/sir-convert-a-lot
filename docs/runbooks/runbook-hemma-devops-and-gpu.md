@@ -179,6 +179,28 @@ Compliance pass conditions:
 - No `docling_cuda_unavailable_fallback_cpu` warning.
 - `rocm-smi` observes non-zero GPU busy during conversion.
 
+## V2 Conversion Smoke Verification (Task 39)
+
+Produce deterministic, written evidence that the Hemma **docker lane** can execute the
+service API v2 critical routes end-to-end (`html -> pdf`, `md -> pdf`, `md -> docx`,
+`pdf -> docx`) while also confirming the locked v1 `pdf -> md` route still works.
+
+Run from laptop (wrapper executes the verification remotely in `~/apps/sir-convert-a-lot`):
+
+```bash
+pdm run run-local-pdm hemma-verify-v2-conversions
+```
+
+Evidence is written on Hemma under:
+
+- `build/verification/task-39-v2-smoke/` (`report.md`, `report.json`, `artifacts/`, `responses/`)
+
+View the markdown report:
+
+```bash
+pdm run run-local-pdm run-hemma -- cat build/verification/task-39-v2-smoke/report.md
+```
+
 ## Tunnel Workflow (Local Dev from Any Repo)
 
 Use a dedicated local-only service port to avoid collisions with other stacks.

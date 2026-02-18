@@ -119,10 +119,10 @@ docs:
 
     - name: backlog-review
       folder: docs/backlog/reviews
-      filename_regex: "^review-[a-z0-9-]+\\.md$"
+      filename_regex: "^(README|review-[a-z0-9-]+)\\.md$"
       type: review
       id_regex: "^[a-z0-9][a-z0-9._-]*$"
-      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
+      status_allowed: [pending, responded, completed]
       required: [priority, last_updated]
       optional: []
 

@@ -26,6 +26,7 @@ from scripts.sir_convert_a_lot.application.contracts import (
     ErrorBody,
     ErrorEnvelope,
 )
+from scripts.sir_convert_a_lot.application.contracts_v2 import ErrorEnvelopeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceConfig,
     ServiceError,
@@ -40,6 +41,7 @@ from scripts.sir_convert_a_lot.interfaces.http_app_state import (
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_health import build_health_router
 from scripts.sir_convert_a_lot.interfaces.http_routes_jobs import build_job_router
+from scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2 import build_job_router_v2
 
 
 def _utc_now_iso() -> str:
@@ -49,21 +51,23 @@ def _utc_now_iso() -> str:
 
 def _error_envelope(
     *,
+    api_version: str,
     correlation_id: str,
     code: str,
     message: str,
     retryable: bool,
     details: dict[str, object] | None = None,
-) -> ErrorEnvelope:
-    return ErrorEnvelope(
-        error=ErrorBody(
-            code=code,
-            message=message,
-            retryable=retryable,
-            details=details,
-            correlation_id=correlation_id,
-        )
+) -> ErrorEnvelope | ErrorEnvelopeV2:
+    error_body = ErrorBody(
+        code=code,
+        message=message,
+        retryable=retryable,
+        details=details,
+        correlation_id=correlation_id,
     )
+    if api_version == "v2":
+        return ErrorEnvelopeV2(error=error_body)
+    return ErrorEnvelope(error=error_body)
 
 
 def create_app(
@@ -136,7 +140,9 @@ def create_app(
     @app.exception_handler(ServiceError)
     async def service_error_handler(request: Request, exc: ServiceError) -> JSONResponse:
         correlation_id = getattr(request.state, "correlation_id", f"corr_{uuid4().hex}")
+        api_version = "v2" if request.url.path.startswith("/v2/") else "v1"
         envelope = _error_envelope(
+            api_version=api_version,
             correlation_id=correlation_id,
             code=exc.code,
             message=exc.message,
@@ -150,7 +156,9 @@ def create_app(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         correlation_id = getattr(request.state, "correlation_id", f"corr_{uuid4().hex}")
+        api_version = "v2" if request.url.path.startswith("/v2/") else "v1"
         envelope = _error_envelope(
+            api_version=api_version,
             correlation_id=correlation_id,
             code="validation_error",
             message="Request validation failed.",
@@ -161,4 +169,5 @@ def create_app(
 
     app.include_router(build_health_router(app=app, service_started_at=service_started_at))
     app.include_router(build_job_router(service_started_at=service_started_at))
+    app.include_router(build_job_router_v2(service_started_at=service_started_at))
     return app

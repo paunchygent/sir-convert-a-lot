@@ -12,6 +12,8 @@ tags:
   - planning
 links:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
+  - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
+  - docs/reference/ref-html-to-pdf-handout-templates-conversion-capability-matrix-2026-02-18.md
 ---
 
 ## Purpose
@@ -25,3 +27,4 @@ as active implementation stories/tasks.
 - Story 003c: internal integration paths for HuleEdu and Skriptoteket.
 - Story 003d: multi-format consolidation under canonical CLI/API.
 - Story 003e: validation and reliability gates.
+- Epic 04: converter suite parity with `html_to_pdf_handout_templates` under canonical CLI surfaces.

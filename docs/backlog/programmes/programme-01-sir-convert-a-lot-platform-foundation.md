@@ -8,6 +8,7 @@ created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
   - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
   - docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
@@ -38,6 +39,7 @@ planned, implemented, validated, and operated across local repos and Hemma-hoste
 ## Active Epics
 
 1. `docs/backlog/epics/epic-03-unified-conversion-service.md`
+1. `docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md`
 
 ## Acceptance Criteria
 

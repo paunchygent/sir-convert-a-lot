@@ -34,21 +34,21 @@ description: >-
 
 - From repo root:
 
-    ```bash
-    pdm run convert-a-lot convert ./pdfs \
-      --output-dir ./research \
-      --service-url "$SERVICE_URL" \
-      --api-key "${SIR_CONVERT_A_LOT_API_KEY:-dev-only-key}"
-    ```
+  ```bash
+  pdm run convert-a-lot convert ./pdfs \
+    --output-dir ./research \
+    --service-url "$SERVICE_URL" \
+    --api-key "${SIR_CONVERT_A_LOT_API_KEY:-dev-only-key}"
+  ```
 
 - From any other repo, route through this repo script surface:
 
-    ```bash
-    pdm run run-local-pdm convert-a-lot convert ./pdfs \
-      --output-dir ./research \
-      --service-url "$SERVICE_URL" \
-      --api-key "${SIR_CONVERT_A_LOT_API_KEY:-dev-only-key}"
-    ```
+  ```bash
+  pdm run run-local-pdm convert-a-lot convert ./pdfs \
+    --output-dir ./research \
+    --service-url "$SERVICE_URL" \
+    --api-key "${SIR_CONVERT_A_LOT_API_KEY:-dev-only-key}"
+  ```
 
 4. Inspect `sir_convert_a_lot_manifest.json` in `--output-dir`.
 

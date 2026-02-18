@@ -23,6 +23,7 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceConfig,
     ServiceRuntime,
 )
+from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceRuntimeMetadata
 
 
@@ -147,6 +148,37 @@ def runtime_for_request(request: Request, *, utc_now_iso: str) -> ServiceRuntime
     return runtime_obj
 
 
+def ensure_runtime_state_v2(app: FastAPI, *, utc_now_iso: str) -> ServiceRuntimeV2:
+    """Initialize v2 runtime exactly once per app instance."""
+    # Ensure shared metadata + v1 runtime exist first.
+    ensure_runtime_state(app, utc_now_iso=utc_now_iso)
+
+    runtime_obj = getattr(app.state, "runtime_v2", None)
+    if isinstance(runtime_obj, ServiceRuntimeV2):
+        return runtime_obj
+
+    startup_lock = getattr(app.state, "startup_lock", None)
+    if startup_lock is None:
+        raise RuntimeError("missing startup lock for service app state initialization")
+    with startup_lock:
+        runtime_obj = getattr(app.state, "runtime_v2", None)
+        if isinstance(runtime_obj, ServiceRuntimeV2):
+            return runtime_obj
+
+        runtime_config = getattr(app.state, "service_config", None)
+        if not isinstance(runtime_config, ServiceConfig):
+            raise RuntimeError("missing service config for runtime initialization")
+
+        runtime_v2 = ServiceRuntimeV2(runtime_config)
+        app.state.runtime_v2 = runtime_v2
+        return runtime_v2
+
+
+def runtime_v2_for_request(request: Request, *, utc_now_iso: str) -> ServiceRuntimeV2:
+    """Return initialized v2 runtime for an incoming request."""
+    return ensure_runtime_state_v2(request.app, utc_now_iso=utc_now_iso)
+
+
 def metadata_for_app(app: FastAPI, *, utc_now_iso: str) -> ServiceRuntimeMetadata:
     """Return initialized service metadata for health/readiness checks."""
     _, metadata_obj = ensure_runtime_state(app, utc_now_iso=utc_now_iso)
@@ -158,3 +190,6 @@ def shutdown_runtime_state(app: FastAPI) -> None:
     runtime_obj = getattr(app.state, "runtime", None)
     if isinstance(runtime_obj, ServiceRuntime):
         runtime_obj.shutdown()
+    runtime_v2_obj = getattr(app.state, "runtime_v2", None)
+    if isinstance(runtime_v2_obj, ServiceRuntimeV2):
+        runtime_v2_obj.shutdown()

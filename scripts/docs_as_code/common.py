@@ -58,11 +58,18 @@ def next_numeric_prefix(directory: Path, width: int = 3) -> str:
 
 
 def next_prefixed_index(directory: Path, prefix: str, width: int = 4) -> str:
-    """Return next index for files named `<prefix>-<number>-...` in a directory."""
+    """Return next index for entries named `<prefix>-<number>-...` in a directory.
+
+    This supports both file-based backlog items (example: `task-01-...md`) and
+    folder-based backlog items (example: `review-01-.../README.md`).
+    """
     max_id = 0
     pattern = re.compile(rf"^{re.escape(prefix)}-(\d+)(?:-|\.|$)")
-    for file_path in directory.glob("*.md*"):
-        match = pattern.match(file_path.name)
+    if not directory.exists():
+        return f"{max_id + 1:0{width}d}"
+
+    for entry in directory.iterdir():
+        match = pattern.match(entry.name)
         if match:
             max_id = max(max_id, int(match.group(1)))
     return f"{max_id + 1:0{width}d}"

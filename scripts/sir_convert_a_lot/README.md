@@ -11,13 +11,17 @@ Scattered converter scripts accumulate across projects. Each has its own invocat
 - **PDF → Markdown** via Docling or PyMuPDF backends:
   - Docling: `backend_strategy=auto|docling`
   - PyMuPDF: `backend_strategy=pymupdf` (CPU-only compatibility path)
+- **HTML (+ optional CSS) → PDF** via local WeasyPrint
+- **Markdown → PDF** via local Pandoc → HTML → WeasyPrint
+- **Markdown → DOCX** via local Pandoc → HTML → Pandoc
 - GPU-first execution policy (rollout lock by default)
 - Async job API with polling and bounded wait
 - Idempotent job creation (SHA256-based fingerprinting)
 - Deterministic JSON manifest per batch run
 - Deterministic markdown normalization (`none|standard|strict`, strict width=100)
 
-Planned: HTML, DOCX, XLSX, CSV conversion routes (see [Story 003d](../../docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md)).
+Planned: PDF→DOCX (hybrid) and other legacy converter parity (see
+[Story 003d](../../docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md)).
 
 ## Usage
 
@@ -54,7 +58,12 @@ pdm run benchmark:story-003b \
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--to` | `md` | Target format (v1: `md` only) |
+| `--to` | `md` | Target format (implemented: `md`, `pdf`, `docx`; see `convert-a-lot routes`) |
+| `--from` | (auto) | Override source format inference (`pdf`, `md`, `html`, `docx`) |
+| `--dry-run` | `false` | Print selected route and discovered files without executing |
+| `--css` | (none) | CSS stylesheet(s) for HTML→PDF (repeatable) |
+| `--keep-html` | `false` | Keep intermediate HTML under `--output-dir/_intermediates/` for MD→PDF and MD→DOCX |
+| `--reference-docx` | (none) | Reference DOCX for styling MD→DOCX conversions |
 | `--service-url` | `http://127.0.0.1:18085` | Service base URL |
 | `--api-key` | `$SIR_CONVERT_A_LOT_API_KEY` | API key |
 | `--wait-seconds` | `5` | Bounded wait on job creation (0–20) |
