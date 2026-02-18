@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sir Convert-a-Lot PDF to Markdown"
+  short_description: "Batch PDF-to-Markdown conversion via Sir Convert-a-Lot."
+  default_prompt: "Convert one or more PDFs to Markdown with Sir Convert-a-Lot and summarize manifest outcomes."

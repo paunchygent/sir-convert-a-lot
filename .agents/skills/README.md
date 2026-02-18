@@ -23,6 +23,7 @@ Index repo-local skills for Sir Convert-a-Lot and document global visibility via
 - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
 - `.agents/skills/sir-convert-a-lot-docs-governance/SKILL.md`
 - `.agents/skills/sir-convert-a-lot-session-handoff/SKILL.md`
+- `.agents/skills/sir-convert-a-lot-pdf-to-md/SKILL.md`
 
 ## Global Visibility
 
@@ -32,6 +33,7 @@ Create symlinks in `~/.codex/skills` pointing to repo-local skills:
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-devops-hemma" ~/.codex/skills/sir-convert-a-lot-devops-hemma
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-docs-governance" ~/.codex/skills/sir-convert-a-lot-docs-governance
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-session-handoff" ~/.codex/skills/sir-convert-a-lot-session-handoff
+ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-pdf-to-md" ~/.codex/skills/sir-convert-a-lot-pdf-to-md
 ```
 
 General cross-repo skills (for example `docs-as-code`) live directly in `~/.codex/skills` and should not be duplicated under `.agents/skills/` in this repo.

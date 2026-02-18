@@ -7,6 +7,9 @@ __pycache__/
 .pdm-python
 build/
 .DS_Store
+.agents/input/
+.agents/session/handoff.md
+.agents/session/readme-first.md
 
 # Generated benchmark/evaluation output (policy: never track under docs/reference)
 docs/reference/artifacts/
