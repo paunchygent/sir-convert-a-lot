@@ -2,7 +2,7 @@
 id: review-01-brutal-review-service-api-v2-multi-format-pivot
 title: 'Brutal review: service API v2 multi-format pivot'
 type: review
-status: pending
+status: responded
 priority: high
 created: '2026-02-18'
 last_updated: '2026-02-18'
@@ -77,11 +77,17 @@ Approval requires:
 
 ## Response
 
-Pending.
+Accepted. Follow-up actions are tracked as Tasks 39–42.
 
-- Follow-up tasks have been created (Task 39–42) and will be linked to PRs/commits as they land.
-- This review will move to `status: responded` once the response section contains a concrete list
-  of accepted/rejected findings and the corresponding PR/task links.
+- Completed Task 39 (Hemma docker-lane v2 smoke verification):
+  - command: `pdm run run-local-pdm hemma-verify-v2-conversions`
+  - evidence (Hemma): `build/verification/task-39-v2-smoke/report.md`
+  - result: v2 critical routes succeeded; `pdf -> docx` recorded `backend_used="docling"` and
+    `acceleration_used="cuda"`.
+- Remaining blockers/hardening tasks to complete before closing this review:
+  - Task 40: v2 contract tests + explicit v1/v2 compatibility/unification policy
+  - Task 41: resources zip extraction limits (zip-bomb hardening)
+  - Task 42: split oversized modules + cancellation CAS race fix
 
 ## Follow-up Actions
 
@@ -102,6 +108,6 @@ Status lifecycle for this review:
 
 - [x] Findings captured
 - [x] Decision recorded
-- [ ] Response recorded
+- [x] Response recorded
 - [x] Follow-up tasks linked
 - [ ] Review closed

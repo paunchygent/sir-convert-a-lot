@@ -101,6 +101,11 @@ Story 02-01 tasks remain in progress but are not the active slice:
 
       - `tests/sir_convert_a_lot/test_cli_v2_routes.py`
 
+    - Completed Task 39 Hemma docker-lane v2 smoke verification and recorded evidence:
+
+      - command: `pdm run run-local-pdm hemma-verify-v2-conversions`
+      - report (Hemma): `build/verification/task-39-v2-smoke/report.md`
+
 - 2026-02-16:
 
   - Task 27 completed with docker-lane GPU runtime compliance on Hemma.
@@ -158,8 +163,6 @@ Story 02-01 tasks remain in progress but are not the active slice:
 
 ## Next Actions
 
-- Capture Hemma docker-lane evidence for v2 critical routes:
-  - `docs/backlog/tasks/task-39-hemma-v2-conversion-smoke-verification.md`
 - Add v2 service-side contract tests + v1/v2 compatibility policy (unification path):
   - `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md`
 - Harden v2 resources zip extraction limits:

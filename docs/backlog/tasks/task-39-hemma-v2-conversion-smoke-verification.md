@@ -2,7 +2,7 @@
 id: task-39-hemma-v2-conversion-smoke-verification
 title: Hemma v2 conversion smoke verification
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-18'
 last_updated: '2026-02-18'
@@ -51,22 +51,27 @@ from Hemma, not laptop-local converters.
 
 ## Deliverables
 
-- [ ] Hemma v2 smoke verifier script exists and is documented
-- [ ] Evidence report exists under `build/verification/task-39-v2-smoke/`
-- [ ] Runbook section exists for repeatable verification
+- [x] Hemma v2 smoke verifier script exists and is documented
+- [x] Evidence report exists under `build/verification/task-39-v2-smoke/`
+- [x] Runbook section exists for repeatable verification
 
 ## Acceptance Criteria
 
-- [ ] Running `pdm run run-local-pdm hemma-verify-v2-conversions` completes successfully against the
+- [x] Running `pdm run run-local-pdm hemma-verify-v2-conversions` completes successfully against the
   docker lane on Hemma.
-- [ ] Each of the 4 critical v2 routes produces a non-empty artifact (PDF/DOCX) and records the
+- [x] Each of the 4 critical v2 routes produces a non-empty artifact (PDF/DOCX) and records the
   corresponding `job_id` in the report.
-- [ ] `pdf -> docx` evidence includes the selected PDF backend + acceleration used in conversion
+- [x] `pdf -> docx` evidence includes the selected PDF backend + acceleration used in conversion
   metadata (GPU governance is still enforced for that stage).
-- [ ] The locked v1 `pdf -> md` route remains operational (smoke includes one v1 submission).
+- [x] The locked v1 `pdf -> md` route remains operational (smoke includes one v1 submission).
+
+Evidence (captured on Hemma, docker lane):
+
+- `build/verification/task-39-v2-smoke/report.md`
+- `build/verification/task-39-v2-smoke/report.json`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

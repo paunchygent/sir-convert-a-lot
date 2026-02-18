@@ -146,7 +146,7 @@ Ordered tasks:
 - [x] `docs/backlog/tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md`
 - [ ] `docs/backlog/tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md`
 - [ ] `docs/backlog/tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md`
-- [ ] `docs/backlog/tasks/task-39-hemma-v2-conversion-smoke-verification.md`
+- [x] `docs/backlog/tasks/task-39-hemma-v2-conversion-smoke-verification.md`
 - [ ] `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md`
 - [ ] `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md`
 - [ ] `docs/backlog/tasks/task-42-split-oversized-cli-and-v2-job-store-cancel-cas.md`

@@ -201,6 +201,15 @@ View the markdown report:
 pdm run run-local-pdm run-hemma -- cat build/verification/task-39-v2-smoke/report.md
 ```
 
+If Hemma is disk-full (for example `OSError: [Errno 28] No space left on device`), capture state and
+reclaim Docker build cache:
+
+```bash
+pdm run run-local-pdm run-hemma -- df -h
+pdm run run-local-pdm run-hemma --shell 'sudo -n docker system df'
+pdm run run-local-pdm run-hemma --shell 'sudo -n docker builder prune -af'
+```
+
 ## Tunnel Workflow (Local Dev from Any Repo)
 
 Use a dedicated local-only service port to avoid collisions with other stacks.
