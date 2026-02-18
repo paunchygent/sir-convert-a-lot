@@ -18,7 +18,14 @@ from pathlib import Path
 
 RESOURCES_ZIP_INVALID = "resources_zip_invalid"
 RESOURCES_ZIP_PATH_TRAVERSAL = "resources_zip_path_traversal"
+RESOURCES_ZIP_TOO_MANY_MEMBERS = "resources_zip_too_many_members"
+RESOURCES_ZIP_MEMBER_TOO_LARGE = "resources_zip_member_too_large"
+RESOURCES_ZIP_TOTAL_TOO_LARGE = "resources_zip_total_too_large"
 RESOURCES_ZIP_EXTRACT_FAILED = "resources_zip_extract_failed"
+
+DEFAULT_MAX_ZIP_MEMBERS = 500
+DEFAULT_MAX_TOTAL_UNCOMPRESSED_BYTES = 100 * 1024 * 1024
+DEFAULT_MAX_MEMBER_UNCOMPRESSED_BYTES = 25 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -38,8 +45,15 @@ def _is_within_directory(*, directory: Path, target: Path) -> bool:
     return directory_resolved == target_resolved or directory_resolved in target_resolved.parents
 
 
-def extract_resources_zip(*, zip_path: Path, output_dir: Path) -> None:
-    """Extract a resources zip to output_dir with path traversal protection."""
+def extract_resources_zip(
+    *,
+    zip_path: Path,
+    output_dir: Path,
+    max_members: int = DEFAULT_MAX_ZIP_MEMBERS,
+    max_total_uncompressed_bytes: int = DEFAULT_MAX_TOTAL_UNCOMPRESSED_BYTES,
+    max_member_uncompressed_bytes: int = DEFAULT_MAX_MEMBER_UNCOMPRESSED_BYTES,
+) -> None:
+    """Extract a resources zip to output_dir with path traversal + size limits."""
     try:
         zip_file = zipfile.ZipFile(zip_path)
     except zipfile.BadZipFile as exc:
@@ -51,7 +65,19 @@ def extract_resources_zip(*, zip_path: Path, output_dir: Path) -> None:
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        for member in zip_file.infolist():
+        members = list(zip_file.infolist())
+        if len(members) > max_members:
+            raise ResourcesZipError(
+                code=RESOURCES_ZIP_TOO_MANY_MEMBERS,
+                message=(
+                    "Uploaded resources bundle contains too many zip members "
+                    f"({len(members)} > {max_members})."
+                ),
+            )
+
+        total_uncompressed_bytes = 0
+        validated_members: list[tuple[zipfile.ZipInfo, Path]] = []
+        for member in members:
             name = member.filename
             if name.startswith("/") or name.startswith("\\"):
                 raise ResourcesZipError(
@@ -66,7 +92,37 @@ def extract_resources_zip(*, zip_path: Path, output_dir: Path) -> None:
                     message=f"Zip member escapes target directory: {name}",
                 )
 
-        zip_file.extractall(output_dir)
+            member_size = int(member.file_size)
+            if member_size > max_member_uncompressed_bytes:
+                raise ResourcesZipError(
+                    code=RESOURCES_ZIP_MEMBER_TOO_LARGE,
+                    message=(
+                        "Zip member exceeds the configured uncompressed size limit: "
+                        f"{name} ({member_size} bytes > {max_member_uncompressed_bytes})."
+                    ),
+                )
+
+            total_uncompressed_bytes += member_size
+            if total_uncompressed_bytes > max_total_uncompressed_bytes:
+                raise ResourcesZipError(
+                    code=RESOURCES_ZIP_TOTAL_TOO_LARGE,
+                    message=(
+                        "Uploaded resources bundle exceeds the configured total uncompressed size "
+                        f"limit ({total_uncompressed_bytes} bytes > "
+                        f"{max_total_uncompressed_bytes})."
+                    ),
+                )
+
+            validated_members.append((member, destination))
+
+        for member, destination in validated_members:
+            if member.is_dir():
+                destination.mkdir(parents=True, exist_ok=True)
+                continue
+
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with zip_file.open(member) as input_stream, destination.open("wb") as output_stream:
+                shutil.copyfileobj(input_stream, output_stream)
     except ResourcesZipError:
         raise
     except Exception as exc:

@@ -14,10 +14,8 @@ Relationships:
 from __future__ import annotations
 
 import hashlib
-import io
 import json
 import os
-import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -26,6 +24,19 @@ import typer
 from scripts.sir_convert_a_lot.application.contracts import CliManifest, CliManifestEntry
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.interfaces.cli_helpers import (
+    build_resources_zip_payload,
+    default_job_spec_v1,
+    default_job_spec_v2,
+    detect_directory_source_format,
+    discover_source_files,
+    idempotency_key_for_file,
+    idempotency_key_for_v2_request,
+    parse_source_format,
+    parse_target_format,
+    relative_source_label,
+    sha256_bytes,
+)
 from scripts.sir_convert_a_lot.interfaces.cli_routes import (
     SourceFormat,
     TargetFormat,
@@ -40,263 +51,6 @@ from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
 )
 
 app = typer.Typer(help="Please, tell Sir Convert-a-Lot to convert x to y.")
-
-
-def _parse_target_format(raw: str) -> TargetFormat:
-    try:
-        return TargetFormat(raw.lower().strip())
-    except ValueError as exc:
-        raise typer.BadParameter(f"Unsupported --to value: {raw}") from exc
-
-
-def _parse_source_format(raw: str) -> SourceFormat:
-    try:
-        return SourceFormat(raw.lower().strip())
-    except ValueError as exc:
-        raise typer.BadParameter(f"Unsupported --from value: {raw}") from exc
-
-
-def _discover_files_by_extension(
-    source: Path, *, extensions: tuple[str, ...], recursive: bool
-) -> list[Path]:
-    if source.is_file():
-        return [source]
-
-    results: list[Path] = []
-    patterns = [f"**/*{ext}" if recursive else f"*{ext}" for ext in extensions]
-    for pattern in patterns:
-        results.extend(path for path in source.glob(pattern) if path.is_file())
-
-    # Stable, de-duplicated ordering in case multiple extensions overlap.
-    return sorted(set(results))
-
-
-def _discover_source_files(
-    source: Path, *, source_format: SourceFormat, recursive: bool
-) -> list[Path]:
-    if source_format is SourceFormat.PDF:
-        return _discover_files_by_extension(source, extensions=(".pdf",), recursive=recursive)
-    if source_format is SourceFormat.MD:
-        return _discover_files_by_extension(
-            source, extensions=(".md", ".markdown"), recursive=recursive
-        )
-    if source_format is SourceFormat.HTML:
-        return _discover_files_by_extension(
-            source, extensions=(".html", ".htm"), recursive=recursive
-        )
-    if source_format is SourceFormat.DOCX:
-        return _discover_files_by_extension(source, extensions=(".docx",), recursive=recursive)
-    raise AssertionError(f"Unsupported source_format: {source_format}")
-
-
-def _detect_directory_source_format(
-    *,
-    source_dir: Path,
-    target_format: TargetFormat,
-    recursive: bool,
-) -> SourceFormat:
-    if target_format is TargetFormat.MD:
-        # Backwards-compatible default: `convert <dir> --to md` means "convert PDFs".
-        return SourceFormat.PDF
-
-    candidates = sorted({route.source for route in list_routes() if route.target is target_format})
-    present: list[SourceFormat] = []
-    for candidate in candidates:
-        if _discover_source_files(source_dir, source_format=candidate, recursive=recursive):
-            present.append(candidate)
-
-    if not present:
-        raise typer.BadParameter(
-            f"No source files found in {source_dir} for target '{target_format.value}'. "
-            "Provide --from to disambiguate."
-        )
-
-    if len(present) > 1:
-        options = ", ".join(sorted(fmt.value for fmt in present))
-        raise typer.BadParameter(
-            f"Ambiguous input directory: found multiple source formats ({options}). "
-            "Provide --from to disambiguate."
-        )
-
-    return present[0]
-
-
-def _default_job_spec(
-    *,
-    filename: str,
-    acceleration_policy: str,
-    backend_strategy: str,
-    ocr_mode: str,
-    table_mode: str,
-    normalize: str,
-) -> dict[str, object]:
-    return {
-        "api_version": "v1",
-        "source": {"kind": "upload", "filename": filename},
-        "conversion": {
-            "output_format": "md",
-            "backend_strategy": backend_strategy,
-            "ocr_mode": ocr_mode,
-            "table_mode": table_mode,
-            "normalize": normalize,
-        },
-        "execution": {
-            "acceleration_policy": acceleration_policy,
-            "priority": "normal",
-            "document_timeout_seconds": 1800,
-        },
-        "retention": {"pin": False},
-    }
-
-
-def _idempotency_key_for_file(pdf_path: Path, job_spec: dict[str, object]) -> str:
-    file_sha = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
-    spec_sha = hashlib.sha256(
-        json.dumps(job_spec, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-    combined = hashlib.sha256(f"{pdf_path.name}:{file_sha}:{spec_sha}".encode("utf-8")).hexdigest()
-    return f"idem_{combined[:48]}"
-
-
-def _default_job_spec_v2(
-    *,
-    filename: str,
-    source_format: SourceFormatV2,
-    output_format: OutputFormatV2,
-    css_filenames: list[str],
-    reference_docx_filename: str | None,
-    acceleration_policy: str,
-    backend_strategy: str,
-    ocr_mode: str,
-    table_mode: str,
-    normalize: str,
-) -> dict[str, object]:
-    conversion: dict[str, object] = {
-        "output_format": output_format.value,
-        "css_filenames": css_filenames,
-        "reference_docx_filename": reference_docx_filename,
-    }
-
-    payload: dict[str, object] = {
-        "api_version": "v2",
-        "source": {"kind": "upload", "filename": filename, "format": source_format.value},
-        "conversion": conversion,
-        "retention": {"pin": False},
-    }
-
-    if source_format == SourceFormatV2.PDF:
-        payload["pdf_options"] = {
-            "backend_strategy": backend_strategy,
-            "ocr_mode": ocr_mode,
-            "table_mode": table_mode,
-            "normalize": normalize,
-        }
-        payload["execution"] = {
-            "acceleration_policy": acceleration_policy,
-            "priority": "normal",
-            "document_timeout_seconds": 1800,
-        }
-
-    return payload
-
-
-def _sha256_bytes(payload: bytes) -> str:
-    return hashlib.sha256(payload).hexdigest()
-
-
-def _deterministic_zip_bytes(*, files: dict[str, bytes]) -> bytes:
-    """Build deterministic zip bytes from an {arcname: bytes} mapping."""
-
-    fixed_dt = (1980, 1, 1, 0, 0, 0)
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_handle:
-        for arcname in sorted(files):
-            info = zipfile.ZipInfo(filename=arcname, date_time=fixed_dt)
-            info.compress_type = zipfile.ZIP_DEFLATED
-            zip_handle.writestr(info, files[arcname])
-    return buffer.getvalue()
-
-
-def _build_resources_zip_payload(
-    *, resources: Path | None, css_paths: tuple[Path, ...]
-) -> tuple[bytes | None, list[str]]:
-    """Build resources zip bytes (optional) and return CSS filenames for the v2 job spec."""
-
-    files: dict[str, bytes] = {}
-
-    if resources is not None:
-        if resources.is_dir():
-            root = resources.resolve()
-            candidates = sorted(path for path in root.rglob("*") if path.is_file())
-            for candidate in candidates:
-                arcname = candidate.relative_to(root).as_posix()
-                if arcname in files:
-                    raise typer.BadParameter(f"Duplicate resources path in bundle: {arcname}")
-                files[arcname] = candidate.read_bytes()
-        else:
-            if resources.suffix.lower() != ".zip":
-                raise typer.BadParameter("--resources must be a directory or a .zip file.")
-            with zipfile.ZipFile(resources) as zip_handle:
-                for info in zip_handle.infolist():
-                    if info.is_dir():
-                        continue
-                    arcname = info.filename
-                    if arcname in files:
-                        raise typer.BadParameter(f"Duplicate resources path in bundle: {arcname}")
-                    files[arcname] = zip_handle.read(info)
-
-    css_filenames: list[str] = []
-    for css_path in css_paths:
-        css_arcname: str
-        if resources is not None and resources.is_dir():
-            root = resources.resolve()
-            resolved_css = css_path.resolve()
-            if resolved_css.is_relative_to(root):
-                css_arcname = resolved_css.relative_to(root).as_posix()
-            else:
-                css_arcname = css_path.name
-        else:
-            css_arcname = css_path.name
-
-        css_bytes = css_path.read_bytes()
-        if css_arcname in files:
-            if files[css_arcname] != css_bytes:
-                raise typer.BadParameter(
-                    f"CSS file name collides with a different resources bundle entry: {css_arcname}"
-                )
-        else:
-            files[css_arcname] = css_bytes
-        css_filenames.append(css_arcname)
-
-    if not files:
-        return None, []
-
-    return _deterministic_zip_bytes(files=files), css_filenames
-
-
-def _idempotency_key_for_v2_request(
-    *,
-    filename: str,
-    file_sha256: str,
-    spec_payload: dict[str, object],
-    resources_sha256: str | None,
-    reference_docx_sha256: str | None,
-) -> str:
-    spec_sha = hashlib.sha256(
-        json.dumps(spec_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-    resources_part = resources_sha256 or ""
-    reference_part = reference_docx_sha256 or ""
-    combined = hashlib.sha256(
-        f"{filename}:{file_sha256}:{spec_sha}:{resources_part}:{reference_part}".encode("utf-8")
-    ).hexdigest()
-    return f"idemv2_{combined[:48]}"
-
-
-def _relative_source_label(source_root: Path, current_file: Path) -> str:
-    if source_root.is_file():
-        return current_file.name
-    return current_file.relative_to(source_root).as_posix()
 
 
 @app.callback()
@@ -413,10 +167,10 @@ def convert_command(
     ),
 ) -> None:
     """Convert one file or a folder of files through Sir Convert-a-Lot."""
-    target_format = _parse_target_format(to)
+    target_format = parse_target_format(to)
 
     if from_format is not None:
-        source_format = _parse_source_format(from_format)
+        source_format = parse_source_format(from_format)
     elif source.is_file():
         inferred = infer_source_format_from_path(source)
         if inferred is None:
@@ -425,7 +179,7 @@ def convert_command(
             )
         source_format = inferred
     else:
-        source_format = _detect_directory_source_format(
+        source_format = detect_directory_source_format(
             source_dir=source,
             target_format=target_format,
             recursive=recursive,
@@ -438,7 +192,7 @@ def convert_command(
             "Use 'convert-a-lot routes' to list supported routes."
         )
 
-    source_files = _discover_source_files(source, source_format=source_format, recursive=recursive)
+    source_files = discover_source_files(source, source_format=source_format, recursive=recursive)
     if not source_files:
         typer.echo("No input files found to convert.")
         raise typer.Exit(code=0)
@@ -483,8 +237,8 @@ def convert_command(
             )
         with SirConvertALotClient(base_url=service_url, api_key=resolved_api_key) as client:
             for pdf_path in source_files:
-                relative_label = _relative_source_label(source, pdf_path)
-                job_spec = _default_job_spec(
+                relative_label = relative_source_label(source, pdf_path)
+                job_spec = default_job_spec_v1(
                     filename=pdf_path.name,
                     acceleration_policy=acceleration_policy,
                     backend_strategy=backend_strategy,
@@ -492,7 +246,7 @@ def convert_command(
                     table_mode=table_mode,
                     normalize=normalize,
                 )
-                idempotency_key = _idempotency_key_for_file(pdf_path, job_spec)
+                idempotency_key = idempotency_key_for_file(pdf_path, job_spec)
                 correlation_id = (
                     f"corr_{hashlib.sha256(relative_label.encode('utf-8')).hexdigest()[:16]}"
                 )
@@ -560,22 +314,22 @@ def convert_command(
         resources_zip_bytes: bytes | None
         css_filenames: list[str]
         if route.target is TargetFormat.PDF:
-            resources_zip_bytes, css_filenames = _build_resources_zip_payload(
+            resources_zip_bytes, css_filenames = build_resources_zip_payload(
                 resources=resources, css_paths=tuple(css)
             )
         else:
-            resources_zip_bytes, _ = _build_resources_zip_payload(resources=resources, css_paths=())
+            resources_zip_bytes, _ = build_resources_zip_payload(resources=resources, css_paths=())
             css_filenames = []
 
         resources_sha256 = (
-            _sha256_bytes(resources_zip_bytes) if resources_zip_bytes is not None else None
+            sha256_bytes(resources_zip_bytes) if resources_zip_bytes is not None else None
         )
 
         reference_docx_bytes: bytes | None = None
         reference_docx_sha256: str | None = None
         if route.target is TargetFormat.DOCX and reference_docx is not None:
             reference_docx_bytes = reference_docx.read_bytes()
-            reference_docx_sha256 = _sha256_bytes(reference_docx_bytes)
+            reference_docx_sha256 = sha256_bytes(reference_docx_bytes)
 
         if route.source is SourceFormat.PDF:
             source_format_v2 = SourceFormatV2.PDF
@@ -594,7 +348,7 @@ def convert_command(
 
         with SirConvertALotClientV2(base_url=service_url, api_key=resolved_api_key) as client:
             for source_path in source_files:
-                relative_label = _relative_source_label(source, source_path)
+                relative_label = relative_source_label(source, source_path)
                 relative_path = Path(relative_label)
                 correlation_id = (
                     f"corr_{hashlib.sha256(relative_label.encode('utf-8')).hexdigest()[:16]}"
@@ -617,7 +371,7 @@ def convert_command(
                     else None
                 )
 
-                job_spec = _default_job_spec_v2(
+                job_spec = default_job_spec_v2(
                     filename=source_path.name,
                     source_format=source_format_v2,
                     output_format=output_format_v2,
@@ -630,8 +384,8 @@ def convert_command(
                     normalize=normalize,
                 )
 
-                file_sha256 = _sha256_bytes(source_path.read_bytes())
-                idempotency_key = _idempotency_key_for_v2_request(
+                file_sha256 = sha256_bytes(source_path.read_bytes())
+                idempotency_key = idempotency_key_for_v2_request(
                     filename=source_path.name,
                     file_sha256=file_sha256,
                     spec_payload=job_spec,

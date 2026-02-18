@@ -2,7 +2,7 @@
 id: task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy
 title: Service API v2 contract tests + v1/v2 compatibility policy
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-18'
 last_updated: '2026-02-18'
@@ -61,20 +61,20 @@ Notes:
 
 ## Deliverables
 
-- [ ] v2 service contract tests exist and run without external converter binaries.
-- [ ] v2 contract doc reflects real endpoint semantics for pending/failed outcomes.
-- [ ] Compatibility policy doc exists and is referenced by both v1 and v2 contracts.
+- [x] v2 service contract tests exist and run without external converter binaries.
+- [x] v2 contract doc reflects real endpoint semantics for pending/failed outcomes.
+- [x] Compatibility policy doc exists and is referenced by both v1 and v2 contracts.
 
 ## Acceptance Criteria
 
-- [ ] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py -q` passes.
-- [ ] `pdm run run-local-pdm validate-docs` passes after contract doc updates.
-- [ ] v1 contract tests remain unchanged and continue passing.
-- [ ] Compatibility policy explicitly states how v1/v2 stay compatible while converging on shared
+- [x] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py -q` passes.
+- [x] `pdm run run-local-pdm validate-docs` passes after contract doc updates.
+- [x] v1 contract tests remain unchanged and continue passing.
+- [x] Compatibility policy explicitly states how v1/v2 stay compatible while converging on shared
   envelope semantics and stable response shapes.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

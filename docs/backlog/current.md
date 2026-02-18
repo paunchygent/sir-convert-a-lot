@@ -106,6 +106,13 @@ Story 02-01 tasks remain in progress but are not the active slice:
       - command: `pdm run run-local-pdm hemma-verify-v2-conversions`
       - report (Hemma): `build/verification/task-39-v2-smoke/report.md`
 
+    - Completed v2 contract + hardening follow-up tasks:
+      - Task 40: v2 service-side contract tests + v1/v2 compatibility policy (unification path)
+      - Task 41: resources zip extraction limits (zip-bomb hardening) + tests
+      - Task 42: split oversized modules + cancellation CAS fix + regression test
+      Local gates passed:
+      `lint-fix`, `typecheck-all`, `pytest-root tests/sir_convert_a_lot`, `index-tasks`.
+
 - 2026-02-16:
 
   - Task 27 completed with docker-lane GPU runtime compliance on Hemma.
@@ -163,9 +170,7 @@ Story 02-01 tasks remain in progress but are not the active slice:
 
 ## Next Actions
 
-- Add v2 service-side contract tests + v1/v2 compatibility policy (unification path):
-  - `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md`
-- Harden v2 resources zip extraction limits:
-  - `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md`
-- Split oversized modules + fix v2 cancellation CAS hazard:
-  - `docs/backlog/tasks/task-42-split-oversized-cli-and-v2-job-store-cancel-cas.md`
+- Redeploy updated `main` to Hemma and re-run v2 smoke verification:
+  - `pdm run run-local-pdm hemma-verify-v2-conversions`
+- Close out remaining Epic 04 tasks that are still marked `in_progress` if their deliverables are now
+  satisfied (and update Epic 04 checklist accordingly).

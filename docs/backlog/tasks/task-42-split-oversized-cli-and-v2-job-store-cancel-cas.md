@@ -2,7 +2,7 @@
 id: task-42-split-oversized-cli-and-v2-job-store-cancel-cas
 title: Split oversized CLI and v2 job store + cancel CAS
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-18'
 last_updated: '2026-02-18'
@@ -44,19 +44,19 @@ late cancels cannot overwrite terminal success.
 
 ## Deliverables
 
-- [ ] Oversized modules are split below 500 LoC without behavior drift.
-- [ ] v2 cancellation is race-safe and cannot overwrite terminal success.
-- [ ] Regression tests exist for the cancellation hazard.
+- [x] Oversized modules are split below 500 LoC without behavior drift.
+- [x] v2 cancellation is race-safe and cannot overwrite terminal success.
+- [x] Regression tests exist for the cancellation hazard.
 
 ## Acceptance Criteria
 
-- [ ] `pdm run run-local-pdm typecheck-all` passes.
-- [ ] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -q` passes.
-- [ ] `pdm run run-local-pdm validate-tasks` and `validate-docs` pass.
-- [ ] Module sizes: both target modules are \<500 LoC after refactor.
+- [x] `pdm run run-local-pdm typecheck-all` passes.
+- [x] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -q` passes.
+- [x] `pdm run run-local-pdm validate-tasks` and `validate-docs` pass.
+- [x] Module sizes: both target modules are \<500 LoC after refactor.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

@@ -197,6 +197,8 @@ class ServiceRuntimeV2:
                 self.job_store.mark_canceled(job_id)
             except (JobMissingV2, JobExpiredV2):
                 return "missing"
+            except JobStateConflictV2:
+                return "conflict"
             return "accepted"
         if job.status == JobStatus.CANCELED:
             return "already_canceled"

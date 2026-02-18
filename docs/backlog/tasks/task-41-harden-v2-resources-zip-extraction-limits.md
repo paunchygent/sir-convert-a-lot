@@ -2,7 +2,7 @@
 id: task-41-harden-v2-resources-zip-extraction-limits
 title: Harden v2 resources zip extraction limits
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-18'
 last_updated: '2026-02-18'
@@ -43,18 +43,18 @@ deterministic extraction semantics for CSS/images/fonts used by HTML/Markdown co
 
 ## Deliverables
 
-- [ ] Zip extraction limits exist and are enforced.
-- [ ] Deterministic error codes exist for each rejection path.
-- [ ] Focused unit tests exist for both success and failure cases.
+- [x] Zip extraction limits exist and are enforced.
+- [x] Deterministic error codes exist for each rejection path.
+- [x] Focused unit tests exist for both success and failure cases.
 
 ## Acceptance Criteria
 
-- [ ] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_resources_zip.py -q` passes.
-- [ ] `pdm run run-local-pdm typecheck-all` passes.
-- [ ] `pdm run run-local-pdm validate-docs` passes (if contract docs mention limits).
+- [x] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_resources_zip.py -q` passes.
+- [x] `pdm run run-local-pdm typecheck-all` passes.
+- [x] `pdm run run-local-pdm validate-docs` passes (if contract docs mention limits).
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

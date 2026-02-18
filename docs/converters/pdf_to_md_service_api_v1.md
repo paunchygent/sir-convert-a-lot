@@ -4,7 +4,7 @@ id: CONV-pdf-to-md-service-api-v1
 title: PDF to Markdown Service API v1
 status: active
 created: '2026-02-11'
-updated: '2026-02-14'
+updated: '2026-02-18'
 owners:
   - platform
 tags:
@@ -14,6 +14,7 @@ tags:
 links:
   - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
   - docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md
+  - docs/converters/service_api_v1_v2_compatibility_policy.md
 ---
 
 ## Status

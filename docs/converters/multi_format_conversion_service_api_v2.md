@@ -14,6 +14,7 @@ tags:
   - multi-format
 links:
   - docs/converters/pdf_to_md_service_api_v1.md
+  - docs/converters/service_api_v1_v2_compatibility_policy.md
   - docs/decisions/0002-multi-format-service-api-v2.md
 ---
 
@@ -169,6 +170,7 @@ produce correct output.
 - content type: `application/zip`
 - extracted to a job-scoped resources root
 - safe extraction must reject path traversal (no `..` / absolute paths)
+- safe extraction enforces zip-bomb limits (max members + max total/per-file uncompressed bytes)
 
 ## Endpoints
 
@@ -202,6 +204,14 @@ Fetch structured result metadata for successful jobs.
 
 Binary artifacts are not returned inline. Clients should download them via the artifact endpoint.
 
+Response matrix:
+
+- `200 OK`: job is `succeeded`; returns `JobResultResponseV2` with artifact + conversion metadata.
+- `202 Accepted`: job is `queued|running`; returns `JobPendingResultResponseV2`.
+- `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
+- `409 Conflict`: job is terminal but not successful (`failed|canceled`);
+  `error.code = "job_not_succeeded"` with `error.details = {"status":"failed|canceled"}`.
+
 ### `GET /v2/convert/jobs/{job_id}/artifact`
 
 Download the output artifact bytes for successful jobs.
@@ -211,9 +221,25 @@ The response content-type is derived from the stored artifact format:
 - PDF: `application/pdf`
 - DOCX: `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
 
+Response matrix:
+
+- `200 OK`: job is `succeeded`; returns the binary artifact bytes.
+- `202 Accepted`: job is `queued|running`; returns `JobPendingResultResponseV2`.
+- `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
+- `409 Conflict`: job is terminal but not successful (`failed|canceled`);
+  `error.code = "job_not_succeeded"` with `error.details = {"status":"failed|canceled"}`.
+
 ### `POST /v2/convert/jobs/{job_id}/cancel`
 
 Request job cancellation.
+
+Response matrix:
+
+- `202 Accepted`: job was `queued|running` and is now canceled; returns `JobRecordResponseV2`.
+- `200 OK`: job was already `canceled`; returns `JobRecordResponseV2`.
+- `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
+- `409 Conflict`: job is terminal (`succeeded|failed`) and cannot be canceled;
+  `error.code = "job_not_cancelable"`.
 
 ## Error Envelope (v2)
 
