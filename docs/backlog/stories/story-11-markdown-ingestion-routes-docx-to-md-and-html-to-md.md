@@ -2,7 +2,7 @@
 id: story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md
 title: Markdown ingestion routes docx to md and html to md
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -37,16 +37,16 @@ DOCX/HTML/PDF inputs into normalized Markdown through one clear API surface.
 
 ## Acceptance Criteria
 
-- [ ] V2 supports all required Markdown pathways: `pdf -> md`, `docx -> md`, `html -> md`.
-- [ ] Route behavior is deterministic and documented in converter/API docs.
-- [ ] Downstream integration contract is published with request/response examples.
-- [ ] CLI route listing and error messaging reflect the expanded Markdown ingress set.
+- [x] V2 supports all required Markdown pathways: `pdf -> md`, `docx -> md`, `html -> md`.
+- [x] Route behavior is deterministic and documented in converter/API docs.
+- [x] Downstream integration contract is published with request/response examples.
+- [x] CLI route listing and error messaging reflect the expanded Markdown ingress set.
 
 ## Test Requirements
 
-- [ ] Contract tests for each Markdown ingress route (queued/running/succeeded/failed transitions).
-- [ ] Normalization regression tests on representative fixtures for DOCX/HTML/PDF sources.
-- [ ] Negative tests for unsupported combinations and resource/template mismatches.
+- [x] Contract tests for each Markdown ingress route (queued/running/succeeded/failed transitions).
+- [x] Normalization regression tests on representative fixtures for DOCX/HTML/PDF sources.
+- [x] Negative tests for unsupported combinations and resource/template mismatches.
 
 ## Done Definition
 
@@ -54,6 +54,6 @@ Markdown ingestion is complete and coherent under v2, with no ambiguous route be
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

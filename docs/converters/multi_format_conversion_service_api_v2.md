@@ -16,6 +16,7 @@ links:
   - docs/decisions/0002-multi-format-service-api-v2.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/converters/docx-template-catalog-contract-v2.md
+  - docs/converters/downstream_integration_contract_v2.md
   - docs/backlog/tasks/task-46-design-docx-template-contract-storage-and-selection-model.md
   - docs/backlog/tasks/task-47-implement-docx-template-endpoints-validation-and-fixture-templates.md
 ---
@@ -44,6 +45,7 @@ Service API v2 is the single active conversion contract surface for:
 
 - Service (HTTP): `scripts/sir_convert_a_lot/interfaces/http_api.py`
 - Client (CLI): `scripts/sir_convert_a_lot/interfaces/cli_app.py`
+- Downstream GUI integration guide: `docs/converters/downstream_integration_contract_v2.md`
 
 ## Base Conventions
 
@@ -104,7 +106,7 @@ Supported v2 conversions (service-executed on Hemma):
 
 ### JobStatus enum
 
-Same values as v1:
+Values:
 
 - `queued`
 - `running`

@@ -2,7 +2,7 @@
 id: story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification
 title: Legacy path removal docs cleanup and runtime simplification
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -33,16 +33,16 @@ about and aligned to one hardened production direction.
 
 ## Acceptance Criteria
 
-- [ ] Compose/runtime topology uses a single canonical conversion runtime path.
-- [ ] No active docs instruct users to use removed v1/eval/local-hybrid conversion behavior.
-- [ ] Stale code paths are removed or explicitly marked deprecated with planned deletion date if blocked.
-- [ ] Docs-as-code validators pass after cleanup.
+- [x] Compose/runtime topology uses a single canonical conversion runtime path.
+- [x] No active docs instruct users to use removed v1/eval/local-hybrid conversion behavior.
+- [x] Stale code paths are removed or explicitly marked deprecated with planned deletion date if blocked.
+- [x] Docs-as-code validators pass after cleanup.
 
 ## Test Requirements
 
-- [ ] Ops smoke checks still pass on canonical lane after eval path removal.
-- [ ] Regression test suite passes with simplified runtime topology.
-- [ ] Grep-based hygiene checks for stale references are added and passing.
+- [x] Ops smoke checks still pass on canonical lane after eval path removal.
+- [x] Regression test suite passes with simplified runtime topology.
+- [x] Grep-based hygiene checks for stale references are added and passing.
 
 ## Done Definition
 
@@ -50,6 +50,6 @@ Repository narrative, runtime topology, and code paths all tell the same story: 
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

@@ -70,12 +70,6 @@ def resolve_prod_root_from_env() -> Path:
     return Path(raw).resolve()
 
 
-def resolve_eval_root_from_env() -> Path:
-    """Resolve configured evaluation data root."""
-    raw = os.getenv("SIR_CONVERT_A_LOT_EVAL_DATA_DIR") or "build/sir_convert_a_lot_eval"
-    return Path(raw).resolve()
-
-
 def initialize_service_state(
     app: FastAPI,
     *,
@@ -150,7 +144,7 @@ def runtime_for_request(request: Request, *, utc_now_iso: str) -> ServiceRuntime
 
 def ensure_runtime_state_v2(app: FastAPI, *, utc_now_iso: str) -> ServiceRuntimeV2:
     """Initialize v2 runtime exactly once per app instance."""
-    # Ensure shared metadata + v1 runtime exist first.
+    # Ensure shared metadata + canonical runtime exist first.
     ensure_runtime_state(app, utc_now_iso=utc_now_iso)
 
     runtime_obj = getattr(app.state, "runtime_v2", None)

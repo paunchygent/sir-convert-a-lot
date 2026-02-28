@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
 # Purpose:
-#   Verify Hemma GPU runtime compliance for Sir Convert-a-Lot before Task 12 runs.
+#   Verify Hemma GPU runtime compliance for Sir Convert-a-Lot v2 single-runtime service.
 #
 # Relationships:
 #   - Uses canonical wrapper `pdm run run-local-pdm run-hemma`.
 #   - Validates `gpu_runtime_probe` + live conversion metadata truth.
+#
 
 set -euo pipefail
 
@@ -28,20 +29,15 @@ VERIFY_LANE="${SIR_CONVERT_A_LOT_VERIFY_LANE:-host}"
 VERIFY_FIXTURE="${SIR_CONVERT_A_LOT_VERIFY_FIXTURE:-tests/fixtures/benchmark_pdfs/paper_alpha.pdf}"
 VERIFY_TIMEOUT_SECONDS="${SIR_CONVERT_A_LOT_VERIFY_TIMEOUT_SECONDS:-180}"
 DOCKER_PROD_CONTAINER="${SIR_CONVERT_A_LOT_VERIFY_DOCKER_PROD_CONTAINER:-sir_convert_a_lot_prod}"
-DOCKER_EVAL_CONTAINER="${SIR_CONVERT_A_LOT_VERIFY_DOCKER_EVAL_CONTAINER:-sir_convert_a_lot_eval}"
 
 case "${VERIFY_LANE}" in
   host)
     SERVICE_URL="${SIR_CONVERT_A_LOT_VERIFY_SERVICE_URL:-http://127.0.0.1:28085}"
-    EVAL_URL="${SIR_CONVERT_A_LOT_VERIFY_EVAL_URL:-http://127.0.0.1:28086}"
     REQUIRED_LISTENER_PORT=28085
-    OPTIONAL_EVAL_LISTENER_PORT=28086
     ;;
   docker)
     SERVICE_URL="${SIR_CONVERT_A_LOT_VERIFY_SERVICE_URL:-http://127.0.0.1:8085}"
-    EVAL_URL="${SIR_CONVERT_A_LOT_VERIFY_EVAL_URL:-http://127.0.0.1:8086}"
     REQUIRED_LISTENER_PORT=8085
-    OPTIONAL_EVAL_LISTENER_PORT=8086
     ;;
   *)
     echo "[verify] unsupported lane '${VERIFY_LANE}' (expected: host or docker)" >&2
@@ -63,7 +59,6 @@ run_remote_shell "set -euo pipefail; rocm-smi --showproductname --showuse --show
 if [[ "${VERIFY_LANE}" == "docker" ]]; then
   echo "[verify] checking docker lane container + ROCm device passthrough"
   run_remote_shell "set -euo pipefail; sudo docker ps --format '{{.Names}}' | grep -qx '${DOCKER_PROD_CONTAINER}'"
-  run_remote_shell "set -euo pipefail; sudo docker ps --format '{{.Names}}' | grep -qx '${DOCKER_EVAL_CONTAINER}'"
   run_remote_shell "set -euo pipefail; sudo docker exec '${DOCKER_PROD_CONTAINER}' test -e /dev/kfd"
   run_remote_shell "set -euo pipefail; sudo docker exec '${DOCKER_PROD_CONTAINER}' test -d /dev/dri"
   echo "[verify] checking in-container torch runtime probe"
@@ -112,11 +107,8 @@ fi
 echo "[verify] checking service listener + readiness"
 run_remote_shell "set -euo pipefail; ss -ltn | grep -q ':${REQUIRED_LISTENER_PORT} '; curl -fsS '${SERVICE_URL}/readyz' >/dev/null"
 
-echo "[verify] checking optional evaluation listener + readiness"
-run_remote_shell "set -euo pipefail; if ss -ltn | grep -q ':${OPTIONAL_EVAL_LISTENER_PORT} '; then curl -fsS '${EVAL_URL}/readyz' >/dev/null; else echo '[verify] eval service not running on optional port ${OPTIONAL_EVAL_LISTENER_PORT}'; fi"
-
 echo "[verify] checking readiness contract details"
-run_remote_shell "set -euo pipefail; VERIFY_SERVICE_URL='${SERVICE_URL}' VERIFY_EVAL_URL='${EVAL_URL}' pdm run python - <<'PY'
+run_remote_shell "set -euo pipefail; VERIFY_SERVICE_URL='${SERVICE_URL}' pdm run python - <<'PY'
 import json
 import os
 import subprocess
@@ -124,56 +116,37 @@ import subprocess
 import httpx
 
 
-def _require_ready_payload(payload: object, *, label: str) -> dict[str, object]:
+def _require_ready_payload(payload: object) -> dict[str, object]:
     if not isinstance(payload, dict):
-        raise SystemExit(f'{label} readyz payload is not an object')
+        raise SystemExit('readyz payload is not an object')
     if payload.get('ready') is not True:
-        raise SystemExit(
-            f'{label} readyz indicates not ready: reasons={payload.get(\"reasons\")!r}'
-        )
+        raise SystemExit(f"readyz indicates not ready: reasons={payload.get('reasons')!r}")
     return payload
 
 
 service_url = os.environ['VERIFY_SERVICE_URL'].rstrip('/')
-eval_url = os.environ['VERIFY_EVAL_URL'].rstrip('/')
 repo_head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
 
 with httpx.Client(timeout=10.0) as client:
-    prod_response = client.get(f'{service_url}/readyz')
-    prod_response.raise_for_status()
-    prod_payload = _require_ready_payload(prod_response.json(), label='prod')
-    if prod_payload.get('service_revision') != repo_head:
-        raise SystemExit(
-            'prod service_revision does not match repo HEAD: '
-            f'service={prod_payload.get(\"service_revision\")!r} repo_head={repo_head!r}'
-        )
+    response = client.get(f'{service_url}/readyz')
+    response.raise_for_status()
+    payload = _require_ready_payload(response.json())
 
-    eval_payload: dict[str, object] | None = None
-    try:
-        eval_response = client.get(f'{eval_url}/readyz')
-        eval_response.raise_for_status()
-    except httpx.HTTPError:
-        print('[verify] eval service not reachable on configured URL (optional)')
-    else:
-        eval_payload = _require_ready_payload(eval_response.json(), label='eval')
-        if eval_payload.get('service_revision') != repo_head:
-            raise SystemExit(
-                'eval service_revision does not match repo HEAD: '
-                f'service={eval_payload.get(\"service_revision\")!r} repo_head={repo_head!r}'
-            )
+if payload.get('service_revision') != repo_head:
+    raise SystemExit(
+        'service_revision does not match repo HEAD: '
+        f"service={payload.get('service_revision')!r} repo_head={repo_head!r}"
+    )
+if payload.get('service_profile') != 'prod':
+    raise SystemExit(f"service_profile is not 'prod': {payload.get('service_profile')!r}")
 
-result: dict[str, object] = {
+result = {
     'repo_head': repo_head,
-    'prod_revision': prod_payload.get('service_revision'),
-    'prod_expected_revision': prod_payload.get('expected_revision'),
-    'prod_profile': prod_payload.get('service_profile'),
-    'prod_data_root': prod_payload.get('data_root'),
+    'service_revision': payload.get('service_revision'),
+    'expected_revision': payload.get('expected_revision'),
+    'service_profile': payload.get('service_profile'),
+    'data_root': payload.get('data_root'),
 }
-if eval_payload is not None:
-    result['eval_revision'] = eval_payload.get('service_revision')
-    result['eval_expected_revision'] = eval_payload.get('expected_revision')
-    result['eval_profile'] = eval_payload.get('service_profile')
-    result['eval_data_root'] = eval_payload.get('data_root')
 print(json.dumps(result, sort_keys=True))
 PY"
 
@@ -198,10 +171,19 @@ if not fixture_path.exists():
     raise SystemExit(f'fixture not found: {fixture_path}')
 
 job_spec = {
-    'api_version': 'v1',
-    'source': {'kind': 'upload', 'filename': fixture_path.name},
+    'api_version': 'v2',
+    'source': {
+        'kind': 'upload',
+        'filename': fixture_path.name,
+        'format': 'pdf',
+    },
     'conversion': {
         'output_format': 'md',
+        'template': None,
+        'css_filenames': [],
+        'reference_docx_filename': None,
+    },
+    'pdf_options': {
         'backend_strategy': 'auto',
         'ocr_mode': 'off',
         'table_mode': 'accurate',
@@ -217,13 +199,17 @@ job_spec = {
 
 file_bytes = fixture_path.read_bytes()
 idem = 'verify_gpu_' + hashlib.sha256(file_bytes).hexdigest()[:24] + '_' + str(int(time.time()))
+headers = {
+    'X-API-Key': api_key,
+    'Idempotency-Key': idem,
+    'X-Correlation-ID': 'corr_verify_gpu_runtime',
+}
 
-headers = {'X-API-Key': api_key, 'Idempotency-Key': idem}
 gpu_busy_seen = 0
 
 with httpx.Client(base_url=service_url, timeout=30.0) as client:
     response = client.post(
-        '/v1/convert/jobs?wait_seconds=0',
+        '/v2/convert/jobs?wait_seconds=0',
         files={
             'file': (fixture_path.name, file_bytes, 'application/pdf'),
             'job_spec': (None, json.dumps(job_spec, separators=(',', ':'))),
@@ -232,13 +218,13 @@ with httpx.Client(base_url=service_url, timeout=30.0) as client:
     )
     response.raise_for_status()
     payload = response.json()
-    job = payload.get('job', {})
-    job_id = job.get('job_id')
+    job_obj = payload.get('job', {})
+    job_id = job_obj.get('job_id')
     if not isinstance(job_id, str):
         raise SystemExit('missing job_id in create response')
 
     deadline = time.monotonic() + timeout_seconds
-    final_status = None
+    final_status: str | None = None
     while time.monotonic() < deadline:
         smi_output = subprocess.run(
             ['rocm-smi', '--showuse'],
@@ -249,10 +235,14 @@ with httpx.Client(base_url=service_url, timeout=30.0) as client:
         for match in re.finditer(r'GPU use \\(%\\):\\s*([0-9]+)', smi_output):
             gpu_busy_seen = max(gpu_busy_seen, int(match.group(1)))
 
-        status_response = client.get(f'/v1/convert/jobs/{job_id}', headers={'X-API-Key': api_key})
+        status_response = client.get(
+            f'/v2/convert/jobs/{job_id}',
+            headers={'X-API-Key': api_key, 'X-Correlation-ID': 'corr_verify_gpu_poll'},
+        )
         status_response.raise_for_status()
         status_payload = status_response.json()
-        final_status = status_payload.get('job', {}).get('status')
+        final_status_obj = status_payload.get('job', {}).get('status')
+        final_status = str(final_status_obj) if final_status_obj is not None else None
         if final_status in {'succeeded', 'failed', 'canceled'}:
             break
         time.sleep(0.2)
@@ -261,18 +251,17 @@ with httpx.Client(base_url=service_url, timeout=30.0) as client:
         raise SystemExit(f'job did not succeed, status={final_status!r}')
 
     result_response = client.get(
-        f'/v1/convert/jobs/{job_id}/result?inline=true',
-        headers={'X-API-Key': api_key},
+        f'/v2/convert/jobs/{job_id}/result',
+        headers={'X-API-Key': api_key, 'X-Correlation-ID': 'corr_verify_gpu_result'},
     )
     result_response.raise_for_status()
     result_payload = result_response.json()
     result_obj = result_payload.get('result', {})
     metadata = result_obj.get('conversion_metadata', {})
     warnings_obj = result_obj.get('warnings', [])
+
     if metadata.get('acceleration_used') != 'cuda':
-        raise SystemExit(
-            f'acceleration_used mismatch: {metadata.get(\"acceleration_used\")!r}'
-        )
+        raise SystemExit(f"acceleration_used mismatch: {metadata.get('acceleration_used')!r}")
     if any('docling_cuda_unavailable_fallback_cpu' in str(item) for item in warnings_obj):
         raise SystemExit('unexpected cpu-fallback warning found in result')
     if gpu_busy_seen <= 0:

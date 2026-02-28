@@ -149,37 +149,43 @@ Primary implementation stories:
     - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
   - Rewrote `review-01-brutal-review-service-api-v2-multi-format-pivot` as the active code-review
     authority, including mandatory v2-only, no-deprecation execution constraints.
-  - Created Epic 05 and linked stories/tasks for prototype-to-production execution:
-    - Epic:
-      - `docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md`
-    - Stories:
-      - `docs/backlog/stories/story-14-v2-only-clean-break-and-api-surface-unification.md`
-      - `docs/backlog/stories/story-13-docx-template-catalog-and-reference-governance.md`
-      - `docs/backlog/stories/story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md.md`
-      - `docs/backlog/stories/story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification.md`
-    - Tasks:
-      - `docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md`
-      - `docs/backlog/tasks/task-45-unify-route-registry-on-v2-and-manifest-contract-hardening.md`
-      - `docs/backlog/tasks/task-46-design-docx-template-contract-storage-and-selection-model.md`
-      - `docs/backlog/tasks/task-47-implement-docx-template-endpoints-validation-and-fixture-templates.md`
-      - `docs/backlog/tasks/task-48-add-v2-route-docx-to-md-with-deterministic-normalization.md`
-      - `docs/backlog/tasks/task-49-add-v2-route-html-to-md-with-resources-and-normalization.md`
-      - `docs/backlog/tasks/task-50-remove-eval-container-and-simplify-compose-runtime-topology.md`
-      - `docs/backlog/tasks/task-51-purge-conflicting-legacy-docs-and-stale-v1-code-paths.md`
-      - `docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md`
-  - Added the next Epic 05 production-integration slice for async push channels on v2:
-    - Story:
-      - `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md`
-    - ADR:
-      - `docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md`
-    - Tasks:
-      - `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
-      - `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
-      - `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
-      - `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
-      - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
-      - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
-      - `docs/backlog/tasks/task-59-enforce-90-percent-test-coverage-gate-for-conversion-core.md`
+  - Epic 05 planning surfaces are established and now tracked by the epic/story/task files directly.
+  - Async push planning stack is in place (`Story 15`, ADR `0003`, Tasks `53-59`) and queued after
+    completed clean-break slices.
+  - Performed a careful planning hardening pass for upcoming cleanup/integration tasks:
+    - Task 52 now has explicit sequencing/dependency guidance for downstream contract publication.
+    - Task 50 now includes a concrete single-runtime cutover plan, risk controls, and validation
+      matrix tied to eval-container removal.
+    - Task 51 now includes explicit active-surface hygiene scope, v2-only purge steps, and
+      deterministic validation commands.
+  - Completed Slice 52A and terminalized Task 52 (`T10`):
+    - published downstream v2 integration contract:
+      - `docs/converters/downstream_integration_contract_v2.md`
+    - linked active converter/runbook docs to downstream contract authority.
+    - checked Epic `T10` and Story `S03` after task/story terminalization.
+  - Completed Slice 50A and terminalized Task 50 (`T11`):
+    - removed eval runtime topology from compose/docker/script/runtime/test surfaces,
+    - removed eval entrypoint module and eval readiness branches,
+    - verified single-runtime docker and v2 conversion probes.
+  - Completed Slice 51A and terminalized Task 51 (`T12`):
+    - purged stale active-surface v1/local-hybrid docs and code references,
+    - removed inactive v1 job-router module from interfaces,
+    - converted compatibility client transport to v2 endpoints only,
+    - simplified CLI route kind semantics to service-only.
+  - Synchronized status/checkoff order:
+    - Task 50 -> `completed` -> Epic `T11` checked,
+    - Task 51 -> `completed` -> Epic `T12` checked,
+    - Story 12 -> `completed` -> Epic `S04` checked.
+  - Validation evidence for T10-T12 + S04 closeout:
+    - `pdm run run-local-pdm format-all` (pass)
+    - `pdm run run-local-pdm lint-fix` (pass)
+    - `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 142 source files`)
+    - `pdm run run-local-pdm coverage-gate` (pass: `347 passed, 5 skipped`; coverage `94.94%`)
+    - targeted T11 test matrix (pass: `17 passed`)
+    - targeted T12 test matrix (pass: `37 passed, 3 skipped`)
+    - `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+    - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=104 rules=9`)
+    - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 
 - 2026-02-18:
 
@@ -190,12 +196,7 @@ Primary implementation stories:
 
 ## Next Actions
 
-- Proceed in epic listed order for Story 13 and Story 11 scope:
-  - `docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md`
-- Complete legacy/runtime cleanup after markdown/template pathways:
-  - `docs/backlog/tasks/task-50-remove-eval-container-and-simplify-compose-runtime-topology.md`
-  - `docs/backlog/tasks/task-51-purge-conflicting-legacy-docs-and-stale-v1-code-paths.md`
-- Execute async-push production slice after above sequencing:
+- Execute async-push production slice in epic listed order:
   - `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
   - `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
   - `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`

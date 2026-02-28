@@ -24,7 +24,6 @@ from prometheus_client import CollectorRegistry, Counter, Histogram
 
 from scripts.sir_convert_a_lot.application.contracts import (
     ErrorBody,
-    ErrorEnvelope,
 )
 from scripts.sir_convert_a_lot.application.contracts_v2 import ErrorEnvelopeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
@@ -53,13 +52,12 @@ def _utc_now_iso() -> str:
 
 def _error_envelope(
     *,
-    api_version: str,
     correlation_id: str,
     code: str,
     message: str,
     retryable: bool,
     details: dict[str, object] | None = None,
-) -> ErrorEnvelope | ErrorEnvelopeV2:
+) -> ErrorEnvelopeV2:
     error_body = ErrorBody(
         code=code,
         message=message,
@@ -67,9 +65,7 @@ def _error_envelope(
         details=details,
         correlation_id=correlation_id,
     )
-    if api_version == "v2":
-        return ErrorEnvelopeV2(error=error_body)
-    return ErrorEnvelope(error=error_body)
+    return ErrorEnvelopeV2(error=error_body)
 
 
 def create_app(
@@ -142,9 +138,7 @@ def create_app(
     @app.exception_handler(ServiceError)
     async def service_error_handler(request: Request, exc: ServiceError) -> JSONResponse:
         correlation_id = getattr(request.state, "correlation_id", f"corr_{uuid4().hex}")
-        api_version = "v2" if request.url.path.startswith("/v2/") else "v1"
         envelope = _error_envelope(
-            api_version=api_version,
             correlation_id=correlation_id,
             code=exc.code,
             message=exc.message,
@@ -158,9 +152,7 @@ def create_app(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         correlation_id = getattr(request.state, "correlation_id", f"corr_{uuid4().hex}")
-        api_version = "v2" if request.url.path.startswith("/v2/") else "v1"
         envelope = _error_envelope(
-            api_version=api_version,
             correlation_id=correlation_id,
             code="validation_error",
             message="Request validation failed.",

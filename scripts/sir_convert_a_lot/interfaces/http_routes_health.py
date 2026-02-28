@@ -22,7 +22,6 @@ from scripts.sir_convert_a_lot.application.contracts import (
 )
 from scripts.sir_convert_a_lot.interfaces.http_app_state import (
     metadata_for_app,
-    resolve_eval_root_from_env,
     resolve_prod_root_from_env,
 )
 
@@ -62,7 +61,6 @@ def build_health_router(*, app: FastAPI, service_started_at: str) -> APIRouter:
             else metadata.service_profile
         )
         prod_root = resolve_prod_root_from_env()
-        eval_root = resolve_eval_root_from_env()
 
         reasons: list[ServiceReadinessReason] = []
         if metadata.service_revision == "unknown":
@@ -101,33 +99,14 @@ def build_health_router(*, app: FastAPI, service_started_at: str) -> APIRouter:
                     },
                 )
             )
-        if prod_root == eval_root:
-            reasons.append(
-                ServiceReadinessReason(
-                    code="data_root_configuration_collision",
-                    message="Configured prod/eval data roots collide.",
-                    details={"data_root": prod_root.as_posix()},
-                )
-            )
-        if metadata.service_profile == "prod" and metadata.data_root != prod_root:
+        if metadata.data_root != prod_root:
             reasons.append(
                 ServiceReadinessReason(
                     code="data_root_profile_mismatch",
-                    message="Prod service data root does not match configured prod data root.",
+                    message="Service data root does not match configured canonical data root.",
                     details={
                         "service_data_root": metadata.data_root.as_posix(),
                         "expected_data_root": prod_root.as_posix(),
-                    },
-                )
-            )
-        if metadata.service_profile == "eval" and metadata.data_root != eval_root:
-            reasons.append(
-                ServiceReadinessReason(
-                    code="data_root_profile_mismatch",
-                    message="Eval service data root does not match configured eval data root.",
-                    details={
-                        "service_data_root": metadata.data_root.as_posix(),
-                        "expected_data_root": eval_root.as_posix(),
                     },
                 )
             )

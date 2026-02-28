@@ -1,165 +1,105 @@
 # Sir Convert-a-Lot
 
-LLM-friendly CLI and HTTP service for document format conversion. Designed so coding assistants and batch scripts can convert between popular formats through a single interface with deterministic, auditable output.
+LLM-friendly CLI and HTTP service for deterministic document conversion through one v2 API surface.
 
 ## Why
 
-Scattered converter scripts accumulate across projects. Each has its own invocation style, error handling, and output conventions. Sir Convert-a-Lot consolidates these into one CLI/API surface with consistent job semantics, idempotency, and machine-readable manifests — so both humans and LLMs can drive conversions without format-specific glue code.
+Conversion logic historically drifted across tools and repos. Sir Convert-a-Lot provides one
+contracted runtime with stable idempotency, job lifecycle semantics, and machine-readable manifests.
 
-## Current Capabilities (v1)
+## Current Capabilities (v2)
 
-- **PDF → Markdown** via Docling or PyMuPDF backends:
-  - Docling: `backend_strategy=auto|docling`
-  - PyMuPDF: `backend_strategy=pymupdf` (CPU-only compatibility path)
-- **HTML (+ optional CSS) → PDF** via local WeasyPrint
-- **Markdown → PDF** via local Pandoc → HTML → WeasyPrint
-- **Markdown → DOCX** via local Pandoc → HTML → Pandoc
-- GPU-first execution policy (rollout lock by default)
-- Async job API with polling and bounded wait
-- Idempotent job creation (SHA256-based fingerprinting)
-- Deterministic JSON manifest per batch run
-- Deterministic markdown normalization (`none|standard|strict`, strict width=100)
-
-Planned: PDF→DOCX (hybrid) and other legacy converter parity (see
-[Story 003d](../../docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md)).
+- `pdf -> md` (Docling/PyMuPDF policy-governed PDF stage)
+- `docx -> md`
+- `html -> md`
+- `html -> pdf`
+- `html -> docx`
+- `md -> pdf`
+- `md -> docx`
+- `pdf -> docx`
+- GPU-first policy for PDF processing
+- Async job model with bounded wait + polling
+- Idempotent create-job behavior
+- Deterministic batch manifest output
 
 ## Usage
 
-### Service readiness (Hemma)
+### Service readiness (Hemma tunnel lane)
 
 ```bash
 ssh hemma -L 28085:127.0.0.1:28085 -N
 curl -fsS http://127.0.0.1:28085/readyz
 ```
 
-### Convert PDFs
+### Convert files
 
 ```bash
-pdm run convert-a-lot convert ./pdfs --output-dir ./output
+pdm run convert-a-lot convert ./inputs --output-dir ./output --to md
 ```
 
-With explicit service URL and API key (tunnel to Hemma host):
+Explicit remote submission:
 
 ```bash
-pdm run convert-a-lot convert ./pdfs \
+pdm run convert-a-lot convert ./inputs \
   --output-dir ./output \
   --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
-Public internet lane:
-
-```bash
-pdm run convert-a-lot convert ./pdfs \
-  --output-dir ./output \
-  --service-url https://convert.hule.education \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
-```
-
-### Run Story 003b benchmark
-
-```bash
-pdm run benchmark:story-003b \
-  --fixtures-dir tests/fixtures/benchmark_pdfs \
-  --output-json build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json
-```
-
-### CLI Options
+## CLI Options
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--to` | `md` | Target format (implemented: `md`, `pdf`, `docx`; see `convert-a-lot routes`) |
-| `--from` | (auto) | Override source format inference (`pdf`, `md`, `html`, `docx`) |
-| `--dry-run` | `false` | Print selected route and discovered files without executing |
-| `--css` | (none) | CSS stylesheet(s) for HTML→PDF (repeatable) |
-| `--keep-html` | `false` | Keep intermediate HTML under `--output-dir/_intermediates/` for MD→PDF and MD→DOCX |
-| `--reference-docx` | (none) | Reference DOCX for styling MD→DOCX conversions |
-| `--service-url` | `http://127.0.0.1:28085` | Service base URL (tunnel lane; internet lane: `https://convert.hule.education`) |
+| `--to` | `md` | Target format (`md`, `pdf`, `docx`) |
+| `--from` | auto | Source format override (`pdf`, `docx`, `md`, `html`) |
+| `--dry-run` | `false` | Print selected route and discovered files |
+| `--service-url` | `http://127.0.0.1:28085` | Service base URL |
 | `--api-key` | `$SIR_CONVERT_A_LOT_API_KEY` | API key |
-| `--wait-seconds` | `5` | Bounded wait on job creation (0–20) |
-| `--max-poll-seconds` | `120` | Max polling time per job |
-| `--recursive` / `--no-recursive` | `--recursive` | Recurse into subdirectories |
-| `--acceleration-policy` | `gpu_required` | `gpu_required`, `gpu_prefer`, or `cpu_only` |
-| `--backend-strategy` | `auto` | `auto`, `docling`, or `pymupdf` |
-| `--ocr-mode` | `auto` | `off`, `force`, or `auto` |
-| `--table-mode` | `accurate` | `fast` or `accurate` |
-| `--normalize` | `strict` | `none`, `standard`, or `strict` |
-| `--manifest-name` | `sir_convert_a_lot_manifest.json` | Output manifest filename |
+| `--wait-seconds` | `5` | Bounded wait on create-job (`0..20`) |
+| `--max-poll-seconds` | `120` | Poll timeout per job |
+| `--recursive` / `--no-recursive` | `--recursive` | Directory traversal mode |
+| `--resources` | none | Optional resource directory/zip upload |
+| `--css` | none | CSS list for PDF outputs |
+| `--reference-docx` | none | Reference DOCX for DOCX outputs |
+| `--acceleration-policy` | `gpu_required` | PDF-stage acceleration policy |
+| `--backend-strategy` | `auto` | PDF-stage backend strategy |
+| `--ocr-mode` | `auto` | PDF-stage OCR mode |
+| `--table-mode` | `accurate` | PDF-stage table mode |
+| `--normalize` | `strict` | Markdown normalization mode |
+| `--manifest-name` | `sir_convert_a_lot_manifest.json` | Manifest filename |
 
 ## Manifest
 
-Each batch writes a JSON manifest to `--output-dir`:
+Each run writes a deterministic JSON manifest in `--output-dir` with one entry per input source.
 
-```json
-{
-  "generated_at": "2026-02-11T17:00:00Z",
-  "source_root": "./pdfs",
-  "output_root": "./output",
-  "entries": [
-    {
-      "source_file_path": "paper.pdf",
-      "job_id": "job_01K2S8CXH3BWV7S6E5B7P4Y2ZR",
-      "status": "succeeded",
-      "output_path": "./output/paper.md",
-      "error_code": null
-    }
-  ]
-}
-```
-
-Long-running behavior:
-
-- If a job exceeds `--max-poll-seconds`, CLI now records `status: "running"` with `job_id` and
-  `error_code: "job_timeout"` in the manifest, and exits non-error unless there are terminal
-  failures.
-- This supports background completion flows where conversion continues server-side and result
-  retrieval can happen later via status/result endpoints.
+- Success: `status="succeeded"` and `output_path` present.
+- Timeout while still running: `status="running"` with `error_code="job_timeout"` and `job_id`.
+- Failure: `status="failed"` with `error_code`.
 
 ## Architecture
 
 ```text
 scripts/sir_convert_a_lot/
-├── domain/          # Core job specs and invariants
-├── application/     # Response/manifest contracts
-├── infrastructure/  # Filesystem-backed runtime engine
-├── interfaces/      # CLI, HTTP API, HTTP client adapters
+├── domain/          # Core job models and invariants
+├── application/     # Response and manifest contracts
+├── infrastructure/  # Runtime engine and persistence
+├── interfaces/      # HTTP/CLI adapters and clients
 ├── cli.py           # Compatibility facade
-├── service.py       # Compatibility facade
-├── client.py        # Compatibility facade
-└── models.py        # Compatibility facade
+├── service.py       # Service entrypoint facade
+├── client.py        # Client export facade
+└── models.py        # Model export facade
 ```
-
-DDD-oriented package layout. Compatibility facades at the root preserve stable imports during internal restructuring.
-
-## Configuration (Environment Variables)
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `SIR_CONVERT_A_LOT_API_KEY` | `dev-only-key` | Service API key |
-| `CONVERTER_STORAGE_ROOT` | `build/sir_convert_a_lot` | Canonical storage root for uploads/artifacts/manifests |
-| `SIR_CONVERT_A_LOT_DATA_DIR` | `build/sir_convert_a_lot` | Compatibility alias for storage root |
-| `SIR_CONVERT_A_LOT_GPU_AVAILABLE` | `1` | GPU availability flag |
-
-Rollout lock note:
-
-- CPU unlock env vars (`SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY`, `SIR_CONVERT_A_LOT_ALLOW_CPU_FALLBACK`)
-  are disabled in normal startup paths during Story 003b governance lock.
-- CPU unlock behavior is available only through explicit test configuration in `ServiceConfig`.
-
-Backend compatibility note:
-
-- `backend_strategy=pymupdf` is rejected with `422 validation_error` when:
-  - `acceleration_policy` is `gpu_required` or `gpu_prefer`, or
-  - `ocr_mode` is `auto` or `force`.
-- `pymupdf` path requires `ocr_mode=off` and CPU-compatible policy.
 
 ## API Reference
 
-See [PDF to Markdown Service API v1](../../docs/converters/pdf_to_md_service_api_v1.md) for the full HTTP contract.
+- Normative API contract:
+  `docs/converters/multi_format_conversion_service_api_v2.md`
+- Downstream integration contract:
+  `docs/converters/downstream_integration_contract_v2.md`
 
 ## LLM Convention
 
 Assistants should use natural-language invocation:
 
-- *"Tell Sir Convert-a-Lot to convert x to y."*
-- *"Tell convert-a-lot to convert x to y."*
+- "Tell Sir Convert-a-Lot to convert x to y."
+- "Tell convert-a-lot to convert x to y."

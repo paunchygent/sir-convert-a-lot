@@ -1,12 +1,12 @@
-"""Sir Convert-a-Lot HTTP client interface.
+"""Sir Convert-a-Lot HTTP client compatibility interface.
 
 Purpose:
-    Provide a typed client for the v1 Sir Convert-a-Lot service endpoints
-    with standardized error parsing and polling behavior.
+    Provide a stable client import path that executes conversions only against
+    the active v2 service API endpoints.
 
 Relationships:
-    - Used by `interfaces.cli_app` for local batch conversion workflows.
-    - Targets `interfaces.http_api` endpoint semantics.
+    - Used by compatibility facades and benchmark/devops helpers.
+    - Delegates transport to `/v2/convert/jobs*` endpoint semantics.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ class SubmittedJob:
 
 
 class SirConvertALotClient:
-    """Client for Sir Convert-a-Lot v1 conversion job endpoints."""
+    """Compatibility client backed by Sir Convert-a-Lot v2 job endpoints."""
 
     def __init__(
         self,
@@ -138,7 +138,7 @@ class SirConvertALotClient:
     ) -> dict[str, object]:
         """Fetch raw job payload for a submitted conversion job."""
         response = self._client.get(
-            f"/v1/convert/jobs/{job_id}",
+            f"/v2/convert/jobs/{job_id}",
             headers=self._headers(correlation_id=correlation_id),
         )
         if response.status_code != 200:
@@ -194,6 +194,95 @@ class SirConvertALotClient:
 
         return SubmittedJob(job_id=job_id_obj, status=status)
 
+    def _normalize_pdf_job_spec(
+        self, *, pdf_path: Path, job_spec: dict[str, object]
+    ) -> dict[str, object]:
+        """Normalize compatibility job specs to the canonical v2 `pdf -> md` shape."""
+        source_obj = job_spec.get("source")
+        conversion_obj = job_spec.get("conversion")
+        pdf_options_obj = job_spec.get("pdf_options")
+        execution_obj = job_spec.get("execution")
+        retention_obj = job_spec.get("retention")
+
+        if (
+            isinstance(source_obj, dict)
+            and source_obj.get("kind") == "upload"
+            and source_obj.get("format") == "pdf"
+            and isinstance(conversion_obj, dict)
+            and isinstance(pdf_options_obj, dict)
+        ):
+            converted_source = {
+                "kind": "upload",
+                "filename": pdf_path.name,
+                "format": "pdf",
+            }
+            converted_conversion: dict[str, object] = {
+                "output_format": conversion_obj.get("output_format", "md"),
+                "css_filenames": conversion_obj.get("css_filenames", []),
+                "reference_docx_filename": conversion_obj.get("reference_docx_filename"),
+            }
+            template_obj = conversion_obj.get("template")
+            if isinstance(template_obj, dict):
+                converted_conversion["template"] = template_obj
+
+            normalized: dict[str, object] = {
+                "api_version": "v2",
+                "source": converted_source,
+                "conversion": converted_conversion,
+                "pdf_options": dict(pdf_options_obj),
+                "execution": dict(execution_obj) if isinstance(execution_obj, dict) else None,
+                "retention": dict(retention_obj)
+                if isinstance(retention_obj, dict)
+                else {"pin": False},
+            }
+            return normalized
+
+        backend_strategy = "auto"
+        ocr_mode = "auto"
+        table_mode = "accurate"
+        normalize = "strict"
+        output_format = "md"
+
+        if isinstance(conversion_obj, dict):
+            output_obj = conversion_obj.get("output_format")
+            backend_obj = conversion_obj.get("backend_strategy")
+            ocr_obj = conversion_obj.get("ocr_mode")
+            table_obj = conversion_obj.get("table_mode")
+            normalize_obj = conversion_obj.get("normalize")
+            if isinstance(output_obj, str) and output_obj.strip() != "":
+                output_format = output_obj
+            if isinstance(backend_obj, str) and backend_obj.strip() != "":
+                backend_strategy = backend_obj
+            if isinstance(ocr_obj, str) and ocr_obj.strip() != "":
+                ocr_mode = ocr_obj
+            if isinstance(table_obj, str) and table_obj.strip() != "":
+                table_mode = table_obj
+            if isinstance(normalize_obj, str) and normalize_obj.strip() != "":
+                normalize = normalize_obj
+
+        normalized_spec: dict[str, object] = {
+            "api_version": "v2",
+            "source": {
+                "kind": "upload",
+                "filename": pdf_path.name,
+                "format": "pdf",
+            },
+            "conversion": {
+                "output_format": output_format,
+                "css_filenames": [],
+                "reference_docx_filename": None,
+            },
+            "pdf_options": {
+                "backend_strategy": backend_strategy,
+                "ocr_mode": ocr_mode,
+                "table_mode": table_mode,
+                "normalize": normalize,
+            },
+            "execution": dict(execution_obj) if isinstance(execution_obj, dict) else None,
+            "retention": dict(retention_obj) if isinstance(retention_obj, dict) else {"pin": False},
+        }
+        return normalized_spec
+
     def submit_pdf_job(
         self,
         *,
@@ -204,14 +293,21 @@ class SirConvertALotClient:
         correlation_id: str | None = None,
     ) -> SubmittedJob:
         """Create a conversion job for a single PDF file."""
+        normalized_job_spec = self._normalize_pdf_job_spec(pdf_path=pdf_path, job_spec=job_spec)
         with pdf_path.open("rb") as handle:
             response = self._client.post(
-                "/v1/convert/jobs",
+                "/v2/convert/jobs",
                 params={"wait_seconds": wait_seconds},
                 headers=self._headers(
                     idempotency_key=idempotency_key, correlation_id=correlation_id
                 ),
-                data={"job_spec": json.dumps(job_spec, separators=(",", ":"), sort_keys=True)},
+                data={
+                    "job_spec": json.dumps(
+                        normalized_job_spec,
+                        separators=(",", ":"),
+                        sort_keys=True,
+                    )
+                },
                 files={"file": (pdf_path.name, handle, "application/pdf")},
             )
 
@@ -258,10 +354,14 @@ class SirConvertALotClient:
         correlation_id: str | None = None,
         inline: bool = True,
     ) -> dict[str, object]:
-        """Fetch raw successful result payload for a job."""
+        """Fetch raw successful result payload for a job.
+
+        When `inline=True` and the output artifact is Markdown, the payload
+        includes compatibility field `result.markdown_content` decoded from
+        `/v2/convert/jobs/{job_id}/artifact`.
+        """
         response = self._client.get(
-            f"/v1/convert/jobs/{job_id}/result",
-            params={"inline": "true" if inline else "false"},
+            f"/v2/convert/jobs/{job_id}/result",
             headers=self._headers(correlation_id=correlation_id),
         )
 
@@ -277,7 +377,44 @@ class SirConvertALotClient:
                 status_code=500,
                 job_id=job_id,
             )
-        return payload
+
+        if not inline:
+            return payload
+
+        result_obj = payload.get("result")
+        if not isinstance(result_obj, dict):
+            return payload
+
+        artifact_obj = result_obj.get("artifact")
+        if not isinstance(artifact_obj, dict):
+            return payload
+
+        format_obj = artifact_obj.get("format")
+        if format_obj != "md":
+            return payload
+
+        artifact_response = self._client.get(
+            f"/v2/convert/jobs/{job_id}/artifact",
+            headers=self._headers(correlation_id=correlation_id),
+        )
+        if artifact_response.status_code != 200:
+            raise self._extract_error(artifact_response, job_id=job_id)
+        try:
+            markdown_content = artifact_response.content.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ClientError(
+                code="invalid_response",
+                message="Markdown artifact is not valid UTF-8.",
+                retryable=False,
+                status_code=502,
+                job_id=job_id,
+            ) from exc
+
+        result_with_markdown = dict(result_obj)
+        result_with_markdown["markdown_content"] = markdown_content
+        payload_with_markdown = dict(payload)
+        payload_with_markdown["result"] = result_with_markdown
+        return payload_with_markdown
 
     def fetch_markdown_result(self, job_id: str, *, correlation_id: str | None = None) -> str:
         """Fetch successful markdown artifact content for a job."""

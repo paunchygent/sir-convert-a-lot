@@ -13,6 +13,7 @@ tags:
   - tunnel
 links:
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/converters/downstream_integration_contract_v2.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 ---
 
@@ -49,6 +50,8 @@ Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
 ## Service Contract
 
 - Normative API: `docs/converters/multi_format_conversion_service_api_v2.md`
+- Downstream integration contract:
+  `docs/converters/downstream_integration_contract_v2.md`
 - Decision v2: `docs/decisions/0002-multi-format-service-api-v2.md`
 
 ## Task 11 Backend Availability

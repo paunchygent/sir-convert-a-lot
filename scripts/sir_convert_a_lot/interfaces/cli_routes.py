@@ -2,7 +2,7 @@
 
 Purpose:
     Define the canonical conversion route taxonomy used by the local CLI for
-    selecting between service-backed, local, and hybrid pipelines.
+    selecting conversion pipelines backed by the unified service API.
 
 Relationships:
     - Used by `scripts.sir_convert_a_lot.interfaces.cli_app` for route selection,
@@ -38,8 +38,6 @@ class PipelineKind(str, Enum):
     """Execution kind for a CLI route."""
 
     SERVICE = "service"
-    LOCAL = "local"
-    HYBRID = "hybrid"
 
 
 @dataclass(frozen=True)
@@ -62,7 +60,7 @@ class CliRoute:
     def requires_service(self) -> bool:
         """Return whether this route requires calling the service."""
 
-        return self.pipeline_kind in {PipelineKind.SERVICE, PipelineKind.HYBRID}
+        return self.pipeline_kind is PipelineKind.SERVICE
 
 
 _ROUTES: tuple[CliRoute, ...] = (

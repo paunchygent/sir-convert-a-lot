@@ -77,10 +77,10 @@ Completion rule:
 - [x] `S02` `docs/backlog/stories/story-13-docx-template-catalog-and-reference-governance.md`
   (requires `T06-T07`)
 
-- [ ] `S03` `docs/backlog/stories/story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md.md`
+- [x] `S03` `docs/backlog/stories/story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md.md`
   (requires `T08-T10`)
 
-- [ ] `S04` `docs/backlog/stories/story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification.md`
+- [x] `S04` `docs/backlog/stories/story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification.md`
   (requires `T11-T12`)
 
 - [ ] `S05` `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md`
@@ -116,11 +116,11 @@ Execution rule:
 
 - [x] `T09` `docs/backlog/tasks/task-49-add-v2-route-html-to-md-with-resources-and-normalization.md`
 
-- [ ] `T10` `docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md`
+- [x] `T10` `docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md`
 
-- [ ] `T11` `docs/backlog/tasks/task-50-remove-eval-container-and-simplify-compose-runtime-topology.md`
+- [x] `T11` `docs/backlog/tasks/task-50-remove-eval-container-and-simplify-compose-runtime-topology.md`
 
-- [ ] `T12` `docs/backlog/tasks/task-51-purge-conflicting-legacy-docs-and-stale-v1-code-paths.md`
+- [x] `T12` `docs/backlog/tasks/task-51-purge-conflicting-legacy-docs-and-stale-v1-code-paths.md`
 
 - [ ] `T02` `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
 

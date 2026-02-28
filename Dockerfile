@@ -1,9 +1,9 @@
 #
 # Purpose:
-#   Build a deterministic container image for Sir Convert-a-Lot HTTP services.
+#   Build a deterministic container image for Sir Convert-a-Lot HTTP service.
 #
 # Relationships:
-#   - Used by compose.yaml for prod/eval service lanes.
+#   - Used by compose.yaml for the canonical runtime lane.
 #   - Executes canonical PDM script entrypoints from pyproject.toml.
 #
 
@@ -52,9 +52,8 @@ RUN pdm run python -m pip install --upgrade --no-cache-dir \
 
 COPY scripts ./scripts
 
-RUN mkdir -p /var/lib/sir-convert-a-lot/prod /var/lib/sir-convert-a-lot/eval
+RUN mkdir -p /var/lib/sir-convert-a-lot/prod
 
 EXPOSE 8085
-EXPOSE 8086
 
 CMD ["pdm", "run", "serve:sir-convert-a-lot"]

@@ -103,7 +103,6 @@ distribution = false
 
 [tool.pdm.scripts]
 "serve:sir-convert-a-lot" = "uvicorn scripts.sir_convert_a_lot.service:app --host 0.0.0.0 --port 8085"
-"serve:sir-convert-a-lot-eval" = "uvicorn scripts.sir_convert_a_lot.service_eval:app --host 0.0.0.0 --port 8086"
 "convert-a-lot" = "python -m scripts.sir_convert_a_lot.cli"
 "sir-convert-a-lot" = "python -m scripts.sir_convert_a_lot.cli"
 "benchmark:story-003b" = "python -m scripts.sir_convert_a_lot.benchmark_gpu_governance"

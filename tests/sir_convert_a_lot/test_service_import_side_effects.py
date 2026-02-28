@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Tests `scripts.sir_convert_a_lot.interfaces.http_api`.
-    - Tests `scripts.sir_convert_a_lot.service_eval`.
+    - Tests `scripts.sir_convert_a_lot.service`.
 """
 
 from __future__ import annotations
@@ -24,8 +24,7 @@ def _clear_modules() -> None:
     sys.modules.pop("scripts.sir_convert_a_lot.interfaces.http_api", None)
     sys.modules.pop("scripts.sir_convert_a_lot.interfaces.http_app_state", None)
     sys.modules.pop("scripts.sir_convert_a_lot.interfaces.http_routes_health", None)
-    sys.modules.pop("scripts.sir_convert_a_lot.interfaces.http_routes_jobs", None)
-    sys.modules.pop("scripts.sir_convert_a_lot.service_eval", None)
+    sys.modules.pop("scripts.sir_convert_a_lot.service", None)
 
 
 def test_http_api_import_does_not_instantiate_runtime(monkeypatch, tmp_path: Path) -> None:
@@ -66,7 +65,7 @@ def test_http_api_import_does_not_instantiate_runtime(monkeypatch, tmp_path: Pat
     assert call_count["value"] == 1
 
 
-def test_service_eval_import_creates_only_one_runtime(monkeypatch, tmp_path: Path) -> None:
+def test_service_entrypoint_import_creates_only_one_runtime(monkeypatch, tmp_path: Path) -> None:
     runtime_engine_module = importlib.import_module(
         "scripts.sir_convert_a_lot.infrastructure.runtime_engine"
     )
@@ -82,13 +81,12 @@ def test_service_eval_import_creates_only_one_runtime(monkeypatch, tmp_path: Pat
 
     monkeypatch.setattr(runtime_engine_module, "ServiceRuntime", _CountingRuntime)
     monkeypatch.setenv("SIR_CONVERT_A_LOT_DATA_DIR", str(tmp_path / "prod_data"))
-    monkeypatch.setenv("SIR_CONVERT_A_LOT_EVAL_DATA_DIR", str(tmp_path / "eval_data"))
 
     _clear_modules()
-    service_eval_module = importlib.import_module("scripts.sir_convert_a_lot.service_eval")
+    service_module = importlib.import_module("scripts.sir_convert_a_lot.service")
 
     assert call_count["value"] == 0
-    with TestClient(service_eval_module.app) as client:
+    with TestClient(service_module.app) as client:
         response = client.get("/healthz")
         assert response.status_code == 200
     assert call_count["value"] == 1

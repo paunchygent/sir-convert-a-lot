@@ -3,13 +3,11 @@
 Purpose:
     Produce deterministic evidence that the Hemma dockerized runtime can execute
     the critical multi-format conversion routes exposed via service API v2:
-    `html -> pdf`, `md -> pdf`, `md -> docx`, and `pdf -> docx`, while also
-    confirming the locked v1 `pdf -> md` route remains operational.
+    `html -> pdf`, `md -> pdf`, `md -> docx`, `pdf -> docx`, and `pdf -> md`.
 
 Relationships:
     - Called by `scripts/devops/verify-hemma-v2-conversions.sh` (remote mode).
     - Uses the typed HTTP clients:
-        - `scripts.sir_convert_a_lot.interfaces.http_client.SirConvertALotClient` (v1)
         - `scripts.sir_convert_a_lot.interfaces.http_client_v2.SirConvertALotClientV2` (v2)
     - Writes evidence under `build/verification/task-39-v2-smoke/` (artifacts,
       responses, and a markdown + JSON report).
@@ -32,7 +30,7 @@ from pathlib import Path
 
 import httpx
 
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError, SirConvertALotClient
+from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
 from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
 
 
@@ -234,84 +232,6 @@ def _run_v2_conversion(
     )
 
 
-def _run_v1_pdf_to_md(
-    *,
-    http_base_url: str,
-    api_key: str,
-    output_dir: Path,
-    pdf_path: Path,
-    wait_seconds: int,
-    max_poll_seconds: float,
-) -> tuple[ArtifactEvidence, dict[str, object]]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    artifact_path = output_dir / "v1_pdf_to_md.md"
-
-    file_bytes = pdf_path.read_bytes()
-    idem = _idempotency_key(scope="v1_pdf_to_md", file_bytes=file_bytes)
-    correlation_id = f"corr_task39_v1_pdf_to_md_{int(time.time())}"
-
-    job_spec: dict[str, object] = {
-        "api_version": "v1",
-        "source": {"kind": "upload", "filename": pdf_path.name},
-        "conversion": {
-            "output_format": "md",
-            "backend_strategy": "auto",
-            "ocr_mode": "auto",
-            "table_mode": "accurate",
-            "normalize": "strict",
-        },
-        "execution": {
-            "acceleration_policy": "gpu_required",
-            "priority": "normal",
-            "document_timeout_seconds": 1800,
-        },
-        "retention": {"pin": False},
-    }
-
-    with SirConvertALotClient(base_url=http_base_url, api_key=api_key) as client:
-        outcome = client.convert_pdf_to_markdown(
-            pdf_path=pdf_path,
-            job_spec=job_spec,
-            idempotency_key=idem,
-            wait_seconds=wait_seconds,
-            max_poll_seconds=max_poll_seconds,
-            correlation_id=correlation_id,
-        )
-        artifact_path.write_text(outcome.markdown_content, encoding="utf-8")
-        result_payload = client.fetch_result_payload(
-            outcome.job_id, correlation_id=correlation_id, inline=True
-        )
-
-    if artifact_path.stat().st_size <= 0:
-        raise SystemExit(f"v1 pdf->md produced empty artifact: {artifact_path}")
-
-    metadata: dict[str, object] = {}
-    result_obj = result_payload.get("result")
-    if isinstance(result_obj, dict):
-        metadata_obj = result_obj.get("conversion_metadata")
-        if isinstance(metadata_obj, dict):
-            metadata = metadata_obj
-
-    pipeline_used_obj = metadata.get("pipeline_used")
-    backend_used_obj = metadata.get("backend_used")
-    acceleration_used_obj = metadata.get("acceleration_used")
-
-    return (
-        ArtifactEvidence(
-            job_id=outcome.job_id,
-            artifact_path=artifact_path,
-            artifact_sha256=_sha256_bytes(artifact_path.read_bytes()),
-            artifact_size_bytes=artifact_path.stat().st_size,
-            pipeline_used=pipeline_used_obj if isinstance(pipeline_used_obj, str) else None,
-            backend_used=backend_used_obj if isinstance(backend_used_obj, str) else None,
-            acceleration_used=(
-                acceleration_used_obj if isinstance(acceleration_used_obj, str) else None
-            ),
-        ),
-        result_payload,
-    )
-
-
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Hemma v2 conversion smoke verifier (Task 39).")
     parser.add_argument(
@@ -340,7 +260,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=os.environ.get(
             "SIR_CONVERT_A_LOT_VERIFY_PDF_FIXTURE", "tests/fixtures/benchmark_pdfs/paper_alpha.pdf"
         ),
-        help="PDF fixture path used for v1 pdf->md and v2 pdf->docx smoke.",
+        help="PDF fixture path used for v2 `pdf -> md` and `pdf -> docx` smoke.",
     )
     parser.add_argument(
         "--docker-prod-container",
@@ -550,15 +470,25 @@ def main(argv: list[str] | None = None) -> int:
         v2_results["pdf_to_docx"] = pdf_docx_ev
         evidence_payloads["pdf_to_docx_result"] = pdf_docx_payload
 
-        v1_ev, v1_payload = _run_v1_pdf_to_md(
+        pdf_md_ev, pdf_md_payload = _run_v2_conversion(
             http_base_url=service_url,
             api_key=args.api_key,
             output_dir=artifacts_dir,
-            pdf_path=pdf_fixture,
+            label="pdf_to_md",
+            source_path=pdf_fixture,
+            job_spec=_spec_v2(
+                source=pdf_fixture,
+                source_format="pdf",
+                output_format="md",
+                css=False,
+            ),
+            artifact_suffix=".md",
             wait_seconds=args.wait_seconds,
             max_poll_seconds=max(args.max_poll_seconds, 240.0),
+            resources_zip_bytes=None,
         )
-        evidence_payloads["v1_pdf_to_md_result"] = v1_payload
+        v2_results["pdf_to_md"] = pdf_md_ev
+        evidence_payloads["pdf_to_md_result"] = pdf_md_payload
     except ClientError as exc:
         raise SystemExit(f"Verification failed: {exc.code} ({exc.message})") from exc
 
@@ -578,27 +508,16 @@ def main(argv: list[str] | None = None) -> int:
         "repo_head": repo_head,
         "runtime_versions": runtime_versions,
         "jobs": {
-            "v2": {
-                name: {
-                    "job_id": ev.job_id,
-                    "artifact_path": ev.artifact_path.as_posix(),
-                    "artifact_size_bytes": ev.artifact_size_bytes,
-                    "artifact_sha256": ev.artifact_sha256,
-                    "pipeline_used": ev.pipeline_used,
-                    "backend_used": ev.backend_used,
-                    "acceleration_used": ev.acceleration_used,
-                }
-                for name, ev in v2_results.items()
-            },
-            "v1_pdf_to_md": {
-                "job_id": v1_ev.job_id,
-                "artifact_path": v1_ev.artifact_path.as_posix(),
-                "artifact_size_bytes": v1_ev.artifact_size_bytes,
-                "artifact_sha256": v1_ev.artifact_sha256,
-                "pipeline_used": v1_ev.pipeline_used,
-                "backend_used": v1_ev.backend_used,
-                "acceleration_used": v1_ev.acceleration_used,
-            },
+            name: {
+                "job_id": ev.job_id,
+                "artifact_path": ev.artifact_path.as_posix(),
+                "artifact_size_bytes": ev.artifact_size_bytes,
+                "artifact_sha256": ev.artifact_sha256,
+                "pipeline_used": ev.pipeline_used,
+                "backend_used": ev.backend_used,
+                "acceleration_used": ev.acceleration_used,
+            }
+            for name, ev in v2_results.items()
         },
     }
     _write_json(output_root / "report.json", report)
@@ -631,15 +550,6 @@ def main(argv: list[str] | None = None) -> int:
             md_lines.append(f"- acceleration_used: `{ev.acceleration_used}`")
         md_lines.append("")
 
-    md_lines.append("### v1 pdf -> md")
-    md_lines.append("")
-    md_lines.append(f"- job_id: `{v1_ev.job_id}`")
-    md_lines.append(f"- artifact: `{v1_ev.artifact_path}` ({v1_ev.artifact_size_bytes} bytes)")
-    if v1_ev.backend_used is not None:
-        md_lines.append(f"- backend_used: `{v1_ev.backend_used}`")
-    if v1_ev.acceleration_used is not None:
-        md_lines.append(f"- acceleration_used: `{v1_ev.acceleration_used}`")
-    md_lines.append("")
     md_lines.append("## Files")
     md_lines.append("")
     md_lines.append(f"- report: `{(output_root / 'report.json').as_posix()}`")

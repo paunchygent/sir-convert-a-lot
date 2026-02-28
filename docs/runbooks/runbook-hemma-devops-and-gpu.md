@@ -15,6 +15,7 @@ tags:
   - sir-convert-a-lot
 links:
   - .agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md
+  - docs/converters/downstream_integration_contract_v2.md
   - /Users/olofs_mba/Documents/Repos/huledu-reboot/docs/operations/hemma-server-operations-huleedu.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-home-server.md
 ---
@@ -121,7 +122,7 @@ Command-surface guarantees:
 
 - `docker compose` v2 only (never `docker-compose`).
 - Compose builds one shared runtime image (`sir-convert-a-lot-runtime:*`) and
-  runs prod/eval as runtime overlays (different command/profile/ports).
+  runs one canonical conversion service (`sir_convert_a_lot_prod`).
 - Wrapper auto-derives `SIR_CONVERT_A_LOT_SERVICE_REVISION` from `git rev-parse HEAD`
   when unset, and defaults `SIR_CONVERT_A_LOT_EXPECTED_REVISION` to the same value.
 - Health remains `/readyz`-gated, so stale/mismatched revision/profile/data-root
@@ -153,7 +154,7 @@ Use deterministic compliance checks before GPU-governed conversion workloads:
 pdm run run-local-pdm hemma-verify-gpu-runtime
 ```
 
-For internal container validation only (`8085`/`8086`) with compose services:
+For internal container validation only (`8085`) with compose services:
 
 ```bash
 SIR_CONVERT_A_LOT_VERIFY_LANE=docker \
@@ -179,7 +180,7 @@ Compliance pass conditions:
 - `/readyz` passes with deterministic service invariants:
   - `service_revision` equals Hemma repo `HEAD`,
   - `service_profile` matches entrypoint profile,
-  - prod/eval data roots do not collide.
+  - `data_root` matches canonical configured runtime root.
 - `/healthz` remains liveness-only and should return `{"status":"ok",...}` when process is alive.
 - `/metrics` is available for Prometheus scraping on the service listener.
 - `rocm-smi` detects the GPU.
@@ -192,7 +193,7 @@ Compliance pass conditions:
 
 Produce deterministic, written evidence that the Hemma **docker lane** can execute the
 service API v2 critical routes end-to-end (`html -> pdf`, `md -> pdf`, `md -> docx`,
-`pdf -> docx`) while also confirming the locked v1 `pdf -> md` route still works.
+`pdf -> docx`, `pdf -> md`).
 
 Run from laptop (wrapper executes the verification remotely in `~/apps/sir-convert-a-lot`):
 
@@ -218,6 +219,10 @@ pdm run run-local-pdm run-hemma -- df -h
 pdm run run-local-pdm run-hemma --shell 'sudo -n docker system df'
 pdm run run-local-pdm run-hemma --shell 'sudo -n docker builder prune -af'
 ```
+
+For downstream GUI/backend integrations (Skriptoteket, HuleEdu, Projektveckor), use:
+
+- `docs/converters/downstream_integration_contract_v2.md`
 
 ## Tunnel Workflow (Local Dev from Any Repo)
 
