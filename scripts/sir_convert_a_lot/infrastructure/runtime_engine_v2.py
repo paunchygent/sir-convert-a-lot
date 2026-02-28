@@ -1,9 +1,8 @@
 """Sir Convert-a-Lot infrastructure runtime engine for service API v2.
 
 Purpose:
-    Provide filesystem-backed v2 job persistence, idempotency tracking, and
-    asynchronous conversion execution for multi-format conversion workflows
-    executed on Hemma (dockerized runtime).
+    Provide filesystem-backed v2 job persistence, idempotency tracking, and asynchronous conversion
+    execution for multi-format conversion workflows executed on Hemma (dockerized runtime).
 
 Relationships:
     - Consumed by v2 HTTP routes for service API v2 job lifecycle operations.
@@ -36,9 +35,18 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2 import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
+from scripts.sir_convert_a_lot.infrastructure.runtime_webhook_service_v2 import (
+    RuntimeWebhookServiceV2,
+)
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
     V2ExecutionResult,
     execute_v2_job_conversion,
+)
+from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import WebhookDeliveryWorkerV2
+from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2 import (
+    WebhookSecretVersionV2,
+    WebhookSubscriptionRecordV2,
+    WebhookSubscriptionStoreV2,
 )
 
 __all__ = ["JobStoreV2", "ServiceRuntimeV2", "StoredJobV2"]
@@ -58,6 +66,24 @@ class ServiceRuntimeV2:
         self.idempotency_store = IdempotencyStore(
             data_root=config.data_root,
             ttl_seconds=config.idempotency_ttl_seconds,
+        )
+        self.webhook_store = WebhookSubscriptionStoreV2(
+            data_root=config.data_root,
+            secret_overlap_seconds=config.webhook_secret_overlap_seconds,
+        )
+        self.webhook_delivery_worker: WebhookDeliveryWorkerV2 | None = None
+        if self.config.enable_webhook_delivery:
+            self.webhook_delivery_worker = WebhookDeliveryWorkerV2(
+                data_root=config.data_root,
+                subscription_store=self.webhook_store,
+            )
+            self.webhook_delivery_worker.start()
+        self.webhook_service = RuntimeWebhookServiceV2(
+            job_store=self.job_store,
+            webhook_store=self.webhook_store,
+            webhook_delivery_worker=self.webhook_delivery_worker,
+            enable_webhook_delivery=self.config.enable_webhook_delivery,
+            sse_replay_horizon_seconds=self.config.sse_replay_horizon_seconds,
         )
         self.docling_backend = DoclingConversionBackend()
         self.pymupdf_backend = PyMuPdfConversionBackend()
@@ -105,6 +131,8 @@ class ServiceRuntimeV2:
     def shutdown(self) -> None:
         """Stop background supervisor loops and release runtime resources."""
         self._shutdown_event.set()
+        if self.webhook_delivery_worker is not None:
+            self.webhook_delivery_worker.stop()
         if self._supervisor_thread is None:
             return
         if not self._supervisor_thread.is_alive():
@@ -114,6 +142,94 @@ class ServiceRuntimeV2:
 
     def _new_job_id(self) -> str:
         return f"jobv2_{uuid4().hex[:26]}"
+
+    def create_webhook_subscription(
+        self,
+        *,
+        api_key: str,
+        callback_url: str,
+        event_types: list[str],
+        enabled: bool,
+    ) -> tuple[WebhookSubscriptionRecordV2, str]:
+        """Create one webhook subscription and reveal the initial active secret."""
+        return self.webhook_service.create_webhook_subscription(
+            api_key=api_key,
+            callback_url=callback_url,
+            event_types=event_types,
+            enabled=enabled,
+        )
+
+    def list_webhook_subscriptions(self, *, api_key: str) -> list[WebhookSubscriptionRecordV2]:
+        """List webhook subscriptions scoped to one API key owner."""
+        return self.webhook_service.list_webhook_subscriptions(
+            api_key=api_key,
+        )
+
+    def get_webhook_subscription(
+        self,
+        *,
+        api_key: str,
+        subscription_id: str,
+    ) -> WebhookSubscriptionRecordV2:
+        """Get one webhook subscription scoped to one API key owner."""
+        return self.webhook_service.get_webhook_subscription(
+            api_key=api_key,
+            subscription_id=subscription_id,
+        )
+
+    def update_webhook_subscription(
+        self,
+        *,
+        api_key: str,
+        subscription_id: str,
+        callback_url: str | None,
+        event_types: list[str] | None,
+        enabled: bool | None,
+    ) -> WebhookSubscriptionRecordV2:
+        """Update mutable fields for one webhook subscription."""
+        return self.webhook_service.update_webhook_subscription(
+            api_key=api_key,
+            subscription_id=subscription_id,
+            callback_url=callback_url,
+            event_types=event_types,
+            enabled=enabled,
+        )
+
+    def rotate_webhook_secret(
+        self,
+        *,
+        api_key: str,
+        subscription_id: str,
+    ) -> tuple[WebhookSubscriptionRecordV2, str]:
+        """Rotate webhook secret and reveal the new next-version secret."""
+        return self.webhook_service.rotate_webhook_secret(
+            api_key=api_key,
+            subscription_id=subscription_id,
+        )
+
+    def revoke_webhook_secret(
+        self,
+        *,
+        api_key: str,
+        subscription_id: str,
+        version: WebhookSecretVersionV2 | None,
+    ) -> tuple[WebhookSubscriptionRecordV2, WebhookSecretVersionV2]:
+        """Revoke active/next webhook secret version for one subscription."""
+        return self.webhook_service.revoke_webhook_secret(
+            api_key=api_key,
+            subscription_id=subscription_id,
+            version=version,
+        )
+
+    def delete_webhook_subscription(self, *, api_key: str, subscription_id: str) -> None:
+        """Delete one webhook subscription for the API key owner."""
+        self.webhook_service.delete_webhook_subscription(
+            api_key=api_key,
+            subscription_id=subscription_id,
+        )
+
+    def _enqueue_webhook_events_for_job(self, *, job_id: str) -> None:
+        self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
 
     def get_job(self, job_id: str) -> StoredJobV2 | None:
         self.job_store.sweep_expired()
@@ -251,6 +367,7 @@ class ServiceRuntimeV2:
         stored = self.get_job(record.job_id)
         if stored is None:
             raise RuntimeError("created v2 job must be loadable immediately")
+        self._enqueue_webhook_events_for_job(job_id=record.job_id)
         return stored
 
     def cancel_job(
@@ -266,6 +383,7 @@ class ServiceRuntimeV2:
                 return "missing"
             except JobStateConflictV2:
                 return "conflict"
+            self._enqueue_webhook_events_for_job(job_id=job_id)
             return "accepted"
         if job.status == JobStatus.CANCELED:
             return "already_canceled"
@@ -303,6 +421,7 @@ class ServiceRuntimeV2:
 
             self.job_store.update_progress(job_id, status=JobStatus.RUNNING, stage="converting")
             self.job_store.touch_heartbeat(job_id)
+            self._enqueue_webhook_events_for_job(job_id=job_id)
             heartbeat_stop, heartbeat_thread = start_conversion_heartbeat_v2(
                 job_store=self.job_store,
                 job_id=job_id,
@@ -336,6 +455,7 @@ class ServiceRuntimeV2:
                     warnings=result.warnings,
                     phase_timings_ms=phase_timings_ms,
                 )
+                self._enqueue_webhook_events_for_job(job_id=job_id)
             except JobStateConflictV2:
                 return
             except ServiceError as exc:
@@ -353,6 +473,7 @@ class ServiceRuntimeV2:
                         details=exc.details,
                         phase_timings_ms={"conversion_attempt_ms": conversion_elapsed_ms},
                     )
+                    self._enqueue_webhook_events_for_job(job_id=job_id)
                 except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
                     return
             except Exception as exc:  # pragma: no cover - defensive fallback
@@ -370,6 +491,7 @@ class ServiceRuntimeV2:
                         details=None,
                         phase_timings_ms={"conversion_attempt_ms": conversion_elapsed_ms},
                     )
+                    self._enqueue_webhook_events_for_job(job_id=job_id)
                 except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
                     return
         finally:

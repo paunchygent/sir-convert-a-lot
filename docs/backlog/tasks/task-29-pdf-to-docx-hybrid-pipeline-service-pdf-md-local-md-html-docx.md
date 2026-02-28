@@ -2,10 +2,10 @@
 id: task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx
 title: PDF to DOCX service pipeline (API v2)
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-18'
-last_updated: '2026-02-18'
+last_updated: '2026-02-28'
 related:
   - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
   - docs/backlog/stories/story-08-cli-multi-format-routing-and-deterministic-manifests.md
@@ -66,32 +66,32 @@ WeasyPrint runtime.
 
 ## Deliverables
 
-- [ ] Service API v2 `pdf -> docx` route implementation.
-- [ ] Deterministic manifest emission for `pdf -> docx` via v2 from the CLI.
-- [ ] Tests covering orchestration, error mapping, and manifest stability.
-- [ ] CLI docs updated with `pdf -> docx` v2 usage.
+- [x] Service API v2 `pdf -> docx` route implementation.
+- [x] Deterministic manifest emission for `pdf -> docx` via v2 from the CLI.
+- [x] Tests covering orchestration, error mapping, and manifest stability.
+- [x] CLI docs updated with `pdf -> docx` v2 usage.
 
 ## Acceptance Criteria
 
-- [ ] Converting a fixture PDF to DOCX completes through the v2 service pipeline and produces a non-empty
+- [x] Converting a fixture PDF to DOCX completes through the v2 service pipeline and produces a non-empty
   DOCX artifact downloaded by the CLI.
-- [ ] Service v1 PDF-to-MD behavior and contract remain unchanged.
-- [ ] Route manifest entries include the service `job_id` and final DOCX `output_path`.
-- [ ] Missing Pandoc in the service runtime surfaces deterministic error codes and actionable messages.
-- [ ] Tests and docs-as-code gates pass.
+- [x] Service v1 PDF-to-MD behavior and contract remain unchanged.
+- [x] Route manifest entries include the service `job_id` and final DOCX `output_path`.
+- [x] Missing Pandoc in the service runtime surfaces deterministic error codes and actionable messages.
+- [x] Tests and docs-as-code gates pass.
 
 ## Validation Evidence
 
 - Local quality gates:
-  - `pdm run run-local-pdm format-all`
-  - `pdm run run-local-pdm lint-fix`
-  - `pdm run run-local-pdm typecheck-all`
-  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -q`
-  - `pdm run run-local-pdm validate-tasks`
-  - `pdm run run-local-pdm validate-docs`
+  - [x] `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 154 source files`,
+    2026-02-28)
+  - [x] `pdm run run-local-pdm coverage-gate` (pass: `373 passed, 5 skipped`, coverage `95.26%`,
+    2026-02-28)
+  - [x] `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`, 2026-02-28)
+  - [x] `pdm run run-local-pdm validate-docs` (pass: `Validated docs=106 rules=9`, 2026-02-28)
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

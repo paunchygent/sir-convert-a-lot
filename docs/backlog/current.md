@@ -199,11 +199,14 @@ Primary implementation stories:
       normalized async KPI target to `100%` within first 3 attempts across epic/story/ADR/contract,
       and defined explicit auth capability + rate-limit contract (`429 rate_limited` + `Retry-After`)
       for SSE and webhook onboarding surfaces.
-  - Completed Task 55 (`T13`) event/SSE implementation slice:
-    - added lifecycle event persistence (`event_id`, `sequence`, replay cursor) and v2 SSE stream route
-      with deterministic `410 cursor_expired`,
-    - updated adapter non-GPU E2E lane and passed full quality + coverage + docs validators,
-    - synchronized status/checkoff: Task 55 `completed`, Epic `T13` checked.
+  - Completed async-push implementation and operational sign-off (`T13-T16`):
+    - finalized webhook onboarding (`T14`), queue-backed delivery worker + retries/DLQ + signing/replay
+      controls (`T15`), and published async-push operations runbook + KPI template (`T16`).
+    - updated adapter non-GPU E2E in the same push-logic slice and passed full coverage gate
+      (`373 passed, 5 skipped`; coverage `93.03%`).
+    - synchronized status/checkoff order: Tasks 55/57/58/56 terminal, Story 15 terminal, Epic 05 terminal.
+  - Completed Task 60 security/resilience remediation: WeasyPrint fetch sandboxing (SSRF/LFI fail-closed), traversal guards for CSS/reference DOCX, Pandoc subprocess timeout enforcement, and HTML resource-validation parity for `html -> md/pdf/docx`.
+  - Validation for Task 60: targeted suite `62 passed`; full gate `388 passed, 5 skipped`, coverage `95.53%`; `typecheck-all` and docs/task validators pass.
 
 - 2026-02-18:
 
@@ -213,7 +216,5 @@ Primary implementation stories:
 
 ## Next Actions
 
-- Execute async-push production slice in epic listed order:
-  - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
-  - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
-  - `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
+- Epic 05 is complete; run post-implementation ruthless review and release-readiness verification.
+- Prepare next backlog slice after Epic 05 closeout and keep session handoff evidence synchronized.

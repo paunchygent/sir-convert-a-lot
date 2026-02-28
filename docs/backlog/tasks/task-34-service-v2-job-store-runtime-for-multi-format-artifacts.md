@@ -2,10 +2,10 @@
 id: task-34-service-v2-job-store-runtime-for-multi-format-artifacts
 title: Service v2 job store + runtime for multi-format artifacts
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-18'
-last_updated: '2026-02-18'
+last_updated: '2026-02-28'
 related:
   - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
   - docs/backlog/stories/story-08-cli-multi-format-routing-and-deterministic-manifests.md
@@ -48,24 +48,33 @@ jobs (md/html/pdf -> pdf/docx) with durable persistence and binary artifacts.
 
 ## Deliverables
 
-- [ ] v2 job store implementation exists (`jobs_v2/*` persistence).
-- [ ] v2 runtime engine implementation exists (async execution + recovery).
-- [ ] v2 HTTP routes exist for job lifecycle + artifact download.
-- [ ] Deterministic error envelope reuse across v1/v2 is preserved.
+- [x] v2 job store implementation exists (`jobs_v2/*` persistence).
+- [x] v2 runtime engine implementation exists (async execution + recovery).
+- [x] v2 HTTP routes exist for job lifecycle + artifact download.
+- [x] Deterministic error envelope reuse across v1/v2 is preserved.
 
 ## Acceptance Criteria
 
-- [ ] Local quality gates pass:
+- [x] Local quality gates pass:
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`
   - `pdm run run-local-pdm typecheck-all`
   - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -q`
   - `pdm run run-local-pdm validate-tasks`
   - `pdm run run-local-pdm validate-docs`
-- [ ] Follow-up hardening tasks are explicitly linked (zip-bomb limits, cancel CAS, SRP split).
+- [x] Follow-up hardening tasks are explicitly linked (zip-bomb limits, cancel CAS, SRP split).
+
+## Validation Evidence
+
+- [x] `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 154 source files`,
+  2026-02-28).
+- [x] `pdm run run-local-pdm coverage-gate` (pass: `373 passed, 5 skipped`, coverage `95.26%`,
+  2026-02-28).
+- [x] `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`, 2026-02-28).
+- [x] `pdm run run-local-pdm validate-docs` (pass: `Validated docs=106 rules=9`, 2026-02-28).
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

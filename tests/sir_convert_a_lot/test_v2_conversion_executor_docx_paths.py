@@ -168,7 +168,9 @@ def test_execute_v2_job_conversion_html_to_docx_success(
         output_docx_path: Path,
         resource_root: Path,
         reference_docx_path: Path | None,
+        timeout_seconds: int = 300,
     ) -> None:
+        del timeout_seconds
         html_docx_calls.append((html_path, output_docx_path, resource_root, reference_docx_path))
         output_docx_path.write_bytes(b"stub-html-docx")
 
@@ -214,8 +216,9 @@ def test_execute_v2_job_conversion_html_to_docx_maps_converter_error(
         output_docx_path: Path,
         resource_root: Path,
         reference_docx_path: Path | None,
+        timeout_seconds: int = 300,
     ) -> None:
-        del html_path, output_docx_path, resource_root, reference_docx_path
+        del html_path, output_docx_path, resource_root, reference_docx_path, timeout_seconds
         raise HtmlToDocxConversionError(
             code="html_to_docx_failed",
             message="Pandoc failed to convert HTML to DOCX.",
@@ -250,6 +253,31 @@ def test_execute_v2_job_conversion_html_to_docx_maps_converter_error(
     assert error.retryable is False
 
 
+def test_execute_v2_job_conversion_html_to_docx_rejects_missing_local_resource(
+    tmp_path: Path,
+) -> None:
+    job = _build_job(
+        tmp_path,
+        source_filename="page.html",
+        source_bytes=b"<html><body><img src='assets/logo.png'></body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.DOCX,
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        execute_v2_job_conversion(
+            job=job,
+            config=_service_config(tmp_path),
+            docling_backend=_UnusedBackend(),
+            pymupdf_backend=_UnusedBackend(),
+        )
+
+    error = exc_info.value
+    assert error.status_code == 422
+    assert error.code == "html_resource_not_found"
+    assert error.details == {"missing_resources": ["assets/logo.png"]}
+
+
 def test_execute_v2_job_conversion_md_to_docx_success(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -257,7 +285,13 @@ def test_execute_v2_job_conversion_md_to_docx_success(
     markdown_calls: list[tuple[Path, Path]] = []
     html_docx_calls: list[tuple[Path, Path, Path, Path | None]] = []
 
-    def _fake_convert_markdown_to_html(*, markdown_path: Path, output_html_path: Path) -> None:
+    def _fake_convert_markdown_to_html(
+        *,
+        markdown_path: Path,
+        output_html_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del timeout_seconds
         markdown_calls.append((markdown_path, output_html_path))
         output_html_path.write_text("<html><body>Converted MD</body></html>", encoding="utf-8")
 
@@ -267,7 +301,9 @@ def test_execute_v2_job_conversion_md_to_docx_success(
         output_docx_path: Path,
         resource_root: Path,
         reference_docx_path: Path | None,
+        timeout_seconds: int = 300,
     ) -> None:
+        del timeout_seconds
         html_docx_calls.append((html_path, output_docx_path, resource_root, reference_docx_path))
         output_docx_path.write_bytes(b"stub-md-docx")
 
@@ -310,8 +346,13 @@ def test_execute_v2_job_conversion_md_to_docx_maps_markdown_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    def _failing_convert_markdown_to_html(*, markdown_path: Path, output_html_path: Path) -> None:
-        del markdown_path, output_html_path
+    def _failing_convert_markdown_to_html(
+        *,
+        markdown_path: Path,
+        output_html_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del markdown_path, output_html_path, timeout_seconds
         raise MarkdownToHtmlConversionError(
             code="pandoc_not_installed",
             message="Pandoc missing.",
@@ -323,8 +364,9 @@ def test_execute_v2_job_conversion_md_to_docx_maps_markdown_error(
         output_docx_path: Path,
         resource_root: Path,
         reference_docx_path: Path | None,
+        timeout_seconds: int = 300,
     ) -> None:
-        del html_path, output_docx_path, resource_root, reference_docx_path
+        del html_path, output_docx_path, resource_root, reference_docx_path, timeout_seconds
         raise AssertionError("convert_html_to_docx should not run when markdown conversion fails.")
 
     monkeypatch.setattr(
@@ -363,8 +405,13 @@ def test_execute_v2_job_conversion_md_to_docx_maps_html_to_docx_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    def _fake_convert_markdown_to_html(*, markdown_path: Path, output_html_path: Path) -> None:
-        del markdown_path
+    def _fake_convert_markdown_to_html(
+        *,
+        markdown_path: Path,
+        output_html_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del markdown_path, timeout_seconds
         output_html_path.write_text("<html><body>Interim</body></html>", encoding="utf-8")
 
     def _failing_convert_html_to_docx(
@@ -373,8 +420,9 @@ def test_execute_v2_job_conversion_md_to_docx_maps_html_to_docx_error(
         output_docx_path: Path,
         resource_root: Path,
         reference_docx_path: Path | None,
+        timeout_seconds: int = 300,
     ) -> None:
-        del html_path, output_docx_path, resource_root, reference_docx_path
+        del html_path, output_docx_path, resource_root, reference_docx_path, timeout_seconds
         raise HtmlToDocxConversionError(
             code="html_to_docx_failed",
             message="Pandoc failed.",

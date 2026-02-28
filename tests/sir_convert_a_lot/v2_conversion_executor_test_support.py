@@ -52,6 +52,7 @@ def _build_job_spec(
     css_filenames: list[str] | None = None,
     template: dict[str, str | None] | None = None,
     reference_docx_filename: str | None = None,
+    execution_timeout_seconds: int | None = None,
 ) -> JobSpecV2:
     payload: dict[str, object] = {
         "api_version": "v2",
@@ -75,10 +76,13 @@ def _build_job_spec(
             "table_mode": "fast",
             "normalize": "standard",
         }
+    if source_format == SourceFormatV2.PDF or execution_timeout_seconds is not None:
         payload["execution"] = {
             "acceleration_policy": "cpu_only",
             "priority": "normal",
-            "document_timeout_seconds": 1800,
+            "document_timeout_seconds": (
+                1800 if execution_timeout_seconds is None else execution_timeout_seconds
+            ),
         }
     return JobSpecV2.model_validate(payload)
 
@@ -96,6 +100,7 @@ def _build_job(
     reference_docx_path: Path | None = None,
     spec_source_format: SourceFormatV2 | None = None,
     spec_output_format: OutputFormatV2 | None = None,
+    execution_timeout_seconds: int | None = None,
 ) -> StoredJobV2:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -117,6 +122,7 @@ def _build_job(
         css_filenames=css_filenames,
         template=template,
         reference_docx_filename=reference_docx_filename,
+        execution_timeout_seconds=execution_timeout_seconds,
     )
     now = datetime.now(UTC)
     return StoredJobV2(

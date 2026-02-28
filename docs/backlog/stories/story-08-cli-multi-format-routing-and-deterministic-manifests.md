@@ -2,10 +2,10 @@
 id: story-08-cli-multi-format-routing-and-deterministic-manifests
 title: CLI multi-format routing and deterministic manifests
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-18'
-last_updated: '2026-02-18'
+last_updated: '2026-02-28'
 related:
   - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
   - docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md
@@ -34,6 +34,11 @@ to a multi-format conversion router while preserving:
 
 This story is the CLI “spine” that all converter parity work plugs into.
 
+Historical note:
+
+- The original “locked v1 pdf->md” compatibility language in this story has been superseded by
+  Epic 05 v2-only clean-break execution. Route unification is now fully v2.
+
 ## Scope
 
 - Define and document a conversion **route taxonomy** (source kind → target format):
@@ -59,24 +64,25 @@ This story is the CLI “spine” that all converter parity work plugs into.
 
 ## Acceptance Criteria
 
-- [ ] Critical pipeline set is implemented and documented:
+- [x] Critical pipeline set is implemented and documented:
   - `pdf -> md`
   - `pdf -> docx`
   - `md -> html -> pdf`
   - `md -> html -> docx`
   - `html + css -> pdf`
-- [ ] CLI supports at least the full set of **planned** routes from the capability matrix
+- [x] CLI supports at least the full set of **planned** routes from the capability matrix
   (even if some executors are initially stubbed behind “not yet implemented” errors).
-- [ ] PDF-to-MD route remains unchanged for existing users (same defaults, same manifest shape).
-- [ ] Route selection is deterministic and transparent (documented and test-covered).
-- [ ] Manifest conventions for non-PDF-to-MD routes are specified and validated by tests.
-- [ ] CLI documentation is updated with examples for each route group.
+- [x] PDF-to-MD route remained stable through Epic 04 delivery and was later unified under v2 in
+  Epic 05 clean-break execution.
+- [x] Route selection is deterministic and transparent (documented and test-covered).
+- [x] Manifest conventions for non-PDF-to-MD routes are specified and validated by tests.
+- [x] CLI documentation is updated with examples for each route group.
 
 ## Test Requirements
 
-- [ ] Unit tests for route inference (`--from` override, file extension inference, directory scans).
-- [ ] Unit tests for manifest emission ordering and error-code mapping.
-- [ ] CLI golden tests for `--dry-run` output (stable).
+- [x] Unit tests for route inference (`--from` override, file extension inference, directory scans).
+- [x] Unit tests for manifest emission ordering and error-code mapping.
+- [x] CLI golden tests for `--dry-run` output (stable).
 
 ## Done Definition
 
@@ -85,6 +91,6 @@ stable routing, documented semantics, and regression coverage.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

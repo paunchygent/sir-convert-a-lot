@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-02-18'
-last_updated: '2026-02-18'
+last_updated: '2026-02-28'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
@@ -139,13 +139,13 @@ Ordered tasks:
 - [x] `docs/backlog/tasks/task-32-html-css-to-pdf-route-weasyprint-with-deterministic-manifest.md` (converter primitive)
 - [x] `docs/backlog/tasks/task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint.md` (converter primitive)
 - [x] `docs/backlog/tasks/task-30-markdown-to-docx-via-html-intermediary-pandoc.md` (converter primitive)
-- [ ] `docs/backlog/tasks/task-33-service-multi-format-api-v2-contract-adr.md`
-- [ ] `docs/backlog/tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md`
+- [x] `docs/backlog/tasks/task-33-service-multi-format-api-v2-contract-adr.md`
+- [x] `docs/backlog/tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md`
 - [x] `docs/backlog/tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md`
 - [x] `docs/backlog/tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md`
 - [x] `docs/backlog/tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md`
-- [ ] `docs/backlog/tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md`
-- [ ] `docs/backlog/tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md`
+- [x] `docs/backlog/tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md`
+- [x] `docs/backlog/tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md`
 - [x] `docs/backlog/tasks/task-39-hemma-v2-conversion-smoke-verification.md`
 - [x] `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md`
 - [x] `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md`

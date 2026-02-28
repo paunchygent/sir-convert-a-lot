@@ -240,6 +240,135 @@ class JobLifecycleEventV2(BaseModel):
     sse_metrics: JobEventSseMetricsV2 | None = None
 
 
+WebhookEventTypeContractV2 = Literal[
+    "job.queued",
+    "job.running",
+    "job.succeeded",
+    "job.failed",
+    "job.canceled",
+]
+WebhookSecretVersionContractV2 = Literal["active", "next"]
+
+
+class WebhookSubscriptionCreateRequestV2(BaseModel):
+    """Request payload for webhook subscription creation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    callback_url: str
+    event_types: list[WebhookEventTypeContractV2]
+    enabled: bool = True
+
+
+class WebhookSubscriptionUpdateRequestV2(BaseModel):
+    """Request payload for webhook subscription update."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    callback_url: str | None = None
+    event_types: list[WebhookEventTypeContractV2] | None = None
+    enabled: bool | None = None
+
+
+class WebhookSecretRotateRequestV2(BaseModel):
+    """Request payload for webhook secret rotation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str | None = None
+
+
+class WebhookSecretRevokeRequestV2(BaseModel):
+    """Request payload for webhook secret revocation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: WebhookSecretVersionContractV2 | None = None
+
+
+class WebhookSubscriptionDataV2(BaseModel):
+    """Non-secret webhook subscription payload used in read/list responses."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    subscription_id: str
+    callback_url: str
+    event_types: list[WebhookEventTypeContractV2]
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class WebhookSecretRevealV2(BaseModel):
+    """Secret material revealed once at create/rotate time."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: WebhookSecretVersionContractV2
+    value: str
+    revealed_once: Literal[True] = True
+
+
+class WebhookSecretOverlapV2(BaseModel):
+    """Secret overlap metadata emitted by rotate/revoke operations."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    active_and_next_valid: bool
+    overlap_expires_at: datetime | None = None
+    overlap_hours: int
+
+
+class WebhookSubscriptionCreateResponseV2(BaseModel):
+    """Response payload for webhook subscription create operation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    subscription: WebhookSubscriptionDataV2
+    secret: WebhookSecretRevealV2
+
+
+class WebhookSubscriptionListResponseV2(BaseModel):
+    """Response payload for webhook subscription listing."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    subscriptions: list[WebhookSubscriptionDataV2] = Field(default_factory=list)
+
+
+class WebhookSubscriptionGetResponseV2(BaseModel):
+    """Response payload for one webhook subscription read."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    subscription: WebhookSubscriptionDataV2
+
+
+class WebhookSecretRotateResponseV2(BaseModel):
+    """Response payload for webhook secret rotation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    subscription_id: str
+    secret: WebhookSecretRevealV2
+    overlap: WebhookSecretOverlapV2
+
+
+class WebhookSecretRevokeResponseV2(BaseModel):
+    """Response payload for webhook secret revocation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    subscription_id: str
+    revoked_version: WebhookSecretVersionContractV2
+    overlap: WebhookSecretOverlapV2
+
+
 class ErrorEnvelopeV2(BaseModel):
     """Top-level error envelope for v2 responses."""
 

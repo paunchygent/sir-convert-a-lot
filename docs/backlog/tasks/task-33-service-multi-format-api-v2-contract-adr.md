@@ -2,10 +2,10 @@
 id: task-33-service-multi-format-api-v2-contract-adr
 title: Service multi-format API v2 contract + ADR
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-18'
-last_updated: '2026-02-18'
+last_updated: '2026-02-28'
 related:
   - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
   - docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md
@@ -41,18 +41,25 @@ conversions on Hemma.
 
 ## Deliverables
 
-- [ ] Converter contract doc exists and is contract-valid
-- [ ] ADR exists and is contract-valid
-- [ ] Epic/story/task graph updated to reflect v2 pivot
+- [x] Converter contract doc exists and is contract-valid
+- [x] ADR exists and is contract-valid
+- [x] Epic/story/task graph updated to reflect v2 pivot
 
 ## Acceptance Criteria
 
-- [ ] `pdm run run-local-pdm validate-docs` passes
-- [ ] `pdm run run-local-pdm validate-tasks` passes
-- [ ] Contract explicitly preserves locked v1 scope while defining v2 expansion surface
+- [x] `pdm run run-local-pdm validate-docs` passes
+- [x] `pdm run run-local-pdm validate-tasks` passes
+- [x] Contract explicitly preserves locked v1 scope while defining v2 expansion surface
+
+## Validation Evidence
+
+- [x] `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`, 2026-02-28).
+- [x] `pdm run run-local-pdm validate-docs` (pass: `Validated docs=106 rules=9`, 2026-02-28).
+- [x] `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+  (pass: `/tmp/sir_tasks_index.md`, 2026-02-28).
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

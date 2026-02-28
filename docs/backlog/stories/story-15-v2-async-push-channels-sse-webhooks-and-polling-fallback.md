@@ -2,7 +2,7 @@
 id: story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback
 title: V2 async push channels SSE webhooks and polling fallback
 type: story
-status: in_progress
+status: completed
 priority: critical
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -74,9 +74,9 @@ Out of scope:
 - [x] ADR is approved and linked from story/tasks.
 - [x] V2 async push contract doc is normative and complete for SSE + webhooks + polling fallback.
 - [x] Push implementation provides deterministic event semantics (ordering/idempotency/terminal behavior).
-- [ ] Webhook security controls are implemented and validated (signature, timestamp, replay window).
-- [ ] Rollout/rollback controls are documented and verified for safe disable.
-- [ ] Push rollout meets production targets:
+- [x] Webhook security controls are implemented and validated (signature, timestamp, replay window).
+- [x] Rollout/rollback controls are documented and verified for safe disable.
+- [x] Push rollout meets production targets:
   - polling request rate reduced by at least 60% for push-enabled clients,
   - SSE propagation p95 \<= 2s,
   - webhook initial delivery p95 \<= 5s and success >= 100% within first 3 attempts.
@@ -95,8 +95,8 @@ Out of scope:
 ## Test Requirements
 
 - [x] End-to-end SSE stream verification for active + terminal job states.
-- [ ] Webhook success/failure retry behavior and terminal-state callback behavior are proven.
-- [ ] Negative security tests cover signature mismatch, stale timestamp, and replay attempts.
+- [x] Webhook success/failure retry behavior and terminal-state callback behavior are proven.
+- [x] Negative security tests cover signature mismatch, stale timestamp, and replay attempts.
 - [x] Polling fallback remains functional and unchanged for clients that do not adopt push.
 - [x] Adapter non-GPU E2E conformance test is updated in the same push-logic PR immediately after implementation changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
 - [x] Replay expiry behavior is validated (`410 cursor_expired` for stale cursors beyond retention horizon).
@@ -109,6 +109,6 @@ contract/ops surface is documented and test-backed for downstream integrations.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

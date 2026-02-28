@@ -22,6 +22,8 @@ from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import PAN
 
 HTML_TO_MARKDOWN_FAILED = "html_to_markdown_failed"
 HTML_TO_MARKDOWN_EMPTY = "html_to_markdown_empty"
+HTML_TO_MARKDOWN_TIMEOUT = "html_to_markdown_timeout"
+PANDOC_DEFAULT_TIMEOUT_SECONDS = 300
 
 
 @dataclass(frozen=True)
@@ -40,6 +42,7 @@ def convert_html_to_markdown(
     html_path: Path,
     output_markdown_path: Path,
     resource_root: Path,
+    timeout_seconds: int = PANDOC_DEFAULT_TIMEOUT_SECONDS,
 ) -> None:
     """Convert HTML to Markdown using the local `pandoc` binary."""
 
@@ -75,7 +78,13 @@ def convert_html_to_markdown(
             check=False,
             capture_output=True,
             text=True,
+            timeout=timeout_seconds,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise HtmlToMarkdownConversionError(
+            code=HTML_TO_MARKDOWN_TIMEOUT,
+            message=f"Pandoc timed out after {timeout_seconds} seconds.",
+        ) from exc
     except OSError as exc:
         raise HtmlToMarkdownConversionError(
             code=HTML_TO_MARKDOWN_FAILED,

@@ -18,6 +18,7 @@ import pytest
 from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_markdown import (
     HTML_TO_MARKDOWN_EMPTY,
     HTML_TO_MARKDOWN_FAILED,
+    HTML_TO_MARKDOWN_TIMEOUT,
     HtmlToMarkdownConversionError,
     convert_html_to_markdown,
 )
@@ -97,6 +98,33 @@ def test_convert_html_to_markdown_rejects_empty_output(
 
     error = exc_info.value
     assert error.code == HTML_TO_MARKDOWN_EMPTY
+
+
+def test_convert_html_to_markdown_maps_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    input_html = tmp_path / "input.html"
+    input_html.write_text("<html><body>Hello</body></html>", encoding="utf-8")
+    output_md = tmp_path / "out.md"
+
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/pandoc")
+
+    def _raise_timeout(*args: object, **kwargs: object) -> _Completed:
+        del args, kwargs
+        raise subprocess.TimeoutExpired(cmd=["pandoc"], timeout=5)
+
+    monkeypatch.setattr(subprocess, "run", _raise_timeout)
+
+    with pytest.raises(HtmlToMarkdownConversionError) as exc_info:
+        convert_html_to_markdown(
+            html_path=input_html,
+            output_markdown_path=output_md,
+            resource_root=tmp_path,
+        )
+
+    error = exc_info.value
+    assert error.code == HTML_TO_MARKDOWN_TIMEOUT
 
 
 def test_convert_html_to_markdown_success(

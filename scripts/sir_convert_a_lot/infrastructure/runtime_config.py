@@ -47,6 +47,11 @@ def service_config_from_env() -> ServiceConfig:
         os.getenv("SIR_CONVERT_A_LOT_SSE_POLL_INTERVAL_SECONDS", "0.05")
     )
     sse_stream_max_seconds = float(os.getenv("SIR_CONVERT_A_LOT_SSE_STREAM_MAX_SECONDS", "15.0"))
+    enable_webhook_onboarding = os.getenv("SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_ONBOARDING", "0") == "1"
+    webhook_secret_overlap_seconds = int(
+        os.getenv("SIR_CONVERT_A_LOT_WEBHOOK_SECRET_OVERLAP_SECONDS", str(24 * 3600))
+    )
+    enable_webhook_delivery = os.getenv("SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY", "0") == "1"
 
     enabled_unlock_envs = [name for name in CPU_UNLOCK_ENV_VARS if os.getenv(name) == "1"]
     if enabled_unlock_envs:
@@ -64,4 +69,7 @@ def service_config_from_env() -> ServiceConfig:
         sse_replay_horizon_seconds=sse_replay_horizon_seconds,
         sse_poll_interval_seconds=sse_poll_interval_seconds,
         sse_stream_max_seconds=sse_stream_max_seconds,
+        enable_webhook_onboarding=enable_webhook_onboarding,
+        webhook_secret_overlap_seconds=webhook_secret_overlap_seconds,
+        enable_webhook_delivery=enable_webhook_delivery,
     )

@@ -2,10 +2,10 @@
 id: task-35-cli-pivot-remote-only-routes-via-service-api-v2
 title: 'CLI pivot: remote-only routes via service API v2'
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-18'
-last_updated: '2026-02-18'
+last_updated: '2026-02-28'
 related: []
 labels: []
 ---
@@ -39,21 +39,28 @@ to `pdf -> md`.
 
 ## Deliverables
 
-- [ ] `convert-a-lot routes` reflects v2-backed multi-format routes.
-- [ ] CLI submits v2 jobs for `html/md/pdf -> pdf/docx` conversions and downloads artifacts.
-- [ ] `--css`, `--reference-docx`, and optional `--resources` are supported as v2 uploads.
-- [ ] Tests updated to match remote-only behavior.
-- [ ] CLI docs updated.
+- [x] `convert-a-lot routes` reflects v2-backed multi-format routes.
+- [x] CLI submits v2 jobs for `html/md/pdf -> pdf/docx` conversions and downloads artifacts.
+- [x] `--css`, `--reference-docx`, and optional `--resources` are supported as v2 uploads.
+- [x] Tests updated to match remote-only behavior.
+- [x] CLI docs updated.
 
 ## Acceptance Criteria
 
-- [ ] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -q` passes without requiring local
+- [x] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -q` passes without requiring local
   Pandoc/WeasyPrint binaries.
-- [ ] CLI produces deterministic manifests that include v2 `job_id` and final artifact paths.
-- [ ] v1 service contract remains unchanged and continues to support `pdf -> md` only.
+- [x] CLI produces deterministic manifests that include v2 `job_id` and final artifact paths.
+- [x] v1 service contract remains unchanged and continues to support `pdf -> md` only.
+
+## Validation Evidence
+
+- [x] `pdm run run-local-pdm coverage-gate` (pass: `373 passed, 5 skipped`, coverage `95.26%`,
+  2026-02-28).
+- [x] `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`, 2026-02-28).
+- [x] `pdm run run-local-pdm validate-docs` (pass: `Validated docs=106 rules=9`, 2026-02-28).
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

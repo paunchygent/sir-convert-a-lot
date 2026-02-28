@@ -2,7 +2,7 @@
 id: epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways
 title: V2 only unified conversion core and template first markdown pathways
 type: epic
-status: in_progress
+status: completed
 priority: critical
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -83,7 +83,7 @@ Completion rule:
 - [x] `S04` `docs/backlog/stories/story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification.md`
   (requires `T11-T12`)
 
-- [ ] `S05` `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md`
+- [x] `S05` `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md`
   (requires `T01-T03` and `T13-T16`)
 
 ## Tasks (Ordered Sprint Execution Checklist)
@@ -128,26 +128,26 @@ Execution rule:
 
 - [x] `T13` `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
 
-- [ ] `T14` `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
+- [x] `T14` `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
 
-- [ ] `T15` `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
+- [x] `T15` `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
 
-- [ ] `T16` `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
+- [x] `T16` `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
 
 ## Acceptance Criteria
 
-- [ ] No v1 conversion API surface remains in runtime or public CLI behavior.
-- [ ] `pdf -> md`, `docx -> md`, and `html -> md` are all served by v2 with deterministic contracts.
-- [ ] DOCX template catalog exists with at least three practical reference templates and typed API selection semantics.
-- [ ] Route taxonomy and manifest semantics are deterministic and explicit for downstream UI orchestration.
-- [ ] Eval container/profile and conflicting legacy runtime paths are removed.
-- [ ] Converter/ADR/runbook/backlog docs no longer describe stale v1 or local/hybrid behavior.
-- [ ] V2 async push model is documented and implemented with SSE/webhooks and polling fallback.
-- [ ] Async push readiness has measurable outcomes:
+- [x] No v1 conversion API surface remains in runtime or public CLI behavior.
+- [x] `pdf -> md`, `docx -> md`, and `html -> md` are all served by v2 with deterministic contracts.
+- [x] DOCX template catalog exists with at least three practical reference templates and typed API selection semantics.
+- [x] Route taxonomy and manifest semantics are deterministic and explicit for downstream UI orchestration.
+- [x] Eval container/profile and conflicting legacy runtime paths are removed.
+- [x] Converter/ADR/runbook/backlog docs no longer describe stale v1 or local/hybrid behavior.
+- [x] V2 async push model is documented and implemented with SSE/webhooks and polling fallback.
+- [x] Async push readiness has measurable outcomes:
   - polling request-rate reduced by >= 60% for push-enabled clients,
   - SSE propagation p95 \<= 2s,
   - webhook initial delivery p95 \<= 5s and success >= 100% within first 3 attempts.
-- [ ] Quality gates pass:
+- [x] Quality gates pass:
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`
   - `pdm run run-local-pdm typecheck-all`

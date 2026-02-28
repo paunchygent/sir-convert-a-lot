@@ -86,6 +86,7 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_conversion import execute_
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.weasyprint_html_to_pdf import (
+    HTML_TO_PDF_RESOURCE_BLOCKED,
     HtmlToPdfConversionError,
     convert_html_to_pdf,
 )
@@ -117,10 +118,63 @@ class ResolvedReferenceDocxV2:
     template_artifact_sha256: str | None = None
 
 
+DEFAULT_NON_PDF_DOCUMENT_TIMEOUT_SECONDS = 300
+
+
 def fingerprint_job_options(spec: JobSpecV2) -> str:
     """Return a deterministic SHA256 fingerprint for a v2 job spec."""
     normalized = json.dumps(spec.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _resolve_document_timeout_seconds(spec: JobSpecV2) -> int:
+    execution = spec.execution
+    if execution is None:
+        return DEFAULT_NON_PDF_DOCUMENT_TIMEOUT_SECONDS
+    return execution.document_timeout_seconds
+
+
+def _resolve_workdir_resource_path(
+    *,
+    workdir: Path,
+    filename: str,
+    field: str,
+    invalid_code: str,
+) -> Path:
+    candidate = (workdir / filename).resolve()
+    resolved_workdir = workdir.resolve()
+    if not candidate.is_relative_to(resolved_workdir):
+        raise ServiceError(
+            status_code=422,
+            code=invalid_code,
+            message=f"Resource path escapes workdir for field '{field}': {filename}",
+            retryable=False,
+            details={"field": field, "filename": filename},
+        )
+    return candidate
+
+
+def _validate_html_resources_for_route(*, input_path: Path, workdir: Path) -> None:
+    resource_validation = validate_html_local_resources(
+        html_path=input_path,
+        resource_root=workdir,
+    )
+    if resource_validation.invalid_references:
+        raise ServiceError(
+            status_code=422,
+            code="html_resource_invalid",
+            message="HTML input contains invalid local resource references.",
+            retryable=False,
+            details={"invalid_resources": resource_validation.invalid_references},
+        )
+    if resource_validation.missing_references:
+        raise ServiceError(
+            status_code=422,
+            code="html_resource_not_found",
+            message="HTML input references missing local resources.",
+            retryable=False,
+            details={"missing_resources": resource_validation.missing_references},
+        )
 
 
 def _resolve_reference_docx(*, job: StoredJobV2, workdir: Path) -> ResolvedReferenceDocxV2:
@@ -186,7 +240,12 @@ def _resolve_reference_docx(*, job: StoredJobV2, workdir: Path) -> ResolvedRefer
     filename = job.spec.conversion.reference_docx_filename
     if filename is None:
         return ResolvedReferenceDocxV2(path=None)
-    candidate = workdir / filename
+    candidate = _resolve_workdir_resource_path(
+        workdir=workdir,
+        filename=filename,
+        field="conversion.reference_docx_filename",
+        invalid_code="reference_docx_invalid",
+    )
     if not candidate.exists():
         raise ServiceError(
             status_code=422,
@@ -280,30 +339,40 @@ def _prepare_workdir(job: StoredJobV2) -> tuple[Path, Path]:
 
 def _map_converter_error(exc: Exception) -> ServiceError:
     if isinstance(exc, DocxToMarkdownConversionError):
-        retryable = exc.code.endswith("not_installed")
+        retryable = exc.code.endswith("not_installed") or exc.code.endswith("_timeout")
+        status_code = 504 if exc.code.endswith("_timeout") else (503 if retryable else 500)
         return ServiceError(
-            status_code=503 if retryable else 500,
+            status_code=status_code,
             code=exc.code,
             message=exc.message,
             retryable=retryable,
         )
     if isinstance(exc, HtmlToMarkdownConversionError):
-        retryable = exc.code.endswith("not_installed")
+        retryable = exc.code.endswith("not_installed") or exc.code.endswith("_timeout")
+        status_code = 504 if exc.code.endswith("_timeout") else (503 if retryable else 500)
         return ServiceError(
-            status_code=503 if retryable else 500,
+            status_code=status_code,
             code=exc.code,
             message=exc.message,
             retryable=retryable,
         )
     if isinstance(exc, MarkdownToHtmlConversionError):
-        retryable = exc.code.endswith("not_installed")
+        retryable = exc.code.endswith("not_installed") or exc.code.endswith("_timeout")
+        status_code = 504 if exc.code.endswith("_timeout") else (503 if retryable else 500)
         return ServiceError(
-            status_code=503 if retryable else 500,
+            status_code=status_code,
             code=exc.code,
             message=exc.message,
             retryable=retryable,
         )
     if isinstance(exc, HtmlToPdfConversionError):
+        if exc.code == HTML_TO_PDF_RESOURCE_BLOCKED:
+            return ServiceError(
+                status_code=422,
+                code=exc.code,
+                message=exc.message,
+                retryable=False,
+            )
         retryable = exc.code.endswith("not_installed") or exc.code.endswith("deps_missing")
         return ServiceError(
             status_code=503 if retryable else 500,
@@ -312,9 +381,10 @@ def _map_converter_error(exc: Exception) -> ServiceError:
             retryable=retryable,
         )
     if isinstance(exc, HtmlToDocxConversionError):
-        retryable = exc.code.endswith("not_installed")
+        retryable = exc.code.endswith("not_installed") or exc.code.endswith("_timeout")
+        status_code = 504 if exc.code.endswith("_timeout") else (503 if retryable else 500)
         return ServiceError(
-            status_code=503 if retryable else 500,
+            status_code=status_code,
             code=exc.code,
             message=exc.message,
             retryable=retryable,
@@ -334,6 +404,7 @@ def execute_v2_job_conversion(
     warnings: list[str] = []
     phase_timings_ms: dict[str, int] = {}
     options_fingerprint = fingerprint_job_options(job.spec)
+    document_timeout_seconds = _resolve_document_timeout_seconds(job.spec)
 
     pipeline_used: str
     backend_used: str | None = None
@@ -341,6 +412,9 @@ def execute_v2_job_conversion(
     template_id: str | None = None
     template_version: str | None = None
     template_artifact_sha256: str | None = None
+
+    if job.source_format == SourceFormatV2.HTML:
+        _validate_html_resources_for_route(input_path=input_path, workdir=workdir)
 
     if job.source_format == SourceFormatV2.DOCX and job.output_format == OutputFormatV2.MD:
         pipeline_used = "docx_to_md_v2"
@@ -360,6 +434,7 @@ def execute_v2_job_conversion(
             convert_docx_to_markdown(
                 docx_path=input_path,
                 output_markdown_path=intermediate_markdown,
+                timeout_seconds=document_timeout_seconds,
             )
         except DocxToMarkdownConversionError as exc:
             if exc.code == DOCX_TO_MARKDOWN_UNREADABLE:
@@ -382,33 +457,13 @@ def execute_v2_job_conversion(
         pipeline_used = "html_to_md_v2"
         backend_used = "pandoc"
 
-        resource_validation = validate_html_local_resources(
-            html_path=input_path,
-            resource_root=workdir,
-        )
-        if resource_validation.invalid_references:
-            raise ServiceError(
-                status_code=422,
-                code="html_resource_invalid",
-                message="HTML input contains invalid local resource references.",
-                retryable=False,
-                details={"invalid_resources": resource_validation.invalid_references},
-            )
-        if resource_validation.missing_references:
-            raise ServiceError(
-                status_code=422,
-                code="html_resource_not_found",
-                message="HTML input references missing local resources.",
-                retryable=False,
-                details={"missing_resources": resource_validation.missing_references},
-            )
-
         intermediate_markdown = workdir / input_path.with_suffix(".md").name
         try:
             convert_html_to_markdown(
                 html_path=input_path,
                 output_markdown_path=intermediate_markdown,
                 resource_root=workdir,
+                timeout_seconds=document_timeout_seconds,
             )
         except (HtmlToMarkdownConversionError,) as exc:
             raise _map_converter_error(exc) from exc
@@ -423,7 +478,15 @@ def execute_v2_job_conversion(
     elif job.source_format == SourceFormatV2.HTML and job.output_format == OutputFormatV2.PDF:
         pipeline_used = "html_to_pdf_v2"
         backend_used = "weasyprint"
-        css_paths = tuple((workdir / name) for name in job.spec.conversion.css_filenames)
+        css_paths = tuple(
+            _resolve_workdir_resource_path(
+                workdir=workdir,
+                filename=name,
+                field="conversion.css_filenames",
+                invalid_code="css_invalid",
+            )
+            for name in job.spec.conversion.css_filenames
+        )
         for css_path in css_paths:
             if not css_path.exists():
                 raise ServiceError(
@@ -439,6 +502,7 @@ def execute_v2_job_conversion(
                 output_pdf_path=job.artifact_path,
                 css_paths=css_paths,
                 base_url=workdir.resolve().as_uri(),
+                allowed_resource_root=workdir,
             )
         except (HtmlToPdfConversionError,) as exc:
             raise _map_converter_error(exc) from exc
@@ -456,6 +520,7 @@ def execute_v2_job_conversion(
                 output_docx_path=job.artifact_path,
                 resource_root=workdir,
                 reference_docx_path=reference_docx.path,
+                timeout_seconds=document_timeout_seconds,
             )
         except (HtmlToDocxConversionError,) as exc:
             raise _map_converter_error(exc) from exc
@@ -463,7 +528,15 @@ def execute_v2_job_conversion(
     elif job.source_format == SourceFormatV2.MD and job.output_format == OutputFormatV2.PDF:
         pipeline_used = "md_to_pdf_v2"
         backend_used = "pandoc+weasyprint"
-        css_paths = tuple((workdir / name) for name in job.spec.conversion.css_filenames)
+        css_paths = tuple(
+            _resolve_workdir_resource_path(
+                workdir=workdir,
+                filename=name,
+                field="conversion.css_filenames",
+                invalid_code="css_invalid",
+            )
+            for name in job.spec.conversion.css_filenames
+        )
         for css_path in css_paths:
             if not css_path.exists():
                 raise ServiceError(
@@ -479,12 +552,14 @@ def execute_v2_job_conversion(
             convert_markdown_to_html(
                 markdown_path=input_path,
                 output_html_path=intermediate_html,
+                timeout_seconds=document_timeout_seconds,
             )
             convert_html_to_pdf(
                 html_path=intermediate_html,
                 output_pdf_path=job.artifact_path,
                 css_paths=css_paths,
                 base_url=workdir.resolve().as_uri(),
+                allowed_resource_root=workdir,
             )
         except (MarkdownToHtmlConversionError, HtmlToPdfConversionError) as exc:
             raise _map_converter_error(exc) from exc
@@ -501,12 +576,14 @@ def execute_v2_job_conversion(
             convert_markdown_to_html(
                 markdown_path=input_path,
                 output_html_path=intermediate_html,
+                timeout_seconds=document_timeout_seconds,
             )
             convert_html_to_docx(
                 html_path=intermediate_html,
                 output_docx_path=job.artifact_path,
                 resource_root=workdir,
                 reference_docx_path=reference_docx.path,
+                timeout_seconds=document_timeout_seconds,
             )
         except (MarkdownToHtmlConversionError, HtmlToDocxConversionError) as exc:
             raise _map_converter_error(exc) from exc
@@ -615,12 +692,14 @@ def execute_v2_job_conversion(
                 convert_markdown_to_html(
                     markdown_path=intermediate_md,
                     output_html_path=intermediate_html,
+                    timeout_seconds=document_timeout_seconds,
                 )
                 convert_html_to_docx(
                     html_path=intermediate_html,
                     output_docx_path=job.artifact_path,
                     resource_root=workdir,
                     reference_docx_path=reference_docx.path,
+                    timeout_seconds=document_timeout_seconds,
                 )
             except (MarkdownToHtmlConversionError, HtmlToDocxConversionError) as exc:
                 raise _map_converter_error(exc) from exc

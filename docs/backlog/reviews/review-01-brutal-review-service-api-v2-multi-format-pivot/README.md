@@ -2,7 +2,7 @@
 id: review-01-brutal-review-service-api-v2-multi-format-pivot
 title: 'Brutal review: service API v2 multi-format pivot'
 type: review
-status: responded
+status: completed
 priority: critical
 created: '2026-02-18'
 last_updated: '2026-02-28'
@@ -721,10 +721,21 @@ Status lifecycle for this review:
 - `responded`: owner directive accepted and tracked via epic/stories/tasks.
 - `completed`: all linked mandatory tasks are complete with validation evidence and docs/rules sync.
 
+Close-out evidence:
+
+- Epic closure: `docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md`
+  is `status: completed`.
+- Story closure: `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md`
+  is `status: completed`.
+- Validation re-run on 2026-02-28:
+  - `pdm run run-local-pdm coverage-gate` -> `373 passed, 5 skipped`, coverage `95.26%`.
+  - `pdm run run-local-pdm validate-tasks` -> `Validated 84 backlog files`.
+  - `pdm run run-local-pdm validate-docs` -> `Validated docs=106 rules=9`.
+
 ## Checklist
 
 - [x] Findings captured
 - [x] Decision recorded
 - [x] Response recorded
 - [x] Follow-up tasks linked
-- [ ] Review closed
+- [x] Review closed

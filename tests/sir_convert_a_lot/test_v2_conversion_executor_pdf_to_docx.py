@@ -191,7 +191,13 @@ def test_execute_v2_job_conversion_pdf_to_docx_success_with_stubbed_stages(
             {"backend_convert_ms": 12, "normalize_ms": 3},
         )
 
-    def _fake_convert_markdown_to_html(*, markdown_path: Path, output_html_path: Path) -> None:
+    def _fake_convert_markdown_to_html(
+        *,
+        markdown_path: Path,
+        output_html_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del timeout_seconds
         markdown_calls.append((markdown_path, output_html_path))
         output_html_path.write_text("<html><body>Converted</body></html>", encoding="utf-8")
 
@@ -201,7 +207,9 @@ def test_execute_v2_job_conversion_pdf_to_docx_success_with_stubbed_stages(
         output_docx_path: Path,
         resource_root: Path,
         reference_docx_path: Path | None,
+        timeout_seconds: int = 300,
     ) -> None:
+        del timeout_seconds
         html_docx_calls.append((html_path, output_docx_path, resource_root, reference_docx_path))
         output_docx_path.write_bytes(b"stub-pdf-docx")
 

@@ -15,6 +15,7 @@ tags:
   - sir-convert-a-lot
 links:
   - .agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md
+  - docs/runbooks/runbook-v2-async-push-delivery.md
   - docs/converters/downstream_integration_contract_v2.md
   - /Users/olofs_mba/Documents/Repos/huledu-reboot/docs/operations/hemma-server-operations-huleedu.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-home-server.md

@@ -23,6 +23,8 @@ from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import PAN
 
 HTML_TO_DOCX_FAILED = "html_to_docx_failed"
 HTML_TO_DOCX_EMPTY = "html_to_docx_empty"
+HTML_TO_DOCX_TIMEOUT = "html_to_docx_timeout"
+PANDOC_DEFAULT_TIMEOUT_SECONDS = 300
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,7 @@ def convert_html_to_docx(
     output_docx_path: Path,
     resource_root: Path,
     reference_docx_path: Path | None,
+    timeout_seconds: int = PANDOC_DEFAULT_TIMEOUT_SECONDS,
 ) -> None:
     """Convert HTML to DOCX using the local `pandoc` binary."""
 
@@ -79,7 +82,13 @@ def convert_html_to_docx(
             check=False,
             capture_output=True,
             text=True,
+            timeout=timeout_seconds,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise HtmlToDocxConversionError(
+            code=HTML_TO_DOCX_TIMEOUT,
+            message=f"Pandoc timed out after {timeout_seconds} seconds.",
+        ) from exc
     except OSError as exc:
         raise HtmlToDocxConversionError(
             code=HTML_TO_DOCX_FAILED,

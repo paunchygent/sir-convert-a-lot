@@ -42,10 +42,17 @@ class ServiceConfig:
     allow_cpu_fallback: bool = False
     processing_delay_seconds: float = 0.2
     heartbeat_interval_seconds: float = 5.0
+    api_capabilities: frozenset[str] = field(
+        default_factory=lambda: frozenset({"jobs:read", "push:read", "push:write"})
+    )
     enable_sse_stream: bool = False
     sse_replay_horizon_seconds: int = 24 * 3600
     sse_poll_interval_seconds: float = 0.05
     sse_stream_max_seconds: float = 15.0
+    enable_webhook_push: bool = False
+    webhook_secret_overlap_seconds: int = 24 * 3600
+    enable_webhook_onboarding: bool = False
+    enable_webhook_delivery: bool = False
 
 
 @dataclass(frozen=True)

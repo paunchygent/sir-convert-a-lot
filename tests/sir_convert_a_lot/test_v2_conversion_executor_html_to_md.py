@@ -41,8 +41,9 @@ def test_execute_v2_job_conversion_html_to_md_success(
         html_path: Path,
         output_markdown_path: Path,
         resource_root: Path,
+        timeout_seconds: int = 300,
     ) -> None:
-        del html_path, resource_root
+        del html_path, resource_root, timeout_seconds
         output_markdown_path.write_text("raw markdown with [MISSING_PAGE_POST]\n", encoding="utf-8")
 
     def _fake_normalize_markdown_for_v2_md_output(
@@ -147,7 +148,9 @@ def test_execute_v2_job_conversion_html_to_md_with_resources_zip(
         html_path: Path,
         output_markdown_path: Path,
         resource_root: Path,
+        timeout_seconds: int = 300,
     ) -> None:
+        del timeout_seconds
         assert (resource_root / "assets" / "logo.png").exists()
         assert html_path.name == "index.html"
         output_markdown_path.write_text("# Converted\n\nBody\n", encoding="utf-8")
@@ -190,8 +193,9 @@ def test_execute_v2_job_conversion_html_to_md_maps_converter_error(
         html_path: Path,
         output_markdown_path: Path,
         resource_root: Path,
+        timeout_seconds: int = 300,
     ) -> None:
-        del html_path, output_markdown_path, resource_root
+        del html_path, output_markdown_path, resource_root, timeout_seconds
         raise HtmlToMarkdownConversionError(
             code="html_to_markdown_failed",
             message="Pandoc failed to convert HTML to Markdown.",
@@ -223,3 +227,86 @@ def test_execute_v2_job_conversion_html_to_md_maps_converter_error(
     assert error.status_code == 500
     assert error.code == "html_to_markdown_failed"
     assert error.retryable is False
+
+
+def test_execute_v2_job_conversion_html_to_md_uses_timeout_from_execution_spec(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured_timeout_seconds: list[int] = []
+
+    def _fake_convert_html_to_markdown(
+        *,
+        html_path: Path,
+        output_markdown_path: Path,
+        resource_root: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del html_path, resource_root
+        captured_timeout_seconds.append(timeout_seconds)
+        output_markdown_path.write_text("# Converted\n\nBody\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        v2_conversion_executor,
+        "convert_html_to_markdown",
+        _fake_convert_html_to_markdown,
+    )
+
+    job = _build_job(
+        tmp_path,
+        source_filename="index.html",
+        source_bytes=b"<html><body>Hello</body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.MD,
+        execution_timeout_seconds=45,
+    )
+
+    execute_v2_job_conversion(
+        job=job,
+        config=_service_config(tmp_path),
+        docling_backend=_UnusedBackend(),
+        pymupdf_backend=_UnusedBackend(),
+    )
+
+    assert captured_timeout_seconds == [45]
+
+
+def test_execute_v2_job_conversion_html_to_md_uses_default_timeout_without_execution_spec(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured_timeout_seconds: list[int] = []
+
+    def _fake_convert_html_to_markdown(
+        *,
+        html_path: Path,
+        output_markdown_path: Path,
+        resource_root: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del html_path, resource_root
+        captured_timeout_seconds.append(timeout_seconds)
+        output_markdown_path.write_text("# Converted\n\nBody\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        v2_conversion_executor,
+        "convert_html_to_markdown",
+        _fake_convert_html_to_markdown,
+    )
+
+    job = _build_job(
+        tmp_path,
+        source_filename="index.html",
+        source_bytes=b"<html><body>Hello</body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.MD,
+    )
+
+    execute_v2_job_conversion(
+        job=job,
+        config=_service_config(tmp_path),
+        docling_backend=_UnusedBackend(),
+        pymupdf_backend=_UnusedBackend(),
+    )
+
+    assert captured_timeout_seconds == [300]

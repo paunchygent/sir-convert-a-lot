@@ -24,6 +24,8 @@ import yaml
 PANDOC_NOT_INSTALLED = "pandoc_not_installed"
 MARKDOWN_TO_HTML_FAILED = "markdown_to_html_failed"
 MARKDOWN_TO_HTML_EMPTY = "markdown_to_html_empty"
+MARKDOWN_TO_HTML_TIMEOUT = "markdown_to_html_timeout"
+PANDOC_DEFAULT_TIMEOUT_SECONDS = 300
 
 
 @dataclass(frozen=True)
@@ -64,6 +66,7 @@ def convert_markdown_to_html(
     *,
     markdown_path: Path,
     output_html_path: Path,
+    timeout_seconds: int = PANDOC_DEFAULT_TIMEOUT_SECONDS,
 ) -> None:
     """Convert Markdown to standalone HTML using the local `pandoc` binary."""
 
@@ -95,7 +98,13 @@ def convert_markdown_to_html(
             check=False,
             capture_output=True,
             text=True,
+            timeout=timeout_seconds,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise MarkdownToHtmlConversionError(
+            code=MARKDOWN_TO_HTML_TIMEOUT,
+            message=f"Pandoc timed out after {timeout_seconds} seconds.",
+        ) from exc
     except OSError as exc:
         raise MarkdownToHtmlConversionError(
             code=MARKDOWN_TO_HTML_FAILED,

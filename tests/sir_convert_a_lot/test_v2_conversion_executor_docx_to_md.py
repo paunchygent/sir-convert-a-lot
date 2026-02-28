@@ -36,8 +36,13 @@ def test_execute_v2_job_conversion_docx_to_md_success(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    def _fake_convert_docx_to_markdown(*, docx_path: Path, output_markdown_path: Path) -> None:
-        del docx_path
+    def _fake_convert_docx_to_markdown(
+        *,
+        docx_path: Path,
+        output_markdown_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del docx_path, timeout_seconds
         output_markdown_path.write_text("raw markdown with [MISSING_PAGE_POST]\n", encoding="utf-8")
 
     def _fake_normalize_markdown_for_v2_md_output(
@@ -108,8 +113,13 @@ def test_execute_v2_job_conversion_docx_to_md_maps_unreadable_converter_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    def _failing_convert_docx_to_markdown(*, docx_path: Path, output_markdown_path: Path) -> None:
-        del docx_path, output_markdown_path
+    def _failing_convert_docx_to_markdown(
+        *,
+        docx_path: Path,
+        output_markdown_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del docx_path, output_markdown_path, timeout_seconds
         raise DocxToMarkdownConversionError(
             code=DOCX_TO_MARKDOWN_UNREADABLE,
             message="Pandoc failed to unpack DOCX container.",

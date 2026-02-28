@@ -2,7 +2,7 @@
 id: task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle
 title: Implement v2 webhook onboarding endpoints and secret lifecycle
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -54,17 +54,17 @@ endpoints and secrets safely.
 
 ## Deliverables
 
-- [ ] V2 webhook onboarding endpoints implemented and wired to auth/ownership model.
-- [ ] Secret lifecycle actions (`create`, `rotate`, `revoke`) implemented.
-- [ ] Contract tests for CRUD + secret lifecycle + authorization + validation failures.
-- [ ] Overlap-window behavior for secret rotation implemented with deterministic timing semantics.
+- [x] V2 webhook onboarding endpoints implemented and wired to auth/ownership model.
+- [x] Secret lifecycle actions (`create`, `rotate`, `revoke`) implemented.
+- [x] Contract tests for CRUD + secret lifecycle + authorization + validation failures.
+- [x] Overlap-window behavior for secret rotation implemented with deterministic timing semantics.
 
 ## Acceptance Criteria
 
-- [ ] Downstream consumers can configure and manage callbacks without infra-side static config.
-- [ ] Secret values are never leaked in read/list responses after creation/rotation.
-- [ ] Subscription disable/delete deterministically stops future callback deliveries.
-- [ ] API contract docs match implemented onboarding behavior.
+- [x] Downstream consumers can configure and manage callbacks without infra-side static config.
+- [x] Secret values are never leaked in read/list responses after creation/rotation.
+- [x] Subscription disable/delete deterministically stops future callback deliveries.
+- [x] API contract docs match implemented onboarding behavior.
 
 ## Execution Plan (Slice 57A, 2026-02-28)
 
@@ -101,7 +101,7 @@ endpoints and secrets safely.
 - `pdm run run-local-pdm format-all`
 - `pdm run run-local-pdm lint-fix`
 - `pdm run run-local-pdm typecheck-all`
-- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py`
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_api_contract_v2_webhook_onboarding.py tests/sir_convert_a_lot/test_webhook_subscriptions_v2_store.py`
 - `pdm run run-local-pdm coverage-gate`
 - `pdm run run-local-pdm validate-tasks`
 - `pdm run run-local-pdm validate-docs`
@@ -109,12 +109,17 @@ endpoints and secrets safely.
 
 ## Validation Evidence
 
-- [ ] CRUD/auth/secret-lifecycle test outputs captured.
-- [ ] Coverage gate output captured (`>=90%`).
-- [ ] Docs/task validators and index output captured.
+- [x] CRUD/auth/secret-lifecycle test outputs captured.
+  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_api_contract_v2_webhook_onboarding.py tests/sir_convert_a_lot/test_webhook_subscriptions_v2_store.py` -> `28 passed`.
+- [x] Coverage gate output captured (`>=90%`).
+  - `pdm run run-local-pdm coverage-gate` -> `368 passed, 5 skipped`, total coverage `93.32%`.
+- [x] Docs/task validators and index output captured.
+  - `pdm run run-local-pdm validate-tasks` -> `Validated 84 backlog files`.
+  - `pdm run run-local-pdm validate-docs` -> `Validated docs=105 rules=9`.
+  - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` -> `/tmp/sir_tasks_index.md`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

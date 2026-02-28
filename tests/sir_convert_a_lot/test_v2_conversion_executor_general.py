@@ -170,6 +170,26 @@ def test_resolve_reference_docx_none_when_no_filename_or_explicit_path(tmp_path:
             500,
             False,
         ),
+        (
+            HtmlToPdfConversionError(
+                code="html_to_pdf_resource_blocked",
+                message="Blocked external resource URL: http://example.invalid",
+            ),
+            "html_to_pdf_resource_blocked",
+            "Blocked external resource URL: http://example.invalid",
+            422,
+            False,
+        ),
+        (
+            MarkdownToHtmlConversionError(
+                code="markdown_to_html_timeout",
+                message="Pandoc timed out after 300 seconds.",
+            ),
+            "markdown_to_html_timeout",
+            "Pandoc timed out after 300 seconds.",
+            504,
+            True,
+        ),
     ],
 )
 def test_map_converter_error_for_markdown_and_html_errors(
@@ -212,14 +232,90 @@ def test_execute_v2_job_conversion_html_to_pdf_css_not_found(tmp_path: Path) -> 
     assert error.details == {"css_filename": "missing.css"}
 
 
+def test_resolve_reference_docx_rejects_workdir_traversal(tmp_path: Path) -> None:
+    workdir = tmp_path / "workdir"
+    workdir.mkdir(parents=True)
+    job = _build_job(
+        tmp_path,
+        source_filename="source.md",
+        source_bytes=b"# Title\n",
+        source_format=SourceFormatV2.MD,
+        output_format=OutputFormatV2.DOCX,
+        reference_docx_filename="../../../etc/passwd",
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        _resolve_reference_docx(job=job, workdir=workdir)
+
+    error = exc_info.value
+    assert error.status_code == 422
+    assert error.code == "reference_docx_invalid"
+    assert error.retryable is False
+
+
+def test_execute_v2_job_conversion_html_to_pdf_rejects_css_traversal(tmp_path: Path) -> None:
+    job = _build_job(
+        tmp_path,
+        source_filename="page.html",
+        source_bytes=b"<html><body>Hello</body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.PDF,
+        css_filenames=["../outside.css"],
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        execute_v2_job_conversion(
+            job=job,
+            config=_service_config(tmp_path),
+            docling_backend=_UnusedBackend(),
+            pymupdf_backend=_UnusedBackend(),
+        )
+
+    error = exc_info.value
+    assert error.status_code == 422
+    assert error.code == "css_invalid"
+    assert error.retryable is False
+
+
+def test_execute_v2_job_conversion_html_to_pdf_rejects_missing_local_resource(
+    tmp_path: Path,
+) -> None:
+    job = _build_job(
+        tmp_path,
+        source_filename="page.html",
+        source_bytes=b"<html><body><img src='assets/logo.png'></body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.PDF,
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        execute_v2_job_conversion(
+            job=job,
+            config=_service_config(tmp_path),
+            docling_backend=_UnusedBackend(),
+            pymupdf_backend=_UnusedBackend(),
+        )
+
+    error = exc_info.value
+    assert error.status_code == 422
+    assert error.code == "html_resource_not_found"
+    assert error.details == {"missing_resources": ["assets/logo.png"]}
+
+
 def test_execute_v2_job_conversion_md_to_pdf_success_with_stubbed_converters(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     markdown_calls: list[tuple[Path, Path]] = []
-    html_pdf_calls: list[tuple[Path, Path, tuple[Path, ...], str]] = []
+    html_pdf_calls: list[tuple[Path, Path, tuple[Path, ...], str, Path | None]] = []
 
-    def _fake_convert_markdown_to_html(*, markdown_path: Path, output_html_path: Path) -> None:
+    def _fake_convert_markdown_to_html(
+        *,
+        markdown_path: Path,
+        output_html_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del timeout_seconds
         markdown_calls.append((markdown_path, output_html_path))
         output_html_path.write_text("<html><body>Converted</body></html>", encoding="utf-8")
 
@@ -229,8 +325,11 @@ def test_execute_v2_job_conversion_md_to_pdf_success_with_stubbed_converters(
         output_pdf_path: Path,
         css_paths: tuple[Path, ...] = (),
         base_url: str | None = None,
+        allowed_resource_root: Path | None = None,
     ) -> None:
-        html_pdf_calls.append((html_path, output_pdf_path, css_paths, base_url or ""))
+        html_pdf_calls.append(
+            (html_path, output_pdf_path, css_paths, base_url or "", allowed_resource_root)
+        )
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
     monkeypatch.setattr(
@@ -268,6 +367,7 @@ def test_execute_v2_job_conversion_md_to_pdf_success_with_stubbed_converters(
     assert html_pdf_calls[0][1] == job.artifact_path
     assert html_pdf_calls[0][2] == ()
     assert html_pdf_calls[0][3].startswith("file://")
+    assert html_pdf_calls[0][4] == job.upload_path.parent / "workdir"
 
 
 def test_execute_v2_job_conversion_pdf_to_docx_invalid_pdf_bytes(
@@ -337,8 +437,13 @@ def test_execute_v2_job_conversion_artifact_empty_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    def _fake_convert_markdown_to_html(*, markdown_path: Path, output_html_path: Path) -> None:
-        del markdown_path
+    def _fake_convert_markdown_to_html(
+        *,
+        markdown_path: Path,
+        output_html_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del markdown_path, timeout_seconds
         output_html_path.write_text("<html><body>Converted</body></html>", encoding="utf-8")
 
     def _fake_convert_html_to_pdf(
@@ -347,8 +452,9 @@ def test_execute_v2_job_conversion_artifact_empty_error(
         output_pdf_path: Path,
         css_paths: tuple[Path, ...] = (),
         base_url: str | None = None,
+        allowed_resource_root: Path | None = None,
     ) -> None:
-        del html_path, css_paths, base_url
+        del html_path, css_paths, base_url, allowed_resource_root
         output_pdf_path.write_bytes(b"")
 
     monkeypatch.setattr(

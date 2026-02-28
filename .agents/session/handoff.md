@@ -14,6 +14,122 @@
   - all linked task statuses must be terminal before story status/checkbox can be terminal,
   - all linked story statuses must be terminal before epic status/checkbox can be terminal.
 
+## 2026-02-28: Task 60 Completed (v2 Security/Resilience Hardening)
+
+### Completed
+
+- Implemented strict WeasyPrint resource sandboxing in
+  `scripts/sir_convert_a_lot/infrastructure/weasyprint_html_to_pdf.py`:
+  - blocks external URL fetching (`http/https/...`) and file URLs outside allowed workdir,
+  - permits only local resources resolved under allowed root.
+- Hardened path resolution in
+  `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py`:
+  - rejects traversal for `conversion.css_filenames` (`css_invalid`),
+  - rejects traversal for `conversion.reference_docx_filename` (`reference_docx_invalid`).
+- Added deterministic Pandoc subprocess timeout handling across wrappers:
+  - `pandoc_docx_to_markdown.py`,
+  - `pandoc_html_to_markdown.py`,
+  - `pandoc_html_to_docx.py`,
+  - `pandoc_markdown_to_html.py`.
+- Enforced HTML local-resource validation parity for all HTML source routes:
+  - `html -> md`, `html -> pdf`, `html -> docx`.
+- Added/updated security and timeout tests:
+  - new `tests/sir_convert_a_lot/test_weasyprint_html_to_pdf.py`,
+  - new `tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py`,
+  - expanded v2 executor and pandoc wrapper tests.
+- Added and terminalized planning artifact:
+  - `docs/backlog/tasks/task-60-harden-v2-converter-security-for-ssrf-traversal-and-timeout-enforcement.md` -> `status: completed`.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_weasyprint_html_to_pdf.py tests/sir_convert_a_lot/test_v2_conversion_executor_general.py tests/sir_convert_a_lot/test_v2_conversion_executor_html_to_md.py tests/sir_convert_a_lot/test_v2_conversion_executor_docx_paths.py tests/sir_convert_a_lot/test_v2_conversion_executor_docx_to_md.py tests/sir_convert_a_lot/test_v2_conversion_executor_pdf_to_docx.py tests/sir_convert_a_lot/test_pandoc_docx_to_markdown.py tests/sir_convert_a_lot/test_pandoc_html_to_markdown.py tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py` (pass: `62 passed`)
+- `pdm run run-local-pdm coverage-gate` (pass: `388 passed, 5 skipped`; coverage `95.53%`)
+- `rm -rf .mypy_cache && pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 156 source files`)
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 85 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=107 rules=9`)
+
+### Next Session Goals
+
+- Commit and push the pending async-push + Task 60 remediation slice as one coherent checkpoint.
+- Run a final ruthless review pass on changed files only (security + contracts + regressions).
+
+## 2026-02-28: T15 + T16 Completed (Webhook Delivery + Push Runbook) and Epic 05 Closeout
+
+### Completed
+
+- Implemented Task 58 (`T15`) webhook delivery lane:
+  - added queue-backed delivery worker with retry schedule and DLQ handoff:
+    - `scripts/sir_convert_a_lot/infrastructure/webhook_delivery_v2.py`
+  - wired runtime event enqueue hooks for queued/running/terminal lifecycle events:
+    - `scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py`
+  - added security helper enforcement for signature mismatch, stale timestamp, and replay detection.
+- Added Task 58 test coverage:
+  - `tests/sir_convert_a_lot/test_webhook_delivery_v2.py` (success/retry/DLQ/security cases),
+  - updated adapter non-GPU E2E in same push-logic slice:
+    - `tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`.
+- Completed Task 56 (`T16`) operational sign-off docs:
+  - added `docs/runbooks/runbook-v2-async-push-delivery.md` with canary/rollback, triage, alert thresholds,
+    and KPI formula/report templates.
+  - linked async-push runbook from `docs/runbooks/runbook-hemma-devops-and-gpu.md`.
+- Status/checkoff synchronization completed in strict order:
+  - Task 58 -> `completed` -> Epic `T15` checked,
+  - Task 56 -> `completed` -> Epic `T16` checked,
+  - Story 15 -> `completed` -> Epic `S05` checked,
+  - Epic 05 -> `completed`.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 153 source files`)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_api_contract_v2_webhook_onboarding.py tests/sir_convert_a_lot/test_webhook_delivery_v2.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime` (pass: `31 passed`)
+- `pdm run run-local-pdm coverage-gate` (pass: `373 passed, 5 skipped`; coverage `93.03%`)
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=106 rules=9`)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Next Session Goals
+
+- Run post-implementation ruthless review and release-readiness verification for Epic 05 completion.
+- Prepare the next backlog slice after Epic 05 closeout.
+
+## 2026-02-28: T14 Task 57 Completed (Webhook Onboarding + Secret Lifecycle)
+
+### Completed
+
+- Completed Task 57 (`T14`) in Epic 05 and moved task status to `completed`.
+- Fixed webhook onboarding runtime/store integration mismatches:
+  - aligned runtime webhook error mapping with concrete store/model error classes,
+  - normalized rotate/revoke return semantics with deterministic service errors,
+  - fixed overlap payload evaluation to use redacted `next_secret_present` state.
+- Implemented onboarding capability checks:
+  - `push:read` enforced for list/get,
+  - `push:write` enforced for create/update/rotate/revoke/delete,
+  - deterministic `403 insufficient_scope` details for missing capability.
+- Expanded test coverage:
+  - route contract tests for invalid API key and missing-scope cases,
+  - store lifecycle tests for owner isolation, overlap expiry promotion, revoke behavior,
+    and disabled/deleted delivery-target exclusion.
+- Status synchronization in strict order:
+  - Task 57 -> `completed` -> Epic `T14` checked.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 151 source files`)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_api_contract_v2_webhook_onboarding.py tests/sir_convert_a_lot/test_webhook_subscriptions_v2_store.py` (pass: `28 passed`)
+- `pdm run run-local-pdm coverage-gate` (pass: `368 passed, 5 skipped`; coverage `93.32%`)
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=105 rules=9`)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Next Session Goals
+
+- Start Task 58 (`T15`) implementation slice for webhook delivery worker, retries/DLQ, and callback
+  signing/timestamp/replay protection.
+- Keep strict order: do not check Epic `T15` before Task 58 is terminal with evidence.
+
 ## 2026-02-28: T13 Task 55 Completed (Event Emission + SSE)
 
 ### Completed
