@@ -199,9 +199,13 @@ Primary implementation stories:
     - synchronized tracking order: Task 54 terminalized, Epic `T02/T03` checked, Story 15 moved to
       `in_progress`.
     - docs validators/index + ADR/contract grep checks pass.
+  - Applied ruthless-review remediation on T03 contract:
+    - added onboarding update/rotate/delete examples, added signature/timestamp/replay error codes,
+      normalized async KPI target to `100%` within first 3 attempts across epic/story/ADR/contract,
+      and defined explicit auth capability + rate-limit contract (`429 rate_limited` + `Retry-After`)
+      for SSE and webhook onboarding surfaces.
 
 - 2026-02-18:
-
   - Epic 04 delivered service API v2 multi-format runtime and CLI remote-only pivot
     for non-PDF->MD routes.
   - Follow-up hardening tasks 40-42 completed (contract tests, resources zip hardening,

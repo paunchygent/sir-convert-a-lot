@@ -146,7 +146,7 @@ Execution rule:
 - [ ] Async push readiness has measurable outcomes:
   - polling request-rate reduced by >= 60% for push-enabled clients,
   - SSE propagation p95 \<= 2s,
-  - webhook initial delivery p95 \<= 5s and success >= 99% within first 3 attempts.
+  - webhook initial delivery p95 \<= 5s and success >= 100% within first 3 attempts.
 - [ ] Quality gates pass:
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`

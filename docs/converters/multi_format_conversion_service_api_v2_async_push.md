@@ -107,6 +107,22 @@ Headers:
 - `X-Correlation-ID` (optional)
 - `Accept: text/event-stream` (recommended)
 
+Authorization requirements:
+
+- API key must be valid for v2 (`auth_invalid_api_key` on failure).
+- SSE stream access requires `jobs:read` capability for the owning API key.
+- Job ownership is enforced; callers cannot stream events for jobs outside their API-key scope.
+
+Rate limits:
+
+- max concurrent SSE streams per API key: `5`
+- max new SSE stream connections per API key per 60 seconds: `30`
+- on limit breach, service returns:
+  - `429 Too Many Requests`
+  - `error.code = "rate_limited"`
+  - `Retry-After: <seconds>`
+  - `error.details.surface = "sse_stream"`
+
 Query parameters:
 
 - `cursor` (optional opaque replay cursor)
@@ -164,6 +180,23 @@ Endpoints:
 - `POST /v2/push/webhooks/subscriptions/{subscription_id}/revoke-secret` (revoke next/active secret)
 - `DELETE /v2/push/webhooks/subscriptions/{subscription_id}` (delete)
 
+Authorization requirements:
+
+- API key must be valid for v2 (`auth_invalid_api_key` on failure).
+- Read endpoints require `push:read` capability.
+- Create/update/rotate/revoke/delete endpoints require `push:write` capability.
+- Subscription ownership is enforced by API key scope.
+
+Rate limits:
+
+- read endpoints (`GET` list/read): `120` requests per 60 seconds per API key.
+- mutating endpoints (`POST`/`PATCH`/`DELETE`): `30` requests per 60 seconds per API key.
+- on limit breach, service returns:
+  - `429 Too Many Requests`
+  - `error.code = "rate_limited"`
+  - `Retry-After: <seconds>`
+  - `error.details.surface = "webhook_onboarding"`
+
 Create request example:
 
 ```json
@@ -194,6 +227,64 @@ Create response example (`201`):
   }
 }
 ```
+
+Update request example (`PATCH /v2/push/webhooks/subscriptions/{subscription_id}`):
+
+```json
+{
+  "callback_url": "https://consumer.example/hooks/scal-prod",
+  "event_types": ["job.succeeded", "job.failed", "job.canceled"],
+  "enabled": true
+}
+```
+
+Update response example (`200`):
+
+```json
+{
+  "api_version": "v2",
+  "subscription": {
+    "subscription_id": "whsub_01J7Y4D9XJ1N31A8QKR2PE5HVS",
+    "callback_url": "https://consumer.example/hooks/scal-prod",
+    "event_types": ["job.succeeded", "job.failed", "job.canceled"],
+    "enabled": true,
+    "created_at": "2026-02-28T21:02:00Z",
+    "updated_at": "2026-02-28T21:20:00Z"
+  }
+}
+```
+
+Rotate-secret request example (`POST /v2/push/webhooks/subscriptions/{subscription_id}/rotate-secret`):
+
+```json
+{
+  "reason": "scheduled_rotation"
+}
+```
+
+Rotate-secret response example (`200`):
+
+```json
+{
+  "api_version": "v2",
+  "subscription_id": "whsub_01J7Y4D9XJ1N31A8QKR2PE5HVS",
+  "secret": {
+    "version": "next",
+    "value": "whsec_live_next_...",
+    "revealed_once": true
+  },
+  "overlap": {
+    "active_and_next_valid": true,
+    "overlap_expires_at": "2026-03-01T21:20:00Z",
+    "overlap_hours": 24
+  }
+}
+```
+
+Delete response semantics (`DELETE /v2/push/webhooks/subscriptions/{subscription_id}`):
+
+- `204 No Content` on successful deletion.
+- `404 webhook_subscription_not_found` if subscription id does not exist.
 
 Secret lifecycle rules:
 
@@ -262,6 +353,12 @@ Push-enabled clients must still support polling fallback for:
 - webhook delivery outages,
 - controlled push feature-disable rollback.
 
+Authorization requirements:
+
+- Polling fallback keeps base v2 auth and ownership rules from
+  `docs/converters/multi_format_conversion_service_api_v2.md`.
+- Polling endpoints require `jobs:read` capability for the owning API key.
+
 ## Error Taxonomy (Push Surfaces)
 
 Expected deterministic push-related codes:
@@ -270,8 +367,13 @@ Expected deterministic push-related codes:
 - `webhook_subscription_not_found` (`404`)
 - `webhook_endpoint_invalid` (`422`)
 - `webhook_subscription_conflict` (`409`)
+- `webhook_signature_invalid` (`401`) for callback signature verification failures
+- `webhook_timestamp_outside_window` (`401`) for callback timestamp outside replay window
+- `webhook_replay_detected` (`409`) for duplicate callback id/timestamp replay attempts
 - `validation_error` (`422`)
 - `auth_invalid_api_key` (`401`)
+- `insufficient_scope` (`403`) for missing push/job capabilities
+- `rate_limited` (`429`) for SSE/onboarding throttle breaches
 
 All errors use v2 standard envelope:
 
@@ -313,6 +415,6 @@ Push rollout acceptance targets:
 - polling request-rate reduction `>=60%` for push-enabled clients,
 - SSE propagation p95 `<= 2s`,
 - webhook initial delivery p95 `<= 5s`,
-- webhook success `>=99%` within first `3` attempts.
+- webhook success `>=100%` within first `3` attempts.
 
 These metrics are operationalized in Task 56 runbook/observability deliverables.

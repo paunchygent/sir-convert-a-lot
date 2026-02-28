@@ -48,6 +48,33 @@
 - Keep order gates strict: do not check `T13` before terminal Task 55 status and evidence updates.
 - Update adapter non-GPU E2E in the same push-logic PR, per Story 15 requirements.
 
+## 2026-02-28: Ruthless-Review Remediation (T03 Contract Hardening)
+
+### Completed
+
+- Closed review findings 1-3 for Task 54 contract completeness and KPI consistency:
+- Closed review findings 1-4 for Task 54 contract completeness and KPI consistency:
+  - expanded async push contract with onboarding update/rotate/delete examples,
+  - added deterministic callback verification error codes
+    (`webhook_signature_invalid`, `webhook_timestamp_outside_window`, `webhook_replay_detected`),
+  - added explicit push auth capability and rate-limit semantics with deterministic
+    `429 rate_limited` + `Retry-After` behavior for SSE/onboarding surfaces,
+  - normalized webhook success KPI target to `>=100% within first 3 attempts` across Story 15,
+    Epic 05, ADR 0003, async contract doc, and Task 56 acceptance text.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=105 rules=9`)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+- `rg -n "Update request example|Rotate-secret request example|Delete response semantics" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
+- `rg -n "webhook_signature_invalid|webhook_timestamp_outside_window|webhook_replay_detected" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
+- `rg -n "Authorization requirements|jobs:read|push:read|push:write|rate_limited|Retry-After|429 Too Many Requests" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
+
+### Next Session Goals
+
+- Begin Task 55 (`T13`) implementation slice with SSE stream/replay behavior and event emission tests.
+
 ## 2026-02-28: T10 -> T11 -> T12 Completed in Order
 
 ### Completed

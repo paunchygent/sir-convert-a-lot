@@ -125,6 +125,9 @@ and webhooks without reverse-engineering internal behavior.
 - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - `rg -n "event_id|event_type|sequence|occurred_at|cursor_expired|X-SCAL-Webhook|retry|DLQ|polling fallback" docs/converters/multi_format_conversion_service_api_v2_async_push.md`
 - `rg -n "multi_format_conversion_service_api_v2_async_push\\.md" docs/converters/multi_format_conversion_service_api_v2.md`
+- `rg -n "Update request example|Rotate-secret request example|Delete response semantics" docs/converters/multi_format_conversion_service_api_v2_async_push.md`
+- `rg -n "webhook_signature_invalid|webhook_timestamp_outside_window|webhook_replay_detected" docs/converters/multi_format_conversion_service_api_v2_async_push.md`
+- `rg -n "Authorization requirements|jobs:read|push:read|push:write|rate_limited|Retry-After|429 Too Many Requests" docs/converters/multi_format_conversion_service_api_v2_async_push.md`
 
 ## Execution Outcome
 
@@ -139,6 +142,9 @@ and webhooks without reverse-engineering internal behavior.
 - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 - `rg -n "event_id|event_type|sequence|occurred_at|cursor_expired|X-SCAL-Webhook|retry|DLQ|polling fallback" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
 - `rg -n "multi_format_conversion_service_api_v2_async_push\\.md" docs/converters/multi_format_conversion_service_api_v2.md` (pass)
+- `rg -n "Update request example|Rotate-secret request example|Delete response semantics" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
+- `rg -n "webhook_signature_invalid|webhook_timestamp_outside_window|webhook_replay_detected" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
+- `rg -n "Authorization requirements|jobs:read|push:read|push:write|rate_limited|Retry-After|429 Too Many Requests" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
 
 ## Checklist
 

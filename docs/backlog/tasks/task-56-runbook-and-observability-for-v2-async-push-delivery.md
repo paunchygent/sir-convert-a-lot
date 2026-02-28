@@ -70,7 +70,7 @@ procedures.
 - [ ] KPI targets are explicitly testable and tracked:
   - >=60% polling request-rate reduction for push-enabled clients vs baseline,
   - SSE propagation p95 \<= 2s,
-  - webhook initial delivery p95 \<= 5s and success >= 99% within first 3 attempts.
+  - webhook initial delivery p95 \<= 5s and success >= 100% within first 3 attempts.
 
 ## Execution Plan (Slice 56A, 2026-02-28)
 
