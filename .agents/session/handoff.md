@@ -1,5 +1,19 @@
 # Session Handoff
 
+## Session Handoff Contract (Mandatory)
+
+- `handoff.md` is session-scoped working handoff, not long-term memory.
+- At the end of each session, update handoff with:
+  - completed work in this session,
+  - validation evidence,
+  - next-session goals.
+- Before clearing/pruning this file, archive completed session summaries into
+  `docs/backlog/current.md` (canonical long-term memory index).
+- Status/checkoff synchronization is strict:
+  - task file status must be terminal (`completed` or `done`) before task checkbox is checked in story/epic trackers,
+  - all linked task statuses must be terminal before story status/checkbox can be terminal,
+  - all linked story statuses must be terminal before epic status/checkbox can be terminal.
+
 ## 2026-02-15: Task 18 Completed (Observability Closure + Hemma Revalidation)
 
 ### Completed

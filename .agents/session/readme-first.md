@@ -27,3 +27,15 @@
   - `pdm run pytest-root tests`
   - `pdm run validate-tasks`
   - `pdm run validate-docs`
+
+- Mandatory end-of-session close-out:
+
+  - Update `.agents/session/handoff.md` with:
+    - what was done in the current session,
+    - validation evidence,
+    - explicit next-session goals.
+  - Archive completed session summary into `docs/backlog/current.md` (long-term memory index) before pruning `handoff.md`.
+  - Synchronize statuses and checkboxes in strict order:
+    - task status terminal before task checkbox is checked in epic/story tracking,
+    - all task statuses terminal before story status/checkbox terminalization,
+    - all story statuses terminal before epic status/checkbox terminalization.

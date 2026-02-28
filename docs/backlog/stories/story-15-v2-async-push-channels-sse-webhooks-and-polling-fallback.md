@@ -16,6 +16,7 @@ related:
   - docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md
   - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
   - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
+  - docs/backlog/tasks/task-59-enforce-90-percent-test-coverage-gate-for-conversion-core.md
   - docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md
   - docs/converters/multi_format_conversion_service_api_v2.md
 labels:
@@ -74,6 +75,7 @@ Out of scope:
 - [ ] Negative security tests cover signature mismatch, stale timestamp, and replay attempts.
 - [ ] Polling fallback remains functional and unchanged for clients that do not adopt push.
 - [ ] Replay expiry behavior is validated (`410 cursor_expired` for stale cursors beyond retention horizon).
+- [ ] Coverage gate passes at `>=90%` for conversion-core code (`pdm run run-local-pdm coverage-gate`).
 
 ## Done Definition
 

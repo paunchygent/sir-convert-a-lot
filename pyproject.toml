@@ -27,6 +27,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
+    "pytest-cov>=6.2.1",
     "ruff>=0.14.0",
     "mypy>=1.18.2",
     "types-pyyaml>=6.0.12.20250915",
@@ -76,6 +77,16 @@ filterwarnings = [
     "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
     "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
 ]
+
+[tool.coverage.run]
+source = ["scripts/sir_convert_a_lot"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = false
+precision = 1
 
 [tool.pdm]
 distribution = false
@@ -139,6 +150,7 @@ distribution = false
 "typecheck-all" = "mypy --config-file pyproject.toml"
 "test" = "pytest -s"
 "pytest-root" = "pytest -s"
+"coverage-gate" = "pytest -s --cov=scripts/sir_convert_a_lot --cov-report=term-missing --cov-report=xml"
 
 [tool.sir_convert_a_lot.rocm_runtime]
 torch_index_url = "https://download.pytorch.org/whl/rocm7.1"

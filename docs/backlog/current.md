@@ -30,6 +30,7 @@ related:
   - docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md
   - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
   - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
+  - docs/backlog/tasks/task-59-enforce-90-percent-test-coverage-gate-for-conversion-core.md
 labels:
   - session-log
   - active-work
@@ -40,6 +41,9 @@ labels:
 Active focus has shifted to Epic 05: a prototype-to-production hardening track that enforces a
 **v2-only conversion architecture** with explicit Markdown ingress routes and template-governed DOCX
 outputs.
+
+This file is the canonical long-term memory index for session progress; session handoff summaries
+must be archived here when `handoff.md` is pruned.
 
 Entrypoints:
 
@@ -93,6 +97,7 @@ Primary implementation stories:
       - `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
       - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
       - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
+      - `docs/backlog/tasks/task-59-enforce-90-percent-test-coverage-gate-for-conversion-core.md`
 
 - 2026-02-18:
 
@@ -122,3 +127,4 @@ Primary implementation stories:
   - `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
   - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
   - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
+  - `docs/backlog/tasks/task-59-enforce-90-percent-test-coverage-gate-for-conversion-core.md`

@@ -67,6 +67,7 @@ procedures.
 - [ ] Commands/log evidence captured for webhook success and retry/failure paths.
 - [ ] Commands/log evidence captured for invalid signature/timestamp/replay rejection paths.
 - [ ] Baseline vs post-enable KPI evidence captured and linked.
+- [ ] `pdm run run-local-pdm coverage-gate` output captured (`>=90%`).
 
 ## Checklist
 

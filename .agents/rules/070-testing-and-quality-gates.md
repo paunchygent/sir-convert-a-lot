@@ -4,7 +4,7 @@ rule_id: RULE-070
 title: Testing and Quality Gates
 status: active
 created: '2026-02-11'
-updated: '2026-02-11'
+updated: '2026-02-28'
 owners:
   - platform
 tags:
@@ -20,6 +20,7 @@ pdm run format-all
 pdm run lint-fix
 pdm run typecheck-all
 pdm run pytest-root <path-or-nodeid>
+pdm run coverage-gate
 ```
 
 Pre-commit safety gate:
@@ -35,3 +36,4 @@ Rules:
 - No `typing.Any`, casts, or ignore-based shortcuts in new code.
 - No shims/hacks for lint/typecheck bypass.
 - Split files before 500 LoC.
+- Coverage threshold for conversion-core code must be `>=90%` via `pdm run coverage-gate`.
