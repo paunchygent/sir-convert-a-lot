@@ -73,7 +73,7 @@ Out of scope:
 
 - [x] ADR is approved and linked from story/tasks.
 - [x] V2 async push contract doc is normative and complete for SSE + webhooks + polling fallback.
-- [ ] Push implementation provides deterministic event semantics (ordering/idempotency/terminal behavior).
+- [x] Push implementation provides deterministic event semantics (ordering/idempotency/terminal behavior).
 - [ ] Webhook security controls are implemented and validated (signature, timestamp, replay window).
 - [ ] Rollout/rollback controls are documented and verified for safe disable.
 - [ ] Push rollout meets production targets:
@@ -94,13 +94,13 @@ Out of scope:
 
 ## Test Requirements
 
-- [ ] End-to-end SSE stream verification for active + terminal job states.
+- [x] End-to-end SSE stream verification for active + terminal job states.
 - [ ] Webhook success/failure retry behavior and terminal-state callback behavior are proven.
 - [ ] Negative security tests cover signature mismatch, stale timestamp, and replay attempts.
-- [ ] Polling fallback remains functional and unchanged for clients that do not adopt push.
-- [ ] Adapter non-GPU E2E conformance test is updated in the same push-logic PR immediately after implementation changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
-- [ ] Replay expiry behavior is validated (`410 cursor_expired` for stale cursors beyond retention horizon).
-- [ ] Coverage gate passes at `>=90%` for conversion-core code (`pdm run run-local-pdm coverage-gate`).
+- [x] Polling fallback remains functional and unchanged for clients that do not adopt push.
+- [x] Adapter non-GPU E2E conformance test is updated in the same push-logic PR immediately after implementation changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
+- [x] Replay expiry behavior is validated (`410 cursor_expired` for stale cursors beyond retention horizon).
+- [x] Coverage gate passes at `>=90%` for conversion-core code (`pdm run run-local-pdm coverage-gate`).
 
 ## Done Definition
 

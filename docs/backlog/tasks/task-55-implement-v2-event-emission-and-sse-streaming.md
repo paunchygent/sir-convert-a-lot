@@ -2,7 +2,7 @@
 id: task-55-implement-v2-event-emission-and-sse-streaming
 title: Implement v2 event emission and SSE streaming
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -56,19 +56,19 @@ Out of scope:
 
 ## Deliverables
 
-- [ ] SSE endpoint and event stream behavior implemented in v2 service.
-- [ ] Event emission model with per-job sequence and event ids.
-- [ ] Contract/integration tests for SSE progress/terminal/replay/idempotency behavior.
-- [ ] Adapter non-GPU E2E conformance test updated in the same PR immediately after SSE push-logic changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
-- [ ] Feature flag toggles and rollback-safe disable behavior for SSE lane.
-- [ ] KPI instrumentation fields emitted for SSE latency measurement (needed by Task 56 KPI sign-off).
+- [x] SSE endpoint and event stream behavior implemented in v2 service.
+- [x] Event emission model with per-job sequence and event ids.
+- [x] Contract/integration tests for SSE progress/terminal/replay/idempotency behavior.
+- [x] Adapter non-GPU E2E conformance test updated in the same PR immediately after SSE push-logic changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
+- [x] Feature flag toggles and rollback-safe disable behavior for SSE lane.
+- [x] KPI instrumentation fields emitted for SSE latency measurement (needed by Task 56 KPI sign-off).
 
 ## Acceptance Criteria
 
-- [ ] End-to-end SSE flow verified for progress and terminal states.
-- [ ] Stale cursor replay attempts return deterministic `410 cursor_expired`.
-- [ ] Polling fallback remains fully functional with no regression.
-- [ ] Event ordering and dedup are deterministic per job (`sequence` monotonic, stable `event_id`).
+- [x] End-to-end SSE flow verified for progress and terminal states.
+- [x] Stale cursor replay attempts return deterministic `410 cursor_expired`.
+- [x] Polling fallback remains fully functional with no regression.
+- [x] Event ordering and dedup are deterministic per job (`sequence` monotonic, stable `event_id`).
 
 ## Execution Plan (Slice 55A, 2026-02-28)
 
@@ -103,7 +103,7 @@ Out of scope:
 - `pdm run run-local-pdm format-all`
 - `pdm run run-local-pdm lint-fix`
 - `pdm run run-local-pdm typecheck-all`
-- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py`
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py`
 - `pdm run run-local-pdm coverage-gate`
 - `pdm run run-local-pdm validate-tasks`
 - `pdm run run-local-pdm validate-docs`
@@ -111,12 +111,20 @@ Out of scope:
 
 ## Validation Evidence
 
-- [ ] Targeted SSE + polling regression command outputs captured.
-- [ ] Adapter non-GPU E2E update evidence captured.
-- [ ] Coverage gate output captured (`>=90%`).
+- [x] Targeted SSE + polling regression command outputs captured.
+- [x] Adapter non-GPU E2E update evidence captured.
+- [x] Coverage gate output captured (`>=90%`).
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 145 source files`)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py` (pass: `22 passed, 3 skipped`)
+- `pdm run run-local-pdm coverage-gate` (pass: `352 passed, 5 skipped`; total coverage `94.76%`)
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=105 rules=9`)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

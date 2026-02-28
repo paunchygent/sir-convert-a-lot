@@ -43,7 +43,10 @@ def _write_pdf(path: Path, label: str) -> None:
 
 
 def _conversion_runtime_config(
-    *, data_root: Path, processing_delay_seconds: float
+    *,
+    data_root: Path,
+    processing_delay_seconds: float,
+    enable_sse_stream: bool = False,
 ) -> ServiceConfig:
     return ServiceConfig(
         api_key="secret-key",
@@ -51,6 +54,7 @@ def _conversion_runtime_config(
         gpu_available=False,
         allow_cpu_fallback=True,
         processing_delay_seconds=processing_delay_seconds,
+        enable_sse_stream=enable_sse_stream,
     )
 
 
@@ -241,6 +245,7 @@ def test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime(
         _conversion_runtime_config(
             data_root=tmp_path / f"service_data_smoke_no_gpu_{profile.value}",
             processing_delay_seconds=0.05,
+            enable_sse_stream=True,
         )
     )
     pdf_path = tmp_path / f"{profile.value}_paper.pdf"

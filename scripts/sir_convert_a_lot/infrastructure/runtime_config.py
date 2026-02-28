@@ -39,6 +39,14 @@ def service_config_from_env() -> ServiceConfig:
         or "build/sir_convert_a_lot"
     )
     gpu_available = os.getenv("SIR_CONVERT_A_LOT_GPU_AVAILABLE", "1") == "1"
+    enable_sse_stream = os.getenv("SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM", "0") == "1"
+    sse_replay_horizon_seconds = int(
+        os.getenv("SIR_CONVERT_A_LOT_SSE_REPLAY_HORIZON_SECONDS", str(24 * 3600))
+    )
+    sse_poll_interval_seconds = float(
+        os.getenv("SIR_CONVERT_A_LOT_SSE_POLL_INTERVAL_SECONDS", "0.05")
+    )
+    sse_stream_max_seconds = float(os.getenv("SIR_CONVERT_A_LOT_SSE_STREAM_MAX_SECONDS", "15.0"))
 
     enabled_unlock_envs = [name for name in CPU_UNLOCK_ENV_VARS if os.getenv(name) == "1"]
     if enabled_unlock_envs:
@@ -52,4 +60,8 @@ def service_config_from_env() -> ServiceConfig:
         api_key=api_key,
         data_root=data_root,
         gpu_available=gpu_available,
+        enable_sse_stream=enable_sse_stream,
+        sse_replay_horizon_seconds=sse_replay_horizon_seconds,
+        sse_poll_interval_seconds=sse_poll_interval_seconds,
+        sse_stream_max_seconds=sse_stream_max_seconds,
     )

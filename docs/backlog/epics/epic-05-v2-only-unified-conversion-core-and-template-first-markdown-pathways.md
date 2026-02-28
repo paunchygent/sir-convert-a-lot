@@ -126,7 +126,7 @@ Execution rule:
 
 - [x] `T03` `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
 
-- [ ] `T13` `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
+- [x] `T13` `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
 
 - [ ] `T14` `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
 

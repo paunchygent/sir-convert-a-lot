@@ -9,8 +9,6 @@ and backed by `job_store_manifest_v2`.
 from __future__ import annotations
 
 import fcntl
-import hashlib
-import time
 from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
@@ -24,10 +22,12 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     read_json,
     utc_now,
 )
+from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import (
+    append_lifecycle_event,
+)
 from scripts.sir_convert_a_lot.infrastructure.job_store_manifest_v2 import (
     build_initial_manifest,
     ensure_diagnostics,
-    merge_phase_timings,
     parse_stored_job_record,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
@@ -36,16 +36,6 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobStateConflictV2,
     StoredJobRecordV2,
 )
-
-
-def _artifact_content_type(output_format: OutputFormatV2) -> str:
-    if output_format == OutputFormatV2.MD:
-        return "text/markdown"
-    if output_format == OutputFormatV2.PDF:
-        return "application/pdf"
-    if output_format == OutputFormatV2.DOCX:
-        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    raise AssertionError(f"Unsupported output_format: {output_format}")
 
 
 class JobStoreV2Core:
@@ -58,6 +48,7 @@ class JobStoreV2Core:
         raw_ttl_seconds: int,
         artifact_ttl_seconds: int,
         tombstone_ttl_seconds: int = 30 * 24 * 3600,
+        replay_horizon_seconds: int = 24 * 3600,
     ) -> None:
         self.data_root = data_root
         self.jobs_dir = data_root / "jobs_v2"
@@ -67,6 +58,7 @@ class JobStoreV2Core:
         self.raw_ttl_seconds = raw_ttl_seconds
         self.artifact_ttl_seconds = artifact_ttl_seconds
         self.tombstone_ttl_seconds = tombstone_ttl_seconds
+        self.replay_horizon_seconds = max(1, replay_horizon_seconds)
 
     def _job_dir(self, job_id: str) -> Path:
         return self.jobs_dir / job_id
@@ -184,6 +176,12 @@ class JobStoreV2Core:
             raw_expires_at=raw_expires_at,
             artifact_expires_at=artifact_expires_at,
         )
+        append_lifecycle_event(
+            payload=manifest,
+            status=JobStatus.QUEUED,
+            stage="queued",
+            occurred_at=now,
+        )
         atomic_write_json(self._manifest_path(job_id), manifest)
 
         return self.get_job(job_id)
@@ -237,6 +235,10 @@ class JobStoreV2Core:
         with self._job_manifest_lock(job_id):
             payload = self._read_manifest_locked(job_id)
             now = utc_now()
+            previous_status_obj = payload.get("status")
+            previous_status = (
+                JobStatus(previous_status_obj) if isinstance(previous_status_obj, str) else None
+            )
 
             payload["status"] = status.value
             progress = payload.get("progress")
@@ -253,6 +255,13 @@ class JobStoreV2Core:
             diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
+            if previous_status != status:
+                append_lifecycle_event(
+                    payload=payload,
+                    status=status,
+                    stage=stage,
+                    occurred_at=now,
+                )
 
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
@@ -311,154 +320,15 @@ class JobStoreV2Core:
             diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
+            append_lifecycle_event(
+                payload=payload,
+                status=JobStatus.RUNNING,
+                stage="starting",
+                occurred_at=now,
+            )
 
             atomic_write_json(manifest_path, payload)
             return True
-
-    def mark_succeeded(
-        self,
-        job_id: str,
-        *,
-        artifact_bytes: bytes,
-        pipeline_used: str,
-        backend_used: str | None,
-        acceleration_used: str | None,
-        options_fingerprint: str,
-        template_id: str | None = None,
-        template_version: str | None = None,
-        template_artifact_sha256: str | None = None,
-        warnings: list[str],
-        phase_timings_ms: dict[str, int] | None = None,
-    ) -> StoredJobRecordV2:
-        persist_started = utc_now()
-        persist_started_monotonic = time.perf_counter()
-
-        manifest_path = self._manifest_path(job_id)
-        with self._job_manifest_lock(job_id):
-            payload = self._read_manifest_locked(job_id)
-            self._require_status(
-                payload=payload,
-                job_id=job_id,
-                expected_statuses=(JobStatus.RUNNING,),
-            )
-
-            output_format_obj = payload.get("output_format")
-            if not isinstance(output_format_obj, str):
-                raise ValueError(f"manifest missing output_format for job_id={job_id}")
-            output_format = OutputFormatV2(output_format_obj)
-
-            artifact_path = self._artifact_path(job_id, output_format)
-            artifact_path.write_bytes(artifact_bytes)
-            sha = hashlib.sha256(artifact_bytes).hexdigest()
-            content_type = _artifact_content_type(output_format)
-
-            now = utc_now()
-            payload["status"] = JobStatus.SUCCEEDED.value
-            timestamps = payload.get("timestamps")
-            if not isinstance(timestamps, dict):
-                timestamps = {}
-                payload["timestamps"] = timestamps
-            timestamps["updated_at"] = dt_to_rfc3339(now)
-            timestamps["completed_at"] = dt_to_rfc3339(now)
-
-            payload["error"] = None
-            payload["result_metadata"] = {
-                "artifact": {
-                    "filename": artifact_path.name,
-                    "format": output_format.value,
-                    "content_type": content_type,
-                    "size_bytes": len(artifact_bytes),
-                    "sha256": sha,
-                },
-                "conversion_metadata": {
-                    "pipeline_used": pipeline_used,
-                    "backend_used": backend_used,
-                    "acceleration_used": acceleration_used,
-                    "options_fingerprint": options_fingerprint,
-                    "template_id": template_id,
-                    "template_version": template_version,
-                    "template_artifact_sha256": template_artifact_sha256,
-                },
-                "warnings": list(warnings),
-            }
-
-            diagnostics = ensure_diagnostics(payload)
-            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
-            if phase_timings_ms is not None:
-                merge_phase_timings(
-                    diagnostics=diagnostics,
-                    additional_phase_timings_ms=phase_timings_ms,
-                )
-            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
-
-            atomic_write_json(manifest_path, payload)
-            persist_elapsed_ms = max(
-                0, int((time.perf_counter() - persist_started_monotonic) * 1000)
-            )
-            merge_phase_timings(
-                diagnostics=diagnostics,
-                additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
-            )
-            atomic_write_json(manifest_path, payload)
-        return self.get_job(job_id)
-
-    def mark_failed(
-        self,
-        job_id: str,
-        *,
-        code: str,
-        message: str,
-        retryable: bool,
-        details: dict[str, object] | None,
-        phase_timings_ms: dict[str, int] | None = None,
-    ) -> StoredJobRecordV2:
-        persist_started = utc_now()
-        persist_started_monotonic = time.perf_counter()
-
-        manifest_path = self._manifest_path(job_id)
-        with self._job_manifest_lock(job_id):
-            payload = self._read_manifest_locked(job_id)
-            self._require_status(
-                payload=payload,
-                job_id=job_id,
-                expected_statuses=(JobStatus.RUNNING,),
-            )
-            now = utc_now()
-
-            payload["status"] = JobStatus.FAILED.value
-            timestamps = payload.get("timestamps")
-            if not isinstance(timestamps, dict):
-                timestamps = {}
-                payload["timestamps"] = timestamps
-            timestamps["updated_at"] = dt_to_rfc3339(now)
-            timestamps["completed_at"] = dt_to_rfc3339(now)
-
-            payload["result_metadata"] = None
-            payload["error"] = {
-                "code": code,
-                "message": message,
-                "retryable": retryable,
-                "details": details,
-            }
-            diagnostics = ensure_diagnostics(payload)
-            diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
-            if phase_timings_ms is not None:
-                merge_phase_timings(
-                    diagnostics=diagnostics,
-                    additional_phase_timings_ms=phase_timings_ms,
-                )
-            diagnostics["current_phase_started_at"] = dt_to_rfc3339(persist_started)
-
-            atomic_write_json(manifest_path, payload)
-            persist_elapsed_ms = max(
-                0, int((time.perf_counter() - persist_started_monotonic) * 1000)
-            )
-            merge_phase_timings(
-                diagnostics=diagnostics,
-                additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
-            )
-            atomic_write_json(manifest_path, payload)
-        return self.get_job(job_id)
 
     def mark_canceled(self, job_id: str) -> StoredJobRecordV2:
         manifest_path = self._manifest_path(job_id)
@@ -495,6 +365,12 @@ class JobStoreV2Core:
             diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
+            append_lifecycle_event(
+                payload=payload,
+                status=JobStatus.CANCELED,
+                stage="canceled",
+                occurred_at=now,
+            )
 
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)

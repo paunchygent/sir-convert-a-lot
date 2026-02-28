@@ -427,3 +427,65 @@ def test_cancel_returns_conflict_for_terminal_jobs(tmp_path: Path, monkeypatch) 
     payload = cancel_response.json()
     assert payload["api_version"] == "v2"
     assert payload["error"]["code"] == "job_not_cancelable"
+
+
+def test_polling_fallback_lifecycle_unchanged_with_sse_enabled(tmp_path: Path, monkeypatch) -> None:
+    from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
+
+    def _successful_executor(**kwargs) -> V2ExecutionResult:
+        job = kwargs["job"]
+        if job.output_format == OutputFormatV2.PDF:
+            artifact_bytes = b"%PDF-1.4\n% fake\n%%EOF\n"
+        else:
+            artifact_bytes = b"PK\x03\x04fake-docx"
+        return V2ExecutionResult(
+            artifact_bytes=artifact_bytes,
+            pipeline_used=f"{job.source_format.value}_to_{job.output_format.value}_v2",
+            backend_used="stub",
+            acceleration_used=None,
+            warnings=[],
+            phase_timings_ms={"conversion_attempt_ms": 1},
+            options_fingerprint="polling_with_sse_enabled",
+        )
+
+    monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _successful_executor)
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data_polling_with_sse_enabled",
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+            enable_sse_stream=True,
+            sse_poll_interval_seconds=0.01,
+            sse_stream_max_seconds=3.0,
+        )
+    )
+    client = TestClient(app)
+
+    spec = _job_spec_v2(
+        filename="note.md",
+        source_format=SourceFormatV2.MD,
+        output_format=OutputFormatV2.PDF,
+    )
+    create_response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-polling-sse-enabled",
+        file_name="note.md",
+        file_bytes=b"# Title\n\nHello.\n",
+        spec=spec,
+    )
+    assert create_response.status_code in {200, 202}
+    job_id = create_response.json()["job"]["job_id"]
+
+    assert _wait_for_terminal(client, "secret-key", job_id) == JobStatus.SUCCEEDED
+
+    result_response = client.get(
+        f"/v2/convert/jobs/{job_id}/result",
+        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_polling_result"},
+    )
+    assert result_response.status_code == 200
+    result_payload = result_response.json()
+    assert result_payload["api_version"] == "v2"
+    assert result_payload["status"] == "succeeded"

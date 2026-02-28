@@ -190,6 +190,56 @@ class JobPendingResultResponseV2(BaseModel):
     status: JobStatus
 
 
+class JobEventRouteV2(BaseModel):
+    """Route metadata included in v2 lifecycle event payloads."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_format: SourceFormatV2
+    target_format: OutputFormatV2
+
+
+class JobEventProgressV2(BaseModel):
+    """Progress metadata included in v2 lifecycle event payloads."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stage: str
+    last_heartbeat_at: datetime | None = None
+
+
+class JobEventSseMetricsV2(BaseModel):
+    """Transient SSE instrumentation fields emitted with stream payloads."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sent_at: datetime
+    emit_to_send_ms: int
+
+
+class JobLifecycleEventV2(BaseModel):
+    """Event payload emitted by the v2 SSE stream surface."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    event_id: str
+    event_type: Literal[
+        "job.queued",
+        "job.running",
+        "job.succeeded",
+        "job.failed",
+        "job.canceled",
+    ]
+    sequence: int
+    occurred_at: datetime
+    job_id: str
+    status: JobStatus
+    route: JobEventRouteV2
+    progress: JobEventProgressV2
+    sse_metrics: JobEventSseMetricsV2 | None = None
+
+
 class ErrorEnvelopeV2(BaseModel):
     """Top-level error envelope for v2 responses."""
 

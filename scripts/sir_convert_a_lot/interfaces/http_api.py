@@ -39,6 +39,9 @@ from scripts.sir_convert_a_lot.interfaces.http_app_state import (
     shutdown_runtime_state,
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_health import build_health_router
+from scripts.sir_convert_a_lot.interfaces.http_routes_job_events_v2 import (
+    build_job_events_router_v2,
+)
 from scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2 import build_job_router_v2
 from scripts.sir_convert_a_lot.interfaces.http_routes_templates_v2 import (
     build_templates_router_v2,
@@ -163,5 +166,6 @@ def create_app(
 
     app.include_router(build_health_router(app=app, service_started_at=service_started_at))
     app.include_router(build_job_router_v2(service_started_at=service_started_at))
+    app.include_router(build_job_events_router_v2(service_started_at=service_started_at))
     app.include_router(build_templates_router_v2(service_started_at=service_started_at))
     return app

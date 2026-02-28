@@ -186,12 +186,7 @@ Primary implementation stories:
     - `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
     - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=104 rules=9`)
     - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
-  - Hardened async-push planning/docs for next slice (`T02/T03/T13-T16`):
-    - strengthened Story 15 with explicit sequencing + acceptance ownership matrix,
-    - added deterministic security/retry constants in ADR `0003`,
-    - upgraded Tasks `53/54/55/57/58/56` with sequencing, execution slices, risk controls,
-      test matrix, and validation command/evidence blocks,
-    - docs/task validators and backlog index pass after planning updates.
+  - Hardened async-push planning/docs for slices `T02/T03/T13-T16` and validated contracts.
   - Completed async-push docs implementation slice for `T02` and `T03`:
     - ADR `0003` accepted and cross-linked to Story 15 + Tasks 54-58 (`T02` complete),
     - published normative async push contract doc:
@@ -204,17 +199,21 @@ Primary implementation stories:
       normalized async KPI target to `100%` within first 3 attempts across epic/story/ADR/contract,
       and defined explicit auth capability + rate-limit contract (`429 rate_limited` + `Retry-After`)
       for SSE and webhook onboarding surfaces.
+  - Completed Task 55 (`T13`) event/SSE implementation slice:
+    - added lifecycle event persistence (`event_id`, `sequence`, replay cursor) and v2 SSE stream route
+      with deterministic `410 cursor_expired`,
+    - updated adapter non-GPU E2E lane and passed full quality + coverage + docs validators,
+    - synchronized status/checkoff: Task 55 `completed`, Epic `T13` checked.
 
 - 2026-02-18:
+
   - Epic 04 delivered service API v2 multi-format runtime and CLI remote-only pivot
     for non-PDF->MD routes.
-  - Follow-up hardening tasks 40-42 completed (contract tests, resources zip hardening,
-    cancellation CAS and module splits).
+  - Follow-up hardening tasks 40-42 completed (tests, zip-hardening, cancellation CAS).
 
 ## Next Actions
 
 - Execute async-push production slice in epic listed order:
-  - `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
   - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
   - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
   - `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`

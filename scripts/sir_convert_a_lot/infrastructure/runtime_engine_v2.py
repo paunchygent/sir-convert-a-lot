@@ -23,6 +23,7 @@ from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
+from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import JobLifecycleEventRecordV2
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobExpiredV2,
     JobMissingV2,
@@ -52,6 +53,7 @@ class ServiceRuntimeV2:
             data_root=config.data_root,
             raw_ttl_seconds=config.upload_ttl_seconds,
             artifact_ttl_seconds=config.result_ttl_seconds,
+            replay_horizon_seconds=config.sse_replay_horizon_seconds,
         )
         self.idempotency_store = IdempotencyStore(
             data_root=config.data_root,
@@ -167,6 +169,68 @@ class ServiceRuntimeV2:
 
     def put_idempotency(self, scope_key: str, fingerprint: str, job_id: str) -> None:
         self.idempotency_store.put(scope_key, fingerprint, job_id)
+
+    def resolve_sse_resume_sequence(
+        self,
+        *,
+        job_id: str,
+        cursor: str | None,
+        last_event_id: str | None,
+    ) -> int:
+        """Resolve replay pointer sequence for SSE streaming."""
+        self.job_store.sweep_expired()
+        try:
+            return self.job_store.resolve_events_resume_sequence(
+                job_id=job_id,
+                cursor=cursor,
+                last_event_id=last_event_id,
+                replay_horizon_seconds=self.config.sse_replay_horizon_seconds,
+            )
+        except JobExpiredV2 as exc:
+            raise ServiceError(
+                status_code=404,
+                code="job_expired",
+                message="Job has expired and is no longer available.",
+                retryable=False,
+                details={"job_id": exc.job_id},
+            ) from exc
+        except JobMissingV2:
+            raise ServiceError(
+                status_code=404,
+                code="job_not_found",
+                message="Job not found or expired.",
+                retryable=False,
+            ) from None
+
+    def get_sse_events(
+        self,
+        *,
+        job_id: str,
+        after_sequence: int,
+    ) -> list[JobLifecycleEventRecordV2]:
+        """Return lifecycle events newer than the supplied sequence pointer."""
+        self.job_store.sweep_expired()
+        try:
+            return self.job_store.list_job_events_after_sequence(
+                job_id=job_id,
+                after_sequence=after_sequence,
+                replay_horizon_seconds=self.config.sse_replay_horizon_seconds,
+            )
+        except JobExpiredV2 as exc:
+            raise ServiceError(
+                status_code=404,
+                code="job_expired",
+                message="Job has expired and is no longer available.",
+                retryable=False,
+                details={"job_id": exc.job_id},
+            ) from exc
+        except JobMissingV2:
+            raise ServiceError(
+                status_code=404,
+                code="job_not_found",
+                message="Job not found or expired.",
+                retryable=False,
+            ) from None
 
     def create_job(
         self,

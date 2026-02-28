@@ -14,6 +14,46 @@
   - all linked task statuses must be terminal before story status/checkbox can be terminal,
   - all linked story statuses must be terminal before epic status/checkbox can be terminal.
 
+## 2026-02-28: T13 Task 55 Completed (Event Emission + SSE)
+
+### Completed
+
+- Implemented v2 lifecycle event persistence and replay primitives:
+  - `scripts/sir_convert_a_lot/infrastructure/job_events_v2.py`
+  - manifest-backed `event_id` (ULID), monotonic `sequence`, replay cursor handling, and pruning.
+- Wired event emission into v2 lifecycle transitions and extracted store responsibilities to preserve
+  `<500` LoC module limits:
+  - `scripts/sir_convert_a_lot/infrastructure/job_store_v2_core.py`
+  - `scripts/sir_convert_a_lot/infrastructure/job_store_v2.py`
+- Added SSE stream route with replay + `410 cursor_expired` behavior and feature-flag gating:
+  - `scripts/sir_convert_a_lot/interfaces/http_routes_job_events_v2.py`
+  - `scripts/sir_convert_a_lot/interfaces/http_api.py` (router registration)
+- Added typed event contracts and SSE metrics payload fields:
+  - `scripts/sir_convert_a_lot/application/contracts_v2.py`
+- Updated required tests in the same implementation slice:
+  - new `tests/sir_convert_a_lot/test_api_contract_v2_sse.py`
+  - updated polling fallback regression in `tests/sir_convert_a_lot/test_api_contract_v2.py`
+  - updated adapter non-GPU E2E lane in
+    `tests/sir_convert_a_lot/test_integration_adapter_conformance.py`.
+- Status synchronization in strict order:
+  - Task 55 -> `completed` -> Epic `T13` checked.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm format-all` (pass)
+- `pdm run run-local-pdm lint-fix` (pass)
+- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 145 source files`)
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py` (pass: `22 passed, 3 skipped`)
+- `pdm run run-local-pdm coverage-gate` (pass: `352 passed, 5 skipped`; coverage `94.76%`)
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=105 rules=9`)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Next Session Goals
+
+- Start Task 57 (`T14`) implementation slice for webhook onboarding CRUD + secret lifecycle.
+- Keep strict order: do not check Epic `T14` before Task 57 is terminal with evidence.
+
 ## 2026-02-28: T02 -> T03 Async Push Docs Slice Completed
 
 ### Completed
@@ -52,7 +92,6 @@
 
 ### Completed
 
-- Closed review findings 1-3 for Task 54 contract completeness and KPI consistency:
 - Closed review findings 1-4 for Task 54 contract completeness and KPI consistency:
   - expanded async push contract with onboarding update/rotate/delete examples,
   - added deterministic callback verification error codes
