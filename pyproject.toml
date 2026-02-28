@@ -92,6 +92,7 @@ distribution = false
 "run-hemma" = "bash scripts/devops/run-hemma.sh"
 "hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"
 "hemma-verify-v2-conversions" = "bash scripts/devops/verify-hemma-v2-conversions.sh"
+"hemma-sync-prod-env-mirror" = "bash scripts/devops/sync-prod-env-mirror.sh"
 "hemma-repair-rocm-runtime" = "bash scripts/devops/repair-hemma-rocm-runtime.sh"
 "dev-start" = "bash scripts/devops/dev-compose.sh start"
 "dev-stop" = "bash scripts/devops/dev-compose.sh stop"

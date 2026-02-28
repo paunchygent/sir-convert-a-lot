@@ -4,7 +4,7 @@ id: RUN-hemma-devops-and-gpu
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 status: active
 created: '2026-02-11'
-updated: '2026-02-16'
+updated: '2026-02-28'
 owners:
   - platform
 system: hemma.hule.education
@@ -32,6 +32,15 @@ remaining aligned with existing HuleEdu and Skriptoteket server patterns.
 - `~/infrastructure`: nginx-proxy/certbot and shared edge infra.
 - `~/apps/shared-postgres` (container-level service): shared DB host via Docker network.
 - `/home/paunchygent/llama.cpp-rocm`: ROCm llama.cpp build context (shared GPU tooling).
+
+## Canonical Client Access Policy
+
+Only these client lanes are canonical for conversion calls:
+
+- Tunnel lane: `http://127.0.0.1:28085`
+- Internet lane: `https://convert.hule.education`
+
+Do not use superseded client lanes such as `127.0.0.1:8085` or `127.0.0.1:18085`.
 
 ## Repo Placement Policy (`~/apps`)
 
@@ -144,7 +153,7 @@ Use deterministic compliance checks before GPU-governed conversion workloads:
 pdm run run-local-pdm hemma-verify-gpu-runtime
 ```
 
-For dockerized lane verification (`8085`/`8086`) with compose services:
+For internal container validation only (`8085`/`8086`) with compose services:
 
 ```bash
 SIR_CONVERT_A_LOT_VERIFY_LANE=docker \
@@ -212,8 +221,7 @@ pdm run run-local-pdm run-hemma --shell 'sudo -n docker builder prune -af'
 
 ## Tunnel Workflow (Local Dev from Any Repo)
 
-Use a dedicated local-only service port to avoid collisions with other stacks.
-Recommended first assignment for Sir Convert-a-Lot: `28085`.
+Use the canonical tunnel mapping (`28085`) for laptop access to the Hemma prod listener.
 
 ```bash
 ssh hemma -L 28085:127.0.0.1:28085 -N
@@ -228,6 +236,39 @@ pdm run convert-a-lot convert ./pdfs \
   --output-dir ./research \
   --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+```
+
+Internet lane equivalent:
+
+```bash
+pdm run convert-a-lot convert ./pdfs \
+  --output-dir ./research \
+  --service-url https://convert.hule.education \
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+```
+
+## Production Env Mirroring Policy (Cross-Repo)
+
+Canonical secret root on Hemma:
+
+- `~/infrastructure/env/prod/`
+
+Required project symlink pattern:
+
+- `~/apps/sir-convert-a-lot/.env -> ~/infrastructure/env/prod/sir-convert-a-lot.env`
+- `~/apps/huleedu/.env -> ~/infrastructure/env/prod/huleedu.env`
+- `~/apps/skriptoteket/.env -> ~/infrastructure/env/prod/skriptoteket.env`
+- `~/apps/projektveckor-portal/.env -> ~/infrastructure/env/prod/projektveckor-portal.env`
+
+Key synchronization invariant:
+
+- `SIR_CONVERT_A_LOT_API_KEY` must be present and synchronized in Sir/HuleEdu/Skriptoteket env files.
+- `PVP_SIR_CONVERT_A_LOT_API_KEY` in Projektveckor must use the same secret value.
+
+Canonical execution command from laptop:
+
+```bash
+pdm run run-local-pdm run-hemma -- pdm run hemma-sync-prod-env-mirror
 ```
 
 ## Canonical Live Docling GPU Validation
@@ -245,7 +286,8 @@ pdm run run-hemma -- pdm run validate:docling-gpu-live \
 
 - Pull tracked changes on Hemma with `git pull`.
 - Do not use `scp` for tracked repository files.
-- Keep service internal-only (localhost bind + tunnel) until public exposure is explicitly decided.
+- Keep client call guidance restricted to tunnel (`28085`) or internet (`https://convert.hule.education`).
+- Do not introduce new direct local client lanes in docs, skills, or runbooks.
 - Keep GPU as default execution policy; CPU fallback requires documented decision update.
 
 ## Cross-Repo Coexistence Notes

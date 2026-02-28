@@ -1,8 +1,8 @@
 ---
 name: sir-convert-a-lot-pdf-to-md
 description: >-
-  Run Sir Convert-a-Lot PDF-to-Markdown conversions through local or Hemma
-  tunnel service endpoints, including readiness checks, CLI submission,
+  Run Sir Convert-a-Lot PDF-to-Markdown conversions through Hemma tunnel or
+  public domain service endpoints, including readiness checks, CLI submission,
   manifest review, and failed-job triage. Use when asked to convert PDFs to
   Markdown, run batch PDF-to-MD conversions, use Sir Convert-a-Lot/convert-a-lot,
   or debug conversion job outcomes.
@@ -18,17 +18,16 @@ description: >-
 
 ## Workflow
 
-1. Confirm the execution lane.
+1. Confirm the execution lane (only these are canonical).
 
-- Local service: `http://127.0.0.1:8085`
 - Hemma tunnel: `http://127.0.0.1:28085` after `ssh hemma -L 28085:127.0.0.1:28085 -N`
+- Public domain: `https://convert.hule.education`
 
 2. Run preflight checks before conversion.
 
 - `curl -fsS "$SERVICE_URL/readyz"`
-- Resolve API key for authenticated service calls:
-  - Preferred: `SIR_CONVERT_A_LOT_API_KEY`
-  - Dev fallback (when env var is unset): `dev-only-key`
+- Require API key for authenticated service calls:
+  - `SIR_CONVERT_A_LOT_API_KEY`
 
 3. Submit conversion with production defaults.
 
@@ -38,7 +37,7 @@ description: >-
   pdm run convert-a-lot convert ./pdfs \
     --output-dir ./research \
     --service-url "$SERVICE_URL" \
-    --api-key "${SIR_CONVERT_A_LOT_API_KEY:-dev-only-key}"
+    --api-key "$SIR_CONVERT_A_LOT_API_KEY"
   ```
 
 - From any other repo, route through this repo script surface:
@@ -47,7 +46,7 @@ description: >-
   pdm run run-local-pdm convert-a-lot convert ./pdfs \
     --output-dir ./research \
     --service-url "$SERVICE_URL" \
-    --api-key "${SIR_CONVERT_A_LOT_API_KEY:-dev-only-key}"
+    --api-key "$SIR_CONVERT_A_LOT_API_KEY"
   ```
 
 4. Inspect `sir_convert_a_lot_manifest.json` in `--output-dir`.
@@ -65,6 +64,7 @@ description: >-
 
 - Keep GPU-first defaults unless the user explicitly requests another mode.
 - Do not silently fall back to CPU when a GPU-required lane fails.
+- Do not use superseded client lanes such as `127.0.0.1:8085` or `127.0.0.1:18085`.
 - Use `backend_strategy=auto` unless the user explicitly asks for `pymupdf`.
 - If using `pymupdf`, enforce compatibility:
   - `--ocr-mode off`

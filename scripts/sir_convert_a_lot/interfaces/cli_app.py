@@ -95,9 +95,13 @@ def convert_command(
         help="Print selected route and discovered files without executing conversion.",
     ),
     service_url: str = typer.Option(
-        "http://127.0.0.1:18085",
+        "http://127.0.0.1:28085",
         "--service-url",
-        help="Sir Convert-a-Lot base URL (typically a local tunnel endpoint).",
+        help=(
+            "Sir Convert-a-Lot base URL "
+            "(canonical lanes: tunnel http://127.0.0.1:28085 or "
+            "internet https://convert.hule.education)."
+        ),
     ),
     api_key: str | None = typer.Option(
         None,

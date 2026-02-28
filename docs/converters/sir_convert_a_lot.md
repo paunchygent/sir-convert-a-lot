@@ -4,7 +4,7 @@ id: CONV-sir-convert-a-lot
 title: Sir Convert-a-Lot CLI and Service Usage
 status: active
 created: '2026-02-11'
-updated: '2026-02-18'
+updated: '2026-02-28'
 owners:
   - platform
 tags:
@@ -18,8 +18,11 @@ links:
 
 ## Purpose
 
-`Sir Convert-a-Lot` is the canonical local client for submitting conversion jobs to the
-Hemma-hosted conversion service over internal HTTP/tunnel.
+`Sir Convert-a-Lot` is the canonical client for submitting conversion jobs to the
+Hemma-hosted conversion service over:
+
+- tunnel lane: `http://127.0.0.1:28085`
+- internet lane: `https://convert.hule.education`
 
 Natural-language usage convention for assistants:
 
@@ -129,13 +132,7 @@ pdm run run-local-pdm hemma-repair-rocm-runtime
 - Compatibility facades at package root (`service.py`, `client.py`, `cli.py`, `models.py`, `runtime.py`)
   preserve stable imports during migration.
 
-## Local Commands
-
-Run service locally:
-
-```bash
-pdm run serve:sir-convert-a-lot
-```
+## Client Commands
 
 Run conversion client:
 
@@ -163,7 +160,7 @@ pdm run convert-a-lot convert ./handout.html \
   --output-dir ./out \
   --css ./styles/handout.css \
   --resources ./styles \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
@@ -180,7 +177,7 @@ pdm run convert-a-lot convert ./notes.md \
   --to pdf \
   --output-dir ./out \
   --resources ./assets \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
@@ -197,7 +194,7 @@ pdm run convert-a-lot convert ./notes.md \
   --to docx \
   --output-dir ./out \
   --resources ./assets \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
@@ -210,7 +207,7 @@ pdm run convert-a-lot convert ./notes.md \
   --to docx \
   --output-dir ./out \
   --reference-docx ./reference.docx \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
@@ -220,7 +217,7 @@ Convert PDF to DOCX via the service v2 pipeline:
 pdm run convert-a-lot convert ./paper.pdf \
   --to docx \
   --output-dir ./out \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
@@ -233,7 +230,7 @@ Optional styling via a reference DOCX is supported for this service v2 route as 
 pdm run convert-a-lot convert ./paper.pdf \
   --to docx \
   --output-dir ./out \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
   --reference-docx ./reference.docx
 ```
@@ -280,22 +277,33 @@ Alias command (same behavior):
 pdm run sir-convert-a-lot convert ./pdfs --output-dir ./research
 ```
 
-## Tunnel-Oriented Development Flow
+## Canonical Access Flow
 
-1. Start service on Hemma (or locally for testing).
-1. Expose the service through your local tunnel endpoint.
+1. Ensure service is running on Hemma.
+1. Choose exactly one client lane:
+   - tunnel: `http://127.0.0.1:28085`
+   - internet: `https://convert.hule.education`
 1. Run from any repo directory:
 
 ```bash
 pdm run convert-a-lot convert ./folder_with_pdfs \
   --output-dir ./research \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
   --backend-strategy auto \
   --ocr-mode auto \
   --table-mode accurate \
   --normalize strict \
   --acceleration-policy gpu_required
+```
+
+Internet lane equivalent:
+
+```bash
+pdm run convert-a-lot convert ./folder_with_pdfs \
+  --output-dir ./research \
+  --service-url https://convert.hule.education \
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
 ## Deterministic Manifest

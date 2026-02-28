@@ -19,6 +19,9 @@ services:
       - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
       - SIR_CONVERT_A_LOT_EVAL_DATA_DIR=/var/lib/sir-convert-a-lot/eval
+      - VIRTUAL_HOST=${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}
+      - VIRTUAL_PORT=8085
+      - LETSENCRYPT_HOST=${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}
     command:
       - pdm
       - run
@@ -33,6 +36,8 @@ services:
       - render
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
+    networks:
+      - hule-network
     healthcheck:
       test:
         [
@@ -58,6 +63,9 @@ services:
       - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
       - SIR_CONVERT_A_LOT_EVAL_DATA_DIR=/var/lib/sir-convert-a-lot/eval
+      - VIRTUAL_HOST=
+      - LETSENCRYPT_HOST=
+      - VIRTUAL_PORT=8086
     command:
       - pdm
       - run
@@ -88,3 +96,7 @@ services:
 volumes:
   sir-convert-a-lot-prod-data:
   sir-convert-a-lot-eval-data:
+
+networks:
+  hule-network:
+    external: true

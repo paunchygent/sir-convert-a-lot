@@ -2,8 +2,8 @@
 name: sir-convert-a-lot-devops-hemma
 description: >-
   Repo-specific DevOps skill for running Sir Convert-a-Lot on Hemma with
-  GPU-first policy, tunnel-first local development, and cross-repo awareness
-  of HuleEdu and Skriptoteket server layout.
+  GPU-first policy, tunnel-or-internet client access policy, and cross-repo
+  awareness of HuleEdu and Skriptoteket server layout.
 ---
 
 # Sir Convert-a-Lot DevOps (Hemma + GPU)
@@ -89,6 +89,18 @@ ssh hemma "/bin/bash -lc 'mkdir -p /home/paunchygent/apps && cd /home/paunchygen
 - If fallback policy changes, require ADR/task updates first.
 
 ## Tunnel-First Dev Flow
+
+Canonical client access lanes (no superseded local lanes):
+
+- Tunnel lane: `http://127.0.0.1:28085`
+- Internet lane: `https://convert.hule.education`
+- Do not guide clients to `127.0.0.1:8085` or `127.0.0.1:18085`.
+
+Canonical Hemma prod env mirror/symlink command:
+
+```bash
+pdm run run-hemma -- pdm run hemma-sync-prod-env-mirror
+```
 
 ```bash
 ssh hemma -L 28085:127.0.0.1:28085 -N

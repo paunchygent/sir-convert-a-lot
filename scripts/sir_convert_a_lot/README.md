@@ -25,10 +25,11 @@ Planned: PDF→DOCX (hybrid) and other legacy converter parity (see
 
 ## Usage
 
-### Start the service
+### Service readiness (Hemma)
 
 ```bash
-pdm run serve:sir-convert-a-lot
+ssh hemma -L 28085:127.0.0.1:28085 -N
+curl -fsS http://127.0.0.1:28085/readyz
 ```
 
 ### Convert PDFs
@@ -37,12 +38,21 @@ pdm run serve:sir-convert-a-lot
 pdm run convert-a-lot convert ./pdfs --output-dir ./output
 ```
 
-With explicit service URL and API key (tunnel to GPU host):
+With explicit service URL and API key (tunnel to Hemma host):
 
 ```bash
 pdm run convert-a-lot convert ./pdfs \
   --output-dir ./output \
-  --service-url http://127.0.0.1:18085 \
+  --service-url http://127.0.0.1:28085 \
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+```
+
+Public internet lane:
+
+```bash
+pdm run convert-a-lot convert ./pdfs \
+  --output-dir ./output \
+  --service-url https://convert.hule.education \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
@@ -64,7 +74,7 @@ pdm run benchmark:story-003b \
 | `--css` | (none) | CSS stylesheet(s) for HTML→PDF (repeatable) |
 | `--keep-html` | `false` | Keep intermediate HTML under `--output-dir/_intermediates/` for MD→PDF and MD→DOCX |
 | `--reference-docx` | (none) | Reference DOCX for styling MD→DOCX conversions |
-| `--service-url` | `http://127.0.0.1:18085` | Service base URL |
+| `--service-url` | `http://127.0.0.1:28085` | Service base URL (tunnel lane; internet lane: `https://convert.hule.education`) |
 | `--api-key` | `$SIR_CONVERT_A_LOT_API_KEY` | API key |
 | `--wait-seconds` | `5` | Bounded wait on job creation (0–20) |
 | `--max-poll-seconds` | `120` | Max polling time per job |
