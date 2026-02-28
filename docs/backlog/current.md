@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-02-28'
+last_updated: '2026-03-01'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md
@@ -31,6 +31,8 @@ related:
   - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
   - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
   - docs/backlog/tasks/task-59-enforce-90-percent-test-coverage-gate-for-conversion-core.md
+  - docs/backlog/tasks/task-60-harden-v2-converter-security-for-ssrf-traversal-and-timeout-enforcement.md
+  - docs/backlog/tasks/task-61-enforce-pandoc-sandbox-and-bounded-subprocess-stderr-handling.md
 labels:
   - session-log
   - active-work
@@ -61,152 +63,49 @@ Primary implementation stories:
 
 ## Worklog
 
+- 2026-03-01:
+
+  - Completed Task 61 security follow-up hardening for Pandoc wrappers:
+    - added `--sandbox` to all v2 Pandoc conversion wrappers to close unsandboxed
+      SSRF/LFI attack surface,
+    - introduced shared bounded subprocess helper:
+      - `scripts/sir_convert_a_lot/infrastructure/pandoc_subprocess.py`,
+    - replaced unbounded `capture_output=True` wrapper execution with bounded
+      stderr capture via temp-file strategy and timeout-safe process cleanup.
+  - Hardened workdir traversal error echo handling in executor:
+    - sanitized user-provided filename echo details in
+      `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py`.
+  - Extended and updated regression tests for sandbox and timeout behavior:
+    - `tests/sir_convert_a_lot/test_pandoc_docx_to_markdown.py`
+    - `tests/sir_convert_a_lot/test_pandoc_html_to_markdown.py`
+    - `tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py`
+  - Validation evidence for Task 61:
+    - `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 157 source files`)
+    - `pdm run run-local-pdm coverage-gate` (pass: `392 passed, 5 skipped`; coverage `95.39%`)
+    - `pdm run run-local-pdm validate-tasks` (pass: `Validated 86 backlog files`)
+    - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=108 rules=9`)
+  - Task 61 moved to `completed` with checklist/evidence synchronized.
+
 - 2026-02-28:
 
-  - Shifted the active planning context from Epic 04 coexistence assumptions to Epic 05 clean-break
-    requirements from the latest brutal review directive.
-  - Completed coverage hardening gate task (`T01` / Task 59):
-    - conversion-core coverage gate is passing at `92.77%` with enforced fail-under `90%`,
-    - strict typing cleanup completed for v2 edge-case test modules with file-size compliance
-      (`<500` LoC per file after split).
-  - Activated first real implementation slice for Epic 05 clean-break execution:
-    - `docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md`
-      moved to `in_progress` with an ordered Slice 44A implementation plan.
-  - Completed Slice 44B and terminalized Task 44:
-    - removed v1 conversion route registration from service API wiring,
-    - removed CLI v1 conversion branching and locked `pdf -> md` to v2,
-    - migrated contract tests to assert v1 conversion route absence + v2 `pdf -> md` lifecycle,
-    - passed full gates including `coverage-gate` at `96.10%`,
-    - checked `T04` in Epic 05 after task status reached `completed`.
-  - Completed Slice 45A and terminalized Task 45:
-    - hardened v2 route-option validation parity (API rejects `resources` and `reference_docx` for
-      `output_format="md"`),
-    - extended CLI manifest contract with deterministic route metadata
-      (`source_format`, `target_format`, `pipeline_used`),
-    - strengthened v2 contract/CLI tests (strict no-op status expectations, route-table v1 absence,
-      artifact content-type assertions, idempotency/correlation propagation checks),
-    - added deterministic non-GPU adapter E2E submit/poll/fetch + idempotent replay lane,
-    - passed full gates including `coverage-gate` at `96.14%`,
-    - checked `T05` and Story `S01` in Epic 05 after task/story terminalization.
-  - Completed Slice 46A and terminalized Task 46:
-    - published the normative DOCX template catalog contract:
-      - `docs/converters/docx-template-catalog-contract-v2.md`
-    - synced v2 converter contract doc with template selector and template discovery rollout
-      contract references:
-      - `docs/converters/multi_format_conversion_service_api_v2.md`
-    - checked `T06` in Epic 05 after task status reached `completed`.
-  - Completed Slice 47A and terminalized Task 47:
-    - implemented v2 DOCX template catalog store + integrity checks and discovery endpoints
-      (`/v2/templates/docx*`),
-    - integrated `conversion.template` selector validation + deterministic create-job errors for
-      unknown template ids/versions,
-    - shipped three curated DOCX fixture templates (`academic-report`, `classroom-handout`,
-      `project-week-summary`),
-    - added template audit metadata to successful result contracts
-      (`template_id`, `template_version`, `template_artifact_sha256`),
-    - passed full gates including `coverage-gate` at `95.41%`,
-    - checked `T07` and Story `S02` in Epic 05 after task/story terminalization.
-  - Activated Task 48 planning slice (`docx -> md`):
-    - moved Task 48 to `in_progress`,
-    - added an ordered execution plan, risk controls, test matrix, and validation command block.
-  - Completed Slice 48A and terminalized Task 48:
-    - implemented v2 `docx -> md` route path across domain contract, HTTP create validation, client
-      content-type inference, CLI route registry, and runtime executor branch,
-    - added dedicated converter + normalization modules:
-      - `scripts/sir_convert_a_lot/infrastructure/pandoc_docx_to_markdown.py`
-      - `scripts/sir_convert_a_lot/infrastructure/markdown_normalization_v2.py`
-    - added deterministic contract coverage for lifecycle, executor behavior, and CLI route flow:
-      - `tests/sir_convert_a_lot/test_api_contract_v2_docx_to_md.py`
-      - `tests/sir_convert_a_lot/test_v2_conversion_executor_docx_to_md.py`
-      - `tests/sir_convert_a_lot/test_pandoc_docx_to_markdown.py`
-    - synchronized converter docs for `docx -> md` route matrix, route semantics, and deterministic
-      error mapping.
-    - passed full gates including `coverage-gate` (`332 passed, 5 skipped`; total coverage `95.08%`),
-      then checked Epic `T08` after task terminalization.
-  - Activated Task 49 planning slice (`html -> md` with resources + deterministic normalization):
-    - moved Task 49 to `in_progress`,
-    - added ordered Slice 49A execution plan, explicit resources-policy decision, risk controls,
-      test matrix, and validation command block.
-  - Completed Slice 49A and terminalized Task 49:
-    - implemented v2 `html -> md` route across domain contract, route validations, executor
-      branching, and CLI route/payload handling,
-    - added deterministic local-resource validation for HTML markdown ingress
-      (`html_resource_not_found`, `html_resource_invalid`),
-    - added dedicated Pandoc wrapper for HTML->Markdown conversion:
-      - `scripts/sir_convert_a_lot/infrastructure/pandoc_html_to_markdown.py`,
-    - updated converter/CLI docs with `html -> md` route semantics, examples, and deterministic
-      error contracts,
-    - added lifecycle/executor/converter/CLI tests for `html -> md`:
-      - `tests/sir_convert_a_lot/test_api_contract_v2_html_to_md.py`
-      - `tests/sir_convert_a_lot/test_v2_conversion_executor_html_to_md.py`
-      - `tests/sir_convert_a_lot/test_pandoc_html_to_markdown.py`
-    - passed full gates including `coverage-gate` (`347 passed, 5 skipped`; total coverage
-      `95.21%`), then checked Epic `T09` after task terminalization.
-  - Updated async push planning docs to require adapter non-GPU E2E updates in the same PR as push
-    logic changes:
-    - `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md`
-    - `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
-    - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
-  - Rewrote `review-01-brutal-review-service-api-v2-multi-format-pivot` as the active code-review
-    authority, including mandatory v2-only, no-deprecation execution constraints.
-  - Epic 05 planning surfaces are established and now tracked by the epic/story/task files directly.
-  - Async push planning stack is in place (`Story 15`, ADR `0003`, Tasks `53-59`) and queued after
-    completed clean-break slices.
-  - Performed a careful planning hardening pass for upcoming cleanup/integration tasks:
-    - Task 52 now has explicit sequencing/dependency guidance for downstream contract publication.
-    - Task 50 now includes a concrete single-runtime cutover plan, risk controls, and validation
-      matrix tied to eval-container removal.
-    - Task 51 now includes explicit active-surface hygiene scope, v2-only purge steps, and
-      deterministic validation commands.
-  - Completed Slice 52A and terminalized Task 52 (`T10`):
-    - published downstream v2 integration contract:
-      - `docs/converters/downstream_integration_contract_v2.md`
-    - linked active converter/runbook docs to downstream contract authority.
-    - checked Epic `T10` and Story `S03` after task/story terminalization.
-  - Completed Slice 50A and terminalized Task 50 (`T11`):
-    - removed eval runtime topology from compose/docker/script/runtime/test surfaces,
-    - removed eval entrypoint module and eval readiness branches,
-    - verified single-runtime docker and v2 conversion probes.
-  - Completed Slice 51A and terminalized Task 51 (`T12`):
-    - purged stale active-surface v1/local-hybrid docs and code references,
-    - removed inactive v1 job-router module from interfaces,
-    - converted compatibility client transport to v2 endpoints only,
-    - simplified CLI route kind semantics to service-only.
-  - Synchronized status/checkoff order:
-    - Task 50 -> `completed` -> Epic `T11` checked,
-    - Task 51 -> `completed` -> Epic `T12` checked,
-    - Story 12 -> `completed` -> Epic `S04` checked.
-  - Validation evidence for T10-T12 + S04 closeout:
-    - `pdm run run-local-pdm format-all` (pass)
-    - `pdm run run-local-pdm lint-fix` (pass)
-    - `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 142 source files`)
-    - `pdm run run-local-pdm coverage-gate` (pass: `347 passed, 5 skipped`; coverage `94.94%`)
-    - targeted T11 test matrix (pass: `17 passed`)
-    - targeted T12 test matrix (pass: `37 passed, 3 skipped`)
-    - `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
-    - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=104 rules=9`)
-    - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
-  - Hardened async-push planning/docs for slices `T02/T03/T13-T16` and validated contracts.
-  - Completed async-push docs implementation slice for `T02` and `T03`:
-    - ADR `0003` accepted and cross-linked to Story 15 + Tasks 54-58 (`T02` complete),
-    - published normative async push contract doc:
-      `docs/converters/multi_format_conversion_service_api_v2_async_push.md` (`T03` complete),
-    - synchronized tracking order: Task 54 terminalized, Epic `T02/T03` checked, Story 15 moved to
-      `in_progress`.
-    - docs validators/index + ADR/contract grep checks pass.
-  - Applied ruthless-review remediation on T03 contract:
-    - added onboarding update/rotate/delete examples, added signature/timestamp/replay error codes,
-      normalized async KPI target to `100%` within first 3 attempts across epic/story/ADR/contract,
-      and defined explicit auth capability + rate-limit contract (`429 rate_limited` + `Retry-After`)
-      for SSE and webhook onboarding surfaces.
-  - Completed async-push implementation and operational sign-off (`T13-T16`):
-    - finalized webhook onboarding (`T14`), queue-backed delivery worker + retries/DLQ + signing/replay
-      controls (`T15`), and published async-push operations runbook + KPI template (`T16`).
-    - updated adapter non-GPU E2E in the same push-logic slice and passed full coverage gate
-      (`373 passed, 5 skipped`; coverage `93.03%`).
-    - synchronized status/checkoff order: Tasks 55/57/58/56 terminal, Story 15 terminal, Epic 05 terminal.
-  - Completed Task 60 security/resilience remediation: WeasyPrint fetch sandboxing (SSRF/LFI fail-closed), traversal guards for CSS/reference DOCX, Pandoc subprocess timeout enforcement, and HTML resource-validation parity for `html -> md/pdf/docx`.
-  - Validation for Task 60: targeted suite `62 passed`; full gate `388 passed, 5 skipped`, coverage `95.53%`; `typecheck-all` and docs/task validators pass.
+  - Epic 05 was fully executed and terminalized in strict order:
+    - clean-break v2-only removal (`T04-T05`, `S01`),
+    - DOCX template governance and endpoints (`T06-T07`, `S02`),
+    - Markdown ingress routes (`T08-T09`),
+    - downstream contract + runtime/docs cleanup (`T10-T12`, `S03-S04`),
+    - async push ADR/contract/implementation (`T02-T03`, `T13-T16`, `S05`).
+  - Key milestones from the day:
+    - v1 conversion surfaces removed; v2 route registry and contracts hardened,
+    - `docx -> md` and `html -> md` routes implemented with deterministic validation and tests,
+    - eval container/runtime removed; topology simplified to single runtime,
+    - async push stack completed (SSE replay + webhook onboarding + signed retry/DLQ delivery),
+    - Task 60 security hardening delivered (WeasyPrint SSRF/LFI guard + traversal + timeout parity).
+  - Validation trend remained above target throughout:
+    - coverage gates across slices ranged from `93.03%` to `96.14%`,
+    - docs/task validators and typecheck remained passing.
+  - Canonical detailed evidence is preserved in:
+    - `docs/backlog/tasks/task-44-*.md` through `task-60-*.md`,
+    - `.agents/session/handoff.md` dated entries for 2026-02-28.
 
 - 2026-02-18:
 

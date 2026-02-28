@@ -14,6 +14,45 @@
   - all linked task statuses must be terminal before story status/checkbox can be terminal,
   - all linked story statuses must be terminal before epic status/checkbox can be terminal.
 
+## 2026-03-01: Task 61 Completed (Pandoc Sandbox + Bounded Stderr)
+
+### Completed
+
+- Closed critical Pandoc SSRF/LFI attack surface by enforcing `--sandbox` across:
+  - `scripts/sir_convert_a_lot/infrastructure/pandoc_docx_to_markdown.py`,
+  - `scripts/sir_convert_a_lot/infrastructure/pandoc_html_to_markdown.py`,
+  - `scripts/sir_convert_a_lot/infrastructure/pandoc_html_to_docx.py`,
+  - `scripts/sir_convert_a_lot/infrastructure/pandoc_markdown_to_html.py`.
+- Added bounded-memory subprocess execution helper:
+  - `scripts/sir_convert_a_lot/infrastructure/pandoc_subprocess.py`.
+  - execution now discards stdout, captures bounded stderr only, and performs timeout-safe cleanup.
+- Hardened executor error detail handling:
+  - sanitized traversal-error filename echo in
+    `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py`.
+- Extended wrapper tests to assert sandbox flags and timeout/error invariants:
+  - `tests/sir_convert_a_lot/test_pandoc_docx_to_markdown.py`,
+  - `tests/sir_convert_a_lot/test_pandoc_html_to_markdown.py`,
+  - `tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py`.
+- Terminalized planning artifact:
+  - `docs/backlog/tasks/task-61-enforce-pandoc-sandbox-and-bounded-subprocess-stderr-handling.md`
+    -> `status: completed`.
+- Archived long-term memory entry in:
+  - `docs/backlog/current.md` (2026-03-01 worklog section).
+
+### Validation Evidence
+
+- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 157 source files`)
+- `pdm run run-local-pdm coverage-gate` (pass: `392 passed, 5 skipped`; coverage `95.39%`)
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 86 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=108 rules=9`)
+
+### Next Session Goals
+
+- Run a focused ruthless review on task-60/task-61 changed files and ensure no residual
+  conversion-surface security gaps remain.
+- Decide whether to harden `specs_v2` strictness policy (`ConfigDict(strict=True)`) as a
+  separate scoped task to avoid unintended API coercion breakage.
+
 ## 2026-02-28: Task 60 Completed (v2 Security/Resilience Hardening)
 
 ### Completed

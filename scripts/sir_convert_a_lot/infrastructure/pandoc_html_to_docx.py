@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import PANDOC_NOT_INSTALLED
+from scripts.sir_convert_a_lot.infrastructure.pandoc_subprocess import run_pandoc_command
 
 HTML_TO_DOCX_FAILED = "html_to_docx_failed"
 HTML_TO_DOCX_EMPTY = "html_to_docx_empty"
@@ -65,6 +66,7 @@ def convert_html_to_docx(
 
     command = [
         pandoc_bin,
+        "--sandbox",
         html_path.as_posix(),
         "--from=html",
         "--to=docx",
@@ -77,12 +79,9 @@ def convert_html_to_docx(
         command.extend(["--reference-doc", reference_docx_path.as_posix()])
 
     try:
-        completed = subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
+        return_code, stderr = run_pandoc_command(
+            command=command,
+            timeout_seconds=timeout_seconds,
         )
     except subprocess.TimeoutExpired as exc:
         raise HtmlToDocxConversionError(
@@ -95,12 +94,11 @@ def convert_html_to_docx(
             message=f"Failed to run pandoc: {exc}",
         ) from exc
 
-    if completed.returncode != 0:
-        stderr = (completed.stderr or "").strip()
+    if return_code != 0:
         detail = f": {stderr}" if stderr else ""
         raise HtmlToDocxConversionError(
             code=HTML_TO_DOCX_FAILED,
-            message=f"Pandoc failed with exit code {completed.returncode}{detail}",
+            message=f"Pandoc failed with exit code {return_code}{detail}",
         )
 
     if not output_docx_path.exists() or output_docx_path.stat().st_size == 0:

@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import PANDOC_NOT_INSTALLED
+from scripts.sir_convert_a_lot.infrastructure.pandoc_subprocess import run_pandoc_command
 
 HTML_TO_MARKDOWN_FAILED = "html_to_markdown_failed"
 HTML_TO_MARKDOWN_EMPTY = "html_to_markdown_empty"
@@ -63,6 +64,7 @@ def convert_html_to_markdown(
 
     command = [
         pandoc_bin,
+        "--sandbox",
         html_path.as_posix(),
         "--from=html",
         "--to=gfm",
@@ -73,12 +75,9 @@ def convert_html_to_markdown(
     ]
 
     try:
-        completed = subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
+        return_code, stderr = run_pandoc_command(
+            command=command,
+            timeout_seconds=timeout_seconds,
         )
     except subprocess.TimeoutExpired as exc:
         raise HtmlToMarkdownConversionError(
@@ -91,12 +90,11 @@ def convert_html_to_markdown(
             message=f"Failed to run pandoc: {exc}",
         ) from exc
 
-    if completed.returncode != 0:
-        stderr = (completed.stderr or "").strip()
+    if return_code != 0:
         detail = f": {stderr}" if stderr else ""
         raise HtmlToMarkdownConversionError(
             code=HTML_TO_MARKDOWN_FAILED,
-            message=f"Pandoc failed with exit code {completed.returncode}{detail}",
+            message=f"Pandoc failed with exit code {return_code}{detail}",
         )
 
     if not output_markdown_path.exists() or output_markdown_path.stat().st_size == 0:

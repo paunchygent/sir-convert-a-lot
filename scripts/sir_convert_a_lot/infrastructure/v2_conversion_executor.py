@@ -134,6 +134,10 @@ def _resolve_document_timeout_seconds(spec: JobSpecV2) -> int:
     return execution.document_timeout_seconds
 
 
+def _sanitize_filename_for_error(value: str) -> str:
+    return value.encode("unicode_escape").decode("ascii")
+
+
 def _resolve_workdir_resource_path(
     *,
     workdir: Path,
@@ -141,15 +145,16 @@ def _resolve_workdir_resource_path(
     field: str,
     invalid_code: str,
 ) -> Path:
+    safe_filename = _sanitize_filename_for_error(filename)
     candidate = (workdir / filename).resolve()
     resolved_workdir = workdir.resolve()
     if not candidate.is_relative_to(resolved_workdir):
         raise ServiceError(
             status_code=422,
             code=invalid_code,
-            message=f"Resource path escapes workdir for field '{field}': {filename}",
+            message=f"Resource path escapes workdir for field '{field}': {safe_filename}",
             retryable=False,
-            details={"field": field, "filename": filename},
+            details={"field": field, "filename": safe_filename},
         )
     return candidate
 

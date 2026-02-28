@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.sir_convert_a_lot.infrastructure import pandoc_html_to_markdown
 from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_markdown import (
     HTML_TO_MARKDOWN_EMPTY,
     HTML_TO_MARKDOWN_FAILED,
@@ -23,12 +24,6 @@ from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_markdown import (
     convert_html_to_markdown,
 )
 from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import PANDOC_NOT_INSTALLED
-
-
-class _Completed:
-    def __init__(self, *, returncode: int, stderr: str = "") -> None:
-        self.returncode = returncode
-        self.stderr = stderr
 
 
 def test_convert_html_to_markdown_rejects_missing_pandoc(
@@ -57,11 +52,19 @@ def test_convert_html_to_markdown_maps_generic_pandoc_failure(
     output_md = tmp_path / "out.md"
 
     monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/pandoc")
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        lambda *args, **kwargs: _Completed(returncode=2, stderr="unexpected conversion error"),
-    )
+    seen_commands: list[list[str]] = []
+
+    def _fake_run_pandoc_command(
+        *,
+        command: list[str],
+        timeout_seconds: int,
+        stderr_max_bytes: int = 65536,
+    ) -> tuple[int, str]:
+        del timeout_seconds, stderr_max_bytes
+        seen_commands.append(command)
+        return (2, "unexpected conversion error")
+
+    monkeypatch.setattr(pandoc_html_to_markdown, "run_pandoc_command", _fake_run_pandoc_command)
 
     with pytest.raises(HtmlToMarkdownConversionError) as exc_info:
         convert_html_to_markdown(
@@ -72,6 +75,7 @@ def test_convert_html_to_markdown_maps_generic_pandoc_failure(
 
     error = exc_info.value
     assert error.code == HTML_TO_MARKDOWN_FAILED
+    assert "--sandbox" in seen_commands[0]
 
 
 def test_convert_html_to_markdown_rejects_empty_output(
@@ -83,11 +87,19 @@ def test_convert_html_to_markdown_rejects_empty_output(
     output_md = tmp_path / "out.md"
 
     monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/pandoc")
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        lambda *args, **kwargs: _Completed(returncode=0, stderr=""),
-    )
+    seen_commands: list[list[str]] = []
+
+    def _fake_run_pandoc_command(
+        *,
+        command: list[str],
+        timeout_seconds: int,
+        stderr_max_bytes: int = 65536,
+    ) -> tuple[int, str]:
+        del timeout_seconds, stderr_max_bytes
+        seen_commands.append(command)
+        return (0, "")
+
+    monkeypatch.setattr(pandoc_html_to_markdown, "run_pandoc_command", _fake_run_pandoc_command)
 
     with pytest.raises(HtmlToMarkdownConversionError) as exc_info:
         convert_html_to_markdown(
@@ -98,6 +110,7 @@ def test_convert_html_to_markdown_rejects_empty_output(
 
     error = exc_info.value
     assert error.code == HTML_TO_MARKDOWN_EMPTY
+    assert "--sandbox" in seen_commands[0]
 
 
 def test_convert_html_to_markdown_maps_timeout(
@@ -110,11 +123,17 @@ def test_convert_html_to_markdown_maps_timeout(
 
     monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/pandoc")
 
-    def _raise_timeout(*args: object, **kwargs: object) -> _Completed:
-        del args, kwargs
+    def _raise_timeout(
+        *,
+        command: list[str],
+        timeout_seconds: int,
+        stderr_max_bytes: int = 65536,
+    ) -> tuple[int, str]:
+        del timeout_seconds, stderr_max_bytes
+        assert "--sandbox" in command
         raise subprocess.TimeoutExpired(cmd=["pandoc"], timeout=5)
 
-    monkeypatch.setattr(subprocess, "run", _raise_timeout)
+    monkeypatch.setattr(pandoc_html_to_markdown, "run_pandoc_command", _raise_timeout)
 
     with pytest.raises(HtmlToMarkdownConversionError) as exc_info:
         convert_html_to_markdown(
@@ -136,13 +155,20 @@ def test_convert_html_to_markdown_success(
     output_md = tmp_path / "out.md"
 
     monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/pandoc")
+    seen_commands: list[list[str]] = []
 
-    def _fake_run(*args, **kwargs) -> _Completed:
-        del args, kwargs
+    def _fake_run_pandoc_command(
+        *,
+        command: list[str],
+        timeout_seconds: int,
+        stderr_max_bytes: int = 65536,
+    ) -> tuple[int, str]:
+        del timeout_seconds, stderr_max_bytes
+        seen_commands.append(command)
         output_md.write_text("# Converted\n\nBody\n", encoding="utf-8")
-        return _Completed(returncode=0, stderr="")
+        return (0, "")
 
-    monkeypatch.setattr(subprocess, "run", _fake_run)
+    monkeypatch.setattr(pandoc_html_to_markdown, "run_pandoc_command", _fake_run_pandoc_command)
 
     convert_html_to_markdown(
         html_path=input_html,
@@ -152,3 +178,4 @@ def test_convert_html_to_markdown_success(
 
     assert output_md.exists()
     assert output_md.read_text(encoding="utf-8").startswith("# Converted")
+    assert "--sandbox" in seen_commands[0]

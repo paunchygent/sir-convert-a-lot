@@ -21,6 +21,8 @@ from pathlib import Path
 
 import yaml
 
+from scripts.sir_convert_a_lot.infrastructure.pandoc_subprocess import run_pandoc_command
+
 PANDOC_NOT_INSTALLED = "pandoc_not_installed"
 MARKDOWN_TO_HTML_FAILED = "markdown_to_html_failed"
 MARKDOWN_TO_HTML_EMPTY = "markdown_to_html_empty"
@@ -82,6 +84,7 @@ def convert_markdown_to_html(
 
     command = [
         pandoc_bin,
+        "--sandbox",
         markdown_path.as_posix(),
         "--standalone",
         "--from=markdown+smart",
@@ -93,12 +96,9 @@ def convert_markdown_to_html(
     ]
 
     try:
-        completed = subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
+        return_code, stderr = run_pandoc_command(
+            command=command,
+            timeout_seconds=timeout_seconds,
         )
     except subprocess.TimeoutExpired as exc:
         raise MarkdownToHtmlConversionError(
@@ -111,12 +111,11 @@ def convert_markdown_to_html(
             message=f"Failed to run pandoc: {exc}",
         ) from exc
 
-    if completed.returncode != 0:
-        stderr = (completed.stderr or "").strip()
+    if return_code != 0:
         detail = f": {stderr}" if stderr else ""
         raise MarkdownToHtmlConversionError(
             code=MARKDOWN_TO_HTML_FAILED,
-            message=f"Pandoc failed with exit code {completed.returncode}{detail}",
+            message=f"Pandoc failed with exit code {return_code}{detail}",
         )
 
     if not output_html_path.exists() or output_html_path.stat().st_size == 0:
