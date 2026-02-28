@@ -123,6 +123,25 @@ Primary implementation stories:
       error mapping.
     - passed full gates including `coverage-gate` (`332 passed, 5 skipped`; total coverage `95.08%`),
       then checked Epic `T08` after task terminalization.
+  - Activated Task 49 planning slice (`html -> md` with resources + deterministic normalization):
+    - moved Task 49 to `in_progress`,
+    - added ordered Slice 49A execution plan, explicit resources-policy decision, risk controls,
+      test matrix, and validation command block.
+  - Completed Slice 49A and terminalized Task 49:
+    - implemented v2 `html -> md` route across domain contract, route validations, executor
+      branching, and CLI route/payload handling,
+    - added deterministic local-resource validation for HTML markdown ingress
+      (`html_resource_not_found`, `html_resource_invalid`),
+    - added dedicated Pandoc wrapper for HTML->Markdown conversion:
+      - `scripts/sir_convert_a_lot/infrastructure/pandoc_html_to_markdown.py`,
+    - updated converter/CLI docs with `html -> md` route semantics, examples, and deterministic
+      error contracts,
+    - added lifecycle/executor/converter/CLI tests for `html -> md`:
+      - `tests/sir_convert_a_lot/test_api_contract_v2_html_to_md.py`
+      - `tests/sir_convert_a_lot/test_v2_conversion_executor_html_to_md.py`
+      - `tests/sir_convert_a_lot/test_pandoc_html_to_markdown.py`
+    - passed full gates including `coverage-gate` (`347 passed, 5 skipped`; total coverage
+      `95.21%`), then checked Epic `T09` after task terminalization.
   - Updated async push planning docs to require adapter non-GPU E2E updates in the same PR as push
     logic changes:
     - `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md`
@@ -172,7 +191,6 @@ Primary implementation stories:
 ## Next Actions
 
 - Proceed in epic listed order for Story 13 and Story 11 scope:
-  - `docs/backlog/tasks/task-49-add-v2-route-html-to-md-with-resources-and-normalization.md`
   - `docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md`
 - Complete legacy/runtime cleanup after markdown/template pathways:
   - `docs/backlog/tasks/task-50-remove-eval-container-and-simplify-compose-runtime-topology.md`

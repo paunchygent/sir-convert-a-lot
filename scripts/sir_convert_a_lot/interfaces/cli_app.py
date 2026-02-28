@@ -79,7 +79,7 @@ def convert_command(
         "--to",
         help=(
             "Target format. Implemented routes include: "
-            "'md' (pdf->md and docx->md via service v2), "
+            "'md' (pdf->md, docx->md, and html->md via service v2), "
             "'pdf' (html->pdf and md->pdf via service v2), and 'docx' (pdf->docx, md->docx, "
             "and html->docx via service v2). "
             "Use 'convert-a-lot routes' for details."
@@ -238,11 +238,17 @@ def convert_command(
         raise typer.BadParameter("--css is only supported for PDF outputs.")
     if route.target is TargetFormat.PDF and reference_docx is not None:
         raise typer.BadParameter("--reference-docx is only supported for DOCX outputs.")
-    if route.target is TargetFormat.MD and (
-        css or resources is not None or reference_docx is not None
+    if route.target is TargetFormat.MD and css:
+        raise typer.BadParameter("V2 markdown-target routes do not accept --css.")
+    if route.target is TargetFormat.MD and reference_docx is not None:
+        raise typer.BadParameter("V2 markdown-target routes do not accept --reference-docx.")
+    if (
+        route.target is TargetFormat.MD
+        and resources is not None
+        and route.source is not SourceFormat.HTML
     ):
         raise typer.BadParameter(
-            "V2 markdown-target routes do not accept --css, --resources, or --reference-docx."
+            "V2 markdown-target routes only accept --resources for html -> md."
         )
 
     resources_zip_bytes: bytes | None
@@ -252,6 +258,9 @@ def convert_command(
             resources=resources, css_paths=tuple(css)
         )
     elif route.target is TargetFormat.DOCX:
+        resources_zip_bytes, _ = build_resources_zip_payload(resources=resources, css_paths=())
+        css_filenames = []
+    elif route.source is SourceFormat.HTML and resources is not None:
         resources_zip_bytes, _ = build_resources_zip_payload(resources=resources, css_paths=())
         css_filenames = []
     else:

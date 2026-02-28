@@ -11,7 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
-from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2
+from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.docx_template_catalog_v2 import (
     DocxTemplateCatalogLoadError,
     DocxTemplateNotFoundError,
@@ -31,11 +31,14 @@ def validate_create_job_route_constraints(
     """Validate route-level upload constraints and template selectors for create-job."""
 
     if spec.conversion.output_format == OutputFormatV2.MD:
-        if resources_uploaded:
+        if resources_uploaded and spec.source.format != SourceFormatV2.HTML:
             raise ServiceError(
                 status_code=422,
                 code="validation_error",
-                message="resources upload is not supported for v2 routes with output_format='md'.",
+                message=(
+                    "resources upload is only supported for v2 html -> md routes with "
+                    "output_format='md'."
+                ),
                 retryable=False,
                 details={"field": "resources", "output_format": "md"},
             )

@@ -114,7 +114,7 @@ Execution rule:
 
 - [x] `T08` `docs/backlog/tasks/task-48-add-v2-route-docx-to-md-with-deterministic-normalization.md`
 
-- [ ] `T09` `docs/backlog/tasks/task-49-add-v2-route-html-to-md-with-resources-and-normalization.md`
+- [x] `T09` `docs/backlog/tasks/task-49-add-v2-route-html-to-md-with-resources-and-normalization.md`
 
 - [ ] `T10` `docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md`
 

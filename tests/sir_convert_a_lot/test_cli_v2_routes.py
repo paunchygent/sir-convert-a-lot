@@ -259,6 +259,60 @@ def test_pdf_to_docx_route_timeout_marks_job_running_without_docx(
     assert by_source["paper_slow.pdf"]["pipeline_used"] == "service: pdf -> docx (v2)"
 
 
+def test_html_to_md_route_submits_v2_job_with_resources(tmp_path: Path, monkeypatch) -> None:
+    FakeV2Client.captured_requests = []
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
+
+    source_file = tmp_path / "page.html"
+    source_file.write_text(
+        "<html><body><img src='assets/logo.png'></body></html>",
+        encoding="utf-8",
+    )
+    resources_dir = tmp_path / "resources"
+    assets_dir = resources_dir / "assets"
+    assets_dir.mkdir(parents=True)
+    (assets_dir / "logo.png").write_bytes(b"\x89PNG\r\n")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "md",
+            "--resources",
+            str(resources_dir),
+            "--api-key",
+            "dev-key",
+        ],
+    )
+
+    assert result.exit_code == 0
+    output_md = output_dir / "page.md"
+    assert output_md.exists()
+    assert output_md.read_bytes().startswith(b"# ")
+
+    manifest_path = output_dir / "sir_convert_a_lot_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert payload["entries"][0]["source_format"] == "html"
+    assert payload["entries"][0]["target_format"] == "md"
+    assert payload["entries"][0]["pipeline_used"] == "service: html -> md (v2)"
+
+    assert len(FakeV2Client.captured_requests) == 1
+    captured = FakeV2Client.captured_requests[0]
+    spec = captured["job_spec"]
+    assert isinstance(spec, dict)
+    assert spec["source"]["format"] == "html"
+    assert spec["conversion"]["output_format"] == "md"
+    resources_zip_bytes = captured["resources_zip_bytes"]
+    assert isinstance(resources_zip_bytes, (bytes, bytearray))
+    with zipfile.ZipFile(io.BytesIO(resources_zip_bytes)) as zip_handle:
+        assert "assets/logo.png" in zip_handle.namelist()
+
+
 def test_docx_to_md_route_submits_v2_job_and_writes_manifest(tmp_path: Path, monkeypatch) -> None:
     FakeV2Client.captured_requests = []
     monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)

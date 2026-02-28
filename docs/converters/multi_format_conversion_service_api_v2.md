@@ -28,6 +28,7 @@ Service API v2 is the single active conversion contract surface for:
 
 - `pdf -> md`
 - `docx -> md`
+- `html -> md`
 - `html -> pdf`
 - `html -> docx`
 - `md -> pdf` (via HTML intermediary)
@@ -92,6 +93,7 @@ Supported v2 conversions (service-executed on Hemma):
 
 - `pdf -> md` (Docling/PyMuPDF pipeline)
 - `docx -> md` (Pandoc -> deterministic Markdown normalization; `pipeline_used="docx_to_md_v2"`)
+- `html -> md` (Pandoc -> deterministic Markdown normalization; `pipeline_used="html_to_md_v2"`)
 - `html -> pdf` (WeasyPrint)
 - `html -> docx` (Pandoc)
 - `md -> pdf` (Pandoc -> HTML -> WeasyPrint)
@@ -194,6 +196,27 @@ Route-specific JobSpec example (`docx -> md`):
 }
 ```
 
+Route-specific JobSpec example (`html -> md`):
+
+```json
+{
+  "api_version": "v2",
+  "source": {
+    "kind": "upload",
+    "filename": "index.html",
+    "format": "html"
+  },
+  "conversion": {
+    "output_format": "md",
+    "css_filenames": [],
+    "reference_docx_filename": null
+  },
+  "retention": {
+    "pin": false
+  }
+}
+```
+
 ## Resources Bundle (v2)
 
 For `md` and `html` inputs, the service may require additional resources (images, fonts, CSS) to
@@ -205,7 +228,9 @@ produce correct output.
 - extracted to a job-scoped resources root
 - safe extraction must reject path traversal (no `..` / absolute paths)
 - safe extraction enforces zip-bomb limits (max members + max total/per-file uncompressed bytes)
-- route guard: uploads are rejected for routes with `output_format="md"`
+- route guard for markdown outputs:
+  - allowed for `html -> md`,
+  - rejected for `pdf -> md` and `docx -> md`.
 
 ## Endpoints
 
@@ -322,6 +347,22 @@ Response matrix:
 - `docx -> md` converter execution failure:
   - `500 Internal Server Error`
   - `error.code = "docx_to_markdown_failed"`
+  - `error.retryable = false`
+- `html -> md` missing local resources:
+  - `422 Unprocessable Entity`
+  - `error.code = "html_resource_not_found"`
+  - `error.details = {"missing_resources":[...]}`
+- `html -> md` invalid local resource references:
+  - `422 Unprocessable Entity`
+  - `error.code = "html_resource_invalid"`
+  - `error.details = {"invalid_resources":[...]}`
+- `html -> md` converter dependency missing:
+  - `503 Service Unavailable`
+  - `error.code = "pandoc_not_installed"`
+  - `error.retryable = true`
+- `html -> md` converter execution failure:
+  - `500 Internal Server Error`
+  - `error.code = "html_to_markdown_failed"`
   - `error.retryable = false`
 
 ## Error Envelope (v2)

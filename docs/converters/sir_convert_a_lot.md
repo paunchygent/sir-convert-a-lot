@@ -37,6 +37,7 @@ The CLI exposes a typed route registry for supported/planned conversions. Routes
 
 - `pdf -> md` (service v2)
 - `docx -> md` (service v2)
+- `html -> md` (service v2)
 - `pdf -> docx` (service v2 pipeline)
 - `html + css -> pdf` (service v2)
 - `html -> docx` (service v2)
@@ -159,6 +160,17 @@ pdm run convert-a-lot convert ./template.docx \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
+Convert HTML to Markdown via the service (v2), with optional resources:
+
+```bash
+pdm run convert-a-lot convert ./index.html \
+  --to md \
+  --resources ./assets \
+  --output-dir ./out \
+  --service-url http://127.0.0.1:28085 \
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+```
+
 Convert HTML (+ optional CSS) to PDF via the service (v2):
 
 ```bash
@@ -249,7 +261,7 @@ Timeout behavior:
 Directory disambiguation note:
 
 - When converting a directory, multiple input formats may be present for the selected target.
-- For `--to md`, `pdf` and `docx` are both valid source formats; use `--from` to disambiguate.
+- For `--to md`, `pdf`, `docx`, and `html` are valid source formats; use `--from` to disambiguate.
 - For non-`md` targets, use `--from` to disambiguate (for example `--from md` or `--from html`).
 
 Docker lane note:

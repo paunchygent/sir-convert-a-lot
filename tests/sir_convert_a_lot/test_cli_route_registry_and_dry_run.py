@@ -30,6 +30,7 @@ def test_routes_command_lists_supported_routes_in_stable_order() -> None:
         "Supported routes:",
         "- pdf -> md [service] (implemented)",
         "- docx -> md [service] (implemented)",
+        "- html -> md [service] (implemented)",
         "- pdf -> docx [service] (implemented)",
         "- md -> pdf [service] (implemented)",
         "- md -> docx [service] (implemented)",
@@ -122,6 +123,33 @@ def test_dry_run_reports_docx_to_md_route_pipeline(tmp_path: Path) -> None:
     ]
 
 
+def test_dry_run_reports_html_to_md_route_pipeline(tmp_path: Path) -> None:
+    source_file = tmp_path / "index.html"
+    source_file.write_text("<html><body>Hello</body></html>", encoding="utf-8")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "md",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout.splitlines() == [
+        "Dry run: selected route html -> md [service] (implemented)",
+        "Pipeline:",
+        "  - service: html -> md (v2)",
+        "Discovered 1 file(s).",
+    ]
+
+
 def test_convert_command_requires_from_when_directory_is_ambiguous(tmp_path: Path) -> None:
     source_dir = tmp_path / "mixed_inputs"
     source_dir.mkdir(parents=True)
@@ -170,3 +198,32 @@ def test_convert_command_requires_from_for_ambiguous_markdown_target_directory(
 
     assert result.exit_code == 2
     assert "Ambiguous input directory" in result.output
+
+
+def test_convert_command_rejects_resources_for_non_html_markdown_route(tmp_path: Path) -> None:
+    source_file = tmp_path / "paper.pdf"
+    source_file.write_bytes(b"%PDF-1.4\n% fake\n%%EOF\n")
+    resources_dir = tmp_path / "resources"
+    resources_dir.mkdir(parents=True)
+    (resources_dir / "asset.txt").write_text("x", encoding="utf-8")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "md",
+            "--resources",
+            str(resources_dir),
+            "--api-key",
+            "dev-key",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "only accept --resources for html ->" in result.output
+    assert "md." in result.output

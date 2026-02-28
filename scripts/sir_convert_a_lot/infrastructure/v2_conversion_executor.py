@@ -54,6 +54,9 @@ from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
     GpuRuntimeProbeResult,
     probe_torch_gpu_runtime,
 )
+from scripts.sir_convert_a_lot.infrastructure.html_resource_references import (
+    validate_html_local_resources,
+)
 from scripts.sir_convert_a_lot.infrastructure.markdown_normalization_v2 import (
     normalize_markdown_for_v2_md_output,
 )
@@ -65,6 +68,10 @@ from scripts.sir_convert_a_lot.infrastructure.pandoc_docx_to_markdown import (
 from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_docx import (
     HtmlToDocxConversionError,
     convert_html_to_docx,
+)
+from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_markdown import (
+    HtmlToMarkdownConversionError,
+    convert_html_to_markdown,
 )
 from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import (
     MarkdownToHtmlConversionError,
@@ -280,6 +287,14 @@ def _map_converter_error(exc: Exception) -> ServiceError:
             message=exc.message,
             retryable=retryable,
         )
+    if isinstance(exc, HtmlToMarkdownConversionError):
+        retryable = exc.code.endswith("not_installed")
+        return ServiceError(
+            status_code=503 if retryable else 500,
+            code=exc.code,
+            message=exc.message,
+            retryable=retryable,
+        )
     if isinstance(exc, MarkdownToHtmlConversionError):
         retryable = exc.code.endswith("not_installed")
         return ServiceError(
@@ -354,6 +369,48 @@ def execute_v2_job_conversion(
                     message=f"Uploaded DOCX could not be converted: {exc.message}",
                     retryable=False,
                 ) from exc
+            raise _map_converter_error(exc) from exc
+
+        normalized_markdown, normalization_warnings = normalize_markdown_for_v2_md_output(
+            markdown_content=intermediate_markdown.read_text(encoding="utf-8"),
+            mode=NormalizeMode.STRICT,
+        )
+        warnings.extend(normalization_warnings)
+        job.artifact_path.write_text(normalized_markdown, encoding="utf-8")
+
+    elif job.source_format == SourceFormatV2.HTML and job.output_format == OutputFormatV2.MD:
+        pipeline_used = "html_to_md_v2"
+        backend_used = "pandoc"
+
+        resource_validation = validate_html_local_resources(
+            html_path=input_path,
+            resource_root=workdir,
+        )
+        if resource_validation.invalid_references:
+            raise ServiceError(
+                status_code=422,
+                code="html_resource_invalid",
+                message="HTML input contains invalid local resource references.",
+                retryable=False,
+                details={"invalid_resources": resource_validation.invalid_references},
+            )
+        if resource_validation.missing_references:
+            raise ServiceError(
+                status_code=422,
+                code="html_resource_not_found",
+                message="HTML input references missing local resources.",
+                retryable=False,
+                details={"missing_resources": resource_validation.missing_references},
+            )
+
+        intermediate_markdown = workdir / input_path.with_suffix(".md").name
+        try:
+            convert_html_to_markdown(
+                html_path=input_path,
+                output_markdown_path=intermediate_markdown,
+                resource_root=workdir,
+            )
+        except (HtmlToMarkdownConversionError,) as exc:
             raise _map_converter_error(exc) from exc
 
         normalized_markdown, normalization_warnings = normalize_markdown_for_v2_md_output(

@@ -130,6 +130,7 @@ class JobSpecV2(BaseModel):
         allowed_routes: set[tuple[SourceFormatV2, OutputFormatV2]] = {
             (SourceFormatV2.PDF, OutputFormatV2.MD),
             (SourceFormatV2.DOCX, OutputFormatV2.MD),
+            (SourceFormatV2.HTML, OutputFormatV2.MD),
             (SourceFormatV2.MD, OutputFormatV2.PDF),
             (SourceFormatV2.MD, OutputFormatV2.DOCX),
             (SourceFormatV2.HTML, OutputFormatV2.PDF),
