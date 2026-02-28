@@ -83,15 +83,22 @@ Push channels are additive and do not remove existing v2 polling behavior.
 
 ## 5. Contract Rules
 
+- Canonical event types (v2 push):
+  - `job.queued`
+  - `job.running`
+  - `job.succeeded`
+  - `job.failed`
+  - `job.canceled`
 - Event identity:
-  - each event has immutable `event_id`,
-  - each event includes `job_id` and `event_type`.
+  - each event has immutable `event_id` (ULID format),
+  - each event includes `job_id`, `event_type`, `sequence`, and `occurred_at`.
 - Subscription management:
   - webhook endpoints are managed through v2 onboarding APIs (`create`, `list`, `update`, `delete`),
   - each subscription has stable `subscription_id` and owner scope,
   - callback delivery for disabled/deleted subscriptions must stop deterministically.
 - Ordering:
   - per-job ordering is guaranteed by monotonic `sequence`,
+  - `sequence` starts at `1` per job and increments by `+1` with no gaps for emitted events,
   - consumers must not assume cross-job global ordering.
 - Idempotency and dedup:
   - `event_id` is the canonical dedup key for consumers,
@@ -101,6 +108,7 @@ Push channels are additive and do not remove existing v2 polling behavior.
   - SSE may reconnect and replay from a supplied cursor/event id contract.
 - Replay retention contract:
   - replay horizon is 24h from event creation,
+  - replay cursor format is opaque and service-generated,
   - when cursor/event id is outside replay horizon, SSE returns `410 cursor_expired` with latest
     resumable cursor metadata,
   - replay retention is independent from artifact retention and may be shorter.
@@ -112,14 +120,20 @@ Push channels are additive and do not remove existing v2 polling behavior.
 ## 6. Security Model
 
 - Webhook signing:
-  - HMAC signatures over timestamp + payload using shared secret.
+  - HMAC-SHA256 signatures over canonical payload using shared secret.
+  - required headers:
+    - `X-SCAL-Webhook-Id` (`event_id`),
+    - `X-SCAL-Webhook-Timestamp` (Unix seconds),
+    - `X-SCAL-Webhook-Signature` (`v1=<hex-hmac>`).
+  - canonical signing input:
+    - `<timestamp>.<raw-body-bytes>`.
 - Replay protection:
-  - include signed timestamp header,
-  - enforce bounded replay window,
+  - include signed timestamp header (`X-SCAL-Webhook-Timestamp`),
+  - enforce bounded replay window of `300` seconds,
   - reject stale or duplicated deliveries within replay window policy.
 - Secret handling:
   - secrets are system-generated and never re-readable after creation,
-  - support secret rotation with overlap period (`active` + `next` secret),
+  - support secret rotation with overlap period of `24h` (`active` + `next` secret),
   - include deterministic rotate/revoke workflows through onboarding APIs.
 - Auth and rate limits:
   - v2 auth requirements remain enforced,
@@ -131,6 +145,10 @@ Push channels are additive and do not remove existing v2 polling behavior.
   - event emission from job lifecycle transitions,
   - queue-backed webhook delivery worker,
   - bounded retries with backoff and DLQ handoff on exhaustion.
+- Retry and DLQ policy constants:
+  - max attempts: `5` total attempts (initial + 4 retries),
+  - retry delays after failed attempts: `2s`, `10s`, `30s`, `120s`,
+  - deliveries exceeding attempt limit are moved to DLQ with terminal failure metadata.
 - Observability:
   - metrics for queue depth, delivery latency, retry count, DLQ growth, stream clients,
   - traces that correlate job execution to push emission and webhook delivery,

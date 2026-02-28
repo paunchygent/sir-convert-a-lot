@@ -45,6 +45,15 @@ Out of scope:
 - Webhook subscription onboarding APIs and secret lifecycle (Task 57).
 - Webhook delivery worker, signing, retries, and replay protection enforcement (Task 58).
 
+## Sequencing and Dependencies
+
+1. This is `T13` in Epic 05.
+1. Task 55 depends on:
+   - `T02` Task 53 (ADR accepted with constants),
+   - `T03` Task 54 (normative async contract published).
+1. Task 55 must complete before Task 58 delivery-worker implementation because webhook delivery
+   consumes the shared event model.
+
 ## Deliverables
 
 - [ ] SSE endpoint and event stream behavior implemented in v2 service.
@@ -52,12 +61,59 @@ Out of scope:
 - [ ] Contract/integration tests for SSE progress/terminal/replay/idempotency behavior.
 - [ ] Adapter non-GPU E2E conformance test updated in the same PR immediately after SSE push-logic changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
 - [ ] Feature flag toggles and rollback-safe disable behavior for SSE lane.
+- [ ] KPI instrumentation fields emitted for SSE latency measurement (needed by Task 56 KPI sign-off).
 
 ## Acceptance Criteria
 
 - [ ] End-to-end SSE flow verified for progress and terminal states.
 - [ ] Stale cursor replay attempts return deterministic `410 cursor_expired`.
 - [ ] Polling fallback remains fully functional with no regression.
+- [ ] Event ordering and dedup are deterministic per job (`sequence` monotonic, stable `event_id`).
+
+## Execution Plan (Slice 55A, 2026-02-28)
+
+1. Implement shared event model and persistence for per-job ordered events.
+1. Implement SSE subscribe endpoint with resume-from-cursor/event-id support.
+1. Implement cursor expiry handling with deterministic `410 cursor_expired`.
+1. Add feature flag guard and rollback-safe disable behavior.
+1. Add targeted SSE integration tests plus polling regression tests.
+1. Update adapter non-GPU E2E test in the same PR immediately after push-logic changes.
+
+## Risk Controls
+
+- Polling regression risk:
+  - keep existing poll endpoints untouched and add explicit regression tests.
+- Replay correctness risk:
+  - test stale cursor, missing cursor, and exact replay boundary behavior.
+- Throughput risk:
+  - emit lightweight event payloads and instrument p95 latency metrics for Task 56 validation.
+
+## Test Matrix (Minimum)
+
+- `tests/sir_convert_a_lot/test_api_contract_v2.py` (polling fallback regression)
+- `tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime` (updated in same PR)
+- New/updated SSE tests:
+  - stream progress + terminal events,
+  - cursor resume replay,
+  - stale cursor `410 cursor_expired`,
+  - dedup/ordering assertions.
+
+## Validation Commands
+
+- `pdm run run-local-pdm format-all`
+- `pdm run run-local-pdm lint-fix`
+- `pdm run run-local-pdm typecheck-all`
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py`
+- `pdm run run-local-pdm coverage-gate`
+- `pdm run run-local-pdm validate-tasks`
+- `pdm run run-local-pdm validate-docs`
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+## Validation Evidence
+
+- [ ] Targeted SSE + polling regression command outputs captured.
+- [ ] Adapter non-GPU E2E update evidence captured.
+- [ ] Coverage gate output captured (`>=90%`).
 
 ## Checklist
 

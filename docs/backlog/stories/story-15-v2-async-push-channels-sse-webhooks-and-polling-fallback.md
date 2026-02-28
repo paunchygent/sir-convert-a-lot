@@ -57,6 +57,18 @@ Out of scope:
 - Any restoration or extension of v1 conversion surfaces.
 - Removal of polling behavior.
 
+## Sequencing and Dependencies
+
+1. Story 15 begins only after Story 12 completion (`S04`).
+1. Ordered execution for Epic checklist alignment:
+   - `T02` Task 53 (ADR finalization + acceptance),
+   - `T03` Task 54 (normative async contract publication),
+   - `T13` Task 55 (event emission + SSE),
+   - `T14` Task 57 (webhook onboarding + secret lifecycle),
+   - `T15` Task 58 (delivery worker + signing + retries + replay protection),
+   - `T16` Task 56 (runbook/observability + KPI sign-off).
+1. No push implementation task (`T13-T16`) may be terminalized before `T02` and `T03` are terminal.
+
 ## Acceptance Criteria
 
 - [ ] ADR is approved and linked from story/tasks.
@@ -67,7 +79,18 @@ Out of scope:
 - [ ] Push rollout meets production targets:
   - polling request rate reduced by at least 60% for push-enabled clients,
   - SSE propagation p95 \<= 2s,
-  - webhook initial delivery p95 \<= 5s and success >= 99% within first 3 attempts.
+  - webhook initial delivery p95 \<= 5s and success >= 100% within first 3 attempts.
+
+## Acceptance Ownership Matrix
+
+| Story Criterion | Owning Task(s) | Required Evidence |
+| --- | --- | --- |
+| ADR approved and implementation-grade | `T02` Task 53 | ADR `0003` status `accepted`, constants pinned, links to Tasks 54-58 |
+| Normative async contract for SSE/webhooks/polling fallback | `T03` Task 54 | `docs/converters/multi_format_conversion_service_api_v2_async_push.md` + v2 converter doc link |
+| Deterministic event semantics and replay behavior | `T13` Task 55 | SSE integration tests including replay and `410 cursor_expired` |
+| Webhook onboarding + secret lifecycle | `T14` Task 57 | CRUD/rotate/revoke tests and auth/ownership negative tests |
+| Webhook delivery security/reliability | `T15` Task 58 | retry/DLQ tests, signature/timestamp/replay rejection tests |
+| Rollout/rollback + KPI operational sign-off | `T16` Task 56 | runbook + dashboard/alerts + baseline/post-enable KPI report |
 
 ## Test Requirements
 

@@ -41,6 +41,15 @@ procedures.
 - Document rollout/canary/rollback operations and safe-disable procedures.
 - Add validation evidence commands and expected operator-visible outputs.
 
+## Sequencing and Dependencies
+
+1. This is `T16` in Epic 05 and is the final async-push sign-off task.
+1. Task 56 depends on implementation completion for:
+   - `T13` Task 55 (SSE + events),
+   - `T14` Task 57 (onboarding + secret lifecycle),
+   - `T15` Task 58 (delivery + security + retries).
+1. Story 15 must not be terminalized before Task 56 evidence is complete.
+
 ## Deliverables
 
 - [ ] Runbook section(s) for v2 async push operations and incident handling.
@@ -50,6 +59,7 @@ procedures.
   - polling request-rate reduction,
   - SSE propagation latency,
   - webhook delivery latency and success rate.
+- [ ] Final KPI pass/fail report template with formula definitions and query/source references.
 
 ## Acceptance Criteria
 
@@ -58,9 +68,25 @@ procedures.
 - [ ] Rollback and feature-disable procedures are tested and documented.
 - [ ] Documentation validators pass with updated runbooks and links.
 - [ ] KPI targets are explicitly testable and tracked:
-  - > =60% polling request-rate reduction for push-enabled clients vs baseline,
+  - >=60% polling request-rate reduction for push-enabled clients vs baseline,
   - SSE propagation p95 \<= 2s,
   - webhook initial delivery p95 \<= 5s and success >= 99% within first 3 attempts.
+
+## Execution Plan (Slice 56A, 2026-02-28)
+
+1. Extend runbook with push-lane operational flows, canary rollout, rollback, and incident triage.
+1. Publish dashboard/alert contracts tied to queue depth, retries, DLQ, and latency SLOs.
+1. Define KPI baseline/post-enable measurement formulas and data sources.
+1. Run/collect validation commands/logs and publish final KPI pass/fail evidence package.
+
+## Risk Controls
+
+- Non-actionable runbook risk:
+  - include command-level procedures with expected outputs and failure branches.
+- KPI ambiguity risk:
+  - include explicit formula + window + source for each KPI.
+- Operational blind-spot risk:
+  - require alert thresholds for queue growth, retry storms, DLQ spikes, and latency regressions.
 
 ## Validation Evidence
 
@@ -69,6 +95,13 @@ procedures.
 - [ ] Commands/log evidence captured for invalid signature/timestamp/replay rejection paths.
 - [ ] Baseline vs post-enable KPI evidence captured and linked.
 - [ ] `pdm run run-local-pdm coverage-gate` output captured (`>=90%`).
+
+## Validation Commands
+
+- `pdm run run-local-pdm validate-tasks`
+- `pdm run run-local-pdm validate-docs`
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- `pdm run run-local-pdm coverage-gate`
 
 ## Checklist
 

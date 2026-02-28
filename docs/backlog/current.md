@@ -186,6 +186,12 @@ Primary implementation stories:
     - `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
     - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=104 rules=9`)
     - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+  - Hardened async-push planning/docs for next slice (`T02/T03/T13-T16`):
+    - strengthened Story 15 with explicit sequencing + acceptance ownership matrix,
+    - added deterministic security/retry constants in ADR `0003`,
+    - upgraded Tasks `53/54/55/57/58/56` with sequencing, execution slices, risk controls,
+      test matrix, and validation command/evidence blocks,
+    - docs/task validators and backlog index pass after planning updates.
 
 - 2026-02-18:
 

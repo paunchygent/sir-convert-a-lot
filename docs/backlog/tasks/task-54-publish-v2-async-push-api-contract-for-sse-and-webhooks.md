@@ -9,8 +9,11 @@ last_updated: '2026-02-28'
 related:
   - docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md
   - docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md
+  - docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md
+  - docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md
   - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
   - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
+  - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/converters/multi_format_conversion_service_api_v2.md
 labels:
   - api-contract
@@ -55,19 +58,81 @@ and webhooks without reverse-engineering internal behavior.
 - Include integration examples for Skriptoteket, HuleEdu, and Projektveckor client patterns.
 - Include explicit non-goal statement: tenant/global SSE streams are out of scope for this slice.
 
+## Sequencing and Dependencies
+
+1. This is `T03` in Epic 05 and may start only after `T02` Task 53 is terminal (`completed`) with
+   ADR `0003` in `accepted` status.
+1. Task 54 blocks implementation tasks `T13-T16` because payload/endpoint/replay/signature
+   semantics must be contract-locked first.
+1. Task 54 must explicitly bind to constants pinned in ADR `0003` (no re-interpretation in code).
+
 ## Deliverables
 
 - [ ] `docs/converters/multi_format_conversion_service_api_v2_async_push.md` created and linked.
 - [ ] Existing v2 converter doc updated with pointer to async push contract.
 - [ ] Example request/response/event payloads published for SSE + webhook + polling fallback.
 - [ ] Onboarding flow examples published (subscription create/update/rotate/delete).
+- [ ] Security/header canonicalization examples published (`X-SCAL-Webhook-*` headers + signature
+  verification input).
+- [ ] Replay and retry policy examples match ADR constants (`410 cursor_expired`, retry schedule,
+  DLQ criteria).
 
 ## Acceptance Criteria
 
-- [ ] Contract doc is complete enough for implementation and downstream integration.
-- [ ] Contract semantics align with ADR decisions from Task 53.
+- [ ] Contract defines endpoint set and request/response semantics for:
+  - SSE stream subscribe/replay,
+  - webhook onboarding CRUD + rotate/revoke,
+  - webhook callback payload + headers,
+  - polling fallback interaction.
+- [ ] Contract semantics are identical to ADR `0003` constants (event types, replay, security,
+  retry/DLQ).
 - [ ] No contract text implies v1 push support or v1 expansion.
 - [ ] Contract includes measurable KPI targets and replay retention constraints.
+- [ ] Contract includes deterministic error taxonomy for push surfaces (including
+  `cursor_expired`, signature errors, onboarding validation errors).
+
+## Execution Plan (Slice 54A, 2026-02-28)
+
+1. Validate Task 53 completion and ADR acceptance state.
+1. Author dedicated async contract document for v2 push surfaces.
+1. Add endpoint/event schema examples for SSE, onboarding, webhook deliveries, and polling fallback.
+1. Add explicit downstream integration examples for Skriptoteket, HuleEdu, and Projektveckor.
+1. Cross-link from existing converter docs and run docs validators.
+
+## Risk Controls
+
+- Ambiguous contract risk:
+  - every normative behavior must include concrete payload/headers/status examples.
+- Drift risk:
+  - contract constants must reference ADR and be grep-checkable.
+- Legacy regression risk:
+  - include explicit v2-only/no-v1 statement in async contract.
+
+## Test Matrix (Minimum)
+
+- Contract completeness checks:
+  - all required endpoint families documented with examples.
+- Determinism checks:
+  - event/replay/signature/retry constants match ADR text exactly.
+- Traceability checks:
+  - links to Story 15 and Tasks 55/56/57/58 exist.
+
+## Validation Commands
+
+- `pdm run run-local-pdm validate-tasks`
+- `pdm run run-local-pdm validate-docs`
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- `rg -n "event_id|event_type|sequence|occurred_at|cursor_expired|X-SCAL-Webhook|retry|DLQ|polling fallback" docs/converters/multi_format_conversion_service_api_v2_async_push.md`
+- `rg -n "multi_format_conversion_service_api_v2_async_push\\.md" docs/converters/multi_format_conversion_service_api_v2.md`
+
+## Execution Outcome
+
+- [ ] Async push contract doc published and linked.
+- [ ] Contract validated against ADR constants and Story 15 acceptance mapping.
+
+### Validation Evidence
+
+- [ ] Validation command outputs captured.
 
 ## Checklist
 

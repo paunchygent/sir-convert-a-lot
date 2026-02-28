@@ -64,3 +64,26 @@
 - Keep strict completion ordering:
   - do not check Task 53/54 in epic until each task file status is terminal,
   - do not check Story 15 until all mapped async-push tasks are terminal.
+
+## 2026-02-28: Async Push Planning Hardening
+
+### Completed
+
+- Hardened Story 15 + Tasks 53/54/55/57/58/56 planning docs for execution-readiness:
+  - sequencing/dependency gates,
+  - execution-plan slices,
+  - risk controls,
+  - minimum test matrix + validation command/evidence blocks.
+- Updated ADR `0003` with deterministic constants for event types, replay, signature headers,
+  replay window, retry schedule, and DLQ handoff policy.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=104 rules=9`)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
+### Next Session Goals
+
+- Execute `T02` Task 53 by finalizing ADR `0003` and moving status to `accepted`.
+- Execute `T03` Task 54 by publishing the normative async push contract doc.
