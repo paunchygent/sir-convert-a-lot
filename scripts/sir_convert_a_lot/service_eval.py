@@ -5,7 +5,7 @@ Purpose:
     evaluation without changing production-lock startup semantics.
 
 Relationships:
-    - Reuses `interfaces.http_api.create_app` for the canonical v1 API surface.
+    - Reuses `interfaces.http_api.create_app` for the canonical v2 API surface.
     - Reuses `infrastructure.runtime_engine.ServiceConfig` with explicit eval
       overrides for CPU-compatible backend experiments.
 """

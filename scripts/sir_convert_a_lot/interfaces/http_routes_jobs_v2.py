@@ -2,11 +2,11 @@
 
 Purpose:
     Provide v2 job create/status/result/artifact/cancel endpoints as an isolated
-    router, enabling multi-format conversions (md/html/pdf -> pdf/docx) while
-    preserving the locked v1 PDF->MD contract.
+    router for the unified conversion API surface, enabling multi-format
+    conversions (pdf/md/html -> md/pdf/docx).
 
 Relationships:
-    - Included by `interfaces.http_api` app factory alongside v1 routes.
+    - Included by `interfaces.http_api` app factory.
     - Uses app-state runtime helpers from `interfaces.http_app_state`.
     - Targets v2 runtime behavior in `infrastructure.runtime_engine_v2`.
 """
@@ -40,6 +40,9 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerpri
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
+from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import (
+    validate_create_job_route_constraints,
+)
 
 
 def _make_job_links(job_id: str) -> JobLinksV2:
@@ -52,6 +55,8 @@ def _make_job_links(job_id: str) -> JobLinksV2:
 
 
 def _content_type_for_output(output_format: OutputFormatV2) -> str:
+    if output_format == OutputFormatV2.MD:
+        return "text/markdown"
     if output_format == OutputFormatV2.PDF:
         return "application/pdf"
     if output_format == OutputFormatV2.DOCX:
@@ -101,6 +106,8 @@ def _infer_format_from_filename(filename: str) -> SourceFormatV2 | None:
         return SourceFormatV2.MD
     if suffix in {".html", ".htm"}:
         return SourceFormatV2.HTML
+    if suffix == ".docx":
+        return SourceFormatV2.DOCX
     return None
 
 
@@ -257,6 +264,12 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 },
             )
 
+        validate_create_job_route_constraints(
+            spec=spec,
+            resources_uploaded=resources_bytes is not None,
+            reference_docx_uploaded=reference_docx_bytes is not None,
+        )
+
         api_key = request.headers.get("X-API-Key", "")
         scope_key = f"{api_key}:POST:/v2/convert/jobs:{idempotency_key}"
         file_sha256 = hashlib.sha256(payload_bytes).hexdigest()
@@ -396,6 +409,9 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                     backend_used=job.backend_used,
                     acceleration_used=job.acceleration_used,
                     options_fingerprint=job.options_fingerprint,
+                    template_id=job.template_id,
+                    template_version=job.template_version,
+                    template_artifact_sha256=job.template_artifact_sha256,
                 ),
                 warnings=job.warnings,
             ),

@@ -185,6 +185,9 @@ class CliManifestEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     source_file_path: str
+    source_format: str
+    target_format: str
+    pipeline_used: str
     job_id: str | None
     status: JobStatus
     output_path: str | None

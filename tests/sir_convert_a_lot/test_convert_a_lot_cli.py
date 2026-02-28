@@ -1,12 +1,12 @@
 """CLI behavior tests for Sir Convert-a-Lot.
 
 Purpose:
-    Validate deterministic manifest output and mixed batch outcomes for the
-    local `convert-a-lot` developer workflow.
+    Validate deterministic manifest output and batch outcomes for the unified
+    v2-only CLI conversion path.
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.cli` command behavior.
-    - Uses client-facing result contracts from `scripts.sir_convert_a_lot.client`.
+    - Stubs `scripts.sir_convert_a_lot.interfaces.cli_app.SirConvertALotClientV2`.
 """
 
 from __future__ import annotations
@@ -17,102 +17,137 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from scripts.sir_convert_a_lot import cli
-from scripts.sir_convert_a_lot.client import ClientError, ConversionOutcome
+from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.interfaces import cli_app
-from scripts.sir_convert_a_lot.models import JobStatus
+from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ArtifactOutcomeV2
 
 
-class FakeClient:
-    """Test double for SirConvertALotClient used by CLI integration tests."""
+class FakeV2Client:
+    """Test double for SirConvertALotClientV2 used by CLI integration tests."""
 
     def __init__(self, *, base_url: str, api_key: str) -> None:
         self.base_url = base_url
         self.api_key = api_key
 
-    def __enter__(self) -> "FakeClient":
+    def __enter__(self) -> "FakeV2Client":
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
+        del exc_type, exc, tb
         return None
 
-    def convert_pdf_to_markdown(
+    def convert_upload_to_artifact(
         self,
         *,
-        pdf_path: Path,
+        source_path: Path,
         job_spec: dict[str, object],
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
         correlation_id: str | None = None,
-    ) -> ConversionOutcome:
-        del job_spec, idempotency_key, wait_seconds, max_poll_seconds, correlation_id
+        resources_zip_bytes: bytes | None = None,
+        reference_docx_bytes: bytes | None = None,
+    ) -> ArtifactOutcomeV2:
+        del (
+            job_spec,
+            idempotency_key,
+            wait_seconds,
+            max_poll_seconds,
+            correlation_id,
+            resources_zip_bytes,
+            reference_docx_bytes,
+        )
 
-        if pdf_path.stem.endswith("9") or pdf_path.stem.endswith("10"):
+        if source_path.stem.endswith("9") or source_path.stem.endswith("10"):
             raise ClientError(
                 code="conversion_failed",
                 message="simulated failure",
                 retryable=False,
                 status_code=500,
-                job_id=f"job_fail_{pdf_path.stem}",
+                job_id=f"job_fail_{source_path.stem}",
             )
 
-        return ConversionOutcome(
-            job_id=f"job_ok_{pdf_path.stem}",
+        return ArtifactOutcomeV2(
+            job_id=f"job_ok_{source_path.stem}",
             status=JobStatus.SUCCEEDED,
-            markdown_content=f"# Converted {pdf_path.name}\n",
+            artifact_bytes=f"# Converted {source_path.name}\n".encode("utf-8"),
         )
 
 
-class FakeTimeoutClient(FakeClient):
+class FakeTimeoutV2Client(FakeV2Client):
     """Test double that simulates long-running background jobs."""
 
-    def convert_pdf_to_markdown(
+    def convert_upload_to_artifact(
         self,
         *,
-        pdf_path: Path,
+        source_path: Path,
         job_spec: dict[str, object],
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
         correlation_id: str | None = None,
-    ) -> ConversionOutcome:
-        del job_spec, idempotency_key, wait_seconds, max_poll_seconds, correlation_id
-        if pdf_path.stem.endswith("slow"):
+        resources_zip_bytes: bytes | None = None,
+        reference_docx_bytes: bytes | None = None,
+    ) -> ArtifactOutcomeV2:
+        del (
+            job_spec,
+            idempotency_key,
+            wait_seconds,
+            max_poll_seconds,
+            correlation_id,
+            resources_zip_bytes,
+            reference_docx_bytes,
+        )
+        if source_path.stem.endswith("slow"):
             raise ClientError(
                 code="job_timeout",
                 message="Timed out waiting for terminal state.",
                 retryable=True,
                 status_code=408,
-                job_id=f"job_running_{pdf_path.stem}",
+                job_id=f"job_running_{source_path.stem}",
             )
-        return ConversionOutcome(
-            job_id=f"job_ok_{pdf_path.stem}",
+        return ArtifactOutcomeV2(
+            job_id=f"job_ok_{source_path.stem}",
             status=JobStatus.SUCCEEDED,
-            markdown_content=f"# Converted {pdf_path.name}\n",
+            artifact_bytes=f"# Converted {source_path.name}\n".encode("utf-8"),
         )
 
 
-class CapturingClient(FakeClient):
-    """Test double that captures submitted job specifications."""
+class CapturingV2Client(FakeV2Client):
+    """Test double that captures submitted v2 job specifications."""
 
     captured_specs: list[dict[str, object]] = []
+    captured_requests: list[dict[str, object]] = []
 
-    def convert_pdf_to_markdown(
+    def convert_upload_to_artifact(
         self,
         *,
-        pdf_path: Path,
+        source_path: Path,
         job_spec: dict[str, object],
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
         correlation_id: str | None = None,
-    ) -> ConversionOutcome:
-        del idempotency_key, wait_seconds, max_poll_seconds, correlation_id
+        resources_zip_bytes: bytes | None = None,
+        reference_docx_bytes: bytes | None = None,
+    ) -> ArtifactOutcomeV2:
         self.captured_specs.append(job_spec)
-        return ConversionOutcome(
-            job_id=f"job_ok_{pdf_path.stem}",
+        self.captured_requests.append(
+            {
+                "source_path": source_path,
+                "idempotency_key": idempotency_key,
+                "correlation_id": correlation_id,
+                "wait_seconds": wait_seconds,
+                "max_poll_seconds": max_poll_seconds,
+                "resources_zip_bytes": resources_zip_bytes,
+                "reference_docx_bytes": reference_docx_bytes,
+            }
+        )
+        return ArtifactOutcomeV2(
+            job_id=f"job_ok_{source_path.stem}",
             status=JobStatus.SUCCEEDED,
-            markdown_content=f"# Converted {pdf_path.name}\n",
+            artifact_bytes=f"# Converted {source_path.name}\n".encode("utf-8"),
         )
 
 
@@ -130,9 +165,7 @@ def test_convert_command_writes_deterministic_manifest_for_mixed_batch(
         )
 
     output_dir = tmp_path / "research_markdown"
-
-    monkeypatch.setattr(cli, "SirConvertALotClient", FakeClient)
-    monkeypatch.setattr(cli_app, "SirConvertALotClient", FakeClient)
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
 
     result = runner.invoke(
         cli.app,
@@ -162,19 +195,13 @@ def test_convert_command_writes_deterministic_manifest_for_mixed_batch(
     source_labels = [entry["source_file_path"] for entry in entries]
     assert source_labels == sorted(source_labels)
 
-    for entry in entries:
-        assert set(entry.keys()) == {
-            "source_file_path",
-            "job_id",
-            "status",
-            "output_path",
-            "error_code",
-        }
-
     success_count = sum(1 for entry in entries if entry["status"] == "succeeded")
     failure_count = sum(1 for entry in entries if entry["status"] == "failed")
     assert success_count == 8
     assert failure_count == 2
+    assert {entry["source_format"] for entry in entries} == {"pdf"}
+    assert {entry["target_format"] for entry in entries} == {"md"}
+    assert {entry["pipeline_used"] for entry in entries} == {"service: pdf -> md (v2)"}
 
     assert (output_dir / "paper_1.md").exists()
     assert (output_dir / "paper_8.md").exists()
@@ -185,11 +212,9 @@ def test_convert_command_writes_deterministic_manifest_for_mixed_batch(
 def test_convert_command_single_file_success(tmp_path: Path, monkeypatch) -> None:
     source_file = tmp_path / "single.pdf"
     source_file.write_bytes(b"%PDF-1.4\n% single\n%%EOF\n")
-
     output_dir = tmp_path / "single_out"
 
-    monkeypatch.setattr(cli, "SirConvertALotClient", FakeClient)
-    monkeypatch.setattr(cli_app, "SirConvertALotClient", FakeClient)
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
 
     result = runner.invoke(
         cli.app,
@@ -210,6 +235,9 @@ def test_convert_command_single_file_success(tmp_path: Path, monkeypatch) -> Non
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert len(payload["entries"]) == 1
     assert payload["entries"][0]["status"] == "succeeded"
+    assert payload["entries"][0]["source_format"] == "pdf"
+    assert payload["entries"][0]["target_format"] == "md"
+    assert payload["entries"][0]["pipeline_used"] == "service: pdf -> md (v2)"
 
 
 def test_convert_command_timeout_marks_job_running_without_cli_failure(
@@ -219,11 +247,9 @@ def test_convert_command_timeout_marks_job_running_without_cli_failure(
     source_dir.mkdir(parents=True)
     (source_dir / "paper_fast.pdf").write_bytes(b"%PDF-1.4\n% fast\n%%EOF\n")
     (source_dir / "paper_slow.pdf").write_bytes(b"%PDF-1.4\n% slow\n%%EOF\n")
-
     output_dir = tmp_path / "out"
 
-    monkeypatch.setattr(cli, "SirConvertALotClient", FakeTimeoutClient)
-    monkeypatch.setattr(cli_app, "SirConvertALotClient", FakeTimeoutClient)
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeTimeoutV2Client)
 
     result = runner.invoke(
         cli.app,
@@ -252,6 +278,12 @@ def test_convert_command_timeout_marks_job_running_without_cli_failure(
     assert by_source["paper_slow.pdf"]["job_id"] == "job_running_paper_slow"
     assert by_source["paper_slow.pdf"]["output_path"] is None
     assert by_source["paper_slow.pdf"]["error_code"] == "job_timeout"
+    assert by_source["paper_fast.pdf"]["source_format"] == "pdf"
+    assert by_source["paper_fast.pdf"]["target_format"] == "md"
+    assert by_source["paper_fast.pdf"]["pipeline_used"] == "service: pdf -> md (v2)"
+    assert by_source["paper_slow.pdf"]["source_format"] == "pdf"
+    assert by_source["paper_slow.pdf"]["target_format"] == "md"
+    assert by_source["paper_slow.pdf"]["pipeline_used"] == "service: pdf -> md (v2)"
 
 
 def test_convert_command_uses_hardened_defaults_for_job_spec(tmp_path: Path, monkeypatch) -> None:
@@ -259,9 +291,9 @@ def test_convert_command_uses_hardened_defaults_for_job_spec(tmp_path: Path, mon
     source_file.write_bytes(b"%PDF-1.4\n% default-spec\n%%EOF\n")
     output_dir = tmp_path / "default_spec_out"
 
-    CapturingClient.captured_specs = []
-    monkeypatch.setattr(cli, "SirConvertALotClient", CapturingClient)
-    monkeypatch.setattr(cli_app, "SirConvertALotClient", CapturingClient)
+    CapturingV2Client.captured_specs = []
+    CapturingV2Client.captured_requests = []
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", CapturingV2Client)
 
     result = runner.invoke(
         cli.app,
@@ -276,17 +308,30 @@ def test_convert_command_uses_hardened_defaults_for_job_spec(tmp_path: Path, mon
     )
 
     assert result.exit_code == 0
-    assert len(CapturingClient.captured_specs) == 1
-    spec = CapturingClient.captured_specs[0]
+    assert len(CapturingV2Client.captured_specs) == 1
+    assert len(CapturingV2Client.captured_requests) == 1
+    spec = CapturingV2Client.captured_specs[0]
+    request = CapturingV2Client.captured_requests[0]
     conversion = spec["conversion"]
     execution = spec["execution"]
+    pdf_options = spec["pdf_options"]
     assert isinstance(conversion, dict)
     assert isinstance(execution, dict)
-    assert conversion["backend_strategy"] == "auto"
-    assert conversion["ocr_mode"] == "auto"
-    assert conversion["table_mode"] == "accurate"
-    assert conversion["normalize"] == "strict"
+    assert isinstance(pdf_options, dict)
+    assert conversion["output_format"] == "md"
+    assert pdf_options["backend_strategy"] == "auto"
+    assert pdf_options["ocr_mode"] == "auto"
+    assert pdf_options["table_mode"] == "accurate"
+    assert pdf_options["normalize"] == "strict"
     assert execution["acceleration_policy"] == "gpu_required"
+    idempotency_key = request["idempotency_key"]
+    correlation_id = request["correlation_id"]
+    assert isinstance(idempotency_key, str)
+    assert isinstance(correlation_id, str)
+    assert idempotency_key.startswith("idemv2_")
+    assert correlation_id.startswith("corr_")
+    assert request["resources_zip_bytes"] is None
+    assert request["reference_docx_bytes"] is None
 
 
 def test_convert_command_allows_explicit_job_spec_flags(tmp_path: Path, monkeypatch) -> None:
@@ -294,9 +339,9 @@ def test_convert_command_allows_explicit_job_spec_flags(tmp_path: Path, monkeypa
     source_file.write_bytes(b"%PDF-1.4\n% explicit-spec\n%%EOF\n")
     output_dir = tmp_path / "explicit_spec_out"
 
-    CapturingClient.captured_specs = []
-    monkeypatch.setattr(cli, "SirConvertALotClient", CapturingClient)
-    monkeypatch.setattr(cli_app, "SirConvertALotClient", CapturingClient)
+    CapturingV2Client.captured_specs = []
+    CapturingV2Client.captured_requests = []
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", CapturingV2Client)
 
     result = runner.invoke(
         cli.app,
@@ -321,14 +366,14 @@ def test_convert_command_allows_explicit_job_spec_flags(tmp_path: Path, monkeypa
     )
 
     assert result.exit_code == 0
-    assert len(CapturingClient.captured_specs) == 1
-    spec = CapturingClient.captured_specs[0]
-    conversion = spec["conversion"]
+    assert len(CapturingV2Client.captured_specs) == 1
+    spec = CapturingV2Client.captured_specs[0]
     execution = spec["execution"]
-    assert isinstance(conversion, dict)
+    pdf_options = spec["pdf_options"]
     assert isinstance(execution, dict)
-    assert conversion["backend_strategy"] == "pymupdf"
-    assert conversion["ocr_mode"] == "off"
-    assert conversion["table_mode"] == "fast"
-    assert conversion["normalize"] == "standard"
+    assert isinstance(pdf_options, dict)
+    assert pdf_options["backend_strategy"] == "pymupdf"
+    assert pdf_options["ocr_mode"] == "off"
+    assert pdf_options["table_mode"] == "fast"
+    assert pdf_options["normalize"] == "standard"
     assert execution["acceleration_policy"] == "cpu_only"

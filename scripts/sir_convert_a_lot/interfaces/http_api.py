@@ -2,11 +2,11 @@
 
 Purpose:
     Build the FastAPI application shell (middleware, error handlers, lifespan,
-    and routers) for the v1 conversion API.
+    and routers) for the unified v2 conversion API.
 
 Relationships:
     - Uses runtime/lifecycle helpers from `interfaces.http_app_state`.
-    - Includes routers from `interfaces.http_routes_jobs` and
+    - Includes routers from `interfaces.http_routes_jobs_v2` and
       `interfaces.http_routes_health`.
 """
 
@@ -40,8 +40,10 @@ from scripts.sir_convert_a_lot.interfaces.http_app_state import (
     shutdown_runtime_state,
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_health import build_health_router
-from scripts.sir_convert_a_lot.interfaces.http_routes_jobs import build_job_router
 from scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2 import build_job_router_v2
+from scripts.sir_convert_a_lot.interfaces.http_routes_templates_v2 import (
+    build_templates_router_v2,
+)
 
 
 def _utc_now_iso() -> str:
@@ -76,7 +78,7 @@ def create_app(
     service_profile: str = "prod",
     expected_service_profile: str | None = None,
 ) -> FastAPI:
-    """Create a FastAPI app instance for the Sir Convert-a-Lot v1 API."""
+    """Create a FastAPI app instance for the Sir Convert-a-Lot v2 API."""
     runtime_config = config or service_config_from_env()
     service_revision = resolve_service_revision()
     expected_service_revision = resolve_expected_revision(default_revision=service_revision)
@@ -105,7 +107,7 @@ def create_app(
         finally:
             shutdown_runtime_state(lifespan_app)
 
-    app = FastAPI(title="Sir Convert-a-Lot API", version="1.0.0", lifespan=_lifespan)
+    app = FastAPI(title="Sir Convert-a-Lot API", version="2.0.0", lifespan=_lifespan)
     initialize_service_state(
         app,
         runtime_config=runtime_config,
@@ -168,6 +170,6 @@ def create_app(
         return JSONResponse(status_code=422, content=envelope.model_dump(mode="json"))
 
     app.include_router(build_health_router(app=app, service_started_at=service_started_at))
-    app.include_router(build_job_router(service_started_at=service_started_at))
     app.include_router(build_job_router_v2(service_started_at=service_started_at))
+    app.include_router(build_templates_router_v2(service_started_at=service_started_at))
     return app

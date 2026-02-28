@@ -12,7 +12,7 @@ tags:
   - usage
   - tunnel
 links:
-  - docs/converters/pdf_to_md_service_api_v1.md
+  - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 ---
 
@@ -29,15 +29,14 @@ Natural-language usage convention for assistants:
 - `Please, tell Sir Convert-a-Lot to convert x to y.`
 - `Please, tell convert-a-lot to convert x to y.`
 
-Service API v1 supports PDF input and Markdown output (`pdf -> md`) only.
-
-Service API v2 is the expansion surface for **multi-format** conversions executed on Hemma
+Service API v2 is the conversion surface for **multi-format** conversions executed on Hemma
 (dockerized runtime). The CLI is a thin submit/poll/download wrapper and does not require
 Pandoc/WeasyPrint to be installed on the caller machine.
 
 The CLI exposes a typed route registry for supported/planned conversions. Routes include:
 
-- `pdf -> md` (service v1)
+- `pdf -> md` (service v2)
+- `docx -> md` (service v2)
 - `pdf -> docx` (service v2 pipeline)
 - `html + css -> pdf` (service v2)
 - `html -> docx` (service v2)
@@ -48,9 +47,7 @@ Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
 
 ## Service Contract
 
-- Normative API: `docs/converters/pdf_to_md_service_api_v1.md`
-- Normative API v2: `docs/converters/multi_format_conversion_service_api_v2.md`
-- Decision lock: `docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md`
+- Normative API: `docs/converters/multi_format_conversion_service_api_v2.md`
 - Decision v2: `docs/decisions/0002-multi-format-service-api-v2.md`
 
 ## Task 11 Backend Availability
@@ -152,6 +149,16 @@ Preview route selection and pipeline steps without executing:
 pdm run convert-a-lot convert ./pdfs --output-dir ./research --dry-run --to md
 ```
 
+Convert DOCX to Markdown via the service (v2):
+
+```bash
+pdm run convert-a-lot convert ./template.docx \
+  --to md \
+  --output-dir ./out \
+  --service-url http://127.0.0.1:28085 \
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+```
+
 Convert HTML (+ optional CSS) to PDF via the service (v2):
 
 ```bash
@@ -221,8 +228,7 @@ pdm run convert-a-lot convert ./paper.pdf \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY"
 ```
 
-This does not expand the locked service v1 contract: v1 remains `pdf -> md` only; `pdf -> docx`
-is delivered by the explicit service API v2 surface.
+`pdf -> docx` is delivered by the explicit service API v2 surface.
 
 Optional styling via a reference DOCX is supported for this service v2 route as well:
 
@@ -242,8 +248,9 @@ Timeout behavior:
 
 Directory disambiguation note:
 
-- When converting a directory to non-`md` targets, multiple input formats may be present.
-  Use `--from` to disambiguate (e.g. `--from md` or `--from html`).
+- When converting a directory, multiple input formats may be present for the selected target.
+- For `--to md`, `pdf` and `docx` are both valid source formats; use `--from` to disambiguate.
+- For non-`md` targets, use `--from` to disambiguate (for example `--from md` or `--from html`).
 
 Docker lane note:
 
@@ -311,6 +318,9 @@ pdm run convert-a-lot convert ./folder_with_pdfs \
 Each batch writes `sir_convert_a_lot_manifest.json` in `--output-dir` with entries containing:
 
 - `source_file_path`
+- `source_format`
+- `target_format`
+- `pipeline_used`
 - `job_id`
 - `status`
 - `output_path`
@@ -323,9 +333,6 @@ Long-running note:
 - If `--max-poll-seconds` is exceeded, CLI records the entry as `status: running` with `job_id`
   and `error_code: job_timeout` instead of marking it as failed.
 - Conversion continues server-side; callers can query:
-  - v1 PDF->MD:
-    - `GET /v1/convert/jobs/{job_id}`
-    - `GET /v1/convert/jobs/{job_id}/result`
   - v2 multi-format:
     - `GET /v2/convert/jobs/{job_id}`
     - `GET /v2/convert/jobs/{job_id}/result`

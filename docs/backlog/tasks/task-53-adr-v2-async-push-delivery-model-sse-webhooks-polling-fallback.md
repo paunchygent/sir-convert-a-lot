@@ -1,9 +1,9 @@
 ---
-id: 'task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback'
-title: 'ADR v2 async push delivery model SSE webhooks polling fallback'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback
+title: ADR v2 async push delivery model SSE webhooks polling fallback
+type: task
+status: proposed
+priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
@@ -19,6 +19,7 @@ labels:
   - async-push
   - architecture
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

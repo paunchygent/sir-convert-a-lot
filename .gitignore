@@ -5,6 +5,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .pdm-python
+.coverage
+coverage.xml
 build/
 .DS_Store
 .agents/input/

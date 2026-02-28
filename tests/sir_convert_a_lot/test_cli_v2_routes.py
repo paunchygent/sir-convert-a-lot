@@ -83,7 +83,12 @@ class FakeV2Client:
             conversion_obj.get("output_format") if isinstance(conversion_obj, dict) else None
         )
         output_format = output_format_obj if isinstance(output_format_obj, str) else ""
-        artifact_prefix = b"%PDF-1.4\n" if output_format == "pdf" else b"PK"
+        if output_format == "pdf":
+            artifact_prefix = b"%PDF-1.4\n"
+        elif output_format == "md":
+            artifact_prefix = b"# "
+        else:
+            artifact_prefix = b"PK"
         return ArtifactOutcomeV2(
             job_id=f"job_ok_{source_path.stem}",
             status=JobStatus.SUCCEEDED,
@@ -131,6 +136,9 @@ def test_html_to_pdf_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mo
     assert payload["entries"][0]["job_id"] == "job_ok_doc"
     assert payload["entries"][0]["status"] == "succeeded"
     assert payload["entries"][0]["output_path"] == str(output_pdf)
+    assert payload["entries"][0]["source_format"] == "html"
+    assert payload["entries"][0]["target_format"] == "pdf"
+    assert payload["entries"][0]["pipeline_used"] == "service: html -> pdf (v2)"
 
     assert len(FakeV2Client.captured_requests) == 1
     captured = FakeV2Client.captured_requests[0]
@@ -141,6 +149,12 @@ def test_html_to_pdf_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mo
     assert spec["conversion"]["output_format"] == "pdf"
     assert spec["conversion"]["css_filenames"] == ["style.css"]
     assert captured["reference_docx_bytes"] is None
+    captured_idempotency = captured["idempotency_key"]
+    captured_correlation = captured["correlation_id"]
+    assert isinstance(captured_idempotency, str)
+    assert isinstance(captured_correlation, str)
+    assert captured_idempotency.startswith("idemv2_")
+    assert captured_correlation.startswith("corr_")
 
     resources_zip_bytes = captured["resources_zip_bytes"]
     assert isinstance(resources_zip_bytes, (bytes, bytearray))
@@ -237,3 +251,50 @@ def test_pdf_to_docx_route_timeout_marks_job_running_without_docx(
     assert by_source["paper_slow.pdf"]["job_id"] == "job_running_paper_slow"
     assert by_source["paper_slow.pdf"]["output_path"] is None
     assert by_source["paper_slow.pdf"]["error_code"] == "job_timeout"
+    assert by_source["paper_fast.pdf"]["source_format"] == "pdf"
+    assert by_source["paper_fast.pdf"]["target_format"] == "docx"
+    assert by_source["paper_fast.pdf"]["pipeline_used"] == "service: pdf -> docx (v2)"
+    assert by_source["paper_slow.pdf"]["source_format"] == "pdf"
+    assert by_source["paper_slow.pdf"]["target_format"] == "docx"
+    assert by_source["paper_slow.pdf"]["pipeline_used"] == "service: pdf -> docx (v2)"
+
+
+def test_docx_to_md_route_submits_v2_job_and_writes_manifest(tmp_path: Path, monkeypatch) -> None:
+    FakeV2Client.captured_requests = []
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
+
+    source_file = tmp_path / "template.docx"
+    source_file.write_bytes(b"PK\x03\x04fake-docx")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "md",
+            "--api-key",
+            "dev-key",
+        ],
+    )
+
+    assert result.exit_code == 0
+    output_md = output_dir / "template.md"
+    assert output_md.exists()
+    assert output_md.read_bytes().startswith(b"# ")
+
+    manifest_path = output_dir / "sir_convert_a_lot_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert payload["entries"][0]["source_format"] == "docx"
+    assert payload["entries"][0]["target_format"] == "md"
+    assert payload["entries"][0]["pipeline_used"] == "service: docx -> md (v2)"
+
+    assert len(FakeV2Client.captured_requests) == 1
+    captured = FakeV2Client.captured_requests[0]
+    spec = captured["job_spec"]
+    assert isinstance(spec, dict)
+    assert spec["source"]["format"] == "docx"
+    assert spec["conversion"]["output_format"] == "md"

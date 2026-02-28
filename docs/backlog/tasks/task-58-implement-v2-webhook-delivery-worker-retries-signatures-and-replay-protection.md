@@ -1,9 +1,9 @@
 ---
-id: 'task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection'
-title: 'Implement v2 webhook delivery worker retries signatures and replay protection'
-type: 'task'
-status: 'proposed'
-priority: 'critical'
+id: task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection
+title: Implement v2 webhook delivery worker retries signatures and replay protection
+type: task
+status: proposed
+priority: critical
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
@@ -20,6 +20,7 @@ labels:
   - retries
   - security
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -44,6 +45,7 @@ deterministic retry/DLQ behavior.
 - [ ] Webhook delivery worker implemented with retry/backoff + DLQ integration.
 - [ ] Signature/timestamp/replay protection enforcement implemented and documented.
 - [ ] Integration tests for success path, retry path, DLQ path, and security failure path.
+- [ ] Adapter non-GPU E2E conformance test updated in the same PR immediately after webhook push-logic changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
 - [ ] Feature-flagged rollback-safe disable behavior for webhook lane.
 
 ## Acceptance Criteria

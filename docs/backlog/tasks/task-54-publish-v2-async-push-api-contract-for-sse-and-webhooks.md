@@ -1,9 +1,9 @@
 ---
-id: 'task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks'
-title: 'Publish v2 async push API contract for SSE and webhooks'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks
+title: Publish v2 async push API contract for SSE and webhooks
+type: task
+status: proposed
+priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
@@ -19,6 +19,7 @@ labels:
   - sse
   - webhooks
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

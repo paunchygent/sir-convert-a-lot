@@ -1,9 +1,9 @@
 ---
-id: 'task-56-runbook-and-observability-for-v2-async-push-delivery'
-title: 'Runbook and observability for v2 async push delivery'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-56-runbook-and-observability-for-v2-async-push-delivery
+title: Runbook and observability for v2 async push delivery
+type: task
+status: proposed
+priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
@@ -17,6 +17,7 @@ labels:
   - v2
   - async-push
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -57,9 +58,9 @@ procedures.
 - [ ] Rollback and feature-disable procedures are tested and documented.
 - [ ] Documentation validators pass with updated runbooks and links.
 - [ ] KPI targets are explicitly testable and tracked:
-  - >=60% polling request-rate reduction for push-enabled clients vs baseline,
-  - SSE propagation p95 <= 2s,
-  - webhook initial delivery p95 <= 5s and success >= 99% within first 3 attempts.
+  - > =60% polling request-rate reduction for push-enabled clients vs baseline,
+  - SSE propagation p95 \<= 2s,
+  - webhook initial delivery p95 \<= 5s and success >= 99% within first 3 attempts.
 
 ## Validation Evidence
 

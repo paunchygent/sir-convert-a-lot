@@ -22,6 +22,8 @@ from scripts.sir_convert_a_lot.application.contracts import ErrorBody
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 
+DocxTemplateStatusV2 = Literal["active", "deprecated", "disabled"]
+
 
 class JobProgressV2(BaseModel):
     """Progress metadata for running v2 jobs."""
@@ -92,6 +94,69 @@ class ConversionMetadataV2(BaseModel):
     backend_used: str | None = None
     acceleration_used: str | None = None
     options_fingerprint: str
+    template_id: str | None = None
+    template_version: str | None = None
+    template_artifact_sha256: str | None = None
+
+
+class DocxTemplateSummaryV2(BaseModel):
+    """Selection-ready template summary in v2 template listing responses."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    template_id: str
+    name: str
+    description: str
+    domain_tags: list[str] = Field(default_factory=list)
+    latest_active_version: str | None = None
+    versions: list[str] = Field(default_factory=list)
+    statuses: list[DocxTemplateStatusV2] = Field(default_factory=list)
+
+
+class DocxTemplateVersionDataV2(BaseModel):
+    """One template-version metadata record returned from v2 template APIs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    template_id: str
+    version: str
+    name: str
+    description: str
+    domain_tags: list[str] = Field(default_factory=list)
+    language_tags: list[str] = Field(default_factory=list)
+    status: DocxTemplateStatusV2
+    artifact_sha256: str
+    artifact_size_bytes: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class DocxTemplateListResponseV2(BaseModel):
+    """Response payload for `GET /v2/templates/docx`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    templates: list[DocxTemplateSummaryV2] = Field(default_factory=list)
+
+
+class DocxTemplateDetailResponseV2(BaseModel):
+    """Response payload for `GET /v2/templates/docx/{template_id}`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    template_id: str
+    versions: list[DocxTemplateVersionDataV2] = Field(default_factory=list)
+
+
+class DocxTemplateVersionResponseV2(BaseModel):
+    """Response payload for one resolved template version record."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_version: Literal["v2"] = "v2"
+    template: DocxTemplateVersionDataV2
 
 
 class ResultPayloadV2(BaseModel):

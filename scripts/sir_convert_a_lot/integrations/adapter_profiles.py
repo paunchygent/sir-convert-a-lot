@@ -2,11 +2,12 @@
 
 Purpose:
     Define thin adapter helper behavior for HuleEdu and Skriptoteket that
-    preserves canonical v1 contract semantics and deterministic headers.
+    preserves canonical v2 contract semantics and deterministic headers.
 
 Relationships:
-    - Delegates conversion execution to `interfaces.http_client.SirConvertALotClient`.
-    - Mirrors contract rules documented in `docs/converters/internal_adapter_contract_v1.md`.
+    - Delegates conversion execution to `interfaces.http_client_v2.SirConvertALotClientV2`.
+    - Mirrors contract rules documented in
+      `docs/converters/multi_format_conversion_service_api_v2.md`.
 """
 
 from __future__ import annotations
@@ -18,9 +19,9 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TypedDict
 
-from scripts.sir_convert_a_lot.interfaces.http_client import (
-    ConversionOutcome,
-    SirConvertALotClient,
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
+    ArtifactOutcomeV2,
+    SirConvertALotClientV2,
 )
 
 
@@ -75,13 +76,17 @@ class AdapterPreparedSubmission:
 def build_job_spec_for_profile(
     profile: ConsumerProfile, *, filename: str, acceleration_policy: str = "gpu_required"
 ) -> dict[str, object]:
-    """Build canonical v1 job spec shared by all integration profiles."""
+    """Build canonical v2 job spec shared by all integration profiles."""
     del profile  # Profile must not alter canonical job spec shape.
     return {
-        "api_version": "v1",
-        "source": {"kind": "upload", "filename": filename},
+        "api_version": "v2",
+        "source": {"kind": "upload", "filename": filename, "format": "pdf"},
         "conversion": {
             "output_format": "md",
+            "css_filenames": [],
+            "reference_docx_filename": None,
+        },
+        "pdf_options": {
             "backend_strategy": "auto",
             "ocr_mode": "auto",
             "table_mode": "accurate",
@@ -149,14 +154,14 @@ def prepare_submission(
 
 def submit_pdf_for_profile(
     *,
-    client: SirConvertALotClient,
+    client: SirConvertALotClientV2,
     context: AdapterRequestContext,
     job_spec: dict[str, object] | None = None,
-) -> ConversionOutcome:
+) -> ArtifactOutcomeV2:
     """Submit conversion through the canonical client with adapter-normalized headers."""
     prepared = prepare_submission(context, job_spec=job_spec)
-    return client.convert_pdf_to_markdown(
-        pdf_path=context.pdf_path,
+    return client.convert_upload_to_artifact(
+        source_path=context.pdf_path,
         job_spec=prepared.job_spec,
         idempotency_key=prepared.idempotency_key,
         wait_seconds=context.wait_seconds,

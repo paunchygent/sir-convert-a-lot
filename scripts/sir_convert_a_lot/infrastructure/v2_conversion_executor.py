@@ -1,13 +1,13 @@
 """Service API v2 conversion execution helpers.
 
 Purpose:
-    Encapsulate v2 pipeline execution (html/md/pdf inputs to pdf/docx outputs),
+    Encapsulate v2 pipeline execution (html/md/pdf inputs to md/pdf/docx outputs),
     including resources handling, backend routing (for PDF sources), and
     deterministic error mapping.
 
 Relationships:
     - Called by `infrastructure.runtime_engine_v2` during async job execution.
-    - Uses v1 PDF conversion backends (Docling/PyMuPDF) for PDF->Markdown stage.
+    - Uses PDF conversion backends (Docling/PyMuPDF) for PDF->Markdown stage.
     - Uses Pandoc/WeasyPrint converters for HTML/Markdown transforms.
 """
 
@@ -24,6 +24,7 @@ from scripts.sir_convert_a_lot.domain.specs import (
     ConversionSpec,
     ExecutionSpec,
     JobSpec,
+    NormalizeMode,
     RetentionSpec,
     SourceKind,
     SourceSpec,
@@ -41,9 +42,25 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendInputError,
     ConversionBackend,
 )
+from scripts.sir_convert_a_lot.infrastructure.docx_template_catalog_v2 import (
+    DocxTemplateCatalogLoadError,
+    DocxTemplateNotFoundError,
+    DocxTemplateUnavailableError,
+    DocxTemplateVersionNotFoundError,
+    ResolvedDocxTemplateV2,
+    load_default_docx_template_catalog,
+)
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
     GpuRuntimeProbeResult,
     probe_torch_gpu_runtime,
+)
+from scripts.sir_convert_a_lot.infrastructure.markdown_normalization_v2 import (
+    normalize_markdown_for_v2_md_output,
+)
+from scripts.sir_convert_a_lot.infrastructure.pandoc_docx_to_markdown import (
+    DOCX_TO_MARKDOWN_UNREADABLE,
+    DocxToMarkdownConversionError,
+    convert_docx_to_markdown,
 )
 from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_docx import (
     HtmlToDocxConversionError,
@@ -78,6 +95,19 @@ class V2ExecutionResult:
     warnings: list[str]
     phase_timings_ms: dict[str, int]
     options_fingerprint: str
+    template_id: str | None = None
+    template_version: str | None = None
+    template_artifact_sha256: str | None = None
+
+
+@dataclass(frozen=True)
+class ResolvedReferenceDocxV2:
+    """Resolved DOCX reference path + optional template audit metadata."""
+
+    path: Path | None
+    template_id: str | None = None
+    template_version: str | None = None
+    template_artifact_sha256: str | None = None
 
 
 def fingerprint_job_options(spec: JobSpecV2) -> str:
@@ -86,14 +116,79 @@ def fingerprint_job_options(spec: JobSpecV2) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
-def _resolve_reference_docx(*, job: StoredJobV2, workdir: Path) -> Path | None:
+def _resolve_reference_docx(*, job: StoredJobV2, workdir: Path) -> ResolvedReferenceDocxV2:
     if job.reference_docx_path is not None:
-        return job.reference_docx_path
+        return ResolvedReferenceDocxV2(path=job.reference_docx_path)
+    selector = job.spec.conversion.template
+    if selector is not None:
+        try:
+            resolved_template: ResolvedDocxTemplateV2 = (
+                load_default_docx_template_catalog().resolve(
+                    template_id=selector.template_id,
+                    version=selector.version,
+                )
+            )
+        except DocxTemplateCatalogLoadError as exc:
+            raise ServiceError(
+                status_code=500,
+                code="template_catalog_invalid",
+                message=exc.message,
+                retryable=False,
+            ) from exc
+        except DocxTemplateNotFoundError as exc:
+            raise ServiceError(
+                status_code=422,
+                code="validation_error",
+                message="Unknown DOCX template id.",
+                retryable=False,
+                details={
+                    "field": "conversion.template.template_id",
+                    "template_id": exc.template_id,
+                },
+            ) from exc
+        except DocxTemplateVersionNotFoundError as exc:
+            raise ServiceError(
+                status_code=422,
+                code="validation_error",
+                message="Unknown DOCX template version.",
+                retryable=False,
+                details={
+                    "field": "conversion.template.version",
+                    "template_id": exc.template_id,
+                    "version": exc.version,
+                },
+            ) from exc
+        except DocxTemplateUnavailableError as exc:
+            raise ServiceError(
+                status_code=409,
+                code="template_unavailable",
+                message="Requested DOCX template is currently unavailable.",
+                retryable=False,
+                details={
+                    "template_id": exc.template_id,
+                    "version": exc.version,
+                    "status": exc.status.value,
+                },
+            ) from exc
+        return ResolvedReferenceDocxV2(
+            path=resolved_template.artifact_path,
+            template_id=resolved_template.metadata.template_id,
+            template_version=resolved_template.metadata.version,
+            template_artifact_sha256=resolved_template.metadata.artifact_sha256,
+        )
     filename = job.spec.conversion.reference_docx_filename
     if filename is None:
-        return None
+        return ResolvedReferenceDocxV2(path=None)
     candidate = workdir / filename
-    return candidate if candidate.exists() else None
+    if not candidate.exists():
+        raise ServiceError(
+            status_code=422,
+            code="reference_docx_not_found",
+            message=f"reference_docx_filename was not found in resources: {filename}",
+            retryable=False,
+            details={"field": "conversion.reference_docx_filename", "filename": filename},
+        )
+    return ResolvedReferenceDocxV2(path=candidate)
 
 
 def _validate_backend_strategy_v1(spec: JobSpec) -> None:
@@ -177,6 +272,14 @@ def _prepare_workdir(job: StoredJobV2) -> tuple[Path, Path]:
 
 
 def _map_converter_error(exc: Exception) -> ServiceError:
+    if isinstance(exc, DocxToMarkdownConversionError):
+        retryable = exc.code.endswith("not_installed")
+        return ServiceError(
+            status_code=503 if retryable else 500,
+            code=exc.code,
+            message=exc.message,
+            retryable=retryable,
+        )
     if isinstance(exc, MarkdownToHtmlConversionError):
         retryable = exc.code.endswith("not_installed")
         return ServiceError(
@@ -220,8 +323,47 @@ def execute_v2_job_conversion(
     pipeline_used: str
     backend_used: str | None = None
     acceleration_used: str | None = None
+    template_id: str | None = None
+    template_version: str | None = None
+    template_artifact_sha256: str | None = None
 
-    if job.source_format == SourceFormatV2.HTML and job.output_format == OutputFormatV2.PDF:
+    if job.source_format == SourceFormatV2.DOCX and job.output_format == OutputFormatV2.MD:
+        pipeline_used = "docx_to_md_v2"
+        backend_used = "pandoc"
+
+        source_bytes = job.upload_path.read_bytes()
+        if not source_bytes.startswith(b"PK"):
+            raise ServiceError(
+                status_code=422,
+                code="docx_unreadable",
+                message="Uploaded file is not a readable DOCX.",
+                retryable=False,
+            )
+
+        intermediate_markdown = workdir / input_path.with_suffix(".md").name
+        try:
+            convert_docx_to_markdown(
+                docx_path=input_path,
+                output_markdown_path=intermediate_markdown,
+            )
+        except DocxToMarkdownConversionError as exc:
+            if exc.code == DOCX_TO_MARKDOWN_UNREADABLE:
+                raise ServiceError(
+                    status_code=422,
+                    code="docx_unreadable",
+                    message=f"Uploaded DOCX could not be converted: {exc.message}",
+                    retryable=False,
+                ) from exc
+            raise _map_converter_error(exc) from exc
+
+        normalized_markdown, normalization_warnings = normalize_markdown_for_v2_md_output(
+            markdown_content=intermediate_markdown.read_text(encoding="utf-8"),
+            mode=NormalizeMode.STRICT,
+        )
+        warnings.extend(normalization_warnings)
+        job.artifact_path.write_text(normalized_markdown, encoding="utf-8")
+
+    elif job.source_format == SourceFormatV2.HTML and job.output_format == OutputFormatV2.PDF:
         pipeline_used = "html_to_pdf_v2"
         backend_used = "weasyprint"
         css_paths = tuple((workdir / name) for name in job.spec.conversion.css_filenames)
@@ -248,12 +390,15 @@ def execute_v2_job_conversion(
         pipeline_used = "html_to_docx_v2"
         backend_used = "pandoc"
         reference_docx = _resolve_reference_docx(job=job, workdir=workdir)
+        template_id = reference_docx.template_id
+        template_version = reference_docx.template_version
+        template_artifact_sha256 = reference_docx.template_artifact_sha256
         try:
             convert_html_to_docx(
                 html_path=input_path,
                 output_docx_path=job.artifact_path,
                 resource_root=workdir,
-                reference_docx_path=reference_docx,
+                reference_docx_path=reference_docx.path,
             )
         except (HtmlToDocxConversionError,) as exc:
             raise _map_converter_error(exc) from exc
@@ -291,6 +436,9 @@ def execute_v2_job_conversion(
         pipeline_used = "md_to_docx_v2"
         backend_used = "pandoc"
         reference_docx = _resolve_reference_docx(job=job, workdir=workdir)
+        template_id = reference_docx.template_id
+        template_version = reference_docx.template_version
+        template_artifact_sha256 = reference_docx.template_artifact_sha256
         intermediate_html = workdir / input_path.with_suffix(".html").name
         try:
             convert_markdown_to_html(
@@ -301,13 +449,18 @@ def execute_v2_job_conversion(
                 html_path=intermediate_html,
                 output_docx_path=job.artifact_path,
                 resource_root=workdir,
-                reference_docx_path=reference_docx,
+                reference_docx_path=reference_docx.path,
             )
         except (MarkdownToHtmlConversionError, HtmlToDocxConversionError) as exc:
             raise _map_converter_error(exc) from exc
 
-    elif job.source_format == SourceFormatV2.PDF and job.output_format == OutputFormatV2.DOCX:
-        pipeline_used = "pdf_to_docx_v2"
+    elif job.source_format == SourceFormatV2.PDF and job.output_format in {
+        OutputFormatV2.MD,
+        OutputFormatV2.DOCX,
+    }:
+        pipeline_used = (
+            "pdf_to_md_v2" if job.output_format == OutputFormatV2.MD else "pdf_to_docx_v2"
+        )
         if job.spec.pdf_options is None or job.spec.execution is None:
             raise ServiceError(
                 status_code=500,
@@ -391,23 +544,29 @@ def execute_v2_job_conversion(
         warnings.extend(pdf_warnings)
         phase_timings_ms.update(pdf_timings)
 
-        intermediate_md = workdir / input_path.with_suffix(".md").name
-        intermediate_md.write_text(markdown_content, encoding="utf-8")
-        intermediate_html = workdir / intermediate_md.with_suffix(".html").name
-        reference_docx = _resolve_reference_docx(job=job, workdir=workdir)
-        try:
-            convert_markdown_to_html(
-                markdown_path=intermediate_md,
-                output_html_path=intermediate_html,
-            )
-            convert_html_to_docx(
-                html_path=intermediate_html,
-                output_docx_path=job.artifact_path,
-                resource_root=workdir,
-                reference_docx_path=reference_docx,
-            )
-        except (MarkdownToHtmlConversionError, HtmlToDocxConversionError) as exc:
-            raise _map_converter_error(exc) from exc
+        if job.output_format == OutputFormatV2.MD:
+            job.artifact_path.write_text(markdown_content, encoding="utf-8")
+        else:
+            intermediate_md = workdir / input_path.with_suffix(".md").name
+            intermediate_md.write_text(markdown_content, encoding="utf-8")
+            intermediate_html = workdir / intermediate_md.with_suffix(".html").name
+            reference_docx = _resolve_reference_docx(job=job, workdir=workdir)
+            template_id = reference_docx.template_id
+            template_version = reference_docx.template_version
+            template_artifact_sha256 = reference_docx.template_artifact_sha256
+            try:
+                convert_markdown_to_html(
+                    markdown_path=intermediate_md,
+                    output_html_path=intermediate_html,
+                )
+                convert_html_to_docx(
+                    html_path=intermediate_html,
+                    output_docx_path=job.artifact_path,
+                    resource_root=workdir,
+                    reference_docx_path=reference_docx.path,
+                )
+            except (MarkdownToHtmlConversionError, HtmlToDocxConversionError) as exc:
+                raise _map_converter_error(exc) from exc
 
     else:
         raise ServiceError(
@@ -434,4 +593,7 @@ def execute_v2_job_conversion(
         warnings=warnings,
         phase_timings_ms=phase_timings_ms,
         options_fingerprint=options_fingerprint,
+        template_id=template_id,
+        template_version=template_version,
+        template_artifact_sha256=template_artifact_sha256,
     )

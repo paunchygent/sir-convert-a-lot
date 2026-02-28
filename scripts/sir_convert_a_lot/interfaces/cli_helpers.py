@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Used by `interfaces.cli_app` for `convert` route selection and payload
-      preparation for both v1 and v2 job submissions.
+      preparation for v2 job submissions.
     - Uses `interfaces.cli_routes` for route enumeration and type-safe formats.
 """
 
@@ -86,9 +86,6 @@ def detect_directory_source_format(
     recursive: bool,
 ) -> SourceFormat:
     """Infer source format for directory conversions, rejecting ambiguous inputs."""
-    if target_format is TargetFormat.MD:
-        return SourceFormat.PDF
-
     candidates = sorted({route.source for route in list_routes() if route.target is target_format})
     present: list[SourceFormat] = []
     for candidate in candidates:
@@ -109,45 +106,6 @@ def detect_directory_source_format(
         )
 
     return present[0]
-
-
-def default_job_spec_v1(
-    *,
-    filename: str,
-    acceleration_policy: str,
-    backend_strategy: str,
-    ocr_mode: str,
-    table_mode: str,
-    normalize: str,
-) -> dict[str, object]:
-    """Return the default v1 job_spec payload."""
-    return {
-        "api_version": "v1",
-        "source": {"kind": "upload", "filename": filename},
-        "conversion": {
-            "output_format": "md",
-            "backend_strategy": backend_strategy,
-            "ocr_mode": ocr_mode,
-            "table_mode": table_mode,
-            "normalize": normalize,
-        },
-        "execution": {
-            "acceleration_policy": acceleration_policy,
-            "priority": "normal",
-            "document_timeout_seconds": 1800,
-        },
-        "retention": {"pin": False},
-    }
-
-
-def idempotency_key_for_file(pdf_path: Path, job_spec: dict[str, object]) -> str:
-    """Return a deterministic v1 Idempotency-Key based on filename + content + spec."""
-    file_sha = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
-    spec_sha = hashlib.sha256(
-        json.dumps(job_spec, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-    combined = hashlib.sha256(f"{pdf_path.name}:{file_sha}:{spec_sha}".encode("utf-8")).hexdigest()
-    return f"idem_{combined[:48]}"
 
 
 def default_job_spec_v2(

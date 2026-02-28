@@ -1,14 +1,9 @@
-"""Filesystem-backed job store core for Sir Convert-a-Lot service API v2.
+"""Filesystem-backed v2 job store core.
 
-Purpose:
-    Provide durable v2 job persistence + atomic state transitions for runtime
-    orchestration, including binary artifacts (PDF/DOCX) and auxiliary uploads
-    (resources zip, reference docx).
-
-Relationships:
-    - Extended by `infrastructure.job_store_v2.JobStoreV2` (sweeping + recovery).
-    - Used by `infrastructure.runtime_engine_v2` for v2 job lifecycle operations.
-    - Uses `infrastructure.job_store_manifest_v2` for manifest creation/parsing.
+Purpose: durable v2 persistence + atomic lifecycle transitions for jobs,
+including artifacts and auxiliary uploads (resources zip/reference docx).
+Relationships: extended by `job_store_v2`, consumed by `runtime_engine_v2`,
+and backed by `job_store_manifest_v2`.
 """
 
 from __future__ import annotations
@@ -44,6 +39,8 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
 
 
 def _artifact_content_type(output_format: OutputFormatV2) -> str:
+    if output_format == OutputFormatV2.MD:
+        return "text/markdown"
     if output_format == OutputFormatV2.PDF:
         return "application/pdf"
     if output_format == OutputFormatV2.DOCX:
@@ -327,6 +324,9 @@ class JobStoreV2Core:
         backend_used: str | None,
         acceleration_used: str | None,
         options_fingerprint: str,
+        template_id: str | None = None,
+        template_version: str | None = None,
+        template_artifact_sha256: str | None = None,
         warnings: list[str],
         phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecordV2:
@@ -375,6 +375,9 @@ class JobStoreV2Core:
                     "backend_used": backend_used,
                     "acceleration_used": acceleration_used,
                     "options_fingerprint": options_fingerprint,
+                    "template_id": template_id,
+                    "template_version": template_version,
+                    "template_artifact_sha256": template_artifact_sha256,
                 },
                 "warnings": list(warnings),
             }

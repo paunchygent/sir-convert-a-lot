@@ -33,6 +33,7 @@ def _job_spec_v2(*, filename: str, source_format: SourceFormatV2, output_format:
         "source": {"kind": "upload", "filename": filename, "format": source_format.value},
         "conversion": {
             "output_format": output_format.value,
+            "template": None,
             "css_filenames": [],
             "reference_docx_filename": None,
         },
@@ -142,8 +143,8 @@ def test_create_job_idempotency_replay_returns_same_job_id(tmp_path: Path, monke
         spec=spec,
     )
 
-    assert first.status_code in {200, 202}
-    assert second.status_code in {200, 202}
+    assert first.status_code == 202
+    assert second.status_code == 202
     assert first.json()["job"]["job_id"] == second.json()["job"]["job_id"]
     assert second.headers.get("X-Idempotent-Replay") == "true"
 
@@ -192,7 +193,7 @@ def test_create_job_idempotency_collision_returns_conflict(tmp_path: Path, monke
         spec=second_spec,
     )
 
-    assert first.status_code in {200, 202}
+    assert first.status_code == 202
     assert collision.status_code == 409
     assert collision.json()["error"]["code"] == "idempotency_key_reused_with_different_payload"
 
@@ -228,7 +229,7 @@ def test_result_and_artifact_return_pending_when_job_not_terminal(
         file_bytes=b"# Title\n\nHello.\n",
         spec=spec,
     )
-    assert create_response.status_code in {200, 202}
+    assert create_response.status_code == 202
     job_id = create_response.json()["job"]["job_id"]
 
     result_response = client.get(
@@ -289,7 +290,7 @@ def test_result_and_artifact_return_conflict_when_job_failed(tmp_path: Path, mon
         file_bytes=b"# Title\n\nHello.\n",
         spec=spec,
     )
-    assert create_response.status_code in {200, 202}
+    assert create_response.status_code == 202
     job_id = create_response.json()["job"]["job_id"]
 
     assert _wait_for_terminal(client, "secret-key", job_id) == JobStatus.FAILED

@@ -2,9 +2,8 @@
 
 Purpose:
     Provide a typed, synchronous client for the Sir Convert-a-Lot **v2** service
-    endpoints. v2 extends the service with multi-format conversions executed on
-    Hemma (md/html/pdf -> pdf/docx) while preserving the locked v1 PDF->MD
-    contract.
+    endpoints for multi-format conversions executed on Hemma
+    (pdf/md/html -> md/pdf/docx).
 
 Relationships:
     - Used by `scripts.sir_convert_a_lot.interfaces.cli_app` for remote-only
@@ -56,6 +55,8 @@ def _content_type_for_source_path(path: Path) -> str:
         return "text/markdown"
     if suffix in {".html", ".htm"}:
         return "text/html"
+    if suffix == ".docx":
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     return "application/octet-stream"
 
 

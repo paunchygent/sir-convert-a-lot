@@ -79,7 +79,17 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["scripts/sir_convert_a_lot"]
+source = [
+    "scripts.sir_convert_a_lot.application.contracts_v2",
+    "scripts.sir_convert_a_lot.domain.specs_v2",
+    "scripts.sir_convert_a_lot.infrastructure.job_store_models_v2",
+    "scripts.sir_convert_a_lot.infrastructure.runtime_models_v2",
+    "scripts.sir_convert_a_lot.infrastructure.runtime_config_v2",
+    "scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2",
+    "scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor",
+    "scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2",
+    "scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2",
+]
 branch = true
 
 [tool.coverage.report]
@@ -150,7 +160,7 @@ distribution = false
 "typecheck-all" = "mypy --config-file pyproject.toml"
 "test" = "pytest -s"
 "pytest-root" = "pytest -s"
-"coverage-gate" = "pytest -s --cov=scripts/sir_convert_a_lot --cov-report=term-missing --cov-report=xml"
+"coverage-gate" = "pytest -s --cov=scripts.sir_convert_a_lot.application.contracts_v2 --cov=scripts.sir_convert_a_lot.domain.specs_v2 --cov=scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2 --cov=scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor --cov=scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 --cov=scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2 --cov-branch --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml"
 
 [tool.sir_convert_a_lot.rocm_runtime]
 torch_index_url = "https://download.pytorch.org/whl/rocm7.1"

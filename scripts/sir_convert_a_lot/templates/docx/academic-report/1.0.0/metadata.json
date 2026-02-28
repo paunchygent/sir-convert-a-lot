@@ -1,0 +1,25 @@
+{
+  "template_id": "academic-report",
+  "version": "1.0.0",
+  "name": "Academic Report",
+  "description": "Formal report layout for academic writing and research summaries.",
+  "domain_tags": [
+    "general",
+    "hule"
+  ],
+  "language_tags": [
+    "en-US",
+    "sv-SE"
+  ],
+  "status": "active",
+  "artifact_filename": "template.docx",
+  "artifact_sha256": "21f8bfa2f18f335d748705afb0d774f8ec2ab84d64c31c7d8e912657552e916e",
+  "artifact_size_bytes": 10552,
+  "created_at": "2026-02-28T17:26:16Z",
+  "updated_at": "2026-02-28T17:26:16Z",
+  "provenance": {
+    "source": "internal_curated",
+    "owner": "platform",
+    "change_note": "Initial curated template set for Task 47 rollout."
+  }
+}

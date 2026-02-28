@@ -2,9 +2,9 @@
 type: converter
 id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
-status: draft
+status: active
 created: 2026-02-18
-updated: 2026-02-18
+updated: 2026-02-28
 owners:
   - platform
 tags:
@@ -13,18 +13,21 @@ tags:
   - v2
   - multi-format
 links:
-  - docs/converters/pdf_to_md_service_api_v1.md
-  - docs/converters/service_api_v1_v2_compatibility_policy.md
   - docs/decisions/0002-multi-format-service-api-v2.md
+  - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
+  - docs/converters/docx-template-catalog-contract-v2.md
+  - docs/backlog/tasks/task-46-design-docx-template-contract-storage-and-selection-model.md
+  - docs/backlog/tasks/task-47-implement-docx-template-endpoints-validation-and-fixture-templates.md
 ---
 
 ## Purpose
 
 Define the normative **service API v2** contract for multi-format conversions executed on Hemma.
 
-Service API v1 remains locked to **PDF input + Markdown output only** (`pdf -> md`), and v2 is
-the contract surface for:
+Service API v2 is the single active conversion contract surface for:
 
+- `pdf -> md`
+- `docx -> md`
 - `html -> pdf`
 - `html -> docx`
 - `md -> pdf` (via HTML intermediary)
@@ -33,8 +36,8 @@ the contract surface for:
 
 ## Status
 
-- v1 contract: locked (2026-02-11)
-- v2 contract: draft (this document)
+- v1 conversion routes: removed from runtime surface (2026-02-28)
+- v2 contract: active (this document)
 
 ## Canonical Surfaces
 
@@ -87,15 +90,13 @@ Semantics:
 
 Supported v2 conversions (service-executed on Hemma):
 
+- `pdf -> md` (Docling/PyMuPDF pipeline)
+- `docx -> md` (Pandoc -> deterministic Markdown normalization; `pipeline_used="docx_to_md_v2"`)
 - `html -> pdf` (WeasyPrint)
 - `html -> docx` (Pandoc)
 - `md -> pdf` (Pandoc -> HTML -> WeasyPrint)
 - `md -> docx` (Pandoc -> HTML -> Pandoc)
 - `pdf -> docx` (Docling/PyMuPDF -> Markdown -> HTML -> DOCX)
-
-Out of scope for v2 (explicit):
-
-- expanding v1 beyond `pdf -> md`
 
 ## Data Contracts (v2)
 
@@ -121,6 +122,10 @@ Same values as v1:
   },
   "conversion": {
     "output_format": "docx",
+    "template": {
+      "template_id": "academic-report",
+      "version": "1.0.0"
+    },
     "css_filenames": [],
     "reference_docx_filename": null
   },
@@ -144,21 +149,50 @@ Same values as v1:
 Field rules:
 
 - `source.kind`: v2 requires `upload`
-- `source.format`: `pdf | md | html`
-- `conversion.output_format`: `pdf | docx`
+- `source.format`: `pdf | docx | md | html`
+- `conversion.output_format`: `md | pdf | docx`
+- `conversion.template`:
+  - canonical DOCX selector shape:
+    - `template_id` (required for template-selected DOCX conversions)
+    - `version` (optional; omitted resolves latest active version)
+  - full normative schema and governance:
+    - `docs/converters/docx-template-catalog-contract-v2.md`
 - `conversion.css_filenames`:
   - only meaningful for `html -> pdf` and `md -> pdf`
   - filenames must exist within the extracted resources root when provided
 - `conversion.reference_docx_filename`:
   - only meaningful for DOCX outputs
   - if provided, the referenced file must exist in the uploaded `reference_docx` part or the
-    extracted resources root (implementation-defined; contract allows both)
+    extracted resources root
+  - rejected for routes with `output_format="md"`
+  - must not be combined with `conversion.template` in the same request
 - `pdf_options`:
   - required when `source.format="pdf"`
-  - ignored when `source.format in {"md","html"}`
+  - ignored when `source.format in {"docx","md","html"}`
 - `execution.acceleration_policy`:
   - required when `source.format="pdf"` (governs the PDF->MD stage)
   - ignored otherwise
+
+Route-specific JobSpec example (`docx -> md`):
+
+```json
+{
+  "api_version": "v2",
+  "source": {
+    "kind": "upload",
+    "filename": "input.docx",
+    "format": "docx"
+  },
+  "conversion": {
+    "output_format": "md",
+    "css_filenames": [],
+    "reference_docx_filename": null
+  },
+  "retention": {
+    "pin": false
+  }
+}
+```
 
 ## Resources Bundle (v2)
 
@@ -171,6 +205,7 @@ produce correct output.
 - extracted to a job-scoped resources root
 - safe extraction must reject path traversal (no `..` / absolute paths)
 - safe extraction enforces zip-bomb limits (max members + max total/per-file uncompressed bytes)
+- route guard: uploads are rejected for routes with `output_format="md"`
 
 ## Endpoints
 
@@ -184,7 +219,7 @@ Query parameters:
 
 Request (multipart form):
 
-- `file`: upload (PDF/Markdown/HTML)
+- `file`: upload (PDF/DOCX/Markdown/HTML)
 - `job_spec`: v2 JobSpec JSON string
 - `resources`: optional zip bundle
 - `reference_docx`: optional reference docx for styling
@@ -193,6 +228,33 @@ Response:
 
 - `200 OK` when job reaches terminal state within `wait_seconds`
 - `202 Accepted` when job is queued/running
+
+### `GET /v2/templates/docx`
+
+List selection-ready DOCX templates for GUI discovery.
+
+Response matrix:
+
+- `200 OK`: returns `DocxTemplateListResponseV2`.
+
+### `GET /v2/templates/docx/{template_id}`
+
+Fetch all known versions for one template id.
+
+Response matrix:
+
+- `200 OK`: returns `DocxTemplateDetailResponseV2`.
+- `404 Not Found`: template id does not exist; `error.code = "template_not_found"`.
+
+### `GET /v2/templates/docx/{template_id}/versions/{version}`
+
+Fetch one resolved template version record.
+
+Response matrix:
+
+- `200 OK`: returns `DocxTemplateVersionResponseV2`.
+- `404 Not Found`: template id does not exist; `error.code = "template_not_found"`.
+- `404 Not Found`: template version does not exist; `error.code = "template_version_not_found"`.
 
 ### `GET /v2/convert/jobs/{job_id}`
 
@@ -203,6 +265,12 @@ Fetch job status and links.
 Fetch structured result metadata for successful jobs.
 
 Binary artifacts are not returned inline. Clients should download them via the artifact endpoint.
+
+For template-selected DOCX jobs, `result.conversion_metadata` includes:
+
+- `template_id`
+- `template_version`
+- `template_artifact_sha256`
 
 Response matrix:
 
@@ -218,6 +286,7 @@ Download the output artifact bytes for successful jobs.
 
 The response content-type is derived from the stored artifact format:
 
+- Markdown: `text/markdown`
 - PDF: `application/pdf`
 - DOCX: `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
 
@@ -240,6 +309,20 @@ Response matrix:
 - `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
 - `409 Conflict`: job is terminal (`succeeded|failed`) and cannot be canceled;
   `error.code = "job_not_cancelable"`.
+
+## Deterministic Route Errors (Selected)
+
+- `docx -> md` unreadable/corrupt DOCX:
+  - `422 Unprocessable Entity`
+  - `error.code = "docx_unreadable"`
+- `docx -> md` converter dependency missing:
+  - `503 Service Unavailable`
+  - `error.code = "pandoc_not_installed"`
+  - `error.retryable = true`
+- `docx -> md` converter execution failure:
+  - `500 Internal Server Error`
+  - `error.code = "docx_to_markdown_failed"`
+  - `error.retryable = false`
 
 ## Error Envelope (v2)
 

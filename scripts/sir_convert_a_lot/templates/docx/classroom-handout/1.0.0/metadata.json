@@ -1,0 +1,25 @@
+{
+  "template_id": "classroom-handout",
+  "version": "1.0.0",
+  "name": "Classroom Handout",
+  "description": "Teaching handout defaults for lesson structure and worksheet content.",
+  "domain_tags": [
+    "general",
+    "skriptoteket"
+  ],
+  "language_tags": [
+    "sv-SE",
+    "en-US"
+  ],
+  "status": "active",
+  "artifact_filename": "template.docx",
+  "artifact_sha256": "df170d43711a218b67e2e90280256ca4e606b5b9387a3534884d96e30d24c310",
+  "artifact_size_bytes": 10768,
+  "created_at": "2026-02-28T17:26:16Z",
+  "updated_at": "2026-02-28T17:26:16Z",
+  "provenance": {
+    "source": "internal_curated",
+    "owner": "platform",
+    "change_note": "Initial curated template set for Task 47 rollout."
+  }
+}

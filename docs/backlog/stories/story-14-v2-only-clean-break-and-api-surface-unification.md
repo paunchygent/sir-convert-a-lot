@@ -2,7 +2,7 @@
 id: story-14-v2-only-clean-break-and-api-surface-unification
 title: V2 only clean break and API surface unification
 type: story
-status: in_progress
+status: completed
 priority: critical
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -16,6 +16,7 @@ labels:
   - api
   - clean-break
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -33,16 +34,16 @@ while keeping the core behavior deterministic and operationally simple.
 
 ## Acceptance Criteria
 
-- [ ] `/v1/convert/jobs*` is removed from service and tests.
-- [ ] CLI no longer branches to v1 for any route.
-- [ ] v2 supports `pdf -> md` with deterministic idempotency, status, result, and error behavior.
-- [ ] API/docs/ADR references no longer claim v1/v2 coexistence as active architecture.
+- [x] `/v1/convert/jobs*` is removed from service and tests.
+- [x] CLI no longer branches to v1 for any route.
+- [x] v2 supports `pdf -> md` with deterministic idempotency, status, result, and error behavior.
+- [x] API/docs/ADR references no longer claim v1/v2 coexistence as active architecture.
 
 ## Test Requirements
 
-- [ ] Add contract tests that assert v2-only route behavior for all supported routes.
-- [ ] Add regression tests ensuring removed v1 paths do not reappear.
-- [ ] Run full quality gates and docs validations.
+- [x] Add contract tests that assert v2-only route behavior for all supported routes.
+- [x] Add regression tests ensuring removed v1 paths do not reappear.
+- [x] Run full quality gates and docs validations.
 
 ## Done Definition
 
@@ -50,6 +51,6 @@ Single-version v2 API surface is the only conversion route in code, tests, and d
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

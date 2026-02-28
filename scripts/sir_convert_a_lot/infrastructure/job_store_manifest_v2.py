@@ -169,6 +169,9 @@ def parse_stored_job_record(
     backend_used: str | None = None
     acceleration_used: str | None = None
     options_fingerprint: str | None = None
+    template_id: str | None = None
+    template_version: str | None = None
+    template_artifact_sha256: str | None = None
     failure_code: str | None = None
     failure_message: str | None = None
     failure_retryable = False
@@ -192,10 +195,20 @@ def parse_stored_job_record(
             backend_obj = meta_obj.get("backend_used")
             accel_obj = meta_obj.get("acceleration_used")
             options_obj = meta_obj.get("options_fingerprint")
+            template_id_obj = meta_obj.get("template_id")
+            template_version_obj = meta_obj.get("template_version")
+            template_sha_obj = meta_obj.get("template_artifact_sha256")
             pipeline_used = pipeline_obj if isinstance(pipeline_obj, str) else None
             backend_used = backend_obj if isinstance(backend_obj, str) else None
             acceleration_used = accel_obj if isinstance(accel_obj, str) else None
             options_fingerprint = options_obj if isinstance(options_obj, str) else None
+            template_id = template_id_obj if isinstance(template_id_obj, str) else None
+            template_version = (
+                template_version_obj if isinstance(template_version_obj, str) else None
+            )
+            template_artifact_sha256 = (
+                template_sha_obj if isinstance(template_sha_obj, str) else None
+            )
 
     if isinstance(error_obj, dict):
         code_obj = error_obj.get("code")
@@ -235,6 +248,9 @@ def parse_stored_job_record(
         backend_used=backend_used,
         acceleration_used=acceleration_used,
         options_fingerprint=options_fingerprint,
+        template_id=template_id,
+        template_version=template_version,
+        template_artifact_sha256=template_artifact_sha256,
         failure_code=failure_code,
         failure_message=failure_message,
         failure_retryable=failure_retryable,

@@ -2,7 +2,7 @@
 id: story-13-docx-template-catalog-and-reference-governance
 title: DOCX template catalog and reference governance
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -16,6 +16,7 @@ labels:
   - docx
   - governance
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -34,16 +35,16 @@ practical reference templates that downstream GUI products can select without ad
 
 ## Acceptance Criteria
 
-- [ ] V2 conversion contract includes typed template-selection semantics.
-- [ ] Template catalog API supports list/get use cases needed by downstream GUIs.
-- [ ] At least three practical reference DOCX templates are available and validated.
-- [ ] Template usage is deterministic and auditable in result metadata and/or manifest fields.
+- [x] V2 conversion contract includes typed template-selection semantics.
+- [x] Template catalog API supports list/get use cases needed by downstream GUIs.
+- [x] At least three practical reference DOCX templates are available and validated.
+- [x] Template usage is deterministic and auditable in result metadata and/or manifest fields.
 
 ## Test Requirements
 
-- [ ] API contract tests for template list/get and conversion selection semantics.
-- [ ] Validation tests for malformed templates and unsupported template IDs.
-- [ ] Integration tests confirming template-selected conversions produce non-empty DOCX artifacts.
+- [x] API contract tests for template list/get and conversion selection semantics.
+- [x] Validation tests for malformed templates and unsupported template IDs.
+- [x] Integration tests confirming template-selected conversions produce non-empty DOCX artifacts.
 
 ## Done Definition
 
@@ -51,6 +52,6 @@ DOCX template handling is productized as a governed API contract, not an ad hoc 
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

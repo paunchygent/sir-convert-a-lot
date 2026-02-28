@@ -50,6 +50,9 @@ class StoredJobRecordV2:
     backend_used: str | None
     acceleration_used: str | None
     options_fingerprint: str | None
+    template_id: str | None
+    template_version: str | None
+    template_artifact_sha256: str | None
     failure_code: str | None
     failure_message: str | None
     failure_retryable: bool

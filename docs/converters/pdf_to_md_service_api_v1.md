@@ -2,9 +2,9 @@
 type: converter
 id: CONV-pdf-to-md-service-api-v1
 title: PDF to Markdown Service API v1
-status: active
+status: draft
 created: '2026-02-11'
-updated: '2026-02-18'
+updated: '2026-02-28'
 owners:
   - platform
 tags:
@@ -12,17 +12,16 @@ tags:
   - contract
   - pdf-to-md
 links:
-  - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
-  - docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md
-  - docs/converters/service_api_v1_v2_compatibility_policy.md
+  - docs/converters/multi_format_conversion_service_api_v2.md
 ---
 
 ## Status
 
-- Phase 0 contract: **locked** (2026-02-11)
-- Primary deployment target: Hemma
-- Architecture direction: HTTP async first, queue-worker compatible
-- Story 003a implementation: **delivered** in `scripts/sir_convert_a_lot/service.py`
+- Historical reference only.
+- Conversion endpoints under `/v1/convert/jobs*` were removed on **2026-02-28** as part of
+  clean-break unification to service API v2.
+- Normative conversion contract is now:
+  - `docs/converters/multi_format_conversion_service_api_v2.md`
 
 ## Canonical Local Tooling
 

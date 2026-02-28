@@ -19,6 +19,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
+from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
 from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
     AdapterRequestContext,
     ConsumerProfile,
@@ -28,7 +30,8 @@ from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
     prepare_submission,
     submit_pdf_for_profile,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError, SirConvertALotClient
+from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
 from scripts.sir_convert_a_lot.models import JobStatus
 from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
 from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf, docling_cuda_available
@@ -52,9 +55,9 @@ def _conversion_runtime_config(
 
 
 @contextmanager
-def _service_client(app: FastAPI, *, api_key: str) -> Iterator[SirConvertALotClient]:
+def _service_client(app: FastAPI, *, api_key: str) -> Iterator[SirConvertALotClientV2]:
     with TestClient(app, base_url="http://testserver") as http_client:
-        with SirConvertALotClient(
+        with SirConvertALotClientV2(
             base_url="http://testserver",
             api_key=api_key,
             http_client=http_client,
@@ -70,7 +73,7 @@ def test_job_spec_shape_is_canonical_and_identical_across_profiles(
     candidate = build_job_spec_for_profile(profile, filename="paper.pdf")
 
     assert candidate == expected
-    assert candidate["source"] == {"kind": "upload", "filename": "paper.pdf"}
+    assert candidate["source"] == {"kind": "upload", "filename": "paper.pdf", "format": "pdf"}
     assert candidate["execution"] == {
         "acceleration_policy": "gpu_required",
         "priority": "normal",
@@ -78,6 +81,10 @@ def test_job_spec_shape_is_canonical_and_identical_across_profiles(
     }
     assert candidate["conversion"] == {
         "output_format": "md",
+        "css_filenames": [],
+        "reference_docx_filename": None,
+    }
+    assert candidate["pdf_options"] == {
         "backend_strategy": "auto",
         "ocr_mode": "auto",
         "table_mode": "accurate",
@@ -200,6 +207,74 @@ def test_adapter_timeout_error_is_not_consumer_remapped(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("profile", [ConsumerProfile.HULEDU, ConsumerProfile.SKRIPTOTEKET])
+def test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime(
+    profile: ConsumerProfile, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _stub_execute_v2_job_conversion(
+        *,
+        job,
+        config,
+        docling_backend,
+        pymupdf_backend,
+    ) -> V2ExecutionResult:
+        del config, docling_backend, pymupdf_backend
+        content = (
+            f"# deterministic non-gpu conversion\n\n"
+            f"profile: {profile.value}\n"
+            f"source: {job.source_filename}\n"
+        ).encode("utf-8")
+        return V2ExecutionResult(
+            artifact_bytes=content,
+            pipeline_used="pdf_to_md_v2",
+            backend_used="stubbed_non_gpu",
+            acceleration_used="cpu",
+            warnings=[],
+            phase_timings_ms={"conversion_attempt_ms": 1},
+            options_fingerprint="stubbed-options-fingerprint",
+        )
+
+    monkeypatch.setattr(
+        runtime_engine_v2, "execute_v2_job_conversion", _stub_execute_v2_job_conversion
+    )
+
+    app = create_app(
+        _conversion_runtime_config(
+            data_root=tmp_path / f"service_data_smoke_no_gpu_{profile.value}",
+            processing_delay_seconds=0.05,
+        )
+    )
+    pdf_path = tmp_path / f"{profile.value}_paper.pdf"
+    _write_pdf(pdf_path, profile.value)
+
+    context = AdapterRequestContext(
+        profile=profile,
+        pdf_path=pdf_path,
+        source_label=f"inbound/{profile.value}/{pdf_path.name}",
+        caller_correlation_id=f"corr_{profile.value}_non_gpu",
+        wait_seconds=0,
+        max_poll_seconds=5.0,
+    )
+
+    prepared = prepare_submission(context)
+    assert prepared.correlation_id == f"corr_{profile.value}_non_gpu"
+
+    with _service_client(app, api_key="secret-key") as client:
+        first = submit_pdf_for_profile(client=client, context=context)
+        second = submit_pdf_for_profile(client=client, context=context)
+        job_payload = client.get_job_payload(first.job_id, correlation_id=prepared.correlation_id)
+
+    assert first.status == JobStatus.SUCCEEDED
+    assert second.status == JobStatus.SUCCEEDED
+    assert first.job_id == second.job_id
+    artifact_text = first.artifact_bytes.decode("utf-8")
+    assert f"profile: {profile.value}" in artifact_text
+    assert f"source: {pdf_path.name}" in artifact_text
+    job_obj = job_payload.get("job")
+    assert isinstance(job_obj, dict)
+    assert job_obj.get("status") == "succeeded"
+
+
+@pytest.mark.parametrize("profile", [ConsumerProfile.HULEDU, ConsumerProfile.SKRIPTOTEKET])
 @pytest.mark.skipif(
     not docling_cuda_available(),
     reason="Docling integration conversion tests require a GPU runtime.",
@@ -231,5 +306,5 @@ def test_adapter_integration_smoke_submit_poll_fetch(
         outcome = submit_pdf_for_profile(client=client, context=context)
 
     assert outcome.status == JobStatus.SUCCEEDED
-    assert outcome.job_id.startswith("job_")
-    assert "fixture line one" in outcome.markdown_content.lower()
+    assert outcome.job_id.startswith("jobv2_")
+    assert "fixture line one" in outcome.artifact_bytes.decode("utf-8").lower()

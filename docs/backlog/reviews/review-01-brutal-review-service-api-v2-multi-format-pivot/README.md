@@ -29,6 +29,7 @@ labels:
   - clean-break
   - prototype-to-prod
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
@@ -69,6 +70,7 @@ Structured review artifact for implementation or readiness checks.
 #### F1 `blocker` Markdown ingress matrix is not implemented on v2
 
 Evidence:
+
 - `docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md:37`
 - `docs/backlog/stories/story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md.md:29`
 - `scripts/sir_convert_a_lot/domain/specs_v2.py:118`
@@ -76,155 +78,186 @@ Evidence:
 - `scripts/sir_convert_a_lot/interfaces/cli_routes.py:69`
 
 Why this matters:
+
 - The required `pdf -> md`, `docx -> md`, `html -> md` pathways are not expressible as first-class v2 routes today.
 - Downstream GUIs cannot rely on one stable route graph for markdown ingress.
 
 Exact fix proposal:
+
 1. Extend `SourceFormatV2` and `OutputFormatV2` in `specs_v2.py` to cover DOCX source and MD output.
-2. Replace hardcoded `allowed_routes` with a single canonical v2 route registry reused by API docs, CLI route listing, and executor dispatch.
-3. Implement executor branches for `pdf -> md`, `docx -> md`, and `html -> md` with deterministic normalization/warnings semantics.
-4. Update API v2 route tables and CLI route output to show these as v2-only routes.
+1. Replace hardcoded `allowed_routes` with a single canonical v2 route registry reused by API docs, CLI route listing, and executor dispatch.
+1. Implement executor branches for `pdf -> md`, `docx -> md`, and `html -> md` with deterministic normalization/warnings semantics.
+1. Update API v2 route tables and CLI route output to show these as v2-only routes.
 
 Proof requirement:
+
 - Add contract tests for each markdown ingress route across `queued/running/succeeded/failed`.
 - Run: `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "v2 and markdown and route"`.
 
 #### F2 `blocker` v2 execution still bridges through v1 job-spec logic
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:21`
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:99`
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:319`
 
 Why this matters:
+
 - The architecture is not a true clean break while v2 builds a v1 `JobSpec` internally for PDF stage execution.
 - Policy/validation drift risk remains because v1 and v2 invariants can diverge.
 
 Exact fix proposal:
+
 1. Introduce v2-native PDF ingress policy validators (backend strategy + acceleration policy) and remove `_validate_*_v1` helpers.
-2. Replace `v1_spec` construction with v2-native conversion stage call(s).
-3. Delete v1 imports from `v2_conversion_executor.py` and keep only typed v2 surfaces.
+1. Replace `v1_spec` construction with v2-native conversion stage call(s).
+1. Delete v1 imports from `v2_conversion_executor.py` and keep only typed v2 surfaces.
 
 Proof requirement:
+
 - Regression tests proving identical behavior for GPU policy violations and unreadable PDFs after v1 dependency removal.
 - Run: `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "v2 and pdf and policy"`.
 
 #### F3 `high` DOCX template product contract is incomplete and ambiguous
 
 Evidence:
+
 - `docs/backlog/stories/story-13-docx-template-catalog-and-reference-governance.md:28`
 - `docs/backlog/tasks/task-46-design-docx-template-contract-storage-and-selection-model.md:25`
 - `scripts/sir_convert_a_lot/domain/specs_v2.py:66`
 - `docs/converters/multi_format_conversion_service_api_v2.md:152`
 
 Why this matters:
+
 - Story/task require governed template IDs, versions, status, and metadata, but v2 spec only exposes `reference_docx_filename`.
 - The API doc allows implementation-defined reference resolution, which is non-deterministic for productized template usage.
 
 Exact fix proposal:
+
 1. Add a typed selector in `ConversionSpecV2`, e.g. `template: {template_id, version, strict}`.
-2. Keep raw `reference_docx` upload as explicit override lane only (optional), with deterministic precedence rules.
-3. Replace implementation-defined text with normative selection/precedence/error semantics.
-4. Include template provenance in result metadata (`template_id`, `template_version`, `template_sha256`).
+1. Keep raw `reference_docx` upload as explicit override lane only (optional), with deterministic precedence rules.
+1. Replace implementation-defined text with normative selection/precedence/error semantics.
+1. Include template provenance in result metadata (`template_id`, `template_version`, `template_sha256`).
 
 Proof requirement:
+
 - Add model validation tests for selector precedence and conflict detection (`template + reference_docx`).
 - Run: `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "template and v2"`.
 
 #### F4 `high` Template API surfaces required by Story 13/Task 47 are missing
 
 Evidence:
+
 - `docs/backlog/tasks/task-47-implement-docx-template-endpoints-validation-and-fixture-templates.md:25`
 - `docs/converters/multi_format_conversion_service_api_v2.md:175`
 - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py:111`
 
 Why this matters:
+
 - Downstream apps cannot discover available templates or supported versions through API, forcing hardcoded IDs and brittle releases.
 
 Exact fix proposal:
+
 1. Add `GET /v2/templates` and `GET /v2/templates/{template_id}` with typed payloads.
-2. Return domain tags, status, version set, checksum, and compatibility hints for route/output usage.
-3. Add deterministic errors: `template_not_found`, `template_inactive`, `template_version_unsupported`.
+1. Return domain tags, status, version set, checksum, and compatibility hints for route/output usage.
+1. Add deterministic errors: `template_not_found`, `template_inactive`, `template_version_unsupported`.
 
 Proof requirement:
+
 - Contract tests for list/get and unknown/inactive/version-mismatch cases.
 - Run: `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "templates and contract"`.
 
 #### F5 `high` Downstream API usability gap for Skriptoteket/Hule/Projektveckor
 
 Evidence:
+
 - `docs/backlog/stories/story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md.md:34`
 - `docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md:29`
 - `scripts/sir_convert_a_lot/application/contracts_v2.py:91`
 - `docs/converters/multi_format_conversion_service_api_v2.md:177`
 
 Why this matters:
+
 - Story 11 requires explicit route metadata for orchestration, but response contracts only expose `pipeline_used` string and no explicit route key/capability object.
 - There is no capability discovery endpoint for GUIs to drive dynamic forms safely.
 
 Exact fix proposal:
+
 1. Add `GET /v2/capabilities` returning route keys, required fields, optional artifacts/resources, and template support flags.
-2. Extend result/job metadata with explicit `route_key` (for example `html_to_md_v2`) and normalized source/target contract hints.
-3. Publish task-52 integration examples directly against these endpoints and schema objects.
+1. Extend result/job metadata with explicit `route_key` (for example `html_to_md_v2`) and normalized source/target contract hints.
+1. Publish task-52 integration examples directly against these endpoints and schema objects.
 
 Proof requirement:
+
 - API contract tests for capability schema stability and route metadata presence.
 - Run: `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "capabilities or route_key"`.
 
 #### F6 `medium` Reference DOCX resolution is fail-open and hides configuration errors
 
 Evidence:
+
 - `docs/converters/multi_format_conversion_service_api_v2.md:154`
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:89`
 
 Why this matters:
+
 - If `reference_docx_filename` is provided but not found, current code can silently proceed with `None`, producing output without intended styling and no clear error.
 
 Exact fix proposal:
+
 1. Fail with `422 reference_docx_not_found` when a reference filename is declared but cannot be resolved.
-2. Make precedence explicit (`template` selection first, override upload second, no implicit fallback).
-3. Add warning only when fallback is explicitly requested in spec.
+1. Make precedence explicit (`template` selection first, override upload second, no implicit fallback).
+1. Add warning only when fallback is explicitly requested in spec.
 
 Proof requirement:
+
 - Add tests for missing filename and ambiguous multi-source reference collisions.
 - Run: `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "reference_docx"`.
 
 #### F7 `medium` CLI route registry is stale versus v2-only target state
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/interfaces/cli_routes.py:38`
 - `scripts/sir_convert_a_lot/interfaces/cli_routes.py:75`
 - `scripts/sir_convert_a_lot/interfaces/cli_routes.py:27`
 
 Why this matters:
+
 - CLI still labels `pdf -> md` as v1 and advertises non-active execution kinds (`LOCAL`, `HYBRID`), while also exposing DOCX source without route coverage.
 - This creates operator confusion and drifts from API contract.
 
 Exact fix proposal:
+
 1. Remove stale pipeline kinds or mark them legacy-internal only.
-2. Generate CLI route list from canonical v2 route registry to eliminate drift.
-3. Ensure all route labels are version-accurate (`v2`) and completeness-checked in tests.
+1. Generate CLI route list from canonical v2 route registry to eliminate drift.
+1. Ensure all route labels are version-accurate (`v2`) and completeness-checked in tests.
 
 Proof requirement:
+
 - Snapshot tests for `convert-a-lot routes` output matching canonical route matrix.
 - Run: `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "cli routes"`.
 
 #### F8 `medium` Contract documents still encode v1/v2 coexistence, weakening clean-break governance
 
 Evidence:
+
 - `docs/converters/multi_format_conversion_service_api_v2.md:25`
 - `docs/converters/multi_format_conversion_service_api_v2.md:37`
 - `docs/converters/multi_format_conversion_service_api_v2.md:96`
 
 Why this matters:
+
 - Epic 05 is defined as strict v2-only clean break, but normative converter doc still frames v1 as active surface and v2 as draft.
 
 Exact fix proposal:
+
 1. Promote v2 converter contract doc to active and v2-only normative language.
-2. Remove coexistence assumptions from v2 doc and archive compatibility policy as historical context only.
-3. Add explicit migration note with fixed cutover date and v1 removal statement.
+1. Remove coexistence assumptions from v2 doc and archive compatibility policy as historical context only.
+1. Add explicit migration note with fixed cutover date and v1 removal statement.
 
 Proof requirement:
+
 - `pdm run run-local-pdm validate-docs`
 - `pdm run run-local-pdm validate-tasks`
 
@@ -425,20 +458,24 @@ rg -n "service_eval|serve:sir-convert-a-lot-eval|sir_convert_a_lot_eval|28086|80
 #### A1 `blocker` v1 + v2 job routes are both active in the canonical app
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/interfaces/http_api.py:171`
 - `scripts/sir_convert_a_lot/interfaces/http_api.py:172`
 - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs.py:92`
 - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py:111`
 
 Why this matters:
+
 - Epic-05 mandates a clean break. Registering both routers preserves split-brain API contracts and blocks v1 removal.
 
 Concrete fix:
+
 1. Remove `build_job_router(...)` from `http_api.py`.
 1. Delete v1 route module and `/v1/convert/jobs*` contract tests/docs in the same migration slice.
 1. Keep only `/v2/convert/jobs*` lifecycle endpoints.
 
 Proof tests/commands:
+
 - Current route graph evidence:
   - `pdm run run-local-pdm python -c "from scripts.sir_convert_a_lot.interfaces.http_api import create_app; app=create_app(); print('\n'.join(sorted({r.path for r in app.routes if r.path.startswith('/v')})))"`
 - Post-fix expectation:
@@ -447,6 +484,7 @@ Proof tests/commands:
 #### A2 `blocker` CLI still hard-wires `pdf -> md` through v1 client/spec path
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/interfaces/cli_routes.py:75`
 - `scripts/sir_convert_a_lot/interfaces/cli_app.py:236`
 - `scripts/sir_convert_a_lot/interfaces/cli_app.py:242`
@@ -454,14 +492,17 @@ Evidence:
 - `scripts/sir_convert_a_lot/interfaces/http_client.py:209`
 
 Why this matters:
+
 - As long as CLI has a v1-only branch, v1 client and v1 request contract remain required runtime dependencies.
 
 Concrete fix:
+
 1. Route `pdf -> md` through `SirConvertALotClientV2`.
 1. Remove `default_job_spec_v1` branch from CLI command flow.
 1. Delete v1 client usage from `cli_app.py` and relabel route list as v2-only.
 
 Proof tests/commands:
+
 - Current behavior evidence:
   - `pdm run run-local-pdm convert-a-lot routes`
   - `pdm run run-local-pdm convert-a-lot convert --help`
@@ -471,20 +512,24 @@ Proof tests/commands:
 #### A3 `blocker` v2 spec cannot represent required Markdown-target routes
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/domain/specs_v2.py:36`
 - `scripts/sir_convert_a_lot/domain/specs_v2.py:44`
 - `scripts/sir_convert_a_lot/domain/specs_v2.py:118`
 - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py:96`
 
 Why this matters:
+
 - `OutputFormatV2` excludes `md` and `SourceFormatV2` excludes `docx`, making `docx -> md`, `html -> md`, and `pdf -> md` impossible under v2.
 
 Concrete fix:
+
 1. Add `DOCX` to `SourceFormatV2` and `MD` to `OutputFormatV2`.
 1. Expand `allowed_routes` in `JobSpecV2` validator for all required `* -> md` routes.
 1. Extend upload format inference/content-type mapping for DOCX and Markdown outputs.
 
 Proof tests/commands:
+
 - Current enum evidence:
   - `pdm run run-local-pdm python -c "from scripts.sir_convert_a_lot.domain.specs_v2 import SourceFormatV2, OutputFormatV2; print('source_formats=', [v.value for v in SourceFormatV2]); print('output_formats=', [v.value for v in OutputFormatV2])"`
 - Current validation rejection evidence:
@@ -493,19 +538,23 @@ Proof tests/commands:
 #### A4 `blocker` v2 executor still constructs a synthetic v1 job spec and runs v1 conversion entrypoint
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:319`
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:320`
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:349`
 
 Why this matters:
+
 - This is a direct clean-break blocker: removing v1 contract/executor code would break v2 PDF-source conversion.
 
 Concrete fix:
+
 1. Extract shared PDF-stage validation/execution primitives into version-agnostic modules.
 1. Replace synthetic `JobSpec(api_version="v1")` construction with v2-native stage config.
 1. Remove direct dependency on v1 `execute_job_conversion(...)`.
 
 Proof tests/commands:
+
 - Current coupling evidence:
   - `rg -n "api_version=\"v1\"|execute_job_conversion\\(" scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py`
 - Post-fix expectation:
@@ -514,6 +563,7 @@ Proof tests/commands:
 #### A5 `high` v2 stack still imports v1 domain module as a foundational dependency
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/domain/specs_v2.py:20`
 - `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py:37`
 - `scripts/sir_convert_a_lot/interfaces/http_client_v2.py:28`
@@ -522,51 +572,62 @@ Evidence:
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:21`
 
 Why this matters:
+
 - Deleting `domain/specs.py` (required by v1 removal) currently breaks v2 code paths immediately.
 
 Concrete fix:
+
 1. Move shared enums/status primitives into a version-agnostic module (for example `domain/specs_shared.py`).
 1. Migrate all v2 imports to shared primitives.
 1. Keep v1-only models isolated for deletion.
 
 Proof tests/commands:
+
 - Import graph evidence:
   - `rg -n "from scripts\\.sir_convert_a_lot\\.domain\\.specs import" scripts/sir_convert_a_lot/domain/specs_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py scripts/sir_convert_a_lot/interfaces/http_client_v2.py scripts/sir_convert_a_lot/interfaces/cli_app.py scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py`
 
 #### A6 `high` v2 HTTP client depends on v1 HTTP client module for error type
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/interfaces/http_client_v2.py:29`
 
 Why this matters:
+
 - Removing `http_client.py` as part of v1 clean-break breaks `http_client_v2.py` because `ClientError` is imported from v1 module.
 
 Concrete fix:
+
 1. Extract `ClientError` into a shared `interfaces/http_client_errors.py`.
 1. Update both clients to import from shared error module.
 1. Delete v1 client after CLI migration completes.
 
 Proof tests/commands:
+
 - Coupling evidence:
   - `rg -n "from scripts\\.sir_convert_a_lot\\.interfaces\\.http_client import ClientError" scripts/sir_convert_a_lot/interfaces/http_client_v2.py`
 
 #### A7 `high` CLI route matrix remains incomplete for required Markdown ingress contract
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/interfaces/cli_routes.py:69`
 - `scripts/sir_convert_a_lot/interfaces/cli_routes.py:112`
 - `scripts/sir_convert_a_lot/interfaces/cli_app.py:81`
 - `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py:224`
 
 Why this matters:
+
 - Downstream API-driven GUIs cannot depend on CLI/API parity while `html -> md` and `docx -> md` are absent from route registry and runtime dispatch.
 
 Concrete fix:
+
 1. Add `html -> md`, `docx -> md`, and `pdf -> md (v2)` to canonical route registry.
 1. Update CLI help/defaults and route resolution to use this canonical matrix.
 1. Add route completeness tests asserting parity between specs, executor branches, and CLI list output.
 
 Proof tests/commands:
+
 - Current matrix evidence:
   - `pdm run run-local-pdm convert-a-lot routes`
 - Current executor branch evidence:
@@ -575,20 +636,24 @@ Proof tests/commands:
 #### A8 `medium` `http_api.py` still describes/versions the service as v1-first
 
 Evidence:
+
 - `scripts/sir_convert_a_lot/interfaces/http_api.py:5`
 - `scripts/sir_convert_a_lot/interfaces/http_api.py:79`
 - `scripts/sir_convert_a_lot/interfaces/http_api.py:108`
 - `scripts/sir_convert_a_lot/interfaces/http_api.py:143`
 
 Why this matters:
+
 - v1-first framing and path-based fallback error-version branching create contract ambiguity during the v2-only cutover.
 
 Concrete fix:
+
 1. Update app metadata/docstrings to v2-only semantics.
 1. Remove path-based `v1` fallback envelope logic once v1 routes are deleted.
 1. Set service version metadata to v2 baseline.
 
 Proof tests/commands:
+
 - Metadata/fallback evidence:
   - `rg -n "v1 API|version=\"1\\.0\\.0\"|api_version = \"v2\" if request\\.url\\.path\\.startswith\\(\"/v2/\"\\) else \"v1\"" scripts/sir_convert_a_lot/interfaces/http_api.py`
 

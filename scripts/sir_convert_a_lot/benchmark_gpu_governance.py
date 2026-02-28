@@ -1,7 +1,7 @@
 """Benchmark GPU governance behavior for Story 003b.
 
 Purpose:
-    Execute a deterministic benchmark corpus against the v1 HTTP contract and
+    Execute a deterministic benchmark corpus against the v2 HTTP contract and
     emit machine-readable evidence for GPU-first rollout governance.
 
 Relationships:
@@ -104,12 +104,16 @@ def _utc_now_iso() -> str:
 
 
 def _job_spec(filename: str, acceleration_policy: str) -> dict[str, object]:
-    """Return a v1 job spec payload for benchmark submissions."""
+    """Return a v2 `pdf -> md` job spec payload for benchmark submissions."""
     return {
-        "api_version": "v1",
-        "source": {"kind": "upload", "filename": filename},
+        "api_version": "v2",
+        "source": {"kind": "upload", "filename": filename, "format": "pdf"},
         "conversion": {
             "output_format": "md",
+            "css_filenames": [],
+            "reference_docx_filename": None,
+        },
+        "pdf_options": {
             "backend_strategy": "auto",
             "ocr_mode": "auto",
             "table_mode": "fast",
@@ -147,7 +151,7 @@ def _wait_for_terminal_status(
     deadline = time.monotonic() + max_poll_seconds
     while time.monotonic() < deadline:
         response = client.get(
-            f"/v1/convert/jobs/{job_id}",
+            f"/v2/convert/jobs/{job_id}",
             headers={"X-API-Key": api_key, "X-Correlation-ID": "corr_benchmark_poll"},
         )
         if response.status_code != 200:
@@ -200,7 +204,7 @@ def run_benchmark(
         start_time = time.monotonic()
 
         create_response = client.post(
-            "/v1/convert/jobs?wait_seconds=0",
+            "/v2/convert/jobs?wait_seconds=0",
             headers={
                 "X-API-Key": api_key,
                 "Idempotency-Key": f"benchmark-{stage}-{index:03d}",
@@ -242,7 +246,7 @@ def run_benchmark(
 
         if status == JobStatus.SUCCEEDED:
             result_response = client.get(
-                f"/v1/convert/jobs/{job_id}/result",
+                f"/v2/convert/jobs/{job_id}/result",
                 headers={"X-API-Key": api_key, "X-Correlation-ID": f"corr_result_{index:03d}"},
             )
             if result_response.status_code == 200:
@@ -255,7 +259,7 @@ def run_benchmark(
                 job_record["error_code"] = result_response.json()["error"]["code"]
         elif status == JobStatus.FAILED:
             result_response = client.get(
-                f"/v1/convert/jobs/{job_id}/result",
+                f"/v2/convert/jobs/{job_id}/result",
                 headers={"X-API-Key": api_key, "X-Correlation-ID": f"corr_result_{index:03d}"},
             )
             if result_response.status_code != 409:

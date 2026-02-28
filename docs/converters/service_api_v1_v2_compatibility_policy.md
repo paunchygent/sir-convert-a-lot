@@ -4,7 +4,7 @@ id: CONV-service-api-v1-v2-compatibility-policy
 title: Service API v1/v2 Compatibility Policy
 status: draft
 created: 2026-02-18
-updated: 2026-02-18
+updated: 2026-02-28
 owners:
   - platform
 tags:
@@ -12,10 +12,8 @@ tags:
   - compatibility
   - versioning
 links:
-  - docs/converters/pdf_to_md_service_api_v1.md
   - docs/converters/multi_format_conversion_service_api_v2.md
-  - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
-  - docs/decisions/0002-multi-format-service-api-v2.md
+  - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
 ---
 
 ## Purpose
@@ -23,9 +21,8 @@ links:
 Define the compatibility, versioning, and unification policy for Sir Convert-a-Lot service API v1
 and v2.
 
-The service is internal today (Hemma network + tunnels), but contract drift is expensive even for
-internal clients. This policy keeps v1 stable, allows v2 iteration, and makes the unification path
-explicit.
+This policy is obsolete after the v2-only clean break completed on 2026-02-28.
+The active conversion surface is now service API v2 only.
 
 ## Compatibility Policy
 

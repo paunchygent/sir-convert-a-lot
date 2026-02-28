@@ -7,8 +7,7 @@ Purpose:
 Relationships:
     - Used by `scripts.sir_convert_a_lot.interfaces.cli_app` for route selection,
       `convert-a-lot routes`, and `--dry-run` diagnostics.
-    - Must not expand the locked PDF-to-MD service v1 contract; multi-format
-      routes are implemented via service API v2.
+    - All implemented conversion routes are resolved through service API v2.
 """
 
 from __future__ import annotations
@@ -72,7 +71,14 @@ _ROUTES: tuple[CliRoute, ...] = (
         target=TargetFormat.MD,
         pipeline_kind=PipelineKind.SERVICE,
         implemented=True,
-        pipeline_steps=("service: pdf -> md (v1)",),
+        pipeline_steps=("service: pdf -> md (v2)",),
+    ),
+    CliRoute(
+        source=SourceFormat.DOCX,
+        target=TargetFormat.MD,
+        pipeline_kind=PipelineKind.SERVICE,
+        implemented=True,
+        pipeline_steps=("service: docx -> md (v2)",),
     ),
     CliRoute(
         source=SourceFormat.PDF,

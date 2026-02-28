@@ -1,9 +1,9 @@
 ---
-id: 'task-55-implement-v2-event-emission-and-sse-streaming'
-title: 'Implement v2 event emission and SSE streaming'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-55-implement-v2-event-emission-and-sse-streaming
+title: Implement v2 event emission and SSE streaming
+type: task
+status: proposed
+priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
@@ -20,6 +20,7 @@ labels:
   - sse
   - events
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -49,6 +50,7 @@ Out of scope:
 - [ ] SSE endpoint and event stream behavior implemented in v2 service.
 - [ ] Event emission model with per-job sequence and event ids.
 - [ ] Contract/integration tests for SSE progress/terminal/replay/idempotency behavior.
+- [ ] Adapter non-GPU E2E conformance test updated in the same PR immediately after SSE push-logic changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
 - [ ] Feature flag toggles and rollback-safe disable behavior for SSE lane.
 
 ## Acceptance Criteria

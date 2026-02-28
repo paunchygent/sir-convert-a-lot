@@ -139,8 +139,8 @@ Push channels are additive and do not remove existing v2 polling behavior.
   - alert on retry storms, sustained delivery latency, DLQ threshold breach, and callback failure rates.
 - Production targets:
   - push-enabled clients should reduce polling request rate by at least 60% versus baseline polling-only clients,
-  - SSE event propagation p95 from job-state transition to client-visible event <= 2s,
-  - webhook initial delivery p95 <= 5s and success rate >= 99% within first 3 attempts.
+  - SSE event propagation p95 from job-state transition to client-visible event \<= 2s,
+  - webhook initial delivery p95 \<= 5s and success rate >= 99% within first 3 attempts.
 
 ## 8. Rollout and Rollback
 

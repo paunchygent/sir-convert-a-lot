@@ -39,11 +39,13 @@ class SourceFormatV2(StrEnum):
     PDF = "pdf"
     MD = "md"
     HTML = "html"
+    DOCX = "docx"
 
 
 class OutputFormatV2(StrEnum):
     """Supported output formats for v2."""
 
+    MD = "md"
     PDF = "pdf"
     DOCX = "docx"
 
@@ -58,6 +60,15 @@ class SourceSpecV2(BaseModel):
     format: SourceFormatV2
 
 
+class TemplateSelectorV2(BaseModel):
+    """Template selector for DOCX-producing v2 routes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    template_id: str = Field(min_length=1, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    version: str | None = Field(default=None, pattern=r"^\d+\.\d+\.\d+$")
+
+
 class ConversionSpecV2(BaseModel):
     """Conversion section of the v2 job specification."""
 
@@ -65,6 +76,7 @@ class ConversionSpecV2(BaseModel):
 
     output_format: OutputFormatV2
     css_filenames: list[str] = Field(default_factory=list)
+    template: TemplateSelectorV2 | None = None
     reference_docx_filename: str | None = None
 
 
@@ -116,10 +128,12 @@ class JobSpecV2(BaseModel):
 
         route = (self.source.format, self.conversion.output_format)
         allowed_routes: set[tuple[SourceFormatV2, OutputFormatV2]] = {
-            (SourceFormatV2.HTML, OutputFormatV2.PDF),
-            (SourceFormatV2.HTML, OutputFormatV2.DOCX),
+            (SourceFormatV2.PDF, OutputFormatV2.MD),
+            (SourceFormatV2.DOCX, OutputFormatV2.MD),
             (SourceFormatV2.MD, OutputFormatV2.PDF),
             (SourceFormatV2.MD, OutputFormatV2.DOCX),
+            (SourceFormatV2.HTML, OutputFormatV2.PDF),
+            (SourceFormatV2.HTML, OutputFormatV2.DOCX),
             (SourceFormatV2.PDF, OutputFormatV2.DOCX),
         }
         if route not in allowed_routes:
@@ -134,11 +148,20 @@ class JobSpecV2(BaseModel):
             if self.execution is None:
                 raise ValueError("execution is required when source.format is 'pdf'")
 
-        if self.conversion.output_format == OutputFormatV2.DOCX and self.conversion.css_filenames:
+        if self.conversion.output_format != OutputFormatV2.PDF and self.conversion.css_filenames:
             raise ValueError("css_filenames is only supported for PDF outputs")
 
-        if self.conversion.output_format == OutputFormatV2.PDF:
+        if self.conversion.output_format != OutputFormatV2.DOCX:
             if self.conversion.reference_docx_filename is not None:
                 raise ValueError("reference_docx_filename is only supported for DOCX outputs")
+            if self.conversion.template is not None:
+                raise ValueError("template is only supported for DOCX outputs")
+        elif (
+            self.conversion.reference_docx_filename is not None
+            and self.conversion.template is not None
+        ):
+            raise ValueError(
+                "reference_docx_filename and template cannot both be provided for DOCX outputs"
+            )
 
         return self

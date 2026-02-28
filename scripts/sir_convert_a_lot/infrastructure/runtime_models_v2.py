@@ -47,6 +47,9 @@ class StoredJobV2:
     backend_used: str | None = None
     acceleration_used: str | None = None
     options_fingerprint: str | None = None
+    template_id: str | None = None
+    template_version: str | None = None
+    template_artifact_sha256: str | None = None
     failure_code: str | None = None
     failure_message: str | None = None
     failure_retryable: bool = False

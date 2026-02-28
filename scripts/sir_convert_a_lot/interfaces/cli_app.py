@@ -2,12 +2,11 @@
 
 Purpose:
     Provide the canonical local "convert-a-lot" UX for submitting conversion
-    jobs to the Sir Convert-a-Lot HTTP service (v1 and v2) and writing
+    jobs to the Sir Convert-a-Lot HTTP service (v2) and writing
     deterministic manifests.
 
 Relationships:
-    - Uses `interfaces.http_client` for v1 PDF->MD transport operations.
-    - Uses `interfaces.http_client_v2` for multi-format transport operations (v2).
+    - Uses `interfaces.http_client_v2` for service transport operations.
     - Uses `application.contracts` for manifest schema and `domain.specs` status values.
 """
 
@@ -26,11 +25,9 @@ from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.interfaces.cli_helpers import (
     build_resources_zip_payload,
-    default_job_spec_v1,
     default_job_spec_v2,
     detect_directory_source_format,
     discover_source_files,
-    idempotency_key_for_file,
     idempotency_key_for_v2_request,
     parse_source_format,
     parse_target_format,
@@ -44,13 +41,16 @@ from scripts.sir_convert_a_lot.interfaces.cli_routes import (
     list_routes,
     resolve_route,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError, SirConvertALotClient
+from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
 from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
     ArtifactOutcomeV2,
     SirConvertALotClientV2,
 )
 
 app = typer.Typer(help="Please, tell Sir Convert-a-Lot to convert x to y.")
+
+# Backwards-compatible alias for import surfaces that still reference this name.
+SirConvertALotClient = SirConvertALotClientV2
 
 
 @app.callback()
@@ -78,7 +78,8 @@ def convert_command(
         "md",
         "--to",
         help=(
-            "Target format. Implemented routes include: 'md' (pdf->md via service v1), "
+            "Target format. Implemented routes include: "
+            "'md' (pdf->md and docx->md via service v2), "
             "'pdf' (html->pdf and md->pdf via service v2), and 'docx' (pdf->docx, md->docx, "
             "and html->docx via service v2). "
             "Use 'convert-a-lot routes' for details."
@@ -233,220 +234,174 @@ def convert_command(
     manifest_entries: list[CliManifestEntry] = []
     has_failures = False
 
-    if route.source is SourceFormat.PDF and route.target is TargetFormat.MD:
-        if css or resources is not None or reference_docx is not None:
-            raise typer.BadParameter(
-                "The locked v1 pdf->md route does not accept --css, --resources, "
-                "or --reference-docx."
-            )
-        with SirConvertALotClient(base_url=service_url, api_key=resolved_api_key) as client:
-            for pdf_path in source_files:
-                relative_label = relative_source_label(source, pdf_path)
-                job_spec = default_job_spec_v1(
-                    filename=pdf_path.name,
-                    acceleration_policy=acceleration_policy,
-                    backend_strategy=backend_strategy,
-                    ocr_mode=ocr_mode,
-                    table_mode=table_mode,
-                    normalize=normalize,
-                )
-                idempotency_key = idempotency_key_for_file(pdf_path, job_spec)
-                correlation_id = (
-                    f"corr_{hashlib.sha256(relative_label.encode('utf-8')).hexdigest()[:16]}"
-                )
+    if route.target is TargetFormat.DOCX and css:
+        raise typer.BadParameter("--css is only supported for PDF outputs.")
+    if route.target is TargetFormat.PDF and reference_docx is not None:
+        raise typer.BadParameter("--reference-docx is only supported for DOCX outputs.")
+    if route.target is TargetFormat.MD and (
+        css or resources is not None or reference_docx is not None
+    ):
+        raise typer.BadParameter(
+            "V2 markdown-target routes do not accept --css, --resources, or --reference-docx."
+        )
 
-                if source.is_file():
-                    target_markdown = output_dir / pdf_path.with_suffix(".md").name
-                else:
-                    target_markdown = output_dir / Path(relative_label).with_suffix(".md")
-                target_markdown.parent.mkdir(parents=True, exist_ok=True)
-
-                try:
-                    v1_outcome = client.convert_pdf_to_markdown(
-                        pdf_path=pdf_path,
-                        job_spec=job_spec,
-                        idempotency_key=idempotency_key,
-                        wait_seconds=wait_seconds,
-                        max_poll_seconds=max_poll_seconds,
-                        correlation_id=correlation_id,
-                    )
-                    target_markdown.write_text(v1_outcome.markdown_content, encoding="utf-8")
-                    manifest_entries.append(
-                        CliManifestEntry(
-                            source_file_path=relative_label,
-                            job_id=v1_outcome.job_id,
-                            status=JobStatus.SUCCEEDED,
-                            output_path=target_markdown.as_posix(),
-                            error_code=None,
-                        )
-                    )
-                    typer.echo(f"✓ Converted {relative_label} -> {target_markdown}")
-                except ClientError as exc:
-                    if exc.code == "job_timeout" and exc.job_id is not None:
-                        manifest_entries.append(
-                            CliManifestEntry(
-                                source_file_path=relative_label,
-                                job_id=exc.job_id,
-                                status=JobStatus.RUNNING,
-                                output_path=None,
-                                error_code=exc.code,
-                            )
-                        )
-                        typer.echo(
-                            "… Submitted and still running "
-                            f"{relative_label}: {exc.job_id}. "
-                            "Use status/result endpoints to fetch completion later."
-                        )
-                        continue
-                    has_failures = True
-                    manifest_entries.append(
-                        CliManifestEntry(
-                            source_file_path=relative_label,
-                            job_id=exc.job_id,
-                            status=JobStatus.FAILED,
-                            output_path=None,
-                            error_code=exc.code,
-                        )
-                    )
-                    typer.echo(f"✗ Failed {relative_label}: {exc.code} ({exc.message})")
+    resources_zip_bytes: bytes | None
+    css_filenames: list[str]
+    if route.target is TargetFormat.PDF:
+        resources_zip_bytes, css_filenames = build_resources_zip_payload(
+            resources=resources, css_paths=tuple(css)
+        )
+    elif route.target is TargetFormat.DOCX:
+        resources_zip_bytes, _ = build_resources_zip_payload(resources=resources, css_paths=())
+        css_filenames = []
     else:
-        if route.target is TargetFormat.DOCX and css:
-            raise typer.BadParameter("--css is only supported for PDF outputs.")
-        if route.target is TargetFormat.PDF and reference_docx is not None:
-            raise typer.BadParameter("--reference-docx is only supported for DOCX outputs.")
+        resources_zip_bytes = None
+        css_filenames = []
 
-        resources_zip_bytes: bytes | None
-        css_filenames: list[str]
-        if route.target is TargetFormat.PDF:
-            resources_zip_bytes, css_filenames = build_resources_zip_payload(
-                resources=resources, css_paths=tuple(css)
-            )
-        else:
-            resources_zip_bytes, _ = build_resources_zip_payload(resources=resources, css_paths=())
-            css_filenames = []
+    resources_sha256 = (
+        sha256_bytes(resources_zip_bytes) if resources_zip_bytes is not None else None
+    )
 
-        resources_sha256 = (
-            sha256_bytes(resources_zip_bytes) if resources_zip_bytes is not None else None
+    reference_docx_bytes: bytes | None = None
+    reference_docx_sha256: str | None = None
+    if route.target is TargetFormat.DOCX and reference_docx is not None:
+        reference_docx_bytes = reference_docx.read_bytes()
+        reference_docx_sha256 = sha256_bytes(reference_docx_bytes)
+
+    if route.source is SourceFormat.PDF:
+        source_format_v2 = SourceFormatV2.PDF
+    elif route.source is SourceFormat.DOCX:
+        source_format_v2 = SourceFormatV2.DOCX
+    elif route.source is SourceFormat.MD:
+        source_format_v2 = SourceFormatV2.MD
+    elif route.source is SourceFormat.HTML:
+        source_format_v2 = SourceFormatV2.HTML
+    else:
+        raise typer.BadParameter(
+            f"unsupported_route: {route.source.value} -> {route.target.value}."
         )
 
-        reference_docx_bytes: bytes | None = None
-        reference_docx_sha256: str | None = None
-        if route.target is TargetFormat.DOCX and reference_docx is not None:
-            reference_docx_bytes = reference_docx.read_bytes()
-            reference_docx_sha256 = sha256_bytes(reference_docx_bytes)
+    if route.target is TargetFormat.MD:
+        output_format_v2 = OutputFormatV2.MD
+    elif route.target is TargetFormat.PDF:
+        output_format_v2 = OutputFormatV2.PDF
+    else:
+        output_format_v2 = OutputFormatV2.DOCX
 
-        if route.source is SourceFormat.PDF:
-            source_format_v2 = SourceFormatV2.PDF
-        elif route.source is SourceFormat.MD:
-            source_format_v2 = SourceFormatV2.MD
-        elif route.source is SourceFormat.HTML:
-            source_format_v2 = SourceFormatV2.HTML
-        else:
-            raise typer.BadParameter(
-                f"unsupported_route: {route.source.value} -> {route.target.value}."
+    with SirConvertALotClientV2(base_url=service_url, api_key=resolved_api_key) as client:
+        for source_path in source_files:
+            relative_label = relative_source_label(source, source_path)
+            relative_path = Path(relative_label)
+            correlation_id = (
+                f"corr_{hashlib.sha256(relative_label.encode('utf-8')).hexdigest()[:16]}"
+            )
+            pipeline_used = (
+                route.pipeline_steps[0] if route.pipeline_steps else "service: unknown (v2)"
             )
 
-        output_format_v2 = (
-            OutputFormatV2.PDF if route.target is TargetFormat.PDF else OutputFormatV2.DOCX
-        )
+            if output_format_v2 == OutputFormatV2.MD:
+                suffix = ".md"
+            elif output_format_v2 == OutputFormatV2.PDF:
+                suffix = ".pdf"
+            else:
+                suffix = ".docx"
+            if source.is_file():
+                target_path = output_dir / source_path.with_suffix(suffix).name
+            else:
+                target_path = output_dir / relative_path.with_suffix(suffix)
+            target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with SirConvertALotClientV2(base_url=service_url, api_key=resolved_api_key) as client:
-            for source_path in source_files:
-                relative_label = relative_source_label(source, source_path)
-                relative_path = Path(relative_label)
-                correlation_id = (
-                    f"corr_{hashlib.sha256(relative_label.encode('utf-8')).hexdigest()[:16]}"
+            reference_docx_filename = (
+                reference_docx.name
+                if (
+                    output_format_v2 == OutputFormatV2.DOCX
+                    and reference_docx is not None
+                    and reference_docx.name.strip() != ""
                 )
+                else None
+            )
 
-                suffix = ".pdf" if output_format_v2 == OutputFormatV2.PDF else ".docx"
-                if source.is_file():
-                    target_path = output_dir / source_path.with_suffix(suffix).name
-                else:
-                    target_path = output_dir / relative_path.with_suffix(suffix)
-                target_path.parent.mkdir(parents=True, exist_ok=True)
+            job_spec = default_job_spec_v2(
+                filename=source_path.name,
+                source_format=source_format_v2,
+                output_format=output_format_v2,
+                css_filenames=css_filenames if output_format_v2 == OutputFormatV2.PDF else [],
+                reference_docx_filename=reference_docx_filename,
+                acceleration_policy=acceleration_policy,
+                backend_strategy=backend_strategy,
+                ocr_mode=ocr_mode,
+                table_mode=table_mode,
+                normalize=normalize,
+            )
 
-                reference_docx_filename = (
-                    reference_docx.name
-                    if (
-                        output_format_v2 == OutputFormatV2.DOCX
-                        and reference_docx is not None
-                        and reference_docx.name.strip() != ""
+            file_sha256 = sha256_bytes(source_path.read_bytes())
+            idempotency_key = idempotency_key_for_v2_request(
+                filename=source_path.name,
+                file_sha256=file_sha256,
+                spec_payload=job_spec,
+                resources_sha256=resources_sha256,
+                reference_docx_sha256=reference_docx_sha256,
+            )
+
+            try:
+                v2_outcome: ArtifactOutcomeV2 = client.convert_upload_to_artifact(
+                    source_path=source_path,
+                    job_spec=job_spec,
+                    idempotency_key=idempotency_key,
+                    wait_seconds=wait_seconds,
+                    max_poll_seconds=max_poll_seconds,
+                    correlation_id=correlation_id,
+                    resources_zip_bytes=resources_zip_bytes,
+                    reference_docx_bytes=reference_docx_bytes,
+                )
+                target_path.write_bytes(v2_outcome.artifact_bytes)
+                manifest_entries.append(
+                    CliManifestEntry(
+                        source_file_path=relative_label,
+                        source_format=route.source.value,
+                        target_format=route.target.value,
+                        pipeline_used=pipeline_used,
+                        job_id=v2_outcome.job_id,
+                        status=JobStatus.SUCCEEDED,
+                        output_path=target_path.as_posix(),
+                        error_code=None,
                     )
-                    else None
                 )
-
-                job_spec = default_job_spec_v2(
-                    filename=source_path.name,
-                    source_format=source_format_v2,
-                    output_format=output_format_v2,
-                    css_filenames=css_filenames if output_format_v2 == OutputFormatV2.PDF else [],
-                    reference_docx_filename=reference_docx_filename,
-                    acceleration_policy=acceleration_policy,
-                    backend_strategy=backend_strategy,
-                    ocr_mode=ocr_mode,
-                    table_mode=table_mode,
-                    normalize=normalize,
-                )
-
-                file_sha256 = sha256_bytes(source_path.read_bytes())
-                idempotency_key = idempotency_key_for_v2_request(
-                    filename=source_path.name,
-                    file_sha256=file_sha256,
-                    spec_payload=job_spec,
-                    resources_sha256=resources_sha256,
-                    reference_docx_sha256=reference_docx_sha256,
-                )
-
-                try:
-                    v2_outcome: ArtifactOutcomeV2 = client.convert_upload_to_artifact(
-                        source_path=source_path,
-                        job_spec=job_spec,
-                        idempotency_key=idempotency_key,
-                        wait_seconds=wait_seconds,
-                        max_poll_seconds=max_poll_seconds,
-                        correlation_id=correlation_id,
-                        resources_zip_bytes=resources_zip_bytes,
-                        reference_docx_bytes=reference_docx_bytes,
-                    )
-                    target_path.write_bytes(v2_outcome.artifact_bytes)
+                typer.echo(f"✓ Converted {relative_label} -> {target_path}")
+            except ClientError as exc:
+                if exc.code == "job_timeout" and exc.job_id is not None:
                     manifest_entries.append(
                         CliManifestEntry(
                             source_file_path=relative_label,
-                            job_id=v2_outcome.job_id,
-                            status=JobStatus.SUCCEEDED,
-                            output_path=target_path.as_posix(),
-                            error_code=None,
-                        )
-                    )
-                    typer.echo(f"✓ Converted {relative_label} -> {target_path}")
-                except ClientError as exc:
-                    if exc.code == "job_timeout" and exc.job_id is not None:
-                        manifest_entries.append(
-                            CliManifestEntry(
-                                source_file_path=relative_label,
-                                job_id=exc.job_id,
-                                status=JobStatus.RUNNING,
-                                output_path=None,
-                                error_code=exc.code,
-                            )
-                        )
-                        typer.echo(
-                            "… Submitted and still running "
-                            f"{relative_label}: {exc.job_id}. "
-                            "Use status/result endpoints to fetch completion later."
-                        )
-                        continue
-                    has_failures = True
-                    manifest_entries.append(
-                        CliManifestEntry(
-                            source_file_path=relative_label,
+                            source_format=route.source.value,
+                            target_format=route.target.value,
+                            pipeline_used=pipeline_used,
                             job_id=exc.job_id,
-                            status=JobStatus.FAILED,
+                            status=JobStatus.RUNNING,
                             output_path=None,
                             error_code=exc.code,
                         )
                     )
-                    typer.echo(f"✗ Failed {relative_label}: {exc.code} ({exc.message})")
+                    typer.echo(
+                        "… Submitted and still running "
+                        f"{relative_label}: {exc.job_id}. "
+                        "Use status/result endpoints to fetch completion later."
+                    )
+                    continue
+                has_failures = True
+                manifest_entries.append(
+                    CliManifestEntry(
+                        source_file_path=relative_label,
+                        source_format=route.source.value,
+                        target_format=route.target.value,
+                        pipeline_used=pipeline_used,
+                        job_id=exc.job_id,
+                        status=JobStatus.FAILED,
+                        output_path=None,
+                        error_code=exc.code,
+                    )
+                )
+                typer.echo(f"✗ Failed {relative_label}: {exc.code} ({exc.message})")
 
     manifest_entries.sort(key=lambda entry: entry.source_file_path)
     manifest = CliManifest(

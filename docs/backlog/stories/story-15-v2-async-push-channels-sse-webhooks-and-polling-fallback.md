@@ -1,9 +1,9 @@
 ---
-id: 'story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback'
-title: 'V2 async push channels SSE webhooks and polling fallback'
-type: 'story'
-status: 'proposed'
-priority: 'critical'
+id: story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback
+title: V2 async push channels SSE webhooks and polling fallback
+type: story
+status: proposed
+priority: critical
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
@@ -26,6 +26,7 @@ labels:
   - webhooks
   - polling-fallback
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -65,8 +66,8 @@ Out of scope:
 - [ ] Rollout/rollback controls are documented and verified for safe disable.
 - [ ] Push rollout meets production targets:
   - polling request rate reduced by at least 60% for push-enabled clients,
-  - SSE propagation p95 <= 2s,
-  - webhook initial delivery p95 <= 5s and success >= 99% within first 3 attempts.
+  - SSE propagation p95 \<= 2s,
+  - webhook initial delivery p95 \<= 5s and success >= 99% within first 3 attempts.
 
 ## Test Requirements
 
@@ -74,6 +75,7 @@ Out of scope:
 - [ ] Webhook success/failure retry behavior and terminal-state callback behavior are proven.
 - [ ] Negative security tests cover signature mismatch, stale timestamp, and replay attempts.
 - [ ] Polling fallback remains functional and unchanged for clients that do not adopt push.
+- [ ] Adapter non-GPU E2E conformance test is updated in the same push-logic PR immediately after implementation changes (`tests/sir_convert_a_lot/test_integration_adapter_conformance.py::test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime`).
 - [ ] Replay expiry behavior is validated (`410 cursor_expired` for stale cursors beyond retention horizon).
 - [ ] Coverage gate passes at `>=90%` for conversion-core code (`pdm run run-local-pdm coverage-gate`).
 

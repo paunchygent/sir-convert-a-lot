@@ -1,9 +1,9 @@
 ---
-id: 'task-43-publish-convert-domain-and-centralize-prod-env-mirroring-across-internal-repos'
-title: 'Publish convert.hule.education and centralize prod env mirroring across internal repos'
-type: 'task'
-status: 'done'
-priority: 'high'
+id: task-43-publish-convert-domain-and-centralize-prod-env-mirroring-across-internal-repos
+title: Publish convert.hule.education and centralize prod env mirroring across internal repos
+type: task
+status: done
+priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
@@ -14,6 +14,7 @@ labels:
   - hemmasecrets
   - docs-governance
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

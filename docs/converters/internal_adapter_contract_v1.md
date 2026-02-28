@@ -2,9 +2,9 @@
 type: converter
 id: CONV-internal-adapter-contract-v1
 title: Internal Adapter Contract v1
-status: active
+status: draft
 created: 2026-02-11
-updated: 2026-02-11
+updated: 2026-02-28
 owners:
   - platform
 tags:
@@ -13,10 +13,7 @@ tags:
   - contract
   - internal
 links:
-  - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
-  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md
-  - docs/converters/pdf_to_md_service_api_v1.md
-  - docs/reference/ref-story-003c-consumer-integration-handoff.md
+  - docs/converters/multi_format_conversion_service_api_v2.md
   - scripts/sir_convert_a_lot/integrations/adapter_profiles.py
 ---
 
@@ -25,6 +22,11 @@ links:
 Define normative requirements for thin internal consumer adapters (HuleEdu and
 Skriptoteket) that submit conversion jobs to Sir Convert-a-Lot without contract
 drift or business-logic forks.
+
+This document is retained as historical context only. Active adapter behavior
+is now v2-only and implemented in:
+
+- `scripts/sir_convert_a_lot/integrations/adapter_profiles.py`
 
 ## Scope
 
