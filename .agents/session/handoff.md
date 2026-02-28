@@ -14,6 +14,40 @@
   - all linked task statuses must be terminal before story status/checkbox can be terminal,
   - all linked story statuses must be terminal before epic status/checkbox can be terminal.
 
+## 2026-02-28: T02 -> T03 Async Push Docs Slice Completed
+
+### Completed
+
+- Task 53 (`T02`) confirmed terminal with ADR acceptance:
+  - `docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md` set to
+    `status: accepted`, with deterministic event/replay/signature/retry/DLQ constants.
+- Task 54 (`T03`) implemented and terminalized:
+  - created/published `docs/converters/multi_format_conversion_service_api_v2_async_push.md`
+    covering SSE, webhook onboarding, delivery headers/signing, retries, replay, error taxonomy,
+    polling fallback, and downstream integration patterns.
+  - linked async contract from `docs/converters/multi_format_conversion_service_api_v2.md`.
+- Status synchronization in strict order:
+  - Task 54 moved to `completed`,
+  - Epic 05 `T02` and `T03` checkboxes checked,
+  - Story 15 moved to `in_progress` with first two acceptance criteria checked.
+- Long-term memory updated:
+  - archived this slice in `docs/backlog/current.md` and updated Next Actions to start at Task 55.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 84 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=105 rules=9`)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+- `rg -n "event_id|event_type|sequence|occurred_at|cursor_expired|X-SCAL-Webhook|retry|DLQ|polling fallback" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
+- `rg -n "multi_format_conversion_service_api_v2_async_push\\.md" docs/converters/multi_format_conversion_service_api_v2.md` (pass)
+- `rg -n "status: accepted|task-54|task-55|task-56|task-57|task-58|story-15" docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md` (pass)
+
+### Next Session Goals
+
+- Start Task 55 (`T13`) implementation slice for event emission + SSE stream/replay behavior.
+- Keep order gates strict: do not check `T13` before terminal Task 55 status and evidence updates.
+- Update adapter non-GPU E2E in the same push-logic PR, per Story 15 requirements.
+
 ## 2026-02-28: T10 -> T11 -> T12 Completed in Order
 
 ### Completed

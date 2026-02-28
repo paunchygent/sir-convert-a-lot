@@ -2,7 +2,7 @@
 id: story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback
 title: V2 async push channels SSE webhooks and polling fallback
 type: story
-status: proposed
+status: in_progress
 priority: critical
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -71,8 +71,8 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] ADR is approved and linked from story/tasks.
-- [ ] V2 async push contract doc is normative and complete for SSE + webhooks + polling fallback.
+- [x] ADR is approved and linked from story/tasks.
+- [x] V2 async push contract doc is normative and complete for SSE + webhooks + polling fallback.
 - [ ] Push implementation provides deterministic event semantics (ordering/idempotency/terminal behavior).
 - [ ] Webhook security controls are implemented and validated (signature, timestamp, replay window).
 - [ ] Rollout/rollback controls are documented and verified for safe disable.

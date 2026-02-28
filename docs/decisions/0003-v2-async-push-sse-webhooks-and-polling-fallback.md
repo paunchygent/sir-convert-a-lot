@@ -2,7 +2,7 @@
 type: decision
 id: ADR-0003
 title: V2 Async Push Delivery with SSE Webhooks and Polling Fallback
-status: proposed
+status: accepted
 created: '2026-02-28'
 updated: '2026-02-28'
 owners:
@@ -28,7 +28,7 @@ links:
 
 ## Status
 
-- Proposed
+- Accepted
 - Date: 2026-02-28
 
 ## 1. Problem and Context

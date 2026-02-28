@@ -2,7 +2,7 @@
 id: task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback
 title: ADR v2 async push delivery model SSE webhooks polling fallback
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -71,19 +71,19 @@ conversion jobs.
 
 ## Deliverables
 
-- [ ] ADR document finalized at `docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md`.
-- [ ] ADR status transitioned to `accepted`.
-- [ ] ADR links to Story 15 and tasks 54-58.
-- [ ] ADR includes explicit v2-only push scope and polling fallback invariants.
-- [ ] ADR pins deterministic policy constants for security, replay, retry, and DLQ behavior.
+- [x] ADR document finalized at `docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md`.
+- [x] ADR status transitioned to `accepted`.
+- [x] ADR links to Story 15 and tasks 54-58.
+- [x] ADR includes explicit v2-only push scope and polling fallback invariants.
+- [x] ADR pins deterministic policy constants for security, replay, retry, and DLQ behavior.
 
 ## Acceptance Criteria
 
-- [ ] ADR provides implementation-grade guidance for API, security, operations, and rollout.
-- [ ] ADR does not introduce any v1 compatibility requirement.
-- [ ] ADR constants are sufficiently specific for Task 54 contract publication and Tasks 55/57/58
+- [x] ADR provides implementation-grade guidance for API, security, operations, and rollout.
+- [x] ADR does not introduce any v1 compatibility requirement.
+- [x] ADR constants are sufficiently specific for Task 54 contract publication and Tasks 55/57/58
   implementation without additional policy decisions.
-- [ ] ADR is referenced by async contract docs and implementation task(s).
+- [x] ADR is referenced by async contract docs and implementation task(s).
 
 ## Execution Plan (Slice 53A, 2026-02-28)
 
@@ -121,15 +121,20 @@ conversion jobs.
 
 ## Execution Outcome
 
-- [ ] ADR finalized and accepted.
-- [ ] Constants pinned and validated against Story 15/Task 54 requirements.
+- [x] ADR finalized and accepted.
+- [x] Constants pinned and validated against Story 15/Task 54 requirements.
 
 ### Validation Evidence
 
-- [ ] Validation command outputs captured.
+- [x] Validation command outputs captured.
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+- `rg -n "status: accepted|task-54|task-55|task-56|task-57|task-58|story-15" docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md` (pass)
+- `rg -n "event_id|event_type|sequence|cursor_expired|HMAC|retry|DLQ|replay window" docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md` (pass)
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

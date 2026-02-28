@@ -192,6 +192,13 @@ Primary implementation stories:
     - upgraded Tasks `53/54/55/57/58/56` with sequencing, execution slices, risk controls,
       test matrix, and validation command/evidence blocks,
     - docs/task validators and backlog index pass after planning updates.
+  - Completed async-push docs implementation slice for `T02` and `T03`:
+    - ADR `0003` accepted and cross-linked to Story 15 + Tasks 54-58 (`T02` complete),
+    - published normative async push contract doc:
+      `docs/converters/multi_format_conversion_service_api_v2_async_push.md` (`T03` complete),
+    - synchronized tracking order: Task 54 terminalized, Epic `T02/T03` checked, Story 15 moved to
+      `in_progress`.
+    - docs validators/index + ADR/contract grep checks pass.
 
 - 2026-02-18:
 
@@ -203,8 +210,6 @@ Primary implementation stories:
 ## Next Actions
 
 - Execute async-push production slice in epic listed order:
-  - `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
-  - `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
   - `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
   - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
   - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`

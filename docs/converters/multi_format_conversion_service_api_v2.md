@@ -14,9 +14,12 @@ tags:
   - multi-format
 links:
   - docs/decisions/0002-multi-format-service-api-v2.md
+  - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
+  - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
   - docs/converters/docx-template-catalog-contract-v2.md
   - docs/converters/downstream_integration_contract_v2.md
+  - docs/converters/multi_format_conversion_service_api_v2_async_push.md
   - docs/backlog/tasks/task-46-design-docx-template-contract-storage-and-selection-model.md
   - docs/backlog/tasks/task-47-implement-docx-template-endpoints-validation-and-fixture-templates.md
 ---
@@ -46,6 +49,8 @@ Service API v2 is the single active conversion contract surface for:
 - Service (HTTP): `scripts/sir_convert_a_lot/interfaces/http_api.py`
 - Client (CLI): `scripts/sir_convert_a_lot/interfaces/cli_app.py`
 - Downstream GUI integration guide: `docs/converters/downstream_integration_contract_v2.md`
+- Async push extension contract:
+  `docs/converters/multi_format_conversion_service_api_v2_async_push.md`
 
 ## Base Conventions
 

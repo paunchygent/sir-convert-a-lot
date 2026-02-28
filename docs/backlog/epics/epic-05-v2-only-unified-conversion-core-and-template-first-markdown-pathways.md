@@ -122,9 +122,9 @@ Execution rule:
 
 - [x] `T12` `docs/backlog/tasks/task-51-purge-conflicting-legacy-docs-and-stale-v1-code-paths.md`
 
-- [ ] `T02` `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
+- [x] `T02` `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
 
-- [ ] `T03` `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
+- [x] `T03` `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
 
 - [ ] `T13` `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
 

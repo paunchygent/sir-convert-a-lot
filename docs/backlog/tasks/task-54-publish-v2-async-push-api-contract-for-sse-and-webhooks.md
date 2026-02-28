@@ -2,7 +2,7 @@
 id: task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks
 title: Publish v2 async push API contract for SSE and webhooks
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
   - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/converters/multi_format_conversion_service_api_v2_async_push.md
 labels:
   - api-contract
   - v2
@@ -68,27 +69,27 @@ and webhooks without reverse-engineering internal behavior.
 
 ## Deliverables
 
-- [ ] `docs/converters/multi_format_conversion_service_api_v2_async_push.md` created and linked.
-- [ ] Existing v2 converter doc updated with pointer to async push contract.
-- [ ] Example request/response/event payloads published for SSE + webhook + polling fallback.
-- [ ] Onboarding flow examples published (subscription create/update/rotate/delete).
-- [ ] Security/header canonicalization examples published (`X-SCAL-Webhook-*` headers + signature
+- [x] `docs/converters/multi_format_conversion_service_api_v2_async_push.md` created and linked.
+- [x] Existing v2 converter doc updated with pointer to async push contract.
+- [x] Example request/response/event payloads published for SSE + webhook + polling fallback.
+- [x] Onboarding flow examples published (subscription create/update/rotate/delete).
+- [x] Security/header canonicalization examples published (`X-SCAL-Webhook-*` headers + signature
   verification input).
-- [ ] Replay and retry policy examples match ADR constants (`410 cursor_expired`, retry schedule,
+- [x] Replay and retry policy examples match ADR constants (`410 cursor_expired`, retry schedule,
   DLQ criteria).
 
 ## Acceptance Criteria
 
-- [ ] Contract defines endpoint set and request/response semantics for:
+- [x] Contract defines endpoint set and request/response semantics for:
   - SSE stream subscribe/replay,
   - webhook onboarding CRUD + rotate/revoke,
   - webhook callback payload + headers,
   - polling fallback interaction.
-- [ ] Contract semantics are identical to ADR `0003` constants (event types, replay, security,
+- [x] Contract semantics are identical to ADR `0003` constants (event types, replay, security,
   retry/DLQ).
-- [ ] No contract text implies v1 push support or v1 expansion.
-- [ ] Contract includes measurable KPI targets and replay retention constraints.
-- [ ] Contract includes deterministic error taxonomy for push surfaces (including
+- [x] No contract text implies v1 push support or v1 expansion.
+- [x] Contract includes measurable KPI targets and replay retention constraints.
+- [x] Contract includes deterministic error taxonomy for push surfaces (including
   `cursor_expired`, signature errors, onboarding validation errors).
 
 ## Execution Plan (Slice 54A, 2026-02-28)
@@ -127,15 +128,20 @@ and webhooks without reverse-engineering internal behavior.
 
 ## Execution Outcome
 
-- [ ] Async push contract doc published and linked.
-- [ ] Contract validated against ADR constants and Story 15 acceptance mapping.
+- [x] Async push contract doc published and linked.
+- [x] Contract validated against ADR constants and Story 15 acceptance mapping.
 
 ### Validation Evidence
 
-- [ ] Validation command outputs captured.
+- [x] Validation command outputs captured.
+- `pdm run run-local-pdm validate-tasks` (pass)
+- `pdm run run-local-pdm validate-docs` (pass)
+- `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+- `rg -n "event_id|event_type|sequence|occurred_at|cursor_expired|X-SCAL-Webhook|retry|DLQ|polling fallback" docs/converters/multi_format_conversion_service_api_v2_async_push.md` (pass)
+- `rg -n "multi_format_conversion_service_api_v2_async_push\\.md" docs/converters/multi_format_conversion_service_api_v2.md` (pass)
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
