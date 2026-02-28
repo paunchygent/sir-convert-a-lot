@@ -19,7 +19,9 @@ links:
   - docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md
   - docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
-  - docs/backlog/tasks/task-55-implement-v2-async-push-events-webhooks-security-and-retries.md
+  - docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md
+  - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
+  - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
   - docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md
   - docs/converters/multi_format_conversion_service_api_v2.md
 ---
@@ -48,6 +50,7 @@ Adopt a hybrid interaction model on v2:
 - keep polling endpoints as supported fallback,
 - add SSE for live UI progress consumption,
 - add webhooks for server-to-server callbacks.
+- add webhook onboarding APIs for endpoint/secret lifecycle management.
 
 Push channels are additive and do not remove existing v2 polling behavior.
 
@@ -57,6 +60,8 @@ Push channels are additive and do not remove existing v2 polling behavior.
 - No v1 expansion is allowed.
 - Polling remains a supported path for clients that do not adopt push.
 - Push semantics are normative through v2 contract docs and test evidence.
+- SSE scope for initial release is per-job streams only; tenant/global multiplexed streams are out of
+  scope for this slice.
 
 ## 4. Chosen Channels
 
@@ -69,6 +74,7 @@ Push channels are additive and do not remove existing v2 polling behavior.
 
 - Purpose: asynchronous callbacks for backend integrations.
 - Consumption model: signed HTTP callbacks with retry/backoff on failure.
+- Subscription model: API-managed webhook registrations with explicit ownership, status, and secret lifecycle.
 
 3. Polling fallback
 
@@ -80,6 +86,10 @@ Push channels are additive and do not remove existing v2 polling behavior.
 - Event identity:
   - each event has immutable `event_id`,
   - each event includes `job_id` and `event_type`.
+- Subscription management:
+  - webhook endpoints are managed through v2 onboarding APIs (`create`, `list`, `update`, `delete`),
+  - each subscription has stable `subscription_id` and owner scope,
+  - callback delivery for disabled/deleted subscriptions must stop deterministically.
 - Ordering:
   - per-job ordering is guaranteed by monotonic `sequence`,
   - consumers must not assume cross-job global ordering.
@@ -89,6 +99,11 @@ Push channels are additive and do not remove existing v2 polling behavior.
 - Delivery semantics:
   - at-least-once delivery for webhooks,
   - SSE may reconnect and replay from a supplied cursor/event id contract.
+- Replay retention contract:
+  - replay horizon is 24h from event creation,
+  - when cursor/event id is outside replay horizon, SSE returns `410 cursor_expired` with latest
+    resumable cursor metadata,
+  - replay retention is independent from artifact retention and may be shorter.
 - Terminal-state behavior:
   - each job emits exactly one terminal state (`succeeded`, `failed`, or `canceled`),
   - no non-terminal event is emitted after terminal state,
@@ -103,7 +118,9 @@ Push channels are additive and do not remove existing v2 polling behavior.
   - enforce bounded replay window,
   - reject stale or duplicated deliveries within replay window policy.
 - Secret handling:
-  - support secret rotation with overlap period (`active` + `next` secret).
+  - secrets are system-generated and never re-readable after creation,
+  - support secret rotation with overlap period (`active` + `next` secret),
+  - include deterministic rotate/revoke workflows through onboarding APIs.
 - Auth and rate limits:
   - v2 auth requirements remain enforced,
   - channel-specific rate limits protect stream/callback abuse paths.
@@ -120,6 +137,10 @@ Push channels are additive and do not remove existing v2 polling behavior.
   - structured logs with job/event/delivery correlation ids.
 - Alerting:
   - alert on retry storms, sustained delivery latency, DLQ threshold breach, and callback failure rates.
+- Production targets:
+  - push-enabled clients should reduce polling request rate by at least 60% versus baseline polling-only clients,
+  - SSE event propagation p95 from job-state transition to client-visible event <= 2s,
+  - webhook initial delivery p95 <= 5s and success rate >= 99% within first 3 attempts.
 
 ## 8. Rollout and Rollback
 

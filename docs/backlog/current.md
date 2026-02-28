@@ -26,8 +26,10 @@ related:
   - docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md
   - docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
-  - docs/backlog/tasks/task-55-implement-v2-async-push-events-webhooks-security-and-retries.md
+  - docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md
   - docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md
+  - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
+  - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
 labels:
   - session-log
   - active-work
@@ -87,8 +89,10 @@ Primary implementation stories:
     - Tasks:
       - `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
       - `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
-      - `docs/backlog/tasks/task-55-implement-v2-async-push-events-webhooks-security-and-retries.md`
+      - `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
       - `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
+      - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
+      - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`
 
 - 2026-02-18:
 
@@ -114,5 +118,7 @@ Primary implementation stories:
 - After Story 14 + Task 45/50/51 stabilization, execute async push slice for production readiness:
   - `docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md`
   - `docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md`
-  - `docs/backlog/tasks/task-55-implement-v2-async-push-events-webhooks-security-and-retries.md`
+  - `docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md`
   - `docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md`
+  - `docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md`
+  - `docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md`

@@ -13,7 +13,9 @@ related:
   - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/backlog/tasks/task-53-adr-v2-async-push-delivery-model-sse-webhooks-polling-fallback.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
-  - docs/backlog/tasks/task-55-implement-v2-async-push-events-webhooks-security-and-retries.md
+  - docs/backlog/tasks/task-55-implement-v2-event-emission-and-sse-streaming.md
+  - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
+  - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
   - docs/backlog/tasks/task-56-runbook-and-observability-for-v2-async-push-delivery.md
   - docs/converters/multi_format_conversion_service_api_v2.md
 labels:
@@ -37,10 +39,12 @@ poll churn.
   - SSE for live UI progress updates,
   - webhooks for server-to-server callback delivery,
   - polling preserved as fallback.
+- Include onboarding contract for webhooks:
+  - registration/update/delete APIs,
+  - secret ownership and rotation semantics.
 - Define and publish normative async push contracts (events, payload schemas, ordering,
   idempotency, retries, and terminal-state semantics).
-- Implement push emission, delivery worker behavior, webhook security (HMAC + replay protection),
-  and operational controls (feature flags/canary/rollback).
+- Implement push emission, onboarding, and delivery behavior as separate PR-sized slices.
 - Publish operating guidance and observability expectations for push delivery reliability.
 - Sequence this story after core clean-break hardening to avoid contract churn:
   - Story 14 v2-only API unification.
@@ -58,6 +62,10 @@ Out of scope:
 - [ ] Push implementation provides deterministic event semantics (ordering/idempotency/terminal behavior).
 - [ ] Webhook security controls are implemented and validated (signature, timestamp, replay window).
 - [ ] Rollout/rollback controls are documented and verified for safe disable.
+- [ ] Push rollout meets production targets:
+  - polling request rate reduced by at least 60% for push-enabled clients,
+  - SSE propagation p95 <= 2s,
+  - webhook initial delivery p95 <= 5s and success >= 99% within first 3 attempts.
 
 ## Test Requirements
 
@@ -65,6 +73,7 @@ Out of scope:
 - [ ] Webhook success/failure retry behavior and terminal-state callback behavior are proven.
 - [ ] Negative security tests cover signature mismatch, stale timestamp, and replay attempts.
 - [ ] Polling fallback remains functional and unchanged for clients that do not adopt push.
+- [ ] Replay expiry behavior is validated (`410 cursor_expired` for stale cursors beyond retention horizon).
 
 ## Done Definition
 

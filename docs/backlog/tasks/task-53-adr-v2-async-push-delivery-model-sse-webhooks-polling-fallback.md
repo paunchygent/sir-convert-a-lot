@@ -11,6 +11,8 @@ related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/backlog/tasks/task-57-implement-v2-webhook-onboarding-endpoints-and-secret-lifecycle.md
+  - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md
 labels:
   - adr
   - v2
@@ -52,7 +54,7 @@ Publish a decision record that defines the production async push model for v2 co
 ## Deliverables
 
 - [ ] ADR document created at `docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md`.
-- [ ] ADR links to Story 15 and tasks 54-56.
+- [ ] ADR links to Story 15 and tasks 54-58.
 - [ ] ADR includes explicit v2-only push scope and polling fallback invariants.
 
 ## Acceptance Criteria

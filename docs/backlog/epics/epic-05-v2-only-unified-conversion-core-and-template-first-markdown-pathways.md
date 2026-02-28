@@ -53,6 +53,7 @@ paths are cleaned up.
 - Production async push readiness on v2:
   - SSE live events for UI progress,
   - webhook callbacks for server-to-server integrations,
+  - webhook onboarding APIs with secret lifecycle management,
   - polling preserved as fallback.
 
 ## Out of Scope
@@ -78,6 +79,10 @@ paths are cleaned up.
 - [ ] Eval container/profile and conflicting legacy runtime paths are removed.
 - [ ] Converter/ADR/runbook/backlog docs no longer describe stale v1 or local/hybrid behavior.
 - [ ] V2 async push model is documented and implemented with SSE/webhooks and polling fallback.
+- [ ] Async push readiness has measurable outcomes:
+  - polling request-rate reduced by >= 60% for push-enabled clients,
+  - SSE propagation p95 <= 2s,
+  - webhook initial delivery p95 <= 5s and success >= 99% within first 3 attempts.
 - [ ] Quality gates pass:
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`
