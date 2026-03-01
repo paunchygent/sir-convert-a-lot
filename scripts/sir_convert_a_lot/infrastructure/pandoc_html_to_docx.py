@@ -66,7 +66,6 @@ def convert_html_to_docx(
 
     command = [
         pandoc_bin,
-        "--sandbox",
         html_path.as_posix(),
         "--from=html",
         "--to=docx",

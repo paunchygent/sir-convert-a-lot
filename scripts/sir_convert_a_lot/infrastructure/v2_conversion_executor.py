@@ -559,6 +559,7 @@ def execute_v2_job_conversion(
                 output_html_path=intermediate_html,
                 timeout_seconds=document_timeout_seconds,
             )
+            _validate_html_resources_for_route(input_path=intermediate_html, workdir=workdir)
             convert_html_to_pdf(
                 html_path=intermediate_html,
                 output_pdf_path=job.artifact_path,
@@ -583,6 +584,7 @@ def execute_v2_job_conversion(
                 output_html_path=intermediate_html,
                 timeout_seconds=document_timeout_seconds,
             )
+            _validate_html_resources_for_route(input_path=intermediate_html, workdir=workdir)
             convert_html_to_docx(
                 html_path=intermediate_html,
                 output_docx_path=job.artifact_path,
@@ -699,6 +701,7 @@ def execute_v2_job_conversion(
                     output_html_path=intermediate_html,
                     timeout_seconds=document_timeout_seconds,
                 )
+                _validate_html_resources_for_route(input_path=intermediate_html, workdir=workdir)
                 convert_html_to_docx(
                     html_path=intermediate_html,
                     output_docx_path=job.artifact_path,

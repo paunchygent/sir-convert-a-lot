@@ -7,6 +7,9 @@ Purpose:
 Relationships:
     - Exercises `pandoc_markdown_to_html` and `pandoc_html_to_docx`.
     - Supports Task 60 security/resilience hardening evidence.
+    - Validates that DOCX-output wrappers do not use Pandoc `--sandbox`, since
+      Pandoc's DOCX writer requires built-in data files that are unavailable
+      under sandbox mode.
 """
 
 from __future__ import annotations
@@ -16,8 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.sir_convert_a_lot.infrastructure import pandoc_html_to_docx
-from scripts.sir_convert_a_lot.infrastructure import pandoc_markdown_to_html
+from scripts.sir_convert_a_lot.infrastructure import pandoc_html_to_docx, pandoc_markdown_to_html
 from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_docx import (
     HTML_TO_DOCX_EMPTY,
     HTML_TO_DOCX_TIMEOUT,
@@ -49,7 +51,7 @@ def test_convert_markdown_to_html_maps_timeout(
         stderr_max_bytes: int = 65536,
     ) -> tuple[int, str]:
         del timeout_seconds, stderr_max_bytes
-        assert "--sandbox" in command
+        assert "--sandbox" not in command
         raise subprocess.TimeoutExpired(cmd=["pandoc"], timeout=10)
 
     monkeypatch.setattr(pandoc_markdown_to_html, "run_pandoc_command", _raise_timeout)
@@ -65,7 +67,7 @@ def test_convert_markdown_to_html_maps_timeout(
     assert error.code == MARKDOWN_TO_HTML_TIMEOUT
 
 
-def test_convert_markdown_to_html_uses_sandbox_flag(
+def test_convert_markdown_to_html_does_not_use_sandbox_flag(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -92,7 +94,7 @@ def test_convert_markdown_to_html_uses_sandbox_flag(
     convert_markdown_to_html(markdown_path=markdown_path, output_html_path=output_html)
 
     assert output_html.exists()
-    assert "--sandbox" in seen_commands[0]
+    assert "--sandbox" not in seen_commands[0]
 
 
 def test_convert_markdown_to_html_reports_empty_output(
@@ -133,7 +135,7 @@ def test_convert_html_to_docx_maps_timeout(
         stderr_max_bytes: int = 65536,
     ) -> tuple[int, str]:
         del timeout_seconds, stderr_max_bytes
-        assert "--sandbox" in command
+        assert "--sandbox" not in command
         raise subprocess.TimeoutExpired(cmd=["pandoc"], timeout=12)
 
     monkeypatch.setattr(pandoc_html_to_docx, "run_pandoc_command", _raise_timeout)
@@ -151,7 +153,7 @@ def test_convert_html_to_docx_maps_timeout(
     assert error.code == HTML_TO_DOCX_TIMEOUT
 
 
-def test_convert_html_to_docx_uses_sandbox_flag(
+def test_convert_html_to_docx_does_not_use_sandbox_flag(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -183,7 +185,7 @@ def test_convert_html_to_docx_uses_sandbox_flag(
     )
 
     assert output_docx.exists()
-    assert "--sandbox" in seen_commands[0]
+    assert "--sandbox" not in seen_commands[0]
 
 
 def test_convert_html_to_docx_reports_empty_output(

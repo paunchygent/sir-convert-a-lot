@@ -84,7 +84,6 @@ def convert_markdown_to_html(
 
     command = [
         pandoc_bin,
-        "--sandbox",
         markdown_path.as_posix(),
         "--standalone",
         "--from=markdown+smart",
