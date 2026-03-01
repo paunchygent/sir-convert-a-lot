@@ -50,6 +50,7 @@ def _build_job_spec(
     source_format: SourceFormatV2,
     output_format: OutputFormatV2,
     css_filenames: list[str] | None = None,
+    pdf_layout: dict[str, object] | None = None,
     template: dict[str, str | None] | None = None,
     reference_docx_filename: str | None = None,
     execution_timeout_seconds: int | None = None,
@@ -69,6 +70,10 @@ def _build_job_spec(
         },
         "retention": {"pin": False},
     }
+    if pdf_layout is not None:
+        conversion = payload["conversion"]
+        assert isinstance(conversion, dict)
+        conversion["pdf_layout"] = pdf_layout
     if source_format == SourceFormatV2.PDF:
         payload["pdf_options"] = {
             "backend_strategy": "auto",
@@ -95,6 +100,7 @@ def _build_job(
     source_format: SourceFormatV2,
     output_format: OutputFormatV2,
     css_filenames: list[str] | None = None,
+    pdf_layout: dict[str, object] | None = None,
     template: dict[str, str | None] | None = None,
     reference_docx_filename: str | None = None,
     reference_docx_path: Path | None = None,
@@ -120,6 +126,7 @@ def _build_job(
         source_format=spec_source_format or source_format,
         output_format=spec_output_format or output_format,
         css_filenames=css_filenames,
+        pdf_layout=pdf_layout,
         template=template,
         reference_docx_filename=reference_docx_filename,
         execution_timeout_seconds=execution_timeout_seconds,

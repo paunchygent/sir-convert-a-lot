@@ -1,9 +1,9 @@
 ---
-id: 'task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf'
+id: task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf
 title: 'ADR-0004: v2 PDF layout presets + preview + DOCX to PDF'
-type: 'task'
-status: 'completed'
-priority: 'high'
+type: task
+status: completed
+priority: high
 created: '2026-03-01'
 last_updated: '2026-03-01'
 related:
@@ -18,6 +18,7 @@ labels:
   - docx
   - contract
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

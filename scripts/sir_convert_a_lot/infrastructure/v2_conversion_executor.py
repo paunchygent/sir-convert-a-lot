@@ -77,6 +77,10 @@ from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import (
     MarkdownToHtmlConversionError,
     convert_markdown_to_html,
 )
+from scripts.sir_convert_a_lot.infrastructure.pdf_layout_presets_v2 import (
+    PdfLayoutPresetWriteError,
+    write_pdf_layout_preset_stylesheet,
+)
 from scripts.sir_convert_a_lot.infrastructure.resources_zip import (
     ResourcesZipError,
     extract_resources_zip,
@@ -157,6 +161,42 @@ def _resolve_workdir_resource_path(
             details={"field": field, "filename": safe_filename},
         )
     return candidate
+
+
+def _resolve_pdf_stylesheets(*, job: StoredJobV2, workdir: Path) -> tuple[Path, ...]:
+    css_paths = tuple(
+        _resolve_workdir_resource_path(
+            workdir=workdir,
+            filename=name,
+            field="conversion.css_filenames",
+            invalid_code="css_invalid",
+        )
+        for name in job.spec.conversion.css_filenames
+    )
+    for css_path in css_paths:
+        if not css_path.exists():
+            raise ServiceError(
+                status_code=422,
+                code="css_not_found",
+                message=f"CSS file not found in resources bundle: {css_path.name}",
+                retryable=False,
+                details={"css_filename": css_path.name},
+            )
+
+    layout = job.spec.conversion.pdf_layout
+    if layout is None:
+        return css_paths
+
+    try:
+        preset_path = write_pdf_layout_preset_stylesheet(workdir=workdir, layout=layout)
+    except PdfLayoutPresetWriteError as exc:
+        raise ServiceError(
+            status_code=500,
+            code="pdf_layout_write_failed",
+            message=str(exc),
+            retryable=True,
+        ) from exc
+    return css_paths + (preset_path,)
 
 
 def _validate_html_resources_for_route(*, input_path: Path, workdir: Path) -> None:
@@ -483,24 +523,7 @@ def execute_v2_job_conversion(
     elif job.source_format == SourceFormatV2.HTML and job.output_format == OutputFormatV2.PDF:
         pipeline_used = "html_to_pdf_v2"
         backend_used = "weasyprint"
-        css_paths = tuple(
-            _resolve_workdir_resource_path(
-                workdir=workdir,
-                filename=name,
-                field="conversion.css_filenames",
-                invalid_code="css_invalid",
-            )
-            for name in job.spec.conversion.css_filenames
-        )
-        for css_path in css_paths:
-            if not css_path.exists():
-                raise ServiceError(
-                    status_code=422,
-                    code="css_not_found",
-                    message=f"CSS file not found in resources bundle: {css_path.name}",
-                    retryable=False,
-                    details={"css_filename": css_path.name},
-                )
+        css_paths = _resolve_pdf_stylesheets(job=job, workdir=workdir)
         try:
             convert_html_to_pdf(
                 html_path=input_path,
@@ -533,24 +556,7 @@ def execute_v2_job_conversion(
     elif job.source_format == SourceFormatV2.MD and job.output_format == OutputFormatV2.PDF:
         pipeline_used = "md_to_pdf_v2"
         backend_used = "pandoc+weasyprint"
-        css_paths = tuple(
-            _resolve_workdir_resource_path(
-                workdir=workdir,
-                filename=name,
-                field="conversion.css_filenames",
-                invalid_code="css_invalid",
-            )
-            for name in job.spec.conversion.css_filenames
-        )
-        for css_path in css_paths:
-            if not css_path.exists():
-                raise ServiceError(
-                    status_code=422,
-                    code="css_not_found",
-                    message=f"CSS file not found in resources bundle: {css_path.name}",
-                    retryable=False,
-                    details={"css_filename": css_path.name},
-                )
+        css_paths = _resolve_pdf_stylesheets(job=job, workdir=workdir)
 
         intermediate_html = workdir / input_path.with_suffix(".html").name
         try:

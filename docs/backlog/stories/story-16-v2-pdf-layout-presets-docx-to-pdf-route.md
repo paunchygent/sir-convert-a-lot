@@ -1,9 +1,9 @@
 ---
-id: 'story-16-v2-pdf-layout-presets-docx-to-pdf-route'
-title: 'V2 PDF layout presets + DOCX to PDF route'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-16-v2-pdf-layout-presets-docx-to-pdf-route
+title: V2 PDF layout presets + DOCX to PDF route
+type: story
+status: proposed
+priority: high
 created: '2026-03-01'
 last_updated: '2026-03-01'
 related:
@@ -21,6 +21,7 @@ labels:
   - presets
   - downstream
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -76,7 +77,7 @@ separate conversion engine.
 ## Task Order (Strict)
 
 - [x] `docs/backlog/tasks/task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf.md`
-- [ ] `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
+- [x] `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
 - [ ] `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`
 
 ## Checklist

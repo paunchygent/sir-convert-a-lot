@@ -17,6 +17,7 @@ links:
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/downstream_integration_contract_v2.md
 ---
+
 ## Status
 
 - Proposed
@@ -33,7 +34,7 @@ Today, v2 has two gaps for that GUI:
 1. PDF outputs lack a first-class, typed layout control surface.
    - Only `conversion.css_filenames` exists, which pushes basic page setup (paper size, orientation,
      margins, page-break ergonomics) into ad hoc CSS conventions per client.
-2. v2 does not support `docx -> pdf`.
+1. v2 does not support `docx -> pdf`.
    - Downstream GUIs need an authoritative PDF artifact output from DOCX inputs without relying on
      repo-local scripts or sidecar conversion tools.
 
@@ -45,8 +46,8 @@ not a separate “partial output” format.
 
 1. Add **PDF layout presets** to the v2 JobSpec as a typed, PDF-only contract surface:
    `conversion.pdf_layout`.
-2. Add a v2 conversion route: `docx -> pdf`, implemented as `docx -> html (pandoc) -> pdf (weasyprint)`.
-3. Define “preview rendition” as a **normal v2 job** producing a PDF artifact:
+1. Add a v2 conversion route: `docx -> pdf`, implemented as `docx -> html (pandoc) -> pdf (weasyprint)`.
+1. Define “preview rendition” as a **normal v2 job** producing a PDF artifact:
    - no new output format,
    - no v1 surfaces,
    - downstream UIs use existing job creation + polling/push to obtain artifacts,

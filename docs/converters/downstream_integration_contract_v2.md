@@ -84,16 +84,18 @@ Deterministic route constraints:
 
 Planned routes must not be treated as implemented until their tasks are terminalized.
 
-## PDF Layout Presets (Planned)
+## PDF Layout Presets
 
 ADR-0004 defines a typed PDF layout surface intended for downstream GUIs: `conversion.pdf_layout`.
 
-Until Task 65 is completed, downstream callers must continue using `conversion.css_filenames` for any
-page setup behavior. Once Task 65 lands, downstream UIs must prefer `conversion.pdf_layout` for:
+Downstream UIs must prefer `conversion.pdf_layout` for:
 
 - paper size (A5/A4/A3),
 - orientation (portrait/landscape),
 - standard margins.
+
+`conversion.css_filenames` remains supported for additional styling (content styling, headers/footers),
+but page setup should be driven by `conversion.pdf_layout`.
 
 ## Preview Rendition (Contract Rule)
 

@@ -165,5 +165,5 @@ Ordered tasks:
 - [x] `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md`
 - [x] `docs/backlog/tasks/task-42-split-oversized-cli-and-v2-job-store-cancel-cas.md`
 - [x] `docs/backlog/tasks/task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf.md`
-- [ ] `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
+- [x] `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
 - [ ] `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`

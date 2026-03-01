@@ -1,9 +1,9 @@
 ---
-id: 'task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs'
-title: 'Add v2 PDF layout presets (paper/orientation) for PDF outputs'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs
+title: Add v2 PDF layout presets (paper/orientation) for PDF outputs
+type: task
+status: completed
+priority: high
 created: '2026-03-01'
 last_updated: '2026-03-01'
 related:
@@ -19,6 +19,7 @@ labels:
   - contract
   - executor
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -42,24 +43,45 @@ Implementation must:
 
 ## Deliverables
 
-- [ ] v2 JobSpec supports `conversion.pdf_layout` (PDF outputs only) with deterministic validation errors.
-- [ ] Executor generates and applies a deterministic preset stylesheet for PDF outputs.
-- [ ] `docs/converters/multi_format_conversion_service_api_v2.md` updated with schema + examples.
-- [ ] `docs/converters/downstream_integration_contract_v2.md` updated with schema + examples.
-- [ ] Spec validation tests cover `conversion.pdf_layout` rules and defaults.
-- [ ] Executor tests cover preset stylesheet generation and application.
+- [x] v2 JobSpec supports `conversion.pdf_layout` (PDF outputs only) with deterministic validation errors.
+- [x] Executor generates and applies a deterministic preset stylesheet for PDF outputs.
+- [x] `docs/converters/multi_format_conversion_service_api_v2.md` updated with schema + examples.
+- [x] `docs/converters/downstream_integration_contract_v2.md` updated with schema + examples.
+- [x] Spec validation tests cover `conversion.pdf_layout` rules and defaults.
+- [x] Executor tests cover preset stylesheet generation and application.
 
 ## Acceptance Criteria
 
-- [ ] A v2 job with `conversion.output_format == "pdf"` may include `conversion.pdf_layout` and is accepted.
-- [ ] A v2 job with a non-PDF output rejects `conversion.pdf_layout` with a deterministic validation error.
-- [ ] Preset application is deterministic and does not depend on caller-provided CSS.
-- [ ] `pdm run run-local-pdm typecheck-all` passes.
-- [ ] `pdm run run-local-pdm coverage-gate` remains >= 90%.
-- [ ] `pdm run run-local-pdm validate-tasks` and `pdm run run-local-pdm validate-docs` pass.
+- [x] A v2 job with `conversion.output_format == "pdf"` may include `conversion.pdf_layout` and is accepted.
+- [x] A v2 job with a non-PDF output rejects `conversion.pdf_layout` with a deterministic validation error.
+- [x] Preset application is deterministic and does not depend on caller-provided CSS.
+- [x] `pdm run run-local-pdm typecheck-all` passes.
+- [x] `pdm run run-local-pdm coverage-gate` remains >= 90%.
+- [x] `pdm run run-local-pdm validate-tasks` and `pdm run run-local-pdm validate-docs` pass.
+
+## Validation Commands
+
+- `pdm run run-local-pdm lint-fix`
+- `pdm run run-local-pdm typecheck-all`
+- `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_specs_v2.py tests/sir_convert_a_lot/test_pdf_layout_presets_v2.py tests/sir_convert_a_lot/test_v2_conversion_executor_pdf_layout.py`
+- `pdm run run-local-pdm coverage-gate`
+- `pdm run run-local-pdm validate-tasks`
+- `pdm run run-local-pdm validate-docs`
+
+## Validation Evidence
+
+- [x] Lint:
+  - `pdm run run-local-pdm lint-fix` (pass: `All checks passed!`, 2026-03-01).
+- [x] Type safety:
+  - `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 162 source files`, 2026-03-01).
+- [x] Full coverage gate:
+  - `pdm run run-local-pdm coverage-gate` (pass: `403 passed, 5 skipped`; total coverage `95.87%`, 2026-03-01).
+- [x] Docs gates:
+  - `pdm run run-local-pdm validate-tasks` (pass: `Validated 92 backlog files`, 2026-03-01).
+  - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=115 rules=9`, 2026-03-01).
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

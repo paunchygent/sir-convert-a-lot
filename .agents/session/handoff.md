@@ -53,6 +53,32 @@
 - Decide whether to harden `specs_v2` strictness policy (`ConfigDict(strict=True)`) as a
   separate scoped task to avoid unintended API coercion breakage.
 
+## 2026-03-01: Task 65 Completed (v2 PDF Layout Presets)
+
+### Completed
+
+- Landed ADR-0004 contract alignment (Task 64) and implemented `conversion.pdf_layout` for PDF outputs
+  (Task 65):
+  - v2 spec now supports typed PDF layout presets (paper size, orientation, margins).
+  - v2 executor applies presets by writing deterministic CSS under the job workdir and passing it to
+    WeasyPrint (authoritative page setup).
+  - Updated normative v2 API and downstream integration docs to mark `pdf_layout` implemented and keep
+    `docx -> pdf` as planned (Task 66).
+- Fixed a strict file-size hygiene issue by splitting executor tests so all `test_v2_conversion_executor_*`
+  modules remain <500 LoC.
+
+### Validation Evidence
+
+- `pdm run run-local-pdm lint-fix` (pass: `All checks passed!`)
+- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 162 source files`)
+- `pdm run run-local-pdm coverage-gate` (pass: `403 passed, 5 skipped`; coverage `95.87%`)
+- `pdm run run-local-pdm validate-tasks` (pass: `Validated 92 backlog files`)
+- `pdm run run-local-pdm validate-docs` (pass: `Validated docs=115 rules=9`)
+
+### Next Session Goals
+
+- Execute Task 66 (`docx -> pdf`) in strict Story 16 order and keep doc/epic checkoffs synchronized.
+
 ## 2026-02-28: Task 60 Completed (v2 Security/Resilience Hardening)
 
 ### Completed

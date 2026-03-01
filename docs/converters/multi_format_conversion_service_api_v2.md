@@ -114,7 +114,6 @@ The following contract extensions are decision-anchored but must not be treated 
 their linked tasks are terminalized:
 
 - `docx -> pdf` (planned: Task 66; pipeline: Pandoc DOCX->HTML + WeasyPrint HTML->PDF)
-- `conversion.pdf_layout` (planned: Task 65; typed PDF page layout presets applied to PDF outputs)
 
 ## Data Contracts (v2)
 
@@ -179,9 +178,9 @@ Field rules:
   - only meaningful for `html -> pdf` and `md -> pdf`
   - filenames must exist within the extracted resources root when provided
 - `conversion.pdf_layout`:
-  - planned (ADR-0004, Task 65)
   - typed PDF-only page layout preset surface intended for downstream GUIs (paper size, orientation,
     and standard margins)
+  - rejected for non-PDF outputs
 - `conversion.reference_docx_filename`:
   - only meaningful for DOCX outputs
   - if provided, the referenced file must exist in the uploaded `reference_docx` part or the
@@ -229,6 +228,32 @@ Route-specific JobSpec example (`html -> md`):
   "conversion": {
     "output_format": "md",
     "css_filenames": [],
+    "reference_docx_filename": null
+  },
+  "retention": {
+    "pin": false
+  }
+}
+```
+
+Route-specific JobSpec example (`html -> pdf` with layout preset):
+
+```json
+{
+  "api_version": "v2",
+  "source": {
+    "kind": "upload",
+    "filename": "index.html",
+    "format": "html"
+  },
+  "conversion": {
+    "output_format": "pdf",
+    "css_filenames": ["print.css"],
+    "pdf_layout": {
+      "paper_size": "a4",
+      "orientation": "portrait",
+      "margins_mm": 12
+    },
     "reference_docx_filename": null
   },
   "retention": {

@@ -1,0 +1,120 @@
+"""V2 conversion executor tests for `conversion.pdf_layout` application."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
+from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
+    execute_v2_job_conversion,
+)
+from tests.sir_convert_a_lot.v2_conversion_executor_test_support import (
+    _build_job,
+    _service_config,
+    _UnusedBackend,
+)
+
+
+def test_execute_v2_job_conversion_md_to_pdf_applies_pdf_layout_preset(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    def _fake_convert_markdown_to_html(
+        *,
+        markdown_path: Path,
+        output_html_path: Path,
+        timeout_seconds: int = 300,
+    ) -> None:
+        del markdown_path, timeout_seconds
+        output_html_path.write_text("<html><body>Converted</body></html>", encoding="utf-8")
+
+    css_seen: tuple[Path, ...] | None = None
+
+    def _fake_convert_html_to_pdf(
+        *,
+        html_path: Path,
+        output_pdf_path: Path,
+        css_paths: tuple[Path, ...] = (),
+        base_url: str | None = None,
+        allowed_resource_root: Path | None = None,
+    ) -> None:
+        nonlocal css_seen
+        del html_path, base_url, allowed_resource_root
+        css_seen = css_paths
+        output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
+
+    monkeypatch.setattr(
+        v2_conversion_executor, "convert_markdown_to_html", _fake_convert_markdown_to_html
+    )
+    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+
+    job = _build_job(
+        tmp_path,
+        source_filename="note.md",
+        source_bytes=b"# Note\n\nBody\n",
+        source_format=SourceFormatV2.MD,
+        output_format=OutputFormatV2.PDF,
+        pdf_layout={"paper_size": "a4", "orientation": "landscape", "margins_mm": 10},
+    )
+
+    result = execute_v2_job_conversion(
+        job=job,
+        config=_service_config(tmp_path),
+        docling_backend=_UnusedBackend(),
+        pymupdf_backend=_UnusedBackend(),
+    )
+
+    assert result.pipeline_used == "md_to_pdf_v2"
+    assert css_seen is not None
+    assert len(css_seen) == 1
+    assert css_seen[0].name == "__pdf_layout_preset_v2.css"
+    assert "A4 landscape" in css_seen[0].read_text(encoding="utf-8")
+
+
+def test_execute_v2_job_conversion_html_to_pdf_applies_pdf_layout_preset(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    css_seen: tuple[Path, ...] | None = None
+
+    def _fake_convert_html_to_pdf(
+        *,
+        html_path: Path,
+        output_pdf_path: Path,
+        css_paths: tuple[Path, ...] = (),
+        base_url: str | None = None,
+        allowed_resource_root: Path | None = None,
+    ) -> None:
+        nonlocal css_seen
+        del html_path, base_url, allowed_resource_root
+        css_seen = css_paths
+        output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
+
+    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+
+    job = _build_job(
+        tmp_path,
+        source_filename="page.html",
+        source_bytes=b"<html><body>Hello</body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.PDF,
+        pdf_layout={"paper_size": "a5", "orientation": "portrait", "margins_mm": 0},
+    )
+
+    result = execute_v2_job_conversion(
+        job=job,
+        config=_service_config(tmp_path),
+        docling_backend=_UnusedBackend(),
+        pymupdf_backend=_UnusedBackend(),
+    )
+
+    assert result.pipeline_used == "html_to_pdf_v2"
+    assert css_seen is not None
+    assert len(css_seen) == 1
+    assert css_seen[0].name == "__pdf_layout_preset_v2.css"
+    css = css_seen[0].read_text(encoding="utf-8")
+    assert "size: A5;" in css
+    assert "margin: 0mm;" in css

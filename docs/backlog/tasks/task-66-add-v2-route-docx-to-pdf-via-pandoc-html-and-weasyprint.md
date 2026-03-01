@@ -1,9 +1,9 @@
 ---
-id: 'task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint'
-title: 'Add v2 route DOCX to PDF via Pandoc HTML and WeasyPrint'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint
+title: Add v2 route DOCX to PDF via Pandoc HTML and WeasyPrint
+type: task
+status: proposed
+priority: high
 created: '2026-03-01'
 last_updated: '2026-03-01'
 related:
@@ -20,6 +20,7 @@ labels:
   - pdf
   - route
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

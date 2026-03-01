@@ -50,6 +50,31 @@ class OutputFormatV2(StrEnum):
     DOCX = "docx"
 
 
+class PdfPaperSizeV2(StrEnum):
+    """Supported PDF paper sizes for v2 PDF outputs."""
+
+    A5 = "a5"
+    A4 = "a4"
+    A3 = "a3"
+
+
+class PdfOrientationV2(StrEnum):
+    """Supported PDF orientations for v2 PDF outputs."""
+
+    PORTRAIT = "portrait"
+    LANDSCAPE = "landscape"
+
+
+class PdfLayoutV2(BaseModel):
+    """Typed PDF layout presets for v2 PDF outputs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    paper_size: PdfPaperSizeV2 = PdfPaperSizeV2.A4
+    orientation: PdfOrientationV2 = PdfOrientationV2.PORTRAIT
+    margins_mm: int = Field(default=12, ge=0, le=50)
+
+
 class SourceSpecV2(BaseModel):
     """Source section of the v2 job specification."""
 
@@ -76,6 +101,7 @@ class ConversionSpecV2(BaseModel):
 
     output_format: OutputFormatV2
     css_filenames: list[str] = Field(default_factory=list)
+    pdf_layout: PdfLayoutV2 | None = None
     template: TemplateSelectorV2 | None = None
     reference_docx_filename: str | None = None
 
@@ -151,6 +177,12 @@ class JobSpecV2(BaseModel):
 
         if self.conversion.output_format != OutputFormatV2.PDF and self.conversion.css_filenames:
             raise ValueError("css_filenames is only supported for PDF outputs")
+
+        if (
+            self.conversion.output_format != OutputFormatV2.PDF
+            and self.conversion.pdf_layout is not None
+        ):
+            raise ValueError("pdf_layout is only supported for PDF outputs")
 
         if self.conversion.output_format != OutputFormatV2.DOCX:
             if self.conversion.reference_docx_filename is not None:

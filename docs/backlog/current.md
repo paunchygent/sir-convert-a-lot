@@ -87,6 +87,11 @@ Primary implementation stories:
   - Task 61 moved to `completed` with checklist/evidence synchronized.
   - Scaffolded the next downstream-GUI enabling slice (proposed) via ADR-0004 and Story 16.
   - Proposed execution order: Task 64 -> Task 65 -> Task 66.
+  - Completed Task 64 (ADR-0004 contract alignment) and Task 65 (v2 PDF layout presets):
+    - added `conversion.pdf_layout` to v2 JobSpec and applied it to PDF outputs via deterministic
+      generated CSS (`pdf_layout_presets_v2.py`),
+    - added unit and executor tests; executor tests re-split to keep modules <500 LoC,
+    - coverage gate remained >=90% (pass: `95.87%`).
 
 - 2026-02-28:
 
@@ -118,7 +123,6 @@ Primary implementation stories:
 ## Next Actions
 
 - Epic 05 is complete; run post-implementation ruthless review and release-readiness verification.
-- Execute Story 16 in strict order: Task 64 (ADR-0004 contract alignment) -> Task 65 (implement
-  `conversion.pdf_layout`) -> Task 66 (implement `docx -> pdf`).
+- Execute Story 16 in strict order: Task 66 (implement `docx -> pdf`).
 - After Story 16 contract surfaces land, proceed with Skriptoteket curated conversion app cutover planning
   (remove runner-script conversion surfaces, route all conversions via Sir Convert-a-Lot v2).

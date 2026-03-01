@@ -25,6 +25,7 @@ def _base_payload(*, source_format: str = "md", output_format: str = "pdf") -> d
             "output_format": output_format,
             "template": None,
             "css_filenames": [],
+            "pdf_layout": None,
             "reference_docx_filename": None,
         },
         "retention": {"pin": False},
@@ -92,6 +93,30 @@ def test_job_spec_rejects_css_filenames_for_docx_output() -> None:
 
     with pytest.raises(ValidationError, match="css_filenames is only supported for PDF outputs"):
         JobSpecV2.model_validate(payload)
+
+
+def test_job_spec_rejects_pdf_layout_for_non_pdf_output() -> None:
+    payload = _base_payload(source_format="md", output_format="docx")
+    conversion = payload["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["pdf_layout"] = {"paper_size": "a4", "orientation": "portrait", "margins_mm": 12}
+
+    with pytest.raises(ValidationError, match="pdf_layout is only supported for PDF outputs"):
+        JobSpecV2.model_validate(payload)
+
+
+def test_job_spec_accepts_pdf_layout_for_pdf_output() -> None:
+    payload = _base_payload(source_format="md", output_format="pdf")
+    conversion = payload["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["pdf_layout"] = {"paper_size": "a4", "orientation": "landscape", "margins_mm": 8}
+
+    spec = JobSpecV2.model_validate(payload)
+    assert spec.conversion.output_format.value == "pdf"
+    assert spec.conversion.pdf_layout is not None
+    assert spec.conversion.pdf_layout.paper_size.value == "a4"
+    assert spec.conversion.pdf_layout.orientation.value == "landscape"
+    assert spec.conversion.pdf_layout.margins_mm == 8
 
 
 def test_job_spec_rejects_reference_docx_for_non_docx_output() -> None:
