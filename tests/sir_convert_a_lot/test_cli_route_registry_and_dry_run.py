@@ -30,6 +30,7 @@ def test_routes_command_lists_supported_routes_in_stable_order() -> None:
         "Supported routes:",
         "- pdf -> md [service] (implemented)",
         "- docx -> md [service] (implemented)",
+        "- docx -> pdf [service] (implemented)",
         "- html -> md [service] (implemented)",
         "- pdf -> docx [service] (implemented)",
         "- md -> pdf [service] (implemented)",

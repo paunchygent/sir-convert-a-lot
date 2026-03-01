@@ -2,7 +2,7 @@
 type: decision
 id: ADR-0004
 title: V2 PDF Layout Presets, Preview Rendition, and DOCX to PDF
-status: proposed
+status: accepted
 created: 2026-03-01
 updated: 2026-03-01
 owners:
@@ -20,7 +20,7 @@ links:
 
 ## Status
 
-- Proposed
+- Accepted
 - Date: 2026-03-01
 
 ## 1. Problem and Context

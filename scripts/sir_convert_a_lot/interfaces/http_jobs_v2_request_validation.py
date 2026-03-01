@@ -30,6 +30,20 @@ def validate_create_job_route_constraints(
 ) -> None:
     """Validate route-level upload constraints and template selectors for create-job."""
 
+    if reference_docx_uploaded and spec.conversion.output_format != OutputFormatV2.DOCX:
+        raise ServiceError(
+            status_code=422,
+            code="validation_error",
+            message=(
+                "reference_docx upload is only supported for v2 routes with output_format='docx'."
+            ),
+            retryable=False,
+            details={
+                "field": "reference_docx",
+                "output_format": spec.conversion.output_format.value,
+            },
+        )
+
     if spec.conversion.output_format == OutputFormatV2.MD:
         if resources_uploaded and spec.source.format != SourceFormatV2.HTML:
             raise ServiceError(
@@ -41,16 +55,6 @@ def validate_create_job_route_constraints(
                 ),
                 retryable=False,
                 details={"field": "resources", "output_format": "md"},
-            )
-        if reference_docx_uploaded:
-            raise ServiceError(
-                status_code=422,
-                code="validation_error",
-                message=(
-                    "reference_docx upload is not supported for v2 routes with output_format='md'."
-                ),
-                retryable=False,
-                details={"field": "reference_docx", "output_format": "md"},
             )
 
     template_selector = spec.conversion.template

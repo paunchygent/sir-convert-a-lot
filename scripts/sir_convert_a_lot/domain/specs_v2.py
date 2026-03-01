@@ -157,6 +157,7 @@ class JobSpecV2(BaseModel):
             (SourceFormatV2.PDF, OutputFormatV2.MD),
             (SourceFormatV2.DOCX, OutputFormatV2.MD),
             (SourceFormatV2.HTML, OutputFormatV2.MD),
+            (SourceFormatV2.DOCX, OutputFormatV2.PDF),
             (SourceFormatV2.MD, OutputFormatV2.PDF),
             (SourceFormatV2.MD, OutputFormatV2.DOCX),
             (SourceFormatV2.HTML, OutputFormatV2.PDF),

@@ -68,7 +68,7 @@ Deterministic route constraints:
 - `reference_docx` is not allowed for `output_format="md"`.
 - `conversion.template` and `reference_docx` must not be combined.
 
-## Capability Matrix (Implemented and Planned v2 Routes)
+## Capability Matrix (Implemented v2 Routes)
 
 | Source | Target | Route key | Notes |
 | --- | --- | --- | --- |
@@ -80,9 +80,7 @@ Deterministic route constraints:
 | `html` | `pdf` | `html -> pdf` | Service pipeline |
 | `html` | `docx` | `html -> docx` | Service pipeline |
 | `pdf` | `docx` | `pdf -> docx` | Service pipeline |
-| `docx` | `pdf` | `docx -> pdf` | Planned (ADR-0004, Task 66) |
-
-Planned routes must not be treated as implemented until their tasks are terminalized.
+| `docx` | `pdf` | `docx -> pdf` | Service pipeline |
 
 ## PDF Layout Presets
 
@@ -179,6 +177,27 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
     "api_version":"v2",
     "source":{"kind":"upload","filename":"index.html","format":"html"},
     "conversion":{"output_format":"md","template":null,"css_filenames":[],"reference_docx_filename":null},
+    "retention":{"pin":false}
+  }'
+```
+
+### 4) `docx -> pdf` create job (layout presets)
+
+```bash
+curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "Idempotency-Key: idem_docx_pdf_001" \
+  -H "X-Correlation-ID: corr_docx_pdf_001" \
+  -F 'file=@./input.docx;type=application/vnd.openxmlformats-officedocument.wordprocessingml.document' \
+  -F 'job_spec={
+    "api_version":"v2",
+    "source":{"kind":"upload","filename":"input.docx","format":"docx"},
+    "conversion":{
+      "output_format":"pdf",
+      "css_filenames":[],
+      "pdf_layout":{"paper_size":"a4","orientation":"portrait","margins_mm":12},
+      "reference_docx_filename":null
+    },
     "retention":{"pin":false}
   }'
 ```

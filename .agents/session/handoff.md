@@ -62,22 +62,26 @@
   - v2 spec now supports typed PDF layout presets (paper size, orientation, margins).
   - v2 executor applies presets by writing deterministic CSS under the job workdir and passing it to
     WeasyPrint (authoritative page setup).
-  - Updated normative v2 API and downstream integration docs to mark `pdf_layout` implemented and keep
-    `docx -> pdf` as planned (Task 66).
+  - Updated normative v2 API and downstream integration docs for `pdf_layout` and the `docx -> pdf` route.
+- Completed Task 66 (`docx -> pdf`):
+  - added sandboxed Pandoc DOCX->HTML wrapper (`pandoc_docx_to_html.py`) with extracted media under workdir,
+  - added executor branch (`pipeline_used="docx_to_pdf_v2"`) and CLI route registry entry (`docx -> pdf`),
+  - added contract and unit tests, and updated normative converter docs.
 - Fixed a strict file-size hygiene issue by splitting executor tests so all `test_v2_conversion_executor_*`
-  modules remain <500 LoC.
+  modules remain \<500 LoC.
 
 ### Validation Evidence
 
 - `pdm run run-local-pdm lint-fix` (pass: `All checks passed!`)
-- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 162 source files`)
-- `pdm run run-local-pdm coverage-gate` (pass: `403 passed, 5 skipped`; coverage `95.87%`)
+- `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 167 source files`)
+- `pdm run run-local-pdm coverage-gate` (pass: `416 passed, 5 skipped`; coverage `95.29%`)
 - `pdm run run-local-pdm validate-tasks` (pass: `Validated 92 backlog files`)
 - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=115 rules=9`)
 
 ### Next Session Goals
 
-- Execute Task 66 (`docx -> pdf`) in strict Story 16 order and keep doc/epic checkoffs synchronized.
+- Proceed with Skriptoteket curated conversion app cutover planning and execution (downstream work),
+  now that `conversion.pdf_layout` and `docx -> pdf` exist in v2.
 
 ## 2026-02-28: Task 60 Completed (v2 Security/Resilience Hardening)
 

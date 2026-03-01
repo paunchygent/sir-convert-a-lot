@@ -185,6 +185,14 @@ def test_job_spec_accepts_docx_to_md_route() -> None:
     assert spec.conversion.output_format.value == "md"
 
 
+def test_job_spec_accepts_docx_to_pdf_route() -> None:
+    payload = _base_payload(source_format="docx", output_format="pdf")
+
+    spec = JobSpecV2.model_validate(payload)
+    assert spec.source.format.value == "docx"
+    assert spec.conversion.output_format.value == "pdf"
+
+
 def test_job_spec_accepts_html_to_md_route() -> None:
     payload = _base_payload(source_format="html", output_format="md")
 

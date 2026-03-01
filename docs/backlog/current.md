@@ -90,8 +90,12 @@ Primary implementation stories:
   - Completed Task 64 (ADR-0004 contract alignment) and Task 65 (v2 PDF layout presets):
     - added `conversion.pdf_layout` to v2 JobSpec and applied it to PDF outputs via deterministic
       generated CSS (`pdf_layout_presets_v2.py`),
-    - added unit and executor tests; executor tests re-split to keep modules <500 LoC,
+    - added unit and executor tests; executor tests re-split to keep modules \<500 LoC,
     - coverage gate remained >=90% (pass: `95.87%`).
+  - Completed Task 66 (`docx -> pdf` v2 route):
+    - added sandboxed Pandoc DOCX->HTML wrapper with extracted media under workdir,
+    - added executor branch `pipeline_used="docx_to_pdf_v2"` and CLI route registry entry,
+    - updated v2 converter docs and downstream integration contract to mark `docx -> pdf` implemented.
 
 - 2026-02-28:
 
@@ -123,6 +127,5 @@ Primary implementation stories:
 ## Next Actions
 
 - Epic 05 is complete; run post-implementation ruthless review and release-readiness verification.
-- Execute Story 16 in strict order: Task 66 (implement `docx -> pdf`).
 - After Story 16 contract surfaces land, proceed with Skriptoteket curated conversion app cutover planning
   (remove runner-script conversion surfaces, route all conversions via Sir Convert-a-Lot v2).

@@ -79,6 +79,13 @@ _ROUTES: tuple[CliRoute, ...] = (
         pipeline_steps=("service: docx -> md (v2)",),
     ),
     CliRoute(
+        source=SourceFormat.DOCX,
+        target=TargetFormat.PDF,
+        pipeline_kind=PipelineKind.SERVICE,
+        implemented=True,
+        pipeline_steps=("service: docx -> pdf (v2)",),
+    ),
+    CliRoute(
         source=SourceFormat.HTML,
         target=TargetFormat.MD,
         pipeline_kind=PipelineKind.SERVICE,

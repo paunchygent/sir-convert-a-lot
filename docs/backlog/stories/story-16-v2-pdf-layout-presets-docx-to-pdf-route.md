@@ -2,7 +2,7 @@
 id: story-16-v2-pdf-layout-presets-docx-to-pdf-route
 title: V2 PDF layout presets + DOCX to PDF route
 type: story
-status: proposed
+status: completed
 priority: high
 created: '2026-03-01'
 last_updated: '2026-03-01'
@@ -53,19 +53,19 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] ADR-0004 is accepted and linked from normative converter docs.
-- [ ] v2 supports `conversion.pdf_layout` for PDF outputs with deterministic validation errors.
-- [ ] v2 supports `docx -> pdf` as an allowed route with deterministic pipeline naming.
-- [ ] All new/changed behavior is covered by contract + unit tests, and `pdm run run-local-pdm coverage-gate`
+- [x] ADR-0004 is accepted and linked from normative converter docs.
+- [x] v2 supports `conversion.pdf_layout` for PDF outputs with deterministic validation errors.
+- [x] v2 supports `docx -> pdf` as an allowed route with deterministic pipeline naming.
+- [x] All new/changed behavior is covered by contract + unit tests, and `pdm run run-local-pdm coverage-gate`
   remains >= 90%.
 
 ## Test Requirements
 
-- [ ] Contract tests cover:
+- [x] Contract tests cover:
   - `conversion.pdf_layout` validation rules and defaults.
   - `docx -> pdf` route acceptance and output artifact content type.
-- [ ] Executor tests cover:
-  - preset stylesheet generation is applied for `html -> pdf` and `md -> pdf` (and `docx -> pdf` once added).
+- [x] Executor tests cover:
+  - preset stylesheet generation is applied for `html -> pdf`, `md -> pdf`, and `docx -> pdf`.
   - deterministic `422` mapping for missing CSS/resource or unreadable DOCX.
 
 ## Done Definition
@@ -78,10 +78,10 @@ separate conversion engine.
 
 - [x] `docs/backlog/tasks/task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf.md`
 - [x] `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
-- [ ] `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`
+- [x] `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

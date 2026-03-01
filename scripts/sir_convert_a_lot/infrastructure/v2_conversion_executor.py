@@ -60,6 +60,11 @@ from scripts.sir_convert_a_lot.infrastructure.html_resource_references import (
 from scripts.sir_convert_a_lot.infrastructure.markdown_normalization_v2 import (
     normalize_markdown_for_v2_md_output,
 )
+from scripts.sir_convert_a_lot.infrastructure.pandoc_docx_to_html import (
+    DOCX_TO_HTML_UNREADABLE,
+    DocxToHtmlConversionError,
+    convert_docx_to_html,
+)
 from scripts.sir_convert_a_lot.infrastructure.pandoc_docx_to_markdown import (
     DOCX_TO_MARKDOWN_UNREADABLE,
     DocxToMarkdownConversionError,
@@ -392,6 +397,15 @@ def _map_converter_error(exc: Exception) -> ServiceError:
             message=exc.message,
             retryable=retryable,
         )
+    if isinstance(exc, DocxToHtmlConversionError):
+        retryable = exc.code.endswith("not_installed") or exc.code.endswith("_timeout")
+        status_code = 504 if exc.code.endswith("_timeout") else (503 if retryable else 500)
+        return ServiceError(
+            status_code=status_code,
+            code=exc.code,
+            message=exc.message,
+            retryable=retryable,
+        )
     if isinstance(exc, HtmlToMarkdownConversionError):
         retryable = exc.code.endswith("not_installed") or exc.code.endswith("_timeout")
         status_code = 504 if exc.code.endswith("_timeout") else (503 if retryable else 500)
@@ -497,6 +511,49 @@ def execute_v2_job_conversion(
         )
         warnings.extend(normalization_warnings)
         job.artifact_path.write_text(normalized_markdown, encoding="utf-8")
+
+    elif job.source_format == SourceFormatV2.DOCX and job.output_format == OutputFormatV2.PDF:
+        pipeline_used = "docx_to_pdf_v2"
+        backend_used = "pandoc+weasyprint"
+
+        source_bytes = job.upload_path.read_bytes()
+        if not source_bytes.startswith(b"PK"):
+            raise ServiceError(
+                status_code=422,
+                code="docx_unreadable",
+                message="Uploaded file is not a readable DOCX.",
+                retryable=False,
+            )
+
+        css_paths = _resolve_pdf_stylesheets(job=job, workdir=workdir)
+        intermediate_html = workdir / input_path.with_suffix(".html").name
+        extract_media_dir = workdir / "media"
+        try:
+            convert_docx_to_html(
+                docx_path=input_path,
+                output_html_path=intermediate_html,
+                extract_media_dir=extract_media_dir,
+                timeout_seconds=document_timeout_seconds,
+            )
+            _validate_html_resources_for_route(input_path=intermediate_html, workdir=workdir)
+            convert_html_to_pdf(
+                html_path=intermediate_html,
+                output_pdf_path=job.artifact_path,
+                css_paths=css_paths,
+                base_url=workdir.resolve().as_uri(),
+                allowed_resource_root=workdir,
+            )
+        except DocxToHtmlConversionError as exc:
+            if exc.code == DOCX_TO_HTML_UNREADABLE:
+                raise ServiceError(
+                    status_code=422,
+                    code="docx_unreadable",
+                    message=f"Uploaded DOCX could not be converted: {exc.message}",
+                    retryable=False,
+                ) from exc
+            raise _map_converter_error(exc) from exc
+        except (HtmlToPdfConversionError,) as exc:
+            raise _map_converter_error(exc) from exc
 
     elif job.source_format == SourceFormatV2.HTML and job.output_format == OutputFormatV2.MD:
         pipeline_used = "html_to_md_v2"

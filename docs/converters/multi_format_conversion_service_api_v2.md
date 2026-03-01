@@ -36,6 +36,7 @@ Service API v2 is the single active conversion contract surface for:
 - `html -> md`
 - `html -> pdf`
 - `html -> docx`
+- `docx -> pdf` (Pandoc -> HTML -> WeasyPrint)
 - `md -> pdf` (via HTML intermediary)
 - `md -> docx` (via HTML intermediary)
 - `pdf -> docx` (service pipeline: `pdf -> md -> html -> docx`)
@@ -102,18 +103,12 @@ Supported v2 conversions (service-executed on Hemma):
 - `pdf -> md` (Docling/PyMuPDF pipeline)
 - `docx -> md` (Pandoc -> deterministic Markdown normalization; `pipeline_used="docx_to_md_v2"`)
 - `html -> md` (Pandoc -> deterministic Markdown normalization; `pipeline_used="html_to_md_v2"`)
+- `docx -> pdf` (Pandoc -> HTML -> WeasyPrint)
 - `html -> pdf` (WeasyPrint)
 - `html -> docx` (Pandoc)
 - `md -> pdf` (Pandoc -> HTML -> WeasyPrint)
 - `md -> docx` (Pandoc -> HTML -> Pandoc)
 - `pdf -> docx` (Docling/PyMuPDF -> Markdown -> HTML -> DOCX)
-
-## Planned Extensions (Not Yet Implemented)
-
-The following contract extensions are decision-anchored but must not be treated as implemented until
-their linked tasks are terminalized:
-
-- `docx -> pdf` (planned: Task 66; pipeline: Pandoc DOCX->HTML + WeasyPrint HTML->PDF)
 
 ## Data Contracts (v2)
 
@@ -207,6 +202,32 @@ Route-specific JobSpec example (`docx -> md`):
   "conversion": {
     "output_format": "md",
     "css_filenames": [],
+    "reference_docx_filename": null
+  },
+  "retention": {
+    "pin": false
+  }
+}
+```
+
+Route-specific JobSpec example (`docx -> pdf`):
+
+```json
+{
+  "api_version": "v2",
+  "source": {
+    "kind": "upload",
+    "filename": "input.docx",
+    "format": "docx"
+  },
+  "conversion": {
+    "output_format": "pdf",
+    "css_filenames": [],
+    "pdf_layout": {
+      "paper_size": "a4",
+      "orientation": "portrait",
+      "margins_mm": 12
+    },
     "reference_docx_filename": null
   },
   "retention": {
