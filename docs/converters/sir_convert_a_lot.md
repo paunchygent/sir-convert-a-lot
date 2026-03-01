@@ -47,6 +47,18 @@ The CLI exposes a typed route registry for supported/planned conversions. Routes
 
 Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
 
+## Idempotency and Reruns (CLI UX)
+
+Service API v2 requires `Idempotency-Key` for `POST /v2/convert/jobs`. The CLI generates a
+deterministic key for safety (double-clicks/retries do not spawn duplicate jobs).
+
+User-facing rerun behavior:
+
+- Default: if the server returns an idempotent replay and the replayed job is terminal `failed` or
+  `canceled`, the CLI automatically submits a new job once (no filename hacks required).
+- `--replay-only`: disable the auto-rerun behavior and keep strict replay semantics.
+- `--new-job`: always submit with a new `Idempotency-Key`, even if a prior job succeeded.
+
 ## Service Contract
 
 - Normative API: `docs/converters/multi_format_conversion_service_api_v2.md`

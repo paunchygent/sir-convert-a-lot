@@ -45,6 +45,7 @@ class FakeV2Client:
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
@@ -54,6 +55,7 @@ class FakeV2Client:
             idempotency_key,
             wait_seconds,
             max_poll_seconds,
+            retry_mode,
             correlation_id,
             resources_zip_bytes,
             reference_docx_bytes,
@@ -86,6 +88,7 @@ class FakeTimeoutV2Client(FakeV2Client):
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
@@ -95,6 +98,7 @@ class FakeTimeoutV2Client(FakeV2Client):
             idempotency_key,
             wait_seconds,
             max_poll_seconds,
+            retry_mode,
             correlation_id,
             resources_zip_bytes,
             reference_docx_bytes,
@@ -128,6 +132,7 @@ class CapturingV2Client(FakeV2Client):
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
@@ -137,6 +142,7 @@ class CapturingV2Client(FakeV2Client):
             {
                 "source_path": source_path,
                 "idempotency_key": idempotency_key,
+                "retry_mode": retry_mode,
                 "correlation_id": correlation_id,
                 "wait_seconds": wait_seconds,
                 "max_poll_seconds": max_poll_seconds,
@@ -238,6 +244,31 @@ def test_convert_command_single_file_success(tmp_path: Path, monkeypatch) -> Non
     assert payload["entries"][0]["source_format"] == "pdf"
     assert payload["entries"][0]["target_format"] == "md"
     assert payload["entries"][0]["pipeline_used"] == "service: pdf -> md (v2)"
+
+
+def test_convert_command_defaults_to_auto_retry_mode(tmp_path: Path, monkeypatch) -> None:
+    CapturingV2Client.captured_specs = []
+    CapturingV2Client.captured_requests = []
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", CapturingV2Client)
+
+    source_file = tmp_path / "single.pdf"
+    source_file.write_bytes(b"%PDF-1.4\n% single\n%%EOF\n")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--api-key",
+            "dev-key",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert CapturingV2Client.captured_requests[0]["retry_mode"] == "auto"
 
 
 def test_convert_command_timeout_marks_job_running_without_cli_failure(

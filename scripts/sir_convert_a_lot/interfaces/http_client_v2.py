@@ -21,6 +21,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Literal, TypeAlias
+from uuid import uuid4
 
 import httpx
 
@@ -36,6 +37,7 @@ class SubmittedJobV2:
 
     job_id: str
     status: JobStatus
+    idempotent_replay: bool = False
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,10 @@ class ArtifactOutcomeV2:
     job_id: str
     status: Literal[JobStatus.SUCCEEDED]
     artifact_bytes: bytes
+    rerun_of_job_id: str | None = None
+
+
+RetryModeV2: TypeAlias = Literal["auto", "replay_only", "new_job"]
 
 
 def _content_type_for_source_path(path: Path) -> str:
@@ -221,8 +227,14 @@ class SirConvertALotClientV2:
         if response.status_code not in {200, 202}:
             raise self._extract_error(response)
 
+        idempotent_replay = response.headers.get("X-Idempotent-Replay", "").lower() == "true"
         payload: object = response.json()
-        return self._read_job_status(payload)
+        submitted = self._read_job_status(payload)
+        return SubmittedJobV2(
+            job_id=submitted.job_id,
+            status=submitted.status,
+            idempotent_replay=idempotent_replay,
+        )
 
     def get_job_payload(
         self, job_id: str, *, correlation_id: str | None = None
@@ -304,20 +316,53 @@ class SirConvertALotClientV2:
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        retry_mode: RetryModeV2 = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
     ) -> ArtifactOutcomeV2:
         """Submit a v2 job, wait for success, and download artifact bytes."""
+        if retry_mode not in {"auto", "replay_only", "new_job"}:
+            raise ClientError(
+                code="invalid_request",
+                message=f"Unknown retry_mode '{retry_mode}'.",
+                retryable=False,
+                status_code=400,
+            )
+
+        effective_key = idempotency_key
+        if retry_mode == "new_job":
+            effective_key = f"{idempotency_key}_new_{uuid4().hex}"
+
         submitted = self.submit_job(
             source_path=source_path,
             job_spec=job_spec,
-            idempotency_key=idempotency_key,
+            idempotency_key=effective_key,
             wait_seconds=wait_seconds,
             correlation_id=correlation_id,
             resources_zip_bytes=resources_zip_bytes,
             reference_docx_bytes=reference_docx_bytes,
         )
+
+        rerun_of_job_id: str | None = None
+        if (
+            retry_mode == "auto"
+            and submitted.idempotent_replay
+            and submitted.status in {JobStatus.FAILED, JobStatus.CANCELED}
+        ):
+            # UX-first behavior: when the server replays a terminal failed/canceled job,
+            # we submit a fresh job with a new Idempotency-Key exactly once.
+            rerun_of_job_id = submitted.job_id
+            rerun_key = f"{idempotency_key}_rerun_{uuid4().hex}"
+            submitted = self.submit_job(
+                source_path=source_path,
+                job_spec=job_spec,
+                idempotency_key=rerun_key,
+                wait_seconds=wait_seconds,
+                correlation_id=correlation_id,
+                resources_zip_bytes=resources_zip_bytes,
+                reference_docx_bytes=reference_docx_bytes,
+            )
 
         final_status = submitted.status
         if final_status not in TERMINAL_JOB_STATUSES:
@@ -350,4 +395,5 @@ class SirConvertALotClientV2:
             job_id=submitted.job_id,
             status=JobStatus.SUCCEEDED,
             artifact_bytes=artifact_bytes,
+            rerun_of_job_id=rerun_of_job_id,
         )

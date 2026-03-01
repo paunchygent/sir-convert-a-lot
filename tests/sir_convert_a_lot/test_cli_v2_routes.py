@@ -52,6 +52,7 @@ class FakeV2Client:
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
@@ -72,6 +73,7 @@ class FakeV2Client:
                 "source_path": source_path,
                 "job_spec": job_spec,
                 "idempotency_key": idempotency_key,
+                "retry_mode": retry_mode,
                 "correlation_id": correlation_id,
                 "resources_zip_bytes": resources_zip_bytes,
                 "reference_docx_bytes": reference_docx_bytes,
@@ -155,6 +157,7 @@ def test_html_to_pdf_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mo
     assert isinstance(captured_correlation, str)
     assert captured_idempotency.startswith("idemv2_")
     assert captured_correlation.startswith("corr_")
+    assert captured["retry_mode"] == "auto"
 
     resources_zip_bytes = captured["resources_zip_bytes"]
     assert isinstance(resources_zip_bytes, (bytes, bytearray))
@@ -204,6 +207,7 @@ def test_md_to_docx_route_forwards_reference_docx_to_v2(tmp_path: Path, monkeypa
     assert spec["conversion"]["reference_docx_filename"] == "reference.docx"
     assert captured["reference_docx_bytes"] == reference_docx_bytes
     assert captured["resources_zip_bytes"] is None
+    assert captured["retry_mode"] == "auto"
 
 
 def test_pdf_to_docx_route_timeout_marks_job_running_without_docx(
@@ -311,6 +315,7 @@ def test_html_to_md_route_submits_v2_job_with_resources(tmp_path: Path, monkeypa
     assert isinstance(resources_zip_bytes, (bytes, bytearray))
     with zipfile.ZipFile(io.BytesIO(resources_zip_bytes)) as zip_handle:
         assert "assets/logo.png" in zip_handle.namelist()
+    assert captured["retry_mode"] == "auto"
 
 
 def test_docx_to_md_route_submits_v2_job_and_writes_manifest(tmp_path: Path, monkeypatch) -> None:
@@ -352,3 +357,75 @@ def test_docx_to_md_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mon
     assert isinstance(spec, dict)
     assert spec["source"]["format"] == "docx"
     assert spec["conversion"]["output_format"] == "md"
+    assert captured["retry_mode"] == "auto"
+
+
+def test_cli_retry_mode_flags_are_mutually_exclusive(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
+
+    source_file = tmp_path / "note.md"
+    source_file.write_text("# Title\n\nHello.\n", encoding="utf-8")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "pdf",
+            "--api-key",
+            "dev-key",
+            "--replay-only",
+            "--new-job",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--replay-only and --new-job are mutually exclusive" in result.output
+
+
+def test_cli_retry_mode_flags_map_to_client_retry_mode(tmp_path: Path, monkeypatch) -> None:
+    FakeV2Client.captured_requests = []
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
+
+    source_file = tmp_path / "note.md"
+    source_file.write_text("# Title\n\nHello.\n", encoding="utf-8")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "pdf",
+            "--api-key",
+            "dev-key",
+            "--replay-only",
+        ],
+    )
+    assert result.exit_code == 0
+    assert FakeV2Client.captured_requests[0]["retry_mode"] == "replay_only"
+
+    FakeV2Client.captured_requests = []
+    result = runner.invoke(
+        cli.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "pdf",
+            "--api-key",
+            "dev-key",
+            "--new-job",
+        ],
+    )
+    assert result.exit_code == 0
+    assert FakeV2Client.captured_requests[0]["retry_mode"] == "new_job"

@@ -44,6 +44,7 @@ from scripts.sir_convert_a_lot.interfaces.cli_routes import (
 from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
 from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
     ArtifactOutcomeV2,
+    RetryModeV2,
     SirConvertALotClientV2,
 )
 
@@ -170,6 +171,16 @@ def convert_command(
         "--manifest-name",
         help="Output manifest filename written in the output directory.",
     ),
+    replay_only: bool = typer.Option(
+        False,
+        "--replay-only",
+        help="Do not auto-rerun terminal failed/canceled idempotent replays.",
+    ),
+    new_job: bool = typer.Option(
+        False,
+        "--new-job",
+        help="Always submit with a new Idempotency-Key (disables replay benefits).",
+    ),
 ) -> None:
     """Convert one file or a folder of files through Sir Convert-a-Lot."""
     target_format = parse_target_format(to)
@@ -228,6 +239,15 @@ def convert_command(
             )
     else:
         resolved_api_key = ""
+
+    if replay_only and new_job:
+        raise typer.BadParameter("--replay-only and --new-job are mutually exclusive.")
+
+    retry_mode: RetryModeV2 = "auto"
+    if replay_only:
+        retry_mode = "replay_only"
+    elif new_job:
+        retry_mode = "new_job"
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -359,10 +379,16 @@ def convert_command(
                     idempotency_key=idempotency_key,
                     wait_seconds=wait_seconds,
                     max_poll_seconds=max_poll_seconds,
+                    retry_mode=retry_mode,
                     correlation_id=correlation_id,
                     resources_zip_bytes=resources_zip_bytes,
                     reference_docx_bytes=reference_docx_bytes,
                 )
+                if v2_outcome.rerun_of_job_id is not None:
+                    typer.echo(
+                        f"[rerun] Replay hit terminal failure for {relative_label}: "
+                        f"{v2_outcome.rerun_of_job_id} -> {v2_outcome.job_id}"
+                    )
                 target_path.write_bytes(v2_outcome.artifact_bytes)
                 manifest_entries.append(
                     CliManifestEntry(
