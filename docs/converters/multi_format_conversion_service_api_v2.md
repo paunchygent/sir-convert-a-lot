@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-02-28
+updated: 2026-03-01
 owners:
   - platform
 tags:
@@ -15,6 +15,7 @@ tags:
 links:
   - docs/decisions/0002-multi-format-service-api-v2.md
   - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
+  - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
   - docs/converters/docx-template-catalog-contract-v2.md
@@ -107,6 +108,14 @@ Supported v2 conversions (service-executed on Hemma):
 - `md -> docx` (Pandoc -> HTML -> Pandoc)
 - `pdf -> docx` (Docling/PyMuPDF -> Markdown -> HTML -> DOCX)
 
+## Planned Extensions (Not Yet Implemented)
+
+The following contract extensions are decision-anchored but must not be treated as implemented until
+their linked tasks are terminalized:
+
+- `docx -> pdf` (planned: Task 66; pipeline: Pandoc DOCX->HTML + WeasyPrint HTML->PDF)
+- `conversion.pdf_layout` (planned: Task 65; typed PDF page layout presets applied to PDF outputs)
+
 ## Data Contracts (v2)
 
 ### JobStatus enum
@@ -169,6 +178,10 @@ Field rules:
 - `conversion.css_filenames`:
   - only meaningful for `html -> pdf` and `md -> pdf`
   - filenames must exist within the extracted resources root when provided
+- `conversion.pdf_layout`:
+  - planned (ADR-0004, Task 65)
+  - typed PDF-only page layout preset surface intended for downstream GUIs (paper size, orientation,
+    and standard margins)
 - `conversion.reference_docx_filename`:
   - only meaningful for DOCX outputs
   - if provided, the referenced file must exist in the uploaded `reference_docx` part or the

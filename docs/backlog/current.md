@@ -85,6 +85,8 @@ Primary implementation stories:
     - `pdm run run-local-pdm validate-tasks` (pass: `Validated 86 backlog files`)
     - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=108 rules=9`)
   - Task 61 moved to `completed` with checklist/evidence synchronized.
+  - Scaffolded the next downstream-GUI enabling slice (proposed) via ADR-0004 and Story 16.
+  - Proposed execution order: Task 64 -> Task 65 -> Task 66.
 
 - 2026-02-28:
 
@@ -116,4 +118,7 @@ Primary implementation stories:
 ## Next Actions
 
 - Epic 05 is complete; run post-implementation ruthless review and release-readiness verification.
-- Prepare next backlog slice after Epic 05 closeout and keep session handoff evidence synchronized.
+- Execute Story 16 in strict order: Task 64 (ADR-0004 contract alignment) -> Task 65 (implement
+  `conversion.pdf_layout`) -> Task 66 (implement `docx -> pdf`).
+- After Story 16 contract surfaces land, proceed with Skriptoteket curated conversion app cutover planning
+  (remove runner-script conversion surfaces, route all conversions via Sir Convert-a-Lot v2).

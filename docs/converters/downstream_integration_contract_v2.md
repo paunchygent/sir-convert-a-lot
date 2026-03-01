@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-02-28
+updated: 2026-03-01
 owners:
   - platform
 tags:
@@ -18,6 +18,7 @@ links:
   - docs/converters/docx-template-catalog-contract-v2.md
   - docs/converters/sir_convert_a_lot.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
+  - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
 ---
 
 ## Purpose
@@ -67,7 +68,7 @@ Deterministic route constraints:
 - `reference_docx` is not allowed for `output_format="md"`.
 - `conversion.template` and `reference_docx` must not be combined.
 
-## Capability Matrix (Implemented v2 Routes)
+## Capability Matrix (Implemented and Planned v2 Routes)
 
 | Source | Target | Route key | Notes |
 | --- | --- | --- | --- |
@@ -79,6 +80,28 @@ Deterministic route constraints:
 | `html` | `pdf` | `html -> pdf` | Service pipeline |
 | `html` | `docx` | `html -> docx` | Service pipeline |
 | `pdf` | `docx` | `pdf -> docx` | Service pipeline |
+| `docx` | `pdf` | `docx -> pdf` | Planned (ADR-0004, Task 66) |
+
+Planned routes must not be treated as implemented until their tasks are terminalized.
+
+## PDF Layout Presets (Planned)
+
+ADR-0004 defines a typed PDF layout surface intended for downstream GUIs: `conversion.pdf_layout`.
+
+Until Task 65 is completed, downstream callers must continue using `conversion.css_filenames` for any
+page setup behavior. Once Task 65 lands, downstream UIs must prefer `conversion.pdf_layout` for:
+
+- paper size (A5/A4/A3),
+- orientation (portrait/landscape),
+- standard margins.
+
+## Preview Rendition (Contract Rule)
+
+“Preview” is not a separate conversion engine and not a distinct output format.
+
+- Downstream UIs create a normal v2 job producing a normal artifact (typically `output_format="pdf"`).
+- Preview jobs should default to `retention.pin: false` unless the UI explicitly wants to keep the
+  artifact.
 
 ## Lifecycle Contract (Create, Poll, Result, Artifact, Cancel)
 

@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-02-18'
-last_updated: '2026-02-28'
+last_updated: '2026-03-01'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
@@ -81,6 +81,7 @@ Epic 04 is complete only when **every legacy converter surface is either**:
 1. `docs/backlog/stories/story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt.md`
 1. `docs/backlog/stories/story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md`
 1. `docs/backlog/stories/story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx.md`
+1. `docs/backlog/stories/story-16-v2-pdf-layout-presets-docx-to-pdf-route.md`
 
 ## Task Order (Synergy-Optimized)
 
@@ -113,6 +114,9 @@ Ordered tasks:
 1. `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md` (contracts)
 1. `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md` (hardening)
 1. `docs/backlog/tasks/task-42-split-oversized-cli-and-v2-job-store-cancel-cas.md` (hardening)
+1. `docs/backlog/tasks/task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf.md`
+1. `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
+1. `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`
 
 ## Acceptance Criteria
 
@@ -133,6 +137,16 @@ Ordered tasks:
 - [ ] Acceptance criteria defined
 - [ ] Execution gate defined (quality gates + parity completion definition)
 
+### Story Checkpoints (Contract Order)
+
+- [ ] `docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md`
+- [x] `docs/backlog/stories/story-08-cli-multi-format-routing-and-deterministic-manifests.md`
+- [ ] `docs/backlog/stories/story-09-template-driven-html-conversions-handout-builder-parity.md`
+- [ ] `docs/backlog/stories/story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt.md`
+- [ ] `docs/backlog/stories/story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md`
+- [ ] `docs/backlog/stories/story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx.md`
+- [ ] `docs/backlog/stories/story-16-v2-pdf-layout-presets-docx-to-pdf-route.md`
+
 ### Critical Pipeline Tasks (Execution Order)
 
 - [x] `docs/backlog/tasks/task-31-cli-route-registry-for-local-and-hybrid-conversions.md` (foundational)
@@ -150,3 +164,6 @@ Ordered tasks:
 - [x] `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md`
 - [x] `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md`
 - [x] `docs/backlog/tasks/task-42-split-oversized-cli-and-v2-job-store-cancel-cas.md`
+- [x] `docs/backlog/tasks/task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf.md`
+- [ ] `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
+- [ ] `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`

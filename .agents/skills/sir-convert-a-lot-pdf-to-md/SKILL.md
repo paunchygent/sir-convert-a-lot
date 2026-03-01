@@ -13,7 +13,7 @@ description: >-
 ## Sources of Truth
 
 - `docs/converters/sir_convert_a_lot.md`
-- `docs/converters/pdf_to_md_service_api_v1.md`
+- `docs/converters/multi_format_conversion_service_api_v2.md`
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
 ## Workflow
@@ -56,8 +56,9 @@ description: >-
 
 5. Triage non-complete jobs deterministically.
 
-- Query status: `GET /v1/convert/jobs/{job_id}`
-- Fetch result: `GET /v1/convert/jobs/{job_id}/result`
+- Query status: `GET /v2/convert/jobs/{job_id}`
+- Fetch result: `GET /v2/convert/jobs/{job_id}/result`
+- Fetch artifact bytes: `GET /v2/convert/jobs/{job_id}/artifact`
 - Report per-file outcomes with `source_file_path`, `status`, `output_path`, and `error_code`.
 
 ## Guardrails
