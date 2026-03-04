@@ -46,6 +46,7 @@ from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
 )
 from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpointed_executor import (
     PdfCheckpointProgressUpdateV2,
+    PdfConversionCanceledV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import WebhookDeliveryWorkerV2
 from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_store import (
@@ -396,12 +397,17 @@ class ServiceRuntimeV2:
                     except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
                         return
 
+                def _is_cancel_requested() -> bool:
+                    current = self.get_job(job_id)
+                    return current is not None and current.status == JobStatus.CANCELED
+
                 result: V2ExecutionResult = execute_v2_job_conversion(
                     job=job,
                     config=self.config,
                     docling_backend=self.docling_backend,
                     pymupdf_backend=self.pymupdf_backend,
                     progress_callback=_progress_callback,
+                    is_cancel_requested=_is_cancel_requested,
                 )
                 phase_timings_ms = dict(result.phase_timings_ms)
                 phase_timings_ms["conversion_attempt_ms"] = max(
@@ -423,6 +429,11 @@ class ServiceRuntimeV2:
                     phase_timings_ms=phase_timings_ms,
                 )
                 self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
+            except PdfConversionCanceledV2:
+                heartbeat_stop.set()
+                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
+                self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
+                return
             except JobStateConflictV2:
                 return
             except ServiceError as exc:

@@ -18,10 +18,8 @@ import httpx
 import pytest
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
-    ClientErrorV2,
-    SirConvertALotClientV2,
-)
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import ClientErrorV2
 
 
 def _job_payload(*, job_id: str, status: JobStatus) -> dict[str, object]:

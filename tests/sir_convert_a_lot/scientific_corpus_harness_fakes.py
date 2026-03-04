@@ -21,7 +21,10 @@ from scripts.sir_convert_a_lot.benchmark_scientific_corpus import (
     DEFAULT_EVALUATION_URL,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ClientErrorV2, SubmittedJobV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
+    ClientErrorV2,
+    SubmittedJobV2,
+)
 from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf
 
 

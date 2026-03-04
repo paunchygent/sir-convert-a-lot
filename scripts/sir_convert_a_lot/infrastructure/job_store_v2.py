@@ -79,6 +79,23 @@ class JobStoreV2(JobStoreV2Core):
             if changed:
                 atomic_write_json(manifest_path, payload)
 
+    def annotate_resume_metadata(
+        self,
+        *,
+        job_id: str,
+        resumed_from_job_id: str,
+        checkpoint_sha256: str,
+    ) -> None:
+        """Persist audit metadata linking a resume job to its source checkpoint."""
+        manifest_path = self._manifest_path(job_id)
+        with self._job_manifest_lock(job_id):
+            payload = self._read_manifest_locked(job_id)
+            payload["resume"] = {
+                "from_job_id": resumed_from_job_id,
+                "checkpoint_sha256": checkpoint_sha256,
+            }
+            atomic_write_json(manifest_path, payload)
+
     def resolve_events_resume_sequence(
         self,
         *,

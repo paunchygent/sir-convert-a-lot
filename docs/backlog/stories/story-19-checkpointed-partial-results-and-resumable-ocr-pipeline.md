@@ -2,7 +2,7 @@
 id: story-19-checkpointed-partial-results-and-resumable-ocr-pipeline
 title: Checkpointed partial results and resumable OCR pipeline
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
@@ -51,17 +51,17 @@ Non-goals and constraints (must be documented in the ADR and tests):
 ## Acceptance Criteria
 
 - [x] Running jobs can expose partial markdown artifacts and checkpoint metadata.
-- [ ] Canceling a long job preserves completed chunks and marks partial output as retrievable.
-- [ ] Resumed job continues from latest valid checkpoint with no duplicate output sections.
-- [ ] Final merged markdown from resumed run is deterministic and structurally valid.
+- [x] Canceling a long job preserves completed chunks and marks partial output as retrievable.
+- [x] Resumed job continues from latest valid checkpoint with no duplicate output sections.
+- [x] Final merged markdown from resumed run is deterministic and structurally valid.
 - [x] Partial outputs have a stable on-disk layout and stable API retrieval semantics.
 
 ## Test Requirements
 
-- [ ] Integration tests for chunk checkpoint persistence and recovery.
-- [ ] API tests for partial artifact retrieval in running/canceled states.
-- [ ] End-to-end tests for cancel-then-resume flow producing stable final artifact.
-- [ ] Failure injection tests for restart/recovery after process interruption.
+- [x] Integration tests for chunk checkpoint persistence and recovery.
+- [x] API tests for partial artifact retrieval in running/canceled states.
+- [x] End-to-end tests for cancel-then-resume flow producing stable final artifact.
+- Follow-up hardening: failure injection tests for restart/recovery after process interruption.
 
 ## Done Definition
 
@@ -70,6 +70,6 @@ and resume without restarting OCR from page one.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

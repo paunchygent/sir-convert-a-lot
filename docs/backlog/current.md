@@ -99,6 +99,10 @@ Primary implementation stories:
       - `GET /v2/convert/jobs/{job_id}/artifact/partial`
       - `GET /v2/convert/jobs/{job_id}/checkpoint`
     - kept the main v2 executor lean by extracting dedicated checkpointed PDF + non-PDF modules.
+  - Completed Task 71 (cancel-with-save + resume-from-checkpoint):
+    - cancel stops long PDF conversion at safe boundaries while preserving checkpoint + partial artifacts,
+    - added `POST /v2/convert/jobs/{job_id}/resume` (idempotent per `(api_key, job_id, Idempotency-Key)`),
+    - added contract tests that lock deterministic baseline vs resumed final artifact.
   - Validation evidence:
     - `pdm run format-all` (pass)
     - `pdm run lint-fix` (pass)
@@ -176,5 +180,4 @@ Primary implementation stories:
 - After Story 16 contract surfaces land, proceed with Skriptoteket curated conversion app cutover planning
   (remove runner-script conversion surfaces, route all conversions via Sir Convert-a-Lot v2).
 - Continue Epic 06 execution:
-  - execute `T71` (cancel-with-save + resume-from-checkpoint),
-  - then `T73` -> `T72` -> `T74`.
+  - execute `T73` -> `T72` -> `T74`.

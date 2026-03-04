@@ -22,6 +22,7 @@ links:
   - docs/converters/docx-template-catalog-contract-v2.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/multi_format_conversion_service_api_v2_async_push.md
+  - docs/converters/multi_format_conversion_service_api_v2_errors.md
   - docs/backlog/tasks/task-46-design-docx-template-contract-storage-and-selection-model.md
   - docs/backlog/tasks/task-47-implement-docx-template-endpoints-validation-and-fixture-templates.md
 ---
@@ -446,6 +447,13 @@ Response matrix:
 
 Request job cancellation.
 
+Notes:
+
+- For long-running PDF routes, cancellation is **cancel-with-save** (ADR-0005):
+  - the service stops processing at the next safe checkpoint boundary,
+  - the latest valid checkpoint remains available via `/checkpoint`,
+  - partial output (when any chunks have completed) is retrievable via `/artifact/partial`.
+
 Response matrix:
 
 - `202 Accepted`: job was `queued|running` and is now canceled; returns `JobRecordResponseV2`.
@@ -454,53 +462,29 @@ Response matrix:
 - `409 Conflict`: job is terminal (`succeeded|failed`) and cannot be canceled;
   `error.code = "job_not_cancelable"`.
 
-## Deterministic Route Errors (Selected)
+### `POST /v2/convert/jobs/{job_id}/resume`
 
-- `docx -> md` unreadable/corrupt DOCX:
-  - `422 Unprocessable Entity`
-  - `error.code = "docx_unreadable"`
-- `docx -> md` converter dependency missing:
-  - `503 Service Unavailable`
-  - `error.code = "pandoc_not_installed"`
-  - `error.retryable = true`
-- `docx -> md` converter execution failure:
-  - `500 Internal Server Error`
-  - `error.code = "docx_to_markdown_failed"`
-  - `error.retryable = false`
-- `html -> md` missing local resources:
-  - `422 Unprocessable Entity`
-  - `error.code = "html_resource_not_found"`
-  - `error.details = {"missing_resources":[...]}`
-- `html -> md` invalid local resource references:
-  - `422 Unprocessable Entity`
-  - `error.code = "html_resource_invalid"`
-  - `error.details = {"invalid_resources":[...]}`
-- `html -> md` converter dependency missing:
-  - `503 Service Unavailable`
-  - `error.code = "pandoc_not_installed"`
-  - `error.retryable = true`
-- `html -> md` converter execution failure:
-  - `500 Internal Server Error`
-  - `error.code = "html_to_markdown_failed"`
-  - `error.retryable = false`
+Resume a long-running PDF job from its latest valid checkpoint (ADR-0005).
 
-## Error Envelope (v2)
+Notes:
 
-All non-2xx responses return a standard error envelope:
+- This endpoint is **PDF-only**.
+- Resume always creates a **new** job id and never mutates the original job record.
+- Resume requires `Idempotency-Key` and is idempotent per `(api_key, job_id, Idempotency-Key)`.
 
-```json
-{
-  "api_version": "v2",
-  "error": {
-    "code": "validation_error",
-    "message": "Request validation failed.",
-    "retryable": false,
-    "details": {
-      "errors": []
-    },
-    "correlation_id": "corr_..."
-  }
-}
-```
+Response matrix:
 
-The error model is intentionally compatible with v1, with `api_version` set to `v2`.
+- `200 OK`: idempotent replay; returns the resumed job `JobRecordResponseV2`.
+- `202 Accepted`: resume accepted; returns the resumed job `JobRecordResponseV2`.
+- `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
+- `409 Conflict`: resume not allowed (missing checkpoint, unsupported job status, or unsupported route);
+  `error.code` is one of:
+  - `resume_not_available`
+  - `resume_checkpoint_missing`
+
+## Errors
+
+See `docs/converters/multi_format_conversion_service_api_v2_errors.md` for:
+
+- the standard v2 error envelope, and
+- selected deterministic route error codes.

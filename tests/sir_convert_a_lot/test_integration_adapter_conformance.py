@@ -33,10 +33,8 @@ from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
     submit_pdf_for_profile,
 )
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
-    ClientErrorV2,
-    SirConvertALotClientV2,
-)
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import ClientErrorV2
 from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf, docling_cuda_available
 
 
@@ -226,8 +224,9 @@ def test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime(
         docling_backend,
         pymupdf_backend,
         progress_callback=None,
+        is_cancel_requested=None,
     ) -> V2ExecutionResult:
-        del config, docling_backend, pymupdf_backend, progress_callback
+        del config, docling_backend, pymupdf_backend, progress_callback, is_cancel_requested
         content = (
             f"# deterministic non-gpu conversion\n\n"
             f"profile: {profile.value}\n"

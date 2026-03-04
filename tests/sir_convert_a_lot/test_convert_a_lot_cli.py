@@ -18,7 +18,10 @@ from typer.testing import CliRunner
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.interfaces import cli_app
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ArtifactOutcomeV2, ClientErrorV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
+    ArtifactOutcomeV2,
+    ClientErrorV2,
+)
 
 
 class FakeV2Client:

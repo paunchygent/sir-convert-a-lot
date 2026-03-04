@@ -74,6 +74,13 @@ class PdfCheckpointProgressUpdateV2:
     eta_seconds: int | None
 
 
+@dataclass(frozen=True)
+class PdfConversionCanceledV2(Exception):
+    """Raised when a running PDF conversion observes cancellation."""
+
+    job_id: str
+
+
 def validate_backend_strategy_v1(spec: JobSpec) -> None:
     violation = validate_backend_strategy_rule(spec)
     if violation is None:
@@ -226,6 +233,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
     pymupdf_backend: ConversionBackend,
     chunk_size_pages: int,
     progress_callback: Callable[[PdfCheckpointProgressUpdateV2], None] | None,
+    is_cancel_requested: Callable[[], bool] | None,
 ) -> tuple[str, str | None, str | None, list[str], dict[str, int]]:
     """Return markdown content + metadata while persisting checkpoints/partials."""
     if job.spec.pdf_options is None or job.spec.execution is None:
@@ -366,6 +374,8 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
     try:
         chunks = _iter_pdf_chunks(total_pages=total_pages, chunk_size_pages=chunk_size_pages)
         for chunk_index, (start_page, end_page) in enumerate(chunks):
+            if is_cancel_requested is not None and is_cancel_requested():
+                raise PdfConversionCanceledV2(job_id=job.job_id)
             if end_page < next_start_page:
                 continue
 
@@ -375,6 +385,8 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                 start_page=start_page,
                 end_page=end_page,
             )
+            if is_cancel_requested is not None and is_cancel_requested():
+                raise PdfConversionCanceledV2(job_id=job.job_id)
             try:
                 markdown_content, pdf_metadata, pdf_warnings, pdf_timings = execute_job_conversion(
                     spec=v1_spec,
@@ -454,6 +466,8 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
             checkpoint.updated_at = dt_to_rfc3339(utc_now()) or checkpoint.updated_at
             persist_pdf_checkpoint(upload_path=job.upload_path, checkpoint=checkpoint)
             assemble_partial_markdown_artifact(upload_path=job.upload_path, checkpoint=checkpoint)
+            if is_cancel_requested is not None and is_cancel_requested():
+                raise PdfConversionCanceledV2(job_id=job.job_id)
 
             if progress_callback is not None:
                 elapsed = max(0.001, time.perf_counter() - conversion_started)

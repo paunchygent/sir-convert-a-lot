@@ -29,3 +29,16 @@ def fingerprint_for_request_v2(
     return hashlib.sha256(
         f"{normalized}:{file_sha256}:{resources_part}:{reference_part}".encode("utf-8")
     ).hexdigest()
+
+
+def fingerprint_for_resume_request_v2(
+    *,
+    source_job_id: str,
+    source_spec_payload: dict[str, object],
+    checkpoint_sha256: str,
+) -> str:
+    """Create deterministic idempotency fingerprint for a v2 resume request."""
+    normalized = json.dumps(source_spec_payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(
+        f"{source_job_id}:{checkpoint_sha256}:{normalized}".encode("utf-8")
+    ).hexdigest()

@@ -33,7 +33,7 @@ from scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions_helpers import
     utc_now_iso,
     write_json,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ClientErrorV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import ClientErrorV2
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:

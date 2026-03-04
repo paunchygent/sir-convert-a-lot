@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.interfaces.cli_helpers import (
     relative_source_label,
     sha256_bytes,
 )
+from scripts.sir_convert_a_lot.interfaces.cli_jobs_v2 import jobs_app
 from scripts.sir_convert_a_lot.interfaces.cli_routes import (
     SourceFormat,
     TargetFormat,
@@ -43,13 +44,16 @@ from scripts.sir_convert_a_lot.interfaces.cli_routes import (
 )
 from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
     DEFAULT_STALL_TIMEOUT_SECONDS,
+    SirConvertALotClientV2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
     ArtifactOutcomeV2,
     ClientErrorV2,
     RetryModeV2,
-    SirConvertALotClientV2,
 )
 
 app = typer.Typer(help="Please, tell Sir Convert-a-Lot to convert x to y.")
+app.add_typer(jobs_app, name="jobs")
 
 
 @app.callback()

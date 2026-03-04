@@ -16,68 +16,27 @@ Relationships:
 from __future__ import annotations
 
 import json
-import time
-from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import IO, Literal, TypeAlias
 from uuid import uuid4
 
 import httpx
 
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client_activity import most_recent_activity_at
-
-RequestFileValue: TypeAlias = tuple[str, IO[bytes] | bytes | str, str]
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
+    ArtifactOutcomeV2,
+    ClientErrorV2,
+    RequestFileValue,
+    RetryModeV2,
+    SubmittedJobV2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_polling import (
+    wait_for_terminal_status_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_upload_helpers import (
+    content_type_for_source_path,
+)
 
 DEFAULT_STALL_TIMEOUT_SECONDS: float = 120.0
-
-
-@dataclass(frozen=True)
-class ClientErrorV2(Exception):
-    """HTTP/service-level error returned by Sir Convert-a-Lot v2 endpoints."""
-
-    code: str
-    message: str
-    retryable: bool
-    status_code: int
-    job_id: str | None = None
-    details: dict[str, object] | None = None
-
-
-@dataclass(frozen=True)
-class SubmittedJobV2:
-    """Job state returned immediately after v2 job creation."""
-
-    job_id: str
-    status: JobStatus
-    idempotent_replay: bool = False
-
-
-@dataclass(frozen=True)
-class ArtifactOutcomeV2:
-    """Successful artifact outcome returned by v2 client operations."""
-
-    job_id: str
-    status: Literal[JobStatus.SUCCEEDED]
-    artifact_bytes: bytes
-    rerun_of_job_id: str | None = None
-
-
-RetryModeV2: TypeAlias = Literal["auto", "replay_only", "new_job"]
-
-
-def _content_type_for_source_path(path: Path) -> str:
-    suffix = path.suffix.lower()
-    if suffix == ".pdf":
-        return "application/pdf"
-    if suffix in {".md", ".markdown"}:
-        return "text/markdown"
-    if suffix in {".html", ".htm"}:
-        return "text/html"
-    if suffix == ".docx":
-        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    return "application/octet-stream"
 
 
 class SirConvertALotClientV2:
@@ -220,7 +179,7 @@ class SirConvertALotClientV2:
         files: dict[str, RequestFileValue] = {}
 
         with source_path.open("rb") as handle:
-            files["file"] = (source_path.name, handle, _content_type_for_source_path(source_path))
+            files["file"] = (source_path.name, handle, content_type_for_source_path(source_path))
             if resources_zip_bytes is not None:
                 files["resources"] = ("resources.zip", resources_zip_bytes, "application/zip")
             if reference_docx_bytes is not None:
@@ -311,6 +270,95 @@ class SirConvertALotClientV2:
 
         raise self._extract_error(response, job_id=job_id)
 
+    def cancel_job(self, job_id: str, *, correlation_id: str | None = None) -> SubmittedJobV2:
+        """Request cancellation for one v2 job."""
+        response = self._client.post(
+            f"/v2/convert/jobs/{job_id}/cancel",
+            headers=self._headers(correlation_id=correlation_id),
+        )
+        if response.status_code not in {200, 202}:
+            raise self._extract_error(response, job_id=job_id)
+        payload: object = response.json()
+        status = self._read_job_status(payload)
+        return SubmittedJobV2(job_id=status.job_id, status=status.status)
+
+    def resume_job(
+        self,
+        *,
+        source_job_id: str,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ) -> SubmittedJobV2:
+        """Resume a PDF job from its latest checkpoint by creating a new v2 job."""
+        response = self._client.post(
+            f"/v2/convert/jobs/{source_job_id}/resume",
+            headers=self._headers(idempotency_key=idempotency_key, correlation_id=correlation_id),
+        )
+        if response.status_code not in {200, 202}:
+            raise self._extract_error(response, job_id=source_job_id)
+        idempotent_replay = response.headers.get("X-Idempotent-Replay", "").lower() == "true"
+        payload: object = response.json()
+        status = self._read_job_status(payload)
+        return SubmittedJobV2(
+            job_id=status.job_id,
+            status=status.status,
+            idempotent_replay=idempotent_replay,
+        )
+
+    def download_partial_artifact(self, job_id: str, *, correlation_id: str | None = None) -> bytes:
+        """Download partial markdown bytes for a long-running PDF job when available."""
+        response = self._client.get(
+            f"/v2/convert/jobs/{job_id}/artifact/partial",
+            headers=self._headers(correlation_id=correlation_id),
+        )
+        if response.status_code == 200:
+            return response.content
+        if response.status_code == 202:
+            payload: object = response.json()
+            status = self._read_job_status(payload)
+            raise ClientErrorV2(
+                code="partial_artifact_not_ready",
+                message="Partial artifact is not available yet.",
+                retryable=True,
+                status_code=202,
+                job_id=status.job_id,
+                details={"status": status.status.value},
+            )
+        raise self._extract_error(response, job_id=job_id)
+
+    def get_checkpoint_payload(
+        self, job_id: str, *, correlation_id: str | None = None
+    ) -> dict[str, object]:
+        """Fetch the latest checkpoint JSON payload for a long-running PDF job."""
+        response = self._client.get(
+            f"/v2/convert/jobs/{job_id}/checkpoint",
+            headers=self._headers(correlation_id=correlation_id),
+        )
+        payload_obj: object
+        if response.status_code == 200:
+            payload_obj = response.json()
+            if not isinstance(payload_obj, dict):
+                raise ClientErrorV2(
+                    code="invalid_response",
+                    message="Checkpoint payload is not a JSON object.",
+                    retryable=False,
+                    status_code=500,
+                    job_id=job_id,
+                )
+            return payload_obj
+        if response.status_code == 202:
+            payload_obj = response.json()
+            status = self._read_job_status(payload_obj)
+            raise ClientErrorV2(
+                code="checkpoint_not_ready",
+                message="Checkpoint is not available yet.",
+                retryable=True,
+                status_code=202,
+                job_id=status.job_id,
+                details={"status": status.status.value},
+            )
+        raise self._extract_error(response, job_id=job_id)
+
     def wait_for_terminal_status(
         self,
         job_id: str,
@@ -320,66 +368,14 @@ class SirConvertALotClientV2:
         poll_interval_seconds: float = 0.2,
         correlation_id: str | None = None,
     ) -> JobStatus:
-        """Poll v2 job status until terminal status or timeout."""
-        deadline = time.monotonic() + timeout_seconds
-        while time.monotonic() < deadline:
-            status = self.get_job_status(job_id, correlation_id=correlation_id)
-            if status in TERMINAL_JOB_STATUSES:
-                return status
-            time.sleep(poll_interval_seconds)
-
-        payload = self.get_job_payload(job_id, correlation_id=correlation_id)
-        status = self._read_job_status(payload).status
-        if status in TERMINAL_JOB_STATUSES:
-            return status
-
-        activity_at = most_recent_activity_at(payload)
-        if activity_at is None:
-            raise ClientErrorV2(
-                code="job_poll_window_exceeded",
-                message=(
-                    "Max poll window exceeded while job is still running "
-                    "(activity timestamp unavailable in payload)."
-                ),
-                retryable=True,
-                status_code=202,
-                job_id=job_id,
-                details={"timeout_seconds": timeout_seconds},
-            )
-
-        now = datetime.now(UTC)
-        seconds_since_activity = max(0.0, (now - activity_at).total_seconds())
-        if seconds_since_activity <= stall_timeout_seconds:
-            raise ClientErrorV2(
-                code="job_poll_window_exceeded",
-                message=(
-                    "Max poll window exceeded while job is still running "
-                    "(heartbeat/progress remains fresh)."
-                ),
-                retryable=True,
-                status_code=202,
-                job_id=job_id,
-                details={
-                    "timeout_seconds": timeout_seconds,
-                    "stall_timeout_seconds": stall_timeout_seconds,
-                    "seconds_since_activity": seconds_since_activity,
-                },
-            )
-
-        raise ClientErrorV2(
-            code="job_timeout",
-            message=(
-                "Timed out waiting for conversion job to reach a terminal state "
-                "and job activity appears stale (likely stalled)."
-            ),
-            retryable=True,
-            status_code=408,
+        """Poll v2 job status until terminal status or classified timeout."""
+        return wait_for_terminal_status_v2(
+            poller=self,
             job_id=job_id,
-            details={
-                "timeout_seconds": timeout_seconds,
-                "stall_timeout_seconds": stall_timeout_seconds,
-                "seconds_since_activity": seconds_since_activity,
-            },
+            timeout_seconds=timeout_seconds,
+            stall_timeout_seconds=stall_timeout_seconds,
+            poll_interval_seconds=poll_interval_seconds,
+            correlation_id=correlation_id,
         )
 
     def download_artifact(self, job_id: str, *, correlation_id: str | None = None) -> bytes:

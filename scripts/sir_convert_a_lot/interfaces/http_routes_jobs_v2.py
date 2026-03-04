@@ -41,6 +41,9 @@ from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import
 from scripts.sir_convert_a_lot.interfaces.http_routes_job_artifacts_v2 import (
     register_job_artifact_routes_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_routes_job_resume_v2 import (
+    register_job_resume_routes_v2,
+)
 
 
 def _make_job_links(job_id: str) -> JobLinksV2:
@@ -109,6 +112,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
     """Build v2 job router with stable app-state wiring."""
     router = APIRouter()
     register_job_artifact_routes_v2(router=router, service_started_at=service_started_at)
+    register_job_resume_routes_v2(router=router, service_started_at=service_started_at)
 
     @router.post("/v2/convert/jobs")
     async def create_job(

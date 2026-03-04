@@ -103,6 +103,7 @@ def execute_v2_job_conversion(
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
     progress_callback: Callable[[PdfCheckpointProgressUpdateV2], None] | None = None,
+    is_cancel_requested: Callable[[], bool] | None = None,
 ) -> V2ExecutionResult:
     """Execute one v2 job conversion and return artifact bytes + metadata."""
     options_fingerprint = fingerprint_job_options(job.spec)
@@ -138,6 +139,7 @@ def execute_v2_job_conversion(
             pymupdf_backend=pymupdf_backend,
             chunk_size_pages=DEFAULT_PDF_CHECKPOINT_CHUNK_SIZE_PAGES,
             progress_callback=progress_callback,
+            is_cancel_requested=is_cancel_requested,
         )
         warnings.extend(pdf_warnings)
         phase_timings_ms.update(pdf_timings)

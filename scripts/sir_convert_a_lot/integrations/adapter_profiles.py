@@ -19,10 +19,8 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TypedDict
 
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
-    ArtifactOutcomeV2,
-    SirConvertALotClientV2,
-)
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import ArtifactOutcomeV2
 
 
 class ConsumerProfile(StrEnum):

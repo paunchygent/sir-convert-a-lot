@@ -18,7 +18,7 @@ from types import TracebackType
 from typing import Protocol, TypedDict
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SubmittedJobV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import SubmittedJobV2
 
 
 class CorpusFileInfo(TypedDict):

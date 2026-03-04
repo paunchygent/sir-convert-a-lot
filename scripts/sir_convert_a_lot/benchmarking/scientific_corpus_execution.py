@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ClientErrorV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import ClientErrorV2
 
 from .scientific_corpus_types import (
     BackendProfile,
