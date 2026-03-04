@@ -1,0 +1,5 @@
+interface:
+  display_name: "Sir Convert-a-Lot Client (v2)"
+  short_description: "Client-side conversions via convert-a-lot (HTML/MD/PDF/DOCX)."
+  default_prompt: "Use Sir Convert-a-Lot (service v2) to convert the given inputs to the requested format, then summarize output paths and manifest outcomes."
+

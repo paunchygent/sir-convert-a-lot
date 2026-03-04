@@ -4,7 +4,7 @@ rule_id: RULE-030
 title: Conversion Workflows
 status: active
 created: '2026-02-11'
-updated: '2026-02-11'
+updated: '2026-03-02'
 owners:
   - platform
 tags:
@@ -30,15 +30,16 @@ Compatibility facades remain at package root for stable imports.
 
 ## Contract References
 
-- API schema: `docs/converters/pdf_to_md_service_api_v1.md`
-- ADR lock: `docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md`
+- API schema (v2): `docs/converters/multi_format_conversion_service_api_v2.md`
+- Decision (v2): `docs/decisions/0002-multi-format-service-api-v2.md`
 - CLI guide: `docs/converters/sir_convert_a_lot.md`
 
 ## Execution Rules
 
-- API is async job-based; no separate sync endpoint in v1.
-- `POST /v1/convert/jobs` must enforce idempotency semantics.
+- API is async job-based; no separate sync endpoint in v2.
+- `POST /v2/convert/jobs` must enforce idempotency semantics.
 - Standard error envelope is mandatory for all non-2xx responses.
+- Artifact bytes are fetched via `GET /v2/convert/jobs/{job_id}/artifact` (not inline).
 - Hemma repo placement invariant for operational workflows:
   - canonical path is `/home/paunchygent/apps/sir-convert-a-lot`
   - do not execute service operations from ad hoc non-`~/apps` clones

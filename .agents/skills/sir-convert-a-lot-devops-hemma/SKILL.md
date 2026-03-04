@@ -18,8 +18,9 @@ description: >-
 ## Source of Truth
 
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
-- `docs/converters/pdf_to_md_service_api_v1.md`
-- `docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md`
+- `docs/converters/sir_convert_a_lot.md`
+- `docs/converters/multi_format_conversion_service_api_v2.md`
+- `docs/decisions/0002-multi-format-service-api-v2.md`
 
 Cross-repo operational references:
 

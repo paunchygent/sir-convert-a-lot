@@ -5,9 +5,10 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-01'
+last_updated: '2026-03-04'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
+  - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md
   - docs/backlog/stories/story-14-v2-only-clean-break-and-api-surface-unification.md
   - docs/backlog/stories/story-13-docx-template-catalog-and-reference-governance.md
@@ -44,6 +45,9 @@ Active focus has shifted to Epic 05: a prototype-to-production hardening track t
 **v2-only conversion architecture** with explicit Markdown ingress routes and template-governed DOCX
 outputs.
 
+Next planned capability increment is Epic 06: long OCR PDF progress visibility, partial results,
+resume, and throughput scaling.
+
 This file is the canonical long-term memory index for session progress; session handoff summaries
 must be archived here when `handoff.md` is pruned.
 
@@ -62,6 +66,18 @@ Primary implementation stories:
   slice after clean-break gates)
 
 ## Worklog
+
+- 2026-03-04:
+
+  - Planned Epic 06 long PDF conversion reliability/performance slice:
+    - new epic/story/task chain under `docs/backlog/` for:
+      - progress-aware timeouts,
+      - page-level progress/ETA and stall telemetry,
+      - checkpointed partial artifacts + cancel-with-save + resume,
+      - telemetry-driven parallelization and benchmarked tuning (GPU-first).
+  - Validation evidence:
+    - `pdm run validate-tasks` (pass: `Validated 105 backlog files`)
+    - `pdm run validate-docs` (pass: `Validated docs=128 rules=9`)
 
 - 2026-03-01:
 
@@ -129,3 +145,4 @@ Primary implementation stories:
 - Epic 05 is complete; run post-implementation ruthless review and release-readiness verification.
 - After Story 16 contract surfaces land, proceed with Skriptoteket curated conversion app cutover planning
   (remove runner-script conversion surfaces, route all conversions via Sir Convert-a-Lot v2).
+- Start Epic 06 execution with `T67` then `T68` (contract-first).

@@ -8,11 +8,11 @@
 
 - For active conversion work, start from:
 
-  - `docs/backlog/epics/epic-03-unified-conversion-service.md`
-  - `docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md`
-  - `docs/converters/pdf_to_md_service_api_v1.md`
+  - `docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md`
+  - `docs/backlog/stories/story-14-v2-only-clean-break-and-api-surface-unification.md`
+  - `docs/converters/multi_format_conversion_service_api_v2.md`
   - `docs/converters/sir_convert_a_lot.md`
-  - `docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md`
+  - `docs/decisions/0002-multi-format-service-api-v2.md`
   - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
 - Confirm active context in `docs/backlog/current.md`.
