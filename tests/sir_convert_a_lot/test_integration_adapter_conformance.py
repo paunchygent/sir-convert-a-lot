@@ -225,8 +225,9 @@ def test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime(
         config,
         docling_backend,
         pymupdf_backend,
+        progress_callback=None,
     ) -> V2ExecutionResult:
-        del config, docling_backend, pymupdf_backend
+        del config, docling_backend, pymupdf_backend, progress_callback
         content = (
             f"# deterministic non-gpu conversion\n\n"
             f"profile: {profile.value}\n"

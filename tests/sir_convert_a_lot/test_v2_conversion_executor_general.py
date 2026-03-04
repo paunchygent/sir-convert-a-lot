@@ -15,17 +15,19 @@ from pathlib import Path
 
 import pytest
 
+import scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_routes_md as v2_non_pdf_routes_md
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
 from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import (
     MarkdownToHtmlConversionError,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
-    _map_converter_error,
-    _resolve_reference_docx,
     execute_v2_job_conversion,
     fingerprint_job_options,
+)
+from scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_helpers import (
+    map_converter_error,
+    resolve_reference_docx,
 )
 from scripts.sir_convert_a_lot.infrastructure.weasyprint_html_to_pdf import (
     HtmlToPdfConversionError,
@@ -54,7 +56,7 @@ def test_resolve_reference_docx_prefers_explicit_path(tmp_path: Path) -> None:
         reference_docx_path=explicit_reference,
     )
 
-    resolved = _resolve_reference_docx(job=job, workdir=workdir)
+    resolved = resolve_reference_docx(job=job, workdir=workdir)
 
     assert resolved.path == explicit_reference
     assert resolved.template_id is None
@@ -75,7 +77,7 @@ def test_resolve_reference_docx_uses_workdir_filename_hit(tmp_path: Path) -> Non
         reference_docx_filename="reference.docx",
     )
 
-    resolved = _resolve_reference_docx(job=job, workdir=workdir)
+    resolved = resolve_reference_docx(job=job, workdir=workdir)
 
     assert resolved.path == expected
     assert resolved.template_id is None
@@ -96,7 +98,7 @@ def test_resolve_reference_docx_uses_workdir_filename_miss_returns_validation_er
     )
 
     with pytest.raises(ServiceError) as exc_info:
-        _resolve_reference_docx(job=job, workdir=workdir)
+        resolve_reference_docx(job=job, workdir=workdir)
 
     error = exc_info.value
     assert error.status_code == 422
@@ -119,7 +121,7 @@ def test_resolve_reference_docx_none_when_no_filename_or_explicit_path(tmp_path:
         reference_docx_filename=None,
     )
 
-    resolved = _resolve_reference_docx(job=job, workdir=workdir)
+    resolved = resolve_reference_docx(job=job, workdir=workdir)
 
     assert resolved.path is None
     assert resolved.template_id is None
@@ -197,7 +199,7 @@ def test_map_converter_error_for_markdown_and_html_errors(
     expected_status: int,
     expected_retryable: bool,
 ) -> None:
-    mapped = _map_converter_error(error)
+    mapped = map_converter_error(error)
 
     assert mapped.status_code == expected_status
     assert mapped.code == expected_code
@@ -243,7 +245,7 @@ def test_resolve_reference_docx_rejects_workdir_traversal(tmp_path: Path) -> Non
     )
 
     with pytest.raises(ServiceError) as exc_info:
-        _resolve_reference_docx(job=job, workdir=workdir)
+        resolve_reference_docx(job=job, workdir=workdir)
 
     error = exc_info.value
     assert error.status_code == 422
@@ -331,9 +333,11 @@ def test_execute_v2_job_conversion_md_to_pdf_success_with_stubbed_converters(
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
     monkeypatch.setattr(
-        v2_conversion_executor, "convert_markdown_to_html", _fake_convert_markdown_to_html
+        v2_non_pdf_routes_md,
+        "convert_markdown_to_html",
+        _fake_convert_markdown_to_html,
     )
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+    monkeypatch.setattr(v2_non_pdf_routes_md, "convert_html_to_pdf", _fake_convert_html_to_pdf)
 
     job = _build_job(
         tmp_path,
@@ -369,19 +373,8 @@ def test_execute_v2_job_conversion_md_to_pdf_success_with_stubbed_converters(
 
 
 def test_execute_v2_job_conversion_pdf_to_docx_invalid_pdf_bytes(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    def _unexpected_execute_job_conversion(
-        **kwargs: object,
-    ) -> tuple[str, object, list[str], dict[str, int]]:
-        del kwargs
-        raise AssertionError("execute_job_conversion should not run for invalid PDF bytes")
-
-    monkeypatch.setattr(
-        v2_conversion_executor, "execute_job_conversion", _unexpected_execute_job_conversion
-    )
-
     job = _build_job(
         tmp_path,
         source_filename="input.pdf",
@@ -456,9 +449,11 @@ def test_execute_v2_job_conversion_artifact_empty_error(
         output_pdf_path.write_bytes(b"")
 
     monkeypatch.setattr(
-        v2_conversion_executor, "convert_markdown_to_html", _fake_convert_markdown_to_html
+        v2_non_pdf_routes_md,
+        "convert_markdown_to_html",
+        _fake_convert_markdown_to_html,
     )
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+    monkeypatch.setattr(v2_non_pdf_routes_md, "convert_html_to_pdf", _fake_convert_html_to_pdf)
 
     job = _build_job(
         tmp_path,

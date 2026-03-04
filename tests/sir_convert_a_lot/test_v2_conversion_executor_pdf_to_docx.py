@@ -18,7 +18,12 @@ import pytest
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import TableMode
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
+from scripts.sir_convert_a_lot.infrastructure import (
+    v2_non_pdf_helpers as v2_non_pdf_helpers,
+)
+from scripts.sir_convert_a_lot.infrastructure import (
+    v2_pdf_checkpointed_executor as v2_pdf_checkpointed_executor,
+)
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
     BackendGpuUnavailableError,
@@ -135,10 +140,11 @@ def test_execute_v2_job_conversion_pdf_to_docx_maps_backend_errors(
         raise raised_error
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_pdf_checkpointed_executor,
         "execute_job_conversion",
         _raise_execute_job_conversion,
     )
+    monkeypatch.setattr(v2_pdf_checkpointed_executor, "best_effort_pdf_total_pages", lambda _: None)
 
     job = _build_job(
         tmp_path,
@@ -214,14 +220,15 @@ def test_execute_v2_job_conversion_pdf_to_docx_success_with_stubbed_stages(
         output_docx_path.write_bytes(b"stub-pdf-docx")
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_pdf_checkpointed_executor,
         "execute_job_conversion",
         _fake_execute_job_conversion,
     )
     monkeypatch.setattr(
-        v2_conversion_executor, "convert_markdown_to_html", _fake_convert_markdown_to_html
+        v2_non_pdf_helpers, "convert_markdown_to_html", _fake_convert_markdown_to_html
     )
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_docx", _fake_convert_html_to_docx)
+    monkeypatch.setattr(v2_non_pdf_helpers, "convert_html_to_docx", _fake_convert_html_to_docx)
+    monkeypatch.setattr(v2_pdf_checkpointed_executor, "best_effort_pdf_total_pages", lambda _: None)
 
     job = _build_job(
         tmp_path,
@@ -255,8 +262,8 @@ def test_execute_v2_job_conversion_pdf_to_docx_success_with_stubbed_stages(
     assert isinstance(execute_calls[0]["pymupdf_backend"], _UnusedBackend)
     assert len(markdown_calls) == 1
     assert len(html_docx_calls) == 1
-    assert markdown_calls[0][0].name == "input.md"
-    assert markdown_calls[0][1].name == "input.html"
-    assert html_docx_calls[0][0].name == "input.html"
+    assert markdown_calls[0][0].name == "pdf_checkpointed_output.md"
+    assert markdown_calls[0][1].name == "pdf_checkpointed_output.html"
+    assert html_docx_calls[0][0].name == "pdf_checkpointed_output.html"
     assert html_docx_calls[0][1] == job.artifact_path
     assert html_docx_calls[0][3] == reference_docx

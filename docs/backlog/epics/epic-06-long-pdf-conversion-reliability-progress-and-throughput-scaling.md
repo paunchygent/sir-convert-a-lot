@@ -85,7 +85,7 @@ high-throughput pipeline with:
 - [x] `T67` `docs/backlog/tasks/task-67-detect-stalled-conversions-separately-from-active-long-running-jobs.md`
 - [x] `T68` `docs/backlog/tasks/task-68-publish-adr-for-progress-checkpoint-and-resume-contract.md`
 - [x] `T69` `docs/backlog/tasks/task-69-add-page-level-progress-fields-to-v2-jobs-api.md`
-- [ ] `T70` `docs/backlog/tasks/task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts.md`
+- [x] `T70` `docs/backlog/tasks/task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts.md`
 - [ ] `T71` `docs/backlog/tasks/task-71-add-cancel-with-save-and-resume-from-checkpoint-flow.md`
 - [ ] `T73` `docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md`
 - [ ] `T72` `docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md`

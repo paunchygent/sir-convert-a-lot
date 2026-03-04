@@ -16,7 +16,15 @@ from pathlib import Path
 import pytest
 
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
+from scripts.sir_convert_a_lot.infrastructure import (
+    v2_non_pdf_routes_html as v2_non_pdf_routes_html,
+)
+from scripts.sir_convert_a_lot.infrastructure import (
+    v2_non_pdf_routes_md as v2_non_pdf_routes_md,
+)
+from scripts.sir_convert_a_lot.infrastructure import (
+    v2_pdf_checkpointed_executor as v2_pdf_checkpointed_executor,
+)
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_docx import (
     HtmlToDocxConversionError,
@@ -26,10 +34,10 @@ from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
-    _map_converter_error,
     execute_v2_job_conversion,
     fingerprint_job_options,
 )
+from scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_helpers import map_converter_error
 from tests.sir_convert_a_lot.v2_conversion_executor_test_support import (
     _build_job,
     _build_v1_job_spec,
@@ -45,7 +53,7 @@ def test_validate_backend_strategy_v1_maps_policy_violation() -> None:
     )
 
     with pytest.raises(ServiceError) as exc_info:
-        v2_conversion_executor._validate_backend_strategy_v1(spec)
+        v2_pdf_checkpointed_executor.validate_backend_strategy_v1(spec)
 
     error = exc_info.value
     assert error.status_code == 422
@@ -73,7 +81,7 @@ def test_validate_acceleration_policy_v1_maps_rule_violation(tmp_path: Path) -> 
     )
 
     with pytest.raises(ServiceError) as exc_info:
-        v2_conversion_executor._validate_acceleration_policy_v1(spec=spec, config=config)
+        v2_pdf_checkpointed_executor.validate_acceleration_policy_v1(spec=spec, config=config)
 
     error = exc_info.value
     assert error.status_code == 503
@@ -113,10 +121,10 @@ def test_validate_acceleration_policy_v1_maps_runtime_probe_unavailable(
     def _fake_probe() -> GpuRuntimeProbeResult:
         return probe
 
-    monkeypatch.setattr(v2_conversion_executor, "probe_torch_gpu_runtime", _fake_probe)
+    monkeypatch.setattr(v2_pdf_checkpointed_executor, "probe_torch_gpu_runtime", _fake_probe)
 
     with pytest.raises(ServiceError) as exc_info:
-        v2_conversion_executor._validate_acceleration_policy_v1(spec=spec, config=config)
+        v2_pdf_checkpointed_executor.validate_acceleration_policy_v1(spec=spec, config=config)
 
     error = exc_info.value
     assert error.status_code == 503
@@ -136,7 +144,7 @@ def test_validate_acceleration_policy_v1_maps_runtime_probe_unavailable(
 
 
 def test_map_converter_error_for_html_to_docx_error() -> None:
-    mapped = _map_converter_error(
+    mapped = map_converter_error(
         HtmlToDocxConversionError(
             code="pandoc_not_installed",
             message="Pandoc is not installed.",
@@ -151,7 +159,7 @@ def test_map_converter_error_for_html_to_docx_error() -> None:
 
 def test_map_converter_error_for_unhandled_type_raises_assertion() -> None:
     with pytest.raises(AssertionError, match="Unhandled converter error type: AssertionError"):
-        _map_converter_error(AssertionError("unexpected"))
+        map_converter_error(AssertionError("unexpected"))
 
 
 def test_execute_v2_job_conversion_html_to_docx_success(
@@ -174,7 +182,7 @@ def test_execute_v2_job_conversion_html_to_docx_success(
         html_docx_calls.append((html_path, output_docx_path, resource_root, reference_docx_path))
         output_docx_path.write_bytes(b"stub-html-docx")
 
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_docx", _fake_convert_html_to_docx)
+    monkeypatch.setattr(v2_non_pdf_routes_html, "convert_html_to_docx", _fake_convert_html_to_docx)
 
     job = _build_job(
         tmp_path,
@@ -225,7 +233,7 @@ def test_execute_v2_job_conversion_html_to_docx_maps_converter_error(
         )
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_html,
         "convert_html_to_docx",
         _failing_convert_html_to_docx,
     )
@@ -308,9 +316,9 @@ def test_execute_v2_job_conversion_md_to_docx_success(
         output_docx_path.write_bytes(b"stub-md-docx")
 
     monkeypatch.setattr(
-        v2_conversion_executor, "convert_markdown_to_html", _fake_convert_markdown_to_html
+        v2_non_pdf_routes_md, "convert_markdown_to_html", _fake_convert_markdown_to_html
     )
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_docx", _fake_convert_html_to_docx)
+    monkeypatch.setattr(v2_non_pdf_routes_md, "convert_html_to_docx", _fake_convert_html_to_docx)
 
     job = _build_job(
         tmp_path,
@@ -370,10 +378,10 @@ def test_execute_v2_job_conversion_md_to_docx_maps_markdown_error(
         raise AssertionError("convert_html_to_docx should not run when markdown conversion fails.")
 
     monkeypatch.setattr(
-        v2_conversion_executor, "convert_markdown_to_html", _failing_convert_markdown_to_html
+        v2_non_pdf_routes_md, "convert_markdown_to_html", _failing_convert_markdown_to_html
     )
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_md,
         "convert_html_to_docx",
         _unexpected_convert_html_to_docx,
     )
@@ -429,10 +437,10 @@ def test_execute_v2_job_conversion_md_to_docx_maps_html_to_docx_error(
         )
 
     monkeypatch.setattr(
-        v2_conversion_executor, "convert_markdown_to_html", _fake_convert_markdown_to_html
+        v2_non_pdf_routes_md, "convert_markdown_to_html", _fake_convert_markdown_to_html
     )
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_md,
         "convert_html_to_docx",
         _failing_convert_html_to_docx,
     )

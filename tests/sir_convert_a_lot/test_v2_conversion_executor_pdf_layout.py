@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
+import scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_routes_html as v2_non_pdf_routes_html
+import scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_routes_md as v2_non_pdf_routes_md
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
     execute_v2_job_conversion,
 )
@@ -47,9 +48,9 @@ def test_execute_v2_job_conversion_md_to_pdf_applies_pdf_layout_preset(
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
     monkeypatch.setattr(
-        v2_conversion_executor, "convert_markdown_to_html", _fake_convert_markdown_to_html
+        v2_non_pdf_routes_md, "convert_markdown_to_html", _fake_convert_markdown_to_html
     )
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+    monkeypatch.setattr(v2_non_pdf_routes_md, "convert_html_to_pdf", _fake_convert_html_to_pdf)
 
     job = _build_job(
         tmp_path,
@@ -93,7 +94,7 @@ def test_execute_v2_job_conversion_html_to_pdf_applies_pdf_layout_preset(
         css_seen = css_paths
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+    monkeypatch.setattr(v2_non_pdf_routes_html, "convert_html_to_pdf", _fake_convert_html_to_pdf)
 
     job = _build_job(
         tmp_path,

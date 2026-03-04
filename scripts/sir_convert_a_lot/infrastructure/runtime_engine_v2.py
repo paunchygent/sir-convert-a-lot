@@ -29,6 +29,7 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobStateConflictV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2 import JobStoreV2
+from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import load_pdf_checkpoint
 from scripts.sir_convert_a_lot.infrastructure.pdf_metadata_v2 import best_effort_pdf_total_pages
 from scripts.sir_convert_a_lot.infrastructure.pymupdf_backend import PyMuPdfConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2 import (
@@ -42,6 +43,9 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_webhook_service_v2 import 
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
     V2ExecutionResult,
     execute_v2_job_conversion,
+)
+from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpointed_executor import (
+    PdfCheckpointProgressUpdateV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import WebhookDeliveryWorkerV2
 from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_store import (
@@ -336,15 +340,33 @@ class ServiceRuntimeV2:
 
             total_pages: int | None = None
             if job.source_format == SourceFormatV2.PDF:
-                total_pages = best_effort_pdf_total_pages(job.upload_path)
+                checkpoint = None
+                try:
+                    checkpoint = load_pdf_checkpoint(upload_path=job.upload_path)
+                except Exception:
+                    checkpoint = None
+                total_pages = checkpoint.total_pages if checkpoint is not None else None
+                if total_pages is None:
+                    total_pages = best_effort_pdf_total_pages(job.upload_path)
+                processed_pages = checkpoint.processed_pages if checkpoint is not None else 0
+                failed_pages = checkpoint.failed_pages if checkpoint is not None else 0
+                percent_complete = (
+                    (processed_pages / float(total_pages)) * 100.0
+                    if total_pages is not None and total_pages > 0
+                    else None
+                )
+            else:
+                processed_pages = None
+                failed_pages = None
+                percent_complete = None
             self.job_store.update_progress(
                 job_id,
                 status=JobStatus.RUNNING,
                 stage="converting",
                 total_pages=total_pages,
-                processed_pages=0 if job.source_format == SourceFormatV2.PDF else None,
-                failed_pages=0 if job.source_format == SourceFormatV2.PDF else None,
-                percent_complete=0.0 if job.source_format == SourceFormatV2.PDF else None,
+                processed_pages=processed_pages,
+                failed_pages=failed_pages,
+                percent_complete=percent_complete,
             )
             self.job_store.touch_heartbeat(job_id)
             self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
@@ -356,11 +378,30 @@ class ServiceRuntimeV2:
 
             try:
                 conversion_started = time.perf_counter()
+
+                def _progress_callback(update: PdfCheckpointProgressUpdateV2) -> None:
+                    try:
+                        self.job_store.update_progress(
+                            job_id,
+                            status=JobStatus.RUNNING,
+                            stage="converting",
+                            total_pages=update.total_pages,
+                            processed_pages=update.processed_pages,
+                            failed_pages=update.failed_pages,
+                            percent_complete=update.percent_complete,
+                            pages_per_minute=update.pages_per_minute,
+                            eta_seconds=update.eta_seconds,
+                        )
+                        self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
+                    except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
+                        return
+
                 result: V2ExecutionResult = execute_v2_job_conversion(
                     job=job,
                     config=self.config,
                     docling_backend=self.docling_backend,
                     pymupdf_backend=self.pymupdf_backend,
+                    progress_callback=_progress_callback,
                 )
                 phase_timings_ms = dict(result.phase_timings_ms)
                 phase_timings_ms["conversion_attempt_ms"] = max(

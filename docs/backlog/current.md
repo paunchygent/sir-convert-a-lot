@@ -93,12 +93,18 @@ Primary implementation stories:
     - removed legacy/re-export modules (`interfaces.http_client`, package-level CLI/client facades),
     - updated all in-repo callers to `interfaces.http_client_v2` + `interfaces.cli_app`,
     - kept touched modules below 500 LoC via targeted extraction helpers.
+  - Completed Task 70 (chunk checkpoints + partial artifact retrieval):
+    - added chunk-level checkpoint persistence + partial markdown assembly for long PDFs,
+    - added v2 endpoints for early retrieval:
+      - `GET /v2/convert/jobs/{job_id}/artifact/partial`
+      - `GET /v2/convert/jobs/{job_id}/checkpoint`
+    - kept the main v2 executor lean by extracting dedicated checkpointed PDF + non-PDF modules.
   - Validation evidence:
     - `pdm run format-all` (pass)
     - `pdm run lint-fix` (pass)
     - `pdm run typecheck-all` (pass)
-    - `pdm run pytest-root tests/sir_convert_a_lot` (pass: `419 passed, 5 skipped`)
-    - `pdm run coverage-gate` (pass: coverage `95.33%`)
+    - `pdm run pytest-root tests/sir_convert_a_lot` (pass: `421 passed, 5 skipped`)
+    - `pdm run coverage-gate` (pass: total coverage `96.61%`)
     - `pdm run validate-tasks` (pass: `Validated 106 backlog files`)
     - `pdm run validate-docs` (pass: `Validated docs=131 rules=9`)
     - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
@@ -169,4 +175,6 @@ Primary implementation stories:
 - Epic 05 is complete; run post-implementation ruthless review and release-readiness verification.
 - After Story 16 contract surfaces land, proceed with Skriptoteket curated conversion app cutover planning
   (remove runner-script conversion surfaces, route all conversions via Sir Convert-a-Lot v2).
-- Start Epic 06 execution with `T67` then `T68` (contract-first).
+- Continue Epic 06 execution:
+  - execute `T71` (cancel-with-save + resume-from-checkpoint),
+  - then `T73` -> `T72` -> `T74`.

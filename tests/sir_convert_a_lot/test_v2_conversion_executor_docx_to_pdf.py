@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
+import scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_helpers as v2_non_pdf_helpers
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
 from scripts.sir_convert_a_lot.infrastructure.pandoc_docx_to_html import (
     DOCX_TO_HTML_UNREADABLE,
     DocxToHtmlConversionError,
@@ -48,8 +48,8 @@ def test_execute_v2_job_conversion_docx_to_pdf_success_with_stubbed_converters(
         del html_path, css_paths, base_url, allowed_resource_root
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
-    monkeypatch.setattr(v2_conversion_executor, "convert_docx_to_html", _fake_convert_docx_to_html)
-    monkeypatch.setattr(v2_conversion_executor, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+    monkeypatch.setattr(v2_non_pdf_helpers, "convert_docx_to_html", _fake_convert_docx_to_html)
+    monkeypatch.setattr(v2_non_pdf_helpers, "convert_html_to_pdf", _fake_convert_html_to_pdf)
 
     job = _build_job(
         tmp_path,
@@ -110,7 +110,7 @@ def test_execute_v2_job_conversion_docx_to_pdf_maps_unreadable_pandoc_error(
             message="couldn't unpack docx container: not a valid zip",
         )
 
-    monkeypatch.setattr(v2_conversion_executor, "convert_docx_to_html", _raise_unreadable)
+    monkeypatch.setattr(v2_non_pdf_helpers, "convert_docx_to_html", _raise_unreadable)
 
     job = _build_job(
         tmp_path,

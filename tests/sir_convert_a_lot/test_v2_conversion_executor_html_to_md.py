@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
+import scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_routes_html as v2_non_pdf_routes_html
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
 from scripts.sir_convert_a_lot.infrastructure.pandoc_html_to_markdown import (
     HtmlToMarkdownConversionError,
 )
@@ -56,12 +56,12 @@ def test_execute_v2_job_conversion_html_to_md_success(
         return ("# Normalized\n\nBody\n", ["normalized_warning"])
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_html,
         "convert_html_to_markdown",
         _fake_convert_html_to_markdown,
     )
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_html,
         "normalize_markdown_for_v2_md_output",
         _fake_normalize_markdown_for_v2_md_output,
     )
@@ -156,7 +156,7 @@ def test_execute_v2_job_conversion_html_to_md_with_resources_zip(
         output_markdown_path.write_text("# Converted\n\nBody\n", encoding="utf-8")
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_html,
         "convert_html_to_markdown",
         _fake_convert_html_to_markdown,
     )
@@ -202,7 +202,7 @@ def test_execute_v2_job_conversion_html_to_md_maps_converter_error(
         )
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_html,
         "convert_html_to_markdown",
         _failing_convert_html_to_markdown,
     )
@@ -247,7 +247,7 @@ def test_execute_v2_job_conversion_html_to_md_uses_timeout_from_execution_spec(
         output_markdown_path.write_text("# Converted\n\nBody\n", encoding="utf-8")
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_html,
         "convert_html_to_markdown",
         _fake_convert_html_to_markdown,
     )
@@ -289,7 +289,7 @@ def test_execute_v2_job_conversion_html_to_md_uses_default_timeout_without_execu
         output_markdown_path.write_text("# Converted\n\nBody\n", encoding="utf-8")
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_non_pdf_routes_html,
         "convert_html_to_markdown",
         _fake_convert_html_to_markdown,
     )

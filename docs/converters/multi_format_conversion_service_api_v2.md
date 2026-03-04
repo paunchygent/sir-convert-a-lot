@@ -409,6 +409,39 @@ Response matrix:
 - `409 Conflict`: job is terminal but not successful (`failed|canceled`);
   `error.code = "job_not_succeeded"` with `error.details = {"status":"failed|canceled"}`.
 
+### `GET /v2/convert/jobs/{job_id}/artifact/partial`
+
+Download a **partial markdown** artifact for long-running PDF routes when available.
+
+Notes:
+
+- This endpoint is **PDF-only**.
+- The partial artifact is written incrementally during chunked conversion.
+- The partial payload is explicitly annotated as partial (see ADR-0005).
+- Partials/checkpoints expire with the job retention window; `retention.pin=true` extends availability.
+
+Response matrix:
+
+- `200 OK`: returns partial markdown bytes (`text/markdown`) when available.
+- `202 Accepted`: job exists (`queued|running|canceled`) but no partial artifact is available yet.
+- `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
+- `409 Conflict`: job is terminal and no partial artifact is available, or job is `succeeded` and
+  partial retrieval is rejected; `error.code` is one of:
+  - `partial_artifact_not_available`
+  - `job_succeeded_use_artifact`
+
+### `GET /v2/convert/jobs/{job_id}/checkpoint`
+
+Fetch the latest persisted checkpoint metadata for long-running PDF routes.
+
+Response matrix:
+
+- `200 OK`: returns checkpoint JSON payload when available.
+- `202 Accepted`: job exists (`queued|running|canceled`) but no checkpoint is available yet.
+- `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
+- `409 Conflict`: job is terminal and no checkpoint is available;
+  `error.code = "checkpoint_not_available"`.
+
 ### `POST /v2/convert/jobs/{job_id}/cancel`
 
 Request job cancellation.

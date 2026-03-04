@@ -2,7 +2,7 @@
 id: story-19-checkpointed-partial-results-and-resumable-ocr-pipeline
 title: Checkpointed partial results and resumable OCR pipeline
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
@@ -50,11 +50,11 @@ Non-goals and constraints (must be documented in the ADR and tests):
 
 ## Acceptance Criteria
 
-- [ ] Running jobs can expose partial markdown artifacts and checkpoint metadata.
+- [x] Running jobs can expose partial markdown artifacts and checkpoint metadata.
 - [ ] Canceling a long job preserves completed chunks and marks partial output as retrievable.
 - [ ] Resumed job continues from latest valid checkpoint with no duplicate output sections.
 - [ ] Final merged markdown from resumed run is deterministic and structurally valid.
-- [ ] Partial outputs have a stable on-disk layout and stable API retrieval semantics.
+- [x] Partial outputs have a stable on-disk layout and stable API retrieval semantics.
 
 ## Test Requirements
 

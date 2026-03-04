@@ -20,7 +20,7 @@ import pytest
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
-from scripts.sir_convert_a_lot.interfaces import http_routes_jobs_v2
+from scripts.sir_convert_a_lot.interfaces import http_routes_job_artifacts_v2, http_routes_jobs_v2
 from tests.sir_convert_a_lot.http_routes_jobs_v2_edge_cases_test_support import (
     build_client,
     disable_run_job_async,
@@ -71,13 +71,13 @@ def test_infer_format_from_filename_returns_expected_supported_formats() -> None
 
 
 def test_content_type_for_output_raises_for_unsupported_enum_simulation() -> None:
-    helper = getattr(http_routes_jobs_v2, "_content_type_for_output")
+    helper = getattr(http_routes_job_artifacts_v2, "_content_type_for_output")
     with pytest.raises(AssertionError, match="Unsupported output_format"):
         helper("unsupported")
 
 
 def test_content_type_for_output_returns_expected_supported_values() -> None:
-    helper = getattr(http_routes_jobs_v2, "_content_type_for_output")
+    helper = getattr(http_routes_job_artifacts_v2, "_content_type_for_output")
     assert helper(OutputFormatV2.MD) == "text/markdown"
     assert helper(OutputFormatV2.PDF) == "application/pdf"
     assert (

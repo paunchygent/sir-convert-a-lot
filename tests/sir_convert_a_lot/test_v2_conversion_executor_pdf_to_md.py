@@ -18,7 +18,9 @@ import pytest
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import TableMode
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.infrastructure import v2_conversion_executor
+from scripts.sir_convert_a_lot.infrastructure import (
+    v2_pdf_checkpointed_executor as v2_pdf_checkpointed_executor,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
     execute_v2_job_conversion,
@@ -55,10 +57,11 @@ def test_execute_v2_job_conversion_pdf_to_md_success_with_stubbed_backend(
         )
 
     monkeypatch.setattr(
-        v2_conversion_executor,
+        v2_pdf_checkpointed_executor,
         "execute_job_conversion",
         _fake_execute_job_conversion,
     )
+    monkeypatch.setattr(v2_pdf_checkpointed_executor, "best_effort_pdf_total_pages", lambda _: None)
 
     job = _build_job(
         tmp_path,
