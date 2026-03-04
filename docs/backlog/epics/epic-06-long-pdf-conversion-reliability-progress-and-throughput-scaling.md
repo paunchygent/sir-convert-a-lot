@@ -1,9 +1,9 @@
 ---
-id: 'epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling'
-title: 'Long PDF conversion reliability progress and throughput scaling'
-type: 'epic'
-status: 'proposed'
-priority: 'high'
+id: epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling
+title: Long PDF conversion reliability progress and throughput scaling
+type: epic
+status: in_progress
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -31,6 +31,7 @@ labels:
   - performance
   - parallelization
 ---
+
 Major capability increment managed through linked stories.
 
 ## Goal
@@ -70,9 +71,9 @@ high-throughput pipeline with:
 
 ## Stories (Ordered)
 
-- [ ] `S00` `docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md`
+- [x] `S00` `docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md`
   (requires `T67`)
-- [ ] `S01` `docs/backlog/stories/story-18-page-level-progress-and-stall-telemetry-contract.md`
+- [x] `S01` `docs/backlog/stories/story-18-page-level-progress-and-stall-telemetry-contract.md`
   (requires `T68-T69`)
 - [ ] `S02` `docs/backlog/stories/story-19-checkpointed-partial-results-and-resumable-ocr-pipeline.md`
   (requires `T70-T71`)
@@ -81,9 +82,9 @@ high-throughput pipeline with:
 
 ## Tasks (Ordered)
 
-- [ ] `T67` `docs/backlog/tasks/task-67-detect-stalled-conversions-separately-from-active-long-running-jobs.md`
-- [ ] `T68` `docs/backlog/tasks/task-68-publish-adr-for-progress-checkpoint-and-resume-contract.md`
-- [ ] `T69` `docs/backlog/tasks/task-69-add-page-level-progress-fields-to-v2-jobs-api.md`
+- [x] `T67` `docs/backlog/tasks/task-67-detect-stalled-conversions-separately-from-active-long-running-jobs.md`
+- [x] `T68` `docs/backlog/tasks/task-68-publish-adr-for-progress-checkpoint-and-resume-contract.md`
+- [x] `T69` `docs/backlog/tasks/task-69-add-page-level-progress-fields-to-v2-jobs-api.md`
 - [ ] `T70` `docs/backlog/tasks/task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts.md`
 - [ ] `T71` `docs/backlog/tasks/task-71-add-cancel-with-save-and-resume-from-checkpoint-flow.md`
 - [ ] `T73` `docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md`
@@ -97,20 +98,20 @@ This epic is intentionally ordered to reduce risk and prevent wasted work.
 1. `T67` (client semantics first):
    - make “timeout” progress-aware using heartbeat-only fallback,
    - ensures long jobs do not look failed while they are still active.
-2. `T68` (ADR locks contract):
+1. `T68` (ADR locks contract):
    - unblocks implementation without contract drift,
    - locks page progress fields + partial/checkpoint + cancel-with-save + resume semantics.
-3. `T69` (contract + API surfaces):
+1. `T69` (contract + API surfaces):
    - add page-level progress fields to polling payloads and async push channels (SSE/webhooks).
-4. `T70` (checkpoints + partial artifacts):
+1. `T70` (checkpoints + partial artifacts):
    - incremental persistence + partial artifact retrieval, with bounded retention/cleanup.
-5. `T71` (cancel-with-save + resume):
+1. `T71` (cancel-with-save + resume):
    - resume creates a new job id; preserved provenance from source job/checkpoint.
-6. `T73` (telemetry before tuning):
+1. `T73` (telemetry before tuning):
    - stage timings + queue/worker saturation + GPU evidence for real bottleneck diagnosis.
-7. `T72` (parallelization with caps):
+1. `T72` (parallelization with caps):
    - introduce bounded worker pools and GPU concurrency caps after telemetry exists.
-8. `T74` (benchmark/report):
+1. `T74` (benchmark/report):
    - run baseline vs tuned profiles and publish operational defaults + rollback criteria.
 
 ## Per-Task Closeout Checklist (Mandatory)
@@ -140,12 +141,12 @@ always include verification evidence.
 
 - [ ] A running long PDF job exposes page-aware progress and ETA fields in v2 job status.
 - [ ] `job_timeout` semantics are reserved for stalled jobs; active heartbeating jobs are not
-      misclassified as failed timeouts.
+  misclassified as failed timeouts.
 - [ ] Partial markdown/checkpoint artifacts are accessible while conversion is still running.
 - [ ] Canceling a long job preserves completed work and exposes a deterministic partial artifact.
 - [ ] Resuming from checkpoint avoids full re-OCR of already completed chunks/pages.
 - [ ] Partial/checkpoint storage is bounded (explicit retention/cleanup policy; no unbounded disk
-      growth under repeated long conversions).
+  growth under repeated long conversions).
 - [ ] GPU-first governance remains invariant:
   - acceleration-policy requests are honored (no silent CPU fallback when GPU is requested/required),
   - any fallback behavior is explicit in job metadata and client/manifest messaging.

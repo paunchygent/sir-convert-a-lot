@@ -1,9 +1,9 @@
 ---
-id: 'task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools'
-title: 'Parallelize PDF OCR conversion with bounded worker pools'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools
+title: Parallelize PDF OCR conversion with bounded worker pools
+type: task
+status: proposed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -19,6 +19,7 @@ labels:
   - worker-pool
   - gpu
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -47,7 +48,7 @@ preserving determinism and system stability.
 - [ ] Runtime remains stable under concurrent long-job load.
 - [ ] Worker pool defaults are documented and safe for Hemma profile.
 - [ ] GPU-backed stages are explicitly capped to avoid OOM/thrash, and GPU policy enforcement remains
-      intact (no silent CPU fallback when GPU is requested/required).
+  intact (no silent CPU fallback when GPU is requested/required).
 
 ## Checklist
 

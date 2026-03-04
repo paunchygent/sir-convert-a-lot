@@ -1,9 +1,9 @@
 ---
-id: 'story-18-page-level-progress-and-stall-telemetry-contract'
-title: 'Page-level progress and stall telemetry contract'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-18-page-level-progress-and-stall-telemetry-contract
+title: Page-level progress and stall telemetry contract
+type: story
+status: completed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-68-publish-adr-for-progress-checkpoint-and-resume-contract.md
   - docs/backlog/tasks/task-69-add-page-level-progress-fields-to-v2-jobs-api.md
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md
   - scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py
   - scripts/sir_convert_a_lot/interfaces/http_client_v2.py
 labels:
@@ -20,6 +21,7 @@ labels:
   - api-contract
   - telemetry
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -65,6 +67,6 @@ decisions on long PDF OCR jobs without ambiguity.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

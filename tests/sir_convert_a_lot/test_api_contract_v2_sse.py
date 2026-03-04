@@ -23,7 +23,7 @@ from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
 from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import encode_replay_cursor
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
-from scripts.sir_convert_a_lot.service import create_app
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 
 def _job_spec_v2(*, filename: str, source_format: SourceFormatV2, output_format: OutputFormatV2):
@@ -185,6 +185,20 @@ def test_sse_stream_emits_ordered_progress_and_terminal_events(tmp_path: Path, m
     assert payloads[0].get("event_type") == "job.queued"
     assert payloads[-1].get("event_type") == "job.succeeded"
     assert payloads[-1].get("status") == "succeeded"
+    for payload in payloads:
+        route = payload.get("route")
+        progress = payload.get("progress")
+        assert isinstance(route, dict)
+        assert isinstance(progress, dict)
+        for key in (
+            "total_pages",
+            "processed_pages",
+            "failed_pages",
+            "percent_complete",
+            "pages_per_minute",
+            "eta_seconds",
+        ):
+            assert key in progress
 
 
 def test_sse_stream_cursor_replay_resumes_from_next_event(tmp_path: Path, monkeypatch) -> None:

@@ -2,11 +2,10 @@
 
 ## Next Session Goals (2026-03-04)
 
-- Execute `T67`: progress-aware timeout semantics in v2 client polling (heartbeat-only fallback when
-  progress fields are absent/`null`).
-- Execute `T68`: publish ADR locking progress + partial artifacts + cancel-with-save + resume
-  semantics (contract-first; no implementation drift).
-- Then proceed with `T69` -> `T70` -> `T71` (API progress fields; checkpoints/partials; cancel+resume).
+- `T75` clean-break enforcement is complete; proceed with Epic 06 execution tasks next.
+- Execute `T70`: implement chunk checkpoints and partial markdown artifacts.
+- Then execute `T71`: cancel-with-save + resume-from-checkpoint flow.
 - Preserve GPU-first governance (no silent CPU fallback when GPU is requested/required).
-- After each task: run validators and only then update checkboxes/statuses per Epic 06 closeout
-  checklist.
+- After each task: run `pdm run validate-tasks` + `pdm run validate-docs` and only then update
+  task/story/epic statuses and checkboxes.
+- Session summary and validation evidence live in `docs/backlog/current.md` (2026-03-04 entry).

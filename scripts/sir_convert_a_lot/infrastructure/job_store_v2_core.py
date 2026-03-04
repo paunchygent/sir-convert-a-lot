@@ -36,6 +36,14 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobStateConflictV2,
     StoredJobRecordV2,
 )
+from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
+    clamp_monotonic_float,
+    clamp_monotonic_int,
+    parse_optional_nonneg_float,
+    parse_optional_nonneg_int,
+    parse_optional_percent,
+    parse_progress_page_fields,
+)
 
 
 class JobStoreV2Core:
@@ -230,6 +238,12 @@ class JobStoreV2Core:
         *,
         status: JobStatus,
         stage: str,
+        total_pages: int | None = None,
+        processed_pages: int | None = None,
+        failed_pages: int | None = None,
+        percent_complete: float | None = None,
+        pages_per_minute: float | None = None,
+        eta_seconds: int | None = None,
     ) -> StoredJobRecordV2:
         manifest_path = self._manifest_path(job_id)
         with self._job_manifest_lock(job_id):
@@ -245,7 +259,72 @@ class JobStoreV2Core:
             if not isinstance(progress, dict):
                 progress = {}
                 payload["progress"] = progress
+            previous_stage_obj = progress.get("stage")
+            previous_stage = previous_stage_obj if isinstance(previous_stage_obj, str) else None
+            existing_page_fields = parse_progress_page_fields(progress)
             progress["stage"] = stage
+            progress.setdefault("total_pages", None)
+            progress.setdefault("processed_pages", None)
+            progress.setdefault("failed_pages", None)
+            progress.setdefault("percent_complete", None)
+            progress.setdefault("pages_per_minute", None)
+            progress.setdefault("eta_seconds", None)
+
+            progress_changed = False
+            updated_total_pages = parse_optional_nonneg_int(total_pages)
+            if (
+                updated_total_pages is not None
+                and existing_page_fields.total_pages is None
+                and updated_total_pages > 0
+            ):
+                progress["total_pages"] = updated_total_pages
+                progress_changed = True
+
+            resolved_total_pages = parse_optional_nonneg_int(progress.get("total_pages"))
+
+            updated_processed_pages = parse_optional_nonneg_int(processed_pages)
+            if resolved_total_pages is not None and updated_processed_pages is not None:
+                updated_processed_pages = min(updated_processed_pages, resolved_total_pages)
+            resolved_processed_pages = clamp_monotonic_int(
+                existing_page_fields.processed_pages,
+                updated_processed_pages,
+            )
+            if resolved_processed_pages != existing_page_fields.processed_pages:
+                progress["processed_pages"] = resolved_processed_pages
+                progress_changed = True
+
+            updated_failed_pages = parse_optional_nonneg_int(failed_pages)
+            if resolved_total_pages is not None and updated_failed_pages is not None:
+                updated_failed_pages = min(updated_failed_pages, resolved_total_pages)
+            resolved_failed_pages = clamp_monotonic_int(
+                existing_page_fields.failed_pages,
+                updated_failed_pages,
+            )
+            if resolved_failed_pages != existing_page_fields.failed_pages:
+                progress["failed_pages"] = resolved_failed_pages
+                progress_changed = True
+
+            updated_percent = parse_optional_percent(percent_complete)
+            resolved_percent = clamp_monotonic_float(
+                existing_page_fields.percent_complete,
+                updated_percent,
+            )
+            if resolved_percent != existing_page_fields.percent_complete:
+                progress["percent_complete"] = resolved_percent
+                progress_changed = True
+
+            updated_ppm = parse_optional_nonneg_float(pages_per_minute)
+            if updated_ppm is not None and updated_ppm != existing_page_fields.pages_per_minute:
+                progress["pages_per_minute"] = updated_ppm
+                progress_changed = True
+
+            updated_eta_seconds = parse_optional_nonneg_int(eta_seconds)
+            if (
+                updated_eta_seconds is not None
+                and updated_eta_seconds != existing_page_fields.eta_seconds
+            ):
+                progress["eta_seconds"] = updated_eta_seconds
+                progress_changed = True
 
             timestamps = payload.get("timestamps")
             if not isinstance(timestamps, dict):
@@ -255,7 +334,10 @@ class JobStoreV2Core:
             diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
-            if previous_status != status:
+            should_emit_event = (
+                previous_status != status or previous_stage != stage or progress_changed
+            )
+            if should_emit_event:
                 append_lifecycle_event(
                     payload=payload,
                     status=status,

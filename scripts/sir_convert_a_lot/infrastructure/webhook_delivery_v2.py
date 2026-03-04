@@ -1,27 +1,26 @@
-"""Queue-backed webhook delivery worker and signing utilities for v2 push.
+"""Queue-backed webhook delivery worker for v2 push.
 
 Purpose:
     Provide deterministic webhook outbox delivery with retries, DLQ handoff,
-    HMAC signing, and replay-safe verification helpers for async push events.
+    and request signing for async push events.
 
 Relationships:
     - Consumed by `infrastructure.runtime_engine_v2` for webhook push delivery.
     - Reads webhook targets from `infrastructure.webhook_subscriptions_v2_store`.
     - Consumes job lifecycle events from `infrastructure.job_events_v2`.
+    - Uses `infrastructure.webhook_signing_v2` for webhook signature computation.
 """
 
 from __future__ import annotations
 
 import fcntl
-import hashlib
-import hmac
 import json
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Callable, Iterator, Literal, Mapping, Sequence
+from typing import Callable, Iterator, Mapping, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -33,30 +32,20 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     utc_now,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import JobLifecycleEventRecordV2
-from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2 import (
+from scripts.sir_convert_a_lot.infrastructure.webhook_signing_v2 import (
+    compute_webhook_signature_v2,
+)
+from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_models import (
     WebhookDeliveryTargetV2,
+)
+from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_store import (
     WebhookSubscriptionStoreV2,
 )
 
 DEFAULT_WEBHOOK_RETRY_SCHEDULE_SECONDS_V2: tuple[int, ...] = (2, 10, 30, 120)
 DEFAULT_WEBHOOK_MAX_ATTEMPTS_V2 = 5
-DEFAULT_WEBHOOK_REPLAY_WINDOW_SECONDS_V2 = 300
-
-WebhookSignatureValidationCodeV2 = Literal[
-    "webhook_signature_invalid",
-    "webhook_timestamp_outside_window",
-    "webhook_replay_detected",
-]
 WebhookPostResultV2 = tuple[int | None, str | None]
 WebhookPostClientV2 = Callable[[str, bytes, Mapping[str, str], float], WebhookPostResultV2]
-
-
-@dataclass
-class WebhookSignatureValidationErrorV2(Exception):
-    """Deterministic signature validation error used by replay/security checks."""
-
-    code: WebhookSignatureValidationCodeV2
-    message: str
 
 
 @dataclass(frozen=True)
@@ -67,69 +56,6 @@ class WebhookDeliveryMetricsV2:
     retried: int
     dlq: int
     failures: int
-
-
-def compute_webhook_signature_v2(*, secret: str, timestamp: str, body_bytes: bytes) -> str:
-    """Return webhook HMAC signature using canonical `<timestamp>.<body>` input."""
-    signed_payload = timestamp.encode("utf-8") + b"." + body_bytes
-    digest = hmac.new(secret.encode("utf-8"), signed_payload, hashlib.sha256).hexdigest()
-    return f"v1={digest}"
-
-
-def verify_webhook_signature_v2(
-    *,
-    headers: Mapping[str, str],
-    body_bytes: bytes,
-    signing_secrets: Sequence[str],
-    now_epoch_seconds: int | None = None,
-    replay_window_seconds: int = DEFAULT_WEBHOOK_REPLAY_WINDOW_SECONDS_V2,
-    replay_cache: set[str] | None = None,
-) -> None:
-    """Verify callback signature, timestamp freshness, and replay key uniqueness."""
-    signature = headers.get("X-SCAL-Webhook-Signature")
-    timestamp = headers.get("X-SCAL-Webhook-Timestamp")
-    webhook_id = headers.get("X-SCAL-Webhook-Id")
-    if signature is None or timestamp is None or webhook_id is None:
-        raise WebhookSignatureValidationErrorV2(
-            code="webhook_signature_invalid",
-            message="Missing webhook signature headers.",
-        )
-
-    try:
-        timestamp_int = int(timestamp)
-    except ValueError as exc:
-        raise WebhookSignatureValidationErrorV2(
-            code="webhook_signature_invalid",
-            message="Webhook timestamp header is invalid.",
-        ) from exc
-
-    resolved_now = (
-        int(datetime.now(UTC).timestamp()) if now_epoch_seconds is None else now_epoch_seconds
-    )
-    if abs(resolved_now - timestamp_int) > max(1, replay_window_seconds):
-        raise WebhookSignatureValidationErrorV2(
-            code="webhook_timestamp_outside_window",
-            message="Webhook timestamp is outside replay window.",
-        )
-
-    expected_candidates = {
-        compute_webhook_signature_v2(secret=secret, timestamp=timestamp, body_bytes=body_bytes)
-        for secret in signing_secrets
-    }
-    if signature not in expected_candidates:
-        raise WebhookSignatureValidationErrorV2(
-            code="webhook_signature_invalid",
-            message="Webhook signature mismatch.",
-        )
-
-    replay_key = f"{webhook_id}:{timestamp}:{signature}"
-    if replay_cache is not None:
-        if replay_key in replay_cache:
-            raise WebhookSignatureValidationErrorV2(
-                code="webhook_replay_detected",
-                message="Webhook replay detected for id/timestamp/signature key.",
-            )
-        replay_cache.add(replay_key)
 
 
 def _default_webhook_post_client_v2(
@@ -211,6 +137,20 @@ class WebhookDeliveryOutboxV2:
                 "occurred_at": dt_to_rfc3339(event.occurred_at),
                 "job_id": event.job_id,
                 "status": str(event.status),
+                "route": {
+                    "source_format": event.source_format.value,
+                    "target_format": event.target_format.value,
+                },
+                "progress": {
+                    "stage": event.stage,
+                    "last_heartbeat_at": dt_to_rfc3339(event.last_heartbeat_at),
+                    "total_pages": event.total_pages,
+                    "processed_pages": event.processed_pages,
+                    "failed_pages": event.failed_pages,
+                    "percent_complete": event.percent_complete,
+                    "pages_per_minute": event.pages_per_minute,
+                    "eta_seconds": event.eta_seconds,
+                },
             },
         }
         with self._lock():
@@ -440,6 +380,8 @@ class WebhookDeliveryWorkerV2:
         sequence_obj = event_obj.get("sequence")
         occurred_at_obj = event_obj.get("occurred_at")
         status_obj = event_obj.get("status")
+        route_obj = event_obj.get("route")
+        progress_obj = event_obj.get("progress")
         if (
             not isinstance(job_id_obj, str)
             or not isinstance(event_id_obj, str)
@@ -447,7 +389,22 @@ class WebhookDeliveryWorkerV2:
             or not isinstance(sequence_obj, int)
             or not isinstance(occurred_at_obj, str)
             or not isinstance(status_obj, str)
+            or not isinstance(route_obj, dict)
+            or not isinstance(progress_obj, dict)
         ):
+            raise ValueError("delivery payload event object is malformed")
+
+        source_format_obj = route_obj.get("source_format")
+        target_format_obj = route_obj.get("target_format")
+        stage_obj = progress_obj.get("stage")
+        heartbeat_obj = progress_obj.get("last_heartbeat_at")
+        if (
+            not isinstance(source_format_obj, str)
+            or not isinstance(target_format_obj, str)
+            or not isinstance(stage_obj, str)
+        ):
+            raise ValueError("delivery payload event object is malformed")
+        if heartbeat_obj is not None and not isinstance(heartbeat_obj, str):
             raise ValueError("delivery payload event object is malformed")
 
         callback_payload = {
@@ -458,6 +415,20 @@ class WebhookDeliveryWorkerV2:
             "occurred_at": occurred_at_obj,
             "job_id": job_id_obj,
             "status": status_obj,
+            "route": {
+                "source_format": source_format_obj,
+                "target_format": target_format_obj,
+            },
+            "progress": {
+                "stage": stage_obj,
+                "last_heartbeat_at": heartbeat_obj,
+                "total_pages": progress_obj.get("total_pages"),
+                "processed_pages": progress_obj.get("processed_pages"),
+                "failed_pages": progress_obj.get("failed_pages"),
+                "percent_complete": progress_obj.get("percent_complete"),
+                "pages_per_minute": progress_obj.get("pages_per_minute"),
+                "eta_seconds": progress_obj.get("eta_seconds"),
+            },
             "result_links": {
                 "result": f"/v2/convert/jobs/{job_id_obj}/result",
                 "artifact": f"/v2/convert/jobs/{job_id_obj}/artifact",

@@ -41,17 +41,15 @@ from scripts.sir_convert_a_lot.interfaces.cli_routes import (
     list_routes,
     resolve_route,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
 from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
+    DEFAULT_STALL_TIMEOUT_SECONDS,
     ArtifactOutcomeV2,
+    ClientErrorV2,
     RetryModeV2,
     SirConvertALotClientV2,
 )
 
 app = typer.Typer(help="Please, tell Sir Convert-a-Lot to convert x to y.")
-
-# Backwards-compatible alias for import surfaces that still reference this name.
-SirConvertALotClient = SirConvertALotClientV2
 
 
 @app.callback()
@@ -112,6 +110,15 @@ def convert_command(
     ),
     wait_seconds: int = typer.Option(5, "--wait-seconds", min=0, max=20),
     max_poll_seconds: int = typer.Option(120, "--max-poll-seconds", min=5),
+    stall_timeout_seconds: int = typer.Option(
+        int(DEFAULT_STALL_TIMEOUT_SECONDS),
+        "--stall-timeout-seconds",
+        min=5,
+        help=(
+            "Seconds without heartbeat/progress considered 'stalled' when the max poll window is "
+            "exceeded. Fresh jobs return a non-failure running outcome instead."
+        ),
+    ),
     recursive: bool = typer.Option(True, "--recursive/--no-recursive"),
     css: list[Path] = typer.Option(
         [],
@@ -379,6 +386,7 @@ def convert_command(
                     idempotency_key=idempotency_key,
                     wait_seconds=wait_seconds,
                     max_poll_seconds=max_poll_seconds,
+                    stall_timeout_seconds=float(stall_timeout_seconds),
                     retry_mode=retry_mode,
                     correlation_id=correlation_id,
                     resources_zip_bytes=resources_zip_bytes,
@@ -403,8 +411,8 @@ def convert_command(
                     )
                 )
                 typer.echo(f"✓ Converted {relative_label} -> {target_path}")
-            except ClientError as exc:
-                if exc.code == "job_timeout" and exc.job_id is not None:
+            except ClientErrorV2 as exc:
+                if exc.code == "job_poll_window_exceeded" and exc.job_id is not None:
                     manifest_entries.append(
                         CliManifestEntry(
                             source_file_path=relative_label,
@@ -418,9 +426,29 @@ def convert_command(
                         )
                     )
                     typer.echo(
-                        "… Submitted and still running "
+                        "… Submitted and still running (max poll window exceeded) "
                         f"{relative_label}: {exc.job_id}. "
                         "Use status/result endpoints to fetch completion later."
+                    )
+                    continue
+                if exc.code == "job_timeout" and exc.job_id is not None:
+                    has_failures = True
+                    manifest_entries.append(
+                        CliManifestEntry(
+                            source_file_path=relative_label,
+                            source_format=route.source.value,
+                            target_format=route.target.value,
+                            pipeline_used=pipeline_used,
+                            job_id=exc.job_id,
+                            status=JobStatus.RUNNING,
+                            output_path=None,
+                            error_code=exc.code,
+                        )
+                    )
+                    typer.echo(
+                        "✗ Submitted but appears stalled (heartbeat/progress stale) "
+                        f"{relative_label}: {exc.job_id}. "
+                        "Check job status and consider cancel/retry if it does not recover."
                     )
                     continue
                 has_failures = True

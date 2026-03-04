@@ -18,8 +18,10 @@ import httpx
 import pytest
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
+    ClientErrorV2,
+    SirConvertALotClientV2,
+)
 
 
 def _job_payload(*, job_id: str, status: JobStatus) -> dict[str, object]:
@@ -132,7 +134,7 @@ def test_convert_upload_to_artifact_replay_only_does_not_rerun(tmp_path: Path) -
     with SirConvertALotClientV2(
         base_url="http://test", api_key="k", http_client=http_client
     ) as client:
-        with pytest.raises(ClientError) as excinfo:
+        with pytest.raises(ClientErrorV2) as excinfo:
             client.convert_upload_to_artifact(
                 source_path=source,
                 job_spec=job_spec,

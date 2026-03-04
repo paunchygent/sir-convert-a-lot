@@ -75,9 +75,33 @@ Primary implementation stories:
       - page-level progress/ETA and stall telemetry,
       - checkpointed partial artifacts + cancel-with-save + resume,
       - telemetry-driven parallelization and benchmarked tuning (GPU-first).
+  - Completed Task 67 (progress-aware polling timeouts):
+    - active-running jobs that exceed the local poll window are classified as
+      `error_code=job_poll_window_exceeded`,
+    - stalled jobs (stale heartbeat/progress) are classified as `error_code=job_timeout`,
+    - added CLI flag `--stall-timeout-seconds` and updated docs/tests.
+  - Completed Task 68 (contract-first ADR lock-in):
+    - published ADR-0005: `docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md`,
+    - linked ADR from `docs/converters/multi_format_conversion_service_api_v2.md` and dependent backlog items.
+  - Completed Task 69 (page progress fields + push parity):
+    - extended v2 job status payload and async push payloads (SSE + webhooks) with PDF-only
+      page progress fields per ADR-0005:
+      `total_pages`, `processed_pages`, `failed_pages`, `percent_complete`, `pages_per_minute`,
+      `eta_seconds`,
+    - webhook callback payloads now include `route` + `progress` for parity with SSE.
+  - Completed Task 75 (clean-break enforcement for client surfaces):
+    - removed legacy/re-export modules (`interfaces.http_client`, package-level CLI/client facades),
+    - updated all in-repo callers to `interfaces.http_client_v2` + `interfaces.cli_app`,
+    - kept touched modules below 500 LoC via targeted extraction helpers.
   - Validation evidence:
-    - `pdm run validate-tasks` (pass: `Validated 105 backlog files`)
-    - `pdm run validate-docs` (pass: `Validated docs=128 rules=9`)
+    - `pdm run format-all` (pass)
+    - `pdm run lint-fix` (pass)
+    - `pdm run typecheck-all` (pass)
+    - `pdm run pytest-root tests/sir_convert_a_lot` (pass: `419 passed, 5 skipped`)
+    - `pdm run coverage-gate` (pass: coverage `95.33%`)
+    - `pdm run validate-tasks` (pass: `Validated 106 backlog files`)
+    - `pdm run validate-docs` (pass: `Validated docs=131 rules=9`)
+    - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 
 - 2026-03-01:
 

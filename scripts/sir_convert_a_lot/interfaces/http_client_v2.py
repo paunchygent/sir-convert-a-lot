@@ -10,8 +10,7 @@ Relationships:
       multi-format conversions (submit/poll/download).
     - Targets `scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2` endpoint
       semantics (`/v2/convert/jobs/*`).
-    - Reuses the shared `ClientError` envelope parsing behavior from
-      `scripts.sir_convert_a_lot.interfaces.http_client`.
+    - Owns the v2 client error envelope parsing behavior (`ClientErrorV2`).
 """
 
 from __future__ import annotations
@@ -19,6 +18,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import IO, Literal, TypeAlias
 from uuid import uuid4
@@ -26,9 +26,23 @@ from uuid import uuid4
 import httpx
 
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
+from scripts.sir_convert_a_lot.interfaces.http_client_activity import most_recent_activity_at
 
 RequestFileValue: TypeAlias = tuple[str, IO[bytes] | bytes | str, str]
+
+DEFAULT_STALL_TIMEOUT_SECONDS: float = 120.0
+
+
+@dataclass(frozen=True)
+class ClientErrorV2(Exception):
+    """HTTP/service-level error returned by Sir Convert-a-Lot v2 endpoints."""
+
+    code: str
+    message: str
+    retryable: bool
+    status_code: int
+    job_id: str | None = None
+    details: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -108,7 +122,9 @@ class SirConvertALotClientV2:
             headers["X-Correlation-ID"] = correlation_id
         return headers
 
-    def _extract_error(self, response: httpx.Response, *, job_id: str | None = None) -> ClientError:
+    def _extract_error(
+        self, response: httpx.Response, *, job_id: str | None = None
+    ) -> ClientErrorV2:
         payload: object
         try:
             payload = response.json()
@@ -130,7 +146,7 @@ class SirConvertALotClientV2:
                 )
                 retryable = retryable_obj if isinstance(retryable_obj, bool) else False
                 details = details_obj if isinstance(details_obj, dict) else None
-                return ClientError(
+                return ClientErrorV2(
                     code=code,
                     message=message,
                     retryable=retryable,
@@ -139,7 +155,7 @@ class SirConvertALotClientV2:
                     details=details,
                 )
 
-        return ClientError(
+        return ClientErrorV2(
             code="http_error",
             message=f"HTTP {response.status_code} request failed with non-standard error payload.",
             retryable=False,
@@ -150,7 +166,7 @@ class SirConvertALotClientV2:
 
     def _read_job_status(self, payload: object) -> SubmittedJobV2:
         if not isinstance(payload, dict):
-            raise ClientError(
+            raise ClientErrorV2(
                 code="invalid_response",
                 message="Service response is not a JSON object.",
                 retryable=False,
@@ -159,7 +175,7 @@ class SirConvertALotClientV2:
 
         job_obj = payload.get("job")
         if not isinstance(job_obj, dict):
-            raise ClientError(
+            raise ClientErrorV2(
                 code="invalid_response",
                 message="Service response is missing the 'job' object.",
                 retryable=False,
@@ -169,7 +185,7 @@ class SirConvertALotClientV2:
         job_id_obj = job_obj.get("job_id")
         status_obj = job_obj.get("status")
         if not isinstance(job_id_obj, str) or not isinstance(status_obj, str):
-            raise ClientError(
+            raise ClientErrorV2(
                 code="invalid_response",
                 message="Service response is missing 'job_id' or 'status'.",
                 retryable=False,
@@ -179,7 +195,7 @@ class SirConvertALotClientV2:
         try:
             status = JobStatus(status_obj)
         except ValueError as exc:
-            raise ClientError(
+            raise ClientErrorV2(
                 code="invalid_response",
                 message=f"Unknown job status '{status_obj}' in service response.",
                 retryable=False,
@@ -248,7 +264,7 @@ class SirConvertALotClientV2:
             raise self._extract_error(response, job_id=job_id)
         payload: object = response.json()
         if not isinstance(payload, dict):
-            raise ClientError(
+            raise ClientErrorV2(
                 code="invalid_response",
                 message="Job response is not a JSON object.",
                 retryable=False,
@@ -263,11 +279,44 @@ class SirConvertALotClientV2:
         submitted = self._read_job_status(payload)
         return submitted.status
 
+    def get_result_payload(
+        self, job_id: str, *, correlation_id: str | None = None
+    ) -> dict[str, object]:
+        """Fetch raw v2 job result payload."""
+        response = self._client.get(
+            f"/v2/convert/jobs/{job_id}/result",
+            headers=self._headers(correlation_id=correlation_id),
+        )
+
+        if response.status_code == 200:
+            payload: object = response.json()
+            if not isinstance(payload, dict):
+                raise ClientErrorV2(
+                    code="invalid_response",
+                    message="Job result payload is not a JSON object.",
+                    retryable=False,
+                    status_code=500,
+                    job_id=job_id,
+                )
+            return payload
+
+        if response.status_code == 202:
+            raise ClientErrorV2(
+                code="job_not_terminal",
+                message="Job is not in a terminal state yet.",
+                retryable=True,
+                status_code=202,
+                job_id=job_id,
+            )
+
+        raise self._extract_error(response, job_id=job_id)
+
     def wait_for_terminal_status(
         self,
         job_id: str,
         *,
         timeout_seconds: float,
+        stall_timeout_seconds: float = DEFAULT_STALL_TIMEOUT_SECONDS,
         poll_interval_seconds: float = 0.2,
         correlation_id: str | None = None,
     ) -> JobStatus:
@@ -279,12 +328,58 @@ class SirConvertALotClientV2:
                 return status
             time.sleep(poll_interval_seconds)
 
-        raise ClientError(
+        payload = self.get_job_payload(job_id, correlation_id=correlation_id)
+        status = self._read_job_status(payload).status
+        if status in TERMINAL_JOB_STATUSES:
+            return status
+
+        activity_at = most_recent_activity_at(payload)
+        if activity_at is None:
+            raise ClientErrorV2(
+                code="job_poll_window_exceeded",
+                message=(
+                    "Max poll window exceeded while job is still running "
+                    "(activity timestamp unavailable in payload)."
+                ),
+                retryable=True,
+                status_code=202,
+                job_id=job_id,
+                details={"timeout_seconds": timeout_seconds},
+            )
+
+        now = datetime.now(UTC)
+        seconds_since_activity = max(0.0, (now - activity_at).total_seconds())
+        if seconds_since_activity <= stall_timeout_seconds:
+            raise ClientErrorV2(
+                code="job_poll_window_exceeded",
+                message=(
+                    "Max poll window exceeded while job is still running "
+                    "(heartbeat/progress remains fresh)."
+                ),
+                retryable=True,
+                status_code=202,
+                job_id=job_id,
+                details={
+                    "timeout_seconds": timeout_seconds,
+                    "stall_timeout_seconds": stall_timeout_seconds,
+                    "seconds_since_activity": seconds_since_activity,
+                },
+            )
+
+        raise ClientErrorV2(
             code="job_timeout",
-            message="Timed out waiting for conversion job to reach a terminal state.",
+            message=(
+                "Timed out waiting for conversion job to reach a terminal state "
+                "and job activity appears stale (likely stalled)."
+            ),
             retryable=True,
             status_code=408,
             job_id=job_id,
+            details={
+                "timeout_seconds": timeout_seconds,
+                "stall_timeout_seconds": stall_timeout_seconds,
+                "seconds_since_activity": seconds_since_activity,
+            },
         )
 
     def download_artifact(self, job_id: str, *, correlation_id: str | None = None) -> bytes:
@@ -298,7 +393,7 @@ class SirConvertALotClientV2:
             return response.content
 
         if response.status_code == 202:
-            raise ClientError(
+            raise ClientErrorV2(
                 code="job_not_terminal",
                 message="Job is not in a terminal state yet.",
                 retryable=True,
@@ -316,6 +411,7 @@ class SirConvertALotClientV2:
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        stall_timeout_seconds: float = DEFAULT_STALL_TIMEOUT_SECONDS,
         retry_mode: RetryModeV2 = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
@@ -323,7 +419,7 @@ class SirConvertALotClientV2:
     ) -> ArtifactOutcomeV2:
         """Submit a v2 job, wait for success, and download artifact bytes."""
         if retry_mode not in {"auto", "replay_only", "new_job"}:
-            raise ClientError(
+            raise ClientErrorV2(
                 code="invalid_request",
                 message=f"Unknown retry_mode '{retry_mode}'.",
                 retryable=False,
@@ -369,11 +465,12 @@ class SirConvertALotClientV2:
             final_status = self.wait_for_terminal_status(
                 submitted.job_id,
                 timeout_seconds=max_poll_seconds,
+                stall_timeout_seconds=stall_timeout_seconds,
                 correlation_id=correlation_id,
             )
 
         if final_status != JobStatus.SUCCEEDED:
-            raise ClientError(
+            raise ClientErrorV2(
                 code="job_not_succeeded",
                 message=f"Job {submitted.job_id} ended with status '{final_status.value}'.",
                 retryable=False,
@@ -383,7 +480,7 @@ class SirConvertALotClientV2:
 
         artifact_bytes = self.download_artifact(submitted.job_id, correlation_id=correlation_id)
         if len(artifact_bytes) == 0:
-            raise ClientError(
+            raise ClientErrorV2(
                 code="invalid_response",
                 message="Downloaded artifact is empty.",
                 retryable=True,

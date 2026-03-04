@@ -5,7 +5,7 @@ Purpose:
     edge-case test modules for v2 job creation and retrieval paths.
 
 Relationships:
-    - Uses `scripts.sir_convert_a_lot.service.create_app` to build the app.
+    - Uses `scripts.sir_convert_a_lot.interfaces.http_api.create_app` to build the app.
     - Reused by `test_http_routes_jobs_v2_edge_cases_create` and
       `test_http_routes_jobs_v2_edge_cases_read_cancel`.
 """
@@ -24,7 +24,7 @@ from fastapi.testclient import TestClient
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
-from scripts.sir_convert_a_lot.service import create_app
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 _MultipartFieldValue: TypeAlias = (
     IO[bytes]

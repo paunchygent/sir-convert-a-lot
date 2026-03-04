@@ -7,7 +7,8 @@ Purpose:
 Relationships:
     - Included by `interfaces.http_api`.
     - Uses runtime state from `interfaces.http_app_state`.
-    - Delegates persistence to `infrastructure.runtime_engine_v2` webhook APIs.
+    - Delegates persistence to `infrastructure.runtime_webhook_service_v2` via
+      `runtime.webhook_service`.
 """
 
 from __future__ import annotations
@@ -111,7 +112,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
 
-        record, secret_value = runtime.create_webhook_subscription(
+        record, secret_value = runtime.webhook_service.create_webhook_subscription(
             api_key=api_key,
             callback_url=body.callback_url,
             event_types=list(body.event_types),
@@ -130,7 +131,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:read")
 
-        records = runtime.list_webhook_subscriptions(api_key=api_key)
+        records = runtime.webhook_service.list_webhook_subscriptions(api_key=api_key)
         payload = WebhookSubscriptionListResponseV2(
             subscriptions=[_subscription_data(record) for record in records]
         )
@@ -143,7 +144,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:read")
 
-        record = runtime.get_webhook_subscription(
+        record = runtime.webhook_service.get_webhook_subscription(
             api_key=api_key,
             subscription_id=subscription_id,
         )
@@ -161,7 +162,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
 
-        record = runtime.update_webhook_subscription(
+        record = runtime.webhook_service.update_webhook_subscription(
             api_key=api_key,
             subscription_id=subscription_id,
             callback_url=body.callback_url,
@@ -183,7 +184,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
 
-        record, revealed_secret = runtime.rotate_webhook_secret(
+        record, revealed_secret = runtime.webhook_service.rotate_webhook_secret(
             api_key=api_key,
             subscription_id=subscription_id,
         )
@@ -206,7 +207,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         _require_capability(runtime, required="push:write")
 
         requested_version = None if body is None else body.version
-        record, revoked_version = runtime.revoke_webhook_secret(
+        record, revoked_version = runtime.webhook_service.revoke_webhook_secret(
             api_key=api_key,
             subscription_id=subscription_id,
             version=requested_version,
@@ -224,7 +225,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
-        runtime.delete_webhook_subscription(
+        runtime.webhook_service.delete_webhook_subscription(
             api_key=api_key,
             subscription_id=subscription_id,
         )

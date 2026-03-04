@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
-from scripts.sir_convert_a_lot.service import create_app
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 
 def _wait_for_terminal(

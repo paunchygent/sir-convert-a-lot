@@ -5,7 +5,7 @@ Purpose:
     no longer registered after the clean-break cutover.
 
 Relationships:
-    - Exercises `scripts.sir_convert_a_lot.service.create_app`.
+    - Exercises `scripts.sir_convert_a_lot.interfaces.http_api.create_app`.
     - Reuses shared helper functions from `test_api_contract_v2`.
 """
 
@@ -19,7 +19,7 @@ from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
-from scripts.sir_convert_a_lot.service import create_app
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 from tests.sir_convert_a_lot.test_api_contract_v2 import (
     _job_spec_v2,
     _post_create,
@@ -84,6 +84,25 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
     assert create_response.status_code in {200, 202}
     job_id = create_response.json()["job"]["job_id"]
     assert _wait_for_terminal(client, "secret-key", job_id) == JobStatus.SUCCEEDED
+
+    status_response = client.get(
+        f"/v2/convert/jobs/{job_id}",
+        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_pdf_md_status_v2"},
+    )
+    assert status_response.status_code == 200
+    progress = status_response.json()["job"]["progress"]
+    assert isinstance(progress, dict)
+    for key in (
+        "total_pages",
+        "processed_pages",
+        "failed_pages",
+        "percent_complete",
+        "pages_per_minute",
+        "eta_seconds",
+    ):
+        assert key in progress
+    assert progress["percent_complete"] == 100.0
+    assert progress["eta_seconds"] == 0
 
     result_response = client.get(
         f"/v2/convert/jobs/{job_id}/result",

@@ -5,7 +5,7 @@ type: fix
 status: completed
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-02-11'
+last_updated: '2026-03-04'
 related:
   - docs/converters/sir_convert_a_lot.md
   - scripts/sir_convert_a_lot/interfaces/cli_app.py
@@ -22,6 +22,12 @@ Focused correction of a known issue.
 
 CLI used synchronous submit+poll flow and treated `job_timeout` as terminal failure, even though
 jobs can continue running server-side.
+
+Note (superseded taxonomy, 2026-03-04 / `T67`):
+
+- Active jobs that exceed the local poll window are now classified as
+  `error_code: job_poll_window_exceeded`.
+- `job_timeout` is reserved for jobs whose heartbeat/progress appears stale (likely stalled).
 
 ## Objective
 
@@ -55,8 +61,8 @@ completion workflows.
 
 - `scripts/sir_convert_a_lot/interfaces/cli_app.py` now maps
   `ClientError(code="job_timeout", job_id=<id>)` to manifest `status: running`.
-- Manifest behavior remains deterministic; timeout entries preserve `job_id` and
-  `error_code: job_timeout` for later status/result retrieval.
+- Manifest behavior remains deterministic; running/stalled outcomes preserve `job_id` and expose a
+  distinct `error_code` for later status/result retrieval.
 - `tests/sir_convert_a_lot/test_convert_a_lot_cli.py` includes a dedicated
   timeout regression test that verifies CLI success exit code for timeout-only runs.
 

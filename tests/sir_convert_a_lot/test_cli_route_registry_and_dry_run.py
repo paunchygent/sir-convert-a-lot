@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.interfaces.cli_routes` indirectly via
-      the `scripts.sir_convert_a_lot.cli` Typer app surface.
+      the `scripts.sir_convert_a_lot.interfaces.cli_app` Typer app surface.
     - Ensures future local/hybrid pipelines remain discoverable without
       requiring a running service or API key for diagnostics.
 """
@@ -17,13 +17,13 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from scripts.sir_convert_a_lot import cli
+from scripts.sir_convert_a_lot.interfaces import cli_app
 
 runner = CliRunner()
 
 
 def test_routes_command_lists_supported_routes_in_stable_order() -> None:
-    result = runner.invoke(cli.app, ["routes"])
+    result = runner.invoke(cli_app.app, ["routes"])
 
     assert result.exit_code == 0
     assert result.stdout.splitlines() == [
@@ -49,7 +49,7 @@ def test_dry_run_reports_selected_service_route_pipeline_without_api_key(tmp_pat
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_dir),
@@ -76,7 +76,7 @@ def test_dry_run_reports_selected_v2_route_pipeline(tmp_path: Path) -> None:
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -103,7 +103,7 @@ def test_dry_run_reports_docx_to_md_route_pipeline(tmp_path: Path) -> None:
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -130,7 +130,7 @@ def test_dry_run_reports_html_to_md_route_pipeline(tmp_path: Path) -> None:
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -160,7 +160,7 @@ def test_convert_command_requires_from_when_directory_is_ambiguous(tmp_path: Pat
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_dir),
@@ -186,7 +186,7 @@ def test_convert_command_requires_from_for_ambiguous_markdown_target_directory(
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_dir),
@@ -210,7 +210,7 @@ def test_convert_command_rejects_resources_for_non_html_markdown_route(tmp_path:
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),

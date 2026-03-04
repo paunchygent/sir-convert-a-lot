@@ -5,7 +5,7 @@ Purpose:
     for auth, idempotency, async lifecycle (pending/terminal), and cancellation.
 
 Relationships:
-    - Exercises `scripts.sir_convert_a_lot.service.create_app` directly.
+    - Exercises `scripts.sir_convert_a_lot.interfaces.http_api.create_app` directly.
     - Stubs `scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2.execute_v2_job_conversion`
       to avoid requiring Pandoc/WeasyPrint in the unit test lane.
     - Asserts behavior documented in `docs/converters/multi_format_conversion_service_api_v2.md`.
@@ -24,7 +24,7 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceForm
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
-from scripts.sir_convert_a_lot.service import create_app
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 
 def _job_spec_v2(*, filename: str, source_format: SourceFormatV2, output_format: OutputFormatV2):

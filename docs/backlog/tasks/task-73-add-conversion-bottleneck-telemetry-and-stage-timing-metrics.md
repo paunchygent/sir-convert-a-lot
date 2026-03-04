@@ -1,9 +1,9 @@
 ---
-id: 'task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics'
-title: 'Add conversion bottleneck telemetry and stage timing metrics'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics
+title: Add conversion bottleneck telemetry and stage timing metrics
+type: task
+status: proposed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -18,6 +18,7 @@ labels:
   - telemetry
   - bottlenecks
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

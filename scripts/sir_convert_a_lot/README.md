@@ -57,6 +57,7 @@ pdm run convert-a-lot convert ./inputs \
 | `--api-key` | `$SIR_CONVERT_A_LOT_API_KEY` | API key |
 | `--wait-seconds` | `5` | Bounded wait on create-job (`0..20`) |
 | `--max-poll-seconds` | `120` | Poll timeout per job |
+| `--stall-timeout-seconds` | `120` | Seconds without heartbeat/progress considered stalled |
 | `--recursive` / `--no-recursive` | `--recursive` | Directory traversal mode |
 | `--resources` | none | Optional resource directory/zip upload |
 | `--css` | none | CSS list for PDF outputs |
@@ -73,7 +74,10 @@ pdm run convert-a-lot convert ./inputs \
 Each run writes a deterministic JSON manifest in `--output-dir` with one entry per input source.
 
 - Success: `status="succeeded"` and `output_path` present.
-- Timeout while still running: `status="running"` with `error_code="job_timeout"` and `job_id`.
+- Still running (max poll window exceeded): `status="running"` with
+  `error_code="job_poll_window_exceeded"` and `job_id`.
+- Stalled (heartbeat/progress stale): `status="running"` with `error_code="job_timeout"` and
+  `job_id` (CLI exits non-zero).
 - Failure: `status="failed"` with `error_code`.
 
 ## Architecture

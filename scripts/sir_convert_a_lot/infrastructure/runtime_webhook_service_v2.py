@@ -18,7 +18,7 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import JobExpi
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2 import JobStoreV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import WebhookDeliveryWorkerV2
-from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2 import (
+from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_models import (
     WebhookEndpointInvalidErrorV2,
     WebhookEventTypeInvalidErrorV2,
     WebhookSecretNotFoundErrorV2,
@@ -27,6 +27,8 @@ from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2 import (
     WebhookSubscriptionConflictErrorV2,
     WebhookSubscriptionNotFoundErrorV2,
     WebhookSubscriptionRecordV2,
+)
+from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_store import (
     WebhookSubscriptionStoreV2,
 )
 

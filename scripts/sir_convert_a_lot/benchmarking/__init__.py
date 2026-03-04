@@ -5,5 +5,5 @@ Purpose:
 
 Relationships:
     - `benchmark_scientific_corpus.py` composes these modules for Task 12.
-    - `interfaces.http_client` provides the concrete client implementation.
+    - `interfaces.http_client_v2` provides the concrete client implementation.
 """

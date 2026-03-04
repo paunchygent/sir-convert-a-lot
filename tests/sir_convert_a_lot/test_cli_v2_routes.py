@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.interfaces.cli_app` through the
-      compatibility Typer surface `scripts.sir_convert_a_lot.cli`.
+      canonical Typer surface `scripts.sir_convert_a_lot.interfaces.cli_app`.
     - Stubs `scripts.sir_convert_a_lot.interfaces.cli_app.SirConvertALotClientV2`.
 """
 
@@ -20,11 +20,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from scripts.sir_convert_a_lot import cli
-from scripts.sir_convert_a_lot.client import ClientError
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.interfaces import cli_app
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ArtifactOutcomeV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ArtifactOutcomeV2, ClientErrorV2
 
 runner = CliRunner()
 
@@ -52,19 +50,20 @@ class FakeV2Client:
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        stall_timeout_seconds: float = 120.0,
         retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
     ) -> ArtifactOutcomeV2:
-        del wait_seconds, max_poll_seconds
+        del wait_seconds, max_poll_seconds, stall_timeout_seconds
 
         if source_path.stem.endswith("slow"):
-            raise ClientError(
-                code="job_timeout",
+            raise ClientErrorV2(
+                code="job_poll_window_exceeded",
                 message="Timed out waiting for terminal state.",
                 retryable=True,
-                status_code=408,
+                status_code=202,
                 job_id=f"job_running_{source_path.stem}",
             )
 
@@ -113,7 +112,7 @@ def test_html_to_pdf_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mo
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -177,7 +176,7 @@ def test_md_to_docx_route_forwards_reference_docx_to_v2(tmp_path: Path, monkeypa
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -224,7 +223,7 @@ def test_pdf_to_docx_route_timeout_marks_job_running_without_docx(
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_dir),
@@ -254,7 +253,7 @@ def test_pdf_to_docx_route_timeout_marks_job_running_without_docx(
     assert by_source["paper_slow.pdf"]["status"] == "running"
     assert by_source["paper_slow.pdf"]["job_id"] == "job_running_paper_slow"
     assert by_source["paper_slow.pdf"]["output_path"] is None
-    assert by_source["paper_slow.pdf"]["error_code"] == "job_timeout"
+    assert by_source["paper_slow.pdf"]["error_code"] == "job_poll_window_exceeded"
     assert by_source["paper_fast.pdf"]["source_format"] == "pdf"
     assert by_source["paper_fast.pdf"]["target_format"] == "docx"
     assert by_source["paper_fast.pdf"]["pipeline_used"] == "service: pdf -> docx (v2)"
@@ -279,7 +278,7 @@ def test_html_to_md_route_submits_v2_job_with_resources(tmp_path: Path, monkeypa
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -327,7 +326,7 @@ def test_docx_to_md_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mon
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -368,7 +367,7 @@ def test_cli_retry_mode_flags_are_mutually_exclusive(tmp_path: Path, monkeypatch
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -396,7 +395,7 @@ def test_cli_retry_mode_flags_map_to_client_retry_mode(tmp_path: Path, monkeypat
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -414,7 +413,7 @@ def test_cli_retry_mode_flags_map_to_client_retry_mode(tmp_path: Path, monkeypat
 
     FakeV2Client.captured_requests = []
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),

@@ -22,9 +22,10 @@ import pytest
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import JobLifecycleEventRecordV2
-from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import (
-    WebhookDeliveryWorkerV2,
+from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import WebhookDeliveryWorkerV2
+from scripts.sir_convert_a_lot.infrastructure.webhook_signing_v2 import (
     WebhookSignatureValidationErrorV2,
+    compute_webhook_signature_v2,
     verify_webhook_signature_v2,
 )
 from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_store import (
@@ -46,6 +47,12 @@ def _build_event(*, event_id: str, sequence: int, job_id: str) -> JobLifecycleEv
         target_format=target_format,
         stage="succeeded",
         last_heartbeat_at=None,
+        total_pages=10,
+        processed_pages=10,
+        failed_pages=0,
+        percent_complete=100.0,
+        pages_per_minute=120.0,
+        eta_seconds=0,
     )
 
 
@@ -137,6 +144,22 @@ def test_worker_delivers_success_and_records_delivery_metadata(tmp_path: Path) -
     assert delivered_payload.get("delivered_status_code") == 204
     assert delivered_payload.get("delivery_latency_ms") is not None
     assert len(list(worker.outbox.outbox_dir.glob("*.json"))) == 0
+
+    decoded_body = json.loads(captured_body.decode("utf-8"))
+    assert decoded_body["api_version"] == "v2"
+    assert "route" in decoded_body
+    assert "progress" in decoded_body
+    assert decoded_body["route"]["source_format"] == "pdf"
+    assert decoded_body["route"]["target_format"] == "md"
+    for key in (
+        "total_pages",
+        "processed_pages",
+        "failed_pages",
+        "percent_complete",
+        "pages_per_minute",
+        "eta_seconds",
+    ):
+        assert key in decoded_body["progress"]
 
     verify_webhook_signature_v2(
         headers=captured_headers,
@@ -253,10 +276,6 @@ def test_verify_webhook_signature_rejects_invalid_stale_and_replay() -> None:
             replay_cache=set(),
         )
     assert invalid_signature.value.code == "webhook_signature_invalid"
-
-    from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import (
-        compute_webhook_signature_v2,
-    )
 
     signature = compute_webhook_signature_v2(
         secret="whsec_live_secret",

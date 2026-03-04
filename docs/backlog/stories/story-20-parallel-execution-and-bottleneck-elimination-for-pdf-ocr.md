@@ -1,9 +1,9 @@
 ---
-id: 'story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr'
-title: 'Parallel execution and bottleneck elimination for PDF OCR'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr
+title: Parallel execution and bottleneck elimination for PDF OCR
+type: story
+status: proposed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -21,6 +21,7 @@ labels:
   - parallelization
   - gpu
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -49,7 +50,7 @@ Guardrails:
 - [ ] Telemetry identifies top bottlenecks with stage-level timings and utilization evidence.
 - [ ] Parallelization does not regress output determinism or API contract behavior.
 - [ ] GPU-first governance remains enforced under parallel mode (no silent CPU fallback, explicit
-      concurrency caps for GPU-backed stages).
+  concurrency caps for GPU-backed stages).
 
 ## Test Requirements
 

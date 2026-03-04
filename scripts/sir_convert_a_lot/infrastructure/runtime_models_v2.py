@@ -40,6 +40,12 @@ class StoredJobV2:
     last_heartbeat_at: datetime | None = None
     current_phase_started_at: datetime | None = None
     phase_timings_ms: dict[str, int] = field(default_factory=dict)
+    total_pages: int | None = None
+    processed_pages: int | None = None
+    failed_pages: int | None = None
+    percent_complete: float | None = None
+    pages_per_minute: float | None = None
+    eta_seconds: int | None = None
     warnings: list[str] = field(default_factory=list)
     artifact_sha256: str | None = None
     artifact_size_bytes: int | None = None

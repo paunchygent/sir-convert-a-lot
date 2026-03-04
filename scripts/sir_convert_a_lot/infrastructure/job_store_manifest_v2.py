@@ -22,6 +22,9 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_to_rfc3339,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import StoredJobRecordV2
+from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
+    parse_progress_page_fields,
+)
 
 
 def ensure_diagnostics(payload: dict[str, object]) -> dict[str, object]:
@@ -80,7 +83,15 @@ def build_initial_manifest(
         "source_filename": spec.source.filename,
         "source_format": spec.source.format.value,
         "output_format": spec.conversion.output_format.value,
-        "progress": {"stage": "queued"},
+        "progress": {
+            "stage": "queued",
+            "total_pages": None,
+            "processed_pages": None,
+            "failed_pages": None,
+            "percent_complete": None,
+            "pages_per_minute": None,
+            "eta_seconds": None,
+        },
         "timestamps": {
             "created_at": dt_to_rfc3339(now),
             "updated_at": dt_to_rfc3339(now),
@@ -150,6 +161,7 @@ def parse_stored_job_record(
         raise ValueError(f"manifest missing progress: {manifest_path}")
     stage_obj = progress.get("stage")
     stage = stage_obj if isinstance(stage_obj, str) else "unknown"
+    page_fields = parse_progress_page_fields(progress)
 
     diagnostics = payload.get("diagnostics")
     diagnostics_obj = diagnostics if isinstance(diagnostics, dict) else {}
@@ -237,6 +249,12 @@ def parse_stored_job_record(
         last_heartbeat_at=last_heartbeat_at,
         current_phase_started_at=current_phase_started_at,
         phase_timings_ms=phase_timings_ms,
+        total_pages=page_fields.total_pages,
+        processed_pages=page_fields.processed_pages,
+        failed_pages=page_fields.failed_pages,
+        percent_complete=page_fields.percent_complete,
+        pages_per_minute=page_fields.pages_per_minute,
+        eta_seconds=page_fields.eta_seconds,
         warnings=warnings,
         upload_path=upload_path,
         resources_zip_path=resources_zip_path,

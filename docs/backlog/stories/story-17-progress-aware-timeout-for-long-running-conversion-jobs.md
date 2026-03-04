@@ -1,9 +1,9 @@
 ---
-id: 'story-17-progress-aware-timeout-for-long-running-conversion-jobs'
-title: 'Progress-aware timeout for long-running conversion jobs'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-17-progress-aware-timeout-for-long-running-conversion-jobs
+title: Progress-aware timeout for long-running conversion jobs
+type: story
+status: completed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -17,6 +17,7 @@ labels:
   - async-jobs
   - cli-manifest
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -44,23 +45,23 @@ Compatibility constraint:
 
 ## Acceptance Criteria
 
-- [ ] A long-running conversion that keeps updating heartbeat/progress does not produce a
-      failure-like timeout classification.
-- [ ] A stalled conversion (no heartbeat/progress past threshold) is classified deterministically
-      with a dedicated stall timeout error code.
-- [ ] CLI manifest semantics are explicit:
+- [x] A long-running conversion that keeps updating heartbeat/progress does not produce a
+  failure-like timeout classification.
+- [x] A stalled conversion (no heartbeat/progress past threshold) is classified deterministically
+  with a dedicated stall timeout error code.
+- [x] CLI manifest semantics are explicit:
   - active-but-not-finished jobs remain `status=running` with non-failure messaging,
   - stall timeout entries are clearly distinguishable from active-running entries.
-- [ ] Converter docs describe the new timeout taxonomy and recommended polling/fetch flow.
-- [ ] When progress fields are absent/`null`, the client still behaves correctly using heartbeat-only
-      freshness semantics (no false stall classification).
+- [x] Converter docs describe the new timeout taxonomy and recommended polling/fetch flow.
+- [x] When progress fields are absent/`null`, the client still behaves correctly using heartbeat-only
+  freshness semantics (no false stall classification).
 
 ## Test Requirements
 
-- [ ] Unit tests for heartbeat/progress-aware timeout classification logic in v2 client polling.
-- [ ] CLI behavior tests for manifest entries and console output around running vs stalled jobs.
-- [ ] Contract-level regression test: active heartbeat through max poll window does not map to
-      failure-like timeout.
+- [x] Unit tests for heartbeat/progress-aware timeout classification logic in v2 client polling.
+- [x] CLI behavior tests for manifest entries and console output around running vs stalled jobs.
+- [x] Contract-level regression test: active heartbeat through max poll window does not map to
+  failure-like timeout.
 
 ## Done Definition
 
@@ -69,6 +70,6 @@ can safely exceed client wait windows without misleading failure labels.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

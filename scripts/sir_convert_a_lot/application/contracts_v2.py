@@ -34,6 +34,12 @@ class JobProgressV2(BaseModel):
     last_heartbeat_at: datetime | None = None
     current_phase_started_at: datetime | None = None
     phase_timings_ms: dict[str, int] = Field(default_factory=dict)
+    total_pages: int | None = Field(default=None, ge=0)
+    processed_pages: int | None = Field(default=None, ge=0)
+    failed_pages: int | None = Field(default=None, ge=0)
+    percent_complete: float | None = Field(default=None, ge=0.0, le=100.0)
+    pages_per_minute: float | None = Field(default=None, ge=0.0)
+    eta_seconds: int | None = Field(default=None, ge=0)
 
 
 class JobLinksV2(BaseModel):
@@ -206,6 +212,12 @@ class JobEventProgressV2(BaseModel):
 
     stage: str
     last_heartbeat_at: datetime | None = None
+    total_pages: int | None = Field(default=None, ge=0)
+    processed_pages: int | None = Field(default=None, ge=0)
+    failed_pages: int | None = Field(default=None, ge=0)
+    percent_complete: float | None = Field(default=None, ge=0.0, le=100.0)
+    pages_per_minute: float | None = Field(default=None, ge=0.0)
+    eta_seconds: int | None = Field(default=None, ge=0)
 
 
 class JobEventSseMetricsV2(BaseModel):

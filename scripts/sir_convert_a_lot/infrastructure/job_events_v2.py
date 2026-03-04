@@ -25,6 +25,9 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_from_rfc3339,
     dt_to_rfc3339,
 )
+from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
+    parse_progress_page_fields,
+)
 
 JobEventTypeV2 = Literal[
     "job.queued",
@@ -58,6 +61,12 @@ class JobLifecycleEventRecordV2:
     target_format: OutputFormatV2
     stage: str
     last_heartbeat_at: datetime | None
+    total_pages: int | None
+    processed_pages: int | None
+    failed_pages: int | None
+    percent_complete: float | None
+    pages_per_minute: float | None
+    eta_seconds: int | None
 
 
 @dataclass
@@ -181,6 +190,7 @@ def _event_records(payload: dict[str, object]) -> list[JobLifecycleEventRecordV2
             continue
         if heartbeat_obj is not None and not isinstance(heartbeat_obj, str):
             continue
+        page_fields = parse_progress_page_fields(progress_obj)
 
         try:
             event_type = _parse_event_type(event_type_obj)
@@ -202,6 +212,12 @@ def _event_records(payload: dict[str, object]) -> list[JobLifecycleEventRecordV2
                     target_format=OutputFormatV2(target_format_obj),
                     stage=stage_obj,
                     last_heartbeat_at=last_heartbeat_at,
+                    total_pages=page_fields.total_pages,
+                    processed_pages=page_fields.processed_pages,
+                    failed_pages=page_fields.failed_pages,
+                    percent_complete=page_fields.percent_complete,
+                    pages_per_minute=page_fields.pages_per_minute,
+                    eta_seconds=page_fields.eta_seconds,
                 )
             )
         except (KeyError, ValueError):
@@ -226,6 +242,12 @@ def _record_to_payload(record: JobLifecycleEventRecordV2) -> dict[str, object]:
         "progress": {
             "stage": record.stage,
             "last_heartbeat_at": dt_to_rfc3339(record.last_heartbeat_at),
+            "total_pages": record.total_pages,
+            "processed_pages": record.processed_pages,
+            "failed_pages": record.failed_pages,
+            "percent_complete": record.percent_complete,
+            "pages_per_minute": record.pages_per_minute,
+            "eta_seconds": record.eta_seconds,
         },
     }
 
@@ -257,6 +279,9 @@ def append_lifecycle_event(
     diagnostics = diagnostics_obj if isinstance(diagnostics_obj, dict) else {}
     heartbeat_obj = diagnostics.get("last_heartbeat_at")
     last_heartbeat_at = dt_from_rfc3339(heartbeat_obj)
+    progress_obj = payload.get("progress")
+    progress = progress_obj if isinstance(progress_obj, dict) else {}
+    page_fields = parse_progress_page_fields(progress)
 
     record = JobLifecycleEventRecordV2(
         event_id=generate_event_ulid(now=occurred_at),
@@ -269,6 +294,12 @@ def append_lifecycle_event(
         target_format=OutputFormatV2(output_format_obj),
         stage=stage,
         last_heartbeat_at=last_heartbeat_at,
+        total_pages=page_fields.total_pages,
+        processed_pages=page_fields.processed_pages,
+        failed_pages=page_fields.failed_pages,
+        percent_complete=page_fields.percent_complete,
+        pages_per_minute=page_fields.pages_per_minute,
+        eta_seconds=page_fields.eta_seconds,
     )
 
     events_obj = payload.get("events")

@@ -39,6 +39,12 @@ class StoredJobRecordV2:
     last_heartbeat_at: datetime | None
     current_phase_started_at: datetime | None
     phase_timings_ms: dict[str, int]
+    total_pages: int | None
+    processed_pages: int | None
+    failed_pages: int | None
+    percent_complete: float | None
+    pages_per_minute: float | None
+    eta_seconds: int | None
     warnings: list[str]
     upload_path: Path
     resources_zip_path: Path | None

@@ -27,16 +27,16 @@ from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_quality import (
 from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_report import write_report
 from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_types import (
     BackendProfile,
+    BenchmarkClient,
     BenchmarkClientFactory,
     BenchmarkPayload,
 )
 from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_utils import (
     discover_corpus,
     git_sha_or_unknown,
-    slug_for_pdf,
     utc_now_iso,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client import SirConvertALotClient
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
 
 DEFAULT_CORPUS_DIR = Path(
     "/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater"
@@ -51,8 +51,9 @@ DEFAULT_RUBRIC_PATH = DEFAULT_OUTPUT_ROOT / "manual-quality-rubric.json"
 DEFAULT_ACCEPTANCE_URL = "http://127.0.0.1:28085"
 DEFAULT_EVALUATION_URL = "http://127.0.0.1:28086"
 
-# Backward-compatible alias used by tests and existing imports.
-_slug_for_pdf = slug_for_pdf
+
+def _default_client_factory(*, base_url: str, api_key: str) -> BenchmarkClient:
+    return SirConvertALotClientV2(base_url=base_url, api_key=api_key)
 
 
 def _acceptance_profiles() -> list[BackendProfile]:
@@ -103,7 +104,7 @@ def run_benchmark(
     hemma_sha: str | None,
     max_poll_seconds: float,
     run_scope: str | None = None,
-    client_factory: BenchmarkClientFactory = SirConvertALotClient,
+    client_factory: BenchmarkClientFactory = _default_client_factory,
 ) -> BenchmarkPayload:
     """Run Task 12 dual-lane evidence benchmark and return payload."""
     enforce_generated_output_path(output_json, label="output_json")

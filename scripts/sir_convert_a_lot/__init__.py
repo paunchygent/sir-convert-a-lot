@@ -5,5 +5,5 @@ Purpose:
 
 Relationships:
     - `service.py` exposes the FastAPI app.
-    - `client.py` and `cli.py` provide local developer command workflows.
+    - `interfaces.cli_app` provides the canonical Typer CLI entrypoint.
 """

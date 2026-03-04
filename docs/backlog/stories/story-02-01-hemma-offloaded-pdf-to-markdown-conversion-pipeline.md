@@ -12,7 +12,7 @@ related:
   - .agents/rules/035-docling-pdf-conversion.md
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine.py
   - scripts/sir_convert_a_lot/interfaces/http_api.py
-  - scripts/sir_convert_a_lot/interfaces/http_client.py
+  - scripts/sir_convert_a_lot/interfaces/http_client_v2.py
   - scripts/sir_convert_a_lot/interfaces/cli_app.py
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/converters/sir_convert_a_lot.md

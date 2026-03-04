@@ -5,7 +5,7 @@ Purpose:
     lanes and persist benchmark artifacts per document/profile.
 
 Relationships:
-    - Uses `interfaces.http_client` compatible clients via typed protocol.
+    - Uses `interfaces.http_client_v2` compatible clients via typed protocol.
     - Uses `scientific_corpus_utils.py` for job spec, idempotency, and summaries.
 """
 
@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ClientErrorV2
 
 from .scientific_corpus_types import (
     BackendProfile,
@@ -30,7 +30,7 @@ from .scientific_corpus_utils import (
     artifact_paths,
     build_job_spec,
     idempotency_key,
-    parse_success_result,
+    parse_success_metadata,
     slug_for_pdf,
     summarize_records,
 )
@@ -78,8 +78,8 @@ def run_profile(
         markdown_output_path: str | None = None
 
         try:
-            submitted = client.submit_pdf_job(
-                pdf_path=pdf_path,
+            submitted = client.submit_job(
+                source_path=pdf_path,
                 job_spec=job_spec,
                 idempotency_key=request_idempotency_key,
                 wait_seconds=0,
@@ -95,27 +95,23 @@ def run_profile(
                 )
 
             if status == JobStatus.SUCCEEDED:
-                result_payload = client.fetch_result_payload(
-                    submitted.job_id,
-                    correlation_id=correlation_id,
-                    inline=True,
+                result_payload = client.get_result_payload(
+                    submitted.job_id, correlation_id=correlation_id
                 )
-                markdown_content, backend_used, acceleration_used, warnings = parse_success_result(
-                    result_payload
+                artifact_bytes = client.download_artifact(
+                    submitted.job_id, correlation_id=correlation_id
                 )
+                markdown_content = artifact_bytes.decode("utf-8")
+                backend_used, acceleration_used, warnings = parse_success_metadata(result_payload)
                 markdown_path.parent.mkdir(parents=True, exist_ok=True)
                 markdown_path.write_text(markdown_content, encoding="utf-8")
                 markdown_output_path = markdown_path.as_posix()
             else:
                 try:
-                    client.fetch_result_payload(
-                        submitted.job_id,
-                        correlation_id=correlation_id,
-                        inline=False,
-                    )
-                except ClientError as result_error:
+                    client.get_result_payload(submitted.job_id, correlation_id=correlation_id)
+                except ClientErrorV2 as result_error:
                     error_code = result_error.code
-        except ClientError as request_error:
+        except ClientErrorV2 as request_error:
             error_code = request_error.code
             if request_error.job_id is not None:
                 job_id = request_error.job_id

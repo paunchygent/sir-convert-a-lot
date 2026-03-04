@@ -1,22 +1,22 @@
 ---
-id: 'task-67-detect-stalled-conversions-separately-from-active-long-running-jobs'
-title: 'Detect stalled conversions separately from active long-running jobs'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-67-detect-stalled-conversions-separately-from-active-long-running-jobs
+title: Detect stalled conversions separately from active long-running jobs
+type: task
+status: completed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md
   - scripts/sir_convert_a_lot/interfaces/http_client_v2.py
-  - scripts/sir_convert_a_lot/interfaces/http_client.py
   - scripts/sir_convert_a_lot/interfaces/cli_app.py
 labels:
   - timeout-governance
   - async-jobs
   - client-polling
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -40,23 +40,40 @@ jobs stop progressing, not when they are still actively converting beyond the lo
 
 ## Deliverables
 
-- [ ] v2 client timeout classification implementation with explicit stale threshold.
-- [ ] CLI manifest semantics update for running-vs-stalled timeout handling.
-- [ ] Regression tests for classification and manifest behavior.
-- [ ] Documentation update in converter/client docs describing the semantics.
+- [x] v2 client timeout classification implementation with explicit stale threshold.
+- [x] CLI manifest semantics update for running-vs-stalled timeout handling.
+- [x] Regression tests for classification and manifest behavior.
+- [x] Documentation update in converter/client docs describing the semantics.
 
 ## Acceptance Criteria
 
-- [ ] Active long-running jobs never produce misleading `job_timeout` failure semantics.
-- [ ] Stalled jobs produce deterministic stall-timeout classification with actionable message.
-- [ ] Existing successful/failed/canceled polling flows remain unchanged.
-- [ ] New and updated tests pass in local quality gates.
+- [x] Active long-running jobs never produce misleading `job_timeout` failure semantics.
+- [x] Stalled jobs produce deterministic stall-timeout classification with actionable message.
+- [x] Existing successful/failed/canceled polling flows remain unchanged.
+- [x] New and updated tests pass in local quality gates.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Implementation Notes
+
+- Active-running poll window exceeded is now emitted as `ClientError(code="job_poll_window_exceeded")`.
+- `ClientError(code="job_timeout")` is reserved for stale heartbeat/progress classification (likely stalled).
+- Added CLI option `--stall-timeout-seconds` to control stale detection threshold.
+
+## Validation Evidence (2026-03-04)
+
+- `pdm run format-all` (pass)
+- `pdm run lint-fix` (pass)
+- `pdm run typecheck-all` (pass: `Success: no issues found in 168 source files`)
+- `pdm run pytest-root tests/sir_convert_a_lot` (pass: `419 passed, 5 skipped`)
+- `pdm run coverage-gate` (pass: `Required test coverage of 90.0% reached. Total coverage: 95.29%`)
+- `pdm run validate-tasks` (pass: `Validated 105 backlog files`)
+- `pdm run validate-docs` (pass: `Validated docs=128 rules=9`)
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 
 ## Closeout (Mandatory)
 

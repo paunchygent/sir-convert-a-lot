@@ -5,7 +5,7 @@ Purpose:
     v2-only CLI conversion path.
 
 Relationships:
-    - Exercises `scripts.sir_convert_a_lot.cli` command behavior.
+    - Exercises `scripts.sir_convert_a_lot.interfaces.cli_app` command behavior.
     - Stubs `scripts.sir_convert_a_lot.interfaces.cli_app.SirConvertALotClientV2`.
 """
 
@@ -16,11 +16,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from scripts.sir_convert_a_lot import cli
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.interfaces import cli_app
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ArtifactOutcomeV2
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ArtifactOutcomeV2, ClientErrorV2
 
 
 class FakeV2Client:
@@ -45,6 +43,7 @@ class FakeV2Client:
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        stall_timeout_seconds: float = 120.0,
         retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
@@ -55,6 +54,7 @@ class FakeV2Client:
             idempotency_key,
             wait_seconds,
             max_poll_seconds,
+            stall_timeout_seconds,
             retry_mode,
             correlation_id,
             resources_zip_bytes,
@@ -62,7 +62,7 @@ class FakeV2Client:
         )
 
         if source_path.stem.endswith("9") or source_path.stem.endswith("10"):
-            raise ClientError(
+            raise ClientErrorV2(
                 code="conversion_failed",
                 message="simulated failure",
                 retryable=False,
@@ -88,6 +88,7 @@ class FakeTimeoutV2Client(FakeV2Client):
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        stall_timeout_seconds: float = 120.0,
         retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
@@ -98,17 +99,18 @@ class FakeTimeoutV2Client(FakeV2Client):
             idempotency_key,
             wait_seconds,
             max_poll_seconds,
+            stall_timeout_seconds,
             retry_mode,
             correlation_id,
             resources_zip_bytes,
             reference_docx_bytes,
         )
         if source_path.stem.endswith("slow"):
-            raise ClientError(
-                code="job_timeout",
+            raise ClientErrorV2(
+                code="job_poll_window_exceeded",
                 message="Timed out waiting for terminal state.",
                 retryable=True,
-                status_code=408,
+                status_code=202,
                 job_id=f"job_running_{source_path.stem}",
             )
         return ArtifactOutcomeV2(
@@ -132,6 +134,7 @@ class CapturingV2Client(FakeV2Client):
         idempotency_key: str,
         wait_seconds: int,
         max_poll_seconds: float,
+        stall_timeout_seconds: float = 120.0,
         retry_mode: str = "auto",
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
@@ -146,6 +149,7 @@ class CapturingV2Client(FakeV2Client):
                 "correlation_id": correlation_id,
                 "wait_seconds": wait_seconds,
                 "max_poll_seconds": max_poll_seconds,
+                "stall_timeout_seconds": stall_timeout_seconds,
                 "resources_zip_bytes": resources_zip_bytes,
                 "reference_docx_bytes": reference_docx_bytes,
             }
@@ -174,7 +178,7 @@ def test_convert_command_writes_deterministic_manifest_for_mixed_batch(
     monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_dir),
@@ -223,7 +227,7 @@ def test_convert_command_single_file_success(tmp_path: Path, monkeypatch) -> Non
     monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -256,7 +260,7 @@ def test_convert_command_defaults_to_auto_retry_mode(tmp_path: Path, monkeypatch
     output_dir = tmp_path / "out"
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -283,7 +287,7 @@ def test_convert_command_timeout_marks_job_running_without_cli_failure(
     monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeTimeoutV2Client)
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_dir),
@@ -308,7 +312,7 @@ def test_convert_command_timeout_marks_job_running_without_cli_failure(
     assert by_source["paper_slow.pdf"]["status"] == "running"
     assert by_source["paper_slow.pdf"]["job_id"] == "job_running_paper_slow"
     assert by_source["paper_slow.pdf"]["output_path"] is None
-    assert by_source["paper_slow.pdf"]["error_code"] == "job_timeout"
+    assert by_source["paper_slow.pdf"]["error_code"] == "job_poll_window_exceeded"
     assert by_source["paper_fast.pdf"]["source_format"] == "pdf"
     assert by_source["paper_fast.pdf"]["target_format"] == "md"
     assert by_source["paper_fast.pdf"]["pipeline_used"] == "service: pdf -> md (v2)"
@@ -327,7 +331,7 @@ def test_convert_command_uses_hardened_defaults_for_job_spec(tmp_path: Path, mon
     monkeypatch.setattr(cli_app, "SirConvertALotClientV2", CapturingV2Client)
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),
@@ -375,7 +379,7 @@ def test_convert_command_allows_explicit_job_spec_flags(tmp_path: Path, monkeypa
     monkeypatch.setattr(cli_app, "SirConvertALotClientV2", CapturingV2Client)
 
     result = runner.invoke(
-        cli.app,
+        cli_app.app,
         [
             "convert",
             str(source_file),

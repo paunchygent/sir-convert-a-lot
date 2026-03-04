@@ -42,6 +42,9 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     StoredJobRecordV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2_core import JobStoreV2Core
+from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
+    parse_optional_nonneg_int,
+)
 
 
 def _artifact_content_type(output_format: OutputFormatV2) -> str:
@@ -177,6 +180,30 @@ class JobStoreV2(JobStoreV2Core):
             timestamps["updated_at"] = dt_to_rfc3339(now)
             timestamps["completed_at"] = dt_to_rfc3339(now)
 
+            progress_obj = payload.get("progress")
+            progress = progress_obj if isinstance(progress_obj, dict) else {}
+            payload["progress"] = progress
+            progress["stage"] = "succeeded"
+            source_format_obj = payload.get("source_format")
+            if isinstance(source_format_obj, str) and source_format_obj == "pdf":
+                total_pages = parse_optional_nonneg_int(progress.get("total_pages"))
+                if total_pages is not None and total_pages > 0:
+                    progress["processed_pages"] = total_pages
+                    if progress.get("failed_pages") is None:
+                        progress["failed_pages"] = 0
+                progress["percent_complete"] = 100.0
+                progress["eta_seconds"] = 0
+                if phase_timings_ms is not None and total_pages is not None and total_pages > 0:
+                    attempt_ms_obj = phase_timings_ms.get("conversion_attempt_ms")
+                    attempt_ms = (
+                        attempt_ms_obj
+                        if isinstance(attempt_ms_obj, int) and not isinstance(attempt_ms_obj, bool)
+                        else None
+                    )
+                    if attempt_ms is not None and attempt_ms > 0:
+                        minutes = attempt_ms / 60_000.0
+                        progress["pages_per_minute"] = float(total_pages) / minutes
+
             payload["error"] = None
             payload["result_metadata"] = {
                 "artifact": {
@@ -255,6 +282,11 @@ class JobStoreV2(JobStoreV2Core):
                 payload["timestamps"] = timestamps
             timestamps["updated_at"] = dt_to_rfc3339(now)
             timestamps["completed_at"] = dt_to_rfc3339(now)
+
+            progress_obj = payload.get("progress")
+            progress = progress_obj if isinstance(progress_obj, dict) else {}
+            payload["progress"] = progress
+            progress["stage"] = "failed"
 
             payload["result_metadata"] = None
             payload["error"] = {

@@ -5,7 +5,7 @@ Purpose:
     emit machine-readable evidence for GPU-first rollout governance.
 
 Relationships:
-    - Uses `scripts.sir_convert_a_lot.service.create_app` as the benchmark API.
+    - Uses `scripts.sir_convert_a_lot.interfaces.http_api.create_app` as the benchmark API.
     - Produces artifacts referenced by Story 003b and benchmark reference docs.
 """
 
@@ -23,7 +23,8 @@ from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 DEFAULT_FIXTURES_DIR = Path("tests/fixtures/benchmark_pdfs")
 DEFAULT_OUTPUT_JSON = Path(

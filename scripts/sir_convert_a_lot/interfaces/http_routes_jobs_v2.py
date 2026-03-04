@@ -80,6 +80,12 @@ def _job_record_response(job: StoredJobV2) -> JobRecordResponseV2:
                 last_heartbeat_at=job.last_heartbeat_at,
                 current_phase_started_at=job.current_phase_started_at,
                 phase_timings_ms=job.phase_timings_ms,
+                total_pages=job.total_pages,
+                processed_pages=job.processed_pages,
+                failed_pages=job.failed_pages,
+                percent_complete=job.percent_complete,
+                pages_per_minute=job.pages_per_minute,
+                eta_seconds=job.eta_seconds,
             ),
             links=_make_job_links(job.job_id),
         )

@@ -20,9 +20,11 @@ import pytest
 from scripts.sir_convert_a_lot.infrastructure import (
     webhook_subscriptions_v2_store as webhook_store_module,
 )
-from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2 import (
+from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_models import (
     WebhookSecretNotFoundErrorV2,
     WebhookSubscriptionNotFoundErrorV2,
+)
+from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_store import (
     WebhookSubscriptionStoreV2,
 )
 

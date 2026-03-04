@@ -270,8 +270,11 @@ pdm run convert-a-lot convert ./paper.pdf \
 
 Timeout behavior:
 
-- If the service stage returns `job_timeout`, the manifest entry remains `status: running` with
-  `job_id` and no artifact is downloaded.
+- If `--max-poll-seconds` is exceeded but the job remains active (fresh heartbeat/progress), the
+  manifest entry remains `status: running` with `job_id` and `error_code: job_poll_window_exceeded`.
+- If the job appears stalled (stale heartbeat/progress beyond `--stall-timeout-seconds`), the
+  manifest entry remains `status: running` with `job_id` and `error_code: job_timeout`, and the CLI
+  exits non-zero to force operator attention.
 
 Directory disambiguation note:
 
@@ -357,8 +360,8 @@ This manifest is the canonical audit artifact for assistant-driven batch convers
 
 Long-running note:
 
-- If `--max-poll-seconds` is exceeded, CLI records the entry as `status: running` with `job_id`
-  and `error_code: job_timeout` instead of marking it as failed.
+- If `--max-poll-seconds` is exceeded, CLI records the entry as `status: running` with `job_id` and
+  `error_code: job_poll_window_exceeded` instead of marking it as failed.
 - Conversion continues server-side; callers can query:
   - v2 multi-format:
     - `GET /v2/convert/jobs/{job_id}`

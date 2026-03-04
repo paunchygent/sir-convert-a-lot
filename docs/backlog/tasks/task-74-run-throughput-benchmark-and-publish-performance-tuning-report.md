@@ -1,9 +1,9 @@
 ---
-id: 'task-74-run-throughput-benchmark-and-publish-performance-tuning-report'
-title: 'Run throughput benchmark and publish performance tuning report'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-74-run-throughput-benchmark-and-publish-performance-tuning-report
+title: Run throughput benchmark and publish performance tuning report
+type: task
+status: proposed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -18,6 +18,7 @@ labels:
   - tuning
   - long-pdf
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

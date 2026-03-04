@@ -18,7 +18,7 @@ from types import TracebackType
 from typing import Protocol, TypedDict
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client import SubmittedJob
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SubmittedJobV2
 
 
 class CorpusFileInfo(TypedDict):
@@ -203,16 +203,16 @@ class BenchmarkClient(Protocol):
         """Exit context manager."""
         ...
 
-    def submit_pdf_job(
+    def submit_job(
         self,
         *,
-        pdf_path: Path,
+        source_path: Path,
         job_spec: dict[str, object],
         idempotency_key: str,
         wait_seconds: int,
         correlation_id: str | None = None,
-    ) -> SubmittedJob:
-        """Submit one PDF conversion job."""
+    ) -> SubmittedJobV2:
+        """Submit one v2 conversion job."""
         ...
 
     def wait_for_terminal_status(
@@ -226,14 +226,17 @@ class BenchmarkClient(Protocol):
         """Poll until job reaches terminal status."""
         ...
 
-    def fetch_result_payload(
+    def get_result_payload(
         self,
         job_id: str,
         *,
         correlation_id: str | None = None,
-        inline: bool = True,
     ) -> dict[str, object]:
         """Fetch raw job result payload."""
+        ...
+
+    def download_artifact(self, job_id: str, *, correlation_id: str | None = None) -> bytes:
+        """Download binary artifact bytes for a successful job."""
         ...
 
 

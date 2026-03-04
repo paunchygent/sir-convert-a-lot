@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2-async-push
 title: Multi-format Conversion Service API v2 Async Push Contract
 status: active
 created: 2026-02-28
-updated: 2026-02-28
+updated: 2026-03-04
 owners:
   - platform
 tags:
@@ -83,10 +83,21 @@ Canonical event payload:
   },
   "progress": {
     "stage": "convert",
-    "last_heartbeat_at": "2026-02-28T20:45:10Z"
+    "last_heartbeat_at": "2026-02-28T20:45:10Z",
+    "total_pages": 120,
+    "processed_pages": 12,
+    "failed_pages": 0,
+    "percent_complete": 10.0,
+    "pages_per_minute": 180.0,
+    "eta_seconds": 360
   }
 }
 ```
+
+Notes:
+
+- The page progress fields in `progress` are PDF-only per ADR-0005 and may be `null` (or omitted) for
+  non-PDF routes.
 
 Invariants:
 
@@ -144,7 +155,7 @@ SSE frame example:
 ```text
 id: 01J7Y3T9F7Q5M7A5KQW4B9V4YQ
 event: job.running
-data: {"api_version":"v2","event_id":"01J7Y3T9F7Q5M7A5KQW4B9V4YQ","event_type":"job.running","sequence":2,"occurred_at":"2026-02-28T20:45:11Z","job_id":"jobv2_01J7Y3T7X6D5J2M1Q5R0T4N6P7","status":"running"}
+data: {"api_version":"v2","event_id":"01J7Y3T9F7Q5M7A5KQW4B9V4YQ","event_type":"job.running","sequence":2,"occurred_at":"2026-02-28T20:45:11Z","job_id":"jobv2_01J7Y3T7X6D5J2M1Q5R0T4N6P7","status":"running","route":{"source_format":"pdf","target_format":"md"},"progress":{"stage":"convert","last_heartbeat_at":"2026-02-28T20:45:10Z","total_pages":120,"processed_pages":12,"failed_pages":0,"percent_complete":10.0,"pages_per_minute":180.0,"eta_seconds":360}}
 ```
 
 Cursor-expired example (`410`):
@@ -332,6 +343,20 @@ Webhook payload example:
   "occurred_at": "2026-02-28T21:14:10Z",
   "job_id": "jobv2_01J7Y5A5JKRN6B5N8EM2QW1G7A",
   "status": "succeeded",
+  "route": {
+    "source_format": "pdf",
+    "target_format": "md"
+  },
+  "progress": {
+    "stage": "succeeded",
+    "last_heartbeat_at": "2026-02-28T21:14:10Z",
+    "total_pages": 120,
+    "processed_pages": 120,
+    "failed_pages": 0,
+    "percent_complete": 100.0,
+    "pages_per_minute": 180.0,
+    "eta_seconds": 0
+  },
   "result_links": {
     "result": "/v2/convert/jobs/jobv2_01J7Y5A5JKRN6B5N8EM2QW1G7A/result",
     "artifact": "/v2/convert/jobs/jobv2_01J7Y5A5JKRN6B5N8EM2QW1G7A/artifact"

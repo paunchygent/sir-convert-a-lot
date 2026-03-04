@@ -1,17 +1,13 @@
-"""Sir Convert-a-Lot compatibility HTTP exports.
+"""Sir Convert-a-Lot HTTP service entrypoint.
 
 Purpose:
-    Preserve stable service imports while delegating HTTP API implementation to
-    the DDD interface layer.
+    Provide the canonical module-level `app` used by Uvicorn for the production
+    service profile.
 
 Relationships:
     - Uses `interfaces.http_api.create_app` as canonical app factory.
-    - Re-exports `ServiceConfig` for test configuration convenience.
 """
 
-from scripts.sir_convert_a_lot.infrastructure.runtime_engine import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 app = create_app(service_profile="prod", expected_service_profile="prod")
-
-__all__ = ["ServiceConfig", "app", "create_app"]

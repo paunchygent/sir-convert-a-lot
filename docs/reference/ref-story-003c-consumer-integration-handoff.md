@@ -4,7 +4,7 @@ id: REF-story-003c-consumer-integration-handoff
 title: Story 003c Consumer Integration Handoff
 status: active
 created: 2026-02-11
-updated: 2026-02-11
+updated: 2026-03-04
 owners:
   - platform
 tags:
@@ -16,8 +16,8 @@ tags:
 links:
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
   - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md
-  - docs/converters/internal_adapter_contract_v1.md
-  - docs/converters/pdf_to_md_service_api_v1.md
+  - docs/converters/internal_adapter_contract_v2.md
+  - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - scripts/sir_convert_a_lot/integrations/adapter_profiles.py
   - tests/sir_convert_a_lot/test_integration_adapter_conformance.py
@@ -33,7 +33,7 @@ repository as the canonical source for adapter contract semantics.
 ## Current Story 003c Artifacts in This Repo
 
 - Normative adapter contract:
-  - `docs/converters/internal_adapter_contract_v1.md`
+  - `docs/converters/internal_adapter_contract_v2.md`
 - Reference adapter implementation:
   - `scripts/sir_convert_a_lot/integrations/adapter_profiles.py`
 - Automated conformance harness:
@@ -49,7 +49,7 @@ from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
     ConsumerProfile,
     submit_pdf_for_profile,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client import SirConvertALotClient
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
 
 pdf_path = Path("/tmp/input.pdf")
 
@@ -63,7 +63,7 @@ context = AdapterRequestContext(
     max_poll_seconds=120.0,
 )
 
-with SirConvertALotClient(base_url="http://127.0.0.1:28085", api_key="...") as client:
+with SirConvertALotClientV2(base_url="http://127.0.0.1:28085", api_key="...") as client:
     outcome = submit_pdf_for_profile(client=client, context=context)
     print(outcome.job_id, outcome.status)
 ```

@@ -19,7 +19,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
 from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
     AdapterRequestContext,
@@ -30,10 +32,11 @@ from scripts.sir_convert_a_lot.integrations.adapter_profiles import (
     prepare_submission,
     submit_pdf_for_profile,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
-from scripts.sir_convert_a_lot.models import JobStatus
-from scripts.sir_convert_a_lot.service import ServiceConfig, create_app
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import (
+    ClientErrorV2,
+    SirConvertALotClientV2,
+)
 from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf, docling_cuda_available
 
 
@@ -150,7 +153,7 @@ def test_adapter_propagates_auth_error_without_remap(tmp_path: Path) -> None:
     )
 
     with _service_client(app, api_key="wrong-key") as client:
-        with pytest.raises(ClientError) as exc_info:
+        with pytest.raises(ClientErrorV2) as exc_info:
             submit_pdf_for_profile(client=client, context=context)
 
     assert exc_info.value.code == "auth_invalid_api_key"
@@ -175,7 +178,7 @@ def test_adapter_propagates_validation_error_without_remap(tmp_path: Path) -> No
     )
 
     with _service_client(app, api_key="secret-key") as client:
-        with pytest.raises(ClientError) as exc_info:
+        with pytest.raises(ClientErrorV2) as exc_info:
             submit_pdf_for_profile(client=client, context=context)
 
     assert exc_info.value.code == "unsupported_media_type"
@@ -205,11 +208,11 @@ def test_adapter_timeout_error_is_not_consumer_remapped(tmp_path: Path) -> None:
     )
 
     with _service_client(app, api_key="secret-key") as client:
-        with pytest.raises(ClientError) as exc_info:
+        with pytest.raises(ClientErrorV2) as exc_info:
             submit_pdf_for_profile(client=client, context=context)
 
-    assert exc_info.value.code == "job_timeout"
-    assert exc_info.value.status_code == 408
+    assert exc_info.value.code == "job_poll_window_exceeded"
+    assert exc_info.value.status_code == 202
 
 
 @pytest.mark.parametrize("profile", [ConsumerProfile.HULEDU, ConsumerProfile.SKRIPTOTEKET])

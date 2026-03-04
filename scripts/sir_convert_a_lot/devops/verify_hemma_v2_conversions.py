@@ -16,220 +16,24 @@ Relationships:
 from __future__ import annotations
 
 import argparse
-import hashlib
-import io
-import json
 import os
 import subprocess
 import sys
-import time
-import zipfile
-from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
 
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError
-from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotClientV2
-
-
-@dataclass(frozen=True)
-class ArtifactEvidence:
-    """Evidence for a successful conversion job."""
-
-    job_id: str
-    artifact_path: Path
-    artifact_sha256: str
-    artifact_size_bytes: int
-    pipeline_used: str | None = None
-    backend_used: str | None = None
-    acceleration_used: str | None = None
-
-
-def _utc_now_iso() -> str:
-    return datetime.now(UTC).replace(microsecond=0).isoformat()
-
-
-def _sha256_bytes(value: bytes) -> str:
-    return hashlib.sha256(value).hexdigest()
-
-
-def _write_json(path: Path, payload: object) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-
-
-def _require_json_object(payload: object, *, label: str) -> dict[str, object]:
-    if not isinstance(payload, dict):
-        raise SystemExit(f"{label} payload is not a JSON object.")
-    return payload
-
-
-def _run_checked(command: list[str], *, label: str) -> str:
-    result = subprocess.run(command, check=False, capture_output=True, text=True)
-    if result.returncode != 0:
-        stdout = result.stdout.strip()
-        stderr = result.stderr.strip()
-        raise SystemExit(
-            f"{label} failed (exit={result.returncode}): {' '.join(command)}\n"
-            f"stdout:\n{stdout}\n"
-            f"stderr:\n{stderr}"
-        )
-    return result.stdout.strip()
-
-
-def _probe_docker_runtime(*, prod_container: str, output_dir: Path) -> dict[str, str]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    containers = _run_checked(
-        ["sudo", "-n", "docker", "ps", "--format", "{{.Names}}"], label="docker ps"
-    )
-    if prod_container not in set(containers.splitlines()):
-        raise SystemExit(
-            f"Expected docker container '{prod_container}' not running. "
-            f"Running containers: {containers!r}"
-        )
-
-    pandoc_version = _run_checked(
-        ["sudo", "-n", "docker", "exec", prod_container, "pandoc", "--version"],
-        label="pandoc --version",
-    )
-    (output_dir / "pandoc_version.txt").write_text(pandoc_version + "\n", encoding="utf-8")
-
-    weasyprint_version = _run_checked(
-        [
-            "sudo",
-            "-n",
-            "docker",
-            "exec",
-            prod_container,
-            "pdm",
-            "run",
-            "python",
-            "-c",
-            "import weasyprint; print(weasyprint.__version__)",
-        ],
-        label="weasyprint version",
-    )
-    (output_dir / "weasyprint_version.txt").write_text(weasyprint_version + "\n", encoding="utf-8")
-
-    return {"pandoc_version": pandoc_version, "weasyprint_version": weasyprint_version}
-
-
-def _fetch_json(
-    client: httpx.Client, *, path: str, headers: dict[str, str], label: str
-) -> dict[str, object]:
-    response = client.get(path, headers=headers)
-    try:
-        response.raise_for_status()
-    except httpx.HTTPError as exc:
-        body = response.text.strip()
-        raise SystemExit(f"{label} request failed: {exc}\nbody:\n{body}") from exc
-
-    payload: object
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise SystemExit(f"{label} did not return JSON.") from exc
-
-    return _require_json_object(payload, label=label)
-
-
-def _assert_readyz_contract(*, readyz: dict[str, object], repo_head: str) -> None:
-    if readyz.get("ready") is not True:
-        raise SystemExit(f"readyz indicates not ready: reasons={readyz.get('reasons')!r}")
-    service_revision = readyz.get("service_revision")
-    if service_revision != repo_head:
-        raise SystemExit(
-            "readyz service_revision does not match repo HEAD: "
-            f"service_revision={service_revision!r} repo_head={repo_head!r}"
-        )
-
-
-def _build_resources_zip(*, files: dict[str, bytes]) -> bytes:
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for name, content in sorted(files.items()):
-            archive.writestr(name, content)
-    return buffer.getvalue()
-
-
-def _idempotency_key(*, scope: str, file_bytes: bytes) -> str:
-    ts = int(time.time())
-    digest = _sha256_bytes(file_bytes)[:10]
-    return f"t39_{scope}_{digest}_{ts}"
-
-
-def _run_v2_conversion(
-    *,
-    http_base_url: str,
-    api_key: str,
-    output_dir: Path,
-    label: str,
-    source_path: Path,
-    job_spec: dict[str, object],
-    artifact_suffix: str,
-    wait_seconds: int,
-    max_poll_seconds: float,
-    resources_zip_bytes: bytes | None = None,
-) -> tuple[ArtifactEvidence, dict[str, object]]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    artifact_path = output_dir / f"{label}{artifact_suffix}"
-
-    file_bytes = source_path.read_bytes()
-    idem = _idempotency_key(scope=label, file_bytes=file_bytes)
-    correlation_id = f"corr_task39_{label}_{int(time.time())}"
-
-    with SirConvertALotClientV2(base_url=http_base_url, api_key=api_key) as client:
-        outcome = client.convert_upload_to_artifact(
-            source_path=source_path,
-            job_spec=job_spec,
-            idempotency_key=idem,
-            wait_seconds=wait_seconds,
-            max_poll_seconds=max_poll_seconds,
-            correlation_id=correlation_id,
-            resources_zip_bytes=resources_zip_bytes,
-            reference_docx_bytes=None,
-        )
-        artifact_path.write_bytes(outcome.artifact_bytes)
-
-    if artifact_path.stat().st_size <= 0:
-        raise SystemExit(f"{label} produced empty artifact: {artifact_path}")
-
-    with httpx.Client(base_url=http_base_url, timeout=30.0) as http_client:
-        result_payload = _fetch_json(
-            http_client,
-            path=f"/v2/convert/jobs/{outcome.job_id}/result",
-            headers={"X-API-Key": api_key, "X-Correlation-ID": correlation_id},
-            label=f"{label} v2 result",
-        )
-
-    result_obj = result_payload.get("result")
-    conversion_metadata_obj: object = None
-    if isinstance(result_obj, dict):
-        conversion_metadata_obj = result_obj.get("conversion_metadata")
-    conversion_metadata = (
-        conversion_metadata_obj if isinstance(conversion_metadata_obj, dict) else {}
-    )
-
-    pipeline_used_obj = conversion_metadata.get("pipeline_used")
-    backend_used_obj = conversion_metadata.get("backend_used")
-    acceleration_used_obj = conversion_metadata.get("acceleration_used")
-
-    return (
-        ArtifactEvidence(
-            job_id=outcome.job_id,
-            artifact_path=artifact_path,
-            artifact_sha256=_sha256_bytes(artifact_path.read_bytes()),
-            artifact_size_bytes=artifact_path.stat().st_size,
-            pipeline_used=pipeline_used_obj if isinstance(pipeline_used_obj, str) else None,
-            backend_used=backend_used_obj if isinstance(backend_used_obj, str) else None,
-            acceleration_used=(
-                acceleration_used_obj if isinstance(acceleration_used_obj, str) else None
-            ),
-        ),
-        result_payload,
-    )
+from scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions_helpers import (
+    ArtifactEvidence,
+    assert_readyz_contract,
+    build_resources_zip,
+    fetch_json,
+    probe_docker_runtime,
+    run_v2_conversion,
+    utc_now_iso,
+    write_json,
+)
+from scripts.sir_convert_a_lot.interfaces.http_client_v2 import ClientErrorV2
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -306,23 +110,23 @@ def main(argv: list[str] | None = None) -> int:
     (output_root / "repo_head.txt").write_text(repo_head + "\n", encoding="utf-8")
 
     with httpx.Client(base_url=service_url, timeout=10.0) as client:
-        healthz = _fetch_json(
+        healthz = fetch_json(
             client,
             path="/healthz",
             headers={"X-API-Key": args.api_key},
             label="healthz",
         )
-        readyz = _fetch_json(
+        readyz = fetch_json(
             client,
             path="/readyz",
             headers={"X-API-Key": args.api_key},
             label="readyz",
         )
-    _write_json(output_root / "healthz.json", healthz)
-    _write_json(output_root / "readyz.json", readyz)
-    _assert_readyz_contract(readyz=readyz, repo_head=repo_head)
+    write_json(output_root / "healthz.json", healthz)
+    write_json(output_root / "readyz.json", readyz)
+    assert_readyz_contract(readyz=readyz, repo_head=repo_head)
 
-    runtime_versions = _probe_docker_runtime(
+    runtime_versions = probe_docker_runtime(
         prod_container=args.docker_prod_container,
         output_dir=runtime_dir,
     )
@@ -349,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     css_path.write_text("h1 { font-size: 22pt; }\n", encoding="utf-8")
 
-    resources_zip_bytes = _build_resources_zip(files={css_path.name: css_path.read_bytes()})
+    resources_zip_bytes = build_resources_zip(files={css_path.name: css_path.read_bytes()})
     (fixtures_dir / "resources.zip").write_bytes(resources_zip_bytes)
 
     pdf_fixture = Path(args.pdf_fixture)
@@ -390,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:
         return spec
 
     try:
-        html_ev, html_payload = _run_v2_conversion(
+        html_ev, html_payload = run_v2_conversion(
             http_base_url=service_url,
             api_key=args.api_key,
             output_dir=artifacts_dir,
@@ -410,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
         v2_results["html_to_pdf"] = html_ev
         evidence_payloads["html_to_pdf_result"] = html_payload
 
-        md_pdf_ev, md_pdf_payload = _run_v2_conversion(
+        md_pdf_ev, md_pdf_payload = run_v2_conversion(
             http_base_url=service_url,
             api_key=args.api_key,
             output_dir=artifacts_dir,
@@ -430,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         v2_results["md_to_pdf"] = md_pdf_ev
         evidence_payloads["md_to_pdf_result"] = md_pdf_payload
 
-        md_docx_ev, md_docx_payload = _run_v2_conversion(
+        md_docx_ev, md_docx_payload = run_v2_conversion(
             http_base_url=service_url,
             api_key=args.api_key,
             output_dir=artifacts_dir,
@@ -450,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         v2_results["md_to_docx"] = md_docx_ev
         evidence_payloads["md_to_docx_result"] = md_docx_payload
 
-        pdf_docx_ev, pdf_docx_payload = _run_v2_conversion(
+        pdf_docx_ev, pdf_docx_payload = run_v2_conversion(
             http_base_url=service_url,
             api_key=args.api_key,
             output_dir=artifacts_dir,
@@ -470,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
         v2_results["pdf_to_docx"] = pdf_docx_ev
         evidence_payloads["pdf_to_docx_result"] = pdf_docx_payload
 
-        pdf_md_ev, pdf_md_payload = _run_v2_conversion(
+        pdf_md_ev, pdf_md_payload = run_v2_conversion(
             http_base_url=service_url,
             api_key=args.api_key,
             output_dir=artifacts_dir,
@@ -489,11 +293,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         v2_results["pdf_to_md"] = pdf_md_ev
         evidence_payloads["pdf_to_md_result"] = pdf_md_payload
-    except ClientError as exc:
+    except ClientErrorV2 as exc:
         raise SystemExit(f"Verification failed: {exc.code} ({exc.message})") from exc
 
     for key, payload in evidence_payloads.items():
-        _write_json(responses_dir / f"{key}.json", payload)
+        write_json(responses_dir / f"{key}.json", payload)
 
     pdf_docx_meta = v2_results["pdf_to_docx"]
     if pdf_docx_meta.backend_used is None or pdf_docx_meta.acceleration_used is None:
@@ -502,7 +306,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     report: dict[str, object] = {
-        "generated_at": _utc_now_iso(),
+        "generated_at": utc_now_iso(),
         "lane": args.lane,
         "service_url": service_url,
         "repo_head": repo_head,
@@ -520,7 +324,7 @@ def main(argv: list[str] | None = None) -> int:
             for name, ev in v2_results.items()
         },
     }
-    _write_json(output_root / "report.json", report)
+    write_json(output_root / "report.json", report)
 
     md_lines: list[str] = []
     md_lines.append("# Task 39 — Hemma v2 conversion smoke verification")

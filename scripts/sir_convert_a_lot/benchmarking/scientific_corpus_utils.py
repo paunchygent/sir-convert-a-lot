@@ -149,12 +149,17 @@ def summarize_records(records: list[LaneJobRecord], *, duration_seconds: float) 
 
 
 def build_job_spec(filename: str, profile: BackendProfile) -> dict[str, object]:
-    """Build deterministic v1 job spec payload for one source file + profile."""
+    """Build deterministic v2 job spec payload for one source file + profile."""
     return {
-        "api_version": "v1",
-        "source": {"kind": "upload", "filename": filename},
+        "api_version": "v2",
+        "source": {"kind": "upload", "filename": filename, "format": "pdf"},
         "conversion": {
             "output_format": "md",
+            "template": None,
+            "css_filenames": [],
+            "reference_docx_filename": None,
+        },
+        "pdf_options": {
             "backend_strategy": profile.backend_strategy,
             "ocr_mode": profile.ocr_mode,
             "table_mode": profile.table_mode,
@@ -197,16 +202,13 @@ def artifact_paths(
     return markdown_path, metadata_path
 
 
-def parse_success_result(
+def parse_success_metadata(
     payload: dict[str, object],
-) -> tuple[str, str | None, str | None, list[str]]:
-    """Extract markdown and metadata from a successful result payload."""
+) -> tuple[str | None, str | None, list[str]]:
+    """Extract conversion metadata and warnings from a successful v2 result payload."""
     result_obj = payload.get("result")
     if not isinstance(result_obj, dict):
         raise ValueError("Result payload missing 'result' object.")
-    markdown_obj = result_obj.get("markdown_content")
-    if not isinstance(markdown_obj, str):
-        raise ValueError("Result payload missing inline markdown content.")
     conversion_metadata = result_obj.get("conversion_metadata")
     if not isinstance(conversion_metadata, dict):
         raise ValueError("Result payload missing conversion metadata.")
@@ -218,4 +220,4 @@ def parse_success_result(
     warnings: list[str] = []
     if isinstance(warnings_obj, list):
         warnings = [str(item) for item in warnings_obj]
-    return markdown_obj, backend_used, acceleration_used, warnings
+    return backend_used, acceleration_used, warnings

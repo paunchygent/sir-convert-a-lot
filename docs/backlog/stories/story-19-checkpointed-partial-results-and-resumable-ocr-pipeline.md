@@ -1,9 +1,9 @@
 ---
-id: 'story-19-checkpointed-partial-results-and-resumable-ocr-pipeline'
-title: 'Checkpointed partial results and resumable OCR pipeline'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-19-checkpointed-partial-results-and-resumable-ocr-pipeline
+title: Checkpointed partial results and resumable OCR pipeline
+type: story
+status: proposed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -11,6 +11,7 @@ related:
   - docs/backlog/tasks/task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts.md
   - docs/backlog/tasks/task-71-add-cancel-with-save-and-resume-from-checkpoint-flow.md
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py
   - scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py
   - scripts/sir_convert_a_lot/infrastructure/job_store_v2.py
@@ -20,6 +21,7 @@ labels:
   - partial-results
   - resume
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective

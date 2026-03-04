@@ -16,7 +16,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
-from scripts.sir_convert_a_lot.service import create_app
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 _API_HEADERS = {
     "X-API-Key": "secret-key",

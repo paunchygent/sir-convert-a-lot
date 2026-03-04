@@ -70,6 +70,12 @@ def _event_payload(
         progress=JobEventProgressV2(
             stage=record.stage,
             last_heartbeat_at=record.last_heartbeat_at,
+            total_pages=record.total_pages,
+            processed_pages=record.processed_pages,
+            failed_pages=record.failed_pages,
+            percent_complete=record.percent_complete,
+            pages_per_minute=record.pages_per_minute,
+            eta_seconds=record.eta_seconds,
         ),
         sse_metrics=JobEventSseMetricsV2(sent_at=sent_at, emit_to_send_ms=emit_to_send_ms),
     )

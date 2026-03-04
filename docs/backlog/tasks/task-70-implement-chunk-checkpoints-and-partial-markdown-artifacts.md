@@ -1,9 +1,9 @@
 ---
-id: 'task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts'
-title: 'Implement chunk checkpoints and partial markdown artifacts'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts
+title: Implement chunk checkpoints and partial markdown artifacts
+type: task
+status: proposed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -18,6 +18,7 @@ labels:
   - partial-results
   - runtime
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -51,7 +52,7 @@ terminal completion.
 - [ ] Crash/restart can recover completed chunks without data loss.
 - [ ] Final merged artifact is deterministic regardless of partial retrieval timing.
 - [ ] Partial/checkpoint retention is bounded and documented (no unbounded disk growth under repeated
-      long conversions).
+  long conversions).
 
 ## Checklist
 

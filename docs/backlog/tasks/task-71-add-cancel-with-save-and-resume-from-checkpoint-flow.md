@@ -1,9 +1,9 @@
 ---
-id: 'task-71-add-cancel-with-save-and-resume-from-checkpoint-flow'
-title: 'Add cancel-with-save and resume-from-checkpoint flow'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-71-add-cancel-with-save-and-resume-from-checkpoint-flow
+title: Add cancel-with-save and resume-from-checkpoint flow
+type: task
+status: proposed
+priority: high
 created: '2026-03-04'
 last_updated: '2026-03-04'
 related:
@@ -19,6 +19,7 @@ labels:
   - resume
   - checkpoints
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

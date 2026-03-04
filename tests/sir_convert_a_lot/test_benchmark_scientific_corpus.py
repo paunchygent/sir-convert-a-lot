@@ -11,9 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import TypedDict
 
 import pytest
 
@@ -26,211 +24,17 @@ from scripts.sir_convert_a_lot.benchmark_scientific_corpus import (
     DEFAULT_RUBRIC_PATH,
     run_benchmark,
 )
-from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_client import ClientError, SubmittedJob
-from tests.sir_convert_a_lot.pdf_fixtures import copy_fixture_pdf
-
-
-class ScenarioEntry(TypedDict):
-    """Fake lane/profile scenario for test harness client."""
-
-    status: str
-    backend_used: str
-    acceleration_used: str
-    warnings: list[str]
-    markdown_content: str
-    error_code: str
-
-
-class FakeScientificClient:
-    """Deterministic fake client for scientific benchmark harness tests."""
-
-    scenario: dict[tuple[str, str, str], ScenarioEntry] = {}
-
-    def __init__(self, *, base_url: str, api_key: str) -> None:
-        self.base_url = base_url
-        self.api_key = api_key
-        self._jobs: dict[str, ScenarioEntry] = {}
-
-    def __enter__(self) -> "FakeScientificClient":
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> None:
-        return None
-
-    def submit_pdf_job(
-        self,
-        *,
-        pdf_path: Path,
-        job_spec: dict[str, object],
-        idempotency_key: str,
-        wait_seconds: int,
-        correlation_id: str | None = None,
-    ) -> SubmittedJob:
-        del wait_seconds, correlation_id
-        conversion_obj = job_spec.get("conversion")
-        assert isinstance(conversion_obj, dict)
-        backend_obj = conversion_obj.get("backend_strategy")
-        assert isinstance(backend_obj, str)
-        key = (self.base_url, backend_obj, pdf_path.name)
-        entry = self.scenario[key]
-        job_id = f"job_{idempotency_key[-12:]}"
-        self._jobs[job_id] = entry
-        return SubmittedJob(job_id=job_id, status=JobStatus.QUEUED)
-
-    def wait_for_terminal_status(
-        self,
-        job_id: str,
-        *,
-        timeout_seconds: float,
-        poll_interval_seconds: float = 0.2,
-        correlation_id: str | None = None,
-    ) -> JobStatus:
-        del timeout_seconds, poll_interval_seconds, correlation_id
-        entry = self._jobs[job_id]
-        return JobStatus(entry["status"])
-
-    def fetch_result_payload(
-        self,
-        job_id: str,
-        *,
-        correlation_id: str | None = None,
-        inline: bool = True,
-    ) -> dict[str, object]:
-        del correlation_id, inline
-        entry = self._jobs[job_id]
-        if entry["status"] != JobStatus.SUCCEEDED.value:
-            raise ClientError(
-                code=entry["error_code"],
-                message="simulated non-success result fetch",
-                retryable=False,
-                status_code=409,
-                job_id=job_id,
-            )
-        return {
-            "api_version": "v1",
-            "job_id": job_id,
-            "status": "succeeded",
-            "result": {
-                "artifact": {"markdown_filename": "x.md", "size_bytes": 1, "sha256": "abc"},
-                "conversion_metadata": {
-                    "backend_used": entry["backend_used"],
-                    "acceleration_used": entry["acceleration_used"],
-                    "ocr_enabled": False,
-                    "table_mode": "accurate",
-                    "options_fingerprint": "sha256:fixture",
-                },
-                "warnings": entry["warnings"],
-                "markdown_content": entry["markdown_content"],
-            },
-        }
-
-
-def _build_corpus(tmp_path: Path) -> tuple[Path, list[str]]:
-    corpus_dir = tmp_path / "corpus"
-    corpus_dir.mkdir(parents=True)
-    filenames = ["paper_c.pdf", "paper_a.pdf", "paper_b.pdf"]
-    for index, filename in enumerate(filenames):
-        fixture = "paper_alpha.pdf" if index % 2 == 0 else "paper_beta.pdf"
-        copy_fixture_pdf(corpus_dir / filename, fixture)
-    return corpus_dir, filenames
-
-
-def _default_scenario(filenames: list[str]) -> dict[tuple[str, str, str], ScenarioEntry]:
-    scenario: dict[tuple[str, str, str], ScenarioEntry] = {}
-    for filename in filenames:
-        scenario[(DEFAULT_ACCEPTANCE_URL, "auto", filename)] = {
-            "status": "succeeded",
-            "backend_used": "docling",
-            "acceleration_used": "cuda",
-            "warnings": ["docling_auto_ocr_retry_applied"] if filename.endswith("a.pdf") else [],
-            "markdown_content": f"# acceptance {filename}\n",
-            "error_code": "job_not_succeeded",
-        }
-        scenario[(DEFAULT_EVALUATION_URL, "docling", filename)] = {
-            "status": "succeeded",
-            "backend_used": "docling",
-            "acceleration_used": "cuda",
-            "warnings": [],
-            "markdown_content": f"# docling {filename}\n",
-            "error_code": "job_not_succeeded",
-        }
-        scenario[(DEFAULT_EVALUATION_URL, "pymupdf", filename)] = {
-            "status": "succeeded",
-            "backend_used": "pymupdf",
-            "acceleration_used": "cpu",
-            "warnings": [],
-            "markdown_content": f"# pymupdf {filename}\n",
-            "error_code": "job_not_succeeded",
-        }
-    return scenario
-
-
-def _write_rubric(
-    *,
-    rubric_path: Path,
-    corpus_dir: Path,
-    score_docling: tuple[int, int, int],
-    score_pymupdf: tuple[int, int, int],
-    manual_review_completed: bool = False,
-    quality_winner: str | None = None,
-    recommended_backend: str | None = None,
-    follow_up_required: bool = False,
-    follow_up_note: str | None = None,
-) -> None:
-    from scripts.sir_convert_a_lot.benchmark_scientific_corpus import _slug_for_pdf
-
-    entries: list[dict[str, object]] = []
-    for file_path in sorted(path for path in corpus_dir.glob("*.pdf") if path.is_file()):
-        slug = _slug_for_pdf(file_path)
-        entries.append(
-            {
-                "source_file": file_path.name,
-                "document_slug": slug,
-                "backend": "docling",
-                "layout_fidelity": score_docling[0],
-                "information_retention": score_docling[1],
-                "legibility": score_docling[2],
-                "notes": "docling score",
-            }
-        )
-        p_layout, p_retention, p_legibility = score_pymupdf
-        entries.append(
-            {
-                "source_file": file_path.name,
-                "document_slug": slug,
-                "backend": "pymupdf",
-                "layout_fidelity": p_layout,
-                "information_retention": p_retention,
-                "legibility": p_legibility,
-                "notes": "pymupdf score",
-            }
-        )
-    manual_verdict: dict[str, object] | None = None
-    if manual_review_completed and quality_winner is not None and recommended_backend is not None:
-        manual_verdict = {
-            "quality_winner": quality_winner,
-            "recommended_production_backend": recommended_backend,
-            "follow_up_required": follow_up_required,
-            "follow_up_note": follow_up_note,
-        }
-
-    rubric_payload = {
-        "generated_at": "2026-02-14T00:00:00Z",
-        "auto_generated": False,
-        "manual_review_completed": manual_review_completed,
-        "manual_verdict": manual_verdict,
-        "entries": entries,
-    }
-    rubric_path.parent.mkdir(parents=True, exist_ok=True)
-    rubric_path.write_text(
-        json.dumps(rubric_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+from tests.sir_convert_a_lot.scientific_corpus_harness_fakes import (
+    FakeScientificClient,
+    build_corpus,
+    default_scenario,
+    write_rubric,
+)
 
 
 def test_deterministic_ordering_and_output_keys(tmp_path: Path) -> None:
-    corpus_dir, filenames = _build_corpus(tmp_path)
-    FakeScientificClient.scenario = _default_scenario(filenames)
+    corpus_dir, filenames = build_corpus(tmp_path)
+    FakeScientificClient.scenario = default_scenario(filenames)
     output_json = tmp_path / "task12.json"
     output_report = tmp_path / "task12.md"
     artifacts_root = tmp_path / "artifacts"
@@ -300,8 +104,8 @@ def test_rejects_docs_reference_output_paths() -> None:
 
 
 def test_summary_metrics_shape_and_counts(tmp_path: Path) -> None:
-    corpus_dir, filenames = _build_corpus(tmp_path)
-    FakeScientificClient.scenario = _default_scenario(filenames)
+    corpus_dir, filenames = build_corpus(tmp_path)
+    FakeScientificClient.scenario = default_scenario(filenames)
     output_json = tmp_path / "task12.json"
     output_report = tmp_path / "task12.md"
 
@@ -330,8 +134,8 @@ def test_summary_metrics_shape_and_counts(tmp_path: Path) -> None:
 
 
 def test_harness_records_gpu_runtime_unavailable_failures_deterministically(tmp_path: Path) -> None:
-    corpus_dir, filenames = _build_corpus(tmp_path)
-    scenario = _default_scenario(filenames)
+    corpus_dir, filenames = build_corpus(tmp_path)
+    scenario = default_scenario(filenames)
     for filename in filenames:
         scenario[(DEFAULT_ACCEPTANCE_URL, "auto", filename)] = {
             "status": "failed",
@@ -368,8 +172,8 @@ def test_harness_records_gpu_runtime_unavailable_failures_deterministically(tmp_
 
 
 def test_acceptance_lane_records_warnings_retries_backend_and_acceleration(tmp_path: Path) -> None:
-    corpus_dir, filenames = _build_corpus(tmp_path)
-    scenario = _default_scenario(filenames)
+    corpus_dir, filenames = build_corpus(tmp_path)
+    scenario = default_scenario(filenames)
     scenario[(DEFAULT_ACCEPTANCE_URL, "auto", "paper_b.pdf")]["warnings"] = [
         "docling_auto_ocr_retry_applied",
         "minor_quality_warning",
@@ -399,8 +203,8 @@ def test_acceptance_lane_records_warnings_retries_backend_and_acceleration(tmp_p
 
 
 def test_evaluation_lane_emits_backend_profiles_and_artifacts(tmp_path: Path) -> None:
-    corpus_dir, filenames = _build_corpus(tmp_path)
-    FakeScientificClient.scenario = _default_scenario(filenames)
+    corpus_dir, filenames = build_corpus(tmp_path)
+    FakeScientificClient.scenario = default_scenario(filenames)
     artifacts_root = tmp_path / "artifacts"
 
     payload = run_benchmark(
@@ -431,10 +235,10 @@ def test_evaluation_lane_emits_backend_profiles_and_artifacts(tmp_path: Path) ->
 
 
 def test_manual_verdict_is_governance_checked_without_auto_ranking(tmp_path: Path) -> None:
-    corpus_dir, filenames = _build_corpus(tmp_path)
-    FakeScientificClient.scenario = _default_scenario(filenames)
+    corpus_dir, filenames = build_corpus(tmp_path)
+    FakeScientificClient.scenario = default_scenario(filenames)
     rubric_path = tmp_path / "rubric.json"
-    _write_rubric(
+    write_rubric(
         rubric_path=rubric_path,
         corpus_dir=corpus_dir,
         score_docling=(4, 4, 4),
@@ -473,19 +277,19 @@ def test_manual_verdict_is_governance_checked_without_auto_ranking(tmp_path: Pat
 
 
 def test_document_slug_is_deterministic_and_collision_safe() -> None:
-    from scripts.sir_convert_a_lot.benchmark_scientific_corpus import _slug_for_pdf
+    from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_utils import slug_for_pdf
 
-    first = _slug_for_pdf(Path("Document A.pdf"))
-    second = _slug_for_pdf(Path("Document-A.pdf"))
-    repeat = _slug_for_pdf(Path("Document A.pdf"))
+    first = slug_for_pdf(Path("Document A.pdf"))
+    second = slug_for_pdf(Path("Document-A.pdf"))
+    repeat = slug_for_pdf(Path("Document A.pdf"))
 
     assert first == repeat
     assert first != second
 
 
 def test_report_contains_required_sections_and_recommendation(tmp_path: Path) -> None:
-    corpus_dir, filenames = _build_corpus(tmp_path)
-    FakeScientificClient.scenario = _default_scenario(filenames)
+    corpus_dir, filenames = build_corpus(tmp_path)
+    FakeScientificClient.scenario = default_scenario(filenames)
     report_path = tmp_path / "task12-report.md"
     output_json = tmp_path / "task12.json"
 

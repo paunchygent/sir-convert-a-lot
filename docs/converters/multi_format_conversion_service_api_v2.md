@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-03-01
+updated: 2026-03-04
 owners:
   - platform
 tags:
@@ -16,6 +16,7 @@ links:
   - docs/decisions/0002-multi-format-service-api-v2.md
   - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
+  - docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
   - docs/converters/docx-template-catalog-contract-v2.md
@@ -121,6 +122,25 @@ Values:
 - `succeeded`
 - `failed`
 - `canceled`
+
+### Job Progress (v2)
+
+All job status payloads include a `job.progress` object with:
+
+- `stage` (`string`): best-effort current stage marker (for example `queued`, `starting`,
+  `converting`, `succeeded`, `failed`, `canceled`).
+- `last_heartbeat_at` (`datetime | null`): liveness signal.
+- `current_phase_started_at` (`datetime | null`): best-effort phase start marker.
+- `phase_timings_ms` (`object`): best-effort stage timing counters.
+
+PDF-only fields (per ADR-0005) are optional and may be `null` for non-PDF routes:
+
+- `total_pages` (`int | null`)
+- `processed_pages` (`int | null`) (monotonic; never decreases)
+- `failed_pages` (`int | null`) (monotonic; never decreases)
+- `percent_complete` (`float | null`) (monotonic; range `0..100`)
+- `pages_per_minute` (`float | null`) (non-negative; best-effort)
+- `eta_seconds` (`int | null`) (non-negative; best-effort)
 
 ### JobSpec (v2)
 

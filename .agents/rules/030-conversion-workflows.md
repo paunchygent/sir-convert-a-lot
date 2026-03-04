@@ -4,7 +4,7 @@ rule_id: RULE-030
 title: Conversion Workflows
 status: active
 created: '2026-02-11'
-updated: '2026-03-02'
+updated: '2026-03-04'
 owners:
   - platform
 tags:
@@ -17,10 +17,8 @@ scope: repo
 
 - Service (HTTP): `scripts/sir_convert_a_lot/interfaces/http_api.py`
 - Client CLI: `scripts/sir_convert_a_lot/interfaces/cli_app.py`
-- Client HTTP adapter: `scripts/sir_convert_a_lot/interfaces/http_client.py`
-- Runtime engine: `scripts/sir_convert_a_lot/infrastructure/runtime_engine.py`
-
-Compatibility facades remain at package root for stable imports.
+- Client HTTP adapter: `scripts/sir_convert_a_lot/interfaces/http_client_v2.py`
+- Runtime engine: `scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py`
 
 ## Core Commands
 

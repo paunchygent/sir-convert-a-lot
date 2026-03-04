@@ -19,7 +19,7 @@ from types import SimpleNamespace
 import pytest
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
+from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobExpiredV2,
@@ -240,8 +240,8 @@ def test_run_job_returns_when_mark_succeeded_conflicts(monkeypatch, tmp_path: Pa
 
     get_job_responses = iter(
         [
-            SimpleNamespace(status=JobStatus.QUEUED),
-            SimpleNamespace(status=JobStatus.RUNNING),
+            SimpleNamespace(status=JobStatus.QUEUED, source_format=SourceFormatV2.MD),
+            SimpleNamespace(status=JobStatus.RUNNING, source_format=SourceFormatV2.MD),
         ]
     )
     monkeypatch.setattr(runtime, "get_job", lambda _job_id: next(get_job_responses))
