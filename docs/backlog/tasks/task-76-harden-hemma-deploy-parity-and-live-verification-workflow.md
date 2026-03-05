@@ -95,6 +95,7 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
   - `test_dev_only_key_refused_without_allow_flag`,
   - `test_lane_port_mapping_host_and_docker`,
   - `test_metrics_scan_rejects_forbidden_job_id_substrings`.
+- [x] GPU busy sampling false-negative in live verifier fixed and regression-tested.
 
 ## Acceptance Criteria
 
@@ -110,6 +111,8 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
   - API keys are not persisted in artifacts/logs.
 - [x] Metrics safety scan rejects forbidden substrings such as `job_id=` and `jobv2_`.
 - [x] Runbook includes the hardened sequence and error-decision tree for drift/auth/lane failures.
+- [x] Host-lane GPU live verification now records non-zero GPU busy evidence and passes on the
+  deployed revision.
 - [x] Validation includes:
   - `pdm run pytest-root tests/sir_convert_a_lot -q`
 
@@ -119,14 +122,55 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
   diacritics guard (`åäö`) and OCR engine/language preflight to prevent multi-hour wrong-output
   runs.
 
+## Post-Deploy RCA and Remediation (2026-03-05)
+
+- Symptom:
+  - live verifier failed with `rocm-smi never observed non-zero GPU busy during conversion`
+    despite successful GPU-required conversions (`acceleration_used="cuda"`).
+- Root cause:
+  - `scripts/sir_convert_a_lot/devops/verify_hemma_gpu_runtime.py` used an over-escaped regex in
+    `_extract_gpu_busy_peak`:
+    - before: `r"GPU use \\(%\\):\\s*([0-9]+)"` (never matched),
+    - after: `r"GPU use \(%\):\s*([0-9]+)"`.
+- Remediation:
+  - fixed parser and added regression tests:
+    - `tests/sir_convert_a_lot/test_verify_hemma_gpu_runtime.py`,
+  - committed and pushed hotfix (`886aeb04ea184e977594c8ff0b4c482682535df2`),
+  - pulled and redeployed on Hemma (`dev-recreate`),
+  - re-ran live verification on host lane and confirmed non-zero GPU busy peak.
+- Long-term stability guard:
+  - parser-level regression tests now block future false negatives in deploy-time GPU verification.
+
+## Live Evidence Addendum (2026-03-05)
+
+- Deploy parity (pass):
+  - `/readyz` reports:
+    - `service_revision=886aeb04ea184e977594c8ff0b4c482682535df2`,
+    - `expected_revision=886aeb04ea184e977594c8ff0b4c482682535df2`.
+- GPU runtime verifier (pass):
+  - `build/verification/task-76-hemma-deploy-verify/gpu-runtime-live-large2/gpu_runtime_report.json`
+  - key fields:
+    - `runtime_probe.runtime_kind="rocm"`,
+    - `smoke.acceleration_used="cuda"`,
+    - `smoke.gpu_busy_peak=99`,
+    - `smoke.status="succeeded"`.
+- Full v2 host-lane conversion smoke (pass):
+  - `build/verification/task-39-v2-smoke-host-live-2/report.md`
+  - routes succeeded:
+    - `html->pdf`, `md->pdf`, `md->docx`, `pdf->docx`, `pdf->md`,
+  - PDF routes report `acceleration_used="cuda"`.
+- Metrics safety (pass):
+  - `build/verification/task-76-hemma-deploy-verify/live-checks/metrics-after-hotfix.prom`
+  - no `job_id=` and no `jobv2_` label leakage.
+
 ## Validation Evidence
 
 - `pdm run format-all` (pass)
 - `pdm run lint-fix` (pass)
 - `pdm run typecheck-all` (pass)
-- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `449 passed, 5 skipped`)
-- `pdm run validate-tasks` (pass: `Validated 107 backlog files`)
-- `pdm run validate-docs` (pass: `Validated docs=134 rules=9`)
+- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `467 passed, 5 skipped`)
+- `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
+- `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 - Live command (pass):
   - `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host`
