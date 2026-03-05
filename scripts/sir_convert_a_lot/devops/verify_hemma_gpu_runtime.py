@@ -215,7 +215,7 @@ def _probe_torch_runtime_in_docker(
 def _extract_gpu_busy_peak(smi_output: str) -> int:
     """Extract maximum GPU busy value from rocm-smi output."""
     peak = 0
-    for match in re.finditer(r"GPU use \\(%\\):\\s*([0-9]+)", smi_output):
+    for match in re.finditer(r"GPU use \(%\):\s*([0-9]+)", smi_output):
         peak = max(peak, int(match.group(1)))
     return peak
 
