@@ -189,6 +189,8 @@ Prometheus metric labels must remain bounded-cardinality:
   "pdf_options": {
     "backend_strategy": "auto",
     "ocr_mode": "auto",
+    "ocr_engine": "auto",
+    "ocr_languages": [],
     "table_mode": "accurate",
     "normalize": "strict"
   },
@@ -230,6 +232,18 @@ Field rules:
 - `pdf_options`:
   - required when `source.format="pdf"`
   - ignored when `source.format in {"docx","md","html"}`
+  - subfields:
+    - `backend_strategy`: `auto|docling|pymupdf`
+    - `ocr_mode`: `off|force|auto`
+    - `ocr_engine`: `auto|easyocr|tesseract_cli`
+      - `auto` delegates to runtime defaults.
+    - `ocr_languages`: list of BCP47/ISO639-1 tags (for example `["sv","en"]` or `["sv-SE","en"]`)
+      - empty list delegates to runtime defaults.
+      - mapping is engine-specific:
+        - EasyOCR uses the ISO639-1 primary tags (for example `sv`, `en`)
+        - Tesseract CLI maps `sv -> swe`, `en -> eng` and rejects unsupported tags.
+    - `table_mode`: `fast|accurate`
+    - `normalize`: `none|standard|strict`
 - `execution.acceleration_policy`:
   - required when `source.format="pdf"` (governs the PDF->MD stage)
   - ignored otherwise
@@ -415,6 +429,16 @@ Telemetry and acceleration evidence fields in `result.conversion_metadata`:
   - `null` for routes where execution policy is not applicable.
 - `acceleration_used` (`string | null`):
   - effective accelerator channel used by the conversion backend (`cpu`, `cuda`, or `null`).
+- `ocr_enabled` (`bool | null`):
+  - `true` when OCR was executed for the PDF->MD stage,
+  - `false` when OCR was disabled or not required,
+  - `null` for routes where OCR is not applicable.
+- `ocr_engine_used` (`string | null`):
+  - effective OCR engine used when OCR is enabled (`auto|easyocr|tesseract_cli`),
+  - `null` when OCR is not executed or not applicable.
+- `ocr_languages_used` (`list[string] | null`):
+  - best-effort normalized OCR language tags used for the OCR stage (for example `["sv","en"]`),
+  - `null` when OCR is not executed or not applicable.
 - `gpu_runtime_kind` (`string | null`):
   - best-effort runtime kind observed for GPU-backed jobs (`rocm`, `cuda`, or `null`).
 - `gpu_device_count` (`int | null`):

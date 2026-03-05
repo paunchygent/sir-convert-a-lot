@@ -55,6 +55,9 @@ class StoredJobRecordV2:
     pipeline_used: str | None
     backend_used: str | None
     acceleration_used: str | None
+    ocr_enabled: bool | None
+    ocr_engine_used: str | None
+    ocr_languages_used: list[str] | None
     acceleration_policy_requested: str | None
     gpu_runtime_kind: str | None
     gpu_device_count: int | None

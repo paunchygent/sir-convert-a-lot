@@ -15,7 +15,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from scripts.sir_convert_a_lot.domain.specs import (
     AccelerationPolicy,
@@ -63,6 +63,14 @@ class PdfOrientationV2(StrEnum):
 
     PORTRAIT = "portrait"
     LANDSCAPE = "landscape"
+
+
+class OcrEngineV2(StrEnum):
+    """Supported OCR engines for PDF OCR stages."""
+
+    AUTO = "auto"
+    EASYOCR = "easyocr"
+    TESSERACT_CLI = "tesseract_cli"
 
 
 class PdfLayoutV2(BaseModel):
@@ -113,8 +121,57 @@ class PdfOptionsV2(BaseModel):
 
     backend_strategy: BackendStrategy
     ocr_mode: OcrMode
+    ocr_engine: OcrEngineV2 = Field(
+        default=OcrEngineV2.AUTO,
+        description="OCR engine selection. 'auto' delegates to runtime defaults.",
+    )
+    ocr_languages: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Requested OCR languages as BCP47/ISO639-1 tags (e.g. ['sv','en']). "
+            "Empty list delegates to runtime defaults."
+        ),
+    )
     table_mode: TableMode
     normalize: NormalizeMode
+
+    @field_validator("ocr_languages", mode="before")
+    @classmethod
+    def _normalize_ocr_languages(cls, value: object) -> list[str]:
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise TypeError("pdf_options.ocr_languages must be a list of strings")
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for raw in value:
+            if not isinstance(raw, str):
+                raise TypeError("pdf_options.ocr_languages entries must be strings")
+            candidate = raw.strip().lower()
+            if candidate == "":
+                raise ValueError("pdf_options.ocr_languages entries must not be empty")
+            parts = candidate.split("-")
+            primary = parts[0]
+            if len(primary) != 2 or not primary.isalpha():
+                raise ValueError(
+                    "pdf_options.ocr_languages entries must start with an ISO639-1 tag "
+                    "(e.g. 'sv' or 'en')"
+                )
+            for part in parts[1:]:
+                if part == "":
+                    raise ValueError(
+                        "pdf_options.ocr_languages entries must not include empty tags"
+                    )
+                if not part.isalnum():
+                    raise ValueError(
+                        "pdf_options.ocr_languages entries must use only letters/numbers "
+                        "and hyphen separators"
+                    )
+            if candidate in seen:
+                continue
+            normalized.append(candidate)
+            seen.add(candidate)
+        return normalized
 
 
 class ExecutionSpecV2(BaseModel):

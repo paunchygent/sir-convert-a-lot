@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2-errors
 title: Multi-format Conversion Service API v2 Errors
 status: active
 created: 2026-03-04
-updated: 2026-03-04
+updated: 2026-03-05
 owners:
   - platform
 tags:
@@ -18,6 +18,17 @@ links:
 
 ## Deterministic Route Errors (Selected)
 
+- `pdf -> md` OCR engine missing/unavailable:
+  - `503 Service Unavailable`
+  - `error.code = "ocr_engine_unavailable"`
+  - `error.retryable = false`
+- `pdf -> md` OCR language pack missing (preflight):
+  - `503 Service Unavailable`
+  - `error.code = "ocr_language_unavailable"`
+  - `error.retryable = false`
+- `pdf -> md` OCR language tags invalid/unsupported for engine:
+  - `422 Unprocessable Entity`
+  - `error.code = "validation_error"`
 - `docx -> md` unreadable/corrupt DOCX:
   - `422 Unprocessable Entity`
   - `error.code = "docx_unreadable"`

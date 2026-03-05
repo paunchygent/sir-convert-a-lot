@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
+from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 
 
 def utc_now() -> datetime:
@@ -44,6 +45,9 @@ class ServiceConfig:
     gpu_available: bool = True
     allow_cpu_only: bool = False
     allow_cpu_fallback: bool = False
+    default_pdf_ocr_engine: OcrEngineV2 = OcrEngineV2.AUTO
+    default_pdf_ocr_languages: tuple[str, ...] = ("en",)
+    easyocr_model_storage_directory: str | None = "/opt/easyocr-models"
     processing_delay_seconds: float = 0.2
     heartbeat_interval_seconds: float = 5.0
     enable_runtime_telemetry_calls: bool = True

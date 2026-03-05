@@ -85,7 +85,10 @@ class ServiceRuntime:
             data_root=config.data_root,
             ttl_seconds=config.idempotency_ttl_seconds,
         )
-        self.docling_backend = DoclingConversionBackend()
+        self.docling_backend = DoclingConversionBackend(
+            easyocr_model_storage_directory=self.config.easyocr_model_storage_directory,
+            easyocr_download_enabled=False,
+        )
         self.pymupdf_backend = PyMuPdfConversionBackend()
         self._lock = threading.Lock()
         self._shutdown_event = threading.Event()

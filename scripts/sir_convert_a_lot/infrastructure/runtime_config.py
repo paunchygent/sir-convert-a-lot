@@ -16,6 +16,7 @@ import json
 import os
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 
 CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
@@ -119,6 +120,41 @@ def service_config_from_env() -> ServiceConfig:
     )
     enable_webhook_delivery = os.getenv("SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY", "0") == "1"
 
+    default_ocr_engine_raw = os.getenv("SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE", "auto").strip()
+    default_pdf_ocr_engine = OcrEngineV2.AUTO
+    if default_ocr_engine_raw:
+        try:
+            default_pdf_ocr_engine = OcrEngineV2(default_ocr_engine_raw.lower())
+        except ValueError as exc:
+            supported = ", ".join(engine.value for engine in OcrEngineV2)
+            raise ValueError(
+                f"Invalid SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE. Use one of: {supported}."
+            ) from exc
+
+    default_lang_raw = os.getenv("SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES", "en")
+    default_pdf_ocr_languages: list[str] = []
+    for raw in default_lang_raw.split(","):
+        candidate = raw.strip().lower()
+        if candidate == "":
+            continue
+        parts = candidate.split("-")
+        primary = parts[0]
+        if len(primary) != 2 or not primary.isalpha():
+            raise ValueError(
+                "Invalid SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES entry. "
+                "Expected BCP47/ISO639-1 tags like 'sv' or 'en'."
+            )
+        if candidate not in default_pdf_ocr_languages:
+            default_pdf_ocr_languages.append(candidate)
+
+    easyocr_model_storage_directory_raw = os.getenv("SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR")
+    if easyocr_model_storage_directory_raw is None:
+        easyocr_model_storage_directory = "/opt/easyocr-models"
+    else:
+        easyocr_model_storage_directory = easyocr_model_storage_directory_raw.strip()
+        if easyocr_model_storage_directory == "":
+            easyocr_model_storage_directory = None
+
     enabled_unlock_envs = [name for name in CPU_UNLOCK_ENV_VARS if os.getenv(name) == "1"]
     if enabled_unlock_envs:
         joined_names = ", ".join(enabled_unlock_envs)
@@ -143,4 +179,7 @@ def service_config_from_env() -> ServiceConfig:
         enable_webhook_onboarding=enable_webhook_onboarding,
         webhook_secret_overlap_seconds=webhook_secret_overlap_seconds,
         enable_webhook_delivery=enable_webhook_delivery,
+        default_pdf_ocr_engine=default_pdf_ocr_engine,
+        default_pdf_ocr_languages=tuple(default_pdf_ocr_languages),
+        easyocr_model_storage_directory=easyocr_model_storage_directory,
     )

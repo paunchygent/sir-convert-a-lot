@@ -91,6 +91,9 @@ def _stub_executor(**kwargs) -> V2ExecutionResult:
             "conversion_total_ms": 20,
         },
         options_fingerprint="metrics-contract-stub",
+        ocr_enabled=None,
+        ocr_engine_used=None,
+        ocr_languages_used=None,
     )
 
 

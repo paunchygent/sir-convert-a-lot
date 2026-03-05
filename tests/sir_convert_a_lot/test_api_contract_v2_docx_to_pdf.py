@@ -50,6 +50,9 @@ def test_docx_to_pdf_lifecycle_result_and_artifact(
             warnings=[],
             phase_timings_ms={},
             options_fingerprint="docx_pdf_contract_test",
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
         )
 
     monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _stub_executor)

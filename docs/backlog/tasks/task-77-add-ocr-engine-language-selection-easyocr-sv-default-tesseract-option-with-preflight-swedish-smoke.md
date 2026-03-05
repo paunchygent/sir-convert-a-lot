@@ -2,7 +2,7 @@
 id: task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke
 title: Add OCR engine + language selection (EasyOCR sv default, Tesseract option) with preflight + Swedish smoke
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-05'
 last_updated: '2026-03-05'
@@ -101,11 +101,11 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
 
 ## Deliverables
 
-- [ ] v2 JobSpec supports `pdf_options.ocr_engine` + `pdf_options.ocr_languages` (docs + validators updated).
-- [ ] CLI supports selecting OCR engine/languages for PDF routes (docs updated).
-- [ ] Docling backend uses EasyOCR GPU for OCR by default on Hemma; Tesseract CLI is selectable.
-- [ ] Preflight rejects missing engine/language with actionable error before starting long runs.
-- [ ] Swedish OCR deploy-smoke exists and is integrated into the current Hemma verification workflow.
+- [x] v2 JobSpec supports `pdf_options.ocr_engine` + `pdf_options.ocr_languages` (docs + validators updated).
+- [x] CLI supports selecting OCR engine/languages for PDF routes (docs updated).
+- [x] Docling backend uses EasyOCR GPU for OCR by default on Hemma; Tesseract CLI is selectable.
+- [x] Preflight rejects missing engine/language with actionable error before starting long runs.
+- [x] Swedish OCR deploy-smoke exists and is integrated into the current Hemma verification workflow.
 - [ ] Evidence artifacts are deterministic (report JSON/MD, readyz, metrics, sample OCR output excerpt).
 
 ## Acceptance Criteria
@@ -132,11 +132,24 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
   - explicit operator benchmark target for the “300 PDFs” corpus:
     - wall-clock \<= 60 minutes on Hemma tuned defaults, with report artifact.
 
+## Validation Evidence (Local)
+
+- `pdm run format-all` (pass)
+- `pdm run lint-fix` (pass)
+- `pdm run typecheck-all` (pass)
+- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `458 passed, 5 skipped`)
+- `pdm run coverage-gate` (pass: total coverage `95.71%`)
+- `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
+- `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+- Live evidence (pending; must run post-merge per ops policy):
+  - `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host --api-key <key>`
+
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated
 
 ## Closeout (Mandatory)
 

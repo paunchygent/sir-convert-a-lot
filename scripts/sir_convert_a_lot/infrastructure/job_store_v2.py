@@ -162,6 +162,9 @@ class JobStoreV2(JobStoreV2Core):
         pipeline_used: str,
         backend_used: str | None,
         acceleration_used: str | None,
+        ocr_enabled: bool | None = None,
+        ocr_engine_used: str | None = None,
+        ocr_languages_used: list[str] | None = None,
         options_fingerprint: str,
         acceleration_policy_requested: str | None = None,
         gpu_runtime_kind: str | None = None,
@@ -248,6 +251,11 @@ class JobStoreV2(JobStoreV2Core):
                     "pipeline_used": pipeline_used,
                     "backend_used": backend_used,
                     "acceleration_used": acceleration_used,
+                    "ocr_enabled": ocr_enabled,
+                    "ocr_engine_used": ocr_engine_used,
+                    "ocr_languages_used": (
+                        list(ocr_languages_used) if ocr_languages_used is not None else None
+                    ),
                     "acceleration_policy_requested": acceleration_policy_requested,
                     "gpu_runtime_kind": gpu_runtime_kind,
                     "gpu_device_count": gpu_device_count,

@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Protocol
 
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
+from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 
 
@@ -28,6 +29,9 @@ class ConversionRequest:
     ocr_mode: OcrMode
     table_mode: TableMode
     gpu_available: bool
+    ocr_engine: OcrEngineV2 | None = None
+    ocr_languages: tuple[str, ...] = ()
+    ocr_use_gpu: bool | None = None
     gpu_runtime_probe: GpuRuntimeProbeResult | None = None
 
 

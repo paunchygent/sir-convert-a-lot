@@ -19,6 +19,17 @@
   - `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
   - `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
 
+- Started `T77` (`docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`).
+- Added OCR engine + language selection for v2 PDF conversions:
+  - v2 JobSpec: `pdf_options.ocr_engine` and `pdf_options.ocr_languages`,
+  - CLI: `--ocr-engine` and repeatable `--ocr-language`,
+  - preflight gates to fail-fast on missing OCR engines or language packs.
+- Updated Hemma defaults for Swedish OCR correctness:
+  - default engine: EasyOCR with `sv,en`,
+  - optional engine: Tesseract CLI with `swe,eng` packs installed in the image.
+- Extended Hemma v2 live verifier with a Swedish OCR smoke step that asserts `åäö` and captures
+  OCR metadata + throughput evidence fields.
+
 Live evidence (pass):
 
 - `build/verification/task-76-hemma-deploy-verify/report.json` (`status=passed`)
@@ -37,6 +48,22 @@ Validation evidence:
 - `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 
+Validation evidence (local, T77):
+
+- `pdm run format-all` (pass)
+- `pdm run lint-fix` (pass)
+- `pdm run typecheck-all` (pass)
+- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `458 passed, 5 skipped`)
+- `pdm run coverage-gate` (pass: total coverage `95.71%`)
+- `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
+- `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
+
+Live evidence (pending, T77):
+
+- Merge to main worktree, then run:
+  - `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host --api-key <key>`
+  - ensure evidence includes the Swedish OCR excerpt under `build/verification/...`.
+
 Cross-repo skill audit:
 
 - Updated `/Users/olofs_mba/Documents/Repos/huledu-reboot/.agents/skills/huledu-devops-hemma/SKILL.md`
@@ -45,8 +72,8 @@ Cross-repo skill audit:
 
 ## Next Session Goals (2026-03-05)
 
-- Execute `T77` (OCR engine/language selection + Swedish diacritics smoke) before publishing the
-  `T74` throughput benchmark report.
+- Merge `codex/task-77-ocr-engine-sv` into `main` and run Hemma live verification to produce T77
+  evidence before publishing the `T74` throughput benchmark report.
 - Execute `T72` (parallel worker pools) and then `T74` (throughput benchmark/report).
 - Keep `T76` evidence command as pre-slice gate before throughput-tuning changes.
 - Preserve strict metric label safety (`job_id=`/`jobv2_` forbidden) and host-lane verification policy.

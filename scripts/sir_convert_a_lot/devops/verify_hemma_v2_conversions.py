@@ -85,6 +85,39 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _write_swedish_ocr_fixture_pdf(path: Path) -> None:
+    """Write a tiny Swedish PDF fixture intended for forced full-page OCR."""
+    try:
+        import pymupdf
+    except Exception as exc:  # pragma: no cover
+        raise SystemExit("PyMuPDF is required to generate the Swedish OCR fixture PDF.") from exc
+
+    document = pymupdf.open()
+    try:
+        page = document.new_page(width=595, height=842)  # A4 in points.
+        if page is None:
+            raise SystemExit("PyMuPDF new_page returned None while generating Swedish OCR fixture.")
+        page.insert_text(
+            (72, 120),
+            "Svenska OCR smoke\n\nDiacritics: å ä ö\nToken: åäö\n",
+            fontsize=48,
+            fontname="helv",
+        )
+        document.save(path.as_posix(), garbage=4, deflate=True)
+    finally:
+        try:
+            document.close()
+        except Exception:
+            pass
+
+
+def _assert_contains_swedish_diacritics(text: str, *, label: str) -> None:
+    missing = [char for char in ("å", "ä", "ö") if char not in text]
+    if missing:
+        joined = "".join(missing)
+        raise SystemExit(f"{label} OCR output is missing Swedish diacritics: missing={joined!r}")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(sys.argv[1:] if argv is None else argv)
 
@@ -122,9 +155,22 @@ def main(argv: list[str] | None = None) -> int:
             headers={"X-API-Key": args.api_key},
             label="readyz",
         )
+        metrics_response = client.get("/metrics")
+        try:
+            metrics_response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise SystemExit(
+                f"metrics request failed: {exc}\nbody:\n{metrics_response.text}"
+            ) from exc
+        metrics_text = metrics_response.text
     write_json(output_root / "healthz.json", healthz)
     write_json(output_root / "readyz.json", readyz)
+    (output_root / "metrics.prom").write_text(metrics_text, encoding="utf-8")
     assert_readyz_contract(readyz=readyz, repo_head=repo_head)
+    if "job_id=" in metrics_text:
+        raise SystemExit("metrics label safety violation: found 'job_id=' in /metrics payload.")
+    if "jobv2_" in metrics_text:
+        raise SystemExit("metrics label safety violation: found job ids in /metrics payload.")
 
     runtime_versions = probe_docker_runtime(
         prod_container=args.docker_prod_container,
@@ -163,6 +209,9 @@ def main(argv: list[str] | None = None) -> int:
     v2_results: dict[str, ArtifactEvidence] = {}
     evidence_payloads: dict[str, dict[str, object]] = {}
 
+    swedish_pdf_fixture = fixtures_dir / "task77_swedish_ocr_fixture.pdf"
+    _write_swedish_ocr_fixture_pdf(swedish_pdf_fixture)
+
     def _spec_v2(
         *, source: Path, source_format: str, output_format: str, css: bool
     ) -> dict[str, object]:
@@ -183,6 +232,8 @@ def main(argv: list[str] | None = None) -> int:
             spec["pdf_options"] = {
                 "backend_strategy": "auto",
                 "ocr_mode": "auto",
+                "ocr_engine": "auto",
+                "ocr_languages": [],
                 "table_mode": "accurate",
                 "normalize": "strict",
             }
@@ -293,6 +344,53 @@ def main(argv: list[str] | None = None) -> int:
         )
         v2_results["pdf_to_md"] = pdf_md_ev
         evidence_payloads["pdf_to_md_result"] = pdf_md_payload
+
+        swedish_spec = _spec_v2(
+            source=swedish_pdf_fixture,
+            source_format="pdf",
+            output_format="md",
+            css=False,
+        )
+        pdf_options = swedish_spec.get("pdf_options")
+        if isinstance(pdf_options, dict):
+            pdf_options["ocr_mode"] = "force"
+            pdf_options["ocr_engine"] = "easyocr"
+            pdf_options["ocr_languages"] = ["sv", "en"]
+
+        swedish_ev, swedish_payload = run_v2_conversion(
+            http_base_url=service_url,
+            api_key=args.api_key,
+            output_dir=artifacts_dir,
+            label="swedish_ocr_pdf_to_md",
+            source_path=swedish_pdf_fixture,
+            job_spec=swedish_spec,
+            artifact_suffix=".md",
+            wait_seconds=args.wait_seconds,
+            max_poll_seconds=max(args.max_poll_seconds, 240.0),
+            resources_zip_bytes=None,
+        )
+        v2_results["swedish_ocr_pdf_to_md"] = swedish_ev
+        evidence_payloads["swedish_ocr_pdf_to_md_result"] = swedish_payload
+
+        swedish_markdown = swedish_ev.artifact_path.read_text(encoding="utf-8", errors="replace")
+        excerpt_path = output_root / "swedish_ocr_excerpt.txt"
+        excerpt_path.write_text(swedish_markdown[:800].rstrip("\n") + "\n", encoding="utf-8")
+        _assert_contains_swedish_diacritics(swedish_markdown, label="swedish_ocr_pdf_to_md")
+        if swedish_ev.ocr_enabled is not True:
+            raise SystemExit(
+                "swedish_ocr_pdf_to_md must run OCR (conversion_metadata.ocr_enabled=true)."
+            )
+        if swedish_ev.ocr_engine_used != "easyocr":
+            raise SystemExit(
+                "swedish_ocr_pdf_to_md must report ocr_engine_used='easyocr' "
+                f"(got {swedish_ev.ocr_engine_used!r})."
+            )
+        swedish_langs = set(swedish_ev.ocr_languages_used or [])
+        if not {"sv", "en"}.issubset(swedish_langs):
+            raise SystemExit(
+                "swedish_ocr_pdf_to_md must report ocr_languages_used including sv,en "
+                f"(got {sorted(swedish_langs)!r})."
+            )
     except ClientErrorV2 as exc:
         raise SystemExit(f"Verification failed: {exc.code} ({exc.message})") from exc
 
@@ -320,6 +418,11 @@ def main(argv: list[str] | None = None) -> int:
                 "pipeline_used": ev.pipeline_used,
                 "backend_used": ev.backend_used,
                 "acceleration_used": ev.acceleration_used,
+                "pages_per_minute": ev.pages_per_minute,
+                "phase_timings_ms": ev.phase_timings_ms,
+                "ocr_enabled": ev.ocr_enabled,
+                "ocr_engine_used": ev.ocr_engine_used,
+                "ocr_languages_used": ev.ocr_languages_used,
             }
             for name, ev in v2_results.items()
         },
@@ -352,6 +455,18 @@ def main(argv: list[str] | None = None) -> int:
             md_lines.append(f"- backend_used: `{ev.backend_used}`")
         if ev.acceleration_used is not None:
             md_lines.append(f"- acceleration_used: `{ev.acceleration_used}`")
+        if ev.pages_per_minute is not None:
+            md_lines.append(f"- pages_per_minute: `{ev.pages_per_minute}`")
+        if ev.phase_timings_ms:
+            timing_keys = ", ".join(sorted(ev.phase_timings_ms))
+            md_lines.append(f"- phase_timings_ms keys: `{timing_keys}`")
+        if ev.ocr_enabled is not None:
+            md_lines.append(f"- ocr_enabled: `{ev.ocr_enabled}`")
+        if ev.ocr_engine_used is not None:
+            md_lines.append(f"- ocr_engine_used: `{ev.ocr_engine_used}`")
+        if ev.ocr_languages_used is not None:
+            langs = ",".join(ev.ocr_languages_used)
+            md_lines.append(f"- ocr_languages_used: `{langs}`")
         md_lines.append("")
 
     md_lines.append("## Files")
@@ -361,6 +476,10 @@ def main(argv: list[str] | None = None) -> int:
     md_lines.append(f"- artifacts: `{artifacts_dir.as_posix()}`")
     md_lines.append(f"- responses: `{responses_dir.as_posix()}`")
     md_lines.append(f"- runtime: `{runtime_dir.as_posix()}`")
+    md_lines.append(f"- metrics: `{(output_root / 'metrics.prom').as_posix()}`")
+    md_lines.append(
+        f"- swedish_ocr_excerpt: `{(output_root / 'swedish_ocr_excerpt.txt').as_posix()}`"
+    )
     md_lines.append("")
 
     (output_root / "report.md").write_text("\n".join(md_lines) + "\n", encoding="utf-8")

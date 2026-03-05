@@ -4,7 +4,7 @@ id: CONV-sir-convert-a-lot
 title: Sir Convert-a-Lot CLI and Service Usage
 status: active
 created: '2026-02-11'
-updated: '2026-02-28'
+updated: '2026-03-05'
 owners:
   - platform
 tags:
@@ -122,6 +122,15 @@ pdm run run-local-pdm hemma-repair-rocm-runtime
     - markdown is empty, or
     - chars/page is below `120`, or
     - confidence low-grade is `poor`/`fair` (when confidence is available).
+- OCR engine + language selection (PDF routes; service API v2):
+  - `--ocr-engine auto|easyocr|tesseract_cli` (default: `auto` delegates to runtime defaults)
+  - `--ocr-language <tag>` (repeatable; BCP47/ISO639-1 tags like `sv`, `en`, `sv-SE`)
+  - Hemma runtime defaults are controlled by env vars:
+    - `SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE`
+    - `SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES` (comma-separated, e.g. `sv,en`)
+    - `SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR` (must exist when EasyOCR downloads are disabled)
+  - Missing engine/language is rejected at v2 job creation (preflight) to prevent multi-hour
+    wrong-OCR runs.
 - Markdown normalization:
   - `none`: preserve backend output.
   - `standard`: deterministic whitespace/blank-line cleanup.
@@ -329,9 +338,23 @@ pdm run convert-a-lot convert ./folder_with_pdfs \
   --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
   --backend-strategy auto \
   --ocr-mode auto \
+  --ocr-engine auto \
   --table-mode accurate \
   --normalize strict \
   --acceleration-policy gpu_required
+```
+
+Force Swedish OCR with explicit engine/languages:
+
+```bash
+pdm run convert-a-lot convert ./folder_with_pdfs \
+  --output-dir ./research \
+  --service-url http://127.0.0.1:28085 \
+  --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
+  --ocr-mode force \
+  --ocr-engine easyocr \
+  --ocr-language sv \
+  --ocr-language en
 ```
 
 Internet lane equivalent:

@@ -48,6 +48,10 @@ from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
     GpuRuntimeProbeResult,
     probe_torch_gpu_runtime,
 )
+from scripts.sir_convert_a_lot.infrastructure.ocr_resolution_v2 import (
+    ResolvedPdfOcrRequestV2,
+    resolve_pdf_ocr_request,
+)
 from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import (
     PdfCheckpointV2,
     PdfChunkRecordV2,
@@ -101,6 +105,7 @@ class PdfChunkConversionOutcomeV2:
     markdown_content: str
     backend_used: str | None
     acceleration_used: str | None
+    ocr_enabled: bool
     warnings: list[str]
     phase_timings_ms: dict[str, int]
     chunk_elapsed_ms: int
@@ -242,7 +247,8 @@ def _convert_one_pdf_chunk(
     probe: GpuRuntimeProbeResult | None,
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
-) -> tuple[str, str | None, str | None, list[str], dict[str, int]]:
+    resolved_ocr: ResolvedPdfOcrRequestV2 | None,
+) -> tuple[str, str | None, str | None, bool, list[str], dict[str, int]]:
     try:
         markdown_content, pdf_metadata, pdf_warnings, pdf_timings = execute_job_conversion(
             spec=v1_spec,
@@ -252,6 +258,9 @@ def _convert_one_pdf_chunk(
             gpu_runtime_probe=probe,
             docling_backend=docling_backend,
             pymupdf_backend=pymupdf_backend,
+            ocr_engine=resolved_ocr.engine if resolved_ocr is not None else None,
+            ocr_languages=resolved_ocr.languages if resolved_ocr is not None else (),
+            ocr_use_gpu=resolved_ocr.use_gpu if resolved_ocr is not None else None,
         )
     except BackendGpuUnavailableError as exc:
         raise ServiceError(
@@ -287,6 +296,7 @@ def _convert_one_pdf_chunk(
         markdown_content,
         pdf_metadata.backend_used,
         pdf_metadata.acceleration_used,
+        bool(pdf_metadata.ocr_enabled),
         list(pdf_warnings),
         dict(pdf_timings),
     )
@@ -360,7 +370,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
     is_cancel_requested: Callable[[], bool] | None,
     on_chunk_worker_start: Callable[[], None] | None = None,
     on_chunk_worker_finish: Callable[[], None] | None = None,
-) -> tuple[str, str | None, str | None, list[str], dict[str, int]]:
+) -> tuple[str, str | None, str | None, bool, str | None, list[str], list[str], dict[str, int]]:
     """Return markdown content + metadata while persisting checkpoints/partials."""
     if job.spec.pdf_options is None or job.spec.execution is None:
         raise ServiceError(
@@ -369,6 +379,14 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
             message="v2 job spec is missing required pdf_options/execution for pdf routes.",
             retryable=False,
         )
+
+    resolved_ocr: ResolvedPdfOcrRequestV2 | None = resolve_pdf_ocr_request(
+        spec=job.spec,
+        config=config,
+    )
+    resolved_ocr_engine = resolved_ocr.engine if resolved_ocr is not None else None
+    resolved_ocr_languages = resolved_ocr.languages if resolved_ocr is not None else ()
+    resolved_ocr_use_gpu = resolved_ocr.use_gpu if resolved_ocr is not None else None
 
     v1_spec = JobSpec(
         api_version="v1",
@@ -414,6 +432,9 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                 gpu_runtime_probe=probe,
                 docling_backend=docling_backend,
                 pymupdf_backend=pymupdf_backend,
+                ocr_engine=resolved_ocr_engine,
+                ocr_languages=resolved_ocr_languages,
+                ocr_use_gpu=resolved_ocr_use_gpu,
             )
         except BackendGpuUnavailableError as exc:
             raise ServiceError(
@@ -445,10 +466,16 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                 message=f"Unexpected backend conversion failure: {exc}",
                 retryable=True,
             ) from exc
+        ocr_enabled = bool(pdf_metadata.ocr_enabled)
+        ocr_engine_used = resolved_ocr_engine.value if ocr_enabled and resolved_ocr_engine else None
+        ocr_languages_used = list(resolved_ocr_languages) if ocr_enabled else []
         return (
             markdown_content,
             pdf_metadata.backend_used,
             pdf_metadata.acceleration_used,
+            ocr_enabled,
+            ocr_engine_used,
+            ocr_languages_used,
             list(pdf_warnings),
             normalize_phase_timings_map(dict(pdf_timings)),
         )
@@ -486,6 +513,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
     phase_timings_ms: dict[str, int] = {}
     backend_used: str | None = None
     acceleration_used: str | None = None
+    ocr_enabled_any = False
     conversion_started = time.perf_counter()
 
     try:
@@ -533,6 +561,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                     markdown_content,
                     chunk_backend_used,
                     chunk_acceleration_used,
+                    chunk_ocr_enabled,
                     chunk_warnings,
                     chunk_phase_timings,
                 ) = _convert_one_pdf_chunk(
@@ -543,6 +572,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                     probe=probe,
                     docling_backend=docling_backend,
                     pymupdf_backend=pymupdf_backend,
+                    resolved_ocr=resolved_ocr,
                 )
                 chunk_elapsed_ms = max(0, int((time.perf_counter() - chunk_started) * 1000))
                 return PdfChunkConversionOutcomeV2(
@@ -552,6 +582,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                     markdown_content=markdown_content,
                     backend_used=chunk_backend_used,
                     acceleration_used=chunk_acceleration_used,
+                    ocr_enabled=chunk_ocr_enabled,
                     warnings=chunk_warnings,
                     phase_timings_ms=chunk_phase_timings,
                     chunk_elapsed_ms=chunk_elapsed_ms,
@@ -630,6 +661,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                         backend_used = outcome.backend_used
                     if acceleration_used is None:
                         acceleration_used = outcome.acceleration_used
+                    ocr_enabled_any = ocr_enabled_any or bool(outcome.ocr_enabled)
                     _append_unique_warnings(warnings, outcome.warnings)
                     phase_timings_ms = _merge_phase_timings(
                         phase_timings_ms, outcome.phase_timings_ms
@@ -720,4 +752,15 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
         upload_path=job.upload_path,
         checkpoint=checkpoint,
     )
-    return final_markdown, backend_used, acceleration_used, warnings, phase_timings_ms
+    ocr_engine_used = resolved_ocr_engine.value if ocr_enabled_any and resolved_ocr_engine else None
+    ocr_languages_used = list(resolved_ocr_languages) if ocr_enabled_any else []
+    return (
+        final_markdown,
+        backend_used,
+        acceleration_used,
+        ocr_enabled_any,
+        ocr_engine_used,
+        ocr_languages_used,
+        warnings,
+        phase_timings_ms,
+    )

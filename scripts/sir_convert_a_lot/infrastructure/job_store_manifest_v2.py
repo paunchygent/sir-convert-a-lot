@@ -191,6 +191,9 @@ def parse_stored_job_record(
     pipeline_used: str | None = None
     backend_used: str | None = None
     acceleration_used: str | None = None
+    ocr_enabled: bool | None = None
+    ocr_engine_used: str | None = None
+    ocr_languages_used: list[str] | None = None
     acceleration_policy_requested: str | None = None
     gpu_runtime_kind: str | None = None
     gpu_device_count: int | None = None
@@ -227,6 +230,9 @@ def parse_stored_job_record(
             pipeline_obj = meta_obj.get("pipeline_used")
             backend_obj = meta_obj.get("backend_used")
             accel_obj = meta_obj.get("acceleration_used")
+            ocr_enabled_obj = meta_obj.get("ocr_enabled")
+            ocr_engine_obj = meta_obj.get("ocr_engine_used")
+            ocr_languages_obj = meta_obj.get("ocr_languages_used")
             policy_obj = meta_obj.get("acceleration_policy_requested")
             runtime_kind_obj = meta_obj.get("gpu_runtime_kind")
             device_count_obj = meta_obj.get("gpu_device_count")
@@ -244,6 +250,10 @@ def parse_stored_job_record(
             pipeline_used = pipeline_obj if isinstance(pipeline_obj, str) else None
             backend_used = backend_obj if isinstance(backend_obj, str) else None
             acceleration_used = accel_obj if isinstance(accel_obj, str) else None
+            ocr_enabled = ocr_enabled_obj if isinstance(ocr_enabled_obj, bool) else None
+            ocr_engine_used = ocr_engine_obj if isinstance(ocr_engine_obj, str) else None
+            if isinstance(ocr_languages_obj, list):
+                ocr_languages_used = [item for item in ocr_languages_obj if isinstance(item, str)]
             acceleration_policy_requested = policy_obj if isinstance(policy_obj, str) else None
             gpu_runtime_kind = runtime_kind_obj if isinstance(runtime_kind_obj, str) else None
             gpu_device_count = (
@@ -335,6 +345,9 @@ def parse_stored_job_record(
         pipeline_used=pipeline_used,
         backend_used=backend_used,
         acceleration_used=acceleration_used,
+        ocr_enabled=ocr_enabled,
+        ocr_engine_used=ocr_engine_used,
+        ocr_languages_used=ocr_languages_used,
         acceleration_policy_requested=acceleration_policy_requested,
         gpu_runtime_kind=gpu_runtime_kind,
         gpu_device_count=gpu_device_count,
