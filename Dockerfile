@@ -34,6 +34,9 @@ RUN apt-get update \
         libxcb1 \
         libxrender1 \
         pandoc \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        tesseract-ocr-swe \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --no-cache-dir "pdm==2.26.4"
@@ -49,6 +52,9 @@ RUN pdm run python -m pip install --upgrade --no-cache-dir \
     "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}" \
     "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}" \
     "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}"
+
+RUN mkdir -p /opt/easyocr-models \
+    && pdm run python -c \"import easyocr; easyocr.Reader(['sv','en'], gpu=False, model_storage_directory='/opt/easyocr-models', download_enabled=True, verbose=False)\"
 
 COPY scripts ./scripts
 

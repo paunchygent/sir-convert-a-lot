@@ -118,6 +118,8 @@ def default_job_spec_v2(
     acceleration_policy: str,
     backend_strategy: str,
     ocr_mode: str,
+    ocr_engine: str,
+    ocr_languages: list[str],
     table_mode: str,
     normalize: str,
 ) -> dict[str, object]:
@@ -139,6 +141,8 @@ def default_job_spec_v2(
         payload["pdf_options"] = {
             "backend_strategy": backend_strategy,
             "ocr_mode": ocr_mode,
+            "ocr_engine": ocr_engine,
+            "ocr_languages": list(ocr_languages),
             "table_mode": table_mode,
             "normalize": normalize,
         }

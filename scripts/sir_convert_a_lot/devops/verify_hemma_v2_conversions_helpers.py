@@ -38,6 +38,11 @@ class ArtifactEvidence:
     pipeline_used: str | None = None
     backend_used: str | None = None
     acceleration_used: str | None = None
+    pages_per_minute: float | None = None
+    phase_timings_ms: dict[str, int] | None = None
+    ocr_enabled: bool | None = None
+    ocr_engine_used: str | None = None
+    ocr_languages_used: list[str] | None = None
 
 
 def utc_now_iso() -> str:
@@ -201,12 +206,38 @@ def run_v2_conversion(
         raise SystemExit(f"{label} produced empty artifact: {artifact_path}")
 
     with httpx.Client(base_url=http_base_url, timeout=30.0) as http_client:
+        status_payload = fetch_json(
+            http_client,
+            path=f"/v2/convert/jobs/{outcome.job_id}",
+            headers={"X-API-Key": api_key, "X-Correlation-ID": correlation_id},
+            label=f"{label} v2 status",
+        )
         result_payload = fetch_json(
             http_client,
             path=f"/v2/convert/jobs/{outcome.job_id}/result",
             headers={"X-API-Key": api_key, "X-Correlation-ID": correlation_id},
             label=f"{label} v2 result",
         )
+
+    job_obj = status_payload.get("job") if isinstance(status_payload, dict) else None
+    progress_obj: object = None
+    if isinstance(job_obj, dict):
+        progress_obj = job_obj.get("progress")
+    progress = progress_obj if isinstance(progress_obj, dict) else {}
+
+    pages_per_minute_obj = progress.get("pages_per_minute")
+    pages_per_minute: float | None = None
+    if isinstance(pages_per_minute_obj, (int, float)):
+        pages_per_minute = float(pages_per_minute_obj)
+
+    phase_timings_obj = progress.get("phase_timings_ms")
+    phase_timings_ms: dict[str, int] | None = None
+    if isinstance(phase_timings_obj, dict):
+        phase_timings_ms = {
+            str(key): int(value)
+            for key, value in phase_timings_obj.items()
+            if isinstance(key, str) and isinstance(value, (int, float))
+        }
 
     result_obj = result_payload.get("result")
     conversion_metadata_obj: object = None
@@ -219,6 +250,9 @@ def run_v2_conversion(
     pipeline_used_obj = conversion_metadata.get("pipeline_used")
     backend_used_obj = conversion_metadata.get("backend_used")
     acceleration_used_obj = conversion_metadata.get("acceleration_used")
+    ocr_enabled_obj = conversion_metadata.get("ocr_enabled")
+    ocr_engine_used_obj = conversion_metadata.get("ocr_engine_used")
+    ocr_languages_used_obj = conversion_metadata.get("ocr_languages_used")
 
     return (
         ArtifactEvidence(
@@ -230,6 +264,15 @@ def run_v2_conversion(
             backend_used=backend_used_obj if isinstance(backend_used_obj, str) else None,
             acceleration_used=(
                 acceleration_used_obj if isinstance(acceleration_used_obj, str) else None
+            ),
+            pages_per_minute=pages_per_minute,
+            phase_timings_ms=phase_timings_ms,
+            ocr_enabled=ocr_enabled_obj if isinstance(ocr_enabled_obj, bool) else None,
+            ocr_engine_used=(ocr_engine_used_obj if isinstance(ocr_engine_used_obj, str) else None),
+            ocr_languages_used=(
+                [item for item in ocr_languages_used_obj if isinstance(item, str)]
+                if isinstance(ocr_languages_used_obj, list)
+                else None
             ),
         ),
         result_payload,

@@ -42,6 +42,9 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
             warnings=["ocr_retry_performed"],
             phase_timings_ms={"backend_convert_ms": 12},
             options_fingerprint="contract_test_pdf_md",
+            ocr_enabled=True,
+            ocr_engine_used="auto",
+            ocr_languages_used=["en"],
         )
 
     monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _successful_executor)
@@ -50,6 +53,8 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=True,
             enable_supervisor=False,
             processing_delay_seconds=0.0,
         )
@@ -113,7 +118,11 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
     assert result_payload["api_version"] == "v2"
     assert result_payload["result"]["artifact"]["format"] == "md"
     assert result_payload["result"]["artifact"]["content_type"] == "text/markdown"
-    assert result_payload["result"]["conversion_metadata"]["pipeline_used"] == "pdf_to_md_v2"
+    metadata = result_payload["result"]["conversion_metadata"]
+    assert metadata["pipeline_used"] == "pdf_to_md_v2"
+    assert metadata["ocr_enabled"] is True
+    assert metadata["ocr_engine_used"] == "auto"
+    assert metadata["ocr_languages_used"] == ["en"]
 
     artifact_response = client.get(
         f"/v2/convert/jobs/{job_id}/artifact",

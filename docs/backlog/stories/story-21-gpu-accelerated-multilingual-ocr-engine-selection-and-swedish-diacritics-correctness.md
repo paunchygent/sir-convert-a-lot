@@ -1,9 +1,9 @@
 ---
-id: 'story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness'
-title: 'GPU-accelerated multilingual OCR engine selection and Swedish diacritics correctness'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness
+title: GPU-accelerated multilingual OCR engine selection and Swedish diacritics correctness
+type: story
+status: in_progress
+priority: high
 created: '2026-03-05'
 last_updated: '2026-03-05'
 related:
@@ -26,6 +26,7 @@ labels:
   - gpu
   - hemma
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -78,7 +79,7 @@ Make PDF OCR both correct for Swedish (preserve `å`, `ä`, `ö`) and fast enoug
 - [ ] Performance target (Hemma live evidence):
   - batch throughput improves materially versus the documented baseline,
   - explicit target for the operator-provided “300 PDFs” corpus:
-    - total wall-clock <= 60 minutes on Hemma default tuned profile,
+    - total wall-clock \<= 60 minutes on Hemma default tuned profile,
     - evidence includes median `pages_per_minute` and stage timings.
 
 ## Test Requirements

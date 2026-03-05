@@ -240,6 +240,9 @@ def test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime(
             warnings=[],
             phase_timings_ms={"conversion_attempt_ms": 1},
             options_fingerprint="stubbed-options-fingerprint",
+            ocr_enabled=False,
+            ocr_engine_used=None,
+            ocr_languages_used=[],
         )
 
     monkeypatch.setattr(

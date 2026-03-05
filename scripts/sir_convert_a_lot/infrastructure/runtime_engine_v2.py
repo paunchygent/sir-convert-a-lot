@@ -37,6 +37,7 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobStateConflictV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2 import JobStoreV2
+from scripts.sir_convert_a_lot.infrastructure.ocr_preflight_v2 import preflight_pdf_ocr_or_raise
 from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import load_pdf_checkpoint
 from scripts.sir_convert_a_lot.infrastructure.pdf_metadata_v2 import best_effort_pdf_total_pages
 from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
@@ -113,7 +114,10 @@ class ServiceRuntimeV2:
             enable_webhook_delivery=self.config.enable_webhook_delivery,
             sse_replay_horizon_seconds=self.config.sse_replay_horizon_seconds,
         )
-        self.docling_backend = DoclingConversionBackend()
+        self.docling_backend = DoclingConversionBackend(
+            easyocr_model_storage_directory=self.config.easyocr_model_storage_directory,
+            easyocr_download_enabled=False,
+        )
         self.pymupdf_backend = PyMuPdfConversionBackend()
         self._lock = threading.Lock()
         self._shutdown_event = threading.Event()
@@ -283,6 +287,11 @@ class ServiceRuntimeV2:
             pipeline_used=record.pipeline_used,
             backend_used=record.backend_used,
             acceleration_used=record.acceleration_used,
+            ocr_enabled=record.ocr_enabled,
+            ocr_engine_used=record.ocr_engine_used,
+            ocr_languages_used=(
+                list(record.ocr_languages_used) if record.ocr_languages_used is not None else None
+            ),
             acceleration_policy_requested=record.acceleration_policy_requested,
             gpu_runtime_kind=record.gpu_runtime_kind,
             gpu_device_count=record.gpu_device_count,
@@ -380,6 +389,7 @@ class ServiceRuntimeV2:
         resources_zip_bytes: bytes | None,
         reference_docx_bytes: bytes | None,
     ) -> StoredJobV2:
+        preflight_pdf_ocr_or_raise(spec=spec, config=self.config)
         job_id = self._new_job_id()
         record = self.job_store.create_job(
             job_id=job_id,
@@ -567,6 +577,9 @@ class ServiceRuntimeV2:
                     pipeline_used=result.pipeline_used,
                     backend_used=result.backend_used,
                     acceleration_used=result.acceleration_used,
+                    ocr_enabled=result.ocr_enabled,
+                    ocr_engine_used=result.ocr_engine_used,
+                    ocr_languages_used=result.ocr_languages_used,
                     options_fingerprint=f"sha256:{result.options_fingerprint}",
                     acceleration_policy_requested=acceleration_policy_requested,
                     gpu_runtime_kind=gpu_runtime_kind,

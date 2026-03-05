@@ -267,6 +267,9 @@ def test_run_job_returns_when_mark_succeeded_conflicts(monkeypatch, tmp_path: Pa
             warnings=[],
             phase_timings_ms={},
             options_fingerprint="f00d",
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
         ),
     )
 
@@ -464,6 +467,9 @@ def test_run_job_gpu_snapshot_errors_are_non_fatal_for_success_path(
             warnings=["preexisting_warning"],
             phase_timings_ms={},
             options_fingerprint="f00d",
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
         )
 
     def _raise_snapshot(*_args, **_kwargs):
@@ -514,6 +520,9 @@ def test_run_job_bypasses_telemetry_hot_path_when_disabled(monkeypatch, tmp_path
             warnings=[],
             phase_timings_ms={},
             options_fingerprint="f00d",
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
         )
 
     def _unexpected_collect(*_args, **_kwargs):

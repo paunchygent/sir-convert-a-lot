@@ -177,6 +177,49 @@ def test_job_spec_accepts_pdf_to_md_route() -> None:
     assert spec.conversion.output_format.value == "md"
 
 
+def test_pdf_options_accepts_ocr_engine_and_normalizes_language_tags() -> None:
+    payload = _base_payload(source_format="pdf", output_format="md")
+    pdf_options = _pdf_options_payload()
+    pdf_options["ocr_mode"] = "force"
+    pdf_options["ocr_engine"] = "easyocr"
+    pdf_options["ocr_languages"] = ["SV", "sv-SE", "en", "en", " sv "]
+    payload["pdf_options"] = pdf_options
+    payload["execution"] = _execution_payload()
+
+    spec = JobSpecV2.model_validate(payload)
+    assert spec.pdf_options is not None
+    assert spec.pdf_options.ocr_engine.value == "easyocr"
+    assert spec.pdf_options.ocr_languages == ["sv", "sv-se", "en"]
+
+
+def test_pdf_options_rejects_invalid_ocr_engine() -> None:
+    payload = _base_payload(source_format="pdf", output_format="md")
+    pdf_options = _pdf_options_payload()
+    pdf_options["ocr_engine"] = "unknown-engine"
+    payload["pdf_options"] = pdf_options
+    payload["execution"] = _execution_payload()
+
+    with pytest.raises(ValidationError) as exc_info:
+        JobSpecV2.model_validate(payload)
+
+    errors = exc_info.value.errors(include_url=False)
+    assert any(error.get("loc") == ("pdf_options", "ocr_engine") for error in errors)
+
+
+def test_pdf_options_rejects_ocr_languages_without_iso639_primary_tag() -> None:
+    payload = _base_payload(source_format="pdf", output_format="md")
+    pdf_options = _pdf_options_payload()
+    pdf_options["ocr_languages"] = ["swe"]
+    payload["pdf_options"] = pdf_options
+    payload["execution"] = _execution_payload()
+
+    with pytest.raises(ValidationError) as exc_info:
+        JobSpecV2.model_validate(payload)
+
+    errors = exc_info.value.errors(include_url=False)
+    assert any(error.get("loc") == ("pdf_options", "ocr_languages") for error in errors)
+
+
 def test_job_spec_accepts_docx_to_md_route() -> None:
     payload = _base_payload(source_format="docx", output_format="md")
 

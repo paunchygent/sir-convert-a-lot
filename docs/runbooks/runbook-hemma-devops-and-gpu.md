@@ -329,6 +329,11 @@ Evidence is written on Hemma under:
 
 - `build/verification/task-39-v2-smoke/` (`report.md`, `report.json`, `artifacts/`, `responses/`)
 
+This smoke includes a Swedish OCR regression guard:
+
+- runs `swedish_ocr_pdf_to_md` with forced OCR and asserts output contains `å`, `ä`, `ö`,
+- records `ocr_*` metadata plus `pages_per_minute` and `phase_timings_ms` evidence fields.
+
 View the markdown report:
 
 ```bash

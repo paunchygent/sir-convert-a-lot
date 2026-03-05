@@ -52,6 +52,9 @@ class V2ExecutionResult:
     warnings: list[str]
     phase_timings_ms: dict[str, int]
     options_fingerprint: str
+    ocr_enabled: bool | None
+    ocr_engine_used: str | None
+    ocr_languages_used: list[str] | None
     template_id: str | None = None
     template_version: str | None = None
     template_artifact_sha256: str | None = None
@@ -112,6 +115,9 @@ def execute_v2_job_conversion(
     pipeline_used: str
     backend_used: str | None = None
     acceleration_used: str | None = None
+    ocr_enabled: bool | None = None
+    ocr_engine_used: str | None = None
+    ocr_languages_used: list[str] | None = None
     template_id: str | None = None
     template_version: str | None = None
     template_artifact_sha256: str | None = None
@@ -130,6 +136,9 @@ def execute_v2_job_conversion(
             markdown_content,
             backend_used,
             acceleration_used,
+            ocr_enabled,
+            ocr_engine_used,
+            ocr_languages_used,
             pdf_warnings,
             pdf_timings,
         ) = execute_pdf_to_markdown_with_checkpoints_v2(
@@ -191,6 +200,9 @@ def execute_v2_job_conversion(
         warnings=warnings,
         phase_timings_ms=phase_timings_ms,
         options_fingerprint=options_fingerprint,
+        ocr_enabled=ocr_enabled,
+        ocr_engine_used=ocr_engine_used,
+        ocr_languages_used=list(ocr_languages_used) if ocr_languages_used is not None else None,
         template_id=template_id,
         template_version=template_version,
         template_artifact_sha256=template_artifact_sha256,

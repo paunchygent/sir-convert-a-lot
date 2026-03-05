@@ -171,6 +171,9 @@ def _run_variant(
                 "conversion_attempt_ms": int(max(0.0, stub_work_seconds) * 1000.0),
             },
             options_fingerprint="story20-telemetry-benchmark",
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
         )
 
     original_execute = runtime_engine_v2.execute_v2_job_conversion

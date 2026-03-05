@@ -387,6 +387,9 @@ def test_cancel_returns_conflict_for_terminal_jobs(tmp_path: Path, monkeypatch) 
             warnings=[],
             phase_timings_ms={},
             options_fingerprint="contract_test_stub",
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
         )
 
     monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _successful_executor)
@@ -446,6 +449,9 @@ def test_polling_fallback_lifecycle_unchanged_with_sse_enabled(tmp_path: Path, m
             warnings=[],
             phase_timings_ms={"conversion_attempt_ms": 1},
             options_fingerprint="polling_with_sse_enabled",
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
         )
 
     monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _successful_executor)

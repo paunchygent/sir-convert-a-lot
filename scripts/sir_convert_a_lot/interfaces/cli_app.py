@@ -167,6 +167,16 @@ def convert_command(
         "--ocr-mode",
         help="OCR mode: off, force, or auto.",
     ),
+    ocr_engine: str = typer.Option(
+        "auto",
+        "--ocr-engine",
+        help="OCR engine: auto, easyocr, or tesseract_cli.",
+    ),
+    ocr_language: list[str] = typer.Option(
+        [],
+        "--ocr-language",
+        help="OCR language tag (repeatable, e.g. --ocr-language sv --ocr-language en).",
+    ),
     table_mode: str = typer.Option(
         "accurate",
         "--table-mode",
@@ -370,6 +380,8 @@ def convert_command(
                 acceleration_policy=acceleration_policy,
                 backend_strategy=backend_strategy,
                 ocr_mode=ocr_mode,
+                ocr_engine=ocr_engine,
+                ocr_languages=ocr_language,
                 table_mode=table_mode,
                 normalize=normalize,
             )

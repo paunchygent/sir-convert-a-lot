@@ -139,6 +139,9 @@ def _stub_executor(**kwargs) -> V2ExecutionResult:
         warnings=[],
         phase_timings_ms={"conversion_attempt_ms": 1},
         options_fingerprint="sse-contract-stub",
+        ocr_enabled=None,
+        ocr_engine_used=None,
+        ocr_languages_used=None,
     )
 
 

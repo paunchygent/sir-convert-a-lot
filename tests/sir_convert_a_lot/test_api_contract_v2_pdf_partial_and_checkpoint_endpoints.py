@@ -93,6 +93,9 @@ def test_pdf_partial_and_checkpoint_endpoints_transition_202_to_200(
             warnings=[],
             phase_timings_ms={"backend_convert_ms": 1},
             options_fingerprint="contract_test_partial_checkpoint",
+            ocr_enabled=False,
+            ocr_engine_used=None,
+            ocr_languages_used=[],
         )
 
     monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _executor)
@@ -101,6 +104,8 @@ def test_pdf_partial_and_checkpoint_endpoints_transition_202_to_200(
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=True,
             enable_supervisor=False,
             processing_delay_seconds=0.0,
         )

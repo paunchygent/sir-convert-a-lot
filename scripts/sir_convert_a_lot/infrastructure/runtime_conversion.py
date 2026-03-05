@@ -17,6 +17,7 @@ import time
 
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, NormalizeMode
+from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.backend_routing import select_backend
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     ConversionBackend,
@@ -48,6 +49,9 @@ def execute_job_conversion(
     gpu_runtime_probe: GpuRuntimeProbeResult | None,
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
+    ocr_engine: OcrEngineV2 | None = None,
+    ocr_languages: tuple[str, ...] = (),
+    ocr_use_gpu: bool | None = None,
 ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
     """Execute one conversion and return markdown, metadata, warnings, and timings."""
     request = ConversionRequest(
@@ -55,6 +59,9 @@ def execute_job_conversion(
         source_bytes=source_bytes,
         backend_strategy=spec.conversion.backend_strategy,
         ocr_mode=spec.conversion.ocr_mode,
+        ocr_engine=ocr_engine,
+        ocr_languages=ocr_languages,
+        ocr_use_gpu=ocr_use_gpu,
         table_mode=spec.conversion.table_mode,
         gpu_available=gpu_available,
         gpu_runtime_probe=gpu_runtime_probe,

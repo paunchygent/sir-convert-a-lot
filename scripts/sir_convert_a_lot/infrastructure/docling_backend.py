@@ -19,15 +19,19 @@ from io import BytesIO
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
+    EasyOcrOptions,
+    OcrAutoOptions,
     PdfPipelineOptions,
     TableFormerMode,
     TableStructureOptions,
+    TesseractCliOcrOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.exceptions import ConversionError as DoclingConversionError
 from docling_core.types.io import DocumentStream
 
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
+from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
     BackendGpuUnavailableError,
@@ -70,6 +74,9 @@ from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
     GpuRuntimeProbeResult,
     probe_torch_gpu_runtime,
 )
+from scripts.sir_convert_a_lot.infrastructure.ocr_language_mapping_v2 import (
+    map_bcp47_languages_to_tesseract,
+)
 
 _AUTO_OCR_CHARS_PER_PAGE_THRESHOLD = 120.0
 _LOW_CONFIDENCE_GRADES = {"poor", "fair"}
@@ -103,6 +110,9 @@ class _ConverterKey:
     table_mode: TableMode
     ocr_enabled: bool
     force_full_page_ocr: bool
+    ocr_engine: OcrEngineV2 | None
+    ocr_languages: tuple[str, ...]
+    ocr_use_gpu: bool | None
     acceleration_device: AcceleratorDevice
     layout_model_key: str
     formula_enrichment: bool
@@ -112,7 +122,12 @@ class _ConverterKey:
 class DoclingConversionBackend(ConversionBackend):
     """Docling implementation of the conversion backend protocol."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        easyocr_model_storage_directory: str | None = None,
+        easyocr_download_enabled: bool = False,
+    ) -> None:
         self._thread_local = threading.local()
         self._ordering_patch_enabled = _is_env_flag_enabled(
             env_var=_DOCLING_ORDERING_PATCH_ENV_VAR,
@@ -122,6 +137,8 @@ class DoclingConversionBackend(ConversionBackend):
             env_var=_DOCLING_ORDERING_QUALITY_GATE_ENV_VAR,
             default=True,
         )
+        self._easyocr_model_storage_directory = easyocr_model_storage_directory
+        self._easyocr_download_enabled = easyocr_download_enabled
         if self._ordering_patch_enabled:
             install_docling_form_ordering_patch()
 
@@ -283,6 +300,9 @@ class DoclingConversionBackend(ConversionBackend):
             table_mode=request.table_mode,
             ocr_enabled=ocr_enabled,
             force_full_page_ocr=force_full_page_ocr,
+            ocr_engine=request.ocr_engine if ocr_enabled else None,
+            ocr_languages=request.ocr_languages if ocr_enabled else (),
+            ocr_use_gpu=request.ocr_use_gpu if ocr_enabled else None,
             acceleration_device=acceleration_device,
             layout_model_key=layout_model_key,
             formula_enrichment=formula_enrichment,
@@ -384,6 +404,21 @@ class DoclingConversionBackend(ConversionBackend):
                 _resolve_layout_model_config(layout_model_key=key.layout_model_key),
             )
         pipeline_options.do_ocr = key.ocr_enabled
+        if key.ocr_engine is not None:
+            if key.ocr_engine == OcrEngineV2.EASYOCR:
+                pipeline_options.ocr_options = EasyOcrOptions(
+                    lang=list(key.ocr_languages),
+                    use_gpu=bool(key.ocr_use_gpu) if key.ocr_use_gpu is not None else True,
+                    download_enabled=self._easyocr_download_enabled,
+                    model_storage_directory=self._easyocr_model_storage_directory,
+                )
+            elif key.ocr_engine == OcrEngineV2.TESSERACT_CLI:
+                pipeline_options.ocr_options = TesseractCliOcrOptions(
+                    lang=list(map_bcp47_languages_to_tesseract(key.ocr_languages)),
+                    psm=3,
+                )
+            else:
+                pipeline_options.ocr_options = OcrAutoOptions(lang=list(key.ocr_languages))
         pipeline_options.do_table_structure = True
         pipeline_options.do_formula_enrichment = key.formula_enrichment
         if key.formula_enrichment:

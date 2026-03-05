@@ -62,6 +62,9 @@ def test_cancel_with_save_and_resume_from_checkpoint_produces_deterministic_fina
         gpu_runtime_probe,
         docling_backend,
         pymupdf_backend,
+        ocr_engine=None,
+        ocr_languages=(),
+        ocr_use_gpu=None,
     ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
         del (
             spec,
@@ -70,6 +73,9 @@ def test_cancel_with_save_and_resume_from_checkpoint_produces_deterministic_fina
             gpu_runtime_probe,
             docling_backend,
             pymupdf_backend,
+            ocr_engine,
+            ocr_languages,
+            ocr_use_gpu,
         )
         import pymupdf
 
