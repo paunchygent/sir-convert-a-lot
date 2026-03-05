@@ -24,8 +24,8 @@ description: >-
 
 Cross-repo operational references:
 
-- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/operations/hemma-server-operations-huleedu.md`
-- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/operations/gpu-ai-workloads-on-hemma-huleedu.md`
+- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/runbooks/hemma-server-operations-huleedu.md`
+- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/runbooks/gpu-ai-workloads-on-hemma-huleedu.md`
 - `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-home-server.md`
 - `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-gpu-ai-workloads.md`
 
