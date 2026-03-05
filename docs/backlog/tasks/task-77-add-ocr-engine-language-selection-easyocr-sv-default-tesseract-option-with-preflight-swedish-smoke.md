@@ -2,7 +2,7 @@
 id: task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke
 title: Add OCR engine + language selection (EasyOCR sv default, Tesseract option) with preflight + Swedish smoke
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-05'
 last_updated: '2026-03-05'
@@ -106,27 +106,27 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
 - [x] Docling backend uses EasyOCR GPU for OCR by default on Hemma; Tesseract CLI is selectable.
 - [x] Preflight rejects missing engine/language with actionable error before starting long runs.
 - [x] Swedish OCR deploy-smoke exists and is integrated into the current Hemma verification workflow.
-- [ ] Evidence artifacts are deterministic (report JSON/MD, readyz, metrics, sample OCR output excerpt).
+- [x] Evidence artifacts are deterministic (report JSON/MD, readyz, metrics, sample OCR output excerpt).
 
 ## Acceptance Criteria
 
-- [ ] Swedish diacritics preserved:
+- [x] Swedish diacritics preserved:
   - the Swedish OCR smoke output contains `å`, `ä`, `ö`,
   - `conversion_metadata.ocr_enabled=true`.
-- [ ] Engine/language are explicit and observable:
+- [x] Engine/language are explicit and observable:
   - `conversion_metadata.ocr_engine_used` and `ocr_languages_used` are populated.
-- [ ] GPU-first policy holds for OCR:
+- [x] GPU-first policy holds for OCR:
   - `conversion_metadata.acceleration_used="cuda"` for Docling execution,
   - `conversion_metadata.ocr_acceleration_used="cuda"` when `acceleration_policy=gpu_required`,
   - no silent CPU fallback when EasyOCR is requested with GPU-required policy.
-- [ ] Preflight gate is fail-fast:
+- [x] Preflight gate is fail-fast:
   - missing `swe` for Tesseract fails job creation with remediation instructions.
-- [ ] Deploy-time smoke stays lightweight:
+- [x] Deploy-time smoke stays lightweight:
   - adds \<= 1 extra OCR job (small fixture),
   - smoke completes within 5 minutes on Hemma and writes deterministic evidence under `build/verification/`.
-- [ ] Metrics safety asserted during verification:
+- [x] Metrics safety asserted during verification:
   - `/metrics` does not contain `job_id=` and does not include job ids as label values.
-- [ ] Performance evidence captured (live check + targets):
+- [x] Performance evidence captured (live check + targets):
   - record median `pages_per_minute` and stage timing keys for the smoke OCR job(s),
   - document a baseline vs new default comparison (tie into `T74` throughput benchmark report),
   - explicit operator benchmark target for the “300 PDFs” corpus:
@@ -137,18 +137,24 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
 - `pdm run format-all` (pass)
 - `pdm run lint-fix` (pass)
 - `pdm run typecheck-all` (pass)
-- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `458 passed, 5 skipped`)
-- `pdm run coverage-gate` (pass: total coverage `95.71%`)
+- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `476 passed, 5 skipped`)
+- `pdm run coverage-gate` (pass: total coverage `95.76%`)
 - `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
 - `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
-- Live evidence (pending; must run post-merge per ops policy):
-  - `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host --api-key <key>`
+- Live command (pass):
+  - `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host`
+  - local artifacts:
+    - `build/verification/task-76-hemma-deploy-verify/report.json`
+    - `build/verification/task-76-hemma-deploy-verify/report.md`
+  - remote smoke artifacts (Hemma):
+    - `build/verification/task-76-hemma-deploy-verify/v2-smoke/report.json`
+    - `build/verification/task-76-hemma-deploy-verify/v2-smoke/swedish_ocr_excerpt.txt`
 
 ## Checklist
 
 - [x] Implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated
 
 ## Closeout (Mandatory)

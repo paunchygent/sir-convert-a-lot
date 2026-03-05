@@ -2,7 +2,7 @@
 id: story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness
 title: GPU-accelerated multilingual OCR engine selection and Swedish diacritics correctness
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-05'
 last_updated: '2026-03-05'
@@ -111,6 +111,6 @@ Operators can run large OCR batches with:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

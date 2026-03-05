@@ -82,7 +82,7 @@ high-throughput pipeline with:
   (requires `T70-T71`)
 - [ ] `S03` `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
   (requires `T72-T74` plus `T76` preflight hardening gate)
-- [ ] `S04` `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
+- [x] `S04` `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
   (requires `T77` and should land before `T74` benchmark/report)
 
 ## Tasks (Ordered)
@@ -95,7 +95,7 @@ high-throughput pipeline with:
 - [x] `T73` `docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md`
 - [x] `T76` `docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md`
 - [ ] `T72` `docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md`
-- [ ] `T77` `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
+- [x] `T77` `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
 - [ ] `T74` `docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md`
 
 ## Execution Plan (Implementation Order)
