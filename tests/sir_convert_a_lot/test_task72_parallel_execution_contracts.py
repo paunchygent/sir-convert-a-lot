@@ -25,7 +25,7 @@ from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import JobStatus, TableMode
-from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
@@ -104,6 +104,9 @@ def _make_stub_conversion(
         gpu_runtime_probe,
         docling_backend,
         pymupdf_backend,
+        ocr_engine: OcrEngineV2 | None = None,
+        ocr_languages: tuple[str, ...] = (),
+        ocr_use_gpu: bool | None = None,
     ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
         del (
             spec,
@@ -112,6 +115,9 @@ def _make_stub_conversion(
             gpu_runtime_probe,
             docling_backend,
             pymupdf_backend,
+            ocr_engine,
+            ocr_languages,
+            ocr_use_gpu,
         )
         page_numbers = _page_numbers_from_chunk(source_bytes)
         delay_seconds = max(delays.get(page_number, 0.01) for page_number in page_numbers)
