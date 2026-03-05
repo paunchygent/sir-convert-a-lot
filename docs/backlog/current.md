@@ -97,10 +97,12 @@ Primary implementation stories (active sequence):
     - `pdm run lint-fix` (pass)
     - `pdm run typecheck-all` (pass)
     - `pdm run pytest-root tests/sir_convert_a_lot/test_gpu_utilization_snapshot.py tests/sir_convert_a_lot/test_runtime_engine_v2.py tests/sir_convert_a_lot/test_benchmark_story20_telemetry_overhead.py -q` (pass: `29 passed`)
+  - Completed Task 76 hardening gate with live Hemma deploy-and-verify evidence:
+    - `build/verification/task-76-hemma-deploy-verify/report.json` (`status=passed`)
   - Changed backlog docs:
     - `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
     - `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
-    - `docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md`
+    - `docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md`
 
 - 2026-03-04:
 

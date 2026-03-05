@@ -1,0 +1,474 @@
+"""One-command Hemma deploy and live verification orchestrator.
+
+Purpose:
+    Execute Task 76 deploy parity and live verification in one deterministic
+    command: push -> remote pull -> rebuild/recreate -> readiness parity ->
+    live GPU smoke -> metrics safety scan.
+
+Relationships:
+    - Exposed as `pdm run hemma-deploy-and-verify`.
+    - Uses `scripts/devops/run-hemma.sh` via `run-local-pdm` for canonical
+      remote execution context.
+    - Delegates live GPU smoke to
+      `scripts.sir_convert_a_lot.devops.verify_hemma_gpu_runtime`.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+
+from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import (
+    VerificationContractError,
+    assert_expected_revision_matches_remote,
+    assert_service_revision_matches_remote,
+    port_for_lane,
+    resolve_api_key,
+    scan_metrics_forbidden_substrings,
+    service_url_for_lane,
+)
+
+DEFAULT_OUTPUT_ROOT = Path("build/verification/task-76-hemma-deploy-verify")
+DOCKER_SOCKET_PERMISSION_DENIED = (
+    "permission denied while trying to connect to the Docker daemon socket"
+)
+
+
+class CommandExecutionError(RuntimeError):
+    """Raised when subprocess execution fails."""
+
+
+@dataclass(frozen=True)
+class WorkflowSettings:
+    """Normalized settings for the deploy-and-verify workflow."""
+
+    expected_revision: str
+    lane: str
+    service_url: str
+    output_root: Path
+    api_key: str
+    api_key_source: str
+    allow_dev_key: bool
+
+
+def _utc_now_iso() -> str:
+    """Return RFC3339 UTC timestamp for reports."""
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    """Parse CLI arguments for Task 76 command surface."""
+    parser = argparse.ArgumentParser(description="Hemma deploy + verify orchestrator (Task 76).")
+    parser.add_argument(
+        "--expected-revision",
+        required=True,
+        help="Local Git revision intended for deployment (SHA or rev-parse expression).",
+    )
+    parser.add_argument(
+        "--lane",
+        choices=["host", "docker"],
+        default="host",
+        help="Verification lane: host (28085 canonical) or docker (8085 internal-only).",
+    )
+    parser.add_argument(
+        "--service-url",
+        default="",
+        help="Override service URL (default derived from --lane).",
+    )
+    parser.add_argument(
+        "--api-key",
+        default=None,
+        help="X-API-Key value. Precedence: --api-key > SIR_CONVERT_A_LOT_API_KEY.",
+    )
+    parser.add_argument(
+        "--allow-dev-key",
+        action="store_true",
+        help="Allow implicit env-based dev-only-key for local/dev scenarios.",
+    )
+    parser.add_argument(
+        "--output-root",
+        default=str(DEFAULT_OUTPUT_ROOT),
+        help="Deterministic artifact output path.",
+    )
+    return parser.parse_args(argv)
+
+
+def _run_command(
+    command: list[str],
+    *,
+    label: str,
+    env: dict[str, str] | None = None,
+    redactions: tuple[str, ...] = (),
+) -> str:
+    """Run command and return stdout, raising sanitized diagnostics on failure."""
+    result = subprocess.run(command, check=False, capture_output=True, text=True, env=env)
+    if result.returncode != 0:
+        stdout = result.stdout
+        stderr = result.stderr
+        for token in redactions:
+            if token != "":
+                stdout = stdout.replace(token, "<redacted>")
+                stderr = stderr.replace(token, "<redacted>")
+        raise CommandExecutionError(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{stdout.strip()}\n"
+            f"stderr:\n{stderr.strip()}"
+        )
+    return result.stdout
+
+
+def _run_remote(
+    remote_args: list[str],
+    *,
+    label: str,
+    redactions: tuple[str, ...] = (),
+) -> str:
+    """Execute argv-safe command on Hemma via canonical wrappers."""
+    command = ["pdm", "run", "run-local-pdm", "run-hemma", "--", *remote_args]
+    return _run_command(command, label=label, redactions=redactions)
+
+
+def _write_json(path: Path, payload: object) -> None:
+    """Write deterministic JSON output."""
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _resolve_expected_revision(raw_revision: str) -> str:
+    """Resolve revision expression to full commit SHA."""
+    output = _run_command(
+        ["git", "rev-parse", f"{raw_revision}^{{commit}}"],
+        label="resolve expected revision",
+    )
+    resolved = output.strip()
+    if resolved == "":
+        raise CommandExecutionError("resolve expected revision produced empty SHA")
+    return resolved
+
+
+def _build_report_markdown(report: dict[str, object]) -> str:
+    """Render human-readable markdown summary from report payload."""
+    checks = report.get("checks")
+    checks_obj = checks if isinstance(checks, dict) else {}
+    metrics_forbidden = checks_obj.get("metrics_forbidden_substrings")
+    forbidden = metrics_forbidden if isinstance(metrics_forbidden, list) else []
+    expected_remote_ok = checks_obj.get("expected_revision_matches_remote")
+    service_remote_ok = checks_obj.get("service_revision_matches_remote")
+    live_smoke_ok = checks_obj.get("live_smoke_passed")
+    metrics_ok = checks_obj.get("metrics_scan_passed")
+
+    lines: list[str] = [
+        "# Task 76 Hemma Deploy and Verify Report",
+        "",
+        f"- generated_at: `{report.get('generated_at')}`",
+        f"- status: `{report.get('status')}`",
+        f"- expected_revision: `{report.get('expected_revision')}`",
+        f"- remote_revision: `{report.get('remote_revision')}`",
+        f"- service_revision: `{report.get('service_revision')}`",
+        f"- lane: `{report.get('lane')}`",
+        f"- service_url: `{report.get('service_url')}`",
+        f"- api_key_source: `{report.get('api_key_source')}`",
+        "",
+        "## Checks",
+        "",
+        f"- expected_revision_matches_remote: `{expected_remote_ok}`",
+        f"- service_revision_matches_remote: `{service_remote_ok}`",
+        f"- live_smoke_passed: `{live_smoke_ok}`",
+        f"- metrics_scan_passed: `{metrics_ok}`",
+        f"- metrics_forbidden_substrings: `{forbidden}`",
+        "",
+    ]
+    failure_obj = report.get("failure")
+    if isinstance(failure_obj, str) and failure_obj.strip() != "":
+        lines.extend(["## Failure", "", failure_obj, ""])
+    lines.extend(
+        [
+            "## Evidence Files",
+            "",
+            "- `report.json`",
+            "- `report.md`",
+            "- `readyz.json`",
+            "- `metrics.prom`",
+            "- `remote_head.txt`",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _load_workflow_settings(args: argparse.Namespace) -> WorkflowSettings:
+    """Resolve settings and enforce API-key contracts before workflow execution."""
+    resolved_expected_revision = _resolve_expected_revision(str(args.expected_revision))
+    try:
+        resolved_api_key = resolve_api_key(
+            api_key_arg=args.api_key,
+            environ=os.environ,
+            allow_dev_key=bool(args.allow_dev_key),
+        )
+    except VerificationContractError as exc:
+        raise CommandExecutionError(str(exc)) from exc
+
+    lane = str(args.lane)
+    # Validate lane mapping early for deterministic failure messaging.
+    port_for_lane(lane)
+
+    service_url = str(args.service_url).strip().rstrip("/")
+    if service_url == "":
+        service_url = service_url_for_lane(lane)
+
+    output_root = Path(str(args.output_root))
+    return WorkflowSettings(
+        expected_revision=resolved_expected_revision,
+        lane=lane,
+        service_url=service_url,
+        output_root=output_root,
+        api_key=resolved_api_key.value,
+        api_key_source=resolved_api_key.source,
+        allow_dev_key=bool(args.allow_dev_key),
+    )
+
+
+def _parse_json_object(payload_text: str, *, label: str) -> dict[str, object]:
+    """Parse JSON text and require top-level object payload."""
+    parsed: object = json.loads(payload_text)
+    if not isinstance(parsed, dict):
+        raise VerificationContractError(f"{label} payload is not an object")
+    return parsed
+
+
+def _fetch_readyz_with_retry(
+    *,
+    service_url: str,
+    timeout_seconds: float = 120.0,
+    poll_interval_seconds: float = 2.0,
+) -> dict[str, object]:
+    """Fetch readyz payload with bounded retries for recreate/startup transitions."""
+    deadline = time.monotonic() + timeout_seconds
+    last_error = "readyz not yet checked"
+    while time.monotonic() < deadline:
+        try:
+            readyz_raw = _run_remote(
+                ["curl", "-sS", f"{service_url}/readyz"],
+                label="remote readyz fetch",
+            )
+            payload = _parse_json_object(readyz_raw, label="readyz")
+            if payload.get("ready") is True:
+                return payload
+            last_error = f"readyz reports not ready: reasons={payload.get('reasons')!r}"
+        except (CommandExecutionError, VerificationContractError, json.JSONDecodeError) as exc:
+            last_error = str(exc)
+        time.sleep(poll_interval_seconds)
+
+    raise VerificationContractError(
+        f"readyz did not become ready within retry window. Last observed issue: {last_error}"
+    )
+
+
+def _initialize_artifacts(output_root: Path) -> tuple[Path, Path, Path, Path, Path]:
+    """Create output path and deterministic evidence file placeholders."""
+    output_root.mkdir(parents=True, exist_ok=True)
+    report_json_path = output_root / "report.json"
+    report_md_path = output_root / "report.md"
+    readyz_path = output_root / "readyz.json"
+    metrics_path = output_root / "metrics.prom"
+    remote_head_path = output_root / "remote_head.txt"
+
+    readyz_path.write_text("{}\n", encoding="utf-8")
+    metrics_path.write_text("# metrics not captured\n", encoding="utf-8")
+    remote_head_path.write_text("unavailable\n", encoding="utf-8")
+
+    return report_json_path, report_md_path, readyz_path, metrics_path, remote_head_path
+
+
+def _remote_recreate_service() -> None:
+    """Recreate remote service, retrying with sudo when Docker socket is restricted."""
+    recreate_args = ["pdm", "run", "dev-recreate", "sir_convert_a_lot_prod"]
+    try:
+        _run_remote(
+            recreate_args,
+            label="remote pdm run dev-recreate sir_convert_a_lot_prod",
+        )
+        return
+    except CommandExecutionError as exc:
+        if DOCKER_SOCKET_PERMISSION_DENIED not in str(exc):
+            raise
+
+    _run_remote(
+        [
+            "sudo",
+            "-n",
+            "/home/paunchygent/.local/bin/pdm",
+            "run",
+            "dev-recreate",
+            "sir_convert_a_lot_prod",
+        ],
+        label="remote sudo -n pdm run dev-recreate sir_convert_a_lot_prod",
+    )
+
+
+def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
+    """Run deploy + verify sequence and return report payload."""
+    report: dict[str, object] = {
+        "generated_at": _utc_now_iso(),
+        "status": "failed",
+        "expected_revision": settings.expected_revision,
+        "remote_revision": None,
+        "service_revision": None,
+        "lane": settings.lane,
+        "service_url": settings.service_url,
+        "api_key_source": settings.api_key_source,
+        "checks": {
+            "expected_revision_matches_remote": False,
+            "service_revision_matches_remote": False,
+            "live_smoke_passed": False,
+            "metrics_scan_passed": False,
+            "metrics_forbidden_substrings": [],
+        },
+        "failure": None,
+    }
+
+    report_json_path, report_md_path, readyz_path, metrics_path, remote_head_path = (
+        _initialize_artifacts(settings.output_root)
+    )
+
+    try:
+        _run_command(["git", "push", "origin", "HEAD"], label="git push origin HEAD")
+        _run_remote(["git", "pull", "--ff-only"], label="remote git pull --ff-only")
+
+        remote_revision = _run_remote(
+            ["git", "rev-parse", "HEAD"],
+            label="remote git rev-parse HEAD",
+        ).strip()
+        remote_head_path.write_text(remote_revision + "\n", encoding="utf-8")
+        report["remote_revision"] = remote_revision
+
+        assert_expected_revision_matches_remote(
+            expected_revision=settings.expected_revision,
+            remote_revision=remote_revision,
+        )
+        checks_obj = report["checks"]
+        if isinstance(checks_obj, dict):
+            checks_obj["expected_revision_matches_remote"] = True
+
+        _remote_recreate_service()
+
+        readyz_payload = _fetch_readyz_with_retry(service_url=settings.service_url)
+        _write_json(readyz_path, readyz_payload)
+
+        service_revision_obj = readyz_payload.get("service_revision")
+        if not isinstance(service_revision_obj, str) or service_revision_obj.strip() == "":
+            raise VerificationContractError("readyz payload missing service_revision")
+        report["service_revision"] = service_revision_obj
+
+        assert_service_revision_matches_remote(
+            service_revision=service_revision_obj,
+            remote_revision=remote_revision,
+        )
+        checks_obj = report["checks"]
+        if isinstance(checks_obj, dict):
+            checks_obj["service_revision_matches_remote"] = True
+
+        remote_smoke_output_root = "build/verification/task-76-hemma-deploy-verify/v2-smoke"
+        remote_verify_args: list[str] = [
+            "pdm",
+            "run",
+            "python",
+            "-m",
+            "scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions",
+            "--lane",
+            settings.lane,
+            "--api-key",
+            settings.api_key,
+            "--output-root",
+            remote_smoke_output_root,
+        ]
+        _run_remote(
+            remote_verify_args,
+            label="remote verify_hemma_v2_conversions",
+            redactions=(settings.api_key,),
+        )
+        checks_obj = report["checks"]
+        if isinstance(checks_obj, dict):
+            checks_obj["live_smoke_passed"] = True
+
+        metrics_text = _run_remote(
+            ["curl", "-fsS", f"{settings.service_url}/metrics"],
+            label="remote metrics fetch",
+        )
+        metrics_path.write_text(metrics_text, encoding="utf-8")
+
+        forbidden = scan_metrics_forbidden_substrings(metrics_text)
+        checks_obj = report["checks"]
+        if isinstance(checks_obj, dict):
+            checks_obj["metrics_forbidden_substrings"] = forbidden
+        if forbidden:
+            raise VerificationContractError(
+                "Metrics safety scan failed. Forbidden substrings found: "
+                f"{', '.join(forbidden)}. Remediation: remove high-cardinality labels "
+                "(for example job identifiers) and rerun verification."
+            )
+        if isinstance(checks_obj, dict):
+            checks_obj["metrics_scan_passed"] = True
+
+        report["status"] = "passed"
+        report["failure"] = None
+    except (CommandExecutionError, VerificationContractError, json.JSONDecodeError) as exc:
+        report["status"] = "failed"
+        report["failure"] = str(exc)
+
+    _write_json(report_json_path, report)
+    report_md_path.write_text(_build_report_markdown(report) + "\n", encoding="utf-8")
+    return report
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entrypoint for Task 76 deploy and verification workflow."""
+    args = _parse_args(sys.argv[1:] if argv is None else argv)
+    try:
+        settings = _load_workflow_settings(args)
+    except CommandExecutionError as exc:
+        # Keep deterministic artifact location if settings resolution fails.
+        output_root = Path(str(args.output_root))
+        report_json_path, report_md_path, readyz_path, metrics_path, remote_head_path = (
+            _initialize_artifacts(output_root)
+        )
+        report: dict[str, object] = {
+            "generated_at": _utc_now_iso(),
+            "status": "failed",
+            "expected_revision": str(args.expected_revision),
+            "remote_revision": None,
+            "service_revision": None,
+            "lane": str(args.lane),
+            "service_url": str(args.service_url).strip() or service_url_for_lane(str(args.lane)),
+            "api_key_source": None,
+            "checks": {
+                "expected_revision_matches_remote": False,
+                "service_revision_matches_remote": False,
+                "live_smoke_passed": False,
+                "metrics_scan_passed": False,
+                "metrics_forbidden_substrings": [],
+            },
+            "failure": str(exc),
+        }
+        _write_json(report_json_path, report)
+        report_md_path.write_text(_build_report_markdown(report) + "\n", encoding="utf-8")
+        readyz_path.write_text("{}\n", encoding="utf-8")
+        metrics_path.write_text("# metrics not captured\n", encoding="utf-8")
+        remote_head_path.write_text("unavailable\n", encoding="utf-8")
+        print(report_md_path.as_posix())
+        return 1
+
+    report = execute_workflow(settings)
+    report_md = settings.output_root / "report.md"
+    print(report_md.as_posix())
+    return 0 if report.get("status") == "passed" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

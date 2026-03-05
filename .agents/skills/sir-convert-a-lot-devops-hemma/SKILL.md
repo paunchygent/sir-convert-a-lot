@@ -44,6 +44,24 @@ pdm run run-hemma -- <command> [args]
 pdm run run-hemma --shell "<command with shell operators>"
 ```
 
+Deploy parity gate (one-command deploy + verify):
+
+```bash
+pdm run hemma-deploy-and-verify \
+  --expected-revision <sha> \
+  --lane host \
+  --api-key <key>
+```
+
+Deploy verification evidence path (deterministic):
+
+- Use `--output-root` for deterministic evidence output and include:
+  - `report.json`
+  - `report.md`
+  - `readyz.json`
+  - `metrics.prom`
+  - `remote_head.txt`
+
 Wrapper behavior is deterministic:
 
 - validates `SIR_CONVERT_A_LOT_HEMMA_ROOT` exists and is a git repo before command execution.
@@ -87,7 +105,7 @@ ssh hemma "/bin/bash -lc 'mkdir -p /home/paunchygent/apps && cd /home/paunchygen
 
 - Prefer GPU execution path by default for conversion service workloads.
 - Never silently switch to CPU fallback when GPU is unavailable.
-- If fallback policy changes, require ADR/task updates first.
+- If fallback policy changes, require ADR/backlog updates first.
 
 ## Tunnel-First Dev Flow
 
@@ -96,6 +114,19 @@ Canonical client access lanes (no superseded local lanes):
 - Tunnel lane: `http://127.0.0.1:28085`
 - Internet lane: `https://convert.hule.education`
 - Do not guide clients to `127.0.0.1:8085` or `127.0.0.1:18085`.
+
+Verification lane policy:
+
+- host lane (`28085`) is canonical for deploy/live verification.
+- docker lane (`8085`) is internal-only container validation and must not be
+  documented as a client access lane.
+
+API key policy for deploy/live verification:
+
+- precedence: `--api-key` > `SIR_CONVERT_A_LOT_API_KEY` > error.
+- implicit `dev-only-key` is rejected unless explicitly passed via
+  `--api-key dev-only-key` or `--allow-dev-key`.
+- API keys must never be persisted in reports/logs/artifacts.
 
 Canonical Hemma prod env mirror/symlink command:
 

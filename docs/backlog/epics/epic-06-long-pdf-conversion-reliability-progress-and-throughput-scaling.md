@@ -5,13 +5,14 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-03-04'
-last_updated: '2026-03-04'
+last_updated: '2026-03-05'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md
   - docs/backlog/stories/story-18-page-level-progress-and-stall-telemetry-contract.md
   - docs/backlog/stories/story-19-checkpointed-partial-results-and-resumable-ocr-pipeline.md
   - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md
+  - docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md
   - docs/backlog/tasks/task-67-detect-stalled-conversions-separately-from-active-long-running-jobs.md
   - docs/backlog/tasks/task-68-publish-adr-for-progress-checkpoint-and-resume-contract.md
   - docs/backlog/tasks/task-69-add-page-level-progress-fields-to-v2-jobs-api.md
@@ -20,6 +21,8 @@ related:
   - docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md
   - docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md
   - docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md
+  - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
+  - docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/sir_convert_a_lot.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -78,7 +81,9 @@ high-throughput pipeline with:
 - [x] `S02` `docs/backlog/stories/story-19-checkpointed-partial-results-and-resumable-ocr-pipeline.md`
   (requires `T70-T71`)
 - [ ] `S03` `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
-  (requires `T72-T74`)
+  (requires `T72-T74` plus `T76` preflight hardening gate)
+- [ ] `S04` `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
+  (requires `T77` and should land before `T74` benchmark/report)
 
 ## Tasks (Ordered)
 
@@ -88,7 +93,9 @@ high-throughput pipeline with:
 - [x] `T70` `docs/backlog/tasks/task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts.md`
 - [x] `T71` `docs/backlog/tasks/task-71-add-cancel-with-save-and-resume-from-checkpoint-flow.md`
 - [x] `T73` `docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md`
+- [x] `T76` `docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md`
 - [ ] `T72` `docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md`
+- [ ] `T77` `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
 - [ ] `T74` `docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md`
 
 ## Execution Plan (Implementation Order)
@@ -109,6 +116,8 @@ This epic is intentionally ordered to reduce risk and prevent wasted work.
    - resume creates a new job id; preserved provenance from source job/checkpoint.
 1. `T73` (telemetry before tuning):
    - stage timings + queue/worker saturation + GPU evidence for real bottleneck diagnosis.
+1. `T76` (deploy/verification hardening gate):
+   - enforce deploy parity and stable live-verification workflow before throughput tuning.
 1. `T72` (parallelization with caps):
    - introduce bounded worker pools and GPU concurrency caps after telemetry exists.
 1. `T74` (benchmark/report):

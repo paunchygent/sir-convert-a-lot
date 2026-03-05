@@ -162,6 +162,12 @@ SIR_CONVERT_A_LOT_VERIFY_LANE=docker \
   pdm run run-local-pdm hemma-verify-gpu-runtime
 ```
 
+Verification lane policy for this command:
+
+- host lane (`28085`) is canonical for deploy/live verification.
+- docker lane (`8085`) is internal-only container validation and must not be advertised as a
+  client access lane.
+
 ROCm torch pin source of truth remains:
 
 - `pyproject.toml` `tool.sir_convert_a_lot.rocm_runtime`
@@ -193,6 +199,48 @@ Compliance pass conditions:
 - Live `gpu_required` conversion succeeds with `conversion_metadata.acceleration_used="cuda"`.
 - No `docling_cuda_unavailable_fallback_cpu` warning.
 - `rocm-smi` observes non-zero GPU busy during conversion.
+
+## Deploy Parity and Live Verification Gate (Task 76)
+
+Use one command to enforce deploy parity before Story 20 throughput slices.
+
+Canonical command:
+
+```bash
+pdm run hemma-deploy-and-verify \
+  --expected-revision <sha> \
+  --lane host \
+  --api-key <key>
+```
+
+Arguments and policy:
+
+- `--expected-revision` is required and must match remote `HEAD` after pull.
+- `--lane` defaults to `host`; `docker` is internal-only validation.
+- API key precedence is strict: `--api-key` > `SIR_CONVERT_A_LOT_API_KEY` > error.
+- `dev-only-key` is forbidden unless explicitly passed via `--api-key dev-only-key` or
+  `--allow-dev-key` is set.
+- API keys must never be persisted in logs/artifacts.
+
+Deterministic evidence path:
+
+- `build/verification/task-76-hemma-deploy-verify/`
+  - `report.json`
+  - `report.md`
+  - `readyz.json`
+  - `metrics.prom`
+  - `remote_head.txt`
+
+Decision tree (fail-closed):
+
+1. `expected_revision != remote_revision`:
+   - push the intended commit, rerun with the pushed SHA.
+1. `service_revision != remote_revision`:
+   - recreate service (`pdm run dev-recreate` on Hemma), verify `/readyz`, rerun gate.
+1. key resolution fails:
+   - provide `--api-key` or set `SIR_CONVERT_A_LOT_API_KEY`; avoid implicit `dev-only-key`.
+1. metrics safety scan fails (`job_id=`, `jobv2_`):
+   - remove forbidden high-cardinality labels and rerun verification.
 
 ## Bottleneck Triage Workflow (Task 73)
 
@@ -268,6 +316,8 @@ Overhead deltas:
 Produce deterministic, written evidence that the Hemma **docker lane** can execute the
 service API v2 critical routes end-to-end (`html -> pdf`, `md -> pdf`, `md -> docx`,
 `pdf -> docx`, `pdf -> md`).
+
+This route is internal container validation only and must not be documented as a client lane.
 
 Run from laptop (wrapper executes the verification remotely in `~/apps/sir-convert-a-lot`):
 

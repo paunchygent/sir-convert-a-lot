@@ -8,6 +8,7 @@ created: '2026-03-04'
 last_updated: '2026-03-05'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
+  - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
   - docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md
   - docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md
   - docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md
@@ -39,6 +40,8 @@ bounded parallel execution and evidence-driven bottleneck removal.
 
 Guardrails:
 
+- Hemma deploy-parity + live verification hardening (`T76`) must be completed before tuning work
+  in `T72`/`T74`.
 - Parallelization is opt-in behind config defaults until benchmark evidence exists.
 - GPU-backed stages must have explicit concurrency caps to avoid OOM and thrash.
 - Any backend-specific limitations (Docling vs PyMuPDF) must be captured in the benchmark report.
