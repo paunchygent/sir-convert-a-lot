@@ -54,7 +54,7 @@ RUN pdm run python -m pip install --upgrade --no-cache-dir \
     "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}"
 
 RUN mkdir -p /opt/easyocr-models \
-    && pdm run python -c \"import easyocr; easyocr.Reader(['sv','en'], gpu=False, model_storage_directory='/opt/easyocr-models', download_enabled=True, verbose=False)\"
+    && pdm run python -c 'import easyocr; easyocr.Reader(["sv", "en"], gpu=False, model_storage_directory="/opt/easyocr-models", download_enabled=True, verbose=False)'
 
 COPY scripts ./scripts
 
