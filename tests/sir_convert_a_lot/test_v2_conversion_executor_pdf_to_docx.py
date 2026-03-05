@@ -251,7 +251,7 @@ def test_execute_v2_job_conversion_pdf_to_docx_success_with_stubbed_stages(
     assert result.backend_used == "docling"
     assert result.acceleration_used == "cuda"
     assert result.warnings == ["table_detection_degraded"]
-    assert result.phase_timings_ms == {"backend_convert_ms": 12, "normalize_ms": 3}
+    assert result.phase_timings_ms == {"ocr_layout_extract_ms": 12, "markdown_normalize_ms": 3}
     assert result.options_fingerprint == fingerprint_job_options(job.spec)
     assert len(execute_calls) == 1
     assert execute_calls[0]["source_filename"] == "input.pdf"

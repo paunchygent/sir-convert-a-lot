@@ -4,7 +4,7 @@ id: RUN-hemma-devops-and-gpu
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 status: active
 created: '2026-02-11'
-updated: '2026-02-28'
+updated: '2026-03-05'
 owners:
   - platform
 system: hemma.hule.education
@@ -184,11 +184,84 @@ Compliance pass conditions:
   - `data_root` matches canonical configured runtime root.
 - `/healthz` remains liveness-only and should return `{"status":"ok",...}` when process is alive.
 - `/metrics` is available for Prometheus scraping on the service listener.
+- Metrics label safety policy:
+  - do not use `job_id`, correlation id, filename, or dynamic endpoint values as metric labels,
+  - use bounded labels only (status/source/output/backend/policy),
+  - correlate per-job diagnostics through `X-Correlation-ID` + lifecycle events/webhook payloads.
 - `rocm-smi` detects the GPU.
 - `probe_torch_gpu_runtime()` reports `runtime_kind="rocm"` and `is_available=true`.
 - Live `gpu_required` conversion succeeds with `conversion_metadata.acceleration_used="cuda"`.
 - No `docling_cuda_unavailable_fallback_cpu` warning.
 - `rocm-smi` observes non-zero GPU busy during conversion.
+
+## Bottleneck Triage Workflow (Task 73)
+
+Use this flow to identify slowdown source without high-cardinality metric labels.
+
+1. Capture a metrics snapshot:
+
+```bash
+curl -fsS http://127.0.0.1:28085/metrics > /tmp/sir_metrics.prom
+```
+
+1. Check queue pressure and worker cap:
+
+   - `sir_convert_a_lot_v2_jobs_queued`
+   - `sir_convert_a_lot_v2_jobs_active`
+   - `sir_convert_a_lot_v2_workers_max`
+   - `sir_convert_a_lot_v2_worker_saturation_ratio`
+   - `sir_convert_a_lot_v2_gpu_concurrency_cap`
+
+1. Check stage timing concentration:
+
+   - `sir_convert_a_lot_v2_stage_duration_seconds_count`
+   - `sir_convert_a_lot_v2_stage_duration_seconds_sum`
+   - canonical stage labels are:
+     - `ocr_layout_extract_ms`
+     - `markdown_normalize_ms`
+     - `formula_enrichment_ms`
+     - `checkpoint_persist_ms`
+     - `final_artifact_persist_ms`
+     - `chunk_total_ms`
+     - `conversion_total_ms`
+
+1. Check terminal/retry trend by bounded dimensions:
+
+   - `sir_convert_a_lot_v2_jobs_terminal_total`
+   - `sir_convert_a_lot_v2_job_retries_total`
+
+1. Correlate one problematic job via job payload and logs/events (not metric labels):
+
+   - inspect `result.conversion_metadata`:
+     - `acceleration_policy_requested`
+     - `acceleration_used`
+     - `gpu_runtime_kind`
+     - `gpu_device_count`
+     - `gpu_busy_percent`
+     - `gpu_memory_used_percent`
+   - join with request/response `X-Correlation-ID` and lifecycle events.
+
+Local synthetic overhead evidence command (generated artifact under `build/`):
+
+```bash
+pdm run benchmark:task-73-telemetry \
+  --total-jobs 40 \
+  --max-workers 8 \
+  --stub-work-seconds 0.2 \
+  --output-json build/benchmarks/story-20/task-73-telemetry-overhead-local.json \
+  --data-root build/benchmarks/story-20/task-73-telemetry-runtime
+```
+
+Benchmark payload variants:
+
+- `telemetry_full`: runtime telemetry calls enabled with Prometheus sink attached.
+- `telemetry_sink_disabled`: runtime telemetry calls enabled with no sink attached.
+- `telemetry_calls_bypassed`: runtime telemetry calls bypassed in hot paths.
+
+Overhead deltas:
+
+- `overhead_percent.full_vs_sink_disabled`
+- `overhead_percent.full_vs_bypassed`
 
 ## V2 Conversion Smoke Verification (Task 39)
 

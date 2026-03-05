@@ -33,7 +33,13 @@ class JobProgressV2(BaseModel):
     stage: str
     last_heartbeat_at: datetime | None = None
     current_phase_started_at: datetime | None = None
-    phase_timings_ms: dict[str, int] = Field(default_factory=dict)
+    phase_timings_ms: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Canonical stage timings map. See v2 converter docs for key contract and legacy alias "
+            "normalization rules."
+        ),
+    )
     total_pages: int | None = Field(default=None, ge=0)
     processed_pages: int | None = Field(default=None, ge=0)
     failed_pages: int | None = Field(default=None, ge=0)
@@ -99,6 +105,11 @@ class ConversionMetadataV2(BaseModel):
     pipeline_used: str
     backend_used: str | None = None
     acceleration_used: str | None = None
+    acceleration_policy_requested: str | None = None
+    gpu_runtime_kind: str | None = None
+    gpu_device_count: int | None = Field(default=None, ge=0)
+    gpu_busy_percent: int | None = Field(default=None, ge=0, le=100)
+    gpu_memory_used_percent: int | None = Field(default=None, ge=0, le=100)
     options_fingerprint: str
     template_id: str | None = None
     template_version: str | None = None

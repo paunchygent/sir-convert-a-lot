@@ -5,10 +5,12 @@ type: programme
 status: in_progress
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-02-11'
+last_updated: '2026-03-05'
 related:
   - docs/backlog/epics/epic-03-unified-conversion-service.md
   - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
+  - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
+  - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
@@ -40,6 +42,11 @@ planned, implemented, validated, and operated across local repos and Hemma-hoste
 
 1. `docs/backlog/epics/epic-03-unified-conversion-service.md`
 1. `docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md`
+1. `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
+
+## Recently Completed Epics
+
+1. `docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md`
 
 ## Acceptance Criteria
 

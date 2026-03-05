@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-03-04
+updated: 2026-03-05
 owners:
   - platform
 tags:
@@ -132,7 +132,25 @@ All job status payloads include a `job.progress` object with:
   `converting`, `succeeded`, `failed`, `canceled`).
 - `last_heartbeat_at` (`datetime | null`): liveness signal.
 - `current_phase_started_at` (`datetime | null`): best-effort phase start marker.
-- `phase_timings_ms` (`object`): best-effort stage timing counters.
+- `phase_timings_ms` (`object`): canonical best-effort stage timing counters.
+
+Canonical v2 timing keys in `phase_timings_ms`:
+
+- `ocr_layout_extract_ms`
+- `markdown_normalize_ms`
+- `formula_enrichment_ms`
+- `checkpoint_persist_ms`
+- `final_artifact_persist_ms`
+- `chunk_total_ms`
+- `conversion_total_ms`
+
+Compatibility alias mapping (accepted as input, normalized on persistence/response):
+
+- `backend_convert_ms` -> `ocr_layout_extract_ms`
+- `normalize_ms` -> `markdown_normalize_ms`
+- `chunk_elapsed_ms` -> `chunk_total_ms`
+- `persist_ms` -> `final_artifact_persist_ms`
+- `conversion_attempt_ms` -> `conversion_total_ms`
 
 PDF-only fields (per ADR-0005) are optional and may be `null` for non-PDF routes:
 
@@ -142,6 +160,15 @@ PDF-only fields (per ADR-0005) are optional and may be `null` for non-PDF routes
 - `percent_complete` (`float | null`) (monotonic; range `0..100`)
 - `pages_per_minute` (`float | null`) (non-negative; best-effort)
 - `eta_seconds` (`int | null`) (non-negative; best-effort)
+
+### Metrics Label Policy (v2)
+
+Prometheus metric labels must remain bounded-cardinality:
+
+- Never use `job_id`, `X-Correlation-ID`, filename, or dynamic route values as metric labels.
+- Use metric labels only for bounded dimensions (for example status/source/output/backend/policy).
+- Correlate per-job investigations through logs/events (`X-Correlation-ID`, lifecycle events, webhook
+  payloads), not metric labels.
 
 ### JobSpec (v2)
 
@@ -383,6 +410,22 @@ For template-selected DOCX jobs, `result.conversion_metadata` includes:
 - `template_id`
 - `template_version`
 - `template_artifact_sha256`
+
+Telemetry and acceleration evidence fields in `result.conversion_metadata`:
+
+- `acceleration_policy_requested` (`string | null`):
+  - echoes requested execution policy when provided in job spec (PDF routes),
+  - `null` for routes where execution policy is not applicable.
+- `acceleration_used` (`string | null`):
+  - effective accelerator channel used by the conversion backend (`cpu`, `cuda`, or `null`).
+- `gpu_runtime_kind` (`string | null`):
+  - best-effort runtime kind observed for GPU-backed jobs (`rocm`, `cuda`, or `null`).
+- `gpu_device_count` (`int | null`):
+  - best-effort observed device count from runtime probe.
+- `gpu_busy_percent` (`int | null`):
+  - best-effort utilization snapshot at/near terminalization.
+- `gpu_memory_used_percent` (`int | null`):
+  - best-effort memory pressure snapshot at/near terminalization.
 
 Response matrix:
 

@@ -31,6 +31,7 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceError,
     service_config_from_env,
 )
+from scripts.sir_convert_a_lot.infrastructure.runtime_telemetry_v2 import RuntimeTelemetrySinkV2
 from scripts.sir_convert_a_lot.interfaces.http_app_state import (
     ensure_runtime_state,
     initialize_service_state,
@@ -100,6 +101,7 @@ def create_app(
         ["method", "path"],
         registry=metrics_registry,
     )
+    runtime_telemetry_v2 = RuntimeTelemetrySinkV2(registry=metrics_registry)
 
     @asynccontextmanager
     async def _lifespan(lifespan_app: FastAPI):
@@ -120,6 +122,7 @@ def create_app(
         metrics_registry=metrics_registry,
         request_counter=request_counter,
         request_duration=request_duration,
+        runtime_telemetry_v2=runtime_telemetry_v2,
     )
 
     @app.middleware("http")

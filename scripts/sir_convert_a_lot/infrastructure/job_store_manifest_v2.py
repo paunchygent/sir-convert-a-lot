@@ -22,6 +22,13 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_to_rfc3339,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import StoredJobRecordV2
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
+    normalize_phase_timings_map,
+)
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    merge_phase_timings as merge_phase_timings_canonical_v2,
+)
 from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
     parse_progress_page_fields,
 )
@@ -41,16 +48,16 @@ def parse_phase_timings(diagnostics: dict[str, object]) -> dict[str, int]:
     phase_timings_obj = diagnostics.get("phase_timings_ms")
     if not isinstance(phase_timings_obj, dict):
         return {}
-    parsed: dict[str, int] = {}
+    string_keyed: dict[str, object] = {}
     for key, value in phase_timings_obj.items():
-        if isinstance(key, str) and isinstance(value, int):
-            parsed[key] = value
-    return parsed
+        if isinstance(key, str):
+            string_keyed[key] = value
+    return normalize_phase_timings_map(string_keyed)
 
 
 def set_phase_timings(*, diagnostics: dict[str, object], phase_timings_ms: dict[str, int]) -> None:
     """Persist normalized phase timings into diagnostics payload."""
-    diagnostics["phase_timings_ms"] = {key: int(value) for key, value in phase_timings_ms.items()}
+    diagnostics["phase_timings_ms"] = normalize_phase_timings_map(phase_timings_ms)
 
 
 def merge_phase_timings(
@@ -59,9 +66,10 @@ def merge_phase_timings(
     additional_phase_timings_ms: dict[str, int],
 ) -> dict[str, int]:
     """Merge additional phase timings into diagnostics in-place."""
-    merged = parse_phase_timings(diagnostics)
-    for key, value in additional_phase_timings_ms.items():
-        merged[key] = merged.get(key, 0) + int(value)
+    merged = merge_phase_timings_canonical_v2(
+        current=parse_phase_timings(diagnostics),
+        additional=additional_phase_timings_ms,
+    )
     set_phase_timings(diagnostics=diagnostics, phase_timings_ms=merged)
     return merged
 
@@ -168,8 +176,11 @@ def parse_stored_job_record(
     last_heartbeat_at = dt_from_rfc3339(diagnostics_obj.get("last_heartbeat_at"))
     current_phase_started_at = dt_from_rfc3339(diagnostics_obj.get("current_phase_started_at"))
     phase_timings_ms = parse_phase_timings(diagnostics_obj)
-    if status in {JobStatus.SUCCEEDED, JobStatus.FAILED} and "persist_ms" not in phase_timings_ms:
-        phase_timings_ms["persist_ms"] = 0
+    if (
+        status in {JobStatus.SUCCEEDED, JobStatus.FAILED}
+        and TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS not in phase_timings_ms
+    ):
+        phase_timings_ms[TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS] = 0
 
     result_obj = payload.get("result_metadata")
     error_obj = payload.get("error")
@@ -180,6 +191,11 @@ def parse_stored_job_record(
     pipeline_used: str | None = None
     backend_used: str | None = None
     acceleration_used: str | None = None
+    acceleration_policy_requested: str | None = None
+    gpu_runtime_kind: str | None = None
+    gpu_device_count: int | None = None
+    gpu_busy_percent: int | None = None
+    gpu_memory_used_percent: int | None = None
     options_fingerprint: str | None = None
     template_id: str | None = None
     template_version: str | None = None
@@ -206,6 +222,11 @@ def parse_stored_job_record(
             pipeline_obj = meta_obj.get("pipeline_used")
             backend_obj = meta_obj.get("backend_used")
             accel_obj = meta_obj.get("acceleration_used")
+            policy_obj = meta_obj.get("acceleration_policy_requested")
+            runtime_kind_obj = meta_obj.get("gpu_runtime_kind")
+            device_count_obj = meta_obj.get("gpu_device_count")
+            gpu_busy_obj = meta_obj.get("gpu_busy_percent")
+            gpu_memory_obj = meta_obj.get("gpu_memory_used_percent")
             options_obj = meta_obj.get("options_fingerprint")
             template_id_obj = meta_obj.get("template_id")
             template_version_obj = meta_obj.get("template_version")
@@ -213,6 +234,23 @@ def parse_stored_job_record(
             pipeline_used = pipeline_obj if isinstance(pipeline_obj, str) else None
             backend_used = backend_obj if isinstance(backend_obj, str) else None
             acceleration_used = accel_obj if isinstance(accel_obj, str) else None
+            acceleration_policy_requested = policy_obj if isinstance(policy_obj, str) else None
+            gpu_runtime_kind = runtime_kind_obj if isinstance(runtime_kind_obj, str) else None
+            gpu_device_count = (
+                device_count_obj
+                if isinstance(device_count_obj, int) and not isinstance(device_count_obj, bool)
+                else None
+            )
+            gpu_busy_percent = (
+                gpu_busy_obj
+                if isinstance(gpu_busy_obj, int) and not isinstance(gpu_busy_obj, bool)
+                else None
+            )
+            gpu_memory_used_percent = (
+                gpu_memory_obj
+                if isinstance(gpu_memory_obj, int) and not isinstance(gpu_memory_obj, bool)
+                else None
+            )
             options_fingerprint = options_obj if isinstance(options_obj, str) else None
             template_id = template_id_obj if isinstance(template_id_obj, str) else None
             template_version = (
@@ -265,6 +303,11 @@ def parse_stored_job_record(
         pipeline_used=pipeline_used,
         backend_used=backend_used,
         acceleration_used=acceleration_used,
+        acceleration_policy_requested=acceleration_policy_requested,
+        gpu_runtime_kind=gpu_runtime_kind,
+        gpu_device_count=gpu_device_count,
+        gpu_busy_percent=gpu_busy_percent,
+        gpu_memory_used_percent=gpu_memory_used_percent,
         options_fingerprint=options_fingerprint,
         template_id=template_id,
         template_version=template_version,

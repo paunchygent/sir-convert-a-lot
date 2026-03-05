@@ -5,7 +5,7 @@ type: story
 status: completed
 priority: high
 created: '2026-03-04'
-last_updated: '2026-03-04'
+last_updated: '2026-03-05'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md
@@ -44,21 +44,21 @@ progress (not only heartbeat) and distinguish active work from stalled work.
 
 ## Acceptance Criteria
 
-- [ ] Progress payload includes page-aware counters and ETA for PDF jobs.
-- [ ] Active long jobs with fresh progress updates never surface as failure-like timeout states.
-- [ ] Stalled jobs are deterministically classified with explicit reason code/details.
-- [ ] CLI/manifest output clearly differentiates:
+- [x] Progress payload includes page-aware counters and ETA for PDF jobs.
+- [x] Active long jobs with fresh progress updates never surface as failure-like timeout states.
+- [x] Stalled jobs are deterministically classified with explicit reason code/details.
+- [x] CLI/manifest output clearly differentiates:
   - active-running long jobs,
   - stalled-timeout jobs,
   - terminal failed jobs.
-- [ ] SSE and webhook progress payloads are upgraded in lockstep with polling payloads.
+- [x] SSE and webhook progress payloads are upgraded in lockstep with polling payloads.
 
 ## Test Requirements
 
-- [ ] Unit tests for progress and stall classification calculations.
-- [ ] API contract tests for new progress fields and compatibility behavior.
-- [ ] CLI polling/manifest tests for active vs stalled timeout mapping.
-- [ ] Regression tests to prove non-PDF routes are unaffected.
+- [x] Unit tests for progress and stall classification calculations.
+- [x] API contract tests for new progress fields and compatibility behavior.
+- [x] CLI polling/manifest tests for active vs stalled timeout mapping.
+- [x] Regression tests to prove non-PDF routes are unaffected.
 
 ## Done Definition
 

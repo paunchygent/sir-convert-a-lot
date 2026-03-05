@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import threading
 import time
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -21,6 +22,9 @@ import pytest
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
+from scripts.sir_convert_a_lot.infrastructure.gpu_utilization_snapshot import (
+    GpuUtilizationSnapshotTimeoutError,
+)
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobExpiredV2,
     JobMissingV2,
@@ -423,3 +427,107 @@ def test_run_job_marks_failed_on_unexpected_exception(monkeypatch, tmp_path: Pat
     assert "Unexpected conversion error: kaboom" in stored.failure_message
     assert stored.failure_retryable is True
     assert stored.failure_details is None
+
+
+@pytest.mark.parametrize(
+    ("raised_error", "expected_warning"),
+    [
+        (RuntimeError("snapshot boom"), "gpu_snapshot_capture_failed"),
+        (GpuUtilizationSnapshotTimeoutError("snapshot timeout"), "gpu_snapshot_capture_timeout"),
+    ],
+)
+def test_run_job_gpu_snapshot_errors_are_non_fatal_for_success_path(
+    monkeypatch,
+    tmp_path: Path,
+    raised_error: Exception,
+    expected_warning: str,
+) -> None:
+    runtime = ServiceRuntimeV2(_runtime_config(tmp_path / "service_data"))
+    job = runtime.create_job(
+        spec=_md_to_pdf_spec(filename="gpu-snapshot-fail-open.md"),
+        upload_bytes=b"# GPU snapshot fail-open\n",
+        resources_zip_bytes=None,
+        reference_docx_bytes=None,
+    )
+
+    def _fake_heartbeat(**kwargs):
+        del kwargs
+        return threading.Event(), _NoopJoinThread()
+
+    def _fake_execute(**kwargs):
+        del kwargs
+        return V2ExecutionResult(
+            artifact_bytes=b"%PDF-1.4\n",
+            pipeline_used="md_to_pdf_v2",
+            backend_used="pandoc+weasyprint",
+            acceleration_used="cuda",
+            warnings=["preexisting_warning"],
+            phase_timings_ms={},
+            options_fingerprint="f00d",
+        )
+
+    def _raise_snapshot(*_args, **_kwargs):
+        raise raised_error
+
+    monkeypatch.setattr(runtime_engine_v2, "start_conversion_heartbeat_v2", _fake_heartbeat)
+    monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _fake_execute)
+    monkeypatch.setattr(runtime, "_collect_gpu_utilization_fields", _raise_snapshot)
+
+    runtime._run_job(job.job_id)
+
+    stored = runtime.get_job(job.job_id)
+    assert stored is not None
+    assert stored.status == JobStatus.SUCCEEDED
+    assert stored.failure_code is None
+    assert stored.gpu_runtime_kind is None
+    assert stored.gpu_busy_percent is None
+    assert stored.gpu_memory_used_percent is None
+    assert "preexisting_warning" in stored.warnings
+    assert expected_warning in stored.warnings
+
+
+def test_run_job_bypasses_telemetry_hot_path_when_disabled(monkeypatch, tmp_path: Path) -> None:
+    runtime = ServiceRuntimeV2(
+        replace(
+            _runtime_config(tmp_path / "service_data"),
+            enable_runtime_telemetry_calls=False,
+        )
+    )
+    job = runtime.create_job(
+        spec=_md_to_pdf_spec(filename="telemetry-bypassed.md"),
+        upload_bytes=b"# Telemetry bypassed\n",
+        resources_zip_bytes=None,
+        reference_docx_bytes=None,
+    )
+
+    def _fake_heartbeat(**kwargs):
+        del kwargs
+        return threading.Event(), _NoopJoinThread()
+
+    def _fake_execute(**kwargs):
+        del kwargs
+        return V2ExecutionResult(
+            artifact_bytes=b"%PDF-1.4\n",
+            pipeline_used="md_to_pdf_v2",
+            backend_used="pandoc+weasyprint",
+            acceleration_used="cuda",
+            warnings=[],
+            phase_timings_ms={},
+            options_fingerprint="f00d",
+        )
+
+    def _unexpected_collect(*_args, **_kwargs):
+        raise AssertionError(
+            "GPU snapshot collection should be bypassed when telemetry is disabled"
+        )
+
+    monkeypatch.setattr(runtime_engine_v2, "start_conversion_heartbeat_v2", _fake_heartbeat)
+    monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _fake_execute)
+    monkeypatch.setattr(runtime, "_collect_gpu_utilization_fields", _unexpected_collect)
+
+    runtime._run_job(job.job_id)
+
+    stored = runtime.get_job(job.job_id)
+    assert stored is not None
+    assert stored.status == JobStatus.SUCCEEDED
+    assert stored.gpu_runtime_kind is None

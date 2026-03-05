@@ -2,10 +2,10 @@
 id: story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr
 title: Parallel execution and bottleneck elimination for PDF OCR
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-04'
-last_updated: '2026-03-04'
+last_updated: '2026-03-05'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md

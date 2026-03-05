@@ -82,7 +82,7 @@ def test_execute_v2_job_conversion_pdf_to_md_success_with_stubbed_backend(
     assert result.backend_used == "docling"
     assert result.acceleration_used == "cuda"
     assert result.warnings == ["ocr_retry_performed"]
-    assert result.phase_timings_ms == {"backend_convert_ms": 45, "normalize_ms": 6}
+    assert result.phase_timings_ms == {"ocr_layout_extract_ms": 45, "markdown_normalize_ms": 6}
     assert result.options_fingerprint == fingerprint_job_options(job.spec)
     assert result.artifact_bytes == b"# Converted markdown\n\nBody\n"
     assert job.artifact_path.read_text(encoding="utf-8") == "# Converted markdown\n\nBody\n"

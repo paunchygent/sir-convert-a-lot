@@ -42,6 +42,10 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     StoredJobRecordV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2_core import JobStoreV2Core
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    TIMING_KEY_CONVERSION_TOTAL_MS,
+    TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
+)
 from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
     parse_optional_nonneg_int,
 )
@@ -159,6 +163,11 @@ class JobStoreV2(JobStoreV2Core):
         backend_used: str | None,
         acceleration_used: str | None,
         options_fingerprint: str,
+        acceleration_policy_requested: str | None = None,
+        gpu_runtime_kind: str | None = None,
+        gpu_device_count: int | None = None,
+        gpu_busy_percent: int | None = None,
+        gpu_memory_used_percent: int | None = None,
         template_id: str | None = None,
         template_version: str | None = None,
         template_artifact_sha256: str | None = None,
@@ -211,7 +220,7 @@ class JobStoreV2(JobStoreV2Core):
                 progress["percent_complete"] = 100.0
                 progress["eta_seconds"] = 0
                 if phase_timings_ms is not None and total_pages is not None and total_pages > 0:
-                    attempt_ms_obj = phase_timings_ms.get("conversion_attempt_ms")
+                    attempt_ms_obj = phase_timings_ms.get(TIMING_KEY_CONVERSION_TOTAL_MS)
                     attempt_ms = (
                         attempt_ms_obj
                         if isinstance(attempt_ms_obj, int) and not isinstance(attempt_ms_obj, bool)
@@ -234,6 +243,11 @@ class JobStoreV2(JobStoreV2Core):
                     "pipeline_used": pipeline_used,
                     "backend_used": backend_used,
                     "acceleration_used": acceleration_used,
+                    "acceleration_policy_requested": acceleration_policy_requested,
+                    "gpu_runtime_kind": gpu_runtime_kind,
+                    "gpu_device_count": gpu_device_count,
+                    "gpu_busy_percent": gpu_busy_percent,
+                    "gpu_memory_used_percent": gpu_memory_used_percent,
                     "options_fingerprint": options_fingerprint,
                     "template_id": template_id,
                     "template_version": template_version,
@@ -263,7 +277,9 @@ class JobStoreV2(JobStoreV2Core):
             )
             merge_phase_timings(
                 diagnostics=diagnostics,
-                additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
+                additional_phase_timings_ms={
+                    TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS: persist_elapsed_ms
+                },
             )
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)
@@ -333,7 +349,9 @@ class JobStoreV2(JobStoreV2Core):
             )
             merge_phase_timings(
                 diagnostics=diagnostics,
-                additional_phase_timings_ms={"persist_ms": persist_elapsed_ms},
+                additional_phase_timings_ms={
+                    TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS: persist_elapsed_ms
+                },
             )
             atomic_write_json(manifest_path, payload)
         return self.get_job(job_id)

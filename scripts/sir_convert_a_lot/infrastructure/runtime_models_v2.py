@@ -52,6 +52,11 @@ class StoredJobV2:
     pipeline_used: str | None = None
     backend_used: str | None = None
     acceleration_used: str | None = None
+    acceleration_policy_requested: str | None = None
+    gpu_runtime_kind: str | None = None
+    gpu_device_count: int | None = None
+    gpu_busy_percent: int | None = None
+    gpu_memory_used_percent: int | None = None
     options_fingerprint: str | None = None
     template_id: str | None = None
     template_version: str | None = None

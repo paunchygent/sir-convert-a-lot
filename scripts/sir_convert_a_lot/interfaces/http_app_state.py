@@ -25,6 +25,7 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceRuntimeMetadata
+from scripts.sir_convert_a_lot.infrastructure.runtime_telemetry_v2 import RuntimeTelemetrySinkV2
 
 
 def resolve_repo_head_revision() -> str:
@@ -81,6 +82,7 @@ def initialize_service_state(
     metrics_registry: CollectorRegistry,
     request_counter: Counter,
     request_duration: Histogram,
+    runtime_telemetry_v2: RuntimeTelemetrySinkV2,
 ) -> None:
     """Attach deterministic service state required for runtime initialization."""
     app.state.service_config = runtime_config
@@ -91,6 +93,7 @@ def initialize_service_state(
     app.state.metrics_registry = metrics_registry
     app.state.request_counter = request_counter
     app.state.request_duration = request_duration
+    app.state.runtime_telemetry_v2 = runtime_telemetry_v2
     app.state.startup_lock = threading.Lock()
 
 
@@ -160,10 +163,13 @@ def ensure_runtime_state_v2(app: FastAPI, *, utc_now_iso: str) -> ServiceRuntime
             return runtime_obj
 
         runtime_config = getattr(app.state, "service_config", None)
+        runtime_telemetry_obj = getattr(app.state, "runtime_telemetry_v2", None)
         if not isinstance(runtime_config, ServiceConfig):
             raise RuntimeError("missing service config for runtime initialization")
+        if not isinstance(runtime_telemetry_obj, RuntimeTelemetrySinkV2):
+            raise RuntimeError("missing v2 runtime telemetry sink for runtime initialization")
 
-        runtime_v2 = ServiceRuntimeV2(runtime_config)
+        runtime_v2 = ServiceRuntimeV2(runtime_config, telemetry_sink=runtime_telemetry_obj)
         app.state.runtime_v2 = runtime_v2
         return runtime_v2
 

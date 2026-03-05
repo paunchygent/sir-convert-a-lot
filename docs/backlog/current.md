@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-04'
+last_updated: '2026-03-05'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -41,31 +41,66 @@ labels:
 
 ## Context
 
-Active focus has shifted to Epic 05: a prototype-to-production hardening track that enforces a
-**v2-only conversion architecture** with explicit Markdown ingress routes and template-governed DOCX
-outputs.
+Epic 05 is complete (v2-only conversion architecture, deterministic markdown ingress routes, and
+template-governed DOCX/PDF pathways are delivered and validated).
 
-Next planned capability increment is Epic 06: long OCR PDF progress visibility, partial results,
-resume, and throughput scaling.
+Active focus is Epic 06: long OCR PDF progress visibility, partial artifact/checkpoint lifecycle,
+resume reliability, and throughput scaling.
 
 This file is the canonical long-term memory index for session progress; session handoff summaries
 must be archived here when `handoff.md` is pruned.
 
-Entrypoints:
+Current epic entrypoint:
 
-- `docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md`
-- `docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md`
+- `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
 
-Primary implementation stories:
+Primary implementation stories (active sequence):
 
-- `docs/backlog/stories/story-14-v2-only-clean-break-and-api-surface-unification.md`
-- `docs/backlog/stories/story-13-docx-template-catalog-and-reference-governance.md`
-- `docs/backlog/stories/story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md.md`
-- `docs/backlog/stories/story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification.md`
-- `docs/backlog/stories/story-15-v2-async-push-channels-sse-webhooks-and-polling-fallback.md` (next
-  slice after clean-break gates)
+- `docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md` (completed)
+- `docs/backlog/stories/story-18-page-level-progress-and-stall-telemetry-contract.md` (completed)
+- `docs/backlog/stories/story-19-checkpointed-partial-results-and-resumable-ocr-pipeline.md` (completed)
+- `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md` (active)
 
 ## Worklog
+
+- 2026-03-05:
+
+  - Task 73 completed for Story 20 telemetry slice, was reopened after ruthless review findings,
+    and is now re-terminalized after remediation.
+  - Added canonical v2 phase timing key contract + alias normalization/merge enforcement at job
+    manifest merge points.
+  - Added explicit v2 runtime telemetry sink ownership in app state and injected sink into
+    `ServiceRuntimeV2` following the HuleEdu app-owned instrumentation pattern.
+  - Added bounded-cardinality metrics for:
+    - active/queued/max workers and saturation ratio,
+    - terminal job counts with bounded labels,
+    - retry category counters,
+    - stage duration histograms using canonical timing keys.
+  - Enforced no `job_id` metric labels and documented correlation policy (`X-Correlation-ID`,
+    lifecycle events, webhook payloads).
+  - Validation evidence:
+    - `pdm run validate-tasks` (pass: `Validated 106 backlog files`)
+    - `pdm run validate-docs` (pass: `Validated docs=132 rules=9`)
+    - `pdm run pytest-root tests/sir_convert_a_lot/test_phase_timings_v2.py tests/sir_convert_a_lot/test_api_metrics_v2.py -q` (pass: `4 passed`)
+  - Added Task 73 sustained-load evidence runner with explicit non-shim benchmark modes:
+    - `pdm run benchmark:task-73-telemetry --total-jobs 40 --max-workers 8 --stub-work-seconds 0.2`
+    - artifact: `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`
+    - latest run (`2026-03-05`):
+      - `overhead_percent.full_vs_sink_disabled=1.3728%`
+      - `overhead_percent.full_vs_bypassed=-1.4069%`
+      - no `job_id` metrics labels observed.
+  - Ruthless review remediation delivered and Task 73 re-terminalized.
+  - Removed benchmark output compatibility shim (`telemetry_overhead_percent`) in favor of
+    explicit `overhead_percent.full_vs_sink_disabled` and `overhead_percent.full_vs_bypassed`.
+  - Validation evidence (remediation closeout):
+    - `pdm run format-all` (pass)
+    - `pdm run lint-fix` (pass)
+    - `pdm run typecheck-all` (pass)
+    - `pdm run pytest-root tests/sir_convert_a_lot/test_gpu_utilization_snapshot.py tests/sir_convert_a_lot/test_runtime_engine_v2.py tests/sir_convert_a_lot/test_benchmark_story20_telemetry_overhead.py -q` (pass: `29 passed`)
+  - Changed backlog docs:
+    - `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
+    - `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
+    - `docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md`
 
 - 2026-03-04:
 
@@ -176,8 +211,8 @@ Primary implementation stories:
 
 ## Next Actions
 
-- Epic 05 is complete; run post-implementation ruthless review and release-readiness verification.
-- After Story 16 contract surfaces land, proceed with Skriptoteket curated conversion app cutover planning
-  (remove runner-script conversion surfaces, route all conversions via Sir Convert-a-Lot v2).
-- Continue Epic 06 execution:
-  - execute `T73` -> `T72` -> `T74`.
+- Continue Epic 06 execution sequence under Story 20:
+  - execute `T72` -> `T74`.
+- Keep docs/task status synchronization strict as tasks terminalize:
+  - task status terminal before epic/story checkboxes are checked.
+- After `T74`, publish benchmark evidence and lock runbook defaults/guardrails for parallel OCR.

@@ -57,6 +57,14 @@ from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import (
     persist_pdf_chunk_markdown,
 )
 from scripts.sir_convert_a_lot.infrastructure.pdf_metadata_v2 import best_effort_pdf_total_pages
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    TIMING_KEY_CHECKPOINT_PERSIST_MS,
+    TIMING_KEY_CHUNK_TOTAL_MS,
+    normalize_phase_timings_map,
+)
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    merge_phase_timings as merge_phase_timings_canonical_v2,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_conversion import execute_job_conversion
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
@@ -219,10 +227,7 @@ def _append_unique_warnings(target: list[str], additional: list[str]) -> None:
 
 
 def _merge_phase_timings(current: dict[str, int], additional: dict[str, int]) -> dict[str, int]:
-    merged = dict(current)
-    for key, value in additional.items():
-        merged[key] = merged.get(key, 0) + int(value)
-    return merged
+    return merge_phase_timings_canonical_v2(current=current, additional=additional)
 
 
 def execute_pdf_to_markdown_with_checkpoints_v2(
@@ -324,7 +329,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
             pdf_metadata.backend_used,
             pdf_metadata.acceleration_used,
             list(pdf_warnings),
-            dict(pdf_timings),
+            normalize_phase_timings_map(dict(pdf_timings)),
         )
 
     total_pages = int(total_pages_obj)
@@ -455,7 +460,12 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                     artifact_relpath=relpath,
                     sha256=f"sha256:{sha_hex}",
                     size_bytes=size_bytes,
-                    phase_timings_ms={**dict(pdf_timings), "chunk_elapsed_ms": chunk_elapsed_ms},
+                    phase_timings_ms=normalize_phase_timings_map(
+                        {
+                            **dict(pdf_timings),
+                            TIMING_KEY_CHUNK_TOTAL_MS: chunk_elapsed_ms,
+                        }
+                    ),
                 )
             )
             checkpoint.processed_pages = min(
@@ -464,8 +474,16 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
             )
             checkpoint.total_pages = total_pages
             checkpoint.updated_at = dt_to_rfc3339(utc_now()) or checkpoint.updated_at
+            checkpoint_persist_started = time.perf_counter()
             persist_pdf_checkpoint(upload_path=job.upload_path, checkpoint=checkpoint)
             assemble_partial_markdown_artifact(upload_path=job.upload_path, checkpoint=checkpoint)
+            checkpoint_persist_ms = max(
+                0, int((time.perf_counter() - checkpoint_persist_started) * 1000)
+            )
+            phase_timings_ms = _merge_phase_timings(
+                phase_timings_ms,
+                {TIMING_KEY_CHECKPOINT_PERSIST_MS: checkpoint_persist_ms},
+            )
             if is_cancel_requested is not None and is_cancel_requested():
                 raise PdfConversionCanceledV2(job_id=job.job_id)
 

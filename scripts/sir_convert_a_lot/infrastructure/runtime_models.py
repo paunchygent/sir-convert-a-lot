@@ -42,6 +42,7 @@ class ServiceConfig:
     allow_cpu_fallback: bool = False
     processing_delay_seconds: float = 0.2
     heartbeat_interval_seconds: float = 5.0
+    enable_runtime_telemetry_calls: bool = True
     api_capabilities: frozenset[str] = field(
         default_factory=lambda: frozenset({"jobs:read", "push:read", "push:write"})
     )
