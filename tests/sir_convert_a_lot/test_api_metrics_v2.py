@@ -86,9 +86,9 @@ def _stub_executor(**kwargs) -> V2ExecutionResult:
         acceleration_used="cpu",
         warnings=["docling_auto_ocr_retry_applied"],
         phase_timings_ms={
-            "backend_convert_ms": 12,
-            "normalize_ms": 5,
-            "conversion_attempt_ms": 20,
+            "ocr_layout_extract_ms": 12,
+            "markdown_normalize_ms": 5,
+            "conversion_total_ms": 20,
         },
         options_fingerprint="metrics-contract-stub",
     )

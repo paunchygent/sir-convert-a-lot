@@ -76,7 +76,7 @@ def test_pdf_partial_and_checkpoint_endpoints_transition_202_to_200(
                 artifact_relpath=relpath,
                 sha256=f"sha256:{sha_hex}",
                 size_bytes=size_bytes,
-                phase_timings_ms={"chunk_elapsed_ms": 5},
+                phase_timings_ms={"chunk_total_ms": 5},
             )
         )
         checkpoint.processed_pages = 1
@@ -91,7 +91,7 @@ def test_pdf_partial_and_checkpoint_endpoints_transition_202_to_200(
             backend_used="docling",
             acceleration_used="cuda",
             warnings=[],
-            phase_timings_ms={"backend_convert_ms": 1},
+            phase_timings_ms={"ocr_layout_extract_ms": 1},
             options_fingerprint="contract_test_partial_checkpoint",
         )
 

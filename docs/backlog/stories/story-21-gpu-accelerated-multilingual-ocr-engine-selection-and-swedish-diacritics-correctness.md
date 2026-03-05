@@ -1,9 +1,9 @@
 ---
-id: 'story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness'
-title: 'GPU-accelerated multilingual OCR engine selection and Swedish diacritics correctness'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness
+title: GPU-accelerated multilingual OCR engine selection and Swedish diacritics correctness
+type: story
+status: proposed
+priority: high
 created: '2026-03-05'
 last_updated: '2026-03-05'
 related:
@@ -26,6 +26,7 @@ labels:
   - gpu
   - hemma
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -42,7 +43,11 @@ Make PDF OCR both correct for Swedish (preserve `å`, `ä`, `ö`) and fast enoug
 - Contract and CLI surface:
   - Extend v2 PDF options with explicit OCR engine + language selection.
   - Expose the same controls in the CLI (`convert-a-lot convert`).
-  - Emit `ocr_engine_used` + `ocr_languages_used` in `result.conversion_metadata` for auditability.
+  - Emit OCR audit metadata in `result.conversion_metadata`:
+    - `ocr_enabled` (effective: did OCR run),
+    - `ocr_engine_used`,
+    - `ocr_languages_requested` + `ocr_languages_used`,
+    - `ocr_acceleration_used` (separate from backend `acceleration_used`).
 - Runtime implementation:
   - Default OCR engine on Hemma: EasyOCR with GPU enabled and Swedish+English languages.
   - Optional OCR engine: Tesseract (CLI) with Swedish+English language packs.
@@ -61,13 +66,16 @@ Make PDF OCR both correct for Swedish (preserve `å`, `ä`, `ö`) and fast enoug
 
 - [ ] Swedish OCR correctness is guaranteed for the deploy-time smoke fixture(s):
   - output contains `å`, `ä`, `ö`,
-  - `result.conversion_metadata.ocr_enabled=true`.
+  - `result.conversion_metadata.ocr_enabled=true`,
+  - `result.conversion_metadata.ocr_engine_used="easyocr"`,
+  - `result.conversion_metadata.ocr_languages_used` includes `sv`.
 - [ ] OCR engine + language selection are explicit and observable:
   - v2 accepts engine/language fields in PDF options,
-  - `result.conversion_metadata` includes `ocr_engine_used` + `ocr_languages_used`.
+  - `result.conversion_metadata` includes `ocr_engine_used`, `ocr_languages_requested`, and `ocr_languages_used`.
 - [ ] Default Hemma OCR engine is GPU-capable and verified live:
   - EasyOCR is the default for OCR-enabled PDF runs,
-  - `acceleration_used="cuda"` and no CPU fallback warning for GPU-required jobs.
+  - `result.conversion_metadata.acceleration_used="cuda"` for Docling execution,
+  - `result.conversion_metadata.ocr_acceleration_used="cuda"` for OCR when `acceleration_policy=gpu_required`.
 - [ ] Preflight is fail-fast and actionable:
   - missing engine/language fails at job creation (no multi-hour run),
   - error message includes remediation steps (install/enable engine + language).
@@ -78,7 +86,7 @@ Make PDF OCR both correct for Swedish (preserve `å`, `ä`, `ö`) and fast enoug
 - [ ] Performance target (Hemma live evidence):
   - batch throughput improves materially versus the documented baseline,
   - explicit target for the operator-provided “300 PDFs” corpus:
-    - total wall-clock <= 60 minutes on Hemma default tuned profile,
+    - total wall-clock \<= 60 minutes on Hemma default tuned profile,
     - evidence includes median `pages_per_minute` and stage timings.
 
 ## Test Requirements

@@ -55,10 +55,14 @@ class V2ExecutionResult:
     template_id: str | None = None
     template_version: str | None = None
     template_artifact_sha256: str | None = None
+    parallel_enabled: bool | None = None
+    max_chunk_workers: int | None = None
+    chunk_size_pages: int | None = None
+    effective_gpu_stage_limit: int | None = None
+    scheduling_mode: str | None = None
 
 
 DEFAULT_NON_PDF_DOCUMENT_TIMEOUT_SECONDS = 300
-DEFAULT_PDF_CHECKPOINT_CHUNK_SIZE_PAGES = 10
 
 
 def fingerprint_job_options(spec: JobSpecV2) -> str:
@@ -72,6 +76,33 @@ def _resolve_document_timeout_seconds(spec: JobSpecV2) -> int:
     if execution is None:
         return DEFAULT_NON_PDF_DOCUMENT_TIMEOUT_SECONDS
     return execution.document_timeout_seconds
+
+
+@dataclass(frozen=True)
+class PdfExecutionProfileV2:
+    """Resolved PDF execution profile derived from runtime config."""
+
+    parallel_enabled: bool
+    max_chunk_workers: int
+    chunk_size_pages: int
+    effective_gpu_stage_limit: int
+    scheduling_mode: str
+
+
+def _resolve_pdf_execution_profile(config: ServiceConfig) -> PdfExecutionProfileV2:
+    chunk_size_pages = max(1, min(500, int(config.pdf_chunk_size_pages)))
+    configured_chunk_workers = max(1, int(config.max_chunk_workers))
+    effective_gpu_stage_limit = max(1, int(config.gpu_stage_max_concurrency))
+    parallel_enabled = bool(config.enable_parallel_pdf_chunks and configured_chunk_workers > 1)
+    max_chunk_workers = configured_chunk_workers if parallel_enabled else 1
+    scheduling_mode = "parallel_ordered_commit" if max_chunk_workers > 1 else "serial"
+    return PdfExecutionProfileV2(
+        parallel_enabled=parallel_enabled,
+        max_chunk_workers=max_chunk_workers,
+        chunk_size_pages=chunk_size_pages,
+        effective_gpu_stage_limit=effective_gpu_stage_limit,
+        scheduling_mode=scheduling_mode,
+    )
 
 
 def _prepare_workdir(job: StoredJobV2) -> tuple[Path, Path]:
@@ -104,6 +135,8 @@ def execute_v2_job_conversion(
     pymupdf_backend: ConversionBackend,
     progress_callback: Callable[[PdfCheckpointProgressUpdateV2], None] | None = None,
     is_cancel_requested: Callable[[], bool] | None = None,
+    on_chunk_worker_start: Callable[[], None] | None = None,
+    on_chunk_worker_finish: Callable[[], None] | None = None,
 ) -> V2ExecutionResult:
     """Execute one v2 job conversion and return artifact bytes + metadata."""
     options_fingerprint = fingerprint_job_options(job.spec)
@@ -118,11 +151,13 @@ def execute_v2_job_conversion(
 
     warnings: list[str] = []
     phase_timings_ms: dict[str, int] = {}
+    profile: PdfExecutionProfileV2 | None = None
 
     if job.source_format == SourceFormatV2.PDF and job.output_format in {
         OutputFormatV2.MD,
         OutputFormatV2.DOCX,
     }:
+        profile = _resolve_pdf_execution_profile(config)
         pipeline_used = (
             "pdf_to_md_v2" if job.output_format == OutputFormatV2.MD else "pdf_to_docx_v2"
         )
@@ -137,9 +172,13 @@ def execute_v2_job_conversion(
             config=config,
             docling_backend=docling_backend,
             pymupdf_backend=pymupdf_backend,
-            chunk_size_pages=DEFAULT_PDF_CHECKPOINT_CHUNK_SIZE_PAGES,
+            chunk_size_pages=profile.chunk_size_pages,
+            max_chunk_workers=profile.max_chunk_workers,
+            parallel_enabled=profile.parallel_enabled,
             progress_callback=progress_callback,
             is_cancel_requested=is_cancel_requested,
+            on_chunk_worker_start=on_chunk_worker_start,
+            on_chunk_worker_finish=on_chunk_worker_finish,
         )
         warnings.extend(pdf_warnings)
         phase_timings_ms.update(pdf_timings)
@@ -194,4 +233,11 @@ def execute_v2_job_conversion(
         template_id=template_id,
         template_version=template_version,
         template_artifact_sha256=template_artifact_sha256,
+        parallel_enabled=profile.parallel_enabled if profile is not None else None,
+        max_chunk_workers=profile.max_chunk_workers if profile is not None else None,
+        chunk_size_pages=profile.chunk_size_pages if profile is not None else None,
+        effective_gpu_stage_limit=profile.effective_gpu_stage_limit
+        if profile is not None
+        else None,
+        scheduling_mode=profile.scheduling_mode if profile is not None else None,
     )

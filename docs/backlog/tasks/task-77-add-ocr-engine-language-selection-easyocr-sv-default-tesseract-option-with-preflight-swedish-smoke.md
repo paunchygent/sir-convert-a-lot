@@ -1,9 +1,9 @@
 ---
-id: 'task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke'
-title: 'Add OCR engine + language selection (EasyOCR sv default, Tesseract option) with preflight + Swedish smoke'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke
+title: Add OCR engine + language selection (EasyOCR sv default, Tesseract option) with preflight + Swedish smoke
+type: task
+status: proposed
+priority: high
 created: '2026-03-05'
 last_updated: '2026-03-05'
 related:
@@ -33,6 +33,7 @@ labels:
   - verification
   - worktree
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -51,6 +52,8 @@ Provide a robust, fail-fast multilingual OCR configuration for long PDF conversi
   - Extend v2 `pdf_options` with:
     - `ocr_engine` (enum; at minimum `auto|easyocr|tesseract_cli`),
     - `ocr_languages` (list of BCP47/ISO639-1 language tags like `sv`, `en`).
+  - Note (Docling constraint): `OcrAutoOptions` uses engine defaults; language selection requires
+    selecting an explicit engine (`EasyOcrOptions`, `TesseractCliOcrOptions`, etc).
   - Map `ocr_languages` to engine-specific codes:
     - EasyOCR: keep ISO639-1 (`sv`, `en`),
     - Tesseract: map to ISO639-2 (`sv` -> `swe`, `en` -> `eng`).
@@ -58,8 +61,11 @@ Provide a robust, fail-fast multilingual OCR configuration for long PDF conversi
     - `--ocr-engine <auto|easyocr|tesseract_cli>`
     - `--ocr-language <tag>` (repeatable)
   - Emit audit metadata:
+    - `result.conversion_metadata.ocr_enabled`
+    - `result.conversion_metadata.ocr_languages_requested`
     - `result.conversion_metadata.ocr_engine_used`
     - `result.conversion_metadata.ocr_languages_used`
+    - `result.conversion_metadata.ocr_acceleration_used` (separate from backend `acceleration_used`)
 - Runtime:
   - In Docling backend converter build, set `pipeline_options.ocr_options` explicitly when OCR is
     enabled and `ocr_engine != auto`.
@@ -68,7 +74,8 @@ Provide a robust, fail-fast multilingual OCR configuration for long PDF conversi
 - Dependencies / image:
   - Add `easyocr` dependency and ensure model downloads are deterministic (prefer build-time cache
     warmup; avoid first-request model download).
-  - Add system packages to runtime image for Tesseract + Swedish language data.
+  - Add system packages to runtime image for Tesseract + Swedish language data
+    (Debian: `tesseract-ocr`, `tesseract-ocr-eng`, `tesseract-ocr-swe`).
 - Preflight fail-fast:
   - If `ocr_engine=tesseract_cli`, assert:
     - `tesseract` exists,
@@ -109,12 +116,13 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
 - [ ] Engine/language are explicit and observable:
   - `conversion_metadata.ocr_engine_used` and `ocr_languages_used` are populated.
 - [ ] GPU-first policy holds for OCR:
-  - `acceleration_used="cuda"` for `acceleration_policy=gpu_required`,
+  - `conversion_metadata.acceleration_used="cuda"` for Docling execution,
+  - `conversion_metadata.ocr_acceleration_used="cuda"` when `acceleration_policy=gpu_required`,
   - no silent CPU fallback when EasyOCR is requested with GPU-required policy.
 - [ ] Preflight gate is fail-fast:
   - missing `swe` for Tesseract fails job creation with remediation instructions.
 - [ ] Deploy-time smoke stays lightweight:
-  - adds <= 1 extra OCR job (small fixture),
+  - adds \<= 1 extra OCR job (small fixture),
   - smoke completes within 5 minutes on Hemma and writes deterministic evidence under `build/verification/`.
 - [ ] Metrics safety asserted during verification:
   - `/metrics` does not contain `job_id=` and does not include job ids as label values.
@@ -122,7 +130,7 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
   - record median `pages_per_minute` and stage timing keys for the smoke OCR job(s),
   - document a baseline vs new default comparison (tie into `T74` throughput benchmark report),
   - explicit operator benchmark target for the “300 PDFs” corpus:
-    - wall-clock <= 60 minutes on Hemma tuned defaults, with report artifact.
+    - wall-clock \<= 60 minutes on Hemma tuned defaults, with report artifact.
 
 ## Checklist
 

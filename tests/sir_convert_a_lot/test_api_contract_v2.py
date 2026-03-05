@@ -444,7 +444,7 @@ def test_polling_fallback_lifecycle_unchanged_with_sse_enabled(tmp_path: Path, m
             backend_used="stub",
             acceleration_used=None,
             warnings=[],
-            phase_timings_ms={"conversion_attempt_ms": 1},
+            phase_timings_ms={"conversion_total_ms": 1},
             options_fingerprint="polling_with_sse_enabled",
         )
 

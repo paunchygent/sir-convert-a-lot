@@ -248,7 +248,7 @@ This story is being executed through these PR-sized tasks:
 3. Publish one cohesive and versioned converter surface:
 
 - versioned CLI/API contract (`v1`),
-- changelog + migration notes for compatibility aliases and removals.
+- changelog + migration notes for canonical contract changes and removals.
 
 4. Enforce canonical ownership in docs:
 

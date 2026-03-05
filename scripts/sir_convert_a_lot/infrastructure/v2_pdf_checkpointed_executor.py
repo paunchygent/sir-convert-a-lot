@@ -16,7 +16,8 @@ Relationships:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
@@ -80,6 +81,7 @@ class PdfCheckpointProgressUpdateV2:
     percent_complete: float
     pages_per_minute: float | None
     eta_seconds: int | None
+    phase_timings_ms: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,21 @@ class PdfConversionCanceledV2(Exception):
     """Raised when a running PDF conversion observes cancellation."""
 
     job_id: str
+
+
+@dataclass(frozen=True)
+class PdfChunkConversionOutcomeV2:
+    """One converted PDF chunk outcome produced before checkpoint commit."""
+
+    chunk_index: int
+    start_page: int
+    end_page: int
+    markdown_content: str
+    backend_used: str | None
+    acceleration_used: str | None
+    warnings: list[str]
+    phase_timings_ms: dict[str, int]
+    chunk_elapsed_ms: int
 
 
 def validate_backend_strategy_v1(spec: JobSpec) -> None:
@@ -147,17 +164,33 @@ def validate_acceleration_policy_v1(
     return probe
 
 
-def _resolve_contiguous_checkpoint_progress(checkpoint: PdfCheckpointV2) -> tuple[int, int]:
-    succeeded = [chunk for chunk in checkpoint.chunks if chunk.status == "succeeded"]
-    ordered = sorted(succeeded, key=lambda record: (record.start_page, record.end_page))
-    completed_end = 0
+def _chunk_identity_key(
+    *, chunk_index: int, start_page: int, end_page: int
+) -> tuple[int, int, int]:
+    return chunk_index, start_page, end_page
+
+
+def _succeeded_chunk_keys(checkpoint: PdfCheckpointV2) -> set[tuple[int, int, int]]:
+    keys: set[tuple[int, int, int]] = set()
+    for chunk in checkpoint.chunks:
+        if chunk.status != "succeeded":
+            continue
+        keys.add(
+            _chunk_identity_key(
+                chunk_index=chunk.chunk_index,
+                start_page=chunk.start_page,
+                end_page=chunk.end_page,
+            )
+        )
+    return keys
+
+
+def _resolve_checkpoint_processed_pages(checkpoint: PdfCheckpointV2) -> int:
+    """Return processed pages from unique succeeded chunk identities."""
     processed_pages = 0
-    for record in ordered:
-        if record.start_page != completed_end + 1:
-            break
-        processed_pages += record.end_page - record.start_page + 1
-        completed_end = record.end_page
-    return completed_end, processed_pages
+    for _chunk_index, start_page, end_page in _succeeded_chunk_keys(checkpoint):
+        processed_pages += end_page - start_page + 1
+    return processed_pages
 
 
 def _iter_pdf_chunks(*, total_pages: int, chunk_size_pages: int) -> list[tuple[int, int]]:
@@ -200,6 +233,90 @@ def _extract_pdf_page_range_bytes(*, document: object, start_page: int, end_page
             pass
 
 
+def _convert_one_pdf_chunk(
+    *,
+    v1_spec: JobSpec,
+    chunk_pdf_bytes: bytes,
+    source_filename: str,
+    config: ServiceConfig,
+    probe: GpuRuntimeProbeResult | None,
+    docling_backend: ConversionBackend,
+    pymupdf_backend: ConversionBackend,
+) -> tuple[str, str | None, str | None, list[str], dict[str, int]]:
+    try:
+        markdown_content, pdf_metadata, pdf_warnings, pdf_timings = execute_job_conversion(
+            spec=v1_spec,
+            source_filename=source_filename,
+            source_bytes=chunk_pdf_bytes,
+            gpu_available=config.gpu_available,
+            gpu_runtime_probe=probe,
+            docling_backend=docling_backend,
+            pymupdf_backend=pymupdf_backend,
+        )
+    except BackendGpuUnavailableError as exc:
+        raise ServiceError(
+            status_code=503,
+            code="gpu_not_available",
+            message=(
+                "GPU runtime is unavailable for the selected backend under GPU-required policy."
+            ),
+            retryable=True,
+            details={
+                "reason": "backend_gpu_runtime_unavailable",
+                "backend": "docling",
+                "runtime_kind": exc.probe.runtime_kind,
+                "hip_version": exc.probe.hip_version,
+                "cuda_version": exc.probe.cuda_version,
+            },
+        ) from exc
+    except BackendInputError as exc:
+        raise ServiceError(
+            status_code=422,
+            code="pdf_unreadable",
+            message=f"Uploaded PDF could not be converted: {exc}",
+            retryable=False,
+        ) from exc
+    except BackendExecutionError as exc:
+        raise ServiceError(
+            status_code=500,
+            code="conversion_internal_error",
+            message=f"Unexpected backend conversion failure: {exc}",
+            retryable=True,
+        ) from exc
+    return (
+        markdown_content,
+        pdf_metadata.backend_used,
+        pdf_metadata.acceleration_used,
+        list(pdf_warnings),
+        dict(pdf_timings),
+    )
+
+
+def _upsert_checkpoint_chunk_record(
+    *,
+    checkpoint: PdfCheckpointV2,
+    record: PdfChunkRecordV2,
+) -> None:
+    """Replace any existing chunk entry for the same identity and append latest record."""
+    key = _chunk_identity_key(
+        chunk_index=record.chunk_index,
+        start_page=record.start_page,
+        end_page=record.end_page,
+    )
+    filtered: list[PdfChunkRecordV2] = []
+    for existing in checkpoint.chunks:
+        existing_key = _chunk_identity_key(
+            chunk_index=existing.chunk_index,
+            start_page=existing.start_page,
+            end_page=existing.end_page,
+        )
+        if existing_key == key:
+            continue
+        filtered.append(existing)
+    filtered.append(record)
+    checkpoint.chunks = filtered
+
+
 def _assemble_final_markdown_from_checkpoint(
     *, upload_path: Path, checkpoint: PdfCheckpointV2
 ) -> str:
@@ -237,8 +354,12 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
     chunk_size_pages: int,
+    max_chunk_workers: int,
+    parallel_enabled: bool,
     progress_callback: Callable[[PdfCheckpointProgressUpdateV2], None] | None,
     is_cancel_requested: Callable[[], bool] | None,
+    on_chunk_worker_start: Callable[[], None] | None = None,
+    on_chunk_worker_finish: Callable[[], None] | None = None,
 ) -> tuple[str, str | None, str | None, list[str], dict[str, int]]:
     """Return markdown content + metadata while persisting checkpoints/partials."""
     if job.spec.pdf_options is None or job.spec.execution is None:
@@ -341,9 +462,10 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
         )
         persist_pdf_checkpoint(upload_path=job.upload_path, checkpoint=checkpoint)
 
-    completed_end, processed_pages = _resolve_contiguous_checkpoint_progress(checkpoint)
-    checkpoint.processed_pages = processed_pages
-    next_start_page = completed_end + 1
+    checkpoint.processed_pages = min(total_pages, _resolve_checkpoint_processed_pages(checkpoint))
+    checkpoint.total_pages = total_pages
+    processed_pages = checkpoint.processed_pages
+    completed_chunk_keys = _succeeded_chunk_keys(checkpoint)
 
     if processed_pages > 0:
         assemble_partial_markdown_artifact(upload_path=job.upload_path, checkpoint=checkpoint)
@@ -356,6 +478,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                     percent_complete=(processed_pages / float(total_pages)) * 100.0,
                     pages_per_minute=None,
                     eta_seconds=None,
+                    phase_timings_ms={},
                 )
             )
 
@@ -375,134 +498,218 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
             retryable=True,
         ) from exc
 
+    resolved_max_chunk_workers = max(1, int(max_chunk_workers))
+    if not parallel_enabled:
+        resolved_max_chunk_workers = 1
+
     document = pymupdf.open(job.upload_path.as_posix())
     try:
         chunks = _iter_pdf_chunks(total_pages=total_pages, chunk_size_pages=chunk_size_pages)
+        pending_chunks: list[tuple[int, int, int]] = []
         for chunk_index, (start_page, end_page) in enumerate(chunks):
-            if is_cancel_requested is not None and is_cancel_requested():
-                raise PdfConversionCanceledV2(job_id=job.job_id)
-            if end_page < next_start_page:
-                continue
-
-            chunk_started = time.perf_counter()
-            chunk_pdf_bytes = _extract_pdf_page_range_bytes(
-                document=document,
-                start_page=start_page,
-                end_page=end_page,
-            )
-            if is_cancel_requested is not None and is_cancel_requested():
-                raise PdfConversionCanceledV2(job_id=job.job_id)
-            try:
-                markdown_content, pdf_metadata, pdf_warnings, pdf_timings = execute_job_conversion(
-                    spec=v1_spec,
-                    source_filename=job.source_filename,
-                    source_bytes=chunk_pdf_bytes,
-                    gpu_available=config.gpu_available,
-                    gpu_runtime_probe=probe,
-                    docling_backend=docling_backend,
-                    pymupdf_backend=pymupdf_backend,
-                )
-            except BackendGpuUnavailableError as exc:
-                raise ServiceError(
-                    status_code=503,
-                    code="gpu_not_available",
-                    message=(
-                        "GPU runtime is unavailable for the selected backend under GPU-required "
-                        "policy."
-                    ),
-                    retryable=True,
-                    details={
-                        "reason": "backend_gpu_runtime_unavailable",
-                        "backend": "docling",
-                        "runtime_kind": exc.probe.runtime_kind,
-                        "hip_version": exc.probe.hip_version,
-                        "cuda_version": exc.probe.cuda_version,
-                    },
-                ) from exc
-            except BackendInputError as exc:
-                raise ServiceError(
-                    status_code=422,
-                    code="pdf_unreadable",
-                    message=f"Uploaded PDF could not be converted: {exc}",
-                    retryable=False,
-                ) from exc
-            except BackendExecutionError as exc:
-                raise ServiceError(
-                    status_code=500,
-                    code="conversion_internal_error",
-                    message=f"Unexpected backend conversion failure: {exc}",
-                    retryable=True,
-                ) from exc
-
-            if backend_used is None:
-                backend_used = pdf_metadata.backend_used
-            if acceleration_used is None:
-                acceleration_used = pdf_metadata.acceleration_used
-            _append_unique_warnings(warnings, list(pdf_warnings))
-            phase_timings_ms = _merge_phase_timings(phase_timings_ms, dict(pdf_timings))
-
-            relpath, size_bytes, sha_hex = persist_pdf_chunk_markdown(
-                upload_path=job.upload_path,
+            key = _chunk_identity_key(
                 chunk_index=chunk_index,
                 start_page=start_page,
                 end_page=end_page,
-                markdown_content=markdown_content,
             )
-            chunk_elapsed_ms = max(0, int((time.perf_counter() - chunk_started) * 1000))
-            checkpoint.chunks.append(
-                PdfChunkRecordV2(
+            if key in completed_chunk_keys:
+                continue
+            pending_chunks.append((chunk_index, start_page, end_page))
+
+        def _convert_pending_chunk(
+            *,
+            chunk_index: int,
+            start_page: int,
+            end_page: int,
+            chunk_pdf_bytes: bytes,
+        ) -> PdfChunkConversionOutcomeV2:
+            acquired_chunk_slot = False
+            if on_chunk_worker_start is not None:
+                on_chunk_worker_start()
+                acquired_chunk_slot = True
+            try:
+                chunk_started = time.perf_counter()
+                (
+                    markdown_content,
+                    chunk_backend_used,
+                    chunk_acceleration_used,
+                    chunk_warnings,
+                    chunk_phase_timings,
+                ) = _convert_one_pdf_chunk(
+                    v1_spec=v1_spec,
+                    chunk_pdf_bytes=chunk_pdf_bytes,
+                    source_filename=job.source_filename,
+                    config=config,
+                    probe=probe,
+                    docling_backend=docling_backend,
+                    pymupdf_backend=pymupdf_backend,
+                )
+                chunk_elapsed_ms = max(0, int((time.perf_counter() - chunk_started) * 1000))
+                return PdfChunkConversionOutcomeV2(
                     chunk_index=chunk_index,
                     start_page=start_page,
                     end_page=end_page,
-                    status="succeeded",
-                    started_at=dt_to_rfc3339(utc_now()),
-                    completed_at=dt_to_rfc3339(utc_now()),
-                    artifact_relpath=relpath,
-                    sha256=f"sha256:{sha_hex}",
-                    size_bytes=size_bytes,
-                    phase_timings_ms=normalize_phase_timings_map(
-                        {
-                            **dict(pdf_timings),
-                            TIMING_KEY_CHUNK_TOTAL_MS: chunk_elapsed_ms,
-                        }
-                    ),
+                    markdown_content=markdown_content,
+                    backend_used=chunk_backend_used,
+                    acceleration_used=chunk_acceleration_used,
+                    warnings=chunk_warnings,
+                    phase_timings_ms=chunk_phase_timings,
+                    chunk_elapsed_ms=chunk_elapsed_ms,
                 )
-            )
-            checkpoint.processed_pages = min(
-                total_pages,
-                checkpoint.processed_pages + (end_page - start_page + 1),
-            )
-            checkpoint.total_pages = total_pages
-            checkpoint.updated_at = dt_to_rfc3339(utc_now()) or checkpoint.updated_at
-            checkpoint_persist_started = time.perf_counter()
-            persist_pdf_checkpoint(upload_path=job.upload_path, checkpoint=checkpoint)
-            assemble_partial_markdown_artifact(upload_path=job.upload_path, checkpoint=checkpoint)
-            checkpoint_persist_ms = max(
-                0, int((time.perf_counter() - checkpoint_persist_started) * 1000)
-            )
-            phase_timings_ms = _merge_phase_timings(
-                phase_timings_ms,
-                {TIMING_KEY_CHECKPOINT_PERSIST_MS: checkpoint_persist_ms},
-            )
-            if is_cancel_requested is not None and is_cancel_requested():
-                raise PdfConversionCanceledV2(job_id=job.job_id)
+            finally:
+                if acquired_chunk_slot and on_chunk_worker_finish is not None:
+                    on_chunk_worker_finish()
 
-            if progress_callback is not None:
-                elapsed = max(0.001, time.perf_counter() - conversion_started)
-                minutes = elapsed / 60.0
-                pages_per_minute = float(checkpoint.processed_pages) / minutes
-                remaining = max(0, total_pages - checkpoint.processed_pages)
-                eta_seconds = int((remaining / max(1e-6, pages_per_minute)) * 60.0)
-                progress_callback(
-                    PdfCheckpointProgressUpdateV2(
-                        total_pages=total_pages,
-                        processed_pages=checkpoint.processed_pages,
-                        failed_pages=checkpoint.failed_pages,
-                        percent_complete=(checkpoint.processed_pages / float(total_pages)) * 100.0,
-                        pages_per_minute=pages_per_minute,
-                        eta_seconds=eta_seconds,
+        with ThreadPoolExecutor(max_workers=resolved_max_chunk_workers) as executor:
+            futures_by_chunk_index: dict[int, Future[PdfChunkConversionOutcomeV2]] = {}
+            pending_by_chunk_index = {
+                chunk_index: (start_page, end_page)
+                for chunk_index, start_page, end_page in pending_chunks
+            }
+            ordered_pending_chunk_indexes = [chunk_index for chunk_index, _, _ in pending_chunks]
+            dispatch_cursor = 0
+            commit_cursor = 0
+
+            def _dispatch_until_capacity() -> None:
+                nonlocal dispatch_cursor
+                while len(
+                    futures_by_chunk_index
+                ) < resolved_max_chunk_workers and dispatch_cursor < len(
+                    ordered_pending_chunk_indexes
+                ):
+                    if is_cancel_requested is not None and is_cancel_requested():
+                        return
+                    chunk_index = ordered_pending_chunk_indexes[dispatch_cursor]
+                    dispatch_cursor += 1
+                    start_page, end_page = pending_by_chunk_index[chunk_index]
+                    chunk_pdf_bytes = _extract_pdf_page_range_bytes(
+                        document=document,
+                        start_page=start_page,
+                        end_page=end_page,
                     )
-                )
+                    if is_cancel_requested is not None and is_cancel_requested():
+                        return
+                    futures_by_chunk_index[chunk_index] = executor.submit(
+                        _convert_pending_chunk,
+                        chunk_index=chunk_index,
+                        start_page=start_page,
+                        end_page=end_page,
+                        chunk_pdf_bytes=chunk_pdf_bytes,
+                    )
+
+            _dispatch_until_capacity()
+            try:
+                while commit_cursor < len(ordered_pending_chunk_indexes):
+                    if is_cancel_requested is not None and is_cancel_requested():
+                        raise PdfConversionCanceledV2(job_id=job.job_id)
+
+                    expected_chunk_index = ordered_pending_chunk_indexes[commit_cursor]
+                    future = futures_by_chunk_index.get(expected_chunk_index)
+                    if future is None:
+                        _dispatch_until_capacity()
+                        continue
+
+                    try:
+                        outcome = future.result(timeout=0.05)
+                    except TimeoutError:
+                        continue
+
+                    del futures_by_chunk_index[expected_chunk_index]
+                    _dispatch_until_capacity()
+
+                    chunk_key = _chunk_identity_key(
+                        chunk_index=outcome.chunk_index,
+                        start_page=outcome.start_page,
+                        end_page=outcome.end_page,
+                    )
+                    if chunk_key in completed_chunk_keys:
+                        commit_cursor += 1
+                        continue
+
+                    if backend_used is None:
+                        backend_used = outcome.backend_used
+                    if acceleration_used is None:
+                        acceleration_used = outcome.acceleration_used
+                    _append_unique_warnings(warnings, outcome.warnings)
+                    phase_timings_ms = _merge_phase_timings(
+                        phase_timings_ms, outcome.phase_timings_ms
+                    )
+                    phase_timings_ms = _merge_phase_timings(
+                        phase_timings_ms,
+                        {TIMING_KEY_CHUNK_TOTAL_MS: outcome.chunk_elapsed_ms},
+                    )
+
+                    relpath, size_bytes, sha_hex = persist_pdf_chunk_markdown(
+                        upload_path=job.upload_path,
+                        chunk_index=outcome.chunk_index,
+                        start_page=outcome.start_page,
+                        end_page=outcome.end_page,
+                        markdown_content=outcome.markdown_content,
+                    )
+                    _upsert_checkpoint_chunk_record(
+                        checkpoint=checkpoint,
+                        record=PdfChunkRecordV2(
+                            chunk_index=outcome.chunk_index,
+                            start_page=outcome.start_page,
+                            end_page=outcome.end_page,
+                            status="succeeded",
+                            started_at=dt_to_rfc3339(utc_now()),
+                            completed_at=dt_to_rfc3339(utc_now()),
+                            artifact_relpath=relpath,
+                            sha256=f"sha256:{sha_hex}",
+                            size_bytes=size_bytes,
+                            phase_timings_ms=normalize_phase_timings_map(
+                                {
+                                    **outcome.phase_timings_ms,
+                                    TIMING_KEY_CHUNK_TOTAL_MS: outcome.chunk_elapsed_ms,
+                                }
+                            ),
+                        ),
+                    )
+                    completed_chunk_keys.add(chunk_key)
+                    checkpoint.processed_pages = min(
+                        total_pages, _resolve_checkpoint_processed_pages(checkpoint)
+                    )
+                    checkpoint.total_pages = total_pages
+                    checkpoint.updated_at = dt_to_rfc3339(utc_now()) or checkpoint.updated_at
+                    checkpoint_persist_started = time.perf_counter()
+                    persist_pdf_checkpoint(upload_path=job.upload_path, checkpoint=checkpoint)
+                    assemble_partial_markdown_artifact(
+                        upload_path=job.upload_path, checkpoint=checkpoint
+                    )
+                    checkpoint_persist_ms = max(
+                        0, int((time.perf_counter() - checkpoint_persist_started) * 1000)
+                    )
+                    phase_timings_ms = _merge_phase_timings(
+                        phase_timings_ms,
+                        {TIMING_KEY_CHECKPOINT_PERSIST_MS: checkpoint_persist_ms},
+                    )
+                    if is_cancel_requested is not None and is_cancel_requested():
+                        raise PdfConversionCanceledV2(job_id=job.job_id)
+
+                    if progress_callback is not None:
+                        elapsed = max(0.001, time.perf_counter() - conversion_started)
+                        minutes = elapsed / 60.0
+                        pages_per_minute = float(checkpoint.processed_pages) / minutes
+                        remaining = max(0, total_pages - checkpoint.processed_pages)
+                        eta_seconds = int((remaining / max(1e-6, pages_per_minute)) * 60.0)
+                        progress_callback(
+                            PdfCheckpointProgressUpdateV2(
+                                total_pages=total_pages,
+                                processed_pages=checkpoint.processed_pages,
+                                failed_pages=checkpoint.failed_pages,
+                                percent_complete=(checkpoint.processed_pages / float(total_pages))
+                                * 100.0,
+                                pages_per_minute=pages_per_minute,
+                                eta_seconds=eta_seconds,
+                                phase_timings_ms=dict(phase_timings_ms),
+                            )
+                        )
+                    commit_cursor += 1
+            except Exception:
+                for future in futures_by_chunk_index.values():
+                    future.cancel()
+                raise
     finally:
         try:
             document.close()

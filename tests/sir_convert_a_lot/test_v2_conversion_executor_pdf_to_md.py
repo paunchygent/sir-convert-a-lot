@@ -53,7 +53,7 @@ def test_execute_v2_job_conversion_pdf_to_md_success_with_stubbed_backend(
                 options_fingerprint="sha256:pdf-md-options",
             ),
             ["ocr_retry_performed"],
-            {"backend_convert_ms": 45, "normalize_ms": 6},
+            {"ocr_layout_extract_ms": 45, "markdown_normalize_ms": 6},
         )
 
     monkeypatch.setattr(

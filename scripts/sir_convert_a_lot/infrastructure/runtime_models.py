@@ -35,6 +35,10 @@ class ServiceConfig:
     upload_ttl_seconds: int = 24 * 3600
     result_ttl_seconds: int = 7 * 24 * 3600
     max_workers: int = 1
+    enable_parallel_pdf_chunks: bool = False
+    max_chunk_workers: int = 1
+    pdf_chunk_size_pages: int = 10
+    gpu_stage_max_concurrency: int = 1
     supervisor_poll_seconds: float = 0.2
     enable_supervisor: bool = True
     gpu_available: bool = True

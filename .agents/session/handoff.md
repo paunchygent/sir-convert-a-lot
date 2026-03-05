@@ -15,6 +15,9 @@
 - Updated runbook and skill guidance:
   - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
   - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+- Added OCR hardening follow-up planning:
+  - `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
+  - `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
 
 Live evidence (pass):
 
@@ -30,8 +33,8 @@ Validation evidence:
 - `pdm run lint-fix` (pass)
 - `pdm run typecheck-all` (pass)
 - `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `449 passed, 5 skipped`)
-- `pdm run validate-tasks` (pass: `Validated 107 backlog files`)
-- `pdm run validate-docs` (pass: `Validated docs=134 rules=9`)
+- `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
+- `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 
 Cross-repo skill audit:
@@ -42,6 +45,8 @@ Cross-repo skill audit:
 
 ## Next Session Goals (2026-03-05)
 
+- Execute `T77` (OCR engine/language selection + Swedish diacritics smoke) before publishing the
+  `T74` throughput benchmark report.
 - Execute `T72` (parallel worker pools) and then `T74` (throughput benchmark/report).
 - Keep `T76` evidence command as pre-slice gate before throughput-tuning changes.
 - Preserve strict metric label safety (`job_id=`/`jobv2_` forbidden) and host-lane verification policy.

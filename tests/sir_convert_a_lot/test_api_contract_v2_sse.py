@@ -137,7 +137,7 @@ def _stub_executor(**kwargs) -> V2ExecutionResult:
         backend_used="stubbed",
         acceleration_used=None,
         warnings=[],
-        phase_timings_ms={"conversion_attempt_ms": 1},
+        phase_timings_ms={"conversion_total_ms": 1},
         options_fingerprint="sse-contract-stub",
     )
 

@@ -2,7 +2,7 @@
 id: task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools
 title: Parallelize PDF OCR conversion with bounded worker pools
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-04'
 last_updated: '2026-03-05'
@@ -55,21 +55,21 @@ preserving determinism, checkpoint/resume correctness, and production stability.
 1. Lock deterministic, idempotent chunk completion semantics:
    - key completion state by `chunk_index` and page range,
    - skip already-completed chunks regardless of completion order.
-2. Enforce concurrency-safe persistence:
+1. Enforce concurrency-safe persistence:
    - single-writer checkpoint/partial aggregation per job, or equivalent per-job lock/CAS merge
      semantics,
    - no concurrent full-file checkpoint writes.
-3. Define cancellation barrier behavior:
+1. Define cancellation barrier behavior:
    - stop new dispatch on cancel,
    - explicit in-flight drain/abort policy,
    - deterministic commit boundary for partial artifacts and resume.
-4. Specify and enforce canonical config contract:
+1. Specify and enforce canonical config contract:
    - env names, bounds, defaults, and fail-closed validation,
    - effective execution profile recorded in runtime/job metadata.
-5. Update telemetry contracts for parallel mode:
+1. Update telemetry contracts for parallel mode:
    - distinguish job-level and chunk-level concurrency signals,
    - enforce bounded-label policy and metrics safety tests.
-6. Add explicit API parity and regression gates, and keep parallel mode opt-in until T74 benchmark
+1. Add explicit API parity and regression gates, and keep parallel mode opt-in until T74 benchmark
    evidence is accepted.
 
 ## PR Scope

@@ -144,13 +144,10 @@ Canonical v2 timing keys in `phase_timings_ms`:
 - `chunk_total_ms`
 - `conversion_total_ms`
 
-Compatibility alias mapping (accepted as input, normalized on persistence/response):
+v2 timing contract is strict:
 
-- `backend_convert_ms` -> `ocr_layout_extract_ms`
-- `normalize_ms` -> `markdown_normalize_ms`
-- `chunk_elapsed_ms` -> `chunk_total_ms`
-- `persist_ms` -> `final_artifact_persist_ms`
-- `conversion_attempt_ms` -> `conversion_total_ms`
+- Only canonical keys above are accepted in v2 payloads and persisted diagnostics.
+- Non-canonical timing keys are unsupported and ignored.
 
 PDF-only fields (per ADR-0005) are optional and may be `null` for non-PDF routes:
 

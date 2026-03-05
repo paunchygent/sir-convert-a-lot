@@ -35,7 +35,7 @@ instead of tuning blindly.
   - markdown normalization,
   - checkpoint persist/final artifact persist.
 - Add metrics for chunk queue depth, worker saturation, and retry counts.
-- Define canonical v2 timing keys and alias mapping rules, then enforce canonicalization at manifest
+- Define canonical v2 timing keys and enforce canonical-only persistence/merge rules at manifest
   merge points.
 - Add GPU/acceleration evidence fields suitable for production tuning:
   - acceleration policy requested/used (or equivalent job metadata),
@@ -65,7 +65,7 @@ instead of tuning blindly.
 ## Status Update (2026-03-05)
 
 - Implemented:
-  - canonical timing key mapping + merge-point enforcement,
+  - canonical timing key enforcement + merge-point enforcement,
   - bounded runtime telemetry metrics and sink injection ownership in app state,
   - contract/runbook updates for label-cardinality safety and timing key policy,
   - regression tests for canonical timing normalization and no-`job_id` metric labels,
@@ -76,8 +76,8 @@ instead of tuning blindly.
     - benchmark id: `task-73-telemetry-overhead`,
     - run sample (`2026-03-05`): `overhead_percent.full_vs_sink_disabled=1.3728%`,
       `overhead_percent.full_vs_bypassed=-1.4069%`, bounded labels verified.
-  - benchmark contract hardened without compatibility shims:
-    - removed legacy alias field `telemetry_overhead_percent`,
+  - benchmark contract hardened with strict canonical fields:
+    - removed deprecated field `telemetry_overhead_percent`,
     - retained explicit mode-only overhead keys.
 
 ## Ruthless Review Findings (2026-03-05)

@@ -67,7 +67,7 @@ Primary implementation stories (active sequence):
 
   - Task 73 completed for Story 20 telemetry slice, was reopened after ruthless review findings,
     and is now re-terminalized after remediation.
-  - Added canonical v2 phase timing key contract + alias normalization/merge enforcement at job
+  - Added canonical v2 phase timing key contract + canonical-only merge enforcement at job
     manifest merge points.
   - Added explicit v2 runtime telemetry sink ownership in app state and injected sink into
     `ServiceRuntimeV2` following the HuleEdu app-owned instrumentation pattern.
@@ -90,8 +90,8 @@ Primary implementation stories (active sequence):
       - `overhead_percent.full_vs_bypassed=-1.4069%`
       - no `job_id` metrics labels observed.
   - Ruthless review remediation delivered and Task 73 re-terminalized.
-  - Removed benchmark output compatibility shim (`telemetry_overhead_percent`) in favor of
-    explicit `overhead_percent.full_vs_sink_disabled` and `overhead_percent.full_vs_bypassed`.
+  - Removed deprecated benchmark output field (`telemetry_overhead_percent`) in favor of explicit
+    `overhead_percent.full_vs_sink_disabled` and `overhead_percent.full_vs_bypassed`.
   - Validation evidence (remediation closeout):
     - `pdm run format-all` (pass)
     - `pdm run lint-fix` (pass)

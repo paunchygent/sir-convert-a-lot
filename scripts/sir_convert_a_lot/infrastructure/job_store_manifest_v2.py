@@ -200,6 +200,11 @@ def parse_stored_job_record(
     template_id: str | None = None
     template_version: str | None = None
     template_artifact_sha256: str | None = None
+    parallel_enabled: bool | None = None
+    max_chunk_workers: int | None = None
+    chunk_size_pages: int | None = None
+    effective_gpu_stage_limit: int | None = None
+    scheduling_mode: str | None = None
     failure_code: str | None = None
     failure_message: str | None = None
     failure_retryable = False
@@ -231,6 +236,11 @@ def parse_stored_job_record(
             template_id_obj = meta_obj.get("template_id")
             template_version_obj = meta_obj.get("template_version")
             template_sha_obj = meta_obj.get("template_artifact_sha256")
+            parallel_enabled_obj = meta_obj.get("parallel_enabled")
+            max_chunk_workers_obj = meta_obj.get("max_chunk_workers")
+            chunk_size_pages_obj = meta_obj.get("chunk_size_pages")
+            effective_gpu_stage_limit_obj = meta_obj.get("effective_gpu_stage_limit")
+            scheduling_mode_obj = meta_obj.get("scheduling_mode")
             pipeline_used = pipeline_obj if isinstance(pipeline_obj, str) else None
             backend_used = backend_obj if isinstance(backend_obj, str) else None
             acceleration_used = accel_obj if isinstance(accel_obj, str) else None
@@ -259,6 +269,28 @@ def parse_stored_job_record(
             template_artifact_sha256 = (
                 template_sha_obj if isinstance(template_sha_obj, str) else None
             )
+            parallel_enabled = (
+                parallel_enabled_obj if isinstance(parallel_enabled_obj, bool) else None
+            )
+            max_chunk_workers = (
+                max_chunk_workers_obj
+                if isinstance(max_chunk_workers_obj, int)
+                and not isinstance(max_chunk_workers_obj, bool)
+                else None
+            )
+            chunk_size_pages = (
+                chunk_size_pages_obj
+                if isinstance(chunk_size_pages_obj, int)
+                and not isinstance(chunk_size_pages_obj, bool)
+                else None
+            )
+            effective_gpu_stage_limit = (
+                effective_gpu_stage_limit_obj
+                if isinstance(effective_gpu_stage_limit_obj, int)
+                and not isinstance(effective_gpu_stage_limit_obj, bool)
+                else None
+            )
+            scheduling_mode = scheduling_mode_obj if isinstance(scheduling_mode_obj, str) else None
 
     if isinstance(error_obj, dict):
         code_obj = error_obj.get("code")
@@ -312,6 +344,11 @@ def parse_stored_job_record(
         template_id=template_id,
         template_version=template_version,
         template_artifact_sha256=template_artifact_sha256,
+        parallel_enabled=parallel_enabled,
+        max_chunk_workers=max_chunk_workers,
+        chunk_size_pages=chunk_size_pages,
+        effective_gpu_stage_limit=effective_gpu_stage_limit,
+        scheduling_mode=scheduling_mode,
         failure_code=failure_code,
         failure_message=failure_message,
         failure_retryable=failure_retryable,

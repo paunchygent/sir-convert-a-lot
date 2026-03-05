@@ -28,6 +28,7 @@ from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import (
 from scripts.sir_convert_a_lot.infrastructure.job_store_manifest_v2 import (
     build_initial_manifest,
     ensure_diagnostics,
+    merge_phase_timings,
     parse_stored_job_record,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
@@ -244,6 +245,7 @@ class JobStoreV2Core:
         percent_complete: float | None = None,
         pages_per_minute: float | None = None,
         eta_seconds: int | None = None,
+        phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecordV2:
         manifest_path = self._manifest_path(job_id)
         with self._job_manifest_lock(job_id):
@@ -334,8 +336,16 @@ class JobStoreV2Core:
             diagnostics = ensure_diagnostics(payload)
             diagnostics["last_heartbeat_at"] = dt_to_rfc3339(now)
             diagnostics["current_phase_started_at"] = dt_to_rfc3339(now)
+            if phase_timings_ms is not None:
+                merge_phase_timings(
+                    diagnostics=diagnostics,
+                    additional_phase_timings_ms=phase_timings_ms,
+                )
             should_emit_event = (
-                previous_status != status or previous_stage != stage or progress_changed
+                previous_status != status
+                or previous_stage != stage
+                or progress_changed
+                or phase_timings_ms is not None
             )
             if should_emit_event:
                 append_lifecycle_event(

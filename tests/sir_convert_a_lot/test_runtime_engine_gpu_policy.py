@@ -72,6 +72,42 @@ def test_service_config_from_env_rejects_cpu_unlock_env_flags(monkeypatch) -> No
         service_config_from_env()
 
 
+def test_service_config_from_env_parallel_defaults_remain_serial(monkeypatch) -> None:
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_MAX_WORKERS", raising=False)
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS", raising=False)
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS", raising=False)
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES", raising=False)
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY", raising=False)
+
+    config = service_config_from_env()
+    assert config.max_workers == 1
+    assert config.enable_parallel_pdf_chunks is False
+    assert config.max_chunk_workers == 1
+    assert config.pdf_chunk_size_pages == 10
+    assert config.gpu_stage_max_concurrency == 1
+
+
+def test_service_config_from_env_parallel_overrides_are_bounded(monkeypatch) -> None:
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_MAX_WORKERS", "4")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS", "1")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS", "3")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES", "12")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY", "2")
+
+    config = service_config_from_env()
+    assert config.max_workers == 4
+    assert config.enable_parallel_pdf_chunks is True
+    assert config.max_chunk_workers == 3
+    assert config.pdf_chunk_size_pages == 12
+    assert config.gpu_stage_max_concurrency == 2
+
+
+def test_service_config_from_env_rejects_invalid_chunk_worker_value(monkeypatch) -> None:
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS", "0")
+    with pytest.raises(ValueError, match="SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS"):
+        service_config_from_env()
+
+
 def test_test_only_cpu_unlock_path_sets_cpu_acceleration(tmp_path: Path) -> None:
     runtime = ServiceRuntime(
         ServiceConfig(

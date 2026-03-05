@@ -64,6 +64,11 @@ class StoredJobRecordV2:
     template_id: str | None
     template_version: str | None
     template_artifact_sha256: str | None
+    parallel_enabled: bool | None
+    max_chunk_workers: int | None
+    chunk_size_pages: int | None
+    effective_gpu_stage_limit: int | None
+    scheduling_mode: str | None
     failure_code: str | None
     failure_message: str | None
     failure_retryable: bool

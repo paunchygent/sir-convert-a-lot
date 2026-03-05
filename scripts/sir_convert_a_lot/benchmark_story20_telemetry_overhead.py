@@ -166,9 +166,9 @@ def _run_variant(
             acceleration_used="cpu",
             warnings=["docling_auto_ocr_retry_applied"],
             phase_timings_ms={
-                "backend_convert_ms": 8,
-                "normalize_ms": 3,
-                "conversion_attempt_ms": int(max(0.0, stub_work_seconds) * 1000.0),
+                "ocr_layout_extract_ms": 8,
+                "markdown_normalize_ms": 3,
+                "conversion_total_ms": int(max(0.0, stub_work_seconds) * 1000.0),
             },
             options_fingerprint="story20-telemetry-benchmark",
         )

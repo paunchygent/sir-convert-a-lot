@@ -1,9 +1,9 @@
 """Canonical phase timing contract helpers for v2 conversion telemetry.
 
 Purpose:
-    Define canonical timing keys, compatibility aliases, and deterministic
-    normalization/merge helpers so v2 timing payloads stay stable across runtime
-    emitters and persisted manifests.
+    Define canonical timing keys and deterministic normalization/merge helpers
+    so v2 timing payloads stay stable across runtime emitters and persisted
+    manifests.
 
 Relationships:
     - Used by `infrastructure.job_store_manifest_v2` when parsing/merging
@@ -35,24 +35,6 @@ CANONICAL_PHASE_TIMING_KEYS: frozenset[str] = frozenset(
     }
 )
 
-_PHASE_TIMING_ALIASES: dict[str, str] = {
-    TIMING_KEY_OCR_LAYOUT_EXTRACT_MS: TIMING_KEY_OCR_LAYOUT_EXTRACT_MS,
-    "backend_convert_ms": TIMING_KEY_OCR_LAYOUT_EXTRACT_MS,
-    "ocr_ms": TIMING_KEY_OCR_LAYOUT_EXTRACT_MS,
-    "layout_extract_ms": TIMING_KEY_OCR_LAYOUT_EXTRACT_MS,
-    TIMING_KEY_MARKDOWN_NORMALIZE_MS: TIMING_KEY_MARKDOWN_NORMALIZE_MS,
-    "normalize_ms": TIMING_KEY_MARKDOWN_NORMALIZE_MS,
-    "markdown_normalization_ms": TIMING_KEY_MARKDOWN_NORMALIZE_MS,
-    TIMING_KEY_FORMULA_ENRICHMENT_MS: TIMING_KEY_FORMULA_ENRICHMENT_MS,
-    TIMING_KEY_CHECKPOINT_PERSIST_MS: TIMING_KEY_CHECKPOINT_PERSIST_MS,
-    TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS: TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
-    "persist_ms": TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
-    TIMING_KEY_CHUNK_TOTAL_MS: TIMING_KEY_CHUNK_TOTAL_MS,
-    "chunk_elapsed_ms": TIMING_KEY_CHUNK_TOTAL_MS,
-    TIMING_KEY_CONVERSION_TOTAL_MS: TIMING_KEY_CONVERSION_TOTAL_MS,
-    "conversion_attempt_ms": TIMING_KEY_CONVERSION_TOTAL_MS,
-}
-
 
 def _coerce_nonnegative_int(value: object) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
@@ -62,7 +44,9 @@ def _coerce_nonnegative_int(value: object) -> int | None:
 
 def canonical_timing_key(key: str) -> str | None:
     """Resolve one timing key to canonical v2 key or return None when unsupported."""
-    return _PHASE_TIMING_ALIASES.get(key)
+    if key in CANONICAL_PHASE_TIMING_KEYS:
+        return key
+    return None
 
 
 def normalize_phase_timings_map(phase_timings: Mapping[str, object]) -> dict[str, int]:

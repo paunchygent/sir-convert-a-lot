@@ -225,8 +225,18 @@ def test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime(
         pymupdf_backend,
         progress_callback=None,
         is_cancel_requested=None,
+        on_chunk_worker_start=None,
+        on_chunk_worker_finish=None,
     ) -> V2ExecutionResult:
-        del config, docling_backend, pymupdf_backend, progress_callback, is_cancel_requested
+        del (
+            config,
+            docling_backend,
+            pymupdf_backend,
+            progress_callback,
+            is_cancel_requested,
+            on_chunk_worker_start,
+            on_chunk_worker_finish,
+        )
         content = (
             f"# deterministic non-gpu conversion\n\n"
             f"profile: {profile.value}\n"
@@ -238,7 +248,7 @@ def test_adapter_integration_smoke_submit_poll_fetch_without_gpu_runtime(
             backend_used="stubbed_non_gpu",
             acceleration_used="cpu",
             warnings=[],
-            phase_timings_ms={"conversion_attempt_ms": 1},
+            phase_timings_ms={"conversion_total_ms": 1},
             options_fingerprint="stubbed-options-fingerprint",
         )
 

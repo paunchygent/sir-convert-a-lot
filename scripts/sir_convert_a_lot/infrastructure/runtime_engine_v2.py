@@ -119,6 +119,10 @@ class ServiceRuntimeV2:
         self._shutdown_event = threading.Event()
         self._supervisor_thread: threading.Thread | None = None
         self._active_job_ids: set[str] = set()
+        self._chunk_workers_active = 0
+        self._chunk_stage_semaphore = threading.BoundedSemaphore(
+            max(1, int(self.config.gpu_stage_max_concurrency))
+        )
 
         self.job_store.sweep_expired()
         self.job_store.recover_running_jobs_to_queued(active_job_ids=self._active_job_ids)
@@ -127,6 +131,7 @@ class ServiceRuntimeV2:
             self._supervisor_thread = threading.Thread(target=self._supervisor_loop, daemon=True)
             self._supervisor_thread.start()
         self._emit_runtime_capacity_metrics()
+        self._emit_chunk_capacity_metrics()
 
     def _queued_job_count(self) -> int:
         queued_jobs = 0
@@ -146,15 +151,53 @@ class ServiceRuntimeV2:
             with self._lock:
                 active_jobs = len(self._active_job_ids)
                 max_workers = max(1, self.config.max_workers)
+                gpu_stage_global_cap = max(1, self.config.gpu_stage_max_concurrency)
             queued_jobs = self._queued_job_count()
             self.telemetry_sink.observe_runtime_capacity(
                 active_jobs=active_jobs,
                 queued_jobs=queued_jobs,
                 max_workers=max_workers,
                 gpu_available=self.config.gpu_available,
+                gpu_stage_global_cap=gpu_stage_global_cap,
             )
         except Exception:
             return
+
+    def _emit_chunk_capacity_metrics(self) -> None:
+        if not self.config.enable_runtime_telemetry_calls:
+            return
+        try:
+            with self._lock:
+                active_chunk_workers = max(0, int(self._chunk_workers_active))
+                max_chunk_workers_per_job = (
+                    max(1, int(self.config.max_chunk_workers))
+                    if self.config.enable_parallel_pdf_chunks
+                    else 1
+                )
+                global_chunk_worker_cap = max(1, int(self.config.gpu_stage_max_concurrency))
+            self.telemetry_sink.observe_chunk_capacity(
+                active_chunk_workers=active_chunk_workers,
+                max_chunk_workers_per_job=max_chunk_workers_per_job,
+                global_chunk_worker_cap=global_chunk_worker_cap,
+            )
+        except Exception:
+            return
+
+    def _acquire_chunk_worker_slot(self) -> None:
+        """Acquire one global chunk worker slot and emit chunk capacity metrics."""
+        self._chunk_stage_semaphore.acquire()
+        with self._lock:
+            self._chunk_workers_active += 1
+        self._emit_chunk_capacity_metrics()
+
+    def _release_chunk_worker_slot(self) -> None:
+        """Release one global chunk worker slot and emit chunk capacity metrics."""
+        with self._lock:
+            self._chunk_workers_active = max(0, self._chunk_workers_active - 1)
+        try:
+            self._chunk_stage_semaphore.release()
+        finally:
+            self._emit_chunk_capacity_metrics()
 
     @staticmethod
     def _resolve_acceleration_policy(job: StoredJobV2) -> AccelerationPolicy | None:
@@ -292,6 +335,11 @@ class ServiceRuntimeV2:
             template_id=record.template_id,
             template_version=record.template_version,
             template_artifact_sha256=record.template_artifact_sha256,
+            parallel_enabled=record.parallel_enabled,
+            max_chunk_workers=record.max_chunk_workers,
+            chunk_size_pages=record.chunk_size_pages,
+            effective_gpu_stage_limit=record.effective_gpu_stage_limit,
+            scheduling_mode=record.scheduling_mode,
             failure_code=record.failure_code,
             failure_message=record.failure_message,
             failure_retryable=record.failure_retryable,
@@ -513,6 +561,7 @@ class ServiceRuntimeV2:
                             percent_complete=update.percent_complete,
                             pages_per_minute=update.pages_per_minute,
                             eta_seconds=update.eta_seconds,
+                            phase_timings_ms=update.phase_timings_ms,
                         )
                         self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
                     except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
@@ -529,6 +578,8 @@ class ServiceRuntimeV2:
                     pymupdf_backend=self.pymupdf_backend,
                     progress_callback=_progress_callback,
                     is_cancel_requested=_is_cancel_requested,
+                    on_chunk_worker_start=self._acquire_chunk_worker_slot,
+                    on_chunk_worker_finish=self._release_chunk_worker_slot,
                 )
                 phase_timings_ms = dict(result.phase_timings_ms)
                 phase_timings_ms[TIMING_KEY_CONVERSION_TOTAL_MS] = max(
@@ -576,6 +627,11 @@ class ServiceRuntimeV2:
                     template_id=result.template_id,
                     template_version=result.template_version,
                     template_artifact_sha256=result.template_artifact_sha256,
+                    parallel_enabled=result.parallel_enabled,
+                    max_chunk_workers=result.max_chunk_workers,
+                    chunk_size_pages=result.chunk_size_pages,
+                    effective_gpu_stage_limit=result.effective_gpu_stage_limit,
+                    scheduling_mode=result.scheduling_mode,
                     warnings=warnings,
                     phase_timings_ms=phase_timings_ms,
                 )

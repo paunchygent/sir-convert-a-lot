@@ -108,6 +108,26 @@ class RuntimeTelemetrySinkV2:
             "Configured concurrency cap for GPU-backed conversion work.",
             registry=registry,
         )
+        self.chunk_workers_active = Gauge(
+            "sir_convert_a_lot_v2_chunk_workers_active",
+            "Current active PDF chunk conversion workers across running jobs.",
+            registry=registry,
+        )
+        self.chunk_workers_per_job_max = Gauge(
+            "sir_convert_a_lot_v2_chunk_workers_per_job_max",
+            "Configured maximum PDF chunk workers per job.",
+            registry=registry,
+        )
+        self.chunk_workers_global_cap = Gauge(
+            "sir_convert_a_lot_v2_chunk_workers_global_cap",
+            "Global cap for concurrent PDF chunk workers across the runtime.",
+            registry=registry,
+        )
+        self.chunk_worker_saturation_ratio = Gauge(
+            "sir_convert_a_lot_v2_chunk_worker_saturation_ratio",
+            "Active chunk workers divided by configured global chunk worker cap.",
+            registry=registry,
+        )
         self.job_terminal_total = Counter(
             "sir_convert_a_lot_v2_jobs_terminal_total",
             "Terminal v2 jobs by status and bounded route/runtime dimensions.",
@@ -176,6 +196,7 @@ class RuntimeTelemetrySinkV2:
         queued_jobs: int,
         max_workers: int,
         gpu_available: bool,
+        gpu_stage_global_cap: int | None = None,
     ) -> None:
         """Record queue/worker capacity gauges for runtime scheduling visibility."""
         capped_max_workers = max(1, int(max_workers))
@@ -186,7 +207,29 @@ class RuntimeTelemetrySinkV2:
         self.workers_max.set(capped_max_workers)
         saturation = min(1.0, float(capped_active_jobs) / float(capped_max_workers))
         self.worker_saturation_ratio.set(saturation)
-        self.gpu_concurrency_cap.set(capped_max_workers if gpu_available else 0)
+        resolved_gpu_cap = (
+            max(1, int(gpu_stage_global_cap))
+            if gpu_stage_global_cap is not None
+            else capped_max_workers
+        )
+        self.gpu_concurrency_cap.set(resolved_gpu_cap if gpu_available else 0)
+
+    def observe_chunk_capacity(
+        self,
+        *,
+        active_chunk_workers: int,
+        max_chunk_workers_per_job: int,
+        global_chunk_worker_cap: int,
+    ) -> None:
+        """Record bounded PDF chunk worker capacity and saturation gauges."""
+        capped_active = max(0, int(active_chunk_workers))
+        capped_per_job = max(1, int(max_chunk_workers_per_job))
+        capped_global = max(1, int(global_chunk_worker_cap))
+        self.chunk_workers_active.set(capped_active)
+        self.chunk_workers_per_job_max.set(capped_per_job)
+        self.chunk_workers_global_cap.set(capped_global)
+        saturation = min(1.0, float(capped_active) / float(capped_global))
+        self.chunk_worker_saturation_ratio.set(saturation)
 
     def observe_phase_timings(
         self,
@@ -265,8 +308,18 @@ class NoopRuntimeTelemetrySinkV2:
         queued_jobs: int,
         max_workers: int,
         gpu_available: bool,
+        gpu_stage_global_cap: int | None = None,
     ) -> None:
-        del active_jobs, queued_jobs, max_workers, gpu_available
+        del active_jobs, queued_jobs, max_workers, gpu_available, gpu_stage_global_cap
+
+    def observe_chunk_capacity(
+        self,
+        *,
+        active_chunk_workers: int,
+        max_chunk_workers_per_job: int,
+        global_chunk_worker_cap: int,
+    ) -> None:
+        del active_chunk_workers, max_chunk_workers_per_job, global_chunk_worker_cap
 
     def observe_phase_timings(
         self,

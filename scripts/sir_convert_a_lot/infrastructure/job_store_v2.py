@@ -171,6 +171,11 @@ class JobStoreV2(JobStoreV2Core):
         template_id: str | None = None,
         template_version: str | None = None,
         template_artifact_sha256: str | None = None,
+        parallel_enabled: bool | None = None,
+        max_chunk_workers: int | None = None,
+        chunk_size_pages: int | None = None,
+        effective_gpu_stage_limit: int | None = None,
+        scheduling_mode: str | None = None,
         warnings: list[str],
         phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecordV2:
@@ -252,6 +257,11 @@ class JobStoreV2(JobStoreV2Core):
                     "template_id": template_id,
                     "template_version": template_version,
                     "template_artifact_sha256": template_artifact_sha256,
+                    "parallel_enabled": parallel_enabled,
+                    "max_chunk_workers": max_chunk_workers,
+                    "chunk_size_pages": chunk_size_pages,
+                    "effective_gpu_stage_limit": effective_gpu_stage_limit,
+                    "scheduling_mode": scheduling_mode,
                 },
                 "warnings": list(warnings),
             }

@@ -113,6 +113,12 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
 - [x] Validation includes:
   - `pdm run pytest-root tests/sir_convert_a_lot -q`
 
+## Follow-ups
+
+- `T77` extends the live v2 conversion smoke (`verify_hemma_v2_conversions.py`) with a Swedish OCR
+  diacritics guard (`åäö`) and OCR engine/language preflight to prevent multi-hour wrong-output
+  runs.
+
 ## Validation Evidence
 
 - `pdm run format-all` (pass)

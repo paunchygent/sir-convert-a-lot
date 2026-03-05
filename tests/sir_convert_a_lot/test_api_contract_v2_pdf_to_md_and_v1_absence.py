@@ -40,7 +40,7 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
             backend_used="docling",
             acceleration_used="cuda",
             warnings=["ocr_retry_performed"],
-            phase_timings_ms={"backend_convert_ms": 12},
+            phase_timings_ms={"ocr_layout_extract_ms": 12},
             options_fingerprint="contract_test_pdf_md",
         )
 

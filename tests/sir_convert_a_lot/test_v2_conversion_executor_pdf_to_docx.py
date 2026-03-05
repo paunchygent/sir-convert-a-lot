@@ -194,7 +194,7 @@ def test_execute_v2_job_conversion_pdf_to_docx_success_with_stubbed_stages(
                 options_fingerprint="sha256:backend-options",
             ),
             ["table_detection_degraded"],
-            {"backend_convert_ms": 12, "normalize_ms": 3},
+            {"ocr_layout_extract_ms": 12, "markdown_normalize_ms": 3},
         )
 
     def _fake_convert_markdown_to_html(

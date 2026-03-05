@@ -35,10 +35,7 @@ class JobProgressV2(BaseModel):
     current_phase_started_at: datetime | None = None
     phase_timings_ms: dict[str, int] = Field(
         default_factory=dict,
-        description=(
-            "Canonical stage timings map. See v2 converter docs for key contract and legacy alias "
-            "normalization rules."
-        ),
+        description=("Canonical stage timings map. See v2 converter docs for key contract."),
     )
     total_pages: int | None = Field(default=None, ge=0)
     processed_pages: int | None = Field(default=None, ge=0)
@@ -114,6 +111,11 @@ class ConversionMetadataV2(BaseModel):
     template_id: str | None = None
     template_version: str | None = None
     template_artifact_sha256: str | None = None
+    parallel_enabled: bool | None = None
+    max_chunk_workers: int | None = Field(default=None, ge=1)
+    chunk_size_pages: int | None = Field(default=None, ge=1)
+    effective_gpu_stage_limit: int | None = Field(default=None, ge=1)
+    scheduling_mode: str | None = None
 
 
 class DocxTemplateSummaryV2(BaseModel):
