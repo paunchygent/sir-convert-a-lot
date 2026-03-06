@@ -17,6 +17,7 @@ import hashlib
 import io
 import json
 import mimetypes
+import os
 import re
 import shutil
 import subprocess
@@ -347,6 +348,23 @@ def prefetch_hf_assets(settings: BenchmarkSettings, mount: MountResolution) -> N
     snapshot_download(settings.base_model_id, cache_dir=str(mount.canonical_root))
 
 
+def _gpu_device_group_ids() -> list[str]:
+    """Return unique numeric group ids required for Hemma GPU device access."""
+    candidate_paths = [Path("/dev/kfd")]
+    dri_root = Path("/dev/dri")
+    if dri_root.exists():
+        candidate_paths.extend(sorted(dri_root.glob("card*")))
+        candidate_paths.extend(sorted(dri_root.glob("renderD*")))
+    group_ids: list[str] = []
+    for candidate in candidate_paths:
+        if not candidate.exists():
+            continue
+        group_id = str(os.stat(candidate).st_gid)
+        if group_id not in group_ids:
+            group_ids.append(group_id)
+    return group_ids
+
+
 def start_sidecar(
     settings: BenchmarkSettings,
     *,
@@ -354,6 +372,7 @@ def start_sidecar(
     openvoice_mount: MountResolution,
 ) -> None:
     """Launch the Task 81 sidecar container on the internal Hemma Docker network."""
+    gpu_group_ids = _gpu_device_group_ids()
     run_args = [
         "run",
         "-d",
@@ -367,56 +386,58 @@ def start_sidecar(
         "/dev/kfd",
         "--device",
         "/dev/dri",
-        "--group-add",
-        "video",
-        "--group-add",
-        "render",
-        "--ipc=host",
-        "--cap-add=SYS_PTRACE",
-        "--security-opt",
-        "seccomp=unconfined",
-        "-p",
-        f"127.0.0.1:{settings.host_port}:{settings.container_port}",
-        "-e",
-        f"HF_HOME={CONTAINER_HF_HOME}",
-        "-e",
-        f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
-        "-e",
-        f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
-        "-e",
-        "SIR_TTS_SIDECAR_BIND_HOST=0.0.0.0",
-        "-e",
-        f"SIR_TTS_SIDECAR_PORT={settings.container_port}",
-        "-e",
-        "SIR_TTS_SIDECAR_BACKEND_ID=openvoice_v2",
-        "-e",
-        "SIR_TTS_SIDECAR_BACKEND_VERSION=74a1d147",
-        "-e",
-        "SIR_TTS_SIDECAR_BACKEND_PROFILE=mms_tts_swe_base",
-        "-e",
-        "SIR_TTS_SIDECAR_GPU_REQUIRED=1",
-        "-e",
-        f"SIR_TTS_SIDECAR_BASE_MODEL_ID={settings.base_model_id}",
-        "-e",
-        "SIR_TTS_SIDECAR_ALLOWED_LANGUAGE_CODES=sv",
-        "-e",
-        "SIR_TTS_SIDECAR_OPENVOICE_ENABLE_WATERMARK=0",
-        "-e",
-        f"SIR_TTS_SIDECAR_OPENVOICE_CHECKPOINTS_ROOT={CONTAINER_OPENVOICE_HOME}/checkpoints_v2",
-        "-e",
-        f"SIR_TTS_SIDECAR_OPENVOICE_CACHE_HOST_ROOT={openvoice_mount.canonical_root.as_posix()}",
-        "-e",
-        f"SIR_TTS_SIDECAR_OPENVOICE_CACHE_CONTAINER_ROOT={CONTAINER_OPENVOICE_HOME}",
-        "-e",
-        f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}",
-        "-e",
-        f"SIR_TTS_SIDECAR_HF_CACHE_CONTAINER_ROOT={CONTAINER_HF_HOME}",
-        "-v",
-        f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
-        "-v",
-        f"{openvoice_mount.effective_root.as_posix()}:{CONTAINER_OPENVOICE_HOME}",
-        settings.image,
     ]
+    for group_id in gpu_group_ids:
+        run_args.extend(["--group-add", group_id])
+    run_args.extend(
+        [
+            "--ipc=host",
+            "--cap-add=SYS_PTRACE",
+            "--security-opt",
+            "seccomp=unconfined",
+            "-p",
+            f"127.0.0.1:{settings.host_port}:{settings.container_port}",
+            "-e",
+            f"HF_HOME={CONTAINER_HF_HOME}",
+            "-e",
+            f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
+            "-e",
+            f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
+            "-e",
+            "SIR_TTS_SIDECAR_BIND_HOST=0.0.0.0",
+            "-e",
+            f"SIR_TTS_SIDECAR_PORT={settings.container_port}",
+            "-e",
+            "SIR_TTS_SIDECAR_BACKEND_ID=openvoice_v2",
+            "-e",
+            "SIR_TTS_SIDECAR_BACKEND_VERSION=74a1d147",
+            "-e",
+            "SIR_TTS_SIDECAR_BACKEND_PROFILE=mms_tts_swe_base",
+            "-e",
+            "SIR_TTS_SIDECAR_GPU_REQUIRED=1",
+            "-e",
+            f"SIR_TTS_SIDECAR_BASE_MODEL_ID={settings.base_model_id}",
+            "-e",
+            "SIR_TTS_SIDECAR_ALLOWED_LANGUAGE_CODES=sv",
+            "-e",
+            "SIR_TTS_SIDECAR_OPENVOICE_ENABLE_WATERMARK=0",
+            "-e",
+            f"SIR_TTS_SIDECAR_OPENVOICE_CHECKPOINTS_ROOT={CONTAINER_OPENVOICE_HOME}/checkpoints_v2",
+            "-e",
+            f"SIR_TTS_SIDECAR_OPENVOICE_CACHE_HOST_ROOT={openvoice_mount.canonical_root.as_posix()}",
+            "-e",
+            f"SIR_TTS_SIDECAR_OPENVOICE_CACHE_CONTAINER_ROOT={CONTAINER_OPENVOICE_HOME}",
+            "-e",
+            f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}",
+            "-e",
+            f"SIR_TTS_SIDECAR_HF_CACHE_CONTAINER_ROOT={CONTAINER_HF_HOME}",
+            "-v",
+            f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
+            "-v",
+            f"{openvoice_mount.effective_root.as_posix()}:{CONTAINER_OPENVOICE_HOME}",
+            settings.image,
+        ]
+    )
     docker_checked(run_args, label="docker run task81 sidecar")
 
 

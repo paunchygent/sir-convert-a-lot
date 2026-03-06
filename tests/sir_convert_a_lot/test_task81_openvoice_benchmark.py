@@ -203,6 +203,10 @@ def test_start_sidecar_uses_persistent_cache_mounts(
         "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime.docker_checked",
         _fake_docker_checked,
     )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime._gpu_device_group_ids",
+        lambda: ["993", "44"],
+    )
     settings = BenchmarkSettings(
         output_root=tmp_path / "output",
         dockerfile_path=tmp_path / "Dockerfile",
@@ -246,6 +250,9 @@ def test_start_sidecar_uses_persistent_cache_mounts(
         in command
     )
     assert f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}" in command
+    assert "--group-add" in command
+    assert "993" in command
+    assert "44" in command
 
 
 def test_reference_audio_evidence_uses_benchmark_image_ffprobe(
