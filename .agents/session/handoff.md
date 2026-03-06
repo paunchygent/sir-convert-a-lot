@@ -28,6 +28,22 @@
   - the Task 81 adapter uses `facebook/mms-tts-swe` as the Swedish base speaker,
   - then applies OpenVoice V2 tone-color conversion for cloning,
   - which keeps the benchmark honest about Swedish generation instead of faking unsupported output.
+- Live `T81` benchmark now exists on Hemma and has reached technical success:
+  - sidecar booted,
+  - canonical caches were reused,
+  - Swedish cloned output was generated from the approved teacher reference clip.
+- Manual listening review rejected the current sample quality:
+  - timbre not close enough to the teacher voice,
+  - strange artifacts,
+  - uneven pacing.
+- Current conclusion:
+  - the pipeline works,
+  - the current model setup is bad,
+  - `T81` remains open for setup remediation and rerun.
+- The remediation order is now implementation-grounded:
+  - fix the sample-rate mismatch between the Swedish base model and the OpenVoice converter,
+  - switch the reference clip to the intended OpenVoice preprocessing path,
+  - preserve processed-reference plus base-vs-cloned artifacts in the next rerun.
 
 Validation evidence:
 
@@ -39,21 +55,30 @@ Validation evidence:
 
 Known remaining work / current state:
 
-- `lint-fix` exposed a docs-governance issue in `docs/backlog/current.md`; this session already compressed the file back under the 220-line limit, but the full repo-wide validation/lint pass still needs one clean rerun.
-- The live Hemma benchmark has not been executed yet in this implementation session.
 - The approved teacher reference clip is currently available locally at:
   - `/Users/olofs_mba/Library/Containers/com.apple.VoiceMemos/Data/tmp/.com.apple.uikit.itemprovider.temporary.PCc9m1/Övre Olskroksgatan 10.m4a`
 - The approved teacher reference clip is cloning input only; Task 81 no longer couples that clip to transcript evidence.
+- Current Hemma evidence path:
+  - `build/verification/task-81-openvoice-v2-hemma/`
+- Current failed-quality artifact baseline:
+  - `build/verification/task-81-openvoice-v2-hemma/artifacts/sample_sv.wav`
+- The next work is setup remediation, not more infrastructure proving.
+- The next rerun must preserve:
+  - the processed reference artifact,
+  - the Swedish base artifact before cloning,
+  - the corrected cloned artifact after conversion.
 
 ## Next Session Goals (2026-03-06)
 
-- Rerun the remaining repo-wide gates now that `current.md` is compressed:
-  - `pdm run lint-fix`
-  - `pdm run validate-tasks`
-  - `pdm run validate-docs`
-  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- Stage the approved teacher reference clip onto Hemma in a disciplined way, then execute:
-  - `pdm run run-hemma -- pdm run benchmark:task-81 --reference-audio <remote-path>`
-- Capture deterministic evidence under `build/verification/task-81-openvoice-v2-hemma/` and listen to the generated Swedish sample.
-- If Task 81 runtime/bootstrap fails on Hemma, debug it without adding hidden fallbacks or container-local long-lived cache paths.
-- Once live evidence exists, decide whether OpenVoice V2 remains the primary cloning-capable Swedish candidate before moving to `T82` and `T83`.
+- Preserve the current failed-quality `T81` sample as baseline evidence.
+- Correct the OpenVoice setup rather than adding more analysis:
+  - fix the base-model vs converter sample-rate contract,
+  - align the reference-speaker setup with the intended model path,
+  - emit processed-reference plus Swedish base vs cloned artifacts,
+  - rerun the benchmark with the same approved teacher reference clip.
+- Update `Task 81` and `Story 23` with:
+  - what changed in setup,
+  - whether artifacts/pacing improved,
+  - whether timbre match improved enough to keep OpenVoice credible.
+- If the corrected setup is still poor, record OpenVoice as technically feasible but not the lead
+  Swedish teacher-voice candidate, then proceed to `T82`.

@@ -24,16 +24,20 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_reporting import (
     GpuIdentity,
     InternalProbeEvidence,
     ReferenceAudioEvidence,
+    SetupArtifactEvidence,
     SidecarRuntime,
     SynthesisProbeResult,
     build_report_markdown,
     write_json,
 )
 from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
+    CONTAINER_DEBUG_ARTIFACT_DIR,
     CONTAINER_HF_HOME,
     CONTAINER_OPENVOICE_HOME,
     BenchmarkSettings,
     MountResolution,
+    collect_setup_artifact_evidence,
+    copy_debug_artifacts_from_container,
     prefetch_openvoice_assets,
     reference_audio_evidence,
     resolve_effective_cache_dir,
@@ -250,6 +254,7 @@ def test_start_sidecar_uses_persistent_cache_mounts(
         in command
     )
     assert f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}" in command
+    assert f"SIR_TTS_SIDECAR_DEBUG_ARTIFACT_DIR={CONTAINER_DEBUG_ARTIFACT_DIR}" in command
     assert "--group-add" in command
     assert "993" in command
     assert "44" in command
@@ -374,6 +379,80 @@ def test_synthesize_probe_posts_normalized_contract_and_writes_artifact(
     assert peak_vram == 4
 
 
+def test_copy_debug_artifacts_from_container_uses_docker_cp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[str]] = []
+
+    def _fake_run(
+        args: list[str],
+        *,
+        check: bool,
+        capture_output: bool,
+        text: bool,
+    ) -> object:
+        assert check is False
+        assert capture_output is True
+        assert text is True
+        calls.append(args)
+        return type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime.subprocess.run",
+        _fake_run,
+    )
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (artifacts_dir / "sample_sv.wav").write_bytes(b"keep")
+    (artifacts_dir / "old.txt").write_text("remove", encoding="utf-8")
+
+    copy_debug_artifacts_from_container(container_name="task81", artifacts_dir=artifacts_dir)
+
+    assert (artifacts_dir / "sample_sv.wav").exists() is True
+    assert (artifacts_dir / "old.txt").exists() is False
+    assert calls == [
+        [
+            "sudo",
+            "-n",
+            "docker",
+            "cp",
+            "task81:/tmp/task81-debug-artifacts/.",
+            artifacts_dir.as_posix(),
+        ]
+    ]
+
+
+def test_collect_setup_artifact_evidence_reads_processed_reference_and_base_files(
+    tmp_path: Path,
+) -> None:
+    artifacts_dir = tmp_path / "artifacts"
+    processed_wavs = artifacts_dir / "processed_reference" / "wavs"
+    processed_wavs.mkdir(parents=True, exist_ok=True)
+    (processed_wavs / "seg0.wav").write_bytes(b"a")
+    (processed_wavs / "seg1.wav").write_bytes(b"b")
+    base_wav = artifacts_dir / "base_sv.wav"
+    converter_wav = artifacts_dir / "base_sv_converter_input.wav"
+    base_wav.write_bytes(b"base")
+    converter_wav.write_bytes(b"conv")
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime._wav_metadata",
+        lambda audio_bytes: (16000, 1.0) if audio_bytes == b"base" else (22050, 1.0),
+    )
+    try:
+        evidence = collect_setup_artifact_evidence(artifacts_dir)
+    finally:
+        monkeypatch.undo()
+
+    assert evidence.processed_reference_dir == (artifacts_dir / "processed_reference").as_posix()
+    assert evidence.processed_reference_segment_count == 2
+    assert evidence.base_output_path == base_wav.as_posix()
+    assert evidence.base_output_sample_rate_hz == 16000
+    assert evidence.converter_input_path == converter_wav.as_posix()
+    assert evidence.converter_input_sample_rate_hz == 22050
+
+
 def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
     report = BenchmarkReport(
         benchmark_id="task-81-openvoice-v2-hemma",
@@ -421,6 +500,16 @@ def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
             duration_seconds=10.0,
             sample_rate_hz=48000,
         ),
+        setup_artifacts=SetupArtifactEvidence(
+            processed_reference_dir="build/verification/task-81-openvoice-v2-hemma/artifacts/processed_reference",
+            processed_reference_segment_count=3,
+            base_output_path="build/verification/task-81-openvoice-v2-hemma/artifacts/base_sv.wav",
+            base_output_sample_rate_hz=16000,
+            converter_input_path=(
+                "build/verification/task-81-openvoice-v2-hemma/artifacts/base_sv_converter_input.wav"
+            ),
+            converter_input_sample_rate_hz=22050,
+        ),
         synthesis_result=SynthesisProbeResult(
             ok=True,
             status_code=200,
@@ -448,5 +537,6 @@ def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
 
     assert '"benchmark_id": "task-81-openvoice-v2-hemma"' in json_path.read_text(encoding="utf-8")
     assert "## Capability Snapshot" in markdown
+    assert "## Setup Artifacts" in markdown
     assert "openvoice_v2" in markdown
     assert "cross_lingual_claimed" in markdown

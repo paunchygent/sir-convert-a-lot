@@ -22,6 +22,9 @@ RUN apt-get update \
 
 RUN python -m pip install --upgrade pip "setuptools<81" wheel
 RUN python -m pip install --index-url "${TORCH_ROCM_INDEX_URL}" "torch==${TORCH_VERSION}"
+# Keep the reference-speaker preprocessing stack aligned to OpenVoice's current
+# published requirements for Task 81 compatibility benchmarking; this is not a
+# repo-wide dependency policy.
 RUN python -m pip install \
     "setuptools<81" \
     "fastapi>=0.128.8" \
@@ -34,8 +37,11 @@ RUN python -m pip install \
     "numpy<2" \
     "scipy>=1.11.0" \
     "librosa==0.9.1" \
+    "faster-whisper==0.9.0" \
+    "pydub==0.25.1" \
     "soxr>=0.5.0" \
     "soundfile>=0.13.1" \
+    "whisper-timestamped==1.14.2" \
     "inflect==7.0.0" \
     "unidecode==1.3.7" \
     "eng_to_ipa==0.0.2" \

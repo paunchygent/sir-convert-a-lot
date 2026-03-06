@@ -37,6 +37,7 @@ from huggingface_hub import snapshot_download
 from scripts.sir_convert_a_lot.devops.task81_openvoice_reporting import (
     InternalProbeEvidence,
     ReferenceAudioEvidence,
+    SetupArtifactEvidence,
     SidecarRuntime,
     SynthesisProbeResult,
 )
@@ -50,6 +51,7 @@ GFX_ARCH_RE = re.compile(r"gfx[0-9]+")
 CONTAINER_HF_HOME = "/cache/huggingface"
 CONTAINER_HF_HUB_CACHE = f"{CONTAINER_HF_HOME}/hub"
 CONTAINER_OPENVOICE_HOME = "/cache/openvoice"
+CONTAINER_DEBUG_ARTIFACT_DIR = "/tmp/task81-debug-artifacts"
 
 
 @dataclass(frozen=True)
@@ -429,6 +431,8 @@ def start_sidecar(
             f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}",
             "-e",
             f"SIR_TTS_SIDECAR_HF_CACHE_CONTAINER_ROOT={CONTAINER_HF_HOME}",
+            "-e",
+            f"SIR_TTS_SIDECAR_DEBUG_ARTIFACT_DIR={CONTAINER_DEBUG_ARTIFACT_DIR}",
             "-v",
             f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
             "-v",
@@ -688,6 +692,72 @@ def synthesize_probe(
         ),
         peak_gpu_busy_percent,
         peak_vram_used_bytes,
+    )
+
+
+def copy_debug_artifacts_from_container(*, container_name: str, artifacts_dir: Path) -> None:
+    """Copy benchmark-side debug artifacts out of the running sidecar container."""
+    for child in sorted(artifacts_dir.iterdir()):
+        if child.name in {"sample_sv.wav", "sample_sv.error.txt"}:
+            continue
+        if child.is_dir():
+            shutil.rmtree(child)
+            continue
+        child.unlink()
+    result = subprocess.run(
+        [
+            "sudo",
+            "-n",
+            "docker",
+            "cp",
+            f"{container_name}:{CONTAINER_DEBUG_ARTIFACT_DIR}/.",
+            artifacts_dir.as_posix(),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        stderr = result.stderr.lower()
+        stdout = result.stdout.lower()
+        if "no such file or directory" in stderr or "could not find" in stderr:
+            return
+        if "no such file or directory" in stdout or "could not find" in stdout:
+            return
+        raise SystemExit(
+            "Task 81 could not copy debug artifacts from the sidecar container.\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        )
+
+
+def collect_setup_artifact_evidence(artifacts_dir: Path) -> SetupArtifactEvidence:
+    """Summarize the processed-reference and base-audio artifacts from one rerun."""
+    processed_reference_dir = artifacts_dir / "processed_reference"
+    base_output_path = artifacts_dir / "base_sv.wav"
+    converter_input_path = artifacts_dir / "base_sv_converter_input.wav"
+    segment_count = None
+    if processed_reference_dir.exists():
+        wavs_dir = processed_reference_dir / "wavs"
+        if wavs_dir.exists():
+            segment_count = len(sorted(wavs_dir.glob("*.wav")))
+    base_sample_rate_hz = None
+    if base_output_path.exists():
+        base_sample_rate_hz, _duration = _wav_metadata(base_output_path.read_bytes())
+    converter_input_sample_rate_hz = None
+    if converter_input_path.exists():
+        converter_input_sample_rate_hz, _duration = _wav_metadata(converter_input_path.read_bytes())
+    return SetupArtifactEvidence(
+        processed_reference_dir=(
+            processed_reference_dir.as_posix() if processed_reference_dir.exists() else None
+        ),
+        processed_reference_segment_count=segment_count,
+        base_output_path=base_output_path.as_posix() if base_output_path.exists() else None,
+        base_output_sample_rate_hz=base_sample_rate_hz,
+        converter_input_path=(
+            converter_input_path.as_posix() if converter_input_path.exists() else None
+        ),
+        converter_input_sample_rate_hz=converter_input_sample_rate_hz,
     )
 
 

@@ -80,6 +80,18 @@ class ReferenceAudioEvidence:
 
 
 @dataclass(frozen=True)
+class SetupArtifactEvidence:
+    """Intermediate artifacts that explain the OpenVoice setup used for one rerun."""
+
+    processed_reference_dir: str | None
+    processed_reference_segment_count: int | None
+    base_output_path: str | None
+    base_output_sample_rate_hz: int | None
+    converter_input_path: str | None
+    converter_input_sample_rate_hz: int | None
+
+
+@dataclass(frozen=True)
 class SynthesisProbeResult:
     """Result for one normalized `/synthesize` request."""
 
@@ -110,6 +122,7 @@ class BenchmarkReport:
     internal_probe: InternalProbeEvidence
     capabilities: CapabilityResponse
     reference_audio: ReferenceAudioEvidence
+    setup_artifacts: SetupArtifactEvidence
     synthesis_result: SynthesisProbeResult
     official_support_summary: list[str]
     listening_notes: str
@@ -201,6 +214,20 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- reference_role: `{report.reference_audio.reference_role}`",
         f"- duration_seconds: `{report.reference_audio.duration_seconds}`",
         f"- sample_rate_hz: `{report.reference_audio.sample_rate_hz}`",
+        "",
+        "## Setup Artifacts",
+        f"- processed_reference_dir: `{report.setup_artifacts.processed_reference_dir}`",
+        (
+            "- processed_reference_segment_count: "
+            f"`{report.setup_artifacts.processed_reference_segment_count}`"
+        ),
+        f"- base_output_path: `{report.setup_artifacts.base_output_path}`",
+        f"- base_output_sample_rate_hz: `{report.setup_artifacts.base_output_sample_rate_hz}`",
+        f"- converter_input_path: `{report.setup_artifacts.converter_input_path}`",
+        (
+            "- converter_input_sample_rate_hz: "
+            f"`{report.setup_artifacts.converter_input_sample_rate_hz}`"
+        ),
         "",
         "## Synthesis Result",
         f"- ok: `{report.synthesis_result.ok}`",

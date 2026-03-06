@@ -515,6 +515,14 @@ Usage notes:
 - The Swedish sample is generated through:
   - `facebook/mms-tts-swe` as the Swedish base speaker
   - OpenVoice V2 tone-color conversion to the teacher reference voice
+- The corrected rerun path must use OpenVoice's intended reference-speaker preprocessing flow
+  (`se_extractor.get_se(..., vad=True)`) rather than extracting directly from the raw reference
+  clip.
+- Corrected reruns preserve:
+  - the processed reference artifact directory,
+  - the Swedish base artifact before cloning,
+  - the final cloned Swedish artifact,
+    so setup defects can be judged without guesswork.
 - Treat the Task 81 result as credibility evidence for OpenVoice's cross-lingual claim on Hemma,
   not as a blanket guarantee of Swedish production quality.
 

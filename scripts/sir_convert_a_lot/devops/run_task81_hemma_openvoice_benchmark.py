@@ -28,6 +28,7 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_reporting import (
     BenchmarkReport,
     CacheEvidence,
     GpuIdentity,
+    SetupArtifactEvidence,
     build_report_markdown,
     write_json,
 )
@@ -35,6 +36,8 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     BenchmarkSettings,
     MountResolution,
     capture_docker_logs,
+    collect_setup_artifact_evidence,
+    copy_debug_artifacts_from_container,
     ensure_image_present,
     ensure_sidecar_preconditions,
     extract_gpu_identity,
@@ -173,6 +176,7 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
 def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Path]:
     """Create a clean deterministic output tree for the current benchmark run."""
     output_root.mkdir(parents=True, exist_ok=True)
+    _preserve_failed_baseline(output_root)
     artifacts_dir = output_root / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     for artifact_path in artifacts_dir.iterdir():
@@ -188,6 +192,22 @@ def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Pat
         with suppress(FileNotFoundError):
             generated_path.unlink()
     return artifacts_dir, logs_path, report_json_path, report_md_path, failure_path
+
+
+def _preserve_failed_baseline(output_root: Path) -> None:
+    """Keep the last failed-quality rerun artifacts before preparing a corrected rerun."""
+    baseline_dir = output_root / "baseline_failed_setup"
+    baseline_dir.mkdir(parents=True, exist_ok=True)
+    baseline_targets = {
+        output_root / "artifacts" / "sample_sv.wav": baseline_dir / "sample_sv.wav",
+        output_root / "report.json": baseline_dir / "report.json",
+        output_root / "report.md": baseline_dir / "report.md",
+        output_root / "docker_logs.txt": baseline_dir / "docker_logs.txt",
+    }
+    for source_path, target_path in baseline_targets.items():
+        if not source_path.exists() or target_path.exists():
+            continue
+        shutil.copy2(source_path, target_path)
 
 
 def _official_support_summary() -> list[str]:
@@ -239,6 +259,14 @@ def main(argv: list[str] | None = None) -> int:
     build_performed = False
     cleanup_performed = False
     report: BenchmarkReport | None = None
+    setup_artifacts = SetupArtifactEvidence(
+        processed_reference_dir=None,
+        processed_reference_segment_count=None,
+        base_output_path=None,
+        base_output_sample_rate_hz=None,
+        converter_input_path=None,
+        converter_input_sample_rate_hz=None,
+    )
     try:
         remove_existing_benchmark_container(settings.container_name)
         build_performed, image_id = ensure_image_present(settings)
@@ -269,6 +297,11 @@ def main(argv: list[str] | None = None) -> int:
             base_url=host_base_url,
             artifacts_dir=artifacts_dir,
         )
+        copy_debug_artifacts_from_container(
+            container_name=settings.container_name,
+            artifacts_dir=artifacts_dir,
+        )
+        setup_artifacts = collect_setup_artifact_evidence(artifacts_dir)
         gpu_identity = GpuIdentity(
             product_name=gpu_identity.product_name,
             gfx_architecture=gpu_identity.gfx_architecture,
@@ -292,6 +325,7 @@ def main(argv: list[str] | None = None) -> int:
             internal_probe=internal_probe,
             capabilities=capabilities,
             reference_audio=reference_audio,
+            setup_artifacts=setup_artifacts,
             synthesis_result=synthesis_result,
             official_support_summary=_official_support_summary(),
             listening_notes=DEFAULT_LISTENING_NOTES,

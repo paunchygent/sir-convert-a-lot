@@ -16,6 +16,7 @@ from __future__ import annotations
 import importlib.metadata
 import os
 import re
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -176,6 +177,7 @@ class OpenVoiceSidecarSettings:
     base_model_id: str
     supported_language_codes: tuple[str, ...]
     network_scope: NetworkScope
+    debug_artifact_dir: Path | None
 
     @classmethod
     def from_env(cls) -> "OpenVoiceSidecarSettings":
@@ -224,6 +226,7 @@ class OpenVoiceSidecarSettings:
             base_model_id=os.environ.get("SIR_TTS_SIDECAR_BASE_MODEL_ID", "facebook/mms-tts-swe"),
             supported_language_codes=supported_codes,
             network_scope=NetworkScope.INTERNAL_ONLY,
+            debug_artifact_dir=_optional_path_env("SIR_TTS_SIDECAR_DEBUG_ARTIFACT_DIR"),
         )
 
 
@@ -241,6 +244,8 @@ class OpenVoiceSidecarBackend:
         self._manual_seed: Callable[[int], object] | None = None
         self._inference_mode_factory: Callable[[], ContextManager[object]] | None = None
         self._sample_rate_hz = 0
+        self._converter_sample_rate_hz = 0
+        self._base_model_sample_rate_hz = 0
         self._package_versions: dict[str, str | None] = {}
 
     def startup(self) -> None:
@@ -270,15 +275,21 @@ class OpenVoiceSidecarBackend:
         base_model: _BaseModel = VitsModel.from_pretrained(self._settings.base_model_id).to(device)
         base_model.eval()
 
-        sample_rate_hz = _positive_int(
+        converter_sample_rate_hz = _positive_int(
             converter.hps.data.sampling_rate, label="OpenVoice converter sampling rate"
+        )
+        base_model_sample_rate_hz = _positive_int(
+            getattr(getattr(base_model, "config", None), "sampling_rate", None),
+            label="Swedish base-model sampling rate",
         )
         self._converter = converter
         self._tokenizer = tokenizer
         self._base_model = base_model
         self._manual_seed = torch.manual_seed
         self._inference_mode_factory = torch.inference_mode
-        self._sample_rate_hz = sample_rate_hz
+        self._sample_rate_hz = converter_sample_rate_hz
+        self._converter_sample_rate_hz = converter_sample_rate_hz
+        self._base_model_sample_rate_hz = base_model_sample_rate_hz
         self._supports_rocm = getattr(torch.version, "hip", None) is not None
         self._package_versions = {
             "openvoice": _package_version_or_none("openvoice"),
@@ -407,22 +418,46 @@ class OpenVoiceSidecarBackend:
 
         with TemporaryDirectory(prefix="openvoice-sidecar-") as temp_dir_raw:
             temp_dir = Path(temp_dir_raw)
+            debug_artifact_dir = self._resolve_debug_artifact_dir()
             reference_path = temp_dir / f"reference{_normalized_suffix(reference_audio.filename)}"
-            source_path = temp_dir / "source.wav"
+            source_base_path = temp_dir / "source_base.wav"
+            source_converter_path = temp_dir / "source_converter.wav"
             output_path = temp_dir / "output.wav"
             reference_path.write_bytes(reference_audio.data)
+            target_se = self._extract_target_speaker_embedding(
+                reference_path=reference_path,
+                converter=converter,
+                temp_dir=temp_dir,
+                debug_artifact_dir=debug_artifact_dir,
+            )
             self._synthesize_base_audio(
                 text=normalized_text,
                 tokenizer=tokenizer,
                 base_model=base_model,
                 manual_seed=manual_seed,
                 inference_mode_factory=inference_mode_factory,
-                output_path=source_path,
+                output_path=source_base_path,
+                sample_rate_hz=self._base_model_sample_rate_hz,
             )
-            source_se = converter.extract_se([source_path.as_posix()])
-            target_se = converter.extract_se([reference_path.as_posix()])
+            if debug_artifact_dir is not None:
+                shutil.copy2(source_base_path, debug_artifact_dir / "base_sv.wav")
+            if self._base_model_sample_rate_hz == self._converter_sample_rate_hz:
+                source_path_for_converter = source_base_path
+            else:
+                _resample_audio_file(
+                    source_path=source_base_path,
+                    target_path=source_converter_path,
+                    target_sample_rate_hz=self._converter_sample_rate_hz,
+                )
+                source_path_for_converter = source_converter_path
+                if debug_artifact_dir is not None:
+                    shutil.copy2(
+                        source_converter_path,
+                        debug_artifact_dir / "base_sv_converter_input.wav",
+                    )
+            source_se = converter.extract_se([source_path_for_converter.as_posix()])
             converter.convert(
-                audio_src_path=source_path.as_posix(),
+                audio_src_path=source_path_for_converter.as_posix(),
                 src_se=source_se,
                 tgt_se=target_se,
                 output_path=output_path.as_posix(),
@@ -475,6 +510,47 @@ class OpenVoiceSidecarBackend:
             raise RuntimeError("Torch inference_mode was not initialized.")
         return self._inference_mode_factory
 
+    def _resolve_debug_artifact_dir(self) -> Path | None:
+        """Prepare one optional debug-artifact directory for benchmark reruns."""
+        debug_artifact_dir = self._settings.debug_artifact_dir
+        if debug_artifact_dir is None:
+            return None
+        if debug_artifact_dir.exists():
+            for child in sorted(debug_artifact_dir.iterdir()):
+                if child.is_dir():
+                    shutil.rmtree(child)
+                    continue
+                child.unlink()
+        debug_artifact_dir.mkdir(parents=True, exist_ok=True)
+        return debug_artifact_dir
+
+    def _extract_target_speaker_embedding(
+        self,
+        *,
+        reference_path: Path,
+        converter: _OpenVoiceConverter,
+        temp_dir: Path,
+        debug_artifact_dir: Path | None,
+    ) -> object:
+        """Run the intended OpenVoice reference-speaker preprocessing path."""
+        from openvoice import se_extractor
+
+        processed_reference_root = temp_dir / "processed_reference"
+        target_se, audio_name = se_extractor.get_se(
+            reference_path.as_posix(),
+            converter,
+            target_dir=processed_reference_root.as_posix(),
+            vad=True,
+        )
+        processed_reference_dir = processed_reference_root / audio_name
+        if debug_artifact_dir is not None and processed_reference_dir.exists():
+            shutil.copytree(
+                processed_reference_dir,
+                debug_artifact_dir / "processed_reference",
+                dirs_exist_ok=True,
+            )
+        return target_se
+
     def _synthesize_base_audio(
         self,
         *,
@@ -484,6 +560,7 @@ class OpenVoiceSidecarBackend:
         manual_seed: Callable[[int], object],
         inference_mode_factory: Callable[[], ContextManager[object]],
         output_path: Path,
+        sample_rate_hz: int,
     ) -> None:
         import soundfile
 
@@ -500,7 +577,7 @@ class OpenVoiceSidecarBackend:
                 else None,
             ).waveform
         waveform = waveform_tensor.squeeze().detach().cpu().numpy()
-        soundfile.write(output_path.as_posix(), waveform, self._sample_rate_hz)
+        soundfile.write(output_path.as_posix(), waveform, sample_rate_hz)
 
 
 def _package_version_or_none(name: str) -> str | None:
@@ -535,6 +612,17 @@ def _parse_bool_env(name: str, *, default: bool) -> bool:
     raise RuntimeError(f"{name} must be a boolean-like value.")
 
 
+def _optional_path_env(name: str) -> Path | None:
+    """Return one optional path-valued environment setting."""
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    return Path(stripped)
+
+
 def _normalize_language_code(language: str) -> str:
     """Map human-friendly or locale-style language values to canonical codes."""
     normalized = language.strip().lower()
@@ -564,3 +652,22 @@ def _positive_int(value: object, *, label: str) -> int:
     if not isinstance(value, int) or value <= 0:
         raise RuntimeError(f"{label} must be a positive integer, got {value!r}.")
     return value
+
+
+def _resample_audio_file(
+    *,
+    source_path: Path,
+    target_path: Path,
+    target_sample_rate_hz: int,
+) -> None:
+    """Resample one WAV artifact explicitly to the converter input rate."""
+    import librosa
+    import soundfile
+
+    waveform, source_sample_rate_hz = librosa.load(source_path.as_posix(), sr=None, mono=True)
+    resampled_waveform = librosa.resample(
+        waveform,
+        orig_sr=source_sample_rate_hz,
+        target_sr=target_sample_rate_hz,
+    )
+    soundfile.write(target_path.as_posix(), resampled_waveform, target_sample_rate_hz)

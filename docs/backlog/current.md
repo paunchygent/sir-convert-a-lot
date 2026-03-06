@@ -81,6 +81,23 @@ Primary implementation stories (active sequence):
     - added the reusable normalized sidecar contract plus the first OpenVoice V2 adapter app,
     - added the dedicated OpenVoice benchmark image/build surface and `benchmark:task-81`,
     - added Task 81 unit coverage plus runbook/task/story status updates.
+  - Ran the first live Hemma `T81` benchmark successfully from a runtime standpoint:
+    - OpenVoice sidecar booted on the R9700 host,
+    - canonical caches were reused,
+    - Swedish cloned output was generated from the approved teacher reference clip.
+  - Manual listening review rejected the current `T81` sample:
+    - timbre not close enough to the teacher voice,
+    - audible artifacts,
+    - uneven pacing.
+  - Current `T81` conclusion:
+    - the pipeline is technically working,
+    - the current model setup is bad,
+    - `T81` stays open for setup remediation before we treat OpenVoice as credible.
+  - Planned the `T81` remediation order from the shipped implementation rather than from
+    extra analysis:
+    - fix the MMS-base vs OpenVoice-converter sample-rate mismatch,
+    - switch the reference clip onto OpenVoice's intended preprocessing path,
+    - rerun with processed-reference, base, and cloned Swedish artifacts preserved together.
 
 - 2026-03-05:
 
@@ -167,53 +184,26 @@ Primary implementation stories (active sequence):
 
 - 2026-03-01:
 
-  - Completed Task 61 security follow-up hardening for Pandoc wrappers:
-    - added `--sandbox` to all v2 Pandoc conversion wrappers to close unsandboxed
-      SSRF/LFI attack surface,
-    - introduced shared bounded subprocess helper:
-      - `scripts/sir_convert_a_lot/infrastructure/pandoc_subprocess.py`,
-    - replaced unbounded `capture_output=True` wrapper execution with bounded
-      stderr capture via temp-file strategy and timeout-safe process cleanup.
-  - Hardened workdir traversal error echo handling in executor:
-    - sanitized user-provided filename echo details in
-      `scripts/sir_convert_a_lot/infrastructure/v2_conversion_executor.py`.
-  - Extended and updated regression tests for sandbox and timeout behavior:
-    - `tests/sir_convert_a_lot/test_pandoc_docx_to_markdown.py`
-    - `tests/sir_convert_a_lot/test_pandoc_html_to_markdown.py`
-    - `tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py`
-  - Validation evidence for Task 61:
-    - `pdm run run-local-pdm typecheck-all` (pass: `Success: no issues found in 157 source files`)
-    - `pdm run run-local-pdm coverage-gate` (pass: `392 passed, 5 skipped`; coverage `95.39%`)
-    - `pdm run run-local-pdm validate-tasks` (pass: `Validated 86 backlog files`)
-    - `pdm run run-local-pdm validate-docs` (pass: `Validated docs=108 rules=9`)
-  - Task 61 moved to `completed` with checklist/evidence synchronized.
-  - Scaffolded the next downstream-GUI enabling slice (proposed) via ADR-0004 and Story 16.
-  - Proposed execution order: Task 64 -> Task 65 -> Task 66.
-  - Completed Task 64 (ADR-0004 contract alignment) and Task 65 (v2 PDF layout presets):
-    - added `conversion.pdf_layout` to v2 JobSpec and applied it to PDF outputs via deterministic
-      generated CSS (`pdf_layout_presets_v2.py`),
-    - added unit and executor tests; executor tests re-split to keep modules \<500 LoC,
-    - coverage gate remained >=90% (pass: `95.87%`).
-  - Completed Task 66 (`docx -> pdf` v2 route):
-    - added sandboxed Pandoc DOCX->HTML wrapper with extracted media under workdir,
-    - added executor branch `pipeline_used="docx_to_pdf_v2"` and CLI route registry entry,
-    - updated v2 converter docs and downstream integration contract to mark `docx -> pdf` implemented.
+  - Completed Task 61 Pandoc/security hardening, including sandboxed wrappers, bounded subprocess
+    stderr handling, and sanitized workdir traversal errors; validations stayed green.
+  - Completed Task 64, Task 65, and Task 66 for ADR-0004 downstream-GUI enablement:
+    deterministic PDF layout presets plus `docx -> pdf` on v2.
+  - Canonical detailed evidence remains in the linked task docs and test files.
 
-- 2026-02-28:
+- 2026-02-28 / 2026-02-18:
 
-  - Epic 05 was fully executed and terminalized; canonical detailed evidence remains in
-    `docs/backlog/tasks/task-44-*.md` through `task-60-*.md` and `.agents/session/handoff.md`.
-
-- 2026-02-18:
-
-  - Epic 04 delivered the service API v2 multi-format runtime and CLI remote-only pivot; follow-up
-    hardening tasks 40-42 also completed.
+  - Epic 05 was fully terminalized and Epic 04 had already delivered the v2 service API and
+    CLI remote-only pivot; canonical detailed evidence remains in the linked task docs.
 
 ## Next Actions
 
 - Current local execution focus is Epic 07 Story 23 with `T81`, then `T82 -> T83`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
-- Immediate `T81` goal: run the first live Hemma OpenVoice benchmark with the approved teacher
-  clip, confirm canonical cache reuse, and judge whether OpenVoice remains the primary cloning candidate.
+- Immediate `T81` remediation goal after the failed listening review: correct the OpenVoice
+  setup, preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts,
+  and decide whether OpenVoice remains viable before moving to `T82`.
+- The first `T81` code changes to make are now explicit:
+  - separate base-model sample-rate handling from converter sample-rate handling,
+  - preserve the processed reference artifact used for embedding extraction.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`,
   `T12`, `T08`.

@@ -13,8 +13,10 @@ Relationships:
 from __future__ import annotations
 
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -189,6 +191,7 @@ def test_openvoice_backend_capabilities_surface_cache_and_language_truth() -> No
         base_model_id="facebook/mms-tts-swe",
         supported_language_codes=("sv",),
         network_scope=NetworkScope.INTERNAL_ONLY,
+        debug_artifact_dir=None,
     )
     backend = OpenVoiceSidecarBackend(settings)
     backend._ready = True
@@ -221,6 +224,7 @@ def test_openvoice_backend_rejects_non_clone_requests_before_runtime_use() -> No
         base_model_id="facebook/mms-tts-swe",
         supported_language_codes=("sv",),
         network_scope=NetworkScope.INTERNAL_ONLY,
+        debug_artifact_dir=None,
     )
     backend = OpenVoiceSidecarBackend(settings)
     backend._ready = True
@@ -251,6 +255,176 @@ def test_openvoice_text_helpers_normalize_language_suffixes_and_whitespace() -> 
     assert (
         _normalize_text("  Hej\n\n världen  ", profile=NormalizationProfile.AUTO) == "Hej världen"
     )
+
+
+def test_openvoice_synthesize_uses_base_rate_then_resamples_for_converter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = OpenVoiceSidecarSettings(
+        backend_id="openvoice_v2",
+        backend_version="74a1d147",
+        backend_profile="mms_tts_swe_base",
+        bind_host="0.0.0.0",
+        port=8092,
+        gpu_required=True,
+        openvoice_checkpoints_root=Path("/cache/openvoice/checkpoints_v2"),
+        openvoice_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/openvoice",
+        openvoice_cache_container_root="/cache/openvoice",
+        hf_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface",
+        hf_cache_container_root="/cache/huggingface",
+        base_model_id="facebook/mms-tts-swe",
+        supported_language_codes=("sv",),
+        network_scope=NetworkScope.INTERNAL_ONLY,
+        debug_artifact_dir=None,
+    )
+    backend = OpenVoiceSidecarBackend(settings)
+    backend._ready = True
+    backend._manual_seed = lambda _: None
+    backend._inference_mode_factory = nullcontext
+    backend._converter_sample_rate_hz = 22050
+    backend._base_model_sample_rate_hz = 16000
+    backend._sample_rate_hz = 22050
+
+    recorded: dict[str, object] = {}
+
+    class _DummyTensor:
+        def to(self, device: object) -> "_DummyTensor":
+            return self
+
+        def squeeze(self) -> "_DummyTensor":
+            return self
+
+        def detach(self) -> "_DummyTensor":
+            return self
+
+        def cpu(self) -> "_DummyTensor":
+            return self
+
+        def numpy(self) -> object:
+            return []
+
+    class _DummyTokenizer:
+        def __call__(self, *, text: str, return_tensors: str) -> dict[str, _DummyTensor]:
+            return {"input_ids": _DummyTensor()}
+
+    class _DummyParameter:
+        @property
+        def device(self) -> object:
+            return "cpu"
+
+    class _DummyWaveformOutput:
+        waveform = _DummyTensor()
+
+    class _DummyBaseModel:
+        def to(self, device: str) -> "_DummyBaseModel":
+            return self
+
+        def eval(self) -> None:
+            return None
+
+        def parameters(self) -> Iterator[_DummyParameter]:
+            yield _DummyParameter()
+
+        def __call__(
+            self,
+            *,
+            input_ids: _DummyTensor,
+            attention_mask: _DummyTensor | None = None,
+        ) -> _DummyWaveformOutput:
+            return _DummyWaveformOutput()
+
+    monkeypatch.setattr(backend, "_tokenizer", _DummyTokenizer())
+    monkeypatch.setattr(backend, "_base_model", _DummyBaseModel())
+
+    class _FakeConverterData:
+        sampling_rate = 22050
+
+    class _FakeConverterHps:
+        data = _FakeConverterData()
+
+    class _FakeConverter:
+        hps = _FakeConverterHps()
+        watermark_model = None
+        version = "v2"
+
+        def extract_se(self, ref_wav_list: list[str], se_save_path: str | None = None) -> object:
+            recorded["extract_se"] = list(ref_wav_list)
+            recorded["se_save_path"] = se_save_path
+            return "source-se"
+
+        def convert(
+            self,
+            audio_src_path: str,
+            src_se: object,
+            tgt_se: object,
+            output_path: str | None = None,
+            tau: float = 0.3,
+            message: str = "default",
+        ) -> object:
+            recorded["convert_audio_src_path"] = audio_src_path
+            recorded["convert_src_se"] = src_se
+            recorded["convert_tgt_se"] = tgt_se
+            assert output_path is not None
+            Path(output_path).write_bytes(b"RIFFfixed")
+            return None
+
+    monkeypatch.setattr(backend, "_converter", _FakeConverter())
+
+    monkeypatch.setattr(
+        backend,
+        "_extract_target_speaker_embedding",
+        lambda **_: "target-se",
+    )
+
+    def _fake_synthesize_base_audio(**kwargs: object) -> None:
+        recorded["base_sample_rate_hz"] = kwargs["sample_rate_hz"]
+        output_path = kwargs["output_path"]
+        assert isinstance(output_path, Path)
+        output_path.write_bytes(b"base")
+
+    monkeypatch.setattr(backend, "_synthesize_base_audio", _fake_synthesize_base_audio)
+
+    def _fake_resample_audio_file(
+        *,
+        source_path: Path,
+        target_path: Path,
+        target_sample_rate_hz: int,
+    ) -> None:
+        recorded["resample_source_path"] = source_path.as_posix()
+        recorded["resample_target_path"] = target_path.as_posix()
+        recorded["resample_target_sample_rate_hz"] = target_sample_rate_hz
+        target_path.write_bytes(b"resampled")
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.tts_sidecar.openvoice_runtime._resample_audio_file",
+        _fake_resample_audio_file,
+    )
+
+    request = SynthesizeRequest(
+        text="Hej världen",
+        language="sv",
+        voice_mode=VoiceMode.REFERENCE_CLONE,
+        output_format=OutputFormat.WAV,
+        style_instructions=None,
+        normalization_profile=NormalizationProfile.AUTO,
+        preset_voice_id=None,
+        reference_transcript=None,
+    )
+    reference_audio = ReferenceAudio(
+        filename="voice.m4a",
+        content_type="audio/mp4",
+        data=b"ref",
+    )
+
+    result = backend.synthesize(request, reference_audio=reference_audio)
+
+    assert recorded["base_sample_rate_hz"] == 16000
+    assert recorded["resample_target_sample_rate_hz"] == 22050
+    assert recorded["convert_src_se"] == "source-se"
+    assert recorded["convert_tgt_se"] == "target-se"
+    assert recorded["extract_se"] == [recorded["resample_target_path"]]
+    assert result.audio_bytes == b"RIFFfixed"
+    assert result.sample_rate_hz == 22050
 
 
 def test_create_tone_color_converter_avoids_broken_upstream_kwargs_path(

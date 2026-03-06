@@ -54,10 +54,29 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 1. `docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
+## Current Story Notes (2026-03-06)
+
+- `T81` has now proven technical feasibility on live Hemma:
+  - sidecar boots,
+  - canonical caches are reused,
+  - Swedish cloned output is generated from the approved teacher reference clip.
+- `T81` has not yet proven product credibility:
+  - manual listening review rejected the current sample because the timbre is not close enough,
+    artifacts are present, and pacing is uneven.
+- Story 23 therefore remains in the `T81` lane until one corrected OpenVoice setup rerun is
+  judged, rather than treating the current result as a pass and moving on too quickly.
+- The current remediation order for `T81` is explicit:
+  - fix the sample-rate mismatch between the Swedish base model and the OpenVoice converter,
+  - switch to the intended OpenVoice reference-speaker preprocessing path,
+  - emit processed-reference plus base-vs-cloned Swedish artifacts,
+  - rerun the same approved teacher-voice benchmark before considering `T82`.
+
 ## Acceptance Criteria
 
 - [ ] Task 81 defines deterministic Hemma evidence for OpenVoice V2 startup, cache reuse,
   cloning flow, and Swedish-text synthesis with a teacher reference voice sample.
+- [ ] Task 81 records the current failed-quality baseline plus at least one corrected setup rerun
+  before we decide whether OpenVoice remains the lead candidate.
 - [ ] Task 82 defines parallel evidence for XTTS-v2 so we can compare cloning quality, runtime
   fit, and operational complexity against OpenVoice V2.
 - [ ] Task 83 defines a Swedish pronunciation control benchmark whose result is explicitly
@@ -78,6 +97,14 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - at least one synthesized Swedish sample artifact.
 - [ ] OpenVoice V2 and XTTS-v2 tasks require an explicit cloning workflow using one approved
   teacher reference clip.
+- [ ] Quality failures must be recorded explicitly in the active task/story docs with:
+  - what worked technically,
+  - why the result still failed,
+  - what setup change will be tested next.
+- [ ] `T81` must isolate setup defects in evidence by preserving:
+  - the processed reference artifact actually used for embedding extraction,
+  - the Swedish base artifact before cloning,
+  - the final cloned Swedish artifact.
 - [ ] Each task records Python/runtime truth, model cache path, and whether the sidecar remains
   internal-network only.
 
