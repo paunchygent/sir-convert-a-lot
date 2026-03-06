@@ -74,6 +74,13 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   - the sidecar image no longer depends on `faster-whisper`, which was the broken Hemma Python
     3.12 build path.
 - Remaining blocker: rerun the corrected Hemma benchmark and judge the new output.
+- New live blocker discovered on the corrected rerun:
+  - the sidecar image still lacked the Silero VAD runtime dependency chain required by
+    `whisper-timestamped`,
+  - the corrected Hemma rerun reached `/synthesize` and then failed with `ModuleNotFoundError:
+    No module named 'torchaudio'`,
+  - next image patch: add `torchaudio` plus the documented VAD dependency support path, rebuild,
+    and rerun.
 
 ## Failure Record
 

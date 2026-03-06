@@ -21,7 +21,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --upgrade pip "setuptools<81" wheel
-RUN python -m pip install --index-url "${TORCH_ROCM_INDEX_URL}" "torch==${TORCH_VERSION}"
+RUN python -m pip install --index-url "${TORCH_ROCM_INDEX_URL}" \
+    "torch==${TORCH_VERSION}" \
+    "torchaudio==${TORCH_VERSION}"
 # Keep the reference-speaker preprocessing stack aligned to OpenVoice's current
 # published requirements for Task 81 compatibility benchmarking; this is not a
 # repo-wide dependency policy.
@@ -35,6 +37,7 @@ RUN python -m pip install \
     "huggingface_hub>=0.34.4" \
     "transformers==4.57.6" \
     "numpy<2" \
+    "onnxruntime>=1.22.1" \
     "scipy>=1.11.0" \
     "librosa==0.9.1" \
     "pydub==0.25.1" \

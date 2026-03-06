@@ -51,6 +51,12 @@
   - the sidecar image no longer installs `faster-whisper`, which was the broken PyAV build path
     on Hemma Python 3.12,
   - the main service image remains untouched.
+- The corrected Hemma rerun replaced the old blocker with a narrower one:
+  - the image now builds and the sidecar reaches `/synthesize`,
+  - the live failure is `ModuleNotFoundError: No module named 'torchaudio'` from the Silero VAD
+    path used by `whisper-timestamped`,
+  - next patch is to add `torchaudio` and the documented VAD support dependency path to the
+    sidecar image, then rerun `T81`.
 
 Validation evidence:
 

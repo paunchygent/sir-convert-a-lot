@@ -105,6 +105,11 @@ Primary implementation stories (active sequence):
     - removed the broken `faster-whisper` / PyAV dependency chain from the sidecar image so Hemma
       can rebuild on Python 3.12,
     - preserved the sidecar-only boundary so the main service image remains untouched.
+  - Ran the corrected Hemma rerun far enough to replace the old blocker:
+    - the sidecar image now builds and boots past the old `faster-whisper` / PyAV failure,
+    - the next live failure is inside `/synthesize`, where Silero VAD requires `torchaudio`,
+    - the next patch is explicit dependency completion for the VAD path, not another model-logic
+      rewrite.
 
 - 2026-03-05:
 
