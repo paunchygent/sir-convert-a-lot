@@ -21,6 +21,7 @@ from scripts.sir_convert_a_lot.benchmark_story20_throughput_report import (
     DEFAULT_OUTPUT_JSON,
     DEFAULT_OUTPUT_REPORT,
     RuntimeParityInputs,
+    _build_two_worker_sweep_profiles,
     run_benchmark,
 )
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
@@ -88,6 +89,25 @@ def test_run_benchmark_writes_expected_payload_and_report(
     assert "## Runtime Parity" in report_text
 
 
+def test_build_two_worker_sweep_profiles_stays_within_safe_bounds() -> None:
+    profiles = _build_two_worker_sweep_profiles(
+        chunk_sizes=(2, 4, 6),
+        gpu_stage_caps=(1, 2),
+    )
+
+    assert [profile.profile_name for profile in profiles] == [
+        "serial_baseline",
+        "parallel_conservative",
+        "parallel_2w_chunk2_cap1",
+        "parallel_2w_chunk2_cap2",
+        "parallel_2w_chunk4_cap1",
+        "parallel_2w_chunk6_cap1",
+        "parallel_2w_chunk6_cap2",
+    ]
+    assert all(profile.max_chunk_workers <= 2 for profile in profiles)
+    assert all(profile.gpu_stage_max_concurrency <= 2 for profile in profiles)
+
+
 def test_default_output_paths_are_outside_docs_reference() -> None:
     assert DEFAULT_OUTPUT_JSON.as_posix().startswith("build/")
     assert DEFAULT_OUTPUT_REPORT.as_posix().startswith("build/")
@@ -107,6 +127,42 @@ def test_run_benchmark_rejects_docs_reference_output_path(tmp_path: Path) -> Non
             acceleration_policy="cpu_only",
             gpu_available=False,
         )
+
+
+def test_run_benchmark_supports_two_worker_sweep_profiles(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        runtime_engine_v2, "execute_v2_job_conversion", _stub_execute_v2_job_conversion
+    )
+
+    payload = run_benchmark(
+        output_json=tmp_path / "task74-sweep.json",
+        output_report=tmp_path / "task74-sweep.md",
+        corpus_root=tmp_path / "corpus",
+        data_root=tmp_path / "runtime",
+        page_counts=(2,),
+        api_key="benchmark-key",
+        acceleration_policy="cpu_only",
+        ocr_mode="off",
+        ocr_engine="auto",
+        ocr_languages=[],
+        max_poll_seconds=30.0,
+        gpu_available=False,
+        two_worker_sweep=True,
+        two_worker_chunk_sizes=(3, 4),
+        two_worker_gpu_stage_caps=(1, 2),
+    )
+
+    profile_names = [profile["profile_name"] for profile in payload["profiles"]]
+    assert profile_names == [
+        "serial_baseline",
+        "parallel_conservative",
+        "parallel_2w_chunk3_cap1",
+        "parallel_2w_chunk3_cap2",
+        "parallel_2w_chunk4_cap1",
+    ]
 
 
 def test_run_benchmark_embeds_task76_runtime_parity_report(

@@ -365,10 +365,31 @@ pdm run benchmark:task-74 \
   --gpu-available
 ```
 
+Bounded 2-worker tuning sweep:
+
+```bash
+pdm run benchmark:task-74-two-worker-sweep \
+  --output-json build/benchmarks/story-20/task-74-two-worker-sweep-local.json \
+  --output-report build/benchmarks/story-20/task-74-two-worker-sweep-report-local.md \
+  --corpus-root build/benchmarks/story-20/task-74-two-worker-sweep-corpus \
+  --data-root build/benchmarks/story-20/task-74-two-worker-sweep-runtime \
+  --page-counts 120,180,240 \
+  --two-worker-chunk-sizes 2,3,4,6,8 \
+  --two-worker-gpu-stage-caps 1,2 \
+  --gpu-available
+```
+
 Remote Hemma execution path after push/deploy parity:
 
 ```bash
 pdm run run-hemma -- pdm run benchmark:task-74-hemma \
+  --expected-revision <sha>
+```
+
+Bounded 2-worker Hemma sweep:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma \
   --expected-revision <sha>
 ```
 
@@ -387,6 +408,9 @@ Usage notes:
   - `serial_baseline` (`max_chunk_workers=1`, `chunk_size_pages=8`, `gpu_stage_max_concurrency=1`)
   - `parallel_conservative` (`max_chunk_workers=2`, `chunk_size_pages=4`,
     `gpu_stage_max_concurrency=2`)
+- Use the bounded 2-worker sweep when exploring alternatives; it keeps `max_chunk_workers=2` and
+  varies only chunk size plus bounded GPU stage cap so candidate profiles stay within the reviewed
+  safety envelope.
 - The generated Task 74 JSON/markdown artifacts now include runtime-surface and runtime-parity
   sections; treat `runtime_parity.parity_proven=true` as mandatory for final closeout evidence.
 - Use `pdm run benchmark:task-74` directly only for local command-surface smoke checks. The Hemma

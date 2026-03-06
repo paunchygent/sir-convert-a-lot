@@ -35,6 +35,12 @@ DEFAULT_OUTPUT_JSON = Path("build/benchmarks/story-20/task-74-throughput-benchma
 DEFAULT_OUTPUT_REPORT = Path("build/benchmarks/story-20/task-74-throughput-report-hemma.md")
 DEFAULT_CORPUS_ROOT = Path("build/benchmarks/story-20/task-74-corpus")
 DEFAULT_DATA_ROOT = Path("build/benchmarks/story-20/task-74-runtime")
+DEFAULT_SWEEP_OUTPUT_JSON = Path("build/benchmarks/story-20/task-74-two-worker-sweep-hemma.json")
+DEFAULT_SWEEP_OUTPUT_REPORT = Path(
+    "build/benchmarks/story-20/task-74-two-worker-sweep-report-hemma.md"
+)
+DEFAULT_SWEEP_CORPUS_ROOT = Path("build/benchmarks/story-20/task-74-two-worker-sweep-corpus")
+DEFAULT_SWEEP_DATA_ROOT = Path("build/benchmarks/story-20/task-74-two-worker-sweep-runtime")
 DEFAULT_HOST_EASYOCR_CACHE = Path("/home/paunchygent/.cache/sir-convert-a-lot/easyocr-models")
 
 
@@ -51,6 +57,9 @@ class Task74HemmaSettings:
     page_counts: str
     host_easyocr_cache_dir: Path
     smoke_output_root: Path
+    two_worker_sweep: bool
+    two_worker_chunk_sizes: str
+    two_worker_gpu_stage_caps: str
 
 
 @dataclass(frozen=True)
@@ -68,10 +77,10 @@ def _parse_args(argv: list[str]) -> Task74HemmaSettings:
     parser = argparse.ArgumentParser(description="Run the canonical Task 74 Hemma benchmark.")
     parser.add_argument("--expected-revision", required=True)
     parser.add_argument("--service-url", default=DEFAULT_SERVICE_URL)
-    parser.add_argument("--output-json", type=Path, default=DEFAULT_OUTPUT_JSON)
-    parser.add_argument("--output-report", type=Path, default=DEFAULT_OUTPUT_REPORT)
-    parser.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
-    parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
+    parser.add_argument("--output-json", type=Path)
+    parser.add_argument("--output-report", type=Path)
+    parser.add_argument("--corpus-root", type=Path)
+    parser.add_argument("--data-root", type=Path)
     parser.add_argument("--page-counts", default="120,180,240")
     parser.add_argument(
         "--host-easyocr-cache-dir",
@@ -79,20 +88,46 @@ def _parse_args(argv: list[str]) -> Task74HemmaSettings:
         default=DEFAULT_HOST_EASYOCR_CACHE,
     )
     parser.add_argument("--smoke-output-root", type=Path)
+    parser.add_argument("--two-worker-sweep", action="store_true")
+    parser.add_argument("--two-worker-chunk-sizes", default="2,3,4,6,8")
+    parser.add_argument("--two-worker-gpu-stage-caps", default="1,2")
     args = parser.parse_args(argv)
+    output_json = (
+        args.output_json
+        if args.output_json is not None
+        else (DEFAULT_SWEEP_OUTPUT_JSON if args.two_worker_sweep else DEFAULT_OUTPUT_JSON)
+    )
+    output_report = (
+        args.output_report
+        if args.output_report is not None
+        else (DEFAULT_SWEEP_OUTPUT_REPORT if args.two_worker_sweep else DEFAULT_OUTPUT_REPORT)
+    )
+    corpus_root = (
+        args.corpus_root
+        if args.corpus_root is not None
+        else (DEFAULT_SWEEP_CORPUS_ROOT if args.two_worker_sweep else DEFAULT_CORPUS_ROOT)
+    )
+    data_root = (
+        args.data_root
+        if args.data_root is not None
+        else (DEFAULT_SWEEP_DATA_ROOT if args.two_worker_sweep else DEFAULT_DATA_ROOT)
+    )
     smoke_output_root = args.smoke_output_root or Path(
         f"build/verification/task-76-hemma-deploy-verify/v2-smoke-{args.expected_revision[:7]}"
     )
     return Task74HemmaSettings(
         expected_revision=str(args.expected_revision),
         service_url=str(args.service_url),
-        output_json=Path(args.output_json),
-        output_report=Path(args.output_report),
-        corpus_root=Path(args.corpus_root),
-        data_root=Path(args.data_root),
+        output_json=Path(output_json),
+        output_report=Path(output_report),
+        corpus_root=Path(corpus_root),
+        data_root=Path(data_root),
         page_counts=str(args.page_counts),
         host_easyocr_cache_dir=Path(args.host_easyocr_cache_dir),
         smoke_output_root=Path(smoke_output_root),
+        two_worker_sweep=bool(args.two_worker_sweep),
+        two_worker_chunk_sizes=str(args.two_worker_chunk_sizes),
+        two_worker_gpu_stage_caps=str(args.two_worker_gpu_stage_caps),
     )
 
 
@@ -330,6 +365,16 @@ def _run_task74_benchmark(
         "--parity-live-smoke-passed",
         "--parity-metrics-scan-passed",
     ]
+    if settings.two_worker_sweep:
+        benchmark_args.extend(
+            [
+                "--two-worker-sweep",
+                "--two-worker-chunk-sizes",
+                settings.two_worker_chunk_sizes,
+                "--two-worker-gpu-stage-caps",
+                settings.two_worker_gpu_stage_caps,
+            ]
+        )
     _run_command(
         benchmark_args,
         label="benchmark:task-74",

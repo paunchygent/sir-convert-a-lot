@@ -89,3 +89,21 @@ def test_verify_expected_revision_rejects_mismatch(monkeypatch: pytest.MonkeyPat
 
     with pytest.raises(SystemExit, match="does not match expected revision"):
         run_task74_hemma_benchmark._verify_expected_revision("expected-sha")
+
+
+def test_parse_args_switches_to_two_worker_sweep_defaults() -> None:
+    settings = run_task74_hemma_benchmark._parse_args(
+        [
+            "--expected-revision",
+            "abc1234",
+            "--two-worker-sweep",
+        ]
+    )
+
+    assert settings.two_worker_sweep is True
+    assert settings.output_json == run_task74_hemma_benchmark.DEFAULT_SWEEP_OUTPUT_JSON
+    assert settings.output_report == run_task74_hemma_benchmark.DEFAULT_SWEEP_OUTPUT_REPORT
+    assert settings.corpus_root == run_task74_hemma_benchmark.DEFAULT_SWEEP_CORPUS_ROOT
+    assert settings.data_root == run_task74_hemma_benchmark.DEFAULT_SWEEP_DATA_ROOT
+    assert settings.two_worker_chunk_sizes == "2,3,4,6,8"
+    assert settings.two_worker_gpu_stage_caps == "1,2"

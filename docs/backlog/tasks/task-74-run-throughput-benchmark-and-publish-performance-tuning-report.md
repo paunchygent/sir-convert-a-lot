@@ -44,6 +44,9 @@ conversions on Hemma.
 - Further tuning work is limited to safe 2-worker experiments first (for example chunk size and
   closely related bounded parameters) until evidence proves a different setting is both stable and
   materially faster.
+- A dedicated bounded sweep command surface now exists for that follow-up work:
+  - local: `pdm run benchmark:task-74-two-worker-sweep`
+  - Hemma: `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>`
 - Make the runtime surface explicit in the evidence bundle:
   - `mode=in_process_app` is acceptable for harness development/smoke evidence,
   - final closeout evidence must also prove deploy/runtime parity on Hemma via `T76`, and must
@@ -101,6 +104,9 @@ Measurement rules (must be explicit in report):
    - determinism evidence for recommended parallel profile vs baseline behavior.
 1. Derive recommended defaults and rollback thresholds from the evidence bundle, then update
    `docs/runbooks/runbook-hemma-devops-and-gpu.md`.
+1. If the first Hemma benchmark misses the target without stability regressions, run the bounded
+   2-worker sweep to evaluate chunk-size and bounded GPU-cap variants before deciding whether the
+   service default can move off serial.
 1. Only after the above is complete, terminalize `T74`, then Story 20, then Epic 06 in strict
    status/checkbox order.
 
@@ -192,9 +198,10 @@ Measurement rules (must be explicit in report):
   versus `serial_baseline`, which is below the Task 74 target of `>= 40%`.
 - The removed 4-worker profile failed all benchmark jobs with ROCm HIP OOM and is no longer an
   allowed benchmark default or rollout candidate.
-- Next tuning work is constrained to safe 2-worker experiments only; if those experiments still
-  fail to reach the `>= 40%` target, production default stays serial and parallel mode remains
-  opt-in via explicit `.env` override.
+- Next tuning work is constrained to safe 2-worker experiments only and now uses the bounded sweep
+  command surface to vary chunk size plus bounded GPU stage cap; if those experiments still fail to
+  reach the `>= 40%` target, production default stays serial and parallel mode remains opt-in via
+  explicit `.env` override.
 
 ## Validation Evidence
 

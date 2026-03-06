@@ -54,6 +54,8 @@ DEFAULT_OUTPUT_REPORT = DEFAULT_OUTPUT_ROOT / "task-74-throughput-report.md"
 DEFAULT_CORPUS_ROOT = DEFAULT_OUTPUT_ROOT / "corpus"
 DEFAULT_DATA_ROOT = DEFAULT_OUTPUT_ROOT / "runtime"
 DEFAULT_PAGE_COUNTS = (120, 180, 240)
+DEFAULT_TWO_WORKER_SWEEP_CHUNK_SIZES = (2, 3, 4, 6, 8)
+DEFAULT_TWO_WORKER_SWEEP_GPU_STAGE_CAPS = (1, 2)
 
 
 @dataclass(frozen=True)
@@ -81,6 +83,25 @@ class RuntimeParityInputs:
     service_revision_matches_remote: bool | None
     live_smoke_passed: bool | None
     metrics_scan_passed: bool | None
+
+
+def _parse_positive_int_csv(raw_values: str, *, label: str) -> tuple[int, ...]:
+    parsed_values: list[int] = []
+    for raw_value in raw_values.split(","):
+        stripped = raw_value.strip()
+        if stripped == "":
+            continue
+        try:
+            parsed = int(stripped)
+        except ValueError as exc:
+            raise ValueError(f"{label} must contain only integers; got `{stripped}`.") from exc
+        if parsed <= 0:
+            raise ValueError(f"{label} must contain only positive integers; got `{parsed}`.")
+        if parsed not in parsed_values:
+            parsed_values.append(parsed)
+    if not parsed_values:
+        raise ValueError(f"{label} must contain at least one positive integer.")
+    return tuple(parsed_values)
 
 
 def _utc_now_iso() -> str:
@@ -684,6 +705,34 @@ def _default_profiles() -> list[ProfileSpec]:
     ]
 
 
+def _build_two_worker_sweep_profiles(
+    *,
+    chunk_sizes: tuple[int, ...],
+    gpu_stage_caps: tuple[int, ...],
+) -> list[ProfileSpec]:
+    profiles = _default_profiles()
+    for gpu_stage_cap in gpu_stage_caps:
+        if gpu_stage_cap > 2:
+            raise ValueError(
+                "Two-worker sweep only allows gpu_stage_max_concurrency <= 2; "
+                f"got `{gpu_stage_cap}`."
+            )
+    for chunk_size in chunk_sizes:
+        for gpu_stage_cap in gpu_stage_caps:
+            if chunk_size == 4 and gpu_stage_cap == 2:
+                continue
+            profiles.append(
+                ProfileSpec(
+                    profile_name=f"parallel_2w_chunk{chunk_size}_cap{gpu_stage_cap}",
+                    parallel_enabled=True,
+                    max_chunk_workers=2,
+                    chunk_size_pages=chunk_size,
+                    gpu_stage_max_concurrency=gpu_stage_cap,
+                )
+            )
+    return profiles
+
+
 def run_benchmark(
     *,
     output_json: Path,
@@ -704,6 +753,9 @@ def run_benchmark(
     runtime_service_url: str | None = None,
     easyocr_model_storage_directory: str | None = "/opt/easyocr-models",
     runtime_parity_inputs: RuntimeParityInputs | None = None,
+    two_worker_sweep: bool = False,
+    two_worker_chunk_sizes: tuple[int, ...] = DEFAULT_TWO_WORKER_SWEEP_CHUNK_SIZES,
+    two_worker_gpu_stage_caps: tuple[int, ...] = DEFAULT_TWO_WORKER_SWEEP_GPU_STAGE_CAPS,
 ) -> BenchmarkPayload:
     """Run the Task 74 throughput benchmark and return the payload."""
     resolved_languages = list(ocr_languages or ["sv", "en"])
@@ -723,7 +775,14 @@ def run_benchmark(
         )
 
     corpus_records = generate_corpus(corpus_root=corpus_root, page_counts=page_counts)
-    resolved_profiles = profiles or _default_profiles()
+    resolved_profiles = profiles or (
+        _build_two_worker_sweep_profiles(
+            chunk_sizes=two_worker_chunk_sizes,
+            gpu_stage_caps=two_worker_gpu_stage_caps,
+        )
+        if two_worker_sweep
+        else _default_profiles()
+    )
     runtime_surface, runtime_parity = _build_runtime_parity_summary(
         inputs=runtime_parity_inputs
         or RuntimeParityInputs(
@@ -834,6 +893,19 @@ def main() -> None:
     parser.add_argument("--runtime-host")
     parser.add_argument("--runtime-service-url")
     parser.add_argument("--easyocr-model-storage-dir")
+    parser.add_argument(
+        "--two-worker-sweep",
+        action="store_true",
+        help="Run the bounded two-worker tuning sweep instead of the default minimal matrix.",
+    )
+    parser.add_argument(
+        "--two-worker-chunk-sizes",
+        default=",".join(str(value) for value in DEFAULT_TWO_WORKER_SWEEP_CHUNK_SIZES),
+    )
+    parser.add_argument(
+        "--two-worker-gpu-stage-caps",
+        default=",".join(str(value) for value in DEFAULT_TWO_WORKER_SWEEP_GPU_STAGE_CAPS),
+    )
     parser.add_argument("--task76-report-json", type=Path)
     parser.add_argument("--parity-status")
     parser.add_argument("--parity-lane")
@@ -891,8 +963,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    page_counts = tuple(
-        int(value.strip()) for value in args.page_counts.split(",") if value.strip()
+    page_counts = _parse_positive_int_csv(args.page_counts, label="page-counts")
+    two_worker_chunk_sizes = _parse_positive_int_csv(
+        args.two_worker_chunk_sizes,
+        label="two-worker-chunk-sizes",
+    )
+    two_worker_gpu_stage_caps = _parse_positive_int_csv(
+        args.two_worker_gpu_stage_caps,
+        label="two-worker-gpu-stage-caps",
     )
     payload = run_benchmark(
         output_json=args.output_json,
@@ -924,6 +1002,9 @@ def main() -> None:
             live_smoke_passed=args.parity_live_smoke_passed,
             metrics_scan_passed=args.parity_metrics_scan_passed,
         ),
+        two_worker_sweep=bool(args.two_worker_sweep),
+        two_worker_chunk_sizes=two_worker_chunk_sizes,
+        two_worker_gpu_stage_caps=two_worker_gpu_stage_caps,
     )
     print(
         "task74-benchmark-written",
