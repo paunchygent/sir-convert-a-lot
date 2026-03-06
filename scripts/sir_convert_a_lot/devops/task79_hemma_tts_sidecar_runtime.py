@@ -33,7 +33,7 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_reporting import 
     SidecarRuntime,
 )
 
-GPU_PRODUCT_RE = re.compile(r"Card series:\s*(.+)")
+GPU_PRODUCT_RE = re.compile(r"Card\s+Series:\s*(.+)", re.IGNORECASE)
 GPU_VRAM_TOTAL_RE = re.compile(r"VRAM Total Memory \(B\):\s*([0-9]+)")
 GPU_VRAM_USED_RE = re.compile(r"VRAM Total Used Memory \(B\):\s*([0-9]+)")
 GPU_BUSY_RE = re.compile(r"GPU use \(%\):\s*([0-9]+)")
@@ -87,7 +87,7 @@ def extract_gpu_identity(smi_output: str, rocminfo_output: str) -> GpuIdentity:
     vram_total_match = GPU_VRAM_TOTAL_RE.search(smi_output)
     busy_values = [int(match.group(1)) for match in GPU_BUSY_RE.finditer(smi_output)]
     used_values = [int(match.group(1)) for match in GPU_VRAM_USED_RE.finditer(smi_output)]
-    arch_match = GFX_ARCH_RE.search(rocminfo_output)
+    arch_match = GFX_ARCH_RE.search(rocminfo_output) or GFX_ARCH_RE.search(smi_output)
     if product_match is None or vram_total_match is None or arch_match is None:
         raise SystemExit("Unable to parse Hemma GPU identity from rocm-smi/rocminfo output.")
     return GpuIdentity(
