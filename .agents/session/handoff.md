@@ -54,11 +54,9 @@
 - The corrected Hemma rerun replaced the old dependency blocker with a narrower one:
   - the image now builds,
   - the sidecar reaches `/synthesize`,
-  - the benchmark now writes `report.json` and `report.md`,
-  - the live remaining failure is post-synthesis debug-artifact export:
-    `permission denied` on `base_sv.wav`,
-  - `T84` now owns that root-cause remediation because the remaining problem is setup-evidence
-    export, not model startup.
+  - but the checked-in evidence bundle is mixed across runs rather than atomic,
+  - and the live remaining failure must now be re-proven on current `HEAD` before export-path
+    reasoning is trusted again.
 
 Validation evidence:
 
@@ -87,12 +85,33 @@ Known remaining work / current state:
 
 - Preserve the current failed-quality `T81` sample as baseline evidence.
 - Execute `T84` as the explicit root-cause remediation lane for `T81`:
-  - remove the residual post-synthesis export failure,
+  - make the evidence bundle atomic per rerun,
+  - declare Torch/Silero cache usage under canonical Hemma cache discipline,
+  - add machine-readable benchmark/evidence status,
   - preserve processed-reference plus base-audio setup artifacts,
-  - rerun the same benchmark cleanly on Hemma.
+  - rerun the same benchmark cleanly on Hemma once current-head export behavior is re-proven.
+- The local review-bound correction slice is now implemented and validated:
+  - `task81_openvoice_reporting.py` now records machine-readable benchmark/evidence status plus
+    failure metadata,
+  - `run_task81_hemma_openvoice_benchmark.py` now writes one report on partial runs instead of
+    leaving stale earlier reports in place,
+  - `task81_openvoice_runtime.py` now declares `TORCH_HOME` under the canonical HF cache tree and
+    prefetches the Silero VAD Torch Hub assets through that path,
+  - the next meaningful step is a current-head Hemma rerun to prove or disprove the remaining
+    setup-artifact export failure against the updated harness.
 - Update `Task 81` and `Story 23` with:
   - what changed in the export/evidence path,
   - whether artifacts/pacing improved,
   - whether timbre match improved enough to keep OpenVoice credible.
 - If the corrected setup is still poor, record OpenVoice as technically feasible but not the lead
   Swedish teacher-voice candidate, then proceed to `T82`.
+
+Validation evidence:
+
+- `pdm run format-all` (pass)
+- `pdm run lint-fix` (pass)
+- `pdm run typecheck-all` (pass: `Success: no issues found in 228 source files`)
+- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_openvoice_adapter.py tests/sir_convert_a_lot/test_task81_openvoice_benchmark.py -q` (pass: `18 passed`)
+- `pdm run validate-tasks` (pass: `Validated 119 backlog files`)
+- `pdm run validate-docs` (pass: `Validated docs=150 rules=9`)
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)

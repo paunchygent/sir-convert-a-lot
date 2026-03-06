@@ -74,6 +74,11 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - rerun the same approved teacher-voice benchmark before considering `T82`.
 - `T84` is now the explicit root-cause remediation lane for `T81`, so benchmark fixes and the
   reasoning behind them stay reviewable instead of being buried inside the broader benchmark task.
+- The binding ruthless review changed the immediate Story 23 standard for `T81`:
+  - the next OpenVoice rerun must produce one atomic evidence bundle,
+  - declare the Torch/Silero cache surface explicitly,
+  - record machine-readable benchmark status,
+  - and preserve reference/setup artifacts strongly enough for a second review pass.
 
 ## Acceptance Criteria
 

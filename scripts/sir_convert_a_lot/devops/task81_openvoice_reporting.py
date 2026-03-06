@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, is_dataclass
+from enum import Enum, StrEnum
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.tts_sidecar.contracts import CapabilityResponse
@@ -31,6 +32,42 @@ class GpuIdentity:
     peak_vram_used_bytes: int
 
 
+class BenchmarkStatus(StrEnum):
+    """Top-level outcome for one benchmark attempt."""
+
+    SUCCEEDED = "succeeded"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+
+class EvidenceStatus(StrEnum):
+    """Completeness classification for emitted evidence artifacts."""
+
+    COMPLETE = "complete"
+    PARTIAL = "partial"
+    MISSING = "missing"
+
+
+class BenchmarkStep(StrEnum):
+    """Named benchmark stages for machine-readable failure reporting."""
+
+    PRECONDITIONS = "preconditions"
+    GPU_IDENTITY = "gpu_identity"
+    REFERENCE_AUDIO = "reference_audio"
+    CACHE_RESOLUTION = "cache_resolution"
+    PREFETCH_OPENVOICE = "prefetch_openvoice"
+    PREFETCH_HF = "prefetch_huggingface"
+    PREFETCH_VAD = "prefetch_vad"
+    START_SIDECAR = "start_sidecar"
+    WAIT_READY = "wait_ready"
+    INTERNAL_PROBE = "internal_probe"
+    INSPECT_RUNTIME = "inspect_runtime"
+    SYNTHESIZE = "synthesize"
+    EXPORT_SETUP_ARTIFACTS = "export_setup_artifacts"
+    COLLECT_SETUP_ARTIFACTS = "collect_setup_artifacts"
+    WRITE_REPORT = "write_report"
+
+
 @dataclass(frozen=True)
 class CacheEvidence:
     """Resolved persistent-cache paths used by the benchmark."""
@@ -39,6 +76,8 @@ class CacheEvidence:
     openvoice_container_root: str
     hf_host_root: str
     hf_container_root: str
+    torch_host_root: str
+    torch_container_root: str
     openvoice_home_mount_used: bool
     hf_home_mount_used: bool
 
@@ -55,6 +94,7 @@ class SidecarRuntime:
     hf_home: str | None
     hf_hub_cache: str | None
     transformers_cache: str | None
+    torch_home: str | None
     openvoice_checkpoints_root: str | None
 
 
@@ -74,6 +114,7 @@ class ReferenceAudioEvidence:
 
     input_path: str
     filename: str
+    sha256: str
     reference_role: str
     duration_seconds: float
     sample_rate_hz: int
@@ -108,20 +149,32 @@ class SynthesisProbeResult:
 
 
 @dataclass(frozen=True)
+class FailureEvidence:
+    """Machine-readable benchmark failure details."""
+
+    message: str
+
+
+@dataclass(frozen=True)
 class BenchmarkReport:
     """Top-level JSON payload for Task 81 Hemma evidence."""
 
     benchmark_id: str
+    run_id: str
     generated_at: str
     repo_head: str
+    benchmark_status: BenchmarkStatus
+    evidence_status: EvidenceStatus
+    blocking_step: BenchmarkStep | None
+    failure: FailureEvidence | None
     host_base_url: str
     internal_base_url: str
-    gpu_identity: GpuIdentity
-    cache_evidence: CacheEvidence
-    sidecar_runtime: SidecarRuntime
-    internal_probe: InternalProbeEvidence
-    capabilities: CapabilityResponse
-    reference_audio: ReferenceAudioEvidence
+    gpu_identity: GpuIdentity | None
+    cache_evidence: CacheEvidence | None
+    sidecar_runtime: SidecarRuntime | None
+    internal_probe: InternalProbeEvidence | None
+    capabilities: CapabilityResponse | None
+    reference_audio: ReferenceAudioEvidence | None
     setup_artifacts: SetupArtifactEvidence
     synthesis_result: SynthesisProbeResult
     official_support_summary: list[str]
@@ -137,6 +190,8 @@ def json_default(value: object) -> object:
     """Serialize dataclasses, pydantic models, and paths for stable JSON output."""
     if is_dataclass(value) and not isinstance(value, type):
         return asdict(value)
+    if isinstance(value, Enum):
+        return value.value
     if isinstance(value, Path):
         return value.as_posix()
     model_dump = getattr(value, "model_dump", None)
@@ -155,65 +210,98 @@ def write_json(path: Path, payload: object) -> None:
 
 def build_report_markdown(report: BenchmarkReport) -> str:
     """Render one operator-friendly markdown summary for Task 81 evidence."""
-    capability_languages = ", ".join(
-        f"{entry.code}:{entry.support_level.value}" for entry in report.capabilities.languages
-    )
+
+    def _render(value: object | None) -> str:
+        return "n/a" if value is None else str(value)
+
+    gpu = report.gpu_identity
+    cache = report.cache_evidence
+    runtime = report.sidecar_runtime
+    probe = report.internal_probe
+    reference = report.reference_audio
+    capabilities = report.capabilities
+    capability_languages = "n/a"
+    voice_modes = "n/a"
+    output_formats = "n/a"
+    if capabilities is not None:
+        capability_languages = ", ".join(
+            f"{entry.code}:{entry.support_level.value}" for entry in capabilities.languages
+        )
+        voice_modes = str([mode.value for mode in capabilities.voice.modes])
+        output_formats = str([fmt.value for fmt in capabilities.synthesis.output_formats])
+    blocking_step = report.blocking_step.value if report.blocking_step is not None else None
+    failure_message = report.failure.message if report.failure is not None else None
     lines = [
         "# Task 81 Hemma OpenVoice V2 Benchmark",
         "",
+        f"- run_id: `{report.run_id}`",
         f"- generated_at: `{report.generated_at}`",
         f"- repo_head: `{report.repo_head}`",
+        f"- benchmark_status: `{report.benchmark_status.value}`",
+        f"- evidence_status: `{report.evidence_status.value}`",
+        f"- blocking_step: `{_render(blocking_step)}`",
+        f"- failure: `{_render(failure_message)}`",
         f"- host_base_url: `{report.host_base_url}`",
         f"- internal_base_url: `{report.internal_base_url}`",
         "",
         "## GPU Identity",
-        f"- product_name: `{report.gpu_identity.product_name}`",
-        f"- gfx_architecture: `{report.gpu_identity.gfx_architecture}`",
-        f"- vram_total_bytes: `{report.gpu_identity.vram_total_bytes}`",
-        f"- peak_gpu_busy_percent: `{report.gpu_identity.peak_gpu_busy_percent}`",
-        f"- peak_vram_used_bytes: `{report.gpu_identity.peak_vram_used_bytes}`",
+        f"- product_name: `{_render(gpu.product_name if gpu else None)}`",
+        f"- gfx_architecture: `{_render(gpu.gfx_architecture if gpu else None)}`",
+        f"- vram_total_bytes: `{_render(gpu.vram_total_bytes if gpu else None)}`",
+        f"- peak_gpu_busy_percent: `{_render(gpu.peak_gpu_busy_percent if gpu else None)}`",
+        f"- peak_vram_used_bytes: `{_render(gpu.peak_vram_used_bytes if gpu else None)}`",
         "",
         "## Cache Evidence",
-        f"- openvoice_host_root: `{report.cache_evidence.openvoice_host_root}`",
-        f"- openvoice_container_root: `{report.cache_evidence.openvoice_container_root}`",
-        f"- hf_host_root: `{report.cache_evidence.hf_host_root}`",
-        f"- hf_container_root: `{report.cache_evidence.hf_container_root}`",
-        f"- openvoice_home_mount_used: `{report.cache_evidence.openvoice_home_mount_used}`",
-        f"- hf_home_mount_used: `{report.cache_evidence.hf_home_mount_used}`",
+        f"- openvoice_host_root: `{_render(cache.openvoice_host_root if cache else None)}`",
+        (
+            "- openvoice_container_root: "
+            f"`{_render(cache.openvoice_container_root if cache else None)}`"
+        ),
+        f"- hf_host_root: `{_render(cache.hf_host_root if cache else None)}`",
+        f"- hf_container_root: `{_render(cache.hf_container_root if cache else None)}`",
+        f"- torch_host_root: `{_render(cache.torch_host_root if cache else None)}`",
+        f"- torch_container_root: `{_render(cache.torch_container_root if cache else None)}`",
+        (
+            "- openvoice_home_mount_used: "
+            f"`{_render(cache.openvoice_home_mount_used if cache else None)}`"
+        ),
+        f"- hf_home_mount_used: `{_render(cache.hf_home_mount_used if cache else None)}`",
         "",
         "## Sidecar Runtime",
-        f"- image: `{report.sidecar_runtime.image}`",
-        f"- image_id: `{report.sidecar_runtime.image_id}`",
-        f"- container_name: `{report.sidecar_runtime.container_name}`",
-        f"- python_version: `{report.sidecar_runtime.python_version}`",
-        f"- openvoice_checkpoints_root: `{report.sidecar_runtime.openvoice_checkpoints_root}`",
-        f"- hf_home: `{report.sidecar_runtime.hf_home}`",
-        f"- hf_hub_cache: `{report.sidecar_runtime.hf_hub_cache}`",
-        f"- transformers_cache: `{report.sidecar_runtime.transformers_cache}`",
+        f"- image: `{_render(runtime.image if runtime else None)}`",
+        f"- image_id: `{_render(runtime.image_id if runtime else None)}`",
+        f"- container_name: `{_render(runtime.container_name if runtime else None)}`",
+        f"- python_version: `{_render(runtime.python_version if runtime else None)}`",
+        (
+            "- openvoice_checkpoints_root: "
+            f"`{_render(runtime.openvoice_checkpoints_root if runtime else None)}`"
+        ),
+        f"- hf_home: `{_render(runtime.hf_home if runtime else None)}`",
+        f"- hf_hub_cache: `{_render(runtime.hf_hub_cache if runtime else None)}`",
+        f"- transformers_cache: `{_render(runtime.transformers_cache if runtime else None)}`",
+        f"- torch_home: `{_render(runtime.torch_home if runtime else None)}`",
         "",
         "## Capability Snapshot",
-        f"- backend_id: `{report.capabilities.backend_id}`",
-        f"- backend_version: `{report.capabilities.backend_version}`",
-        f"- backend_profile: `{report.capabilities.backend_profile}`",
+        f"- backend_id: `{_render(capabilities.backend_id if capabilities else None)}`",
+        f"- backend_version: `{_render(capabilities.backend_version if capabilities else None)}`",
+        f"- backend_profile: `{_render(capabilities.backend_profile if capabilities else None)}`",
         f"- languages: `{capability_languages}`",
-        f"- voice_modes: `{[mode.value for mode in report.capabilities.voice.modes]}`",
-        (
-            "- output_formats: "
-            f"`{[fmt.value for fmt in report.capabilities.synthesis.output_formats]}`"
-        ),
+        f"- voice_modes: `{voice_modes}`",
+        f"- output_formats: `{output_formats}`",
         "",
         "## Internal Probe",
-        f"- host_probe_ok: `{report.internal_probe.host_probe_ok}`",
-        f"- service_probe_ok: `{report.internal_probe.service_probe_ok}`",
-        f"- service_backend_id: `{report.internal_probe.service_backend_id}`",
-        f"- service_ready: `{report.internal_probe.service_ready}`",
+        f"- host_probe_ok: `{_render(probe.host_probe_ok if probe else None)}`",
+        f"- service_probe_ok: `{_render(probe.service_probe_ok if probe else None)}`",
+        f"- service_backend_id: `{_render(probe.service_backend_id if probe else None)}`",
+        f"- service_ready: `{_render(probe.service_ready if probe else None)}`",
         "",
         "## Reference Audio",
-        f"- input_path: `{report.reference_audio.input_path}`",
-        f"- filename: `{report.reference_audio.filename}`",
-        f"- reference_role: `{report.reference_audio.reference_role}`",
-        f"- duration_seconds: `{report.reference_audio.duration_seconds}`",
-        f"- sample_rate_hz: `{report.reference_audio.sample_rate_hz}`",
+        f"- input_path: `{_render(reference.input_path if reference else None)}`",
+        f"- filename: `{_render(reference.filename if reference else None)}`",
+        f"- sha256: `{_render(reference.sha256 if reference else None)}`",
+        f"- reference_role: `{_render(reference.reference_role if reference else None)}`",
+        f"- duration_seconds: `{_render(reference.duration_seconds if reference else None)}`",
+        f"- sample_rate_hz: `{_render(reference.sample_rate_hz if reference else None)}`",
         "",
         "## Setup Artifacts",
         f"- processed_reference_dir: `{report.setup_artifacts.processed_reference_dir}`",

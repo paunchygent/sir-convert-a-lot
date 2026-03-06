@@ -78,17 +78,18 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 - New live blocker discovered on the corrected rerun:
   - the sidecar image still lacked the Silero VAD runtime dependency chain required by
     `whisper-timestamped`,
-  - the corrected Hemma rerun reached `/synthesize` and then failed with `ModuleNotFoundError:
-    No module named 'torchaudio'`,
+  - the corrected Hemma rerun reached `/synthesize` and then failed with `ModuleNotFoundError: No module named 'torchaudio'`,
   - next image patch: add `torchaudio` plus the documented VAD dependency support path, rebuild,
     and rerun.
 - New live blocker discovered after synthesis started succeeding:
-  - the benchmark now produces `sample_sv.wav` and writes `report.json` plus `report.md`, but the
-    run still leaves `failure.txt` because debug-artifact export fails with `permission denied` on
-    `base_sv.wav`,
-  - that means the benchmark harness now records partial validated runtime evidence, but still
-    does not preserve the full setup-artifact trail needed for closeout,
-  - `T84` now owns the root-cause remediation and rationale trail for this export failure.
+  - the checked-in evidence bundle is mixed: `report.json` plus `report.md` come from an earlier
+    synthesis-success run, while `failure.txt` plus `docker_logs.txt` reflect a later rerun that
+    failed during setup-artifact export,
+  - that means the current evidence directory is not yet an atomic statement of one benchmark
+    attempt,
+  - `T84` now owns the root-cause remediation and rationale trail for fixing atomic evidence,
+    machine-readable benchmark status, declared VAD cache/runtime truth, and current-head export
+    diagnosis.
 
 ## Failure Record
 
@@ -112,6 +113,8 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   the processed reference artifact plus the pre-conversion Swedish base artifact needed to isolate
   whether defects come from the base voice, the reference embedding, or the tone-color conversion
   step.
+- The current runtime/cache evidence does not yet declare the Torch Hub / Silero VAD cache path,
+  so canonical cache-reuse claims are incomplete until that surface is persisted and reported.
 
 ## Remediation Track
 
@@ -136,6 +139,11 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   - processed reference artifacts,
   - Swedish base artifacts before cloning,
   - report files without a leftover `failure.txt`.
+- [ ] Make the next corrected rerun atomic:
+  - one repo head,
+  - one timestamp family,
+  - one machine-readable benchmark/evidence status,
+  - one deterministic setup-artifact trail.
 - [ ] If the corrected rerun is still poor, record OpenVoice as technically feasible but not the
   primary Swedish teacher-voice candidate, then proceed to `T82`.
 

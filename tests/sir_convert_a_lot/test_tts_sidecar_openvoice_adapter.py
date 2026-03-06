@@ -188,6 +188,8 @@ def test_openvoice_backend_capabilities_surface_cache_and_language_truth() -> No
         openvoice_cache_container_root="/cache/openvoice",
         hf_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface",
         hf_cache_container_root="/cache/huggingface",
+        torch_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface/torch",
+        torch_cache_container_root="/cache/huggingface/torch",
         base_model_id="facebook/mms-tts-swe",
         supported_language_codes=("sv",),
         network_scope=NetworkScope.INTERNAL_ONLY,
@@ -203,6 +205,7 @@ def test_openvoice_backend_capabilities_surface_cache_and_language_truth() -> No
     assert capabilities.backend_id == "openvoice_v2"
     assert capabilities.cache.cache_family == "openvoice_assets"
     assert capabilities.auxiliary_caches[0].cache_family == "huggingface"
+    assert capabilities.auxiliary_caches[1].cache_family == "torch_hub"
     assert capabilities.languages[0].code == "sv"
     assert capabilities.languages[0].support_level is LanguageSupportLevel.CROSS_LINGUAL_CLAIMED
     assert capabilities.voice.reference_transcript_required is False
@@ -221,6 +224,8 @@ def test_openvoice_backend_rejects_non_clone_requests_before_runtime_use() -> No
         openvoice_cache_container_root="/cache/openvoice",
         hf_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface",
         hf_cache_container_root="/cache/huggingface",
+        torch_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface/torch",
+        torch_cache_container_root="/cache/huggingface/torch",
         base_model_id="facebook/mms-tts-swe",
         supported_language_codes=("sv",),
         network_scope=NetworkScope.INTERNAL_ONLY,
@@ -272,6 +277,8 @@ def test_openvoice_synthesize_uses_base_rate_then_resamples_for_converter(
         openvoice_cache_container_root="/cache/openvoice",
         hf_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface",
         hf_cache_container_root="/cache/huggingface",
+        torch_cache_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface/torch",
+        torch_cache_container_root="/cache/huggingface/torch",
         base_model_id="facebook/mms-tts-swe",
         supported_language_codes=("sv",),
         network_scope=NetworkScope.INTERNAL_ONLY,

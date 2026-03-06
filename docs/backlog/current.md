@@ -214,7 +214,7 @@ Primary implementation stories (active sequence):
 - Immediate `T81` remediation goal after the failed listening review: correct the OpenVoice setup,
   preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts, and decide
   whether OpenVoice remains viable before moving to `T82`.
-- `T84` is now the explicit root-cause remediation lane because the benchmark writes `report.json`
-  and `report.md` but still leaves `failure.txt` when setup-artifact export fails; the next `T81`
-  step is a corrected Hemma rerun that preserves processed-reference plus base-audio evidence.
+- `T84` is now the explicit root-cause remediation lane and is review-bound to five concrete fixes:
+  atomic rerun evidence, declared Torch/Silero cache truth, current-head export diagnosis,
+  machine-readable benchmark status, preserved reference/setup artifacts, and a current-head Hemma rerun.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

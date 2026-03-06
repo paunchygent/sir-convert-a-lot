@@ -11,6 +11,8 @@ Relationships:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import zipfile
 from pathlib import Path
 from typing import Literal
@@ -20,7 +22,9 @@ import pytest
 from scripts.sir_convert_a_lot.devops import run_task81_hemma_openvoice_benchmark
 from scripts.sir_convert_a_lot.devops.task81_openvoice_reporting import (
     BenchmarkReport,
+    BenchmarkStatus,
     CacheEvidence,
+    EvidenceStatus,
     GpuIdentity,
     InternalProbeEvidence,
     ReferenceAudioEvidence,
@@ -34,11 +38,13 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     CONTAINER_DEBUG_ARTIFACT_DIR,
     CONTAINER_HF_HOME,
     CONTAINER_OPENVOICE_HOME,
+    CONTAINER_TORCH_HOME,
     BenchmarkSettings,
     MountResolution,
     collect_setup_artifact_evidence,
     copy_debug_artifacts_from_container,
     prefetch_openvoice_assets,
+    prefetch_vad_assets,
     reference_audio_evidence,
     resolve_effective_cache_dir,
     start_sidecar,
@@ -81,7 +87,13 @@ def _capabilities() -> CapabilityResponse:
                 host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface",
                 container_root="/cache/huggingface",
                 reuse_strategy="persistent_host_cache",
-            )
+            ),
+            CacheCapability(
+                cache_family="torch_hub",
+                host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface/torch",
+                container_root="/cache/huggingface/torch",
+                reuse_strategy="persistent_host_cache",
+            ),
         ],
         synthesis=SynthesisCapability(
             output_formats=[OutputFormat.WAV],
@@ -249,11 +261,16 @@ def test_start_sidecar_uses_persistent_cache_mounts(
     command = recorded_commands[0]
     assert f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}" in command
     assert f"{openvoice_mount.effective_root.as_posix()}:{CONTAINER_OPENVOICE_HOME}" in command
+    assert f"TORCH_HOME={CONTAINER_TORCH_HOME}" in command
     assert (
         f"SIR_TTS_SIDECAR_OPENVOICE_CACHE_HOST_ROOT={openvoice_mount.canonical_root.as_posix()}"
         in command
     )
     assert f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}" in command
+    assert (
+        "SIR_TTS_SIDECAR_TORCH_CACHE_HOST_ROOT="
+        f"{(hf_mount.canonical_root / 'torch').as_posix()}" in command
+    )
     assert f"SIR_TTS_SIDECAR_DEBUG_ARTIFACT_DIR={CONTAINER_DEBUG_ARTIFACT_DIR}" in command
     assert "--group-add" in command
     assert "993" in command
@@ -283,6 +300,7 @@ def test_reference_audio_evidence_uses_benchmark_image_ffprobe(
     evidence = reference_audio_evidence(reference_audio, image="test-image")
 
     assert evidence.filename == "voice.m4a"
+    assert evidence.sha256 == hashlib.sha256(b"audio").hexdigest()
     assert evidence.reference_role == "teacher_voice_cloning_reference"
     assert evidence.sample_rate_hz == 48000
     assert evidence.duration_seconds == 89.130667
@@ -290,6 +308,59 @@ def test_reference_audio_evidence_uses_benchmark_image_ffprobe(
     assert command[0:4] == ["run", "--rm", "-v", f"{reference_audio.parent.as_posix()}:/input:ro"]
     assert command[4:7] == ["--entrypoint", "ffprobe", "test-image"]
     assert command[-1] == "/input/voice.m4a"
+
+
+def test_prefetch_vad_assets_declares_torch_home_under_hf_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    recorded_commands: list[list[str]] = []
+
+    def _fake_docker_checked(args: list[str], *, label: str) -> str:
+        assert label == "docker run task81 vad prefetch"
+        recorded_commands.append(args)
+        return ""
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime.docker_checked",
+        _fake_docker_checked,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime._silero_vad_cached",
+        lambda torch_home: False,
+    )
+    settings = BenchmarkSettings(
+        output_root=tmp_path / "output",
+        dockerfile_path=tmp_path / "Dockerfile",
+        image="test-image",
+        openvoice_checkpoint_url="https://example.invalid/checkpoints.zip",
+        base_model_id="facebook/mms-tts-swe",
+        network="hule-network",
+        network_alias="task81-sidecar",
+        container_name="task81",
+        service_container="sir_convert_a_lot_prod",
+        container_port=8092,
+        host_port=38092,
+        startup_timeout_seconds=600.0,
+        hf_cache_dir=tmp_path / "hf-cache",
+        hf_cache_home_mount=tmp_path / "hf-home",
+        openvoice_cache_dir=tmp_path / "ov-cache",
+        openvoice_cache_home_mount=tmp_path / "ov-home",
+        reference_audio_path=tmp_path / "voice.m4a",
+        probe_text="Hej världen",
+        build_image=False,
+        retain_container=False,
+    )
+    mount = MountResolution(
+        canonical_root=tmp_path / "hf-cache",
+        effective_root=tmp_path / "hf-effective",
+        used_home_mount=False,
+    )
+
+    prefetch_vad_assets(settings, mount)
+
+    command = recorded_commands[0]
+    assert f"TORCH_HOME={CONTAINER_TORCH_HOME}" in command
+    assert f"{mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}" in command
 
 
 def test_synthesize_probe_posts_normalized_contract_and_writes_artifact(
@@ -466,8 +537,13 @@ def test_collect_setup_artifact_evidence_reads_processed_reference_and_base_file
 def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
     report = BenchmarkReport(
         benchmark_id="task-81-openvoice-v2-hemma",
+        run_id="20260306T120000Z",
         generated_at="2026-03-06T12:00:00Z",
         repo_head="abc123",
+        benchmark_status=BenchmarkStatus.SUCCEEDED,
+        evidence_status=EvidenceStatus.COMPLETE,
+        blocking_step=None,
+        failure=None,
         host_base_url="http://127.0.0.1:38092",
         internal_base_url="http://sir-convert-a-lot-openvoice-task81:8092",
         gpu_identity=GpuIdentity(
@@ -482,6 +558,8 @@ def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
             openvoice_container_root="/cache/openvoice",
             hf_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface",
             hf_container_root="/cache/huggingface",
+            torch_host_root="/srv/scratch/sir-convert-a-lot/cache/huggingface/torch",
+            torch_container_root="/cache/huggingface/torch",
             openvoice_home_mount_used=False,
             hf_home_mount_used=True,
         ),
@@ -494,6 +572,7 @@ def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
             hf_home="/cache/huggingface",
             hf_hub_cache="/cache/huggingface/hub",
             transformers_cache="/cache/huggingface",
+            torch_home="/cache/huggingface/torch",
             openvoice_checkpoints_root="/cache/openvoice/checkpoints_v2",
         ),
         internal_probe=InternalProbeEvidence(
@@ -506,6 +585,7 @@ def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
         reference_audio=ReferenceAudioEvidence(
             input_path="/tmp/voice.m4a",
             filename="voice.m4a",
+            sha256="feedface",
             reference_role="teacher_voice_cloning_reference",
             duration_seconds=10.0,
             sample_rate_hz=48000,
@@ -546,7 +626,218 @@ def test_report_helpers_render_task81_markdown(tmp_path: Path) -> None:
     markdown = build_report_markdown(report)
 
     assert '"benchmark_id": "task-81-openvoice-v2-hemma"' in json_path.read_text(encoding="utf-8")
+    assert '"benchmark_status": "succeeded"' in json_path.read_text(encoding="utf-8")
     assert "## Capability Snapshot" in markdown
     assert "## Setup Artifacts" in markdown
+    assert "torch_home" in markdown
     assert "openvoice_v2" in markdown
     assert "cross_lingual_claimed" in markdown
+
+
+def test_main_writes_partial_report_when_setup_artifact_export_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference_audio = tmp_path / "voice.m4a"
+    reference_audio.write_bytes(b"reference")
+    settings = BenchmarkSettings(
+        output_root=tmp_path / "output",
+        dockerfile_path=tmp_path / "Dockerfile",
+        image="test-image",
+        openvoice_checkpoint_url="https://example.invalid/checkpoints.zip",
+        base_model_id="facebook/mms-tts-swe",
+        network="hule-network",
+        network_alias="task81-sidecar",
+        container_name="task81",
+        service_container="sir_convert_a_lot_prod",
+        container_port=8092,
+        host_port=38092,
+        startup_timeout_seconds=600.0,
+        hf_cache_dir=tmp_path / "hf-cache",
+        hf_cache_home_mount=tmp_path / "hf-home",
+        openvoice_cache_dir=tmp_path / "ov-cache",
+        openvoice_cache_home_mount=tmp_path / "ov-home",
+        reference_audio_path=reference_audio,
+        probe_text="Hej världen",
+        build_image=False,
+        retain_container=False,
+    )
+    mount = MountResolution(
+        canonical_root=tmp_path / "hf-cache",
+        effective_root=tmp_path / "hf-cache",
+        used_home_mount=False,
+    )
+    openvoice_mount = MountResolution(
+        canonical_root=tmp_path / "ov-cache",
+        effective_root=tmp_path / "ov-cache",
+        used_home_mount=False,
+    )
+
+    monkeypatch.setattr(run_task81_hemma_openvoice_benchmark, "_parse_args", lambda argv: settings)
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "enforce_generated_output_path",
+        lambda output_root, *, label: None,
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark, "ensure_sidecar_preconditions", lambda settings: None
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "run_checked",
+        lambda args, *, label: {
+            "git rev-parse HEAD": "deadbeef",
+            "rocm-smi identity": (
+                "Card Series: AMD Radeon AI PRO R9700\n"
+                "VRAM Total Memory (B): 32061259776\n"
+                "VRAM Total Used Memory (B): 0\n"
+                "GPU use (%): 0\n"
+            ),
+            "rocminfo": "gfx1201",
+            "docker rm task81": "",
+        }[label],
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "extract_gpu_identity",
+        lambda smi_output, rocminfo_output: GpuIdentity(
+            product_name="AMD Radeon AI PRO R9700",
+            gfx_architecture="gfx1201",
+            vram_total_bytes=32061259776,
+            peak_gpu_busy_percent=0,
+            peak_vram_used_bytes=0,
+        ),
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "remove_existing_benchmark_container",
+        lambda container_name: None,
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "ensure_image_present",
+        lambda settings: (False, "sha256:test"),
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "reference_audio_evidence",
+        lambda reference_audio_path, *, image: ReferenceAudioEvidence(
+            input_path=reference_audio_path.as_posix(),
+            filename=reference_audio_path.name,
+            sha256=hashlib.sha256(reference_audio_path.read_bytes()).hexdigest(),
+            reference_role="teacher_voice_cloning_reference",
+            duration_seconds=10.0,
+            sample_rate_hz=48000,
+        ),
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "resolve_effective_cache_dir",
+        lambda cache_dir, home_mount, image: (
+            mount if "huggingface" in cache_dir.as_posix() else openvoice_mount
+        ),
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "prefetch_openvoice_assets",
+        lambda settings, mount: None,
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark, "prefetch_hf_assets", lambda settings, mount: None
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark, "prefetch_vad_assets", lambda settings, mount: None
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "start_sidecar",
+        lambda settings, hf_mount, openvoice_mount: None,
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "wait_for_sidecar",
+        lambda settings: (12.0, {}, _capabilities()),
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "probe_from_service_container",
+        lambda settings: InternalProbeEvidence(
+            host_probe_ok=True,
+            service_probe_ok=True,
+            service_backend_id="openvoice_v2",
+            service_ready=True,
+        ),
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "inspect_runtime",
+        lambda settings, *, image_id: SidecarRuntime(
+            image="test-image",
+            image_id=image_id,
+            container_name="task81",
+            python_version="3.12.13",
+            package_versions={"torch": "2.10.0+rocm7.1"},
+            hf_home="/cache/huggingface",
+            hf_hub_cache="/cache/huggingface/hub",
+            transformers_cache="/cache/huggingface",
+            torch_home="/cache/huggingface/torch",
+            openvoice_checkpoints_root="/cache/openvoice/checkpoints_v2",
+        ),
+    )
+
+    def _fake_synthesize_probe(
+        *, settings: BenchmarkSettings, base_url: str, artifacts_dir: Path
+    ) -> tuple[SynthesisProbeResult, int, int]:
+        output_path = artifacts_dir / "sample_sv.wav"
+        output_path.write_bytes(b"wav")
+        return (
+            SynthesisProbeResult(
+                ok=True,
+                status_code=200,
+                content_type="audio/wav",
+                byte_count=3,
+                sha256="deadbeef",
+                output_path=output_path.as_posix(),
+                elapsed_seconds=2.0,
+                sample_rate_hz=22050,
+                duration_seconds=1.0,
+                error_message=None,
+            ),
+            5,
+            6,
+        )
+
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark, "synthesize_probe", _fake_synthesize_probe
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "copy_debug_artifacts_from_container",
+        lambda container_name, artifacts_dir: (_ for _ in ()).throw(
+            SystemExit(
+                "Task 81 could not copy debug artifacts from the sidecar container.\n"
+                "stdout:\n\nstderr:\npermission denied"
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        run_task81_hemma_openvoice_benchmark,
+        "capture_docker_logs",
+        lambda container_name, *, output_path: output_path.write_text("logs\n", encoding="utf-8"),
+    )
+
+    exit_code = run_task81_hemma_openvoice_benchmark.main([])
+
+    report_path = settings.output_root / "report.json"
+    report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 1
+    assert report_payload["benchmark_status"] == "partial"
+    assert report_payload["evidence_status"] == "partial"
+    assert report_payload["blocking_step"] == "export_setup_artifacts"
+    assert report_payload["failure"]["message"].startswith(
+        "Task 81 could not copy debug artifacts from the sidecar container."
+    )
+    assert report_payload["synthesis_result"]["ok"] is True
+    assert report_payload["reference_audio"]["sha256"] == hashlib.sha256(b"reference").hexdigest()
+    assert report_payload["cache_evidence"]["torch_container_root"] == "/cache/huggingface/torch"
+    assert (settings.output_root / "failure.txt").exists() is True

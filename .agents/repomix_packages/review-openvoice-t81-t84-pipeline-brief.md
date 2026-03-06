@@ -30,18 +30,18 @@ for:
 ## Primary Questions
 
 1. Does the implementation reflect the real current pipeline accurately?
-2. Are the proposed remediations targeted at the actual root causes rather than symptoms?
-3. Is the model handling technically sound?
+1. Are the proposed remediations targeted at the actual root causes rather than symptoms?
+1. Is the model handling technically sound?
    - OpenVoice V2 role
    - Swedish base-speaker role
    - reference-preprocessing path
    - sample-rate handling
    - cache and runtime dependency strategy
-4. Is the benchmark harness reasoning correct about what counts as:
+1. Is the benchmark harness reasoning correct about what counts as:
    - technical success,
    - partial evidence,
    - validated end-to-end evidence?
-5. Are there signs that the analysis overreaches, misunderstands upstream model behavior, or
+1. Are there signs that the analysis overreaches, misunderstands upstream model behavior, or
    misreads the current Hemma runtime truth?
 
 ## Findings Requested

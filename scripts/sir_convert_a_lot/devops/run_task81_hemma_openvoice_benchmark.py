@@ -19,16 +19,23 @@ import os
 import shutil
 import sys
 from contextlib import suppress
-from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task81_openvoice_reporting import (
     BenchmarkReport,
+    BenchmarkStatus,
+    BenchmarkStep,
     CacheEvidence,
+    EvidenceStatus,
+    FailureEvidence,
     GpuIdentity,
+    InternalProbeEvidence,
+    ReferenceAudioEvidence,
     SetupArtifactEvidence,
+    SidecarRuntime,
+    SynthesisProbeResult,
     build_report_markdown,
     write_json,
 )
@@ -44,6 +51,7 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     inspect_runtime,
     prefetch_hf_assets,
     prefetch_openvoice_assets,
+    prefetch_vad_assets,
     probe_from_service_container,
     reference_audio_evidence,
     remove_existing_benchmark_container,
@@ -229,9 +237,61 @@ def _cache_evidence(hf_mount: MountResolution, openvoice_mount: MountResolution)
         openvoice_container_root="/cache/openvoice",
         hf_host_root=hf_mount.canonical_root.as_posix(),
         hf_container_root="/cache/huggingface",
+        torch_host_root=(hf_mount.canonical_root / "torch").as_posix(),
+        torch_container_root="/cache/huggingface/torch",
         openvoice_home_mount_used=openvoice_mount.used_home_mount,
         hf_home_mount_used=hf_mount.used_home_mount,
     )
+
+
+def _new_run_id(*, generated_at: str) -> str:
+    """Return a deterministic identifier for one benchmark attempt."""
+    return generated_at.replace("-", "").replace(":", "")
+
+
+def _empty_synthesis_result() -> SynthesisProbeResult:
+    """Return the default synthesis result used before `/synthesize` runs."""
+    return SynthesisProbeResult(
+        ok=False,
+        status_code=0,
+        content_type=None,
+        byte_count=0,
+        sha256=None,
+        output_path=None,
+        elapsed_seconds=0.0,
+        sample_rate_hz=None,
+        duration_seconds=None,
+        error_message=None,
+    )
+
+
+def _determine_evidence_status(
+    *,
+    setup_artifacts: SetupArtifactEvidence,
+    synthesis_result: SynthesisProbeResult,
+    reference_audio: ReferenceAudioEvidence | None,
+    sidecar_runtime: SidecarRuntime | None,
+    internal_probe: InternalProbeEvidence | None,
+    logs_path: Path,
+) -> EvidenceStatus:
+    """Classify whether one benchmark attempt emitted complete, partial, or missing evidence."""
+    if (
+        synthesis_result.ok
+        and setup_artifacts.processed_reference_dir is not None
+        and setup_artifacts.base_output_path is not None
+        and setup_artifacts.converter_input_path is not None
+        and logs_path.exists()
+    ):
+        return EvidenceStatus.COMPLETE
+    if (
+        synthesis_result.output_path is not None
+        or reference_audio is not None
+        or sidecar_runtime is not None
+        or internal_probe is not None
+        or logs_path.exists()
+    ):
+        return EvidenceStatus.PARTIAL
+    return EvidenceStatus.MISSING
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -241,24 +301,24 @@ def main(argv: list[str] | None = None) -> int:
     artifacts_dir, logs_path, report_json_path, report_md_path, failure_path = _prepare_output_root(
         settings.output_root
     )
-
-    ensure_sidecar_preconditions(settings)
-    smi_identity_output = run_checked(
-        ["rocm-smi", "--showproductname", "--showmeminfo", "vram", "--showuse"],
-        label="rocm-smi identity",
-    )
-    rocminfo_output = run_checked(["rocminfo"], label="rocminfo")
-    parsed_gpu_identity = extract_gpu_identity(smi_identity_output, rocminfo_output)
-    gpu_identity = GpuIdentity(
-        product_name=parsed_gpu_identity.product_name,
-        gfx_architecture=parsed_gpu_identity.gfx_architecture,
-        vram_total_bytes=parsed_gpu_identity.vram_total_bytes,
-        peak_gpu_busy_percent=parsed_gpu_identity.peak_gpu_busy_percent,
-        peak_vram_used_bytes=parsed_gpu_identity.peak_vram_used_bytes,
-    )
+    generated_at = _utc_now_iso()
+    run_id = _new_run_id(generated_at=generated_at)
+    repo_head = run_checked(["git", "rev-parse", "HEAD"], label="git rev-parse HEAD")
+    host_base_url = f"http://127.0.0.1:{settings.host_port}"
+    internal_base_url = f"http://{settings.network_alias}:{settings.container_port}"
     build_performed = False
     cleanup_performed = False
-    report: BenchmarkReport | None = None
+    exit_code = 0
+    blocking_step: BenchmarkStep | None = None
+    failure: FailureEvidence | None = None
+    cache_evidence: CacheEvidence | None = None
+    gpu_identity: GpuIdentity | None = None
+    sidecar_runtime: SidecarRuntime | None = None
+    internal_probe: InternalProbeEvidence | None = None
+    capabilities = None
+    reference_audio: ReferenceAudioEvidence | None = None
+    readiness_seconds = 0.0
+    synthesis_result = _empty_synthesis_result()
     setup_artifacts = SetupArtifactEvidence(
         processed_reference_dir=None,
         processed_reference_segment_count=None,
@@ -268,11 +328,29 @@ def main(argv: list[str] | None = None) -> int:
         converter_input_sample_rate_hz=None,
     )
     try:
+        blocking_step = BenchmarkStep.PRECONDITIONS
+        ensure_sidecar_preconditions(settings)
+        blocking_step = BenchmarkStep.GPU_IDENTITY
+        smi_identity_output = run_checked(
+            ["rocm-smi", "--showproductname", "--showmeminfo", "vram", "--showuse"],
+            label="rocm-smi identity",
+        )
+        rocminfo_output = run_checked(["rocminfo"], label="rocminfo")
+        parsed_gpu_identity = extract_gpu_identity(smi_identity_output, rocminfo_output)
+        gpu_identity = GpuIdentity(
+            product_name=parsed_gpu_identity.product_name,
+            gfx_architecture=parsed_gpu_identity.gfx_architecture,
+            vram_total_bytes=parsed_gpu_identity.vram_total_bytes,
+            peak_gpu_busy_percent=parsed_gpu_identity.peak_gpu_busy_percent,
+            peak_vram_used_bytes=parsed_gpu_identity.peak_vram_used_bytes,
+        )
         remove_existing_benchmark_container(settings.container_name)
         build_performed, image_id = ensure_image_present(settings)
+        blocking_step = BenchmarkStep.REFERENCE_AUDIO
         reference_audio = reference_audio_evidence(
             settings.reference_audio_path, image=settings.image
         )
+        blocking_step = BenchmarkStep.CACHE_RESOLUTION
         hf_mount = resolve_effective_cache_dir(
             cache_dir=settings.hf_cache_dir,
             home_mount=settings.hf_cache_home_mount,
@@ -283,44 +361,88 @@ def main(argv: list[str] | None = None) -> int:
             home_mount=settings.openvoice_cache_home_mount,
             image=settings.image,
         )
+        cache_evidence = _cache_evidence(hf_mount, openvoice_mount)
+        blocking_step = BenchmarkStep.PREFETCH_OPENVOICE
         prefetch_openvoice_assets(settings, openvoice_mount)
+        blocking_step = BenchmarkStep.PREFETCH_HF
         prefetch_hf_assets(settings, hf_mount)
+        blocking_step = BenchmarkStep.PREFETCH_VAD
+        prefetch_vad_assets(settings, hf_mount)
+        blocking_step = BenchmarkStep.START_SIDECAR
         start_sidecar(settings, hf_mount=hf_mount, openvoice_mount=openvoice_mount)
+        blocking_step = BenchmarkStep.WAIT_READY
         readiness_seconds, _health_payload, capabilities = wait_for_sidecar(settings)
+        blocking_step = BenchmarkStep.INTERNAL_PROBE
         internal_probe = probe_from_service_container(settings)
+        blocking_step = BenchmarkStep.INSPECT_RUNTIME
         sidecar_runtime = inspect_runtime(settings, image_id=image_id)
-
-        host_base_url = f"http://127.0.0.1:{settings.host_port}"
-        internal_base_url = f"http://{settings.network_alias}:{settings.container_port}"
+        blocking_step = BenchmarkStep.SYNTHESIZE
         synthesis_result, peak_busy, peak_vram = synthesize_probe(
             settings=settings,
             base_url=host_base_url,
             artifacts_dir=artifacts_dir,
         )
-        copy_debug_artifacts_from_container(
-            container_name=settings.container_name,
-            artifacts_dir=artifacts_dir,
-        )
-        setup_artifacts = collect_setup_artifact_evidence(artifacts_dir)
-        gpu_identity = GpuIdentity(
-            product_name=gpu_identity.product_name,
-            gfx_architecture=gpu_identity.gfx_architecture,
-            vram_total_bytes=gpu_identity.vram_total_bytes,
-            peak_gpu_busy_percent=max(gpu_identity.peak_gpu_busy_percent, peak_busy),
-            peak_vram_used_bytes=max(gpu_identity.peak_vram_used_bytes, peak_vram),
-        )
         if synthesis_result.ok is not True:
             raise SystemExit(
                 "Task 81 acceptance failed: normalized `/synthesize` did not return wav audio."
             )
+        blocking_step = BenchmarkStep.EXPORT_SETUP_ARTIFACTS
+        copy_debug_artifacts_from_container(
+            container_name=settings.container_name,
+            artifacts_dir=artifacts_dir,
+        )
+        blocking_step = BenchmarkStep.COLLECT_SETUP_ARTIFACTS
+        setup_artifacts = collect_setup_artifact_evidence(artifacts_dir)
+        if gpu_identity is not None:
+            gpu_identity = GpuIdentity(
+                product_name=gpu_identity.product_name,
+                gfx_architecture=gpu_identity.gfx_architecture,
+                vram_total_bytes=gpu_identity.vram_total_bytes,
+                peak_gpu_busy_percent=max(gpu_identity.peak_gpu_busy_percent, peak_busy),
+                peak_vram_used_bytes=max(gpu_identity.peak_vram_used_bytes, peak_vram),
+            )
+    except SystemExit as exc:
+        exit_code = 1
+        failure = FailureEvidence(message=str(exc))
+        failure_path.write_text(str(exc) + "\n", encoding="utf-8")
+    finally:
+        capture_docker_logs(settings.container_name, output_path=logs_path)
+        if not settings.retain_container:
+            with suppress(SystemExit):
+                run_checked(
+                    ["sudo", "-n", "docker", "rm", "-f", settings.container_name],
+                    label="docker rm task81",
+                )
+            cleanup_performed = True
+        evidence_status = _determine_evidence_status(
+            setup_artifacts=setup_artifacts,
+            synthesis_result=synthesis_result,
+            reference_audio=reference_audio,
+            sidecar_runtime=sidecar_runtime,
+            internal_probe=internal_probe,
+            logs_path=logs_path,
+        )
+        if failure is None and evidence_status is EvidenceStatus.COMPLETE:
+            benchmark_status = BenchmarkStatus.SUCCEEDED
+            blocking_step = None
+        elif evidence_status is EvidenceStatus.PARTIAL:
+            benchmark_status = BenchmarkStatus.PARTIAL
+        else:
+            benchmark_status = BenchmarkStatus.FAILED
+        blocking_step = None if benchmark_status is BenchmarkStatus.SUCCEEDED else blocking_step
         report = BenchmarkReport(
             benchmark_id="task-81-openvoice-v2-hemma",
-            generated_at=_utc_now_iso(),
-            repo_head=run_checked(["git", "rev-parse", "HEAD"], label="git rev-parse HEAD"),
+            run_id=run_id,
+            generated_at=generated_at,
+            repo_head=repo_head,
+            benchmark_status=benchmark_status,
+            evidence_status=evidence_status,
+            blocking_step=blocking_step,
+            failure=failure,
             host_base_url=host_base_url,
             internal_base_url=internal_base_url,
             gpu_identity=gpu_identity,
-            cache_evidence=_cache_evidence(hf_mount, openvoice_mount),
+            cache_evidence=cache_evidence,
             sidecar_runtime=sidecar_runtime,
             internal_probe=internal_probe,
             capabilities=capabilities,
@@ -332,29 +454,12 @@ def main(argv: list[str] | None = None) -> int:
             pull_performed=False,
             build_performed=build_performed,
             readiness_seconds=readiness_seconds,
-            cleanup_performed=not settings.retain_container,
+            cleanup_performed=cleanup_performed,
             docker_logs_path=logs_path.as_posix(),
         )
         write_json(report_json_path, report)
         report_md_path.write_text(build_report_markdown(report), encoding="utf-8")
-        return 0
-    except SystemExit as exc:
-        failure_path.write_text(str(exc) + "\n", encoding="utf-8")
-        return 1
-    finally:
-        capture_docker_logs(settings.container_name, output_path=logs_path)
-        if not settings.retain_container:
-            with suppress(SystemExit):
-                run_checked(
-                    ["sudo", "-n", "docker", "rm", "-f", settings.container_name],
-                    label="docker rm task81",
-                )
-            cleanup_performed = True
-        if report is not None:
-            if report.cleanup_performed != cleanup_performed:
-                report = replace(report, cleanup_performed=cleanup_performed)
-                write_json(report_json_path, report)
-                report_md_path.write_text(build_report_markdown(report), encoding="utf-8")
+    return exit_code
 
 
 if __name__ == "__main__":

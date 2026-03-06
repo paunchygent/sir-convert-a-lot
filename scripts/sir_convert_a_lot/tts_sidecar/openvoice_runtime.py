@@ -78,6 +78,8 @@ class OpenVoiceSidecarSettings:
     openvoice_cache_container_root: str
     hf_cache_host_root: str
     hf_cache_container_root: str
+    torch_cache_host_root: str
+    torch_cache_container_root: str
     base_model_id: str
     supported_language_codes: tuple[str, ...]
     network_scope: NetworkScope
@@ -126,6 +128,14 @@ class OpenVoiceSidecarSettings:
             hf_cache_container_root=os.environ.get(
                 "SIR_TTS_SIDECAR_HF_CACHE_CONTAINER_ROOT",
                 "/cache/huggingface",
+            ),
+            torch_cache_host_root=os.environ.get(
+                "SIR_TTS_SIDECAR_TORCH_CACHE_HOST_ROOT",
+                "/srv/scratch/sir-convert-a-lot/cache/huggingface/torch",
+            ),
+            torch_cache_container_root=os.environ.get(
+                "SIR_TTS_SIDECAR_TORCH_CACHE_CONTAINER_ROOT",
+                "/cache/huggingface/torch",
             ),
             base_model_id=os.environ.get("SIR_TTS_SIDECAR_BASE_MODEL_ID", "facebook/mms-tts-swe"),
             supported_language_codes=supported_codes,
@@ -199,6 +209,9 @@ class OpenVoiceSidecarBackend:
             "openvoice": _package_version_or_none("openvoice"),
             "transformers": _package_version_or_none("transformers"),
             "torch": _package_version_or_none("torch"),
+            "torchaudio": _package_version_or_none("torchaudio"),
+            "onnxruntime": _package_version_or_none("onnxruntime"),
+            "whisper-timestamped": _package_version_or_none("whisper-timestamped"),
         }
         self._ready = True
 
@@ -236,7 +249,13 @@ class OpenVoiceSidecarBackend:
                     host_root=self._settings.hf_cache_host_root,
                     container_root=self._settings.hf_cache_container_root,
                     reuse_strategy="persistent_host_cache",
-                )
+                ),
+                CacheCapability(
+                    cache_family="torch_hub",
+                    host_root=self._settings.torch_cache_host_root,
+                    container_root=self._settings.torch_cache_container_root,
+                    reuse_strategy="persistent_host_cache",
+                ),
             ],
             synthesis=SynthesisCapability(
                 output_formats=[OutputFormat.WAV],

@@ -51,6 +51,7 @@ GPU_BUSY_RE = re.compile(r"GPU use \(%\):\s*([0-9]+)")
 GFX_ARCH_RE = re.compile(r"gfx[0-9]+")
 CONTAINER_HF_HOME = "/cache/huggingface"
 CONTAINER_HF_HUB_CACHE = f"{CONTAINER_HF_HOME}/hub"
+CONTAINER_TORCH_HOME = f"{CONTAINER_HF_HOME}/torch"
 CONTAINER_OPENVOICE_HOME = "/cache/openvoice"
 CONTAINER_DEBUG_ARTIFACT_DIR = "/tmp/task81-debug-artifacts"
 
@@ -351,6 +352,53 @@ def prefetch_hf_assets(settings: BenchmarkSettings, mount: MountResolution) -> N
     snapshot_download(settings.base_model_id, cache_dir=str(mount.canonical_root))
 
 
+def _torch_host_root(mount: MountResolution) -> Path:
+    """Return the canonical Torch Hub cache path nested under the HF cache root."""
+    return mount.canonical_root / "torch"
+
+
+def _silero_vad_cached(torch_home: Path) -> bool:
+    """Return whether the Silero VAD Torch Hub assets already exist in the shared cache."""
+    hub_dir = torch_home / "hub"
+    if not hub_dir.exists():
+        return False
+    return any(hub_dir.glob("snakers4_silero-vad*"))
+
+
+def prefetch_vad_assets(settings: BenchmarkSettings, mount: MountResolution) -> None:
+    """Prime the shared Torch Hub cache with the Silero VAD assets used by the VAD path."""
+    torch_home = _torch_host_root(mount)
+    torch_home.mkdir(parents=True, exist_ok=True)
+    if _silero_vad_cached(torch_home):
+        return
+    docker_checked(
+        [
+            "run",
+            "--rm",
+            "-e",
+            f"HF_HOME={CONTAINER_HF_HOME}",
+            "-e",
+            f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
+            "-e",
+            f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
+            "-e",
+            f"TORCH_HOME={CONTAINER_TORCH_HOME}",
+            "-v",
+            f"{mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
+            "--entrypoint",
+            "python",
+            settings.image,
+            "-c",
+            (
+                "import torch; "
+                f"torch.hub.set_dir('{CONTAINER_TORCH_HOME}'); "
+                "torch.hub.load('snakers4/silero-vad', 'silero_vad', trust_repo=True)"
+            ),
+        ],
+        label="docker run task81 vad prefetch",
+    )
+
+
 def _gpu_device_group_ids() -> list[str]:
     """Return unique numeric group ids required for Hemma GPU device access."""
     candidate_paths = [Path("/dev/kfd")]
@@ -407,6 +455,8 @@ def start_sidecar(
             "-e",
             f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
             "-e",
+            f"TORCH_HOME={CONTAINER_TORCH_HOME}",
+            "-e",
             "SIR_TTS_SIDECAR_BIND_HOST=0.0.0.0",
             "-e",
             f"SIR_TTS_SIDECAR_PORT={settings.container_port}",
@@ -432,6 +482,10 @@ def start_sidecar(
             f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}",
             "-e",
             f"SIR_TTS_SIDECAR_HF_CACHE_CONTAINER_ROOT={CONTAINER_HF_HOME}",
+            "-e",
+            f"SIR_TTS_SIDECAR_TORCH_CACHE_HOST_ROOT={_torch_host_root(hf_mount).as_posix()}",
+            "-e",
+            f"SIR_TTS_SIDECAR_TORCH_CACHE_CONTAINER_ROOT={CONTAINER_TORCH_HOME}",
             "-e",
             f"SIR_TTS_SIDECAR_DEBUG_ARTIFACT_DIR={CONTAINER_DEBUG_ARTIFACT_DIR}",
             "-v",
@@ -514,6 +568,7 @@ def inspect_runtime(settings: BenchmarkSettings, *, image_id: str) -> SidecarRun
         hf_home=_string_or_none(payload_obj.get("hf_home")),
         hf_hub_cache=_string_or_none(payload_obj.get("hf_hub_cache")),
         transformers_cache=_string_or_none(payload_obj.get("transformers_cache")),
+        torch_home=_string_or_none(payload_obj.get("torch_home")),
         openvoice_checkpoints_root=_string_or_none(payload_obj.get("openvoice_checkpoints_root")),
     )
 
@@ -548,6 +603,7 @@ def probe_from_service_container(settings: BenchmarkSettings) -> InternalProbeEv
 
 def reference_audio_evidence(reference_audio_path: Path, *, image: str) -> ReferenceAudioEvidence:
     """Collect deterministic metadata for the approved reference-audio input."""
+    reference_audio_bytes = reference_audio_path.read_bytes()
     output = docker_checked(
         [
             "run",
@@ -590,6 +646,7 @@ def reference_audio_evidence(reference_audio_path: Path, *, image: str) -> Refer
     return ReferenceAudioEvidence(
         input_path=reference_audio_path.as_posix(),
         filename=reference_audio_path.name,
+        sha256=hashlib.sha256(reference_audio_bytes).hexdigest(),
         reference_role="teacher_voice_cloning_reference",
         duration_seconds=round(float(duration_obj), 6),
         sample_rate_hz=sample_rate_hz,
@@ -796,13 +853,22 @@ def _build_runtime_metadata_probe_python() -> str:
             except md.PackageNotFoundError:
                 return None
 
-        targets = ("openvoice", "transformers", "torch", "fastapi")
+        targets = (
+            "openvoice",
+            "transformers",
+            "torch",
+            "torchaudio",
+            "onnxruntime",
+            "whisper-timestamped",
+            "fastapi",
+        )
         payload = {
             "python_version": sys.version.split()[0],
             "package_versions": {name: version_or_none(name) for name in targets},
             "hf_home": os.environ.get("HF_HOME"),
             "hf_hub_cache": os.environ.get("HF_HUB_CACHE"),
             "transformers_cache": os.environ.get("TRANSFORMERS_CACHE"),
+            "torch_home": os.environ.get("TORCH_HOME"),
             "openvoice_checkpoints_root": os.environ.get(
                 "SIR_TTS_SIDECAR_OPENVOICE_CHECKPOINTS_ROOT"
             ),
