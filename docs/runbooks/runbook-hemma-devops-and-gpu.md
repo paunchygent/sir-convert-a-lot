@@ -448,13 +448,24 @@ Usage notes:
 - The harness uses the canonical persistent HF cache path
   `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`
   so repeated Task 79 runs reuse downloaded model weights instead of redownloading them.
+- When Docker on Hemma cannot bind `/srv/*` directly, the harness bind-mounts that canonical
+  data-disk cache into
+  `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT:-/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}`
+  and uses the home-visible path without creating a second long-lived cache tree.
 - Inside the sidecar container the cache mount is standardized as:
   - `HF_HOME=/cache/huggingface`
   - `HF_HUB_CACHE=/cache/huggingface/hub`
   - `TRANSFORMERS_CACHE=/cache/huggingface`
+- The harness explicitly sets `VLLM_USE_TRITON_FLASH_ATTN=0` until Triton-backed ROCm serving is
+  proven on Hemma; missing Triton is not treated as the acceptance blocker for Task 79.
 - The current stage config is pinned in
   `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml` and tracks the
   current upstream `qwen3_tts.yaml` schema.
+- Before the sidecar starts, the harness prefetched both:
+  - `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice`
+  - `Qwen/Qwen3-TTS-Tokenizer-12Hz`
+- The tokenizer files are mirrored into the model snapshot `speech_tokenizer/` path expected by
+  the live `vllm-omni` stage-1 loader.
 - The benchmark proves both:
   - host-lane reachability on `127.0.0.1:<task79-port>`
   - internal Docker-network reachability from `sir_convert_a_lot_prod`

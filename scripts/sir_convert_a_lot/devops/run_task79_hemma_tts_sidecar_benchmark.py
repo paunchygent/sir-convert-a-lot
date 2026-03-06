@@ -17,6 +17,7 @@ import argparse
 import os
 import sys
 from contextlib import suppress
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -35,9 +36,11 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime import (
     ensure_sidecar_preconditions,
     extract_gpu_identity,
     inspect_runtime,
+    prefetch_qwen3_tts_assets,
     probe_from_service_container,
     python_recommendation,
     remove_existing_benchmark_container,
+    resolve_effective_hf_cache_dir,
     run_checked,
     start_sidecar,
     voice_names_from_payload,
@@ -47,6 +50,7 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime import (
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-79-hemma-tts-sidecar")
 DEFAULT_IMAGE = "vllm/vllm-omni-rocm:v0.16.0"
 DEFAULT_MODEL = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+DEFAULT_TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
 DEFAULT_NETWORK = "hule-network"
 DEFAULT_NETWORK_ALIAS = "sir-convert-a-lot-tts-task79"
 DEFAULT_CONTAINER_NAME = "sir_convert_a_lot_tts_task79"
@@ -55,7 +59,9 @@ DEFAULT_CONTAINER_PORT = 8091
 DEFAULT_HOST_PORT = 38091
 DEFAULT_TIMEOUT_SECONDS = 1800.0
 DEFAULT_HEMMA_HF_CACHE_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH"
+DEFAULT_HEMMA_HF_CACHE_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT"
 DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
+DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface")
 DEFAULT_TEXT = (
     "Hello from Sir Convert a Lot. This benchmark proves a sidecar backed text to speech "
     "stack on the Hemma Radeon AI PRO R9700. The voice should sound clear, steady, and ready "
@@ -77,12 +83,21 @@ def _default_hf_cache_dir() -> Path:
     return Path(configured_path.strip())
 
 
+def _default_hf_cache_home_mount() -> Path:
+    """Resolve the home-backed mount path used when Docker cannot bind `/srv/*` directly."""
+    configured_path = os.environ.get(DEFAULT_HEMMA_HF_CACHE_HOME_MOUNT_ENV)
+    if configured_path is None or configured_path.strip() == "":
+        return DEFAULT_HF_CACHE_HOME_MOUNT
+    return Path(configured_path.strip())
+
+
 def _parse_args(argv: list[str]) -> BenchmarkSettings:
     """Parse CLI arguments into normalized benchmark settings."""
     parser = argparse.ArgumentParser(description="Run the Task 79 Hemma TTS benchmark.")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--image", default=DEFAULT_IMAGE)
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--tokenizer-model", default=DEFAULT_TOKENIZER_MODEL)
     parser.add_argument("--network", default=DEFAULT_NETWORK)
     parser.add_argument("--network-alias", default=DEFAULT_NETWORK_ALIAS)
     parser.add_argument("--container-name", default=DEFAULT_CONTAINER_NAME)
@@ -99,6 +114,15 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
             "Host path for the persistent Hugging Face cache. Defaults to "
             "`SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH` when set, otherwise "
             "`/srv/scratch/sir-convert-a-lot/cache/huggingface`."
+        ),
+    )
+    parser.add_argument(
+        "--hf-cache-home-mount",
+        type=Path,
+        default=_default_hf_cache_home_mount(),
+        help=(
+            "Home-backed mount path used when Docker cannot bind the canonical `/srv/*` cache "
+            "path directly."
         ),
     )
     parser.add_argument("--probe-text", default=DEFAULT_TEXT)
@@ -130,6 +154,8 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         output_root=Path(args.output_root),
         image=str(args.image),
         model=str(args.model),
+        tokenizer_model=str(args.tokenizer_model),
+        hf_cache_home_mount=Path(args.hf_cache_home_mount),
         network=str(args.network),
         network_alias=str(args.network_alias),
         container_name=str(args.container_name),
@@ -175,6 +201,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         remove_existing_benchmark_container(settings.container_name)
         pull_performed, image_id = ensure_image_present(settings)
+        settings = replace(settings, hf_cache_dir=resolve_effective_hf_cache_dir(settings))
+        prefetch_qwen3_tts_assets(settings)
         start_sidecar(settings)
         readiness_seconds, host_payload = wait_for_voices(settings)
         voice_names = voice_names_from_payload(host_payload)

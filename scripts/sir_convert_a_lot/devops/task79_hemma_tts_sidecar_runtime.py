@@ -17,6 +17,7 @@ import io
 import json
 import re
 import subprocess
+import textwrap
 import threading
 import time
 import wave
@@ -49,6 +50,8 @@ class BenchmarkSettings:
     output_root: Path
     image: str
     model: str
+    tokenizer_model: str
+    hf_cache_home_mount: Path
     network: str
     network_alias: str
     container_name: str
@@ -81,6 +84,109 @@ def run_checked(command: list[str], *, label: str) -> str:
 def docker_checked(args: list[str], *, label: str) -> str:
     """Run one Docker command through `sudo -n docker`."""
     return run_checked(["sudo", "-n", "docker", *args], label=label)
+
+
+def _probe_docker_bind_mount(cache_dir: Path, *, image: str) -> bool:
+    """Return whether Docker can bind-mount the requested host cache path."""
+    try:
+        docker_checked(
+            [
+                "run",
+                "--rm",
+                "-v",
+                f"{cache_dir.as_posix()}:/cache-probe",
+                "--entrypoint",
+                "python",
+                image,
+                "-c",
+                (
+                    "from pathlib import Path; "
+                    "probe = Path('/cache-probe/.task79_probe'); "
+                    "probe.write_text('ok', encoding='utf-8'); "
+                    "print(probe.read_text(encoding='utf-8')); "
+                    "probe.unlink()"
+                ),
+            ],
+            label="docker run task79 hf cache probe",
+        )
+    except SystemExit:
+        return False
+    return True
+
+
+def _best_effort_unmount(path: Path) -> None:
+    """Unmount one path when a previous bind mount exists."""
+    subprocess.run(
+        ["sudo", "-n", "umount", path.as_posix()],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _is_srv_cache_path(cache_dir: Path) -> bool:
+    """Return whether one cache path is expected to live on Hemma's data disk."""
+    return str(cache_dir).startswith("/srv/")
+
+
+def _sync_home_cache_into_data_disk(canonical_dir: Path, home_mount: Path) -> None:
+    """Migrate any existing home-backed cache files into the canonical data-disk path."""
+    if not home_mount.exists():
+        return
+    for source in sorted(home_mount.iterdir()):
+        target = canonical_dir / source.name
+        if target.exists():
+            continue
+        if source.is_dir():
+            subprocess.run(
+                [
+                    "cp",
+                    "-a",
+                    source.as_posix(),
+                    target.as_posix(),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        else:
+            target.write_bytes(source.read_bytes())
+
+
+def _ensure_home_bind_mount(canonical_dir: Path, home_mount: Path) -> None:
+    """Expose the canonical `/srv` cache through a `$HOME` path for Docker-restricted hosts."""
+    run_checked(
+        ["sudo", "-n", "mkdir", "-p", canonical_dir.as_posix()],
+        label="sudo mkdir canonical hf cache",
+    )
+    run_checked(["mkdir", "-p", home_mount.as_posix()], label="mkdir hf cache home mount")
+    _sync_home_cache_into_data_disk(canonical_dir, home_mount)
+    _best_effort_unmount(home_mount)
+    run_checked(
+        [
+            "sudo",
+            "-n",
+            "mount",
+            "--bind",
+            canonical_dir.as_posix(),
+            home_mount.as_posix(),
+        ],
+        label="sudo mount --bind hf cache",
+    )
+
+
+def resolve_effective_hf_cache_dir(settings: BenchmarkSettings) -> Path:
+    """Return the host cache path Docker can mount without redownloading model weights."""
+    settings.hf_cache_dir.mkdir(parents=True, exist_ok=True)
+    if _probe_docker_bind_mount(settings.hf_cache_dir, image=settings.image):
+        return settings.hf_cache_dir
+    if _is_srv_cache_path(settings.hf_cache_dir):
+        _ensure_home_bind_mount(settings.hf_cache_dir, settings.hf_cache_home_mount)
+        if _probe_docker_bind_mount(settings.hf_cache_home_mount, image=settings.image):
+            return settings.hf_cache_home_mount
+    raise SystemExit(
+        "Task 79 could not establish a Docker-mountable Hugging Face cache path on Hemma."
+    )
 
 
 def extract_gpu_identity(smi_output: str, rocminfo_output: str) -> GpuIdentity:
@@ -206,7 +312,6 @@ def ensure_sidecar_preconditions(settings: BenchmarkSettings) -> None:
     """Fail early if the expected Docker network and service container are missing."""
     if not settings.stage_config_path.resolve().exists():
         raise SystemExit(f"Task 79 stage config is missing: {settings.stage_config_path}")
-    settings.hf_cache_dir.mkdir(parents=True, exist_ok=True)
     docker_checked(["network", "inspect", settings.network], label="docker network inspect")
     running = docker_checked(["ps", "--format", "{{.Names}}"], label="docker ps").splitlines()
     if settings.service_container not in running:
@@ -246,6 +351,77 @@ def ensure_image_present(settings: BenchmarkSettings) -> tuple[bool, str]:
     return pull_performed, image_id.strip()
 
 
+def prefetch_qwen3_tts_assets(settings: BenchmarkSettings) -> None:
+    """Prime the shared cache with tokenizer assets expected by stage-1 startup."""
+    main_model_cache_key = settings.model.replace("/", "--")
+    tokenizer_cache_key = settings.tokenizer_model.replace("/", "--")
+    prefetch_script = textwrap.dedent(
+        f"""
+        from pathlib import Path
+        import json
+        import shutil
+
+        from huggingface_hub import snapshot_download
+
+        cache_dir = Path({CONTAINER_HF_HOME!r})
+        model_id = {settings.model!r}
+        tokenizer_id = {settings.tokenizer_model!r}
+        model_snapshot = Path(snapshot_download(model_id, cache_dir=str(cache_dir)))
+        tokenizer_snapshot = Path(snapshot_download(tokenizer_id, cache_dir=str(cache_dir)))
+        copied_targets = []
+        for prefix in (cache_dir, cache_dir / "hub"):
+            snapshots_root = prefix / {("models--" + main_model_cache_key)!r} / "snapshots"
+            if not snapshots_root.exists():
+                continue
+            for snapshot_dir in sorted(path for path in snapshots_root.iterdir() if path.is_dir()):
+                speech_dir = snapshot_dir / "speech_tokenizer"
+                speech_dir.mkdir(parents=True, exist_ok=True)
+                for source in sorted(tokenizer_snapshot.iterdir()):
+                    target = speech_dir / source.name
+                    if target.exists():
+                        continue
+                    if source.is_dir():
+                        shutil.copytree(source, target, dirs_exist_ok=True)
+                    else:
+                        shutil.copy2(source, target)
+                copied_targets.append(str(speech_dir))
+        print(
+            json.dumps(
+                {{
+                    "model_snapshot": str(model_snapshot),
+                    "tokenizer_snapshot": str(tokenizer_snapshot),
+                    "copied_targets": copied_targets,
+                    "tokenizer_cache_key": {tokenizer_cache_key!r},
+                }},
+                sort_keys=True,
+            )
+        )
+        """
+    ).strip()
+    docker_checked(
+        [
+            "run",
+            "--rm",
+            "-e",
+            f"HF_HOME={CONTAINER_HF_HOME}",
+            "-e",
+            f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
+            "-e",
+            f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
+            "-e",
+            "VLLM_USE_TRITON_FLASH_ATTN=0",
+            "-v",
+            f"{settings.hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}",
+            "--entrypoint",
+            "python",
+            settings.image,
+            "-c",
+            prefetch_script,
+        ],
+        label="docker run task79 tokenizer prefetch",
+    )
+
+
 def start_sidecar(settings: BenchmarkSettings) -> None:
     """Launch the benchmark sidecar container with the committed stage config."""
     run_args = [
@@ -277,6 +453,8 @@ def start_sidecar(settings: BenchmarkSettings) -> None:
         f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
         "-e",
         f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
+        "-e",
+        "VLLM_USE_TRITON_FLASH_ATTN=0",
         "-v",
         f"{settings.hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}",
         "-v",

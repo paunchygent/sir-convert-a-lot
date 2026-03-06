@@ -31,7 +31,9 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime import (
     CONTAINER_HF_HUB_CACHE,
     BenchmarkSettings,
     extract_gpu_identity,
+    prefetch_qwen3_tts_assets,
     python_recommendation,
+    resolve_effective_hf_cache_dir,
     start_sidecar,
     voice_names_from_payload,
 )
@@ -74,10 +76,125 @@ def test_parse_args_prefers_canonical_hemma_cache_env(monkeypatch: pytest.Monkey
         "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH",
         "/srv/scratch/custom/cache/huggingface",
     )
+    monkeypatch.setenv(
+        "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT",
+        "/home/paunchygent/.data/custom/cache/huggingface",
+    )
 
     settings = run_task79_hemma_tts_sidecar_benchmark._parse_args([])
 
     assert settings.hf_cache_dir == Path("/srv/scratch/custom/cache/huggingface")
+    assert settings.hf_cache_home_mount == Path("/home/paunchygent/.data/custom/cache/huggingface")
+
+
+def test_resolve_effective_hf_cache_dir_uses_home_bind_mount_when_srv_probe_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hf_cache_dir = tmp_path / "hf-cache-data-disk"
+    hf_cache_home_mount = tmp_path / "hf-cache-home"
+    probe_calls: list[Path] = []
+    bind_calls: list[tuple[Path, Path]] = []
+
+    def _fake_probe(cache_dir: Path, *, image: str) -> bool:
+        assert image == "vllm/vllm-omni-rocm:v0.16.0"
+        probe_calls.append(cache_dir)
+        return cache_dir == hf_cache_home_mount
+
+    def _fake_bind_mount(canonical_dir: Path, home_mount: Path) -> None:
+        bind_calls.append((canonical_dir, home_mount))
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime._probe_docker_bind_mount",
+        _fake_probe,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime._ensure_home_bind_mount",
+        _fake_bind_mount,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime._is_srv_cache_path",
+        lambda cache_dir: cache_dir == hf_cache_dir,
+    )
+    settings = BenchmarkSettings(
+        output_root=tmp_path / "output",
+        image="vllm/vllm-omni-rocm:v0.16.0",
+        model="Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        hf_cache_home_mount=hf_cache_home_mount,
+        network="hule-network",
+        network_alias="sir-convert-a-lot-tts-task79",
+        container_name="sir_convert_a_lot_tts_task79",
+        service_container="sir_convert_a_lot_prod",
+        container_port=8091,
+        host_port=38091,
+        voice="Chelsie",
+        response_formats=("wav",),
+        startup_timeout_seconds=600.0,
+        hf_cache_dir=hf_cache_dir,
+        probe_text="hello",
+        hf_token=None,
+        pull_image=False,
+        retain_container=False,
+        stage_config_path=tmp_path / "task79_stage_config.yaml",
+    )
+
+    effective_cache_dir = resolve_effective_hf_cache_dir(settings)
+
+    assert effective_cache_dir == hf_cache_home_mount
+    assert probe_calls == [hf_cache_dir, hf_cache_home_mount]
+    assert bind_calls == [(hf_cache_dir, hf_cache_home_mount)]
+
+
+def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_disables_triton(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stage_config_path = tmp_path / "task79_stage_config.yaml"
+    stage_config_path.write_text("stage_args: []\n", encoding="utf-8")
+    hf_cache_dir = tmp_path / "hf-cache"
+    recorded_commands: list[list[str]] = []
+
+    def _fake_docker_checked(args: list[str], *, label: str) -> str:
+        assert label == "docker run task79 tokenizer prefetch"
+        recorded_commands.append(args)
+        return (
+            '{"copied_targets":["/cache/huggingface/hub/models--Qwen--Qwen3-TTS-12Hz-0.6B-'
+            'CustomVoice/snapshots/test/speech_tokenizer"]}'
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime.docker_checked",
+        _fake_docker_checked,
+    )
+    settings = BenchmarkSettings(
+        output_root=tmp_path / "output",
+        image="vllm/vllm-omni-rocm:v0.16.0",
+        model="Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        hf_cache_home_mount=tmp_path / "hf-cache-home",
+        network="hule-network",
+        network_alias="sir-convert-a-lot-tts-task79",
+        container_name="sir_convert_a_lot_tts_task79",
+        service_container="sir_convert_a_lot_prod",
+        container_port=8091,
+        host_port=38091,
+        voice="Chelsie",
+        response_formats=("wav",),
+        startup_timeout_seconds=600.0,
+        hf_cache_dir=hf_cache_dir,
+        probe_text="hello",
+        hf_token=None,
+        pull_image=False,
+        retain_container=False,
+        stage_config_path=stage_config_path,
+    )
+
+    prefetch_qwen3_tts_assets(settings)
+
+    assert len(recorded_commands) == 1
+    command = recorded_commands[0]
+    assert f"{hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}" in command
+    assert "VLLM_USE_TRITON_FLASH_ATTN=0" in command
+    assert "Qwen/Qwen3-TTS-Tokenizer-12Hz" in command[-1]
 
 
 def test_start_sidecar_uses_persistent_hf_cache_contract(
@@ -101,6 +218,8 @@ def test_start_sidecar_uses_persistent_hf_cache_contract(
         output_root=tmp_path / "output",
         image="vllm/vllm-omni-rocm:v0.16.0",
         model="Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        hf_cache_home_mount=tmp_path / "hf-cache-home",
         network="hule-network",
         network_alias="sir-convert-a-lot-tts-task79",
         container_name="sir_convert_a_lot_tts_task79",
@@ -126,6 +245,7 @@ def test_start_sidecar_uses_persistent_hf_cache_contract(
     assert f"HF_HOME={CONTAINER_HF_HOME}" in command
     assert f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}" in command
     assert f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}" in command
+    assert "VLLM_USE_TRITON_FLASH_ATTN=0" in command
     assert "--enforce-eager" in command
 
 

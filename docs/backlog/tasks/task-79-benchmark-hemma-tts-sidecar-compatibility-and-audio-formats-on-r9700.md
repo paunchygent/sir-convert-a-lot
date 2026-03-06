@@ -64,6 +64,8 @@ Current command defaults:
 - model: `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice`
 - host HF cache:
   `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`
+- compatibility mount when Docker cannot bind `/srv/*` directly:
+  `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT:-/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}`
 - stage config:
   `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`
   (mirrors the current upstream `qwen3_tts.yaml` schema)
@@ -76,6 +78,10 @@ Current command defaults:
   - `HF_HOME=/cache/huggingface`
   - `HF_HUB_CACHE=/cache/huggingface/hub`
   - `TRANSFORMERS_CACHE=/cache/huggingface`
+- tokenizer prefetch contract:
+  - `Qwen/Qwen3-TTS-Tokenizer-12Hz` is prefetched into the shared cache
+  - tokenizer files are mirrored into the model snapshot `speech_tokenizer/` path expected by
+    the live `vllm-omni` stage-1 loader
 
 The benchmark writes:
 
