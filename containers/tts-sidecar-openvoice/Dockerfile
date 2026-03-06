@@ -20,9 +20,10 @@ RUN apt-get update \
         libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install --upgrade pip setuptools wheel
+RUN python -m pip install --upgrade pip "setuptools<81" wheel
 RUN python -m pip install --index-url "${TORCH_ROCM_INDEX_URL}" "torch==${TORCH_VERSION}"
 RUN python -m pip install \
+    "setuptools<81" \
     "fastapi>=0.128.8" \
     "uvicorn[standard]>=0.40.0" \
     "python-multipart>=0.0.22" \
@@ -41,6 +42,7 @@ RUN python -m pip install \
     "cn2an==0.5.22" \
     "jieba==0.42.1"
 RUN python -m pip install --no-deps "git+https://github.com/myshell-ai/OpenVoice.git@${OPENVOICE_GIT_REF}"
+RUN python -c "import pkg_resources"
 
 COPY scripts/__init__.py /app/scripts/__init__.py
 COPY scripts/sir_convert_a_lot/__init__.py /app/scripts/sir_convert_a_lot/__init__.py
