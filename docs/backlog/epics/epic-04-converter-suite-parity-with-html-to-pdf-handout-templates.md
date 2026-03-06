@@ -5,10 +5,11 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-02-18'
-last_updated: '2026-03-01'
+last_updated: '2026-03-06'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md
   - docs/backlog/stories/story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx.md
   - docs/backlog/stories/story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt.md
@@ -56,7 +57,7 @@ Epic 04 is complete only when **every legacy converter surface is either**:
 - Converter parity for the legacy document-conversion set:
   - template-driven HTML conversions (handout builder + written-exam template flows),
   - Pandoc/WeasyPrint document transforms (md/docx/pdf/txt),
-  - auxiliary conversions that are already shipped as “converters” (image OCR extract, text-to-speech).
+  - auxiliary conversions that are already shipped as “converters” (image OCR extract).
 - Docs-as-code and contract sync:
   - CLI guide updates (`docs/converters/sir_convert_a_lot.md`),
   - per-converter docs as needed under `docs/converters/`,
@@ -69,6 +70,8 @@ Epic 04 is complete only when **every legacy converter surface is either**:
 
 - Any silent expansion of the **PDF-to-MD service v1** contract beyond its locked scope.
   - Multi-format service support must be delivered as an explicit v2 contract (docs + tests).
+- Hemma sidecar TTS architecture and `md -> wav` contract work.
+  - This now lives under `docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md`.
 - Grading/assessment workflows from the legacy repository.
 - Org-/project-specific export workflows (example: Nate feedback export bundle).
 - Public internet exposure of conversion endpoints.
@@ -80,6 +83,7 @@ Epic 04 is complete only when **every legacy converter surface is either**:
 1. `docs/backlog/stories/story-09-template-driven-html-conversions-handout-builder-parity.md`
 1. `docs/backlog/stories/story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt.md`
 1. `docs/backlog/stories/story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md`
+   (image OCR parity only; TTS superseded by Epic 07 / Story 22)
 1. `docs/backlog/stories/story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx.md`
 1. `docs/backlog/stories/story-16-v2-pdf-layout-presets-docx-to-pdf-route.md`
 
@@ -123,6 +127,8 @@ Ordered tasks:
 - [ ] Capability matrix is complete and kept current for this epic:
   `docs/reference/ref-html-to-pdf-handout-templates-conversion-capability-matrix-2026-02-18.md`.
 - [ ] Every legacy converter is classified as migrate/wrap/supersede/out_of_scope, with no “unknowns”.
+- [ ] TTS supersession is explicit and points to Epic 07; no duplicate canonical TTS planning path
+  remains inside Epic 04.
 - [ ] Canonical CLI supports all **migrate** routes with deterministic outputs and manifests.
 - [ ] CLI manifest remains deterministic across all supported routes (service-backed and local).
 - [ ] Docs and examples are updated for new CLI routes and flags.

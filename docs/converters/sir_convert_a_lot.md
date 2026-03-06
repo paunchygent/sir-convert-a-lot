@@ -4,7 +4,7 @@ id: CONV-sir-convert-a-lot
 title: Sir Convert-a-Lot CLI and Service Usage
 status: active
 created: '2026-02-11'
-updated: '2026-03-05'
+updated: '2026-03-06'
 owners:
   - platform
 tags:
@@ -44,8 +44,15 @@ The CLI exposes a typed route registry for supported/planned conversions. Routes
 - `html -> docx` (service v2)
 - `md -> html -> pdf` (service v2)
 - `md -> html -> docx` (service v2)
+- approved next route: `md -> wav` (Hemma sidecar TTS; not yet implemented)
 
 Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
+
+TTS planning note:
+
+- TTS is planned as a sidecar-backed Hemma service route, not a laptop-local auxiliary command.
+- The first approved route is `md -> wav`.
+- `pdf -> wav` is deferred until the sidecar-backed `md -> wav` contract is implemented.
 
 ## Idempotency and Reruns (CLI UX)
 

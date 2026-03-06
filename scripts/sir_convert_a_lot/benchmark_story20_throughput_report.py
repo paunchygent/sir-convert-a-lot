@@ -31,10 +31,7 @@ from scripts.sir_convert_a_lot.benchmarking.story20_throughput_report import wri
 from scripts.sir_convert_a_lot.benchmarking.story20_throughput_types import (
     BenchmarkPayload,
     CorpusFileRecord,
-    JobDefaults,
     JobRecord,
-    LatencySummary,
-    ProfileConfig,
     ProfilePayload,
     ProfileSummary,
     ResourceEvidence,
@@ -44,8 +41,8 @@ from scripts.sir_convert_a_lot.benchmarking.story20_throughput_types import (
     Task76ReportPayload,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 DEFAULT_OUTPUT_ROOT = Path("build/benchmarks/story-20/task-74-throughput")
 DEFAULT_OUTPUT_JSON = DEFAULT_OUTPUT_ROOT / "task-74-throughput-benchmark-local.json"
@@ -770,7 +767,10 @@ def run_benchmark(
             "rollback_conditions": [
                 "success_rate drops below 1.0 on the benchmark corpus",
                 "peak chunk worker saturation remains >= 0.95 while queue depth stays elevated",
-                "observed gpu_busy_percent stays near 0 or gpu_memory_used_percent exceeds safe headroom",
+                (
+                    "observed gpu_busy_percent stays near 0 or "
+                    "gpu_memory_used_percent exceeds safe headroom"
+                ),
             ],
         },
     }

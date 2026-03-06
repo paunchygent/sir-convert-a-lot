@@ -70,6 +70,9 @@ Primary implementation stories (active sequence):
     `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
     (`comparison.p50_wall_clock_improvement_percent=73.274`, `comparison.byte_identical_to_serial=true`).
   - Updated runbook/reference/task docs and checked the Epic 06 `T72` tracker box.
+  - Planned the next feature line as Epic 07 sidecar-backed TTS: added Epic 07 / Story 22 /
+    Tasks 78-80, accepted ADR-0006, published the approved `md -> wav` contract draft, and marked
+    legacy Story 07 TTS planning as superseded by Epic 07.
 
 - 2026-03-05:
 

@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-03-05
+updated: 2026-03-06
 owners:
   - platform
 tags:
@@ -17,6 +17,8 @@ links:
   - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
   - docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md
+  - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
+  - docs/reference/ref-hemma-sidecar-tts-md-to-wav-contract-outline.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
   - docs/converters/docx-template-catalog-contract-v2.md
@@ -98,7 +100,7 @@ Semantics:
   - `409 Conflict`
   - `error.code = "idempotency_key_reused_with_different_payload"`
 
-## Supported Routes
+## Supported Routes (Active Runtime)
 
 Supported v2 conversions (service-executed on Hemma):
 
@@ -111,6 +113,19 @@ Supported v2 conversions (service-executed on Hemma):
 - `md -> pdf` (Pandoc -> HTML -> WeasyPrint)
 - `md -> docx` (Pandoc -> HTML -> Pandoc)
 - `pdf -> docx` (Docling/PyMuPDF -> Markdown -> HTML -> DOCX)
+
+## Approved Next Route (Not Yet Implemented)
+
+The next approved v2 route extension is:
+
+- `md -> wav` (sidecar-backed TTS on Hemma; see ADR-0006)
+
+Important:
+
+- This route is approved for planning and contract publication.
+- It is **not yet implemented** in the runtime.
+- The public contract remains provider-neutral and the TTS backend must remain a Hemma sidecar,
+  not an in-process dependency in the main service image.
 
 ## Data Contracts (v2)
 
@@ -209,7 +224,9 @@ Field rules:
 
 - `source.kind`: v2 requires `upload`
 - `source.format`: `pdf | docx | md | html`
-- `conversion.output_format`: `md | pdf | docx`
+- `conversion.output_format`:
+  - active runtime: `md | pdf | docx`
+  - approved next extension (not yet implemented): `wav` for `md -> wav`
 - `conversion.template`:
   - canonical DOCX selector shape:
     - `template_id` (required for template-selected DOCX conversions)
@@ -229,6 +246,14 @@ Field rules:
     extracted resources root
   - rejected for routes with `output_format="md"`
   - must not be combined with `conversion.template` in the same request
+- `tts_options`:
+  - not part of the active runtime yet
+  - reserved for the approved `md -> wav` extension
+  - planned phase-1 shape:
+    - `voice`
+    - `language`
+    - `style_instructions`
+    - `normalize_for_speech`
 - `pdf_options`:
   - required when `source.format="pdf"`
   - ignored when `source.format in {"docx","md","html"}`
@@ -247,6 +272,10 @@ Field rules:
 - `execution.acceleration_policy`:
   - required when `source.format="pdf"` (governs the PDF->MD stage)
   - ignored otherwise
+  - approved next extension (`md -> wav` only; not yet implemented):
+    - `execution` becomes required,
+    - only `acceleration_policy="gpu_required"` is accepted,
+    - `gpu_prefer` and `cpu_only` are rejected.
 
 Route-specific JobSpec example (`docx -> md`):
 
@@ -341,6 +370,85 @@ Route-specific JobSpec example (`html -> pdf` with layout preset):
   }
 }
 ```
+
+Approved next-route JobSpec draft (`md -> wav`; not yet implemented):
+
+```json
+{
+  "api_version": "v2",
+  "source": {
+    "kind": "upload",
+    "filename": "lesson.md",
+    "format": "md"
+  },
+  "conversion": {
+    "output_format": "wav",
+    "css_filenames": [],
+    "reference_docx_filename": null
+  },
+  "tts_options": {
+    "voice": "teacher-clear-01",
+    "language": "en",
+    "style_instructions": "Read clearly as a teacher with a moderate pace.",
+    "normalize_for_speech": "auto"
+  },
+  "execution": {
+    "acceleration_policy": "gpu_required",
+    "priority": "normal",
+    "document_timeout_seconds": 1800
+  },
+  "retention": {
+    "pin": false
+  }
+}
+```
+
+## Approved `md -> wav` Contract Draft (Not Yet Implemented)
+
+The approved phase-1 `md -> wav` contract draft is:
+
+- source:
+  - `source.format="md"`
+- target:
+  - `conversion.output_format="wav"`
+- execution:
+  - sidecar-backed TTS only,
+  - fail-closed,
+  - `gpu_required` only in phase 1.
+
+Planned phase-1 `tts_options` semantics:
+
+- `voice`: provider-neutral preset voice identifier
+- `language`: caller intent only; runtime validates against the configured sidecar profile
+- `style_instructions`: bounded free-text style guidance
+- `normalize_for_speech`: `auto | strict`
+
+Planned success expectations:
+
+- artifact filename suffix: `.wav`
+- artifact content type: `audio/wav`
+- provider-neutral metadata additions under `result.conversion_metadata`:
+  - `tts_voice_used`
+  - `tts_language_used`
+  - bounded `backend_used` such as `tts_sidecar`
+
+Planned stage markers:
+
+- `queued`
+- `starting`
+- `normalizing`
+- `synthesizing`
+- `packaging`
+- `succeeded`
+- `failed`
+- `canceled`
+
+Phase-1 exclusions:
+
+- voice cloning
+- reference-audio uploads
+- Swedish quality guarantee
+- compressed-format contract requirement
 
 ## Resources Bundle (v2)
 
@@ -465,6 +573,7 @@ The response content-type is derived from the stored artifact format:
 - Markdown: `text/markdown`
 - PDF: `application/pdf`
 - DOCX: `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+- Approved next extension (not yet implemented): WAV `audio/wav`
 
 Response matrix:
 
