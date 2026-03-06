@@ -252,6 +252,8 @@ def test_audio_probe_treats_json_success_payload_as_error(
     )
     artifacts_dir = tmp_path / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
+    stale_output_path = artifacts_dir / "sample.wav"
+    stale_output_path.write_bytes(b"stale-audio")
     settings = BenchmarkSettings(
         output_root=tmp_path / "output",
         image="vllm/vllm-omni-rocm:v0.16.0",
@@ -285,8 +287,111 @@ def test_audio_probe_treats_json_success_payload_as_error(
     assert result.ok is False
     assert result.error_message == '{"error":{"message":"Invalid speaker"}}'
     assert result.output_path is None
+    assert stale_output_path.exists() is False
+    assert (artifacts_dir / "sample.wav.error.txt").exists() is True
     assert peak_busy == 0
     assert peak_vram == 0
+
+
+def test_audio_probe_success_removes_stale_error_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _FakeSampler:
+        def start(self) -> None:
+            return None
+
+        def stop(self) -> tuple[int, int]:
+            return (0, 0)
+
+    class _FakeResponse:
+        status_code = 200
+        headers = {"content-type": "audio/wav"}
+        content = b"RIFFfakewav"
+        text = ""
+        is_success = True
+
+    class _FakeClient:
+        def __init__(self, *, timeout: float) -> None:
+            assert timeout == 600.0
+
+        def __enter__(self) -> "_FakeClient":
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> Literal[False]:
+            return False
+
+        def post(self, url: str, json: dict[str, str]) -> _FakeResponse:
+            assert url == "http://127.0.0.1:38091/v1/audio/speech"
+            assert json["voice"] == "ryan"
+            return _FakeResponse()
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime._GpuSampler",
+        _FakeSampler,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime.httpx.Client",
+        _FakeClient,
+    )
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    stale_error_path = artifacts_dir / "sample.wav.error.txt"
+    stale_error_path.write_text("old error\n", encoding="utf-8")
+    settings = BenchmarkSettings(
+        output_root=tmp_path / "output",
+        image="vllm/vllm-omni-rocm:v0.16.0",
+        model="Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        hf_cache_home_mount=tmp_path / "hf-cache-home",
+        network="hule-network",
+        network_alias="sir-convert-a-lot-tts-task79",
+        container_name="sir_convert_a_lot_tts_task79",
+        service_container="sir_convert_a_lot_prod",
+        container_port=8091,
+        host_port=38091,
+        voice="ryan",
+        response_formats=("wav",),
+        startup_timeout_seconds=600.0,
+        hf_cache_dir=tmp_path / "hf-cache",
+        probe_text="hello",
+        hf_token=None,
+        pull_image=False,
+        retain_container=False,
+        stage_config_path=tmp_path / "task79_stage_config.yaml",
+    )
+
+    result, peak_busy, peak_vram = audio_probe(
+        settings=settings,
+        base_url="http://127.0.0.1:38091",
+        response_format="wav",
+        artifacts_dir=artifacts_dir,
+    )
+
+    assert result.ok is True
+    assert result.output_path == (artifacts_dir / "sample.wav").as_posix()
+    assert stale_error_path.exists() is False
+    assert peak_busy == 0
+    assert peak_vram == 0
+
+
+def test_prepare_output_root_removes_stale_failure_and_artifacts(tmp_path: Path) -> None:
+    output_root = tmp_path / "task79-output"
+    artifacts_dir = output_root / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (artifacts_dir / "sample.wav").write_bytes(b"stale")
+    (artifacts_dir / "sample.wav.error.txt").write_text("stale error\n", encoding="utf-8")
+    (output_root / "failure.txt").write_text("old failure\n", encoding="utf-8")
+    (output_root / "report.json").write_text("{}", encoding="utf-8")
+
+    prepared = run_task79_hemma_tts_sidecar_benchmark._prepare_output_root(output_root)
+
+    prepared_artifacts_dir, logs_path, report_json_path, report_md_path, failure_path = prepared
+    assert prepared_artifacts_dir == artifacts_dir
+    assert list(prepared_artifacts_dir.iterdir()) == []
+    assert logs_path.exists() is False
+    assert report_json_path.exists() is False
+    assert report_md_path.exists() is False
+    assert failure_path.exists() is False
 
 
 def test_start_sidecar_uses_persistent_hf_cache_contract(

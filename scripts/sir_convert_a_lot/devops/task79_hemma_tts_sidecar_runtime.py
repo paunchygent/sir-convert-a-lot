@@ -620,6 +620,11 @@ def audio_probe(
         "response_format": response_format,
     }
     output_path = artifacts_dir / f"sample.{response_format}"
+    error_path = artifacts_dir / f"sample.{response_format}.error.txt"
+    with suppress(FileNotFoundError):
+        output_path.unlink()
+    with suppress(FileNotFoundError):
+        error_path.unlink()
     sampler = _GpuSampler()
     sampler.start()
     started = time.monotonic()
@@ -633,7 +638,6 @@ def audio_probe(
         audio_bytes = response.content
         content_type_normalized = (content_type or "").lower()
         if "json" in content_type_normalized or audio_bytes.lstrip().startswith(b"{"):
-            error_path = artifacts_dir / f"sample.{response_format}.error.txt"
             error_text = response.text.strip()
             error_path.write_text(error_text + "\n", encoding="utf-8")
             return (
@@ -678,7 +682,6 @@ def audio_probe(
             peak_vram_used_bytes,
         )
 
-    error_path = artifacts_dir / f"sample.{response_format}.error.txt"
     error_text = response.text.strip()
     error_path.write_text(error_text + "\n", encoding="utf-8")
     return (

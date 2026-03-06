@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import sys
 from contextlib import suppress
 from dataclasses import replace
@@ -175,17 +176,38 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     )
 
 
+def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Path]:
+    """Create a clean deterministic output tree for the current benchmark run."""
+    output_root.mkdir(parents=True, exist_ok=True)
+    artifacts_dir = output_root / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    for artifact_path in artifacts_dir.iterdir():
+        if artifact_path.is_dir():
+            shutil.rmtree(artifact_path)
+            continue
+        artifact_path.unlink()
+
+    logs_path = output_root / "docker_logs.txt"
+    report_json_path = output_root / "report.json"
+    report_md_path = output_root / "report.md"
+    failure_path = output_root / "failure.txt"
+    for generated_path in (logs_path, report_json_path, report_md_path, failure_path):
+        with suppress(FileNotFoundError):
+            generated_path.unlink()
+    return artifacts_dir, logs_path, report_json_path, report_md_path, failure_path
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the Task 79 sidecar benchmark and write report artifacts."""
     settings = _parse_args(sys.argv[1:] if argv is None else argv)
     enforce_generated_output_path(settings.output_root, label="output_root")
-    settings.output_root.mkdir(parents=True, exist_ok=True)
-    artifacts_dir = settings.output_root / "artifacts"
-    artifacts_dir.mkdir(parents=True, exist_ok=True)
-    logs_path = settings.output_root / "docker_logs.txt"
-    report_json_path = settings.output_root / "report.json"
-    report_md_path = settings.output_root / "report.md"
-    failure_path = settings.output_root / "failure.txt"
+    (
+        artifacts_dir,
+        logs_path,
+        report_json_path,
+        report_md_path,
+        failure_path,
+    ) = _prepare_output_root(settings.output_root)
 
     ensure_sidecar_preconditions(settings)
     smi_identity_output = run_checked(
