@@ -12,7 +12,9 @@ Relationships:
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import tarfile
 import zipfile
 from pathlib import Path
 from typing import Literal
@@ -450,30 +452,33 @@ def test_synthesize_probe_posts_normalized_contract_and_writes_artifact(
     assert peak_vram == 4
 
 
-def test_copy_debug_artifacts_from_container_uses_docker_cp(
+def test_copy_debug_artifacts_from_container_streams_tar_archive(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     calls: list[list[str]] = []
-    copied_temp_dirs: list[Path] = []
+    tar_buffer = io.BytesIO()
+    with tarfile.open(fileobj=tar_buffer, mode="w:") as archive:
+        base_info = tarfile.TarInfo(name="./base_sv.wav")
+        base_bytes = b"base"
+        base_info.size = len(base_bytes)
+        archive.addfile(base_info, io.BytesIO(base_bytes))
+
+        seg_bytes = b"wav"
+        seg_info = tarfile.TarInfo(name="./processed_reference/wavs/seg0.wav")
+        seg_info.size = len(seg_bytes)
+        archive.addfile(seg_info, io.BytesIO(seg_bytes))
+    tar_payload = tar_buffer.getvalue()
 
     def _fake_run(
         args: list[str],
         *,
         check: bool,
         capture_output: bool,
-        text: bool,
     ) -> object:
         assert check is False
         assert capture_output is True
-        assert text is True
         calls.append(args)
-        destination_dir = Path(args[-1])
-        copied_temp_dirs.append(destination_dir)
-        (destination_dir / "base_sv.wav").write_bytes(b"base")
-        processed_reference_dir = destination_dir / "processed_reference" / "wavs"
-        processed_reference_dir.mkdir(parents=True, exist_ok=True)
-        (processed_reference_dir / "seg0.wav").write_bytes(b"wav")
-        return type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+        return type("Result", (), {"returncode": 0, "stdout": tar_payload, "stderr": b""})()
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime.subprocess.run",
@@ -490,15 +495,19 @@ def test_copy_debug_artifacts_from_container_uses_docker_cp(
     assert (artifacts_dir / "old.txt").exists() is False
     assert (artifacts_dir / "base_sv.wav").read_bytes() == b"base"
     assert (artifacts_dir / "processed_reference" / "wavs" / "seg0.wav").read_bytes() == b"wav"
-    assert len(copied_temp_dirs) == 1
     assert calls == [
         [
             "sudo",
             "-n",
             "docker",
-            "cp",
-            "task81:/tmp/task81-debug-artifacts/.",
-            copied_temp_dirs[0].as_posix(),
+            "exec",
+            "task81",
+            "tar",
+            "-C",
+            CONTAINER_DEBUG_ARTIFACT_DIR,
+            "-cf",
+            "-",
+            ".",
         ]
     ]
 

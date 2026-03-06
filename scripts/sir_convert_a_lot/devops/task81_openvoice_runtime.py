@@ -21,6 +21,7 @@ import os
 import re
 import shutil
 import subprocess
+import tarfile
 import textwrap
 import threading
 import time
@@ -769,32 +770,56 @@ def copy_debug_artifacts_from_container(*, container_name: str, artifacts_dir: P
                 "sudo",
                 "-n",
                 "docker",
-                "cp",
-                f"{container_name}:{CONTAINER_DEBUG_ARTIFACT_DIR}/.",
-                temp_dir.as_posix(),
+                "exec",
+                container_name,
+                "tar",
+                "-C",
+                CONTAINER_DEBUG_ARTIFACT_DIR,
+                "-cf",
+                "-",
+                ".",
             ],
             check=False,
             capture_output=True,
-            text=True,
         )
         if result.returncode != 0:
-            stderr = result.stderr.lower()
-            stdout = result.stdout.lower()
-            if "no such file or directory" in stderr or "could not find" in stderr:
+            stderr = result.stderr.decode("utf-8", errors="replace").lower()
+            stdout = result.stdout.decode("utf-8", errors="replace").lower()
+            if "no such file or directory" in stderr or "cannot open" in stderr:
                 return
-            if "no such file or directory" in stdout or "could not find" in stdout:
+            if "no such file or directory" in stdout or "cannot open" in stdout:
                 return
             raise SystemExit(
-                "Task 81 could not copy debug artifacts from the sidecar container.\n"
-                f"stdout:\n{result.stdout.strip()}\n"
-                f"stderr:\n{result.stderr.strip()}"
+                "Task 81 could not stream debug artifacts from the sidecar container.\n"
+                f"stdout:\n{result.stdout.decode('utf-8', errors='replace').strip()}\n"
+                f"stderr:\n{result.stderr.decode('utf-8', errors='replace').strip()}"
             )
+        if len(result.stdout) == 0:
+            return
+        with tarfile.open(fileobj=io.BytesIO(result.stdout), mode="r:") as archive:
+            _extract_debug_artifact_archive(archive=archive, destination_dir=temp_dir)
         for child in sorted(temp_dir.iterdir()):
             target_path = artifacts_dir / child.name
             if child.is_dir():
                 shutil.copytree(child, target_path, dirs_exist_ok=True)
                 continue
             shutil.copy2(child, target_path)
+
+
+def _extract_debug_artifact_archive(*, archive: tarfile.TarFile, destination_dir: Path) -> None:
+    """Extract one streamed debug-artifact tar archive safely into a temp directory."""
+    destination_root = destination_dir.resolve()
+    for member in archive.getmembers():
+        member_name = member.name.lstrip("./")
+        if member_name == "":
+            continue
+        target_path = (destination_dir / member_name).resolve()
+        if destination_root not in target_path.parents and target_path != destination_root:
+            raise SystemExit(
+                "Task 81 received an unsafe debug-artifact path from the sidecar container: "
+                f"{member.name}"
+            )
+    archive.extractall(destination_root)
 
 
 def collect_setup_artifact_evidence(artifacts_dir: Path) -> SetupArtifactEvidence:
