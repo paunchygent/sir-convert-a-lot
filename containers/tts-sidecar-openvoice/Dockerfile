@@ -34,6 +34,7 @@ RUN python -m pip install \
     "numpy<2" \
     "scipy>=1.11.0" \
     "librosa==0.9.1" \
+    "soxr>=0.5.0" \
     "soundfile>=0.13.1" \
     "inflect==7.0.0" \
     "unidecode==1.3.7" \
@@ -42,7 +43,7 @@ RUN python -m pip install \
     "cn2an==0.5.22" \
     "jieba==0.42.1"
 RUN python -m pip install --no-deps "git+https://github.com/myshell-ai/OpenVoice.git@${OPENVOICE_GIT_REF}"
-RUN python -c "import pkg_resources"
+RUN python -c "import pkg_resources; from transformers import VitsModel"
 
 COPY scripts/__init__.py /app/scripts/__init__.py
 COPY scripts/sir_convert_a_lot/__init__.py /app/scripts/sir_convert_a_lot/__init__.py
