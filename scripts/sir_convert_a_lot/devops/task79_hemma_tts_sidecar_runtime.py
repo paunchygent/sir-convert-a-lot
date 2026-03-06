@@ -631,12 +631,35 @@ def audio_probe(
     content_type = response.headers.get("content-type")
     if response.is_success:
         audio_bytes = response.content
+        content_type_normalized = (content_type or "").lower()
+        if "json" in content_type_normalized or audio_bytes.lstrip().startswith(b"{"):
+            error_path = artifacts_dir / f"sample.{response_format}.error.txt"
+            error_text = response.text.strip()
+            error_path.write_text(error_text + "\n", encoding="utf-8")
+            return (
+                AudioProbeResult(
+                    response_format=response_format,
+                    ok=False,
+                    status_code=response.status_code,
+                    content_type=content_type,
+                    byte_count=len(audio_bytes),
+                    sha256=None,
+                    output_path=None,
+                    elapsed_seconds=elapsed_seconds,
+                    sample_rate_hz=None,
+                    duration_seconds=None,
+                    error_message=error_text,
+                ),
+                peak_gpu_busy_percent,
+                peak_vram_used_bytes,
+            )
         output_path.write_bytes(audio_bytes)
         sha256_value = hashlib.sha256(audio_bytes).hexdigest()
         sample_rate_hz: int | None = None
         duration_seconds: float | None = None
         if response_format == "wav":
-            sample_rate_hz, duration_seconds = _wav_metadata(audio_bytes)
+            with suppress(wave.Error):
+                sample_rate_hz, duration_seconds = _wav_metadata(audio_bytes)
         return (
             AudioProbeResult(
                 response_format=response_format,

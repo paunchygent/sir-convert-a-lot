@@ -58,6 +58,7 @@ DEFAULT_SERVICE_CONTAINER = "sir_convert_a_lot_prod"
 DEFAULT_CONTAINER_PORT = 8091
 DEFAULT_HOST_PORT = 38091
 DEFAULT_TIMEOUT_SECONDS = 1800.0
+DEFAULT_VOICE = "ryan"
 DEFAULT_HEMMA_HF_CACHE_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH"
 DEFAULT_HEMMA_HF_CACHE_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT"
 DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
@@ -104,7 +105,7 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--service-container", default=DEFAULT_SERVICE_CONTAINER)
     parser.add_argument("--container-port", type=int, default=DEFAULT_CONTAINER_PORT)
     parser.add_argument("--host-port", type=int, default=DEFAULT_HOST_PORT)
-    parser.add_argument("--voice", default="Chelsie")
+    parser.add_argument("--voice", default=DEFAULT_VOICE)
     parser.add_argument("--startup-timeout-seconds", type=float, default=DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument(
         "--hf-cache-dir",
@@ -206,6 +207,12 @@ def main(argv: list[str] | None = None) -> int:
         start_sidecar(settings)
         readiness_seconds, host_payload = wait_for_voices(settings)
         voice_names = voice_names_from_payload(host_payload)
+        if settings.voice not in voice_names:
+            supported = ", ".join(voice_names)
+            raise SystemExit(
+                "Configured Task 79 voice "
+                f"`{settings.voice}` is unavailable. Supported: {supported}"
+            )
         service_probe_ok, service_voice_count = probe_from_service_container(settings)
         sidecar_runtime = inspect_runtime(settings, image_id=image_id)
 

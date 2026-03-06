@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+from typing import Literal
 
 import pytest
 
@@ -32,6 +33,7 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime import (
     CONTAINER_HF_HUB_CACHE,
     BenchmarkSettings,
     _build_runtime_metadata_probe_python,
+    audio_probe,
     extract_gpu_identity,
     prefetch_qwen3_tts_assets,
     python_recommendation,
@@ -95,6 +97,7 @@ def test_parse_args_prefers_canonical_hemma_cache_env(monkeypatch: pytest.Monkey
 
     assert settings.hf_cache_dir == Path("/srv/scratch/custom/cache/huggingface")
     assert settings.hf_cache_home_mount == Path("/home/paunchygent/.data/custom/cache/huggingface")
+    assert settings.voice == "ryan"
 
 
 def test_resolve_effective_hf_cache_dir_uses_home_bind_mount_when_srv_probe_fails(
@@ -205,6 +208,85 @@ def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_disables_triton(
     assert f"{hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}" in command
     assert "VLLM_USE_TRITON_FLASH_ATTN=0" in command
     assert "Qwen/Qwen3-TTS-Tokenizer-12Hz" in command[-1]
+
+
+def test_audio_probe_treats_json_success_payload_as_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _FakeSampler:
+        def start(self) -> None:
+            return None
+
+        def stop(self) -> tuple[int, int]:
+            return (0, 0)
+
+    class _FakeResponse:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+        content = b'{"error":{"message":"Invalid speaker"}}'
+        text = '{"error":{"message":"Invalid speaker"}}'
+        is_success = True
+
+    class _FakeClient:
+        def __init__(self, *, timeout: float) -> None:
+            assert timeout == 600.0
+
+        def __enter__(self) -> "_FakeClient":
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> Literal[False]:
+            return False
+
+        def post(self, url: str, json: dict[str, str]) -> _FakeResponse:
+            assert url == "http://127.0.0.1:38091/v1/audio/speech"
+            assert json["voice"] == "ryan"
+            return _FakeResponse()
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime._GpuSampler",
+        _FakeSampler,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime.httpx.Client",
+        _FakeClient,
+    )
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    settings = BenchmarkSettings(
+        output_root=tmp_path / "output",
+        image="vllm/vllm-omni-rocm:v0.16.0",
+        model="Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        hf_cache_home_mount=tmp_path / "hf-cache-home",
+        network="hule-network",
+        network_alias="sir-convert-a-lot-tts-task79",
+        container_name="sir_convert_a_lot_tts_task79",
+        service_container="sir_convert_a_lot_prod",
+        container_port=8091,
+        host_port=38091,
+        voice="ryan",
+        response_formats=("wav",),
+        startup_timeout_seconds=600.0,
+        hf_cache_dir=tmp_path / "hf-cache",
+        probe_text="hello",
+        hf_token=None,
+        pull_image=False,
+        retain_container=False,
+        stage_config_path=tmp_path / "task79_stage_config.yaml",
+    )
+
+    result, peak_busy, peak_vram = audio_probe(
+        settings=settings,
+        base_url="http://127.0.0.1:38091",
+        response_format="wav",
+        artifacts_dir=artifacts_dir,
+    )
+
+    assert result.ok is False
+    assert result.error_message == '{"error":{"message":"Invalid speaker"}}'
+    assert result.output_path is None
+    assert peak_busy == 0
+    assert peak_vram == 0
 
 
 def test_start_sidecar_uses_persistent_hf_cache_contract(
