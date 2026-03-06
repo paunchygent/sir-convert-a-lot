@@ -445,6 +445,13 @@ Evidence path:
 Usage notes:
 
 - The harness launches an isolated `vllm/vllm-omni-rocm:v0.16.0` container on `hule-network`.
+- The harness uses the canonical persistent HF cache path
+  `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`
+  so repeated Task 79 runs reuse downloaded model weights instead of redownloading them.
+- Inside the sidecar container the cache mount is standardized as:
+  - `HF_HOME=/cache/huggingface`
+  - `HF_HUB_CACHE=/cache/huggingface/hub`
+  - `TRANSFORMERS_CACHE=/cache/huggingface`
 - The current stage config is pinned in
   `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`.
 - The benchmark proves both:

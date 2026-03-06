@@ -62,6 +62,8 @@ Current command defaults:
 
 - image: `vllm/vllm-omni-rocm:v0.16.0`
 - model: `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice`
+- host HF cache:
+  `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`
 - stage config:
   `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`
 - output root: `build/verification/task-79-hemma-tts-sidecar/`
@@ -69,6 +71,10 @@ Current command defaults:
 - network contract:
   - sidecar joins `hule-network`
   - service-container reachability is verified from `sir_convert_a_lot_prod`
+- container cache env contract:
+  - `HF_HOME=/cache/huggingface`
+  - `HF_HUB_CACHE=/cache/huggingface/hub`
+  - `TRANSFORMERS_CACHE=/cache/huggingface`
 
 The benchmark writes:
 

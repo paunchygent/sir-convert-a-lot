@@ -38,6 +38,8 @@ GPU_VRAM_TOTAL_RE = re.compile(r"VRAM Total Memory \(B\):\s*([0-9]+)")
 GPU_VRAM_USED_RE = re.compile(r"VRAM Total Used Memory \(B\):\s*([0-9]+)")
 GPU_BUSY_RE = re.compile(r"GPU use \(%\):\s*([0-9]+)")
 GFX_ARCH_RE = re.compile(r"gfx[0-9]+")
+CONTAINER_HF_HOME = "/cache/huggingface"
+CONTAINER_HF_HUB_CACHE = f"{CONTAINER_HF_HOME}/hub"
 
 
 @dataclass(frozen=True)
@@ -269,8 +271,14 @@ def start_sidecar(settings: BenchmarkSettings) -> None:
         "seccomp=unconfined",
         "-p",
         f"127.0.0.1:{settings.host_port}:{settings.container_port}",
+        "-e",
+        f"HF_HOME={CONTAINER_HF_HOME}",
+        "-e",
+        f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
+        "-e",
+        f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
         "-v",
-        f"{settings.hf_cache_dir.as_posix()}:/root/.cache/huggingface",
+        f"{settings.hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}",
         "-v",
         f"{settings.stage_config_path.resolve().as_posix()}:/workspace/task79_stage_config.yaml:ro",
     ]
@@ -330,7 +338,7 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
             "python",
             "-c",
             (
-                "import importlib.metadata as md, json, sys; "
+                "import importlib.metadata as md, json, os, sys; "
                 "versions = {}; "
                 "targets = ('vllm', 'vllm-omni', 'vllm_omni'); "
                 "for name in targets:\n"
@@ -340,7 +348,10 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
                 "        versions[name] = None\n"
                 "print(json.dumps({"
                 "'python_version': sys.version.split()[0], "
-                "'package_versions': versions"
+                "'package_versions': versions, "
+                "'hf_home': os.environ.get('HF_HOME'), "
+                "'hf_hub_cache': os.environ.get('HF_HUB_CACHE'), "
+                "'transformers_cache': os.environ.get('TRANSFORMERS_CACHE')"
                 "}, sort_keys=True))"
             ),
         ],
@@ -351,8 +362,19 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
         raise SystemExit("Task 79 sidecar metadata probe returned an unexpected payload.")
     python_version_obj = payload_obj.get("python_version")
     package_versions_obj = payload_obj.get("package_versions")
+    hf_home_obj = payload_obj.get("hf_home")
+    hf_hub_cache_obj = payload_obj.get("hf_hub_cache")
+    transformers_cache_obj = payload_obj.get("transformers_cache")
     if not isinstance(python_version_obj, str) or not isinstance(package_versions_obj, dict):
         raise SystemExit("Task 79 sidecar metadata probe payload is malformed.")
+    if hf_home_obj is not None and not isinstance(hf_home_obj, str):
+        raise SystemExit("Task 79 sidecar metadata probe returned a malformed HF_HOME value.")
+    if hf_hub_cache_obj is not None and not isinstance(hf_hub_cache_obj, str):
+        raise SystemExit("Task 79 sidecar metadata probe returned a malformed HF_HUB_CACHE value.")
+    if transformers_cache_obj is not None and not isinstance(transformers_cache_obj, str):
+        raise SystemExit(
+            "Task 79 sidecar metadata probe returned a malformed TRANSFORMERS_CACHE value."
+        )
     package_versions: dict[str, str | None] = {}
     for key, value in package_versions_obj.items():
         if isinstance(key, str) and (isinstance(value, str) or value is None):
@@ -364,6 +386,9 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
         python_version=python_version_obj,
         package_versions=package_versions,
         stage_config_path="/workspace/task79_stage_config.yaml",
+        hf_home=hf_home_obj,
+        hf_hub_cache=hf_hub_cache_obj,
+        transformers_cache=transformers_cache_obj,
     )
 
 

@@ -14,6 +14,7 @@ Relationships:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -53,7 +54,8 @@ DEFAULT_SERVICE_CONTAINER = "sir_convert_a_lot_prod"
 DEFAULT_CONTAINER_PORT = 8091
 DEFAULT_HOST_PORT = 38091
 DEFAULT_TIMEOUT_SECONDS = 1800.0
-DEFAULT_HF_CACHE = Path("/home/paunchygent/.cache/huggingface")
+DEFAULT_HEMMA_HF_CACHE_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH"
+DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_TEXT = (
     "Hello from Sir Convert a Lot. This benchmark proves a sidecar backed text to speech "
     "stack on the Hemma Radeon AI PRO R9700. The voice should sound clear, steady, and ready "
@@ -65,6 +67,14 @@ STAGE_CONFIG_PATH = Path("scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stag
 def _utc_now_iso() -> str:
     """Return the current UTC timestamp in RFC3339 format."""
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _default_hf_cache_dir() -> Path:
+    """Resolve the canonical Hemma Hugging Face cache path for Task 79."""
+    configured_path = os.environ.get(DEFAULT_HEMMA_HF_CACHE_ENV)
+    if configured_path is None or configured_path.strip() == "":
+        return DEFAULT_HF_CACHE
+    return Path(configured_path.strip())
 
 
 def _parse_args(argv: list[str]) -> BenchmarkSettings:
@@ -81,7 +91,16 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--host-port", type=int, default=DEFAULT_HOST_PORT)
     parser.add_argument("--voice", default="Chelsie")
     parser.add_argument("--startup-timeout-seconds", type=float, default=DEFAULT_TIMEOUT_SECONDS)
-    parser.add_argument("--hf-cache-dir", type=Path, default=DEFAULT_HF_CACHE)
+    parser.add_argument(
+        "--hf-cache-dir",
+        type=Path,
+        default=_default_hf_cache_dir(),
+        help=(
+            "Host path for the persistent Hugging Face cache. Defaults to "
+            "`SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH` when set, otherwise "
+            "`/srv/scratch/sir-convert-a-lot/cache/huggingface`."
+        ),
+    )
     parser.add_argument("--probe-text", default=DEFAULT_TEXT)
     parser.add_argument("--hf-token", default=None)
     parser.add_argument(
@@ -195,6 +214,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_head=run_checked(["git", "rev-parse", "HEAD"], label="git rev-parse HEAD"),
             host_base_url=host_base_url,
             internal_base_url=internal_base_url,
+            host_hf_cache_dir=settings.hf_cache_dir.as_posix(),
             gpu_identity=gpu_identity,
             sidecar_runtime=sidecar_runtime,
             voices_evidence=VoicesEvidence(
@@ -239,6 +259,7 @@ def main(argv: list[str] | None = None) -> int:
                 repo_head=report.repo_head,
                 host_base_url=report.host_base_url,
                 internal_base_url=report.internal_base_url,
+                host_hf_cache_dir=report.host_hf_cache_dir,
                 gpu_identity=report.gpu_identity,
                 sidecar_runtime=report.sidecar_runtime,
                 voices_evidence=report.voices_evidence,

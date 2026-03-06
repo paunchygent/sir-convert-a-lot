@@ -38,6 +38,9 @@ class SidecarRuntime:
     python_version: str
     package_versions: dict[str, str | None]
     stage_config_path: str
+    hf_home: str | None
+    hf_hub_cache: str | None
+    transformers_cache: str | None
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,7 @@ class BenchmarkReport:
     repo_head: str
     host_base_url: str
     internal_base_url: str
+    host_hf_cache_dir: str
     gpu_identity: GpuIdentity
     sidecar_runtime: SidecarRuntime
     voices_evidence: VoicesEvidence
@@ -126,6 +130,7 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- repo_head: `{report.repo_head}`",
         f"- host_base_url: `{report.host_base_url}`",
         f"- internal_base_url: `{report.internal_base_url}`",
+        f"- host_hf_cache_dir: `{report.host_hf_cache_dir}`",
         "",
         "## GPU Identity",
         f"- product_name: `{report.gpu_identity.product_name}`",
@@ -140,6 +145,9 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- container_name: `{report.sidecar_runtime.container_name}`",
         f"- python_version: `{report.sidecar_runtime.python_version}`",
         f"- stage_config_path: `{report.sidecar_runtime.stage_config_path}`",
+        f"- hf_home: `{report.sidecar_runtime.hf_home}`",
+        f"- hf_hub_cache: `{report.sidecar_runtime.hf_hub_cache}`",
+        f"- transformers_cache: `{report.sidecar_runtime.transformers_cache}`",
         "",
         "## Voices",
         f"- host_probe_ok: `{report.voices_evidence.host_probe_ok}`",
