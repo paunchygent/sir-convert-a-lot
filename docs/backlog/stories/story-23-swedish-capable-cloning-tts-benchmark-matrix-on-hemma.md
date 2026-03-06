@@ -1,9 +1,9 @@
 ---
-id: 'story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma'
-title: 'Swedish-capable cloning TTS benchmark matrix on Hemma'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma
+title: Swedish-capable cloning TTS benchmark matrix on Hemma
+type: story
+status: in_progress
+priority: high
 created: '2026-03-06'
 last_updated: '2026-03-06'
 related:
@@ -23,6 +23,7 @@ labels:
   - swedish
   - cloning
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -65,7 +66,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - one primary cloning-capable backend candidate,
   - one comparison backend,
   - one pronunciation control baseline,
-  without reopening ADR-0006 or the public v2 contract shape.
+    without reopening ADR-0006 or the public v2 contract shape.
   - and without inventing a backend-specific service integration path outside ADR-0007.
 
 ## Test Requirements
@@ -76,7 +77,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - sidecar logs,
   - at least one synthesized Swedish sample artifact.
 - [ ] OpenVoice V2 and XTTS-v2 tasks require an explicit cloning workflow using one approved
-  teacher reference clip and transcript.
+  teacher reference clip.
 - [ ] Each task records Python/runtime truth, model cache path, and whether the sidecar remains
   internal-network only.
 

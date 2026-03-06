@@ -474,6 +474,50 @@ Usage notes:
 - Use the emitted Python recommendation from `report.json` to lock the sidecar runtime floor;
   do not assume Python `3.14` support without live proof.
 
+## OpenVoice V2 Swedish Cloning Benchmark (Task 81)
+
+Run the first normalized ADR-0007 sidecar benchmark for the OpenVoice V2
+candidate with a Swedish base speaker and an approved teacher reference clip.
+
+Canonical command:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-81 \
+  --reference-audio <remote-path-to-approved-reference-audio>
+```
+
+Evidence path:
+
+- `build/verification/task-81-openvoice-v2-hemma/`
+  - `report.json`
+  - `report.md`
+  - `docker_logs.txt`
+  - `artifacts/sample_sv.wav`
+  - `failure.txt` on non-acceptance failures
+
+Usage notes:
+
+- The harness builds and launches the dedicated `containers/tts-sidecar-openvoice/Dockerfile`
+  image instead of reusing the main service image.
+- The sidecar exposes the normalized internal-only endpoints from ADR-0007:
+  - `GET /health`
+  - `GET /capabilities`
+  - `GET /voices`
+  - `POST /synthesize`
+- OpenVoice checkpoints are cached under the canonical persistent host root
+  `${SIR_CONVERT_A_LOT_HEMMA_OPENVOICE_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/openvoice}`.
+- The Swedish base model cache reuses the canonical shared HF cache root
+  `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`.
+- When Docker cannot bind `/srv/*` directly, the harness bind-mounts the canonical cache roots
+  through the approved home-visible compatibility paths without creating a second long-lived
+  cache tree.
+- The benchmark requires one approved teacher reference clip used strictly as the cloning input.
+- The Swedish sample is generated through:
+  - `facebook/mms-tts-swe` as the Swedish base speaker
+  - OpenVoice V2 tone-color conversion to the teacher reference voice
+- Treat the Task 81 result as credibility evidence for OpenVoice's cross-lingual claim on Hemma,
+  not as a blanket guarantee of Swedish production quality.
+
 ## V2 Conversion Smoke Verification (Task 39)
 
 Produce deterministic, written evidence that the Hemma **docker lane** can execute the

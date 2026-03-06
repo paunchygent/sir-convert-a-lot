@@ -1,9 +1,9 @@
 ---
-id: 'task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma'
-title: 'Benchmark MMS Swedish as the direct-pronunciation control on Hemma'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma
+title: Benchmark MMS Swedish as the direct-pronunciation control on Hemma
+type: task
+status: proposed
+priority: high
 created: '2026-03-06'
 last_updated: '2026-03-06'
 related:
@@ -22,6 +22,7 @@ labels:
   - control
   - mms
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

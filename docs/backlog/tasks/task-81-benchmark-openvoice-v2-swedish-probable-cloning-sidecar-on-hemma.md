@@ -1,9 +1,9 @@
 ---
-id: 'task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma'
-title: 'Benchmark OpenVoice V2 Swedish-probable cloning sidecar on Hemma'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma
+title: Benchmark OpenVoice V2 Swedish-probable cloning sidecar on Hemma
+type: task
+status: in_progress
+priority: high
 created: '2026-03-06'
 last_updated: '2026-03-06'
 related:
@@ -22,6 +22,7 @@ labels:
   - cloning
   - openvoice
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -36,7 +37,7 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   ADR-0007 (`/health`, `/capabilities`, `/voices`, `/synthesize`).
 - Reuse the canonical Hemma persistent model-cache discipline so reruns do not redownload model
   weights.
-- Exercise a cloning flow with one approved teacher reference voice clip plus transcript.
+- Exercise a cloning flow with one approved teacher reference voice clip.
 - Exercise Swedish probe text generation and capture sample artifacts for listening review.
 - Record runtime truth:
   - Python version,

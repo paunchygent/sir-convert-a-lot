@@ -64,6 +64,7 @@ Primary implementation stories (active sequence):
 ## Worklog
 
 - 2026-03-06:
+
   - Completed Task 72 for Story 20 bounded parallel PDF chunk execution.
   - Added deterministic Task 72 benchmark evidence via `pdm run benchmark:task-72` at
     `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
@@ -76,8 +77,13 @@ Primary implementation stories (active sequence):
     `T81` OpenVoice V2, `T82` XTTS-v2, and `T83` MMS Swedish.
   - Drafted and accepted ADR-0007 to define the reusable internal multi-backend sidecar
     capability contract before `T81` starts.
+  - Started `T81` implementation against ADR-0007:
+    - added the reusable normalized sidecar contract plus the first OpenVoice V2 adapter app,
+    - added the dedicated OpenVoice benchmark image/build surface and `benchmark:task-81`,
+    - added Task 81 unit coverage plus runbook/task/story status updates.
 
 - 2026-03-05:
+
   - Task 73 completed for Story 20 telemetry slice, was reopened after ruthless review findings,
     and is now re-terminalized after remediation.
   - Added canonical v2 phase timing key contract + canonical-only merge enforcement at job
@@ -110,12 +116,8 @@ Primary implementation stories (active sequence):
     - `pdm run lint-fix` (pass)
     - `pdm run typecheck-all` (pass)
     - `pdm run pytest-root tests/sir_convert_a_lot/test_gpu_utilization_snapshot.py tests/sir_convert_a_lot/test_runtime_engine_v2.py tests/sir_convert_a_lot/test_benchmark_story20_telemetry_overhead.py -q` (pass: `29 passed`)
-      - Completed Task 76 hardening gate with Hemma deploy-and-verify evidence: `build/verification/task-76-hemma-deploy-verify/report.json` (`status=passed`)
-      - Completed Task 77 multilingual OCR hardening with Hemma live evidence: `build/verification/task-76-hemma-deploy-verify/v2-smoke/swedish_ocr_excerpt.txt` (contains `å ä ö`)
-      - Changed backlog docs:
-        - `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
-        - `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
-        - `docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md`
+  - Completed Task 76 deploy-and-verify evidence plus Task 77 multilingual OCR hardening;
+    canonical backlog updates landed in the linked Epic 06 / Story 20 / Task 76 docs.
 
 - 2026-03-04:
 
@@ -198,23 +200,20 @@ Primary implementation stories (active sequence):
     - updated v2 converter docs and downstream integration contract to mark `docx -> pdf` implemented.
 
 - 2026-02-28:
+
   - Epic 05 was fully executed and terminalized; canonical detailed evidence remains in
     `docs/backlog/tasks/task-44-*.md` through `task-60-*.md` and `.agents/session/handoff.md`.
 
 - 2026-02-18:
+
   - Epic 04 delivered the service API v2 multi-format runtime and CLI remote-only pivot; follow-up
     hardening tasks 40-42 also completed.
 
 ## Next Actions
 
-- Continue Epic 06 execution sequence under Story 20 with `T74`.
-- Publish Hemma benchmark/report evidence, lock runbook defaults/guardrails for parallel OCR, and keep task/story/epic status synchronization strict as terminal states change.
-- Recommended execution order after `T74`:
-  1. `T62` — close the live DOCX output regression after sandbox hardening.
-  1. `T25` + `T26` — co-terminalize the Docling quality/order hardening pair as one focused cleanup lane.
-  1. `T12` — finish the scientific-paper workload evidence harness and acceptance report.
-  1. `T08` — close the HuleEdu thin-adapter adoption only after Sir workload evidence is stable.
-- Defer until the above queue is done:
-  - `T23` durable persistence layout retention/recovery
-  - `T24` container operations runbook + Hemma deployment verification
-- Epic 07 follow-on Swedish-cloning benchmark order is `T81 -> T82 -> T83`.
+- Current local execution focus is Epic 07 Story 23 with `T81`, then `T82 -> T83`.
+- Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
+- Immediate `T81` goal: run the first live Hemma OpenVoice benchmark with the approved teacher
+  clip, confirm canonical cache reuse, and judge whether OpenVoice remains the primary cloning candidate.
+- Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`,
+  `T12`, `T08`.

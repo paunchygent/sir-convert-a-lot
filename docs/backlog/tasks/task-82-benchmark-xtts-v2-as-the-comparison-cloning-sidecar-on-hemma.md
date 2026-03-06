@@ -1,9 +1,9 @@
 ---
-id: 'task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma'
-title: 'Benchmark XTTS-v2 as the comparison cloning sidecar on Hemma'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma
+title: Benchmark XTTS-v2 as the comparison cloning sidecar on Hemma
+type: task
+status: proposed
+priority: high
 created: '2026-03-06'
 last_updated: '2026-03-06'
 related:
@@ -22,6 +22,7 @@ labels:
   - cloning
   - xtts
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
