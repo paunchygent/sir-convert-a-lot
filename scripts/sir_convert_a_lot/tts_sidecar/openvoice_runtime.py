@@ -137,6 +137,8 @@ class _OpenVoiceConverter(Protocol):
     """Minimal OpenVoice converter surface used by the adapter."""
 
     hps: _OpenVoiceHParams
+    watermark_model: object | None
+    version: str
 
     def load_ckpt(self, ckpt_path: str) -> None:
         """Load one converter checkpoint from disk."""
@@ -173,8 +175,6 @@ class OpenVoiceSidecarSettings:
     hf_cache_container_root: str
     base_model_id: str
     supported_language_codes: tuple[str, ...]
-    enable_watermark: bool
-    watermark_message: str
     network_scope: NetworkScope
 
     @classmethod
@@ -223,10 +223,6 @@ class OpenVoiceSidecarSettings:
             ),
             base_model_id=os.environ.get("SIR_TTS_SIDECAR_BASE_MODEL_ID", "facebook/mms-tts-swe"),
             supported_language_codes=supported_codes,
-            enable_watermark=_parse_bool_env(
-                "SIR_TTS_SIDECAR_OPENVOICE_ENABLE_WATERMARK", default=False
-            ),
-            watermark_message=os.environ.get("SIR_TTS_SIDECAR_OPENVOICE_WATERMARK_MESSAGE", ""),
             network_scope=NetworkScope.INTERNAL_ONLY,
         )
 
@@ -250,7 +246,6 @@ class OpenVoiceSidecarBackend:
     def startup(self) -> None:
         """Load OpenVoice and the Swedish MMS base model onto the configured GPU."""
         import torch
-        from openvoice.api import ToneColorConverter
         from transformers import AutoTokenizer, VitsModel
 
         if self._settings.gpu_required and not torch.cuda.is_available():
@@ -269,11 +264,7 @@ class OpenVoiceSidecarBackend:
                 f"{converter_root.as_posix()}."
             )
 
-        converter: _OpenVoiceConverter = ToneColorConverter(
-            config_path.as_posix(),
-            device=device,
-            enable_watermark=self._settings.enable_watermark,
-        )
+        converter = _create_tone_color_converter(config_path, device=device)
         converter.load_ckpt(checkpoint_path.as_posix())
         tokenizer: _Tokenizer = AutoTokenizer.from_pretrained(self._settings.base_model_id)
         base_model: _BaseModel = VitsModel.from_pretrained(self._settings.base_model_id).to(device)
@@ -435,7 +426,7 @@ class OpenVoiceSidecarBackend:
                 src_se=source_se,
                 tgt_se=target_se,
                 output_path=output_path.as_posix(),
-                message=self._settings.watermark_message,
+                message="",
             )
             audio_bytes = output_path.read_bytes()
 
@@ -518,6 +509,17 @@ def _package_version_or_none(name: str) -> str | None:
         return importlib.metadata.version(name)
     except importlib.metadata.PackageNotFoundError:
         return None
+
+
+def _create_tone_color_converter(config_path: Path, *, device: str) -> _OpenVoiceConverter:
+    """Create a no-watermark converter for Task 81 without unsupported kwargs."""
+    from openvoice.api import OpenVoiceBaseClass, ToneColorConverter
+
+    converter: _OpenVoiceConverter = ToneColorConverter.__new__(ToneColorConverter)
+    OpenVoiceBaseClass.__init__(converter, config_path.as_posix(), device=device)
+    converter.watermark_model = None
+    converter.version = getattr(converter.hps, "_version_", "v1")
+    return converter
 
 
 def _parse_bool_env(name: str, *, default: bool) -> bool:

@@ -12,8 +12,11 @@ Relationships:
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.tts_sidecar.app_factory import create_tts_sidecar_app
@@ -40,6 +43,7 @@ from scripts.sir_convert_a_lot.tts_sidecar.contracts import (
 from scripts.sir_convert_a_lot.tts_sidecar.openvoice_runtime import (
     OpenVoiceSidecarBackend,
     OpenVoiceSidecarSettings,
+    _create_tone_color_converter,
     _normalize_language_code,
     _normalize_text,
     _normalized_suffix,
@@ -184,8 +188,6 @@ def test_openvoice_backend_capabilities_surface_cache_and_language_truth() -> No
         hf_cache_container_root="/cache/huggingface",
         base_model_id="facebook/mms-tts-swe",
         supported_language_codes=("sv",),
-        enable_watermark=False,
-        watermark_message="",
         network_scope=NetworkScope.INTERNAL_ONLY,
     )
     backend = OpenVoiceSidecarBackend(settings)
@@ -218,8 +220,6 @@ def test_openvoice_backend_rejects_non_clone_requests_before_runtime_use() -> No
         hf_cache_container_root="/cache/huggingface",
         base_model_id="facebook/mms-tts-swe",
         supported_language_codes=("sv",),
-        enable_watermark=False,
-        watermark_message="",
         network_scope=NetworkScope.INTERNAL_ONLY,
     )
     backend = OpenVoiceSidecarBackend(settings)
@@ -251,3 +251,31 @@ def test_openvoice_text_helpers_normalize_language_suffixes_and_whitespace() -> 
     assert (
         _normalize_text("  Hej\n\n världen  ", profile=NormalizationProfile.AUTO) == "Hej världen"
     )
+
+
+def test_create_tone_color_converter_avoids_broken_upstream_kwargs_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    class _FakeBase:
+        def __init__(self, config_path: str, device: str = "cuda:0") -> None:
+            self.config_path = config_path
+            self.device = device
+            self.hps = SimpleNamespace(_version_="v2")
+
+    class _FakeTone(_FakeBase):
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            raise AssertionError("Direct ToneColorConverter.__init__ should not run.")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "openvoice.api",
+        SimpleNamespace(OpenVoiceBaseClass=_FakeBase, ToneColorConverter=_FakeTone),
+    )
+
+    converter = _create_tone_color_converter(tmp_path / "config.json", device="cuda:0")
+
+    assert isinstance(converter, _FakeTone)
+    assert converter.config_path == (tmp_path / "config.json").as_posix()
+    assert converter.device == "cuda:0"
+    assert converter.watermark_model is None
+    assert converter.version == "v2"

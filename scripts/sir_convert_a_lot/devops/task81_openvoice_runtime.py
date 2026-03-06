@@ -420,8 +420,6 @@ def start_sidecar(
             "-e",
             "SIR_TTS_SIDECAR_ALLOWED_LANGUAGE_CODES=sv",
             "-e",
-            "SIR_TTS_SIDECAR_OPENVOICE_ENABLE_WATERMARK=0",
-            "-e",
             f"SIR_TTS_SIDECAR_OPENVOICE_CHECKPOINTS_ROOT={CONTAINER_OPENVOICE_HOME}/checkpoints_v2",
             "-e",
             f"SIR_TTS_SIDECAR_OPENVOICE_CACHE_HOST_ROOT={openvoice_mount.canonical_root.as_posix()}",
