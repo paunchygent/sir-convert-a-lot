@@ -30,6 +30,7 @@ import zipfile
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import httpx
 from huggingface_hub import snapshot_download
@@ -704,31 +705,39 @@ def copy_debug_artifacts_from_container(*, container_name: str, artifacts_dir: P
             shutil.rmtree(child)
             continue
         child.unlink()
-    result = subprocess.run(
-        [
-            "sudo",
-            "-n",
-            "docker",
-            "cp",
-            f"{container_name}:{CONTAINER_DEBUG_ARTIFACT_DIR}/.",
-            artifacts_dir.as_posix(),
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        stderr = result.stderr.lower()
-        stdout = result.stdout.lower()
-        if "no such file or directory" in stderr or "could not find" in stderr:
-            return
-        if "no such file or directory" in stdout or "could not find" in stdout:
-            return
-        raise SystemExit(
-            "Task 81 could not copy debug artifacts from the sidecar container.\n"
-            f"stdout:\n{result.stdout.strip()}\n"
-            f"stderr:\n{result.stderr.strip()}"
+    with TemporaryDirectory(prefix="task81-debug-copy-", dir="/tmp") as temp_dir_raw:
+        temp_dir = Path(temp_dir_raw)
+        result = subprocess.run(
+            [
+                "sudo",
+                "-n",
+                "docker",
+                "cp",
+                f"{container_name}:{CONTAINER_DEBUG_ARTIFACT_DIR}/.",
+                temp_dir.as_posix(),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
         )
+        if result.returncode != 0:
+            stderr = result.stderr.lower()
+            stdout = result.stdout.lower()
+            if "no such file or directory" in stderr or "could not find" in stderr:
+                return
+            if "no such file or directory" in stdout or "could not find" in stdout:
+                return
+            raise SystemExit(
+                "Task 81 could not copy debug artifacts from the sidecar container.\n"
+                f"stdout:\n{result.stdout.strip()}\n"
+                f"stderr:\n{result.stderr.strip()}"
+            )
+        for child in sorted(temp_dir.iterdir()):
+            target_path = artifacts_dir / child.name
+            if child.is_dir():
+                shutil.copytree(child, target_path, dirs_exist_ok=True)
+                continue
+            shutil.copy2(child, target_path)
 
 
 def collect_setup_artifact_evidence(artifacts_dir: Path) -> SetupArtifactEvidence:

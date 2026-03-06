@@ -383,6 +383,7 @@ def test_copy_debug_artifacts_from_container_uses_docker_cp(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     calls: list[list[str]] = []
+    copied_temp_dirs: list[Path] = []
 
     def _fake_run(
         args: list[str],
@@ -395,6 +396,12 @@ def test_copy_debug_artifacts_from_container_uses_docker_cp(
         assert capture_output is True
         assert text is True
         calls.append(args)
+        destination_dir = Path(args[-1])
+        copied_temp_dirs.append(destination_dir)
+        (destination_dir / "base_sv.wav").write_bytes(b"base")
+        processed_reference_dir = destination_dir / "processed_reference" / "wavs"
+        processed_reference_dir.mkdir(parents=True, exist_ok=True)
+        (processed_reference_dir / "seg0.wav").write_bytes(b"wav")
         return type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
 
     monkeypatch.setattr(
@@ -410,6 +417,9 @@ def test_copy_debug_artifacts_from_container_uses_docker_cp(
 
     assert (artifacts_dir / "sample_sv.wav").exists() is True
     assert (artifacts_dir / "old.txt").exists() is False
+    assert (artifacts_dir / "base_sv.wav").read_bytes() == b"base"
+    assert (artifacts_dir / "processed_reference" / "wavs" / "seg0.wav").read_bytes() == b"wav"
+    assert len(copied_temp_dirs) == 1
     assert calls == [
         [
             "sudo",
@@ -417,7 +427,7 @@ def test_copy_debug_artifacts_from_container_uses_docker_cp(
             "docker",
             "cp",
             "task81:/tmp/task81-debug-artifacts/.",
-            artifacts_dir.as_posix(),
+            copied_temp_dirs[0].as_posix(),
         ]
     ]
 
