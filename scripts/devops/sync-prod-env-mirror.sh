@@ -79,6 +79,11 @@ for repo in "${repos[@]}"; do
   fi
 
   ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_API_KEY" "${sir_key_value}"
+  if [[ "${repo}" == "sir-convert-a-lot" ]]; then
+    ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE" "easyocr"
+    ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES" "sv,en"
+    ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR" "/opt/easyocr-models"
+  fi
   if [[ "${repo}" == "projektveckor-portal" ]]; then
     ensure_key "${canonical_env}" "PVP_SIR_CONVERT_A_LOT_API_KEY" "${sir_key_value}"
   fi

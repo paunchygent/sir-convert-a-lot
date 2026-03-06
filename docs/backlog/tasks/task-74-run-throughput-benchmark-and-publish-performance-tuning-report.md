@@ -81,13 +81,13 @@ Measurement rules (must be explicit in report):
 
 1. Re-run `T76` on the current pushed revision and record the exact `expected_revision`,
    `remote_revision`, and `service_revision`.
-2. Execute the canonical `T74` profile matrix on Hemma with GPU-backed settings:
+1. Execute the canonical `T74` profile matrix on Hemma with GPU-backed settings:
    - `page_counts=120,180,240`
    - `acceleration_policy=gpu_required`
    - `ocr_mode=force`
    - `ocr_engine=easyocr`
    - `ocr_languages=sv,en`
-3. Capture one evidence bundle containing:
+1. Capture one evidence bundle containing:
    - benchmark JSON,
    - markdown report,
    - profile matrix and recommended profile,
@@ -95,9 +95,9 @@ Measurement rules (must be explicit in report):
    - resource evidence (`peak_jobs_queued`, worker/chunk saturation, GPU busy/memory),
    - metrics-safety result (`contains_job_id_label`),
    - determinism evidence for recommended parallel profile vs baseline behavior.
-4. Derive recommended defaults and rollback thresholds from the evidence bundle, then update
+1. Derive recommended defaults and rollback thresholds from the evidence bundle, then update
    `docs/runbooks/runbook-hemma-devops-and-gpu.md`.
-5. Only after the above is complete, terminalize `T74`, then Story 20, then Epic 06 in strict
+1. Only after the above is complete, terminalize `T74`, then Story 20, then Epic 06 in strict
    status/checkbox order.
 
 ## Implementation Checklist

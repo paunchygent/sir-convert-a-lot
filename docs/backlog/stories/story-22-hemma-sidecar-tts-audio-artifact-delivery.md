@@ -23,6 +23,7 @@ labels:
   - hemma
   - v2
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective

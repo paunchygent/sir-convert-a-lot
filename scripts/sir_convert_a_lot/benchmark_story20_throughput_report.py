@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import statistics
 import time
@@ -124,6 +125,33 @@ def _coerce_optional_bool(value: object) -> bool | None:
     if isinstance(value, bool):
         return value
     return None
+
+
+def _assert_in_process_runtime_supports_requested_ocr(
+    *,
+    ocr_mode: str,
+    ocr_engine: str,
+    easyocr_model_storage_directory: str | None,
+) -> None:
+    if ocr_mode == "off":
+        return
+    if ocr_engine != "easyocr":
+        return
+    if importlib.util.find_spec("easyocr") is None:
+        raise RuntimeError(
+            "Task 74 in-process benchmark runtime is missing EasyOCR. "
+            "Run `pdm sync` in the benchmark environment or use the canonical "
+            "`benchmark:task-74-hemma` workflow before benchmarking."
+        )
+    if easyocr_model_storage_directory is None:
+        return
+    model_dir = Path(easyocr_model_storage_directory).expanduser()
+    if not model_dir.exists():
+        raise RuntimeError(
+            "Task 74 in-process benchmark runtime is missing the EasyOCR model directory "
+            f"`{model_dir}`. Warm the host EasyOCR cache first or pass "
+            "`--easyocr-model-storage-dir` to a prepared path."
+        )
 
 
 def _read_runtime_parity_report(report_json_path: Path) -> Task76ReportPayload:
@@ -446,6 +474,7 @@ def _run_profile(
     ocr_languages: list[str],
     max_poll_seconds: float,
     gpu_available: bool,
+    easyocr_model_storage_directory: str | None,
 ) -> ProfilePayload:
     config = ServiceConfig(
         api_key=api_key,
@@ -458,6 +487,7 @@ def _run_profile(
         max_chunk_workers=profile.max_chunk_workers,
         pdf_chunk_size_pages=profile.chunk_size_pages,
         gpu_stage_max_concurrency=profile.gpu_stage_max_concurrency,
+        easyocr_model_storage_directory=easyocr_model_storage_directory,
     )
     app = create_app(config)
     jobs: list[JobRecord] = []
@@ -676,6 +706,7 @@ def run_benchmark(
     runtime_mode: str = "in_process_app",
     runtime_host: str | None = None,
     runtime_service_url: str | None = None,
+    easyocr_model_storage_directory: str | None = "/opt/easyocr-models",
     runtime_parity_inputs: RuntimeParityInputs | None = None,
 ) -> BenchmarkPayload:
     """Run the Task 74 throughput benchmark and return the payload."""
@@ -687,6 +718,13 @@ def run_benchmark(
         (data_root, "data_root"),
     ]:
         enforce_generated_output_path(path_value, label=label)
+
+    if runtime_mode == "in_process_app":
+        _assert_in_process_runtime_supports_requested_ocr(
+            ocr_mode=ocr_mode,
+            ocr_engine=ocr_engine,
+            easyocr_model_storage_directory=easyocr_model_storage_directory,
+        )
 
     corpus_records = generate_corpus(corpus_root=corpus_root, page_counts=page_counts)
     resolved_profiles = profiles or _default_profiles()
@@ -721,6 +759,7 @@ def run_benchmark(
             ocr_languages=resolved_languages,
             max_poll_seconds=max_poll_seconds,
             gpu_available=gpu_available,
+            easyocr_model_storage_directory=easyocr_model_storage_directory,
         )
         for profile in resolved_profiles
     ]
@@ -798,6 +837,7 @@ def main() -> None:
     parser.add_argument("--runtime-mode", default="in_process_app")
     parser.add_argument("--runtime-host")
     parser.add_argument("--runtime-service-url")
+    parser.add_argument("--easyocr-model-storage-dir")
     parser.add_argument("--task76-report-json", type=Path)
     parser.add_argument("--parity-status")
     parser.add_argument("--parity-lane")
@@ -874,6 +914,8 @@ def main() -> None:
         runtime_mode=str(args.runtime_mode),
         runtime_host=_coerce_optional_str(args.runtime_host),
         runtime_service_url=_coerce_optional_str(args.runtime_service_url),
+        easyocr_model_storage_directory=_coerce_optional_str(args.easyocr_model_storage_dir)
+        or "/opt/easyocr-models",
         runtime_parity_inputs=RuntimeParityInputs(
             report_json_path=args.task76_report_json,
             status=_coerce_optional_str(args.parity_status),

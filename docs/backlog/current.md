@@ -211,9 +211,9 @@ Primary implementation stories (active sequence):
 - Publish Hemma benchmark/report evidence, lock runbook defaults/guardrails for parallel OCR, and keep task/story/epic status synchronization strict as terminal states change.
 - Recommended execution order after `T74`:
   1. `T62` — close the live DOCX output regression after sandbox hardening.
-  2. `T25` + `T26` — co-terminalize the Docling quality/order hardening pair as one focused cleanup lane.
-  3. `T12` — finish the scientific-paper workload evidence harness and acceptance report.
-  4. `T08` — close the HuleEdu thin-adapter adoption only after Sir workload evidence is stable.
+  1. `T25` + `T26` — co-terminalize the Docling quality/order hardening pair as one focused cleanup lane.
+  1. `T12` — finish the scientific-paper workload evidence harness and acceptance report.
+  1. `T08` — close the HuleEdu thin-adapter adoption only after Sir workload evidence is stable.
 - Defer until the above queue is done:
   - `T23` durable persistence layout retention/recovery
   - `T24` container operations runbook + Hemma deployment verification

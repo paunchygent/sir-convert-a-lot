@@ -24,6 +24,7 @@ labels:
   - hemma
   - v2
 ---
+
 Major capability increment managed through linked stories.
 
 ## Goal

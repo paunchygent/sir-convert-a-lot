@@ -19,7 +19,10 @@ from .story20_throughput_types import BenchmarkPayload, ProfilePayload
 
 def _render_profile_rows(profiles: list[ProfilePayload]) -> list[str]:
     lines = [
-        "| Profile | Success Rate | p50 | p90 | Peak Queue | Peak Chunk Saturation | Peak GPU Busy |",
+        (
+            "| Profile | Success Rate | p50 | p90 | Peak Queue | "
+            "Peak Chunk Saturation | Peak GPU Busy |"
+        ),
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
     for profile in profiles:
@@ -60,8 +63,14 @@ def write_report(
         "  - throughput",
         "  - story-20",
         "links:",
-        "  - docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md",
-        "  - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md",
+        (
+            "  - docs/backlog/tasks/"
+            "task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md"
+        ),
+        (
+            "  - docs/backlog/stories/"
+            "story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md"
+        ),
         "  - docs/runbooks/runbook-hemma-devops-and-gpu.md",
         f"  - {benchmark_json_path.as_posix()}",
         "---",
