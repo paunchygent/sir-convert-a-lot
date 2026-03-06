@@ -372,14 +372,38 @@ pdm run run-hemma -- pdm run benchmark:task-74 \
   --corpus-root build/benchmarks/story-20/task-74-corpus \
   --data-root build/benchmarks/story-20/task-74-runtime \
   --page-counts 120,180,240 \
-  --gpu-available
+  --gpu-available \
+  --runtime-mode in_process_app \
+  --runtime-host hemma \
+  --runtime-service-url http://127.0.0.1:28085 \
+  --parity-status passed \
+  --parity-lane host \
+  --parity-expected-revision <sha> \
+  --parity-remote-revision <sha> \
+  --parity-service-revision <sha> \
+  --parity-expected-remote-ok \
+  --parity-service-remote-ok \
+  --parity-live-smoke-passed \
+  --parity-metrics-scan-passed
 ```
 
 Usage notes:
 
 - Defaults assume Task 76 deploy parity has already passed on the pushed revision.
+- Treat the Task 76 report as the source of truth for the parity flags above:
+  - `status`,
+  - `lane`,
+  - `expected_revision`,
+  - `remote_revision`,
+  - `service_revision`,
+  - `expected_revision_matches_remote`,
+  - `service_revision_matches_remote`,
+  - `live_smoke_passed`,
+  - `metrics_scan_passed`.
 - The harness records p50/p90 wall-clock latency, success/error rate, queue depth, worker
   saturation, chunk-worker saturation, and GPU busy/memory gauges.
+- The generated Task 74 JSON/markdown artifacts now include runtime-surface and runtime-parity
+  sections; treat `runtime_parity.parity_proven=true` as mandatory for final closeout evidence.
 - Use `--acceleration-policy cpu_only --ocr-mode off --no-gpu-available` only for local command
   surface smoke checks; those runs are not acceptable as Hemma evidence.
 - Treat the generated markdown report as the source for recommended defaults and rollback criteria

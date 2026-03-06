@@ -19,6 +19,7 @@ import pytest
 from scripts.sir_convert_a_lot.benchmark_story20_throughput_report import (
     DEFAULT_OUTPUT_JSON,
     DEFAULT_OUTPUT_REPORT,
+    RuntimeParityInputs,
     run_benchmark,
 )
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
@@ -82,6 +83,11 @@ def test_run_benchmark_writes_expected_payload_and_report(
     assert payload["comparison"]["recommended_profile"] != "serial_baseline"
     assert payload["comparison"]["p50_improvement_percent"] >= 0.0
     assert len(payload["profiles"]) == 3
+    assert payload["runtime_surface"]["mode"] == "in_process_app"
+    assert payload["runtime_parity"]["parity_proven"] is False
+    report_text = output_report.read_text(encoding="utf-8")
+    assert "## Runtime Surface" in report_text
+    assert "## Runtime Parity" in report_text
 
 
 def test_default_output_paths_are_outside_docs_reference() -> None:
@@ -103,3 +109,102 @@ def test_run_benchmark_rejects_docs_reference_output_path(tmp_path: Path) -> Non
             acceleration_policy="cpu_only",
             gpu_available=False,
         )
+
+
+def test_run_benchmark_embeds_task76_runtime_parity_report(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        runtime_engine_v2, "execute_v2_job_conversion", _stub_execute_v2_job_conversion
+    )
+    parity_report = tmp_path / "task76-report.json"
+    parity_report.write_text(
+        (
+            "{"
+            '"status":"passed",'
+            '"lane":"host",'
+            '"expected_revision":"abc",'
+            '"remote_revision":"abc",'
+            '"service_revision":"abc",'
+            '"service_url":"http://127.0.0.1:28085",'
+            '"checks":{'
+            '"expected_revision_matches_remote":true,'
+            '"service_revision_matches_remote":true,'
+            '"live_smoke_passed":true,'
+            '"metrics_scan_passed":true'
+            "}"
+            "}"
+        ),
+        encoding="utf-8",
+    )
+
+    payload = run_benchmark(
+        output_json=tmp_path / "task74.json",
+        output_report=tmp_path / "task74.md",
+        corpus_root=tmp_path / "corpus",
+        data_root=tmp_path / "runtime",
+        page_counts=(2,),
+        api_key="benchmark-key",
+        acceleration_policy="cpu_only",
+        ocr_mode="off",
+        ocr_engine="auto",
+        ocr_languages=[],
+        max_poll_seconds=30.0,
+        gpu_available=False,
+        runtime_mode="in_process_app",
+        runtime_host="hemma",
+        runtime_parity_inputs=RuntimeParityInputs(
+            report_json_path=parity_report,
+            status=None,
+            lane=None,
+            expected_revision=None,
+            remote_revision=None,
+            service_revision=None,
+            expected_revision_matches_remote=None,
+            service_revision_matches_remote=None,
+            live_smoke_passed=None,
+            metrics_scan_passed=None,
+        ),
+    )
+
+    assert payload["runtime_surface"]["host"] == "hemma"
+    assert payload["runtime_surface"]["parity_source"].startswith("task76_report_json:")
+    assert payload["runtime_parity"]["parity_proven"] is True
+    assert payload["runtime_parity"]["service_revision"] == "abc"
+    assert payload["runtime_parity"]["live_smoke_passed"] is True
+
+
+def test_run_benchmark_marks_runtime_parity_unproven_when_checks_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        runtime_engine_v2, "execute_v2_job_conversion", _stub_execute_v2_job_conversion
+    )
+
+    payload = run_benchmark(
+        output_json=tmp_path / "task74.json",
+        output_report=tmp_path / "task74.md",
+        corpus_root=tmp_path / "corpus",
+        data_root=tmp_path / "runtime",
+        page_counts=(2,),
+        api_key="benchmark-key",
+        acceleration_policy="cpu_only",
+        gpu_available=False,
+        runtime_parity_inputs=RuntimeParityInputs(
+            report_json_path=None,
+            status="passed",
+            lane="host",
+            expected_revision="abc",
+            remote_revision="abc",
+            service_revision="abc",
+            expected_revision_matches_remote=True,
+            service_revision_matches_remote=True,
+            live_smoke_passed=False,
+            metrics_scan_passed=True,
+        ),
+    )
+
+    assert payload["runtime_parity"]["parity_proven"] is False
+    assert "Task 76 live smoke proof is missing or failed." in payload["runtime_parity"]["notes"]

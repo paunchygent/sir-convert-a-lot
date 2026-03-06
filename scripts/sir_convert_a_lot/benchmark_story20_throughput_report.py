@@ -38,6 +38,10 @@ from scripts.sir_convert_a_lot.benchmarking.story20_throughput_types import (
     ProfilePayload,
     ProfileSummary,
     ResourceEvidence,
+    RuntimeParitySummary,
+    RuntimeSurface,
+    Task76ReportChecks,
+    Task76ReportPayload,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
@@ -60,6 +64,22 @@ class ProfileSpec:
     max_chunk_workers: int
     chunk_size_pages: int
     gpu_stage_max_concurrency: int
+
+
+@dataclass(frozen=True)
+class RuntimeParityInputs:
+    """Optional Task 76 parity metadata provided to the benchmark harness."""
+
+    report_json_path: Path | None
+    status: str | None
+    lane: str | None
+    expected_revision: str | None
+    remote_revision: str | None
+    service_revision: str | None
+    expected_revision_matches_remote: bool | None
+    service_revision_matches_remote: bool | None
+    live_smoke_passed: bool | None
+    metrics_scan_passed: bool | None
 
 
 def _utc_now_iso() -> str:
@@ -95,6 +115,147 @@ def _metric_max(metrics_text: str, metric_name: str) -> float:
         if line.startswith(metric_name):
             values.append(float(line.rsplit(" ", 1)[-1]))
     return max(values) if values else 0.0
+
+
+def _coerce_optional_str(value: object) -> str | None:
+    if isinstance(value, str) and value.strip():
+        return value
+    return None
+
+
+def _coerce_optional_bool(value: object) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    return None
+
+
+def _read_runtime_parity_report(report_json_path: Path) -> Task76ReportPayload:
+    payload_obj = json.loads(report_json_path.read_text(encoding="utf-8"))
+    if not isinstance(payload_obj, dict):
+        raise ValueError("Task 76 parity report must contain a JSON object at the root.")
+    raw_checks = payload_obj.get("checks")
+    checks_obj: object = raw_checks if isinstance(raw_checks, dict) else {}
+    checks: Task76ReportChecks = {
+        "expected_revision_matches_remote": _coerce_optional_bool(
+            checks_obj.get("expected_revision_matches_remote")
+            if isinstance(checks_obj, dict)
+            else None
+        ),
+        "service_revision_matches_remote": _coerce_optional_bool(
+            checks_obj.get("service_revision_matches_remote")
+            if isinstance(checks_obj, dict)
+            else None
+        ),
+        "live_smoke_passed": _coerce_optional_bool(
+            checks_obj.get("live_smoke_passed") if isinstance(checks_obj, dict) else None
+        ),
+        "metrics_scan_passed": _coerce_optional_bool(
+            checks_obj.get("metrics_scan_passed") if isinstance(checks_obj, dict) else None
+        ),
+    }
+    return {
+        "status": _coerce_optional_str(payload_obj.get("status")),
+        "lane": _coerce_optional_str(payload_obj.get("lane")),
+        "expected_revision": _coerce_optional_str(payload_obj.get("expected_revision")),
+        "remote_revision": _coerce_optional_str(payload_obj.get("remote_revision")),
+        "service_revision": _coerce_optional_str(payload_obj.get("service_revision")),
+        "checks": checks,
+    }
+
+
+def _build_runtime_parity_summary(
+    *,
+    inputs: RuntimeParityInputs,
+) -> tuple[RuntimeSurface, RuntimeParitySummary]:
+    parity_source = "none"
+    status = inputs.status
+    lane = inputs.lane
+    expected_revision = inputs.expected_revision
+    remote_revision = inputs.remote_revision
+    service_revision = inputs.service_revision
+    expected_revision_matches_remote = inputs.expected_revision_matches_remote
+    service_revision_matches_remote = inputs.service_revision_matches_remote
+    live_smoke_passed = inputs.live_smoke_passed
+    metrics_scan_passed = inputs.metrics_scan_passed
+
+    if inputs.report_json_path is not None:
+        report_payload = _read_runtime_parity_report(inputs.report_json_path)
+        checks_obj = report_payload["checks"]
+        parity_source = f"task76_report_json:{inputs.report_json_path.as_posix()}"
+        status = report_payload["status"] or status
+        lane = report_payload["lane"] or lane
+        expected_revision = report_payload["expected_revision"] or expected_revision
+        remote_revision = report_payload["remote_revision"] or remote_revision
+        service_revision = report_payload["service_revision"] or service_revision
+        expected_revision_matches_remote = checks_obj["expected_revision_matches_remote"]
+        if expected_revision_matches_remote is None:
+            expected_revision_matches_remote = inputs.expected_revision_matches_remote
+        service_revision_matches_remote = checks_obj["service_revision_matches_remote"]
+        if service_revision_matches_remote is None:
+            service_revision_matches_remote = inputs.service_revision_matches_remote
+        live_smoke_passed = checks_obj["live_smoke_passed"]
+        if live_smoke_passed is None:
+            live_smoke_passed = inputs.live_smoke_passed
+        metrics_scan_passed = checks_obj["metrics_scan_passed"]
+        if metrics_scan_passed is None:
+            metrics_scan_passed = inputs.metrics_scan_passed
+    elif any(
+        value is not None
+        for value in [
+            status,
+            lane,
+            expected_revision,
+            remote_revision,
+            service_revision,
+            expected_revision_matches_remote,
+            service_revision_matches_remote,
+            live_smoke_passed,
+            metrics_scan_passed,
+        ]
+    ):
+        parity_source = "cli_flags"
+
+    notes: list[str] = []
+    parity_proven = True
+    if status != "passed":
+        parity_proven = False
+        notes.append("Task 76 parity status is not `passed`.")
+    if expected_revision is None or remote_revision is None or service_revision is None:
+        parity_proven = False
+        notes.append("Missing expected/remote/service revision metadata.")
+    if expected_revision_matches_remote is not True:
+        parity_proven = False
+        notes.append("`expected_revision_matches_remote` is not true.")
+    if service_revision_matches_remote is not True:
+        parity_proven = False
+        notes.append("`service_revision_matches_remote` is not true.")
+    if live_smoke_passed is not True:
+        parity_proven = False
+        notes.append("Task 76 live smoke proof is missing or failed.")
+    if metrics_scan_passed is not True:
+        parity_proven = False
+        notes.append("Task 76 metrics safety proof is missing or failed.")
+
+    runtime_surface: RuntimeSurface = {
+        "mode": "in_process_app",
+        "host": None,
+        "service_url": None,
+        "parity_source": parity_source,
+    }
+    runtime_parity: RuntimeParitySummary = {
+        "status": status,
+        "lane": lane,
+        "expected_revision": expected_revision,
+        "remote_revision": remote_revision,
+        "service_revision": service_revision,
+        "expected_revision_matches_remote": expected_revision_matches_remote,
+        "service_revision_matches_remote": service_revision_matches_remote,
+        "live_smoke_passed": live_smoke_passed,
+        "metrics_scan_passed": metrics_scan_passed,
+        "parity_proven": parity_proven,
+        "notes": notes,
+    }
+    return runtime_surface, runtime_parity
 
 
 def _build_scan_template_image(text: str) -> bytes:
@@ -515,6 +676,10 @@ def run_benchmark(
     max_poll_seconds: float = 7200.0,
     gpu_available: bool = True,
     profiles: list[ProfileSpec] | None = None,
+    runtime_mode: str = "in_process_app",
+    runtime_host: str | None = None,
+    runtime_service_url: str | None = None,
+    runtime_parity_inputs: RuntimeParityInputs | None = None,
 ) -> BenchmarkPayload:
     """Run the Task 74 throughput benchmark and return the payload."""
     resolved_languages = list(ocr_languages or ["sv", "en"])
@@ -528,6 +693,24 @@ def run_benchmark(
 
     corpus_records = generate_corpus(corpus_root=corpus_root, page_counts=page_counts)
     resolved_profiles = profiles or _default_profiles()
+    runtime_surface, runtime_parity = _build_runtime_parity_summary(
+        inputs=runtime_parity_inputs
+        or RuntimeParityInputs(
+            report_json_path=None,
+            status=None,
+            lane=None,
+            expected_revision=None,
+            remote_revision=None,
+            service_revision=None,
+            expected_revision_matches_remote=None,
+            service_revision_matches_remote=None,
+            live_smoke_passed=None,
+            metrics_scan_passed=None,
+        )
+    )
+    runtime_surface["mode"] = runtime_mode
+    runtime_surface["host"] = runtime_host
+    runtime_surface["service_url"] = runtime_service_url
     profile_payloads = [
         _run_profile(
             profile=profile,
@@ -561,7 +744,7 @@ def run_benchmark(
     payload: BenchmarkPayload = {
         "benchmark_id": "task-74-throughput-benchmark",
         "generated_at": _utc_now_iso(),
-        "mode": "in_process_app",
+        "mode": runtime_mode,
         "corpus": {
             "corpus_root": str(corpus_root.resolve()),
             "count": len(corpus_records),
@@ -574,6 +757,8 @@ def run_benchmark(
             "ocr_engine": ocr_engine,
             "ocr_languages": resolved_languages,
         },
+        "runtime_surface": runtime_surface,
+        "runtime_parity": runtime_parity,
         "profiles": profile_payloads,
         "comparison": {
             "baseline_profile": baseline["profile_name"],
@@ -610,9 +795,64 @@ def main() -> None:
     parser.add_argument("--ocr-engine", default="easyocr")
     parser.add_argument("--ocr-languages", default="sv,en")
     parser.add_argument("--max-poll-seconds", type=float, default=7200.0)
+    parser.add_argument("--runtime-mode", default="in_process_app")
+    parser.add_argument("--runtime-host")
+    parser.add_argument("--runtime-service-url")
+    parser.add_argument("--task76-report-json", type=Path)
+    parser.add_argument("--parity-status")
+    parser.add_argument("--parity-lane")
+    parser.add_argument("--parity-expected-revision")
+    parser.add_argument("--parity-remote-revision")
+    parser.add_argument("--parity-service-revision")
+    parser.add_argument(
+        "--parity-expected-remote-ok",
+        dest="parity_expected_remote_ok",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no-parity-expected-remote-ok",
+        dest="parity_expected_remote_ok",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--parity-service-remote-ok",
+        dest="parity_service_remote_ok",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no-parity-service-remote-ok",
+        dest="parity_service_remote_ok",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--parity-live-smoke-passed",
+        dest="parity_live_smoke_passed",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no-parity-live-smoke-passed",
+        dest="parity_live_smoke_passed",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--parity-metrics-scan-passed",
+        dest="parity_metrics_scan_passed",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no-parity-metrics-scan-passed",
+        dest="parity_metrics_scan_passed",
+        action="store_false",
+    )
     parser.add_argument("--gpu-available", dest="gpu_available", action="store_true")
     parser.add_argument("--no-gpu-available", dest="gpu_available", action="store_false")
-    parser.set_defaults(gpu_available=True)
+    parser.set_defaults(
+        gpu_available=True,
+        parity_expected_remote_ok=None,
+        parity_service_remote_ok=None,
+        parity_live_smoke_passed=None,
+        parity_metrics_scan_passed=None,
+    )
     args = parser.parse_args()
 
     page_counts = tuple(
@@ -631,6 +871,21 @@ def main() -> None:
         ocr_languages=[value.strip() for value in args.ocr_languages.split(",") if value.strip()],
         max_poll_seconds=args.max_poll_seconds,
         gpu_available=args.gpu_available,
+        runtime_mode=str(args.runtime_mode),
+        runtime_host=_coerce_optional_str(args.runtime_host),
+        runtime_service_url=_coerce_optional_str(args.runtime_service_url),
+        runtime_parity_inputs=RuntimeParityInputs(
+            report_json_path=args.task76_report_json,
+            status=_coerce_optional_str(args.parity_status),
+            lane=_coerce_optional_str(args.parity_lane),
+            expected_revision=_coerce_optional_str(args.parity_expected_revision),
+            remote_revision=_coerce_optional_str(args.parity_remote_revision),
+            service_revision=_coerce_optional_str(args.parity_service_revision),
+            expected_revision_matches_remote=args.parity_expected_remote_ok,
+            service_revision_matches_remote=args.parity_service_remote_ok,
+            live_smoke_passed=args.parity_live_smoke_passed,
+            metrics_scan_passed=args.parity_metrics_scan_passed,
+        ),
     )
     print(
         "task74-benchmark-written",
@@ -639,6 +894,7 @@ def main() -> None:
                 "output_json": args.output_json.as_posix(),
                 "recommended_profile": payload["comparison"]["recommended_profile"],
                 "p50_improvement_percent": payload["comparison"]["p50_improvement_percent"],
+                "runtime_parity_proven": payload["runtime_parity"]["parity_proven"],
             },
             sort_keys=True,
         ),

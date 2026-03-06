@@ -76,6 +76,30 @@ def write_report(
         f"- OCR engine: `{payload['job_defaults']['ocr_engine']}`",
         f"- OCR languages: `{', '.join(payload['job_defaults']['ocr_languages'])}`",
         "",
+        "## Runtime Surface",
+        f"- Benchmark mode: `{payload['runtime_surface']['mode']}`",
+        f"- Benchmark host: `{payload['runtime_surface']['host'] or 'unspecified'}`",
+        f"- Benchmark service URL: `{payload['runtime_surface']['service_url'] or 'n/a'}`",
+        f"- Parity metadata source: `{payload['runtime_surface']['parity_source']}`",
+        "",
+        "## Runtime Parity",
+        f"- Parity proven: `{payload['runtime_parity']['parity_proven']}`",
+        f"- Task 76 status: `{payload['runtime_parity']['status'] or 'missing'}`",
+        f"- Lane: `{payload['runtime_parity']['lane'] or 'missing'}`",
+        f"- Expected revision: `{payload['runtime_parity']['expected_revision'] or 'missing'}`",
+        f"- Remote revision: `{payload['runtime_parity']['remote_revision'] or 'missing'}`",
+        f"- Service revision: `{payload['runtime_parity']['service_revision'] or 'missing'}`",
+        (
+            "- expected_revision_matches_remote: "
+            f"`{payload['runtime_parity']['expected_revision_matches_remote']}`"
+        ),
+        (
+            "- service_revision_matches_remote: "
+            f"`{payload['runtime_parity']['service_revision_matches_remote']}`"
+        ),
+        f"- live_smoke_passed: `{payload['runtime_parity']['live_smoke_passed']}`",
+        f"- metrics_scan_passed: `{payload['runtime_parity']['metrics_scan_passed']}`",
+        "",
         "## Profile Comparison",
         *_render_profile_rows(payload["profiles"]),
         "",
@@ -100,6 +124,10 @@ def write_report(
     rollback_conditions = comparison["rollback_conditions"]
     for item in rollback_conditions:
         lines.append(f"- {item}")
+    if payload["runtime_parity"]["notes"]:
+        lines.extend(["", "## Parity Notes"])
+        for note in payload["runtime_parity"]["notes"]:
+            lines.append(f"- {note}")
 
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

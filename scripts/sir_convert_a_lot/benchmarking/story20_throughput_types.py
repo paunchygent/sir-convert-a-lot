@@ -111,6 +111,51 @@ class JobDefaults(TypedDict):
     ocr_languages: list[str]
 
 
+class RuntimeSurface(TypedDict):
+    """Benchmark runtime surface declaration."""
+
+    mode: str
+    host: str | None
+    service_url: str | None
+    parity_source: str
+
+
+class RuntimeParitySummary(TypedDict):
+    """Task 76 parity summary embedded into the Task 74 evidence bundle."""
+
+    status: str | None
+    lane: str | None
+    expected_revision: str | None
+    remote_revision: str | None
+    service_revision: str | None
+    expected_revision_matches_remote: bool | None
+    service_revision_matches_remote: bool | None
+    live_smoke_passed: bool | None
+    metrics_scan_passed: bool | None
+    parity_proven: bool
+    notes: list[str]
+
+
+class Task76ReportChecks(TypedDict):
+    """Typed subset of the Task 76 verification checks used by Task 74."""
+
+    expected_revision_matches_remote: bool | None
+    service_revision_matches_remote: bool | None
+    live_smoke_passed: bool | None
+    metrics_scan_passed: bool | None
+
+
+class Task76ReportPayload(TypedDict):
+    """Typed subset of the Task 76 verification payload consumed by Task 74."""
+
+    status: str | None
+    lane: str | None
+    expected_revision: str | None
+    remote_revision: str | None
+    service_revision: str | None
+    checks: Task76ReportChecks
+
+
 class ComparisonSummary(TypedDict):
     """Cross-profile comparison summary."""
 
@@ -131,5 +176,7 @@ class BenchmarkPayload(TypedDict):
     mode: str
     corpus: CorpusSummary
     job_defaults: JobDefaults
+    runtime_surface: RuntimeSurface
+    runtime_parity: RuntimeParitySummary
     profiles: list[ProfilePayload]
     comparison: ComparisonSummary

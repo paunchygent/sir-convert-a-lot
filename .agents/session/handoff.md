@@ -50,3 +50,9 @@ Validation evidence:
 - Push the current revision, rerun the Task 76 deploy-and-verify gate, then execute the Task 74 Hemma benchmark harness.
 - Publish the Task 74 Hemma JSON + markdown artifacts and update the task/runbook with recommended production defaults and rollback criteria.
 - Terminalize `T74`, then close Story 20 and Epic 06 status/checkbox state in strict order once evidence is in place.
+- After Epic 06 closes, execute the next queue in this exact order:
+  1. `T62` (`docs/backlog/tasks/task-62-fix-docx-output-regression-after-pandoc-sandbox-hardening.md`)
+  2. `T25` + `T26` together (`docs/backlog/tasks/task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md`, `docs/backlog/tasks/task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback.md`)
+  3. `T12` (`docs/backlog/tasks/task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`)
+  4. `T08` (`docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md`)
+- Keep `T23` and `T24` deferred until the queue above is complete.

@@ -194,27 +194,23 @@ Primary implementation stories (active sequence):
 
 - 2026-02-28:
 
-  - Epic 05 was fully executed and terminalized across clean-break v2 removal, DOCX template
-    governance, markdown ingress routes, runtime/docs cleanup, and async push delivery.
-  - Key milestones from the day:
-    - v1 conversion surfaces removed; v2 route registry and contracts hardened,
-    - `docx -> md` and `html -> md` routes implemented with deterministic validation and tests,
-    - eval container/runtime removed; topology simplified to single runtime,
-    - async push stack completed (SSE replay + webhook onboarding + signed retry/DLQ delivery),
-    - Task 60 security hardening delivered (WeasyPrint SSRF/LFI guard + traversal + timeout parity).
-  - Validation trend remained above target throughout:
-    - coverage gates across slices ranged from `93.03%` to `96.14%`,
-    - docs/task validators and typecheck remained passing.
-  - Canonical detailed evidence is preserved in:
-    - `docs/backlog/tasks/task-44-*.md` through `task-60-*.md`,
-    - `.agents/session/handoff.md` dated entries for 2026-02-28.
+  - Epic 05 was fully executed and terminalized; canonical detailed evidence remains in
+    `docs/backlog/tasks/task-44-*.md` through `task-60-*.md` and `.agents/session/handoff.md`.
 
 - 2026-02-18:
 
-  - Epic 04 delivered service API v2 multi-format runtime and CLI remote-only pivot for
-    non-PDF->MD routes; follow-up hardening tasks 40-42 also completed.
+  - Epic 04 delivered the service API v2 multi-format runtime and CLI remote-only pivot; follow-up
+    hardening tasks 40-42 also completed.
 
 ## Next Actions
 
 - Continue Epic 06 execution sequence under Story 20 with `T74`.
 - Publish Hemma benchmark/report evidence, lock runbook defaults/guardrails for parallel OCR, and keep task/story/epic status synchronization strict as terminal states change.
+- Recommended execution order after `T74`:
+  1. `T62` — close the live DOCX output regression after sandbox hardening.
+  2. `T25` + `T26` — co-terminalize the Docling quality/order hardening pair as one focused cleanup lane.
+  3. `T12` — finish the scientific-paper workload evidence harness and acceptance report.
+  4. `T08` — close the HuleEdu thin-adapter adoption only after Sir workload evidence is stable.
+- Defer until the above queue is done:
+  - `T23` durable persistence layout retention/recovery
+  - `T24` container operations runbook + Hemma deployment verification
