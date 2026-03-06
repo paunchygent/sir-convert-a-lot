@@ -296,6 +296,7 @@ def start_sidecar(settings: BenchmarkSettings) -> None:
             "--host",
             "0.0.0.0",
             "--omni",
+            "--enforce-eager",
             "--trust-remote-code",
             "--stage-configs-path",
             "/workspace/task79_stage_config.yaml",

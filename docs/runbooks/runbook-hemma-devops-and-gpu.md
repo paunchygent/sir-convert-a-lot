@@ -453,7 +453,8 @@ Usage notes:
   - `HF_HUB_CACHE=/cache/huggingface/hub`
   - `TRANSFORMERS_CACHE=/cache/huggingface`
 - The current stage config is pinned in
-  `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`.
+  `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml` and tracks the
+  current upstream `qwen3_tts.yaml` schema.
 - The benchmark proves both:
   - host-lane reachability on `127.0.0.1:<task79-port>`
   - internal Docker-network reachability from `sir_convert_a_lot_prod`

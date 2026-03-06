@@ -66,6 +66,7 @@ Current command defaults:
   `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`
 - stage config:
   `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`
+  (mirrors the current upstream `qwen3_tts.yaml` schema)
 - output root: `build/verification/task-79-hemma-tts-sidecar/`
 - response formats: `wav,mp3`
 - network contract:

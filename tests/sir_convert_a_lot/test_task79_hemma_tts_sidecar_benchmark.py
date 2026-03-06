@@ -126,6 +126,7 @@ def test_start_sidecar_uses_persistent_hf_cache_contract(
     assert f"HF_HOME={CONTAINER_HF_HOME}" in command
     assert f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}" in command
     assert f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}" in command
+    assert "--enforce-eager" in command
 
 
 def test_report_helpers_write_expected_json_and_markdown(tmp_path: Path) -> None:
