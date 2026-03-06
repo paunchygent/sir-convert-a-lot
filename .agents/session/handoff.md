@@ -57,6 +57,23 @@
   - but the checked-in evidence bundle is mixed across runs rather than atomic,
   - and the live remaining failure must now be re-proven on current `HEAD` before export-path
     reasoning is trusted again.
+- The review-bound evidence correction slice is now implemented and pushed:
+  - `task81_openvoice_reporting.py` now emits machine-readable benchmark/evidence status plus
+    failure metadata,
+  - `run_task81_hemma_openvoice_benchmark.py` now writes one report even on partial runs,
+  - `task81_openvoice_runtime.py` now declares Torch Hub cache roots and records reference-audio
+    SHA256,
+  - tests now cover partial-run reporting and Torch cache declaration.
+- Current-head Hemma rerun was executed on `beac775f1f6c021946105adef0f007cf06b908d3` without
+  `--skip-build`:
+  - atomic evidence now exists for `run_id=20260306T220740Z`,
+  - the earlier export failure did not reproduce,
+  - current blocker has moved into `/synthesize`,
+  - `whisper-timestamped` still asserts
+    `/root/.cache/torch/hub/snakers4_silero-vad_master` even though the benchmark declares
+    `TORCH_HOME=/cache/huggingface/torch`,
+  - the corrected setup still cannot be judged for quality because synthesize fails before setup
+    artifacts are exported.
 
 Validation evidence:
 
@@ -85,24 +102,14 @@ Known remaining work / current state:
 
 - Preserve the current failed-quality `T81` sample as baseline evidence.
 - Execute `T84` as the explicit root-cause remediation lane for `T81`:
-  - make the evidence bundle atomic per rerun,
-  - declare Torch/Silero cache usage under canonical Hemma cache discipline,
-  - add machine-readable benchmark/evidence status,
-  - preserve processed-reference plus base-audio setup artifacts,
-  - rerun the same benchmark cleanly on Hemma once current-head export behavior is re-proven.
-- The local review-bound correction slice is now implemented and validated:
-  - `task81_openvoice_reporting.py` now records machine-readable benchmark/evidence status plus
-    failure metadata,
-  - `run_task81_hemma_openvoice_benchmark.py` now writes one report on partial runs instead of
-    leaving stale earlier reports in place,
-  - `task81_openvoice_runtime.py` now declares `TORCH_HOME` under the canonical HF cache tree and
-    prefetches the Silero VAD Torch Hub assets through that path,
-  - the next meaningful step is a current-head Hemma rerun to prove or disprove the remaining
-    setup-artifact export failure against the updated harness.
+  - make the declared Torch Hub cache path the effective path used by the Silero repo assertion,
+  - keep the atomic evidence/reporting contract as-is,
+  - preserve processed-reference plus base-audio setup artifacts once synthesize succeeds,
+  - rerun the same benchmark cleanly on Hemma and only then ask for listening review.
 - Update `Task 81` and `Story 23` with:
-  - what changed in the export/evidence path,
-  - whether artifacts/pacing improved,
-  - whether timbre match improved enough to keep OpenVoice credible.
+  - the current-head rerun truth,
+  - the current synthesize-stage blocker,
+  - whether artifacts/pacing/timbre improve enough to keep OpenVoice credible after the next rerun.
 - If the corrected setup is still poor, record OpenVoice as technically feasible but not the lead
   Swedish teacher-voice candidate, then proceed to `T82`.
 

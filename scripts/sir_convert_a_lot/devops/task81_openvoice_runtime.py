@@ -859,7 +859,6 @@ def _build_runtime_metadata_probe_python() -> str:
             "torch",
             "torchaudio",
             "onnxruntime",
-            "whisper-timestamped",
             "fastapi",
         )
         payload = {

@@ -211,7 +211,6 @@ class OpenVoiceSidecarBackend:
             "torch": _package_version_or_none("torch"),
             "torchaudio": _package_version_or_none("torchaudio"),
             "onnxruntime": _package_version_or_none("onnxruntime"),
-            "whisper-timestamped": _package_version_or_none("whisper-timestamped"),
         }
         self._ready = True
 

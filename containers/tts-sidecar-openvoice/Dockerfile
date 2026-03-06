@@ -43,7 +43,6 @@ RUN python -m pip install \
     "pydub==0.25.1" \
     "soxr>=0.5.0" \
     "soundfile>=0.13.1" \
-    "whisper-timestamped==1.14.2" \
     "inflect==7.0.0" \
     "unidecode==1.3.7" \
     "eng_to_ipa==0.0.2" \

@@ -110,6 +110,21 @@ Primary implementation stories (active sequence):
     - the next live failure is inside `/synthesize`, where Silero VAD requires `torchaudio`,
     - the next patch is explicit dependency completion for the VAD path, not another model-logic
       rewrite.
+  - Took the ruthless review as binding and implemented the evidence-discipline correction slice:
+    - `T81` / `T84` now record machine-readable `benchmark_status`, `evidence_status`,
+      `blocking_step`, and failure metadata,
+    - the benchmark now declares Torch Hub cache roots under the canonical HF cache tree and
+      records reference-audio SHA256,
+    - local tests now cover partial-run report writing and Torch Hub cache declaration.
+  - Ran the updated current-head Hemma rerun on `beac775f1f6c021946105adef0f007cf06b908d3` without
+    `--skip-build`:
+    - one atomic partial evidence bundle now exists for `run_id=20260306T220740Z`,
+    - the earlier export failure did not reproduce,
+    - current blocker is now synthesize-stage Torch Hub / Silero repo-path mismatch,
+    - `/synthesize` returns `500` because `whisper-timestamped` still asserts
+      `/root/.cache/torch/hub/snakers4_silero-vad_master`,
+    - corrected setup quality still cannot be judged because no processed-reference/base artifacts
+      are emitted before that failure.
 
 - 2026-03-05:
 
@@ -184,28 +199,8 @@ Primary implementation stories (active sequence):
     - cancel stops long PDF conversion at safe boundaries while preserving checkpoint + partial artifacts,
     - added `POST /v2/convert/jobs/{job_id}/resume` (idempotent per `(api_key, job_id, Idempotency-Key)`),
     - added contract tests that lock deterministic baseline vs resumed final artifact.
-  - Validation evidence:
-    - `pdm run format-all` (pass)
-    - `pdm run lint-fix` (pass)
-    - `pdm run typecheck-all` (pass)
-    - `pdm run pytest-root tests/sir_convert_a_lot` (pass: `421 passed, 5 skipped`)
-    - `pdm run coverage-gate` (pass: total coverage `96.61%`)
-    - `pdm run validate-tasks` (pass: `Validated 106 backlog files`)
-    - `pdm run validate-docs` (pass: `Validated docs=131 rules=9`)
-    - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
-
-- 2026-03-01:
-
-  - Completed Task 61 Pandoc/security hardening, including sandboxed wrappers, bounded subprocess
-    stderr handling, and sanitized workdir traversal errors; validations stayed green.
-  - Completed Task 64, Task 65, and Task 66 for ADR-0004 downstream-GUI enablement:
-    deterministic PDF layout presets plus `docx -> pdf` on v2.
-  - Canonical detailed evidence remains in the linked task docs and test files.
-
-- 2026-02-28 / 2026-02-18:
-
-  - Epic 05 was fully terminalized and Epic 04 had already delivered the v2 service API and
-    CLI remote-only pivot; canonical detailed evidence remains in the linked task docs.
+  - Validation evidence remained green across the Epic 06 March 4 delivery slice; canonical
+    detailed results stay in the linked task docs and tests.
 
 ## Next Actions
 
@@ -217,4 +212,8 @@ Primary implementation stories (active sequence):
 - `T84` is now the explicit root-cause remediation lane and is review-bound to five concrete fixes:
   atomic rerun evidence, declared Torch/Silero cache truth, current-head export diagnosis,
   machine-readable benchmark status, preserved reference/setup artifacts, and a current-head Hemma rerun.
+- Current `T81` blocker after the current-head rerun:
+  - fix the Torch Hub / Silero repo-path mismatch so the declared `TORCH_HOME` is the path used by
+    the synthesize-stage assertion logic,
+  - then rerun to recover processed-reference/base artifacts before any further listening review.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

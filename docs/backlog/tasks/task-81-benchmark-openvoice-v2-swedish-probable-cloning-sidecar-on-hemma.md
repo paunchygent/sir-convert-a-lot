@@ -57,16 +57,17 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 ## Current Evidence (2026-03-06)
 
 - Live Hemma benchmark evidence exists under `build/verification/task-81-openvoice-v2-hemma/`.
-- The OpenVoice sidecar now boots on Hemma, reuses canonical caches, answers the normalized
-  ADR-0007 endpoints, and returns `audio/wav` for a Swedish cloning request.
-- The current generated artifact is `build/verification/task-81-openvoice-v2-hemma/artifacts/sample_sv.wav`.
-- Manual listening review rejected the current setup:
+- The preserved failed-setup baseline now lives under
+  `build/verification/task-81-openvoice-v2-hemma/baseline_failed_setup/`.
+- The failed-setup baseline generated one Swedish cloned sample at
+  `build/verification/task-81-openvoice-v2-hemma/baseline_failed_setup/sample_sv.wav`.
+- Manual listening review rejected that baseline setup:
   - timbre not close enough to the approved teacher reference voice,
   - audible artifacts,
   - uneven pacing.
-- Current conclusion: the model setup is bad even though the benchmark is technically working.
-  Task 81 remains open until we rerun with a corrected setup and decide whether OpenVoice stays
-  credible for this use case.
+- Current conclusion about the failed baseline:
+  - the model setup was bad even though the benchmark was technically working,
+  - the baseline sample remains useful only as before/after evidence.
 - Local remediation implementation is now in place:
   - the sidecar separates Swedish base-model sample-rate handling from converter sample-rate
     handling,
@@ -74,22 +75,27 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
     importing upstream `openvoice.se_extractor`,
   - the sidecar image no longer depends on `faster-whisper`, which was the broken Hemma Python
     3.12 build path.
-- Remaining blocker: rerun the corrected Hemma benchmark and judge the new output.
-- New live blocker discovered on the corrected rerun:
-  - the sidecar image still lacked the Silero VAD runtime dependency chain required by
-    `whisper-timestamped`,
-  - the corrected Hemma rerun reached `/synthesize` and then failed with `ModuleNotFoundError: No module named 'torchaudio'`,
-  - next image patch: add `torchaudio` plus the documented VAD dependency support path, rebuild,
-    and rerun.
-- New live blocker discovered after synthesis started succeeding:
-  - the checked-in evidence bundle is mixed: `report.json` plus `report.md` come from an earlier
-    synthesis-success run, while `failure.txt` plus `docker_logs.txt` reflect a later rerun that
-    failed during setup-artifact export,
-  - that means the current evidence directory is not yet an atomic statement of one benchmark
-    attempt,
-  - `T84` now owns the root-cause remediation and rationale trail for fixing atomic evidence,
-    machine-readable benchmark status, declared VAD cache/runtime truth, and current-head export
-    diagnosis.
+- The `torchaudio` / runtime dependency blocker has been fixed in the benchmark image.
+- Current-head Hemma rerun on `beac775f1f6c021946105adef0f007cf06b908d3` now emits one atomic
+  partial evidence bundle:
+  - `run_id=20260306T220740Z`,
+  - `benchmark_status=partial`,
+  - `evidence_status=partial`,
+  - `blocking_step=synthesize`.
+- The earlier export failure did not reproduce on current `HEAD`.
+- The current live blocker has moved earlier into the synthesize path:
+  - `/synthesize` now returns `500 Internal Server Error`,
+  - sidecar logs show `whisper-timestamped` still asserting a missing Silero VAD repo under
+    `/root/.cache/torch/hub/snakers4_silero-vad_master`,
+  - this happens even though the benchmark now declares `TORCH_HOME=/cache/huggingface/torch`
+    and records that cache surface in the report.
+- Current conclusion:
+  - the atomic evidence and machine-readable status remediation is working,
+  - the remaining blocker is now a current-head Torch Hub / Silero VAD path mismatch in the
+    synthesize-stage reference-preprocessing path,
+  - `T84` remains open until that mismatch is fixed and one rerun completes with setup artifacts,
+  - corrected setup quality is not yet judgeable because the current rerun fails before exporting
+    processed-reference and base-audio artifacts.
 
 ## Failure Record
 
@@ -101,7 +107,7 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   - technical success alone is insufficient for the teacher-voice requirement,
   - the current OpenVoice plus Swedish-base setup should not be treated as accepted.
 
-## Current Setup Concerns From The Failed Rerun (2026-03-06)
+## Failed-Baseline Setup Concerns (2026-03-06)
 
 - The current adapter writes Swedish MMS base audio using the OpenVoice converter sample rate
   rather than the Swedish base model's native sample rate. This is a likely pacing/timbre defect
@@ -109,12 +115,12 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 - The current adapter extracts the target speaker embedding directly from the full approved
   reference clip instead of using OpenVoice's intended reference-speaker preprocessing flow.
   That means the benchmark is skipping the model's speech-segmentation/reference-cleanup path.
-- The current benchmark evidence only preserves the final cloned artifact. It does not yet write
-  the processed reference artifact plus the pre-conversion Swedish base artifact needed to isolate
-  whether defects come from the base voice, the reference embedding, or the tone-color conversion
-  step.
-- The current runtime/cache evidence does not yet declare the Torch Hub / Silero VAD cache path,
-  so canonical cache-reuse claims are incomplete until that surface is persisted and reported.
+- The current benchmark still does not write the processed reference artifact plus the
+  pre-conversion Swedish base artifact, because the synthesize-stage blocker fires before those
+  setup artifacts are exported.
+- The Torch Hub / Silero VAD cache path is now declared and reported, but current logs prove that
+  the runtime still resolves the repo assertion through `/root/.cache/torch/hub`, so cache truth is
+  now explicit but not yet correct end-to-end.
 
 ## Remediation Track
 
@@ -131,28 +137,30 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   - Swedish cloned output after tone-color conversion.
 - [x] Remove the broken `faster-whisper` / PyAV dependency chain from the OpenVoice sidecar image
   so Hemma can rebuild the benchmark image on Python 3.12.
-- [ ] Rerun Task 81 on Hemma with the corrected setup and preserve the failed sample as baseline
+- [x] Rerun Task 81 on Hemma with the corrected setup and preserve the failed sample as baseline
   evidence rather than overwriting the learning.
 - [ ] Record whether the corrected setup removes the reported artifacts, improves pacing, and
   materially improves timbre match to the approved teacher voice.
-- [ ] Eliminate the residual debug-artifact export failure so the corrected rerun preserves:
-  - processed reference artifacts,
-  - Swedish base artifacts before cloning,
-  - report files without a leftover `failure.txt`.
-- [ ] Make the next corrected rerun atomic:
+- [x] Make the next corrected rerun atomic:
   - one repo head,
   - one timestamp family,
   - one machine-readable benchmark/evidence status,
   - one deterministic setup-artifact trail.
+- [x] Re-prove the earlier export failure on current `HEAD` before changing the export path again.
+- [x] Record that the earlier export failure does not reproduce on current `HEAD`.
+- [ ] Fix the current synthesize-stage Torch Hub / Silero VAD path mismatch so the declared
+  `TORCH_HOME` cache path is actually the path used by the runtime assertion logic.
+- [ ] Remove `whisper-timestamped` from the active reference-preprocessing path and replace it
+  with a direct local Silero VAD flow rooted only in the canonical Torch cache.
 - [ ] If the corrected rerun is still poor, record OpenVoice as technically feasible but not the
   primary Swedish teacher-voice candidate, then proceed to `T82`.
 
 ## Immediate Execution Order
 
-1. Build and launch the corrected OpenVoice sidecar image on Hemma.
+1. Fix the current synthesize-stage Torch Hub / Silero VAD path mismatch on Hemma.
 1. Rerun the same Swedish probe text with the same approved teacher reference clip on Hemma.
-1. Compare processed-reference, base, and cloned artifacts against the failed baseline.
-1. Decide whether OpenVoice remains credible only after listening to the corrected rerun.
+1. Preserve processed-reference, base, and cloned artifacts beside the failed baseline.
+1. Decide whether OpenVoice remains credible only after one corrected rerun completes end-to-end.
 
 ## Acceptance Criteria
 

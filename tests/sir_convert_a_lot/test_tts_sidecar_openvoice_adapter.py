@@ -50,6 +50,7 @@ from scripts.sir_convert_a_lot.tts_sidecar.openvoice_runtime import (
     _normalize_text,
     _normalized_suffix,
 )
+from scripts.sir_convert_a_lot.tts_sidecar.openvoice_support import _load_local_silero_vad_bundle
 
 
 class _FakeBackend:
@@ -209,6 +210,41 @@ def test_openvoice_backend_capabilities_surface_cache_and_language_truth() -> No
     assert capabilities.languages[0].code == "sv"
     assert capabilities.languages[0].support_level is LanguageSupportLevel.CROSS_LINGUAL_CLAIMED
     assert capabilities.voice.reference_transcript_required is False
+
+
+def test_load_local_silero_vad_bundle_uses_canonical_torch_home(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    torch_home = tmp_path / "torch-home"
+    repo_or_dir = torch_home / "hub" / "snakers4_silero-vad_master"
+    repo_or_dir.mkdir(parents=True)
+    recorded: dict[str, object] = {}
+
+    fake_hub = SimpleNamespace(
+        set_dir=lambda value: recorded.setdefault("set_dir", value),
+        load=lambda **kwargs: (
+            recorded.setdefault("load_kwargs", kwargs),
+            (lambda *args, **kwargs: [],),
+        ),
+    )
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(hub=fake_hub))
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.tts_sidecar.openvoice_support._package_version_or_none",
+        lambda name: "1.24.3" if name == "onnxruntime" else None,
+    )
+
+    vad_model, get_speech_timestamps = _load_local_silero_vad_bundle(torch_home=torch_home)
+
+    assert callable(get_speech_timestamps) is True
+    assert recorded["set_dir"] == torch_home.as_posix()
+    assert recorded["load_kwargs"] == {
+        "repo_or_dir": repo_or_dir.as_posix(),
+        "model": "silero_vad",
+        "source": "local",
+        "onnx": True,
+    }
+    assert isinstance(vad_model, dict) is True
 
 
 def test_openvoice_backend_rejects_non_clone_requests_before_runtime_use() -> None:

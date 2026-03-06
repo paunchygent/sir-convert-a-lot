@@ -11,6 +11,9 @@ Relationships:
     - Mirrors only the VAD-based reference-speaker flow from the official
       OpenVoice benchmark path so Hemma can avoid the broken
       `faster-whisper`/PyAV build chain on Python 3.12.
+    - Uses a direct local Silero VAD helper rooted in the canonical shared
+      Hemma Torch cache instead of relying on `whisper-timestamped` path
+      assumptions.
 """
 
 from __future__ import annotations
@@ -256,6 +259,40 @@ def _hash_audio_content(reference_path: Path) -> str:
     return base64.b64encode(digest).decode("utf-8")[:16].replace("/", "_^")
 
 
+def _torch_home_root(*, override: Path | None = None) -> Path:
+    """Return the canonical Torch cache root for the current sidecar process."""
+    if override is not None:
+        return override
+    value = os.environ.get("TORCH_HOME")
+    if value is None or value.strip() == "":
+        return Path.home() / ".cache" / "torch"
+    return Path(value.strip())
+
+
+def _load_local_silero_vad_bundle(*, torch_home: Path | None = None) -> tuple[object, object]:
+    """Load Silero VAD directly from the canonical Torch Hub cache tree."""
+    import torch
+
+    resolved_torch_home = _torch_home_root(override=torch_home)
+    repo_or_dir = resolved_torch_home / "hub" / "snakers4_silero-vad_master"
+    if not repo_or_dir.is_dir():
+        raise RuntimeError(
+            "Silero VAD repo is missing from the canonical Torch Hub cache. "
+            f"Expected: {repo_or_dir}"
+        )
+
+    torch.hub.set_dir(resolved_torch_home.as_posix())
+    onnx_enabled = _package_version_or_none("onnxruntime") is not None
+    vad_model, utils = torch.hub.load(
+        repo_or_dir=repo_or_dir.as_posix(),
+        model="silero_vad",
+        source="local",
+        onnx=onnx_enabled,
+    )
+    get_speech_timestamps = utils[0]
+    return vad_model, get_speech_timestamps
+
+
 def _split_audio_vad(
     *,
     audio_path: Path,
@@ -263,19 +300,26 @@ def _split_audio_vad(
     target_dir: Path,
     split_seconds: float = 10.0,
 ) -> Path:
-    """Split one reference clip with the upstream VAD-only OpenVoice strategy."""
+    """Split one reference clip with a direct local Silero VAD flow."""
+    import librosa
     import numpy as np
+    import torch
     from pydub import AudioSegment
-    from whisper_timestamped.transcribe import get_audio_tensor, get_vad_segments
+
+    vad_model, get_speech_timestamps = _load_local_silero_vad_bundle()
+    if not callable(get_speech_timestamps):
+        raise RuntimeError("Silero VAD did not expose a callable get_speech_timestamps helper.")
 
     sample_rate_hz = 16000
-    audio_vad = get_audio_tensor(audio_path.as_posix())
-    sample_segments = get_vad_segments(
+    waveform, _ = librosa.load(audio_path.as_posix(), sr=sample_rate_hz, mono=True)
+    audio_vad = torch.from_numpy(waveform)
+    sample_segments = get_speech_timestamps(
         audio_vad,
-        output_sample=True,
-        min_speech_duration=0.1,
-        min_silence_duration=1,
-        method="silero",
+        vad_model,
+        sampling_rate=sample_rate_hz,
+        min_speech_duration_ms=100,
+        min_silence_duration_ms=1000,
+        return_seconds=False,
     )
     speech_segments = [
         (float(segment["start"]) / sample_rate_hz, float(segment["end"]) / sample_rate_hz)
