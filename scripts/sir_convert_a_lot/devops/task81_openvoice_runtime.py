@@ -522,20 +522,26 @@ def probe_from_service_container(settings: BenchmarkSettings) -> InternalProbeEv
     )
 
 
-def reference_audio_evidence(reference_audio_path: Path) -> ReferenceAudioEvidence:
+def reference_audio_evidence(reference_audio_path: Path, *, image: str) -> ReferenceAudioEvidence:
     """Collect deterministic metadata for the approved reference-audio input."""
-    output = run_checked(
+    output = docker_checked(
         [
+            "run",
+            "--rm",
+            "-v",
+            f"{reference_audio_path.resolve().parent.as_posix()}:/input:ro",
+            "--entrypoint",
             "ffprobe",
+            image,
             "-v",
             "error",
             "-show_entries",
             "format=duration:stream=sample_rate,codec_type",
             "-of",
             "json",
-            reference_audio_path.as_posix(),
+            f"/input/{reference_audio_path.name}",
         ],
-        label="ffprobe reference audio",
+        label="docker run ffprobe reference audio",
     )
     payload_obj = json.loads(output)
     if not isinstance(payload_obj, dict):

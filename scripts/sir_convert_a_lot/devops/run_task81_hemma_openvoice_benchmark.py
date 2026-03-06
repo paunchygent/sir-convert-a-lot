@@ -236,14 +236,15 @@ def main(argv: list[str] | None = None) -> int:
         peak_gpu_busy_percent=parsed_gpu_identity.peak_gpu_busy_percent,
         peak_vram_used_bytes=parsed_gpu_identity.peak_vram_used_bytes,
     )
-    reference_audio = reference_audio_evidence(settings.reference_audio_path)
-
     build_performed = False
     cleanup_performed = False
     report: BenchmarkReport | None = None
     try:
         remove_existing_benchmark_container(settings.container_name)
         build_performed, image_id = ensure_image_present(settings)
+        reference_audio = reference_audio_evidence(
+            settings.reference_audio_path, image=settings.image
+        )
         hf_mount = resolve_effective_cache_dir(
             cache_dir=settings.hf_cache_dir,
             home_mount=settings.hf_cache_home_mount,

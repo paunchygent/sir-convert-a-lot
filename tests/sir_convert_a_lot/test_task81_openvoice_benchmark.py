@@ -35,6 +35,7 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     BenchmarkSettings,
     MountResolution,
     prefetch_openvoice_assets,
+    reference_audio_evidence,
     resolve_effective_cache_dir,
     start_sidecar,
     synthesize_probe,
@@ -245,6 +246,38 @@ def test_start_sidecar_uses_persistent_cache_mounts(
         in command
     )
     assert f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}" in command
+
+
+def test_reference_audio_evidence_uses_benchmark_image_ffprobe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reference_audio = tmp_path / "voice.m4a"
+    reference_audio.write_bytes(b"audio")
+    recorded: list[list[str]] = []
+
+    def _fake_docker_checked(args: list[str], *, label: str) -> str:
+        assert label == "docker run ffprobe reference audio"
+        recorded.append(args)
+        return (
+            '{"streams":[{"codec_type":"audio","sample_rate":"48000"}],'
+            '"format":{"duration":"89.130667"}}'
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime.docker_checked",
+        _fake_docker_checked,
+    )
+
+    evidence = reference_audio_evidence(reference_audio, image="test-image")
+
+    assert evidence.filename == "voice.m4a"
+    assert evidence.reference_role == "teacher_voice_cloning_reference"
+    assert evidence.sample_rate_hz == 48000
+    assert evidence.duration_seconds == 89.130667
+    command = recorded[0]
+    assert command[0:4] == ["run", "--rm", "-v", f"{reference_audio.parent.as_posix()}:/input:ro"]
+    assert command[4:7] == ["--entrypoint", "ffprobe", "test-image"]
+    assert command[-1] == "/input/voice.m4a"
 
 
 def test_synthesize_probe_posts_normalized_contract_and_writes_artifact(
