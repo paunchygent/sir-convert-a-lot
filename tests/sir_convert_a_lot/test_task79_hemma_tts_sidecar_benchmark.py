@@ -11,6 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,7 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime import (
     CONTAINER_HF_HOME,
     CONTAINER_HF_HUB_CACHE,
     BenchmarkSettings,
+    _build_runtime_metadata_probe_python,
     extract_gpu_identity,
     prefetch_qwen3_tts_assets,
     python_recommendation,
@@ -69,6 +71,14 @@ def test_python_recommendation_marks_312_as_not_yet_314() -> None:
     assert recommendation.highest_proven_version == "3.12.11"
     assert recommendation.recommended_minor == "3.12"
     assert recommendation.python_3_14_supported is False
+
+
+def test_runtime_metadata_probe_script_is_valid_python() -> None:
+    script = _build_runtime_metadata_probe_python()
+
+    ast.parse(script)
+    assert "HF_HOME" in script
+    assert "vllm-omni" in script
 
 
 def test_parse_args_prefers_canonical_hemma_cache_env(monkeypatch: pytest.MonkeyPatch) -> None:

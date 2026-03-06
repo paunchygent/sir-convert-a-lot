@@ -299,6 +299,34 @@ def _build_service_probe_python(base_url: str) -> str:
     )
 
 
+def _build_runtime_metadata_probe_python() -> str:
+    """Return the Python snippet used to inspect versions and cache env vars in-container."""
+    return textwrap.dedent(
+        """
+        import importlib.metadata as md
+        import json
+        import os
+        import sys
+
+        def version_or_none(name: str) -> str | None:
+            try:
+                return md.version(name)
+            except md.PackageNotFoundError:
+                return None
+
+        targets = ("vllm", "vllm-omni", "vllm_omni")
+        payload = {
+            "python_version": sys.version.split()[0],
+            "package_versions": {name: version_or_none(name) for name in targets},
+            "hf_home": os.environ.get("HF_HOME"),
+            "hf_hub_cache": os.environ.get("HF_HUB_CACHE"),
+            "transformers_cache": os.environ.get("TRANSFORMERS_CACHE"),
+        }
+        print(json.dumps(payload, sort_keys=True))
+        """
+    ).strip()
+
+
 def _wav_metadata(audio_bytes: bytes) -> tuple[int, float]:
     """Extract WAV sample-rate and duration from response bytes."""
     with wave.open(io.BytesIO(audio_bytes), "rb") as wav_file:
@@ -516,23 +544,7 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
             settings.container_name,
             "python",
             "-c",
-            (
-                "import importlib.metadata as md, json, os, sys; "
-                "versions = {}; "
-                "targets = ('vllm', 'vllm-omni', 'vllm_omni'); "
-                "for name in targets:\n"
-                "    try:\n"
-                "        versions[name] = md.version(name)\n"
-                "    except md.PackageNotFoundError:\n"
-                "        versions[name] = None\n"
-                "print(json.dumps({"
-                "'python_version': sys.version.split()[0], "
-                "'package_versions': versions, "
-                "'hf_home': os.environ.get('HF_HOME'), "
-                "'hf_hub_cache': os.environ.get('HF_HUB_CACHE'), "
-                "'transformers_cache': os.environ.get('TRANSFORMERS_CACHE')"
-                "}, sort_keys=True))"
-            ),
+            _build_runtime_metadata_probe_python(),
         ],
         label="docker exec metadata probe",
     )
