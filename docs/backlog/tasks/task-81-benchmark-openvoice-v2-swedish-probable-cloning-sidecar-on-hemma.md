@@ -10,6 +10,7 @@ related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
+  - docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -81,6 +82,13 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
     No module named 'torchaudio'`,
   - next image patch: add `torchaudio` plus the documented VAD dependency support path, rebuild,
     and rerun.
+- New live blocker discovered after synthesis started succeeding:
+  - the benchmark now produces `sample_sv.wav` and writes `report.json` plus `report.md`, but the
+    run still leaves `failure.txt` because debug-artifact export fails with `permission denied` on
+    `base_sv.wav`,
+  - that means the benchmark harness now records partial validated runtime evidence, but still
+    does not preserve the full setup-artifact trail needed for closeout,
+  - `T84` now owns the root-cause remediation and rationale trail for this export failure.
 
 ## Failure Record
 
@@ -124,6 +132,10 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   evidence rather than overwriting the learning.
 - [ ] Record whether the corrected setup removes the reported artifacts, improves pacing, and
   materially improves timbre match to the approved teacher voice.
+- [ ] Eliminate the residual debug-artifact export failure so the corrected rerun preserves:
+  - processed reference artifacts,
+  - Swedish base artifacts before cloning,
+  - report files without a leftover `failure.txt`.
 - [ ] If the corrected rerun is still poor, record OpenVoice as technically feasible but not the
   primary Swedish teacher-voice candidate, then proceed to `T82`.
 

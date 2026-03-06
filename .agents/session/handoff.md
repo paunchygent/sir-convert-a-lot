@@ -51,12 +51,14 @@
   - the sidecar image no longer installs `faster-whisper`, which was the broken PyAV build path
     on Hemma Python 3.12,
   - the main service image remains untouched.
-- The corrected Hemma rerun replaced the old blocker with a narrower one:
-  - the image now builds and the sidecar reaches `/synthesize`,
-  - the live failure is `ModuleNotFoundError: No module named 'torchaudio'` from the Silero VAD
-    path used by `whisper-timestamped`,
-  - next patch is to add `torchaudio` and the documented VAD support dependency path to the
-    sidecar image, then rerun `T81`.
+- The corrected Hemma rerun replaced the old dependency blocker with a narrower one:
+  - the image now builds,
+  - the sidecar reaches `/synthesize`,
+  - the benchmark now writes `report.json` and `report.md`,
+  - the live remaining failure is post-synthesis debug-artifact export:
+    `permission denied` on `base_sv.wav`,
+  - `T84` now owns that root-cause remediation because the remaining problem is setup-evidence
+    export, not model startup.
 
 Validation evidence:
 
@@ -84,12 +86,12 @@ Known remaining work / current state:
 ## Next Session Goals (2026-03-06)
 
 - Preserve the current failed-quality `T81` sample as baseline evidence.
-- Correct the OpenVoice setup rather than adding more analysis:
-  - the code/setup fixes are already in place locally and validated,
-  - the next action is to rerun the benchmark with the rebuilt sidecar image on Hemma using the
-    same approved teacher reference clip.
+- Execute `T84` as the explicit root-cause remediation lane for `T81`:
+  - remove the residual post-synthesis export failure,
+  - preserve processed-reference plus base-audio setup artifacts,
+  - rerun the same benchmark cleanly on Hemma.
 - Update `Task 81` and `Story 23` with:
-  - what changed in setup,
+  - what changed in the export/evidence path,
   - whether artifacts/pacing improved,
   - whether timbre match improved enough to keep OpenVoice credible.
 - If the corrected setup is still poor, record OpenVoice as technically feasible but not the lead

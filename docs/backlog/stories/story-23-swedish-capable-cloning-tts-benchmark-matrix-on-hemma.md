@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
   - docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md
   - docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
@@ -51,6 +52,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 ## Tasks (Ordered)
 
 1. `docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md`
+1. `docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md`
 1. `docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
@@ -70,6 +72,8 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - switch to the intended OpenVoice reference-speaker preprocessing path,
   - emit processed-reference plus base-vs-cloned Swedish artifacts,
   - rerun the same approved teacher-voice benchmark before considering `T82`.
+- `T84` is now the explicit root-cause remediation lane for `T81`, so benchmark fixes and the
+  reasoning behind them stay reviewable instead of being buried inside the broader benchmark task.
 
 ## Acceptance Criteria
 

@@ -209,12 +209,12 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 with `T81`, then `T82 -> T83`.
+- Current local execution focus is Epic 07 Story 23 with `T81 -> T84`, then `T82 -> T83`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
-- Immediate `T81` remediation goal after the failed listening review: correct the OpenVoice
-  setup, preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts,
-  and decide whether OpenVoice remains viable before moving to `T82`.
-- The code-side remediation is now in place; the next `T81` step is the corrected Hemma rerun
-  using the rebuilt sidecar image, not more local patching.
-- Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`,
-  `T12`, `T08`.
+- Immediate `T81` remediation goal after the failed listening review: correct the OpenVoice setup,
+  preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts, and decide
+  whether OpenVoice remains viable before moving to `T82`.
+- `T84` is now the explicit root-cause remediation lane because the benchmark writes `report.json`
+  and `report.md` but still leaves `failure.txt` when setup-artifact export fails; the next `T81`
+  step is a corrected Hemma rerun that preserves processed-reference plus base-audio evidence.
+- Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.
