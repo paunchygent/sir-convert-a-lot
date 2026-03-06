@@ -10,10 +10,15 @@ related:
   - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
   - docs/backlog/stories/story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md
   - docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md
+  - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
   - docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md
+  - docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
+  - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/reference/ref-hemma-sidecar-tts-md-to-wav-contract-outline.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -51,10 +56,18 @@ This epic is complete only when:
   - benchmark and smoke evidence on the actual AMD Radeon AI PRO R9700 (`gfx1201`) host,
   - Python runtime policy of "newest supported upstream version"; treat Python `3.12` as the
     current minimum proven target until benchmark evidence confirms a newer version.
+- Backend selection for cloning-enabled follow-on work:
+  - benchmark OpenVoice V2 as the Swedish-probable cloning candidate,
+  - benchmark XTTS-v2 as the comparison cloning backend,
+  - benchmark MMS Swedish as the pronunciation-only control baseline.
 - Contract-first API design:
   - publish provider-neutral `md -> wav` v2 request/response semantics,
   - define fail-closed acceleration policy behavior for non-PDF TTS routes,
   - define output artifact/content-type semantics and stage markers.
+- Internal multi-backend reuse:
+  - standardize one internal sidecar capability contract before cloning-capable backend benchmarks
+    begin,
+  - keep backend-native runtime differences behind adapter-specific sidecar images.
 - Delivery sequencing:
   - `md -> wav` first,
   - `pdf -> wav` later as a composition route over the existing checkpointed PDF-to-Markdown stage.
@@ -70,6 +83,7 @@ This epic is complete only when:
 ## Stories
 
 1. `docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md`
+1. `docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md`
 
 ## Tasks (Ordered Planning and Execution Checklist)
 
@@ -82,10 +96,15 @@ Execution rule:
 1. `docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md`
 1. `docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md`
 1. `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
+1. `docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md`
+1. `docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md`
+1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
 ## Acceptance Criteria
 
 - [x] Accepted ADR records sidecar-only TTS, non-PDF GPU governance, and the Python runtime policy.
+- [x] Accepted follow-on ADR records the reusable internal sidecar capability contract for
+  OpenVoice V2, XTTS-v2, and MMS Swedish benchmark work.
 - [ ] Hemma benchmark task records sidecar startup/runtime evidence on the R9700 and captures
   `wav` output plus compressed-format availability.
 - [x] `md -> wav` contract outline is published and linked from the epic/story/task chain.

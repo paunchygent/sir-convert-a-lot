@@ -64,7 +64,6 @@ Primary implementation stories (active sequence):
 ## Worklog
 
 - 2026-03-06:
-
   - Completed Task 72 for Story 20 bounded parallel PDF chunk execution.
   - Added deterministic Task 72 benchmark evidence via `pdm run benchmark:task-72` at
     `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
@@ -73,9 +72,12 @@ Primary implementation stories (active sequence):
   - Planned the next feature line as Epic 07 sidecar-backed TTS: added Epic 07 / Story 22 /
     Tasks 78-80, accepted ADR-0006, published the approved `md -> wav` contract draft, and marked
     legacy Story 07 TTS planning as superseded by Epic 07.
+  - Added the follow-on Swedish cloning benchmark slice under Epic 07 as Story 23 with
+    `T81` OpenVoice V2, `T82` XTTS-v2, and `T83` MMS Swedish.
+  - Drafted and accepted ADR-0007 to define the reusable internal multi-backend sidecar
+    capability contract before `T81` starts.
 
 - 2026-03-05:
-
   - Task 73 completed for Story 20 telemetry slice, was reopened after ruthless review findings,
     and is now re-terminalized after remediation.
   - Added canonical v2 phase timing key contract + canonical-only merge enforcement at job
@@ -196,12 +198,10 @@ Primary implementation stories (active sequence):
     - updated v2 converter docs and downstream integration contract to mark `docx -> pdf` implemented.
 
 - 2026-02-28:
-
   - Epic 05 was fully executed and terminalized; canonical detailed evidence remains in
     `docs/backlog/tasks/task-44-*.md` through `task-60-*.md` and `.agents/session/handoff.md`.
 
 - 2026-02-18:
-
   - Epic 04 delivered the service API v2 multi-format runtime and CLI remote-only pivot; follow-up
     hardening tasks 40-42 also completed.
 
@@ -217,3 +217,4 @@ Primary implementation stories (active sequence):
 - Defer until the above queue is done:
   - `T23` durable persistence layout retention/recovery
   - `T24` container operations runbook + Hemma deployment verification
+- Epic 07 follow-on Swedish-cloning benchmark order is `T81 -> T82 -> T83`.

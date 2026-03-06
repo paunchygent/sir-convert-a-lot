@@ -18,6 +18,7 @@ links:
   - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
   - docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
+  - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/reference/ref-hemma-sidecar-tts-md-to-wav-contract-outline.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
@@ -126,6 +127,8 @@ Important:
 - It is **not yet implemented** in the runtime.
 - The public contract remains provider-neutral and the TTS backend must remain a Hemma sidecar,
   not an in-process dependency in the main service image.
+- Internal multi-backend TTS reuse is governed by ADR-0007; backend-native sidecar APIs are not
+  the normative Sir-facing contract.
 
 ## Data Contracts (v2)
 

@@ -20,6 +20,7 @@ links:
   - docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
   - docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md
+  - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/reference/ref-hemma-sidecar-tts-md-to-wav-contract-outline.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -155,5 +156,6 @@ Tradeoffs:
 
 - Task 79 validates sidecar compatibility and Python-version reality on Hemma.
 - Task 80 publishes the `md -> wav` v2 contract.
+- ADR-0007 defines the reusable internal sidecar capability contract for multi-backend TTS work.
 - Later implementation tasks may integrate the sidecar and then add `pdf -> wav` composition once
   `md -> wav` is stable.

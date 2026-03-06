@@ -37,6 +37,12 @@
   - completed `T78` and `T80` docs slices,
   - left `T79` as the next TTS action: benchmark sidecar compatibility and Python-version reality
     on the live R9700 host.
+  - Added a follow-on `Story 23` benchmark matrix for cloning-required Swedish backend selection:
+    - `T81` OpenVoice V2 primary benchmark,
+    - `T82` XTTS-v2 comparison benchmark,
+    - `T83` MMS Swedish pronunciation-control benchmark.
+  - Drafted and accepted `ADR-0007` for the reusable internal multi-backend sidecar capability
+    contract to govern `T81+`.
 
 Validation evidence:
 
@@ -67,3 +73,8 @@ Validation evidence:
 - Keep `T23` and `T24` deferred until the queue above is complete.
 - TTS planning is now ready for execution under Epic 07; when that queue is picked up, start with
   `T79` (`docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`).
+- If Swedish-capable cloning becomes the next planning lane after `T79`, execute the benchmark
+  matrix in this order:
+  1. `T81`
+  1. `T82`
+  1. `T83`
