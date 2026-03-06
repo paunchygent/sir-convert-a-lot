@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-03-04'
-last_updated: '2026-03-05'
+last_updated: '2026-03-06'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md
@@ -94,7 +94,7 @@ high-throughput pipeline with:
 - [x] `T71` `docs/backlog/tasks/task-71-add-cancel-with-save-and-resume-from-checkpoint-flow.md`
 - [x] `T73` `docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md`
 - [x] `T76` `docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md`
-- [ ] `T72` `docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md`
+- [x] `T72` `docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md`
 - [x] `T77` `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
 - [ ] `T74` `docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md`
 

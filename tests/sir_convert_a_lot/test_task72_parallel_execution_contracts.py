@@ -648,7 +648,9 @@ def test_parallel_checkpoint_and_partial_retention_respects_job_expiry_and_pin(
     )
 
     config = _parallel_service_config(tmp_path, data_dir="service_data_retention")
-    config = replace(config, result_ttl_seconds=1, upload_ttl_seconds=1)
+    # Keep TTL short enough for the retention assertion, but long enough that
+    # the job cannot expire during the first progress poll under full-suite load.
+    config = replace(config, result_ttl_seconds=2, upload_ttl_seconds=2)
     app = create_app(config)
     client = TestClient(app)
 
@@ -688,7 +690,7 @@ def test_parallel_checkpoint_and_partial_retention_respects_job_expiry_and_pin(
     )
     assert pinned_checkpoint.status_code == 200
 
-    time.sleep(1.2)
+    time.sleep(2.2)
     runtime = app.state.runtime_v2
     runtime.job_store.sweep_expired()
 

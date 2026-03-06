@@ -2,15 +2,16 @@
 id: task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools
 title: Parallelize PDF OCR conversion with bounded worker pools
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-04'
-last_updated: '2026-03-05'
+last_updated: '2026-03-06'
 related:
   - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md
   - docs/backlog/tasks/task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts.md
   - docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md
   - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
+  - docs/reference/ref-task-72-parallel-throughput-evidence.md
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py
   - scripts/sir_convert_a_lot/infrastructure/runtime_telemetry_v2.py
   - scripts/sir_convert_a_lot/infrastructure/v2_pdf_checkpointed_executor.py
@@ -111,45 +112,45 @@ preserving determinism, checkpoint/resume correctness, and production stability.
 
 ## Deliverables
 
-- [ ] Parallel execution implementation in runtime/conversion pipeline with deterministic merge.
-- [ ] Concurrency-safe checkpoint and partial artifact persistence model for parallel workers.
-- [ ] Explicit config surface (knobs, bounds, defaults) for chunk workers and chunk size.
-- [ ] Telemetry contract updates for job-level vs chunk-level concurrency and bounded labels.
-- [ ] Concurrency safety, cancel/resume, deterministic parity, and API contract regression tests.
-- [ ] Updated runbook guidance for safe Hemma tuning and rollout sequencing.
+- [x] Parallel execution implementation in runtime/conversion pipeline with deterministic merge.
+- [x] Concurrency-safe checkpoint and partial artifact persistence model for parallel workers.
+- [x] Explicit config surface (knobs, bounds, defaults) for chunk workers and chunk size.
+- [x] Telemetry contract updates for job-level vs chunk-level concurrency and bounded labels.
+- [x] Concurrency safety, cancel/resume, deterministic parity, and API contract regression tests.
+- [x] Updated runbook guidance for safe Hemma tuning and rollout sequencing.
 
 ## Acceptance Criteria
 
-- [ ] Parallel mode shows measurable throughput improvement (>= 10% wall-clock reduction versus
+- [x] Parallel mode shows measurable throughput improvement (>= 10% wall-clock reduction versus
   serial baseline on task benchmark fixture) and stores machine-readable evidence under
   `build/benchmarks/story-20/` without API/artifact regressions.
-- [ ] Resume from partially parallelized runs is byte-identical to serial baseline and contains no
+- [x] Resume from partially parallelized runs is byte-identical to serial baseline and contains no
   duplicate chunk content.
-- [ ] Under parallel load, checkpoint state remains valid (`checkpoint_invalid` is never produced by
+- [x] Under parallel load, checkpoint state remains valid (`checkpoint_invalid` is never produced by
   write races) and chunk records remain complete/unique.
-- [ ] ADR-0005 progress invariants hold under out-of-order completion:
+- [x] ADR-0005 progress invariants hold under out-of-order completion:
   - `processed_pages`/`failed_pages`/`percent_complete` never decrease,
   - progress fields never exceed `total_pages`,
   - chunk commits update heartbeat and phase timings consistently.
-- [ ] Cancel-with-save behavior is deterministic in parallel mode and yields resume-safe partial
+- [x] Cancel-with-save behavior is deterministic in parallel mode and yields resume-safe partial
   artifacts with explicit commit boundary (only chunks committed before cancel barrier are
   persisted).
-- [ ] Parallel checkpoint/partial persistence remains retention-bounded and pin-aware (expires with
+- [x] Parallel checkpoint/partial persistence remains retention-bounded and pin-aware (expires with
   job unless `retention.pin=true`).
-- [ ] Default behavior remains serial when parallel knobs are unset (opt-in rollout preserved).
-- [ ] Effective config is validated, documented, and exposed with canonical metadata keys:
+- [x] Default behavior remains serial when parallel knobs are unset (opt-in rollout preserved).
+- [x] Effective config is validated, documented, and exposed with canonical metadata keys:
   `parallel_enabled`, `max_chunk_workers`, `chunk_size_pages`, `effective_gpu_stage_limit`,
   `scheduling_mode`.
-- [ ] Telemetry reflects true scheduler state for job and chunk concurrency while preserving bounded
+- [x] Telemetry reflects true scheduler state for job and chunk concurrency while preserving bounded
   cardinality (no `job_id`, filename, or correlation-id labels).
-- [ ] `/artifact`, `/artifact/partial`, `/checkpoint`, and `/resume` preserve ADR/API semantics in
+- [x] `/artifact`, `/artifact/partial`, `/checkpoint`, and `/resume` preserve ADR/API semantics in
   serial and parallel modes:
   - `/artifact` remains terminal-success-only,
   - `/artifact/partial` and `/checkpoint` retain `200/202/404` behavior,
   - `/resume` creates a new `job_id` and preserves rejection semantics for missing/expired
     checkpoint material.
-- [ ] T76 deploy-parity + live verification gate evidence exists before Hemma tuning runs for T72/T74.
-- [ ] GPU-backed stages enforce both per-job and global concurrency caps with backpressure to avoid
+- [x] T76 deploy-parity + live verification gate evidence exists before Hemma tuning runs for T72/T74.
+- [x] GPU-backed stages enforce both per-job and global concurrency caps with backpressure to avoid
   OOM/thrash, and GPU policy enforcement remains intact (no silent CPU fallback when GPU is
   requested/required).
 
@@ -174,17 +175,48 @@ preserving determinism, checkpoint/resume correctness, and production stability.
 
 ## Remediation Checklist (Must Be Resolved Before Terminalizing)
 
-- [ ] Blocker findings for resume safety and checkpoint race safety are closed.
-- [ ] High-severity findings for cancellation barrier semantics and config contract are closed.
-- [ ] High-severity telemetry contract gaps are closed with bounded-label enforcement.
-- [ ] Story 20 guardrails (T76 prerequisite + opt-in default parallelism) are enforced.
-- [ ] Medium-severity API parity and explicit test-matrix gaps are closed.
+- [x] Blocker findings for resume safety and checkpoint race safety are closed.
+- [x] High-severity findings for cancellation barrier semantics and config contract are closed.
+- [x] High-severity telemetry contract gaps are closed with bounded-label enforcement.
+- [x] Story 20 guardrails (T76 prerequisite + opt-in default parallelism) are enforced.
+- [x] Medium-severity API parity and explicit test-matrix gaps are closed.
+
+## Status Update (2026-03-06)
+
+- Implemented:
+  - bounded per-job chunk worker pools with ordered commit semantics in
+    `scripts/sir_convert_a_lot/infrastructure/v2_pdf_checkpointed_executor.py`,
+  - global chunk-worker admission/backpressure controls in
+    `scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py`,
+  - explicit parallel config/env contract and surfaced conversion metadata in
+    `runtime_config.py`, `v2_conversion_executor.py`, and result payloads,
+  - dedicated Task 72 regression coverage for determinism, checkpoint safety, cancel/resume,
+    bounded metrics labels, API parity, progress monotonicity, and multi-job caps.
+- Added deterministic local throughput evidence command and artifact:
+  - `pdm run benchmark:task-72 --output-json build/benchmarks/story-20/task-72-parallel-throughput-local.json`
+  - artifact: `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
+  - latest local run (`2026-03-06`, artifact timestamp `2026-03-05T23:10:26Z`):
+    - `comparison.p50_wall_clock_improvement_percent=73.274`
+    - `comparison.byte_identical_to_serial=true`
+    - `serial.p50_duration_seconds=0.317518`
+    - `parallel.p50_duration_seconds=0.08486`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Validation Evidence
+
+- `pdm run format-all` (pass)
+- `pdm run lint-fix` (pass)
+- `pdm run typecheck-all` (pass: `Success: no issues found in 207 source files`)
+- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `479 passed, 5 skipped`)
+- `pdm run benchmark:task-72 --total-pages 8 --repeats 5 --chunk-size-pages 1 --max-chunk-workers 4 --stub-work-seconds 0.03 --output-json build/benchmarks/story-20/task-72-parallel-throughput-local.json --data-root build/benchmarks/story-20/task-72-parallel-throughput-runtime` (pass: `p50_wall_clock_improvement_percent=73.274`)
+- `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
+- `pdm run validate-docs` (pass: `Validated docs=137 rules=9`)
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
 
 ## Closeout (Mandatory)
 

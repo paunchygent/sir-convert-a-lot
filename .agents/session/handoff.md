@@ -1,78 +1,52 @@
 # Session Handoff
 
-## Current Session Summary (2026-03-05)
+## Current Session Summary (2026-03-06)
 
-- Completed `T76` (`docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md`).
-- Implemented one-command deploy parity + live verification surface:
-  - `pdm run hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
-- Refactored GPU verifier to committed Python module + `--remote` wrapper flow:
-  - `scripts/devops/verify-hemma-gpu-runtime.sh`
-  - `scripts/sir_convert_a_lot/devops/verify_hemma_gpu_runtime.py`
-- Added strict verification contracts + regression tests:
-  - `scripts/sir_convert_a_lot/devops/hemma_deploy_verification_contracts.py`
-  - `tests/sir_convert_a_lot/test_hemma_deploy_verification_contracts.py`
-  - `tests/sir_convert_a_lot/test_hemma_deploy_and_verify.py`
-- Updated runbook and skill guidance:
+- Completed `T72` (`docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md`).
+- Confirmed the core Task 72 implementation already existed in runtime/config/API surfaces and
+  terminalized the docs-as-code state.
+- Added deterministic Task 72 benchmark runner + test coverage:
+  - `scripts/sir_convert_a_lot/benchmark_story20_parallel_throughput.py`
+  - `tests/sir_convert_a_lot/test_benchmark_story20_parallel_throughput.py`
+  - `pdm run benchmark:task-72`
+- Generated local benchmark evidence:
+  - `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
+  - `build/benchmarks/story-20/task-72-parallel-throughput-runtime/`
+  - latest local result: `comparison.p50_wall_clock_improvement_percent=73.274`,
+    `comparison.byte_identical_to_serial=true`
+- Updated task/reference/runbook/current log state:
+  - `docs/reference/ref-task-72-parallel-throughput-evidence.md`
   - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
-  - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
-- Added OCR hardening follow-up planning:
-  - `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
-  - `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
-
-- Completed `T77` (`docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`).
-- Added OCR engine + language selection for v2 PDF conversions:
-  - v2 JobSpec: `pdf_options.ocr_engine` and `pdf_options.ocr_languages`,
-  - CLI: `--ocr-engine` and repeatable `--ocr-language`,
-  - preflight gates to fail-fast on missing OCR engines or language packs.
-- Updated Hemma defaults for Swedish OCR correctness:
-  - default engine: EasyOCR with `sv,en`,
-  - optional engine: Tesseract CLI with `swe,eng` packs installed in the image.
-- Extended Hemma v2 live verifier with a Swedish OCR smoke step that asserts `åäö` and captures
-  OCR metadata + throughput evidence fields.
-
-Live evidence (pass):
-
-- `build/verification/task-76-hemma-deploy-verify/report.json` (`status=passed`)
-- `build/verification/task-76-hemma-deploy-verify/report.md`
-- `build/verification/task-76-hemma-deploy-verify/readyz.json`
-- `build/verification/task-76-hemma-deploy-verify/metrics.prom`
-- `build/verification/task-76-hemma-deploy-verify/remote_head.txt`
+  - `docs/backlog/current.md`
+  - `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
+- Started `T74` benchmark/report implementation:
+  - `scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py`
+  - `scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py`
+  - `tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py`
+  - `pdm run benchmark:task-74`
+- Generated a local command-surface smoke artifact for Task 74:
+  - `build/benchmarks/story-20/task-74-throughput-smoke-local.json`
+  - `build/benchmarks/story-20/task-74-throughput-smoke-local.md`
+- Current Task 74 blocker:
+  - local `HEAD=855b5a46f8640b69112e9cd1ad071f4f94ea17f1`
+  - deployed `/healthz.service_revision=e7a1e38c1e73ab9cd7953f68560c8e82df8d88ac`
+  - rerun Task 76 deploy parity on a pushed revision before final Hemma benchmark evidence.
 
 Validation evidence:
 
 - `pdm run format-all` (pass)
 - `pdm run lint-fix` (pass)
-- `pdm run typecheck-all` (pass)
-- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `449 passed, 5 skipped`)
+- `pdm run typecheck-all` (pass: `Success: no issues found in 207 source files`)
+- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `479 passed, 5 skipped`)
+- `pdm run benchmark:task-72 --total-pages 8 --repeats 5 --chunk-size-pages 1 --max-chunk-workers 4 --stub-work-seconds 0.03 --output-json build/benchmarks/story-20/task-72-parallel-throughput-local.json --data-root build/benchmarks/story-20/task-72-parallel-throughput-runtime` (pass)
 - `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
-- `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
+- `pdm run validate-docs` (pass: `Validated docs=137 rules=9`)
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+- `pdm run typecheck-all` (pass: `Success: no issues found in 211 source files`)
+- `pdm run pytest-root tests/sir_convert_a_lot/test_benchmark_story20_parallel_throughput.py tests/sir_convert_a_lot/test_benchmark_story20_telemetry_overhead.py tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py -q` (pass: `9 passed`)
 
-Validation evidence (local, T77):
+## Next Session Goals (2026-03-06)
 
-- `pdm run format-all` (pass)
-- `pdm run lint-fix` (pass)
-- `pdm run typecheck-all` (pass)
-- `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `476 passed, 5 skipped`)
-- `pdm run coverage-gate` (pass: total coverage `95.76%`)
-- `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
-- `pdm run validate-docs` (pass: `Validated docs=136 rules=9`)
-
-Live evidence (pass, T77):
-
-- `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host` (pass)
-- Remote smoke artifacts (Hemma):
-  - `build/verification/task-76-hemma-deploy-verify/v2-smoke/report.json`
-  - `build/verification/task-76-hemma-deploy-verify/v2-smoke/swedish_ocr_excerpt.txt` (contains `å ä ö`)
-
-Cross-repo skill audit:
-
-- Updated `/Users/olofs_mba/Documents/Repos/huledu-reboot/.agents/skills/huledu-devops-hemma/SKILL.md`
-  with Sir Convert-a-Lot lane/deploy coexistence guidance.
-- `windsurf-project` skill audit found no Sir Convert-a-Lot/Hemma skill references to update.
-
-## Next Session Goals (2026-03-05)
-
-- Execute `T72` (parallel worker pools) and then `T74` (throughput benchmark/report).
-- Keep `T76` evidence command as pre-slice gate before throughput-tuning changes.
-- Preserve strict metric label safety (`job_id=`/`jobv2_` forbidden) and host-lane verification policy.
+- Push the current revision, rerun the Task 76 deploy-and-verify gate, then execute the Task 74 Hemma benchmark harness.
+- Publish the Task 74 Hemma JSON + markdown artifacts and update the task/runbook with recommended production defaults and rollback criteria.
+- Terminalize `T74`, then close Story 20 and Epic 06 status/checkbox state in strict order once evidence is in place.

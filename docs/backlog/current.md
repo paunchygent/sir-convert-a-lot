@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-05'
+last_updated: '2026-03-06'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -62,6 +62,14 @@ Primary implementation stories (active sequence):
 - `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md` (active)
 
 ## Worklog
+
+- 2026-03-06:
+
+  - Completed Task 72 for Story 20 bounded parallel PDF chunk execution.
+  - Added deterministic Task 72 benchmark evidence via `pdm run benchmark:task-72` at
+    `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
+    (`comparison.p50_wall_clock_improvement_percent=73.274`, `comparison.byte_identical_to_serial=true`).
+  - Updated runbook/reference/task docs and checked the Epic 06 `T72` tracker box.
 
 - 2026-03-05:
 
@@ -186,12 +194,8 @@ Primary implementation stories (active sequence):
 
 - 2026-02-28:
 
-  - Epic 05 was fully executed and terminalized in strict order:
-    - clean-break v2-only removal (`T04-T05`, `S01`),
-    - DOCX template governance and endpoints (`T06-T07`, `S02`),
-    - Markdown ingress routes (`T08-T09`),
-    - downstream contract + runtime/docs cleanup (`T10-T12`, `S03-S04`),
-    - async push ADR/contract/implementation (`T02-T03`, `T13-T16`, `S05`).
+  - Epic 05 was fully executed and terminalized across clean-break v2 removal, DOCX template
+    governance, markdown ingress routes, runtime/docs cleanup, and async push delivery.
   - Key milestones from the day:
     - v1 conversion surfaces removed; v2 route registry and contracts hardened,
     - `docx -> md` and `html -> md` routes implemented with deterministic validation and tests,
@@ -207,14 +211,10 @@ Primary implementation stories (active sequence):
 
 - 2026-02-18:
 
-  - Epic 04 delivered service API v2 multi-format runtime and CLI remote-only pivot
-    for non-PDF->MD routes.
-  - Follow-up hardening tasks 40-42 completed (tests, zip-hardening, cancellation CAS).
+  - Epic 04 delivered service API v2 multi-format runtime and CLI remote-only pivot for
+    non-PDF->MD routes; follow-up hardening tasks 40-42 also completed.
 
 ## Next Actions
 
-- Continue Epic 06 execution sequence under Story 20:
-  - execute `T72` -> `T74`.
-- Keep docs/task status synchronization strict as tasks terminalize:
-  - task status terminal before epic/story checkboxes are checked.
-- After `T74`, publish benchmark evidence and lock runbook defaults/guardrails for parallel OCR.
+- Continue Epic 06 execution sequence under Story 20 with `T74`.
+- Publish Hemma benchmark/report evidence, lock runbook defaults/guardrails for parallel OCR, and keep task/story/epic status synchronization strict as terminal states change.

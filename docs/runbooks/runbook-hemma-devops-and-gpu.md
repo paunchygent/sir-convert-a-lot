@@ -311,6 +311,80 @@ Overhead deltas:
 - `overhead_percent.full_vs_sink_disabled`
 - `overhead_percent.full_vs_bypassed`
 
+## Local Parallel Throughput Fixture (Task 72)
+
+Use this deterministic local benchmark to confirm the Task 72 worker-pool implementation before
+moving to Hemma production-profile tuning in Task 74.
+
+Command:
+
+```bash
+pdm run benchmark:task-72 \
+  --total-pages 8 \
+  --repeats 5 \
+  --chunk-size-pages 1 \
+  --max-chunk-workers 4 \
+  --stub-work-seconds 0.03 \
+  --output-json build/benchmarks/story-20/task-72-parallel-throughput-local.json \
+  --data-root build/benchmarks/story-20/task-72-parallel-throughput-runtime
+```
+
+Interpretation rules:
+
+- `comparison.p50_wall_clock_improvement_percent` should stay at or above the Task 72 floor
+  (`>= 10%`) for the deterministic fixture.
+- `comparison.byte_identical_to_serial` must remain `true`.
+- `serial.result_metadata.parallel_enabled` must be `false`.
+- `parallel.result_metadata.parallel_enabled` must be `true`.
+- `parallel.result_metadata.scheduling_mode` must remain `parallel_ordered_commit`.
+
+Rollout guardrails:
+
+- Treat this command as implementation evidence only; do not use it to set Hemma production
+  defaults.
+- Keep `SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=0` by default until Task 74 publishes tuned
+  Hemma guidance and rollback criteria.
+- Run the Task 76 deploy-and-verify gate before any Hemma tuning/profile runs.
+
+## Throughput Benchmark Harness (Task 74)
+
+Use the committed Task 74 harness to compare baseline and tuned long-PDF profiles and publish
+machine-readable plus markdown evidence.
+
+Local command surface:
+
+```bash
+pdm run benchmark:task-74 \
+  --output-json build/benchmarks/story-20/task-74-throughput-benchmark-local.json \
+  --output-report build/benchmarks/story-20/task-74-throughput-report-local.md \
+  --corpus-root build/benchmarks/story-20/task-74-corpus \
+  --data-root build/benchmarks/story-20/task-74-runtime \
+  --page-counts 120,180,240 \
+  --gpu-available
+```
+
+Remote Hemma execution path after push/deploy parity:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-74 \
+  --output-json build/benchmarks/story-20/task-74-throughput-benchmark-hemma.json \
+  --output-report build/benchmarks/story-20/task-74-throughput-report-hemma.md \
+  --corpus-root build/benchmarks/story-20/task-74-corpus \
+  --data-root build/benchmarks/story-20/task-74-runtime \
+  --page-counts 120,180,240 \
+  --gpu-available
+```
+
+Usage notes:
+
+- Defaults assume Task 76 deploy parity has already passed on the pushed revision.
+- The harness records p50/p90 wall-clock latency, success/error rate, queue depth, worker
+  saturation, chunk-worker saturation, and GPU busy/memory gauges.
+- Use `--acceleration-policy cpu_only --ocr-mode off --no-gpu-available` only for local command
+  surface smoke checks; those runs are not acceptable as Hemma evidence.
+- Treat the generated markdown report as the source for recommended defaults and rollback criteria
+  once the Hemma run is complete.
+
 ## V2 Conversion Smoke Verification (Task 39)
 
 Produce deterministic, written evidence that the Hemma **docker lane** can execute the
