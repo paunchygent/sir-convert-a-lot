@@ -74,6 +74,17 @@
     `TORCH_HOME=/cache/huggingface/torch`,
   - the corrected setup still cannot be judged for quality because synthesize fails before setup
     artifacts are exported.
+- The no-legacy-path remediation is now implemented and pushed in `e1d5901`:
+  - the active Task 81 reference-preprocessing path no longer uses `whisper-timestamped`,
+  - direct local Silero VAD loading now uses the canonical Torch cache only,
+  - the Task 81 image no longer installs `whisper-timestamped`.
+- Current-head Hemma rerun was executed on `e1d5901879c64a21f256a88352f407e6ce2ae45d` without
+  `--skip-build`:
+  - atomic evidence now exists for `run_id=20260306T222647Z`,
+  - `/synthesize` succeeds and writes `artifacts/sample_sv.wav`,
+  - there is no top-level `failure.txt` for the current rerun,
+  - the remaining blocker is `collect_setup_artifacts`, because processed-reference, base-output,
+    and converter-input artifacts are still missing.
 
 Validation evidence:
 
@@ -102,13 +113,12 @@ Known remaining work / current state:
 
 - Preserve the current failed-quality `T81` sample as baseline evidence.
 - Execute `T84` as the explicit root-cause remediation lane for `T81`:
-  - make the declared Torch Hub cache path the effective path used by the Silero repo assertion,
-  - keep the atomic evidence/reporting contract as-is,
-  - preserve processed-reference plus base-audio setup artifacts once synthesize succeeds,
+  - keep the direct local Silero path and atomic evidence/reporting contract as-is,
+  - recover processed-reference plus base-audio/converter-input setup artifacts,
   - rerun the same benchmark cleanly on Hemma and only then ask for listening review.
 - Update `Task 81` and `Story 23` with:
   - the current-head rerun truth,
-  - the current synthesize-stage blocker,
+  - the current setup-artifact blocker,
   - whether artifacts/pacing/timbre improve enough to keep OpenVoice credible after the next rerun.
 - If the corrected setup is still poor, record OpenVoice as technically feasible but not the lead
   Swedish teacher-voice candidate, then proceed to `T82`.

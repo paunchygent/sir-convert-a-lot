@@ -31,8 +31,8 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
 ## PR Scope
 
 - Remediate only the failures that block `T81` acceptance:
-  - the remaining synthesize-stage Torch Hub / Silero repo-path mismatch on Hemma,
-  - declared-but-not-yet-satisfied Torch/Silero cache/runtime behavior,
+  - the remaining setup-artifact collection gap after synthesize succeeds,
+  - declared-and-now-satisfied Torch/Silero cache/runtime behavior that must stay true,
   - missing deterministic setup-artifact evidence after a corrected rerun,
   - the need to preserve atomic partial-vs-failed-vs-complete benchmark status.
 - Keep all changes sidecar-only and benchmark-only:
@@ -57,20 +57,18 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
 - Root cause 4: the VAD runtime/cache surface is still under-declared
   - `whisper-timestamped` pulls Silero VAD through Torch Hub into container-local state unless we
     explicitly declare and persist that cache path.
-  - current `HEAD` now declares and reports the Torch Hub cache surface, but the synthesize path
-    still asserts against `/root/.cache/torch/hub`, so the cache truth is explicit but not yet
-    operationally correct.
+  - this was true on the earlier rerun and is now fixed by removing `whisper-timestamped` from the
+    active VAD path and loading Silero directly from the canonical Torch cache.
 - Root cause 5: benchmark completion and machine-readable status are underspecified
   - this was true in the earlier harness and is now fixed on current `HEAD`.
   - the current report schema now distinguishes full success, partial evidence, and fatal
     benchmark failure in one machine-readable payload.
-- Root cause 6: the remaining current-head blocker is a Torch Hub / Silero repo-path mismatch
-  - the benchmark now sets `TORCH_HOME=/cache/huggingface/torch` and prefetched Silero VAD into
-    that tree,
-  - but `whisper-timestamped` still asserts `missing /root/.cache/torch/hub/snakers4_silero-vad_master`
-    during `/synthesize`.
-- Root cause 7: setup artifacts are still absent because the current rerun fails before the
-  synthesize path can finish and export them.
+- Root cause 6: the current-head blocker has moved from synthesize into setup-artifact collection
+  - the current rerun now reaches `/synthesize` successfully and writes `sample_sv.wav`,
+  - but `processed_reference_dir`, `base_output_path`, and `converter_input_path` are still
+    missing in the atomic report.
+- Root cause 7: the benchmark still needs a deterministic artifact trail for the corrected setup
+  - one final WAV alone is not enough to validate the corrected OpenVoice path.
 
 ## Reasoned Remediation Changes
 
@@ -85,6 +83,9 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
   - Reason: the installed `whisper-timestamped==1.14.2` path still hardcodes
     `~/.cache/torch/hub/...`, so the clean fix is to stop depending on that path rather than
     wiring legacy cache expectations into the sidecar.
+- Re-focus the remaining remediation on setup-artifact collection, not synthesis.
+  - Reason: current `HEAD` now proves `/synthesize` succeeds, so the missing processed-reference
+    and base/converter artifacts are the only remaining blocker before listening review.
 - Declare the Torch/Silero cache surface under the canonical Hemma cache tree.
   - Reason: canonical cache reuse is not fully true while the runtime still resolves the Silero
     repo assertion through an undeclared default path.
@@ -125,7 +126,7 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
   - processed-reference artifacts,
   - Swedish base artifacts before cloning,
   - reference-input identity evidence,
-  - and no longer leaves `failure.txt` once the current synthesize-stage blocker is cleared.
+  - and no longer leaves `failure.txt` once the current setup-artifact blocker is cleared.
 - [ ] Task-level reasoning notes kept in sync with the implementation so reviewers can see why
   each change exists.
 
@@ -144,8 +145,7 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
 - [x] The current export failure is reproduced or disproved against current `HEAD` before any
   further export-path reasoning is treated as canonical.
 - [x] Current `HEAD` disproves the old export failure as the active blocker.
-- [ ] The declared Torch/Silero cache path is also the runtime path used by the synthesize-stage
-  assertion logic.
+- [x] The declared Torch/Silero cache path is also the runtime path used by the active VAD logic.
 - [ ] `T81` can complete end-to-end with one atomic evidence bundle containing the required setup
   artifacts and final report files.
 - [ ] The remediation task records the reasoning behind each implementation change, not just the
@@ -156,7 +156,7 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
 1. Correct `T81` so it describes the new atomic partial rerun rather than the old mixed bundle.
 1. Keep the machine-readable benchmark/evidence status and declared Torch/Silero cache reporting as
    the canonical partial-run truth.
-1. Fix the current synthesize-stage Torch Hub / Silero repo-path mismatch on Hemma.
+1. Fix the current setup-artifact collection gap on Hemma.
 1. Preserve reference-input identity and setup-artifact evidence in one deterministic output tree.
 1. Close this remediation task only after `T81` emits one complete rerun with setup artifacts.
 

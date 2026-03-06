@@ -93,11 +93,8 @@ Primary implementation stories (active sequence):
     - the pipeline is technically working,
     - the current model setup is bad,
     - `T81` stays open for setup remediation before we treat OpenVoice as credible.
-  - Planned the `T81` remediation order from the shipped implementation rather than from
-    extra analysis:
-    - fix the MMS-base vs OpenVoice-converter sample-rate mismatch,
-    - switch the reference clip onto OpenVoice's intended preprocessing path,
-    - rerun with processed-reference, base, and cloned Swedish artifacts preserved together.
+  - Planned the initial `T81` remediation around three concrete fixes: sample-rate boundaries,
+    intended reference preprocessing, and paired processed-reference/base/cloned artifacts.
   - Implemented the local `T81` remediation slice:
     - split the oversized OpenVoice adapter support into a dedicated helper module,
     - replaced the upstream `openvoice.se_extractor` import with a committed local VAD-only
@@ -105,11 +102,9 @@ Primary implementation stories (active sequence):
     - removed the broken `faster-whisper` / PyAV dependency chain from the sidecar image so Hemma
       can rebuild on Python 3.12,
     - preserved the sidecar-only boundary so the main service image remains untouched.
-  - Ran the corrected Hemma rerun far enough to replace the old blocker:
-    - the sidecar image now builds and boots past the old `faster-whisper` / PyAV failure,
-    - the next live failure is inside `/synthesize`, where Silero VAD requires `torchaudio`,
-    - the next patch is explicit dependency completion for the VAD path, not another model-logic
-      rewrite.
+  - Ran the corrected Hemma rerun far enough to replace the old blocker: the sidecar image now
+    builds and boots past the old `faster-whisper` / PyAV failure, and the next live failure was
+    narrowed to the VAD dependency path inside `/synthesize`.
   - Took the ruthless review as binding and implemented the evidence-discipline correction slice:
     - `T81` / `T84` now record machine-readable `benchmark_status`, `evidence_status`,
       `blocking_step`, and failure metadata,
@@ -125,6 +120,14 @@ Primary implementation stories (active sequence):
       `/root/.cache/torch/hub/snakers4_silero-vad_master`,
     - corrected setup quality still cannot be judged because no processed-reference/base artifacts
       are emitted before that failure.
+  - Removed `whisper-timestamped` from the active Task 81 reference-preprocessing path and
+    switched the sidecar to direct local Silero VAD loading from the canonical Torch cache.
+  - Ran the rebuilt current-head Hemma rerun on `e1d5901879c64a21f256a88352f407e6ce2ae45d`:
+    - one new atomic partial evidence bundle now exists for `run_id=20260306T222647Z`,
+    - `/synthesize` now succeeds with `200 OK` and writes `artifacts/sample_sv.wav`,
+    - the current blocker has moved to `collect_setup_artifacts`,
+    - processed-reference, base-output, and converter-input artifacts are still missing, so the
+      corrected setup is still not ready for listening review.
 
 - 2026-03-05:
 
@@ -207,13 +210,10 @@ Primary implementation stories (active sequence):
 - Current local execution focus is Epic 07 Story 23 with `T81 -> T84`, then `T82 -> T83`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Immediate `T81` remediation goal after the failed listening review: correct the OpenVoice setup,
-  preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts, and decide
-  whether OpenVoice remains viable before moving to `T82`.
+  preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts, then decide whether OpenVoice remains viable before moving to `T82`.
 - `T84` is now the explicit root-cause remediation lane and is review-bound to five concrete fixes:
   atomic rerun evidence, declared Torch/Silero cache truth, current-head export diagnosis,
   machine-readable benchmark status, preserved reference/setup artifacts, and a current-head Hemma rerun.
-- Current `T81` blocker after the current-head rerun:
-  - fix the Torch Hub / Silero repo-path mismatch so the declared `TORCH_HOME` is the path used by
-    the synthesize-stage assertion logic,
-  - then rerun to recover processed-reference/base artifacts before any further listening review.
+- Current `T81` blocker after the latest current-head rerun: recover setup-artifact collection so
+  the corrected rerun preserves processed-reference, base-output, and converter-input artifacts, then rerun before any further listening review.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

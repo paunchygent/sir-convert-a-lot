@@ -84,12 +84,11 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - one atomic partial evidence bundle now exists for `run_id=20260306T220740Z`,
   - the earlier export failure did not reproduce,
   - machine-readable benchmark/evidence status now matches the live rerun.
-- Story 23 is still blocked in `T81` because the remaining failure has moved earlier into
-  `/synthesize`:
-  - `whisper-timestamped` still asserts a missing Silero repo under `/root/.cache/torch/hub`,
-  - the declared `TORCH_HOME=/cache/huggingface/torch` is therefore not yet the effective runtime
-    path,
-  - processed-reference and base-audio artifacts still cannot be judged on the corrected setup.
+- Story 23 is still blocked in `T81`, but the remaining failure has moved forward:
+  - the direct local Silero remediation cleared the `/synthesize` blocker,
+  - the current rerun now produces a corrected `sample_sv.wav`,
+  - processed-reference and base-audio artifacts still cannot be judged because setup-artifact
+    collection remains incomplete.
 
 ## Acceptance Criteria
 
@@ -125,8 +124,8 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - the processed reference artifact actually used for embedding extraction,
   - the Swedish base artifact before cloning,
   - the final cloned Swedish artifact.
-- [ ] `T81` must clear the current synthesize-stage Torch Hub / Silero path mismatch before the
-  corrected setup can be evaluated for audio quality.
+- [ ] `T81` must preserve processed-reference, base, and converter-input artifacts on the
+  corrected rerun before the audio quality can be evaluated fairly.
 - [ ] Each task records Python/runtime truth, model cache path, and whether the sidecar remains
   internal-network only.
 
