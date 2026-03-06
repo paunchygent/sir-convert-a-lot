@@ -66,6 +66,14 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 - Current conclusion: the model setup is bad even though the benchmark is technically working.
   Task 81 remains open until we rerun with a corrected setup and decide whether OpenVoice stays
   credible for this use case.
+- Local remediation implementation is now in place:
+  - the sidecar separates Swedish base-model sample-rate handling from converter sample-rate
+    handling,
+  - the sidecar uses a committed local VAD-only reference-preprocessing helper instead of
+    importing upstream `openvoice.se_extractor`,
+  - the sidecar image no longer depends on `faster-whisper`, which was the broken Hemma Python
+    3.12 build path.
+- Remaining blocker: rerun the corrected Hemma benchmark and judge the new output.
 
 ## Failure Record
 
@@ -77,7 +85,7 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   - technical success alone is insufficient for the teacher-voice requirement,
   - the current OpenVoice plus Swedish-base setup should not be treated as accepted.
 
-## Current Setup Concerns (2026-03-06)
+## Current Setup Concerns From The Failed Rerun (2026-03-06)
 
 - The current adapter writes Swedish MMS base audio using the OpenVoice converter sample rate
   rather than the Swedish base model's native sample rate. This is a likely pacing/timbre defect
@@ -92,17 +100,19 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 
 ## Remediation Track
 
-- [ ] Correct the sample-rate contract between the Swedish base model and the OpenVoice converter:
+- [x] Correct the sample-rate contract between the Swedish base model and the OpenVoice converter:
   - write base audio at the base model's native sample rate,
   - resample explicitly only when the converter requires a different rate,
   - record both rates in the benchmark report.
-- [ ] Replace the current simplified reference-speaker setup with the intended OpenVoice
+- [x] Replace the current simplified reference-speaker setup with the intended OpenVoice
   reference-speaker preprocessing path and preserve the processed reference artifact used for
   embedding extraction.
-- [ ] Produce paired rerun artifacts so we can compare:
+- [x] Produce paired rerun artifacts so we can compare:
   - processed reference audio,
   - Swedish base output before cloning,
   - Swedish cloned output after tone-color conversion.
+- [x] Remove the broken `faster-whisper` / PyAV dependency chain from the OpenVoice sidecar image
+  so Hemma can rebuild the benchmark image on Python 3.12.
 - [ ] Rerun Task 81 on Hemma with the corrected setup and preserve the failed sample as baseline
   evidence rather than overwriting the learning.
 - [ ] Record whether the corrected setup removes the reported artifacts, improves pacing, and
@@ -112,10 +122,9 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 
 ## Immediate Execution Order
 
-1. Fix the base-model vs converter sample-rate handling first.
-1. Switch reference embedding extraction onto the intended OpenVoice preprocessing path.
-1. Extend the benchmark evidence to emit processed-reference, base, and cloned Swedish artifacts.
+1. Build and launch the corrected OpenVoice sidecar image on Hemma.
 1. Rerun the same Swedish probe text with the same approved teacher reference clip on Hemma.
+1. Compare processed-reference, base, and cloned artifacts against the failed baseline.
 1. Decide whether OpenVoice remains credible only after listening to the corrected rerun.
 
 ## Acceptance Criteria

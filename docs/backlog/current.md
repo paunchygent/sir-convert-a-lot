@@ -98,6 +98,13 @@ Primary implementation stories (active sequence):
     - fix the MMS-base vs OpenVoice-converter sample-rate mismatch,
     - switch the reference clip onto OpenVoice's intended preprocessing path,
     - rerun with processed-reference, base, and cloned Swedish artifacts preserved together.
+  - Implemented the local `T81` remediation slice:
+    - split the oversized OpenVoice adapter support into a dedicated helper module,
+    - replaced the upstream `openvoice.se_extractor` import with a committed local VAD-only
+      reference-preprocessing helper,
+    - removed the broken `faster-whisper` / PyAV dependency chain from the sidecar image so Hemma
+      can rebuild on Python 3.12,
+    - preserved the sidecar-only boundary so the main service image remains untouched.
 
 - 2026-03-05:
 
@@ -202,8 +209,7 @@ Primary implementation stories (active sequence):
 - Immediate `T81` remediation goal after the failed listening review: correct the OpenVoice
   setup, preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts,
   and decide whether OpenVoice remains viable before moving to `T82`.
-- The first `T81` code changes to make are now explicit:
-  - separate base-model sample-rate handling from converter sample-rate handling,
-  - preserve the processed reference artifact used for embedding extraction.
+- The code-side remediation is now in place; the next `T81` step is the corrected Hemma rerun
+  using the rebuilt sidecar image, not more local patching.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`,
   `T12`, `T08`.

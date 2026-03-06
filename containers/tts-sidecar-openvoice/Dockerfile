@@ -15,18 +15,9 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        build-essential \
         ffmpeg \
         git \
-        libavcodec-dev \
-        libavdevice-dev \
-        libavfilter-dev \
-        libavformat-dev \
-        libavutil-dev \
         libsndfile1 \
-        libswresample-dev \
-        libswscale-dev \
-        pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --upgrade pip "setuptools<81" wheel
@@ -46,7 +37,6 @@ RUN python -m pip install \
     "numpy<2" \
     "scipy>=1.11.0" \
     "librosa==0.9.1" \
-    "faster-whisper==0.9.0" \
     "pydub==0.25.1" \
     "soxr>=0.5.0" \
     "soundfile>=0.13.1" \

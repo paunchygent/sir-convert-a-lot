@@ -13,7 +13,6 @@ Relationships:
 
 from __future__ import annotations
 
-import importlib.metadata
 import os
 import re
 import shutil
@@ -21,7 +20,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable, ContextManager, Iterator, Protocol
+from typing import Callable, ContextManager
 
 from scripts.sir_convert_a_lot.tts_sidecar.contracts import (
     CacheCapability,
@@ -43,120 +42,25 @@ from scripts.sir_convert_a_lot.tts_sidecar.contracts import (
     VoiceMode,
     VoicesResponse,
 )
+from scripts.sir_convert_a_lot.tts_sidecar.openvoice_support import (
+    _BaseModel,
+    _create_tone_color_converter,
+    _normalized_suffix,
+    _OpenVoiceConverter,
+    _optional_path_env,
+    _package_version_or_none,
+    _parse_bool_env,
+    _positive_int,
+    _resample_audio_file,
+    _Tokenizer,
+    extract_target_speaker_embedding,
+)
 
 _SUPPORTED_LANGUAGE_ALIASES = {
     "sv": "sv",
     "sv-se": "sv",
     "swedish": "sv",
 }
-
-
-class _TensorLike(Protocol):
-    """Minimal tensor surface used by the OpenVoice adapter."""
-
-    def to(self, device: object) -> "_TensorLike":
-        """Move one tensor to a device."""
-
-    def squeeze(self) -> "_TensorLike":
-        """Return one squeezed tensor."""
-
-    def detach(self) -> "_TensorLike":
-        """Detach one tensor from autograd."""
-
-    def cpu(self) -> "_TensorLike":
-        """Move one tensor to CPU."""
-
-    def numpy(self) -> object:
-        """Convert one tensor to a NumPy-compatible array."""
-
-
-class _TokenizerBatch(Protocol):
-    """Minimal tokenized-input container used by the OpenVoice adapter."""
-
-    def __getitem__(self, key: str) -> _TensorLike:
-        """Return one required tensor by key."""
-
-    def get(self, key: str) -> _TensorLike | None:
-        """Return one optional tensor by key."""
-
-
-class _Tokenizer(Protocol):
-    """Minimal tokenizer callable used by the OpenVoice adapter."""
-
-    def __call__(self, *, text: str, return_tensors: str) -> _TokenizerBatch:
-        """Tokenize one text input into tensors."""
-
-
-class _ModelParameter(Protocol):
-    """Minimal model-parameter surface used to discover a device."""
-
-    @property
-    def device(self) -> object:
-        """Return the device that owns this parameter."""
-
-
-class _WaveformOutput(Protocol):
-    """Minimal model output surface used by the OpenVoice adapter."""
-
-    waveform: _TensorLike
-
-
-class _BaseModel(Protocol):
-    """Minimal Swedish base-model surface used by the OpenVoice adapter."""
-
-    def to(self, device: str) -> "_BaseModel":
-        """Move the model to the requested device."""
-
-    def eval(self) -> None:
-        """Switch the model into evaluation mode."""
-
-    def parameters(self) -> Iterator[_ModelParameter]:
-        """Return one iterator over model parameters."""
-
-    def __call__(
-        self,
-        *,
-        input_ids: _TensorLike,
-        attention_mask: _TensorLike | None = None,
-    ) -> _WaveformOutput:
-        """Run one forward pass and return waveform output."""
-
-
-class _OpenVoiceDataConfig(Protocol):
-    """Minimal OpenVoice hparams data surface used by the adapter."""
-
-    sampling_rate: int
-
-
-class _OpenVoiceHParams(Protocol):
-    """Minimal OpenVoice hparams surface used by the adapter."""
-
-    data: _OpenVoiceDataConfig
-
-
-class _OpenVoiceConverter(Protocol):
-    """Minimal OpenVoice converter surface used by the adapter."""
-
-    hps: _OpenVoiceHParams
-    watermark_model: object | None
-    version: str
-
-    def load_ckpt(self, ckpt_path: str) -> None:
-        """Load one converter checkpoint from disk."""
-
-    def extract_se(self, ref_wav_list: list[str], se_save_path: str | None = None) -> object:
-        """Extract one speaker embedding from reference audio."""
-
-    def convert(
-        self,
-        audio_src_path: str,
-        src_se: object,
-        tgt_se: object,
-        output_path: str | None = None,
-        tau: float = 0.3,
-        message: str = "default",
-    ) -> object:
-        """Convert one source audio file into the target tone color."""
 
 
 @dataclass(frozen=True)
@@ -533,23 +437,12 @@ class OpenVoiceSidecarBackend:
         debug_artifact_dir: Path | None,
     ) -> object:
         """Run the intended OpenVoice reference-speaker preprocessing path."""
-        from openvoice import se_extractor
-
-        processed_reference_root = temp_dir / "processed_reference"
-        target_se, audio_name = se_extractor.get_se(
-            reference_path.as_posix(),
-            converter,
-            target_dir=processed_reference_root.as_posix(),
-            vad=True,
+        return extract_target_speaker_embedding(
+            reference_path=reference_path,
+            converter=converter,
+            temp_dir=temp_dir,
+            debug_artifact_dir=debug_artifact_dir,
         )
-        processed_reference_dir = processed_reference_root / audio_name
-        if debug_artifact_dir is not None and processed_reference_dir.exists():
-            shutil.copytree(
-                processed_reference_dir,
-                debug_artifact_dir / "processed_reference",
-                dirs_exist_ok=True,
-            )
-        return target_se
 
     def _synthesize_base_audio(
         self,
@@ -580,49 +473,6 @@ class OpenVoiceSidecarBackend:
         soundfile.write(output_path.as_posix(), waveform, sample_rate_hz)
 
 
-def _package_version_or_none(name: str) -> str | None:
-    """Return one installed package version when available."""
-    try:
-        return importlib.metadata.version(name)
-    except importlib.metadata.PackageNotFoundError:
-        return None
-
-
-def _create_tone_color_converter(config_path: Path, *, device: str) -> _OpenVoiceConverter:
-    """Create a no-watermark converter for Task 81 without unsupported kwargs."""
-    from openvoice.api import OpenVoiceBaseClass, ToneColorConverter
-
-    converter: _OpenVoiceConverter = ToneColorConverter.__new__(ToneColorConverter)
-    OpenVoiceBaseClass.__init__(converter, config_path.as_posix(), device=device)
-    converter.watermark_model = None
-    converter.version = getattr(converter.hps, "_version_", "v1")
-    return converter
-
-
-def _parse_bool_env(name: str, *, default: bool) -> bool:
-    """Parse one boolean environment variable with a deterministic default."""
-    value = os.environ.get(name)
-    if value is None:
-        return default
-    lowered = value.strip().lower()
-    if lowered in {"1", "true", "yes", "on"}:
-        return True
-    if lowered in {"0", "false", "no", "off"}:
-        return False
-    raise RuntimeError(f"{name} must be a boolean-like value.")
-
-
-def _optional_path_env(name: str) -> Path | None:
-    """Return one optional path-valued environment setting."""
-    value = os.environ.get(name)
-    if value is None:
-        return None
-    stripped = value.strip()
-    if stripped == "":
-        return None
-    return Path(stripped)
-
-
 def _normalize_language_code(language: str) -> str:
     """Map human-friendly or locale-style language values to canonical codes."""
     normalized = language.strip().lower()
@@ -635,39 +485,3 @@ def _normalize_text(text: str, *, profile: NormalizationProfile) -> str:
     if profile is NormalizationProfile.NONE:
         return stripped
     return re.sub(r"\s+", " ", stripped)
-
-
-def _normalized_suffix(filename: str) -> str:
-    """Return one safe suffix for a temporary reference-audio file."""
-    suffix = Path(filename).suffix.strip()
-    if suffix == "":
-        return ".wav"
-    if len(suffix) > 10:
-        return ".wav"
-    return suffix
-
-
-def _positive_int(value: object, *, label: str) -> int:
-    """Convert one runtime value to a strictly positive integer."""
-    if not isinstance(value, int) or value <= 0:
-        raise RuntimeError(f"{label} must be a positive integer, got {value!r}.")
-    return value
-
-
-def _resample_audio_file(
-    *,
-    source_path: Path,
-    target_path: Path,
-    target_sample_rate_hz: int,
-) -> None:
-    """Resample one WAV artifact explicitly to the converter input rate."""
-    import librosa
-    import soundfile
-
-    waveform, source_sample_rate_hz = librosa.load(source_path.as_posix(), sr=None, mono=True)
-    resampled_waveform = librosa.resample(
-        waveform,
-        orig_sr=source_sample_rate_hz,
-        target_sr=target_sample_rate_hz,
-    )
-    soundfile.write(target_path.as_posix(), resampled_waveform, target_sample_rate_hz)

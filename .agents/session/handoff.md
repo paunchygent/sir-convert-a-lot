@@ -44,6 +44,13 @@
   - fix the sample-rate mismatch between the Swedish base model and the OpenVoice converter,
   - switch the reference clip to the intended OpenVoice preprocessing path,
   - preserve processed-reference plus base-vs-cloned artifacts in the next rerun.
+- The local remediation slice is now implemented:
+  - `scripts/sir_convert_a_lot/tts_sidecar/openvoice_support.py` owns the OpenVoice-specific
+    VAD-only reference preprocessing and runtime helpers,
+  - `openvoice_runtime.py` is back under the 500-line split guideline,
+  - the sidecar image no longer installs `faster-whisper`, which was the broken PyAV build path
+    on Hemma Python 3.12,
+  - the main service image remains untouched.
 
 Validation evidence:
 
@@ -72,10 +79,9 @@ Known remaining work / current state:
 
 - Preserve the current failed-quality `T81` sample as baseline evidence.
 - Correct the OpenVoice setup rather than adding more analysis:
-  - fix the base-model vs converter sample-rate contract,
-  - align the reference-speaker setup with the intended model path,
-  - emit processed-reference plus Swedish base vs cloned artifacts,
-  - rerun the benchmark with the same approved teacher reference clip.
+  - the code/setup fixes are already in place locally and validated,
+  - the next action is to rerun the benchmark with the rebuilt sidecar image on Hemma using the
+    same approved teacher reference clip.
 - Update `Task 81` and `Story 23` with:
   - what changed in setup,
   - whether artifacts/pacing improved,
