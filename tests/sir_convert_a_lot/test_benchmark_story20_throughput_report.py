@@ -77,13 +77,10 @@ def test_run_benchmark_writes_expected_payload_and_report(
     assert output_report.exists()
     assert payload["benchmark_id"] == "task-74-throughput-benchmark"
     assert payload["comparison"]["baseline_profile"] == "serial_baseline"
-    assert payload["comparison"]["recommended_profile"] in {
-        "parallel_conservative",
-        "parallel_tuned",
-    }
-    assert payload["comparison"]["recommended_profile"] != "serial_baseline"
+    assert payload["comparison"]["tuned_profile"] == "parallel_conservative"
+    assert payload["comparison"]["recommended_profile"] == "parallel_conservative"
     assert payload["comparison"]["p50_improvement_percent"] >= 0.0
-    assert len(payload["profiles"]) == 3
+    assert len(payload["profiles"]) == 2
     assert payload["runtime_surface"]["mode"] == "in_process_app"
     assert payload["runtime_parity"]["parity_proven"] is False
     report_text = output_report.read_text(encoding="utf-8")

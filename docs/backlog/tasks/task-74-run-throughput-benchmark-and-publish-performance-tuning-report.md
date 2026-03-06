@@ -39,8 +39,11 @@ conversions on Hemma.
     `chunk_size_pages=8`, `gpu_stage_max_concurrency=1`
   - `parallel_conservative`: `parallel_enabled=true`, `max_chunk_workers=2`,
     `chunk_size_pages=4`, `gpu_stage_max_concurrency=2`
-  - `parallel_tuned`: `parallel_enabled=true`, `max_chunk_workers=4`,
-    `chunk_size_pages=2`, `gpu_stage_max_concurrency=4`
+- The unsafe 4-worker benchmark profile was removed after the 2026-03-06 Hemma run proved it can
+  hit ROCm HIP OOM and must not remain as an accidentally reusable command-surface default.
+- Further tuning work is limited to safe 2-worker experiments first (for example chunk size and
+  closely related bounded parameters) until evidence proves a different setting is both stable and
+  materially faster.
 - Make the runtime surface explicit in the evidence bundle:
   - `mode=in_process_app` is acceptable for harness development/smoke evidence,
   - final closeout evidence must also prove deploy/runtime parity on Hemma via `T76`, and must
@@ -87,6 +90,7 @@ Measurement rules (must be explicit in report):
    - `ocr_mode=force`
    - `ocr_engine=easyocr`
    - `ocr_languages=sv,en`
+   - `profile matrix = serial_baseline + parallel_conservative` only
 1. Capture one evidence bundle containing:
    - benchmark JSON,
    - markdown report,
@@ -142,6 +146,8 @@ Measurement rules (must be explicit in report):
 - [ ] Recommended defaults include explicit safety limits (workers/chunk size/memory).
 - [ ] Recommended defaults are justified by recorded queue/worker saturation and GPU busy/memory
   evidence, not by latency alone.
+- [ ] If safe 2-worker tuning still fails to reach the >= 40% target, the service default remains
+  serial and parallel execution is exposed only through explicit `.env` override.
 - [ ] Metrics-safety evidence is explicit: no forbidden high-cardinality metric labels are present
   (`contains_job_id_label=false`).
 - [ ] Parallel tuning evidence includes explicit determinism/non-regression proof against the serial
@@ -177,6 +183,18 @@ Measurement rules (must be explicit in report):
     - determinism proof,
     - explicit metrics-safety result,
     - runbook defaults + rollback thresholds derived from the benchmark evidence.
+
+## Benchmark Decision Update (2026-03-06)
+
+- Hemma benchmark evidence was captured on revision
+  `470e44afac29baf92abe56e0e06097663adfd57d` with runtime parity proven.
+- `parallel_conservative` was the best stable profile, improving p50 wall-clock by `11.4286%`
+  versus `serial_baseline`, which is below the Task 74 target of `>= 40%`.
+- The removed 4-worker profile failed all benchmark jobs with ROCm HIP OOM and is no longer an
+  allowed benchmark default or rollout candidate.
+- Next tuning work is constrained to safe 2-worker experiments only; if those experiments still
+  fail to reach the `>= 40%` target, production default stays serial and parallel mode remains
+  opt-in via explicit `.env` override.
 
 ## Validation Evidence
 

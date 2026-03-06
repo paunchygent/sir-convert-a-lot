@@ -2,7 +2,7 @@
 id: task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700
 title: Benchmark Hemma TTS sidecar compatibility and audio formats on R9700
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-06'
 last_updated: '2026-03-06'
@@ -40,9 +40,44 @@ Prove that the chosen sidecar stack can run on the real Hemma AMD Radeon AI PRO 
 
 ## Deliverables
 
-- [ ] Committed benchmark/smoke command surface.
+- [x] Committed benchmark/smoke command surface.
 - [ ] Deterministic Hemma evidence artifacts for startup/runtime/output-format checks.
 - [ ] Runbook guidance for the sidecar benchmark flow.
+
+## Canonical Command Surface
+
+Local entrypoint:
+
+```bash
+pdm run benchmark:task-79
+```
+
+Remote Hemma execution:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-79
+```
+
+Current command defaults:
+
+- image: `vllm/vllm-omni-rocm:v0.16.0`
+- model: `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice`
+- stage config:
+  `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`
+- output root: `build/verification/task-79-hemma-tts-sidecar/`
+- response formats: `wav,mp3`
+- network contract:
+  - sidecar joins `hule-network`
+  - service-container reachability is verified from `sir_convert_a_lot_prod`
+
+The benchmark writes:
+
+- `report.json`
+- `report.md`
+- `docker_logs.txt`
+- `artifacts/sample.wav` on success
+- `artifacts/sample.mp3` when compressed output is supported
+- `failure.txt` when the run fails before acceptance completes
 
 ## Acceptance Criteria
 
@@ -57,4 +92,4 @@ Prove that the chosen sidecar stack can run on the real Hemma AMD Radeon AI PRO 
 
 - [ ] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated

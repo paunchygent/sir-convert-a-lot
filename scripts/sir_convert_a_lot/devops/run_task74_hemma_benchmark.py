@@ -122,7 +122,9 @@ def _run_command(
         stdout = _redact(result.stdout.strip(), redactions=redactions)
         stderr = _redact(result.stderr.strip(), redactions=redactions)
         raise SystemExit(
-            f"{label} failed with exit code {result.returncode}.\nstdout:\n{stdout}\nstderr:\n{stderr}"
+            f"{label} failed with exit code {result.returncode}.\n"
+            f"stdout:\n{stdout}\n"
+            f"stderr:\n{stderr}"
         )
     return result.stdout
 

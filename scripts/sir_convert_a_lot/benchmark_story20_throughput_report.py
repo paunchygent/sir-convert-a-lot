@@ -681,13 +681,6 @@ def _default_profiles() -> list[ProfileSpec]:
             chunk_size_pages=4,
             gpu_stage_max_concurrency=2,
         ),
-        ProfileSpec(
-            profile_name="parallel_tuned",
-            parallel_enabled=True,
-            max_chunk_workers=4,
-            chunk_size_pages=2,
-            gpu_stage_max_concurrency=4,
-        ),
     ]
 
 

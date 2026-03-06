@@ -344,6 +344,8 @@ Rollout guardrails:
   defaults.
 - Keep `SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=0` by default until Task 74 publishes tuned
   Hemma guidance and rollback criteria.
+- Do not reintroduce the removed 4-worker OCR benchmark profile without new written evidence; the
+  2026-03-06 Hemma run showed ROCm HIP OOM under that setting.
 - Run the Task 76 deploy-and-verify gate before any Hemma tuning/profile runs.
 
 ## Throughput Benchmark Harness (Task 74)
@@ -381,6 +383,10 @@ Usage notes:
   - reruns the live host-lane smoke on the expected revision before benchmarking.
 - The harness records p50/p90 wall-clock latency, success/error rate, queue depth, worker
   saturation, chunk-worker saturation, and GPU busy/memory gauges.
+- The committed benchmark matrix is intentionally restricted to:
+  - `serial_baseline` (`max_chunk_workers=1`, `chunk_size_pages=8`, `gpu_stage_max_concurrency=1`)
+  - `parallel_conservative` (`max_chunk_workers=2`, `chunk_size_pages=4`,
+    `gpu_stage_max_concurrency=2`)
 - The generated Task 74 JSON/markdown artifacts now include runtime-surface and runtime-parity
   sections; treat `runtime_parity.parity_proven=true` as mandatory for final closeout evidence.
 - Use `pdm run benchmark:task-74` directly only for local command-surface smoke checks. The Hemma
@@ -388,6 +394,42 @@ Usage notes:
   long-running OCR jobs start.
 - Treat the generated markdown report as the source for recommended defaults and rollback criteria
   once the Hemma run is complete.
+- If safe 2-worker tuning still cannot prove the Task 74 `>= 40%` target, keep serial service
+  defaults and expose parallel OCR only through explicit `.env` override.
+
+## TTS Sidecar Benchmark Harness (Task 79)
+
+Use the committed Task 79 harness to prove the sidecar-only TTS path on the live Hemma
+R9700/gfx1201 host before the `md -> wav` contract is implemented.
+
+Canonical command:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-79
+```
+
+Evidence path:
+
+- `build/verification/task-79-hemma-tts-sidecar/`
+  - `report.json`
+  - `report.md`
+  - `docker_logs.txt`
+  - `artifacts/sample.wav`
+  - `artifacts/sample.mp3` when compressed output succeeds
+  - `failure.txt` on non-acceptance failures
+
+Usage notes:
+
+- The harness launches an isolated `vllm/vllm-omni-rocm:v0.16.0` container on `hule-network`.
+- The current stage config is pinned in
+  `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`.
+- The benchmark proves both:
+  - host-lane reachability on `127.0.0.1:<task79-port>`
+  - internal Docker-network reachability from `sir_convert_a_lot_prod`
+- Treat `wav` success as mandatory acceptance evidence.
+- Treat compressed-format output as capability evidence, not phase-1 contract acceptance.
+- Use the emitted Python recommendation from `report.json` to lock the sidecar runtime floor;
+  do not assume Python `3.14` support without live proof.
 
 ## V2 Conversion Smoke Verification (Task 39)
 
