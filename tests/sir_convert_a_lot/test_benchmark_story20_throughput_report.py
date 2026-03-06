@@ -11,6 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
+import importlib.machinery
 import time
 from pathlib import Path
 
@@ -191,6 +192,9 @@ def test_run_benchmark_marks_runtime_parity_unproven_when_checks_missing(
         page_counts=(2,),
         api_key="benchmark-key",
         acceleration_policy="cpu_only",
+        ocr_mode="off",
+        ocr_engine="auto",
+        ocr_languages=[],
         gpu_available=False,
         runtime_parity_inputs=RuntimeParityInputs(
             report_json_path=None,
@@ -208,3 +212,54 @@ def test_run_benchmark_marks_runtime_parity_unproven_when_checks_missing(
 
     assert payload["runtime_parity"]["parity_proven"] is False
     assert "Task 76 live smoke proof is missing or failed." in payload["runtime_parity"]["notes"]
+
+
+def test_run_benchmark_fails_fast_when_easyocr_missing_for_in_process_mode(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.benchmark_story20_throughput_report.importlib.util.find_spec",
+        lambda _module_name: None,
+    )
+
+    with pytest.raises(RuntimeError, match="missing EasyOCR"):
+        run_benchmark(
+            output_json=tmp_path / "task74.json",
+            output_report=tmp_path / "task74.md",
+            corpus_root=tmp_path / "corpus",
+            data_root=tmp_path / "runtime",
+            page_counts=(2,),
+            api_key="benchmark-key",
+            acceleration_policy="gpu_required",
+            ocr_mode="force",
+            ocr_engine="easyocr",
+            ocr_languages=["sv", "en"],
+            gpu_available=True,
+        )
+
+
+def test_run_benchmark_fails_fast_when_easyocr_model_dir_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.benchmark_story20_throughput_report.importlib.util.find_spec",
+        lambda _module_name: importlib.machinery.ModuleSpec("easyocr", loader=None),
+    )
+
+    with pytest.raises(RuntimeError, match="missing the EasyOCR model directory"):
+        run_benchmark(
+            output_json=tmp_path / "task74.json",
+            output_report=tmp_path / "task74.md",
+            corpus_root=tmp_path / "corpus",
+            data_root=tmp_path / "runtime",
+            page_counts=(2,),
+            api_key="benchmark-key",
+            acceleration_policy="gpu_required",
+            ocr_mode="force",
+            ocr_engine="easyocr",
+            ocr_languages=["sv", "en"],
+            gpu_available=True,
+            easyocr_model_storage_directory=(tmp_path / "missing-model-dir").as_posix(),
+        )

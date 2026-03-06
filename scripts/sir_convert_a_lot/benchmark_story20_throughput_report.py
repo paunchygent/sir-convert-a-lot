@@ -7,9 +7,12 @@ Purpose:
 
 Relationships:
     - Uses `scripts.sir_convert_a_lot.interfaces.http_api.create_app` to
-      exercise the real v2 HTTP/runtime stack with per-profile configs.
+      exercise the real v2 HTTP/runtime stack with per-profile configs when
+      running in-process harness benchmarks.
     - Uses `scripts.sir_convert_a_lot.benchmarking.story20_throughput_report`
       to render the markdown report artifact.
+    - Is orchestrated on Hemma by
+      `scripts.sir_convert_a_lot.devops.run_task74_hemma_benchmark`.
     - Writes generated artifacts under `build/benchmarks/story-20/`.
 """
 

@@ -23,6 +23,7 @@ import importlib
 import importlib.util
 import json
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -370,7 +371,7 @@ def execute_workflow(settings: Task74HemmaSettings) -> dict[str, object]:
 
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments, run the workflow, and print a compact machine-readable summary."""
-    settings = _parse_args(argv or [])
+    settings = _parse_args(sys.argv[1:] if argv is None else argv)
     payload = execute_workflow(settings)
     comparison_obj = payload.get("comparison")
     if not isinstance(comparison_obj, dict):

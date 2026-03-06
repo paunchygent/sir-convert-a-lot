@@ -114,6 +114,10 @@ Measurement rules (must be explicit in report):
   - report output containing runtime surface + parity fields.
 - [x] Update Task 74 acceptance commands/runbook usage to pass the parity metadata explicitly during
   the Hemma benchmark run.
+- [x] Add a canonical Hemma benchmark workflow that repairs env/runtime drift before running the
+  long OCR benchmark (`benchmark:task-74-hemma`).
+- [x] Fail fast when the in-process benchmark runtime is missing required OCR dependencies/models so
+  Task 74 cannot silently emit bogus all-503 benchmark output.
 
 ## Deliverables
 
@@ -186,7 +190,7 @@ Measurement rules (must be explicit in report):
 - Deploy parity preflight:
   - `pdm run hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host`
 - Hemma benchmark run:
-  - `pdm run run-hemma -- pdm run benchmark:task-74 --output-json build/benchmarks/story-20/task-74-throughput-benchmark-hemma.json --output-report build/benchmarks/story-20/task-74-throughput-report-hemma.md --corpus-root build/benchmarks/story-20/task-74-corpus --data-root build/benchmarks/story-20/task-74-runtime --page-counts 120,180,240 --gpu-available --runtime-mode in_process_app --runtime-host hemma --runtime-service-url http://127.0.0.1:28085 --parity-status passed --parity-lane host --parity-expected-revision <sha> --parity-remote-revision <sha> --parity-service-revision <sha> --parity-expected-remote-ok --parity-service-remote-ok --parity-live-smoke-passed --parity-metrics-scan-passed`
+  - `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha>`
 - Required closeout gates after evidence capture:
   - `pdm run format-all`
   - `pdm run lint-fix`

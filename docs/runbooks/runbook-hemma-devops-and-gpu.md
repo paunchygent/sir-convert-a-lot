@@ -366,46 +366,26 @@ pdm run benchmark:task-74 \
 Remote Hemma execution path after push/deploy parity:
 
 ```bash
-pdm run run-hemma -- pdm run benchmark:task-74 \
-  --output-json build/benchmarks/story-20/task-74-throughput-benchmark-hemma.json \
-  --output-report build/benchmarks/story-20/task-74-throughput-report-hemma.md \
-  --corpus-root build/benchmarks/story-20/task-74-corpus \
-  --data-root build/benchmarks/story-20/task-74-runtime \
-  --page-counts 120,180,240 \
-  --gpu-available \
-  --runtime-mode in_process_app \
-  --runtime-host hemma \
-  --runtime-service-url http://127.0.0.1:28085 \
-  --parity-status passed \
-  --parity-lane host \
-  --parity-expected-revision <sha> \
-  --parity-remote-revision <sha> \
-  --parity-service-revision <sha> \
-  --parity-expected-remote-ok \
-  --parity-service-remote-ok \
-  --parity-live-smoke-passed \
-  --parity-metrics-scan-passed
+pdm run run-hemma -- pdm run benchmark:task-74-hemma \
+  --expected-revision <sha>
 ```
 
 Usage notes:
 
-- Defaults assume Task 76 deploy parity has already passed on the pushed revision.
-- Treat the Task 76 report as the source of truth for the parity flags above:
-  - `status`,
-  - `lane`,
-  - `expected_revision`,
-  - `remote_revision`,
-  - `service_revision`,
-  - `expected_revision_matches_remote`,
-  - `service_revision_matches_remote`,
-  - `live_smoke_passed`,
-  - `metrics_scan_passed`.
+- The canonical Hemma runner now performs the required preflight before invoking `benchmark:task-74`:
+  - runs `pdm run hemma-sync-prod-env-mirror`,
+  - verifies `~/apps/sir-convert-a-lot/.env` resolves to the canonical prod env file,
+  - requires the canonical env to contain the Task 74 OCR defaults,
+  - runs `pdm sync --prod --no-editable --no-self` on the Hemma host runtime,
+  - warms a host EasyOCR cache under `~/.cache/sir-convert-a-lot/easyocr-models`,
+  - reruns the live host-lane smoke on the expected revision before benchmarking.
 - The harness records p50/p90 wall-clock latency, success/error rate, queue depth, worker
   saturation, chunk-worker saturation, and GPU busy/memory gauges.
 - The generated Task 74 JSON/markdown artifacts now include runtime-surface and runtime-parity
   sections; treat `runtime_parity.parity_proven=true` as mandatory for final closeout evidence.
-- Use `--acceleration-policy cpu_only --ocr-mode off --no-gpu-available` only for local command
-  surface smoke checks; those runs are not acceptable as Hemma evidence.
+- Use `pdm run benchmark:task-74` directly only for local command-surface smoke checks. The Hemma
+  evidence path must use `benchmark:task-74-hemma` so host env/runtime drift is repaired before
+  long-running OCR jobs start.
 - Treat the generated markdown report as the source for recommended defaults and rollback criteria
   once the Hemma run is complete.
 
