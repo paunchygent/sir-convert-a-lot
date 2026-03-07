@@ -36,13 +36,59 @@ def test_build_segment_plan_prefers_sentence_and_clause_boundaries() -> None:
         cross_fade_ms=80,
     )
 
-    assert plan.segment_count == 4
+    assert plan.segment_count == 3
     assert plan.segments == [
         "Hej världen. Det här är en längre mening,",
-        "med en tydlig paus,",
-        "och ytterligare några ord för att kräva mer än ett",
-        "segment.",
+        "med en tydlig paus, och ytterligare några ord för",
+        "att kräva mer än ett segment.",
     ]
+    assert all(
+        segment.predicted_duration_seconds <= plan.hard_max_seconds
+        for segment in plan.segment_predictions
+    )
+
+
+def test_build_segment_plan_prefers_list_item_boundaries_for_structured_text() -> None:
+    plan = build_segment_plan(
+        text=(
+            "Sex saker att ta med er. Ett: ni är delegater – representera ert land. "
+            "Två: lyft landskylten för att begära ordet. "
+            "Tre: börja alltid med Herr och Fru ordförande på svenska. "
+            "Fyra: håll er inom taltiden."
+        ),
+        max_chars=320,
+        cross_fade_ms=80,
+    )
+
+    assert (
+        plan.segments[0] == "Sex saker att ta med er. Ett: ni är delegater – representera ert land."
+    )
+    assert plan.segments[1] == "Två: lyft landskylten för att begära ordet."
+    assert plan.segments[2] == "Tre: börja alltid med Herr och Fru ordförande på svenska."
+    assert plan.segments[3] == "Fyra: håll er inom taltiden."
+    assert plan.segment_predictions[0].boundary_type == "list_item"
+    assert all(
+        segment.predicted_duration_seconds <= plan.hard_max_seconds
+        for segment in plan.segment_predictions
+    )
+
+
+def test_build_segment_plan_splits_oversized_list_item_before_hard_cap() -> None:
+    plan = build_segment_plan(
+        text=(
+            "Ett: ni ska tala lugnt och tydligt för att alla i rummet ska kunna följa med "
+            "och för att tempot inte ska bli för högt när instruktionerna blir längre än vanligt."
+        ),
+        max_chars=320,
+        cross_fade_ms=80,
+    )
+
+    assert plan.segment_count >= 2
+    assert all(
+        segment.predicted_duration_seconds <= plan.hard_max_seconds
+        for segment in plan.segment_predictions
+    )
+    assert plan.segments[0].startswith("Ett:")
 
 
 def test_build_segment_plan_splits_oversized_sentence_on_words() -> None:

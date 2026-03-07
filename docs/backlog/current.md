@@ -142,18 +142,13 @@ Primary implementation stories (active sequence):
     - deterministic evidence now exists under
       `build/verification/task-89-chatterbox-espeak-hemma/`,
     - the run also forced one deterministic Chatterbox image fix:
-      prefetch `spacy_pkuseg` assets during image build so startup no longer
-      depends on a live model download.
+      prefetch `spacy_pkuseg` assets during image build so startup no longer depends on a live model download.
   - Implemented and ran `T90` on live Hemma:
-    - deterministic segmentation, chunk execution, and cross-fade stitching
-      are now part of the Chatterbox sidecar path,
-    - paired single-pass vs segmented evidence now exists under
-      `build/verification/task-90-chatterbox-segmented-hemma/`,
+    - deterministic segmentation, chunk execution, and cross-fade stitching are now part of the Chatterbox sidecar path,
+    - paired single-pass vs segmented evidence now exists under `build/verification/task-90-chatterbox-segmented-hemma/`,
     - the segmented lane used `3` deterministic text segments,
-    - single-pass clone duration was `51.904` seconds with peak VRAM
-      `5959815168` bytes,
-    - segmented clone duration was `57.473` seconds with peak VRAM
-      `5742292992` bytes,
+    - single-pass clone duration was `51.904` seconds with peak VRAM `5959815168` bytes,
+    - segmented clone duration was `57.473` seconds with peak VRAM `5742292992` bytes,
     - listening review now favors the segmented path overall,
     - the remaining Story 23 blocker is now stitch quality:
       noisy chunk tails and pauses that are too long.
@@ -162,16 +157,11 @@ Primary implementation stories (active sequence):
     - pause-aware stitching,
     - robust cross-fade that preserves natural pauses.
   - Implemented and ran `T91` on live Hemma:
-    - deterministic speech-aware stitching is now part of the repo-owned
-      Chatterbox segmented path,
-    - paired simple-vs-speech-aware segmented evidence now exists under
-      `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/`,
-    - the simple segmented lane duration was `123.426` seconds with peak VRAM
-      `6239154176` bytes,
-    - the speech-aware segmented lane duration was `94.954` seconds with peak
-      VRAM `5945778176` bytes,
-    - the speech-aware lane now records `chunk_analysis.json` and
-      `boundary_decisions.json`,
+    - deterministic speech-aware stitching is now part of the repo-owned Chatterbox segmented path,
+    - paired simple-vs-speech-aware segmented evidence now exists under `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/`,
+    - the simple segmented lane duration was `123.426` seconds with peak VRAM `6239154176` bytes,
+    - the speech-aware segmented lane duration was `94.954` seconds with peak VRAM `5945778176` bytes,
+    - the speech-aware lane now records `chunk_analysis.json` and `boundary_decisions.json`,
     - the current blocker is no longer implementation but qualitative review of
       the new stitched output.
   - Folded the relaxed `12 ms` speech-aware edge fade cap into the default
@@ -179,6 +169,14 @@ Primary implementation stories (active sequence):
     opened `T92` to make Chatterbox the explicit Hemma production-candidate
     TTS sidecar while marking OpenVoice, F5, and eSpeak helper images as
     experiment-only.
+  - Opened `T93` as the next active Chatterbox quality slice after the latest
+    delegate-text evidence exposed a planner problem rather than a stitcher
+    problem:
+    - the current sentence-packing planner emitted a `19.92` second first chunk for the delegate text,
+    - that oversized chunk produced stressed pacing and end-of-chunk artifacts,
+    - `T93` now replaces that planner with a list-item-aware,
+      clause-aware, duration-bounded path targeting `4-6` second chunks on
+      average with a hard planning ceiling of `9` seconds.
 
 - 2026-03-05:
 
@@ -208,11 +206,12 @@ Primary implementation stories (active sequence):
 ## Next Actions
 
 - Current local execution focus is Epic 07 Story 23 listening review on `T91`,
-  then `T83`, with `T82` kept deferred.
+  then `T93`, then `T83`, with `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
 - Immediate Story 23 focus is now the `T91` listening verdict after the
-  completed speech-aware stitching implementation, with `T83` kept as the
-  Swedish pronunciation control and `T82` remaining deferred.
+  completed speech-aware stitching implementation plus the active `T93`
+  chunk-planner redesign, with `T83` kept as the Swedish pronunciation control
+  and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

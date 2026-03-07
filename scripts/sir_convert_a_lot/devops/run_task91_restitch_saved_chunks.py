@@ -152,7 +152,8 @@ def _load_chunk_waveforms(
             sample_rate_hz = chunk_sample_rate_hz
         elif sample_rate_hz != chunk_sample_rate_hz:
             raise SystemExit(
-                f"Mismatched chunk sample rate: expected {sample_rate_hz}, got {chunk_sample_rate_hz}"
+                "Mismatched chunk sample rate: expected "
+                f"{sample_rate_hz}, got {chunk_sample_rate_hz}"
             )
         waveforms.append(waveform)
     if sample_rate_hz is None:

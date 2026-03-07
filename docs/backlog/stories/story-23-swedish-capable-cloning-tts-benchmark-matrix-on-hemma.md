@@ -20,6 +20,7 @@ related:
   - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
   - docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md
   - docs/backlog/tasks/task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md
+  - docs/backlog/tasks/task-93-implement-clause-aware-duration-bounded-chatterbox-chunk-planning-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -68,6 +69,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 1. `docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md`
 1. `docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md`
 1. `docs/backlog/tasks/task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md`
+1. `docs/backlog/tasks/task-93-implement-clause-aware-duration-bounded-chatterbox-chunk-planning-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
 Deferred follow-up:
@@ -202,6 +204,17 @@ Deferred follow-up:
     - peak VRAM also dropped from `6239154176` bytes to `5945778176` bytes,
     - Story 23 still needs the listening verdict before `T91` can be closed
       as better, worse, or unchanged.
+  - The next Chatterbox quality blocker is now segment planning rather than
+    stitching:
+    - the latest delegate-text run produced a `19.92` second first chunk under
+      the older sentence-packing planner,
+    - that oversized first chunk caused stressed delivery, speedups, and
+      audible artifacts,
+    - `T93` is now the active fix slice for:
+      - list-item-aware boundaries,
+      - clause-aware planning units,
+      - a `4-6` second target band,
+      - and a hard `9` second planning ceiling per chunk.
 
 ## Acceptance Criteria
 

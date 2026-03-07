@@ -29,6 +29,34 @@ if TYPE_CHECKING:
 
 _HARD_BOUNDARY_RE = re.compile(r"(?<=[.!?])\s+")
 _SOFT_BOUNDARY_RE = re.compile(r"(?<=[,;:])\s+")
+_LIST_ITEM_RE = re.compile(
+    r"^(?:"
+    r"(?:ett|två|tre|fyra|fem|sex|sju|åtta|nio|tio|elva|tolv)"
+    r"|(?:\d+)"
+    r")\s*[:.)-]\s+",
+    re.IGNORECASE,
+)
+_BRACKETED_CUE_RE = re.compile(r"\[[^\]]+\]")
+_WEAK_BOUNDARY_STARTERS = (
+    ("för", "att"),
+    ("så", "att"),
+    ("och",),
+    ("men",),
+    ("när",),
+    ("om",),
+    ("medan",),
+    ("eftersom",),
+    ("som",),
+    ("att",),
+)
+_TARGET_SEGMENT_SECONDS_MIN = 4.0
+_TARGET_SEGMENT_SECONDS_MAX = 6.0
+_HARD_MAX_SEGMENT_SECONDS = 9.0
+_PLANNER_VERSION = "clause_duration_v1"
+_ESTIMATED_WORDS_PER_SECOND = 3.1
+_ESTIMATED_CHARS_PER_SECOND = 20.0
+_JOIN_PENALTY_SECONDS = 0.12
+_MIN_LIST_ITEM_STANDALONE_SECONDS = 1.5
 
 
 @dataclass(frozen=True)
@@ -51,6 +79,30 @@ class SegmentPlan:
     segments: list[str]
     max_chars: int
     cross_fade_ms: int
+    planner_version: str
+    target_seconds_min: float
+    target_seconds_max: float
+    hard_max_seconds: float
+    segment_predictions: list["PlannedSegment"]
+
+
+@dataclass(frozen=True)
+class PlannedSegment:
+    """Debug-friendly segment planning metadata."""
+
+    text: str
+    boundary_type: str
+    predicted_duration_seconds: float
+    unit_count: int
+
+
+@dataclass(frozen=True)
+class PlanningUnit:
+    """Internal clause-sized planning unit used before chunk packing."""
+
+    text: str
+    boundary_type: str
+    predicted_duration_seconds: float
 
 
 @dataclass(frozen=True)
@@ -128,13 +180,18 @@ def build_segment_plan(*, text: str, max_chars: int, cross_fade_ms: int) -> Segm
             message="The synthesis request text is empty after normalization.",
             status_code=422,
         )
-    segments = _segment_text(stripped, max_chars=max_chars)
+    planned_segments = _plan_text_segments(stripped, max_chars=max_chars)
     return SegmentPlan(
         original_text=stripped,
-        segment_count=len(segments),
-        segments=segments,
+        segment_count=len(planned_segments),
+        segments=[segment.text for segment in planned_segments],
         max_chars=max_chars,
         cross_fade_ms=cross_fade_ms,
+        planner_version=_PLANNER_VERSION,
+        target_seconds_min=_TARGET_SEGMENT_SECONDS_MIN,
+        target_seconds_max=_TARGET_SEGMENT_SECONDS_MAX,
+        hard_max_seconds=_HARD_MAX_SEGMENT_SECONDS,
+        segment_predictions=planned_segments,
     )
 
 
@@ -145,7 +202,7 @@ def stitch_waveforms(
     cross_fade_ms: int,
     segment_texts: list[str],
     stitch_mode: str,
-    edge_fade_cap_ms: float = 16.0,
+    edge_fade_cap_ms: float = 12.0,
 ) -> "StitchResult":
     """Stitch per-segment waveforms into one mono waveform tensor."""
     if len(waveforms) == 0:
@@ -316,62 +373,259 @@ def _stitch_waveforms_speech_aware(
     )
 
 
-def _segment_text(text: str, *, max_chars: int) -> list[str]:
-    """Split text deterministically on sentence and softer boundary heuristics."""
+def _plan_text_segments(text: str, *, max_chars: int) -> list[PlannedSegment]:
+    """Plan duration-bounded segments from clause-aware atomic units."""
+    units = _segment_text(text, max_chars=max_chars)
+    planned_segments: list[PlannedSegment] = []
+    current_units: list[PlanningUnit] = []
+    for unit in units:
+        if current_units and _should_close_segment_before_adding(
+            current_units=current_units,
+            next_unit=unit,
+            max_chars=max_chars,
+        ):
+            planned_segments.append(_finalize_planned_segment(current_units))
+            current_units = [unit]
+            continue
+        current_units.append(unit)
+    if current_units:
+        planned_segments.append(_finalize_planned_segment(current_units))
+    return planned_segments
+
+
+def _segment_text(text: str, *, max_chars: int) -> list[PlanningUnit]:
+    """Split text deterministically into clause-aware planning units."""
     sentences = _split_text_with_pattern(text, _HARD_BOUNDARY_RE)
-    chunks: list[str] = []
-    current_parts: list[str] = []
-    current_length = 0
+    units: list[PlanningUnit] = []
     for sentence in sentences:
         normalized_sentence = sentence.strip()
         if normalized_sentence == "":
             continue
-        sentence_parts = _expand_oversized_unit(normalized_sentence, max_chars=max_chars)
-        for part in sentence_parts:
-            if current_parts and current_length + 1 + len(part) > max_chars:
-                chunks.append(" ".join(current_parts))
-                current_parts = [part]
-                current_length = len(part)
-                continue
-            if not current_parts:
-                current_parts = [part]
-                current_length = len(part)
-                continue
-            current_parts.append(part)
-            current_length += 1 + len(part)
-    if current_parts:
-        chunks.append(" ".join(current_parts))
-    return chunks if chunks else [text]
+        units.extend(_expand_sentence_to_units(normalized_sentence, max_chars=max_chars))
+    return units
 
 
-def _expand_oversized_unit(text: str, *, max_chars: int) -> list[str]:
-    """Split an oversized sentence first on soft punctuation, then on words."""
-    if len(text) <= max_chars:
-        return [text]
+def _expand_sentence_to_units(text: str, *, max_chars: int) -> list[PlanningUnit]:
+    """Split one sentence into bounded planning units."""
+    if _unit_within_limits(text=text, max_chars=max_chars):
+        return [_build_planning_unit(text)]
+    structural_clauses = _split_on_structural_boundaries(text)
+    if len(structural_clauses) > 1:
+        segments: list[PlanningUnit] = []
+        for clause in structural_clauses:
+            segments.extend(_expand_sentence_to_units(clause.strip(), max_chars=max_chars))
+        return segments
+    weak_clauses = _split_on_weak_boundaries(text)
+    if len(weak_clauses) > 1:
+        segments = []
+        for clause in weak_clauses:
+            segments.extend(_expand_sentence_to_units(clause.strip(), max_chars=max_chars))
+        return segments
+    return _split_words_to_units(text, max_chars=max_chars)
+
+
+def _split_words_to_units(text: str, *, max_chars: int) -> list[PlanningUnit]:
+    """Split one oversized unit on words while honoring duration ceilings."""
+    words = text.split()
+    if len(words) <= 1:
+        return [_build_planning_unit(text)]
+    word_segments: list[PlanningUnit] = []
+    current_words: list[str] = []
+    for word in words:
+        proposed_words = current_words + [word]
+        proposed_text = " ".join(proposed_words)
+        if current_words and not _unit_within_limits(text=proposed_text, max_chars=max_chars):
+            word_segments.append(_build_planning_unit(" ".join(current_words)))
+            current_words = [word]
+            continue
+        current_words = proposed_words
+    if current_words:
+        word_segments.append(_build_planning_unit(" ".join(current_words)))
+    return word_segments
+
+
+def _split_on_structural_boundaries(text: str) -> list[str]:
+    """Split one unit on strong structural boundaries before word fallback."""
     clauses = _split_text_with_pattern(text, _SOFT_BOUNDARY_RE)
     if len(clauses) > 1:
-        segments: list[str] = []
-        for clause in clauses:
-            segments.extend(_expand_oversized_unit(clause.strip(), max_chars=max_chars))
-        return segments
+        return clauses
+    dash_clauses = _split_on_dash_boundaries(text)
+    if len(dash_clauses) > 1:
+        return dash_clauses
+    cue_clauses = _split_on_bracketed_cues(text)
+    if len(cue_clauses) > 1:
+        return cue_clauses
+    return [text]
+
+
+def _split_on_dash_boundaries(text: str) -> list[str]:
+    """Split one unit on spoken dash boundaries while preserving the marker."""
+    parts = [part.strip() for part in re.split(r"\s+[–-]\s+", text.strip()) if part.strip() != ""]
+    if len(parts) <= 1:
+        return [text]
+    segments: list[str] = []
+    for index, part in enumerate(parts):
+        if index < len(parts) - 1:
+            segments.append(f"{part} –")
+        else:
+            segments.append(part)
+    return segments
+
+
+def _split_on_bracketed_cues(text: str) -> list[str]:
+    """Split one unit so bracketed cues can form their own short planning unit."""
+    matches = list(_BRACKETED_CUE_RE.finditer(text))
+    if not matches:
+        return [text]
+    segments: list[str] = []
+    cursor = 0
+    for match in matches:
+        prefix = text[cursor : match.start()].strip()
+        cue = match.group(0).strip()
+        if prefix != "":
+            segments.append(prefix)
+        if cue != "":
+            segments.append(cue)
+        cursor = match.end()
+    suffix = text[cursor:].strip()
+    if suffix != "":
+        segments.append(suffix)
+    return segments if len(segments) > 1 else [text]
+
+
+def _split_on_weak_boundaries(text: str) -> list[str]:
+    """Split an oversized unit on weaker clause starters when needed."""
     words = text.split()
     if len(words) <= 1:
         return [text]
-    word_segments: list[str] = []
-    current_words: list[str] = []
-    current_length = 0
-    for word in words:
-        proposed_length = len(word) if not current_words else current_length + 1 + len(word)
-        if current_words and proposed_length > max_chars:
-            word_segments.append(" ".join(current_words))
-            current_words = [word]
-            current_length = len(word)
+    segments: list[list[str]] = [[]]
+    index = 0
+    while index < len(words):
+        split_marker = _match_weak_boundary_starter(words, index)
+        if split_marker is not None and segments[-1]:
+            segments.append([])
+        segments[-1].append(words[index])
+        index += 1
+    built_segments = [" ".join(segment).strip() for segment in segments if segment]
+    return built_segments if len(built_segments) > 1 else [text]
+
+
+def _match_weak_boundary_starter(words: list[str], index: int) -> tuple[str, ...] | None:
+    """Return the matching weak boundary starter at one word index."""
+    for starter in _WEAK_BOUNDARY_STARTERS:
+        if index + len(starter) > len(words):
             continue
-        current_words.append(word)
-        current_length = proposed_length
-    if current_words:
-        word_segments.append(" ".join(current_words))
-    return word_segments
+        candidate = tuple(
+            word.casefold().strip(".,;:!?()[]{}\"'") for word in words[index : index + len(starter)]
+        )
+        if candidate == starter:
+            return starter
+    return None
+
+
+def _should_close_segment_before_adding(
+    *,
+    current_units: list[PlanningUnit],
+    next_unit: PlanningUnit,
+    max_chars: int,
+) -> bool:
+    """Decide whether one segment should be closed before adding the next unit."""
+    current_seconds = _predicted_duration_for_units(current_units)
+    proposed_units = [*current_units, next_unit]
+    proposed_text = _join_units(proposed_units)
+    proposed_seconds = _predicted_duration_for_units(proposed_units)
+    current_has_list_item = any(unit.boundary_type == "list_item" for unit in current_units)
+
+    if current_has_list_item and next_unit.boundary_type == "list_item":
+        return True
+    if (
+        current_has_list_item
+        and next_unit.boundary_type in {"sentence", "cue"}
+        and current_seconds >= _MIN_LIST_ITEM_STANDALONE_SECONDS
+    ):
+        return True
+    if len(proposed_text) > max_chars:
+        return True
+    if proposed_seconds > _HARD_MAX_SEGMENT_SECONDS:
+        return True
+    if (
+        current_seconds >= _TARGET_SEGMENT_SECONDS_MIN * 0.75
+        and proposed_seconds > _TARGET_SEGMENT_SECONDS_MAX
+        and next_unit.boundary_type in {"list_item", "sentence", "cue"}
+    ):
+        return True
+    if current_seconds >= _TARGET_SEGMENT_SECONDS_MIN and next_unit.boundary_type in {
+        "list_item",
+        "sentence",
+        "cue",
+    }:
+        return True
+    return False
+
+
+def _finalize_planned_segment(units: list[PlanningUnit]) -> PlannedSegment:
+    """Convert one packed unit group into emitted segment metadata."""
+    text = _join_units(units)
+    return PlannedSegment(
+        text=text,
+        boundary_type=units[-1].boundary_type,
+        predicted_duration_seconds=round(_predicted_duration_for_units(units), 3),
+        unit_count=len(units),
+    )
+
+
+def _join_units(units: list[PlanningUnit]) -> str:
+    """Join planning units into one emitted segment text."""
+    return " ".join(unit.text for unit in units).strip()
+
+
+def _predicted_duration_for_units(units: list[PlanningUnit]) -> float:
+    """Predict one segment duration from its planning units."""
+    if len(units) == 0:
+        return 0.0
+    return sum(unit.predicted_duration_seconds for unit in units) + (
+        max(len(units) - 1, 0) * _JOIN_PENALTY_SECONDS
+    )
+
+
+def _build_planning_unit(text: str) -> PlanningUnit:
+    """Create one planning unit with normalized text and predicted duration."""
+    stripped = text.strip()
+    return PlanningUnit(
+        text=stripped,
+        boundary_type=_classify_planning_unit_type(stripped),
+        predicted_duration_seconds=_estimate_text_duration_seconds(stripped),
+    )
+
+
+def _classify_planning_unit_type(text: str) -> str:
+    """Classify one planning unit for chunk-boundary priority."""
+    if _LIST_ITEM_RE.match(text):
+        return "list_item"
+    if _BRACKETED_CUE_RE.fullmatch(text):
+        return "cue"
+    return _classify_boundary_type(text)
+
+
+def _estimate_text_duration_seconds(text: str) -> float:
+    """Estimate speech duration conservatively from text length and word count."""
+    cleaned = text.strip()
+    if cleaned == "":
+        return 0.0
+    non_space_chars = len(re.sub(r"\s+", "", cleaned))
+    word_count = len(cleaned.split())
+    return max(
+        non_space_chars / _ESTIMATED_CHARS_PER_SECOND,
+        word_count / _ESTIMATED_WORDS_PER_SECOND,
+    )
+
+
+def _unit_within_limits(*, text: str, max_chars: int) -> bool:
+    """Return whether one unit already fits the hard planning constraints."""
+    return (
+        len(text) <= max_chars
+        and _estimate_text_duration_seconds(text) <= _HARD_MAX_SEGMENT_SECONDS
+    )
 
 
 def _split_text_with_pattern(text: str, pattern: re.Pattern[str]) -> list[str]:

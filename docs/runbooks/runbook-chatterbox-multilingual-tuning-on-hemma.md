@@ -19,6 +19,7 @@ links:
   - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
   - docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md
   - docs/backlog/tasks/task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md
+  - docs/backlog/tasks/task-93-implement-clause-aware-duration-bounded-chatterbox-chunk-planning-on-hemma.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -133,13 +134,19 @@ Current repo truth:
   - segmented normal text
 - the segmented lane writes a `segment_plan.json` plus chunk artifacts when
   debug retention is enabled
+- Task 93 now changes the planner shape itself:
+  - structural list items are preferred split boundaries,
+  - clause-aware planning units are used before word fallback,
+  - the planner targets `4-6` second chunks on average,
+  - and enforces a hard `9` second planning ceiling per chunk
 
 Practical consequence:
 
 - the repo now has a real long-form quality path for Chatterbox
-- the remaining gap is qualitative, not infrastructural:
-  we still need listening judgment to decide whether segmented output is better
-  than the single-pass baseline for Story 23
+- the next quality lever is no longer generic segmentation, but better segment
+  planning for structured Swedish text
+- `segment_max_chars` should now be treated as a secondary safety rail, not as
+  the primary chunking policy
 
 ## Reference Audio Behavior in This Repo
 
