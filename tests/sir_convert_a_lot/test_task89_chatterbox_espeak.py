@@ -65,6 +65,14 @@ def test_task89_hemma_parse_args_defaults() -> None:
     assert settings.build_chatterbox_image is False
 
 
+def test_task89_hemma_parse_args_supports_explicit_benchmark_rebuild() -> None:
+    settings = run_task89_hemma_chatterbox_espeak_experiment._parse_args(
+        ["--build-benchmark-image"]
+    )
+
+    assert settings.build_chatterbox_image is True
+
+
 def test_task89_local_orchestrator_runs_remote_then_rsync(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

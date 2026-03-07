@@ -90,7 +90,7 @@ def _parse_args(argv: list[str]) -> ExperimentSettings:
         "--no-preserve-punctuation", dest="preserve_punctuation", action="store_false"
     )
     parser.add_argument("--skip-helper-build", action="store_true")
-    parser.add_argument("--skip-benchmark-build", action="store_true", default=True)
+    parser.add_argument("--build-benchmark-image", action="store_true")
     args = parser.parse_args(argv)
     return ExperimentSettings(
         output_root=Path(args.output_root),
@@ -101,7 +101,7 @@ def _parse_args(argv: list[str]) -> ExperimentSettings:
         espeak_language=str(args.espeak_language),
         preserve_punctuation=bool(args.preserve_punctuation),
         build_helper_image=not bool(args.skip_helper_build),
-        build_chatterbox_image=not bool(args.skip_benchmark_build),
+        build_chatterbox_image=bool(args.build_benchmark_image),
     )
 
 

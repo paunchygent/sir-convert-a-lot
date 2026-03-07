@@ -54,7 +54,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=Path(os.environ.get("SIR_CONVERT_A_LOT_HEMMA_ROOT", DEFAULT_HEMMA_ROOT.as_posix())),
     )
     parser.add_argument("--skip-helper-build", action="store_true")
-    parser.add_argument("--skip-benchmark-build", action="store_true", default=True)
+    parser.add_argument("--build-benchmark-image", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -88,8 +88,8 @@ def main(argv: list[str] | None = None) -> int:
     ]
     if args.skip_helper_build:
         remote_command.append("--skip-helper-build")
-    if args.skip_benchmark_build:
-        remote_command.append("--skip-benchmark-build")
+    if args.build_benchmark_image:
+        remote_command.append("--build-benchmark-image")
     LOGGER.info("Running Task 89 remotely on Hemma")
     remote_returncode = _run_local(remote_command)
     sync_command = [
