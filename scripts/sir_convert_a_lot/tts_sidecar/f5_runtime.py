@@ -506,7 +506,7 @@ def _render_infer_toml(
         f'output_dir = "{_escape_toml(output_dir.as_posix())}"',
         f'output_file = "{_escape_toml(output_file)}"',
         f"remove_silence = {'true' if remove_silence else 'false'}",
-        f'nfe_step = {nfe_step}',
+        f"nfe_step = {nfe_step}",
         f"cfg_strength = {cfg_strength}",
         f"sway_sampling_coef = {sway_sampling_coef}",
         f'vocoder_name = "{_escape_toml(vocoder_name)}"',

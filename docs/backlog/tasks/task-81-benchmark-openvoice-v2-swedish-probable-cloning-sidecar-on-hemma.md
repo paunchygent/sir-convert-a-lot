@@ -2,7 +2,7 @@
 id: task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma
 title: Benchmark OpenVoice V2 Swedish-probable cloning sidecar on Hemma
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-06'
 last_updated: '2026-03-06'
@@ -51,7 +51,7 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 - [x] Committed `benchmark:task-81` command surface (or equivalent named wrapper).
 - [x] Deterministic Hemma evidence under `build/verification/task-81-openvoice-v2-hemma/`.
 - [x] Swedish sample artifacts generated from a cloning flow.
-- [ ] Explicit recommendation on whether OpenVoice V2 becomes the primary cloning-capable backend
+- [x] Explicit recommendation on whether OpenVoice V2 becomes the primary cloning-capable backend
   candidate for the next implementation slice.
 
 ## Current Evidence (2026-03-06)
@@ -76,41 +76,53 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   - the sidecar image no longer depends on `faster-whisper`, which was the broken Hemma Python
     3.12 build path.
 - The `torchaudio` / runtime dependency blocker has been fixed in the benchmark image.
-- Current-head Hemma rerun on `e1d5901879c64a21f256a88352f407e6ce2ae45d` now emits one atomic
-  partial evidence bundle:
-  - `run_id=20260306T222647Z`,
-  - `benchmark_status=partial`,
-  - `evidence_status=partial`,
-  - `blocking_step=collect_setup_artifacts`.
-- The earlier synthesize-stage Torch Hub / Silero blocker is fixed on current `HEAD`:
+- Current complete Hemma rerun on `61b263cab56118677dc47810b615daaf0adbe463` now emits one atomic
+  success bundle:
+  - `run_id=20260306T224057Z`,
+  - `benchmark_status=succeeded`,
+  - `evidence_status=complete`,
+  - `blocking_step=null`,
+  - `failure=null`.
+- The earlier synthesize-stage Torch Hub / Silero blocker is fixed on current benchmark `HEAD`:
   - the sidecar no longer uses `whisper-timestamped` in the active reference-preprocessing path,
-  - `/synthesize` now returns `200 OK`,
-  - the new corrected sample artifact is
+  - `/synthesize` returns `200 OK`,
+  - canonical Torch cache truth is declared and used without reintroducing legacy cache paths.
+- The earlier export failure also remains disproved on the successful rerun:
+  - processed-reference artifacts are preserved under
+    `build/verification/task-81-openvoice-v2-hemma/artifacts/processed_reference/`,
+  - Swedish base audio is preserved at
+    `build/verification/task-81-openvoice-v2-hemma/artifacts/base_sv.wav`,
+  - converter-input audio is preserved at
+    `build/verification/task-81-openvoice-v2-hemma/artifacts/base_sv_converter_input.wav`,
+  - the final cloned artifact is preserved at
     `build/verification/task-81-openvoice-v2-hemma/artifacts/sample_sv.wav`.
-- The earlier export failure still does not reproduce on current `HEAD`.
-- The current live blocker is now narrower and later in the run:
-  - the benchmark remains partial because setup-artifact collection is incomplete,
-  - `processed_reference_dir`, `base_output_path`, and `converter_input_path` remain `null` in the
-    current report,
-  - there is no top-level `failure.txt` for the current rerun, so the missing setup trail is the
-    remaining blocker rather than a new synthesize crash.
 - Current conclusion:
-  - the atomic evidence and machine-readable status remediation is working,
-  - the direct local Silero remediation fixed the current-head synthesize blocker without
-    reintroducing legacy cache paths,
-  - `T84` remains open until the current rerun also preserves processed-reference, base-audio,
-    and converter-input artifacts,
-  - corrected setup quality is still not review-ready because the setup-artifact trail is missing.
+  - the benchmark plumbing is now validated end-to-end on Hemma,
+  - the failed-quality baseline is preserved for before/after comparison,
+  - `T84` is complete,
+  - listening review of the corrected rerun says:
+    - the Swedish base voice remains very unnatural with pitch, tone, and phrasing issues,
+    - the cloned result is somewhat better than the base voice,
+    - the cloned result is still sub-par for the teacher-voice goal,
+  - recommendation: OpenVoice V2 is technically feasible on Hemma but should not remain the
+    primary Swedish teacher-voice candidate for the next implementation slice.
 
-## Failure Record
+## Result Record
 
-- Failure type: quality/setup failure, not runtime failure.
-- What failed:
-  - cloned Swedish output quality,
-  - voice similarity to the approved teacher reference clip.
-- Why we are not closing the task:
-  - technical success alone is insufficient for the teacher-voice requirement,
-  - the current OpenVoice plus Swedish-base setup should not be treated as accepted.
+- Result type: technical success with negative product recommendation.
+- What worked:
+  - sidecar/runtime/cache plumbing,
+  - Swedish base generation,
+  - cloning flow with the approved teacher reference clip,
+  - deterministic evidence preservation on Hemma.
+- What still failed:
+  - Swedish base voice quality,
+  - cloned output quality,
+  - teacher-voice credibility for the intended product path.
+- Decision:
+  - close `T81` as completed evidence,
+  - do not promote OpenVoice V2 as the primary Swedish teacher-voice backend,
+  - proceed to `T82`.
 
 ## Failed-Baseline Setup Concerns (2026-03-06)
 
@@ -120,12 +132,10 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 - The current adapter extracts the target speaker embedding directly from the full approved
   reference clip instead of using OpenVoice's intended reference-speaker preprocessing flow.
   That means the benchmark is skipping the model's speech-segmentation/reference-cleanup path.
-- The current benchmark still does not write the processed reference artifact plus the
-  pre-conversion Swedish base artifact, because the synthesize-stage blocker fires before those
-  setup artifacts are exported.
-- The Torch Hub / Silero VAD cache path is now declared and reported, but current logs prove that
-  the runtime still resolves the repo assertion through `/root/.cache/torch/hub`, so cache truth is
-  now explicit but not yet correct end-to-end.
+- The failed baseline did not preserve the processed reference artifact plus the pre-conversion
+  Swedish base artifact, which is why it could not isolate setup quality defects fairly.
+- The failed baseline also proved the old Torch Hub / Silero path was wrong, which is why the
+  corrected rerun had to remove `whisper-timestamped` rather than wire in a legacy cache path.
 
 ## Remediation Track
 
@@ -144,7 +154,7 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   so Hemma can rebuild the benchmark image on Python 3.12.
 - [x] Rerun Task 81 on Hemma with the corrected setup and preserve the failed sample as baseline
   evidence rather than overwriting the learning.
-- [ ] Record whether the corrected setup removes the reported artifacts, improves pacing, and
+- [x] Record whether the corrected setup removes the reported artifacts, improves pacing, and
   materially improves timbre match to the approved teacher voice.
 - [x] Make the next corrected rerun atomic:
   - one repo head,
@@ -157,19 +167,18 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   `TORCH_HOME` cache path is actually the path used by the runtime assertion logic.
 - [x] Remove `whisper-timestamped` from the active reference-preprocessing path and replace it
   with a direct local Silero VAD flow rooted only in the canonical Torch cache.
-- [ ] Recover setup-artifact collection so the corrected rerun preserves:
+- [x] Recover setup-artifact collection so the corrected rerun preserves:
   - processed reference artifacts,
   - Swedish base artifacts before cloning,
   - converter-input artifacts for the tone-color conversion step.
-- [ ] If the corrected rerun is still poor, record OpenVoice as technically feasible but not the
+- [x] If the corrected rerun is still poor, record OpenVoice as technically feasible but not the
   primary Swedish teacher-voice candidate, then proceed to `T82`.
 
 ## Immediate Execution Order
 
-1. Fix the current setup-artifact collection gap on Hemma.
-1. Rerun the same Swedish probe text with the same approved teacher reference clip on Hemma.
-1. Preserve processed-reference, base, and cloned artifacts beside the failed baseline.
-1. Decide whether OpenVoice remains credible only after one corrected rerun completes end-to-end.
+1. Preserve OpenVoice as a technically successful but non-primary benchmark lane.
+1. Proceed to `T82` for the next cloning-capable comparison backend.
+1. Keep `T83` as the direct Swedish pronunciation control lane.
 
 ## Acceptance Criteria
 
@@ -184,11 +193,12 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
   - official upstream support claims,
   - live Hemma runtime truth,
   - subjective listening notes.
-- [ ] The task records whether OpenVoice V2 is sufficiently credible to be the default Swedish-
+- [x] The task records whether OpenVoice V2 is sufficiently credible to be the default Swedish-
   probable cloning backend for follow-on implementation work.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+- [x] Recommendation recorded

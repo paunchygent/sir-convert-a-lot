@@ -5,7 +5,7 @@ type: task
 status: proposed
 priority: high
 created: '2026-03-06'
-last_updated: '2026-03-06'
+last_updated: '2026-03-07'
 related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
@@ -24,6 +24,14 @@ labels:
 ---
 
 PR-sized execution unit; may be linked to a story or standalone.
+
+Planning note (2026-03-07):
+
+- Story 23 no longer treats `T82` as the immediate next benchmark lane.
+- The active next comparison benchmark moved to `T85` for F5-TTS after the OpenVoice
+  quality decision and explicit user direction.
+- Keep this task as a deferred follow-up candidate if F5-TTS does not produce a credible Swedish
+  teacher-voice result.
 
 ## Objective
 

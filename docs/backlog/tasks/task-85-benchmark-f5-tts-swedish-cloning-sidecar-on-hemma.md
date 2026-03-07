@@ -89,9 +89,13 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
 
 - 2026-03-07 Hemma technical benchmark succeeded on commit
   `f1343104e625a5118fe713c0a10f8f5c41ea00c3`.
+- 2026-03-07 quality-sweep follow-up succeeded on commit
+  `c9c92afaaa50584a86563d7efd2fdb4a7aae54f6`, which added explicit benchmark logging and
+  pass-through controls for `nfe_step`, `remove_silence`, and `vocoder_name`.
 - The dedicated sidecar image built successfully as
   `sir-convert-a-lot/f5-sidecar-task85:local`
-  (`sha256:dfcad95ffb580e675a3cc19606a718dd0b00b67c5da0a3509ee2609dd012d20b`).
+  and was later rebuilt with the quality-sweep/logging slice as
+  `sha256:9d6f2e563b2900b1f19a36d1f76d4525379028517fae0fc935256ec9b7548799`.
 - The normalized sidecar reached ready state in `6.153` seconds and passed both:
   - host-lane probing on `http://127.0.0.1:38093`
   - internal service-container probing from `sir_convert_a_lot_prod`
@@ -109,16 +113,49 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
   - prepared clip: `build/verification/task-85-f5-tts-hemma/inputs/reference_10s_sv.wav`
   - transcript:
     `Jag har ofta tänkt på att man inte ska liksom ta scenen dit man kommer, men vad vet jag om det?`
+- The longer custom Swedish probe text also synthesized successfully:
+  - baseline long-text artifact:
+    `build/verification/task-85-f5-tts-hemma-olof-text/artifacts/sample_sv.wav`
+  - format: `wav`, `24 kHz`, mono, duration `17.994` seconds
+- Quality sweep evidence is now available for direct listening comparison:
+  - `nfe_step=48`:
+    `build/verification/task-85-f5-tts-hemma-olof-text-nfe48/artifacts/sample_sv.wav`
+    - SHA256:
+      `009060907d4510e6e23a47307b7ba5aee11acea8d55c4942d662bf1f62a70c8d`
+    - format: `wav`, `24 kHz`, mono, duration `17.994` seconds
+  - `nfe_step=48` + `remove_silence=true`:
+    `build/verification/task-85-f5-tts-hemma-olof-text-nfe48-remove-silence/artifacts/sample_sv.wav`
+    - SHA256:
+      `813eae6ba4e84ca20da6ecd5df001cc2c192ed705129234c72b07d94fd4c5d39`
+    - format: `wav`, `24 kHz`, mono, duration `16.230` seconds
+  - `nfe_step=64`:
+    `build/verification/task-85-f5-tts-hemma-olof-text-nfe64/artifacts/sample_sv.wav`
+    - SHA256:
+      `b462440c874faf69a8a3f48a33b7c02f1735f62635b0585451da6be21fd86a9c`
+    - format: `wav`, `24 kHz`, mono, duration `17.994` seconds
+  - `nfe_step=64` + `remove_silence=true`:
+    `build/verification/task-85-f5-tts-hemma-olof-text-nfe64-remove-silence/artifacts/sample_sv.wav`
+    - SHA256:
+      `3ad225af8a7e447784604049bf726190ea242a5bfe5808ebae0e2c2c429d9bf6`
+    - format: `wav`, `24 kHz`, mono, duration `16.500` seconds
+- `vocoder_name=bigvgan` is currently not a viable Task 85 lane with the upstream package as
+  installed here:
+  - the Hemma sidecar returns `500` during `/synthesize`
+  - runtime error text points to missing upstream BigVGAN submodule/source-code preparation
+  - failure evidence is preserved under
+    `build/verification/task-85-f5-tts-hemma-olof-text-nfe48-bigvgan/`
 
 ## Remaining Work
 
-- Perform listening review of the successful F5 sample against the preserved OpenVoice Task 81
-  baseline.
+- Perform listening review across the preserved OpenVoice Task 81 baseline and the new F5 quality
+  sweep artifacts.
 - Record explicit comparison notes on:
   - cloning workflow ergonomics,
   - Swedish output credibility,
   - runtime/dependency complexity,
   - Hemma operational fit.
+- Decide whether the best Task 85 quality lane is the original baseline, `nfe48`,
+  `nfe48 + remove_silence`, or `nfe64`.
 - End the task with a recommendation instead of a purely technical pass.
 
 ## Checklist
