@@ -19,6 +19,7 @@ related:
   - docs/backlog/tasks/task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration.md
   - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
   - docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md
+  - docs/backlog/tasks/task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -66,6 +67,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 1. `docs/backlog/tasks/task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration.md`
 1. `docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md`
 1. `docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md`
+1. `docs/backlog/tasks/task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
 Deferred follow-up:
@@ -179,10 +181,15 @@ Deferred follow-up:
     - single-pass clone duration was `51.904` seconds,
     - segmented clone duration was `57.473` seconds,
     - single-pass peak VRAM was `5959815168` bytes,
-    - segmented peak VRAM was `5742292992` bytes.
-  - The main Chatterbox quality gap is no longer missing infrastructure.
-    It is now the pending listening judgment on whether segmented output is
-    better, worse, or unchanged versus the single-pass baseline.
+      - segmented peak VRAM was `5742292992` bytes.
+  - The qualitative Task 90 verdict is now recorded:
+    - segmented output is better overall than single-pass on longer passages,
+    - especially toward the end where the single-pass lane sounds more stressed,
+    - but stitch-point tails still carry noise and pauses can be too long.
+  - `T91` is now the next Chatterbox quality slice:
+    - speech-aware tail cleanup,
+    - pause-aware boundary stitching,
+    - improved cross-fade that preserves natural pauses.
 
 ## Acceptance Criteria
 

@@ -18,6 +18,7 @@ links:
   - docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
   - docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md
+  - docs/backlog/tasks/task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -258,7 +259,16 @@ Measured outcome:
 - segmented peak VRAM: `5742292992`
 
 This runbook does not claim a winner from those numbers alone. The next
-decision still depends on listening review.
+decision now includes the listening review:
+
+- segmented output is the better Chatterbox path overall
+- the remaining defects are stitch-specific, not segmentation-specific
+
+The next quality slice is therefore not “more segmentation tuning.” It is:
+
+- tail-noise cleanup after speech stops
+- pause-aware stitch decisions at chunk boundaries
+- cross-fade that respects intended natural pauses
 
 ## Canonical Baseline Lane
 

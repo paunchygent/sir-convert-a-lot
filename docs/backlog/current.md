@@ -154,8 +154,13 @@ Primary implementation stories (active sequence):
       `5959815168` bytes,
     - segmented clone duration was `57.473` seconds with peak VRAM
       `5742292992` bytes,
-    - the remaining Story 23 blocker is now listening judgment, not missing
-      Chatterbox infrastructure.
+    - listening review now favors the segmented path overall,
+    - the remaining Story 23 blocker is now stitch quality:
+      noisy chunk tails and pauses that are too long.
+  - Opened `T91` as the new Chatterbox follow-up:
+    - speech-aware tail cleanup,
+    - pause-aware stitching,
+    - robust cross-fade that preserves natural pauses.
 
 - 2026-03-05:
 
@@ -184,13 +189,13 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 listening review of `T90`
-  single-pass versus segmented Chatterbox output, then `T83`, with `T82` kept
-  deferred.
+- Current local execution focus is Epic 07 Story 23 `T91`
+  speech-aware stitching and tail cleanup for Chatterbox, then `T83`, with
+  `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now listening review and recommendation capture
-  for the completed `T90` Chatterbox comparison, with `T83` kept as the
-  Swedish pronunciation control and `T82` remaining deferred.
+- Immediate Story 23 focus is now `T91` speech-aware stitching after the
+  completed `T90` segmentation win, with `T83` kept as the Swedish
+  pronunciation control and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

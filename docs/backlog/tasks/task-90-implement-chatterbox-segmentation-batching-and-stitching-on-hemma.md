@@ -2,7 +2,7 @@
 id: task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma
 title: Implement Chatterbox segmentation batching and stitching on Hemma
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
@@ -10,6 +10,7 @@ related:
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
+  - docs/backlog/tasks/task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md
   - docs/runbooks/runbook-chatterbox-multilingual-tuning-on-hemma.md
   - docs/reference/ref-espeak-ng-swedish-phoneme-integration-for-chatterbox.md
 labels:
@@ -101,9 +102,16 @@ Measured Task 90 result:
 - segmented plan used `3` deterministic text segments at `max_chars=160` with
   `cross_fade_ms=80`
 
-Qualitative listening judgment is still pending, so the task remains
-`in_progress` until the repo records whether the segmented output is better,
-worse, or unchanged versus the single-pass baseline.
+Qualitative listening judgment is now recorded:
+
+- segmented output is roughly equal overall but better than single-pass toward
+  the end of longer passages
+- the single-pass lane sounds more stressed later in the passage
+- remaining defects are now localized to chunk boundaries:
+  - noisy tails after speech stops
+  - pauses that are too long because stitching is not yet speech-aware
+
+Those remaining issues are intentionally deferred into `T91`.
 
 ## Acceptance Criteria
 
@@ -113,7 +121,7 @@ worse, or unchanged versus the single-pass baseline.
 - [x] The segmented lane writes one final stitched artifact under
   `build/verification/`.
 - [x] Optional chunk-level debug artifacts are deterministic when enabled.
-- [ ] The benchmark records whether segmented output is judged better, worse, or
+- [x] The benchmark records whether segmented output is judged better, worse, or
   unchanged versus the single-pass baseline.
 
 ## Checklist
