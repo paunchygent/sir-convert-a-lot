@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 import mimetypes
 import os
 import sys
@@ -44,6 +45,8 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     run_checked,
 )
 from scripts.sir_convert_a_lot.tts_sidecar.contracts import CapabilityResponse
+
+LOGGER = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-85-f5-tts-hemma")
 DEFAULT_DOCKERFILE = Path("containers/tts-sidecar-f5/Dockerfile")
@@ -134,6 +137,9 @@ class BenchmarkReport:
     reference_audio_sample_rate_hz: int
     reference_transcript: str
     reference_transcript_path: str
+    remove_silence: bool
+    nfe_step: int
+    vocoder_name: str
     hf_cache_host_root: str
     model_cache_host_root: str
     model_files: list[str]
@@ -637,6 +643,9 @@ def _build_report_markdown(report: BenchmarkReport) -> str:
         f"- reference_audio_duration_seconds: `{report.reference_audio_duration_seconds}`",
         f"- reference_audio_sample_rate_hz: `{report.reference_audio_sample_rate_hz}`",
         f"- reference_transcript: `{report.reference_transcript}`",
+        f"- remove_silence: `{report.remove_silence}`",
+        f"- nfe_step: `{report.nfe_step}`",
+        f"- vocoder_name: `{report.vocoder_name}`",
         f"- hf_cache_host_root: `{report.hf_cache_host_root}`",
         f"- model_cache_host_root: `{report.model_cache_host_root}`",
         f"- gpu_product_name: `{report.gpu_product_name}`",
@@ -659,7 +668,19 @@ def _build_report_markdown(report: BenchmarkReport) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     """Run the Task 85 benchmark and write deterministic evidence artifacts."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+    )
     settings = _parse_args(sys.argv[1:] if argv is None else argv)
+    LOGGER.info(
+        "Task 85 starting: output_root=%s skip_build=%s remove_silence=%s nfe_step=%s vocoder=%s",
+        settings.output_root,
+        not settings.build_image,
+        settings.remove_silence,
+        settings.nfe_step,
+        settings.vocoder_name,
+    )
     enforce_generated_output_path(settings.output_root, label="output_root")
     (
         artifacts_dir,
@@ -677,15 +698,24 @@ def main(argv: list[str] | None = None) -> int:
     build_performed = False
     cleanup_performed = False
     try:
+        LOGGER.info("Checking Docker/service/reference preconditions")
         _ensure_preconditions(settings)
+        LOGGER.info("Inspecting GPU runtime")
         smi_identity_output = run_checked(
             ["rocm-smi", "--showproductname", "--showmeminfo", "vram", "--showuse"],
             label="rocm-smi identity",
         )
         rocminfo_output = run_checked(["rocminfo"], label="rocminfo")
         gpu_identity = extract_gpu_identity(smi_identity_output, rocminfo_output)
+        LOGGER.info(
+            "GPU detected: product=%s gfx=%s",
+            gpu_identity.product_name,
+            gpu_identity.gfx_architecture,
+        )
         remove_existing_benchmark_container(settings.container_name)
+        LOGGER.info("Ensuring F5 sidecar image is present")
         build_performed, image_id = _ensure_image_present(settings)
+        LOGGER.info("Image ready: build_performed=%s image_id=%s", build_performed, image_id)
         hf_mount = resolve_effective_cache_dir(
             cache_dir=settings.hf_cache_dir,
             home_mount=settings.hf_cache_home_mount,
@@ -696,21 +726,34 @@ def main(argv: list[str] | None = None) -> int:
             home_mount=settings.model_cache_home_mount,
             image=settings.image,
         )
+        LOGGER.info(
+            "Resolved cache mounts: hf=%s model=%s",
+            hf_mount.canonical_root,
+            model_mount.canonical_root,
+        )
+        LOGGER.info("Prefetching Swedish model snapshot if needed")
         _prefetch_model_snapshot(settings, hf_mount=hf_mount, model_mount=model_mount)
+        LOGGER.info("Collecting reference audio evidence")
         reference_evidence = reference_audio_evidence(
             settings.reference_audio_path,
             image=settings.image,
         )
+        LOGGER.info("Resolving reference transcript input")
         reference_transcript = _resolve_reference_transcript(
             settings,
             transcript_path=transcript_path,
         )
+        LOGGER.info("Starting F5 sidecar container")
         _start_sidecar(settings, hf_mount=hf_mount, model_mount=model_mount)
+        LOGGER.info("Waiting for sidecar readiness")
         readiness_seconds, capabilities = _wait_for_sidecar(settings)
+        LOGGER.info("Probing sidecar from service container")
         service_probe_ok, service_backend_id, service_ready = _probe_from_service_container(
             settings
         )
+        LOGGER.info("Capturing f5-tts_infer-cli --help evidence")
         help_command_ok = _write_help_output(settings, help_path=help_path)
+        LOGGER.info("Running synthesis probe")
         (
             synthesized_ok,
             synthesized_output_path,
@@ -750,6 +793,9 @@ def main(argv: list[str] | None = None) -> int:
             reference_audio_sample_rate_hz=reference_evidence.sample_rate_hz,
             reference_transcript=reference_transcript,
             reference_transcript_path=transcript_path.as_posix(),
+            remove_silence=settings.remove_silence,
+            nfe_step=settings.nfe_step,
+            vocoder_name=settings.vocoder_name,
             hf_cache_host_root=hf_mount.canonical_root.as_posix(),
             model_cache_host_root=model_mount.canonical_root.as_posix(),
             model_files=_collect_model_files(model_mount),
@@ -757,13 +803,16 @@ def main(argv: list[str] | None = None) -> int:
             gpu_gfx_architecture=gpu_identity.gfx_architecture,
             docker_logs_path=logs_path.as_posix(),
         )
+        LOGGER.info("Writing benchmark report and evidence bundle")
         report_json_path.write_text(
             json.dumps(asdict(report), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
         report_md_path.write_text(_build_report_markdown(report), encoding="utf-8")
+        LOGGER.info("Task 85 completed successfully: sample=%s", synthesized_output_path)
         return 0
     finally:
+        LOGGER.info("Capturing docker logs for %s", settings.container_name)
         capture_docker_logs(settings.container_name, output_path=logs_path)
         if not settings.retain_container:
             with suppress(SystemExit):
@@ -772,6 +821,7 @@ def main(argv: list[str] | None = None) -> int:
                     label="docker rm task85",
                 )
             cleanup_performed = True
+            LOGGER.info("Removed benchmark container %s", settings.container_name)
         _ = cleanup_performed
 
 
