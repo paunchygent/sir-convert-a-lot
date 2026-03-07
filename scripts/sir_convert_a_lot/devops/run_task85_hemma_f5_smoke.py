@@ -300,7 +300,7 @@ def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Pat
 
 
 def _ensure_image_present(settings: BenchmarkSettings) -> tuple[bool, str]:
-    """Build the Task 85 sidecar image when requested and return the image id."""
+    """Build the Task 85 sidecar image with BuildKit and return the image id."""
     image_present = True
     try:
         image_id = docker_checked(
@@ -312,16 +312,19 @@ def _ensure_image_present(settings: BenchmarkSettings) -> tuple[bool, str]:
         image_id = ""
     build_performed = settings.build_image or not image_present
     if build_performed:
+        docker_checked(["buildx", "version"], label="docker buildx version")
         docker_checked(
             [
+                "buildx",
                 "build",
+                "--load",
                 "-t",
                 settings.image,
                 "-f",
                 settings.dockerfile_path.resolve().as_posix(),
                 ".",
             ],
-            label="docker build task85 image",
+            label="docker buildx build task85 image",
         )
         image_id = docker_checked(
             ["image", "inspect", settings.image, "--format", "{{.Id}}"],
