@@ -161,6 +161,19 @@ Primary implementation stories (active sequence):
     - speech-aware tail cleanup,
     - pause-aware stitching,
     - robust cross-fade that preserves natural pauses.
+  - Implemented and ran `T91` on live Hemma:
+    - deterministic speech-aware stitching is now part of the repo-owned
+      Chatterbox segmented path,
+    - paired simple-vs-speech-aware segmented evidence now exists under
+      `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/`,
+    - the simple segmented lane duration was `123.426` seconds with peak VRAM
+      `6239154176` bytes,
+    - the speech-aware segmented lane duration was `94.954` seconds with peak
+      VRAM `5945778176` bytes,
+    - the speech-aware lane now records `chunk_analysis.json` and
+      `boundary_decisions.json`,
+    - the current blocker is no longer implementation but qualitative review of
+      the new stitched output.
 
 - 2026-03-05:
 
@@ -189,13 +202,12 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 `T91`
-  speech-aware stitching and tail cleanup for Chatterbox, then `T83`, with
-  `T82` kept deferred.
+- Current local execution focus is Epic 07 Story 23 listening review on `T91`,
+  then `T83`, with `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now `T91` speech-aware stitching after the
-  completed `T90` segmentation win, with `T83` kept as the Swedish
-  pronunciation control and `T82` remaining deferred.
+- Immediate Story 23 focus is now the `T91` listening verdict after the
+  completed speech-aware stitching implementation, with `T83` kept as the
+  Swedish pronunciation control and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

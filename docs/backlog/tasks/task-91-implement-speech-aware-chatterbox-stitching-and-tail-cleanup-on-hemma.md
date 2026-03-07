@@ -2,7 +2,7 @@
 id: task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma
 title: Implement speech-aware Chatterbox stitching and tail cleanup on Hemma
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
@@ -72,13 +72,69 @@ tail behavior instead of treating every chunk boundary the same way.
 
 ## Deliverables
 
-- [ ] Tail-noise analysis and cleanup step for segmented chunks.
-- [ ] Pause-aware stitcher that preserves needed natural pauses.
-- [ ] Deterministic stitch-decision debug evidence per boundary.
-- [ ] Hemma benchmark evidence comparing:
+- [x] Tail-noise analysis and cleanup step for segmented chunks.
+- [x] Pause-aware stitcher that preserves needed natural pauses.
+- [x] Deterministic stitch-decision debug evidence per boundary.
+- [x] Hemma benchmark evidence comparing:
   - current Task 90 stitcher,
   - speech-aware stitcher.
-- [ ] Runbook updates for the improved stitching path.
+- [x] Runbook updates for the improved stitching path.
+
+## Implementation Notes
+
+Task 91 is now implemented in the repo-owned Chatterbox segmented path:
+
+- `scripts/sir_convert_a_lot/tts_sidecar/chatterbox_segmented_generation.py`
+- `scripts/sir_convert_a_lot/tts_sidecar/chatterbox_runtime.py`
+- `scripts/sir_convert_a_lot/devops/run_task91_hemma_chatterbox_speech_aware_stitching_experiment.py`
+- `scripts/sir_convert_a_lot/devops/run_task91_chatterbox_speech_aware_stitching_experiment.py`
+
+The new stitch mode is internal-only and does not change the public sidecar
+request contract. The benchmark/runtime surface now supports:
+
+- `segment_stitch_mode=simple`
+- `segment_stitch_mode=speech_aware`
+
+The speech-aware stitcher now adds:
+
+- low-energy edge trimming per chunk
+- short edge fades after trimming
+- boundary classification from the preceding chunk text
+- pause targets that differ for clause and sentence boundaries
+- deterministic debug evidence for chunk analysis and boundary decisions
+
+## Hemma Evidence
+
+Live Hemma evidence now exists under:
+
+- `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/`
+
+Primary artifacts:
+
+- simple stitch lane:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/simple/artifacts/scenario-a-sv-ref-sv-out.wav`
+- speech-aware stitch lane:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware/artifacts/scenario-a-sv-ref-sv-out.wav`
+- summary:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/report.json`
+- speech-aware chunk analysis:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware/segment-debug/chunk_analysis.json`
+- speech-aware boundary decisions:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware/segment-debug/boundary_decisions.json`
+
+Measured result:
+
+- simple segmented lane:
+  - `synthesized_ok=true`
+  - duration `123.426` seconds
+  - peak VRAM `6239154176` bytes
+- speech-aware segmented lane:
+  - `synthesized_ok=true`
+  - duration `94.954` seconds
+  - peak VRAM `5945778176` bytes
+- speech-aware boundary decisions recorded:
+  - boundary `1`: sentence pause `180 ms`, previous tail trim `500 ms`, next leading trim `120 ms`
+  - boundary `2`: sentence pause `180 ms`, previous tail trim `500 ms`, next leading trim `200 ms`
 
 ## Acceptance Criteria
 
@@ -92,8 +148,24 @@ tail behavior instead of treating every chunk boundary the same way.
 - [ ] The Hemma benchmark records whether the speech-aware stitcher is judged
   better, worse, or unchanged versus the Task 90 baseline.
 
+Current acceptance status:
+
+- text-based contract: satisfied
+- trim and boundary decisions recorded: satisfied
+- live Hemma benchmark completed: satisfied
+- qualitative verdict from listening review: still pending
+
+## Validation
+
+Local validation completed:
+
+- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_segmented_generation.py tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_adapter.py tests/sir_convert_a_lot/test_task86_chatterbox_benchmark.py tests/sir_convert_a_lot/test_task90_chatterbox_segmented_experiment.py tests/sir_convert_a_lot/test_task91_chatterbox_speech_aware_stitching_experiment.py`
+- `pdm run format-all`
+- `pdm run lint-fix`
+- `pdm run typecheck-all`
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

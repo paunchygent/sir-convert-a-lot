@@ -190,6 +190,18 @@ Deferred follow-up:
     - speech-aware tail cleanup,
     - pause-aware boundary stitching,
     - improved cross-fade that preserves natural pauses.
+  - `T91` now has live Hemma evidence:
+    - both segmented lanes synthesized successfully,
+    - the baseline simple stitch lane is recorded under
+      `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/simple/`,
+    - the new speech-aware lane is recorded under
+      `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware/`,
+    - the speech-aware lane writes chunk analysis and per-boundary decisions,
+    - measured output duration dropped from `123.426` seconds in the simple
+      segmented lane to `94.954` seconds in the speech-aware lane,
+    - peak VRAM also dropped from `6239154176` bytes to `5945778176` bytes,
+    - Story 23 still needs the listening verdict before `T91` can be closed
+      as better, worse, or unchanged.
 
 ## Acceptance Criteria
 

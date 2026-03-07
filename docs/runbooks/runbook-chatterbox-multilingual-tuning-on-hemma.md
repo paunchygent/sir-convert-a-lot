@@ -74,6 +74,10 @@ The sidecar runtime currently exposes these environment-backed Chatterbox knobs:
 
 - `SIR_TTS_SIDECAR_CHATTERBOX_EXAGGERATION`
 - `SIR_TTS_SIDECAR_CHATTERBOX_CFG_WEIGHT`
+- `SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_TEXT`
+- `SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_MAX_CHARS`
+- `SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_CROSS_FADE_MS`
+- `SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_STITCH_MODE`
 
 The sidecar always calls the official multilingual API through:
 
@@ -269,6 +273,44 @@ The next quality slice is therefore not “more segmentation tuning.” It is:
 - tail-noise cleanup after speech stops
 - pause-aware stitch decisions at chunk boundaries
 - cross-fade that respects intended natural pauses
+
+## Task 91 Result
+
+Task 91 now provides live Hemma evidence for speech-aware stitched segmented
+output:
+
+- simple segmented baseline:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/simple/`
+- speech-aware segmented lane:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware/`
+- summary report:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/report.json`
+
+Measured outcome:
+
+- both segmented lanes synthesized successfully
+- simple segmented duration: `123.426`
+- speech-aware duration: `94.954`
+- simple peak VRAM: `6239154176`
+- speech-aware peak VRAM: `5945778176`
+- the speech-aware lane now records:
+  - `chunk_analysis.json`
+  - `boundary_decisions.json`
+  - `chunk_XX_post.wav`
+
+Current repo truth for speech-aware stitching:
+
+- it remains an internal segmented-generation behavior, not a public API field
+- it trims low-energy chunk edges before stitching
+- it applies short edge fades after trimming
+- it chooses pause targets from the preceding boundary type:
+  - clause: `110 ms`
+  - sentence: `180 ms`
+  - generic: `80 ms`
+
+This still does not prove a quality winner on its own. The listening verdict
+remains the final decision point for whether `speech_aware` becomes the default
+segmented stitch mode.
 
 ## Canonical Baseline Lane
 
