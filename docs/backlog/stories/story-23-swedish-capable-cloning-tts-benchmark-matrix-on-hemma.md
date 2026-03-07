@@ -125,6 +125,23 @@ Deferred follow-up:
     multilingual runtime surfaces only,
   - `T86` also records a key contract difference versus F5-TTS: Chatterbox cloning does not
     require a reference transcript.
+  - `T86` now has its first technically successful live Hemma benchmark run on commit
+    `a93bf39edcf62b456bf65eff4e4b5f20b23ce769`,
+  - the benchmark proved the normalized ADR-0007 sidecar contract end to end with the official
+    multilingual runtime:
+    - `GET /health`
+    - `GET /capabilities`
+    - `GET /voices`
+    - `POST /synthesize`
+  - the same-language Swedish cloning artifact now exists under
+    `build/verification/task-86-chatterbox-hemma/artifacts/scenario-a-sv-ref-sv-out.wav`,
+  - runtime truth is now concrete instead of inferred:
+    - startup `33.207` seconds,
+    - warm restart `21.065` seconds,
+    - Swedish clone peak VRAM `8982421504` bytes on `AMD Radeon AI PRO R9700`,
+    - cached model snapshot reused from the canonical Hugging Face cache,
+  - Story 23 now needs qualitative listening review of the Chatterbox artifact before deciding
+    whether Chatterbox becomes the new lead Swedish cloning candidate.
 
 ## Acceptance Criteria
 
@@ -134,7 +151,7 @@ Deferred follow-up:
   before we decide whether OpenVoice remains the lead candidate.
 - [x] Task 85 defines parallel evidence for F5-TTS so we can compare cloning quality, runtime
   fit, and operational complexity against OpenVoice V2.
-- [ ] Task 86 defines deterministic Hemma evidence for Chatterbox Multilingual Swedish cloning,
+- [x] Task 86 defines deterministic Hemma evidence for Chatterbox Multilingual Swedish cloning,
   including quality-first settings and watermark/runtime-governance notes.
 - [ ] Task 83 defines a Swedish pronunciation control benchmark whose result is explicitly
   non-canonical for backend selection because cloning is absent.
@@ -166,6 +183,14 @@ Deferred follow-up:
   corrected rerun before the audio quality can be evaluated fairly.
 - [ ] Each task records Python/runtime truth, model cache path, and whether the sidecar remains
   internal-network only.
+- [x] `T86` now records deterministic Hemma evidence for:
+  - successful image build via BuildKit,
+  - official multilingual runtime startup,
+  - normalized sidecar readiness,
+  - smoke-test plus Swedish-cloning artifacts,
+  - package/runtime versions,
+  - cached model snapshot path,
+  - GPU before/after plus per-probe peak usage.
 - [x] `T85` now records deterministic Hemma evidence for:
   - successful image build plus `f5-tts_infer-cli --help`,
   - normalized sidecar readiness,

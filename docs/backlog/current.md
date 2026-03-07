@@ -129,13 +129,8 @@ Primary implementation stories (active sequence):
 
   - Redirected Story 23 from deferred XTTS comparison to the active `T85` F5-TTS lane per the
     explicit user decision.
-  - Added the dedicated F5 sidecar benchmark slice:
-    - `containers/tts-sidecar-f5/Dockerfile`
-    - `scripts/sir_convert_a_lot/tts_sidecar/f5_app.py`
-    - `scripts/sir_convert_a_lot/tts_sidecar/f5_runtime.py`
-    - `scripts/sir_convert_a_lot/devops/run_task85_hemma_f5_smoke.py`
-    - `tests/sir_convert_a_lot/test_tts_sidecar_f5_adapter.py`
-    - `pdm run benchmark:task-85`
+  - Added the dedicated F5 sidecar benchmark slice and canonical `pdm run benchmark:task-85`
+    command surface.
   - Prepared deterministic reference-input evidence for F5:
     - source clip `reference_source_sv.m4a`,
     - prepared `10.000000` second `24 kHz` mono WAV `reference_10s_sv.wav`,
@@ -148,17 +143,10 @@ Primary implementation stories (active sequence):
     - the sidecar reached ready state in `6.153` seconds,
     - `sir_convert_a_lot_prod` could probe the sidecar internally,
     - the benchmark wrote `build/verification/task-85-f5-tts-hemma/artifacts/sample_sv.wav`.
-  - Current T85 evidence bundle now includes:
-    - `report.json`
-    - `report.md`
-    - `f5_help.txt`
-    - `docker_logs.txt`
-    - `reference_transcript.txt`
-    - `artifacts/sample_sv.wav`
-  - The successful Hemma run used the concrete Swedish model inventory:
-    - `model_last.pt`
-    - `setting.json`
-    - `vocab.txt`
+  - Current T85 evidence bundle includes deterministic report, logs, transcript, and artifact
+    outputs under `build/verification/task-85-f5-tts-hemma/`.
+  - The successful Hemma run used the concrete Swedish model inventory `model_last.pt`,
+    `setting.json`, and `vocab.txt`.
   - The remaining Task 85 work is qualitative rather than infrastructural:
     - listen to the successful F5 sample,
     - compare it against the preserved OpenVoice baseline,
@@ -169,6 +157,19 @@ Primary implementation stories (active sequence):
     - F5-TTS remains technically functional on Hemma,
     - the evaluated Swedish outputs are still not good enough,
     - Story 23 therefore opens `T86` Chatterbox Multilingual as the next active cloning lane.
+  - Implemented the dedicated `T86` Chatterbox benchmark surface and canonical
+    `pdm run benchmark:task-86` command, including the dedicated sidecar image, runtime, reporting
+    modules, and targeted tests.
+  - Verified the first live `T86` Hemma benchmark on commit
+    `a93bf39edcf62b456bf65eff4e4b5f20b23ce769`:
+    - the BuildKit image built successfully,
+    - the official `ChatterboxMultilingualTTS` runtime passed smoke synthesis,
+    - Swedish cloning succeeded with the approved teacher reference clip,
+    - deterministic evidence was written under `build/verification/task-86-chatterbox-hemma/`,
+    - the live runtime used `torch==2.10.0+rocm7.1` / `torchaudio==2.10.0+rocm7.1` on
+      `AMD Radeon AI PRO R9700`,
+    - the remaining Story 23 work is qualitative listening review and recommendation capture for
+      Chatterbox.
 
 - 2026-03-05:
 
@@ -197,11 +198,12 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 with `T86` Chatterbox Multilingual as the
-  next active cloning benchmark, then `T83`, with `T82` kept deferred.
+- Current local execution focus is Epic 07 Story 23 qualitative review of the successful `T86`
+  Chatterbox benchmark, then `T83`, with `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now `T86` Chatterbox Multilingual, with `T83` kept as the Swedish
-  pronunciation control and `T82` remaining deferred.
+- Immediate Story 23 focus is now listening review and recommendation capture for `T86`
+  Chatterbox Multilingual, with `T83` kept as the Swedish pronunciation control and `T82`
+  remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

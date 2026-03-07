@@ -68,11 +68,11 @@ Chatterbox capabilities and a quality-first benchmark discipline on Hemma.
 
 ## Deliverables
 
-- [ ] Committed `benchmark:task-86` command surface (or equivalent named wrapper).
-- [ ] Deterministic Hemma evidence under `build/verification/task-86-chatterbox-hemma/`.
-- [ ] One successful official-API smoke artifact from `ChatterboxMultilingualTTS`.
-- [ ] One successful Swedish cloning artifact using the approved teacher reference clip.
-- [ ] Recorded runtime-truth bundle:
+- [x] Committed `benchmark:task-86` command surface (or equivalent named wrapper).
+- [x] Deterministic Hemma evidence under `build/verification/task-86-chatterbox-hemma/`.
+- [x] One successful official-API smoke artifact from `ChatterboxMultilingualTTS`.
+- [x] One successful Swedish cloning artifact using the approved teacher reference clip.
+- [x] Recorded runtime-truth bundle:
   - package version,
   - model cache location,
   - cold-start time,
@@ -84,31 +84,83 @@ Chatterbox capabilities and a quality-first benchmark discipline on Hemma.
 
 ## Acceptance Criteria
 
-- [ ] The benchmark uses the official multilingual Chatterbox class rather than an inferred or
+- [x] The benchmark uses the official multilingual Chatterbox class rather than an inferred or
   community-only wrapper:
   - `chatterbox.mtl_tts.ChatterboxMultilingualTTS`
-- [ ] The benchmark proves whether official `language_id="sv"` synthesis works on Hemma with the
+- [x] The benchmark proves whether official `language_id="sv"` synthesis works on Hemma with the
   approved teacher reference clip.
-- [ ] The sidecar exposes the normalized capability contract from ADR-0007 rather than a
+- [x] The sidecar exposes the normalized capability contract from ADR-0007 rather than a
   Chatterbox-native benchmark-only surface.
-- [ ] Same-language Swedish cloning is benchmarked with:
+- [x] Same-language Swedish cloning is benchmarked with:
   - the approved teacher reference clip,
   - `language_id="sv"`,
   - recorded `cfg_weight` and `exaggeration`,
   - saved `24 kHz` output artifacts.
-- [ ] The benchmark records that Chatterbox does not require a reference transcript for cloning.
+- [x] The benchmark records that Chatterbox does not require a reference transcript for cloning.
 - [ ] If cross-language cloning is benchmarked, it uses an explicitly approved English reference
   clip and records the official Chatterbox guidance to set `cfg_weight=0` to reduce accent bleed.
-- [ ] The benchmark records actual Hemma runtime truth instead of assumptions:
+- [x] The benchmark records actual Hemma runtime truth instead of assumptions:
   - model download/cache behavior,
   - package/runtime versions,
   - GPU memory/utilization,
   - synthesis latency.
-- [ ] Watermarking is recorded explicitly as a production-governance consideration because the
+- [x] Watermarking is recorded explicitly as a production-governance consideration because the
   official model embeds PerTh watermarks in generated output.
 - [ ] The task ends with a clear recommendation:
   - Chatterbox becomes the new lead Swedish cloning candidate, or
   - Chatterbox is rejected with explicit evidence.
+
+## Hemma Evidence Update (2026-03-07)
+
+The first live Hemma benchmark run is technically successful and produces both the smoke artifact
+and the Swedish cloning artifact under `build/verification/task-86-chatterbox-hemma/`.
+
+Verified runtime evidence from `report.json`:
+
+- `benchmark_id`: `task-86-chatterbox-hemma`
+- `repo_head`: `a93bf39edcf62b456bf65eff4e4b5f20b23ce769`
+- `image_id`: `sha256:2cc0ec92a19a3fe34e1819402af89e366ef898193b42769055822deb1b6954de`
+- `service_backend_id`: `chatterbox_multilingual`
+- `capability_language_support_sv`: `official`
+- `capability_reference_transcript_required`: `false`
+- `first_startup_seconds`: `33.207`
+- `warm_restart_seconds`: `21.065`
+- `model_snapshot_present_before_start`: `true`
+- `model_snapshot_downloaded_during_first_start`: `false`
+- `model_snapshot_path`:
+  `/srv/scratch/sir-convert-a-lot/cache/huggingface/models--ResembleAI--chatterbox/snapshots/05e904af2b5c7f8e482687a9d7336c5c824467d9`
+- `gpu_product_name`: `AMD Radeon AI PRO R9700`
+- `gpu_gfx_architecture`: `gfx1201`
+
+Verified package/runtime truth from `package_versions.json`:
+
+- `chatterbox-tts==0.1.6`
+- `diffusers==0.29.0`
+- `transformers==4.46.3`
+- `torch==2.10.0+rocm7.1`
+- `torchaudio==2.10.0+rocm7.1`
+
+Artifacts:
+
+- English smoke:
+  - `build/verification/task-86-chatterbox-hemma/artifacts/smoke-test-en.wav`
+  - duration `35.196` seconds
+  - peak VRAM used `7714471936` bytes
+- Swedish cloning:
+  - `build/verification/task-86-chatterbox-hemma/artifacts/scenario-a-sv-ref-sv-out.wav`
+  - duration `36.962` seconds
+  - peak VRAM used `8982421504` bytes
+
+Evidence bundle:
+
+- `build/verification/task-86-chatterbox-hemma/report.json`
+- `build/verification/task-86-chatterbox-hemma/report.md`
+- `build/verification/task-86-chatterbox-hemma/capabilities.json`
+- `build/verification/task-86-chatterbox-hemma/voices.json`
+- `build/verification/task-86-chatterbox-hemma/package_versions.json`
+- `build/verification/task-86-chatterbox-hemma/gpu-before.txt`
+- `build/verification/task-86-chatterbox-hemma/gpu-after.txt`
+- `build/verification/task-86-chatterbox-hemma/docker_logs.txt`
 
 ## Verified Upstream Facts To Anchor The Benchmark
 
@@ -144,6 +196,6 @@ Chatterbox capabilities and a quality-first benchmark discipline on Hemma.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
