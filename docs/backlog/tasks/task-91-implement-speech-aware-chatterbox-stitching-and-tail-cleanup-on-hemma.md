@@ -102,6 +102,7 @@ The speech-aware stitcher now adds:
 - boundary classification from the preceding chunk text
 - pause targets that differ for clause and sentence boundaries
 - deterministic debug evidence for chunk analysis and boundary decisions
+- one saved-chunk re-stitch utility for post-processing-only comparisons
 
 ## Hemma Evidence
 
@@ -121,6 +122,10 @@ Primary artifacts:
   `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware/segment-debug/chunk_analysis.json`
 - speech-aware boundary decisions:
   `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware/segment-debug/boundary_decisions.json`
+- saved-chunk relaxed-fade comparison:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware_relaxed_fade_12ms/artifacts/scenario-a-sv-ref-sv-out.wav`
+- saved-chunk relaxed-fade summary:
+  `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/speech_aware_relaxed_fade_12ms/report.json`
 
 Measured result:
 
@@ -135,6 +140,11 @@ Measured result:
 - speech-aware boundary decisions recorded:
   - boundary `1`: sentence pause `180 ms`, previous tail trim `500 ms`, next leading trim `120 ms`
   - boundary `2`: sentence pause `180 ms`, previous tail trim `500 ms`, next leading trim `200 ms`
+- one local saved-chunk comparison run now exists with a slightly shorter edge
+  fade cap:
+  - source debug bundle reused directly from the live Task 91 speech-aware lane
+  - `edge_fade_cap_ms=12.0`
+  - no new Chatterbox inference run was required
 
 ## Acceptance Criteria
 

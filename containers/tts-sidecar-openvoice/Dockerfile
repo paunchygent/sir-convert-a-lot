@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# Experimental benchmark sidecar image. Do not deploy on Hemma as a production service.
 
 FROM python:3.12-slim
 
@@ -10,6 +11,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONPATH=/app
+
+LABEL org.sir_convert_a_lot.sidecar_family="tts"
+LABEL org.sir_convert_a_lot.sidecar_backend="openvoice_v2"
+LABEL org.sir_convert_a_lot.lifecycle="experimental_benchmark"
+LABEL org.sir_convert_a_lot.hemma_deployable="false"
 
 WORKDIR /app
 

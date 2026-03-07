@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# Hemma production-candidate TTS sidecar image.
 
 FROM python:3.11-slim-bullseye
 
@@ -13,6 +14,11 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONPATH=/app
 ENV HF_HUB_DISABLE_XET=1
 ENV PKUSEG_HOME=/root/.pkuseg
+
+LABEL org.sir_convert_a_lot.sidecar_family="tts"
+LABEL org.sir_convert_a_lot.sidecar_backend="chatterbox_multilingual"
+LABEL org.sir_convert_a_lot.lifecycle="hemma_production_candidate"
+LABEL org.sir_convert_a_lot.hemma_deployable="true"
 
 WORKDIR /app
 

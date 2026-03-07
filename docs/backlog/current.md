@@ -174,6 +174,11 @@ Primary implementation stories (active sequence):
       `boundary_decisions.json`,
     - the current blocker is no longer implementation but qualitative review of
       the new stitched output.
+  - Folded the relaxed `12 ms` speech-aware edge fade cap into the default
+    Chatterbox stitcher after a saved-chunk local re-stitch comparison, and
+    opened `T92` to make Chatterbox the explicit Hemma production-candidate
+    TTS sidecar while marking OpenVoice, F5, and eSpeak helper images as
+    experiment-only.
 
 - 2026-03-05:
 

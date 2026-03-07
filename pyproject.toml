@@ -123,6 +123,7 @@ distribution = false
 "benchmark:task-90-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_task90_hemma_chatterbox_segmented_experiment"
 "benchmark:task-91" = "python -m scripts.sir_convert_a_lot.devops.run_task91_chatterbox_speech_aware_stitching_experiment"
 "benchmark:task-91-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_task91_hemma_chatterbox_speech_aware_stitching_experiment"
+"benchmark:task-91-restitch" = "python -m scripts.sir_convert_a_lot.devops.run_task91_restitch_saved_chunks"
 "benchmark:task-73-telemetry" = "python -m scripts.sir_convert_a_lot.benchmark_story20_telemetry_overhead"
 "benchmark:task-12" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"

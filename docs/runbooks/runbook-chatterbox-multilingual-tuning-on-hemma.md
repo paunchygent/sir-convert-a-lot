@@ -37,6 +37,14 @@ Provide one quality-first, repo-grounded procedure for tuning Chatterbox
 Multilingual on Hemma without inventing unsupported controls, hidden runtime
 behavior, or unofficial benchmark rules.
 
+Current lifecycle status in this repo:
+
+- `containers/tts-sidecar-chatterbox/` is the current Hemma production-candidate
+  TTS sidecar image
+- `containers/tts-sidecar-openvoice/`, `containers/tts-sidecar-f5/`, and
+  `containers/textprep-espeak-phonemizer/` remain experiment-only surfaces and
+  must not be treated as Hemma production deploy targets
+
 ## Ground Truth Sources
 
 This runbook is intentionally limited to two truth surfaces:
@@ -303,6 +311,7 @@ Current repo truth for speech-aware stitching:
 - it remains an internal segmented-generation behavior, not a public API field
 - it trims low-energy chunk edges before stitching
 - it applies short edge fades after trimming
+- the default speech-aware edge fade cap is now `12 ms`
 - it chooses pause targets from the preceding boundary type:
   - clause: `110 ms`
   - sentence: `180 ms`

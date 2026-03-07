@@ -145,6 +145,7 @@ def stitch_waveforms(
     cross_fade_ms: int,
     segment_texts: list[str],
     stitch_mode: str,
+    edge_fade_cap_ms: float = 16.0,
 ) -> "StitchResult":
     """Stitch per-segment waveforms into one mono waveform tensor."""
     if len(waveforms) == 0:
@@ -183,6 +184,7 @@ def stitch_waveforms(
             sample_rate_hz=sample_rate_hz,
             cross_fade_ms=cross_fade_ms,
             segment_texts=segment_texts,
+            edge_fade_cap_ms=edge_fade_cap_ms,
         )
     raise RuntimeError(f"Unsupported stitch_mode `{stitch_mode}`.")
 
@@ -247,6 +249,7 @@ def _stitch_waveforms_speech_aware(
     sample_rate_hz: int,
     cross_fade_ms: int,
     segment_texts: list[str],
+    edge_fade_cap_ms: float,
 ) -> StitchResult:
     """Trim noisy edges, preserve intended pauses, and fade edges softly."""
     processed_waveforms: list[np.ndarray] = []
@@ -258,7 +261,7 @@ def _stitch_waveforms_speech_aware(
             sample_rate_hz=sample_rate_hz,
         )
         edge_fade_samples = min(
-            int(round(sample_rate_hz * (min(cross_fade_ms, 16) / 1000.0))),
+            int(round(sample_rate_hz * (min(cross_fade_ms, edge_fade_cap_ms) / 1000.0))),
             max(processed.shape[0] // 2, 0),
         )
         processed = _apply_edge_fades(processed, edge_fade_samples=edge_fade_samples)
@@ -276,7 +279,7 @@ def _stitch_waveforms_speech_aware(
     stitched = processed_waveforms[0]
     boundary_decisions: list[BoundaryDecision] = []
     edge_fade_ms = _samples_to_ms(
-        int(round(sample_rate_hz * (min(cross_fade_ms, 16) / 1000.0))),
+        int(round(sample_rate_hz * (min(cross_fade_ms, edge_fade_cap_ms) / 1000.0))),
         sample_rate_hz,
     )
     for boundary_index, next_waveform in enumerate(processed_waveforms[1:], start=1):
@@ -517,6 +520,11 @@ def _wave_bytes_from_waveform(waveform: torch.Tensor, *, sample_rate_hz: int) ->
     return _wave_bytes_from_pcm16(pcm16=pcm16, sample_rate_hz=sample_rate_hz)
 
 
+def wave_bytes_from_waveform(waveform: torch.Tensor, *, sample_rate_hz: int) -> bytes:
+    """Public wrapper for deterministic mono WAV serialization."""
+    return _wave_bytes_from_waveform(waveform, sample_rate_hz=sample_rate_hz)
+
+
 def _wave_bytes_from_pcm16(*, pcm16: np.ndarray, sample_rate_hz: int) -> bytes:
     """Serialize one PCM16 mono array into deterministic WAV bytes."""
     from io import BytesIO
@@ -528,6 +536,25 @@ def _wave_bytes_from_pcm16(*, pcm16: np.ndarray, sample_rate_hz: int) -> bytes:
             wav_file.setframerate(sample_rate_hz)
             wav_file.writeframes(pcm16.tobytes())
         return buffer.getvalue()
+
+
+def read_wav_tensor(path: Path) -> tuple[torch.Tensor, int]:
+    """Load one mono WAV file into the normalized waveform tensor shape."""
+    with wave.open(path.as_posix(), "rb") as wav_file:
+        if wav_file.getnchannels() != 1:
+            raise RuntimeError(f"Expected mono WAV input, got {wav_file.getnchannels()} channels.")
+        if wav_file.getsampwidth() != 2:
+            raise RuntimeError(
+                f"Expected PCM16 WAV input, got sample width {wav_file.getsampwidth()}."
+            )
+        sample_rate_hz = int(wav_file.getframerate())
+        pcm16 = np.frombuffer(wav_file.readframes(wav_file.getnframes()), dtype="<i2").astype(
+            np.float32
+        )
+    from torch import from_numpy
+
+    waveform = from_numpy((pcm16 / 32767.0).astype(np.float32, copy=False)).unsqueeze(0)
+    return waveform, sample_rate_hz
 
 
 def _write_debug_artifacts(

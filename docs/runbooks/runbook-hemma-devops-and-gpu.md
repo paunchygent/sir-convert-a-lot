@@ -600,6 +600,7 @@ Usage notes:
 
 - The harness builds and launches the dedicated `containers/tts-sidecar-chatterbox/Dockerfile`
   image via BuildKit.
+- This is the current Hemma production-candidate TTS sidecar image in this repo.
 - The sidecar stays internal-network only and exposes the normalized ADR-0007 endpoints:
   - `GET /health`
   - `GET /capabilities`
@@ -619,6 +620,15 @@ Usage notes:
 - Treat the current Task 86 result as technical feasibility evidence first; the quality
   recommendation remains open until listening review is recorded against the Task 81 and Task 85
   baselines.
+
+TTS container lifecycle policy:
+
+- deployable Hemma production candidate:
+  - `containers/tts-sidecar-chatterbox/Dockerfile`
+- experiment-only, do not deploy as Hemma production services:
+  - `containers/tts-sidecar-openvoice/Dockerfile`
+  - `containers/tts-sidecar-f5/Dockerfile`
+  - `containers/textprep-espeak-phonemizer/Dockerfile`
 
 ## V2 Conversion Smoke Verification (Task 39)
 

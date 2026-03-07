@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
   - docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md
+  - docs/backlog/tasks/task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/reference/ref-hemma-sidecar-tts-md-to-wav-contract-outline.md
   - docs/converters/multi_format_conversion_service_api_v2.md
@@ -57,11 +58,14 @@ the first implementation slice as a provider-neutral `md -> wav` v2 job contract
 1. `docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md`
 1. `docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md`
 1. `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
+1. `docs/backlog/tasks/task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly.md`
 
 ## Acceptance Criteria
 
 - [x] ADR-0006 is accepted and explicitly forbids in-process TTS in the main service image.
 - [ ] Hemma benchmark scope is concrete enough to prove sidecar viability on the live R9700 host.
+- [x] Chatterbox is the explicit current Hemma production-candidate sidecar for the
+  English-first TTS delivery track, while the other TTS containers remain experiment-only.
 - [x] `md -> wav` is the first documented implementation route and includes:
   - request/response contract,
   - output content type,
