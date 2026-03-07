@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-06'
+last_updated: '2026-03-07'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -81,18 +81,9 @@ Primary implementation stories (active sequence):
     - added the reusable normalized sidecar contract plus the first OpenVoice V2 adapter app,
     - added the dedicated OpenVoice benchmark image/build surface and `benchmark:task-81`,
     - added Task 81 unit coverage plus runbook/task/story status updates.
-  - Ran the first live Hemma `T81` benchmark successfully from a runtime standpoint:
-    - OpenVoice sidecar booted on the R9700 host,
-    - canonical caches were reused,
-    - Swedish cloned output was generated from the approved teacher reference clip.
-  - Manual listening review rejected the current `T81` sample:
-    - timbre not close enough to the teacher voice,
-    - audible artifacts,
-    - uneven pacing.
-  - Current `T81` conclusion:
-    - the pipeline is technically working,
-    - the current model setup is bad,
-    - `T81` stays open for setup remediation before we treat OpenVoice as credible.
+  - Ran the first live Hemma `T81` benchmark successfully from a runtime standpoint, but manual
+    listening review rejected the sample (timbre mismatch, artifacts, uneven pacing), so `T81`
+    stayed open for setup remediation.
   - Planned the initial `T81` remediation around three concrete fixes: sample-rate boundaries,
     intended reference preprocessing, and paired processed-reference/base/cloned artifacts.
   - Implemented the local `T81` remediation slice:
@@ -102,24 +93,17 @@ Primary implementation stories (active sequence):
     - removed the broken `faster-whisper` / PyAV dependency chain from the sidecar image so Hemma
       can rebuild on Python 3.12,
     - preserved the sidecar-only boundary so the main service image remains untouched.
-  - Ran the corrected Hemma rerun far enough to replace the old blocker: the sidecar image now
-    builds and boots past the old `faster-whisper` / PyAV failure, and the next live failure was
-    narrowed to the VAD dependency path inside `/synthesize`.
+  - Ran the corrected Hemma rerun far enough to replace the old `faster-whisper` / PyAV blocker
+    with a narrower VAD dependency failure inside `/synthesize`.
   - Took the ruthless review as binding and implemented the evidence-discipline correction slice:
     - `T81` / `T84` now record machine-readable `benchmark_status`, `evidence_status`,
       `blocking_step`, and failure metadata,
     - the benchmark now declares Torch Hub cache roots under the canonical HF cache tree and
       records reference-audio SHA256,
     - local tests now cover partial-run report writing and Torch Hub cache declaration.
-  - Ran the updated current-head Hemma rerun on `beac775f1f6c021946105adef0f007cf06b908d3` without
-    `--skip-build`:
-    - one atomic partial evidence bundle now exists for `run_id=20260306T220740Z`,
-    - the earlier export failure did not reproduce,
-    - current blocker is now synthesize-stage Torch Hub / Silero repo-path mismatch,
-    - `/synthesize` returns `500` because `whisper-timestamped` still asserts
-      `/root/.cache/torch/hub/snakers4_silero-vad_master`,
-    - corrected setup quality still cannot be judged because no processed-reference/base artifacts
-      are emitted before that failure.
+  - Ran the updated current-head Hemma rerun on `beac775f1f6c021946105adef0f007cf06b908d3`
+    without `--skip-build`; it produced an atomic partial bundle and narrowed the next blocker to
+    the synthesize-stage Torch Hub / Silero mismatch from `whisper-timestamped`.
   - Removed `whisper-timestamped` from the active Task 81 reference-preprocessing path and
     switched the sidecar to direct local Silero VAD loading from the canonical Torch cache.
   - Ran the rebuilt current-head Hemma rerun on `e1d5901879c64a21f256a88352f407e6ce2ae45d`:
@@ -128,92 +112,98 @@ Primary implementation stories (active sequence):
     - the current blocker has moved to `collect_setup_artifacts`,
     - processed-reference, base-output, and converter-input artifacts are still missing, so the
       corrected setup is still not ready for listening review.
+  - Fixed the remaining `collect_setup_artifacts` blocker without introducing legacy cache paths:
+    - replaced unreliable `docker cp` evidence export with streamed `docker exec tar` extraction,
+    - reran `T81` on Hemma and produced one atomic complete evidence bundle for
+      `run_id=20260306T224057Z` on `61b263cab56118677dc47810b615daaf0adbe463`,
+    - preserved `processed_reference`, `base_sv.wav`, `base_sv_converter_input.wav`, and
+      `sample_sv.wav` under `build/verification/task-81-openvoice-v2-hemma/artifacts/`; `T84`
+      is complete and `T81` is now blocked only on the qualitative recommendation decision.
+  - Recorded the qualitative `T81` decision:
+    - the Swedish base artifact is very unnatural with pitch, tone, and phrasing issues,
+    - the cloned artifact is somewhat better but still sub-par,
+    - OpenVoice is technically feasible on Hemma but not the lead Swedish teacher-voice
+      candidate, so Story 23 now advances to `T82`.
+
+- 2026-03-07:
+
+  - Redirected Story 23 from deferred XTTS comparison to the active `T85` F5-TTS lane per the
+    explicit user decision.
+  - Added the dedicated F5 sidecar benchmark slice and canonical `pdm run benchmark:task-85`
+    command surface.
+  - Prepared deterministic reference-input evidence for F5:
+    - source clip `reference_source_sv.m4a`,
+    - prepared `10.000000` second `24 kHz` mono WAV `reference_10s_sv.wav`,
+    - Whisper transcript `reference_10s_sv.txt`.
+  - Pushed branch `codex/task85-f5-tts-hemma` and ran the benchmark on Hemma at commit
+    `f1343104e625a5118fe713c0a10f8f5c41ea00c3`.
+  - Current live T85 result is technical success:
+    - the F5 image built successfully,
+    - `f5-tts_infer-cli --help` passed,
+    - the sidecar reached ready state in `6.153` seconds,
+    - `sir_convert_a_lot_prod` could probe the sidecar internally,
+    - the benchmark wrote `build/verification/task-85-f5-tts-hemma/artifacts/sample_sv.wav`.
+  - Current T85 evidence bundle includes deterministic report, logs, transcript, and artifact
+    outputs under `build/verification/task-85-f5-tts-hemma/`.
+  - The successful Hemma run used the concrete Swedish model inventory `model_last.pt`,
+    `setting.json`, and `vocab.txt`.
+  - The remaining Task 85 work is qualitative rather than infrastructural:
+    - listen to the successful F5 sample,
+    - compare it against the preserved OpenVoice baseline,
+    - record a recommendation.
+  - Continued `T85` qualitative review with longer Swedish F5 samples and multiple controlled
+    inference reruns.
+  - Recorded the practical Chatterbox decision trigger:
+    - F5-TTS remains technically functional on Hemma,
+    - the evaluated Swedish outputs are still not good enough,
+    - Story 23 therefore opens `T86` Chatterbox Multilingual as the next active cloning lane.
+  - Implemented the dedicated `T86` Chatterbox benchmark surface and canonical
+    `pdm run benchmark:task-86` command, including the dedicated sidecar image, runtime, reporting
+    modules, and targeted tests.
+  - Verified the first live `T86` Hemma benchmark on commit
+    `a93bf39edcf62b456bf65eff4e4b5f20b23ce769`:
+    - the BuildKit image built successfully,
+    - the official `ChatterboxMultilingualTTS` runtime passed smoke synthesis,
+    - Swedish cloning succeeded with the approved teacher reference clip,
+    - deterministic evidence was written under `build/verification/task-86-chatterbox-hemma/`,
+    - the live runtime used `torch==2.10.0+rocm7.1` / `torchaudio==2.10.0+rocm7.1` on
+      `AMD Radeon AI PRO R9700`,
+    - the remaining Story 23 work is qualitative listening review and recommendation capture for
+      Chatterbox.
 
 - 2026-03-05:
 
-  - Task 73 completed for Story 20 telemetry slice, was reopened after ruthless review findings,
-    and is now re-terminalized after remediation.
-  - Added canonical v2 phase timing key contract + canonical-only merge enforcement at job
-    manifest merge points.
-  - Added explicit v2 runtime telemetry sink ownership in app state and injected sink into
-    `ServiceRuntimeV2` following the HuleEdu app-owned instrumentation pattern.
-  - Added bounded-cardinality metrics for:
-    - active/queued/max workers and saturation ratio,
-    - terminal job counts with bounded labels,
-    - retry category counters,
-    - stage duration histograms using canonical timing keys.
-  - Enforced no `job_id` metric labels and documented correlation policy (`X-Correlation-ID`,
-    lifecycle events, webhook payloads).
-  - Validation evidence:
-    - `pdm run validate-tasks` (pass: `Validated 106 backlog files`)
-    - `pdm run validate-docs` (pass: `Validated docs=132 rules=9`)
-    - `pdm run pytest-root tests/sir_convert_a_lot/test_phase_timings_v2.py tests/sir_convert_a_lot/test_api_metrics_v2.py -q` (pass: `4 passed`)
-  - Added Task 73 sustained-load evidence runner with explicit non-shim benchmark modes:
-    - `pdm run benchmark:task-73-telemetry --total-jobs 40 --max-workers 8 --stub-work-seconds 0.2`
-    - artifact: `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`
-    - latest run (`2026-03-05`):
-      - `overhead_percent.full_vs_sink_disabled=1.3728%`
-      - `overhead_percent.full_vs_bypassed=-1.4069%`
-      - no `job_id` metrics labels observed.
-  - Ruthless review remediation delivered and Task 73 re-terminalized.
-  - Removed deprecated benchmark output field (`telemetry_overhead_percent`) in favor of explicit
-    `overhead_percent.full_vs_sink_disabled` and `overhead_percent.full_vs_bypassed`.
-  - Validation evidence (remediation closeout):
-    - `pdm run format-all` (pass)
-    - `pdm run lint-fix` (pass)
-    - `pdm run typecheck-all` (pass)
-    - `pdm run pytest-root tests/sir_convert_a_lot/test_gpu_utilization_snapshot.py tests/sir_convert_a_lot/test_runtime_engine_v2.py tests/sir_convert_a_lot/test_benchmark_story20_telemetry_overhead.py -q` (pass: `29 passed`)
-  - Completed Task 76 deploy-and-verify evidence plus Task 77 multilingual OCR hardening;
-    canonical backlog updates landed in the linked Epic 06 / Story 20 / Task 76 docs.
+  - Re-terminalized Task 73 after ruthless review remediation:
+    - canonical phase timing keys and app-owned telemetry sink wiring landed,
+    - bounded-cardinality worker/job/retry/duration metrics replaced the older shape,
+    - sustained-load evidence was recorded in
+      `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`,
+    - remediation validations passed (`format-all`, `lint-fix`, `typecheck-all`, targeted pytest).
+  - Completed Task 76 deploy-and-verify evidence plus Task 77 multilingual OCR hardening; full
+    detail remains in the linked Epic 06 / Story 20 / Task 76 docs.
 
 - 2026-03-04:
 
-  - Planned Epic 06 long PDF conversion reliability/performance slice:
-    - new epic/story/task chain under `docs/backlog/` for:
-      - progress-aware timeouts,
-      - page-level progress/ETA and stall telemetry,
-      - checkpointed partial artifacts + cancel-with-save + resume,
-      - telemetry-driven parallelization and benchmarked tuning (GPU-first).
-  - Completed Task 67 (progress-aware polling timeouts):
-    - active-running jobs that exceed the local poll window are classified as
-      `error_code=job_poll_window_exceeded`,
-    - stalled jobs (stale heartbeat/progress) are classified as `error_code=job_timeout`,
-    - added CLI flag `--stall-timeout-seconds` and updated docs/tests.
-  - Completed Task 68 (contract-first ADR lock-in):
-    - published ADR-0005: `docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md`,
-    - linked ADR from `docs/converters/multi_format_conversion_service_api_v2.md` and dependent backlog items.
-  - Completed Task 69 (page progress fields + push parity):
-    - extended v2 job status payload and async push payloads (SSE + webhooks) with PDF-only
-      page progress fields per ADR-0005:
-      `total_pages`, `processed_pages`, `failed_pages`, `percent_complete`, `pages_per_minute`,
-      `eta_seconds`,
-    - webhook callback payloads now include `route` + `progress` for parity with SSE.
-  - Completed Task 75 (clean-break enforcement for client surfaces):
-    - removed legacy/re-export modules (`interfaces.http_client`, package-level CLI/client facades),
-    - updated all in-repo callers to `interfaces.http_client_v2` + `interfaces.cli_app`,
-    - kept touched modules below 500 LoC via targeted extraction helpers.
-  - Completed Task 70 (chunk checkpoints + partial artifact retrieval):
-    - added chunk-level checkpoint persistence + partial markdown assembly for long PDFs,
-    - added v2 endpoints for early retrieval:
-      - `GET /v2/convert/jobs/{job_id}/artifact/partial`
-      - `GET /v2/convert/jobs/{job_id}/checkpoint`
-    - kept the main v2 executor lean by extracting dedicated checkpointed PDF + non-PDF modules.
-  - Completed Task 71 (cancel-with-save + resume-from-checkpoint):
-    - cancel stops long PDF conversion at safe boundaries while preserving checkpoint + partial artifacts,
-    - added `POST /v2/convert/jobs/{job_id}/resume` (idempotent per `(api_key, job_id, Idempotency-Key)`),
-    - added contract tests that lock deterministic baseline vs resumed final artifact.
-  - Validation evidence remained green across the Epic 06 March 4 delivery slice; canonical
-    detailed results stay in the linked task docs and tests.
+  - Planned Epic 06 long PDF reliability/performance work under the new progress, checkpoint,
+    resume, and throughput stories.
+  - Completed Tasks 67-71 and 75 in the first Epic 06 delivery slice:
+    - progress-aware timeout classification,
+    - ADR-0005 lock-in for long-job progress/checkpoint/cancel/resume,
+    - page progress fields plus SSE/webhook parity,
+    - chunk checkpoints plus partial artifact retrieval,
+    - cancel-with-save plus resume,
+    - clean-break v2 client-surface enforcement.
+  - Validation evidence remained green across that delivery slice; detailed results stay in the
+    linked task docs and tests.
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 with `T81 -> T84`, then `T82 -> T83`.
+- Current local execution focus is Epic 07 Story 23 qualitative review of the successful `T86`
+  Chatterbox benchmark, then `T83`, with `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
-- Immediate `T81` remediation goal after the failed listening review: correct the OpenVoice setup,
-  preserve the failed baseline, rerun with Swedish base vs cloned comparison artifacts, then decide whether OpenVoice remains viable before moving to `T82`.
-- `T84` is now the explicit root-cause remediation lane and is review-bound to five concrete fixes:
-  atomic rerun evidence, declared Torch/Silero cache truth, current-head export diagnosis,
-  machine-readable benchmark status, preserved reference/setup artifacts, and a current-head Hemma rerun.
-- Current `T81` blocker after the latest current-head rerun: recover setup-artifact collection so
-  the corrected rerun preserves processed-reference, base-output, and converter-input artifacts, then rerun before any further listening review.
+- `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
+  lead Swedish teacher-voice candidate.
+- Immediate Story 23 focus is now listening review and recommendation capture for `T86`
+  Chatterbox Multilingual, with `T83` kept as the Swedish pronunciation control and `T82`
+  remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

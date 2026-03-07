@@ -20,6 +20,7 @@ links:
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -48,7 +49,8 @@ That architecture is sufficient for one benchmarked backend, but not yet for the
 we need to compare and potentially reuse multiple TTS stacks on Hemma:
 
 - OpenVoice V2 as the primary Swedish-probable cloning candidate,
-- XTTS-v2 as the comparison cloning backend,
+- F5-TTS as the active comparison cloning backend,
+- XTTS-v2 as a documented deferred follow-up candidate,
 - MMS Swedish as the direct-pronunciation control baseline.
 
 Those backends do not share one native runtime contract. They differ in:
@@ -87,6 +89,7 @@ Key rules:
 Each deployable sidecar instance represents exactly one normalized backend profile, for example:
 
 - `openvoice_v2`
+- `f5_tts_swedish`
 - `xtts_v2`
 - `mms_tts_swe`
 
@@ -306,7 +309,7 @@ Tradeoffs:
 ## 9. Follow-Up
 
 - `T81` implements the first benchmark against this contract for OpenVoice V2.
-- `T82` reuses the same contract for XTTS-v2.
+- `T85` reuses the same contract for F5-TTS.
 - `T83` uses the same contract for MMS Swedish while marking cloning as unsupported in
   capabilities.
 - Later implementation tasks for `md -> wav` should integrate with this contract rather than with

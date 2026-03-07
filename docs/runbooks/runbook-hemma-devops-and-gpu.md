@@ -526,6 +526,100 @@ Usage notes:
 - Treat the Task 81 result as credibility evidence for OpenVoice's cross-lingual claim on Hemma,
   not as a blanket guarantee of Swedish production quality.
 
+## F5-TTS Swedish Cloning Benchmark (Task 85)
+
+Run the active F5-TTS comparison benchmark against the normalized ADR-0007 sidecar contract using
+the prepared Swedish teacher reference clip plus exact transcript evidence.
+
+Canonical command:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-85 \
+  --reference-audio build/verification/task-85-f5-tts-hemma/inputs/reference_10s_sv.wav \
+  --reference-transcript-file build/verification/task-85-f5-tts-hemma/inputs/reference_10s_sv.txt
+```
+
+Evidence path:
+
+- `build/verification/task-85-f5-tts-hemma/`
+  - `report.json`
+  - `report.md`
+  - `docker_logs.txt`
+  - `f5_help.txt`
+  - `reference_transcript.txt`
+  - `artifacts/sample_sv.wav`
+
+Usage notes:
+
+- The harness builds and launches the dedicated `containers/tts-sidecar-f5/Dockerfile` image.
+- The sidecar stays internal-network only and exposes the normalized ADR-0007 endpoints:
+  - `GET /health`
+  - `GET /capabilities`
+  - `GET /voices`
+  - `POST /synthesize`
+- The Swedish model snapshot is cached under the canonical persistent host root
+  `${SIR_CONVERT_A_LOT_HEMMA_F5_MODEL_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/f5-tts-swedish}`.
+- Shared Hugging Face assets reuse the canonical persistent host root
+  `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`.
+- The benchmark accepts transcript input either:
+  - directly via `--reference-transcript`
+  - or via deterministic file input with `--reference-transcript-file`
+- The current successful model inventory on Hemma is:
+  - `model_last.pt`
+  - `setting.json`
+  - `vocab.txt`
+- Treat the current Task 85 result as technical feasibility evidence first; the quality
+  recommendation remains open until listening review is recorded against the Task 81 baseline.
+
+## Chatterbox Multilingual Swedish Cloning Benchmark (Task 86)
+
+Run the official Chatterbox Multilingual benchmark against the normalized ADR-0007 sidecar
+contract on Hemma.
+
+Canonical command:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-86
+```
+
+Evidence path:
+
+- `build/verification/task-86-chatterbox-hemma/`
+  - `report.json`
+  - `report.md`
+  - `capabilities.json`
+  - `voices.json`
+  - `package_versions.json`
+  - `gpu-before.txt`
+  - `gpu-after.txt`
+  - `docker_logs.txt`
+  - `artifacts/smoke-test-en.wav`
+  - `artifacts/scenario-a-sv-ref-sv-out.wav`
+
+Usage notes:
+
+- The harness builds and launches the dedicated `containers/tts-sidecar-chatterbox/Dockerfile`
+  image via BuildKit.
+- The sidecar stays internal-network only and exposes the normalized ADR-0007 endpoints:
+  - `GET /health`
+  - `GET /capabilities`
+  - `GET /voices`
+  - `POST /synthesize`
+- The runtime uses the official multilingual surface:
+  - package `chatterbox-tts`
+  - class `chatterbox.mtl_tts.ChatterboxMultilingualTTS`
+- The benchmark records the contract difference versus F5-TTS:
+  - Chatterbox cloning does not require `ref_text`.
+- Shared Hugging Face assets reuse the canonical persistent host root
+  `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`.
+- The first successful Hemma run reused an existing cached model snapshot and recorded:
+  - startup `33.207` seconds,
+  - warm restart `21.065` seconds,
+  - Swedish clone peak VRAM `8982421504` bytes on `AMD Radeon AI PRO R9700`.
+- Treat the current Task 86 result as technical feasibility evidence first; the quality
+  recommendation remains open until listening review is recorded against the Task 81 and Task 85
+  baselines.
+
 ## V2 Conversion Smoke Verification (Task 39)
 
 Produce deterministic, written evidence that the Hemma **docker lane** can execute the

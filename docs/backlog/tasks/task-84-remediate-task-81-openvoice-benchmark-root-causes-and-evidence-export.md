@@ -2,7 +2,7 @@
 id: task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export
 title: Remediate Task 81 OpenVoice benchmark root causes and evidence export
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-06'
 last_updated: '2026-03-06'
@@ -113,8 +113,8 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
 
 ## Deliverables
 
-- [ ] Committed sidecar/harness remediation linked from `T81`.
-- [ ] Updated `T81` evidence path so one successful rerun emits:
+- [x] Committed sidecar/harness remediation linked from `T81`.
+- [x] Updated `T81` evidence path so one successful rerun emits:
   - one atomic `report.json`,
   - one atomic `report.md`,
   - one atomic `docker_logs.txt`,
@@ -127,7 +127,7 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
   - Swedish base artifacts before cloning,
   - reference-input identity evidence,
   - and no longer leaves `failure.txt` once the current setup-artifact blocker is cleared.
-- [ ] Task-level reasoning notes kept in sync with the implementation so reviewers can see why
+- [x] Task-level reasoning notes kept in sync with the implementation so reviewers can see why
   each change exists.
 
 ## Acceptance Criteria
@@ -146,22 +146,23 @@ Hemma evidence, without widening scope beyond the OpenVoice sidecar benchmark la
   further export-path reasoning is treated as canonical.
 - [x] Current `HEAD` disproves the old export failure as the active blocker.
 - [x] The declared Torch/Silero cache path is also the runtime path used by the active VAD logic.
-- [ ] `T81` can complete end-to-end with one atomic evidence bundle containing the required setup
+- [x] `T81` can complete end-to-end with one atomic evidence bundle containing the required setup
   artifacts and final report files.
-- [ ] The remediation task records the reasoning behind each implementation change, not just the
+- [x] The remediation task records the reasoning behind each implementation change, not just the
   resulting code diff.
 
-## Immediate Execution Order
+## Closeout Notes
 
-1. Correct `T81` so it describes the new atomic partial rerun rather than the old mixed bundle.
-1. Keep the machine-readable benchmark/evidence status and declared Torch/Silero cache reporting as
-   the canonical partial-run truth.
-1. Fix the current setup-artifact collection gap on Hemma.
-1. Preserve reference-input identity and setup-artifact evidence in one deterministic output tree.
-1. Close this remediation task only after `T81` emits one complete rerun with setup artifacts.
+- The successful Hemma rerun on `61b263cab56118677dc47810b615daaf0adbe463` now proves:
+  - one atomic complete evidence bundle (`run_id=20260306T224057Z`),
+  - canonical Torch/Silero cache truth without legacy path wiring,
+  - processed-reference, base-output, converter-input, and cloned artifacts all preserved.
+- Remaining work is qualitative and belongs back in `T81`:
+  - listening review of the corrected sample,
+  - recommendation on whether OpenVoice remains the lead backend candidate.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
