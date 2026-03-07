@@ -12,6 +12,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONPATH=/app
 ENV HF_HUB_DISABLE_XET=1
+ENV PKUSEG_HOME=/root/.pkuseg
 
 WORKDIR /app
 
@@ -47,6 +48,7 @@ RUN python -m pip install \
     "omegaconf"
 RUN python -m pip install --no-deps "chatterbox-tts==${CHATTERBOX_TTS_VERSION}"
 RUN python -m pip uninstall -y hf-xet
+RUN python -c "import spacy_pkuseg.config as c; from spacy_pkuseg.download import download_model; download_model(c.model_urls['spacy_ontonotes'], c.pkuseg_home, c.model_hash['spacy_ontonotes'])"
 
 COPY scripts/__init__.py /app/scripts/__init__.py
 COPY scripts/sir_convert_a_lot/__init__.py /app/scripts/sir_convert_a_lot/__init__.py

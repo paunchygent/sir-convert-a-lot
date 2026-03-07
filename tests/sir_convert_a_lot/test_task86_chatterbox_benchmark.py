@@ -190,3 +190,10 @@ def test_build_report_markdown_includes_restart_and_probe_sections() -> None:
     assert "warm_restart_seconds" in markdown
     assert "Smoke Probe" in markdown
     assert "Swedish Clone Probe" in markdown
+
+
+def test_chatterbox_dockerfile_prefetches_spacy_pkuseg_model() -> None:
+    dockerfile = Path("containers/tts-sidecar-chatterbox/Dockerfile").read_text(encoding="utf-8")
+
+    assert "PKUSEG_HOME=/root/.pkuseg" in dockerfile
+    assert "download_model(c.model_urls['spacy_ontonotes']" in dockerfile
