@@ -31,14 +31,9 @@ contract.
 
 ## Problem Statement
 
-The current Chatterbox path is single-pass. It does not currently provide:
-
-- sentence splitting
-- prosodic-boundary detection
-- chunk batching
-- chunk stitching or cross-fade
-
-That leaves the repo without a maximal-quality long-form synthesis path.
+The pre-Task 90 Chatterbox path was single-pass and lacked sentence-aware
+segmentation, chunk execution, and deterministic stitching. That left the repo
+without a reviewable long-form synthesis path.
 
 Task 89 also clarified one explicit boundary decision:
 
@@ -75,25 +70,54 @@ Task 89 also clarified one explicit boundary decision:
 
 ## Deliverables
 
-- [ ] Deterministic segmentation planner for longer Swedish text.
-- [ ] Deterministic chunk execution path for Chatterbox.
-- [ ] Deterministic stitcher with explicit evidence output.
-- [ ] Hemma benchmark evidence comparing single-pass vs segmented output.
-- [ ] Runbook updates for the new quality path.
+- [x] Deterministic segmentation planner for longer Swedish text.
+- [x] Deterministic chunk execution path for Chatterbox.
+- [x] Deterministic stitcher with explicit evidence output.
+- [x] Hemma benchmark evidence comparing single-pass vs segmented output.
+- [x] Runbook updates for the new quality path.
+
+## Result
+
+Task 90 is now implemented with live Hemma evidence under:
+
+- `build/verification/task-90-chatterbox-segmented-hemma/`
+
+The segmented lane now records deterministic debug artifacts:
+
+- `segmented/segment-debug/segment_plan.json`
+- `segmented/segment-debug/chunk_01.wav`
+- `segmented/segment-debug/chunk_02.wav`
+- `segmented/segment-debug/chunk_03.wav`
+- `segmented/segment-debug/stitched.wav`
+
+Measured Task 90 result:
+
+- single-pass lane succeeded
+- segmented lane succeeded
+- single-pass Swedish clone duration: `51.904` seconds
+- segmented Swedish clone duration: `57.473` seconds
+- single-pass peak VRAM: `5959815168` bytes
+- segmented peak VRAM: `5742292992` bytes
+- segmented plan used `3` deterministic text segments at `max_chars=160` with
+  `cross_fade_ms=80`
+
+Qualitative listening judgment is still pending, so the task remains
+`in_progress` until the repo records whether the segmented output is better,
+worse, or unchanged versus the single-pass baseline.
 
 ## Acceptance Criteria
 
-- [ ] The sidecar contract remains text-based.
-- [ ] The repo records the exact segment plan used for each benchmark lane.
-- [ ] The segmented lane runs the same reference clip as the single-pass lane.
-- [ ] The segmented lane writes one final stitched artifact under
+- [x] The sidecar contract remains text-based.
+- [x] The repo records the exact segment plan used for each benchmark lane.
+- [x] The segmented lane runs the same reference clip as the single-pass lane.
+- [x] The segmented lane writes one final stitched artifact under
   `build/verification/`.
-- [ ] Optional chunk-level debug artifacts are deterministic when enabled.
+- [x] Optional chunk-level debug artifacts are deterministic when enabled.
 - [ ] The benchmark records whether segmented output is judged better, worse, or
   unchanged versus the single-pass baseline.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

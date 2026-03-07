@@ -38,6 +38,19 @@
   - removed dangling images only
   - did not touch BuildKit/build cache
   - reclaimed `14.77GB`
+- Implemented and ran `T90` on live Hemma:
+  - deterministic segmentation, chunk execution, and cross-fade stitching are
+    now part of the Chatterbox sidecar path
+  - evidence is synced locally under
+    `build/verification/task-90-chatterbox-segmented-hemma/`
+  - single-pass Swedish clone duration: `51.904`, peak VRAM `5959815168`
+  - segmented Swedish clone duration: `57.473`, peak VRAM `5742292992`
+  - segmented debug evidence includes:
+    - `segment_plan.json`
+    - `chunk_01.wav`
+    - `chunk_02.wav`
+    - `chunk_03.wav`
+    - `stitched.wav`
 - Updated docs-as-code records for:
   - `docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md`
   - `docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md`
@@ -61,18 +74,15 @@ Validation evidence:
 Known remaining work / current state:
 
 - `T89` is complete.
-- `T90` is now the next explicit Chatterbox quality slice:
-  - sentence splitting
-  - prosodic-boundary detection
-  - chunk batching
-  - chunk stitching or cross-fade
-- Story 23 is still not recommendation-complete; the next qualitative decision is still whether
-  Chatterbox becomes the lead Swedish teacher-voice candidate after the missing quality layer is
-  implemented and reviewed.
+- `T90` implementation and Hemma benchmark evidence are complete, but the task
+  is still open for the qualitative comparison verdict.
+- Story 23 is still not recommendation-complete; the next qualitative decision
+  is whether the segmented Chatterbox result is better, worse, or unchanged
+  versus the single-pass baseline.
 
 ## Next Session Goals (2026-03-07)
 
-- Implement `T90` segmentation, batching, and stitching for longer Chatterbox Swedish output.
-- Run the new single-pass vs segmented Hemma comparison after `T90` lands.
-- Record explicit comparison notes in Story 23 and decide whether Chatterbox becomes the new lead
-  Swedish cloning candidate or whether Story 23 advances to `T83`.
+- Listen to the Task 90 single-pass and segmented Chatterbox outputs.
+- Record the qualitative verdict in `T90` and Story 23.
+- Decide whether Chatterbox remains the lead Swedish cloning candidate or
+  whether Story 23 advances to `T83`.

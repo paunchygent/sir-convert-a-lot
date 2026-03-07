@@ -102,34 +102,31 @@ The repo currently passes only these Chatterbox generation arguments:
 
 ## Current Quality Limits In This Repo
 
-The current Chatterbox implementation in this repo is still a single-pass
-generation path.
+Task 90 changed the quality floor for long-form Chatterbox runs in this repo.
 
-It does **not** currently implement:
+The sidecar now supports a repo-owned segmented normal-text path with:
 
-- sentence splitting
-- prosodic-boundary detection
-- chunk batching
-- chunk stitching or cross-fade
+- sentence-aware splitting
+- deterministic chunk execution
+- deterministic stitching with cross-fade
+- optional chunk-level debug evidence
 
-For Story 23 quality work, those missing behaviors must now be treated as
-explicit implementation gaps rather than tuning assumptions.
+Current repo truth:
 
-Repo truth for this statement:
-
-- the sidecar sends one normalized text string into one
-  `model.generate(...)` call
-- the reference clip is converted into one deterministic prompt WAV
-- no repo-owned chunk planner, stitcher, or cross-fade layer exists in the
-  current Chatterbox path
+- segmentation is internal and environment-backed, not a public API field
+- the sidecar contract remains text-based
+- the benchmark can now compare:
+  - single-pass normal text
+  - segmented normal text
+- the segmented lane writes a `segment_plan.json` plus chunk artifacts when
+  debug retention is enabled
 
 Practical consequence:
 
-- the current benchmark is valid for comparing the existing Chatterbox knob
-  surface
-- it is **not** yet a maximal-quality long-form synthesis pipeline
-- quality regressions on longer Swedish text must be interpreted in light of
-  the missing segmentation-and-stitching layer
+- the repo now has a real long-form quality path for Chatterbox
+- the remaining gap is qualitative, not infrastructural:
+  we still need listening judgment to decide whether segmented output is better
+  than the single-pass baseline for Story 23
 
 ## Reference Audio Behavior in This Repo
 
@@ -238,6 +235,30 @@ Current repo decision for Chatterbox:
 - keep the helper path only for future comparisons against other models
 - move Chatterbox quality work to normal-text segmentation, batching, and
   stitching under `T90`
+
+## Task 90 Result
+
+Task 90 now provides live Hemma evidence for the new normal-text segmented
+path:
+
+- single-pass evidence:
+  `build/verification/task-90-chatterbox-segmented-hemma/single_pass/`
+- segmented evidence:
+  `build/verification/task-90-chatterbox-segmented-hemma/segmented/`
+- summary report:
+  `build/verification/task-90-chatterbox-segmented-hemma/report.json`
+
+Measured outcome:
+
+- both lanes synthesized successfully
+- the segmented lane used `3` deterministic text segments
+- single-pass duration: `51.904`
+- segmented duration: `57.473`
+- single-pass peak VRAM: `5959815168`
+- segmented peak VRAM: `5742292992`
+
+This runbook does not claim a winner from those numbers alone. The next
+decision still depends on listening review.
 
 ## Canonical Baseline Lane
 

@@ -144,11 +144,18 @@ Primary implementation stories (active sequence):
     - the run also forced one deterministic Chatterbox image fix:
       prefetch `spacy_pkuseg` assets during image build so startup no longer
       depends on a live model download.
-  - Recorded the next explicit Chatterbox quality requirement:
-    - the current path is still single-pass with no sentence splitting,
-      prosodic-boundary detection, chunk batching, or stitching/cross-fade,
-    - `T90` is now the follow-on implementation task for that missing quality
-      layer.
+  - Implemented and ran `T90` on live Hemma:
+    - deterministic segmentation, chunk execution, and cross-fade stitching
+      are now part of the Chatterbox sidecar path,
+    - paired single-pass vs segmented evidence now exists under
+      `build/verification/task-90-chatterbox-segmented-hemma/`,
+    - the segmented lane used `3` deterministic text segments,
+    - single-pass clone duration was `51.904` seconds with peak VRAM
+      `5959815168` bytes,
+    - segmented clone duration was `57.473` seconds with peak VRAM
+      `5742292992` bytes,
+    - the remaining Story 23 blocker is now listening judgment, not missing
+      Chatterbox infrastructure.
 
 - 2026-03-05:
 
@@ -177,14 +184,13 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 `T90`
-  segmentation/stitching quality work for Chatterbox, then `T83`, with `T82`
-  kept deferred.
+- Current local execution focus is Epic 07 Story 23 listening review of `T90`
+  single-pass versus segmented Chatterbox output, then `T83`, with `T82` kept
+  deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now `T90` segmentation/stitching quality work
-  after the completed `T89` eSpeak experiment, then listening review and
-  recommendation capture, with `T83` kept as the Swedish pronunciation control
-  and `T82` remaining deferred.
+- Immediate Story 23 focus is now listening review and recommendation capture
+  for the completed `T90` Chatterbox comparison, with `T83` kept as the
+  Swedish pronunciation control and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

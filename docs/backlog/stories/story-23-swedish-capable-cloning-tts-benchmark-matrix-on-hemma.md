@@ -172,14 +172,17 @@ Deferred follow-up:
     - keep the eSpeak helper path for future non-Chatterbox experiments,
     - stop using it in the active Chatterbox quality lane,
     - continue Chatterbox only on the documented normal-text path.
-  - Current Chatterbox quality limitations are now explicit repo-truth items:
-    - the current path is still single-pass,
-    - no sentence splitting,
-    - no prosodic-boundary detection,
-    - no chunk batching,
-    - no chunk stitching or cross-fade,
-    - so maximal-quality long-form output now requires a follow-on
-      segmentation-and-stitching slice beyond `T89`.
+  - `T90` is now implemented with live Hemma evidence:
+    - single-pass and segmented normal-text lanes both succeeded,
+    - the segmented lane preserved a deterministic `3`-segment plan plus
+      chunk-level debug artifacts,
+    - single-pass clone duration was `51.904` seconds,
+    - segmented clone duration was `57.473` seconds,
+    - single-pass peak VRAM was `5959815168` bytes,
+    - segmented peak VRAM was `5742292992` bytes.
+  - The main Chatterbox quality gap is no longer missing infrastructure.
+    It is now the pending listening judgment on whether segmented output is
+    better, worse, or unchanged versus the single-pass baseline.
 
 ## Acceptance Criteria
 
