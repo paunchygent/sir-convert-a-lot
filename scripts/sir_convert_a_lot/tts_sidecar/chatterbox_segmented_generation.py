@@ -3,10 +3,10 @@
 Purpose:
     Provide one repo-owned segmentation and stitching layer for Chatterbox so
     longer normal-text synthesis can stay on the documented text-input path
-    while avoiding a single oversized `model.generate(...)` call.
+    while avoiding a single oversized ``model.generate(...)`` call.
 
 Relationships:
-    - Called by `chatterbox_runtime.py` when segmented generation is enabled.
+    - Called by ``chatterbox_runtime.py`` when segmented generation is enabled.
     - Keeps segmentation, chunk execution, and stitching outside the benchmark
       runners so the sidecar remains the canonical synthesis behavior.
 """
@@ -182,21 +182,21 @@ def _expand_oversized_unit(text: str, *, max_chars: int) -> list[str]:
     words = text.split()
     if len(words) <= 1:
         return [text]
-    segments = []
+    word_segments: list[str] = []
     current_words: list[str] = []
     current_length = 0
     for word in words:
         proposed_length = len(word) if not current_words else current_length + 1 + len(word)
         if current_words and proposed_length > max_chars:
-            segments.append(" ".join(current_words))
+            word_segments.append(" ".join(current_words))
             current_words = [word]
             current_length = len(word)
             continue
         current_words.append(word)
         current_length = proposed_length
     if current_words:
-        segments.append(" ".join(current_words))
-    return segments
+        word_segments.append(" ".join(current_words))
+    return word_segments
 
 
 def _split_text_with_pattern(text: str, pattern: re.Pattern[str]) -> list[str]:
@@ -235,7 +235,7 @@ def _run_generate_tensor(
 
 
 def _normalize_waveform_tensor(waveform: torch.Tensor) -> torch.Tensor:
-    """Normalize one waveform tensor into shape `(1, samples)`."""
+    """Normalize one waveform tensor into shape ``(1, samples)``."""
     tensor = getattr(waveform, "detach", lambda: waveform)()
     tensor = getattr(tensor, "cpu", lambda: tensor)()
     tensor = getattr(tensor, "float", lambda: tensor)()
@@ -256,7 +256,9 @@ def _tensor_to_numpy(waveform: torch.Tensor) -> np.ndarray:
 
 def _wave_bytes_from_waveform(waveform: torch.Tensor, *, sample_rate_hz: int) -> bytes:
     """Serialize one waveform tensor into deterministic mono WAV bytes."""
-    pcm16 = (_tensor_to_numpy(_normalize_waveform_tensor(waveform)) * 32767.0).round().astype("<i2")
+    pcm16 = (_tensor_to_numpy(_normalize_waveform_tensor(waveform)) * 32767.0).round().astype(
+        "<i2"
+    )
     return _wave_bytes_from_pcm16(pcm16=pcm16, sample_rate_hz=sample_rate_hz)
 
 
