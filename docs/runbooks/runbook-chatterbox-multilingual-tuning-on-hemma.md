@@ -99,6 +99,37 @@ The repo currently passes only these Chatterbox generation arguments:
 - Change one variable at a time.
 - Use one dedicated `--output-root` per lane so evidence stays reviewable.
 
+## Current Quality Limits In This Repo
+
+The current Chatterbox implementation in this repo is still a single-pass
+generation path.
+
+It does **not** currently implement:
+
+- sentence splitting
+- prosodic-boundary detection
+- chunk batching
+- chunk stitching or cross-fade
+
+For Story 23 quality work, those missing behaviors must now be treated as
+explicit implementation gaps rather than tuning assumptions.
+
+Repo truth for this statement:
+
+- the sidecar sends one normalized text string into one
+  `model.generate(...)` call
+- the reference clip is converted into one deterministic prompt WAV
+- no repo-owned chunk planner, stitcher, or cross-fade layer exists in the
+  current Chatterbox path
+
+Practical consequence:
+
+- the current benchmark is valid for comparing the existing Chatterbox knob
+  surface
+- it is **not** yet a maximal-quality long-form synthesis pipeline
+- quality regressions on longer Swedish text must be interpreted in light of
+  the missing segmentation-and-stitching layer
+
 ## Reference Audio Behavior in This Repo
 
 The sidecar does not pass the uploaded reference file through unchanged.
@@ -174,6 +205,30 @@ For the Swedish teacher-voice benchmark in this repo, the tuning goal is:
 - preserve deterministic evidence for each lane
 
 This is a quality-first tuning runbook, not a latency-minimization runbook.
+
+For future maximal-quality work, this runbook now has two phases:
+
+1. tune the current single-pass path
+2. implement segmentation, batching, and stitching as a separate follow-on
+   slice
+
+## Task 89 Result
+
+Task 89 proved that the benchmark-only eSpeak preprocessing path is
+implementable and measurable on Hemma.
+
+Evidence:
+
+- baseline text-input lane:
+  `build/verification/task-89-chatterbox-espeak-hemma/baseline/`
+- eSpeak-preprocessed lane:
+  `build/verification/task-89-chatterbox-espeak-hemma/espeak_sv/`
+- Task 89 summary:
+  `build/verification/task-89-chatterbox-espeak-hemma/report.json`
+
+Task 89 does **not** remove the need for segmentation, batching, and stitching.
+It adds one alternate text-input form for comparison, but it does not change
+the underlying single-pass generation shape.
 
 ## Canonical Baseline Lane
 

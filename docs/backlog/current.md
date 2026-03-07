@@ -127,59 +127,28 @@ Primary implementation stories (active sequence):
 
 - 2026-03-07:
 
-  - Redirected Story 23 from deferred XTTS comparison to the active `T85` F5-TTS lane per the
-    explicit user decision.
-  - Added the dedicated F5 sidecar benchmark slice and canonical `pdm run benchmark:task-85`
-    command surface.
-  - Prepared deterministic reference-input evidence for F5:
-    - source clip `reference_source_sv.m4a`,
-    - prepared `10.000000` second `24 kHz` mono WAV `reference_10s_sv.wav`,
-    - Whisper transcript `reference_10s_sv.txt`.
-  - Pushed branch `codex/task85-f5-tts-hemma` and ran the benchmark on Hemma at commit
-    `f1343104e625a5118fe713c0a10f8f5c41ea00c3`.
-  - Current live T85 result is technical success:
-    - the F5 image built successfully,
-    - `f5-tts_infer-cli --help` passed,
-    - the sidecar reached ready state in `6.153` seconds,
-    - `sir_convert_a_lot_prod` could probe the sidecar internally,
-    - the benchmark wrote `build/verification/task-85-f5-tts-hemma/artifacts/sample_sv.wav`.
-  - Current T85 evidence bundle includes deterministic report, logs, transcript, and artifact
-    outputs under `build/verification/task-85-f5-tts-hemma/`.
-  - The successful Hemma run used the concrete Swedish model inventory `model_last.pt`,
-    `setting.json`, and `vocab.txt`.
-  - The remaining Task 85 work is qualitative rather than infrastructural:
-    - listen to the successful F5 sample,
-    - compare it against the preserved OpenVoice baseline,
-    - record a recommendation.
-  - Continued `T85` qualitative review with longer Swedish F5 samples and multiple controlled
-    inference reruns.
-  - Recorded the practical Chatterbox decision trigger:
-    - F5-TTS remains technically functional on Hemma,
-    - the evaluated Swedish outputs are still not good enough,
-    - Story 23 therefore opens `T86` Chatterbox Multilingual as the next active cloning lane.
-  - Implemented the dedicated `T86` Chatterbox benchmark surface and canonical
-    `pdm run benchmark:task-86` command, including the dedicated sidecar image, runtime, reporting
-    modules, and targeted tests.
-  - Verified the first live `T86` Hemma benchmark on commit
-    `a93bf39edcf62b456bf65eff4e4b5f20b23ce769`:
-    - the BuildKit image built successfully,
-    - the official `ChatterboxMultilingualTTS` runtime passed smoke synthesis,
-    - Swedish cloning succeeded with the approved teacher reference clip,
-    - deterministic evidence was written under `build/verification/task-86-chatterbox-hemma/`,
-    - the live runtime used `torch==2.10.0+rocm7.1` / `torchaudio==2.10.0+rocm7.1` on
-      `AMD Radeon AI PRO R9700`,
-    - the remaining Story 23 work is qualitative listening review and recommendation capture for
-      Chatterbox.
-  - Opened `T87` as the committed Chatterbox tuning-sweep slice:
-    - bounded to the documented runbook knob values only,
-    - one fixed Swedish-only probe text,
-    - one fixed approved teacher reference clip,
-    - conservative-first execution order across the full `cfg_weight` /
-      `exaggeration` combination grid.
-  - Opened `T88` / `T89` for the next Chatterbox phoneme experiment:
-    - `T88` keeps the research boundary explicit,
-    - `T89` implements a benchmark-only eSpeak preprocessing path outside the
-      current sidecar contract.
+  - Redirected Story 23 from deferred XTTS comparison to the active `T85`
+    F5-TTS lane, prepared deterministic F5 reference evidence, and recorded a
+    technically successful but qualitatively rejected Hemma benchmark under
+    `build/verification/task-85-f5-tts-hemma/`.
+  - Implemented and verified `T86` Chatterbox on Hemma, including the dedicated
+    sidecar image, runtime, reporting, and deterministic evidence under
+    `build/verification/task-86-chatterbox-hemma/`; runtime truth is now fixed
+    to the live ROCm stack on `AMD Radeon AI PRO R9700`.
+  - Completed `T87` as the first documented Chatterbox tuning sweep and opened
+    `T88` / `T89` for the bounded eSpeak preprocessing experiment.
+  - Completed `T89` on live Hemma:
+    - baseline and eSpeak-preprocessed lanes both synthesized successfully,
+    - deterministic evidence now exists under
+      `build/verification/task-89-chatterbox-espeak-hemma/`,
+    - the run also forced one deterministic Chatterbox image fix:
+      prefetch `spacy_pkuseg` assets during image build so startup no longer
+      depends on a live model download.
+  - Recorded the next explicit Chatterbox quality requirement:
+    - the current path is still single-pass with no sentence splitting,
+      prosodic-boundary detection, chunk batching, or stitching/cross-fade,
+    - `T90` is now the follow-on implementation task for that missing quality
+      layer.
 
 - 2026-03-05:
 
@@ -208,12 +177,14 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 `T89` benchmark-only eSpeak preprocessing for
-  Chatterbox, after the completed `T87` sweep, then `T83`, with `T82` kept deferred.
+- Current local execution focus is Epic 07 Story 23 `T90`
+  segmentation/stitching quality work for Chatterbox, then `T83`, with `T82`
+  kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now the bounded `T89` eSpeak preprocessing experiment for
-  Chatterbox, then listening review and recommendation capture, with `T83` kept as the Swedish
-  pronunciation control and `T82` remaining deferred.
+- Immediate Story 23 focus is now `T90` segmentation/stitching quality work
+  after the completed `T89` eSpeak experiment, then listening review and
+  recommendation capture, with `T83` kept as the Swedish pronunciation control
+  and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

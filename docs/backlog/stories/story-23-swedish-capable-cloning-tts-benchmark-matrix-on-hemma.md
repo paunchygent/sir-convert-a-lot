@@ -18,6 +18,7 @@ related:
   - docs/backlog/tasks/task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma.md
   - docs/backlog/tasks/task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration.md
   - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
+  - docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -64,6 +65,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 1. `docs/backlog/tasks/task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma.md`
 1. `docs/backlog/tasks/task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration.md`
 1. `docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md`
+1. `docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
 Deferred follow-up:
@@ -162,6 +164,18 @@ Deferred follow-up:
     - separate helper image,
     - no Chatterbox sidecar contract change,
     - baseline-vs-preprocessed comparison on Hemma.
+  - `T89` is now complete with live Hemma evidence:
+    - baseline and eSpeak-preprocessed lanes both succeeded,
+    - the helper path is operationally proven,
+    - but it does not replace the missing segmentation-and-stitching layer.
+  - Current Chatterbox quality limitations are now explicit repo-truth items:
+    - the current path is still single-pass,
+    - no sentence splitting,
+    - no prosodic-boundary detection,
+    - no chunk batching,
+    - no chunk stitching or cross-fade,
+    - so maximal-quality long-form output now requires a follow-on
+      segmentation-and-stitching slice beyond `T89`.
 
 ## Acceptance Criteria
 

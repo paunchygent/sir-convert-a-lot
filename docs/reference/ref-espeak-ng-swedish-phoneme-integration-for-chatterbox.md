@@ -78,6 +78,38 @@ In practical terms, the safest first implementation shape is a benchmark-only
 tool or helper container, not a silent in-process dependency added directly to
 the production sidecar.
 
+## Current Repo Quality Gap
+
+The current Chatterbox path in this repo remains a single-pass text-to-audio
+call.
+
+It does not currently include:
+
+- sentence splitting
+- prosodic-boundary detection
+- chunk batching
+- chunk stitching or cross-fade
+
+For this repo's quality goals, those missing capabilities should be treated as
+explicit gaps in the Chatterbox benchmark pipeline.
+
+That means an eSpeak preprocessing experiment may still be useful, but it
+cannot by itself stand in for the missing segmentation-and-stitching layer that
+would be needed for stronger long-form quality.
+
+## Task 89 Result
+
+Task 89 now provides live Hemma evidence for a bounded eSpeak preprocessing
+comparison:
+
+- baseline text-input lane succeeded
+- eSpeak-preprocessed lane succeeded
+- both lanes reuse the same Chatterbox sidecar contract and reference clip
+
+Task 89 therefore proves the helper-path experiment is operationally viable.
+It does not prove that phoneme-like preprocessing is sufficient to solve the
+remaining quality issues on its own.
+
 ## Recommended Task Setup
 
 Suggested docs-as-code sequence:
@@ -94,6 +126,10 @@ Suggested docs-as-code sequence:
    - add the bounded preprocessing surface in the chosen boundary
 1. benchmark task:
    - run Swedish A/B comparisons against the current Chatterbox baseline
+1. follow-on quality task:
+   - add sentence and prosodic segmentation
+   - add chunk batching
+   - add deterministic stitching or cross-fade
 
 ## Recommendation
 
@@ -105,3 +141,7 @@ Start with research and a benchmark-only incorporation path, because:
   phoneme-input contract for our existing adapter surface
 - Swedish benefit should be demonstrated empirically on Hemma before changing
   the runtime boundary
+
+After Task 89, the next quality-focused step is no longer "prove the helper
+path exists." That is done. The next step is to add the missing
+segmentation-and-stitching layer as its own bounded task.
