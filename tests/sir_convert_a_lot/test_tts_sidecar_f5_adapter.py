@@ -50,6 +50,8 @@ def _settings() -> F5TtsSidecarSettings:
         network_scope=NetworkScope.INTERNAL_ONLY,
         remove_silence=False,
         nfe_step=32,
+        cfg_strength=2.0,
+        sway_sampling_coef=-1.0,
         vocoder_name="vocos",
     )
 
@@ -108,6 +110,8 @@ def test_render_infer_toml_includes_deterministic_paths() -> None:
         model_cfg_path=None,
         remove_silence=True,
         nfe_step=48,
+        cfg_strength=2.5,
+        sway_sampling_coef=0.0,
         vocoder_name="bigvgan",
     )
 
@@ -116,4 +120,6 @@ def test_render_infer_toml_includes_deterministic_paths() -> None:
     assert 'output_file = "sample.wav"' in config
     assert "remove_silence = true" in config
     assert "nfe_step = 48" in config
+    assert "cfg_strength = 2.5" in config
+    assert "sway_sampling_coef = 0.0" in config
     assert 'vocoder_name = "bigvgan"' in config

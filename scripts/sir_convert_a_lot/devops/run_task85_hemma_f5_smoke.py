@@ -101,6 +101,8 @@ class BenchmarkSettings:
     probe_text: str
     remove_silence: bool
     nfe_step: int
+    cfg_strength: float
+    sway_sampling_coef: float
     vocoder_name: str
     build_image: bool
     retain_container: bool
@@ -139,6 +141,8 @@ class BenchmarkReport:
     reference_transcript_path: str
     remove_silence: bool
     nfe_step: int
+    cfg_strength: float
+    sway_sampling_coef: float
     vocoder_name: str
     hf_cache_host_root: str
     model_cache_host_root: str
@@ -210,6 +214,8 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--probe-text", default=DEFAULT_SWEDISH_TEXT)
     parser.add_argument("--remove-silence", action="store_true")
     parser.add_argument("--nfe-step", type=int, default=32)
+    parser.add_argument("--cfg-strength", type=float, default=2.0)
+    parser.add_argument("--sway-sampling-coef", type=float, default=-1.0)
     parser.add_argument("--vocoder-name", default="vocos")
     parser.add_argument("--skip-build", action="store_true", help="Reuse an already-built image.")
     parser.add_argument(
@@ -245,6 +251,8 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         probe_text=str(args.probe_text),
         remove_silence=bool(args.remove_silence),
         nfe_step=int(args.nfe_step),
+        cfg_strength=float(args.cfg_strength),
+        sway_sampling_coef=float(args.sway_sampling_coef),
         vocoder_name=str(args.vocoder_name),
         build_image=not bool(args.skip_build),
         retain_container=bool(args.retain_container),
@@ -477,6 +485,10 @@ def _start_sidecar(
         "-e",
         f"SIR_TTS_SIDECAR_F5_NFE_STEP={settings.nfe_step}",
         "-e",
+        f"SIR_TTS_SIDECAR_F5_CFG_STRENGTH={settings.cfg_strength}",
+        "-e",
+        f"SIR_TTS_SIDECAR_F5_SWAY_SAMPLING_COEF={settings.sway_sampling_coef}",
+        "-e",
         f"SIR_TTS_SIDECAR_F5_VOCODER_NAME={settings.vocoder_name}",
         "-v",
         f"{hf_mount.effective_root.as_posix()}:/cache/huggingface",
@@ -645,6 +657,8 @@ def _build_report_markdown(report: BenchmarkReport) -> str:
         f"- reference_transcript: `{report.reference_transcript}`",
         f"- remove_silence: `{report.remove_silence}`",
         f"- nfe_step: `{report.nfe_step}`",
+        f"- cfg_strength: `{report.cfg_strength}`",
+        f"- sway_sampling_coef: `{report.sway_sampling_coef}`",
         f"- vocoder_name: `{report.vocoder_name}`",
         f"- hf_cache_host_root: `{report.hf_cache_host_root}`",
         f"- model_cache_host_root: `{report.model_cache_host_root}`",
@@ -674,11 +688,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     settings = _parse_args(sys.argv[1:] if argv is None else argv)
     LOGGER.info(
-        "Task 85 starting: output_root=%s skip_build=%s remove_silence=%s nfe_step=%s vocoder=%s",
+        (
+            "Task 85 starting: output_root=%s skip_build=%s remove_silence=%s "
+            "nfe_step=%s cfg_strength=%s sway_sampling_coef=%s vocoder=%s"
+        ),
         settings.output_root,
         not settings.build_image,
         settings.remove_silence,
         settings.nfe_step,
+        settings.cfg_strength,
+        settings.sway_sampling_coef,
         settings.vocoder_name,
     )
     enforce_generated_output_path(settings.output_root, label="output_root")
@@ -795,6 +814,8 @@ def main(argv: list[str] | None = None) -> int:
             reference_transcript_path=transcript_path.as_posix(),
             remove_silence=settings.remove_silence,
             nfe_step=settings.nfe_step,
+            cfg_strength=settings.cfg_strength,
+            sway_sampling_coef=settings.sway_sampling_coef,
             vocoder_name=settings.vocoder_name,
             hf_cache_host_root=hf_mount.canonical_root.as_posix(),
             model_cache_host_root=model_mount.canonical_root.as_posix(),

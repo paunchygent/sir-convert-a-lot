@@ -73,6 +73,8 @@ class F5TtsSidecarSettings:
     network_scope: NetworkScope
     remove_silence: bool
     nfe_step: int
+    cfg_strength: float
+    sway_sampling_coef: float
     vocoder_name: str
 
     @classmethod
@@ -127,6 +129,14 @@ class F5TtsSidecarSettings:
             network_scope=NetworkScope.INTERNAL_ONLY,
             remove_silence=_parse_bool_env("SIR_TTS_SIDECAR_F5_REMOVE_SILENCE", default=False),
             nfe_step=_parse_int_env("SIR_TTS_SIDECAR_F5_NFE_STEP", default=32, minimum=1),
+            cfg_strength=_parse_float_env(
+                "SIR_TTS_SIDECAR_F5_CFG_STRENGTH",
+                default=2.0,
+            ),
+            sway_sampling_coef=_parse_float_env(
+                "SIR_TTS_SIDECAR_F5_SWAY_SAMPLING_COEF",
+                default=-1.0,
+            ),
             vocoder_name=os.environ.get("SIR_TTS_SIDECAR_F5_VOCODER_NAME", "vocos").strip(),
         )
 
@@ -317,6 +327,8 @@ class F5TtsSidecarBackend:
                     model_cfg_path=self._settings.model_cfg_path,
                     remove_silence=self._settings.remove_silence,
                     nfe_step=self._settings.nfe_step,
+                    cfg_strength=self._settings.cfg_strength,
+                    sway_sampling_coef=self._settings.sway_sampling_coef,
                     vocoder_name=self._settings.vocoder_name,
                 ),
                 encoding="utf-8",
@@ -479,6 +491,8 @@ def _render_infer_toml(
     model_cfg_path: str | None,
     remove_silence: bool,
     nfe_step: int,
+    cfg_strength: float,
+    sway_sampling_coef: float,
     vocoder_name: str,
 ) -> str:
     """Render one small TOML config file for `f5-tts_infer-cli`."""
@@ -493,6 +507,8 @@ def _render_infer_toml(
         f'output_file = "{_escape_toml(output_file)}"',
         f"remove_silence = {'true' if remove_silence else 'false'}",
         f'nfe_step = {nfe_step}',
+        f"cfg_strength = {cfg_strength}",
+        f"sway_sampling_coef = {sway_sampling_coef}",
         f'vocoder_name = "{_escape_toml(vocoder_name)}"',
     ]
     if model_cfg_path is not None:
@@ -540,6 +556,17 @@ def _parse_int_env(name: str, *, default: int, minimum: int) -> int:
     if parsed < minimum:
         raise RuntimeError(f"{name} must be >= {minimum}, got `{parsed}`.")
     return parsed
+
+
+def _parse_float_env(name: str, *, default: float) -> float:
+    """Return one float environment variable with validation and fallback."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return float(value.strip())
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a float-like value, got `{value}`.") from exc
 
 
 def _optional_str_env(name: str) -> str | None:
