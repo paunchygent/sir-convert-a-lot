@@ -2,7 +2,7 @@
 id: task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma
 title: Benchmark F5-TTS Swedish cloning sidecar on Hemma
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
@@ -58,24 +58,24 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
 
 ## Deliverables
 
-- [ ] Committed `benchmark:task-85` command surface (or equivalent named wrapper).
-- [ ] Deterministic Hemma evidence under `build/verification/task-85-f5-tts-hemma/`.
-- [ ] Recorded model asset inventory for the Swedish Hugging Face fine-tune, including the exact
+- [x] Committed `benchmark:task-85` command surface (or equivalent named wrapper).
+- [x] Deterministic Hemma evidence under `build/verification/task-85-f5-tts-hemma/`.
+- [x] Recorded model asset inventory for the Swedish Hugging Face fine-tune, including the exact
   checkpoint filename used by the benchmark.
-- [ ] Reference-audio preparation evidence with the exact transcript used for `ref_text`.
+- [x] Reference-audio preparation evidence with the exact transcript used for `ref_text`.
 - [ ] Explicit comparison notes versus OpenVoice V2 and the deferred XTTS-v2 task.
 
 ## Acceptance Criteria
 
-- [ ] F5-TTS installation succeeds in an isolated benchmark environment that does not widen the
+- [x] F5-TTS installation succeeds in an isolated benchmark environment that does not widen the
   dependency surface of the main Sir Convert-a-Lot service runtime.
-- [ ] `f5-tts_infer-cli --help` runs successfully in the chosen environment before benchmark
+- [x] `f5-tts_infer-cli --help` runs successfully in the chosen environment before benchmark
   synthesis is attempted.
-- [ ] The sidecar exposes the normalized capability contract from ADR-0007 rather than a
+- [x] The sidecar exposes the normalized capability contract from ADR-0007 rather than a
   benchmark-only backend-native surface.
-- [ ] The benchmark proves whether F5-TTS can complete a cloning flow with Swedish probe text on
+- [x] The benchmark proves whether F5-TTS can complete a cloning flow with Swedish probe text on
   the real R9700 host using the approved teacher reference clip.
-- [ ] Evidence records the exact Swedish checkpoint file (`.pt` or `.safetensors`) and
+- [x] Evidence records the exact Swedish checkpoint file (`.pt` or `.safetensors`) and
   `vocab.txt` used for the run.
 - [ ] Evidence records where F5-TTS is stronger or weaker than OpenVoice V2:
   - cloning workflow ergonomics,
@@ -84,6 +84,42 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
   - Hemma operational fit.
 - [ ] The task ends with a clear recommendation on whether F5-TTS becomes the new lead Swedish
   teacher-voice candidate or falls behind the existing alternatives.
+
+## Current Evidence
+
+- 2026-03-07 Hemma technical benchmark succeeded on commit
+  `f1343104e625a5118fe713c0a10f8f5c41ea00c3`.
+- The dedicated sidecar image built successfully as
+  `sir-convert-a-lot/f5-sidecar-task85:local`
+  (`sha256:dfcad95ffb580e675a3cc19606a718dd0b00b67c5da0a3509ee2609dd012d20b`).
+- The normalized sidecar reached ready state in `6.153` seconds and passed both:
+  - host-lane probing on `http://127.0.0.1:38093`
+  - internal service-container probing from `sir_convert_a_lot_prod`
+- The benchmark wrote one synthesized Swedish artifact:
+  - `build/verification/task-85-f5-tts-hemma/artifacts/sample_sv.wav`
+  - SHA256:
+    `4d994e1e82aae2cbaa87900506b3e553d4261e537f2e536e68ac0b0b7e59b412`
+  - output format: `wav`, `24 kHz`, mono, duration `15.423333` seconds
+- The Swedish model asset inventory used by the successful run is:
+  - checkpoint: `model_last.pt`
+  - vocab: `vocab.txt`
+  - companion metadata: `setting.json`
+- Reference-input evidence is now concrete and no longer guessed:
+  - source clip: `build/verification/task-85-f5-tts-hemma/inputs/reference_source_sv.m4a`
+  - prepared clip: `build/verification/task-85-f5-tts-hemma/inputs/reference_10s_sv.wav`
+  - transcript:
+    `Jag har ofta tänkt på att man inte ska liksom ta scenen dit man kommer, men vad vet jag om det?`
+
+## Remaining Work
+
+- Perform listening review of the successful F5 sample against the preserved OpenVoice Task 81
+  baseline.
+- Record explicit comparison notes on:
+  - cloning workflow ergonomics,
+  - Swedish output credibility,
+  - runtime/dependency complexity,
+  - Hemma operational fit.
+- End the task with a recommendation instead of a purely technical pass.
 
 ## Checklist
 

@@ -122,7 +122,7 @@ Deferred follow-up:
   cloning flow, and Swedish-text synthesis with a teacher reference voice sample.
 - [x] Task 81 records the current failed-quality baseline plus at least one corrected setup rerun
   before we decide whether OpenVoice remains the lead candidate.
-- [ ] Task 85 defines parallel evidence for F5-TTS so we can compare cloning quality, runtime
+- [x] Task 85 defines parallel evidence for F5-TTS so we can compare cloning quality, runtime
   fit, and operational complexity against OpenVoice V2.
 - [ ] Task 83 defines a Swedish pronunciation control benchmark whose result is explicitly
   non-canonical for backend selection because cloning is absent.
@@ -154,6 +154,12 @@ Deferred follow-up:
   corrected rerun before the audio quality can be evaluated fairly.
 - [ ] Each task records Python/runtime truth, model cache path, and whether the sidecar remains
   internal-network only.
+- [x] `T85` now records deterministic Hemma evidence for:
+  - successful image build plus `f5-tts_infer-cli --help`,
+  - normalized sidecar readiness,
+  - service-container probe success,
+  - Swedish model inventory (`model_last.pt`, `setting.json`, `vocab.txt`),
+  - synthesized artifact `build/verification/task-85-f5-tts-hemma/artifacts/sample_sv.wav`.
 
 ## Done Definition
 
