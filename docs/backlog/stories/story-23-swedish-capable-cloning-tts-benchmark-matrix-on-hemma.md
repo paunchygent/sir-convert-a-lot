@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md
   - docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -36,8 +37,9 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 
 - Benchmark OpenVoice V2 as the primary Swedish-probable cloning candidate based on official
   cross-lingual voice-cloning claims.
-- Benchmark XTTS-v2 as the comparison cloning backend using the same Hemma sidecar discipline and
-  evidence structure.
+- Benchmark F5-TTS with the Swedish fine-tune as the active comparison cloning backend using the
+  same Hemma sidecar discipline and evidence structure.
+- Keep XTTS-v2 available as a deferred follow-up candidate rather than the active next lane.
 - Benchmark MMS Swedish as a direct-pronunciation control to separate language quality from
   cloning capability.
 - Keep the main Sir Convert-a-Lot public API and provider-neutral `tts_options` contract stable
@@ -53,8 +55,12 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 
 1. `docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md`
-1. `docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md`
+1. `docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
+
+Deferred follow-up:
+
+1. `docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md`
 
 ## Current Story Notes (2026-03-06)
 
@@ -79,24 +85,44 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - declare the Torch/Silero cache surface explicitly,
   - record machine-readable benchmark status,
   - and preserve reference/setup artifacts strongly enough for a second review pass.
-- Current-head Hemma rerun on `beac775f1f6c021946105adef0f007cf06b908d3` met the first half of
-  that standard:
-  - one atomic partial evidence bundle now exists for `run_id=20260306T220740Z`,
-  - the earlier export failure did not reproduce,
-  - machine-readable benchmark/evidence status now matches the live rerun.
-- Story 23 is still blocked in `T81`, but the remaining failure has moved forward:
-  - the direct local Silero remediation cleared the `/synthesize` blocker,
-  - the current rerun now produces a corrected `sample_sv.wav`,
-  - processed-reference and base-audio artifacts still cannot be judged because setup-artifact
-    collection remains incomplete.
+- Current complete Hemma rerun on `61b263cab56118677dc47810b615daaf0adbe463` now meets that
+  benchmark-standard:
+  - one atomic complete evidence bundle now exists for `run_id=20260306T224057Z`,
+  - the earlier export failure remains disproved,
+  - machine-readable benchmark/evidence status matches the live rerun,
+  - processed-reference, base-audio, converter-input, and cloned artifacts are all preserved.
+- `T84` is therefore complete.
+- Story 23 remains in the `T81` lane only for qualitative judgment:
+  - compare the corrected successful rerun against the failed baseline,
+  - decide whether OpenVoice stays credible enough to remain the lead candidate,
+  - if not, proceed directly to `T82`.
+- Qualitative judgment is now recorded:
+  - the default Swedish base artifact is very unnatural, with pitch, tone, and phrasing issues,
+  - the cloned artifact is somewhat better than the base artifact,
+  - the cloned artifact is still sub-par for the teacher-voice goal,
+  - OpenVoice therefore remains technically feasible but is no longer the lead Swedish
+    teacher-voice candidate.
+- Story 23 now advances to `T82`, with `T83` still kept as the Swedish pronunciation control.
+- 2026-03-07 planning update:
+  - after `T81` closed with a negative recommendation on OpenVoice quality, the next active
+    cloning lane was redirected from XTTS-v2 to F5-TTS based on the explicit user decision,
+  - `T85` now owns the active comparison benchmark,
+  - `T82` remains documented as a deferred follow-up rather than the immediate next slice,
+  - the benchmark must prove the environment-adapted install path first by running
+    `f5-tts_infer-cli --help`,
+  - the Swedish model asset inventory is now concrete upstream evidence:
+    `EkhoCollective/f5-tts-swedish` currently exposes `model_last.pt`, `setting.json`, and
+    `vocab.txt`,
+  - the shared teacher reference clip still requires an exact transcript and `24 kHz` mono WAV
+    preprocessing before any fair F5-TTS quality judgment.
 
 ## Acceptance Criteria
 
-- [ ] Task 81 defines deterministic Hemma evidence for OpenVoice V2 startup, cache reuse,
+- [x] Task 81 defines deterministic Hemma evidence for OpenVoice V2 startup, cache reuse,
   cloning flow, and Swedish-text synthesis with a teacher reference voice sample.
-- [ ] Task 81 records the current failed-quality baseline plus at least one corrected setup rerun
+- [x] Task 81 records the current failed-quality baseline plus at least one corrected setup rerun
   before we decide whether OpenVoice remains the lead candidate.
-- [ ] Task 82 defines parallel evidence for XTTS-v2 so we can compare cloning quality, runtime
+- [ ] Task 85 defines parallel evidence for F5-TTS so we can compare cloning quality, runtime
   fit, and operational complexity against OpenVoice V2.
 - [ ] Task 83 defines a Swedish pronunciation control benchmark whose result is explicitly
   non-canonical for backend selection because cloning is absent.
@@ -114,17 +140,17 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   - `report.md`,
   - sidecar logs,
   - at least one synthesized Swedish sample artifact.
-- [ ] OpenVoice V2 and XTTS-v2 tasks require an explicit cloning workflow using one approved
+- [ ] OpenVoice V2 and F5-TTS tasks require an explicit cloning workflow using one approved
   teacher reference clip.
-- [ ] Quality failures must be recorded explicitly in the active task/story docs with:
+- [x] Quality failures must be recorded explicitly in the active task/story docs with:
   - what worked technically,
   - why the result still failed,
   - what setup change will be tested next.
-- [ ] `T81` must isolate setup defects in evidence by preserving:
+- [x] `T81` must isolate setup defects in evidence by preserving:
   - the processed reference artifact actually used for embedding extraction,
   - the Swedish base artifact before cloning,
   - the final cloned Swedish artifact.
-- [ ] `T81` must preserve processed-reference, base, and converter-input artifacts on the
+- [x] `T81` now preserves processed-reference, base, and converter-input artifacts on the
   corrected rerun before the audio quality can be evaluated fairly.
 - [ ] Each task records Python/runtime truth, model cache path, and whether the sidecar remains
   internal-network only.
