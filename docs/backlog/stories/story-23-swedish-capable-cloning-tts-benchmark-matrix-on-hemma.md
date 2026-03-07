@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -58,6 +59,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 1. `docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md`
 1. `docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md`
+1. `docs/backlog/tasks/task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
 Deferred follow-up:
@@ -140,8 +142,14 @@ Deferred follow-up:
     - warm restart `21.065` seconds,
     - Swedish clone peak VRAM `8982421504` bytes on `AMD Radeon AI PRO R9700`,
     - cached model snapshot reused from the canonical Hugging Face cache,
-  - Story 23 now needs qualitative listening review of the Chatterbox artifact before deciding
-    whether Chatterbox becomes the new lead Swedish cloning candidate.
+  - `T87` is now the follow-on execution slice for the first committed
+    Chatterbox tuning sweep on Hemma,
+  - the sweep is constrained to the documented runbook values only:
+    - `exaggeration` in `{0.5, 0.7}`
+    - `cfg_weight` in `{0.5, 0.3, 0.0}`
+  - Story 23 now needs the completed conservative-first sweep and listening
+    review before deciding whether Chatterbox becomes the new lead Swedish
+    cloning candidate.
 
 ## Acceptance Criteria
 

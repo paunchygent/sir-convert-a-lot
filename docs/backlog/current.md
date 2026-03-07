@@ -170,6 +170,12 @@ Primary implementation stories (active sequence):
       `AMD Radeon AI PRO R9700`,
     - the remaining Story 23 work is qualitative listening review and recommendation capture for
       Chatterbox.
+  - Opened `T87` as the committed Chatterbox tuning-sweep slice:
+    - bounded to the documented runbook knob values only,
+    - one fixed Swedish-only probe text,
+    - one fixed approved teacher reference clip,
+    - conservative-first execution order across the full `cfg_weight` /
+      `exaggeration` combination grid.
 
 - 2026-03-05:
 
@@ -198,12 +204,12 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 qualitative review of the successful `T86`
-  Chatterbox benchmark, then `T83`, with `T82` kept deferred.
+- Current local execution focus is Epic 07 Story 23 `T87` Chatterbox tuning sweep on Hemma, then
+  qualitative review of the completed sweep, then `T83`, with `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now listening review and recommendation capture for `T86`
-  Chatterbox Multilingual, with `T83` kept as the Swedish pronunciation control and `T82`
-  remaining deferred.
+- Immediate Story 23 focus is now the conservative-first `T87` Chatterbox tuning sweep, then
+  listening review and recommendation capture, with `T83` kept as the Swedish pronunciation
+  control and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.
