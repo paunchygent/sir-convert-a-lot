@@ -24,9 +24,8 @@ PR-sized execution unit; may be linked to a story or standalone.
 ## Objective
 
 Research whether eSpeak NG should be incorporated into the Swedish Chatterbox
-pipeline, and if so, identify the safest repo-aligned integration boundary,
-licensing posture, and benchmark discipline before any implementation work
-starts.
+pipeline, and if so, identify the safest repo-aligned integration boundary and
+benchmark discipline before any implementation work starts.
 
 ## PR Scope
 
@@ -43,9 +42,6 @@ starts.
   - text-to-phoneme conversion
   - language coverage and Swedish verification steps
   - CLI/runtime packaging expectations
-  - license
-- Verify the licensing posture of likely helper tooling such as `phonemizer`
-  before proposing it as a pipeline dependency.
 - Produce one reference note that compares possible integration boundaries:
   - offline preprocessing tool
   - benchmark-only sidecar/helper container
@@ -58,7 +54,6 @@ starts.
 - [ ] Reference note with official-source findings and incorporation options.
 - [ ] Explicit statement of whether direct phoneme input is documented for the
   current Chatterbox multilingual API.
-- [ ] Explicit licensing note for eSpeak NG and any proposed helper library.
 - [ ] Recommended docs-as-code follow-on task sequence for implementation, if
   the research outcome is positive.
 
@@ -72,9 +67,6 @@ starts.
   accept phoneme strings without undocumented internals.
 - [ ] The task records that Swedish phoneme support must be benchmarked on Hemma
   rather than assumed from generic multilingual marketing copy.
-- [ ] The task records whether GPL-licensed phoneme tooling can be placed inside
-  the main runtime image or should remain outside the production service
-  boundary pending review.
 - [ ] The task ends with a recommended task setup for the next slices rather
   than jumping directly to implementation.
 
