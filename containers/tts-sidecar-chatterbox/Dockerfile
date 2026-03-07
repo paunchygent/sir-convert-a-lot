@@ -2,9 +2,9 @@
 
 FROM python:3.11-slim-bullseye
 
-ARG TORCH_ROCM_INDEX_URL=https://download.pytorch.org/whl/rocm6.2.4
-ARG TORCH_VERSION=2.6.0
-ARG TORCHAUDIO_VERSION=2.6.0
+ARG TORCH_ROCM_INDEX_URL=https://download.pytorch.org/whl/rocm7.1
+ARG TORCH_VERSION=2.10.0+rocm7.1
+ARG TORCHAUDIO_VERSION=2.10.0+rocm7.1
 ARG CHATTERBOX_TTS_VERSION=0.1.6
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -32,7 +32,20 @@ RUN python -m pip install \
     "python-multipart>=0.0.22" \
     "httpx>=0.28.1" \
     "pydantic==2.10.6" \
-    "chatterbox-tts==${CHATTERBOX_TTS_VERSION}"
+    "numpy>=1.24.0,<1.26.0" \
+    "librosa==0.11.0" \
+    "s3tokenizer" \
+    "transformers==4.46.3" \
+    "diffusers==0.29.0" \
+    "resemble-perth==1.0.1" \
+    "conformer==0.3.2" \
+    "safetensors==0.5.3" \
+    "spacy-pkuseg" \
+    "pykakasi==2.3.0" \
+    "gradio==5.44.1" \
+    "pyloudnorm" \
+    "omegaconf"
+RUN python -m pip install --no-deps "chatterbox-tts==${CHATTERBOX_TTS_VERSION}"
 RUN python -m pip uninstall -y hf-xet
 
 COPY scripts/__init__.py /app/scripts/__init__.py
