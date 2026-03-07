@@ -48,6 +48,9 @@ def _settings() -> F5TtsSidecarSettings:
         model_cache_container_root="/models",
         supported_language_codes=("sv",),
         network_scope=NetworkScope.INTERNAL_ONLY,
+        remove_silence=False,
+        nfe_step=32,
+        vocoder_name="vocos",
     )
 
 
@@ -103,8 +106,14 @@ def test_render_infer_toml_includes_deterministic_paths() -> None:
         output_dir=Path("/tmp/output"),
         output_file="sample.wav",
         model_cfg_path=None,
+        remove_silence=True,
+        nfe_step=48,
+        vocoder_name="bigvgan",
     )
 
     assert 'ckpt_file = "/models/swedish/model_last.pt"' in config
     assert 'vocab_file = "/models/swedish/vocab.txt"' in config
     assert 'output_file = "sample.wav"' in config
+    assert "remove_silence = true" in config
+    assert "nfe_step = 48" in config
+    assert 'vocoder_name = "bigvgan"' in config

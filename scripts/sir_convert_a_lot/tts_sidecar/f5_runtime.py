@@ -71,6 +71,9 @@ class F5TtsSidecarSettings:
     model_cache_container_root: str
     supported_language_codes: tuple[str, ...]
     network_scope: NetworkScope
+    remove_silence: bool
+    nfe_step: int
+    vocoder_name: str
 
     @classmethod
     def from_env(cls) -> "F5TtsSidecarSettings":
@@ -122,6 +125,9 @@ class F5TtsSidecarSettings:
             ),
             supported_language_codes=supported_codes,
             network_scope=NetworkScope.INTERNAL_ONLY,
+            remove_silence=_parse_bool_env("SIR_TTS_SIDECAR_F5_REMOVE_SILENCE", default=False),
+            nfe_step=_parse_int_env("SIR_TTS_SIDECAR_F5_NFE_STEP", default=32, minimum=1),
+            vocoder_name=os.environ.get("SIR_TTS_SIDECAR_F5_VOCODER_NAME", "vocos").strip(),
         )
 
 
@@ -309,6 +315,9 @@ class F5TtsSidecarBackend:
                     output_dir=output_dir,
                     output_file=output_file,
                     model_cfg_path=self._settings.model_cfg_path,
+                    remove_silence=self._settings.remove_silence,
+                    nfe_step=self._settings.nfe_step,
+                    vocoder_name=self._settings.vocoder_name,
                 ),
                 encoding="utf-8",
             )
@@ -468,6 +477,9 @@ def _render_infer_toml(
     output_dir: Path,
     output_file: str,
     model_cfg_path: str | None,
+    remove_silence: bool,
+    nfe_step: int,
+    vocoder_name: str,
 ) -> str:
     """Render one small TOML config file for `f5-tts_infer-cli`."""
     lines = [
@@ -479,7 +491,9 @@ def _render_infer_toml(
         f'gen_text = "{_escape_toml(gen_text)}"',
         f'output_dir = "{_escape_toml(output_dir.as_posix())}"',
         f'output_file = "{_escape_toml(output_file)}"',
-        "remove_silence = false",
+        f"remove_silence = {'true' if remove_silence else 'false'}",
+        f'nfe_step = {nfe_step}',
+        f'vocoder_name = "{_escape_toml(vocoder_name)}"',
     ]
     if model_cfg_path is not None:
         lines.append(f'model_cfg = "{_escape_toml(model_cfg_path)}"')
@@ -512,6 +526,20 @@ def _parse_bool_env(name: str, *, default: bool) -> bool:
     if normalized in {"0", "false", "no", "off"}:
         return False
     raise RuntimeError(f"{name} must be a boolean-like value, got `{value}`.")
+
+
+def _parse_int_env(name: str, *, default: int, minimum: int) -> int:
+    """Return one integer environment variable with validation and fallback."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value.strip())
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an integer-like value, got `{value}`.") from exc
+    if parsed < minimum:
+        raise RuntimeError(f"{name} must be >= {minimum}, got `{parsed}`.")
+    return parsed
 
 
 def _optional_str_env(name: str) -> str | None:

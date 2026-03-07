@@ -96,6 +96,9 @@ class BenchmarkSettings:
     reference_transcript_path: Path | None
     whisper_model: str
     probe_text: str
+    remove_silence: bool
+    nfe_step: int
+    vocoder_name: str
     build_image: bool
     retain_container: bool
 
@@ -199,6 +202,9 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--reference-transcript-file", type=Path, default=None)
     parser.add_argument("--whisper-model", default=DEFAULT_WHISPER_MODEL)
     parser.add_argument("--probe-text", default=DEFAULT_SWEDISH_TEXT)
+    parser.add_argument("--remove-silence", action="store_true")
+    parser.add_argument("--nfe-step", type=int, default=32)
+    parser.add_argument("--vocoder-name", default="vocos")
     parser.add_argument("--skip-build", action="store_true", help="Reuse an already-built image.")
     parser.add_argument(
         "--retain-container",
@@ -231,6 +237,9 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         else None,
         whisper_model=str(args.whisper_model),
         probe_text=str(args.probe_text),
+        remove_silence=bool(args.remove_silence),
+        nfe_step=int(args.nfe_step),
+        vocoder_name=str(args.vocoder_name),
         build_image=not bool(args.skip_build),
         retain_container=bool(args.retain_container),
     )
@@ -457,6 +466,12 @@ def _start_sidecar(
         "SIR_TTS_SIDECAR_MODEL_CACHE_CONTAINER_ROOT=/models",
         "-e",
         "SIR_TTS_SIDECAR_ALLOWED_LANGUAGE_CODES=sv",
+        "-e",
+        f"SIR_TTS_SIDECAR_F5_REMOVE_SILENCE={'1' if settings.remove_silence else '0'}",
+        "-e",
+        f"SIR_TTS_SIDECAR_F5_NFE_STEP={settings.nfe_step}",
+        "-e",
+        f"SIR_TTS_SIDECAR_F5_VOCODER_NAME={settings.vocoder_name}",
         "-v",
         f"{hf_mount.effective_root.as_posix()}:/cache/huggingface",
         "-v",
