@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: high
 created: '2026-03-06'
-last_updated: '2026-03-06'
+last_updated: '2026-03-07'
 related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md
@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md
   - docs/backlog/tasks/task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -56,6 +57,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 1. `docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md`
 1. `docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md`
+1. `docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
 Deferred follow-up:
@@ -115,6 +117,14 @@ Deferred follow-up:
     `vocab.txt`,
   - the shared teacher reference clip still requires an exact transcript and `24 kHz` mono WAV
     preprocessing before any fair F5-TTS quality judgment.
+- 2026-03-07 Chatterbox follow-up update:
+  - `T85` produced a technically successful F5-TTS integration but remained qualitatively
+    unacceptable on the evaluated Swedish outputs,
+  - the next active cloning lane is now `T86` Chatterbox Multilingual,
+  - `T86` is intentionally constrained to officially documented Chatterbox controls and
+    multilingual runtime surfaces only,
+  - `T86` also records a key contract difference versus F5-TTS: Chatterbox cloning does not
+    require a reference transcript.
 
 ## Acceptance Criteria
 
@@ -124,6 +134,8 @@ Deferred follow-up:
   before we decide whether OpenVoice remains the lead candidate.
 - [x] Task 85 defines parallel evidence for F5-TTS so we can compare cloning quality, runtime
   fit, and operational complexity against OpenVoice V2.
+- [ ] Task 86 defines deterministic Hemma evidence for Chatterbox Multilingual Swedish cloning,
+  including quality-first settings and watermark/runtime-governance notes.
 - [ ] Task 83 defines a Swedish pronunciation control benchmark whose result is explicitly
   non-canonical for backend selection because cloning is absent.
 - [ ] Story outputs are strong enough to recommend:

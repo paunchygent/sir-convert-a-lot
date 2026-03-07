@@ -163,6 +163,12 @@ Primary implementation stories (active sequence):
     - listen to the successful F5 sample,
     - compare it against the preserved OpenVoice baseline,
     - record a recommendation.
+  - Continued `T85` qualitative review with longer Swedish F5 samples and multiple controlled
+    inference reruns.
+  - Recorded the practical Chatterbox decision trigger:
+    - F5-TTS remains technically functional on Hemma,
+    - the evaluated Swedish outputs are still not good enough,
+    - Story 23 therefore opens `T86` Chatterbox Multilingual as the next active cloning lane.
 
 - 2026-03-05:
 
@@ -191,11 +197,11 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 with `T85` qualitative review and
-  recommendation first, then `T83`, with `T82` kept deferred unless F5 is rejected.
+- Current local execution focus is Epic 07 Story 23 with `T86` Chatterbox Multilingual as the
+  next active cloning benchmark, then `T83`, with `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now the completed-setup `T85` listening review, with `T83` kept as
-  the Swedish pronunciation control and `T82` remaining deferred.
+- Immediate Story 23 focus is now `T86` Chatterbox Multilingual, with `T83` kept as the Swedish
+  pronunciation control and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.
