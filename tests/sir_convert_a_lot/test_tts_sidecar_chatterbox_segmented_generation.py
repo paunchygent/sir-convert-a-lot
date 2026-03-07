@@ -69,13 +69,43 @@ def test_stitch_waveforms_cross_fades_overlapping_edges() -> None:
         waveforms=[waveform_a, waveform_b],
         sample_rate_hz=1000,
         cross_fade_ms=2,
+        segment_texts=["Första delen,", "andra delen."],
+        stitch_mode="simple",
     )
 
-    assert stitched.shape == (1, 6)
+    assert stitched.waveform.shape == (1, 6)
     assert torch.allclose(
-        stitched,
+        stitched.waveform,
         torch.tensor([[0.0, 0.5, 1.0, 0.5, 0.0, 0.0]], dtype=torch.float32),
     )
+    assert stitched.boundary_decisions == []
+
+
+def test_stitch_waveforms_speech_aware_trims_noise_and_records_boundaries() -> None:
+    waveform_a = torch.tensor(
+        [[0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 0.01, 0.0, 0.0, 0.0]],
+        dtype=torch.float32,
+    )
+    waveform_b = torch.tensor(
+        [[0.0, 0.0, 0.05, 0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0]],
+        dtype=torch.float32,
+    )
+
+    stitched = stitch_waveforms(
+        waveforms=[waveform_a, waveform_b],
+        sample_rate_hz=100,
+        cross_fade_ms=40,
+        segment_texts=["Första delen,", "andra delen."],
+        stitch_mode="speech_aware",
+    )
+
+    assert stitched.waveform.shape[0] == 1
+    assert len(stitched.chunk_analyses) == 2
+    assert len(stitched.boundary_decisions) == 1
+    assert stitched.chunk_analyses[0].leading_trim_ms > 0
+    assert stitched.chunk_analyses[0].trailing_trim_ms > 0
+    assert stitched.boundary_decisions[0].boundary_type == "clause"
+    assert stitched.boundary_decisions[0].inserted_pause_ms == 110.0
 
 
 def test_generate_audio_bytes_writes_debug_artifacts_for_segmented_lane(
@@ -99,6 +129,7 @@ def test_generate_audio_bytes_writes_debug_artifacts_for_segmented_lane(
             enabled=True,
             max_chars=20,
             cross_fade_ms=10,
+            stitch_mode="speech_aware",
             debug_dir=tmp_path,
         ),
     )
@@ -108,6 +139,9 @@ def test_generate_audio_bytes_writes_debug_artifacts_for_segmented_lane(
     assert plan_payload["segment_count"] == 3
     assert (tmp_path / "chunk_01.wav").exists()
     assert (tmp_path / "chunk_02.wav").exists()
+    assert (tmp_path / "chunk_01_post.wav").exists()
+    assert (tmp_path / "chunk_analysis.json").exists()
+    assert (tmp_path / "boundary_decisions.json").exists()
     assert (tmp_path / "stitched.wav").exists()
     with wave.open(Path(tmp_path / "stitched.wav").as_posix(), "rb") as wav_file:
         assert wav_file.getframerate() == 24000
@@ -130,6 +164,7 @@ def test_generate_audio_bytes_skips_segmentation_when_disabled() -> None:
             enabled=False,
             max_chars=20,
             cross_fade_ms=10,
+            stitch_mode="simple",
             debug_dir=None,
         ),
     )

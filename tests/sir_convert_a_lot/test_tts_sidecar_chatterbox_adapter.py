@@ -53,6 +53,7 @@ def _settings() -> ChatterboxSidecarSettings:
         segment_text=False,
         segment_max_chars=220,
         segment_cross_fade_ms=80,
+        segment_stitch_mode="simple",
         segment_debug_dir=None,
     )
 
@@ -196,6 +197,7 @@ def test_run_generate_wraps_value_error_into_sidecar_error() -> None:
                 enabled=False,
                 max_chars=220,
                 cross_fade_ms=80,
+                stitch_mode="simple",
                 debug_dir=None,
             ),
         )
@@ -210,6 +212,16 @@ def test_chatterbox_normalization_helpers_keep_supported_aliases() -> None:
     assert (
         _normalize_text("  Hej   världen  ", profile=NormalizationProfile.NONE) == "Hej   världen"
     )
+
+
+def test_chatterbox_settings_from_env_accepts_segment_stitch_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_STITCH_MODE", "speech_aware")
+
+    settings = ChatterboxSidecarSettings.from_env()
+
+    assert settings.segment_stitch_mode == "speech_aware"
 
 
 def _noop_generate(**_kwargs: object) -> torch.Tensor:

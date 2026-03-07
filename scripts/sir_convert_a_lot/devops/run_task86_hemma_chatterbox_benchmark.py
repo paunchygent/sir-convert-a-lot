@@ -141,6 +141,11 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--segment-text", action="store_true")
     parser.add_argument("--segment-max-chars", type=int, default=220)
     parser.add_argument("--segment-cross-fade-ms", type=int, default=80)
+    parser.add_argument(
+        "--segment-stitch-mode",
+        choices=("simple", "speech_aware"),
+        default="simple",
+    )
     parser.add_argument("--segment-debug-dir", type=Path, default=None)
     parser.add_argument("--skip-build", action="store_true", help="Reuse an already-built image.")
     parser.add_argument(
@@ -181,6 +186,7 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         segment_text=bool(args.segment_text),
         segment_max_chars=int(args.segment_max_chars),
         segment_cross_fade_ms=int(args.segment_cross_fade_ms),
+        segment_stitch_mode=str(args.segment_stitch_mode),
         segment_debug_dir=Path(args.segment_debug_dir) if args.segment_debug_dir else None,
         build_image=not bool(args.skip_build),
         retain_container=bool(args.retain_container),
@@ -251,13 +257,14 @@ def main(argv: list[str] | None = None) -> int:
     LOGGER.info(
         (
             "Task 86 starting: output_root=%s skip_build=%s exaggeration=%s "
-            "cfg_weight=%s segment_text=%s"
+            "cfg_weight=%s segment_text=%s segment_stitch_mode=%s"
         ),
         settings.output_root,
         not settings.build_image,
         settings.exaggeration,
         settings.cfg_weight,
         settings.segment_text,
+        settings.segment_stitch_mode,
     )
     enforce_generated_output_path(settings.output_root, label="output_root")
     paths = _prepare_output_root(settings.output_root)
@@ -408,6 +415,7 @@ def main(argv: list[str] | None = None) -> int:
             segment_text=effective_settings.segment_text,
             segment_max_chars=effective_settings.segment_max_chars,
             segment_cross_fade_ms=effective_settings.segment_cross_fade_ms,
+            segment_stitch_mode=effective_settings.segment_stitch_mode,
             segment_debug_dir=(
                 effective_settings.segment_debug_dir.as_posix()
                 if (

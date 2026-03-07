@@ -48,6 +48,7 @@ def test_parse_args_prefers_canonical_hemma_cache_env(monkeypatch: pytest.Monkey
     assert settings.segment_text is False
     assert settings.segment_max_chars == 220
     assert settings.segment_cross_fade_ms == 80
+    assert settings.segment_stitch_mode == "simple"
 
 
 def test_parse_args_accepts_probe_text_file(tmp_path: Path) -> None:
@@ -63,6 +64,8 @@ def test_parse_args_accepts_probe_text_file(tmp_path: Path) -> None:
             "180",
             "--segment-cross-fade-ms",
             "90",
+            "--segment-stitch-mode",
+            "speech_aware",
         ]
     )
 
@@ -70,6 +73,7 @@ def test_parse_args_accepts_probe_text_file(tmp_path: Path) -> None:
     assert settings.segment_text is True
     assert settings.segment_max_chars == 180
     assert settings.segment_cross_fade_ms == 90
+    assert settings.segment_stitch_mode == "speech_aware"
 
 
 def test_discover_model_snapshot_path_handles_hf_root_and_hub_root(tmp_path: Path) -> None:
@@ -122,6 +126,7 @@ def test_start_sidecar_uses_buildkit_ready_mounts_and_envs(
         segment_text=True,
         segment_max_chars=180,
         segment_cross_fade_ms=120,
+        segment_stitch_mode="speech_aware",
         segment_debug_dir=tmp_path / "segment-debug",
         build_image=False,
         retain_container=False,
@@ -140,6 +145,7 @@ def test_start_sidecar_uses_buildkit_ready_mounts_and_envs(
     assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_TEXT=1" in command
     assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_MAX_CHARS=180" in command
     assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_CROSS_FADE_MS=120" in command
+    assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_STITCH_MODE=speech_aware" in command
     assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_DEBUG_DIR=/segment-debug" in command
     assert f"{mount.effective_root.as_posix()}:/cache/huggingface" in command
     assert settings.segment_debug_dir is not None
@@ -204,6 +210,7 @@ def test_build_report_markdown_includes_restart_and_probe_sections() -> None:
         segment_text=True,
         segment_max_chars=220,
         segment_cross_fade_ms=80,
+        segment_stitch_mode="speech_aware",
         segment_debug_dir="/tmp/segment-debug",
         hf_cache_host_root="/srv/cache/hf",
         gpu_product_name="AMD Radeon AI PRO R9700",
@@ -219,6 +226,7 @@ def test_build_report_markdown_includes_restart_and_probe_sections() -> None:
     assert "Smoke Probe" in markdown
     assert "Swedish Clone Probe" in markdown
     assert "segment_text" in markdown
+    assert "segment_stitch_mode" in markdown
 
 
 def test_chatterbox_dockerfile_prefetches_spacy_pkuseg_model() -> None:

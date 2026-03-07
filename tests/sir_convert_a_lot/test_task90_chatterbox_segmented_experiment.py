@@ -27,12 +27,15 @@ def test_task90_local_parse_args_accepts_segment_controls() -> None:
             "140",
             "--segment-cross-fade-ms",
             "60",
+            "--segment-stitch-mode",
+            "speech_aware",
             "--skip-build",
         ]
     )
 
     assert args.segment_max_chars == 140
     assert args.segment_cross_fade_ms == 60
+    assert args.segment_stitch_mode == "speech_aware"
     assert args.skip_build is True
 
 
@@ -43,12 +46,15 @@ def test_task90_hemma_parse_args_accepts_segment_controls() -> None:
             "140",
             "--segment-cross-fade-ms",
             "60",
+            "--segment-stitch-mode",
+            "speech_aware",
             "--skip-build",
         ]
     )
 
     assert settings.segment_max_chars == 140
     assert settings.segment_cross_fade_ms == 60
+    assert settings.segment_stitch_mode == "speech_aware"
     assert settings.build_image is False
 
 
@@ -61,6 +67,7 @@ def test_task90_write_summary_records_both_lanes(tmp_path: Path) -> None:
         cfg_weight=0.5,
         segment_max_chars=160,
         segment_cross_fade_ms=80,
+        segment_stitch_mode="simple",
         build_image=False,
     )
     single_pass = run_task90_hemma_chatterbox_segmented_experiment.LaneSummary(
@@ -74,6 +81,7 @@ def test_task90_write_summary_records_both_lanes(tmp_path: Path) -> None:
         segment_text=False,
         segment_max_chars=160,
         segment_cross_fade_ms=80,
+        segment_stitch_mode="simple",
         segment_debug_dir=None,
     )
     segmented = run_task90_hemma_chatterbox_segmented_experiment.LaneSummary(
@@ -87,6 +95,7 @@ def test_task90_write_summary_records_both_lanes(tmp_path: Path) -> None:
         segment_text=True,
         segment_max_chars=160,
         segment_cross_fade_ms=80,
+        segment_stitch_mode="simple",
         segment_debug_dir="/tmp/segmented/segment-debug",
     )
 
@@ -101,4 +110,5 @@ def test_task90_write_summary_records_both_lanes(tmp_path: Path) -> None:
 
     assert payload["single_pass_lane"]["segment_text"] is False
     assert payload["segmented_lane"]["segment_text"] is True
+    assert payload["segmented_lane"]["segment_stitch_mode"] == "simple"
     assert payload["segmented_lane"]["segment_debug_dir"] == "/tmp/segmented/segment-debug"

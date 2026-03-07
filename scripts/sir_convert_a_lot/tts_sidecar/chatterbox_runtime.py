@@ -81,6 +81,7 @@ class ChatterboxSidecarSettings:
     segment_text: bool
     segment_max_chars: int
     segment_cross_fade_ms: int
+    segment_stitch_mode: str
     segment_debug_dir: str | None
 
     @classmethod
@@ -135,6 +136,11 @@ class ChatterboxSidecarSettings:
                 default=80,
                 minimum=0,
             ),
+            segment_stitch_mode=_parse_choice_env(
+                "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_STITCH_MODE",
+                default="simple",
+                choices=("simple", "speech_aware"),
+            ),
             segment_debug_dir=_parse_optional_path_env(
                 "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_DEBUG_DIR"
             ),
@@ -170,7 +176,7 @@ class ChatterboxSidecarBackend:
             (
                 "Loading Chatterbox Multilingual model: repo_id=%s exaggeration=%s "
                 "cfg_weight=%s segment_text=%s segment_max_chars=%s "
-                "cross_fade_ms=%s"
+                "cross_fade_ms=%s stitch_mode=%s"
             ),
             self._settings.model_repo_id,
             self._settings.exaggeration,
@@ -178,6 +184,7 @@ class ChatterboxSidecarBackend:
             self._settings.segment_text,
             self._settings.segment_max_chars,
             self._settings.segment_cross_fade_ms,
+            self._settings.segment_stitch_mode,
         )
         model = ChatterboxMultilingualTTS.from_pretrained(device="cuda")
         self._generate = model.generate
@@ -388,6 +395,7 @@ class ChatterboxSidecarBackend:
                 enabled=self._settings.segment_text,
                 max_chars=self._settings.segment_max_chars,
                 cross_fade_ms=self._settings.segment_cross_fade_ms,
+                stitch_mode=self._settings.segment_stitch_mode,
                 debug_dir=Path(self._settings.segment_debug_dir)
                 if self._settings.segment_debug_dir is not None
                 else None,
@@ -492,6 +500,17 @@ def _parse_optional_path_env(name: str) -> str | None:
         return None
     normalized = value.strip()
     return normalized if normalized != "" else None
+
+
+def _parse_choice_env(name: str, *, default: str, choices: tuple[str, ...]) -> str:
+    """Return one string environment variable constrained to a known set."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    normalized = value.strip()
+    if normalized in choices:
+        return normalized
+    raise RuntimeError(f"{name} must be one of {choices}, got `{normalized}`.")
 
 
 def _package_version_or_none(metadata_module: object, distribution_name: str) -> str | None:

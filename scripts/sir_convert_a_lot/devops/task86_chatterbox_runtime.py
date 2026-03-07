@@ -66,6 +66,7 @@ class BenchmarkSettings:
     segment_text: bool
     segment_max_chars: int
     segment_cross_fade_ms: int
+    segment_stitch_mode: str
     segment_debug_dir: Path | None
     build_image: bool
     retain_container: bool
@@ -212,6 +213,8 @@ def start_sidecar(settings: BenchmarkSettings, *, hf_mount: MountResolution) -> 
         (f"SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_MAX_CHARS={settings.segment_max_chars}"),
         "-e",
         (f"SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_CROSS_FADE_MS={settings.segment_cross_fade_ms}"),
+        "-e",
+        (f"SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_STITCH_MODE={settings.segment_stitch_mode}"),
         "-v",
         f"{hf_mount.effective_root.as_posix()}:/cache/huggingface",
     ]

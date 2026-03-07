@@ -70,6 +70,7 @@ class BenchmarkReport:
     segment_text: bool
     segment_max_chars: int
     segment_cross_fade_ms: int
+    segment_stitch_mode: str
     segment_debug_dir: str | None
     hf_cache_host_root: str
     gpu_product_name: str
@@ -111,6 +112,7 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- segment_text: `{report.segment_text}`",
         f"- segment_max_chars: `{report.segment_max_chars}`",
         f"- segment_cross_fade_ms: `{report.segment_cross_fade_ms}`",
+        f"- segment_stitch_mode: `{report.segment_stitch_mode}`",
         f"- segment_debug_dir: `{report.segment_debug_dir}`",
         f"- gpu_product_name: `{report.gpu_product_name}`",
         f"- gpu_gfx_architecture: `{report.gpu_gfx_architecture}`",

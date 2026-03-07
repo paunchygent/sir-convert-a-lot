@@ -1,9 +1,9 @@
 ---
-id: 'task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma'
-title: 'Implement speech-aware Chatterbox stitching and tail cleanup on Hemma'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma
+title: Implement speech-aware Chatterbox stitching and tail cleanup on Hemma
+type: task
+status: proposed
+priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
 related:
