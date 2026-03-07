@@ -89,6 +89,20 @@ def _env_path(name: str, *, default: Path) -> Path:
     return Path(value.strip())
 
 
+def _resolve_text_argument(*, text: str | None, text_file: Path | None, label: str) -> str:
+    """Return text from one direct value or one file-backed value."""
+    if text_file is None:
+        if text is None:
+            raise SystemExit(f"Task 86 {label} text is missing.")
+        return text
+    if not text_file.exists():
+        raise SystemExit(f"Task 86 {label} text file is missing: {text_file}")
+    file_text = text_file.read_text(encoding="utf-8").strip()
+    if file_text == "":
+        raise SystemExit(f"Task 86 {label} text file is empty: {text_file}")
+    return file_text
+
+
 def _parse_args(argv: list[str]) -> BenchmarkSettings:
     """Parse CLI arguments into normalized Task 86 benchmark settings."""
     parser = argparse.ArgumentParser(description="Run the Task 86 Hemma Chatterbox benchmark.")
@@ -118,7 +132,9 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--reference-audio", type=Path, default=DEFAULT_REFERENCE_AUDIO)
     parser.add_argument("--english-reference-audio", type=Path, default=None)
     parser.add_argument("--smoke-text", default=DEFAULT_ENGLISH_SMOKE_TEXT)
+    parser.add_argument("--smoke-text-file", type=Path, default=None)
     parser.add_argument("--probe-text", default=DEFAULT_SWEDISH_TEXT)
+    parser.add_argument("--probe-text-file", type=Path, default=None)
     parser.add_argument("--exaggeration", type=float, default=0.5)
     parser.add_argument("--cfg-weight", type=float, default=0.5)
     parser.add_argument("--skip-build", action="store_true", help="Reuse an already-built image.")
@@ -145,8 +161,16 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         english_reference_audio_path=Path(args.english_reference_audio)
         if args.english_reference_audio is not None
         else None,
-        smoke_text=str(args.smoke_text),
-        probe_text=str(args.probe_text),
+        smoke_text=_resolve_text_argument(
+            text=str(args.smoke_text) if args.smoke_text is not None else None,
+            text_file=Path(args.smoke_text_file) if args.smoke_text_file is not None else None,
+            label="smoke",
+        ),
+        probe_text=_resolve_text_argument(
+            text=str(args.probe_text) if args.probe_text is not None else None,
+            text_file=Path(args.probe_text_file) if args.probe_text_file is not None else None,
+            label="probe",
+        ),
         exaggeration=float(args.exaggeration),
         cfg_weight=float(args.cfg_weight),
         build_image=not bool(args.skip_build),

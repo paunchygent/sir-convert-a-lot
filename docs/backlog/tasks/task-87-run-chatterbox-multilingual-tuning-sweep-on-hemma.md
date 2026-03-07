@@ -1,9 +1,9 @@
 ---
-id: 'task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma'
-title: 'Run Chatterbox multilingual tuning sweep on Hemma'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma
+title: Run Chatterbox multilingual tuning sweep on Hemma
+type: task
+status: in_progress
+priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
 related:
@@ -19,6 +19,7 @@ labels:
   - hemma
   - swedish
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

@@ -176,6 +176,10 @@ Primary implementation stories (active sequence):
     - one fixed approved teacher reference clip,
     - conservative-first execution order across the full `cfg_weight` /
       `exaggeration` combination grid.
+  - Opened `T88` / `T89` for the next Chatterbox phoneme experiment:
+    - `T88` keeps the research boundary explicit,
+    - `T89` implements a benchmark-only eSpeak preprocessing path outside the
+      current sidecar contract.
 
 - 2026-03-05:
 
@@ -204,12 +208,12 @@ Primary implementation stories (active sequence):
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 `T87` Chatterbox tuning sweep on Hemma, then
-  qualitative review of the completed sweep, then `T83`, with `T82` kept deferred.
+- Current local execution focus is Epic 07 Story 23 `T89` benchmark-only eSpeak preprocessing for
+  Chatterbox, after the completed `T87` sweep, then `T83`, with `T82` kept deferred.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
   lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now the conservative-first `T87` Chatterbox tuning sweep, then
-  listening review and recommendation capture, with `T83` kept as the Swedish pronunciation
-  control and `T82` remaining deferred.
+- Immediate Story 23 focus is now the bounded `T89` eSpeak preprocessing experiment for
+  Chatterbox, then listening review and recommendation capture, with `T83` kept as the Swedish
+  pronunciation control and `T82` remaining deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

@@ -16,15 +16,19 @@ tags:
   - swedish
 links:
   - docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md
+  - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - scripts/sir_convert_a_lot/devops/run_task86_hemma_chatterbox_benchmark.py
+  - scripts/sir_convert_a_lot/devops/run_task89_hemma_chatterbox_espeak_experiment.py
   - scripts/sir_convert_a_lot/devops/task86_chatterbox_runtime.py
   - scripts/sir_convert_a_lot/tts_sidecar/chatterbox_runtime.py
+  - containers/textprep-espeak-phonemizer/Dockerfile
   - https://github.com/resemble-ai/chatterbox
   - https://pypi.org/project/chatterbox-tts/
 ---
+
 ## Purpose
 
 Provide one quality-first, repo-grounded procedure for tuning Chatterbox
@@ -283,6 +287,41 @@ surface:
 The current sidecar rejects `style_instructions` and `reference_transcript`,
 and the benchmark reports only WAV output.
 
+## Experimental eSpeak Path
+
+The repo now includes one benchmark-only eSpeak preprocessing experiment for
+Swedish Chatterbox lanes.
+
+Important boundary:
+
+- this does not change the Chatterbox sidecar contract
+- this does not add a phoneme mode to `/synthesize`
+- this does not move preprocessing into the sidecar container
+
+Instead, Task 89 adds one separate helper image and one separate experiment
+runner that:
+
+- writes the original Swedish probe text to an input artifact
+- generates one eSpeak-backed phonemized text artifact
+- runs one baseline Chatterbox lane from the original text
+- runs one comparison lane from the phonemized text
+
+Canonical command:
+
+```bash
+pdm run benchmark:task-89
+```
+
+Remote execution surface used by the orchestrator:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-89-hemma
+```
+
+Use this path only for experimental A/B evaluation of Swedish phoneme handling.
+Do not treat it as a proven production-sidecar improvement until the benchmark
+evidence is reviewed.
+
 ## Evidence Checklist For Every Lane
 
 Each tuning lane should produce its own deterministic output root containing:
@@ -305,15 +344,15 @@ reference audio path must also be captured in the report.
 Use this order when judging a tuning lane:
 
 1. Confirm the lane stayed on the official multilingual runtime.
-2. Confirm the lane used the intended Swedish-only probe text.
-3. Confirm only one tuning variable changed.
-4. Listen for:
+1. Confirm the lane used the intended Swedish-only probe text.
+1. Confirm only one tuning variable changed.
+1. Listen for:
    - cloning similarity
    - Swedish intelligibility
    - pacing
    - start/end artifacts
    - instability or accent bleed
-5. Keep the winning lane only if it is audibly better than the baseline,
+1. Keep the winning lane only if it is audibly better than the baseline,
    not merely different.
 
 ## Current Repo Baseline

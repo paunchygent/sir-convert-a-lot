@@ -21,6 +21,7 @@ links:
   - https://github.com/espeak-ng/espeak-ng
   - https://github.com/bootphon/phonemizer
 ---
+
 ## Purpose
 
 Record the current research truth for using eSpeak NG to improve Swedish
@@ -85,13 +86,13 @@ Suggested docs-as-code sequence:
    - confirm API reality
    - confirm Swedish verification steps
    - decide the integration boundary
-2. follow-on design task:
+1. follow-on design task:
    - define the exact repo contract for optional phoneme preprocessing
    - document whether the output is phoneme text, alternate normalized text, or
      benchmark-only evidence
-3. implementation task:
+1. implementation task:
    - add the bounded preprocessing surface in the chosen boundary
-4. benchmark task:
+1. benchmark task:
    - run Swedish A/B comparisons against the current Chatterbox baseline
 
 ## Recommendation

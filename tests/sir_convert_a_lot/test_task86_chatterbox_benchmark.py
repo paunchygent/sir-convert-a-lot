@@ -47,6 +47,17 @@ def test_parse_args_prefers_canonical_hemma_cache_env(monkeypatch: pytest.Monkey
     assert settings.exaggeration == 0.5
 
 
+def test_parse_args_accepts_probe_text_file(tmp_path: Path) -> None:
+    probe_text_file = tmp_path / "probe_text.txt"
+    probe_text_file.write_text("fonemiserad svensk text", encoding="utf-8")
+
+    settings = run_task86_hemma_chatterbox_benchmark._parse_args(
+        ["--probe-text-file", probe_text_file.as_posix()]
+    )
+
+    assert settings.probe_text == "fonemiserad svensk text"
+
+
 def test_discover_model_snapshot_path_handles_hf_root_and_hub_root(tmp_path: Path) -> None:
     direct_snapshot = tmp_path / "models--ResembleAI--chatterbox" / "snapshots" / "abc"
     direct_snapshot.mkdir(parents=True)

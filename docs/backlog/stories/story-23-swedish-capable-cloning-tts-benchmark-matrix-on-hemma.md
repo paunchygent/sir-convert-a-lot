@@ -17,6 +17,7 @@ related:
   - docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma.md
   - docs/backlog/tasks/task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration.md
+  - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
   - docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -62,6 +63,7 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
 1. `docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md`
 1. `docs/backlog/tasks/task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma.md`
 1. `docs/backlog/tasks/task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration.md`
+1. `docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md`
 1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
 
 Deferred follow-up:
@@ -155,6 +157,11 @@ Deferred follow-up:
   - `T88` is now opened as the phoneme-research follow-up to determine whether
     eSpeak NG should remain a benchmark-only preprocessing experiment or become
     a stronger part of the Swedish Chatterbox pipeline.
+  - `T89` is now the first implementation slice for that conclusion:
+    - a benchmark-only eSpeak preprocessing path,
+    - separate helper image,
+    - no Chatterbox sidecar contract change,
+    - baseline-vs-preprocessed comparison on Hemma.
 
 ## Acceptance Criteria
 

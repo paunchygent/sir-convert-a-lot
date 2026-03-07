@@ -1,9 +1,9 @@
 ---
-id: 'task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration'
-title: 'Research eSpeak NG phoneme support for Swedish Chatterbox integration'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration
+title: Research eSpeak NG phoneme support for Swedish Chatterbox integration
+type: task
+status: in_progress
+priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
 related:
@@ -19,6 +19,7 @@ labels:
   - phonemes
   - swedish
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
