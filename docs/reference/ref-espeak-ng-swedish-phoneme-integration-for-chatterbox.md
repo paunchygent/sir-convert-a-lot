@@ -110,6 +110,13 @@ Task 89 therefore proves the helper-path experiment is operationally viable.
 It does not prove that phoneme-like preprocessing is sufficient to solve the
 remaining quality issues on its own.
 
+The current repo decision for Chatterbox is now explicit:
+
+- keep the helper path for future model experiments
+- stop using it in the active Chatterbox quality lane
+- treat normal-text segmentation and stitching as the next required quality
+  slice
+
 ## Recommended Task Setup
 
 Suggested docs-as-code sequence:
@@ -144,4 +151,5 @@ Start with research and a benchmark-only incorporation path, because:
 
 After Task 89, the next quality-focused step is no longer "prove the helper
 path exists." That is done. The next step is to add the missing
-segmentation-and-stitching layer as its own bounded task.
+segmentation-and-stitching layer as its own bounded task and keep Chatterbox
+on the documented normal-text input path.

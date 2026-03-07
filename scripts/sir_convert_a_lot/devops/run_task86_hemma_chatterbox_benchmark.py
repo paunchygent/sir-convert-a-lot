@@ -20,9 +20,10 @@ import argparse
 import json
 import logging
 import os
+import shutil
 import sys
 from contextlib import suppress
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -137,6 +138,10 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--probe-text-file", type=Path, default=None)
     parser.add_argument("--exaggeration", type=float, default=0.5)
     parser.add_argument("--cfg-weight", type=float, default=0.5)
+    parser.add_argument("--segment-text", action="store_true")
+    parser.add_argument("--segment-max-chars", type=int, default=220)
+    parser.add_argument("--segment-cross-fade-ms", type=int, default=80)
+    parser.add_argument("--segment-debug-dir", type=Path, default=None)
     parser.add_argument("--skip-build", action="store_true", help="Reuse an already-built image.")
     parser.add_argument(
         "--retain-container",
@@ -173,6 +178,10 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         ),
         exaggeration=float(args.exaggeration),
         cfg_weight=float(args.cfg_weight),
+        segment_text=bool(args.segment_text),
+        segment_max_chars=int(args.segment_max_chars),
+        segment_cross_fade_ms=int(args.segment_cross_fade_ms),
+        segment_debug_dir=Path(args.segment_debug_dir) if args.segment_debug_dir else None,
         build_image=not bool(args.skip_build),
         retain_container=bool(args.retain_container),
     )
@@ -224,8 +233,11 @@ def _prepare_output_root(output_root: Path) -> dict[str, Path]:
         "capabilities": output_root / "capabilities.json",
         "voices": output_root / "voices.json",
     }
+    segment_debug_dir = output_root / "segment-debug"
+    shutil.rmtree(segment_debug_dir, ignore_errors=True)
+    paths["segment_debug_dir"] = segment_debug_dir
     for path in paths.values():
-        if path == artifacts_dir:
+        if path in {artifacts_dir, segment_debug_dir}:
             continue
         with suppress(FileNotFoundError):
             path.unlink()
@@ -237,14 +249,24 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     settings = _parse_args(sys.argv[1:] if argv is None else argv)
     LOGGER.info(
-        "Task 86 starting: output_root=%s skip_build=%s exaggeration=%s cfg_weight=%s",
+        (
+            "Task 86 starting: output_root=%s skip_build=%s exaggeration=%s "
+            "cfg_weight=%s segment_text=%s"
+        ),
         settings.output_root,
         not settings.build_image,
         settings.exaggeration,
         settings.cfg_weight,
+        settings.segment_text,
     )
     enforce_generated_output_path(settings.output_root, label="output_root")
     paths = _prepare_output_root(settings.output_root)
+    effective_settings = replace(
+        settings,
+        segment_debug_dir=settings.segment_debug_dir
+        if settings.segment_debug_dir is not None
+        else (paths["segment_debug_dir"] if settings.segment_text else None),
+    )
     generated_at = _utc_now_iso()
     run_id = generated_at.replace("-", "").replace(":", "")
     repo_head = run_checked(["git", "rev-parse", "HEAD"], label="git rev-parse HEAD")
@@ -252,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
     internal_base_url = f"http://{settings.network_alias}:{settings.container_port}"
     try:
         LOGGER.info("Checking Docker/service/reference preconditions")
-        _ensure_preconditions(settings)
+        _ensure_preconditions(effective_settings)
         LOGGER.info("Inspecting GPU identity")
         smi_identity_output = run_checked(
             ["rocm-smi", "--showproductname", "--showmeminfo", "vram", "--showuse"],
@@ -261,18 +283,18 @@ def main(argv: list[str] | None = None) -> int:
         rocminfo_output = run_checked(["rocminfo"], label="rocminfo")
         gpu_identity = extract_gpu_identity(smi_identity_output, rocminfo_output)
         capture_gpu_snapshot(paths["gpu_before"])
-        remove_existing_benchmark_container(settings.container_name)
+        remove_existing_benchmark_container(effective_settings.container_name)
         LOGGER.info("Ensuring Chatterbox sidecar image is present")
-        build_performed, image_id = ensure_image_present(settings)
+        build_performed, image_id = ensure_image_present(effective_settings)
         hf_mount = resolve_effective_cache_dir(
-            cache_dir=settings.hf_cache_dir,
-            home_mount=settings.hf_cache_home_mount,
-            image=settings.image,
+            cache_dir=effective_settings.hf_cache_dir,
+            home_mount=effective_settings.hf_cache_home_mount,
+            image=effective_settings.image,
         )
         model_snapshot_before = discover_model_snapshot_path(hf_mount.canonical_root)
         LOGGER.info("Starting Chatterbox sidecar container")
-        start_sidecar(settings, hf_mount=hf_mount)
-        first_startup_seconds, capabilities, voices = wait_for_sidecar(settings)
+        start_sidecar(effective_settings, hf_mount=hf_mount)
+        first_startup_seconds, capabilities, voices = wait_for_sidecar(effective_settings)
         paths["capabilities"].write_text(
             json.dumps(capabilities.model_dump(), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
@@ -281,14 +303,16 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(voices.model_dump(), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        write_runtime_versions(settings, output_path=paths["package_versions"])
-        service_probe_ok, service_backend_id, service_ready = probe_from_service_container(settings)
+        write_runtime_versions(effective_settings, output_path=paths["package_versions"])
+        service_probe_ok, service_backend_id, service_ready = probe_from_service_container(
+            effective_settings
+        )
         LOGGER.info("Running official English smoke synthesis")
         smoke_probe = synthesize_probe(
             base_url=host_base_url,
             artifacts_dir=paths["artifacts_dir"],
             filename="smoke-test-en.wav",
-            text=settings.smoke_text,
+            text=effective_settings.smoke_text,
             language="en",
             voice_mode="preset",
             preset_voice_id="builtin_default",
@@ -299,36 +323,36 @@ def main(argv: list[str] | None = None) -> int:
             base_url=host_base_url,
             artifacts_dir=paths["artifacts_dir"],
             filename="scenario-a-sv-ref-sv-out.wav",
-            text=settings.probe_text,
+            text=effective_settings.probe_text,
             language="sv",
             voice_mode="reference_clone",
             preset_voice_id=None,
-            reference_audio_path=settings.reference_audio_path,
+            reference_audio_path=effective_settings.reference_audio_path,
         )
         cross_language_probe = None
         english_reference_evidence = None
-        if settings.english_reference_audio_path is not None:
+        if effective_settings.english_reference_audio_path is not None:
             LOGGER.info("Running optional cross-language cloning synthesis")
             english_reference_evidence = reference_audio_evidence(
-                settings.english_reference_audio_path,
-                image=settings.image,
+                effective_settings.english_reference_audio_path,
+                image=effective_settings.image,
             )
             cross_language_probe = synthesize_probe(
                 base_url=host_base_url,
                 artifacts_dir=paths["artifacts_dir"],
                 filename="scenario-b-en-ref-sv-out.wav",
-                text=settings.probe_text,
+                text=effective_settings.probe_text,
                 language="sv",
                 voice_mode="reference_clone",
                 preset_voice_id=None,
-                reference_audio_path=settings.english_reference_audio_path,
+                reference_audio_path=effective_settings.english_reference_audio_path,
             )
         LOGGER.info("Measuring warm restart")
-        warm_restart_seconds = restart_sidecar_and_measure(settings)
+        warm_restart_seconds = restart_sidecar_and_measure(effective_settings)
         capture_gpu_snapshot(paths["gpu_after"])
         reference_evidence = reference_audio_evidence(
-            settings.reference_audio_path,
-            image=settings.image,
+            effective_settings.reference_audio_path,
+            image=effective_settings.image,
         )
         model_snapshot_after = discover_model_snapshot_path(hf_mount.canonical_root)
         downloaded_during_first_start = (
@@ -341,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_head=repo_head,
             host_base_url=host_base_url,
             internal_base_url=internal_base_url,
-            image=settings.image,
+            image=effective_settings.image,
             image_id=image_id,
             build_performed=build_performed,
             package_versions_path=paths["package_versions"].as_posix(),
@@ -362,9 +386,9 @@ def main(argv: list[str] | None = None) -> int:
                 if language.code == "sv"
             ),
             voices_count=len(voices.voices),
-            smoke_text=settings.smoke_text,
+            smoke_text=effective_settings.smoke_text,
             smoke_probe=smoke_probe,
-            probe_text=settings.probe_text,
+            probe_text=effective_settings.probe_text,
             swedish_clone_probe=swedish_clone_probe,
             cross_language_probe=cross_language_probe,
             reference_audio_path=reference_evidence.input_path,
@@ -379,8 +403,19 @@ def main(argv: list[str] | None = None) -> int:
             english_reference_audio_sample_rate_hz=english_reference_evidence.sample_rate_hz
             if english_reference_evidence
             else None,
-            exaggeration=settings.exaggeration,
-            cfg_weight=settings.cfg_weight,
+            exaggeration=effective_settings.exaggeration,
+            cfg_weight=effective_settings.cfg_weight,
+            segment_text=effective_settings.segment_text,
+            segment_max_chars=effective_settings.segment_max_chars,
+            segment_cross_fade_ms=effective_settings.segment_cross_fade_ms,
+            segment_debug_dir=(
+                effective_settings.segment_debug_dir.as_posix()
+                if (
+                    effective_settings.segment_text
+                    and effective_settings.segment_debug_dir is not None
+                )
+                else None
+            ),
             hf_cache_host_root=hf_mount.canonical_root.as_posix(),
             gpu_product_name=gpu_identity.product_name,
             gpu_gfx_architecture=gpu_identity.gfx_architecture,
@@ -400,12 +435,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     finally:
-        LOGGER.info("Capturing docker logs for %s", settings.container_name)
-        capture_docker_logs(settings.container_name, output_path=paths["docker_logs"])
-        if not settings.retain_container:
+        LOGGER.info("Capturing docker logs for %s", effective_settings.container_name)
+        capture_docker_logs(effective_settings.container_name, output_path=paths["docker_logs"])
+        if not effective_settings.retain_container:
             with suppress(SystemExit):
                 run_checked(
-                    ["sudo", "-n", "docker", "rm", "-f", settings.container_name],
+                    ["sudo", "-n", "docker", "rm", "-f", effective_settings.container_name],
                     label="docker rm task86",
                 )
 

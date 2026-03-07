@@ -63,6 +63,10 @@ class BenchmarkSettings:
     probe_text: str
     exaggeration: float
     cfg_weight: float
+    segment_text: bool
+    segment_max_chars: int
+    segment_cross_fade_ms: int
+    segment_debug_dir: Path | None
     build_image: bool
     retain_container: bool
 
@@ -155,60 +159,74 @@ def discover_model_snapshot_path(cache_root: Path) -> Path | None:
 
 def start_sidecar(settings: BenchmarkSettings, *, hf_mount: MountResolution) -> None:
     """Launch the Task 86 sidecar container on the internal Hemma Docker network."""
-    docker_checked(
-        [
-            "run",
-            "-d",
-            "--name",
-            settings.container_name,
-            "--network",
-            settings.network,
-            "--network-alias",
-            settings.network_alias,
-            "--device",
-            "/dev/kfd",
-            "--device",
-            "/dev/dri",
-            "--ipc=host",
-            "--cap-add=SYS_PTRACE",
-            "--security-opt",
-            "seccomp=unconfined",
-            "-p",
-            f"127.0.0.1:{settings.host_port}:{settings.container_port}",
-            "-e",
-            "HF_HUB_DISABLE_XET=1",
-            "-e",
-            "HF_HOME=/cache/huggingface",
-            "-e",
-            "HUGGINGFACE_HUB_CACHE=/cache/huggingface",
-            "-e",
-            "TRANSFORMERS_CACHE=/cache/huggingface",
-            "-e",
-            "TORCH_HOME=/cache/huggingface/torch",
-            "-e",
-            "SIR_TTS_SIDECAR_BACKEND_ID=chatterbox_multilingual",
-            "-e",
-            "SIR_TTS_SIDECAR_BACKEND_VERSION=0.1.6",
-            "-e",
-            "SIR_TTS_SIDECAR_BACKEND_PROFILE=official_multilingual_0p5b",
-            "-e",
-            "SIR_TTS_SIDECAR_GPU_REQUIRED=1",
-            "-e",
-            "SIR_TTS_SIDECAR_MODEL_REPO_ID=ResembleAI/chatterbox",
-            "-e",
-            f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}",
-            "-e",
-            "SIR_TTS_SIDECAR_HF_CACHE_CONTAINER_ROOT=/cache/huggingface",
-            "-e",
-            f"SIR_TTS_SIDECAR_CHATTERBOX_EXAGGERATION={settings.exaggeration}",
-            "-e",
-            f"SIR_TTS_SIDECAR_CHATTERBOX_CFG_WEIGHT={settings.cfg_weight}",
-            "-v",
-            f"{hf_mount.effective_root.as_posix()}:/cache/huggingface",
-            settings.image,
-        ],
-        label="docker run task86 sidecar",
-    )
+    command = [
+        "run",
+        "-d",
+        "--name",
+        settings.container_name,
+        "--network",
+        settings.network,
+        "--network-alias",
+        settings.network_alias,
+        "--device",
+        "/dev/kfd",
+        "--device",
+        "/dev/dri",
+        "--ipc=host",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined",
+        "-p",
+        f"127.0.0.1:{settings.host_port}:{settings.container_port}",
+        "-e",
+        "HF_HUB_DISABLE_XET=1",
+        "-e",
+        "HF_HOME=/cache/huggingface",
+        "-e",
+        "HUGGINGFACE_HUB_CACHE=/cache/huggingface",
+        "-e",
+        "TRANSFORMERS_CACHE=/cache/huggingface",
+        "-e",
+        "TORCH_HOME=/cache/huggingface/torch",
+        "-e",
+        "SIR_TTS_SIDECAR_BACKEND_ID=chatterbox_multilingual",
+        "-e",
+        "SIR_TTS_SIDECAR_BACKEND_VERSION=0.1.6",
+        "-e",
+        "SIR_TTS_SIDECAR_BACKEND_PROFILE=official_multilingual_0p5b",
+        "-e",
+        "SIR_TTS_SIDECAR_GPU_REQUIRED=1",
+        "-e",
+        "SIR_TTS_SIDECAR_MODEL_REPO_ID=ResembleAI/chatterbox",
+        "-e",
+        f"SIR_TTS_SIDECAR_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}",
+        "-e",
+        "SIR_TTS_SIDECAR_HF_CACHE_CONTAINER_ROOT=/cache/huggingface",
+        "-e",
+        f"SIR_TTS_SIDECAR_CHATTERBOX_EXAGGERATION={settings.exaggeration}",
+        "-e",
+        f"SIR_TTS_SIDECAR_CHATTERBOX_CFG_WEIGHT={settings.cfg_weight}",
+        "-e",
+        f"SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_TEXT={int(settings.segment_text)}",
+        "-e",
+        (f"SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_MAX_CHARS={settings.segment_max_chars}"),
+        "-e",
+        (f"SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_CROSS_FADE_MS={settings.segment_cross_fade_ms}"),
+        "-v",
+        f"{hf_mount.effective_root.as_posix()}:/cache/huggingface",
+    ]
+    if settings.segment_debug_dir is not None:
+        settings.segment_debug_dir.mkdir(parents=True, exist_ok=True)
+        command.extend(
+            [
+                "-e",
+                "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_DEBUG_DIR=/segment-debug",
+                "-v",
+                f"{settings.segment_debug_dir.resolve().as_posix()}:/segment-debug",
+            ]
+        )
+    command.append(settings.image)
+    docker_checked(command, label="docker run task86 sidecar")
 
 
 def wait_for_sidecar(

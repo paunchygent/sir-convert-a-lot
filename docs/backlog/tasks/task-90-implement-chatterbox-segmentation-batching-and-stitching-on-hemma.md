@@ -1,9 +1,9 @@
 ---
-id: 'task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma'
-title: 'Implement Chatterbox segmentation batching and stitching on Hemma'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma
+title: Implement Chatterbox segmentation batching and stitching on Hemma
+type: task
+status: in_progress
+priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
 related:
@@ -19,6 +19,7 @@ labels:
   - stitching
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -38,6 +39,12 @@ The current Chatterbox path is single-pass. It does not currently provide:
 - chunk stitching or cross-fade
 
 That leaves the repo without a maximal-quality long-form synthesis path.
+
+Task 89 also clarified one explicit boundary decision:
+
+- eSpeak preprocessing stays available for future model experiments
+- eSpeak is no longer part of the active Chatterbox quality path
+- Chatterbox quality work now continues on the normal text path only
 
 ## PR Scope
 

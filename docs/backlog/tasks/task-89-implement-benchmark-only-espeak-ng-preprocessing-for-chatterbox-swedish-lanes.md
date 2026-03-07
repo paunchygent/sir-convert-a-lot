@@ -83,8 +83,22 @@ Observed outcome:
 
 - the helper path works
 - both Hemma lanes synthesize successfully
+- baseline normal-text input is qualitatively superior to the eSpeak lane for
+  Chatterbox in the current repo shape
 - the experiment does not remove the need for a separate segmentation,
   batching, and stitching slice
+
+## Decision
+
+For Chatterbox specifically, the repo will keep the eSpeak helper path only as
+future reusable benchmark infrastructure for other models.
+
+It is no longer part of the active Chatterbox quality path because:
+
+- the official Chatterbox multilingual surface in this repo remains text-based
+- Task 89 did not improve the Chatterbox result
+- the next active quality slice is normal-text segmentation, batching, and
+  stitching under `T90`
 
 ## Deliverables
 

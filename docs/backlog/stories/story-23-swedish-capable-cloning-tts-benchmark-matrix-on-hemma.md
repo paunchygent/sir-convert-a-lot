@@ -168,6 +168,10 @@ Deferred follow-up:
     - baseline and eSpeak-preprocessed lanes both succeeded,
     - the helper path is operationally proven,
     - but it does not replace the missing segmentation-and-stitching layer.
+  - The Chatterbox decision after `T89` is now explicit:
+    - keep the eSpeak helper path for future non-Chatterbox experiments,
+    - stop using it in the active Chatterbox quality lane,
+    - continue Chatterbox only on the documented normal-text path.
   - Current Chatterbox quality limitations are now explicit repo-truth items:
     - the current path is still single-pass,
     - no sentence splitting,

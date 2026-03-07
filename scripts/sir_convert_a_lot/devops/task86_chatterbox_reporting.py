@@ -67,6 +67,10 @@ class BenchmarkReport:
     english_reference_audio_sample_rate_hz: int | None
     exaggeration: float
     cfg_weight: float
+    segment_text: bool
+    segment_max_chars: int
+    segment_cross_fade_ms: int
+    segment_debug_dir: str | None
     hf_cache_host_root: str
     gpu_product_name: str
     gpu_gfx_architecture: str
@@ -104,6 +108,10 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- voices_count: `{report.voices_count}`",
         f"- exaggeration: `{report.exaggeration}`",
         f"- cfg_weight: `{report.cfg_weight}`",
+        f"- segment_text: `{report.segment_text}`",
+        f"- segment_max_chars: `{report.segment_max_chars}`",
+        f"- segment_cross_fade_ms: `{report.segment_cross_fade_ms}`",
+        f"- segment_debug_dir: `{report.segment_debug_dir}`",
         f"- gpu_product_name: `{report.gpu_product_name}`",
         f"- gpu_gfx_architecture: `{report.gpu_gfx_architecture}`",
         "",

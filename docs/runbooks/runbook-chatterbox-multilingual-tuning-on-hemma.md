@@ -17,6 +17,7 @@ tags:
 links:
   - docs/backlog/tasks/task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md
+  - docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -209,10 +210,10 @@ This is a quality-first tuning runbook, not a latency-minimization runbook.
 For future maximal-quality work, this runbook now has two phases:
 
 1. tune the current single-pass path
-2. implement segmentation, batching, and stitching as a separate follow-on
+1. implement segmentation, batching, and stitching as a separate follow-on
    slice
 
-## Task 89 Result
+## Task 89 Result and Current Decision
 
 Task 89 proved that the benchmark-only eSpeak preprocessing path is
 implementable and measurable on Hemma.
@@ -229,6 +230,14 @@ Evidence:
 Task 89 does **not** remove the need for segmentation, batching, and stitching.
 It adds one alternate text-input form for comparison, but it does not change
 the underlying single-pass generation shape.
+
+Current repo decision for Chatterbox:
+
+- do not use the eSpeak-preprocessed lane as part of the active Chatterbox
+  quality path
+- keep the helper path only for future comparisons against other models
+- move Chatterbox quality work to normal-text segmentation, batching, and
+  stitching under `T90`
 
 ## Canonical Baseline Lane
 

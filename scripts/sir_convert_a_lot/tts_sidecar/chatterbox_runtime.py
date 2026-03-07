@@ -13,18 +13,20 @@ Relationships:
 
 from __future__ import annotations
 
-import io
 import logging
 import os
 import re
 import subprocess
 import sys
-import wave
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Callable
 
+from scripts.sir_convert_a_lot.tts_sidecar.chatterbox_segmented_generation import (
+    SegmentGenerationSettings,
+    generate_audio_bytes,
+)
 from scripts.sir_convert_a_lot.tts_sidecar.contracts import (
     CacheCapability,
     CapabilityResponse,
@@ -76,6 +78,10 @@ class ChatterboxSidecarSettings:
     network_scope: NetworkScope
     exaggeration: float
     cfg_weight: float
+    segment_text: bool
+    segment_max_chars: int
+    segment_cross_fade_ms: int
+    segment_debug_dir: str | None
 
     @classmethod
     def from_env(cls) -> "ChatterboxSidecarSettings":
@@ -115,6 +121,23 @@ class ChatterboxSidecarSettings:
                 "SIR_TTS_SIDECAR_CHATTERBOX_CFG_WEIGHT",
                 default=0.5,
             ),
+            segment_text=_parse_bool_env(
+                "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_TEXT",
+                default=False,
+            ),
+            segment_max_chars=_parse_int_env(
+                "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_MAX_CHARS",
+                default=220,
+                minimum=40,
+            ),
+            segment_cross_fade_ms=_parse_int_env(
+                "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_CROSS_FADE_MS",
+                default=80,
+                minimum=0,
+            ),
+            segment_debug_dir=_parse_optional_path_env(
+                "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_DEBUG_DIR"
+            ),
         )
 
 
@@ -144,10 +167,17 @@ class ChatterboxSidecarBackend:
             )
 
         LOGGER.info(
-            "Loading Chatterbox Multilingual model: repo_id=%s exaggeration=%s cfg_weight=%s",
+            (
+                "Loading Chatterbox Multilingual model: repo_id=%s exaggeration=%s "
+                "cfg_weight=%s segment_text=%s segment_max_chars=%s "
+                "cross_fade_ms=%s"
+            ),
             self._settings.model_repo_id,
             self._settings.exaggeration,
             self._settings.cfg_weight,
+            self._settings.segment_text,
+            self._settings.segment_max_chars,
+            self._settings.segment_cross_fade_ms,
         )
         model = ChatterboxMultilingualTTS.from_pretrained(device="cuda")
         self._generate = model.generate
@@ -319,7 +349,7 @@ class ChatterboxSidecarBackend:
                     target_path=prepared_reference_path,
                 )
                 generate_kwargs["audio_prompt_path"] = prepared_reference_path.as_posix()
-                audio_bytes = _run_generate(self._generate, self._sample_rate_hz, generate_kwargs)
+                audio_bytes = self._generate_audio_bytes(generate_kwargs)
         else:
             raise SidecarRequestError(
                 code="unsupported_voice_mode",
@@ -327,7 +357,7 @@ class ChatterboxSidecarBackend:
                 status_code=422,
             )
         if request.voice_mode is VoiceMode.PRESET:
-            audio_bytes = _run_generate(self._generate, self._sample_rate_hz, generate_kwargs)
+            audio_bytes = self._generate_audio_bytes(generate_kwargs)
         return SynthesizeResult(
             audio_bytes=audio_bytes,
             content_type="audio/wav",
@@ -348,58 +378,21 @@ class ChatterboxSidecarBackend:
                 status_code=503,
             )
 
-
-def _run_generate(
-    generate_fn: Callable[..., torch.Tensor] | None,
-    sample_rate_hz: int,
-    generate_kwargs: dict[str, object],
-) -> bytes:
-    """Run the official generate function and serialize the returned waveform."""
-    if generate_fn is None:
-        raise RuntimeError("Chatterbox generate function was not initialized.")
-    try:
-        waveform = generate_fn(**generate_kwargs)
-    except ValueError as exc:
-        raise SidecarRequestError(
-            code="invalid_generation_request",
-            message=str(exc),
-            status_code=422,
-        ) from exc
-    except AssertionError as exc:
-        raise SidecarRequestError(
-            code="missing_conditionals",
-            message=str(exc),
-            status_code=422,
-        ) from exc
-    except Exception as exc:  # pragma: no cover - defensive runtime envelope
-        raise SidecarRequestError(
-            code="chatterbox_generate_failed",
-            message=f"Chatterbox generation failed: {exc}",
-            status_code=500,
-        ) from exc
-    return _wave_bytes_from_tensor(waveform, sample_rate_hz=sample_rate_hz)
-
-
-def _wave_bytes_from_tensor(waveform: torch.Tensor, *, sample_rate_hz: int) -> bytes:
-    """Serialize one mono float waveform tensor into deterministic WAV bytes."""
-    tensor = getattr(waveform, "detach", lambda: waveform)()
-    tensor = getattr(tensor, "cpu", lambda: tensor)()
-    tensor = getattr(tensor, "float", lambda: tensor)()
-    if getattr(tensor, "ndim", None) == 1:
-        tensor = tensor.unsqueeze(0)
-    if getattr(tensor, "ndim", None) != 2:
-        raise RuntimeError("Expected a 2D waveform tensor from Chatterbox generate().")
-    if tensor.shape[0] > 1:
-        tensor = tensor[:1, :]
-    clipped = tensor.clamp(-1.0, 1.0)
-    pcm16 = (clipped.squeeze(0).numpy() * 32767.0).round().astype("<i2")
-    with io.BytesIO() as buffer:
-        with wave.open(buffer, "wb") as wav_file:
-            wav_file.setnchannels(1)
-            wav_file.setsampwidth(2)
-            wav_file.setframerate(sample_rate_hz)
-            wav_file.writeframes(pcm16.tobytes())
-        return buffer.getvalue()
+    def _generate_audio_bytes(self, generate_kwargs: dict[str, object]) -> bytes:
+        """Run one Chatterbox synthesis request through the configured generation path."""
+        return generate_audio_bytes(
+            generate_fn=self._generate,
+            sample_rate_hz=self._sample_rate_hz,
+            generate_kwargs=generate_kwargs,
+            settings=SegmentGenerationSettings(
+                enabled=self._settings.segment_text,
+                max_chars=self._settings.segment_max_chars,
+                cross_fade_ms=self._settings.segment_cross_fade_ms,
+                debug_dir=Path(self._settings.segment_debug_dir)
+                if self._settings.segment_debug_dir is not None
+                else None,
+            ),
+        )
 
 
 def _normalize_language_code(language: str) -> str:
@@ -476,6 +469,29 @@ def _parse_float_env(name: str, *, default: float) -> float:
         return float(value.strip())
     except ValueError as exc:
         raise RuntimeError(f"{name} must be a float-like value, got `{value}`.") from exc
+
+
+def _parse_int_env(name: str, *, default: int, minimum: int) -> int:
+    """Return one integer environment variable with validation and fallback."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value.strip())
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an int-like value, got `{value}`.") from exc
+    if parsed < minimum:
+        raise RuntimeError(f"{name} must be >= {minimum}, got `{parsed}`.")
+    return parsed
+
+
+def _parse_optional_path_env(name: str) -> str | None:
+    """Return one optional path-valued environment variable with empty-as-none semantics."""
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized if normalized != "" else None
 
 
 def _package_version_or_none(metadata_module: object, distribution_name: str) -> str | None:

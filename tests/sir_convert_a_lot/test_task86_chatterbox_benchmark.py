@@ -45,6 +45,9 @@ def test_parse_args_prefers_canonical_hemma_cache_env(monkeypatch: pytest.Monkey
     assert settings.hf_cache_home_mount == Path("/home/paunchygent/.data/custom/cache/huggingface")
     assert settings.cfg_weight == 0.5
     assert settings.exaggeration == 0.5
+    assert settings.segment_text is False
+    assert settings.segment_max_chars == 220
+    assert settings.segment_cross_fade_ms == 80
 
 
 def test_parse_args_accepts_probe_text_file(tmp_path: Path) -> None:
@@ -52,10 +55,21 @@ def test_parse_args_accepts_probe_text_file(tmp_path: Path) -> None:
     probe_text_file.write_text("fonemiserad svensk text", encoding="utf-8")
 
     settings = run_task86_hemma_chatterbox_benchmark._parse_args(
-        ["--probe-text-file", probe_text_file.as_posix()]
+        [
+            "--probe-text-file",
+            probe_text_file.as_posix(),
+            "--segment-text",
+            "--segment-max-chars",
+            "180",
+            "--segment-cross-fade-ms",
+            "90",
+        ]
     )
 
     assert settings.probe_text == "fonemiserad svensk text"
+    assert settings.segment_text is True
+    assert settings.segment_max_chars == 180
+    assert settings.segment_cross_fade_ms == 90
 
 
 def test_discover_model_snapshot_path_handles_hf_root_and_hub_root(tmp_path: Path) -> None:
@@ -105,6 +119,10 @@ def test_start_sidecar_uses_buildkit_ready_mounts_and_envs(
         probe_text="Hej världen",
         exaggeration=0.7,
         cfg_weight=0.3,
+        segment_text=True,
+        segment_max_chars=180,
+        segment_cross_fade_ms=120,
+        segment_debug_dir=tmp_path / "segment-debug",
         build_image=False,
         retain_container=False,
     )
@@ -119,7 +137,13 @@ def test_start_sidecar_uses_buildkit_ready_mounts_and_envs(
     command = recorded_commands[0]
     assert "SIR_TTS_SIDECAR_CHATTERBOX_EXAGGERATION=0.7" in command
     assert "SIR_TTS_SIDECAR_CHATTERBOX_CFG_WEIGHT=0.3" in command
+    assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_TEXT=1" in command
+    assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_MAX_CHARS=180" in command
+    assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_CROSS_FADE_MS=120" in command
+    assert "SIR_TTS_SIDECAR_CHATTERBOX_SEGMENT_DEBUG_DIR=/segment-debug" in command
     assert f"{mount.effective_root.as_posix()}:/cache/huggingface" in command
+    assert settings.segment_debug_dir is not None
+    assert f"{settings.segment_debug_dir.resolve().as_posix()}:/segment-debug" in command
     assert "TORCH_HOME=/cache/huggingface/torch" in command
 
 
@@ -177,6 +201,10 @@ def test_build_report_markdown_includes_restart_and_probe_sections() -> None:
         english_reference_audio_sample_rate_hz=None,
         exaggeration=0.5,
         cfg_weight=0.5,
+        segment_text=True,
+        segment_max_chars=220,
+        segment_cross_fade_ms=80,
+        segment_debug_dir="/tmp/segment-debug",
         hf_cache_host_root="/srv/cache/hf",
         gpu_product_name="AMD Radeon AI PRO R9700",
         gpu_gfx_architecture="gfx1201",
@@ -190,6 +218,7 @@ def test_build_report_markdown_includes_restart_and_probe_sections() -> None:
     assert "warm_restart_seconds" in markdown
     assert "Smoke Probe" in markdown
     assert "Swedish Clone Probe" in markdown
+    assert "segment_text" in markdown
 
 
 def test_chatterbox_dockerfile_prefetches_spacy_pkuseg_model() -> None:

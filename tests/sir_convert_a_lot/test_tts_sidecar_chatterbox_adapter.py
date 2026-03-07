@@ -22,7 +22,10 @@ from scripts.sir_convert_a_lot.tts_sidecar.chatterbox_runtime import (
     ChatterboxSidecarSettings,
     _normalize_language_code,
     _normalize_text,
-    _run_generate,
+)
+from scripts.sir_convert_a_lot.tts_sidecar.chatterbox_segmented_generation import (
+    SegmentGenerationSettings,
+    generate_audio_bytes,
 )
 from scripts.sir_convert_a_lot.tts_sidecar.contracts import (
     LanguageSupportLevel,
@@ -47,6 +50,10 @@ def _settings() -> ChatterboxSidecarSettings:
         network_scope=NetworkScope.INTERNAL_ONLY,
         exaggeration=0.5,
         cfg_weight=0.5,
+        segment_text=False,
+        segment_max_chars=220,
+        segment_cross_fade_ms=80,
+        segment_debug_dir=None,
     )
 
 
@@ -181,7 +188,17 @@ def test_run_generate_wraps_value_error_into_sidecar_error() -> None:
         raise ValueError("Unsupported language_id")
 
     with pytest.raises(Exception) as exc_info:
-        _run_generate(_raise_value_error, 24000, {"text": "Hej", "language_id": "zz"})
+        generate_audio_bytes(
+            generate_fn=_raise_value_error,
+            sample_rate_hz=24000,
+            generate_kwargs={"text": "Hej", "language_id": "zz"},
+            settings=SegmentGenerationSettings(
+                enabled=False,
+                max_chars=220,
+                cross_fade_ms=80,
+                debug_dir=None,
+            ),
+        )
 
     assert "Unsupported language_id" in str(exc_info.value)
 
