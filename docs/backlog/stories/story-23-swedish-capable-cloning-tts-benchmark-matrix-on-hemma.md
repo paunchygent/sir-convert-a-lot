@@ -215,6 +215,14 @@ Deferred follow-up:
       - clause-aware planning units,
       - a `4-6` second target band,
       - and a hard `9` second planning ceiling per chunk.
+  - `T93` now has live Hemma evidence:
+    - the same delegate text now emits `7` chunks instead of `2`,
+    - the first chunk dropped from `19.92` seconds to `5.36` seconds,
+    - all measured chunk durations now fall between `3.6` and `5.36`
+      seconds,
+    - the measured average chunk duration is approximately `4.5` seconds,
+    - the planner now keeps each numbered list item as its own preferred chunk
+      boundary unless the intro is short enough to merge with item one.
 
 ## Acceptance Criteria
 

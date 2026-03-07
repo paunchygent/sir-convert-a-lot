@@ -2,7 +2,7 @@
 id: task-93-implement-clause-aware-duration-bounded-chatterbox-chunk-planning-on-hemma
 title: Implement clause-aware duration-bounded Chatterbox chunk planning on Hemma
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-07'
 last_updated: '2026-03-07'
@@ -61,8 +61,8 @@ more stable chunks for Swedish long-form synthesis on Hemma.
 - [x] Clause-aware duration-bounded segment planner in the Chatterbox sidecar.
 - [x] Deterministic tests for list-aware and hard-cap chunk planning.
 - [x] Updated runbook guidance describing the new planner rules.
-- [ ] Hemma-ready behavior that can be benchmarked against the current Task 92
-  text shape without ad hoc scripting.
+- [x] Hemma-ready behavior benchmarked against the current Task 92 text shape
+  without ad hoc scripting.
 
 ## Implementation Notes
 
@@ -91,14 +91,14 @@ The local test slice now covers:
 
 ## Acceptance Criteria
 
-- [ ] The planner treats list-item boundaries as preferred split points instead
+- [x] The planner treats list-item boundaries as preferred split points instead
   of merging many items into one oversized segment.
-- [ ] The planner targets smaller chunks in the `4-6` second band on average
+- [x] The planner targets smaller chunks in the `4-6` second band on average
   for long-form Swedish instructional text.
-- [ ] The planner enforces a hard planning ceiling of `9` seconds per chunk by
+- [x] The planner enforces a hard planning ceiling of `9` seconds per chunk by
   splitting oversized units further on clause boundaries or fallback word
   boundaries.
-- [ ] The planner remains deterministic and produces reviewable debug evidence.
+- [x] The planner remains deterministic and produces reviewable debug evidence.
 - [x] Local tests cover list-aware planning, oversized unit fallback, and
   duration-bound packing behavior.
 
@@ -114,10 +114,42 @@ Local validation completed:
 - `pdm run validate-docs`
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
-Live Hemma benchmark evidence is still pending for this task.
+Live Hemma evidence now exists under:
+
+- `build/verification/task-93-chatterbox-delegates-text/`
+
+Primary artifacts:
+
+- clone output:
+  `build/verification/task-93-chatterbox-delegates-text/artifacts/scenario-a-sv-ref-sv-out.wav`
+- summary:
+  `build/verification/task-93-chatterbox-delegates-text/report.json`
+- segment plan:
+  `build/verification/task-93-chatterbox-delegates-text/segment-debug/segment_plan.json`
+- chunk analysis:
+  `build/verification/task-93-chatterbox-delegates-text/segment-debug/chunk_analysis.json`
+
+Measured result on the delegate-text lane:
+
+- old planner baseline for the same text had a `19.92` second first chunk
+- new planner emitted `7` chunks
+- predicted chunk durations ranged from `1.613` to `4.636` seconds
+- actual raw chunk durations ranged from `3.6` to `5.36` seconds
+- average raw chunk duration was approximately `4.5` seconds
+- no chunk exceeded the `9` second planning ceiling
+
+The new plan kept the list structure explicit:
+
+- intro plus item one
+- item two
+- item three
+- item four
+- item five
+- item six
+- closing narration
 
 ## Checklist
 
 - [x] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Validation complete
+- [x] Docs updated

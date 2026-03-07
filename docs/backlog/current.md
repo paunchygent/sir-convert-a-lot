@@ -169,14 +169,14 @@ Primary implementation stories (active sequence):
     opened `T92` to make Chatterbox the explicit Hemma production-candidate
     TTS sidecar while marking OpenVoice, F5, and eSpeak helper images as
     experiment-only.
-  - Opened `T93` as the next active Chatterbox quality slice after the latest
-    delegate-text evidence exposed a planner problem rather than a stitcher
-    problem:
-    - the current sentence-packing planner emitted a `19.92` second first chunk for the delegate text,
-    - that oversized chunk produced stressed pacing and end-of-chunk artifacts,
-    - `T93` now replaces that planner with a list-item-aware,
-      clause-aware, duration-bounded path targeting `4-6` second chunks on
-      average with a hard planning ceiling of `9` seconds.
+  - Completed `T93` on live Hemma:
+    - the old sentence-packing planner had emitted a `19.92` second first
+      chunk for the delegate text,
+    - the new clause-aware planner emitted `7` chunks instead of `2`,
+    - measured chunk durations now fall between `3.6` and `5.36` seconds with
+      an average of approximately `4.5` seconds,
+    - numbered list items are now treated as preferred chunk boundaries rather
+      than being merged into one oversized opening segment.
 
 - 2026-03-05:
 
