@@ -86,23 +86,49 @@ def _migrate_tree(source: Path, destination: Path) -> None:
     if not source.exists() or source.is_symlink():
         return
     ensure_directory(destination.parent)
-    if destination.exists():
-        if not destination.is_dir():
-            raise SystemExit(f"Refusing to merge into non-directory destination: {destination}")
-        for child in sorted(source.iterdir()):
-            target_child = destination / child.name
-            if target_child.exists():
-                if child.is_dir() and target_child.is_dir():
-                    _migrate_tree(child, target_child)
-                    continue
-                raise SystemExit(
-                    "Refusing to overwrite existing destination path during "
-                    f"migration: {target_child}"
-                )
-            shutil.move(child.as_posix(), target_child.as_posix())
-        source.rmdir()
-        return
-    shutil.move(source.as_posix(), destination.as_posix())
+    try:
+        if destination.exists():
+            if not destination.is_dir():
+                raise SystemExit(f"Refusing to merge into non-directory destination: {destination}")
+            for child in sorted(source.iterdir()):
+                target_child = destination / child.name
+                if target_child.exists():
+                    if child.is_dir() and target_child.is_dir():
+                        _migrate_tree(child, target_child)
+                        continue
+                    raise SystemExit(
+                        "Refusing to overwrite existing destination path during "
+                        f"migration: {target_child}"
+                    )
+                shutil.move(child.as_posix(), target_child.as_posix())
+            source.rmdir()
+            return
+        shutil.move(source.as_posix(), destination.as_posix())
+    except (OSError, shutil.Error):
+        _sudo_rsync_tree(source=source, destination=destination)
+
+
+def _sudo_rsync_tree(*, source: Path, destination: Path) -> None:
+    """Move one tree with sudo-backed rsync when user-space moves cannot succeed."""
+    run_checked(
+        ["sudo", "-n", "mkdir", "-p", destination.as_posix()],
+        label="sudo mkdir task112",
+    )
+    run_checked(
+        [
+            "sudo",
+            "-n",
+            "rsync",
+            "-aHAX",
+            f"{source.as_posix()}/",
+            f"{destination.as_posix()}/",
+        ],
+        label="sudo rsync task112",
+    )
+    run_checked(
+        ["sudo", "-n", "rm", "-rf", source.as_posix()],
+        label="sudo rm source task112",
+    )
 
 
 def _replace_with_symlink(source_path: Path, target_path: Path) -> None:
