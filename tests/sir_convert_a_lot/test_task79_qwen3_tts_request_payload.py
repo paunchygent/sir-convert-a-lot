@@ -110,3 +110,23 @@ def test_prepare_request_inputs_copies_files_and_measures_reference_duration(
     assert prepared.reference_audio_path is not None
     assert prepared.reference_audio_sha256 is not None
     assert prepared.reference_audio_duration_seconds == 0.5
+
+
+def test_prepare_request_inputs_preserves_reference_when_source_is_inside_inputs_dir(
+    tmp_path: Path,
+) -> None:
+    inputs_dir = tmp_path / "inputs"
+    inputs_dir.mkdir(parents=True, exist_ok=True)
+    reference_path = inputs_dir / "reference_audio.wav"
+    _write_wav(reference_path, duration_seconds=0.25)
+
+    prepared = prepare_request_inputs(
+        inputs_dir=inputs_dir,
+        probe_text="probe",
+        instructions=None,
+        reference_audio=reference_path,
+        reference_transcript="transcript",
+    )
+
+    assert Path(prepared.reference_audio_path or "").exists()
+    assert prepared.reference_audio_duration_seconds == 0.25

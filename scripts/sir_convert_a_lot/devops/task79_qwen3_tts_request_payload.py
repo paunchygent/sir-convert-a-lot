@@ -60,6 +60,12 @@ def prepare_request_inputs(
     reference_transcript: str | None,
 ) -> PreparedRequestInputs:
     """Copy benchmark inputs into the deterministic evidence directory."""
+    source_reference_audio_bytes: bytes | None = None
+    source_reference_audio_suffix = ""
+    if reference_audio is not None:
+        source_reference_audio_bytes = reference_audio.read_bytes()
+        source_reference_audio_suffix = reference_audio.suffix.lower()
+
     inputs_dir.mkdir(parents=True, exist_ok=True)
     for existing in sorted(inputs_dir.iterdir()):
         if existing.is_dir():
@@ -78,9 +84,9 @@ def prepare_request_inputs(
     reference_audio_path: Path | None = None
     reference_audio_sha256: str | None = None
     reference_audio_duration_seconds: float | None = None
-    if reference_audio is not None:
-        reference_audio_path = inputs_dir / f"reference_audio{reference_audio.suffix.lower()}"
-        shutil.copy2(reference_audio, reference_audio_path)
+    if source_reference_audio_bytes is not None:
+        reference_audio_path = inputs_dir / f"reference_audio{source_reference_audio_suffix}"
+        reference_audio_path.write_bytes(source_reference_audio_bytes)
         reference_audio_bytes = reference_audio_path.read_bytes()
         reference_audio_sha256 = hashlib.sha256(reference_audio_bytes).hexdigest()
         reference_audio_duration_seconds = _read_wav_duration_seconds(reference_audio_path)
