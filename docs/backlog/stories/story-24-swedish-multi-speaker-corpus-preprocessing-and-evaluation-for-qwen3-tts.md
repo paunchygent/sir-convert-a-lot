@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
+  - docs/reference/ref-qwen3-tts-swedish-preprocessing-and-manifest-spec.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -65,7 +66,8 @@ general-language-support result.
   external evidence pass before the pilot subset is locked.
 - [x] Task 102 defines the multi-speaker Swedish corpus policy and the first
   bounded training/dev/eval split.
-- [ ] Task 103 defines the preprocessing/manifest pipeline needed for Swedish
+- [ ] Task 103 defines and implements the preprocessing/manifest pipeline
+  needed for Swedish
   Qwen full-finetune runs.
 - [ ] Task 104 publishes the Colab H100 scaling lane and compares it against
   the Hemma pilot rather than treating it as an isolated notebook exercise.

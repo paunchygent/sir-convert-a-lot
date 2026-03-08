@@ -2,7 +2,7 @@
 id: task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline
 title: Build the Qwen3-TTS Swedish preprocessing and manifest pipeline
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
@@ -11,6 +11,8 @@ related:
   - docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md
+  - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
+  - docs/reference/ref-qwen3-tts-swedish-preprocessing-and-manifest-spec.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -57,6 +59,35 @@ into Qwen-ready training inputs without relying on ad hoc local scripts.
 - [ ] One explicit dependency matrix for preprocessing and eval surfaces.
 - [ ] Runbook guidance for preprocessing reruns and artifact locations.
 
+## Active Contract
+
+Canonical specification:
+
+- `docs/reference/ref-qwen3-tts-swedish-preprocessing-and-manifest-spec.md`
+
+This task now has the following fixed contract:
+
+- deterministic artifact root:
+  - `build/reference/qwen3-tts-swedish-corpus/`
+- manifest layers:
+  - inventory JSONL
+  - curated JSONL
+  - Qwen raw JSONL
+  - Qwen prepared JSONL with `audio_codes`
+- pinned ASR mismatch backend:
+  - `KBLab/kb-whisper-large`
+  - `revision="strict"`
+- manifest families:
+  - `swedish_smoke_train`
+  - `swedish_pilot_train`
+  - `swedish_scaleup_train`
+  - `swedish_checkpoint_dev`
+  - `swedish_final_test`
+  - `swedish_waxholm_control`
+- training-side audio contract:
+  - public source assets may arrive at `16 kHz`
+  - all emitted training-side audio and `ref_audio` artifacts must be `24 kHz`
+
 ## Acceptance Criteria
 
 - [ ] The pipeline is compatible with the official Qwen tokenizer/code
@@ -70,6 +101,12 @@ into Qwen-ready training inputs without relying on ad hoc local scripts.
   Task 100 training-image dependency set.
 - [ ] The pipeline can be reused by both the Hemma pilot and the Colab H100
   scaling lane.
+- [ ] The pipeline pins `KBLab/kb-whisper-large` with `revision="strict"` for
+  transcript-mismatch scoring.
+- [ ] The pipeline materializes `swedish_checkpoint_dev` separately from
+  `swedish_final_test`.
+- [ ] The pipeline enforces 16 kHz source acceptance and 24 kHz emitted
+  training-side assets without ambiguity.
 
 ## Checklist
 

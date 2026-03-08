@@ -28,6 +28,7 @@ links:
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
+  - docs/reference/ref-qwen3-tts-swedish-preprocessing-and-manifest-spec.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base
@@ -274,6 +275,17 @@ Policy:
 - the Task 103 surface must document its own preprocessing/eval stack
 - do not rely on mutable host installs on Hemma as the long-term source of
   truth
+
+Canonical Task 103 preprocessing contract:
+
+- `docs/reference/ref-qwen3-tts-swedish-preprocessing-and-manifest-spec.md`
+- deterministic artifact root:
+  - `build/reference/qwen3-tts-swedish-corpus/`
+- pinned ASR mismatch backend:
+  - `KBLab/kb-whisper-large`
+  - `revision="strict"`
+- public source assets may begin at `16 kHz`, but all emitted training-side
+  audio artifacts and `ref_audio` clips must be `24 kHz`
 
 ## Execution Order
 
