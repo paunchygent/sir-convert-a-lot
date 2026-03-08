@@ -74,6 +74,12 @@ DEFAULT_SWEDISH_TEXT = (
     "Hej. Det här är ett benchmarkprov för Sir Convert a Lot på Hemma. "
     "Vi testar om F5-TTS kan klona en lärarröst och läsa svensk text på ett tydligt sätt."
 )
+DEFAULT_F5_NFE_STEP = 64
+DEFAULT_F5_CFG_STRENGTH = 2.0
+DEFAULT_F5_SWAY_SAMPLING_COEF = -1.0
+DEFAULT_F5_SPEED = 1.0
+DEFAULT_F5_CROSS_FADE_DURATION = 0.15
+DEFAULT_F5_TARGET_RMS = 0.1
 
 
 @dataclass(frozen=True)
@@ -100,11 +106,17 @@ class BenchmarkSettings:
     reference_transcript_path: Path | None
     whisper_model: str
     probe_text: str
+    probe_text_path: Path | None
     remove_silence: bool
     nfe_step: int
     cfg_strength: float
     sway_sampling_coef: float
+    speed: float
+    fix_duration: float | None
+    cross_fade_duration: float
+    target_rms: float
     vocoder_name: str
+    load_vocoder_from_local: bool
     build_image: bool
     retain_container: bool
 
@@ -140,11 +152,18 @@ class BenchmarkReport:
     reference_audio_sample_rate_hz: int
     reference_transcript: str
     reference_transcript_path: str
+    probe_text: str
+    probe_text_path: str | None
     remove_silence: bool
     nfe_step: int
     cfg_strength: float
     sway_sampling_coef: float
+    speed: float
+    fix_duration: float | None
+    cross_fade_duration: float
+    target_rms: float
     vocoder_name: str
+    load_vocoder_from_local: bool
     hf_cache_host_root: str
     model_cache_host_root: str
     model_files: list[str]
@@ -164,6 +183,25 @@ def _env_path(name: str, *, default: Path) -> Path:
     if value is None or value.strip() == "":
         return default
     return Path(value.strip())
+
+
+def _resolve_text_argument(
+    *,
+    text: str | None,
+    text_file: Path | None,
+    label: str,
+) -> tuple[str, Path | None]:
+    """Return text from one direct value or one file-backed value."""
+    if text_file is None:
+        if text is None:
+            raise SystemExit(f"Task 85 {label} text is missing.")
+        return text, None
+    if not text_file.exists():
+        raise SystemExit(f"Task 85 {label} text file is missing: {text_file}")
+    file_text = text_file.read_text(encoding="utf-8").strip()
+    if file_text == "":
+        raise SystemExit(f"Task 85 {label} text file is empty: {text_file}")
+    return file_text, text_file
 
 
 def _parse_args(argv: list[str]) -> BenchmarkSettings:
@@ -213,11 +251,33 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--reference-transcript-file", type=Path, default=None)
     parser.add_argument("--whisper-model", default=DEFAULT_WHISPER_MODEL)
     parser.add_argument("--probe-text", default=DEFAULT_SWEDISH_TEXT)
-    parser.add_argument("--remove-silence", action="store_true")
-    parser.add_argument("--nfe-step", type=int, default=32)
-    parser.add_argument("--cfg-strength", type=float, default=2.0)
-    parser.add_argument("--sway-sampling-coef", type=float, default=-1.0)
+    parser.add_argument("--probe-text-file", type=Path, default=None)
+    parser.add_argument(
+        "--remove-silence",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--nfe-step", type=int, default=DEFAULT_F5_NFE_STEP)
+    parser.add_argument("--cfg-strength", type=float, default=DEFAULT_F5_CFG_STRENGTH)
+    parser.add_argument(
+        "--sway-sampling-coef",
+        type=float,
+        default=DEFAULT_F5_SWAY_SAMPLING_COEF,
+    )
+    parser.add_argument("--speed", type=float, default=DEFAULT_F5_SPEED)
+    parser.add_argument("--fix-duration", type=float, default=None)
+    parser.add_argument(
+        "--cross-fade-duration",
+        type=float,
+        default=DEFAULT_F5_CROSS_FADE_DURATION,
+    )
+    parser.add_argument("--target-rms", type=float, default=DEFAULT_F5_TARGET_RMS)
     parser.add_argument("--vocoder-name", default="vocos")
+    parser.add_argument(
+        "--load-vocoder-from-local",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
     parser.add_argument("--skip-build", action="store_true", help="Reuse an already-built image.")
     parser.add_argument(
         "--retain-container",
@@ -225,6 +285,11 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         help="Keep the sidecar running after evidence capture.",
     )
     args = parser.parse_args(argv)
+    probe_text, probe_text_path = _resolve_text_argument(
+        text=str(args.probe_text) if args.probe_text is not None else None,
+        text_file=Path(args.probe_text_file) if args.probe_text_file is not None else None,
+        label="probe",
+    )
     return BenchmarkSettings(
         output_root=Path(args.output_root),
         dockerfile_path=Path(args.dockerfile),
@@ -249,12 +314,18 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         if args.reference_transcript_file is not None
         else None,
         whisper_model=str(args.whisper_model),
-        probe_text=str(args.probe_text),
+        probe_text=probe_text,
+        probe_text_path=probe_text_path,
         remove_silence=bool(args.remove_silence),
         nfe_step=int(args.nfe_step),
         cfg_strength=float(args.cfg_strength),
         sway_sampling_coef=float(args.sway_sampling_coef),
+        speed=float(args.speed),
+        fix_duration=float(args.fix_duration) if args.fix_duration is not None else None,
+        cross_fade_duration=float(args.cross_fade_duration),
+        target_rms=float(args.target_rms),
         vocoder_name=str(args.vocoder_name),
+        load_vocoder_from_local=bool(args.load_vocoder_from_local),
         build_image=not bool(args.skip_build),
         retain_container=bool(args.retain_container),
     )
@@ -493,7 +564,25 @@ def _start_sidecar(
         "-e",
         f"SIR_TTS_SIDECAR_F5_SWAY_SAMPLING_COEF={settings.sway_sampling_coef}",
         "-e",
+        f"SIR_TTS_SIDECAR_F5_SPEED={settings.speed}",
+        "-e",
+        (
+            "SIR_TTS_SIDECAR_F5_FIX_DURATION="
+            if settings.fix_duration is None
+            else f"SIR_TTS_SIDECAR_F5_FIX_DURATION={settings.fix_duration}"
+        ),
+        "-e",
+        f"SIR_TTS_SIDECAR_F5_CROSS_FADE_DURATION={settings.cross_fade_duration}",
+        "-e",
+        f"SIR_TTS_SIDECAR_F5_TARGET_RMS={settings.target_rms}",
+        "-e",
         f"SIR_TTS_SIDECAR_F5_VOCODER_NAME={settings.vocoder_name}",
+        "-e",
+        (
+            "SIR_TTS_SIDECAR_F5_LOAD_VOCODER_FROM_LOCAL=1"
+            if settings.load_vocoder_from_local
+            else "SIR_TTS_SIDECAR_F5_LOAD_VOCODER_FROM_LOCAL=0"
+        ),
         "-v",
         f"{hf_mount.effective_root.as_posix()}:/cache/huggingface",
         "-v",
@@ -659,11 +748,18 @@ def _build_report_markdown(report: BenchmarkReport) -> str:
         f"- reference_audio_duration_seconds: `{report.reference_audio_duration_seconds}`",
         f"- reference_audio_sample_rate_hz: `{report.reference_audio_sample_rate_hz}`",
         f"- reference_transcript: `{report.reference_transcript}`",
+        f"- probe_text: `{report.probe_text}`",
+        f"- probe_text_path: `{report.probe_text_path}`",
         f"- remove_silence: `{report.remove_silence}`",
         f"- nfe_step: `{report.nfe_step}`",
         f"- cfg_strength: `{report.cfg_strength}`",
         f"- sway_sampling_coef: `{report.sway_sampling_coef}`",
+        f"- speed: `{report.speed}`",
+        f"- fix_duration: `{report.fix_duration}`",
+        f"- cross_fade_duration: `{report.cross_fade_duration}`",
+        f"- target_rms: `{report.target_rms}`",
         f"- vocoder_name: `{report.vocoder_name}`",
+        f"- load_vocoder_from_local: `{report.load_vocoder_from_local}`",
         f"- hf_cache_host_root: `{report.hf_cache_host_root}`",
         f"- model_cache_host_root: `{report.model_cache_host_root}`",
         f"- gpu_product_name: `{report.gpu_product_name}`",
@@ -694,7 +790,9 @@ def main(argv: list[str] | None = None) -> int:
     LOGGER.info(
         (
             "Task 85 starting: output_root=%s skip_build=%s remove_silence=%s "
-            "nfe_step=%s cfg_strength=%s sway_sampling_coef=%s vocoder=%s"
+            "nfe_step=%s cfg_strength=%s sway_sampling_coef=%s speed=%s "
+            "fix_duration=%s cross_fade_duration=%s target_rms=%s "
+            "load_vocoder_from_local=%s vocoder=%s"
         ),
         settings.output_root,
         not settings.build_image,
@@ -702,6 +800,11 @@ def main(argv: list[str] | None = None) -> int:
         settings.nfe_step,
         settings.cfg_strength,
         settings.sway_sampling_coef,
+        settings.speed,
+        settings.fix_duration,
+        settings.cross_fade_duration,
+        settings.target_rms,
+        settings.load_vocoder_from_local,
         settings.vocoder_name,
     )
     enforce_generated_output_path(settings.output_root, label="output_root")
@@ -816,11 +919,20 @@ def main(argv: list[str] | None = None) -> int:
             reference_audio_sample_rate_hz=reference_evidence.sample_rate_hz,
             reference_transcript=reference_transcript,
             reference_transcript_path=transcript_path.as_posix(),
+            probe_text=settings.probe_text,
+            probe_text_path=settings.probe_text_path.as_posix()
+            if settings.probe_text_path is not None
+            else None,
             remove_silence=settings.remove_silence,
             nfe_step=settings.nfe_step,
             cfg_strength=settings.cfg_strength,
             sway_sampling_coef=settings.sway_sampling_coef,
+            speed=settings.speed,
+            fix_duration=settings.fix_duration,
+            cross_fade_duration=settings.cross_fade_duration,
+            target_rms=settings.target_rms,
             vocoder_name=settings.vocoder_name,
+            load_vocoder_from_local=settings.load_vocoder_from_local,
             hf_cache_host_root=hf_mount.canonical_root.as_posix(),
             model_cache_host_root=model_mount.canonical_root.as_posix(),
             model_files=_collect_model_files(model_mount),

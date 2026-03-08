@@ -77,7 +77,12 @@ class F5TtsSidecarSettings:
     nfe_step: int
     cfg_strength: float
     sway_sampling_coef: float
+    speed: float
+    fix_duration: float | None
+    cross_fade_duration: float
+    target_rms: float
     vocoder_name: str
+    load_vocoder_from_local: bool
 
     @classmethod
     def from_env(cls) -> "F5TtsSidecarSettings":
@@ -129,8 +134,8 @@ class F5TtsSidecarSettings:
             ),
             supported_language_codes=supported_codes,
             network_scope=NetworkScope.INTERNAL_ONLY,
-            remove_silence=_parse_bool_env("SIR_TTS_SIDECAR_F5_REMOVE_SILENCE", default=False),
-            nfe_step=_parse_int_env("SIR_TTS_SIDECAR_F5_NFE_STEP", default=32, minimum=1),
+            remove_silence=_parse_bool_env("SIR_TTS_SIDECAR_F5_REMOVE_SILENCE", default=True),
+            nfe_step=_parse_int_env("SIR_TTS_SIDECAR_F5_NFE_STEP", default=64, minimum=1),
             cfg_strength=_parse_float_env(
                 "SIR_TTS_SIDECAR_F5_CFG_STRENGTH",
                 default=2.0,
@@ -139,7 +144,18 @@ class F5TtsSidecarSettings:
                 "SIR_TTS_SIDECAR_F5_SWAY_SAMPLING_COEF",
                 default=-1.0,
             ),
+            speed=_parse_float_env("SIR_TTS_SIDECAR_F5_SPEED", default=1.0),
+            fix_duration=_optional_float_env("SIR_TTS_SIDECAR_F5_FIX_DURATION"),
+            cross_fade_duration=_parse_float_env(
+                "SIR_TTS_SIDECAR_F5_CROSS_FADE_DURATION",
+                default=0.15,
+            ),
+            target_rms=_parse_float_env("SIR_TTS_SIDECAR_F5_TARGET_RMS", default=0.1),
             vocoder_name=os.environ.get("SIR_TTS_SIDECAR_F5_VOCODER_NAME", "vocos").strip(),
+            load_vocoder_from_local=_parse_bool_env(
+                "SIR_TTS_SIDECAR_F5_LOAD_VOCODER_FROM_LOCAL",
+                default=False,
+            ),
         )
 
 
@@ -311,11 +327,13 @@ class F5TtsSidecarBackend:
             output_dir.mkdir(parents=True, exist_ok=True)
             output_file = "synthesized.wav"
             config_path = temp_dir / "f5_task85.toml"
+            gen_file_path = temp_dir / "gen_text.txt"
             source_reference_path.write_bytes(reference_audio.data)
             _prepare_reference_audio(
                 source_path=source_reference_path,
                 target_path=prepared_reference_path,
             )
+            gen_file_path.write_text(normalized_text + "\n", encoding="utf-8")
             config_path.write_text(
                 _render_infer_toml(
                     model_name=self._settings.model_name,
@@ -323,7 +341,8 @@ class F5TtsSidecarBackend:
                     vocab_file=model_files.vocab_path,
                     ref_audio=prepared_reference_path,
                     ref_text=request.reference_transcript.strip(),
-                    gen_text=normalized_text,
+                    gen_text=None,
+                    gen_file=gen_file_path,
                     output_dir=output_dir,
                     output_file=output_file,
                     model_cfg_path=self._settings.model_cfg_path,
@@ -331,7 +350,12 @@ class F5TtsSidecarBackend:
                     nfe_step=self._settings.nfe_step,
                     cfg_strength=self._settings.cfg_strength,
                     sway_sampling_coef=self._settings.sway_sampling_coef,
+                    speed=self._settings.speed,
+                    fix_duration=self._settings.fix_duration,
+                    cross_fade_duration=self._settings.cross_fade_duration,
+                    target_rms=self._settings.target_rms,
                     vocoder_name=self._settings.vocoder_name,
+                    load_vocoder_from_local=self._settings.load_vocoder_from_local,
                 ),
                 encoding="utf-8",
             )
@@ -487,7 +511,8 @@ def _render_infer_toml(
     vocab_file: Path,
     ref_audio: Path,
     ref_text: str,
-    gen_text: str,
+    gen_text: str | None,
+    gen_file: Path | None,
     output_dir: Path,
     output_file: str,
     model_cfg_path: str | None,
@@ -495,7 +520,12 @@ def _render_infer_toml(
     nfe_step: int,
     cfg_strength: float,
     sway_sampling_coef: float,
+    speed: float,
+    fix_duration: float | None,
+    cross_fade_duration: float,
+    target_rms: float,
     vocoder_name: str,
+    load_vocoder_from_local: bool,
 ) -> str:
     """Render one small TOML config file for `f5-tts_infer-cli`."""
     lines = [
@@ -504,15 +534,23 @@ def _render_infer_toml(
         f'vocab_file = "{_escape_toml(vocab_file.as_posix())}"',
         f'ref_audio = "{_escape_toml(ref_audio.as_posix())}"',
         f'ref_text = "{_escape_toml(ref_text)}"',
-        f'gen_text = "{_escape_toml(gen_text)}"',
+        f'gen_text = "{_escape_toml(gen_text or "")}"',
         f'output_dir = "{_escape_toml(output_dir.as_posix())}"',
         f'output_file = "{_escape_toml(output_file)}"',
         f"remove_silence = {'true' if remove_silence else 'false'}",
         f"nfe_step = {nfe_step}",
         f"cfg_strength = {cfg_strength}",
         f"sway_sampling_coef = {sway_sampling_coef}",
+        f"speed = {speed}",
+        f"cross_fade_duration = {cross_fade_duration}",
+        f"target_rms = {target_rms}",
         f'vocoder_name = "{_escape_toml(vocoder_name)}"',
+        f"load_vocoder_from_local = {'true' if load_vocoder_from_local else 'false'}",
     ]
+    if gen_file is not None:
+        lines.append(f'gen_file = "{_escape_toml(gen_file.as_posix())}"')
+    if fix_duration is not None:
+        lines.append(f"fix_duration = {fix_duration}")
     if model_cfg_path is not None:
         lines.append(f'model_cfg = "{_escape_toml(model_cfg_path)}"')
     return "\n".join(lines) + "\n"
@@ -578,6 +616,20 @@ def _optional_str_env(name: str) -> str | None:
         return None
     stripped = value.strip()
     return stripped if stripped != "" else None
+
+
+def _optional_float_env(name: str) -> float | None:
+    """Return one optional float environment variable."""
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    try:
+        return float(stripped)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a float-like value, got `{value}`.") from exc
 
 
 def _package_version_or_none(metadata_module: object, distribution_name: str) -> str | None:

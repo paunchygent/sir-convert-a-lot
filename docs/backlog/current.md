@@ -126,12 +126,12 @@ Primary implementation stories (active sequence):
       candidate, so Story 23 now advances to `T82`.
 
 - 2026-03-07:
-  - Redirected Story 23 from deferred XTTS comparison to the active `T85` F5-TTS
-    lane and recorded a technically successful but qualitatively rejected Hemma
-    benchmark under `build/verification/task-85-f5-tts-hemma/`.
-  - Switched the current Task 85 runtime source locally from `SWivid/F5-TTS@1.1.17`
-    to `ChiliOlavi/F5-TTS@swedish-tts` and reran the benchmark successfully on
-    Hemma on `2026-03-08` with
+
+  - Redirected Story 23 to the active `T85` F5-TTS lane and recorded a technically successful
+    but qualitatively rejected Hemma benchmark under `build/verification/task-85-f5-tts-hemma/`.
+  - Switched the current Task 85 runtime source locally from `SWivid/F5-TTS@1.1.17` to
+    `ChiliOlavi/F5-TTS@swedish-tts` and reran the benchmark successfully on Hemma on
+    `2026-03-08` with
     `run_id=20260308T002337Z`, image `sha256:e69ffa81f883369bbde227fee1d910da3b249484c0e595e210011b147e6eb04e`,
     and sample SHA256 `2735c0536aebc3f5324333d3a9deb95492721230b2e10ff3d4989019078e1c82`.
   - Implemented and verified `T86` Chatterbox on Hemma, including the dedicated

@@ -49,10 +49,15 @@ def _settings() -> F5TtsSidecarSettings:
         supported_language_codes=("sv",),
         network_scope=NetworkScope.INTERNAL_ONLY,
         remove_silence=False,
-        nfe_step=32,
+        nfe_step=64,
         cfg_strength=2.0,
         sway_sampling_coef=-1.0,
+        speed=1.0,
+        fix_duration=None,
+        cross_fade_duration=0.15,
+        target_rms=0.1,
         vocoder_name="vocos",
+        load_vocoder_from_local=False,
     )
 
 
@@ -104,22 +109,35 @@ def test_render_infer_toml_includes_deterministic_paths() -> None:
         vocab_file=Path("/models/swedish/vocab.txt"),
         ref_audio=Path("/tmp/reference.wav"),
         ref_text="Hej hej",
-        gen_text="Det har ar ett test.",
+        gen_text=None,
+        gen_file=Path("/tmp/gen_text.txt"),
         output_dir=Path("/tmp/output"),
         output_file="sample.wav",
         model_cfg_path=None,
         remove_silence=True,
-        nfe_step=48,
+        nfe_step=64,
         cfg_strength=2.5,
         sway_sampling_coef=0.0,
+        speed=0.9,
+        fix_duration=12.0,
+        cross_fade_duration=0.2,
+        target_rms=0.12,
         vocoder_name="bigvgan",
+        load_vocoder_from_local=True,
     )
 
     assert 'ckpt_file = "/models/swedish/model_last.pt"' in config
     assert 'vocab_file = "/models/swedish/vocab.txt"' in config
     assert 'output_file = "sample.wav"' in config
+    assert 'gen_text = ""' in config
+    assert 'gen_file = "/tmp/gen_text.txt"' in config
     assert "remove_silence = true" in config
-    assert "nfe_step = 48" in config
+    assert "nfe_step = 64" in config
     assert "cfg_strength = 2.5" in config
     assert "sway_sampling_coef = 0.0" in config
+    assert "speed = 0.9" in config
+    assert "fix_duration = 12.0" in config
+    assert "cross_fade_duration = 0.2" in config
+    assert "target_rms = 0.12" in config
     assert 'vocoder_name = "bigvgan"' in config
+    assert "load_vocoder_from_local = true" in config
