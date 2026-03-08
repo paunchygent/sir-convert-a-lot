@@ -170,7 +170,7 @@ def ensure_persistent_bind_mount(
     ensure_directory(source)
     ensure_directory(target)
     before_source = find_mount_source(target)
-    if before_source not in {None, source.as_posix()}:
+    if before_source is not None and not target.samefile(source):
         raise SystemExit(
             f"Refusing to replace unexpected mount at `{target}` from `{before_source}`."
         )
