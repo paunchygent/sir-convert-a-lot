@@ -75,6 +75,22 @@ def test_migrate_qwen_data_to_storage_moves_and_symlinks(tmp_path: Path) -> None
     ) == "rows"
 
 
+def test_migrate_repo_build_to_scratch_allows_identical_duplicate_files(tmp_path: Path) -> None:
+    """Task 112 should absorb identical duplicate files during build migration."""
+    settings = _settings(tmp_path)
+    source_artifact = settings.repo_build_root / "reference" / "artifact.txt"
+    target_artifact = settings.scratch_build_root / "reference" / "artifact.txt"
+    source_artifact.parent.mkdir(parents=True)
+    target_artifact.parent.mkdir(parents=True)
+    source_artifact.write_text("same", encoding="utf-8")
+    target_artifact.write_text("same", encoding="utf-8")
+
+    migrate_repo_build_to_scratch(settings)
+
+    assert settings.repo_build_root.is_symlink()
+    assert target_artifact.read_text(encoding="utf-8") == "same"
+
+
 def test_cleanup_non_active_docker_state_prunes_expected_resources(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

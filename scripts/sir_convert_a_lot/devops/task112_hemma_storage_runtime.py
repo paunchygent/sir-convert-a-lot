@@ -17,6 +17,7 @@ Relationships:
 
 from __future__ import annotations
 
+import filecmp
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -96,10 +97,12 @@ def _migrate_tree(source: Path, destination: Path) -> None:
                     if child.is_dir() and target_child.is_dir():
                         _migrate_tree(child, target_child)
                         continue
-                    raise SystemExit(
-                        "Refusing to overwrite existing destination path during "
-                        f"migration: {target_child}"
-                    )
+                    if child.is_file() and target_child.is_file():
+                        if filecmp.cmp(child.as_posix(), target_child.as_posix(), shallow=False):
+                            child.unlink()
+                            continue
+                    _sudo_rsync_tree(source=source, destination=destination)
+                    return
                 shutil.move(child.as_posix(), target_child.as_posix())
             source.rmdir()
             return
