@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
 )
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     default_data_root,
+    ensure_bulk_data_storage_path,
     ensure_data_disk_path,
 )
 
@@ -180,7 +181,7 @@ def _resolve_source_records(
     """Resolve source records for one requested Task 103 runner mode."""
     if settings.source_mode == "repo-fixture":
         return None
-    ensure_data_disk_path(settings.data_root, label="data_root")
+    ensure_bulk_data_storage_path(settings.data_root, label="data_root")
     return list(
         staged_public_corpus_source_records(
             settings.data_root,

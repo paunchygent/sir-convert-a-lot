@@ -32,7 +32,7 @@ the first bounded Hemma pilot fine-tune.
 
 ## PR Scope
 
-- Stage revision-pinned `rixvox` audio assets on Hemma's DATA-backed storage.
+- Stage revision-pinned `rixvox` audio assets on Hemma's HDD-backed storage.
 - Materialize real `source_audio_locator` values for admitted `rixvox` rows.
 - Add the missing train-family mapping for admitted `rixvox` train rows:
   - `swedish_smoke_train`
@@ -68,7 +68,7 @@ Execute `T108` in this order:
      targeted `huggingface_hub` path already used by `T106`
    - add one bounded audio-acquisition surface for only the admitted train rows
      needed by smoke/pilot planning, not a whole-corpus bulk fetch
-   - keep all raw assets on Hemma's DATA-backed storage
+   - keep all raw assets on Hemma's HDD-backed storage
 
 1. Add `rixvox` audio materialization metadata.
 
@@ -132,7 +132,7 @@ bounded `rixvox` audio staging form:
   - targeted archive or file acquisition for only admitted rows plus
     `AudioLocator` support that can read from archives without full unpacking
 - acceptable fallback inside the same repo contract:
-  - targeted acquisition followed by deterministic extraction to DATA-backed
+  - targeted acquisition followed by deterministic extraction to HDD-backed
     local files when archive-member access proves too awkward operationally
 
 Whichever path wins, the repo contract remains the same:
@@ -280,7 +280,7 @@ That means the next `T108` continuation should not simply retry the same
 configuration. It should:
 
 - lower GPU ASR concurrency below the `5`-worker crash point
-- move the large Hemma preprocessing output/evidence lane onto DATA-backed
+- move the large Hemma preprocessing output/evidence lane onto SSD-scratch-backed
   storage while preserving the documented artifact structure
 
 ## Acceptance Criteria

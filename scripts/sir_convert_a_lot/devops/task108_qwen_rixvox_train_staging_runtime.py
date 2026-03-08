@@ -2,7 +2,7 @@
 
 Purpose:
     Stage revision-pinned `KBLab/rixvox` train metadata and a bounded set of
-    train audio archives onto Hemma's DATA-backed storage so the Qwen
+    train audio archives onto Hemma's HDD bulk-data tier so the Qwen
     preprocessing lane can move from metadata-only inventory to real
     audio-backed train rows.
 
@@ -22,6 +22,7 @@ from pathlib import Path
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     DownloadedFileRecord,
     download_file_with_retry,
+    ensure_bulk_data_storage_path,
     ensure_data_disk_path,
     resolve_dataset_revision,
     stage_downloaded_file,
@@ -69,7 +70,7 @@ def run_task108_rixvox_train_staging(
     settings: Task108RixvoxTrainStagingSettings,
 ) -> Task108RixvoxTrainStagingReport:
     """Stage train metadata and bounded train audio archives for RixVox."""
-    ensure_data_disk_path(settings.data_root, label="Task 108 data_root")
+    ensure_bulk_data_storage_path(settings.data_root, label="Task 108 data_root")
     ensure_data_disk_path(settings.hf_cache_dir, label="Task 108 hf_cache_dir")
     settings.data_root.mkdir(parents=True, exist_ok=True)
     settings.hf_cache_dir.mkdir(parents=True, exist_ok=True)

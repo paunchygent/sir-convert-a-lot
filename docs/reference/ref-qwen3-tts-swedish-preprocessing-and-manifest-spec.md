@@ -4,7 +4,7 @@ id: REF-qwen3-tts-swedish-preprocessing-and-manifest-spec
 title: Qwen3-TTS Swedish Preprocessing and Manifest Specification
 status: active
 created: 2026-03-08
-updated: 2026-03-08
+updated: 2026-03-09
 owners:
   - Olof
 links:
@@ -42,14 +42,18 @@ Preferred long-term path:
 Storage policy:
 
 - large raw corpus assets must be acquired on Hemma only
-- large raw corpus assets must live on Hemma's DATA-backed storage, not on the
+- large raw corpus assets must live on Hemma's HDD storage tier, not on the
   local workstation and not on the Hemma OS disk
 - canonical Hemma raw-corpus root:
-  - `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
-- compatible home-visible mount when needed:
+  - `/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+- compatible home-visible bind mount when needed:
   - `/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
-- deterministic generated manifests and reports still live under
-  `build/reference/qwen3-tts-swedish-corpus/` in the repo
+- on Hemma, large generated preprocessing artifacts and proof evidence must
+  live on the SSD scratch tier, not the root disk
+- canonical Hemma generated-build root:
+  - `/srv/scratch/sir-convert-a-lot/build/`
+- compatible home-visible bind mount when needed:
+  - `/home/paunchygent/.data/sir-convert-a-lot/build/`
 
 Dataset-specific expected inputs:
 
@@ -78,9 +82,16 @@ Forbidden option:
 
 ## Deterministic Artifact Roots
 
-All corpus-preprocessing artifacts should live under:
+Logical artifact structure should remain under:
 
 - `build/reference/qwen3-tts-swedish-corpus/`
+
+Storage interpretation:
+
+- local workstation / repo-fixture runs may use repo-relative `build/...`
+- Hemma public-corpus and detached-proof runs must persist the same logical
+  subtree under the SSD-scratch-backed build root:
+  - `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus/`
 
 Canonical subtrees:
 

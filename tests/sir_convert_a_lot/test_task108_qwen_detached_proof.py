@@ -47,7 +47,8 @@ def test_build_detached_task108_command_drops_rm_and_adds_name() -> None:
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
-        data_root=Path("/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
+        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
             "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
         ),

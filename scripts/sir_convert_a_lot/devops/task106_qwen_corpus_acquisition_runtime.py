@@ -1,7 +1,7 @@
 """Runtime helpers for Task 106 Hemma-only Qwen corpus acquisition.
 
 Purpose:
-    Stage revision-pinned Swedish corpus assets onto Hemma's DATA-backed disk
+    Stage revision-pinned Swedish corpus assets onto Hemma's bulk-data HDD tier
     using targeted, sequential Hugging Face downloads instead of broad snapshot
     fan-out or deprecated dataset-script loading.
 
@@ -26,7 +26,7 @@ DEFAULT_HEMMA_HF_CACHE_ENV: Final[str] = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH"
 DEFAULT_HEMMA_QWEN_DATA_ENV: Final[str] = "SIR_CONVERT_A_LOT_HEMMA_QWEN_CORPUS_DATA_PATH"
 DEFAULT_HF_CACHE_DIR: Final[Path] = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_DATA_ROOT: Final[Path] = Path(
-    "/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
+    "/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
 )
 DEFAULT_OUTPUT_ROOT: Final[Path] = Path("build/reference/qwen3-tts-swedish-corpus/acquisition")
 DEFAULT_FLEURS_SPLITS: Final[tuple[str, ...]] = ("dev", "test")
@@ -85,11 +85,23 @@ def default_data_root() -> Path:
 
 
 def ensure_data_disk_path(path: Path, *, label: str) -> None:
-    """Require one configured path to live on Hemma's DATA-backed disk."""
+    """Require one configured path to live on a managed Hemma storage tier."""
     rendered = path.as_posix()
-    if rendered.startswith("/srv/") or rendered.startswith("/home/paunchygent/.data/"):
+    if (
+        rendered.startswith("/srv/scratch/")
+        or rendered.startswith("/srv/storage/")
+        or rendered.startswith("/home/paunchygent/.data/")
+    ):
         return
-    raise SystemExit(f"{label} must live on Hemma's DATA-backed storage, got `{rendered}`.")
+    raise SystemExit(f"{label} must live on a managed Hemma storage tier, got `{rendered}`.")
+
+
+def ensure_bulk_data_storage_path(path: Path, *, label: str) -> None:
+    """Require one configured path to live on Hemma's HDD bulk-data tier."""
+    rendered = path.as_posix()
+    if rendered.startswith("/srv/storage/") or rendered.startswith("/home/paunchygent/.data/"):
+        return
+    raise SystemExit(f"{label} must live on Hemma's HDD bulk-data tier, got `{rendered}`.")
 
 
 def resolve_dataset_revision(
@@ -159,7 +171,7 @@ def download_file_with_retry(
 
 
 def stage_downloaded_file(*, cached_path: Path, staged_path: Path) -> None:
-    """Expose one cached dataset asset through a stable DATA-root symlink."""
+    """Expose one cached dataset asset through a stable staged-root symlink."""
     staged_path.parent.mkdir(parents=True, exist_ok=True)
     if staged_path.is_symlink():
         if staged_path.resolve() == cached_path.resolve():
@@ -173,7 +185,7 @@ def stage_downloaded_file(*, cached_path: Path, staged_path: Path) -> None:
 def acquire_fleurs_assets(
     settings: Task106AcquisitionSettings,
 ) -> tuple[str, list[DownloadedFileRecord]]:
-    """Stage the targeted Swedish FLEURS control assets on Hemma's DATA disk."""
+    """Stage the targeted Swedish FLEURS control assets on Hemma's HDD tier."""
     repo_id = "google/fleurs"
     revision = resolve_dataset_revision(
         repo_id,
@@ -211,7 +223,7 @@ def acquire_fleurs_assets(
 def acquire_rixvox_metadata_assets(
     settings: Task106AcquisitionSettings,
 ) -> tuple[str, list[DownloadedFileRecord]]:
-    """Stage the targeted RixVox metadata parquet files on Hemma's DATA disk."""
+    """Stage the targeted RixVox metadata parquet files on Hemma's HDD tier."""
     repo_id = "KBLab/rixvox"
     revision = resolve_dataset_revision(
         repo_id,
@@ -246,7 +258,7 @@ def acquire_rixvox_metadata_assets(
 def acquire_waxholm_assets(
     settings: Task106AcquisitionSettings,
 ) -> tuple[str, list[DownloadedFileRecord]]:
-    """Stage a bounded labeled Waxholm control subset on Hemma's DATA disk."""
+    """Stage a bounded labeled Waxholm control subset on Hemma's HDD tier."""
     repo_id = "KTH/waxholm"
     revision = resolve_dataset_revision(
         repo_id,
@@ -310,7 +322,7 @@ def acquire_waxholm_assets(
 
 def run_task106_acquisition(settings: Task106AcquisitionSettings) -> Task106AcquisitionReport:
     """Run the bounded Hemma-only raw-corpus acquisition pass for Task 106."""
-    ensure_data_disk_path(settings.data_root, label="Task 106 data_root")
+    ensure_bulk_data_storage_path(settings.data_root, label="Task 106 data_root")
     ensure_data_disk_path(settings.hf_cache_dir, label="Task 106 hf_cache_dir")
     settings.data_root.mkdir(parents=True, exist_ok=True)
     settings.hf_cache_dir.mkdir(parents=True, exist_ok=True)

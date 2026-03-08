@@ -40,6 +40,7 @@ class Task109ContainerizedPreprocessingSettings:
     image: str
     hf_cache_dir: Path
     hf_cache_home_mount: Path
+    scratch_build_root: Path
     data_root: Path
     data_root_home_mount: Path
     build_image: bool
@@ -148,6 +149,8 @@ def build_containerized_preprocessing_command(
         f"TORCH_HOME={container_torch_home}",
         "-v",
         f"{repo_root.as_posix()}:/app",
+        "-v",
+        f"{settings.scratch_build_root.as_posix()}:/app/build",
         "-v",
         f"{hf_mount.effective_root.as_posix()}:{hf_mount.canonical_root.as_posix()}",
         "-v",

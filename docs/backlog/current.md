@@ -122,12 +122,12 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     the Task 103 core is now adapter-shaped, `fleurs` / labeled `waxholm` /
     `rixvox` parquet adapters exist, and the new Hemma-only
     `task-106-acquire` surface stages targeted revision-pinned raw assets onto
-    `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/` instead of
+    `/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/` instead of
     downloading large corpora locally.
   - Completed the first live Hemma `T106` acquisition pass on `main`:
     `task-106-acquire --waxholm-max-files 8 --request-pause-seconds 0.5`
     staged `4` `fleurs` files, `17` bounded `waxholm` files, and `2` `rixvox`
-    parquet files onto the DATA disk, with revision-pinned evidence written to
+    parquet files onto the HDD storage tier, with revision-pinned evidence written to
     `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json` on
     Hemma.
   - Opened `T107` as the next active Epic 08 slice so `task-103-preprocess`
@@ -183,6 +183,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     pinned the crash to `libaotriton_v2.so.0.11.1`, and Hemma root-disk
     pressure is now confirmed as a separate operational problem because `/`
     has only about `1.3 GB` free while DATA still has ample space.
+  - Opened `T112` to correct the storage contract: Qwen Hemma hot generated
+    output must move from repo-root `build/` onto SSD scratch, raw Swedish
+    corpus storage must move onto HDD storage, and root-disk cleanup must focus
+    on measured Docker bloat rather than blaming the comparatively small
+    preprocessing output.
 
 - 2026-03-05:
   - Re-terminalized Task 73 after ruthless review remediation with sustained-load evidence in
@@ -204,8 +209,9 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   train families, using detached Hemma execution as the required proof mode.
 - Follow-on hardening after the first detached `T108` repro is now partly in place:
   `T110` has delivered the staged spool/finalization split plus explicit row/GPU concurrency
-  controls, and the next immediate step is to rerun the bounded detached Hemma proof through the
-  containerized Task 109 lane before advancing toward `T101`. `T111` remains the later
-  provenance-safe ASR relabel candidate task.
+  controls. The immediate next step is `T112`: move Hemma Qwen hot generated output onto SSD
+  scratch, move raw corpus storage onto HDD storage, clean root-disk Docker bloat, and only then
+  rerun the bounded detached proof through the containerized Task 109 lane before advancing toward
+  `T101`. `T111` remains the later provenance-safe ASR relabel candidate task.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

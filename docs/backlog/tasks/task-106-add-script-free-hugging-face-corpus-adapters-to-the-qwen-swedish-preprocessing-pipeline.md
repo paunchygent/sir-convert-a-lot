@@ -37,7 +37,7 @@ assets onto the local workstation.
   - use Hemma-only, revision-pinned `huggingface_hub` downloads via targeted
     `hf_hub_download(...)` calls and narrowly scoped acquisition plans
   - parse raw supported repository assets directly
-  - store large raw corpus assets on Hemma's DATA-backed disk, not on the local
+  - store large raw corpus assets on Hemma's HDD bulk-data tier, not on the local
     workstation and not on the Hemma OS disk
   - preserve deterministic outputs under
     `build/reference/qwen3-tts-swedish-corpus/`
@@ -89,7 +89,7 @@ Committed runner surfaces in this slice:
   `rixvox`, `fleurs`, or `waxholm` ingestion in the canonical T103 lane.
 - [x] All Hugging Face dataset acquisition in this slice is revision-pinned and
   reproducible from committed code.
-- [x] Large raw corpus assets are documented to live on Hemma's DATA-backed
+- [x] Large raw corpus assets are documented to live on Hemma's HDD-backed
   storage, not on the local workstation and not on the Hemma OS disk.
 - [x] The acquisition approach uses targeted sequential downloads for large
   corpora rather than broad whole-repository fan-out.
@@ -123,7 +123,7 @@ Implemented and validated in this slice:
   - `KTH/waxholm`: `17` staged files from the bounded labeled subset
   - `KBLab/rixvox`: `2` staged metadata parquet files for `dev/test`
   - canonical Hemma DATA root:
-    `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`
+    `/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`
   - canonical Hemma report path:
     `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json`
 

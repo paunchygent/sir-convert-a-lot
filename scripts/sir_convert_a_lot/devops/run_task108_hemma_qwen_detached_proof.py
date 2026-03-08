@@ -32,6 +32,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_HF_CACHE_HOME_MOUNT,
     DEFAULT_IMAGE,
     DEFAULT_ROW_WORKER_COUNT,
+    DEFAULT_SCRATCH_BUILD,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     ensure_image_present,
@@ -41,6 +42,7 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
 )
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     default_data_root,
+    ensure_bulk_data_storage_path,
     ensure_data_disk_path,
 )
 from scripts.sir_convert_a_lot.devops.task108_qwen_detached_proof_runtime import (
@@ -68,6 +70,7 @@ def _parse_shared_settings(args: argparse.Namespace) -> Task109ContainerizedPrep
         image=str(args.image),
         hf_cache_dir=Path(args.hf_cache_dir),
         hf_cache_home_mount=Path(args.hf_cache_home_mount),
+        scratch_build_root=Path(args.scratch_build_root),
         data_root=Path(args.data_root),
         data_root_home_mount=Path(args.data_root_home_mount),
         build_image=not bool(args.skip_build),
@@ -93,6 +96,7 @@ def _build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--image", default=DEFAULT_IMAGE)
     launch.add_argument("--hf-cache-dir", type=Path, default=DEFAULT_HF_CACHE)
     launch.add_argument("--hf-cache-home-mount", type=Path, default=DEFAULT_HF_CACHE_HOME_MOUNT)
+    launch.add_argument("--scratch-build-root", type=Path, default=DEFAULT_SCRATCH_BUILD)
     launch.add_argument("--data-root", type=Path, default=default_data_root())
     launch.add_argument(
         "--data-root-home-mount",
@@ -256,8 +260,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "launch":
         settings = _parse_shared_settings(args)
-        ensure_data_disk_path(settings.data_root, label="data_root")
+        ensure_bulk_data_storage_path(settings.data_root, label="data_root")
         ensure_data_disk_path(settings.hf_cache_dir, label="hf_cache_dir")
+        if not settings.scratch_build_root.as_posix().startswith("/srv/scratch/"):
+            raise SystemExit(
+                "scratch_build_root must live on Hemma's SSD scratch tier, got "
+                f"`{settings.scratch_build_root.as_posix()}`."
+            )
+        settings.scratch_build_root.mkdir(parents=True, exist_ok=True)
         repo_root = Path.cwd().resolve()
         run_checked(
             ["rocm-smi", "--showmeminfo", "vram", "--showuse", "--showpids"],

@@ -32,12 +32,16 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
 )
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     default_data_root,
+    ensure_bulk_data_storage_path,
     ensure_data_disk_path,
 )
 from scripts.sir_convert_a_lot.devops.task109_qwen_containerized_preprocessing_runtime import (
     ContainerizedPreprocessingRun,
     Task109ContainerizedPreprocessingSettings,
     run_containerized_preprocessing,
+)
+from scripts.sir_convert_a_lot.devops.task112_hemma_storage_runtime import (
+    DEFAULT_SCRATCH_BUILD_ROOT,
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-109-qwen-containerized-preprocessing")
@@ -48,6 +52,7 @@ DEFAULT_HEMMA_HF_CACHE_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_M
 DEFAULT_HEMMA_DATA_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_QWEN_CORPUS_DATA_HOME_MOUNT"
 DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface")
+DEFAULT_SCRATCH_BUILD = DEFAULT_SCRATCH_BUILD_ROOT
 DEFAULT_DATA_ROOT_HOME_MOUNT = Path(
     "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
 )
@@ -71,6 +76,7 @@ class Task109ContainerizedReport:
     hf_cache_dir: str
     effective_hf_cache_dir: str
     used_hf_home_mount: bool
+    scratch_build_root: str
     data_root: str
     effective_data_root: str
     used_data_home_mount: bool
@@ -107,7 +113,7 @@ def _default_hf_cache_home_mount() -> Path:
 
 
 def _default_data_root_home_mount() -> Path:
-    """Resolve the fallback home-backed DATA-root mount path."""
+    """Resolve the fallback home-backed raw-corpus mount path."""
     configured_path = os.environ.get(DEFAULT_HEMMA_DATA_HOME_MOUNT_ENV)
     if configured_path is None or configured_path.strip() == "":
         return DEFAULT_DATA_ROOT_HOME_MOUNT
@@ -128,6 +134,7 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         type=Path,
         default=_default_hf_cache_home_mount(),
     )
+    parser.add_argument("--scratch-build-root", type=Path, default=DEFAULT_SCRATCH_BUILD)
     parser.add_argument("--data-root", type=Path, default=default_data_root())
     parser.add_argument(
         "--data-root-home-mount",
@@ -179,6 +186,7 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         image=str(args.image),
         hf_cache_dir=Path(args.hf_cache_dir),
         hf_cache_home_mount=Path(args.hf_cache_home_mount),
+        scratch_build_root=Path(args.scratch_build_root),
         data_root=Path(args.data_root),
         data_root_home_mount=Path(args.data_root_home_mount),
         build_image=not bool(args.skip_build),
@@ -227,6 +235,7 @@ def _build_report_markdown(
         f"- HF cache canonical root: `{report.hf_cache_dir}`\n"
         f"- HF cache effective root: `{report.effective_hf_cache_dir}`\n"
         f"- Used HF home-backed bind mount: `{report.used_hf_home_mount}`\n"
+        f"- Scratch build root: `{report.scratch_build_root}`\n"
         f"- DATA canonical root: `{report.data_root}`\n"
         f"- DATA effective root: `{report.effective_data_root}`\n"
         f"- Used DATA home-backed bind mount: `{report.used_data_home_mount}`\n"
@@ -257,8 +266,14 @@ def main(argv: list[str] | None = None) -> int:
     enforce_generated_output_path(report_json_path, label="report_json_path")
     enforce_generated_output_path(report_md_path, label="report_md_path")
     enforce_generated_output_path(failure_path, label="failure_path")
-    ensure_data_disk_path(settings.data_root, label="data_root")
+    ensure_bulk_data_storage_path(settings.data_root, label="data_root")
     ensure_data_disk_path(settings.hf_cache_dir, label="hf_cache_dir")
+    if not settings.scratch_build_root.as_posix().startswith("/srv/scratch/"):
+        raise SystemExit(
+            "scratch_build_root must live on Hemma's SSD scratch tier, got "
+            f"`{settings.scratch_build_root.as_posix()}`."
+        )
+    settings.scratch_build_root.mkdir(parents=True, exist_ok=True)
 
     try:
         rocm_smi_before = run_checked(
@@ -289,6 +304,7 @@ def main(argv: list[str] | None = None) -> int:
             hf_cache_dir=settings.hf_cache_dir.as_posix(),
             effective_hf_cache_dir=hf_mount.effective_root.as_posix(),
             used_hf_home_mount=hf_mount.used_home_mount,
+            scratch_build_root=settings.scratch_build_root.as_posix(),
             data_root=settings.data_root.as_posix(),
             effective_data_root=data_mount.effective_root.as_posix(),
             used_data_home_mount=data_mount.used_home_mount,

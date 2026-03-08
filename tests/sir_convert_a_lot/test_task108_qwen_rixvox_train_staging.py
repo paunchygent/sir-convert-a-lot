@@ -43,7 +43,7 @@ def test_run_task108_rixvox_train_staging_downloads_metadata_and_shards(
     """The Task 108 runtime should stage train metadata and bounded train archives."""
     settings = Task108RixvoxTrainStagingSettings(
         output_root=tmp_path / "build/reference/qwen3-tts-swedish-corpus/rixvox-train-staging",
-        data_root=Path("/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
+        data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         train_audio_shards=(0, 2),
         request_pause_seconds=0.0,
@@ -94,7 +94,7 @@ def test_run_task108_rixvox_train_staging_downloads_metadata_and_shards(
         "data/train/train_2.tar.gz",
     ]
     assert staged_calls[0][1] == Path(
-        "/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/raw/kblab_rixvox/data/train_metadata.parquet"
+        "/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/raw/kblab_rixvox/data/train_metadata.parquet"
     )
 
 
@@ -105,7 +105,7 @@ def test_task108_runner_main_writes_report(
 ) -> None:
     """The Task 108 runner should write the staging report and print JSON."""
     expected_report = Task108RixvoxTrainStagingReport(
-        data_root="/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus",
+        data_root="/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus",
         hf_cache_dir="/srv/scratch/sir-convert-a-lot/cache/huggingface",
         dataset_revision="rev-rixvox",
         train_audio_shards=[0],

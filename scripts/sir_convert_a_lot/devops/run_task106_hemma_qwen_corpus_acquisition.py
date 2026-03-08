@@ -2,7 +2,7 @@
 
 Purpose:
     Provide one committed argv-friendly runner for staging the first real
-    Swedish corpus assets on Hemma's DATA-backed storage without broad local
+    Swedish corpus assets on Hemma's HDD bulk-data tier without broad local
     snapshot downloads or deprecated dataset-script loading.
 
 Relationships:

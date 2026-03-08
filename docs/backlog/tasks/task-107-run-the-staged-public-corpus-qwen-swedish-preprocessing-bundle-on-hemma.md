@@ -33,7 +33,7 @@ staged `rixvox` metadata before the first bounded Hemma fine-tune.
 ## PR Scope
 
 - Extend the committed `task-103-preprocess` runner with one explicit
-  staged-public-corpus mode rooted at Hemma's DATA-backed raw-corpus path.
+  staged-public-corpus mode rooted at Hemma's HDD-backed raw-corpus path.
 - Keep the existing deterministic artifact and report contract under
   `build/reference/qwen3-tts-swedish-corpus/`.
 - Load staged source rows from:
@@ -58,7 +58,7 @@ staged `rixvox` metadata before the first bounded Hemma fine-tune.
 
 - [x] `task-103-preprocess` supports an explicit staged-public-corpus mode
   without breaking repo-fixture smoke mode.
-- [x] The staged-public-corpus mode reads assets from Hemma's DATA-backed raw
+- [x] The staged-public-corpus mode reads assets from Hemma's HDD-backed raw
   corpus root rather than downloading anything locally.
 - [x] The live Hemma run emits deterministic inventory, curated, raw, and
   prepared artifacts under `build/reference/qwen3-tts-swedish-corpus/`.

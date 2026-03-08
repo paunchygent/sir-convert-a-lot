@@ -73,7 +73,7 @@ Qwen runtime on Hemma instead of the Hemma host virtualenv.
   containerized preprocessing is canonical, host execution is not.
 - [x] The public-corpus preprocessing command runs through the Qwen
   container/runtime rather than the Hemma host venv.
-- [x] The containerized run mounts the canonical DATA-backed corpus root and
+- [x] The containerized run mounts the canonical HDD-backed corpus root and
   Hugging Face cache root.
 - [x] The remediation leaves no ambiguity in backlog/runbook docs about the
   selected processing unit.
@@ -105,7 +105,7 @@ Preferred long-term repo position:
 - Hemma host is used only for:
   - wrapper-driven orchestration
   - bind mounts
-  - cache and DATA-root exposure
+  - cache and raw-corpus-root exposure
   - report collection
 
 The public-corpus preprocessing lane should therefore be moved onto the
@@ -139,8 +139,10 @@ Key runtime facts from the live report:
   - `sha256:e09ab71bc210812f554a3068d0d0f262d2e287e0bc078c86707cb874b42512c2`
 - canonical HF cache mounted into the container:
   - `/srv/scratch/sir-convert-a-lot/cache/huggingface`
+- canonical scratch-backed build root mounted into the container:
+  - `/srv/scratch/sir-convert-a-lot/build`
 - canonical DATA root mounted into the container:
-  - `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`
+  - `/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`
 - effective home-backed compatibility mounts used by Docker:
   - `/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface`
   - `/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`

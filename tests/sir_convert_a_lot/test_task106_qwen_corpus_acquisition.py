@@ -34,8 +34,8 @@ def test_task106_parse_args_defaults() -> None:
 
 
 def test_ensure_data_disk_path_rejects_non_data_disk_path(tmp_path: Path) -> None:
-    """Task 106 should reject paths that do not live on Hemma's DATA-backed roots."""
-    with pytest.raises(SystemExit, match="DATA-backed storage"):
+    """Task 106 should reject paths that do not live on managed Hemma tiers."""
+    with pytest.raises(SystemExit, match="managed Hemma storage tier"):
         ensure_data_disk_path(tmp_path / "not-data-root", label="test path")
 
 
@@ -59,7 +59,7 @@ def test_run_task106_acquisition_aggregates_targeted_download_reports(
     """The Task 106 runtime should aggregate staged files from all datasets."""
     settings = Task106AcquisitionSettings(
         output_root=tmp_path / "build/reference/qwen3-tts-swedish-corpus/acquisition",
-        data_root=Path("/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
+        data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         fleurs_splits=("dev", "test"),
         rixvox_splits=("dev", "test"),
@@ -137,7 +137,7 @@ def test_task106_runner_main_writes_report(
 ) -> None:
     """The Task 106 runner should write the acquisition report and print JSON."""
     expected_report = Task106AcquisitionReport(
-        data_root="/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus",
+        data_root="/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus",
         hf_cache_dir="/srv/scratch/sir-convert-a-lot/cache/huggingface",
         dataset_revisions={"google/fleurs": "rev-fleurs"},
         downloaded_files=[

@@ -48,7 +48,7 @@ def staged_public_corpus_source_records(
     rixvox_max_rows_per_split: int | None = None,
     include_waxholm: bool = True,
 ) -> list[SourceRecord]:
-    """Load staged public-corpus source records from Hemma's DATA-backed root."""
+    """Load staged public-corpus source records from Hemma's bulk-data root."""
     raw_root = data_root / RAW_CORPUS_SUBDIR
     if not raw_root.is_dir():
         raise FileNotFoundError(f"Missing staged raw corpus root: {raw_root}")

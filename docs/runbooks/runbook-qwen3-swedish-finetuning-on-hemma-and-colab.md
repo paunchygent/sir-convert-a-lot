@@ -291,13 +291,13 @@ Not allowed as the long-term repo contract:
 
 Storage policy:
 
-- large raw corpus assets belong on Hemma's DATA-backed storage
+- large raw corpus assets belong on Hemma's HDD storage tier
 - do not download large public corpus assets onto the local workstation
 - do not use the Hemma OS disk as the long-term storage location for Swedish
   corpus acquisition
 - canonical Hemma raw-corpus root:
-  - `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
-- compatible home-visible mount when needed:
+  - `/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+- compatible home-visible bind mount when needed:
   - `/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
 
 Canonical Task 102 corpus policy:
@@ -400,6 +400,10 @@ Canonical Task 103 preprocessing contract:
   - `revision="strict"`
 - public source assets may begin at `16 kHz`, but all emitted training-side
   audio artifacts and `ref_audio` clips must be `24 kHz`
+- Hemma storage rule:
+  - large generated Qwen preprocessing artifacts and detached-proof evidence
+    must persist on the SSD scratch tier, not under the near-full root-backed
+    repo `build/` path
 - committed runner surfaces:
   - `pdm run task-103-preprocess`
   - `pdm run task-103-preprocess-public-corpus`
@@ -428,7 +432,7 @@ Canonical Task 106 acquisition surface:
   - targeted `hf_hub_download(...)`
   - sequential requests with retry/backoff
   - stage raw assets under
-    `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+    `/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
 - first live bounded Hemma execution on `2026-03-08`:
   - `pdm run run-hemma -- pdm run task-106-acquire --waxholm-max-files 8 --request-pause-seconds 0.5`
   - staged counts:
@@ -498,7 +502,10 @@ Canonical Task 106 acquisition surface:
      - kernel log showed a segfault in `libaotriton_v2.so.0.11.1`
    - operational constraint now confirmed on Hemma:
      - root (`/`) is nearly full
-     - DATA (`/srv/scratch`) remains the only safe large-output target
+     - SSD scratch (`/srv/scratch`) is the safe target for hot output and
+       caches
+     - HDD storage (`/srv/storage`) is the canonical target for raw corpus
+       data
 1. Keep `T111` as the provenance-safe transcript-improvement lane.
    - ASR remains a quality gate by default
    - any transcript relabeling must preserve original text plus provenance

@@ -17,6 +17,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_IMAGE,
     DEFAULT_OUTPUT_ROOT,
     DEFAULT_ROW_WORKER_COUNT,
+    DEFAULT_SCRATCH_BUILD,
     _parse_args,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
@@ -39,6 +40,7 @@ def test_task109_parse_args_defaults() -> None:
     assert settings.image == DEFAULT_IMAGE
     assert settings.hf_cache_dir == DEFAULT_HF_CACHE
     assert settings.hf_cache_home_mount == DEFAULT_HF_CACHE_HOME_MOUNT
+    assert settings.scratch_build_root == DEFAULT_SCRATCH_BUILD
     assert settings.data_root == DEFAULT_DATA_ROOT
     assert settings.data_root_home_mount == DEFAULT_DATA_ROOT_HOME_MOUNT
     assert settings.fleurs_max_rows_per_split == DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT
@@ -58,7 +60,8 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
-        data_root=Path("/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
+        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
             "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
         ),
@@ -95,6 +98,7 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "--workdir" in command
     assert "/app" in command
     assert f"{repo_root.as_posix()}:/app" in command
+    assert f"{settings.scratch_build_root.as_posix()}:/app/build" in command
     assert f"{hf_mount.effective_root.as_posix()}:{hf_mount.canonical_root.as_posix()}" in command
     assert (
         f"{data_mount.effective_root.as_posix()}:{data_mount.canonical_root.as_posix()}:ro"
@@ -127,7 +131,8 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
-        data_root=Path("/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
+        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
             "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
         ),
