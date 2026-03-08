@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -200,6 +201,21 @@ def start_docker_snap() -> None:
     run_checked(["sudo", "-n", "snap", "start", "docker"], label="snap start docker task113")
 
 
+def wait_for_docker_daemon(*, attempts: int = 30, sleep_seconds: float = 1.0) -> str:
+    """Wait for the Docker daemon to accept `docker info` again after restart."""
+    last_error: str | None = None
+    for _ in range(attempts):
+        try:
+            return docker_root_dir()
+        except SystemExit as exc:
+            last_error = str(exc)
+            time.sleep(sleep_seconds)
+    raise SystemExit(
+        "Docker daemon did not become ready after restart.\n"
+        f"Last error:\n{last_error or 'unknown'}"
+    )
+
+
 def set_snap_data_root(home_docker_root: Path) -> None:
     """Set the Docker snap data-root to the home-visible bind mount path."""
     run_checked(
@@ -286,7 +302,7 @@ def run_task113_docker_storage_migration(
         rsync_tree(source=settings.old_docker_root, destination=settings.scratch_docker_root)
         set_snap_data_root(settings.home_docker_root)
         start_docker_snap()
-        docker_root_after = docker_root_dir()
+        docker_root_after = wait_for_docker_daemon()
         if docker_root_after != settings.home_docker_root.as_posix():
             raise SystemExit(
                 "Docker data-root migration did not converge to the expected "
