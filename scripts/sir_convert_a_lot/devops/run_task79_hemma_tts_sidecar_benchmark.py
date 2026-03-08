@@ -25,6 +25,7 @@ from pathlib import Path
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_reporting import (
     BenchmarkReport,
+    SpeechRequestEvidence,
     VoicesEvidence,
     build_report_markdown,
     write_json,
@@ -47,10 +48,15 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_runtime import (
     voice_names_from_payload,
     wait_for_voices,
 )
+from scripts.sir_convert_a_lot.devops.task79_qwen3_tts_request_payload import (
+    prepare_request_inputs,
+    resolve_text_input,
+)
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-79-hemma-tts-sidecar")
 DEFAULT_IMAGE = "vllm/vllm-omni-rocm:v0.16.0"
-DEFAULT_MODEL = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+DEFAULT_CUSTOM_VOICE_MODEL = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+DEFAULT_BASE_MODEL = "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
 DEFAULT_TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
 DEFAULT_NETWORK = "hule-network"
 DEFAULT_NETWORK_ALIAS = "sir-convert-a-lot-tts-task79"
@@ -98,7 +104,13 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser = argparse.ArgumentParser(description="Run the Task 79 Hemma TTS benchmark.")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--image", default=DEFAULT_IMAGE)
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--model", default=None)
+    parser.add_argument(
+        "--task-type",
+        choices=("CustomVoice", "Base"),
+        default="CustomVoice",
+    )
+    parser.add_argument("--language", default="Auto")
     parser.add_argument("--tokenizer-model", default=DEFAULT_TOKENIZER_MODEL)
     parser.add_argument("--network", default=DEFAULT_NETWORK)
     parser.add_argument("--network-alias", default=DEFAULT_NETWORK_ALIAS)
@@ -127,7 +139,13 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
             "path directly."
         ),
     )
-    parser.add_argument("--probe-text", default=DEFAULT_TEXT)
+    parser.add_argument("--probe-text", default=None)
+    parser.add_argument("--probe-text-file", type=Path, default=None)
+    parser.add_argument("--instructions", default=None)
+    parser.add_argument("--instructions-file", type=Path, default=None)
+    parser.add_argument("--reference-audio", type=Path, default=None)
+    parser.add_argument("--reference-transcript", default=None)
+    parser.add_argument("--reference-transcript-file", type=Path, default=None)
     parser.add_argument("--hf-token", default=None)
     parser.add_argument(
         "--response-formats",
@@ -145,6 +163,28 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         help="Keep the benchmark container running after evidence capture.",
     )
     args = parser.parse_args(argv)
+    model = (
+        str(args.model).strip()
+        if args.model is not None
+        else (DEFAULT_BASE_MODEL if str(args.task_type) == "Base" else DEFAULT_CUSTOM_VOICE_MODEL)
+    )
+    probe_text = resolve_text_input(
+        direct_value=None if args.probe_text is None else str(args.probe_text),
+        file_path=args.probe_text_file,
+        label="probe text",
+    )
+    instructions = resolve_text_input(
+        direct_value=None if args.instructions is None else str(args.instructions),
+        file_path=args.instructions_file,
+        label="instructions",
+    )
+    reference_transcript = resolve_text_input(
+        direct_value=(
+            None if args.reference_transcript is None else str(args.reference_transcript)
+        ),
+        file_path=args.reference_transcript_file,
+        label="reference transcript",
+    )
     response_formats = tuple(
         candidate.strip().lower()
         for candidate in str(args.response_formats).split(",")
@@ -155,7 +195,9 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     return BenchmarkSettings(
         output_root=Path(args.output_root),
         image=str(args.image),
-        model=str(args.model),
+        model=model,
+        task_type=str(args.task_type),
+        language=str(args.language).strip(),
         tokenizer_model=str(args.tokenizer_model),
         hf_cache_home_mount=Path(args.hf_cache_home_mount),
         network=str(args.network),
@@ -168,7 +210,10 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         response_formats=response_formats,
         startup_timeout_seconds=float(args.startup_timeout_seconds),
         hf_cache_dir=Path(args.hf_cache_dir),
-        probe_text=str(args.probe_text),
+        probe_text=probe_text if probe_text is not None else DEFAULT_TEXT,
+        instructions=instructions,
+        reference_audio=Path(args.reference_audio) if args.reference_audio is not None else None,
+        reference_transcript=reference_transcript,
         hf_token=str(args.hf_token).strip() if args.hf_token else None,
         pull_image=not bool(args.skip_pull_image),
         retain_container=bool(args.retain_container),
@@ -176,16 +221,19 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     )
 
 
-def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Path]:
+def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Path, Path]:
     """Create a clean deterministic output tree for the current benchmark run."""
     output_root.mkdir(parents=True, exist_ok=True)
     artifacts_dir = output_root / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
-    for artifact_path in artifacts_dir.iterdir():
-        if artifact_path.is_dir():
-            shutil.rmtree(artifact_path)
-            continue
-        artifact_path.unlink()
+    inputs_dir = output_root / "inputs"
+    inputs_dir.mkdir(parents=True, exist_ok=True)
+    for managed_dir in (artifacts_dir, inputs_dir):
+        for artifact_path in managed_dir.iterdir():
+            if artifact_path.is_dir():
+                shutil.rmtree(artifact_path)
+                continue
+            artifact_path.unlink()
 
     logs_path = output_root / "docker_logs.txt"
     report_json_path = output_root / "report.json"
@@ -194,7 +242,7 @@ def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Pat
     for generated_path in (logs_path, report_json_path, report_md_path, failure_path):
         with suppress(FileNotFoundError):
             generated_path.unlink()
-    return artifacts_dir, logs_path, report_json_path, report_md_path, failure_path
+    return artifacts_dir, inputs_dir, logs_path, report_json_path, report_md_path, failure_path
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -203,11 +251,19 @@ def main(argv: list[str] | None = None) -> int:
     enforce_generated_output_path(settings.output_root, label="output_root")
     (
         artifacts_dir,
+        inputs_dir,
         logs_path,
         report_json_path,
         report_md_path,
         failure_path,
     ) = _prepare_output_root(settings.output_root)
+    prepared_inputs = prepare_request_inputs(
+        inputs_dir=inputs_dir,
+        probe_text=settings.probe_text,
+        instructions=settings.instructions,
+        reference_audio=settings.reference_audio,
+        reference_transcript=settings.reference_transcript,
+    )
 
     ensure_sidecar_preconditions(settings)
     smi_identity_output = run_checked(
@@ -229,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         start_sidecar(settings)
         readiness_seconds, host_payload = wait_for_voices(settings)
         voice_names = voice_names_from_payload(host_payload)
-        if settings.voice not in voice_names:
+        if settings.task_type != "Base" and settings.voice not in voice_names:
             supported = ", ".join(voice_names)
             raise SystemExit(
                 "Configured Task 79 voice "
@@ -272,6 +328,18 @@ def main(argv: list[str] | None = None) -> int:
             host_base_url=host_base_url,
             internal_base_url=internal_base_url,
             host_hf_cache_dir=settings.hf_cache_dir.as_posix(),
+            speech_request=SpeechRequestEvidence(
+                task_type=settings.task_type,
+                model=settings.model,
+                language=settings.language,
+                voice=None if settings.task_type == "Base" else settings.voice,
+                probe_text_path=prepared_inputs.probe_text_path,
+                instructions_path=prepared_inputs.instructions_path,
+                reference_audio_path=prepared_inputs.reference_audio_path,
+                reference_audio_sha256=prepared_inputs.reference_audio_sha256,
+                reference_audio_duration_seconds=prepared_inputs.reference_audio_duration_seconds,
+                reference_transcript_path=prepared_inputs.reference_transcript_path,
+            ),
             gpu_identity=gpu_identity,
             sidecar_runtime=sidecar_runtime,
             voices_evidence=VoicesEvidence(
@@ -317,6 +385,7 @@ def main(argv: list[str] | None = None) -> int:
                 host_base_url=report.host_base_url,
                 internal_base_url=report.internal_base_url,
                 host_hf_cache_dir=report.host_hf_cache_dir,
+                speech_request=report.speech_request,
                 gpu_identity=report.gpu_identity,
                 sidecar_runtime=report.sidecar_runtime,
                 voices_evidence=report.voices_evidence,

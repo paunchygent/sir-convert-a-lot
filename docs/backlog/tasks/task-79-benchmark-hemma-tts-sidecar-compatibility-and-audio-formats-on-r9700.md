@@ -10,6 +10,7 @@ related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md
+  - docs/backlog/tasks/task-98-add-qwen-english-reference-clone-lane-to-hemma-benchmark.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
@@ -61,7 +62,8 @@ pdm run run-hemma -- pdm run benchmark:task-79
 Current command defaults:
 
 - image: `vllm/vllm-omni-rocm:v0.16.0`
-- model: `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice`
+- CustomVoice model: `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice`
+- Base clone model: `Qwen/Qwen3-TTS-12Hz-0.6B-Base`
 - host HF cache:
   `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH:-/srv/scratch/sir-convert-a-lot/cache/huggingface}`
 - compatibility mount when Docker cannot bind `/srv/*` directly:
@@ -82,6 +84,11 @@ Current command defaults:
   - `Qwen/Qwen3-TTS-Tokenizer-12Hz` is prefetched into the shared cache
   - tokenizer files are mirrored into the model snapshot `speech_tokenizer/` path expected by
     the live `vllm-omni` stage-1 loader
+- request-evidence contract:
+  - `inputs/probe_text.txt`
+  - `inputs/instructions.txt` when style instructions are used
+  - `inputs/reference_audio.wav` when the Base clone lane is used
+  - `inputs/reference_transcript.txt` when the Base clone lane is used
 
 The benchmark writes:
 
@@ -91,6 +98,16 @@ The benchmark writes:
 - `artifacts/sample.wav` on success
 - `artifacts/sample.mp3` when compressed output is supported
 - `failure.txt` when the run fails before acceptance completes
+
+Task 98 extends this benchmark with the official Qwen Base clone lane:
+
+- `task_type=Base`
+- `ref_audio`
+- `ref_text`
+- `instructions`
+
+The clone lane keeps the same canonical `benchmark:task-79` command surface and
+does not introduce a parallel ad hoc benchmark script.
 
 ## Acceptance Criteria
 

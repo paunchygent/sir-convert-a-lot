@@ -33,6 +33,9 @@ from scripts.sir_convert_a_lot.devops.task79_hemma_tts_sidecar_reporting import 
     PythonRecommendation,
     SidecarRuntime,
 )
+from scripts.sir_convert_a_lot.devops.task79_qwen3_tts_request_payload import (
+    build_speech_payload,
+)
 
 GPU_PRODUCT_RE = re.compile(r"Card\s+Series:\s*(.+)", re.IGNORECASE)
 GPU_VRAM_TOTAL_RE = re.compile(r"VRAM Total Memory \(B\):\s*([0-9]+)")
@@ -50,6 +53,8 @@ class BenchmarkSettings:
     output_root: Path
     image: str
     model: str
+    task_type: str
+    language: str
     tokenizer_model: str
     hf_cache_home_mount: Path
     network: str
@@ -63,6 +68,9 @@ class BenchmarkSettings:
     startup_timeout_seconds: float
     hf_cache_dir: Path
     probe_text: str
+    instructions: str | None
+    reference_audio: Path | None
+    reference_transcript: str | None
     hf_token: str | None
     pull_image: bool
     retain_container: bool
@@ -225,8 +233,6 @@ def voice_names_from_payload(payload: object) -> list[str]:
             name_obj = entry.get("name") or entry.get("voice")
             if isinstance(name_obj, str) and name_obj.strip() != "":
                 names.append(name_obj)
-    if not names:
-        raise SystemExit("No voice names were parsed from `/v1/audio/voices`.")
     return sorted(dict.fromkeys(names))
 
 
@@ -614,10 +620,18 @@ def audio_probe(
 ) -> tuple[AudioProbeResult, int, int]:
     """Call `/v1/audio/speech` for one response format and persist the artifact."""
     payload = {
-        "model": settings.model,
-        "input": settings.probe_text,
-        "voice": settings.voice,
-        "response_format": response_format,
+        key: value
+        for key, value in build_speech_payload(
+            model=settings.model,
+            probe_text=settings.probe_text,
+            response_format=response_format,
+            task_type=settings.task_type,
+            language=settings.language,
+            voice=settings.voice,
+            instructions=settings.instructions,
+            reference_audio=settings.reference_audio,
+            reference_transcript=settings.reference_transcript,
+        ).items()
     }
     output_path = artifacts_dir / f"sample.{response_format}"
     error_path = artifacts_dir / f"sample.{response_format}.error.txt"

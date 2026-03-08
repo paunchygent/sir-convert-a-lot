@@ -474,6 +474,33 @@ Usage notes:
 - Use the emitted Python recommendation from `report.json` to lock the sidecar runtime floor;
   do not assume Python `3.14` support without live proof.
 
+Official Qwen Base clone lane:
+
+- The same Task 79 harness now supports the official Qwen3-TTS Base cloning
+  path through `/v1/audio/speech`.
+- Use:
+  - `task_type=Base`
+  - model `Qwen/Qwen3-TTS-12Hz-0.6B-Base`
+  - `--reference-audio`
+  - `--reference-transcript` or `--reference-transcript-file`
+  - optional bounded `--instructions` or `--instructions-file`
+- The benchmark writes deterministic input evidence under `inputs/` so the
+  exact clone prompt can be audited after the Hemma run.
+
+Example:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-79 \
+  --output-root build/verification/task-98-qwen-english-reference-clone \
+  --task-type Base \
+  --language English \
+  --model Qwen/Qwen3-TTS-12Hz-0.6B-Base \
+  --reference-audio build/verification/task-98-qwen-english-reference-clone/inputs/reference_audio.wav \
+  --reference-transcript-file build/verification/task-98-qwen-english-reference-clone/inputs/reference_transcript.txt \
+  --probe-text-file build/verification/task-98-qwen-english-reference-clone/inputs/probe_text.txt \
+  --instructions-file build/verification/task-98-qwen-english-reference-clone/inputs/instructions.txt
+```
+
 ## OpenVoice V2 Swedish Cloning Benchmark (Task 81)
 
 Run the first normalized ADR-0007 sidecar benchmark for the OpenVoice V2

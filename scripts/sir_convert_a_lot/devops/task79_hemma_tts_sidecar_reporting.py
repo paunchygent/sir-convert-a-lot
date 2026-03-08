@@ -18,6 +18,22 @@ from pathlib import Path
 
 
 @dataclass(frozen=True)
+class SpeechRequestEvidence:
+    """Resolved request-input evidence for one Task 79 audio probe run."""
+
+    task_type: str
+    model: str
+    language: str
+    voice: str | None
+    probe_text_path: str
+    instructions_path: str | None
+    reference_audio_path: str | None
+    reference_audio_sha256: str | None
+    reference_audio_duration_seconds: float | None
+    reference_transcript_path: str | None
+
+
+@dataclass(frozen=True)
 class GpuIdentity:
     """Live GPU identity and runtime truth observed on Hemma."""
 
@@ -91,6 +107,7 @@ class BenchmarkReport:
     host_base_url: str
     internal_base_url: str
     host_hf_cache_dir: str
+    speech_request: SpeechRequestEvidence
     gpu_identity: GpuIdentity
     sidecar_runtime: SidecarRuntime
     voices_evidence: VoicesEvidence
@@ -131,6 +148,21 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- host_base_url: `{report.host_base_url}`",
         f"- internal_base_url: `{report.internal_base_url}`",
         f"- host_hf_cache_dir: `{report.host_hf_cache_dir}`",
+        "",
+        "## Speech Request",
+        f"- task_type: `{report.speech_request.task_type}`",
+        f"- model: `{report.speech_request.model}`",
+        f"- language: `{report.speech_request.language}`",
+        f"- voice: `{report.speech_request.voice}`",
+        f"- probe_text_path: `{report.speech_request.probe_text_path}`",
+        f"- instructions_path: `{report.speech_request.instructions_path}`",
+        f"- reference_audio_path: `{report.speech_request.reference_audio_path}`",
+        f"- reference_audio_sha256: `{report.speech_request.reference_audio_sha256}`",
+        (
+            "- reference_audio_duration_seconds: "
+            f"`{report.speech_request.reference_audio_duration_seconds}`"
+        ),
+        f"- reference_transcript_path: `{report.speech_request.reference_transcript_path}`",
         "",
         "## GPU Identity",
         f"- product_name: `{report.gpu_identity.product_name}`",
