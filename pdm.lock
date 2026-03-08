@@ -5,7 +5,7 @@
 groups = ["default", "qwen-preprocessing"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:5b3752cda1e3b5ede59e8c4a7dd8e7d36d39244ae7e6bc4be7c49775334eebac"
+content_hash = "sha256:a2a22c3f76146f361044f1a39b6e3b0d2cd9f159568cc9a0bfc2b6f892732879"
 
 [[metadata.targets]]
 requires_python = ">=3.11,<3.14"
