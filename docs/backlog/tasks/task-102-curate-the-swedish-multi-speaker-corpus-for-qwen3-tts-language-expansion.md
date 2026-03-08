@@ -65,6 +65,10 @@ Task 102 now fixes the corpus policy for Epic 08:
 - filtered `rixvox` train is the only main training backbone
 - `fleurs` validation/test and labeled `waxholm` stay reserved for control and
   evaluation
+- checkpoint-dev is fixed to:
+  - `rixvox` validation plus `fleurs` validation
+- final reporting is fixed to:
+  - `rixvox` test plus `fleurs` test
 - preprocessing smoke subset:
   - `8` to `12` filtered hours from `12` to `16` speakers
 - bounded Hemma pilot subset:
@@ -76,8 +80,13 @@ Task 102 now fixes the corpus policy for Epic 08:
 - auxiliary held-out control:
   - labeled usable `waxholm`
 - transcript-mismatch filtering hand-off to `T103`:
-  - ASR-WER `<= 0.15` for smoke/pilot
-  - ASR-WER `<= 0.20` for scale-up admission
+  - pinned Swedish ASR backend:
+    - `KBLab/kb-whisper-large` with `revision=\"strict\"`
+  - ASR-WER `<= 0.15` for high-trust smoke/pilot admission
+  - ASR-WER `<= 0.20` for medium-trust scale-up admission
+  - `speaker_from_id=True` preferred for smoke/pilot; quarantine the rest until
+    manual review
+  - apply boilerplate-text dedup before per-speaker cap accounting
 
 ## Hand-Off to T103
 
@@ -86,6 +95,8 @@ Task 102 now fixes the corpus policy for Epic 08:
 - generating deterministic artifact specs under
   `build/reference/qwen3-tts-swedish-corpus/`
 - implementing the Swedish ASR/WER mismatch filter
+- standardizing public `16 kHz` source assets to `24 kHz` before training
+  manifests are emitted
 - assigning one canonical `5` to `10` second `ref_audio` clip per speaker
 - materializing train/dev/eval manifests from this policy
 

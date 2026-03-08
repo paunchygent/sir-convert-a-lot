@@ -32,7 +32,8 @@ into Qwen-ready training inputs without relying on ad hoc local scripts.
 - Adapt the official Qwen preprocessing flow to the repo's cache, wrapper, and
   artifact policy.
 - Define the normalized intermediate records for:
-  - source audio (resampled strictly to 24 kHz),
+  - source audio (public corpora may arrive at 16 kHz, but training-side
+    artifacts are resampled strictly to 24 kHz),
   - normalized transcript (feeding raw Swedish orthography to the LLM tokenizer with strict punctuation),
   - reference audio policy (**assigning exactly one 5-10 second canonical reference clip per speaker**, reused across all rows for that speaker),
   - generated audio codes,

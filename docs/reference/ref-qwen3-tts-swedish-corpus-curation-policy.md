@@ -30,7 +30,8 @@ This policy closes `T102` by naming:
 - the transcript and speaker filters,
 - the bounded Hemma pilot subset,
 - the later Colab scale-up subset,
-- and the held-out evaluation split.
+- the checkpoint-dev versus final held-out split,
+- and the preprocessing hand-off into `T103`.
 
 ## Dataset Inventory
 
@@ -71,6 +72,12 @@ Policy:
 - do not use `fleurs` validation or test in training
 - do not use `waxholm` in training
 
+Policy:
+
+- treat `rixvox` validation plus `fleurs` validation as checkpoint-dev only
+- treat `rixvox` test plus `fleurs` test as final reporting only
+- do not recycle the final test split for checkpoint or subset selection
+
 ### Optional Non-Training Smoke Controls
 
 `fleurs` train and labeled `waxholm` may be used for preprocessing smoke checks
@@ -87,7 +94,11 @@ The filtering contract for `T102` is:
 1. exclude rows with obvious protocol-only or stage-direction content
 1. exclude rows with missing or unusable speaker identity for per-speaker
    reference selection
+1. prefer `speaker_from_id=True` rows for the smoke subset and bounded Hemma
+   pilot; quarantine the rest until manual review proves they are safe
+1. exclude suspected multi-speaker contamination or diarization failures
 1. apply transcript-mismatch filtering with Swedish ASR during `T103`
+1. apply a boilerplate-text dedup pass before speaker caps are counted
 1. cap per-speaker contribution so a few parliamentary voices do not dominate
 
 ### Transcript-Mismatch Policy
@@ -95,12 +106,24 @@ The filtering contract for `T102` is:
 `T103` must implement a reproducible Swedish ASR mismatch filter before pilot
 manifests are finalized.
 
+Pinned backend:
+
+- `KBLab/kb-whisper-large`
+- default revision:
+  - `strict`
+
 Initial thresholds:
 
 - Hemma smoke and bounded pilot:
   - ASR-WER `<= 0.15`
+  - quality tier:
+    - high-trust / pilot-admissible
 - Colab scale-up admission:
   - ASR-WER `<= 0.20`
+  - quality tier:
+    - medium-trust / scale-up-only
+
+Rows above `0.20` are out of scope for admission.
 
 These thresholds are intentionally strict for the first pilot. They can be
 relaxed later only after manual review shows the filter is discarding too much
@@ -127,6 +150,12 @@ Initial per-speaker caps:
   - maximum `60` minutes per speaker
 - Colab scale-up:
   - maximum `3` hours per speaker
+
+Speaker hours are counted after:
+
+- transcript-mismatch filtering
+- boilerplate-text deduplication
+- speaker-contamination exclusion
 
 ## Bounded Subsets
 
@@ -206,6 +235,7 @@ Use:
 Purpose:
 
 - monitor Swedish intelligibility and overfitting during pilot training
+- serve as checkpoint-dev only
 
 ### Quantitative Test
 
@@ -218,6 +248,7 @@ Purpose:
 
 - compare the Hemma pilot and later Colab scale-up on untouched evaluation
   data
+- serve as final reporting only
 
 ### Auxiliary Held-Out Control
 
@@ -236,6 +267,9 @@ Purpose:
 This task does not build manifests, but it fixes the corpus-side policy that
 `T103` must implement:
 
+- corpus admission can start from the public `16 kHz` source assets
+- all training-side artifacts must be standardized to `24 kHz` before manifest
+  emission and mel extraction
 - assign exactly one canonical `5` to `10` second reference clip per speaker
 - reuse that reference clip across all rows for that speaker
 - do not let per-row random `ref_audio` selection leak into the first pilot
