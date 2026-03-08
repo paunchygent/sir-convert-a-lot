@@ -32,7 +32,7 @@ Below is a curated collection of sources where each source has a short, fielded 
 **Says about…**
 Curation: Requires text+audio pairs. No quality filtering described.
 Preprocess: `prepare_data.py` creates `audio_codes` with `Qwen3-TTS-Tokenizer-12Hz`.
-Training: `sft_12hz.py` with example LR and epochs, and `speaker_name` (single speaker).
+Training: `sft_12hz.py` with example LR and epochs, and `speaker_name` (single speaker). Note: there is a hyperparameter mismatch between the README (batch_size 32, lr 2e-6, num_epochs 10) and the script defaults (batch_size 2, lr 2e-5, num_epochs 3). This requires local sweeps.
 Runtime: Assumes GPU device and batched encoding (`BATCH_INFER_NUM=32`).
 Evaluation: Suggests "quick inference test" with `generate_custom_voice`.
 **Directly reusable?** Partially. The chain is directly reusable; but single-speaker assumptions in the training script must be removed/reshaped for multi-speaker.
@@ -123,6 +123,16 @@ Evaluation/anti-pattern: "non-verbatim + auto-alignment" is exactly the type of 
 **Why important:** It gives practical "flawless" operation rules relevant to your TTS FT: (1) verify ROCm visibility in container, (2) avoid docker-snap if mounting `/srv/scratch/...`, (3) pin ROCm base images and avoid pip-installing the wrong torch wheel.
 **Directly reusable?** Yes for reproducibility and cache stability.
 
+**KBLab/kb-whisper-large**
+**Source Type:** Model card on Hugging Face.
+**Why important:** This should be your default Swedish ASR backend for filtering and WER evaluation. It is trained on 50,000+ hours of Swedish speech and reports materially better Swedish WER than `whisper-large-v3` across FLEURS, Common Voice, and NST.
+**Directly reusable?** Yes, as the most reproducible ASR choice.
+
+**mozi1924/Qwen3-TTS-EasyFinetuning**
+**Source Type:** Third-party GitHub repository.
+**Why important:** This is an indirect engineering reference, not a recipe to copy. It is the clearest public code example of building a `spk_id_map`, carrying per-sample `speaker_ids`, applying the text-projection fix, and writing multiple speaker embeddings back into the codec table. It is CUDA/Docker-oriented and voice-product-centric.
+**Directly reusable?** Partially, as an engineering reference.
+
 ## Best Public Patterns for Multi-Speaker Language Expansion from Qwen's Single-Speaker Recipe
 
 Here is the most defensible translation from "single-speaker custom voice" to "multi-speaker language expansion" based on what Qwen actually does in their code.
@@ -168,17 +178,13 @@ The most defensible policy is to explicitly divide data into **trust levels** an
 
 ### Trust Levels and Suggested Role in Training
 
-**High trust: FLEURS (sv_SE) – "clean read speech + ready split"**
-FLEURS has ~10 hours train per language and separate speakers between train and dev/test, making it exceptionally good as both a training base and evaluation source.
-Policy: use FLEURS train as a "stable Swedish core"; use dev/test as one of your primary eval sets.
-
-**High trust: Waxholm – "manual orthographic text + align correction"**
-The Waxholm card describes a process with manual text input (listen & write), T2P, auto align, and manual correction; and warns that files without labels should not be used for training/test.
-Policy: take only label-safe files; build speakers from filenames/metadata; consistently resample to 24k for the Qwen pipeline.
+**High trust: FLEURS (sv_SE) & Waxholm – "clean read speech & manual orthographic text"**
+These are excellent as high-trust signal tests, but too small to be the main training backbone.
+Policy: use FLEURS and Waxholm strictly for smoke tests, controls, and held-out evaluation. Wherever possible, prefer their native dataset splits over a generic custom 80/20 split.
 
 **Medium/Low trust: RixVox – "massive volume, but not always verbatim"**
-RixVox is large (≈5493 h) and has rich speaker metadata, but transcript text is not always verbatim speech, alignment is automatic, and dedup is minimal.
-Policy: only use RixVox as "volume + prosody variation" **after** you have implemented transcript match filters and audio quality filters.
+RixVox is large (≈5493 h) and already has speaker-disjoint splits, making it the most viable training backbone. However, transcript text is not always verbatim speech.
+Policy: use filtered RixVox as the **first real training backbone**, but only **after** you have implemented transcript match filters (e.g. ASR-WER based mismatch detection).
 
 ### A Defensible Filtering Policy for RixVox
 
@@ -198,11 +204,12 @@ Translated to RixVox:
 
 This is binary: either you follow the contract or training becomes brittle.
 
-- **Swedish Orthography:** Feed native Swedish orthography directly into the pipeline without custom phonemizers. Qwen3-TTS's tokenizer possesses native subword tokens for Latin-extended characters (`å`, `ä`, `ö`) and its 16-layer RVQ stack uses a semantic first layer to natively interpret raw text.
+- **Swedish Orthography:** Feed standard Swedish orthography directly. Qwen handles text with the standard Qwen tokenizer, while the 12Hz tokenizer handles speech codes separately; do not add a phonemizer in the first pass unless evaluation later shows a clear homograph problem.
 - **Punctuation:** Maintain strict, clear punctuation (commas, periods). The model relies heavily on these to structure prosody and breathing boundaries, since there is no intermediate phoneme layer.
 - **24 kHz**: `ref_audio` must be 24k for `extract_mels`.
 - **JSONL fields**: every row must have `audio`, `text`, `ref_audio`; after the prepare step, also `audio_codes`.
 - **Length policy**: RixVox can be up to 30s; Qwen's pipeline can technically handle it, but you should set a max length in the pilot (e.g., 2–15s) for faster iteration and less risk of alignment drift.
+- **Inert `language` field:** Do not assume the JSONL `language` field affects training in the current public finetune stack; it is read by `dataset.py` but not propagated into the returned batch.
 
 ## Reference Audio and Manifest Strategy for Multi-Speaker Swedish Runs
 
@@ -317,14 +324,14 @@ Nord-Parl-TTS shows that DNSMOS P.835-OVL is used as sample metadata in the Swed
      - dropping of `speaker_encoder` from `state_dict`
    - Ensure the configuration parameter `tts_model_type` remains or is reverted to `"base"` rather than being overwritten to `"custom_voice"`. This is crucial because "custom_voice" disables In-Context Learning (ICL) and zero-shot voice cloning capabilities in downstream inference.
    - **sft_12hz.py**: Include the community text-projection fix to ensure language adaptation behaves correctly.
-   - **dataset.py**: Patch the dataloader to parse multiple speakers, build a `spk_id_map`, and carry a dataset-scoped `speaker_id` through the training loop.
+   - **dataset.py**: Patch the dataloader to parse multiple speakers, build a `spk_id_map`, and carry a dataset-scoped `speaker_id` through the training loop. *(Note: This patch is strictly for metadata tracking, governance, and evaluation, or if you intend to export named speakers (Pattern B). The actual forward path conditions purely on `ref_mel -> speaker_encoder(ref_mels)` and does not use `speaker_id`.)*
      Otherwise, you risk exporting an artificial "single speaker" even if training succeeds.
 
 1. **Inference on Multi-Speaker Checkpoint**
 
    - Because you kept `tts_model_type` as "base" and preserved the `speaker_encoder`, do **not** use `generate_custom_voice.py` for inference.
-   - Load the fine-tuned checkpoint using the standard base generation script.
-   - Pass your target `ref_audio` path dynamically at runtime. The preserved speaker encoder will extract the speaker embedding on the fly, identical to how the unmodified foundation model operates.
+   - After a base-like fine-tune, validate inference with `generate_voice_clone.py` or `create_voice_clone_prompt` + `generate_voice_clone`.
+   - Reserve `generate_custom_voice.py` strictly for checkpoints intentionally exported as CustomVoice models.
 
 1. **Run a short, but not trivial, training loop**
 

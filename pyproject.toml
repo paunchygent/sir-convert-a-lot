@@ -6,7 +6,7 @@ authors = [
     { name = "Olof Larsson", email = "paunchygent@gmail.com" },
 ]
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.128.8",
@@ -124,6 +124,7 @@ distribution = false
 "benchmark:task-91" = "python -m scripts.sir_convert_a_lot.devops.run_task91_chatterbox_speech_aware_stitching_experiment"
 "benchmark:task-91-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_task91_hemma_chatterbox_speech_aware_stitching_experiment"
 "benchmark:task-91-restitch" = "python -m scripts.sir_convert_a_lot.devops.run_task91_restitch_saved_chunks"
+"task-100-smoke" = "python -m scripts.sir_convert_a_lot.devops.run_task100_hemma_qwen_finetune_smoke"
 "benchmark:task-73-telemetry" = "python -m scripts.sir_convert_a_lot.benchmark_story20_telemetry_overhead"
 "benchmark:task-12" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"

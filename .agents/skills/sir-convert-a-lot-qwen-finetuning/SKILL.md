@@ -90,7 +90,7 @@ This Qwen skill adds the model-family-specific decisions:
 - keep the target on the `1.7B` base model
 - distinguish official Qwen single-speaker guidance from the repo's planned
   multi-speaker Swedish language-expansion lane. **Crucially, `sft_12hz.py` must be patched to preserve the `speaker_encoder` and `tts_model_type="base"` to avoid collapsing into a single-speaker state.**
-- **Patch `dataset.py` to parse multiple speakers, build a `spk_id_map`, and carry a dataset-scoped `speaker_id` through the training loop.**
+- **Patch `dataset.py` to parse multiple speakers, build a `spk_id_map`, and carry a dataset-scoped `speaker_id` through the manifest and batch surfaces. In the current base-model path, this is metadata for governance, eval, and optional future speaker-bank export, not the primary conditioning signal.**
 - **Ensure the training patch includes the known community text-projection fix to maintain language adaptation stability.**
 - **Rely on Qwen's LLM tokenizer for text normalization. Feed raw Swedish orthography directly with strict punctuation. Do not use external phonemizers.**
 - keep Triton flash attention as the default Qwen ROCm path
@@ -112,11 +112,12 @@ Treat Swedish data as three different roles:
 - `KBLab/rixvox`
   - main hours source
   - requires transcript filtering and speaker curation
+  - prefer Swedish ASR/WER-backed mismatch filtering before scale-up
 - `google/fleurs` Swedish
   - clean short utterances
-  - good dev/eval source
+  - good high-trust smoke and dev/eval source
 - `KTH/waxholm`
-  - smoke data and held-out checks
+  - high-trust smoke data and held-out checks
 
 Never treat "available Swedish data" as a single undifferentiated pool.
 
@@ -127,6 +128,7 @@ When planning the corpus, always answer:
 - what is held out?
 - which speakers are excluded from training for evaluation?
 - how are low-confidence transcripts filtered?
+- which Swedish ASR/WER surface is used to detect transcript mismatch?
 
 ## Qwen Workflow Overlay
 
@@ -144,6 +146,8 @@ this Qwen-specific order:
    - reference-audio policy: **One 5-10 second canonical reference clip per speaker, reused across all rows for that speaker.**
    - audio-code generation
    - manifests: **Two layers (rich intermediate + Qwen-ready JSONL with `speaker_id`).**
+   - `speaker_id` note: **track it for metadata, splits, and optional future speaker-bank export; current conditioning still comes from `ref_audio -> ref_mel -> speaker_encoder`.**
+   - dependency split: **Task 100 owns the training-image stack; Task 103 owns the extra preprocessing/eval stack.**
 1. Run a bounded pilot:
    - one real optimizer step minimum
    - **Hemma Smoke Run:** 8-12 hours, 12-16 speakers.

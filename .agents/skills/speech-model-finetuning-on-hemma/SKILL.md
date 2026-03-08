@@ -94,6 +94,10 @@ Always separate:
 For weakly aligned transcripts, require an explicit filtering policy before
 recommending scale-up training.
 
+If the language is Swedish and the corpus includes weakly aligned broadcast or
+parliamentary data, prefer an explicit Swedish ASR/WER mismatch filter rather
+than only trusting the provided transcript.
+
 ## Training Workflow
 
 Use this order by default:

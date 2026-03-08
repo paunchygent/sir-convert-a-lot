@@ -186,6 +186,7 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     brief, and source map instead of freeform external searching.
 
 - 2026-03-05:
+
   - Re-terminalized Task 73 after ruthless review remediation:
     - canonical phase timing keys and app-owned telemetry sink wiring landed,
     - bounded-cardinality worker/job/retry/duration metrics replaced the older shape,
@@ -196,6 +197,7 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     detail remains in the linked Epic 06 / Story 20 / Task 76 docs.
 
 - 2026-03-04:
+
   - Planned Epic 06 long PDF reliability/performance work under the new progress, checkpoint,
     resume, and throughput stories.
   - Completed Tasks 67-71 and 75 in the first Epic 06 delivery slice:
@@ -209,12 +211,10 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     linked task docs and tests.
 
 ## Next Actions
-- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`,
-  then `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: `T99` is active first, then `T105`, then corpus curation
-  (`T102`) and preprocessing (`T103`) once the external evidence pass lands.
+
+- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then
+  `T83`, with `T82` kept deferred.
+- Parallel planning focus is Epic 08: `T99`, then `T105`, then corpus curation (`T102`) and
+  preprocessing (`T103`) once the external evidence pass lands.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
-- `T81` is complete with a negative recommendation; immediate Story 23 focus is now the `T91`
-  listening verdict plus the active `T93` chunk-planner redesign, with `T83` as the Swedish
-  pronunciation control and `T82` still deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

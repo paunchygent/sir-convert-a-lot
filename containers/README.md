@@ -26,6 +26,12 @@ Current lifecycle policy:
   - deployable on Hemma: no
   - purpose:
     - saved-text preprocessing experiments outside the Chatterbox sidecar
+- `qwen-finetune-hemma/`
+  - status: experimental training runtime
+  - deployable on Hemma: no
+  - purpose:
+    - Task 100 containerized Qwen3-TTS Swedish fine-tuning lane
+    - build-only and smoke-only training image, not a public sidecar
 
 Operational rule:
 

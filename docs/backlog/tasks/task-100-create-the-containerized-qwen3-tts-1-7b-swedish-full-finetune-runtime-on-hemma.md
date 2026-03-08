@@ -35,6 +35,26 @@ wrapper, and GPU-governance discipline.
   Hemma.
 - Base the image/runtime on a ROCm training container instead of the main
   service image.
+- **Implement the critical multi-speaker language expansion patches to `sft_12hz.py`**:
+  - Remove the single-speaker collapse logic (the `spk_id=3000` rewrite).
+  - Preserve the `speaker_encoder` in the state dict.
+  - Maintain `tts_model_type="base"`.
+  - Include the known community text-projection fix.
+  - Make checkpoint export work for both:
+    - local model directories,
+    - and Hugging Face Hub ids such as
+      `Qwen/Qwen3-TTS-12Hz-1.7B-Base`.
+- Define the **training-image dependency baseline** for the runtime image:
+  - `qwen_tts`
+  - `torch` ROCm-compatible build
+  - `accelerate`
+  - `transformers`
+  - `safetensors`
+  - `huggingface_hub`
+  - `librosa`
+  - `soundfile`
+  - `sentencepiece`
+  - `tensorboard`
 - Keep cache/model storage under the canonical Sir Convert-a-Lot cache roots.
 - Keep command execution wrapper-driven:
   - local PDM wrapper,
@@ -45,7 +65,15 @@ wrapper, and GPU-governance discipline.
 
 - [ ] One committed runtime/image definition for Qwen `1.7B` fine-tuning on
   Hemma.
+- [ ] Canonical image definition:
+  - `containers/qwen-finetune-hemma/Dockerfile`
+- [ ] Canonical pinned dependency baseline:
+  - `containers/qwen-finetune-hemma/requirements.txt`
+- [ ] Patched versions of the official Qwen training scripts (`sft_12hz.py`).
+- [ ] One explicit dependency matrix for the Task 100 training image.
 - [ ] One deterministic command surface for smoke/pilot runs.
+- [ ] Canonical wrapper-driven smoke command:
+  - `pdm run run-hemma -- pdm run task-100-smoke`
 - [ ] Runbook instructions for build, launch, cache roots, and GPU validation.
 - [ ] Explicit note that this runtime is separate from the current production
   sidecar candidate images.
@@ -56,6 +84,12 @@ wrapper, and GPU-governance discipline.
 - [ ] The runtime reuses canonical persistent caches instead of container-local
   model downloads as the steady-state path.
 - [ ] The runtime does not modify the main Sir Convert-a-Lot service image.
+- [ ] The training script successfully exports a valid multi-speaker checkpoint
+  (with speaker encoder intact) without collapsing to a single voice.
+- [ ] The training script exports cleanly when `--init_model_path` is either a
+  local directory or a Hugging Face Hub id.
+- [ ] The Task 100 runtime image includes the training-only dependency set and
+  does not silently rely on host-python installs.
 - [ ] The runtime documentation names the exact Hemma host paths and wrapper
   commands that are allowed.
 

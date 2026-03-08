@@ -212,6 +212,57 @@ Use them differently:
 Do not start by mixing raw multi-thousand-hour `rixvox` data without a curation
 policy.
 
+## Dependency Baseline
+
+Separate the runtime dependencies by lane. Do not treat host-python state as
+the contract.
+
+Task 100 training image baseline:
+
+- `qwen_tts`
+- ROCm-compatible `torch`
+- `accelerate`
+- `transformers`
+- `safetensors`
+- `huggingface_hub`
+- `librosa`
+- `soundfile`
+- `sentencepiece`
+- `tensorboard`
+
+Canonical Task 100 runtime assets:
+
+- `containers/qwen-finetune-hemma/Dockerfile`
+- `containers/qwen-finetune-hemma/requirements.txt`
+- `scripts/sir_convert_a_lot/devops/run_task100_hemma_qwen_finetune_smoke.py`
+
+Wrapper-driven Hemma smoke command for the image surface:
+
+```bash
+pdm run run-hemma -- pdm run task-100-smoke
+```
+
+Expected deterministic evidence root:
+
+- `build/verification/task-100-qwen-finetune-smoke/`
+  - `report.json`
+  - `report.md`
+  - `failure.txt` when the smoke run fails
+
+Task 103 preprocessing/eval baseline:
+
+- `datasets`
+- Swedish ASR runtime/tooling for transcript-mismatch filtering
+- `jiwer`
+- any committed audio normalization utilities required by the pipeline
+
+Policy:
+
+- the Task 100 image must contain the training baseline itself
+- the Task 103 surface must document its own preprocessing/eval stack
+- do not rely on mutable host installs on Hemma as the long-term source of
+  truth
+
 ## Execution Order
 
 1. Complete Task 99 so the Qwen Hemma benchmark reflects the current ROCm flash
@@ -220,9 +271,13 @@ policy.
    research map, one research-team brief, and one repomix package rather than
    ad hoc notebook hunting.
 1. Complete Task 100 and create the dedicated training runtime.
+   - include the Task 100 training-image dependency baseline
+   - ensure `sft_12hz.py` exports cleanly for both local model directories and
+     Hub ids
 1. Complete Task 102 and define the bounded Swedish pilot subset.
 1. Complete Task 103 and produce deterministic manifests and preprocessed
    artifacts.
+   - include the Task 103 preprocessing/eval dependency baseline
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 

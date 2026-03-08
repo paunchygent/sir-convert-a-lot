@@ -32,17 +32,28 @@ into Qwen-ready training inputs without relying on ad hoc local scripts.
 - Adapt the official Qwen preprocessing flow to the repo's cache, wrapper, and
   artifact policy.
 - Define the normalized intermediate records for:
-  - source audio,
-  - normalized transcript,
-  - reference audio policy,
+  - source audio (resampled strictly to 24 kHz),
+  - normalized transcript (feeding raw Swedish orthography to the LLM tokenizer with strict punctuation),
+  - reference audio policy (**assigning exactly one 5-10 second canonical reference clip per speaker**, reused across all rows for that speaker),
   - generated audio codes,
   - train/dev/eval manifests.
+- Patch `dataset.py` to parse multiple speakers, build a `spk_id_map`, and carry a dataset-scoped `speaker_id` through the manifest and batch surfaces for governance, evaluation, and optional future speaker-bank export.
 - Preserve deterministic artifact/output roots for later reruns.
+- Define the transcript-mismatch filtering path for weakly aligned Swedish data,
+  preferably with a reproducible Swedish ASR/WER surface before scale-up.
+- Define the **preprocessing/eval dependency baseline** separately from the
+  Task 100 training image, including:
+  - `datasets`
+  - Swedish ASR runtime/tooling
+  - `jiwer`
+  - any audio normalization utilities required by the committed pipeline
 
 ## Deliverables
 
-- [ ] One committed preprocessing pipeline surface.
-- [ ] One documented manifest schema used by Hemma and Colab runs.
+- [ ] One committed preprocessing pipeline surface including the patched `dataset.py`.
+- [ ] One documented manifest schema used by Hemma and Colab runs, demonstrating the two-layer approach (rich intermediate vs Qwen-ready).
+- [ ] One documented transcript-mismatch filtering policy for `rixvox`.
+- [ ] One explicit dependency matrix for preprocessing and eval surfaces.
 - [ ] Runbook guidance for preprocessing reruns and artifact locations.
 
 ## Acceptance Criteria
@@ -50,6 +61,12 @@ into Qwen-ready training inputs without relying on ad hoc local scripts.
 - [ ] The pipeline is compatible with the official Qwen tokenizer/code
   preparation flow.
 - [ ] The pipeline produces deterministic manifests for train/dev/eval splits.
+- [ ] The pipeline enforces the 24kHz and canonical 5-10s ref-audio constraints.
+- [ ] The preprocessing contract makes it explicit that `speaker_id` is tracked
+  metadata while primary conditioning still comes from `ref_audio` /
+  `speaker_encoder`.
+- [ ] The preprocessing/eval dependency set is documented separately from the
+  Task 100 training-image dependency set.
 - [ ] The pipeline can be reused by both the Hemma pilot and the Colab H100
   scaling lane.
 
