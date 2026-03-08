@@ -17,11 +17,13 @@ from __future__ import annotations
 
 import argparse
 import importlib.metadata
+import importlib.util
 import json
 from pathlib import Path
 
 import sft_12hz
 import torch
+from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
 
 
 def _package_version(distribution_name: str) -> str | None:
@@ -48,6 +50,7 @@ def _build_dependency_versions() -> dict[str, str | None]:
         "torchaudio": _package_version("torchaudio"),
         "onnxruntime": _package_version("onnxruntime"),
         "sox": _package_version("sox"),
+        "flash-attn": _package_version("flash-attn"),
     }
 
 
@@ -77,6 +80,16 @@ def main() -> int:
 
     resolved_model_path = sft_12hz._resolve_model_export_source_path(str(args.model_id))
     config_dict = sft_12hz._load_config_dict(str(args.model_id))
+    flash_attn_importable = importlib.util.find_spec("flash_attn") is not None
+    flash_attn_model_load_ok = False
+    if flash_attn_importable:
+        model = Qwen3TTSModel.from_pretrained(
+            str(args.model_id),
+            dtype=torch.bfloat16,
+            attn_implementation="flash_attention_2",
+        )
+        del model
+        flash_attn_model_load_ok = True
 
     payload = {
         "model_id": str(args.model_id),
@@ -88,6 +101,9 @@ def main() -> int:
         "torch_cuda_available": True,
         "torch_cuda_device_count": int(torch.cuda.device_count()),
         "torch_hip_version": str(torch.version.hip),
+        "flash_attn_importable": flash_attn_importable,
+        "flash_attn_version": _package_version("flash-attn"),
+        "flash_attn_model_load_ok": flash_attn_model_load_ok,
         "dependency_versions": _build_dependency_versions(),
     }
     print(json.dumps(payload, indent=2, sort_keys=True))

@@ -61,6 +61,7 @@ def test_task100_build_smoke_probe_command_uses_rocm_and_cache_mounts() -> None:
     assert "--ipc=host" in command
     assert "HF_HOME=/cache/huggingface" in command
     assert f"{mount.effective_root.as_posix()}:/cache/huggingface" in command
+    assert all("TRANSFORMERS_CACHE=" not in item for item in command)
     assert settings.model_id in command
 
 
@@ -98,6 +99,9 @@ def test_task100_run_smoke_probe_parses_runtime_fields(monkeypatch: pytest.Monke
             '"torch_cuda_device_count":1,'
             '"torch_hip_version":"7.1.25424",'
             '"torch_version":"2.10.0+rocm7.1",'
+            '"flash_attn_importable":true,'
+            '"flash_attn_model_load_ok":true,'
+            '"flash_attn_version":"2.8.3",'
             '"tts_model_type":"base"'
             "}"
         )
@@ -114,4 +118,7 @@ def test_task100_run_smoke_probe_parses_runtime_fields(monkeypatch: pytest.Monke
     assert result.torch_cuda_device_count == 1
     assert result.torch_hip_version == "7.1.25424"
     assert result.torch_version == "2.10.0+rocm7.1"
+    assert result.flash_attn_importable is True
+    assert result.flash_attn_model_load_ok is True
+    assert result.flash_attn_version == "2.8.3"
     assert result.tts_model_type == "base"
