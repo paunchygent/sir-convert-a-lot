@@ -134,6 +134,16 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     can run against the staged Hemma public corpora rather than repo fixtures,
     while keeping the deterministic `build/reference/qwen3-tts-swedish-corpus/`
     contract stable.
+  - Completed the first live Hemma `T107` staged public-corpus preprocessing
+    pass with the bounded `task-103-preprocess-public-corpus` surface:
+    `fleurs` dev/test were capped to `8` rows each, labeled `waxholm` ran end
+    to end, and staged `rixvox` metadata was included in inventory. The live
+    result produced `inventory_rows=16841`, `curated_rows=24`,
+    `admitted_rows=23`, and `prepared_rows=23`.
+  - Opened `T108` as the next blocker before `T101`: `rixvox` still lacks
+    committed audio materialization and train-family mapping, so the current
+    preprocessing bundle is real and useful for eval/control corpora but not
+    yet sufficient for the bounded Hemma fine-tune.
 
 - 2026-03-05:
 
@@ -165,8 +175,8 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 - Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then
   `T83`, with `T82` kept deferred.
 - Parallel planning focus is Epic 08: `T100`, the first `T103` preprocessing
-  slice, and `T106` are complete; `T107` is now active to run the real
-  public-corpus preprocessing bundle over the staged Hemma `fleurs` / labeled
-  `waxholm` / `rixvox` assets before `T101`.
+  slice, `T106`, and `T107` are complete. The active blocker before `T101` is
+  `T108`: materialize `rixvox` audio and map admitted train rows into the
+  canonical train families.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

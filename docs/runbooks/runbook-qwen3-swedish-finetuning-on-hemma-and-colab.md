@@ -27,6 +27,7 @@ links:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/backlog/tasks/task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma.md
+  - docs/backlog/tasks/task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -421,6 +422,14 @@ Canonical Task 106 acquisition surface:
    Hemma.
    - canonical command:
      `pdm run run-hemma -- pdm run task-103-preprocess-public-corpus`
+   - current proven bounded result:
+     - `inventory_rows=16841`
+     - `curated_rows=24`
+     - `prepared_rows=23`
+1. Resolve `T108` before `T101`.
+   - `rixvox` is still metadata-only in the preprocessing lane
+   - admitted train families remain blocked on `rixvox` audio materialization
+     plus train-family mapping
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 

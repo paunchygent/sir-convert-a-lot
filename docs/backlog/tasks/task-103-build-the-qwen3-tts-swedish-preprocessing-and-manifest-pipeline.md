@@ -143,6 +143,10 @@ This closes the first committed preprocessing slice. The next extension of
 `T103` is to replace the repo-fixture smoke rows with the real public corpus
 adapters for `rixvox`, `fleurs`, and labeled `waxholm`.
 
+That public-corpus extension now exists through `T107`. The current remaining
+preprocessing blocker before `T101` is `T108`: real `rixvox` audio
+materialization plus train-family mapping.
+
 ## Checklist
 
 - [x] Implementation complete
