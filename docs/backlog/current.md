@@ -214,7 +214,7 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 - Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then
   `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: run live `T100` smoke on Hemma, then treat that result as
-  the last blocker before corpus curation (`T102`) and preprocessing (`T103`).
+- Parallel planning focus is Epic 08: `T100` smoke is complete, `T102` corpus policy is defined,
+  and `T103` preprocessing/manifests is now the active blocker before `T101`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

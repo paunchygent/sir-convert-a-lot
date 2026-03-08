@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
+  - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -62,7 +63,7 @@ general-language-support result.
 
 - [ ] Task 105 publishes the research map and repomix package that anchor the
   external evidence pass before the pilot subset is locked.
-- [ ] Task 102 defines the multi-speaker Swedish corpus policy and the first
+- [x] Task 102 defines the multi-speaker Swedish corpus policy and the first
   bounded training/dev/eval split.
 - [ ] Task 103 defines the preprocessing/manifest pipeline needed for Swedish
   Qwen full-finetune runs.

@@ -2,12 +2,13 @@
 id: task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion
 title: Curate the Swedish multi-speaker corpus for Qwen3-TTS language expansion
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
+  - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
   - docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
@@ -39,22 +40,57 @@ lane will actually use.
 
 ## Deliverables
 
-- [ ] Corpus inventory with hours, speakers, and transcript caveats.
-- [ ] Initial pilot subset definition.
-- [ ] Scale-up subset definition.
-- [ ] Explicit held-out evaluation split.
+- [x] Corpus inventory with hours, speakers, and transcript caveats.
+- [x] Initial pilot subset definition.
+- [x] Scale-up subset definition.
+- [x] Explicit held-out evaluation split.
 
 ## Acceptance Criteria
 
-- [ ] `rixvox` is treated as the dominant hours source and is filtered rather
+- [x] `rixvox` is treated as the dominant hours source and is filtered rather
   than used raw.
-- [ ] `fleurs` and `waxholm` are given explicit roles in dev/eval rather than
+- [x] `fleurs` and `waxholm` are given explicit roles in dev/eval rather than
   being hand-waved into the training pool.
-- [ ] The task names the first bounded pilot-hours target and the later scaled
+- [x] The task names the first bounded pilot-hours target and the later scaled
   target.
+
+## Completed Definition
+
+Canonical output:
+
+- `docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md`
+
+Task 102 now fixes the corpus policy for Epic 08:
+
+- filtered `rixvox` train is the only main training backbone
+- `fleurs` validation/test and labeled `waxholm` stay reserved for control and
+  evaluation
+- preprocessing smoke subset:
+  - `8` to `12` filtered hours from `12` to `16` speakers
+- bounded Hemma pilot subset:
+  - `24` to `36` filtered hours from `24` to `40` speakers
+- Colab scale-up subset:
+  - `100` to `300` filtered hours from `80` to `160` speakers
+- held-out quantitative evaluation:
+  - `rixvox` validation/test plus `fleurs` validation/test
+- auxiliary held-out control:
+  - labeled usable `waxholm`
+- transcript-mismatch filtering hand-off to `T103`:
+  - ASR-WER `<= 0.15` for smoke/pilot
+  - ASR-WER `<= 0.20` for scale-up admission
+
+## Hand-Off to T103
+
+`T103` now owns:
+
+- generating deterministic artifact specs under
+  `build/reference/qwen3-tts-swedish-corpus/`
+- implementing the Swedish ASR/WER mismatch filter
+- assigning one canonical `5` to `10` second `ref_audio` clip per speaker
+- materializing train/dev/eval manifests from this policy
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

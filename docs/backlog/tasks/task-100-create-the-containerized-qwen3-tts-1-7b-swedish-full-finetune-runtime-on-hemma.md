@@ -2,7 +2,7 @@
 id: task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma
 title: Create the containerized Qwen3-TTS 1.7B Swedish full-finetune runtime on Hemma
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
@@ -63,35 +63,57 @@ wrapper, and GPU-governance discipline.
 
 ## Deliverables
 
-- [ ] One committed runtime/image definition for Qwen `1.7B` fine-tuning on
+- [x] One committed runtime/image definition for Qwen `1.7B` fine-tuning on
   Hemma.
-- [ ] Canonical image definition:
+- [x] Canonical image definition:
   - `containers/qwen-finetune-hemma/Dockerfile`
-- [ ] Canonical pinned dependency baseline:
+- [x] Canonical pinned dependency baseline:
   - `containers/qwen-finetune-hemma/requirements.txt`
-- [ ] Patched versions of the official Qwen training scripts (`sft_12hz.py`).
-- [ ] One explicit dependency matrix for the Task 100 training image.
-- [ ] One deterministic command surface for smoke/pilot runs.
-- [ ] Canonical wrapper-driven smoke command:
+- [x] Patched versions of the official Qwen training scripts (`sft_12hz.py`).
+- [x] One explicit dependency matrix for the Task 100 training image.
+- [x] One deterministic command surface for smoke/pilot runs.
+- [x] Canonical wrapper-driven smoke command:
   - `pdm run run-hemma -- pdm run task-100-smoke`
-- [ ] Runbook instructions for build, launch, cache roots, and GPU validation.
-- [ ] Explicit note that this runtime is separate from the current production
+- [x] Runbook instructions for build, launch, cache roots, and GPU validation.
+- [x] Explicit note that this runtime is separate from the current production
   sidecar candidate images.
 
 ## Acceptance Criteria
 
-- [ ] The runtime is containerized and GPU-first.
-- [ ] The runtime reuses canonical persistent caches instead of container-local
+- [x] The runtime is containerized and GPU-first.
+- [x] The runtime reuses canonical persistent caches instead of container-local
   model downloads as the steady-state path.
-- [ ] The runtime does not modify the main Sir Convert-a-Lot service image.
-- [ ] The training script successfully exports a valid multi-speaker checkpoint
+- [x] The runtime does not modify the main Sir Convert-a-Lot service image.
+- [x] The training script successfully exports a valid multi-speaker checkpoint
   (with speaker encoder intact) without collapsing to a single voice.
-- [ ] The training script exports cleanly when `--init_model_path` is either a
+- [x] The training script exports cleanly when `--init_model_path` is either a
   local directory or a Hugging Face Hub id.
-- [ ] The Task 100 runtime image includes the training-only dependency set and
+- [x] The Task 100 runtime image includes the training-only dependency set and
   does not silently rely on host-python installs.
-- [ ] The runtime documentation names the exact Hemma host paths and wrapper
+- [x] The runtime documentation names the exact Hemma host paths and wrapper
   commands that are allowed.
+
+## Completed Evidence
+
+Live Hemma smoke evidence confirmed the runtime is unblocked:
+
+- command:
+  - `pdm run run-hemma -- pdm run task-100-smoke`
+- evidence root:
+  - `build/verification/task-100-qwen-finetune-smoke/`
+- key runtime truth:
+  - image `sha256:4996f29f1497d039de5bb002d8e79c19db85b37233beac5b5c8befc33caa3fbc`
+  - `torch==2.10.0+rocm7.1`
+  - `torchaudio==2.10.0+rocm7.1`
+  - `torch.cuda.is_available() == True`
+  - `torch.version.hip == 7.1.25424`
+  - Hub-id resolution works for `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+  - canonical HF cache works through the approved home-backed bind mount
+
+The only live blocker surfaced during smoke validation was mixed probe stdout
+from `qwen_tts` warnings before the JSON payload. That parser hardening landed
+in `main`, the rerun succeeded, and Task 100 is no longer the blocker for Epic
+08.
 
 ## Immediate Next Step
 
@@ -112,6 +134,6 @@ Interpretation policy:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

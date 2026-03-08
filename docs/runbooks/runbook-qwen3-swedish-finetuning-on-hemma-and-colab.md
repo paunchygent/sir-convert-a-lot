@@ -27,6 +27,7 @@ links:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
+  - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base
@@ -211,6 +212,17 @@ Use them differently:
 
 Do not start by mixing raw multi-thousand-hour `rixvox` data without a curation
 policy.
+
+Canonical Task 102 corpus policy:
+
+- `docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md`
+- filtered `rixvox` train is the only main training backbone
+- `fleurs` validation/test plus labeled `waxholm` stay reserved for control and
+  evaluation
+- bounded Hemma pilot target:
+  - `24` to `36` filtered hours from `24` to `40` speakers
+- Colab scale-up target:
+  - `100` to `300` filtered hours from `80` to `160` speakers
 
 ## Dependency Baseline
 
