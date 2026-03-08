@@ -10,10 +10,13 @@ ARG FLASH_ATTENTION_REPO=https://github.com/ROCm/flash-attention.git
 ARG FLASH_ATTENTION_REF=main_perf
 ARG GPU_ARCHS=gfx1201
 ARG MAX_JOBS=16
+ARG VIRTUAL_ENV=/opt/task100-venv
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
+ENV VIRTUAL_ENV=${VIRTUAL_ENV}
+ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
 ENV PYTHONPATH=/app:/app/scripts/devops/qwen_finetuning_patches
 ENV HF_HUB_DISABLE_XET=1
 ENV GPU_ARCHS=${GPU_ARCHS}
@@ -40,6 +43,7 @@ RUN apt-get update \
         python3 \
         python3-dev \
         python3-pip \
+        python3-venv \
         rocblas-dev \
         rocsolver-dev \
         hipsparse-dev \
@@ -48,6 +52,7 @@ RUN apt-get update \
 
 COPY containers/qwen-finetune-hemma/requirements.txt /tmp/task100-requirements.txt
 
+RUN python3 -m venv "${VIRTUAL_ENV}"
 RUN python -m pip install --upgrade pip "setuptools<81" wheel
 RUN python -m pip install --index-url "${TORCH_ROCM_INDEX_URL}" \
     "torch==${TORCH_VERSION}" \
