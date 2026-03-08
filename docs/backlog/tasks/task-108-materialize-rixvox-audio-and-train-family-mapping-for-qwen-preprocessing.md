@@ -246,6 +246,43 @@ Follow-on implementation state after the first `T110` slice:
   - accepted only if it emits non-empty audio-backed train manifests without
     repeating the prior host-RAM OOM pattern
 
+Latest detached proof result on `2026-03-08`:
+
+- committed detached runner:
+  - `pdm run task-108-detached-proof`
+- bounded proof launch:
+  - `--rixvox-split train`
+  - `--rixvox-split dev`
+  - `--rixvox-split test`
+  - `--rixvox-max-rows-per-split 64`
+  - `--row-worker-count 10`
+  - `--gpu-asr-worker-count 5`
+  - `--audio-codes-chunk-size 4`
+- observed runtime facts:
+  - detached container started correctly and remained independent of the local
+    client session
+  - GPU residency climbed to roughly `14.6 GB` before failure
+  - no `audio_24k`, spool, curated, or manifest rows were durably emitted
+    before the crash
+- exact failure evidence:
+  - Docker state:
+    - `ExitCode=139`
+    - `OOMKilled=false`
+  - kernel log:
+    - `segfault ... in libaotriton_v2.so.0.11.1`
+- operational storage lesson:
+  - Hemma root (`/`) is effectively full while `/srv/scratch` remains mostly
+    empty
+  - repo-root `build/` output is therefore no longer a safe write target for
+    large detached preprocessing evidence on Hemma
+
+That means the next `T108` continuation should not simply retry the same
+configuration. It should:
+
+- lower GPU ASR concurrency below the `5`-worker crash point
+- move the large Hemma preprocessing output/evidence lane onto DATA-backed
+  storage while preserving the documented artifact structure
+
 ## Acceptance Criteria
 
 - [ ] `train_metadata.parquet` is staged on Hemma through the script-free

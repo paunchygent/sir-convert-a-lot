@@ -490,6 +490,15 @@ Canonical Task 106 acquisition surface:
    - `audio_codes` generation is chunked rather than whole-family all-at-once
    - detached Hemma proof work should tune `row-worker-count`,
      `gpu-asr-worker-count`, and `audio-codes-chunk-size` from live evidence
+   - latest aggressive proof result:
+     - `row-worker-count=10`
+     - `gpu-asr-worker-count=5`
+     - `audio-codes-chunk-size=4`
+     - failed with `ExitCode=139`
+     - kernel log showed a segfault in `libaotriton_v2.so.0.11.1`
+   - operational constraint now confirmed on Hemma:
+     - root (`/`) is nearly full
+     - DATA (`/srv/scratch`) remains the only safe large-output target
 1. Keep `T111` as the provenance-safe transcript-improvement lane.
    - ASR remains a quality gate by default
    - any transcript relabeling must preserve original text plus provenance

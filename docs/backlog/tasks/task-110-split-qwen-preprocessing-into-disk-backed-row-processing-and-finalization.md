@@ -183,6 +183,27 @@ Remaining acceptance work:
 - tune row/GPU concurrency from live Hemma evidence rather than static
   assumptions
 
+Latest concurrency evidence:
+
+- detached Hemma proof with:
+  - `row-worker-count=10`
+  - `gpu-asr-worker-count=5`
+  - `audio-codes-chunk-size=4`
+- result:
+  - Docker `ExitCode=139`
+  - `OOMKilled=false`
+  - kernel log recorded a segfault in `libaotriton_v2.so.0.11.1`
+  - GPU residency reached roughly `14.6 GB` before the crash
+
+Current interpretation:
+
+- the staged spool/finalization split removed the earlier whole-run Python OOM
+  as the only explanation
+- aggressive GPU ASR concurrency is now a separate ROCm/AOTriton stability
+  limit that must be tuned below the `5`-worker crash point
+- Hemma root-disk pressure is now also a practical blocker for large detached
+  preprocessing output written under the repo-root `build/` subtree
+
 ## Durability And Atomicity
 
 The row-processing stage should treat each row as an atomic durable unit.

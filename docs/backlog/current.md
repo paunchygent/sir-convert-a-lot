@@ -177,31 +177,22 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     spool rows, finalization rebuilds canonical refs from the spool, and the runtime now exposes
     explicit `row-worker-count`, `gpu-asr-worker-count`, and `audio-codes-chunk-size` controls
     for the next detached `T108` Hemma proof.
+  - Ran the first detached post-`T110` `T108` proof with
+    `row-worker-count=10`, `gpu-asr-worker-count=5`, and
+    `audio-codes-chunk-size=4`; the container exited `139`, the kernel log
+    pinned the crash to `libaotriton_v2.so.0.11.1`, and Hemma root-disk
+    pressure is now confirmed as a separate operational problem because `/`
+    has only about `1.3 GB` free while DATA still has ample space.
 
 - 2026-03-05:
-
-  - Re-terminalized Task 73 after ruthless review remediation:
-    - canonical phase timing keys and app-owned telemetry sink wiring landed,
-    - bounded-cardinality worker/job/retry/duration metrics replaced the older shape,
-    - sustained-load evidence was recorded in
-      `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`,
-    - remediation validations passed (`format-all`, `lint-fix`, `typecheck-all`, targeted pytest).
-  - Completed Task 76 deploy-and-verify evidence plus Task 77 multilingual OCR hardening; full
-    detail remains in the linked Epic 06 / Story 20 / Task 76 docs.
+  - Re-terminalized Task 73 after ruthless review remediation with sustained-load evidence in
+    `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`; validation stayed green.
+  - Completed Task 76 deploy-and-verify evidence plus Task 77 multilingual OCR hardening; detail
+    remains in the linked Epic 06 / Story 20 / Task 76 docs.
 
 - 2026-03-04:
-
-  - Planned Epic 06 long PDF reliability/performance work under the new progress, checkpoint,
-    resume, and throughput stories.
-  - Completed Tasks 67-71 and 75 in the first Epic 06 delivery slice:
-    - progress-aware timeout classification,
-    - ADR-0005 lock-in for long-job progress/checkpoint/cancel/resume,
-    - page progress fields plus SSE/webhook parity,
-    - chunk checkpoints plus partial artifact retrieval,
-    - cancel-with-save plus resume,
-    - clean-break v2 client-surface enforcement.
-  - Validation evidence remained green across that delivery slice; detailed results stay in the
-    linked task docs and tests.
+  - Planned Epic 06 long PDF reliability/performance work and completed Tasks 67-71 plus 75 in
+    the first delivery slice; detailed progress remains in the linked task docs and tests.
 
 ## Next Actions
 
