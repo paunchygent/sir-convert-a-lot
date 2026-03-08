@@ -119,7 +119,7 @@ def train() -> None:
     model_path = args.init_model_path
     qwen3tts = Qwen3TTSModel.from_pretrained(
         model_path,
-        torch_dtype=torch.bfloat16,
+        dtype=torch.bfloat16,
         attn_implementation="flash_attention_2",
     )
     config = AutoConfig.from_pretrained(model_path)

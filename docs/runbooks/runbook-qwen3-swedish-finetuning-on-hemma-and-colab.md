@@ -25,6 +25,7 @@ links:
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
+  - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -214,6 +215,49 @@ Use them differently:
 Do not start by mixing raw multi-thousand-hour `rixvox` data without a curation
 policy.
 
+## Hugging Face Ingestion Policy
+
+The canonical repo path for public-corpus acquisition is not custom
+`datasets.load_dataset(...)` scripts.
+
+Preferred path:
+
+- acquire dataset assets with `huggingface_hub` on Hemma only
+- pin every acquisition to a dataset revision or commit
+- prefer targeted file acquisition over broad whole-repository downloads for
+  large corpora
+- parse raw supported repository assets directly
+
+Current expected surfaces:
+
+- `rixvox`
+  - metadata parquet plus audio archives/files
+- `fleurs` Swedish
+  - `sv_se` TSV plus audio tarballs
+- `waxholm`
+  - repo snapshot plus `.wav` and `.smp.mix`
+
+Allowed but non-canonical:
+
+- Hub auto-converted parquet when available as an optimization layer
+
+Not allowed as the long-term repo contract:
+
+- relying on deprecated dataset scripts as the primary ingestion path
+- pinning legacy `datasets<4` and using custom dataset scripts, even as a
+  fallback
+
+Storage policy:
+
+- large raw corpus assets belong on Hemma's DATA-backed storage
+- do not download large public corpus assets onto the local workstation
+- do not use the Hemma OS disk as the long-term storage location for Swedish
+  corpus acquisition
+- canonical Hemma raw-corpus root:
+  - `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+- compatible home-visible mount when needed:
+  - `/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+
 Canonical Task 102 corpus policy:
 
 - `docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md`
@@ -255,6 +299,17 @@ Wrapper-driven Hemma smoke command for the image surface:
 pdm run run-hemma -- pdm run task-100-smoke
 ```
 
+Current proven Task 100 runtime truth:
+
+- `build/verification/task-100-qwen-finetune-smoke/report.json`
+- image id:
+  - `sha256:032e235123018c18a85e0abd7a1882aa35289bb7737af1f031befdf35e34f74b`
+- `flash_attn==2.8.3`
+- `flash_attn_importable == True`
+- `flash_attn_model_load_ok == True`
+- `HF_HOME` is the canonical cache env for this lane
+- `dtype=` is the canonical model-loading keyword for this lane
+
 Expected deterministic evidence root:
 
 - `build/verification/task-100-qwen-finetune-smoke/`
@@ -268,6 +323,23 @@ Task 103 preprocessing/eval baseline:
 - Swedish ASR runtime/tooling for transcript-mismatch filtering
 - `jiwer`
 - any committed audio normalization utilities required by the pipeline
+
+Canonical repo surface for the preprocessing lane:
+
+- install:
+  - `pdm install -G qwen-preprocessing`
+- run:
+  - `pdm run task-103-preprocess`
+- runner:
+  - `scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py`
+- current deterministic artifact root:
+  - `build/reference/qwen3-tts-swedish-corpus/`
+- first bundle truth:
+  - `inventory_rows=2`
+  - `curated_rows=2`
+  - `admitted_rows=2`
+  - `prepared_rows=2`
+  - `swedish_smoke_train=2`
 
 Policy:
 
@@ -286,6 +358,26 @@ Canonical Task 103 preprocessing contract:
   - `revision="strict"`
 - public source assets may begin at `16 kHz`, but all emitted training-side
   audio artifacts and `ref_audio` clips must be `24 kHz`
+
+Canonical Task 106 acquisition surface:
+
+- runner:
+  - `scripts/sir_convert_a_lot/devops/run_task106_hemma_qwen_corpus_acquisition.py`
+- runtime:
+  - `scripts/sir_convert_a_lot/devops/task106_qwen_corpus_acquisition_runtime.py`
+- local command surface:
+  - `pdm run task-106-acquire`
+- canonical Hemma execution:
+  - `pdm run run-hemma -- pdm run task-106-acquire`
+- current bounded default behavior:
+  - `fleurs dev/test`
+  - `rixvox dev/test metadata parquet`
+  - bounded labeled `waxholm` subset via `--waxholm-max-files`
+- acquisition discipline:
+  - targeted `hf_hub_download(...)`
+  - sequential requests with retry/backoff
+  - stage raw assets under
+    `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
 
 ## Execution Order
 
@@ -307,6 +399,12 @@ Canonical Task 103 preprocessing contract:
 1. Complete Task 103 and produce deterministic manifests and preprocessed
    artifacts.
    - include the Task 103 preprocessing/eval dependency baseline
+   - prove the first deterministic bundle under
+     `build/reference/qwen3-tts-swedish-corpus/`
+1. Extend the completed Task 103 surface from repo-fixture smoke rows to the
+   real `rixvox` / `fleurs` / labeled `waxholm` corpus adapters.
+   - use `T106` Hemma-only acquisition first
+   - do not stage large corpus assets on the local workstation
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 

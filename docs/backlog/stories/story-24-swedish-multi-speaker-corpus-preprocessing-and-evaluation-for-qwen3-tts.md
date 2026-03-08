@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
+  - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -58,6 +59,7 @@ general-language-support result.
 1. `docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md`
 1. `docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md`
 1. `docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md`
+1. `docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md`
 1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
 
 ## Acceptance Criteria
@@ -69,6 +71,9 @@ general-language-support result.
 - [ ] Task 103 defines and implements the preprocessing/manifest pipeline
   needed for Swedish
   Qwen full-finetune runs.
+- [ ] Task 106 extends the first Task 103 slice to real `rixvox` / `fleurs` /
+  labeled `waxholm` inputs through revision-pinned script-free adapters rather
+  than deprecated dataset-script loading.
 - [ ] Task 104 publishes the Colab H100 scaling lane and compares it against
   the Hemma pilot rather than treating it as an isolated notebook exercise.
 - [ ] The story documents the difference between the official Qwen

@@ -159,6 +159,9 @@ def _build_report_markdown(
         f"- `torch.cuda.is_available()`: `{report.smoke_probe_result.torch_cuda_available}`\n"
         f"- CUDA device count: `{report.smoke_probe_result.torch_cuda_device_count}`\n"
         f"- ROCm HIP version: `{report.smoke_probe_result.torch_hip_version}`\n"
+        f"- `flash_attn` importable: `{report.smoke_probe_result.flash_attn_importable}`\n"
+        f"- `flash_attn` version: `{report.smoke_probe_result.flash_attn_version}`\n"
+        f"- Flash-attn model init ok: `{report.smoke_probe_result.flash_attn_model_load_ok}`\n"
         "\n## Dependency Versions\n\n"
         + "\n".join(
             f"- `{name}`: `{version}`"

@@ -58,6 +58,9 @@ class SmokeProbeResult:
     torch_cuda_available: bool
     torch_cuda_device_count: int
     torch_hip_version: str | None
+    flash_attn_importable: bool
+    flash_attn_version: str | None
+    flash_attn_model_load_ok: bool
     dependency_versions: dict[str, str | None]
 
 
@@ -100,8 +103,7 @@ def _parse_smoke_probe_payload(raw_output: str) -> dict[str, object]:
         if isinstance(payload_obj, dict):
             return payload_obj
     raise SystemExit(
-        "Task 100 smoke probe did not emit a parseable JSON object. "
-        f"Raw stdout was:\n{raw_output}"
+        f"Task 100 smoke probe did not emit a parseable JSON object. Raw stdout was:\n{raw_output}"
     )
 
 
@@ -286,8 +288,6 @@ def build_smoke_probe_command(
         "-e",
         f"HUGGINGFACE_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
         "-e",
-        f"TRANSFORMERS_CACHE={CONTAINER_HF_HUB_CACHE}",
-        "-e",
         f"TORCH_HOME={CONTAINER_TORCH_HOME}",
         "-e",
         f"SIR_QWEN_TRAINING_HF_CACHE_HOST_ROOT={hf_mount.canonical_root.as_posix()}",
@@ -325,6 +325,9 @@ def run_smoke_probe(
         torch_cuda_available=_required_bool(payload_raw, "torch_cuda_available"),
         torch_cuda_device_count=_required_int(payload_raw, "torch_cuda_device_count"),
         torch_hip_version=_optional_string(payload_raw, "torch_hip_version"),
+        flash_attn_importable=_required_bool(payload_raw, "flash_attn_importable"),
+        flash_attn_version=_optional_string(payload_raw, "flash_attn_version"),
+        flash_attn_model_load_ok=_required_bool(payload_raw, "flash_attn_model_load_ok"),
         dependency_versions={
             str(key): (None if value is None else str(value))
             for key, value in dependency_versions.items()

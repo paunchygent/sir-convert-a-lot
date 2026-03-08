@@ -9,6 +9,7 @@ owners:
   - Olof
 links:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
+  - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-guide.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -21,6 +22,56 @@ full-finetune lane so Hemma and Colab runs use the same artifact layout,
 quality-tier logic, and Qwen-ready manifest shapes.
 
 This reference is the contract target for `T103`.
+
+## Source Acquisition Contract
+
+The canonical source-acquisition path for the Swedish Qwen corpus lane is
+script-free and revision-pinned.
+
+Preferred long-term path:
+
+- use `huggingface_hub` to acquire dataset assets by pinned revision
+- prefer targeted `hf_hub_download(...)` acquisition over broad whole-repo
+  fetches for large datasets
+- use narrow directory or file acquisition plans only when structure matters
+- parse supported raw repository assets directly
+
+Storage policy:
+
+- large raw corpus assets must be acquired on Hemma only
+- large raw corpus assets must live on Hemma's DATA-backed storage, not on the
+  local workstation and not on the Hemma OS disk
+- canonical Hemma raw-corpus root:
+  - `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+- compatible home-visible mount when needed:
+  - `/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+- deterministic generated manifests and reports still live under
+  `build/reference/qwen3-tts-swedish-corpus/` in the repo
+
+Dataset-specific expected inputs:
+
+- `KBLab/rixvox`
+  - metadata parquet
+  - repository audio archives / extracted files
+- `google/fleurs` Swedish
+  - `sv_se` TSV files
+  - corresponding audio tar members
+- `KTH/waxholm`
+  - repo snapshot
+  - `.wav`
+  - `.smp.mix`
+
+Allowed optional acceleration:
+
+- Hub auto-converted parquet or viewer-derived assets
+  - may be used opportunistically when available
+  - must not be the only path required for repo success
+
+Forbidden option:
+
+- legacy `datasets<4` custom-script loading
+  - forbidden, including as a fallback
+  - too brittle for the long-term repo contract
 
 ## Deterministic Artifact Roots
 

@@ -61,103 +61,25 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 - 2026-03-06:
 
-  - Completed Task 72 for Story 20 bounded parallel PDF chunk execution.
-  - Added deterministic Task 72 benchmark evidence via `pdm run benchmark:task-72` at
-    `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
-    (`comparison.p50_wall_clock_improvement_percent=73.274`, `comparison.byte_identical_to_serial=true`).
-  - Updated runbook/reference/task docs and checked the Epic 06 `T72` tracker box.
-  - Planned the next feature line as Epic 07 sidecar-backed TTS: added Epic 07 / Story 22 /
-    Tasks 78-80, accepted ADR-0006, published the approved `md -> wav` contract draft, and marked
-    legacy Story 07 TTS planning as superseded by Epic 07.
-  - Added the follow-on Swedish cloning benchmark slice under Epic 07 as Story 23 with
-    `T81` OpenVoice V2, `T82` XTTS-v2, and `T83` MMS Swedish.
-  - Drafted and accepted ADR-0007 to define the reusable internal multi-backend sidecar
-    capability contract before `T81` starts.
-  - Started `T81` implementation against ADR-0007:
-    - added the reusable normalized sidecar contract plus the first OpenVoice V2 adapter app,
-    - added the dedicated OpenVoice benchmark image/build surface and `benchmark:task-81`,
-    - added Task 81 unit coverage plus runbook/task/story status updates.
-  - Ran the first live Hemma `T81` benchmark successfully from a runtime standpoint, but manual
-    listening review rejected the sample (timbre mismatch, artifacts, uneven pacing), so `T81`
-    stayed open for setup remediation.
-  - Planned the initial `T81` remediation around three concrete fixes: sample-rate boundaries,
-    intended reference preprocessing, and paired processed-reference/base/cloned artifacts.
-  - Implemented the local `T81` remediation slice:
-    - split the oversized OpenVoice adapter support into a dedicated helper module,
-    - replaced the upstream `openvoice.se_extractor` import with a committed local VAD-only
-      reference-preprocessing helper,
-    - removed the broken `faster-whisper` / PyAV dependency chain from the sidecar image so Hemma
-      can rebuild on Python 3.12,
-    - preserved the sidecar-only boundary so the main service image remains untouched.
-  - Ran the corrected Hemma rerun far enough to replace the old `faster-whisper` / PyAV blocker
-    with a narrower VAD dependency failure inside `/synthesize`.
-  - Took the ruthless review as binding and implemented the evidence-discipline correction slice:
-    - `T81` / `T84` now record machine-readable `benchmark_status`, `evidence_status`,
-      `blocking_step`, and failure metadata,
-    - the benchmark now declares Torch Hub cache roots under the canonical HF cache tree and
-      records reference-audio SHA256,
-    - local tests now cover partial-run report writing and Torch Hub cache declaration.
-  - Ran the updated current-head Hemma rerun on `beac775f1f6c021946105adef0f007cf06b908d3`
-    without `--skip-build`; it produced an atomic partial bundle and narrowed the next blocker to
-    the synthesize-stage Torch Hub / Silero mismatch from `whisper-timestamped`.
-  - Removed `whisper-timestamped` from the active Task 81 reference-preprocessing path and
-    switched the sidecar to direct local Silero VAD loading from the canonical Torch cache.
-  - Ran the rebuilt current-head Hemma rerun on `e1d5901879c64a21f256a88352f407e6ce2ae45d`:
-    - one new atomic partial evidence bundle now exists for `run_id=20260306T222647Z`,
-    - `/synthesize` now succeeds with `200 OK` and writes `artifacts/sample_sv.wav`,
-    - the current blocker has moved to `collect_setup_artifacts`,
-    - processed-reference, base-output, and converter-input artifacts are still missing, so the
-      corrected setup is still not ready for listening review.
-  - Fixed the remaining `collect_setup_artifacts` blocker without introducing legacy cache paths:
-    - replaced unreliable `docker cp` evidence export with streamed `docker exec tar` extraction,
-    - reran `T81` on Hemma and produced one atomic complete evidence bundle for
-      `run_id=20260306T224057Z` on `61b263cab56118677dc47810b615daaf0adbe463`,
-    - preserved `processed_reference`, `base_sv.wav`, `base_sv_converter_input.wav`, and
-      `sample_sv.wav` under `build/verification/task-81-openvoice-v2-hemma/artifacts/`; `T84`
-      is complete and `T81` is now blocked only on the qualitative recommendation decision.
-  - Recorded the qualitative `T81` decision:
-    - the Swedish base artifact is very unnatural with pitch, tone, and phrasing issues,
-    - the cloned artifact is somewhat better but still sub-par,
-    - OpenVoice is technically feasible on Hemma but not the lead Swedish teacher-voice
-      candidate, so Story 23 now advances to `T82`.
+  - Completed `T72` with deterministic throughput evidence in
+    `build/benchmarks/story-20/task-72-parallel-throughput-local.json`.
+  - Opened Epic 07 / Story 23 and accepted ADR-0007 for the reusable TTS
+    sidecar contract.
+  - Implemented and remediated `T81` OpenVoice on Hemma through multiple live
+    reruns, fixed the setup-artifact export path, and closed `T84`.
+  - Recorded the final qualitative `T81` decision: technically feasible, but
+    not the lead Swedish teacher-voice candidate, so Story 23 advanced to
+    `T82`.
 
 - 2026-03-07:
 
-  - Redirected Story 23 to the active `T85` F5-TTS lane and recorded a technically successful
-    but qualitatively rejected Hemma benchmark under `build/verification/task-85-f5-tts-hemma/`.
-  - Switched the current Task 85 runtime source locally from `SWivid/F5-TTS@1.1.17` to
-    `ChiliOlavi/F5-TTS@swedish-tts` and reran the benchmark successfully on Hemma on
-    `2026-03-08` with
-    `run_id=20260308T002337Z`, image `sha256:e69ffa81f883369bbde227fee1d910da3b249484c0e595e210011b147e6eb04e`,
-    and sample SHA256 `2735c0536aebc3f5324333d3a9deb95492721230b2e10ff3d4989019078e1c82`.
-  - Implemented and verified `T86` Chatterbox on Hemma, including the dedicated
-    sidecar image, runtime, reporting, and deterministic evidence under
-    `build/verification/task-86-chatterbox-hemma/`; runtime truth is now fixed
-    to the live ROCm stack on `AMD Radeon AI PRO R9700`.
-  - Completed `T87` as the first documented Chatterbox tuning sweep and opened
-    `T88` / `T89` for the bounded eSpeak preprocessing experiment.
-  - Completed `T89` on live Hemma with deterministic evidence under
-    `build/verification/task-89-chatterbox-espeak-hemma/`, and fixed one real
-    runtime issue by prefetching `spacy_pkuseg` assets during image build.
-  - Implemented and ran `T90` on live Hemma:
-    deterministic segmentation and stitching are now part of the Chatterbox
-    sidecar path, paired evidence exists under
-    `build/verification/task-90-chatterbox-segmented-hemma/`, and listening
-    review favored the segmented path overall.
-  - Implemented and ran `T91` on live Hemma:
-    speech-aware stitching plus `chunk_analysis.json` /
-    `boundary_decisions.json` are now part of the segmented Chatterbox lane,
-    with paired evidence under
-    `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/`.
-  - Folded the relaxed `12 ms` speech-aware edge fade cap into the default
-    Chatterbox stitcher after a saved-chunk local re-stitch comparison, and
-    opened `T92` to make Chatterbox the explicit Hemma production-candidate
-    TTS sidecar while marking OpenVoice, F5, and eSpeak helper images as
-    experiment-only.
-  - Completed `T93` on live Hemma:
-    the clause-aware planner now emits bounded chunks (`7` instead of `2`,
-    roughly `3.6` to `5.36` seconds) and treats numbered list items as
-    preferred boundaries.
+  - Redirected Story 23 to the active `T85` F5 lane, proved it technically on
+    Hemma, and rejected it qualitatively.
+  - Implemented and verified the Chatterbox Hemma lane across `T86-T93`,
+    including tuning, eSpeak preprocessing, deterministic segmentation,
+    speech-aware stitching, and clause-aware chunk planning.
+  - Established Chatterbox as the production-candidate Swedish TTS sidecar lane
+    on Hemma.
 
 - 2026-03-08:
 
@@ -184,6 +106,24 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Added `T105` as the research-handoff slice for Epic 08 so the first
     multi-speaker experiment is preceded by a tracked repomix package, research
     brief, and source map instead of freeform external searching.
+  - Completed the hardened Task 100 runtime bring-up on live Hemma:
+    the dedicated ROCm training image now builds through a container-local
+    virtualenv, uses `HF_HOME` and `dtype=`, and the smoke report under
+    `build/verification/task-100-qwen-finetune-smoke/` confirms
+    `flash_attn==2.8.3` with successful `flash_attention_2` model init on the
+    `AMD Radeon AI PRO R9700`.
+  - Completed the first committed Task 103 preprocessing slice:
+    `pdm install -G qwen-preprocessing` plus `pdm run task-103-preprocess`
+    now emits the deterministic artifact bundle under
+    `build/reference/qwen3-tts-swedish-corpus/`, including inventory, curated,
+    raw, prepared, and summary-report layers; the first bundle produced
+    `2` admitted Swedish smoke rows and `2` prepared Qwen rows.
+  - Opened and began `T106` as the script-free public-corpus extension lane:
+    the Task 103 core is now adapter-shaped, `fleurs` / labeled `waxholm` /
+    `rixvox` parquet adapters exist, and the new Hemma-only
+    `task-106-acquire` surface stages targeted revision-pinned raw assets onto
+    `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/` instead of
+    downloading large corpora locally.
 
 - 2026-03-05:
 
@@ -214,7 +154,9 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 - Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then
   `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: `T100` smoke is complete, `T102` corpus policy is defined,
-  and `T103` preprocessing/manifests is the active blocker before `T101`.
+- Parallel planning focus is Epic 08: `T100` and the first `T103` preprocessing
+  slice are complete, and `T106` is now the active implementation lane:
+  run the first real Hemma-only acquisition pass, then feed those staged raw
+  assets into the public-corpus preprocessing run before `T101`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.
