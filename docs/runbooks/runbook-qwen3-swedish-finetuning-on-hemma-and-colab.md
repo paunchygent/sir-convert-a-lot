@@ -274,6 +274,11 @@ Policy:
    - include the Task 100 training-image dependency baseline
    - ensure `sft_12hz.py` exports cleanly for both local model directories and
      Hub ids
+1. Run the canonical live Hemma Task 100 smoke command:
+   - `pdm run run-hemma -- pdm run task-100-smoke`
+   - if the smoke run fails, treat it as the last blocker before corpus and
+     preprocessing work
+   - if the smoke run succeeds, move directly into `T102` and `T103`
 1. Complete Task 102 and define the bounded Swedish pilot subset.
 1. Complete Task 103 and produce deterministic manifests and preprocessed
    artifacts.

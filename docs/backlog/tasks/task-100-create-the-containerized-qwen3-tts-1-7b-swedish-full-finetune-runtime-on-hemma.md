@@ -93,6 +93,23 @@ wrapper, and GPU-governance discipline.
 - [ ] The runtime documentation names the exact Hemma host paths and wrapper
   commands that are allowed.
 
+## Immediate Next Step
+
+After the Task 100 runtime lands in `main`, run the canonical live Hemma smoke
+command:
+
+```bash
+pdm run run-hemma -- pdm run task-100-smoke
+```
+
+Interpretation policy:
+
+- if the smoke run succeeds, treat Task 100 runtime bring-up as unblocked and
+  move immediately to `T102` and `T103`
+- if the smoke run fails, treat its result as the last blocker before corpus
+  curation and preprocessing work
+- record the blocking step and evidence root before changing scope
+
 ## Checklist
 
 - [ ] Implementation complete

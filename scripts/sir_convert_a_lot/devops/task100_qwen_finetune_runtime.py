@@ -13,9 +13,9 @@ Relationships:
 
 from __future__ import annotations
 
-import json
 import subprocess
 from dataclasses import dataclass
+from json import JSONDecodeError, JSONDecoder
 from pathlib import Path
 
 CONTAINER_HF_HOME = "/cache/huggingface"
@@ -85,6 +85,24 @@ def _required_int(payload: dict[str, object], key: str) -> int:
     if not isinstance(value, int):
         raise SystemExit(f"Task 100 smoke probe returned a malformed `{key}` value.")
     return value
+
+
+def _parse_smoke_probe_payload(raw_output: str) -> dict[str, object]:
+    """Extract one JSON object from mixed probe stdout."""
+    decoder = JSONDecoder()
+    for start_index, char in enumerate(raw_output):
+        if char != "{":
+            continue
+        try:
+            payload_obj, _ = decoder.raw_decode(raw_output[start_index:])
+        except JSONDecodeError:
+            continue
+        if isinstance(payload_obj, dict):
+            return payload_obj
+    raise SystemExit(
+        "Task 100 smoke probe did not emit a parseable JSON object. "
+        f"Raw stdout was:\n{raw_output}"
+    )
 
 
 def run_checked(command: list[str], *, label: str) -> str:
@@ -293,9 +311,7 @@ def run_smoke_probe(
     """Run the in-container smoke probe and parse its JSON payload."""
     command = build_smoke_probe_command(settings, hf_mount=hf_mount)
     output = docker_checked(command, label="docker run task100 smoke probe")
-    payload_raw = json.loads(output)
-    if not isinstance(payload_raw, dict):
-        raise SystemExit("Task 100 smoke probe did not emit a JSON object.")
+    payload_raw = _parse_smoke_probe_payload(output)
     dependency_versions = payload_raw.get("dependency_versions")
     if not isinstance(dependency_versions, dict):
         raise SystemExit("Task 100 smoke probe did not include dependency_versions.")
