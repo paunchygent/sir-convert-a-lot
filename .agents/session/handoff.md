@@ -2,6 +2,41 @@
 
 ## Current Session Summary (2026-03-08)
 
+- Started `T106` as the script-free public-corpus extension lane for the Qwen
+  Swedish fine-tuning track:
+
+  - added `task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md`
+  - hardened the docs so legacy `datasets<4` script loading is forbidden
+  - codified Hemma-only acquisition and DATA-disk corpus storage
+
+- Refactored the Task 103 preprocessing core into adapter-shaped source
+  contracts and added the first real public-corpus adapters:
+
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_core.py`
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_family_assignment.py`
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_models.py`
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_repo_fixture.py`
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_fleurs.py`
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_waxholm.py`
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_rixvox.py`
+
+- Added the first Hemma-only targeted acquisition surface for real Swedish
+  corpus staging:
+
+  - `scripts/sir_convert_a_lot/devops/run_task106_hemma_qwen_corpus_acquisition.py`
+  - `scripts/sir_convert_a_lot/devops/task106_qwen_corpus_acquisition_runtime.py`
+  - `pyproject.toml`
+    - `task-106-acquire`
+
+- Local validation for the new `T103` / `T106` slice passed:
+
+  - `pdm run task-106-acquire --help`
+  - `pdm run python -m pytest -q tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py tests/sir_convert_a_lot/test_task106_qwen_corpus_acquisition.py`
+  - `pdm run python -m mypy --follow-imports=skip ...`
+  - `pdm run validate-tasks`
+  - `pdm run validate-docs`
+  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 - Opened the new Epic 08 Qwen Swedish fine-tuning lane as a parallel track to
   Epic 07 rather than overloading the existing sidecar-delivery scope:
 
