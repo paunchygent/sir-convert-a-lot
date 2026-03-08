@@ -34,6 +34,9 @@ RUN python -m pip install --upgrade pip "setuptools<81" wheel
 RUN python -m pip install --index-url "${TORCH_ROCM_INDEX_URL}" \
     "torch==${TORCH_VERSION}" \
     "torchaudio==${TORCH_VERSION}"
+# Torchaudio 2.9+ routes load/save through TorchCodec, and the swedish-tts
+# branch still calls `torchaudio.load()` during reference prep.
+RUN python -m pip install "torchcodec"
 RUN git clone --branch "${F5_TTS_REF}" --depth 1 "${F5_TTS_GIT_URL}" /opt/F5-TTS \
     && git -C /opt/F5-TTS submodule update --init --recursive
 RUN python -m pip install \
