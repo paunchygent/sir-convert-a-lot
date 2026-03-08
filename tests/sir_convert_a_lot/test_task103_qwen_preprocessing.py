@@ -18,6 +18,7 @@ import pytest
 from scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing import (
     DEFAULT_ASR_MODEL,
     DEFAULT_ASR_REVISION,
+    DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT,
     DEFAULT_FLEURS_SPLITS,
     DEFAULT_OUTPUT_ROOT,
     DEFAULT_RIXVOX_SPLITS,
@@ -117,6 +118,7 @@ def test_task103_parse_args_defaults() -> None:
     assert runner_settings.source_mode == DEFAULT_SOURCE_MODE
     assert runner_settings.data_root == DEFAULT_DATA_ROOT
     assert runner_settings.fleurs_splits == DEFAULT_FLEURS_SPLITS
+    assert runner_settings.fleurs_max_rows_per_split == DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT
     assert runner_settings.rixvox_splits == DEFAULT_RIXVOX_SPLITS
 
 
@@ -130,6 +132,8 @@ def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
             tmp_path.as_posix(),
             "--fleurs-splits",
             "dev",
+            "--fleurs-max-rows-per-split",
+            "8",
             "--rixvox-splits",
             "test",
         ]
@@ -138,6 +142,7 @@ def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
     assert runner_settings.source_mode == "staged-public-corpus"
     assert runner_settings.data_root == tmp_path
     assert runner_settings.fleurs_splits == ("dev",)
+    assert runner_settings.fleurs_max_rows_per_split == 8
     assert runner_settings.rixvox_splits == ("test",)
 
 
@@ -536,6 +541,96 @@ def test_staged_public_corpus_source_records_load_all_supported_inputs(tmp_path:
     assert source_records[2].source_audio_locator is not None
 
 
+def test_staged_public_corpus_source_records_cap_fleurs_rows_per_split(tmp_path: Path) -> None:
+    """The staged loader should support one deterministic FLEURS per-split cap."""
+    data_root = tmp_path / "data_root"
+    fleurs_root = data_root / "raw/google_fleurs"
+    fleurs_tsv_path = fleurs_root / "data/sv_se/dev.tsv"
+    fleurs_archive_path = fleurs_root / "data/sv_se/audio/dev.tar.gz"
+    first_audio_path = tmp_path / "first_audio.wav"
+    second_audio_path = tmp_path / "second_audio.wav"
+    _write_test_wav(first_audio_path, sample_rate_hz=16_000, duration_seconds=1.5)
+    _write_test_wav(second_audio_path, sample_rate_hz=16_000, duration_seconds=1.5)
+
+    fleurs_tsv_path.parent.mkdir(parents=True, exist_ok=True)
+    fleurs_archive_path.parent.mkdir(parents=True, exist_ok=True)
+    fleurs_tsv_path.write_text(
+        "\n".join(
+            [
+                "1641\t111.wav\tFörsta raden.\tforsta raden\tf ö r s t a\t24000\tMALE",
+                "1641\t222.wav\tAndra raden.\tandra raden\ta n d r a\t24000\tMALE",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    with tarfile.open(fleurs_archive_path, "w:gz") as archive:
+        for archive_name, source_audio_path in (
+            ("dev/111.wav", first_audio_path),
+            ("dev/222.wav", second_audio_path),
+        ):
+            audio_bytes = source_audio_path.read_bytes()
+            member = tarfile.TarInfo(name=archive_name)
+            member.size = len(audio_bytes)
+            archive.addfile(member, io.BytesIO(audio_bytes))
+
+    waxholm_root = data_root / "raw/kth_waxholm"
+    waxholm_listing_path = waxholm_root / "alloktrainfiles"
+    waxholm_speaker_dir = waxholm_root / "scenes_formatted/fp2001"
+    waxholm_wav_path = waxholm_speaker_dir / "fp2001.1.01.wav"
+    waxholm_mix_path = waxholm_speaker_dir / "fp2001.1.01.smp.mix"
+    _write_test_wav(waxholm_wav_path, sample_rate_hz=16_000, duration_seconds=2.0)
+    waxholm_listing_path.parent.mkdir(parents=True, exist_ok=True)
+    waxholm_listing_path.write_text("fp2001.1.01.smp\n", encoding="utf-8")
+    waxholm_mix_path.parent.mkdir(parents=True, exist_ok=True)
+    waxholm_mix_path.write_text("TEXT:\nhej från sverige .\n", encoding="utf-8")
+
+    rixvox_root = data_root / "raw/kblab_rixvox/data"
+    rixvox_root.mkdir(parents=True, exist_ok=True)
+    rixvox_parquet_path = rixvox_root / "test_metadata.parquet"
+    pq.write_table(
+        pa.Table.from_pylist(
+            [
+                {
+                    "dokid": "GR01KRU1",
+                    "anforande_nummer": 5,
+                    "observation_nr": 0,
+                    "speaker": "Peter Pedersen",
+                    "party": "V",
+                    "gender": "male",
+                    "debatedate": None,
+                    "electoral_district": "Örebro län",
+                    "birth_year": 1954,
+                    "intressent_id": "0556347007015",
+                    "speaker_from_id": True,
+                    "speaker_audio_meta": "Peter Pedersen (V)",
+                    "text": "Hej från Sverige.",
+                    "start": 0.64,
+                    "end": 27.0,
+                    "duration": 26.36,
+                    "bleu_score": 0.39,
+                    "filename": "GR01KRU1/2442210220028627521_anf5_1_27.wav",
+                    "speaker_total_hours": 5.026244444444444,
+                }
+            ]
+        ),
+        rixvox_parquet_path,
+    )
+
+    source_records = staged_public_corpus_source_records(
+        data_root,
+        fleurs_splits=("dev",),
+        fleurs_max_rows_per_split=1,
+        rixvox_splits=("test",),
+    )
+
+    assert [source_record.dataset for source_record in source_records] == [
+        "fleurs_sv_se",
+        "rixvox",
+        "waxholm",
+    ]
+
+
 def test_task103_runner_main_staged_public_corpus_passes_source_records(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -600,6 +695,8 @@ def test_task103_runner_main_staged_public_corpus_passes_source_records(
             DEFAULT_DATA_ROOT.as_posix(),
             "--fleurs-splits",
             "dev",
+            "--fleurs-max-rows-per-split",
+            "8",
             "--rixvox-splits",
             "test",
         ]
@@ -607,6 +704,7 @@ def test_task103_runner_main_staged_public_corpus_passes_source_records(
 
     assert exit_code == 0
     assert observed_runner_settings[0].source_mode == "staged-public-corpus"
+    assert observed_runner_settings[0].fleurs_max_rows_per_split == 8
     assert observed_source_records == [expected_source_records]
     stdout_payload = json.loads(capsys.readouterr().out)
     assert stdout_payload["datasets"] == ["fleurs_sv_se", "rixvox", "waxholm"]

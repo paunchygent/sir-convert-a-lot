@@ -42,6 +42,7 @@ DEFAULT_TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
 DEFAULT_SOURCE_MODE = "repo-fixture"
 DEFAULT_FLEURS_SPLITS = ("dev", "test")
 DEFAULT_RIXVOX_SPLITS = ("dev", "test")
+DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT: int | None = None
 SourceMode = Literal["repo-fixture", "staged-public-corpus"]
 
 
@@ -53,6 +54,7 @@ class Task103RunnerSettings:
     source_mode: SourceMode
     data_root: Path
     fleurs_splits: tuple[str, ...]
+    fleurs_max_rows_per_split: int | None
     rixvox_splits: tuple[str, ...]
 
 
@@ -82,6 +84,11 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
     )
     parser.add_argument("--data-root", type=Path, default=default_data_root())
     parser.add_argument("--fleurs-splits", default=",".join(DEFAULT_FLEURS_SPLITS))
+    parser.add_argument(
+        "--fleurs-max-rows-per-split",
+        type=int,
+        default=DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT,
+    )
     parser.add_argument("--rixvox-splits", default=",".join(DEFAULT_RIXVOX_SPLITS))
     args = parser.parse_args(argv)
     return Task103RunnerSettings(
@@ -94,6 +101,7 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         source_mode=args.source_mode,
         data_root=Path(args.data_root),
         fleurs_splits=_parse_csv_list(str(args.fleurs_splits)),
+        fleurs_max_rows_per_split=args.fleurs_max_rows_per_split,
         rixvox_splits=_parse_csv_list(str(args.rixvox_splits)),
     )
 
@@ -108,6 +116,7 @@ def _resolve_source_records(
     return staged_public_corpus_source_records(
         settings.data_root,
         fleurs_splits=settings.fleurs_splits,
+        fleurs_max_rows_per_split=settings.fleurs_max_rows_per_split,
         rixvox_splits=settings.rixvox_splits,
     )
 

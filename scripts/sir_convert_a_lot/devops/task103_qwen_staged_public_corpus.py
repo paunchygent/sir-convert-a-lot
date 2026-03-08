@@ -42,6 +42,7 @@ def staged_public_corpus_source_records(
     data_root: Path,
     *,
     fleurs_splits: Sequence[str] = FLEURS_ALLOWED_SPLITS,
+    fleurs_max_rows_per_split: int | None = None,
     rixvox_splits: Sequence[str] = ("dev", "test"),
     include_waxholm: bool = True,
 ) -> list[SourceRecord]:
@@ -57,7 +58,13 @@ def staged_public_corpus_source_records(
     if invalid_fleurs_splits:
         raise ValueError(f"Unsupported staged FLEURS splits: {invalid_fleurs_splits}")
     fleurs_root = raw_root / FLEURS_STAGED_SUBDIR
-    source_records.extend(fleurs_sv_source_records(fleurs_root, splits=requested_fleurs_splits))
+    fleurs_source_records = fleurs_sv_source_records(fleurs_root, splits=requested_fleurs_splits)
+    source_records.extend(
+        _limit_rows_per_split(
+            fleurs_source_records,
+            max_rows_per_split=fleurs_max_rows_per_split,
+        )
+    )
 
     if include_waxholm:
         waxholm_root = raw_root / WAXHOLM_STAGED_SUBDIR
@@ -78,3 +85,24 @@ def staged_public_corpus_source_records(
         source_records,
         key=lambda row: (row.dataset, row.source_split, row.speaker_id, row.dataset_row_id),
     )
+
+
+def _limit_rows_per_split(
+    source_records: Sequence[SourceRecord],
+    *,
+    max_rows_per_split: int | None,
+) -> list[SourceRecord]:
+    """Apply one deterministic per-split cap when the caller requests it."""
+    if max_rows_per_split is None:
+        return list(source_records)
+    if max_rows_per_split <= 0:
+        raise ValueError("max_rows_per_split must be positive when provided.")
+
+    rows_by_split: dict[str, list[SourceRecord]] = {}
+    for source_record in source_records:
+        rows_by_split.setdefault(source_record.source_split, []).append(source_record)
+
+    limited_rows: list[SourceRecord] = []
+    for split_name in sorted(rows_by_split):
+        limited_rows.extend(rows_by_split[split_name][:max_rows_per_split])
+    return limited_rows
