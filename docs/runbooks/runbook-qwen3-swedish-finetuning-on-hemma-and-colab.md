@@ -26,6 +26,7 @@ links:
   - docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
+  - docs/backlog/tasks/task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -358,6 +359,9 @@ Canonical Task 103 preprocessing contract:
   - `revision="strict"`
 - public source assets may begin at `16 kHz`, but all emitted training-side
   audio artifacts and `ref_audio` clips must be `24 kHz`
+- committed runner surfaces:
+  - `pdm run task-103-preprocess`
+  - `pdm run task-103-preprocess-public-corpus`
 
 Canonical Task 106 acquisition surface:
 
@@ -413,6 +417,10 @@ Canonical Task 106 acquisition surface:
    real `rixvox` / `fleurs` / labeled `waxholm` corpus adapters.
    - use `T106` Hemma-only acquisition first
    - do not stage large corpus assets on the local workstation
+1. Run `T107` and prove the staged public-corpus preprocessing bundle on
+   Hemma.
+   - canonical command:
+     `pdm run run-hemma -- pdm run task-103-preprocess-public-corpus`
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 

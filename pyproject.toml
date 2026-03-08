@@ -142,6 +142,7 @@ distribution = false
 "benchmark:task-91-restitch" = "python -m scripts.sir_convert_a_lot.devops.run_task91_restitch_saved_chunks"
 "task-100-smoke" = "python -m scripts.sir_convert_a_lot.devops.run_task100_hemma_qwen_finetune_smoke"
 "task-103-preprocess" = "python -m scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing"
+"task-103-preprocess-public-corpus" = "python -m scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing --source-mode staged-public-corpus"
 "task-106-acquire" = "python -m scripts.sir_convert_a_lot.devops.run_task106_hemma_qwen_corpus_acquisition"
 "benchmark:task-73-telemetry" = "python -m scripts.sir_convert_a_lot.benchmark_story20_telemetry_overhead"
 "benchmark:task-12" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"

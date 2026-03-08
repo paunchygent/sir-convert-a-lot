@@ -8,6 +8,7 @@ import math
 import tarfile
 import wave
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 import pyarrow as pa
@@ -17,8 +18,12 @@ import pytest
 from scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing import (
     DEFAULT_ASR_MODEL,
     DEFAULT_ASR_REVISION,
+    DEFAULT_FLEURS_SPLITS,
     DEFAULT_OUTPUT_ROOT,
+    DEFAULT_RIXVOX_SPLITS,
+    DEFAULT_SOURCE_MODE,
     DEFAULT_TOKENIZER_MODEL,
+    Task103RunnerSettings,
     _parse_args,
     main,
 )
@@ -41,6 +46,12 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_waxholm import (
     waxholm_labeled_source_records,
+)
+from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
+    staged_public_corpus_source_records,
+)
+from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
+    DEFAULT_DATA_ROOT,
 )
 
 
@@ -97,12 +108,37 @@ def _build_source_record(
 
 def test_task103_parse_args_defaults() -> None:
     """The Task 103 runner should expose deterministic defaults."""
-    settings = _parse_args([])
+    runner_settings = _parse_args([])
 
-    assert settings.output_root == DEFAULT_OUTPUT_ROOT
-    assert settings.asr_model == DEFAULT_ASR_MODEL
-    assert settings.asr_revision == DEFAULT_ASR_REVISION
-    assert settings.tokenizer_model == DEFAULT_TOKENIZER_MODEL
+    assert runner_settings.preprocessing.output_root == DEFAULT_OUTPUT_ROOT
+    assert runner_settings.preprocessing.asr_model == DEFAULT_ASR_MODEL
+    assert runner_settings.preprocessing.asr_revision == DEFAULT_ASR_REVISION
+    assert runner_settings.preprocessing.tokenizer_model == DEFAULT_TOKENIZER_MODEL
+    assert runner_settings.source_mode == DEFAULT_SOURCE_MODE
+    assert runner_settings.data_root == DEFAULT_DATA_ROOT
+    assert runner_settings.fleurs_splits == DEFAULT_FLEURS_SPLITS
+    assert runner_settings.rixvox_splits == DEFAULT_RIXVOX_SPLITS
+
+
+def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
+    """The runner should parse the staged public-corpus settings explicitly."""
+    runner_settings = _parse_args(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--data-root",
+            tmp_path.as_posix(),
+            "--fleurs-splits",
+            "dev",
+            "--rixvox-splits",
+            "test",
+        ]
+    )
+
+    assert runner_settings.source_mode == "staged-public-corpus"
+    assert runner_settings.data_root == tmp_path
+    assert runner_settings.fleurs_splits == ("dev",)
+    assert runner_settings.rixvox_splits == ("test",)
 
 
 def test_task103_preprocessing_emits_deterministic_bundle(
@@ -276,7 +312,11 @@ def test_task103_runner_main_prints_report_summary(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
-        lambda settings: expected_report,
+        lambda settings, *, source_records=None: expected_report,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
+        lambda settings: None,
     )
 
     exit_code = main([])
@@ -389,6 +429,160 @@ def test_rixvox_source_records_from_parquet_ingest_metadata_only(tmp_path: Path)
     assert source_record.duration_seconds == 26.36
     assert source_record.source_sample_rate_hz == 16_000
     assert manifest_target_for_source(source_record) == "swedish_checkpoint_dev"
+
+
+def test_staged_public_corpus_source_records_load_all_supported_inputs(tmp_path: Path) -> None:
+    """The staged public-corpus loader should aggregate FLEURS, Waxholm, and RixVox."""
+    data_root = tmp_path / "data_root"
+
+    fleurs_root = data_root / "raw/google_fleurs"
+    fleurs_tsv_path = fleurs_root / "data/sv_se/dev.tsv"
+    fleurs_archive_path = fleurs_root / "data/sv_se/audio/dev.tar.gz"
+    fleurs_audio_path = tmp_path / "fleurs_audio.wav"
+    _write_test_wav(fleurs_audio_path, sample_rate_hz=16_000, duration_seconds=1.5)
+    fleurs_tsv_path.parent.mkdir(parents=True, exist_ok=True)
+    fleurs_archive_path.parent.mkdir(parents=True, exist_ok=True)
+    fleurs_tsv_path.write_text(
+        "1641\t14347918279741910315.wav\tHej från Sverige.\thej från sverige\th e j\t24000\tMALE\n",
+        encoding="utf-8",
+    )
+    with tarfile.open(fleurs_archive_path, "w:gz") as archive:
+        audio_bytes = fleurs_audio_path.read_bytes()
+        member = tarfile.TarInfo(name="dev/14347918279741910315.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+
+    waxholm_root = data_root / "raw/kth_waxholm"
+    waxholm_listing_path = waxholm_root / "alloktrainfiles"
+    waxholm_speaker_dir = waxholm_root / "scenes_formatted/fp2001"
+    waxholm_wav_path = waxholm_speaker_dir / "fp2001.1.01.wav"
+    waxholm_mix_path = waxholm_speaker_dir / "fp2001.1.01.smp.mix"
+    _write_test_wav(waxholm_wav_path, sample_rate_hz=16_000, duration_seconds=2.0)
+    waxholm_listing_path.parent.mkdir(parents=True, exist_ok=True)
+    waxholm_listing_path.write_text("fp2001.1.01.smp\n", encoding="utf-8")
+    waxholm_mix_path.parent.mkdir(parents=True, exist_ok=True)
+    waxholm_mix_path.write_text("TEXT:\nhej från sverige .\n", encoding="utf-8")
+
+    rixvox_root = data_root / "raw/kblab_rixvox/data"
+    rixvox_root.mkdir(parents=True, exist_ok=True)
+    rixvox_parquet_path = rixvox_root / "test_metadata.parquet"
+    rixvox_table = pa.Table.from_pylist(
+        [
+            {
+                "dokid": "GR01KRU1",
+                "anforande_nummer": 5,
+                "observation_nr": 0,
+                "speaker": "Peter Pedersen",
+                "party": "V",
+                "gender": "male",
+                "debatedate": None,
+                "electoral_district": "Örebro län",
+                "birth_year": 1954,
+                "intressent_id": "0556347007015",
+                "speaker_from_id": True,
+                "speaker_audio_meta": "Peter Pedersen (V)",
+                "text": "Hej från Sverige.",
+                "start": 0.64,
+                "end": 27.0,
+                "duration": 26.36,
+                "bleu_score": 0.39,
+                "filename": "GR01KRU1/2442210220028627521_anf5_1_27.wav",
+                "speaker_total_hours": 5.026244444444444,
+            }
+        ]
+    )
+    pq.write_table(rixvox_table, rixvox_parquet_path)
+
+    source_records = staged_public_corpus_source_records(
+        data_root,
+        fleurs_splits=("dev",),
+        rixvox_splits=("test",),
+    )
+
+    assert [source_record.dataset for source_record in source_records] == [
+        "fleurs_sv_se",
+        "rixvox",
+        "waxholm",
+    ]
+    assert source_records[0].source_audio_locator is not None
+    assert source_records[1].source_audio_locator is None
+    assert source_records[2].source_audio_locator is not None
+
+
+def test_task103_runner_main_staged_public_corpus_passes_source_records(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The runner should resolve staged public-corpus records before core execution."""
+    expected_report = Task103PreprocessingReport(
+        output_root="build/reference/qwen3-tts-swedish-corpus",
+        datasets=["fleurs_sv_se", "rixvox", "waxholm"],
+        asr_model=DEFAULT_ASR_MODEL,
+        asr_revision=DEFAULT_ASR_REVISION,
+        tokenizer_model=DEFAULT_TOKENIZER_MODEL,
+        inventory_rows=3,
+        curated_rows=2,
+        admitted_rows=2,
+        prepared_rows=2,
+        speaker_ids=["speaker_a", "speaker_b", "speaker_c"],
+        manifest_counts={"swedish_checkpoint_dev": 1, "swedish_waxholm_control": 1},
+    )
+    expected_source_records = [
+        _build_source_record(
+            dataset="fleurs_sv_se",
+            source_split="dev",
+            dataset_row_id="fleurs-dev-001",
+            speaker_id="speaker_a",
+            speaker_name="Speaker A",
+            source_audio_path=tmp_path / "speaker_a.wav",
+            reference_audio_path=None,
+            text_raw="Hej från Sverige.",
+        )
+    ]
+    observed_runner_settings: list[Task103RunnerSettings] = []
+    observed_source_records: list[list[SourceRecord] | None] = []
+
+    def _fake_resolve_source_records(settings: Task103RunnerSettings) -> list[SourceRecord]:
+        observed_runner_settings.append(settings)
+        return expected_source_records
+
+    def _fake_run_task103_preprocessing(
+        settings: Task103PreprocessingSettings,
+        *,
+        source_records: Sequence[SourceRecord] | None = None,
+    ) -> Task103PreprocessingReport:
+        assert source_records is not None
+        observed_source_records.append(list(source_records))
+        return expected_report
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
+        _fake_resolve_source_records,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
+        _fake_run_task103_preprocessing,
+    )
+
+    exit_code = main(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--data-root",
+            DEFAULT_DATA_ROOT.as_posix(),
+            "--fleurs-splits",
+            "dev",
+            "--rixvox-splits",
+            "test",
+        ]
+    )
+
+    assert exit_code == 0
+    assert observed_runner_settings[0].source_mode == "staged-public-corpus"
+    assert observed_source_records == [expected_source_records]
+    stdout_payload = json.loads(capsys.readouterr().out)
+    assert stdout_payload["datasets"] == ["fleurs_sv_se", "rixvox", "waxholm"]
 
 
 def test_whisper_strict_scorer_resamples_to_processor_rate(
