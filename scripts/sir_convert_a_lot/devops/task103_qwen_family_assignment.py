@@ -45,3 +45,28 @@ def manifest_target_for_source(source_record: SourceRecord) -> ManifestFamily | 
         }
         return rixvox_mapping.get(source_record.source_split)
     return None
+
+
+def manifest_targets_for_curated_source(
+    source_record: SourceRecord,
+    *,
+    quality_tier: str,
+    speaker_quality_gate: str,
+) -> tuple[ManifestFamily, ...]:
+    """Map one curated source row into one or more canonical manifest families."""
+    direct_target = manifest_target_for_source(source_record)
+    if direct_target is not None:
+        return (direct_target,)
+    if source_record.dataset != "rixvox" or source_record.source_split != "train":
+        return ()
+    if speaker_quality_gate != "speaker_from_id":
+        return ()
+    if quality_tier == "high_trust":
+        return (
+            "swedish_smoke_train",
+            "swedish_pilot_train",
+            "swedish_scaleup_train",
+        )
+    if quality_tier == "medium_trust":
+        return ("swedish_scaleup_train",)
+    return ()

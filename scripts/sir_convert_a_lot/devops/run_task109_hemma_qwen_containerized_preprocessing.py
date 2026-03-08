@@ -52,6 +52,8 @@ DEFAULT_DATA_ROOT_HOME_MOUNT = Path(
     "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
 )
 DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT = 8
+DEFAULT_RIXVOX_SPLITS = ("dev", "test")
+DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
 
 
 @dataclass(frozen=True)
@@ -70,6 +72,8 @@ class Task109ContainerizedReport:
     effective_data_root: str
     used_data_home_mount: bool
     fleurs_max_rows_per_split: int
+    rixvox_splits: list[str]
+    rixvox_max_rows_per_split: int | None
     command: list[str]
     preprocessing_report: dict[str, object]
     rocm_smi_before: str
@@ -130,11 +134,24 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         default=DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT,
     )
     parser.add_argument(
+        "--rixvox-split",
+        action="append",
+        dest="rixvox_splits",
+        default=None,
+        choices=["train", "dev", "test"],
+    )
+    parser.add_argument(
+        "--rixvox-max-rows-per-split",
+        type=int,
+        default=DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT,
+    )
+    parser.add_argument(
         "--skip-build",
         action="store_true",
         help="Skip `docker buildx build` when the image already exists locally.",
     )
     args = parser.parse_args(argv)
+    rixvox_splits = tuple(args.rixvox_splits or DEFAULT_RIXVOX_SPLITS)
     return Task109ContainerizedPreprocessingSettings(
         output_root=Path(args.output_root),
         dockerfile_path=Path(args.dockerfile_path),
@@ -145,6 +162,8 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         data_root_home_mount=Path(args.data_root_home_mount),
         build_image=not bool(args.skip_build),
         fleurs_max_rows_per_split=int(args.fleurs_max_rows_per_split),
+        rixvox_splits=rixvox_splits,
+        rixvox_max_rows_per_split=args.rixvox_max_rows_per_split,
     )
 
 
@@ -188,6 +207,8 @@ def _build_report_markdown(
         f"- DATA effective root: `{report.effective_data_root}`\n"
         f"- Used DATA home-backed bind mount: `{report.used_data_home_mount}`\n"
         f"- FLEURS max rows per split: `{report.fleurs_max_rows_per_split}`\n"
+        f"- RixVox splits: `{report.rixvox_splits}`\n"
+        f"- RixVox max rows per split: `{report.rixvox_max_rows_per_split}`\n"
         f"- Command: `{command_text}`\n"
         f"- Inner output root: `{inner_report['output_root']}`\n"
         f"- Inventory rows: `{inner_report['inventory_rows']}`\n"
@@ -245,6 +266,8 @@ def main(argv: list[str] | None = None) -> int:
             effective_data_root=data_mount.effective_root.as_posix(),
             used_data_home_mount=data_mount.used_home_mount,
             fleurs_max_rows_per_split=settings.fleurs_max_rows_per_split,
+            rixvox_splits=list(settings.rixvox_splits),
+            rixvox_max_rows_per_split=settings.rixvox_max_rows_per_split,
             command=preprocessing_run.command,
             preprocessing_report=asdict(preprocessing_run.preprocessing_report),
             rocm_smi_before=rocm_smi_before,

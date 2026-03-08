@@ -34,7 +34,7 @@ from typing import Literal, Protocol, Sequence, TypedDict
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import (
     ManifestFamily,
-    manifest_target_for_source,
+    manifest_targets_for_curated_source,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import AudioLocator, SourceRecord
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_repo_fixture import (
@@ -335,7 +335,7 @@ def admission_decision_for_source(
     speaker_quality_gate: SpeakerQualityGate,
 ) -> AdmissionDecision:
     """Map quality and speaker gates to one bounded pilot admission decision."""
-    if quality_tier == "high_trust" and speaker_quality_gate == "speaker_from_id":
+    if quality_tier in {"high_trust", "medium_trust"} and speaker_quality_gate == "speaker_from_id":
         return "admit"
     return "reject"
 
@@ -619,8 +619,8 @@ def run_task103_preprocessing(
         family: [] for family in CANONICAL_MANIFEST_FAMILIES
     }
 
-    canonical_reference_paths: dict[tuple[ManifestFamily, str], Path] = {}
     canonical_reference_locators: dict[tuple[ManifestFamily, str], AudioLocator] = {}
+    canonical_reference_paths: dict[tuple[ManifestFamily, str], Path] = {}
     all_curated_rows: list[CuratedRow] = []
     admitted_rows: list[CuratedRow] = []
     inventory_rows_by_key = {
@@ -628,8 +628,7 @@ def run_task103_preprocessing(
     }
 
     for source_row in effective_source_records:
-        manifest_target = manifest_target_for_source(source_row)
-        if manifest_target is None or source_row.source_audio_locator is None:
+        if source_row.source_audio_locator is None:
             continue
 
         inventory_row = inventory_rows_by_key[
@@ -644,16 +643,6 @@ def run_task103_preprocessing(
             / f"{utterance_slug}.wav"
         )
 
-        reference_key = (manifest_target, source_row.speaker_id)
-        reference_locator = canonical_reference_locators.setdefault(
-            reference_key,
-            source_row.reference_audio_locator or source_row.source_audio_locator,
-        )
-        reference_audio_24k_path = refs_dir / manifest_target / source_row.speaker_id / "ref.wav"
-        canonical_reference_paths[reference_key] = reference_audio_24k_path
-        if not reference_audio_24k_path.exists():
-            _materialize_audio_locator(reference_locator, reference_audio_24k_path)
-
         duration_seconds = _materialize_audio_locator(
             source_row.source_audio_locator,
             audio_24k_path,
@@ -663,44 +652,61 @@ def run_task103_preprocessing(
         quality_tier = quality_tier_for_wer(asr_wer)
         speaker_quality_gate = _speaker_quality_gate_for_source(source_row)
         admission_decision = admission_decision_for_source(quality_tier, speaker_quality_gate)
-
-        curated_row = CuratedRow(
-            dataset=source_row.dataset,
-            source_split=source_row.source_split,
-            dataset_row_id=source_row.dataset_row_id,
-            speaker_id=source_row.speaker_id,
-            speaker_name=source_row.speaker_name,
-            speaker_from_id=source_row.speaker_from_id,
-            source_audio_path=source_row.source_audio_path,
-            audio_24k_path=audio_24k_path.relative_to(output_root).as_posix(),
-            duration_seconds=duration_seconds,
-            text_normalized=inventory_row.text_normalized,
-            reference_audio_24k_path=reference_audio_24k_path.relative_to(output_root).as_posix(),
-            asr_model=settings.asr_model,
-            asr_revision=settings.asr_revision,
-            asr_transcript=asr_transcript,
-            asr_wer=asr_wer,
+        manifest_targets = manifest_targets_for_curated_source(
+            source_row,
             quality_tier=quality_tier,
             speaker_quality_gate=speaker_quality_gate,
-            dedup_applied=False,
-            admission_decision=admission_decision,
-            manifest_target=manifest_target,
         )
-        curated_rows_by_family[manifest_target].append(curated_row)
-        all_curated_rows.append(curated_row)
-        if curated_row.admission_decision == "admit":
-            admitted_rows.append(curated_row)
-            raw_manifest_rows_by_family[manifest_target].append(
-                RawManifestRow(
-                    audio=curated_row.audio_24k_path,
-                    text=curated_row.text_normalized,
-                    ref_audio=curated_row.reference_audio_24k_path,
-                    speaker_id=curated_row.speaker_id,
-                    dataset=curated_row.dataset,
-                    source_split=curated_row.source_split,
-                    quality_tier=curated_row.quality_tier,
-                )
+        for manifest_target in manifest_targets:
+            reference_key = (manifest_target, source_row.speaker_id)
+            reference_locator = canonical_reference_locators.setdefault(
+                reference_key,
+                source_row.reference_audio_locator or source_row.source_audio_locator,
             )
+            reference_audio_24k_path = (
+                refs_dir / manifest_target / source_row.speaker_id / "ref.wav"
+            )
+            canonical_reference_paths[reference_key] = reference_audio_24k_path
+            if not reference_audio_24k_path.exists():
+                _materialize_audio_locator(reference_locator, reference_audio_24k_path)
+
+            curated_row = CuratedRow(
+                dataset=source_row.dataset,
+                source_split=source_row.source_split,
+                dataset_row_id=source_row.dataset_row_id,
+                speaker_id=source_row.speaker_id,
+                speaker_name=source_row.speaker_name,
+                speaker_from_id=source_row.speaker_from_id,
+                source_audio_path=source_row.source_audio_path,
+                audio_24k_path=audio_24k_path.relative_to(output_root).as_posix(),
+                duration_seconds=duration_seconds,
+                text_normalized=inventory_row.text_normalized,
+                reference_audio_24k_path=reference_audio_24k_path.relative_to(output_root).as_posix(),
+                asr_model=settings.asr_model,
+                asr_revision=settings.asr_revision,
+                asr_transcript=asr_transcript,
+                asr_wer=asr_wer,
+                quality_tier=quality_tier,
+                speaker_quality_gate=speaker_quality_gate,
+                dedup_applied=False,
+                admission_decision=admission_decision,
+                manifest_target=manifest_target,
+            )
+            curated_rows_by_family[manifest_target].append(curated_row)
+            all_curated_rows.append(curated_row)
+            if curated_row.admission_decision == "admit":
+                admitted_rows.append(curated_row)
+                raw_manifest_rows_by_family[manifest_target].append(
+                    RawManifestRow(
+                        audio=curated_row.audio_24k_path,
+                        text=curated_row.text_normalized,
+                        ref_audio=curated_row.reference_audio_24k_path,
+                        speaker_id=curated_row.speaker_id,
+                        dataset=curated_row.dataset,
+                        source_split=curated_row.source_split,
+                        quality_tier=curated_row.quality_tier,
+                    )
+                )
 
     for family in CANONICAL_MANIFEST_FAMILIES:
         write_jsonl(

@@ -39,6 +39,8 @@ def test_task109_parse_args_defaults() -> None:
     assert settings.data_root == DEFAULT_DATA_ROOT
     assert settings.data_root_home_mount == DEFAULT_DATA_ROOT_HOME_MOUNT
     assert settings.fleurs_max_rows_per_split == DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT
+    assert settings.rixvox_splits == ("dev", "test")
+    assert settings.rixvox_max_rows_per_split is None
     assert settings.build_image is True
 
 
@@ -56,6 +58,8 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
         ),
         build_image=True,
         fleurs_max_rows_per_split=8,
+        rixvox_splits=("train", "dev", "test"),
+        rixvox_max_rows_per_split=64,
     )
     repo_root = Path("/home/paunchygent/apps/sir-convert-a-lot")
     hf_mount = MountResolution(
@@ -92,6 +96,10 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "staged-public-corpus" in command
     assert "--fleurs-max-rows-per-split" in command
     assert "8" in command
+    assert "--rixvox-splits" in command
+    assert "train,dev,test" in command
+    assert "--rixvox-max-rows-per-split" in command
+    assert "64" in command
 
 
 def test_task109_run_containerized_preprocessing_parses_inner_report(
@@ -110,6 +118,8 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
         ),
         build_image=False,
         fleurs_max_rows_per_split=8,
+        rixvox_splits=("dev", "test"),
+        rixvox_max_rows_per_split=None,
     )
     repo_root = Path("/home/paunchygent/apps/sir-convert-a-lot")
     hf_mount = MountResolution(

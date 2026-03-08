@@ -26,6 +26,7 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     parse_json_object_from_mixed_stdout,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
+    CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
     Task103PreprocessingReport,
 )
@@ -44,6 +45,8 @@ class Task109ContainerizedPreprocessingSettings:
     data_root_home_mount: Path
     build_image: bool
     fleurs_max_rows_per_split: int
+    rixvox_splits: tuple[str, ...]
+    rixvox_max_rows_per_split: int | None
 
 
 @dataclass(frozen=True)
@@ -89,8 +92,25 @@ def _required_manifest_counts(payload: dict[str, object]) -> dict[ManifestFamily
             raise SystemExit(
                 "Task 109 preprocessing payload returned malformed `manifest_counts`."
             )
-        manifest_counts[key] = count
+        manifest_counts[_manifest_family_from_key(key)] = count
     return manifest_counts
+
+
+def _manifest_family_from_key(key: str) -> ManifestFamily:
+    """Convert one manifest-count JSON key into the typed manifest-family literal."""
+    if key == "swedish_smoke_train":
+        return "swedish_smoke_train"
+    if key == "swedish_pilot_train":
+        return "swedish_pilot_train"
+    if key == "swedish_scaleup_train":
+        return "swedish_scaleup_train"
+    if key == "swedish_checkpoint_dev":
+        return "swedish_checkpoint_dev"
+    if key == "swedish_final_test":
+        return "swedish_final_test"
+    if key == "swedish_waxholm_control":
+        return "swedish_waxholm_control"
+    raise SystemExit("Task 109 preprocessing payload returned an unknown `manifest_counts` key.")
 
 
 def build_containerized_preprocessing_command(
@@ -107,7 +127,7 @@ def build_containerized_preprocessing_command(
         container_hf_home,
     )
     container_torch_home = CONTAINER_TORCH_HOME.replace("/cache/huggingface", container_hf_home)
-    return [
+    command = [
         "run",
         "--rm",
         "--device",
@@ -145,7 +165,17 @@ def build_containerized_preprocessing_command(
         data_mount.canonical_root.as_posix(),
         "--fleurs-max-rows-per-split",
         str(settings.fleurs_max_rows_per_split),
+        "--rixvox-splits",
+        ",".join(settings.rixvox_splits),
     ]
+    if settings.rixvox_max_rows_per_split is not None:
+        command.extend(
+            [
+                "--rixvox-max-rows-per-split",
+                str(settings.rixvox_max_rows_per_split),
+            ]
+        )
+    return command
 
 
 def run_containerized_preprocessing(

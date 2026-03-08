@@ -61,6 +61,7 @@ def rixvox_source_records_from_parquet_with_audio_locators(
     *,
     split: str,
     audio_locators_by_source_path: Mapping[str, AudioLocator] | None,
+    include_metadata_only_rows: bool = True,
 ) -> list[SourceRecord]:
     """Parse RixVox rows with optional staged audio-locator resolution."""
     if split not in RIXVOX_ALLOWED_SPLITS:
@@ -82,6 +83,8 @@ def rixvox_source_records_from_parquet_with_audio_locators(
             source_audio_locator = None
             if audio_locators_by_source_path is not None:
                 source_audio_locator = audio_locators_by_source_path.get(filename)
+                if source_audio_locator is None and not include_metadata_only_rows:
+                    continue
             source_records.append(
                 SourceRecord(
                     dataset="rixvox",

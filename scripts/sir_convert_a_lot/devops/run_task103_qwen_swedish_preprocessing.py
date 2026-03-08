@@ -43,6 +43,7 @@ DEFAULT_SOURCE_MODE = "repo-fixture"
 DEFAULT_FLEURS_SPLITS = ("dev", "test")
 DEFAULT_RIXVOX_SPLITS = ("dev", "test")
 DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT: int | None = None
+DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
 SourceMode = Literal["repo-fixture", "staged-public-corpus"]
 
 
@@ -56,6 +57,7 @@ class Task103RunnerSettings:
     fleurs_splits: tuple[str, ...]
     fleurs_max_rows_per_split: int | None
     rixvox_splits: tuple[str, ...]
+    rixvox_max_rows_per_split: int | None
 
 
 def _parse_csv_list(raw_value: str) -> tuple[str, ...]:
@@ -90,6 +92,11 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         default=DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT,
     )
     parser.add_argument("--rixvox-splits", default=",".join(DEFAULT_RIXVOX_SPLITS))
+    parser.add_argument(
+        "--rixvox-max-rows-per-split",
+        type=int,
+        default=DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT,
+    )
     args = parser.parse_args(argv)
     return Task103RunnerSettings(
         preprocessing=Task103PreprocessingSettings(
@@ -103,6 +110,7 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         fleurs_splits=_parse_csv_list(str(args.fleurs_splits)),
         fleurs_max_rows_per_split=args.fleurs_max_rows_per_split,
         rixvox_splits=_parse_csv_list(str(args.rixvox_splits)),
+        rixvox_max_rows_per_split=args.rixvox_max_rows_per_split,
     )
 
 
@@ -118,6 +126,7 @@ def _resolve_source_records(
         fleurs_splits=settings.fleurs_splits,
         fleurs_max_rows_per_split=settings.fleurs_max_rows_per_split,
         rixvox_splits=settings.rixvox_splits,
+        rixvox_max_rows_per_split=settings.rixvox_max_rows_per_split,
     )
 
 

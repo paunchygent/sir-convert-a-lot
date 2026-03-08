@@ -30,6 +30,7 @@ from scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing imp
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import (
     manifest_target_for_source,
+    manifest_targets_for_curated_source,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     CANONICAL_MANIFEST_FAMILIES,
@@ -122,6 +123,7 @@ def test_task103_parse_args_defaults() -> None:
     assert runner_settings.fleurs_splits == DEFAULT_FLEURS_SPLITS
     assert runner_settings.fleurs_max_rows_per_split == DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT
     assert runner_settings.rixvox_splits == DEFAULT_RIXVOX_SPLITS
+    assert runner_settings.rixvox_max_rows_per_split is None
 
 
 def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
@@ -138,6 +140,8 @@ def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
             "8",
             "--rixvox-splits",
             "test",
+            "--rixvox-max-rows-per-split",
+            "16",
         ]
     )
 
@@ -146,6 +150,7 @@ def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
     assert runner_settings.fleurs_splits == ("dev",)
     assert runner_settings.fleurs_max_rows_per_split == 8
     assert runner_settings.rixvox_splits == ("test",)
+    assert runner_settings.rixvox_max_rows_per_split == 16
 
 
 def test_task103_preprocessing_emits_deterministic_bundle(
@@ -297,6 +302,108 @@ def test_task103_preprocessing_supports_multiple_manifest_families(
     )
     assert checkpoint_row["manifest_target"] == "swedish_checkpoint_dev"
     assert waxholm_row["manifest_target"] == "swedish_waxholm_control"
+
+
+def test_manifest_targets_for_curated_source_route_rixvox_train_by_quality() -> None:
+    """RixVox train rows should map into bounded train families by trust tier."""
+    source_record = SourceRecord(
+        dataset="rixvox",
+        source_split="train",
+        dataset_row_id="rixvox-train-001",
+        speaker_id="rixvox_0584659199514",
+        speaker_name="Göran Hägglund",
+        speaker_from_id=True,
+        source_audio_path="GR01BOU3/2442210220028601121_anf191_1_25.wav",
+        text_raw="Hej från Sverige.",
+        language="sv-SE",
+        speaker_total_hours=1.0,
+        has_label_files=False,
+        speaker_audio_meta_ok=True,
+    )
+
+    assert manifest_targets_for_curated_source(
+        source_record,
+        quality_tier="high_trust",
+        speaker_quality_gate="speaker_from_id",
+    ) == (
+        "swedish_smoke_train",
+        "swedish_pilot_train",
+        "swedish_scaleup_train",
+    )
+    assert manifest_targets_for_curated_source(
+        source_record,
+        quality_tier="medium_trust",
+        speaker_quality_gate="speaker_from_id",
+    ) == ("swedish_scaleup_train",)
+    assert (
+        manifest_targets_for_curated_source(
+            source_record,
+            quality_tier="rejected",
+            speaker_quality_gate="speaker_from_id",
+        )
+        == ()
+    )
+
+
+def test_task103_preprocessing_routes_rixvox_train_into_train_manifest_families(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """High-trust RixVox train rows should populate smoke, pilot, and scale-up manifests."""
+    workspace_root = tmp_path / "workspace"
+    archive_path = workspace_root / "raw/train_0.tar.gz"
+    source_audio_path = tmp_path / "rixvox_train_source.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=3.0)
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive_path, "w:gz") as archive:
+        audio_bytes = source_audio_path.read_bytes()
+        member = tarfile.TarInfo(name="GR01BOU3/2442210220028601121_anf191_1_25.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        lambda self, audio_path: "Hej från Sverige.",
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core._encode_audio_codes",
+        lambda *, tokenizer_model, audio_paths: [[[31, 32]] for _ in audio_paths],
+    )
+
+    report = run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=workspace_root / "build/reference/qwen3-tts-swedish-corpus",
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        ),
+        source_records=[
+            SourceRecord(
+                dataset="rixvox",
+                source_split="train",
+                dataset_row_id="GR01BOU3-191-0",
+                speaker_id="rixvox_0584659199514",
+                speaker_name="Göran Hägglund",
+                speaker_from_id=True,
+                source_audio_path="GR01BOU3/2442210220028601121_anf191_1_25.wav",
+                source_audio_locator=AudioLocator(
+                    archive_path,
+                    archive_member="GR01BOU3/2442210220028601121_anf191_1_25.wav",
+                ),
+                text_raw="Hej från Sverige.",
+                language="sv-SE",
+                speaker_total_hours=1.0,
+                has_label_files=False,
+                speaker_audio_meta_ok=True,
+                source_sample_rate_hz=16_000,
+                duration_seconds=3.0,
+            )
+        ],
+    )
+
+    assert report.manifest_counts["swedish_smoke_train"] == 1
+    assert report.manifest_counts["swedish_pilot_train"] == 1
+    assert report.manifest_counts["swedish_scaleup_train"] == 1
 
 
 def test_task103_runner_main_prints_report_summary(
@@ -817,12 +924,15 @@ def test_task103_runner_main_staged_public_corpus_passes_source_records(
             "8",
             "--rixvox-splits",
             "test",
+            "--rixvox-max-rows-per-split",
+            "32",
         ]
     )
 
     assert exit_code == 0
     assert observed_runner_settings[0].source_mode == "staged-public-corpus"
     assert observed_runner_settings[0].fleurs_max_rows_per_split == 8
+    assert observed_runner_settings[0].rixvox_max_rows_per_split == 32
     assert observed_source_records == [expected_source_records]
     stdout_payload = json.loads(capsys.readouterr().out)
     assert stdout_payload["datasets"] == ["fleurs_sv_se", "rixvox", "waxholm"]

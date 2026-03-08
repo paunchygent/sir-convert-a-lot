@@ -46,6 +46,7 @@ def staged_public_corpus_source_records(
     fleurs_splits: Sequence[str] = FLEURS_ALLOWED_SPLITS,
     fleurs_max_rows_per_split: int | None = None,
     rixvox_splits: Sequence[str] = ("dev", "test"),
+    rixvox_max_rows_per_split: int | None = None,
     include_waxholm: bool = True,
 ) -> list[SourceRecord]:
     """Load staged public-corpus source records from Hemma's DATA-backed root."""
@@ -88,14 +89,27 @@ def staged_public_corpus_source_records(
             archive_paths = []
         if archive_paths:
             source_records.extend(
-                rixvox_source_records_from_parquet_with_audio_locators(
-                    parquet_path,
-                    split=split,
-                    audio_locators_by_source_path=build_rixvox_audio_locator_index(archive_paths),
+                _limit_rows_per_split(
+                    rixvox_source_records_from_parquet_with_audio_locators(
+                        parquet_path,
+                        split=split,
+                        audio_locators_by_source_path=build_rixvox_audio_locator_index(archive_paths),
+                        include_metadata_only_rows=split != "train",
+                    ),
+                    max_rows_per_split=rixvox_max_rows_per_split,
                 )
             )
             continue
-        source_records.extend(rixvox_source_records_from_parquet(parquet_path, split=split))
+        source_records.extend(
+            _limit_rows_per_split(
+                rixvox_source_records_from_parquet_with_audio_locators(
+                    parquet_path,
+                    split=split,
+                    audio_locators_by_source_path=None,
+                ),
+                max_rows_per_split=rixvox_max_rows_per_split,
+            )
+        )
 
     return sorted(
         source_records,
