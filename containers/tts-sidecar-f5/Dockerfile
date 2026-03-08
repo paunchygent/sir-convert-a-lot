@@ -5,7 +5,8 @@ FROM python:3.12-slim
 
 ARG TORCH_ROCM_INDEX_URL=https://download.pytorch.org/whl/rocm7.1
 ARG TORCH_VERSION=2.10.0+rocm7.1
-ARG F5_TTS_REF=1.1.17
+ARG F5_TTS_GIT_URL=https://github.com/ChiliOlavi/F5-TTS.git
+ARG F5_TTS_REF=swedish-tts
 ARG TRANSFORMERS_VERSION=4.57.6
 ARG HUGGINGFACE_HUB_VERSION=0.34.4
 
@@ -33,7 +34,7 @@ RUN python -m pip install --upgrade pip "setuptools<81" wheel
 RUN python -m pip install --index-url "${TORCH_ROCM_INDEX_URL}" \
     "torch==${TORCH_VERSION}" \
     "torchaudio==${TORCH_VERSION}"
-RUN git clone --branch "${F5_TTS_REF}" --depth 1 https://github.com/SWivid/F5-TTS.git /opt/F5-TTS \
+RUN git clone --branch "${F5_TTS_REF}" --depth 1 "${F5_TTS_GIT_URL}" /opt/F5-TTS \
     && git -C /opt/F5-TTS submodule update --init --recursive
 RUN python -m pip install \
     "fastapi>=0.128.8" \

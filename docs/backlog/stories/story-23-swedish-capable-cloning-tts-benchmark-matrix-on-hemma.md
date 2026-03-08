@@ -127,6 +127,10 @@ Deferred follow-up:
   - the Swedish model asset inventory is now concrete upstream evidence:
     `EkhoCollective/f5-tts-swedish` currently exposes `model_last.pt`, `setting.json`, and
     `vocab.txt`,
+  - the current Task 85 runtime source has now been switched from `SWivid/F5-TTS@1.1.17` to
+    `ChiliOlavi/F5-TTS@swedish-tts`,
+  - the next Task 85 rerun must refresh the preserved Hemma evidence so the listening verdict is
+    attached to the current branch-backed runtime instead of the earlier upstream runtime,
   - the shared teacher reference clip still requires an exact transcript and `24 kHz` mono WAV
     preprocessing before any fair F5-TTS quality judgment.
 - 2026-03-07 Chatterbox follow-up update:

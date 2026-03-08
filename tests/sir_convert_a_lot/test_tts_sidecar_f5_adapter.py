@@ -35,7 +35,7 @@ from scripts.sir_convert_a_lot.tts_sidecar.f5_runtime import (
 def _settings() -> F5TtsSidecarSettings:
     return F5TtsSidecarSettings(
         backend_id="f5_tts_swedish",
-        backend_version="1.1.17",
+        backend_version="swedish-tts",
         backend_profile="f5tts_v1_base_swedish_finetune",
         gpu_required=True,
         model_name="F5TTS_v1_Base",

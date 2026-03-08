@@ -1,14 +1,16 @@
 """F5-TTS backend adapter for the normalized internal TTS sidecar contract.
 
 Purpose:
-    Wrap F5-TTS CLI inference plus the Swedish Task 85 fine-tune behind the
-    reusable ADR-0007 sidecar contract so Hemma can validate a minimal
-    cloning-capable Swedish backend through the service-container path.
+    Wrap the ChiliOlavi `swedish-tts` F5-TTS CLI inference plus the Swedish
+    Task 85 fine-tune behind the reusable ADR-0007 sidecar contract so Hemma
+    can validate a minimal cloning-capable Swedish backend through the
+    service-container path.
 
 Relationships:
     - Uses the generic FastAPI surface built by `app_factory.py`.
-    - Depends on the upstream `f5-tts_infer-cli` command plus the
-      `EkhoCollective/f5-tts-swedish` model assets mounted into the sidecar.
+    - Depends on the `ChiliOlavi/F5-TTS@swedish-tts` `f5-tts_infer-cli`
+      command plus the `EkhoCollective/f5-tts-swedish` model assets mounted
+      into the sidecar.
 """
 
 from __future__ import annotations
@@ -91,7 +93,7 @@ class F5TtsSidecarSettings:
             raise RuntimeError("SIR_TTS_SIDECAR_ALLOWED_LANGUAGE_CODES must not be empty.")
         return cls(
             backend_id=os.environ.get("SIR_TTS_SIDECAR_BACKEND_ID", "f5_tts_swedish"),
-            backend_version=os.environ.get("SIR_TTS_SIDECAR_BACKEND_VERSION", "1.1.17"),
+            backend_version=os.environ.get("SIR_TTS_SIDECAR_BACKEND_VERSION", "swedish-tts"),
             backend_profile=os.environ.get(
                 "SIR_TTS_SIDECAR_BACKEND_PROFILE",
                 "f5tts_v1_base_swedish_finetune",
@@ -245,7 +247,7 @@ class F5TtsSidecarBackend:
         *,
         reference_audio: ReferenceAudio | None,
     ) -> SynthesizeResult:
-        """Synthesize Swedish audio via the upstream F5-TTS CLI."""
+        """Synthesize Swedish audio via the installed F5-TTS CLI."""
         self._ensure_ready()
         if request.output_format is not OutputFormat.WAV:
             raise SidecarRequestError(

@@ -128,9 +128,12 @@ Primary implementation stories (active sequence):
 - 2026-03-07:
 
   - Redirected Story 23 from deferred XTTS comparison to the active `T85`
-    F5-TTS lane, prepared deterministic F5 reference evidence, and recorded a
-    technically successful but qualitatively rejected Hemma benchmark under
-    `build/verification/task-85-f5-tts-hemma/`.
+    F5-TTS lane and recorded a technically successful but qualitatively
+    rejected Hemma benchmark under `build/verification/task-85-f5-tts-hemma/`.
+  - Switched the current Task 85 runtime source locally from
+    `SWivid/F5-TTS@1.1.17` to `ChiliOlavi/F5-TTS@swedish-tts`; the image now
+    clones the ChiliOlavi fork by default and the next Hemma rerun must
+    refresh Task 85 evidence on the new runtime.
   - Implemented and verified `T86` Chatterbox on Hemma, including the dedicated
     sidecar image, runtime, reporting, and deterministic evidence under
     `build/verification/task-86-chatterbox-hemma/`; runtime truth is now fixed

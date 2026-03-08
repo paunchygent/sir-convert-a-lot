@@ -11,6 +11,7 @@ Relationships:
     - Intended to run on Hemma via `pdm run run-hemma -- pdm run benchmark:task-85`.
     - Reuses the ADR-0007 `/health`, `/capabilities`, and service-container
       probe pattern established by Tasks 79 and 81.
+    - Builds the current Task 85 runtime from `ChiliOlavi/F5-TTS@swedish-tts`.
     - Writes deterministic evidence under
       `build/verification/task-85-f5-tts-hemma/`.
 """
@@ -462,7 +463,7 @@ def _start_sidecar(
         "-e",
         "SIR_TTS_SIDECAR_BACKEND_ID=f5_tts_swedish",
         "-e",
-        "SIR_TTS_SIDECAR_BACKEND_VERSION=1.1.17",
+        "SIR_TTS_SIDECAR_BACKEND_VERSION=swedish-tts",
         "-e",
         "SIR_TTS_SIDECAR_BACKEND_PROFILE=f5tts_v1_base_swedish_finetune",
         "-e",

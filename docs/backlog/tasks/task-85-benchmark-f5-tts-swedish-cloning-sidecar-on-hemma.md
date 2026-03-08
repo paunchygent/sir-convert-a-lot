@@ -40,6 +40,8 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
   - verify `f5-tts_infer-cli --help` before attempting synthesis.
 - Implement the benchmark against the reusable internal sidecar capability contract from
   ADR-0007 (`/health`, `/capabilities`, `/voices`, `/synthesize`).
+- Use the current Task 85 runtime source from `ChiliOlavi/F5-TTS@swedish-tts` rather than the
+  upstream `SWivid/F5-TTS` release branch.
 - Download and record the Swedish model assets from
   `EkhoCollective/f5-tts-swedish`, including the exact checkpoint filename and `vocab.txt`.
 - Reuse the same teacher reference voice clip and Swedish probe text discipline as Task 81, but
@@ -87,6 +89,10 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
 
 ## Current Evidence
 
+- Current repo `HEAD` now points the Task 85 sidecar image at `ChiliOlavi/F5-TTS@swedish-tts`
+  instead of `SWivid/F5-TTS@1.1.17`.
+- The preserved Hemma evidence below was collected before that runtime-source switch, so it still
+  proves only the earlier upstream-runtime lane until a fresh rerun is recorded.
 - 2026-03-07 Hemma technical benchmark succeeded on commit
   `f1343104e625a5118fe713c0a10f8f5c41ea00c3`.
 - 2026-03-07 quality-sweep follow-up succeeded on commit
@@ -147,6 +153,8 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
 
 ## Remaining Work
 
+- Rebuild and rerun Task 85 on Hemma so the preserved evidence reflects the current
+  `ChiliOlavi/F5-TTS@swedish-tts` runtime rather than the earlier upstream runtime.
 - Perform listening review across the preserved OpenVoice Task 81 baseline and the new F5 quality
   sweep artifacts.
 - Record explicit comparison notes on:

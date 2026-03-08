@@ -58,11 +58,17 @@
   - `docs/reference/ref-espeak-ng-swedish-phoneme-integration-for-chatterbox.md`
   - `docs/runbooks/runbook-chatterbox-multilingual-tuning-on-hemma.md`
   - `docs/backlog/current.md`
+- Switched the current Task 85 F5 runtime source locally from
+  `SWivid/F5-TTS@1.1.17` to `ChiliOlavi/F5-TTS@swedish-tts`:
+  - `containers/tts-sidecar-f5/Dockerfile` now clones the ChiliOlavi fork by default
+  - Task 85 runtime defaults/reporting now advertise backend version `swedish-tts`
+  - Task 85 docs now explicitly mark the preserved Hemma evidence as pre-switch and require a rerun
 
 Validation evidence:
 
 - `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_adapter.py tests/sir_convert_a_lot/test_task86_chatterbox_benchmark.py -q` (pass: `9 passed`)
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task86_chatterbox_benchmark.py tests/sir_convert_a_lot/test_task89_chatterbox_espeak.py -q` (pass: `12 passed`)
+- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_f5_adapter.py -q` (pass: `3 passed`)
 - `pdm run format-all` (pass)
 - `pdm run lint-fix` (pass)
 - `pdm run typecheck-all` (pass)

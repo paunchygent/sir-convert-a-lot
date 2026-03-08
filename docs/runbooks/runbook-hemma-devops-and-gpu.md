@@ -552,6 +552,7 @@ Evidence path:
 Usage notes:
 
 - The harness builds and launches the dedicated `containers/tts-sidecar-f5/Dockerfile` image.
+- The current Task 85 image source is `ChiliOlavi/F5-TTS@swedish-tts`.
 - The sidecar stays internal-network only and exposes the normalized ADR-0007 endpoints:
   - `GET /health`
   - `GET /capabilities`
