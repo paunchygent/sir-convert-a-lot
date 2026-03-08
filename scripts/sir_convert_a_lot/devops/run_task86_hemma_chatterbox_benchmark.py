@@ -70,6 +70,7 @@ DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/ca
 DEFAULT_REFERENCE_AUDIO = Path(
     "build/verification/task-81-openvoice-v2-hemma/inputs/teacher_reference_voice.m4a"
 )
+DEFAULT_PROBE_LANGUAGE = "sv"
 DEFAULT_SWEDISH_TEXT = (
     "Hej. Det här är ett benchmarkprov för Sir Convert a Lot på Hemma. "
     "Vi testar om Chatterbox kan klona en lärarröst och läsa svensk text på ett tydligt sätt."
@@ -136,6 +137,7 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--smoke-text-file", type=Path, default=None)
     parser.add_argument("--probe-text", default=DEFAULT_SWEDISH_TEXT)
     parser.add_argument("--probe-text-file", type=Path, default=None)
+    parser.add_argument("--probe-language", choices=("sv", "en"), default=DEFAULT_PROBE_LANGUAGE)
     parser.add_argument("--exaggeration", type=float, default=0.5)
     parser.add_argument("--cfg-weight", type=float, default=0.5)
     parser.add_argument("--segment-text", action="store_true")
@@ -181,6 +183,7 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
             text_file=Path(args.probe_text_file) if args.probe_text_file is not None else None,
             label="probe",
         ),
+        probe_language=str(args.probe_language),
         exaggeration=float(args.exaggeration),
         cfg_weight=float(args.cfg_weight),
         segment_text=bool(args.segment_text),
@@ -325,13 +328,16 @@ def main(argv: list[str] | None = None) -> int:
             preset_voice_id="builtin_default",
             reference_audio_path=None,
         )
-        LOGGER.info("Running Swedish cloning synthesis")
-        swedish_clone_probe = synthesize_probe(
+        LOGGER.info("Running primary cloning synthesis")
+        primary_clone_probe = synthesize_probe(
             base_url=host_base_url,
             artifacts_dir=paths["artifacts_dir"],
-            filename="scenario-a-sv-ref-sv-out.wav",
+            filename=(
+                f"scenario-a-{effective_settings.probe_language}-ref-"
+                f"{effective_settings.probe_language}-out.wav"
+            ),
             text=effective_settings.probe_text,
-            language="sv",
+            language=effective_settings.probe_language,
             voice_mode="reference_clone",
             preset_voice_id=None,
             reference_audio_path=effective_settings.reference_audio_path,
@@ -396,7 +402,8 @@ def main(argv: list[str] | None = None) -> int:
             smoke_text=effective_settings.smoke_text,
             smoke_probe=smoke_probe,
             probe_text=effective_settings.probe_text,
-            swedish_clone_probe=swedish_clone_probe,
+            probe_language=effective_settings.probe_language,
+            primary_clone_probe=primary_clone_probe,
             cross_language_probe=cross_language_probe,
             reference_audio_path=reference_evidence.input_path,
             reference_audio_duration_seconds=reference_evidence.duration_seconds,
@@ -439,7 +446,7 @@ def main(argv: list[str] | None = None) -> int:
         LOGGER.info(
             "Task 86 completed successfully: smoke=%s clone=%s",
             smoke_probe.output_path,
-            swedish_clone_probe.output_path,
+            primary_clone_probe.output_path,
         )
         return 0
     finally:

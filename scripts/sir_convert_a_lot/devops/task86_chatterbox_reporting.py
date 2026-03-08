@@ -57,7 +57,8 @@ class BenchmarkReport:
     smoke_text: str
     smoke_probe: ProbeResult
     probe_text: str
-    swedish_clone_probe: ProbeResult
+    probe_language: str
+    primary_clone_probe: ProbeResult
     cross_language_probe: ProbeResult | None
     reference_audio_path: str
     reference_audio_duration_seconds: float
@@ -124,12 +125,13 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- peak_gpu_busy_percent: `{report.smoke_probe.peak_gpu_busy_percent}`",
         f"- peak_vram_used_bytes: `{report.smoke_probe.peak_vram_used_bytes}`",
         "",
-        "## Swedish Clone Probe",
+        "## Primary Clone Probe",
         f"- text: `{report.probe_text}`",
-        f"- output_path: `{report.swedish_clone_probe.output_path}`",
-        f"- duration_seconds: `{report.swedish_clone_probe.duration_seconds}`",
-        f"- peak_gpu_busy_percent: `{report.swedish_clone_probe.peak_gpu_busy_percent}`",
-        f"- peak_vram_used_bytes: `{report.swedish_clone_probe.peak_vram_used_bytes}`",
+        f"- language: `{report.probe_language}`",
+        f"- output_path: `{report.primary_clone_probe.output_path}`",
+        f"- duration_seconds: `{report.primary_clone_probe.duration_seconds}`",
+        f"- peak_gpu_busy_percent: `{report.primary_clone_probe.peak_gpu_busy_percent}`",
+        f"- peak_vram_used_bytes: `{report.primary_clone_probe.peak_vram_used_bytes}`",
         "",
         "## Evidence",
         f"- package_versions_path: `{report.package_versions_path}`",

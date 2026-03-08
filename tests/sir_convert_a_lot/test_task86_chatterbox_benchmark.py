@@ -70,10 +70,28 @@ def test_parse_args_accepts_probe_text_file(tmp_path: Path) -> None:
     )
 
     assert settings.probe_text == "fonemiserad svensk text"
+    assert settings.probe_language == "sv"
     assert settings.segment_text is True
     assert settings.segment_max_chars == 180
     assert settings.segment_cross_fade_ms == 90
     assert settings.segment_stitch_mode == "speech_aware"
+
+
+def test_parse_args_accepts_english_probe_language(tmp_path: Path) -> None:
+    probe_text_file = tmp_path / "probe_text.txt"
+    probe_text_file.write_text("This is an English cloning test.", encoding="utf-8")
+
+    settings = run_task86_hemma_chatterbox_benchmark._parse_args(
+        [
+            "--probe-text-file",
+            probe_text_file.as_posix(),
+            "--probe-language",
+            "en",
+        ]
+    )
+
+    assert settings.probe_text == "This is an English cloning test."
+    assert settings.probe_language == "en"
 
 
 def test_discover_model_snapshot_path_handles_hf_root_and_hub_root(tmp_path: Path) -> None:
@@ -121,6 +139,7 @@ def test_start_sidecar_uses_buildkit_ready_mounts_and_envs(
         english_reference_audio_path=None,
         smoke_text="This is a smoke test.",
         probe_text="Hej världen",
+        probe_language="sv",
         exaggeration=0.7,
         cfg_weight=0.3,
         segment_text=True,
@@ -189,7 +208,8 @@ def test_build_report_markdown_includes_restart_and_probe_sections() -> None:
             peak_vram_used_bytes=1024,
         ),
         probe_text="Hej världen",
-        swedish_clone_probe=ProbeResult(
+        probe_language="en",
+        primary_clone_probe=ProbeResult(
             ok=True,
             output_path="/tmp/clone.wav",
             sha256="def",
@@ -224,7 +244,8 @@ def test_build_report_markdown_includes_restart_and_probe_sections() -> None:
 
     assert "warm_restart_seconds" in markdown
     assert "Smoke Probe" in markdown
-    assert "Swedish Clone Probe" in markdown
+    assert "Primary Clone Probe" in markdown
+    assert "language: `en`" in markdown
     assert "segment_text" in markdown
     assert "segment_stitch_mode" in markdown
 

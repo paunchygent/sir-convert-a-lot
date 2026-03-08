@@ -61,6 +61,7 @@ class BenchmarkSettings:
     english_reference_audio_path: Path | None
     smoke_text: str
     probe_text: str
+    probe_language: str
     exaggeration: float
     cfg_weight: float
     segment_text: bool
