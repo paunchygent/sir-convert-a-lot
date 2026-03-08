@@ -13,6 +13,7 @@ Relationships:
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,7 @@ from scripts.sir_convert_a_lot.devops.task113_hemma_docker_storage_runtime impor
     Task113DockerStorageReport,
     Task113DockerStorageSettings,
     ensure_fstab_bind_entry_text,
+    find_mount_source,
 )
 
 
@@ -36,6 +38,31 @@ def test_ensure_fstab_bind_entry_text_appends_once(tmp_path: Path) -> None:
     entry = f"{source.as_posix()} {target.as_posix()} none bind 0 0"
     assert first.count(entry) == 1
     assert second.count(entry) == 1
+
+
+def test_find_mount_source_returns_none_for_plain_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Task 113 should ignore plain directories that are not mountpoints."""
+
+    def _fake_run(
+        command: list[str],
+        *,
+        check: bool,
+        capture_output: bool,
+        text: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        if command[0] == "mountpoint":
+            return subprocess.CompletedProcess(command, 1, "", "")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task113_hemma_docker_storage_runtime.subprocess.run",
+        _fake_run,
+    )
+
+    assert find_mount_source(tmp_path / "plain") is None
 
 
 def test_task113_runner_writes_report_artifacts(

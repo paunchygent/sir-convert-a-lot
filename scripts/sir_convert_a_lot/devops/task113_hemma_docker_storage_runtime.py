@@ -110,6 +110,14 @@ def filesystem_df() -> str:
 
 def find_mount_source(target: Path) -> str | None:
     """Return the current bind-mount source for one target, if mounted."""
+    is_mount_result = subprocess.run(
+        ["mountpoint", "-q", target.as_posix()],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if is_mount_result.returncode != 0:
+        return None
     result = subprocess.run(
         ["findmnt", "-n", "-o", "SOURCE", "--target", target.as_posix()],
         check=False,
