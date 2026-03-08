@@ -149,6 +149,8 @@ class Task103PreprocessingSettings:
     stage: Task103Stage = "all"
     finalization_families: tuple[ManifestFamily, ...] = CANONICAL_MANIFEST_FAMILIES
     audio_codes_chunk_size: int = 8
+    row_worker_count: int = 1
+    gpu_asr_worker_count: int = 1
 
 
 @dataclass(frozen=True)

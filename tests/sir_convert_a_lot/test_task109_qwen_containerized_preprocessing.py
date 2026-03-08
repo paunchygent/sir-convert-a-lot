@@ -7,13 +7,16 @@ from pathlib import Path
 import pytest
 
 from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_preprocessing import (
+    DEFAULT_AUDIO_CODES_CHUNK_SIZE,
     DEFAULT_DATA_ROOT_HOME_MOUNT,
     DEFAULT_DOCKERFILE_PATH,
     DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT,
+    DEFAULT_GPU_ASR_WORKER_COUNT,
     DEFAULT_HF_CACHE,
     DEFAULT_HF_CACHE_HOME_MOUNT,
     DEFAULT_IMAGE,
     DEFAULT_OUTPUT_ROOT,
+    DEFAULT_ROW_WORKER_COUNT,
     _parse_args,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
@@ -41,6 +44,9 @@ def test_task109_parse_args_defaults() -> None:
     assert settings.fleurs_max_rows_per_split == DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT
     assert settings.rixvox_splits == ("dev", "test")
     assert settings.rixvox_max_rows_per_split is None
+    assert settings.audio_codes_chunk_size == DEFAULT_AUDIO_CODES_CHUNK_SIZE
+    assert settings.row_worker_count == DEFAULT_ROW_WORKER_COUNT
+    assert settings.gpu_asr_worker_count == DEFAULT_GPU_ASR_WORKER_COUNT
     assert settings.build_image is True
 
 
@@ -60,6 +66,9 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
         fleurs_max_rows_per_split=8,
         rixvox_splits=("train", "dev", "test"),
         rixvox_max_rows_per_split=64,
+        audio_codes_chunk_size=4,
+        row_worker_count=3,
+        gpu_asr_worker_count=2,
     )
     repo_root = Path("/home/paunchygent/apps/sir-convert-a-lot")
     hf_mount = MountResolution(
@@ -100,6 +109,12 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "train,dev,test" in command
     assert "--rixvox-max-rows-per-split" in command
     assert "64" in command
+    assert "--audio-codes-chunk-size" in command
+    assert "4" in command
+    assert "--row-worker-count" in command
+    assert "3" in command
+    assert "--gpu-asr-worker-count" in command
+    assert "2" in command
 
 
 def test_task109_run_containerized_preprocessing_parses_inner_report(
@@ -120,6 +135,9 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
         fleurs_max_rows_per_split=8,
         rixvox_splits=("dev", "test"),
         rixvox_max_rows_per_split=None,
+        audio_codes_chunk_size=8,
+        row_worker_count=1,
+        gpu_asr_worker_count=1,
     )
     repo_root = Path("/home/paunchygent/apps/sir-convert-a-lot")
     hf_mount = MountResolution(

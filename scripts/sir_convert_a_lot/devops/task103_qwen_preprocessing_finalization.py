@@ -14,6 +14,7 @@ Relationships:
 
 from __future__ import annotations
 
+import shutil
 from collections import Counter
 from pathlib import Path
 from typing import Protocol
@@ -64,7 +65,12 @@ def encode_audio_codes(
     return rendered_codes
 
 
-def _curated_row_from_spool(spool_row: SpoolRow, manifest_target: ManifestFamily) -> CuratedRow:
+def _curated_row_from_spool(
+    spool_row: SpoolRow,
+    manifest_target: ManifestFamily,
+    *,
+    reference_audio_24k_path: str,
+) -> CuratedRow:
     """Project one spool row into one family-specific curated row."""
     return CuratedRow(
         dataset=spool_row.dataset,
@@ -77,7 +83,7 @@ def _curated_row_from_spool(spool_row: SpoolRow, manifest_target: ManifestFamily
         audio_24k_path=spool_row.audio_24k_path,
         duration_seconds=spool_row.duration_seconds,
         text_normalized=spool_row.text_normalized,
-        reference_audio_24k_path=spool_row.reference_audio_24k_paths[manifest_target],
+        reference_audio_24k_path=reference_audio_24k_path,
         asr_model=spool_row.asr_model,
         asr_revision=spool_row.asr_revision,
         asr_transcript=spool_row.asr_transcript,
@@ -88,6 +94,36 @@ def _curated_row_from_spool(spool_row: SpoolRow, manifest_target: ManifestFamily
         admission_decision=spool_row.admission_decision,
         manifest_target=manifest_target,
     )
+
+
+def _canonical_reference_audio_path(
+    *,
+    family: ManifestFamily,
+    speaker_id: str,
+) -> Path:
+    """Return the canonical relative reference-audio path for one family speaker."""
+    return Path("refs", family, speaker_id, "ref.wav")
+
+
+def _build_reference_audio_paths(output_root: Path) -> dict[tuple[ManifestFamily, str], str]:
+    """Materialize and index one deterministic reference clip per family speaker."""
+    reference_audio_paths: dict[tuple[ManifestFamily, str], str] = {}
+    for spool_row in iter_spool_rows(output_root):
+        source_audio_path = output_root / spool_row.audio_24k_path
+        for family in spool_row.manifest_targets:
+            speaker_key = (family, spool_row.speaker_id)
+            if speaker_key in reference_audio_paths:
+                continue
+            relative_reference_path = _canonical_reference_audio_path(
+                family=family,
+                speaker_id=spool_row.speaker_id,
+            )
+            absolute_reference_path = output_root / relative_reference_path
+            absolute_reference_path.parent.mkdir(parents=True, exist_ok=True)
+            if not absolute_reference_path.exists():
+                shutil.copyfile(source_audio_path, absolute_reference_path)
+            reference_audio_paths[speaker_key] = relative_reference_path.as_posix()
+    return reference_audio_paths
 
 
 def _raw_manifest_row_from_curated(curated_row: CuratedRow) -> RawManifestRow:
@@ -149,6 +185,7 @@ def finalize_from_spool(
     if settings.audio_codes_chunk_size <= 0:
         raise ValueError("`audio_codes_chunk_size` must be positive.")
     selected_families = set(settings.finalization_families)
+    reference_audio_paths = _build_reference_audio_paths(output_root)
     curated_dir = output_root / "curated"
     manifests_dir = output_root / "manifests"
     for family in CANONICAL_MANIFEST_FAMILIES:
@@ -163,7 +200,11 @@ def finalize_from_spool(
             for spool_row in iter_spool_rows(output_root):
                 if family not in spool_row.manifest_targets:
                     continue
-                curated_row = _curated_row_from_spool(spool_row, family)
+                curated_row = _curated_row_from_spool(
+                    spool_row,
+                    family,
+                    reference_audio_24k_path=reference_audio_paths[(family, spool_row.speaker_id)],
+                )
                 curated_writer.write_row(curated_row)
                 if curated_row.admission_decision == "admit":
                     raw_chunk.append(_raw_manifest_row_from_curated(curated_row))

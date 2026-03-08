@@ -2,7 +2,7 @@
 
 Purpose:
     Convert source records into deterministic inventory rows, canonical
-    24 kHz audio artifacts, reference clips, ASR-scored spool rows, and other
+    24 kHz audio artifacts, ASR-scored spool rows, and other
     durable row-level outputs used by later finalization.
 
 Relationships:
@@ -20,8 +20,11 @@ import tarfile
 import tempfile
 import wave
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from pathlib import Path
+from queue import Queue
+from threading import Lock
 from typing import Callable, Sequence
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import (
@@ -37,7 +40,6 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_asr import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     CANONICAL_SAMPLE_RATE_HZ,
     InventoryRow,
-    ManifestFamily,
     SpoolRow,
     Task103PreprocessingSettings,
 )
@@ -178,20 +180,26 @@ def process_rows_to_spool(
     source_records: Sequence[SourceRecord],
     scorer_factory: Callable[[str, str], object],
 ) -> None:
-    """Process source rows into durable audio, refs, and spool records."""
+    """Process source rows into durable audio artifacts and spool records."""
+    if settings.row_worker_count <= 0:
+        raise ValueError("`row_worker_count` must be positive.")
+    if settings.gpu_asr_worker_count <= 0:
+        raise ValueError("`gpu_asr_worker_count` must be positive.")
     inventory_rows = write_inventory_rows(output_root, source_records)
     inventory_rows_by_key = {
         (row.dataset, row.source_split, row.dataset_row_id): row for row in inventory_rows
     }
-    scorer = scorer_factory(settings.asr_model, settings.asr_revision)
-    canonical_reference_locators: dict[tuple[ManifestFamily, str], AudioLocator] = {}
+    scorer_slots: list[object | None] = [None] * settings.gpu_asr_worker_count
+    scorer_slots_lock = Lock()
+    scorer_slot_queue: Queue[int] = Queue()
+    for slot_index in range(settings.gpu_asr_worker_count):
+        scorer_slot_queue.put(slot_index)
 
     audio_24k_dir = output_root / "audio_24k"
-    refs_dir = output_root / "refs"
 
-    for source_row in source_records:
+    def _process_source_row(source_row: SourceRecord) -> None:
         if source_row.source_audio_locator is None:
-            continue
+            return
 
         inventory_row = inventory_rows_by_key[
             (source_row.dataset, source_row.source_split, source_row.dataset_row_id)
@@ -209,8 +217,17 @@ def process_rows_to_spool(
             source_row.source_audio_locator,
             audio_24k_path,
         )
-        transcribe = getattr(scorer, "transcribe")
-        asr_transcript = transcribe(audio_24k_path)
+        scorer_slot_index = scorer_slot_queue.get()
+        try:
+            with scorer_slots_lock:
+                scorer = scorer_slots[scorer_slot_index]
+                if scorer is None:
+                    scorer = scorer_factory(settings.asr_model, settings.asr_revision)
+                    scorer_slots[scorer_slot_index] = scorer
+            transcribe = getattr(scorer, "transcribe")
+            asr_transcript = transcribe(audio_24k_path)
+        finally:
+            scorer_slot_queue.put(scorer_slot_index)
         asr_wer = word_error_rate(inventory_row.text_normalized, asr_transcript)
         quality_tier = quality_tier_for_wer(asr_wer)
         speaker_quality_gate = speaker_quality_gate_for_source(source_row)
@@ -220,22 +237,6 @@ def process_rows_to_spool(
             quality_tier=quality_tier,
             speaker_quality_gate=speaker_quality_gate,
         )
-
-        reference_audio_24k_paths: dict[ManifestFamily, str] = {}
-        for manifest_target in manifest_targets:
-            reference_key = (manifest_target, source_row.speaker_id)
-            reference_locator = canonical_reference_locators.setdefault(
-                reference_key,
-                source_row.reference_audio_locator or source_row.source_audio_locator,
-            )
-            reference_audio_24k_path = (
-                refs_dir / manifest_target / source_row.speaker_id / "ref.wav"
-            )
-            if not reference_audio_24k_path.exists():
-                _materialize_audio_locator(reference_locator, reference_audio_24k_path)
-            reference_audio_24k_paths[manifest_target] = reference_audio_24k_path.relative_to(
-                output_root
-            ).as_posix()
 
         spool_row = SpoolRow(
             dataset=source_row.dataset,
@@ -248,7 +249,7 @@ def process_rows_to_spool(
             audio_24k_path=audio_24k_path.relative_to(output_root).as_posix(),
             duration_seconds=duration_seconds,
             text_normalized=inventory_row.text_normalized,
-            reference_audio_24k_paths=reference_audio_24k_paths,
+            reference_audio_24k_paths={},
             asr_model=settings.asr_model,
             asr_revision=settings.asr_revision,
             asr_transcript=asr_transcript,
@@ -260,3 +261,6 @@ def process_rows_to_spool(
             manifest_targets=manifest_targets,
         )
         write_spool_row(output_root, spool_row)
+
+    with ThreadPoolExecutor(max_workers=settings.row_worker_count) as executor:
+        list(executor.map(_process_source_row, source_records))

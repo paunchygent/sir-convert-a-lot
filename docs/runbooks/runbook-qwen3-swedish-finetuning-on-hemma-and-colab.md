@@ -403,6 +403,12 @@ Canonical Task 103 preprocessing contract:
 - committed runner surfaces:
   - `pdm run task-103-preprocess`
   - `pdm run task-103-preprocess-public-corpus`
+- current Task 110 control surfaces on the committed runner:
+  - `--stage`
+  - `--finalization-families`
+  - `--audio-codes-chunk-size`
+  - `--row-worker-count`
+  - `--gpu-asr-worker-count`
 
 Canonical Task 106 acquisition surface:
 
@@ -476,13 +482,14 @@ Canonical Task 106 acquisition surface:
      containerized Task 109 runner
    - live remediation evidence exists under
      `build/verification/task-109-qwen-containerized-preprocessing/`
-1. Plan `T110` as the next resilience hardening slice after the first `T108`
-   proof closes.
-   - split row preprocessing from finalization
-   - persist row-level ASR and admission results to disk
-   - keep later manifest/code generation restartable
-   - bound `audio_codes` generation by chunk size rather than one whole-family
-     batch
+1. Treat `T110` as the active resilience hardening slice for the next detached
+   `T108` proof.
+   - row preprocessing and finalization are now split
+   - row-level ASR/admission results persist as durable spool rows
+   - finalization rebuilds canonical refs from the spool
+   - `audio_codes` generation is chunked rather than whole-family all-at-once
+   - detached Hemma proof work should tune `row-worker-count`,
+     `gpu-asr-worker-count`, and `audio-codes-chunk-size` from live evidence
 1. Keep `T111` as the provenance-safe transcript-improvement lane.
    - ASR remains a quality gate by default
    - any transcript relabeling must preserve original text plus provenance

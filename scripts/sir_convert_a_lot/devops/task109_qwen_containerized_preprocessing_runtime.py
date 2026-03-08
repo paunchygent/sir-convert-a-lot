@@ -46,6 +46,9 @@ class Task109ContainerizedPreprocessingSettings:
     fleurs_max_rows_per_split: int
     rixvox_splits: tuple[str, ...]
     rixvox_max_rows_per_split: int | None
+    audio_codes_chunk_size: int
+    row_worker_count: int
+    gpu_asr_worker_count: int
 
 
 @dataclass(frozen=True)
@@ -164,6 +167,12 @@ def build_containerized_preprocessing_command(
         str(settings.fleurs_max_rows_per_split),
         "--rixvox-splits",
         ",".join(settings.rixvox_splits),
+        "--audio-codes-chunk-size",
+        str(settings.audio_codes_chunk_size),
+        "--row-worker-count",
+        str(settings.row_worker_count),
+        "--gpu-asr-worker-count",
+        str(settings.gpu_asr_worker_count),
     ]
     if settings.rixvox_max_rows_per_split is not None:
         command.extend(

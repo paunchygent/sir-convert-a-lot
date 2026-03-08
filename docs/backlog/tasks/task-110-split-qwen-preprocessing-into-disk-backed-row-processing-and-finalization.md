@@ -2,10 +2,10 @@
 id: task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization
 title: Split Qwen preprocessing into disk-backed row processing and finalization
 type: task
-status: proposed
+status: active
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-08'
+last_updated: '2026-03-09'
 related:
   - docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
@@ -146,7 +146,19 @@ Expected control surfaces:
 - bounded finalization concurrency:
   - one family at a time by default
   - configurable `audio_codes` chunk size
-  - explicit upper bound for concurrent tokenizer work
+- explicit upper bound for concurrent tokenizer work
+
+Current implemented controls:
+
+- `run_task103_qwen_swedish_preprocessing.py`
+  - `--stage`
+  - `--finalization-families`
+  - `--audio-codes-chunk-size`
+  - `--row-worker-count`
+  - `--gpu-asr-worker-count`
+- `task-103-preprocess-public-corpus` / Task 109 containerized wrapper
+  - forwards the same chunk-size and row/GPU concurrency controls into the
+    canonical Qwen container runtime on Hemma
 
 Default posture:
 
@@ -154,6 +166,22 @@ Default posture:
 - conservative GPU concurrency
 - conservative `audio_codes` chunk size
 - restart from durable spool rather than rerunning completed rows
+
+Current implementation progress:
+
+- row-processing and finalization now live in separate modules
+- durable spool rows are emitted under `build/reference/qwen3-tts-swedish-corpus/spool/rows`
+- finalization now rebuilds canonical family reference clips from the spool
+  instead of depending on row-stage-managed refs
+- `audio_codes` generation is chunked rather than family-wide all-at-once
+- row-worker concurrency and GPU ASR concurrency are explicit runtime controls
+
+Remaining acceptance work:
+
+- prove the bounded detached Hemma `T108` lane against the chunked spool-based
+  pipeline
+- tune row/GPU concurrency from live Hemma evidence rather than static
+  assumptions
 
 ## Durability And Atomicity
 
@@ -243,5 +271,5 @@ Design rules:
 ## Checklist
 
 - [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Validation complete
+- [x] Docs updated

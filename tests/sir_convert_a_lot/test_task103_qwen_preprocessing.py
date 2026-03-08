@@ -118,6 +118,10 @@ def test_task103_parse_args_defaults() -> None:
     assert runner_settings.preprocessing.asr_model == DEFAULT_ASR_MODEL
     assert runner_settings.preprocessing.asr_revision == DEFAULT_ASR_REVISION
     assert runner_settings.preprocessing.tokenizer_model == DEFAULT_TOKENIZER_MODEL
+    assert runner_settings.preprocessing.stage == "all"
+    assert runner_settings.preprocessing.audio_codes_chunk_size == 8
+    assert runner_settings.preprocessing.row_worker_count == 1
+    assert runner_settings.preprocessing.gpu_asr_worker_count == 1
     assert runner_settings.source_mode == DEFAULT_SOURCE_MODE
     assert runner_settings.data_root == DEFAULT_DATA_ROOT
     assert runner_settings.fleurs_splits == DEFAULT_FLEURS_SPLITS

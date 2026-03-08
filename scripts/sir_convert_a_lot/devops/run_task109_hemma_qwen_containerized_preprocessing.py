@@ -54,6 +54,9 @@ DEFAULT_DATA_ROOT_HOME_MOUNT = Path(
 DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT = 8
 DEFAULT_RIXVOX_SPLITS = ("dev", "test")
 DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
+DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
+DEFAULT_ROW_WORKER_COUNT = 1
+DEFAULT_GPU_ASR_WORKER_COUNT = 1
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,9 @@ class Task109ContainerizedReport:
     fleurs_max_rows_per_split: int
     rixvox_splits: list[str]
     rixvox_max_rows_per_split: int | None
+    audio_codes_chunk_size: int
+    row_worker_count: int
+    gpu_asr_worker_count: int
     command: list[str]
     preprocessing_report: dict[str, object]
     rocm_smi_before: str
@@ -146,6 +152,21 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         default=DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT,
     )
     parser.add_argument(
+        "--audio-codes-chunk-size",
+        type=int,
+        default=DEFAULT_AUDIO_CODES_CHUNK_SIZE,
+    )
+    parser.add_argument(
+        "--row-worker-count",
+        type=int,
+        default=DEFAULT_ROW_WORKER_COUNT,
+    )
+    parser.add_argument(
+        "--gpu-asr-worker-count",
+        type=int,
+        default=DEFAULT_GPU_ASR_WORKER_COUNT,
+    )
+    parser.add_argument(
         "--skip-build",
         action="store_true",
         help="Skip `docker buildx build` when the image already exists locally.",
@@ -164,6 +185,9 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         fleurs_max_rows_per_split=int(args.fleurs_max_rows_per_split),
         rixvox_splits=rixvox_splits,
         rixvox_max_rows_per_split=args.rixvox_max_rows_per_split,
+        audio_codes_chunk_size=int(args.audio_codes_chunk_size),
+        row_worker_count=int(args.row_worker_count),
+        gpu_asr_worker_count=int(args.gpu_asr_worker_count),
     )
 
 
@@ -209,6 +233,9 @@ def _build_report_markdown(
         f"- FLEURS max rows per split: `{report.fleurs_max_rows_per_split}`\n"
         f"- RixVox splits: `{report.rixvox_splits}`\n"
         f"- RixVox max rows per split: `{report.rixvox_max_rows_per_split}`\n"
+        f"- Audio-codes chunk size: `{report.audio_codes_chunk_size}`\n"
+        f"- Row worker count: `{report.row_worker_count}`\n"
+        f"- GPU ASR worker count: `{report.gpu_asr_worker_count}`\n"
         f"- Command: `{command_text}`\n"
         f"- Inner output root: `{inner_report['output_root']}`\n"
         f"- Inventory rows: `{inner_report['inventory_rows']}`\n"
@@ -268,6 +295,9 @@ def main(argv: list[str] | None = None) -> int:
             fleurs_max_rows_per_split=settings.fleurs_max_rows_per_split,
             rixvox_splits=list(settings.rixvox_splits),
             rixvox_max_rows_per_split=settings.rixvox_max_rows_per_split,
+            audio_codes_chunk_size=settings.audio_codes_chunk_size,
+            row_worker_count=settings.row_worker_count,
+            gpu_asr_worker_count=settings.gpu_asr_worker_count,
             command=preprocessing_run.command,
             preprocessing_report=asdict(preprocessing_run.preprocessing_report),
             rocm_smi_before=rocm_smi_before,

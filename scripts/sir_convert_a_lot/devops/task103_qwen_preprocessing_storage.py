@@ -23,7 +23,6 @@ from typing import Iterator, Protocol
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
-    CANONICAL_MANIFEST_FAMILIES,
     AdmissionDecision,
     ManifestFamily,
     QualityTier,

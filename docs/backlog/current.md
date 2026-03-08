@@ -172,6 +172,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     with disk-backed row results, and `T111` will define an optional
     provenance-safe ASR relabeling lane without silently replacing source
     transcripts.
+  - Implemented the first `T110` slice on `main`: the Task 103 preprocessing
+    monolith is now split into stage modules, row-processing persists durable
+    spool rows, finalization rebuilds canonical refs from the spool, and the runtime now exposes
+    explicit `row-worker-count`, `gpu-asr-worker-count`, and `audio-codes-chunk-size` controls
+    for the next detached `T108` Hemma proof.
 
 - 2026-03-05:
 
@@ -206,8 +211,10 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   `T109` are complete. The active blocker before `T101` is `T108`:
   materialize `rixvox` audio and map admitted train rows into the canonical
   train families, using detached Hemma execution as the required proof mode.
-- Follow-on hardening after the first `T108` proof is now explicit:
-  `T110` for disk-backed row/finalization split and `T111` for provenance-safe
-  ASR relabel candidates.
+- Follow-on hardening after the first detached `T108` repro is now partly in place:
+  `T110` has delivered the staged spool/finalization split plus explicit row/GPU concurrency
+  controls, and the next immediate step is to rerun the bounded detached Hemma proof through the
+  containerized Task 109 lane before advancing toward `T101`. `T111` remains the later
+  provenance-safe ASR relabel candidate task.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

@@ -5,7 +5,7 @@ type: task
 status: active
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-08'
+last_updated: '2026-03-09'
 related:
   - docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
@@ -229,6 +229,22 @@ That means the current `T108` blocker is now better defined:
 - the detached repro proved a real host-memory OOM in the Python process
 - future `T108` implementation should treat `T110` as the planned structural
   remediation path for reducing long-run in-memory pressure
+
+Follow-on implementation state after the first `T110` slice:
+
+- the preprocessing lane now supports:
+  - disk-backed row spool records
+  - separate row-processing and finalization stages
+  - chunked `audio_codes` generation
+  - explicit `row-worker-count`
+  - explicit `gpu-asr-worker-count`
+- the next canonical `T108` proof is therefore:
+  - detached on Hemma
+  - container-backed through Task 109
+  - tuned against the earlier observed `~4.6 GB` GPU residency during the
+    main row loop
+  - accepted only if it emits non-empty audio-backed train manifests without
+    repeating the prior host-RAM OOM pattern
 
 ## Acceptance Criteria
 

@@ -48,6 +48,8 @@ DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_STAGE = "all"
 DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
+DEFAULT_ROW_WORKER_COUNT = 1
+DEFAULT_GPU_ASR_WORKER_COUNT = 1
 SourceMode = Literal["repo-fixture", "staged-public-corpus"]
 
 
@@ -123,6 +125,16 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         default=DEFAULT_AUDIO_CODES_CHUNK_SIZE,
     )
     parser.add_argument(
+        "--row-worker-count",
+        type=int,
+        default=DEFAULT_ROW_WORKER_COUNT,
+    )
+    parser.add_argument(
+        "--gpu-asr-worker-count",
+        type=int,
+        default=DEFAULT_GPU_ASR_WORKER_COUNT,
+    )
+    parser.add_argument(
         "--source-mode",
         choices=("repo-fixture", "staged-public-corpus"),
         default=DEFAULT_SOURCE_MODE,
@@ -150,6 +162,8 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
             stage=args.stage,
             finalization_families=_parse_manifest_families(str(args.finalization_families)),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
+            row_worker_count=int(args.row_worker_count),
+            gpu_asr_worker_count=int(args.gpu_asr_worker_count),
         ),
         source_mode=args.source_mode,
         data_root=Path(args.data_root),
