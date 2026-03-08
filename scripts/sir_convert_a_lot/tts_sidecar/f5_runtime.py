@@ -53,6 +53,7 @@ _SUPPORTED_LANGUAGE_ALIASES = {
     "sv-se": "sv",
     "swedish": "sv",
 }
+_DEFAULT_REFERENCE_MAX_SECONDS = 12.0
 
 
 @dataclass(frozen=True)
@@ -83,6 +84,7 @@ class F5TtsSidecarSettings:
     target_rms: float
     vocoder_name: str
     load_vocoder_from_local: bool
+    reference_max_seconds: float
 
     @classmethod
     def from_env(cls) -> "F5TtsSidecarSettings":
@@ -155,6 +157,10 @@ class F5TtsSidecarSettings:
             load_vocoder_from_local=_parse_bool_env(
                 "SIR_TTS_SIDECAR_F5_LOAD_VOCODER_FROM_LOCAL",
                 default=False,
+            ),
+            reference_max_seconds=_parse_float_env(
+                "SIR_TTS_SIDECAR_F5_REFERENCE_MAX_SECONDS",
+                default=_DEFAULT_REFERENCE_MAX_SECONDS,
             ),
         )
 
@@ -332,6 +338,7 @@ class F5TtsSidecarBackend:
             _prepare_reference_audio(
                 source_path=source_reference_path,
                 target_path=prepared_reference_path,
+                max_seconds=self._settings.reference_max_seconds,
             )
             gen_file_path.write_text(normalized_text + "\n", encoding="utf-8")
             config_path.write_text(
@@ -470,7 +477,7 @@ def _normalized_suffix(filename: str) -> str:
     return suffix if suffix != "" else ".bin"
 
 
-def _prepare_reference_audio(*, source_path: Path, target_path: Path) -> None:
+def _prepare_reference_audio(*, source_path: Path, target_path: Path, max_seconds: float) -> None:
     """Convert one uploaded reference clip into the F5-TTS benchmark WAV format."""
     result = subprocess.run(
         [
@@ -485,7 +492,7 @@ def _prepare_reference_audio(*, source_path: Path, target_path: Path) -> None:
             "-sample_fmt",
             "s16",
             "-t",
-            "10",
+            str(max_seconds),
             target_path.as_posix(),
         ],
         check=False,

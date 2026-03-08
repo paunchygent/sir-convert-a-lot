@@ -58,6 +58,7 @@ def _settings() -> F5TtsSidecarSettings:
         target_rms=0.1,
         vocoder_name="vocos",
         load_vocoder_from_local=False,
+        reference_max_seconds=12.0,
     )
 
 

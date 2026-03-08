@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import logging
 import mimetypes
@@ -27,12 +28,14 @@ import os
 import sys
 import textwrap
 import time
+import wave
 from contextlib import suppress
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+import numpy as np
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
@@ -44,6 +47,11 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     remove_existing_benchmark_container,
     resolve_effective_cache_dir,
     run_checked,
+)
+from scripts.sir_convert_a_lot.tts_sidecar.chatterbox_segmented_generation import (
+    build_segment_plan,
+    stitch_waveforms,
+    wave_bytes_from_waveform,
 )
 from scripts.sir_convert_a_lot.tts_sidecar.contracts import CapabilityResponse
 
@@ -80,6 +88,9 @@ DEFAULT_F5_SWAY_SAMPLING_COEF = -1.0
 DEFAULT_F5_SPEED = 1.0
 DEFAULT_F5_CROSS_FADE_DURATION = 0.15
 DEFAULT_F5_TARGET_RMS = 0.1
+DEFAULT_F5_REFERENCE_MAX_SECONDS = 12.0
+DEFAULT_F5_SEGMENT_MAX_CHARS = 160
+DEFAULT_F5_SEGMENT_CROSS_FADE_MS = 80
 
 
 @dataclass(frozen=True)
@@ -117,6 +128,11 @@ class BenchmarkSettings:
     target_rms: float
     vocoder_name: str
     load_vocoder_from_local: bool
+    reference_max_seconds: float
+    segment_text: bool
+    segment_max_chars: int
+    segment_cross_fade_ms: int
+    segment_stitch_mode: str
     build_image: bool
     retain_container: bool
 
@@ -164,6 +180,13 @@ class BenchmarkReport:
     target_rms: float
     vocoder_name: str
     load_vocoder_from_local: bool
+    reference_max_seconds: float
+    segment_text: bool
+    segment_count: int | None
+    segment_max_chars: int | None
+    segment_cross_fade_ms: int | None
+    segment_stitch_mode: str | None
+    segment_debug_dir: str | None
     hf_cache_host_root: str
     model_cache_host_root: str
     model_files: list[str]
@@ -272,11 +295,28 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         default=DEFAULT_F5_CROSS_FADE_DURATION,
     )
     parser.add_argument("--target-rms", type=float, default=DEFAULT_F5_TARGET_RMS)
+    parser.add_argument(
+        "--reference-max-seconds",
+        type=float,
+        default=DEFAULT_F5_REFERENCE_MAX_SECONDS,
+    )
     parser.add_argument("--vocoder-name", default="vocos")
     parser.add_argument(
         "--load-vocoder-from-local",
         action=argparse.BooleanOptionalAction,
         default=False,
+    )
+    parser.add_argument("--segment-text", action="store_true")
+    parser.add_argument("--segment-max-chars", type=int, default=DEFAULT_F5_SEGMENT_MAX_CHARS)
+    parser.add_argument(
+        "--segment-cross-fade-ms",
+        type=int,
+        default=DEFAULT_F5_SEGMENT_CROSS_FADE_MS,
+    )
+    parser.add_argument(
+        "--segment-stitch-mode",
+        choices=("simple", "speech_aware"),
+        default="simple",
     )
     parser.add_argument("--skip-build", action="store_true", help="Reuse an already-built image.")
     parser.add_argument(
@@ -326,6 +366,11 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         target_rms=float(args.target_rms),
         vocoder_name=str(args.vocoder_name),
         load_vocoder_from_local=bool(args.load_vocoder_from_local),
+        reference_max_seconds=float(args.reference_max_seconds),
+        segment_text=bool(args.segment_text),
+        segment_max_chars=int(args.segment_max_chars),
+        segment_cross_fade_ms=int(args.segment_cross_fade_ms),
+        segment_stitch_mode=str(args.segment_stitch_mode),
         build_image=not bool(args.skip_build),
         retain_container=bool(args.retain_container),
     )
@@ -357,9 +402,19 @@ def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Pat
     output_root.mkdir(parents=True, exist_ok=True)
     artifacts_dir = output_root / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
+    segment_debug_dir = output_root / "segment-debug"
     for child in sorted(artifacts_dir.iterdir()):
         if child.is_file():
             child.unlink()
+    if segment_debug_dir.exists():
+        for child in sorted(segment_debug_dir.rglob("*"), reverse=True):
+            if child.is_file():
+                child.unlink()
+            elif child.is_dir():
+                with suppress(OSError):
+                    child.rmdir()
+        with suppress(OSError):
+            segment_debug_dir.rmdir()
     help_path = output_root / "f5_help.txt"
     transcript_path = output_root / "reference_transcript.txt"
     report_json_path = output_root / "report.json"
@@ -583,6 +638,8 @@ def _start_sidecar(
             if settings.load_vocoder_from_local
             else "SIR_TTS_SIDECAR_F5_LOAD_VOCODER_FROM_LOCAL=0"
         ),
+        "-e",
+        f"SIR_TTS_SIDECAR_F5_REFERENCE_MAX_SECONDS={settings.reference_max_seconds}",
         "-v",
         f"{hf_mount.effective_root.as_posix()}:/cache/huggingface",
         "-v",
@@ -676,11 +733,11 @@ def _synthesize_probe(
     *,
     settings: BenchmarkSettings,
     base_url: str,
-    artifacts_dir: Path,
     reference_transcript: str,
-) -> tuple[bool, str | None, str | None, str | None]:
-    """Call the normalized `/synthesize` endpoint and persist the Swedish sample."""
-    output_path = artifacts_dir / "sample_sv.wav"
+    text: str,
+    output_path: Path,
+) -> tuple[bytes, str | None]:
+    """Call the normalized `/synthesize` endpoint and persist one WAV artifact."""
     mime_type = (
         mimetypes.guess_type(settings.reference_audio_path.name)[0] or "application/octet-stream"
     )
@@ -688,7 +745,7 @@ def _synthesize_probe(
         response = client.post(
             f"{base_url}/synthesize",
             data={
-                "text": settings.probe_text,
+                "text": text,
                 "language": "sv",
                 "voice_mode": "reference_clone",
                 "output_format": "wav",
@@ -711,11 +768,166 @@ def _synthesize_probe(
             f"body={response.text.strip()}"
         )
     output_path.write_bytes(response.content)
+    return response.content, response.headers.get("content-type")
+
+
+def _wav_bytes_to_tensor(wav_bytes: bytes):
+    """Convert one mono PCM WAV payload into a torch tensor waveform."""
+    import torch
+
+    with wave.open(io.BytesIO(wav_bytes), "rb") as handle:
+        if handle.getnchannels() != 1:
+            raise SystemExit("Task 85 segmented stitching currently requires mono WAV chunks.")
+        if handle.getsampwidth() != 2:
+            raise SystemExit(
+                "Task 85 segmented stitching currently requires 16-bit PCM WAV chunks."
+            )
+        sample_rate_hz = handle.getframerate()
+        frames = handle.readframes(handle.getnframes())
+    waveform = np.frombuffer(frames, dtype="<i2").astype(np.float32) / 32767.0
+    return torch.from_numpy(waveform).unsqueeze(0), sample_rate_hz
+
+
+def _write_segment_debug_artifacts(
+    *,
+    plan,
+    stitched_result,
+    sample_rate_hz: int,
+    debug_dir: Path,
+) -> None:
+    """Write deterministic segment-plan and stitching debug artifacts."""
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    (debug_dir / "segment_plan.json").write_text(
+        json.dumps(asdict(plan), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    for index, processed in enumerate(stitched_result.processed_waveforms, start=1):
+        processed_tensor = np.expand_dims(processed.astype(np.float32, copy=False), axis=0)
+        (debug_dir / f"chunk_{index:02d}_post.wav").write_bytes(
+            wave_bytes_from_waveform(
+                waveform=_numpy_waveform_to_tensor(processed_tensor),
+                sample_rate_hz=sample_rate_hz,
+            )
+        )
+    (debug_dir / "chunk_analysis.json").write_text(
+        json.dumps(
+            [asdict(chunk_analysis) for chunk_analysis in stitched_result.chunk_analyses],
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (debug_dir / "boundary_decisions.json").write_text(
+        json.dumps(
+            [asdict(boundary_decision) for boundary_decision in stitched_result.boundary_decisions],
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (debug_dir / "stitched.wav").write_bytes(
+        wave_bytes_from_waveform(
+            waveform=stitched_result.waveform,
+            sample_rate_hz=sample_rate_hz,
+        )
+    )
+
+
+def _numpy_waveform_to_tensor(waveform: np.ndarray):
+    """Convert one normalized mono waveform array into a torch tensor."""
+    import torch
+
+    return torch.from_numpy(waveform.astype(np.float32, copy=False))
+
+
+def _run_synthesis(
+    *,
+    settings: BenchmarkSettings,
+    base_url: str,
+    artifacts_dir: Path,
+    reference_transcript: str,
+    sample_rate_hz: int,
+) -> tuple[
+    bool,
+    str | None,
+    str | None,
+    str | None,
+    int | None,
+    str | None,
+]:
+    """Run either one single-pass probe or one segmented probe and persist evidence."""
+    if not settings.segment_text:
+        output_path = artifacts_dir / "sample_sv.wav"
+        audio_bytes, content_type = _synthesize_probe(
+            settings=settings,
+            base_url=base_url,
+            reference_transcript=reference_transcript,
+            text=settings.probe_text,
+            output_path=output_path,
+        )
+        return (
+            True,
+            output_path.as_posix(),
+            hashlib.sha256(audio_bytes).hexdigest(),
+            content_type,
+            None,
+            None,
+        )
+
+    segment_plan = build_segment_plan(
+        text=settings.probe_text,
+        max_chars=settings.segment_max_chars,
+        cross_fade_ms=settings.segment_cross_fade_ms,
+    )
+    segment_waveforms = []
+    content_type = "audio/wav"
+    for index, segment_text in enumerate(segment_plan.segments, start=1):
+        chunk_output_path = artifacts_dir / f"chunk_{index:02d}.wav"
+        chunk_bytes, chunk_content_type = _synthesize_probe(
+            settings=settings,
+            base_url=base_url,
+            reference_transcript=reference_transcript,
+            text=segment_text,
+            output_path=chunk_output_path,
+        )
+        waveform, chunk_sample_rate_hz = _wav_bytes_to_tensor(chunk_bytes)
+        if chunk_sample_rate_hz != sample_rate_hz:
+            raise SystemExit(
+                "Task 85 segmented stitching requires all chunk sample rates to match "
+                f"{sample_rate_hz} Hz, got {chunk_sample_rate_hz} Hz."
+            )
+        segment_waveforms.append(waveform)
+        if chunk_content_type is not None:
+            content_type = chunk_content_type
+    stitched_result = stitch_waveforms(
+        waveforms=segment_waveforms,
+        sample_rate_hz=sample_rate_hz,
+        cross_fade_ms=settings.segment_cross_fade_ms,
+        segment_texts=segment_plan.segments,
+        stitch_mode=settings.segment_stitch_mode,
+    )
+    output_path = artifacts_dir / "sample_sv.wav"
+    final_bytes = wave_bytes_from_waveform(
+        waveform=stitched_result.waveform,
+        sample_rate_hz=sample_rate_hz,
+    )
+    output_path.write_bytes(final_bytes)
+    debug_dir = settings.output_root / "segment-debug"
+    _write_segment_debug_artifacts(
+        plan=segment_plan,
+        stitched_result=stitched_result,
+        sample_rate_hz=sample_rate_hz,
+        debug_dir=debug_dir,
+    )
     return (
         True,
         output_path.as_posix(),
-        hashlib.sha256(response.content).hexdigest(),
-        response.headers.get("content-type"),
+        hashlib.sha256(final_bytes).hexdigest(),
+        content_type,
+        segment_plan.segment_count,
+        debug_dir.as_posix(),
     )
 
 
@@ -760,6 +972,13 @@ def _build_report_markdown(report: BenchmarkReport) -> str:
         f"- target_rms: `{report.target_rms}`",
         f"- vocoder_name: `{report.vocoder_name}`",
         f"- load_vocoder_from_local: `{report.load_vocoder_from_local}`",
+        f"- reference_max_seconds: `{report.reference_max_seconds}`",
+        f"- segment_text: `{report.segment_text}`",
+        f"- segment_count: `{report.segment_count}`",
+        f"- segment_max_chars: `{report.segment_max_chars}`",
+        f"- segment_cross_fade_ms: `{report.segment_cross_fade_ms}`",
+        f"- segment_stitch_mode: `{report.segment_stitch_mode}`",
+        f"- segment_debug_dir: `{report.segment_debug_dir}`",
         f"- hf_cache_host_root: `{report.hf_cache_host_root}`",
         f"- model_cache_host_root: `{report.model_cache_host_root}`",
         f"- gpu_product_name: `{report.gpu_product_name}`",
@@ -792,7 +1011,9 @@ def main(argv: list[str] | None = None) -> int:
             "Task 85 starting: output_root=%s skip_build=%s remove_silence=%s "
             "nfe_step=%s cfg_strength=%s sway_sampling_coef=%s speed=%s "
             "fix_duration=%s cross_fade_duration=%s target_rms=%s "
-            "load_vocoder_from_local=%s vocoder=%s"
+            "load_vocoder_from_local=%s reference_max_seconds=%s "
+            "segment_text=%s segment_max_chars=%s segment_cross_fade_ms=%s "
+            "segment_stitch_mode=%s vocoder=%s"
         ),
         settings.output_root,
         not settings.build_image,
@@ -805,6 +1026,11 @@ def main(argv: list[str] | None = None) -> int:
         settings.cross_fade_duration,
         settings.target_rms,
         settings.load_vocoder_from_local,
+        settings.reference_max_seconds,
+        settings.segment_text,
+        settings.segment_max_chars,
+        settings.segment_cross_fade_ms,
+        settings.segment_stitch_mode,
         settings.vocoder_name,
     )
     enforce_generated_output_path(settings.output_root, label="output_root")
@@ -885,11 +1111,14 @@ def main(argv: list[str] | None = None) -> int:
             synthesized_output_path,
             synthesized_sha256,
             synthesized_content_type,
-        ) = _synthesize_probe(
+            segment_count,
+            segment_debug_dir,
+        ) = _run_synthesis(
             settings=settings,
             base_url=host_base_url,
-            artifacts_dir=artifacts_dir,
             reference_transcript=reference_transcript,
+            artifacts_dir=artifacts_dir,
+            sample_rate_hz=capabilities.synthesis.sample_rates_hz[0],
         )
         report = BenchmarkReport(
             benchmark_id="task-85-f5-tts-hemma",
@@ -933,6 +1162,15 @@ def main(argv: list[str] | None = None) -> int:
             target_rms=settings.target_rms,
             vocoder_name=settings.vocoder_name,
             load_vocoder_from_local=settings.load_vocoder_from_local,
+            reference_max_seconds=settings.reference_max_seconds,
+            segment_text=settings.segment_text,
+            segment_count=segment_count,
+            segment_max_chars=settings.segment_max_chars if settings.segment_text else None,
+            segment_cross_fade_ms=(
+                settings.segment_cross_fade_ms if settings.segment_text else None
+            ),
+            segment_stitch_mode=settings.segment_stitch_mode if settings.segment_text else None,
+            segment_debug_dir=segment_debug_dir,
             hf_cache_host_root=hf_mount.canonical_root.as_posix(),
             model_cache_host_root=model_mount.canonical_root.as_posix(),
             model_files=_collect_model_files(model_mount),
