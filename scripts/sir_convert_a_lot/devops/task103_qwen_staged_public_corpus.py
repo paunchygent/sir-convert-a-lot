@@ -26,7 +26,9 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_fleurs import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
     RIXVOX_ALLOWED_SPLITS,
+    build_rixvox_audio_locator_index,
     rixvox_source_records_from_parquet,
+    rixvox_source_records_from_parquet_with_audio_locators,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_waxholm import (
     waxholm_labeled_source_records,
@@ -79,6 +81,20 @@ def staged_public_corpus_source_records(
         parquet_path = rixvox_root / f"data/{split}_metadata.parquet"
         if not parquet_path.is_file():
             raise FileNotFoundError(f"Missing staged RixVox parquet file: {parquet_path}")
+        archive_root = rixvox_root / "data" / split
+        if archive_root.is_dir():
+            archive_paths = sorted(archive_root.glob(f"{split}_*.tar.gz"))
+        else:
+            archive_paths = []
+        if archive_paths:
+            source_records.extend(
+                rixvox_source_records_from_parquet_with_audio_locators(
+                    parquet_path,
+                    split=split,
+                    audio_locators_by_source_path=build_rixvox_audio_locator_index(archive_paths),
+                )
+            )
+            continue
         source_records.extend(rixvox_source_records_from_parquet(parquet_path, split=split))
 
     return sorted(

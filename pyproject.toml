@@ -146,6 +146,7 @@ distribution = false
 "task-103-preprocess-public-corpus" = "python -m scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_preprocessing"
 "task-109-containerized-preprocess" = "python -m scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_preprocessing"
 "task-106-acquire" = "python -m scripts.sir_convert_a_lot.devops.run_task106_hemma_qwen_corpus_acquisition"
+"task-108-stage-rixvox-train" = "python -m scripts.sir_convert_a_lot.devops.run_task108_hemma_qwen_rixvox_train_staging"
 "benchmark:task-73-telemetry" = "python -m scripts.sir_convert_a_lot.benchmark_story20_telemetry_overhead"
 "benchmark:task-12" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"

@@ -14,13 +14,14 @@ Relationships:
 
 from __future__ import annotations
 
+import tarfile
 from pathlib import Path
-from typing import Final, Sequence
+from typing import Final, Mapping, Sequence
 
 import pyarrow.parquet as pq
 from huggingface_hub import hf_hub_download
 
-from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import AudioLocator, SourceRecord
 
 RIXVOX_DATASET_ID: Final[str] = "KBLab/rixvox"
 RIXVOX_ALLOWED_SPLITS: Final[tuple[str, ...]] = ("train", "dev", "test")
@@ -48,6 +49,20 @@ def download_rixvox_metadata_file(
 
 def rixvox_source_records_from_parquet(parquet_path: Path, *, split: str) -> list[SourceRecord]:
     """Parse inventory-capable RixVox rows from one metadata parquet file."""
+    return rixvox_source_records_from_parquet_with_audio_locators(
+        parquet_path,
+        split=split,
+        audio_locators_by_source_path=None,
+    )
+
+
+def rixvox_source_records_from_parquet_with_audio_locators(
+    parquet_path: Path,
+    *,
+    split: str,
+    audio_locators_by_source_path: Mapping[str, AudioLocator] | None,
+) -> list[SourceRecord]:
+    """Parse RixVox rows with optional staged audio-locator resolution."""
     if split not in RIXVOX_ALLOWED_SPLITS:
         raise ValueError(f"Unsupported RixVox split for Task 106: {split}")
     parquet_file = pq.ParquetFile(parquet_path)
@@ -63,6 +78,10 @@ def rixvox_source_records_from_parquet(parquet_path: Path, *, split: str) -> lis
             dataset_row_id = f"{row['dokid']}-{row['anforande_nummer']}-{row['observation_nr']}"
             bleu_score = float(row["bleu_score"])
             speaker_audio_meta = str(row["speaker_audio_meta"]).strip()
+            filename = str(row["filename"]).strip()
+            source_audio_locator = None
+            if audio_locators_by_source_path is not None:
+                source_audio_locator = audio_locators_by_source_path.get(filename)
             source_records.append(
                 SourceRecord(
                     dataset="rixvox",
@@ -71,7 +90,8 @@ def rixvox_source_records_from_parquet(parquet_path: Path, *, split: str) -> lis
                     speaker_id=f"rixvox_{speaker_slug}",
                     speaker_name=str(row["speaker"]).strip(),
                     speaker_from_id=bool(row["speaker_from_id"]),
-                    source_audio_path=str(row["filename"]).strip(),
+                    source_audio_path=filename,
+                    source_audio_locator=source_audio_locator,
                     text_raw=str(row["text"]).strip(),
                     language="sv-SE",
                     speaker_total_hours=round(float(row["speaker_total_hours"]), 6),
@@ -104,6 +124,24 @@ def download_rixvox_source_records(
         )
         source_records.extend(rixvox_source_records_from_parquet(parquet_path, split=split))
     return source_records
+
+
+def build_rixvox_audio_locator_index(archive_paths: Sequence[Path]) -> dict[str, AudioLocator]:
+    """Index staged RixVox tar members by dataset-relative filename."""
+    audio_locators_by_source_path: dict[str, AudioLocator] = {}
+    for archive_path in archive_paths:
+        with tarfile.open(archive_path, "r:*") as archive:
+            for member in archive.getmembers():
+                if not member.isfile():
+                    continue
+                member_name = member.name.strip()
+                if not member_name.endswith(".wav"):
+                    continue
+                audio_locators_by_source_path.setdefault(
+                    member_name,
+                    AudioLocator(path=archive_path, archive_member=member_name),
+                )
+    return audio_locators_by_source_path
 
 
 def _slugify_speaker(speaker_name: str) -> str:

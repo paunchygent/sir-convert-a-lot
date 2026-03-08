@@ -43,7 +43,9 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_fleurs import fleurs_sv_source_records
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import AudioLocator, SourceRecord
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
+    build_rixvox_audio_locator_index,
     rixvox_source_records_from_parquet,
+    rixvox_source_records_from_parquet_with_audio_locators,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_waxholm import (
     waxholm_labeled_source_records,
@@ -463,6 +465,59 @@ def test_rixvox_source_records_from_parquet_ingest_metadata_only(tmp_path: Path)
     assert manifest_target_for_source(source_record) == "swedish_checkpoint_dev"
 
 
+def test_rixvox_source_records_from_parquet_attach_audio_locators(tmp_path: Path) -> None:
+    """The RixVox adapter should attach tar-member locators when staged archives exist."""
+    parquet_path = tmp_path / "train_metadata.parquet"
+    archive_path = tmp_path / "train_0.tar.gz"
+    source_audio_path = tmp_path / "rixvox_audio.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=2.0)
+    with tarfile.open(archive_path, "w:gz") as archive:
+        audio_bytes = source_audio_path.read_bytes()
+        member = tarfile.TarInfo(name="GR01KRU1/2442210220028627521_anf5_1_27.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+    table = pa.Table.from_pylist(
+        [
+            {
+                "dokid": "GR01KRU1",
+                "anforande_nummer": 5,
+                "observation_nr": 0,
+                "speaker": "Peter Pedersen",
+                "party": "V",
+                "gender": "male",
+                "debatedate": None,
+                "electoral_district": "Örebro län",
+                "birth_year": 1954,
+                "intressent_id": "0556347007015",
+                "speaker_from_id": True,
+                "speaker_audio_meta": "Peter Pedersen (V)",
+                "text": "Hej från Sverige.",
+                "start": 0.64,
+                "end": 27.0,
+                "duration": 26.36,
+                "bleu_score": 0.39,
+                "filename": "GR01KRU1/2442210220028627521_anf5_1_27.wav",
+                "speaker_total_hours": 5.026244444444444,
+            }
+        ]
+    )
+    pq.write_table(table, parquet_path)
+
+    audio_index = build_rixvox_audio_locator_index([archive_path])
+    source_records = rixvox_source_records_from_parquet_with_audio_locators(
+        parquet_path,
+        split="train",
+        audio_locators_by_source_path=audio_index,
+    )
+
+    assert len(source_records) == 1
+    assert source_records[0].source_audio_locator is not None
+    assert source_records[0].source_audio_locator.path == archive_path
+    assert source_records[0].source_audio_locator.archive_member == (
+        "GR01KRU1/2442210220028627521_anf5_1_27.wav"
+    )
+
+
 def test_staged_public_corpus_source_records_load_all_supported_inputs(tmp_path: Path) -> None:
     """The staged public-corpus loader should aggregate FLEURS, Waxholm, and RixVox."""
     data_root = tmp_path / "data_root"
@@ -539,6 +594,69 @@ def test_staged_public_corpus_source_records_load_all_supported_inputs(tmp_path:
     assert source_records[0].source_audio_locator is not None
     assert source_records[1].source_audio_locator is None
     assert source_records[2].source_audio_locator is not None
+
+
+def test_staged_public_corpus_source_records_attach_rixvox_train_archive_locators(
+    tmp_path: Path,
+) -> None:
+    """The staged loader should attach RixVox train audio locators from staged archives."""
+    data_root = tmp_path / "data_root"
+    rixvox_root = data_root / "raw/kblab_rixvox/data"
+    rixvox_root.mkdir(parents=True, exist_ok=True)
+    train_parquet_path = rixvox_root / "train_metadata.parquet"
+    train_archive_root = rixvox_root / "train"
+    train_archive_root.mkdir(parents=True, exist_ok=True)
+    train_archive_path = train_archive_root / "train_0.tar.gz"
+    source_audio_path = tmp_path / "rixvox_train_audio.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=2.0)
+    with tarfile.open(train_archive_path, "w:gz") as archive:
+        audio_bytes = source_audio_path.read_bytes()
+        member = tarfile.TarInfo(name="GR01BOU3/2442210220028601121_anf191_1_25.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+    pq.write_table(
+        pa.Table.from_pylist(
+            [
+                {
+                    "dokid": "GR01BOU3",
+                    "anforande_nummer": 191,
+                    "observation_nr": 0,
+                    "speaker": "Göran Hägglund",
+                    "party": "KD",
+                    "gender": "male",
+                    "debatedate": None,
+                    "electoral_district": None,
+                    "birth_year": 1959,
+                    "intressent_id": "0584659199514",
+                    "speaker_from_id": True,
+                    "speaker_audio_meta": "Göran Hägglund (KD)",
+                    "text": "Hej från Sverige.",
+                    "start": 1.0,
+                    "end": 25.0,
+                    "duration": 23.56,
+                    "bleu_score": 0.72,
+                    "filename": "GR01BOU3/2442210220028601121_anf191_1_25.wav",
+                    "speaker_total_hours": 30.621333333333332,
+                }
+            ]
+        ),
+        train_parquet_path,
+    )
+
+    source_records = staged_public_corpus_source_records(
+        data_root,
+        include_waxholm=False,
+        fleurs_splits=(),
+        rixvox_splits=("train",),
+    )
+
+    assert len(source_records) == 1
+    assert source_records[0].dataset == "rixvox"
+    assert source_records[0].source_audio_locator is not None
+    assert source_records[0].source_audio_locator.path == train_archive_path
+    assert source_records[0].source_audio_locator.archive_member == (
+        "GR01BOU3/2442210220028601121_anf191_1_25.wav"
+    )
 
 
 def test_staged_public_corpus_source_records_cap_fleurs_rows_per_split(tmp_path: Path) -> None:
