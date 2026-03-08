@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-07'
-last_updated: '2026-03-07'
+last_updated: '2026-03-08'
 related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
@@ -89,10 +89,29 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
 
 ## Current Evidence
 
-- Current repo `HEAD` now points the Task 85 sidecar image at `ChiliOlavi/F5-TTS@swedish-tts`
-  instead of `SWivid/F5-TTS@1.1.17`.
-- The preserved Hemma evidence below was collected before that runtime-source switch, so it still
-  proves only the earlier upstream-runtime lane until a fresh rerun is recorded.
+- 2026-03-08 Hemma rerun succeeded on commit
+  `af36f5085d137bc20116086376e4d7e9b36dc9b1` with the current
+  `ChiliOlavi/F5-TTS@swedish-tts` sidecar image.
+- The branch-backed rerun rebuilt the dedicated image successfully as
+  `sha256:e69ffa81f883369bbde227fee1d910da3b249484c0e595e210011b147e6eb04e`.
+- The normalized sidecar reached ready state in `6.123` seconds and again passed both:
+  - host-lane probing on `http://127.0.0.1:38093`
+  - internal service-container probing from `sir_convert_a_lot_prod`
+- The branch-backed rerun resolved the first runtime blocker introduced by the
+  `swedish-tts` switch:
+  - the initial rerun reached `/synthesize` but failed because `torchaudio.load()` required
+    `torchcodec`,
+  - the current sidecar image now installs `torchcodec`,
+  - the rerun now completes end to end without touching the benchmark contract surface.
+- The refreshed Swedish artifact from the branch-backed runtime is now:
+  - `build/verification/task-85-f5-tts-hemma/artifacts/sample_sv.wav`
+  - SHA256:
+    `2735c0536aebc3f5324333d3a9deb95492721230b2e10ff3d4989019078e1c82`
+  - output format: `wav`, `24 kHz`, mono
+- The active Task 85 evidence path now contains the current branch-backed rerun:
+  - `run_id=20260308T002337Z`
+  - `repo_head=af36f5085d137bc20116086376e4d7e9b36dc9b1`
+  - `image_id=sha256:e69ffa81f883369bbde227fee1d910da3b249484c0e595e210011b147e6eb04e`
 - 2026-03-07 Hemma technical benchmark succeeded on commit
   `f1343104e625a5118fe713c0a10f8f5c41ea00c3`.
 - 2026-03-07 quality-sweep follow-up succeeded on commit
@@ -153,8 +172,6 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
 
 ## Remaining Work
 
-- Rebuild and rerun Task 85 on Hemma so the preserved evidence reflects the current
-  `ChiliOlavi/F5-TTS@swedish-tts` runtime rather than the earlier upstream runtime.
 - Perform listening review across the preserved OpenVoice Task 81 baseline and the new F5 quality
   sweep artifacts.
 - Record explicit comparison notes on:

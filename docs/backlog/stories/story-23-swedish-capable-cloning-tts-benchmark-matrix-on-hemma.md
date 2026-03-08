@@ -129,8 +129,12 @@ Deferred follow-up:
     `vocab.txt`,
   - the current Task 85 runtime source has now been switched from `SWivid/F5-TTS@1.1.17` to
     `ChiliOlavi/F5-TTS@swedish-tts`,
-  - the next Task 85 rerun must refresh the preserved Hemma evidence so the listening verdict is
-    attached to the current branch-backed runtime instead of the earlier upstream runtime,
+  - the current branch-backed rerun on commit
+    `af36f5085d137bc20116086376e4d7e9b36dc9b1` now succeeds end to end on Hemma,
+  - the switch exposed one real runtime blocker first:
+    `torchaudio.load()` required `torchcodec` in the sidecar image,
+  - that blocker is now fixed in the Task 85 image and the refreshed evidence bundle lives again
+    under `build/verification/task-85-f5-tts-hemma/`,
   - the shared teacher reference clip still requires an exact transcript and `24 kHz` mono WAV
     preprocessing before any fair F5-TTS quality judgment.
 - 2026-03-07 Chatterbox follow-up update:
