@@ -203,11 +203,15 @@ def build_storage_report(
 ) -> Task112StorageReport:
     """Build the deterministic post-remediation storage report."""
     repo_build_target = None
+    migrated_repo_build = False
     if settings.repo_build_root.is_symlink():
         repo_build_target = settings.repo_build_root.resolve().as_posix()
+        migrated_repo_build = repo_build_target == settings.scratch_build_root.resolve().as_posix()
     old_qwen_data_target = None
+    migrated_qwen_data = False
     if settings.old_qwen_data_root.is_symlink():
         old_qwen_data_target = settings.old_qwen_data_root.resolve().as_posix()
+        migrated_qwen_data = old_qwen_data_target == settings.new_qwen_data_root.resolve().as_posix()
     return Task112StorageReport(
         repo_build_root=settings.repo_build_root.as_posix(),
         repo_build_is_symlink=settings.repo_build_root.is_symlink(),
@@ -217,8 +221,8 @@ def build_storage_report(
         old_qwen_data_is_symlink=settings.old_qwen_data_root.is_symlink(),
         old_qwen_data_target=old_qwen_data_target,
         new_qwen_data_root=settings.new_qwen_data_root.as_posix(),
-        migrated_repo_build=settings.migrate_repo_build,
-        migrated_qwen_data=settings.migrate_qwen_data,
+        migrated_repo_build=migrated_repo_build,
+        migrated_qwen_data=migrated_qwen_data,
         cleaned_docker_state=settings.cleanup_docker_state,
         docker_system_df_before=docker_system_df_before_text,
         docker_system_df_after=docker_system_df_after_text,
