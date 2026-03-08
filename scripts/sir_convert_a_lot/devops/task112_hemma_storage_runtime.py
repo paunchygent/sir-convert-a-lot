@@ -79,7 +79,10 @@ def run_checked(command: list[str], *, label: str) -> str:
 
 def ensure_directory(path: Path) -> None:
     """Create one directory tree when it does not already exist."""
-    path.mkdir(parents=True, exist_ok=True)
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        run_checked(["sudo", "-n", "mkdir", "-p", path.as_posix()], label="sudo mkdir task112")
 
 
 def _migrate_tree(source: Path, destination: Path) -> None:
