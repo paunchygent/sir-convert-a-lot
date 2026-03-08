@@ -75,11 +75,11 @@ def test_task113_runner_writes_report_artifacts(
     expected_report = Task113DockerStorageReport(
         old_docker_root="/var/snap/docker/common/var-lib-docker",
         scratch_docker_root="/srv/scratch/docker/data-root",
-        home_docker_root="/home/paunchygent/.data/docker/data-root",
+        home_docker_root="/home/paunchygent/docker-data-root",
         docker_root_before="/var/snap/docker/common/var-lib-docker",
-        docker_root_after="/home/paunchygent/.data/docker/data-root",
+        docker_root_after="/home/paunchygent/docker-data-root",
         snap_data_root_before="",
-        snap_data_root_after="/home/paunchygent/.data/docker/data-root",
+        snap_data_root_after="/home/paunchygent/docker-data-root",
         bind_mount_source_before=None,
         bind_mount_source_after="/srv/scratch/docker/data-root",
         removed_old_root_after_success=True,
@@ -113,5 +113,5 @@ def test_task113_runner_writes_report_artifacts(
         encoding="utf-8"
     )
     assert (
-        '"docker_root_after": "/home/paunchygent/.data/docker/data-root"' in capsys.readouterr().out
+        '"docker_root_after": "/home/paunchygent/docker-data-root"' in capsys.readouterr().out
     )

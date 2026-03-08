@@ -22,7 +22,7 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 Stop storing Hemma Docker daemon data on the root disk by migrating Docker's
 storage root onto the SSD scratch tier through a Docker-snap-compatible
-home-visible bind mount.
+non-hidden home-visible bind mount.
 
 ## Why This Exists
 
@@ -41,7 +41,10 @@ storage.
 
 The Docker snap's documented `data-root` configuration must target a location
 the snap can access, which makes a home-visible compatibility path necessary
-even though the underlying bytes should live on SSD scratch.
+even though the underlying bytes should live on SSD scratch. The first
+attempted hidden-dotpath variant under `/home/paunchygent/.data/...` caused a
+real daemon startup failure with `permission denied`, so the canonical path for
+this task must be non-hidden.
 
 ## PR Scope
 

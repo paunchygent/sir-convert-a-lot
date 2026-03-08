@@ -21,7 +21,7 @@ from pathlib import Path
 
 DEFAULT_OLD_DOCKER_ROOT = Path("/var/snap/docker/common/var-lib-docker")
 DEFAULT_SCRATCH_DOCKER_ROOT = Path("/srv/scratch/docker/data-root")
-DEFAULT_HOME_DOCKER_ROOT = Path("/home/paunchygent/.data/docker/data-root")
+DEFAULT_HOME_DOCKER_ROOT = Path("/home/paunchygent/docker-data-root")
 DEFAULT_FSTAB_PATH = Path("/etc/fstab")
 
 
