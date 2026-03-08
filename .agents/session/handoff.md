@@ -2,6 +2,30 @@
 
 ## Current Session Summary (2026-03-08)
 
+- Implemented and pushed `ec3d6ebecf9de24de6aab3d8c836ffc4e7aa2254`
+  (`feat: expose F5 tuning controls on Hemma`):
+  - Task 85 now exposes `speed`, `fix_duration`, `cross_fade_duration`,
+    `target_rms`, `load_vocoder_from_local`, and `--probe-text-file`
+  - the F5 sidecar now writes file-backed prompt text through `gen_file`
+  - opened and documented `T95` for the exact upstream F5 voice-tag surface
+- Ran the live Hemma `T95` Christian Hedlund reference rerun successfully:
+  - command root:
+    `pdm run run-hemma -- pdm run benchmark:task-85 --output-root build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma ...`
+  - succeeded with:
+    - `run_id=20260308T012850Z`
+    - `repo_head=ec3d6ebecf9de24de6aab3d8c836ffc4e7aa2254`
+    - `image_id=sha256:3ab9b7a15f25da99ea677670a3bce217055cf2a06ec4be2d54f1166d7d21327e`
+    - `readiness_seconds=3.13`
+    - `sample_sha256=50b38ad889dbe993668c370d28092c7a3e867052dffe7dc2e1e3c5f7a25117c5`
+  - synced evidence locally under
+    `build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma/`
+- Confirmed exact upstream `infer_cli` voice-tag behavior:
+  - accepted form is `[voice_name]`
+  - actual parser regex is `\[(\w+)\]`
+  - unknown/missing tags fall back to `main`
+  - no explicit IPA or SSML/paralinguistic tag support was found in the
+    installed CLI path
+
 - Committed and pushed the Task 85 runtime-source switch to `main`:
 
   - `ec17e180efb48ad8f228e1df15f4e597ade156ff` switches the F5 sidecar from

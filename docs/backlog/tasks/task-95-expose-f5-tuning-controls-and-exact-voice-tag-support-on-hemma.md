@@ -57,32 +57,79 @@ installed CLI/runtime.
 
 ## Deliverables
 
-- [ ] Task 85 runner exposes the new F5 tuning flags and file-backed probe-text
+- [x] Task 85 runner exposes the new F5 tuning flags and file-backed probe-text
   input.
-- [ ] F5 sidecar runtime writes the expanded TOML surface supported by the
+- [x] F5 sidecar runtime writes the expanded TOML surface supported by the
   installed `swedish-tts` CLI.
-- [ ] Exact upstream voice-tag behavior is documented with code-grounded
+- [x] Exact upstream voice-tag behavior is documented with code-grounded
   evidence rather than README-level assumptions.
-- [ ] One fresh Hemma evidence bundle exists for the Christian Hedlund
+- [x] One fresh Hemma evidence bundle exists for the Christian Hedlund
   reference clip under `build/verification/`.
 
 ## Acceptance Criteria
 
-- [ ] `benchmark:task-85` accepts and records `speed`, `fix_duration`,
+- [x] `benchmark:task-85` accepts and records `speed`, `fix_duration`,
   `cross_fade_duration`, `target_rms`, and `load_vocoder_from_local`.
-- [ ] The generated F5 TOML can use file-backed prompt text (`gen_file`) while
+- [x] The generated F5 TOML can use file-backed prompt text (`gen_file`) while
   preserving the normalized sidecar contract.
-- [ ] The docs record the exact accepted voice-tag form from the installed CLI:
+- [x] The docs record the exact accepted voice-tag form from the installed CLI:
   `[voice_name]` with names constrained by the upstream regex rather than an
   inferred free-form tag syntax.
-- [ ] The implementation does not falsely claim support for paralinguistic
+- [x] The implementation does not falsely claim support for paralinguistic
   tags, SSML, or IPA unless code-grounded evidence exists in the installed
   upstream runtime.
-- [ ] One new Hemma sample is generated with the Christian Hedlund reference
+- [x] One new Hemma sample is generated with the Christian Hedlund reference
   clip and synced locally for listening review.
+
+## Current Evidence
+
+- The Task 85 runner now exposes and records:
+  - `speed`
+  - `fix_duration`
+  - `cross_fade_duration`
+  - `target_rms`
+  - `load_vocoder_from_local`
+  - file-backed `--probe-text-file`
+- The F5 sidecar now writes file-backed prompt text through `gen_file` in the
+  generated TOML while keeping the normalized ADR-0007 `/synthesize` request
+  shape unchanged.
+- The exact upstream `infer_cli` voice-tag syntax is now code-grounded:
+  - tag form: `[voice_name]`
+  - actual parser regex: `\[(\w+)\]`
+  - accepted tag-name characters are therefore limited to word characters
+    rather than free-form labels,
+  - missing or unknown tags fall back to `main`,
+  - true multi-speaker generation still requires a richer request surface than
+    the current single-reference ADR-0007 sidecar contract.
+- Upstream evidence also remains negative on the following claims:
+  - no explicit IPA support found,
+  - no explicit SSML/paralinguistic-tag support found in the installed CLI,
+  - the Gradio “multi-style” examples are still reference-routing examples
+    rather than magic built-in emotion tags.
+- Live Hemma Christian Hedlund rerun now exists under:
+  - `build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma/`
+  - `run_id=20260308T012850Z`
+  - `repo_head=ec3d6ebecf9de24de6aab3d8c836ffc4e7aa2254`
+  - rebuilt image:
+    `sha256:3ab9b7a15f25da99ea677670a3bce217055cf2a06ec4be2d54f1166d7d21327e`
+  - synthesized artifact:
+    `build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma/artifacts/sample_sv.wav`
+  - artifact SHA256:
+    `50b38ad889dbe993668c370d28092c7a3e867052dffe7dc2e1e3c5f7a25117c5`
+- The successful Christian run used these quality-first settings:
+  - `remove_silence=true`
+  - `nfe_step=64`
+  - `cfg_strength=2.0`
+  - `sway_sampling_coef=-1.0`
+  - `speed=1.0`
+  - `fix_duration=null`
+  - `cross_fade_duration=0.15`
+  - `target_rms=0.1`
+  - `vocoder_name=vocos`
+  - `load_vocoder_from_local=false`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
