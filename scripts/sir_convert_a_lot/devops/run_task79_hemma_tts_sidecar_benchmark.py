@@ -228,12 +228,11 @@ def _prepare_output_root(output_root: Path) -> tuple[Path, Path, Path, Path, Pat
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     inputs_dir = output_root / "inputs"
     inputs_dir.mkdir(parents=True, exist_ok=True)
-    for managed_dir in (artifacts_dir, inputs_dir):
-        for artifact_path in managed_dir.iterdir():
-            if artifact_path.is_dir():
-                shutil.rmtree(artifact_path)
-                continue
-            artifact_path.unlink()
+    for artifact_path in artifacts_dir.iterdir():
+        if artifact_path.is_dir():
+            shutil.rmtree(artifact_path)
+            continue
+        artifact_path.unlink()
 
     logs_path = output_root / "docker_logs.txt"
     report_json_path = output_root / "report.json"

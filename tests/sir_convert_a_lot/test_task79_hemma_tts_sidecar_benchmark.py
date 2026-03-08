@@ -403,9 +403,12 @@ def test_audio_probe_success_removes_stale_error_file(
 def test_prepare_output_root_removes_stale_failure_and_artifacts(tmp_path: Path) -> None:
     output_root = tmp_path / "task79-output"
     artifacts_dir = output_root / "artifacts"
+    inputs_dir = output_root / "inputs"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
+    inputs_dir.mkdir(parents=True, exist_ok=True)
     (artifacts_dir / "sample.wav").write_bytes(b"stale")
     (artifacts_dir / "sample.wav.error.txt").write_text("stale error\n", encoding="utf-8")
+    (inputs_dir / "reference_audio.wav").write_bytes(b"keep-me")
     (output_root / "failure.txt").write_text("old failure\n", encoding="utf-8")
     (output_root / "report.json").write_text("{}", encoding="utf-8")
 
@@ -420,9 +423,9 @@ def test_prepare_output_root_removes_stale_failure_and_artifacts(tmp_path: Path)
         failure_path,
     ) = prepared
     assert prepared_artifacts_dir == artifacts_dir
-    assert prepared_inputs_dir == output_root / "inputs"
+    assert prepared_inputs_dir == inputs_dir
     assert list(prepared_artifacts_dir.iterdir()) == []
-    assert list(prepared_inputs_dir.iterdir()) == []
+    assert (prepared_inputs_dir / "reference_audio.wav").read_bytes() == b"keep-me"
     assert logs_path.exists() is False
     assert report_json_path.exists() is False
     assert report_md_path.exists() is False
