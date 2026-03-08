@@ -28,6 +28,7 @@ links:
   - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/backlog/tasks/task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma.md
   - docs/backlog/tasks/task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing.md
+  - docs/backlog/tasks/task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -142,6 +143,27 @@ Use the current repo surfaces as two different lanes:
    - full-finetune proof
 
 Do not overload Task 79 into the full training runtime.
+
+## Runtime-Model Correction
+
+The intended processing unit for the Qwen lane is the containerized runtime,
+not the Hemma host virtualenv.
+
+Drift that must be corrected:
+
+- `T100` correctly established the dedicated containerized Qwen runtime
+- `T103` began as a repo/PDM preprocessing runner for fast manifest proof
+- `T107` extended that runner into real public-corpus execution on the Hemma
+  host venv
+
+That produced an unplanned split between containerized training truth and
+host-executed preprocessing truth.
+
+Preferred solution:
+
+- containerized Qwen runtime is canonical for preprocessing and training
+- Hemma host is orchestration only
+- `T109` owns this remediation
 
 ## Flash Attention Policy
 
@@ -430,6 +452,11 @@ Canonical Task 106 acquisition surface:
    - `rixvox` is still metadata-only in the preprocessing lane
    - admitted train families remain blocked on `rixvox` audio materialization
      plus train-family mapping
+1. Resolve `T109` before treating the preprocessing lane as operationally
+   correct.
+   - public-corpus preprocessing currently proved functionality on Hemma
+   - but execution drifted onto the host venv instead of staying in the chosen
+     containerized runtime model
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 

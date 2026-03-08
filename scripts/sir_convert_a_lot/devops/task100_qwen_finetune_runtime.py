@@ -17,6 +17,7 @@ import subprocess
 from dataclasses import dataclass
 from json import JSONDecodeError, JSONDecoder
 from pathlib import Path
+from typing import Protocol
 
 CONTAINER_HF_HOME = "/cache/huggingface"
 CONTAINER_HF_HUB_CACHE = f"{CONTAINER_HF_HOME}/hub"
@@ -64,6 +65,38 @@ class SmokeProbeResult:
     dependency_versions: dict[str, str | None]
 
 
+class QwenImageSettings(Protocol):
+    """Minimal image-build settings shared across Qwen container runners."""
+
+    @property
+    def dockerfile_path(self) -> Path:
+        """Return the Dockerfile path for the shared Qwen runtime image."""
+
+    @property
+    def image(self) -> str:
+        """Return the image tag for the shared Qwen runtime image."""
+
+    @property
+    def build_image(self) -> bool:
+        """Return whether the shared Qwen runtime image should be rebuilt."""
+
+
+class QwenCacheSettings(Protocol):
+    """Minimal cache-mount settings shared across Qwen container runners."""
+
+    @property
+    def image(self) -> str:
+        """Return the image tag for Docker bind-mount cache probes."""
+
+    @property
+    def hf_cache_dir(self) -> Path:
+        """Return the canonical Hugging Face cache root."""
+
+    @property
+    def hf_cache_home_mount(self) -> Path:
+        """Return the home-backed fallback mount for the HF cache root."""
+
+
 def _optional_string(payload: dict[str, object], key: str) -> str | None:
     """Return one optional string field from a JSON object."""
     value = payload.get(key)
@@ -90,8 +123,8 @@ def _required_int(payload: dict[str, object], key: str) -> int:
     return value
 
 
-def _parse_smoke_probe_payload(raw_output: str) -> dict[str, object]:
-    """Extract one JSON object from mixed probe stdout."""
+def parse_json_object_from_mixed_stdout(raw_output: str) -> dict[str, object]:
+    """Extract one JSON object from mixed stdout that may include warnings."""
     decoder = JSONDecoder()
     for start_index, char in enumerate(raw_output):
         if char != "{":
@@ -186,14 +219,20 @@ def _sync_home_cache_into_data_disk(canonical_dir: Path, home_mount: Path) -> No
         target.write_bytes(source.read_bytes())
 
 
-def _ensure_home_bind_mount(canonical_dir: Path, home_mount: Path) -> None:
-    """Expose one canonical `/srv` cache root through a Docker-visible home path."""
+def _ensure_home_bind_mount(
+    canonical_dir: Path,
+    home_mount: Path,
+    *,
+    sync_home_into_canonical: bool,
+) -> None:
+    """Expose one canonical `/srv` root through a Docker-visible home path."""
     run_checked(
         ["sudo", "-n", "mkdir", "-p", canonical_dir.as_posix()],
         label="sudo mkdir task100 cache",
     )
     run_checked(["mkdir", "-p", home_mount.as_posix()], label="mkdir task100 home cache")
-    _sync_home_cache_into_data_disk(canonical_dir, home_mount)
+    if sync_home_into_canonical:
+        _sync_home_cache_into_data_disk(canonical_dir, home_mount)
     _best_effort_unmount(home_mount)
     run_checked(
         [
@@ -208,30 +247,50 @@ def _ensure_home_bind_mount(canonical_dir: Path, home_mount: Path) -> None:
     )
 
 
-def resolve_effective_hf_cache_dir(settings: Task100SmokeSettings) -> MountResolution:
-    """Return the Docker-mountable host cache path for Task 100 model assets."""
-    settings.hf_cache_dir.mkdir(parents=True, exist_ok=True)
-    if _probe_docker_bind_mount(settings.hf_cache_dir, image=settings.image):
+def resolve_effective_bind_root(
+    canonical_root: Path,
+    home_mount: Path,
+    *,
+    image: str,
+    sync_home_into_canonical: bool,
+) -> MountResolution:
+    """Return one Docker-mountable host path with optional home-bind fallback."""
+    canonical_root.mkdir(parents=True, exist_ok=True)
+    if _probe_docker_bind_mount(canonical_root, image=image):
         return MountResolution(
-            canonical_root=settings.hf_cache_dir,
-            effective_root=settings.hf_cache_dir,
+            canonical_root=canonical_root,
+            effective_root=canonical_root,
             used_home_mount=False,
         )
-    if _is_srv_cache_path(settings.hf_cache_dir):
-        _ensure_home_bind_mount(settings.hf_cache_dir, settings.hf_cache_home_mount)
-        if _probe_docker_bind_mount(settings.hf_cache_home_mount, image=settings.image):
+    if _is_srv_cache_path(canonical_root):
+        _ensure_home_bind_mount(
+            canonical_root,
+            home_mount,
+            sync_home_into_canonical=sync_home_into_canonical,
+        )
+        if _probe_docker_bind_mount(home_mount, image=image):
             return MountResolution(
-                canonical_root=settings.hf_cache_dir,
-                effective_root=settings.hf_cache_home_mount,
+                canonical_root=canonical_root,
+                effective_root=home_mount,
                 used_home_mount=True,
             )
     raise SystemExit(
-        "Task 100 could not establish a Docker-mountable Hugging Face cache path on Hemma."
+        f"Could not establish a Docker-mountable bind root for {canonical_root} on Hemma."
     )
 
 
-def ensure_image_present(settings: Task100SmokeSettings) -> tuple[bool, str]:
-    """Build the Task 100 image with BuildKit when needed and return its image id."""
+def resolve_effective_hf_cache_dir(settings: QwenCacheSettings) -> MountResolution:
+    """Return the Docker-mountable host cache path for Qwen model assets."""
+    return resolve_effective_bind_root(
+        settings.hf_cache_dir,
+        settings.hf_cache_home_mount,
+        image=settings.image,
+        sync_home_into_canonical=True,
+    )
+
+
+def ensure_image_present(settings: QwenImageSettings) -> tuple[bool, str]:
+    """Build the requested Qwen image with BuildKit when needed and return its id."""
     image_present = True
     try:
         image_id = docker_checked(
@@ -255,11 +314,11 @@ def ensure_image_present(settings: Task100SmokeSettings) -> tuple[bool, str]:
                 settings.dockerfile_path.resolve().as_posix(),
                 ".",
             ],
-            label="docker buildx build task100 image",
+            label="docker buildx build qwen image",
         )
         image_id = docker_checked(
             ["image", "inspect", settings.image, "--format", "{{.Id}}"],
-            label="docker image inspect task100 after build",
+            label="docker image inspect qwen after build",
         )
     return build_performed, image_id.strip()
 
@@ -311,7 +370,7 @@ def run_smoke_probe(
     """Run the in-container smoke probe and parse its JSON payload."""
     command = build_smoke_probe_command(settings, hf_mount=hf_mount)
     output = docker_checked(command, label="docker run task100 smoke probe")
-    payload_raw = _parse_smoke_probe_payload(output)
+    payload_raw = parse_json_object_from_mixed_stdout(output)
     dependency_versions = payload_raw.get("dependency_versions")
     if not isinstance(dependency_versions, dict):
         raise SystemExit("Task 100 smoke probe did not include dependency_versions.")

@@ -144,6 +144,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     committed audio materialization and train-family mapping, so the current
     preprocessing bundle is real and useful for eval/control corpora but not
     yet sufficient for the bounded Hemma fine-tune.
+  - Opened `T109` as a separate remediation task because the public-corpus
+    preprocessing lane drifted onto the Hemma host venv during `T103` / `T107`
+    instead of staying inside the selected Qwen container runtime. The
+    preferred correction is now explicit in docs: containerized preprocessing
+    is canonical, host execution is not.
 
 - 2026-03-05:
 
@@ -177,6 +182,8 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 - Parallel planning focus is Epic 08: `T100`, the first `T103` preprocessing
   slice, `T106`, and `T107` are complete. The active blocker before `T101` is
   `T108`: materialize `rixvox` audio and map admitted train rows into the
-  canonical train families.
+  canonical train families. In parallel, `T109` must correct the runtime-model
+  drift so public-corpus preprocessing moves into the selected containerized
+  Qwen runtime.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.
