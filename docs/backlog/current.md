@@ -140,46 +140,45 @@ Primary implementation stories (active sequence):
     to the live ROCm stack on `AMD Radeon AI PRO R9700`.
   - Completed `T87` as the first documented Chatterbox tuning sweep and opened
     `T88` / `T89` for the bounded eSpeak preprocessing experiment.
-  - Completed `T89` on live Hemma:
-    - baseline and eSpeak-preprocessed lanes both synthesized successfully,
-    - deterministic evidence now exists under
-      `build/verification/task-89-chatterbox-espeak-hemma/`,
-    - the run also forced one deterministic Chatterbox image fix:
-      prefetch `spacy_pkuseg` assets during image build so startup no longer depends on a live model download.
+  - Completed `T89` on live Hemma with deterministic evidence under
+    `build/verification/task-89-chatterbox-espeak-hemma/`, and fixed one real
+    runtime issue by prefetching `spacy_pkuseg` assets during image build.
   - Implemented and ran `T90` on live Hemma:
-    - deterministic segmentation, chunk execution, and cross-fade stitching are now part of the Chatterbox sidecar path,
-    - paired single-pass vs segmented evidence now exists under `build/verification/task-90-chatterbox-segmented-hemma/`,
-    - the segmented lane used `3` deterministic text segments,
-    - single-pass clone duration was `51.904` seconds with peak VRAM `5959815168` bytes,
-    - segmented clone duration was `57.473` seconds with peak VRAM `5742292992` bytes,
-    - listening review now favors the segmented path overall,
-    - the remaining Story 23 blocker is now stitch quality:
-      noisy chunk tails and pauses that are too long.
-  - Opened `T91` as the new Chatterbox follow-up:
-    - speech-aware tail cleanup,
-    - pause-aware stitching,
-    - robust cross-fade that preserves natural pauses.
+    deterministic segmentation and stitching are now part of the Chatterbox
+    sidecar path, paired evidence exists under
+    `build/verification/task-90-chatterbox-segmented-hemma/`, and listening
+    review favored the segmented path overall.
   - Implemented and ran `T91` on live Hemma:
-    - deterministic speech-aware stitching is now part of the repo-owned Chatterbox segmented path,
-    - paired simple-vs-speech-aware segmented evidence now exists under `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/`,
-    - the simple segmented lane duration was `123.426` seconds with peak VRAM `6239154176` bytes,
-    - the speech-aware segmented lane duration was `94.954` seconds with peak VRAM `5945778176` bytes,
-    - the speech-aware lane now records `chunk_analysis.json` and `boundary_decisions.json`,
-    - the current blocker is no longer implementation but qualitative review of
-      the new stitched output.
+    speech-aware stitching plus `chunk_analysis.json` /
+    `boundary_decisions.json` are now part of the segmented Chatterbox lane,
+    with paired evidence under
+    `build/verification/task-91-chatterbox-speech-aware-stitching-hemma/`.
   - Folded the relaxed `12 ms` speech-aware edge fade cap into the default
     Chatterbox stitcher after a saved-chunk local re-stitch comparison, and
     opened `T92` to make Chatterbox the explicit Hemma production-candidate
     TTS sidecar while marking OpenVoice, F5, and eSpeak helper images as
     experiment-only.
   - Completed `T93` on live Hemma:
-    - the old sentence-packing planner had emitted a `19.92` second first
-      chunk for the delegate text,
-    - the new clause-aware planner emitted `7` chunks instead of `2`,
-    - measured chunk durations now fall between `3.6` and `5.36` seconds with
-      an average of approximately `4.5` seconds,
-    - numbered list items are now treated as preferred chunk boundaries rather
-      than being merged into one oversized opening segment.
+    the clause-aware planner now emits bounded chunks (`7` instead of `2`,
+    roughly `3.6` to `5.36` seconds) and treats numbered list items as
+    preferred boundaries.
+
+- 2026-03-08:
+
+  - Completed `T95` and `T97` follow-up work on the F5 Swedish lane:
+    `T95` exposed the remaining tuning controls and exact voice-tag syntax,
+    and `T97` replaced the old local `10` second reference cap with a bounded
+    `12.0` second maximum.
+  - Ran the corrected live Hemma Christian Hedlund rerun for `T97` under
+    `build/verification/task-97-f5-reference-12s-hemma/`; the `11.5` second
+    reference clip now remained intact and output duration increased to
+    `18.538` seconds from the earlier `16.266` second `T95` run.
+  - Implemented and ran the new segmented F5 benchmark lane under
+    `build/verification/task-97-f5-segmented-hemma/`; deterministic
+    `segment-debug/` evidence now exists, the segmented lane emitted `4`
+    chunks and a final duration of `18.362` seconds, and the current
+    recommendation is to keep segmented F5 as a comparison/debug lane rather
+    than making it the default path.
 
 - 2026-03-05:
 

@@ -2,13 +2,62 @@
 
 ## Current Session Summary (2026-03-08)
 
+- Implemented and pushed `e3a3a83be2656f2ad1bae46dad83a59fcbc5c1dc`
+  (`feat: align F5 reference duration and add segmented lane`):
+
+  - the F5 sidecar reference-prep cap is now configurable and defaults to
+    `12.0` seconds instead of the earlier hard `10`
+  - Task 85 now supports a repo-owned segmented F5 lane with deterministic
+    segment planning, chunk artifacts, stitching, and segment-debug evidence
+  - the public ADR-0007 sidecar contract is unchanged; segmentation lives at
+    the benchmark layer
+
+- Ran the live Hemma `T97` corrected Christian Hedlund rerun successfully:
+
+  - command root:
+    `pdm run run-hemma -- pdm run benchmark:task-85 --output-root build/verification/task-97-f5-reference-12s-hemma ... --reference-max-seconds 12.0`
+  - succeeded with:
+    - `run_id=20260308T015946Z`
+    - `repo_head=e3a3a83be2656f2ad1bae46dad83a59fcbc5c1dc`
+    - `image_id=sha256:f2161b09aefd1b000b4a6c8476e334784dd00ce9f7d5a7101259e458a53eafab`
+    - `reference_audio_duration_seconds=11.5`
+    - `sample_sha256=46c31cbb6f8eb685d64a321afde81e5387c60fed444d6d9ba2e71d91bf9f9ab7`
+    - output duration `18.538` seconds
+  - synced evidence locally under
+    `build/verification/task-97-f5-reference-12s-hemma/`
+
+- Ran the live Hemma segmented `T97` comparison lane successfully:
+
+  - command root:
+    `pdm run run-hemma -- pdm run benchmark:task-85 --output-root build/verification/task-97-f5-segmented-hemma ... --segment-text --segment-max-chars 160 --segment-cross-fade-ms 80 --segment-stitch-mode simple --skip-build`
+  - succeeded with:
+    - `run_id=20260308T020119Z`
+    - `repo_head=e3a3a83be2656f2ad1bae46dad83a59fcbc5c1dc`
+    - reused image `sha256:f2161b09aefd1b000b4a6c8476e334784dd00ce9f7d5a7101259e458a53eafab`
+    - `segment_count=4`
+    - `sample_sha256=12255eb80ab66b897425b00c09ab8feb87243e7e1008afacdcc25d7e14307b01`
+    - output duration `18.362` seconds
+  - synced evidence locally under
+    `build/verification/task-97-f5-segmented-hemma/`
+
+- Current `T97` recommendation is evidence-backed:
+
+  - the biggest improvement came from fixing the `10s`/`11.5s` reference
+    mismatch
+  - segmented F5 is worth keeping as a comparison/debug lane
+  - segmented F5 is not yet justified as the default path because its measured
+    output length is very close to the corrected single-pass run
+
 - Implemented and pushed `ec3d6ebecf9de24de6aab3d8c836ffc4e7aa2254`
   (`feat: expose F5 tuning controls on Hemma`):
+
   - Task 85 now exposes `speed`, `fix_duration`, `cross_fade_duration`,
     `target_rms`, `load_vocoder_from_local`, and `--probe-text-file`
   - the F5 sidecar now writes file-backed prompt text through `gen_file`
   - opened and documented `T95` for the exact upstream F5 voice-tag surface
+
 - Ran the live Hemma `T95` Christian Hedlund reference rerun successfully:
+
   - command root:
     `pdm run run-hemma -- pdm run benchmark:task-85 --output-root build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma ...`
   - succeeded with:
@@ -19,7 +68,9 @@
     - `sample_sha256=50b38ad889dbe993668c370d28092c7a3e867052dffe7dc2e1e3c5f7a25117c5`
   - synced evidence locally under
     `build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma/`
+
 - Confirmed exact upstream `infer_cli` voice-tag behavior:
+
   - accepted form is `[voice_name]`
   - actual parser regex is `\[(\w+)\]`
   - unknown/missing tags fall back to `main`
