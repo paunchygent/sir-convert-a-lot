@@ -358,6 +358,33 @@ def test_fleurs_source_records_parse_tsv_and_audio_archive(tmp_path: Path) -> No
     assert source_record.speaker_total_hours == round(1.5 / 3600.0, 6)
 
 
+def test_fleurs_source_records_parse_quoted_text_without_csv_semantics(tmp_path: Path) -> None:
+    """The FLEURS adapter should preserve quoted text in raw TSV rows."""
+    snapshot_root = tmp_path / "fleurs_snapshot"
+    tsv_path = snapshot_root / "data/sv_se/test.tsv"
+    archive_path = snapshot_root / "data/sv_se/audio/test.tar.gz"
+    source_audio_path = tmp_path / "quoted_audio.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.5)
+
+    tsv_path.parent.mkdir(parents=True, exist_ok=True)
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    tsv_path.write_text(
+        '1960\t7619464773135024428.wav\t"Han sa ""hej""."\t"han sa ""hej""."\th a n\t24000\tMALE\n',
+        encoding="utf-8",
+    )
+    with tarfile.open(archive_path, "w:gz") as archive:
+        audio_bytes = source_audio_path.read_bytes()
+        member = tarfile.TarInfo(name="test/7619464773135024428.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+
+    source_records = fleurs_sv_source_records(snapshot_root, splits=("test",))
+
+    assert len(source_records) == 1
+    assert source_records[0].text_raw == '"Han sa ""hej""."'
+    assert manifest_target_for_source(source_records[0]) == "swedish_final_test"
+
+
 def test_waxholm_labeled_source_records_parse_text_and_audio(tmp_path: Path) -> None:
     """The Waxholm adapter should decode `.smp.mix` orthography into Swedish text."""
     snapshot_root = tmp_path / "waxholm_snapshot"

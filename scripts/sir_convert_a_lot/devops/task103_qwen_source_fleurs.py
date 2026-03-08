@@ -13,7 +13,6 @@ Relationships:
 
 from __future__ import annotations
 
-import csv
 from collections import defaultdict
 from pathlib import Path
 from typing import Final, Sequence
@@ -62,16 +61,12 @@ def fleurs_sv_source_records(
         tsv_path = snapshot_root / f"data/{FLEURS_SV_CONFIG}/{split}.tsv"
         if not tsv_path.is_file():
             raise FileNotFoundError(f"Missing FLEURS TSV file: {tsv_path}")
-        with tsv_path.open("r", encoding="utf-8", newline="") as handle:
-            reader = csv.reader(handle, delimiter="\t")
-            for row in reader:
-                if len(row) != 7:
-                    raise ValueError(f"Unexpected FLEURS TSV row width {len(row)} in {tsv_path}")
-                speaker_id_raw = row[0]
-                sample_count = row[5]
-                parsed_rows.append((split, row))
-                duration_seconds = int(sample_count) / FLEURS_SAMPLE_RATE_HZ
-                speaker_total_seconds[speaker_id_raw] += duration_seconds
+        for row in _iter_fleurs_tsv_rows(tsv_path):
+            speaker_id_raw = row[0]
+            sample_count = row[5]
+            parsed_rows.append((split, row))
+            duration_seconds = int(sample_count) / FLEURS_SAMPLE_RATE_HZ
+            speaker_total_seconds[speaker_id_raw] += duration_seconds
 
     source_records: list[SourceRecord] = []
     for split, row in parsed_rows:
@@ -116,3 +111,16 @@ def fleurs_sv_source_records(
             )
         )
     return source_records
+
+
+def _iter_fleurs_tsv_rows(tsv_path: Path) -> list[list[str]]:
+    """Parse one raw FLEURS TSV file without CSV quote semantics."""
+    rows: list[list[str]] = []
+    for raw_line in tsv_path.read_text(encoding="utf-8").splitlines():
+        if raw_line.strip() == "":
+            continue
+        row = raw_line.split("\t")
+        if len(row) != 7:
+            raise ValueError(f"Unexpected FLEURS TSV row width {len(row)} in {tsv_path}")
+        rows.append(row)
+    return rows
