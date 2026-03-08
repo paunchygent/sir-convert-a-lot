@@ -72,6 +72,7 @@ def _build_settings(
     pull_image: bool = False,
     retain_container: bool = False,
     stage_config_path: Path | None = None,
+    use_triton_flash_attn: bool = True,
 ) -> BenchmarkSettings:
     """Return one Task 79 settings fixture with sensible defaults."""
     return BenchmarkSettings(
@@ -106,6 +107,7 @@ def _build_settings(
             if stage_config_path is None
             else stage_config_path
         ),
+        use_triton_flash_attn=use_triton_flash_attn,
     )
 
 
@@ -151,6 +153,7 @@ def test_runtime_metadata_probe_script_is_valid_python() -> None:
     ast.parse(script)
     assert "HF_HOME" in script
     assert "vllm-omni" in script
+    assert "VLLM_USE_TRITON_FLASH_ATTN" in script
 
 
 def test_parse_args_prefers_canonical_hemma_cache_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -198,6 +201,17 @@ def test_parse_args_uses_base_model_defaults_for_clone_lane(tmp_path: Path) -> N
     assert settings.model == "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
     assert settings.probe_text == "hello from file"
     assert settings.reference_transcript == "reference transcript"
+    assert settings.use_triton_flash_attn is True
+
+
+def test_parse_args_allows_disabling_triton_flash_attention() -> None:
+    settings = run_task79_hemma_tts_sidecar_benchmark._parse_args(
+        [
+            "--disable-triton-flash-attn",
+        ]
+    )
+
+    assert settings.use_triton_flash_attn is False
 
 
 def test_resolve_effective_hf_cache_dir_uses_home_bind_mount_when_srv_probe_fails(
@@ -242,7 +256,7 @@ def test_resolve_effective_hf_cache_dir_uses_home_bind_mount_when_srv_probe_fail
     assert bind_calls == [(hf_cache_dir, hf_cache_home_mount)]
 
 
-def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_disables_triton(
+def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_enables_triton(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     stage_config_path = tmp_path / "task79_stage_config.yaml"
@@ -274,7 +288,7 @@ def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_disables_triton(
     assert len(recorded_commands) == 1
     command = recorded_commands[0]
     assert f"{hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}" in command
-    assert "VLLM_USE_TRITON_FLASH_ATTN=0" in command
+    assert "VLLM_USE_TRITON_FLASH_ATTN=1" in command
     assert "Qwen/Qwen3-TTS-Tokenizer-12Hz" in command[-1]
 
 
@@ -464,7 +478,7 @@ def test_start_sidecar_uses_persistent_hf_cache_contract(
     assert f"HF_HOME={CONTAINER_HF_HOME}" in command
     assert f"HF_HUB_CACHE={CONTAINER_HF_HUB_CACHE}" in command
     assert f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}" in command
-    assert "VLLM_USE_TRITON_FLASH_ATTN=0" in command
+    assert "VLLM_USE_TRITON_FLASH_ATTN=1" in command
     assert "--enforce-eager" in command
 
 
@@ -509,6 +523,7 @@ def test_report_helpers_write_expected_json_and_markdown(tmp_path: Path) -> None
             hf_home="/cache/huggingface",
             hf_hub_cache="/cache/huggingface/hub",
             transformers_cache="/cache/huggingface",
+            triton_flash_attn_enabled=True,
         ),
         voices_evidence=VoicesEvidence(
             host_probe_ok=True,

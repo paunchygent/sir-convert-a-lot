@@ -75,6 +75,7 @@ class BenchmarkSettings:
     pull_image: bool
     retain_container: bool
     stage_config_path: Path
+    use_triton_flash_attn: bool
 
 
 def run_checked(command: list[str], *, label: str) -> str:
@@ -327,10 +328,16 @@ def _build_runtime_metadata_probe_python() -> str:
             "hf_home": os.environ.get("HF_HOME"),
             "hf_hub_cache": os.environ.get("HF_HUB_CACHE"),
             "transformers_cache": os.environ.get("TRANSFORMERS_CACHE"),
+            "vllm_use_triton_flash_attn": os.environ.get("VLLM_USE_TRITON_FLASH_ATTN"),
         }
         print(json.dumps(payload, sort_keys=True))
         """
     ).strip()
+
+
+def _vllm_use_triton_flash_attn_env(settings: BenchmarkSettings) -> str:
+    """Return the explicit Triton flash-attention environment assignment."""
+    return f"VLLM_USE_TRITON_FLASH_ATTN={'1' if settings.use_triton_flash_attn else '0'}"
 
 
 def _wav_metadata(audio_bytes: bytes) -> tuple[int, float]:
@@ -443,7 +450,7 @@ def prefetch_qwen3_tts_assets(settings: BenchmarkSettings) -> None:
             "-e",
             f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
             "-e",
-            "VLLM_USE_TRITON_FLASH_ATTN=0",
+            _vllm_use_triton_flash_attn_env(settings),
             "-v",
             f"{settings.hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}",
             "--entrypoint",
@@ -488,7 +495,7 @@ def start_sidecar(settings: BenchmarkSettings) -> None:
         "-e",
         f"TRANSFORMERS_CACHE={CONTAINER_HF_HOME}",
         "-e",
-        "VLLM_USE_TRITON_FLASH_ATTN=0",
+        _vllm_use_triton_flash_attn_env(settings),
         "-v",
         f"{settings.hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}",
         "-v",
@@ -562,6 +569,7 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
     hf_home_obj = payload_obj.get("hf_home")
     hf_hub_cache_obj = payload_obj.get("hf_hub_cache")
     transformers_cache_obj = payload_obj.get("transformers_cache")
+    triton_flash_attn_obj = payload_obj.get("vllm_use_triton_flash_attn")
     if not isinstance(python_version_obj, str) or not isinstance(package_versions_obj, dict):
         raise SystemExit("Task 79 sidecar metadata probe payload is malformed.")
     if hf_home_obj is not None and not isinstance(hf_home_obj, str):
@@ -572,10 +580,24 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
         raise SystemExit(
             "Task 79 sidecar metadata probe returned a malformed TRANSFORMERS_CACHE value."
         )
+    if triton_flash_attn_obj is not None and not isinstance(triton_flash_attn_obj, str):
+        raise SystemExit(
+            "Task 79 sidecar metadata probe returned a malformed Triton flash-attention value."
+        )
     package_versions: dict[str, str | None] = {}
     for key, value in package_versions_obj.items():
         if isinstance(key, str) and (isinstance(value, str) or value is None):
             package_versions[key] = value
+    if triton_flash_attn_obj is None:
+        triton_flash_attn_enabled: bool | None = None
+    elif triton_flash_attn_obj == "1":
+        triton_flash_attn_enabled = True
+    elif triton_flash_attn_obj == "0":
+        triton_flash_attn_enabled = False
+    else:
+        raise SystemExit(
+            "Task 79 sidecar metadata probe returned an unexpected Triton flash-attention value."
+        )
     return SidecarRuntime(
         image=settings.image,
         image_id=image_id,
@@ -586,6 +608,7 @@ def inspect_runtime(settings: BenchmarkSettings, image_id: str) -> SidecarRuntim
         hf_home=hf_home_obj,
         hf_hub_cache=hf_hub_cache_obj,
         transformers_cache=transformers_cache_obj,
+        triton_flash_attn_enabled=triton_flash_attn_enabled,
     )
 
 

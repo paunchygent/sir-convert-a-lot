@@ -1,0 +1,185 @@
+---
+name: sir-convert-a-lot-qwen-finetuning
+description: >-
+  Model-specific operator skill for Qwen3-TTS fine-tuning on Hemma and Colab.
+  Use when the task is specifically about Qwen TTS training, Swedish language
+  expansion with Qwen, Qwen preprocessing or runtime policy, or deciding
+  whether a fine-tuned Qwen model should enter the Sir Convert-a-Lot sidecar
+  candidate lane.
+---
+
+# Sir Convert-a-Lot Qwen Finetuning
+
+## Use This Skill When
+
+- The user wants to fine-tune `Qwen/Qwen3-TTS-12Hz-1.7B-Base`.
+- The user wants Swedish support, not just a single custom voice.
+- The task involves choosing between Hemma and Colab H100.
+- The task involves ROCm, Triton flash attention, or GPU container policy.
+- The task involves Swedish speech data curation, preprocessing, or evaluation.
+- The task involves deciding whether a trained model is good enough to become a
+  sidecar candidate later.
+
+## Do Not Use This Skill For
+
+- Normal sidecar benchmarking that does not involve model training.
+- Chatterbox, F5, OpenVoice, or MMS implementation work unless the task is
+  explicitly comparing them against a future Qwen fine-tuned candidate.
+- Generic speech-model training questions when no Qwen-specific decision is in
+  play. For those, use the broader `speech-model-finetuning-on-hemma` skill.
+
+## Source of Truth
+
+Use this skill together with the broader local skill:
+
+- `.agents/skills/speech-model-finetuning-on-hemma/SKILL.md`
+
+- `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
+
+- `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+
+- `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
+
+- `docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
+
+- `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+
+- `docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md`
+
+- `docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md`
+
+Upstream truth to verify before major claims or runtime changes:
+
+- [Qwen3-TTS model card](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base)
+- [Qwen finetuning README](https://github.com/QwenLM/Qwen3-TTS/tree/main/finetuning)
+- [vLLM ROCm docs](https://docs.vllm.ai/en/stable/getting_started/installation/gpu.html#amd-rocm)
+- [flash-attention](https://github.com/Dao-AILab/flash-attention)
+
+## First Move
+
+Before proposing anything, classify the request into one of these lanes:
+
+1. `Benchmark lane`
+   - Serving/runtime truth only.
+   - Current repo home: Task 79 / Task 98.
+1. `Single-speaker adaptation lane`
+   - Useful for voice transfer experiments.
+   - Not the same as general Swedish support.
+1. `Language-expansion lane`
+   - Multi-speaker Swedish.
+   - Current repo home: Epic 08.
+
+If the user says "general Swedish support," always choose lane 3 unless they
+explicitly narrow the scope.
+
+## Core Project Position
+
+- The main project target is full fine-tuning of the `1.7B` base model.
+- Hemma is viable for bounded pilot work.
+- Colab H100 is the scale-up lane, not the only viable lane.
+- The end goal is general Swedish support, not a single teacher voice.
+- Any future production use must still fit the sidecar-only architecture from
+  ADR-0006 and ADR-0007.
+
+## Qwen-Specific Decisions
+
+The broader Hemma speech-model skill covers the generic training workflow.
+This Qwen skill adds the model-family-specific decisions:
+
+- separate Task 79 / Task 98 serving truth from Epic 08 training truth
+- keep the target on the `1.7B` base model
+- distinguish official Qwen single-speaker guidance from the repo's planned
+  multi-speaker Swedish language-expansion lane. **Crucially, `sft_12hz.py` must be patched to preserve the `speaker_encoder` and `tts_model_type="base"` to avoid collapsing into a single-speaker state.**
+- **Patch `dataset.py` to parse multiple speakers, build a `spk_id_map`, and carry a dataset-scoped `speaker_id` through the training loop.**
+- **Ensure the training patch includes the known community text-projection fix to maintain language adaptation stability.**
+- **Rely on Qwen's LLM tokenizer for text normalization. Feed raw Swedish orthography directly with strict punctuation. Do not use external phonemizers.**
+- keep Triton flash attention as the default Qwen ROCm path
+- decide when a fine-tuned Qwen model is strong enough to enter future
+  sidecar-candidate comparison work
+
+## Flash Attention Rules
+
+- Triton flash attention is the default Qwen ROCm lane.
+- Do not recommend a permanent disabled-flash-attention posture.
+- Disable it only to triage a concrete regression and record that in the
+  evidence.
+- If serving and training assumptions diverge, call that out explicitly.
+
+## Dataset Strategy
+
+Treat Swedish data as three different roles:
+
+- `KBLab/rixvox`
+  - main hours source
+  - requires transcript filtering and speaker curation
+- `google/fleurs` Swedish
+  - clean short utterances
+  - good dev/eval source
+- `KTH/waxholm`
+  - smoke data and held-out checks
+
+Never treat "available Swedish data" as a single undifferentiated pool.
+
+When planning the corpus, always answer:
+
+- what is the bounded pilot subset?
+- what is the scale-up subset?
+- what is held out?
+- which speakers are excluded from training for evaluation?
+- how are low-confidence transcripts filtered?
+
+## Qwen Workflow Overlay
+
+After the broader speech-model skill has set the runtime/data/eval frame, apply
+this Qwen-specific order:
+
+1. Confirm the model target:
+   - `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+1. Confirm the data policy:
+   - pilot subset
+   - scale-up subset
+   - eval split
+1. Build or verify Qwen preprocessing:
+   - transcript normalization
+   - reference-audio policy: **One 5-10 second canonical reference clip per speaker, reused across all rows for that speaker.**
+   - audio-code generation
+   - manifests: **Two layers (rich intermediate + Qwen-ready JSONL with `speaker_id`).**
+1. Run a bounded pilot:
+   - one real optimizer step minimum
+   - **Hemma Smoke Run:** 8-12 hours, 12-16 speakers.
+   - **Hemma Pilot:** 24-36 hours, 24-40 speakers.
+   - **Colab Scale-up:** 100-300 hours.
+1. Evaluate:
+   - pronunciation
+   - intelligibility
+   - prosody
+   - held-out speaker behavior
+   - operational fit
+1. Decide whether the result is:
+   - not credible
+   - promising but not sidecar-ready
+   - ready to enter a future sidecar-comparison lane
+
+## Common Failure Modes
+
+Watch for these specifically:
+
+- transcript quality from `rixvox` is too noisy
+- single-speaker assumptions leaking into multi-speaker planning
+- flash attention silently disabled without being recorded
+- treating official Qwen single-speaker docs as if they already solved the
+  multi-speaker Swedish language-expansion problem
+- mixing Task 79 serving constraints with the future dedicated fine-tune runtime
+
+## Promotion Rule
+
+A fine-tuned Qwen model does not become a production candidate just because it
+trained successfully.
+
+Before recommending it as a sidecar candidate, require:
+
+- real Swedish language quality evidence
+- held-out evaluation
+- operational reproducibility
+- compatibility with ADR-0006 and ADR-0007
+- comparison against the current benchmarked TTS candidates when relevant

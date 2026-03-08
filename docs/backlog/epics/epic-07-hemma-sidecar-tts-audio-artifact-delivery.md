@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md
   - docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
+  - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
   - docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md
@@ -71,6 +72,11 @@ This epic is complete only when:
   - standardize one internal sidecar capability contract before cloning-capable backend benchmarks
     begin,
   - keep backend-native runtime differences behind adapter-specific sidecar images.
+- Parallel upstream model work:
+  - keep Sir-owned Qwen Swedish fine-tuning under Epic 08 as a separate
+    training/model-lifecycle lane,
+  - treat that lane as an upstream model-candidate source for future sidecar
+    evaluation rather than as a replacement for Epic 07 scope.
 - Delivery sequencing:
   - `md -> wav` first,
   - `pdf -> wav` later as a composition route over the existing checkpointed PDF-to-Markdown stage.
@@ -81,6 +87,7 @@ This epic is complete only when:
 - Direct public exposure of the TTS sidecar.
 - Voice cloning, voice-reference uploads, or teacher-voice persistence in phase 1.
 - Swedish TTS quality guarantees in phase 1.
+- Sir-owned Qwen Swedish fine-tuning lifecycle work, which now lives in Epic 08.
 - Reusing Story 07's legacy auxiliary-converter assumptions as the canonical design surface.
 
 ## Stories

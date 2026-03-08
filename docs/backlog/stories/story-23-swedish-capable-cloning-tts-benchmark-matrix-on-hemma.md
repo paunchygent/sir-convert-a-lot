@@ -8,6 +8,7 @@ created: '2026-03-06'
 last_updated: '2026-03-07'
 related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
+  - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
   - docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md
@@ -55,6 +56,9 @@ for Hemma before we commit implementation defaults for teacher-voice audio deliv
   while the sidecar backend choice remains open.
 - Require candidate benchmarks to target the reusable internal sidecar capability contract from
   ADR-0007 rather than backend-native APIs directly.
+- Keep Sir-owned Qwen Swedish fine-tuning planning under Epic 08 as a separate
+  upstream model-creation lane; Story 23 remains a benchmark-and-selection lane
+  for externally sourced runtime candidates.
 - Reuse the Hemma model-cache discipline:
   - canonical persistent host cache/storage,
   - no repeated redownloads between runs,

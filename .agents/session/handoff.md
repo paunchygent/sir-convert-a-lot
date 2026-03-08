@@ -2,6 +2,60 @@
 
 ## Current Session Summary (2026-03-08)
 
+- Opened the new Epic 08 Qwen Swedish fine-tuning lane as a parallel track to
+  Epic 07 rather than overloading the existing sidecar-delivery scope:
+
+  - `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
+  - `docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
+  - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+  - `docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md`
+  - `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
+  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+  - `docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md`
+  - `docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md`
+  - `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
+
+- Added the dedicated Qwen Swedish fine-tuning operational surfaces:
+
+  - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
+  - `.agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
+  - `.agents/skills/speech-model-finetuning-on-hemma/SKILL.md`
+
+- Re-enabled Triton flash attention as the default in the Task 79 Qwen Hemma
+  benchmark lane:
+
+  - `scripts/sir_convert_a_lot/devops/run_task79_hemma_tts_sidecar_benchmark.py`
+  - `scripts/sir_convert_a_lot/devops/task79_hemma_tts_sidecar_runtime.py`
+  - `scripts/sir_convert_a_lot/devops/task79_hemma_tts_sidecar_reporting.py`
+  - `tests/sir_convert_a_lot/test_task79_hemma_tts_sidecar_benchmark.py`
+  - benchmark reports now record whether Triton flash attention was enabled
+
+- Cross-linked the existing TTS planning docs so Epic 07 / Story 23 stay
+  delivery-and-benchmark focused while Epic 08 owns the Sir-trained Qwen lane:
+
+  - `docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md`
+  - `docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md`
+  - `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
+  - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+  - `docs/backlog/current.md`
+
+- Added the research-handoff surface for the next Epic 08 decisions:
+
+  - `docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md`
+  - `docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md`
+  - `.agents/repomix_packages/research-qwen3-swedish-finetuning-brief.md`
+  - `.agents/repomix_packages/repomix-qwen3-swedish-finetuning-research-context.xml`
+
+- Validation evidence for this session's Qwen planning/runtime work:
+
+  - `pdm run format-all` (pass after cleanup)
+  - `pdm run lint-fix` (pass)
+  - `pdm run typecheck-all` (pass)
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_task79_hemma_tts_sidecar_benchmark.py -q` (pass: `15 passed`)
+  - `pdm run validate-tasks` (pass)
+  - `pdm run validate-docs` (pass)
+  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
+
 - Implemented and pushed `e3a3a83be2656f2ad1bae46dad83a59fcbc5c1dc`
   (`feat: align F5 reference duration and add segmented lane`):
 

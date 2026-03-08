@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-07'
+last_updated: '2026-03-08'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -54,12 +54,8 @@ Current epic entrypoint:
 
 - `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
 
-Primary implementation stories (active sequence):
-
-- `docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md` (completed)
-- `docs/backlog/stories/story-18-page-level-progress-and-stall-telemetry-contract.md` (completed)
-- `docs/backlog/stories/story-19-checkpointed-partial-results-and-resumable-ocr-pipeline.md` (completed)
-- `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md` (active)
+Primary implementation stories (active sequence): Stories 17-19 are completed; Story 20 remains
+active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
 
 ## Worklog
 
@@ -179,9 +175,17 @@ Primary implementation stories (active sequence):
     chunks and a final duration of `18.362` seconds, and the current
     recommendation is to keep segmented F5 as a comparison/debug lane rather
     than making it the default path.
+  - Opened Epic 08 as a separate Qwen Swedish fine-tuning lane with Stories
+    24-25, Tasks 99-104, the dedicated finetuning runbook/skill, and the
+    measured Hemma `1.7B` memory proof recorded as planning input.
+  - Re-enabled Triton flash attention as the default in the current Qwen Hemma
+    benchmark lane and updated the benchmark/reporting docs so future evidence
+    records whether Triton was enabled.
+  - Added `T105` as the research-handoff slice for Epic 08 so the first
+    multi-speaker experiment is preceded by a tracked repomix package, research
+    brief, and source map instead of freeform external searching.
 
 - 2026-03-05:
-
   - Re-terminalized Task 73 after ruthless review remediation:
     - canonical phase timing keys and app-owned telemetry sink wiring landed,
     - bounded-cardinality worker/job/retry/duration metrics replaced the older shape,
@@ -192,7 +196,6 @@ Primary implementation stories (active sequence):
     detail remains in the linked Epic 06 / Story 20 / Task 76 docs.
 
 - 2026-03-04:
-
   - Planned Epic 06 long PDF reliability/performance work under the new progress, checkpoint,
     resume, and throughput stories.
   - Completed Tasks 67-71 and 75 in the first Epic 06 delivery slice:
@@ -206,14 +209,12 @@ Primary implementation stories (active sequence):
     linked task docs and tests.
 
 ## Next Actions
-
-- Current local execution focus is Epic 07 Story 23 listening review on `T91`,
-  then `T93`, then `T83`, with `T82` kept deferred.
+- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`,
+  then `T83`, with `T82` kept deferred.
+- Parallel planning focus is Epic 08: `T99` is active first, then `T105`, then corpus curation
+  (`T102`) and preprocessing (`T103`) once the external evidence pass lands.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
-- `T81` is complete with a negative recommendation: OpenVoice is technically feasible but not the
-  lead Swedish teacher-voice candidate.
-- Immediate Story 23 focus is now the `T91` listening verdict after the
-  completed speech-aware stitching implementation plus the active `T93`
-  chunk-planner redesign, with `T83` kept as the Swedish pronunciation control
-  and `T82` remaining deferred.
+- `T81` is complete with a negative recommendation; immediate Story 23 focus is now the `T91`
+  listening verdict plus the active `T93` chunk-planner redesign, with `T83` as the Swedish
+  pronunciation control and `T82` still deferred.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

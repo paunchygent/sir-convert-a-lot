@@ -57,6 +57,7 @@ class SidecarRuntime:
     hf_home: str | None
     hf_hub_cache: str | None
     transformers_cache: str | None
+    triton_flash_attn_enabled: bool | None
 
 
 @dataclass(frozen=True)
@@ -180,6 +181,7 @@ def build_report_markdown(report: BenchmarkReport) -> str:
         f"- hf_home: `{report.sidecar_runtime.hf_home}`",
         f"- hf_hub_cache: `{report.sidecar_runtime.hf_hub_cache}`",
         f"- transformers_cache: `{report.sidecar_runtime.transformers_cache}`",
+        (f"- triton_flash_attn_enabled: `{report.sidecar_runtime.triton_flash_attn_enabled}`"),
         "",
         "## Voices",
         f"- host_probe_ok: `{report.voices_evidence.host_probe_ok}`",

@@ -70,6 +70,7 @@ DEFAULT_HEMMA_HF_CACHE_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH"
 DEFAULT_HEMMA_HF_CACHE_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT"
 DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface")
+DEFAULT_USE_TRITON_FLASH_ATTN = True
 DEFAULT_TEXT = (
     "Hello from Sir Convert a Lot. This benchmark proves a sidecar backed text to speech "
     "stack on the Hemma Radeon AI PRO R9700. The voice should sound clear, steady, and ready "
@@ -162,6 +163,14 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         action="store_true",
         help="Keep the benchmark container running after evidence capture.",
     )
+    parser.add_argument(
+        "--disable-triton-flash-attn",
+        action="store_true",
+        help=(
+            "Disable Triton flash attention for regression triage. The canonical Hemma ROCm lane "
+            "keeps Triton flash attention enabled."
+        ),
+    )
     args = parser.parse_args(argv)
     model = (
         str(args.model).strip()
@@ -218,6 +227,9 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         pull_image=not bool(args.skip_pull_image),
         retain_container=bool(args.retain_container),
         stage_config_path=STAGE_CONFIG_PATH,
+        use_triton_flash_attn=(
+            DEFAULT_USE_TRITON_FLASH_ATTN and not bool(args.disable_triton_flash_attn)
+        ),
     )
 
 

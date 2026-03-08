@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md
   - docs/backlog/tasks/task-98-add-qwen-english-reference-clone-lane-to-hemma-benchmark.md
+  - docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
@@ -80,6 +81,7 @@ Current command defaults:
   - `HF_HOME=/cache/huggingface`
   - `HF_HUB_CACHE=/cache/huggingface/hub`
   - `TRANSFORMERS_CACHE=/cache/huggingface`
+  - `VLLM_USE_TRITON_FLASH_ATTN=1` by default
 - tokenizer prefetch contract:
   - `Qwen/Qwen3-TTS-Tokenizer-12Hz` is prefetched into the shared cache
   - tokenizer files are mirrored into the model snapshot `speech_tokenizer/` path expected by
@@ -115,6 +117,7 @@ does not introduce a parallel ad hoc benchmark script.
 - [ ] Hemma evidence records the live GPU identity (`R9700`, `gfx1201`) and runtime truth.
 - [ ] `/v1/audio/speech` succeeds with `wav`.
 - [ ] Benchmark output explicitly records whether compressed audio formats are supported on Hemma.
+- [ ] Benchmark output explicitly records whether Triton flash attention was enabled.
 - [ ] The task makes an explicit recommendation on the highest supported Python version observed
   in practice; if `3.14` is unsupported, the evidence records why.
 

@@ -4,7 +4,7 @@ id: RUN-hemma-devops-and-gpu
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 status: active
 created: '2026-02-11'
-updated: '2026-03-05'
+updated: '2026-03-08'
 owners:
   - platform
 system: hemma.hule.education
@@ -15,8 +15,10 @@ tags:
   - sir-convert-a-lot
 links:
   - .agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md
+  - .agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
   - docs/runbooks/runbook-v2-async-push-delivery.md
   - docs/converters/downstream_integration_contract_v2.md
+  - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - /Users/olofs_mba/Documents/Repos/huledu-reboot/docs/runbooks/hemma-server-operations-huleedu.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-home-server.md
 ---
@@ -456,8 +458,10 @@ Usage notes:
   - `HF_HOME=/cache/huggingface`
   - `HF_HUB_CACHE=/cache/huggingface/hub`
   - `TRANSFORMERS_CACHE=/cache/huggingface`
-- The harness explicitly sets `VLLM_USE_TRITON_FLASH_ATTN=0` until Triton-backed ROCm serving is
-  proven on Hemma; missing Triton is not treated as the acceptance blocker for Task 79.
+- The harness now keeps `VLLM_USE_TRITON_FLASH_ATTN=1` as the canonical Qwen ROCm container
+  default on Hemma.
+- Use the explicit Task 79 fallback flag only when triaging a concrete regression; do not treat
+  "flash attention disabled" as the normal steady state.
 - The current stage config is pinned in
   `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml` and tracks the
   current upstream `qwen3_tts.yaml` schema.
@@ -469,6 +473,8 @@ Usage notes:
 - The benchmark proves both:
   - host-lane reachability on `127.0.0.1:<task79-port>`
   - internal Docker-network reachability from `sir_convert_a_lot_prod`
+- For full `Qwen3-TTS-1.7B` Swedish fine-tuning planning and Hemma/Colab runtime strategy, use:
+  - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
 - Treat `wav` success as mandatory acceptance evidence.
 - Treat compressed-format output as capability evidence, not phase-1 contract acceptance.
 - Use the emitted Python recommendation from `report.json` to lock the sidecar runtime floor;

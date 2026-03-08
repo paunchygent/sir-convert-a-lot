@@ -1,9 +1,9 @@
 ---
-id: 'task-96-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark'
-title: 'Add English reference-clone lane to Chatterbox Hemma benchmark'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-96-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark
+title: Add English reference-clone lane to Chatterbox Hemma benchmark
+type: task
+status: in_progress
+priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
 related:
@@ -16,6 +16,7 @@ labels:
   - benchmark
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

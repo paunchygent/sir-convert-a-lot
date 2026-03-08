@@ -1,0 +1,122 @@
+---
+id: epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab
+title: Qwen3-TTS Swedish language expansion fine-tuning on Hemma and Colab
+type: epic
+status: in_progress
+priority: high
+created: '2026-03-08'
+last_updated: '2026-03-08'
+related:
+  - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
+  - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
+  - docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md
+  - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
+  - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
+  - docs/backlog/tasks/task-98-add-qwen-english-reference-clone-lane-to-hemma-benchmark.md
+  - docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md
+  - docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md
+  - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
+  - docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md
+  - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
+  - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
+  - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
+  - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
+  - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
+  - docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md
+  - docs/runbooks/runbook-hemma-devops-and-gpu.md
+  - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
+labels:
+  - qwen
+  - tts
+  - finetuning
+  - swedish
+  - hemma
+  - colab
+---
+
+Major capability increment managed through linked stories.
+
+## Goal
+
+Plan and prove a Sir-owned `Qwen/Qwen3-TTS-12Hz-1.7B-Base` fine-tuning lane that
+adds general Swedish language support through a multi-speaker dataset strategy,
+while preserving the existing Sir Convert-a-Lot public TTS contract and Hemma
+container/runtime discipline.
+
+This epic is complete only when:
+
+- the training/runtime lane is documented as a separate concern from Epic 07
+  sidecar delivery,
+- the Hemma `32.06 GB` ROCm host has a reproducible containerized full-finetune
+  baseline for the `1.7B` model,
+- the Swedish corpus curation and preprocessing path is explicit and reviewable,
+- a Hemma pilot run plus a Colab H100 scaling comparison are both documented,
+- and the resulting model-delivery path still fits ADR-0006 and ADR-0007.
+
+## In Scope
+
+- A new model-training lane parallel to Epic 07, not embedded inside the
+  current public `md -> wav` delivery scope.
+- Containerized GPU-first runtime work for Qwen `1.7B` on Hemma and Colab.
+- Re-enabling Triton flash attention for the existing Qwen Hemma benchmark lane
+  so the serving/runtime baseline matches the now-understood ROCm container
+  path on `AMD Radeon AI PRO R9700`.
+- Multi-speaker Swedish corpus planning built from:
+  - `KBLab/rixvox`,
+  - `google/fleurs` Swedish (`sv_se`),
+  - `KTH/waxholm`.
+- Preprocessing/manifests that adapt the official Qwen `prepare_data.py` flow
+  to Swedish full-finetune inputs and persistent cache discipline.
+- Hemma pilot evidence for a real full-finetune step with `AdamW` on the
+  `1.7B` model.
+- Colab H100 scaling guidance and comparison evidence for the larger run.
+- Evaluation planning focused on language support, pronunciation, prosody,
+  held-out speakers, and operational fit for a future sidecar candidate.
+
+## Out of Scope
+
+- Changing the current public v2 API away from the provider-neutral ADR-0006
+  / ADR-0007 contract.
+- Collapsing model training into the main Sir Convert-a-Lot service image.
+- Raw host or `systemd` training flows on Hemma.
+- Treating single-speaker cloning or custom-voice adaptation as the end goal.
+- Shipping a production default backend decision in this epic alone.
+
+## Stories
+
+1. `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+1. `docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
+
+## Tasks (Ordered Planning and Execution Checklist)
+
+1. `docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md`
+1. `docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md`
+1. `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
+1. `docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md`
+1. `docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md`
+1. `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
+
+## Acceptance Criteria
+
+- [ ] Epic 08 remains explicitly separate from Epic 07 so model training does
+  not distort the current sidecar-delivery scope.
+- [ ] The Hemma runbook and the dedicated Qwen finetuning runbook both describe
+  a containerized ROCm path with Triton flash attention enabled by default for
+  the current Qwen benchmark lane.
+- [ ] A committed backlog path exists for corpus curation, preprocessing,
+  Hemma pilot execution, and Colab H100 scaling.
+- [ ] The planning record captures the real Hemma evidence already established:
+  clean idle baseline around `0.06 GB`, real official Waxholm full-finetune
+  step around `20.19 GB`, and remaining headroom around `11.87 GB` on the
+  `32.06 GB` card.
+- [ ] The epic defines general Swedish language support as a multi-speaker
+  outcome rather than a single-voice adaptation shortcut.
+- [ ] All future delivery candidates from this epic remain downstream of
+  ADR-0006 and ADR-0007 instead of inventing a parallel public contract.
+
+## Checklist
+
+- [x] Stories linked
+- [x] Acceptance criteria defined
+- [x] Execution gate defined
