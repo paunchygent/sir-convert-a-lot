@@ -7,6 +7,7 @@ import math
 import wave
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing import (
@@ -19,9 +20,12 @@ from scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing imp
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     CANONICAL_MANIFEST_FAMILIES,
+    ProcessorOutputProtocol,
     SourceFixtureRow,
     Task103PreprocessingReport,
     Task103PreprocessingSettings,
+    TorchTensorProtocol,
+    WhisperStrictScorer,
     run_task103_preprocessing,
 )
 
@@ -39,8 +43,7 @@ def _write_test_wav(path: Path, *, sample_rate_hz: int, duration_seconds: float)
         frames = bytearray()
         for frame_index in range(frame_count):
             sample = int(
-                amplitude
-                * math.sin((2.0 * math.pi * frequency_hz * frame_index) / sample_rate_hz)
+                amplitude * math.sin((2.0 * math.pi * frequency_hz * frame_index) / sample_rate_hz)
             )
             frames.extend(sample.to_bytes(length=2, byteorder="little", signed=True))
         handle.writeframes(bytes(frames))
@@ -94,7 +97,7 @@ def test_task103_preprocessing_emits_deterministic_bundle(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core._encode_audio_codes",
-        lambda *, tokenizer_model, audio_paths: [[ [11, 12, 13] ] for _ in audio_paths],
+        lambda *, tokenizer_model, audio_paths: [[[11, 12, 13]] for _ in audio_paths],
     )
 
     report = run_task103_preprocessing(
@@ -175,3 +178,89 @@ def test_task103_runner_main_prints_report_summary(
     stdout_payload = json.loads(capsys.readouterr().out)
     assert stdout_payload["output_root"] == expected_report.output_root
     assert stdout_payload["prepared_rows"] == 2
+
+
+def test_whisper_strict_scorer_resamples_to_processor_rate(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The ASR scorer should resample 24 kHz training audio to 16 kHz for Whisper."""
+
+    class _FakeInputFeatures:
+        def __init__(self) -> None:
+            self.dtype_received: object | None = None
+
+        def to(self, *args: object, **kwargs: object) -> TorchTensorProtocol:
+            self.dtype_received = kwargs.get("dtype")
+            return self
+
+    class _FakeProcessor:
+        def __init__(self) -> None:
+            self.feature_extractor = type("_FeatureExtractor", (), {"sampling_rate": 16_000})()
+            self.sampling_rate_seen: int | None = None
+
+        class _Processed:
+            def __init__(self) -> None:
+                self.input_features: TorchTensorProtocol = _FakeInputFeatures()
+                self.attention_mask: TorchTensorProtocol | None = _FakeInputFeatures()
+
+        def __call__(
+            self,
+            waveform: object,
+            *,
+            sampling_rate: int,
+            return_tensors: str,
+            return_attention_mask: bool,
+        ) -> ProcessorOutputProtocol:
+            assert return_tensors == "pt"
+            assert return_attention_mask is True
+            self.sampling_rate_seen = sampling_rate
+            return self._Processed()
+
+        def batch_decode(self, sequences: object, *, skip_special_tokens: bool) -> list[str]:
+            assert skip_special_tokens is True
+            return ["Hej från Sverige."]
+
+    class _FakeModel:
+        def to(self, device: object) -> "_FakeModel":
+            return self
+
+        def eval(self) -> None:
+            return None
+
+        def generate(
+            self,
+            input_features: object,
+            *,
+            attention_mask: object = None,
+            max_new_tokens: int,
+            task: str,
+        ) -> list[list[int]]:
+            assert attention_mask is not None
+            assert max_new_tokens == 256
+            assert task == "transcribe"
+            return [[1, 2, 3]]
+
+    fake_processor = _FakeProcessor()
+    scorer = WhisperStrictScorer(
+        model_id="KBLab/kb-whisper-large",
+        revision="strict",
+        _model=_FakeModel(),
+        _processor=fake_processor,
+        _device=type("_FakeDevice", (), {"type": "cpu"})(),
+        _dtype=np.float32,
+    )
+
+    monkeypatch.setattr(
+        "soundfile.read",
+        lambda path, dtype: (np.ones(24_000, dtype=np.float32), 24_000),
+    )
+    monkeypatch.setattr(
+        "librosa.resample",
+        lambda waveform, *, orig_sr, target_sr: np.ones(target_sr, dtype=np.float32),
+    )
+
+    transcript = scorer.transcribe(tmp_path / "sample.wav")
+
+    assert transcript == "Hej från Sverige."
+    assert fake_processor.sampling_rate_seen == 16_000

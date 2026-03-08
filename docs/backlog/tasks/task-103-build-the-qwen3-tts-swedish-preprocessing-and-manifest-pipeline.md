@@ -2,7 +2,7 @@
 id: task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline
 title: Build the Qwen3-TTS Swedish preprocessing and manifest pipeline
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
@@ -53,11 +53,11 @@ into Qwen-ready training inputs without relying on ad hoc local scripts.
 
 ## Deliverables
 
-- [ ] One committed preprocessing pipeline surface including the patched `dataset.py`.
-- [ ] One documented manifest schema used by Hemma and Colab runs, demonstrating the two-layer approach (rich intermediate vs Qwen-ready).
-- [ ] One documented transcript-mismatch filtering policy for `rixvox`.
-- [ ] One explicit dependency matrix for preprocessing and eval surfaces.
-- [ ] Runbook guidance for preprocessing reruns and artifact locations.
+- [x] One committed preprocessing pipeline surface including the patched `dataset.py`.
+- [x] One documented manifest schema used by Hemma and Colab runs, demonstrating the two-layer approach (rich intermediate vs Qwen-ready).
+- [x] One documented transcript-mismatch filtering policy for `rixvox`.
+- [x] One explicit dependency matrix for preprocessing and eval surfaces.
+- [x] Runbook guidance for preprocessing reruns and artifact locations.
 
 ## Active Contract
 
@@ -90,26 +90,61 @@ This task now has the following fixed contract:
 
 ## Acceptance Criteria
 
-- [ ] The pipeline is compatible with the official Qwen tokenizer/code
+- [x] The pipeline is compatible with the official Qwen tokenizer/code
   preparation flow.
-- [ ] The pipeline produces deterministic manifests for train/dev/eval splits.
-- [ ] The pipeline enforces the 24kHz and canonical 5-10s ref-audio constraints.
-- [ ] The preprocessing contract makes it explicit that `speaker_id` is tracked
+- [x] The pipeline produces deterministic manifests for train/dev/eval splits.
+- [x] The pipeline enforces the 24kHz and canonical 5-10s ref-audio constraints.
+- [x] The preprocessing contract makes it explicit that `speaker_id` is tracked
   metadata while primary conditioning still comes from `ref_audio` /
   `speaker_encoder`.
-- [ ] The preprocessing/eval dependency set is documented separately from the
+- [x] The preprocessing/eval dependency set is documented separately from the
   Task 100 training-image dependency set.
-- [ ] The pipeline can be reused by both the Hemma pilot and the Colab H100
+- [x] The pipeline can be reused by both the Hemma pilot and the Colab H100
   scaling lane.
-- [ ] The pipeline pins `KBLab/kb-whisper-large` with `revision="strict"` for
+- [x] The pipeline pins `KBLab/kb-whisper-large` with `revision="strict"` for
   transcript-mismatch scoring.
-- [ ] The pipeline materializes `swedish_checkpoint_dev` separately from
+- [x] The pipeline materializes `swedish_checkpoint_dev` separately from
   `swedish_final_test`.
-- [ ] The pipeline enforces 16 kHz source acceptance and 24 kHz emitted
+- [x] The pipeline enforces 16 kHz source acceptance and 24 kHz emitted
   training-side assets without ambiguity.
+
+## Completed Evidence
+
+The first deterministic Task 103 bundle now exists and is reproducible from the
+committed runner surface:
+
+- command:
+  - `pdm run task-103-preprocess`
+- artifact root:
+  - `build/reference/qwen3-tts-swedish-corpus/`
+- committed runner/runtime surfaces:
+  - `scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py`
+  - `scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_core.py`
+  - `pyproject.toml`
+    - `task-103-preprocess`
+    - `qwen-preprocessing` dependency group
+- machine-readable evidence:
+  - `build/reference/qwen3-tts-swedish-corpus/report.json`
+  - `build/reference/qwen3-tts-swedish-corpus/report.md`
+  - `build/reference/qwen3-tts-swedish-corpus/reports/inventory_summary.json`
+  - `build/reference/qwen3-tts-swedish-corpus/reports/filter_summary.json`
+  - `build/reference/qwen3-tts-swedish-corpus/reports/reference_selection_summary.json`
+  - `build/reference/qwen3-tts-swedish-corpus/reports/manifest_summary.json`
+- current runtime truth from the first deterministic bundle:
+  - `inventory_rows=2`
+  - `curated_rows=2`
+  - `admitted_rows=2`
+  - `prepared_rows=2`
+  - `swedish_smoke_train=2`
+  - all other canonical manifest families are emitted as deterministic empty
+    JSONL files until the public corpus adapters land
+
+This closes the first committed preprocessing slice. The next extension of
+`T103` is to replace the repo-fixture smoke rows with the real public corpus
+adapters for `rixvox`, `fleurs`, and labeled `waxholm`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

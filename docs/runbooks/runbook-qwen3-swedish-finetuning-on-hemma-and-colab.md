@@ -255,6 +255,17 @@ Wrapper-driven Hemma smoke command for the image surface:
 pdm run run-hemma -- pdm run task-100-smoke
 ```
 
+Current proven Task 100 runtime truth:
+
+- `build/verification/task-100-qwen-finetune-smoke/report.json`
+- image id:
+  - `sha256:032e235123018c18a85e0abd7a1882aa35289bb7737af1f031befdf35e34f74b`
+- `flash_attn==2.8.3`
+- `flash_attn_importable == True`
+- `flash_attn_model_load_ok == True`
+- `HF_HOME` is the canonical cache env for this lane
+- `dtype=` is the canonical model-loading keyword for this lane
+
 Expected deterministic evidence root:
 
 - `build/verification/task-100-qwen-finetune-smoke/`
@@ -268,6 +279,23 @@ Task 103 preprocessing/eval baseline:
 - Swedish ASR runtime/tooling for transcript-mismatch filtering
 - `jiwer`
 - any committed audio normalization utilities required by the pipeline
+
+Canonical repo surface for the preprocessing lane:
+
+- install:
+  - `pdm install -G qwen-preprocessing`
+- run:
+  - `pdm run task-103-preprocess`
+- runner:
+  - `scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py`
+- current deterministic artifact root:
+  - `build/reference/qwen3-tts-swedish-corpus/`
+- first bundle truth:
+  - `inventory_rows=2`
+  - `curated_rows=2`
+  - `admitted_rows=2`
+  - `prepared_rows=2`
+  - `swedish_smoke_train=2`
 
 Policy:
 
@@ -307,6 +335,10 @@ Canonical Task 103 preprocessing contract:
 1. Complete Task 103 and produce deterministic manifests and preprocessed
    artifacts.
    - include the Task 103 preprocessing/eval dependency baseline
+   - prove the first deterministic bundle under
+     `build/reference/qwen3-tts-swedish-corpus/`
+1. Extend the completed Task 103 surface from repo-fixture smoke rows to the
+   real `rixvox` / `fleurs` / labeled `waxholm` corpus adapters.
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 

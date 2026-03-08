@@ -95,25 +95,34 @@ wrapper, and GPU-governance discipline.
 
 ## Completed Evidence
 
-Live Hemma smoke evidence confirmed the runtime is unblocked:
+Live Hemma smoke evidence confirmed the runtime is unblocked and that
+FlashAttention 2 now works on the real Hemma runtime:
 
 - command:
   - `pdm run run-hemma -- pdm run task-100-smoke`
 - evidence root:
   - `build/verification/task-100-qwen-finetune-smoke/`
 - key runtime truth:
-  - image `sha256:4996f29f1497d039de5bb002d8e79c19db85b37233beac5b5c8befc33caa3fbc`
+  - image `sha256:032e235123018c18a85e0abd7a1882aa35289bb7737af1f031befdf35e34f74b`
   - `torch==2.10.0+rocm7.1`
   - `torchaudio==2.10.0+rocm7.1`
   - `torch.cuda.is_available() == True`
   - `torch.version.hip == 7.1.25424`
+  - `flash_attn==2.8.3`
+  - `flash_attn_importable == True`
+  - `flash_attn_model_load_ok == True`
   - Hub-id resolution works for `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
   - canonical HF cache works through the approved home-backed bind mount
+  - the runtime now uses:
+    - `HF_HOME` instead of deprecated `TRANSFORMERS_CACHE`
+    - `dtype=` instead of deprecated `torch_dtype=`
+  - the ROCm image now builds through a dedicated virtualenv inside the
+    container instead of attempting to mutate the Ubuntu 24.04 system Python
 
 The only live blocker surfaced during smoke validation was mixed probe stdout
 from `qwen_tts` warnings before the JSON payload. That parser hardening landed
 in `main`, the rerun succeeded, and Task 100 is no longer the blocker for Epic
-08.
+08\.
 
 ## Immediate Next Step
 

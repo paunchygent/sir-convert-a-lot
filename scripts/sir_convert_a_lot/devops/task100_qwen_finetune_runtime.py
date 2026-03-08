@@ -103,8 +103,7 @@ def _parse_smoke_probe_payload(raw_output: str) -> dict[str, object]:
         if isinstance(payload_obj, dict):
             return payload_obj
     raise SystemExit(
-        "Task 100 smoke probe did not emit a parseable JSON object. "
-        f"Raw stdout was:\n{raw_output}"
+        f"Task 100 smoke probe did not emit a parseable JSON object. Raw stdout was:\n{raw_output}"
     )
 
 

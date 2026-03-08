@@ -57,10 +57,13 @@ class ProcessorOutputProtocol(Protocol):
     """Minimal processor output surface used by the local ASR helper."""
 
     input_features: TorchTensorProtocol
+    attention_mask: TorchTensorProtocol | None
 
 
 class WhisperProcessorProtocol(Protocol):
     """Minimal processor surface used by the local ASR helper."""
+
+    feature_extractor: "WhisperFeatureExtractorProtocol"
 
     def __call__(
         self,
@@ -68,11 +71,18 @@ class WhisperProcessorProtocol(Protocol):
         *,
         sampling_rate: int,
         return_tensors: str,
+        return_attention_mask: bool,
     ) -> ProcessorOutputProtocol:
         """Encode one waveform into input features."""
 
     def batch_decode(self, sequences: object, *, skip_special_tokens: bool) -> list[str]:
         """Decode generated token ids into text."""
+
+
+class WhisperFeatureExtractorProtocol(Protocol):
+    """Minimal feature extractor metadata used by the local ASR helper."""
+
+    sampling_rate: int
 
 
 class TorchDeviceProtocol(Protocol):
@@ -94,6 +104,7 @@ class WhisperModelProtocol(Protocol):
         self,
         input_features: TorchTensorProtocol,
         *,
+        attention_mask: TorchTensorProtocol | None = None,
         max_new_tokens: int,
         task: str,
     ) -> object:
@@ -487,6 +498,8 @@ class WhisperStrictScorer:
 
     def transcribe(self, audio_path: Path) -> str:
         """Transcribe one short audio clip with deterministic generation settings."""
+        import librosa
+        import numpy as np
         import soundfile
         import torch
 
@@ -499,17 +512,30 @@ class WhisperStrictScorer:
         waveform, sample_rate_hz = soundfile.read(audio_path.as_posix(), dtype="float32")
         if getattr(waveform, "ndim", 1) > 1:
             waveform = waveform.mean(axis=1)
+        target_sample_rate_hz = int(self._processor.feature_extractor.sampling_rate)
+        if sample_rate_hz != target_sample_rate_hz:
+            waveform = librosa.resample(
+                np.asarray(waveform, dtype=np.float32),
+                orig_sr=sample_rate_hz,
+                target_sr=target_sample_rate_hz,
+            )
+            sample_rate_hz = target_sample_rate_hz
         processed = self._processor(
             waveform,
             sampling_rate=sample_rate_hz,
             return_tensors="pt",
+            return_attention_mask=True,
         )
         input_features = processed.input_features.to(self._device)
+        attention_mask = processed.attention_mask
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(self._device)
         if self._device.type == "cuda":
             input_features = input_features.to(dtype=self._dtype)
         with torch.inference_mode():
             predicted_ids = self._model.generate(
                 input_features,
+                attention_mask=attention_mask,
                 max_new_tokens=256,
                 task="transcribe",
             )
@@ -707,9 +733,7 @@ def run_task103_preprocessing(settings: Task103PreprocessingSettings) -> Task103
             "curated_rows": len(curated_rows),
             "admitted_rows": len(admitted_rows),
             "quality_tier_counts": {
-                "high_trust": sum(
-                    1 for row in curated_rows if row.quality_tier == "high_trust"
-                ),
+                "high_trust": sum(1 for row in curated_rows if row.quality_tier == "high_trust"),
                 "medium_trust": sum(
                     1 for row in curated_rows if row.quality_tier == "medium_trust"
                 ),
