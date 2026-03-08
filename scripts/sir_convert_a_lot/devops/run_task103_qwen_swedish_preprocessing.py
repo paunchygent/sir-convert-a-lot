@@ -35,7 +35,6 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     default_data_root,
     ensure_bulk_data_storage_path,
-    ensure_data_disk_path,
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/reference/qwen3-tts-swedish-corpus")

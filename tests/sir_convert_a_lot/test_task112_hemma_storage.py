@@ -54,9 +54,9 @@ def test_migrate_repo_build_to_scratch_moves_and_symlinks(tmp_path: Path) -> Non
 
     assert settings.repo_build_root.is_symlink()
     assert settings.repo_build_root.resolve() == settings.scratch_build_root.resolve()
-    assert (
-        settings.scratch_build_root / "reference" / "artifact.txt"
-    ).read_text(encoding="utf-8") == "ok"
+    assert (settings.scratch_build_root / "reference" / "artifact.txt").read_text(
+        encoding="utf-8"
+    ) == "ok"
 
 
 def test_migrate_qwen_data_to_storage_moves_and_symlinks(tmp_path: Path) -> None:
@@ -70,9 +70,9 @@ def test_migrate_qwen_data_to_storage_moves_and_symlinks(tmp_path: Path) -> None
 
     assert settings.old_qwen_data_root.is_symlink()
     assert settings.old_qwen_data_root.resolve() == settings.new_qwen_data_root.resolve()
-    assert (
-        settings.new_qwen_data_root / "raw" / "asset.parquet"
-    ).read_text(encoding="utf-8") == "rows"
+    assert (settings.new_qwen_data_root / "raw" / "asset.parquet").read_text(
+        encoding="utf-8"
+    ) == "rows"
 
 
 def test_cleanup_non_active_docker_state_prunes_expected_resources(
@@ -170,4 +170,4 @@ def test_task112_runner_writes_report_after_remediation(
     report_md_path = output_root / "report.md"
     assert json.loads(report_json_path.read_text(encoding="utf-8"))["repo_build_is_symlink"] is True
     assert "Task 112 Hemma Storage Remediation Report" in report_md_path.read_text(encoding="utf-8")
-    assert "\"cleaned_docker_state\": true" in capsys.readouterr().out
+    assert '"cleaned_docker_state": true' in capsys.readouterr().out

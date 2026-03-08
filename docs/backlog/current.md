@@ -190,12 +190,14 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     preprocessing output.
 
 - 2026-03-05:
+
   - Re-terminalized Task 73 after ruthless review remediation with sustained-load evidence in
     `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`; validation stayed green.
   - Completed Task 76 deploy-and-verify evidence plus Task 77 multilingual OCR hardening; detail
     remains in the linked Epic 06 / Story 20 / Task 76 docs.
 
 - 2026-03-04:
+
   - Planned Epic 06 long PDF reliability/performance work and completed Tasks 67-71 plus 75 in
     the first delivery slice; detailed progress remains in the linked task docs and tests.
 

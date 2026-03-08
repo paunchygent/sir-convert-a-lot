@@ -51,8 +51,8 @@ Confirmed `2026-03-09` evidence:
 So three remediations are required:
 
 1. future hot/generated Qwen output must persist on SSD scratch
-2. raw Swedish corpus assets must persist on HDD storage
-3. root-disk Docker bloat must be cleaned intentionally
+1. raw Swedish corpus assets must persist on HDD storage
+1. root-disk Docker bloat must be cleaned intentionally
 
 ## PR Scope
 
