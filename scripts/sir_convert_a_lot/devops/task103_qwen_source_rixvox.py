@@ -72,9 +72,7 @@ def rixvox_source_records_from_parquet_with_audio_locators(
         for row in batch.to_pylist():
             intressent_id = str(row["intressent_id"]).strip()
             speaker_slug = (
-                intressent_id
-                if intressent_id != ""
-                else _slugify_speaker(str(row["speaker"]))
+                intressent_id if intressent_id != "" else _slugify_speaker(str(row["speaker"]))
             )
             dataset_row_id = f"{row['dokid']}-{row['anforande_nummer']}-{row['observation_nr']}"
             bleu_score = float(row["bleu_score"])
@@ -102,10 +100,7 @@ def rixvox_source_records_from_parquet_with_audio_locators(
                     speaker_audio_meta_ok=speaker_audio_meta != "",
                     source_sample_rate_hz=RIXVOX_SOURCE_SAMPLE_RATE_HZ,
                     duration_seconds=round(float(row["duration"]), 6),
-                    notes=(
-                        f"bleu_score={bleu_score:.6f};"
-                        f"speaker_audio_meta={speaker_audio_meta}"
-                    ),
+                    notes=(f"bleu_score={bleu_score:.6f};speaker_audio_meta={speaker_audio_meta}"),
                 )
             )
     return source_records
@@ -150,8 +145,7 @@ def build_rixvox_audio_locator_index(archive_paths: Sequence[Path]) -> dict[str,
 def _slugify_speaker(speaker_name: str) -> str:
     """Build one stable fallback speaker slug from a human-readable speaker name."""
     letters_only = [
-        character.lower() if character.isalnum() else "_"
-        for character in speaker_name.strip()
+        character.lower() if character.isalnum() else "_" for character in speaker_name.strip()
     ]
     slug = "".join(letters_only).strip("_")
     return "_".join(part for part in slug.split("_") if part != "")

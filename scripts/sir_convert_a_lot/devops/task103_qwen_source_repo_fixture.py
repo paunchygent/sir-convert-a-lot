@@ -27,26 +27,17 @@ def repo_fixture_source_records(workspace_root: Path) -> list[SourceRecord]:
         workspace_root
         / "build/verification/task-85-f5-tts-hemma-voice-sample-new/inputs/reference_source_sv.txt"
     )
-    christian_audio_path = (
-        workspace_root
-        / (
-            "build/verification/task-94-youtube-reference-audio-for-chatterbox-ptole/"
-            "inputs/reference_2m09_2m20p5_prompt.wav"
-        )
+    christian_audio_path = workspace_root / (
+        "build/verification/task-94-youtube-reference-audio-for-chatterbox-ptole/"
+        "inputs/reference_2m09_2m20p5_prompt.wav"
     )
-    christian_ref_path = (
-        workspace_root
-        / (
-            "build/verification/task-94-youtube-reference-audio-for-chatterbox-ptole/"
-            "inputs/reference_2m00_2m10_prompt.wav"
-        )
+    christian_ref_path = workspace_root / (
+        "build/verification/task-94-youtube-reference-audio-for-chatterbox-ptole/"
+        "inputs/reference_2m00_2m10_prompt.wav"
     )
-    christian_text_path = (
-        workspace_root
-        / (
-            "build/verification/task-94-youtube-reference-audio-for-chatterbox-ptole/"
-            "inputs/reference_2m09_2m20p5_prompt.txt"
-        )
+    christian_text_path = workspace_root / (
+        "build/verification/task-94-youtube-reference-audio-for-chatterbox-ptole/"
+        "inputs/reference_2m09_2m20p5_prompt.txt"
     )
     fixture_rows = [
         SourceRecord(

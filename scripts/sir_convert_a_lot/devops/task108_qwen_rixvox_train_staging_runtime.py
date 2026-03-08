@@ -81,9 +81,10 @@ def run_task108_rixvox_train_staging(
         request_pause_seconds=settings.request_pause_seconds,
     )
 
-    filenames = ["data/train_metadata.parquet", *[
-        f"data/train/train_{shard}.tar.gz" for shard in normalized_shards
-    ]]
+    filenames = [
+        "data/train_metadata.parquet",
+        *[f"data/train/train_{shard}.tar.gz" for shard in normalized_shards],
+    ]
     downloaded_files: list[DownloadedFileRecord] = []
     for filename in filenames:
         cached_path = download_file_with_retry(

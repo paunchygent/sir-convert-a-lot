@@ -406,6 +406,131 @@ def test_task103_preprocessing_routes_rixvox_train_into_train_manifest_families(
     assert report.manifest_counts["swedish_scaleup_train"] == 1
 
 
+def test_task103_row_processing_stage_emits_spool_without_manifests(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The row-processing stage should persist spool rows without final manifests."""
+    workspace_root = tmp_path / "workspace"
+    source_audio_path = workspace_root / "fixtures/source.wav"
+    reference_audio_path = workspace_root / "fixtures/ref.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.25)
+    _write_test_wav(reference_audio_path, sample_rate_hz=16_000, duration_seconds=6.0)
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        lambda self, audio_path: "Hej från Sverige.",
+    )
+
+    report = run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=workspace_root / "build/reference/qwen3-tts-swedish-corpus",
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+        ),
+        source_records=[
+            _build_source_record(
+                dataset="repo_fixture_sv",
+                source_split="fixture",
+                dataset_row_id="repo-fixture-test-001",
+                speaker_id="speaker_test",
+                speaker_name="Test Speaker",
+                source_audio_path=source_audio_path,
+                reference_audio_path=reference_audio_path,
+                text_raw="Hej från Sverige.",
+            )
+        ],
+    )
+
+    output_root = Path(report.output_root)
+    assert report.inventory_rows == 1
+    assert report.curated_rows == 0
+    assert report.prepared_rows == 0
+    assert (output_root / "spool/rows").is_dir()
+    assert len(list((output_root / "spool/rows").rglob("*.json"))) == 1
+    assert not (output_root / "manifests/swedish_smoke_train.prepared.jsonl").exists()
+
+
+def test_task103_finalization_stage_chunks_audio_code_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The finalization stage should bound `audio_codes` generation by chunk size."""
+    workspace_root = tmp_path / "workspace"
+    first_audio_path = workspace_root / "fixtures/first.wav"
+    second_audio_path = workspace_root / "fixtures/second.wav"
+    third_audio_path = workspace_root / "fixtures/third.wav"
+    _write_test_wav(first_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+    _write_test_wav(second_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+    _write_test_wav(third_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        lambda self, audio_path: "Hej från Sverige.",
+    )
+
+    source_records = [
+        _build_source_record(
+            dataset="repo_fixture_sv",
+            source_split="fixture",
+            dataset_row_id=f"repo-fixture-test-00{index}",
+            speaker_id=f"speaker_{index}",
+            speaker_name=f"Speaker {index}",
+            source_audio_path=audio_path,
+            reference_audio_path=None,
+            text_raw="Hej från Sverige.",
+        )
+        for index, audio_path in enumerate(
+            (first_audio_path, second_audio_path, third_audio_path),
+            start=1,
+        )
+    ]
+    output_root = workspace_root / "build/reference/qwen3-tts-swedish-corpus"
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+        ),
+        source_records=source_records,
+    )
+
+    observed_chunk_sizes: list[int] = []
+
+    def _fake_encode_audio_codes(
+        *,
+        tokenizer_model: str,
+        audio_paths: list[Path],
+    ) -> list[list[list[int]]]:
+        observed_chunk_sizes.append(len(audio_paths))
+        return [[[41, 42]] for _ in audio_paths]
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core._encode_audio_codes",
+        _fake_encode_audio_codes,
+    )
+
+    report = run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="finalization",
+            finalization_families=("swedish_smoke_train",),
+            audio_codes_chunk_size=2,
+        ),
+    )
+
+    assert observed_chunk_sizes == [2, 1]
+    assert report.manifest_counts["swedish_smoke_train"] == 3
+    assert report.prepared_rows == 3
+
+
 def test_task103_runner_main_prints_report_summary(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

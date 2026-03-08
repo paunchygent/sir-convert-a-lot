@@ -73,6 +73,9 @@ Prefer both when the task is strategic:
 
 - Use containers for serious training work.
 - Do not rely on raw host processes as the primary lane.
+- Use detached execution for long-running Hemma work so the job does not
+  depend on the local client or tunnel staying alive.
+- Treat attached remote execution as probe-only.
 - Confirm the GPU is idle before real runs.
 - Record exact runtime truth before and after the run.
 - Keep cache roots explicit and stable.

@@ -1,55 +1,78 @@
 # Sir Convert-a-Lot
 
-Standalone conversion platform for LLM-friendly document conversion workflows.
+Standalone platform for LLM-friendly document conversion.
 
 Canonical intent:
 
-- one stable CLI/API surface,
-- deterministic and auditable output,
-- GPU-first remote execution path,
-- docs-as-code governance built into the repo.
+- One stable CLI/API surface (v2).
+- Deterministic, auditable outputs.
+- GPU-first remote execution path (Hemma).
+- Docs-as-code governance built into the repo.
+
+## Capabilities & Routes
+
+The v2 service executes the following conversion routes natively:
+
+- **To Markdown:** `pdf -> md`, `docx -> md`, `html -> md`
+- **To PDF:** `docx -> pdf`, `html -> pdf`, `md -> pdf`
+- **To DOCX:** `pdf -> docx`, `html -> docx`, `md -> docx`
+
+Future approved routes include `md -> wav` (sidecar-backed TTS).
+
+## API & CLI Surface
+
+- **REST API (v2):** Asynchronous, idempotent job submission with correlation tracking. Supports long-running job checkpoints, partial artifact retrieval, cancel/resume operations, resource bundles (CSS/images), and DOCX templates.
+- **CLI (`convert-a-lot`):** Client application that submits files and directories to the v2 service. Includes flags for acceleration policies, OCR configuration, and long-job management.
 
 ## Quickstart
+
+Start the local v2 API service:
 
 ```bash
 pdm install
 pdm run serve:sir-convert-a-lot
 ```
 
-In another terminal:
+In another terminal, convert documents via the CLI:
 
 ```bash
-pdm run convert-a-lot convert ./pdfs --output-dir ./research
+pdm run convert-a-lot convert ./pdfs --to md --output-dir ./research
+
+# Check supported routes and implementation status
+pdm run convert-a-lot routes
 ```
 
-## Commands
+## Core Commands
+
+**Service & Conversion:**
 
 - `pdm run serve:sir-convert-a-lot`
-- `pdm run convert-a-lot`
-- `pdm run sir-convert-a-lot`
-- `pdm run run-local-pdm <script> [args]`
+- `pdm run convert-a-lot convert <path> --output-dir <dir>`
+- `pdm run convert-a-lot jobs [cancel|resume|partial|checkpoint]`
+
+**Hemma (Remote) Execution:**
+
 - `pdm run run-hemma -- <command> [args]`
-- `pdm run new-task`
-- `pdm run new-doc`
-- `pdm run new-rule`
+- `pdm run run-local-pdm <script> [args]`
+
+**Docs-as-code Governance:**
+
+- `pdm run new-[task|epic|story|doc|rule]`
 - `pdm run validate-tasks`
 - `pdm run validate-docs`
-- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
-## Architecture
+## Documentation & Contracts
 
-See:
+**Architecture:**
 
-- `scripts/sir_convert_a_lot/README.md`
-- `docs/converters/multi_format_conversion_service_api_v2.md`
-- `docs/converters/downstream_integration_contract_v2.md`
-- `docs/converters/sir_convert_a_lot.md`
-- `docs/decisions/0002-multi-format-service-api-v2.md`
+- [Service API v2](docs/converters/multi_format_conversion_service_api_v2.md)
+- [Downstream Integration Contract](docs/converters/downstream_integration_contract_v2.md)
+- [Async Push Extension](docs/converters/multi_format_conversion_service_api_v2_async_push.md)
 
-## Governance
+**Governance:**
 
-- Agent rules: `.agents/rules/`
-- Session state: `.agents/session/`
-- Skills: `.agents/skills/`
-- Active planning/tasks: `docs/backlog/`
+- System rules: `.agents/rules/`
+- Active backlog: `docs/backlog/`
 - Docs contract: `docs/_meta/docs-contract.yaml`
+
+Before operating, consult [`AGENTS.md`](AGENTS.md) and execute quality gates.

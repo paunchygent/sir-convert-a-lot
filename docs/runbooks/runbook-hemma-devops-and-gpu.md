@@ -99,6 +99,28 @@ Wrapper guarantees:
 - Commands run in deterministic shell mode (`bash --noprofile --norc`).
 - Remote script is streamed over stdin to avoid quoting drift across SSH command parsing.
 
+## Detached Execution Policy
+
+For Hemma, execution mode matters as much as the command surface.
+
+- Use attached `pdm run run-hemma -- ...` only for short probes, inspections,
+  validation commands, and fast deterministic checks.
+- Any long-running remote workload must be detached from the local client
+  session before it is treated as canonical evidence.
+- This applies to:
+  - ML preprocessing
+  - model training
+  - large corpus acquisition
+  - long benchmark sweeps
+  - any GPU job that may outlive the local tunnel or client session
+
+Approved long-run posture:
+
+- committed detached runner surface
+- named background Docker container plus separate inspection commands
+- remote `tmux`/supervised execution when a committed detached runner does not
+  yet exist
+
 ## SSH and Service Health
 
 ```bash

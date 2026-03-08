@@ -29,6 +29,8 @@ links:
   - docs/backlog/tasks/task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma.md
   - docs/backlog/tasks/task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing.md
   - docs/backlog/tasks/task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma.md
+  - docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
+  - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -218,6 +220,19 @@ Pass condition:
 
 - no unrelated KFD PIDs
 - only the expected runtime after launch
+
+## Detached Hemma Rule
+
+For the Qwen lane, attached client-driven Hemma execution is probe-only.
+
+- Long-running preprocessing, corpus staging, and fine-tuning runs must start
+  detached from the local client session.
+- Preferred surfaces:
+  - committed detached Hemma runner
+  - named detached Docker container with later `inspect`, `logs`, and report
+    collection
+  - remote supervisor or `tmux` only when the repo does not yet expose a
+    committed detached runner
 
 ## Dataset Policy
 
@@ -461,6 +476,16 @@ Canonical Task 106 acquisition surface:
      containerized Task 109 runner
    - live remediation evidence exists under
      `build/verification/task-109-qwen-containerized-preprocessing/`
+1. Plan `T110` as the next resilience hardening slice after the first `T108`
+   proof closes.
+   - split row preprocessing from finalization
+   - persist row-level ASR and admission results to disk
+   - keep later manifest/code generation restartable
+   - bound `audio_codes` generation by chunk size rather than one whole-family
+     batch
+1. Keep `T111` as the provenance-safe transcript-improvement lane.
+   - ASR remains a quality gate by default
+   - any transcript relabeling must preserve original text plus provenance
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 
@@ -502,6 +527,14 @@ Every real training or scaling lane must emit:
 - exact command surface used
 - repo `HEAD`
 - runtime/image identity
+
+For long preprocessing runs after `T110`, evidence should also record:
+
+- stage selection used
+- row-worker count
+- GPU ASR worker count
+- `audio_codes` chunk size
+- whether the run was row-processing only, finalization only, or full pipeline
 - dataset slice identity
 - cache roots used
 - clean-baseline GPU snapshot

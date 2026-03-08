@@ -44,6 +44,16 @@ pdm run run-hemma -- <command> [args]
 pdm run run-hemma --shell "<command with shell operators>"
 ```
 
+Detached execution policy:
+
+- Use attached `run-hemma` only for short probes, validation commands, and fast
+  status checks.
+- Any long-running Hemma work must be launched through a detached remote
+  surface so the job survives local client disconnects, tunnel drops, or
+  session resets.
+- Prefer committed detached runners, named background containers, or remote
+  `tmux`/supervised surfaces over foreground client-attached execution.
+
 Deploy parity gate (one-command deploy + verify):
 
 ```bash

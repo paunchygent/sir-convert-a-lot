@@ -1,9 +1,9 @@
 ---
-id: 'task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma'
-title: 'Containerize Qwen public-corpus preprocessing execution on Hemma'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma
+title: Containerize Qwen public-corpus preprocessing execution on Hemma
+type: task
+status: completed
+priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
 related:
@@ -21,6 +21,7 @@ labels:
   - hemma
   - remediation
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -57,25 +58,25 @@ Qwen runtime on Hemma instead of the Hemma host virtualenv.
 
 - [x] One explicit remediation record for the host-versus-container drift.
 - [x] One containerized command surface for public-corpus preprocessing on
-      Hemma.
+  Hemma.
 - [x] One updated runbook/task state describing the container-first policy for
-      preprocessing and training alike.
+  preprocessing and training alike.
 - [x] One live Hemma validation proving the public-corpus preprocessing lane no
-      longer depends on host-installed `sox`, `flash_attn`, or other drift-prone
-      host runtime state.
+  longer depends on host-installed `sox`, `flash_attn`, or other drift-prone
+  host runtime state.
 
 ## Acceptance Criteria
 
 - [x] The task explains the drift in concrete terms and references the affected
-      tasks (`T100`, `T103`, `T107`).
+  tasks (`T100`, `T103`, `T107`).
 - [x] The preferred solution is documented explicitly:
-      containerized preprocessing is canonical, host execution is not.
+  containerized preprocessing is canonical, host execution is not.
 - [x] The public-corpus preprocessing command runs through the Qwen
-      container/runtime rather than the Hemma host venv.
+  container/runtime rather than the Hemma host venv.
 - [x] The containerized run mounts the canonical DATA-backed corpus root and
-      Hugging Face cache root.
+  Hugging Face cache root.
 - [x] The remediation leaves no ambiguity in backlog/runbook docs about the
-      selected processing unit.
+  selected processing unit.
 
 ## Drift Record
 

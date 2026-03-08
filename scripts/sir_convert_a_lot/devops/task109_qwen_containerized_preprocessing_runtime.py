@@ -26,7 +26,6 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     parse_json_object_from_mixed_stdout,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
-    CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
     Task103PreprocessingReport,
 )
@@ -89,9 +88,7 @@ def _required_manifest_counts(payload: dict[str, object]) -> dict[ManifestFamily
     manifest_counts: dict[ManifestFamily, int] = {}
     for key, count in value.items():
         if not isinstance(key, str) or not isinstance(count, int):
-            raise SystemExit(
-                "Task 109 preprocessing payload returned malformed `manifest_counts`."
-            )
+            raise SystemExit("Task 109 preprocessing payload returned malformed `manifest_counts`.")
         manifest_counts[_manifest_family_from_key(key)] = count
     return manifest_counts
 

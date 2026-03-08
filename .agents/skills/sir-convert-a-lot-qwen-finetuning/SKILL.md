@@ -80,6 +80,8 @@ explicitly narrow the scope.
 - The end goal is general Swedish support, not a single teacher voice.
 - Any future production use must still fit the sidecar-only architecture from
   ADR-0006 and ADR-0007.
+- Long-running Hemma preprocessing, training, and corpus-acquisition work must
+  run detached from the local client session.
 
 ## Qwen-Specific Decisions
 
@@ -149,6 +151,7 @@ this Qwen-specific order:
    - `speaker_id` note: **track it for metadata, splits, and optional future speaker-bank export; current conditioning still comes from `ref_audio -> ref_mel -> speaker_encoder`.**
    - dependency split: **Task 100 owns the training-image stack; Task 103 owns the extra preprocessing/eval stack.**
 1. Run a bounded pilot:
+   - detached on Hemma by default
    - one real optimizer step minimum
    - **Hemma Smoke Run:** 8-12 hours, 12-16 speakers.
    - **Hemma Pilot:** 24-36 hours, 24-40 speakers.

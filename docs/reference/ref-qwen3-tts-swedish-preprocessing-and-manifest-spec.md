@@ -10,6 +10,8 @@ owners:
 links:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
+  - docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
+  - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-guide.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -21,7 +23,8 @@ Define the canonical preprocessing and manifest contract for the Swedish Qwen
 full-finetune lane so Hemma and Colab runs use the same artifact layout,
 quality-tier logic, and Qwen-ready manifest shapes.
 
-This reference is the contract target for `T103`.
+This reference is the contract target for `T103` and its planned follow-on
+hardening tasks `T110` and `T111`.
 
 ## Source Acquisition Contract
 
@@ -94,10 +97,18 @@ Canonical subtrees:
     final test
 - `reports/`
   - policy summaries and counts
+- `spool/`
+  - planned `T110` subtree for disk-backed row-processing outputs used by
+    later finalization
+  - expected subtrees:
+    - `rows/`
+    - `tmp/`
+    - `state/`
 
 ## Pipeline Stages
 
-The preprocessing flow is fixed to these stages:
+The full planned preprocessing flow, including `T110` / `T111` hardening, is
+fixed to these stages:
 
 1. inventory the approved source datasets and emit deterministic source rows
 1. normalize transcript text into a Swedish orthography form suitable for Qwen
@@ -107,10 +118,104 @@ The preprocessing flow is fixed to these stages:
 1. run Swedish ASR mismatch scoring with `KBLab/kb-whisper-large`,
    `revision="strict"`
 1. assign corpus quality tiers from WER bands and speaker-quality gates
-1. materialize the rich curated manifest layer
-1. materialize the Qwen raw JSONL layer
-1. generate `audio_codes` with the official Qwen tokenizer flow
+1. persist row-level preprocessing results to a deterministic disk-backed spool
+1. materialize the rich curated manifest layer from the spool
+1. materialize the Qwen raw JSONL layer from the spool
+1. generate `audio_codes` with the official Qwen tokenizer flow in bounded
+   chunks
 1. materialize the Qwen prepared JSONL layer used by training
+
+## Stage Control Contract
+
+The preprocessing lane should be independently controllable by stage.
+
+Required stage surfaces:
+
+- `inventory`
+- `row-processing`
+- `curated-projection`
+- `finalization`
+- `reports`
+
+Preferred execution behavior:
+
+- each stage can be run independently
+- later stages consume deterministic on-disk artifacts from earlier stages
+- rerunning later stages must not require recomputing already completed
+  row-processing work
+
+## Parallelism Contract
+
+Parallelism must be explicit and bounded.
+
+Required control knobs:
+
+- row-worker count
+- CPU-side audio materialization concurrency
+- GPU-side ASR worker count
+- finalization-family selection
+- `audio_codes` chunk size
+
+Default posture:
+
+- conservative GPU concurrency
+- sequential family finalization
+- chunked `audio_codes` generation
+- detached Hemma execution for long runs
+
+## Modularization Contract
+
+The preprocessing lane should be split into stage-oriented modules rather than
+expanded indefinitely inside one file.
+
+Preferred module boundaries:
+
+- orchestration runner
+- source loading and inventory
+- row processing
+- ASR mismatch scoring
+- spool read/write contract
+- manifest finalization
+- reporting
+
+Module policy:
+
+- schema types should live in dedicated model/contract modules
+- stage entrypoints should be independently testable
+- no future hardening task should rely on growing one central preprocessing
+  file without decomposition
+
+## Spool Contract
+
+`T110` should treat the spool as the durable hand-off between row-processing
+and finalization.
+
+Expected spool semantics:
+
+- one durable completed-row record per processed source row
+- temp-file plus atomic-rename writes
+- no partial row treated as complete
+- enough row metadata to rebuild curated/manifests/reports without rerunning
+  Whisper for completed rows
+
+Minimum planned spool fields:
+
+- source identity:
+  - `dataset`
+  - `source_split`
+  - `dataset_row_id`
+- materialized artifact paths:
+  - `audio_24k_path`
+  - `reference_audio_24k_path`
+- transcript and quality state:
+  - `text_normalized`
+  - `asr_transcript`
+  - `asr_wer`
+  - `quality_tier`
+  - `speaker_quality_gate`
+  - `admission_decision`
+- routing state:
+  - `manifest_targets`
 
 ## Audio Contract
 
@@ -122,6 +227,23 @@ Training-side contract:
 - all `ref_audio` clips must be emitted at `24 kHz`
 - the same `24 kHz` canonical reference clip must be reused for every row of a
   given speaker in the same manifest family
+
+## Transcript Provenance Contract
+
+This is the planned `T111` extension to the current preprocessing contract.
+
+Source transcript text remains canonical by default.
+
+ASR output is required for mismatch scoring and quality-tier assignment. It is
+not automatically allowed to replace the public-source transcript.
+
+If the relabeling lane is enabled, the curated/report layers must preserve
+both:
+
+- original source transcript text
+- ASR-generated transcript text
+
+Any relabeling decision must be explicit and machine-readable.
 
 ## Quality-Tier Contract
 
@@ -229,6 +351,24 @@ Recommended values:
   - `speaker_from_id`
   - `manual_review`
   - `rejected_multi_speaker`
+
+Planned `T111` fields:
+
+- `text_original`
+- `transcript_source`
+- `relabel_decision`
+
+Planned `T111` values:
+
+- `transcript_source`
+  - `source`
+  - `asr_candidate`
+  - `asr_approved`
+- `relabel_decision`
+  - `not_attempted`
+  - `candidate_only`
+  - `approved`
+  - `rejected`
 
 ### Layer 3: Qwen Raw JSONL
 

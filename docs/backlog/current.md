@@ -151,6 +151,27 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     records the canonical DATA/HF cache mounts plus the reproduced
     public-corpus preprocessing result (`inventory_rows=16841`,
     `curated_rows=24`, `admitted_rows=23`, `prepared_rows=23`).
+  - Began live `T108` bounded `rixvox` train-family proof work with
+    `train_metadata.parquet` plus `train_0.tar.gz` staged on Hemma DATA and a
+    bounded `--rixvox-max-rows-per-split 64` containerized preprocessing run.
+  - Recorded one important operational correction for all Hemma work: long
+    remote jobs must run detached from the local client session. An attached
+    `Task 109` foreground run exited with `137`, and that attached-mode exit
+    is not used as canonical preprocessing failure evidence for `T108`.
+  - Detached repro work for the same bounded `T108` lane showed the live
+    Python process inside ROCm/MIOpen `conv1d` work during the main
+    preprocessing loop, which means the earlier attached `137` cannot be used
+    as proof of a late-stage manifest or tokenizer failure.
+  - Detached `T108` proof then established the exact failure mode:
+    Hemma kernel logs recorded a real Python OOM kill inside the detached
+    Docker scope at `2026-03-08 21:41:24`, after `88` `audio_24k` files,
+    `10` refs, and `51` curated `swedish_smoke_train` rows had already been
+    emitted but before final manifests/reports existed.
+  - Opened `T110` and `T111` as the next docs-as-code hardening slices for the
+    preprocessing lane: `T110` will split row preprocessing from finalization
+    with disk-backed row results, and `T111` will define an optional
+    provenance-safe ASR relabeling lane without silently replacing source
+    transcripts.
 
 - 2026-03-05:
 
@@ -184,6 +205,9 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, and
   `T109` are complete. The active blocker before `T101` is `T108`:
   materialize `rixvox` audio and map admitted train rows into the canonical
-  train families.
+  train families, using detached Hemma execution as the required proof mode.
+- Follow-on hardening after the first `T108` proof is now explicit:
+  `T110` for disk-backed row/finalization split and `T111` for provenance-safe
+  ASR relabel candidates.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

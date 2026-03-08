@@ -75,6 +75,9 @@ Strict execution policy:
 - For any non-trivial remote workflow (multi-step checks, probes, reports, loops, JSON parsing), commit a script in this repo and invoke that script via argv mode.
 - Never run inline heredoc Python/Bash payloads through `run-hemma --shell` for routine operations.
 - Never use `run-hemma --shell` as an ad hoc command transport layer when a committed script surface exists or should exist.
+- Detached execution is the default for long-running Hemma work.
+- Any Hemma job that may outlive the local client session or tunnel must be launched through a detached remote surface and observed separately through committed logs, reports, or status commands.
+- Attached `run-hemma` execution is short-probe-only.
 
 Environment overrides:
 
@@ -150,6 +153,7 @@ Policy:
 - GPU-first execution is default and decision-governed.
 - No silent CPU fallback.
 - Use tunnels for local dev access by default.
+- Long-running Hemma work must not depend on the stability of the local client, tunnel, or attached SSH session.
 
 ## Do Not
 

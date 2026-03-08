@@ -1,9 +1,9 @@
 ---
-id: 'task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline'
-title: 'Add script-free Hugging Face corpus adapters to the Qwen Swedish preprocessing pipeline'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline
+title: Add script-free Hugging Face corpus adapters to the Qwen Swedish preprocessing pipeline
+type: task
+status: completed
+priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
 related:
@@ -19,6 +19,7 @@ labels:
   - datasets
   - swedish
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -62,18 +63,18 @@ assets onto the local workstation.
 ## Deliverables
 
 - [x] One committed adapter surface for real Hugging Face targeted file
-      downloads on Hemma.
+  downloads on Hemma.
 - [x] One refactor of the Task 103 source-row contract so dataset adapters own
-      raw source metadata and the core owns family assignment plus manifest
-      materialization.
+  raw source metadata and the core owns family assignment plus manifest
+  materialization.
 - [x] One `fleurs` Swedish adapter that emits deterministic
-      `swedish_checkpoint_dev` and `swedish_final_test` rows.
+  `swedish_checkpoint_dev` and `swedish_final_test` rows.
 - [x] One labeled `waxholm` adapter that emits deterministic
-      `swedish_waxholm_control` rows from `.smp.mix` text.
+  `swedish_waxholm_control` rows from `.smp.mix` text.
 - [x] One `rixvox` metadata adapter that ingests parquet metadata without
-      `load_dataset(...)`.
+  `load_dataset(...)`.
 - [x] Updated docs that make the script-free lane canonical and explain the
-      hard prohibition on legacy dataset-script loading.
+  hard prohibition on legacy dataset-script loading.
 
 Committed runner surfaces in this slice:
 
@@ -85,27 +86,27 @@ Committed runner surfaces in this slice:
 ## Acceptance Criteria
 
 - [x] The repo no longer depends on `datasets.load_dataset(...)` for
-      `rixvox`, `fleurs`, or `waxholm` ingestion in the canonical T103 lane.
+  `rixvox`, `fleurs`, or `waxholm` ingestion in the canonical T103 lane.
 - [x] All Hugging Face dataset acquisition in this slice is revision-pinned and
-      reproducible from committed code.
+  reproducible from committed code.
 - [x] Large raw corpus assets are documented to live on Hemma's DATA-backed
-      storage, not on the local workstation and not on the Hemma OS disk.
+  storage, not on the local workstation and not on the Hemma OS disk.
 - [x] The acquisition approach uses targeted sequential downloads for large
-      corpora rather than broad whole-repository fan-out.
+  corpora rather than broad whole-repository fan-out.
 - [x] The deterministic artifact/report structure under
-      `build/reference/qwen3-tts-swedish-corpus/` remains unchanged at the
-      contract level.
+  `build/reference/qwen3-tts-swedish-corpus/` remains unchanged at the
+  contract level.
 - [x] The implementation preserves the existing family contract:
-      `swedish_smoke_train`, `swedish_pilot_train`, `swedish_scaleup_train`,
-      `swedish_checkpoint_dev`, `swedish_final_test`,
-      `swedish_waxholm_control`.
+  `swedish_smoke_train`, `swedish_pilot_train`, `swedish_scaleup_train`,
+  `swedish_checkpoint_dev`, `swedish_final_test`,
+  `swedish_waxholm_control`.
 - [x] The docs explicitly state that raw file formats and automated data
-      support are preferred long term over custom dataset scripts.
+  support are preferred long term over custom dataset scripts.
 - [x] The task documents the allowed policy options:
-      `script-free revision-pinned adapters` as canonical and
-      `auto-converted parquet when available` as optional acceleration.
+  `script-free revision-pinned adapters` as canonical and
+  `auto-converted parquet when available` as optional acceleration.
 - [x] The task explicitly forbids legacy `datasets<4` custom-script loading,
-      including as a fallback.
+  including as a fallback.
 
 ## Current Status
 

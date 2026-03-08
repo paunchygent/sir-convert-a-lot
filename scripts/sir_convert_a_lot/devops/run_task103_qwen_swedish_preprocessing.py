@@ -22,6 +22,8 @@ from typing import Literal, Sequence
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
+    CANONICAL_MANIFEST_FAMILIES,
+    ManifestFamily,
     Task103PreprocessingReport,
     Task103PreprocessingSettings,
     run_task103_preprocessing,
@@ -44,6 +46,8 @@ DEFAULT_FLEURS_SPLITS = ("dev", "test")
 DEFAULT_RIXVOX_SPLITS = ("dev", "test")
 DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
+DEFAULT_STAGE = "all"
+DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
 SourceMode = Literal["repo-fixture", "staged-public-corpus"]
 
 
@@ -62,12 +66,37 @@ class Task103RunnerSettings:
 
 def _parse_csv_list(raw_value: str) -> tuple[str, ...]:
     """Parse one comma-separated CLI list into a normalized tuple."""
-    rendered_values = tuple(
-        value.strip() for value in raw_value.split(",") if value.strip() != ""
-    )
+    rendered_values = tuple(value.strip() for value in raw_value.split(",") if value.strip() != "")
     if not rendered_values:
         raise SystemExit("Expected at least one split value.")
     return rendered_values
+
+
+def _parse_manifest_families(raw_value: str) -> tuple[ManifestFamily, ...]:
+    """Parse one manifest-family CSV list into typed family literals."""
+    rendered_values = _parse_csv_list(raw_value)
+    typed_values: list[ManifestFamily] = []
+    for value in rendered_values:
+        if value == "swedish_smoke_train":
+            typed_values.append("swedish_smoke_train")
+            continue
+        if value == "swedish_pilot_train":
+            typed_values.append("swedish_pilot_train")
+            continue
+        if value == "swedish_scaleup_train":
+            typed_values.append("swedish_scaleup_train")
+            continue
+        if value == "swedish_checkpoint_dev":
+            typed_values.append("swedish_checkpoint_dev")
+            continue
+        if value == "swedish_final_test":
+            typed_values.append("swedish_final_test")
+            continue
+        if value == "swedish_waxholm_control":
+            typed_values.append("swedish_waxholm_control")
+            continue
+        raise SystemExit(f"Unknown manifest family: {value}")
+    return tuple(typed_values)
 
 
 def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
@@ -79,6 +108,20 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
     parser.add_argument("--asr-model", default=DEFAULT_ASR_MODEL)
     parser.add_argument("--asr-revision", default=DEFAULT_ASR_REVISION)
     parser.add_argument("--tokenizer-model", default=DEFAULT_TOKENIZER_MODEL)
+    parser.add_argument(
+        "--stage",
+        choices=("all", "row-processing", "finalization"),
+        default=DEFAULT_STAGE,
+    )
+    parser.add_argument(
+        "--finalization-families",
+        default=",".join(CANONICAL_MANIFEST_FAMILIES),
+    )
+    parser.add_argument(
+        "--audio-codes-chunk-size",
+        type=int,
+        default=DEFAULT_AUDIO_CODES_CHUNK_SIZE,
+    )
     parser.add_argument(
         "--source-mode",
         choices=("repo-fixture", "staged-public-corpus"),
@@ -104,6 +147,9 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
             asr_model=str(args.asr_model),
             asr_revision=str(args.asr_revision),
             tokenizer_model=str(args.tokenizer_model),
+            stage=args.stage,
+            finalization_families=_parse_manifest_families(str(args.finalization_families)),
+            audio_codes_chunk_size=int(args.audio_codes_chunk_size),
         ),
         source_mode=args.source_mode,
         data_root=Path(args.data_root),
@@ -121,12 +167,14 @@ def _resolve_source_records(
     if settings.source_mode == "repo-fixture":
         return None
     ensure_data_disk_path(settings.data_root, label="data_root")
-    return staged_public_corpus_source_records(
-        settings.data_root,
-        fleurs_splits=settings.fleurs_splits,
-        fleurs_max_rows_per_split=settings.fleurs_max_rows_per_split,
-        rixvox_splits=settings.rixvox_splits,
-        rixvox_max_rows_per_split=settings.rixvox_max_rows_per_split,
+    return list(
+        staged_public_corpus_source_records(
+            settings.data_root,
+            fleurs_splits=settings.fleurs_splits,
+            fleurs_max_rows_per_split=settings.fleurs_max_rows_per_split,
+            rixvox_splits=settings.rixvox_splits,
+            rixvox_max_rows_per_split=settings.rixvox_max_rows_per_split,
+        )
     )
 
 

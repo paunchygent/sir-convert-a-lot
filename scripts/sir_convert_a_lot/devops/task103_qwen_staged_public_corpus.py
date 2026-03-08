@@ -27,7 +27,6 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRe
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
     RIXVOX_ALLOWED_SPLITS,
     build_rixvox_audio_locator_index,
-    rixvox_source_records_from_parquet,
     rixvox_source_records_from_parquet_with_audio_locators,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_waxholm import (
@@ -93,7 +92,9 @@ def staged_public_corpus_source_records(
                     rixvox_source_records_from_parquet_with_audio_locators(
                         parquet_path,
                         split=split,
-                        audio_locators_by_source_path=build_rixvox_audio_locator_index(archive_paths),
+                        audio_locators_by_source_path=build_rixvox_audio_locator_index(
+                            archive_paths
+                        ),
                         include_metadata_only_rows=split != "train",
                     ),
                     max_rows_per_split=rixvox_max_rows_per_split,

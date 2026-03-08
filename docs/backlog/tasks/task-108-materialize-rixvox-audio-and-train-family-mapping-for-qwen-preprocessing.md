@@ -1,9 +1,9 @@
 ---
-id: 'task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing'
-title: 'Materialize RixVox audio and train-family mapping for Qwen preprocessing'
-type: 'task'
-status: 'active'
-priority: 'high'
+id: task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing
+title: Materialize RixVox audio and train-family mapping for Qwen preprocessing
+type: task
+status: active
+priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
 related:
@@ -21,6 +21,7 @@ labels:
   - audio
   - swedish
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -62,6 +63,7 @@ real audio-backed train manifests for the bounded Hemma pilot.
 Execute `T108` in this order:
 
 1. Extend the script-free `rixvox` acquisition lane.
+
    - stage `train_metadata.parquet` on Hemma with the same revision-pinned,
      targeted `huggingface_hub` path already used by `T106`
    - add one bounded audio-acquisition surface for only the admitted train rows
@@ -69,6 +71,7 @@ Execute `T108` in this order:
    - keep all raw assets on Hemma's DATA-backed storage
 
 1. Add `rixvox` audio materialization metadata.
+
    - parse `train_metadata.parquet` and preserve the dataset-native `filename`
      field as the canonical source-path identifier
    - resolve each admitted row to one real local audio source:
@@ -78,6 +81,7 @@ Execute `T108` in this order:
      revision-pinned
 
 1. Add explicit train-family assignment rules.
+
    - extend `task103_qwen_family_assignment.py` so admitted `rixvox` train rows
      can map into:
      - `swedish_smoke_train`
@@ -87,6 +91,7 @@ Execute `T108` in this order:
    - keep `fleurs` and labeled `waxholm` in control/eval-only roles
 
 1. Thread bounded subset selection through the preprocessing lane.
+
    - define deterministic subset rules for smoke/pilot/scale-up train rows
    - apply the existing quality-tier and speaker-quality gates before audio
      materialization fan-out
@@ -94,6 +99,7 @@ Execute `T108` in this order:
      `build/reference/qwen3-tts-swedish-corpus/`
 
 1. Prove the first live Hemma audio-backed train-manifest run.
+
    - run the container-backed public-corpus preprocessing lane
    - record that `swedish_smoke_train` and at least one broader train family
      are now non-empty
@@ -142,7 +148,7 @@ Whichever path wins, the repo contract remains the same:
 - [ ] One committed `rixvox` audio materialization surface.
 - [ ] One committed train-family mapping path for admitted `rixvox` train rows.
 - [ ] One live Hemma evidence bundle that proves real `rixvox` audio-backed
-      train manifests exist before `T101`.
+  train manifests exist before `T101`.
 
 ## Current Implementation Slice
 
@@ -166,18 +172,76 @@ This first slice does not yet complete train-family mapping or a live
 audio-backed preprocessing proof, but it establishes the raw-staging and
 loader foundation required for the next `T108` step.
 
+The next live `T108` proof established one important runtime lesson on Hemma:
+
+- bounded containerized preprocessing with:
+  - `--rixvox-split train`
+  - `--rixvox-split dev`
+  - `--rixvox-split test`
+  - `--rixvox-max-rows-per-split 64`
+- when launched through the attached client path, exited with `137` before
+  manifest/report emission
+- that attached-mode exit is not used as canonical preprocessing failure
+  evidence for this task
+- follow-on detached repro work is the required truth surface for root-cause
+  analysis and acceptance decisions
+
+Observed evidence from that failed proof:
+
+- `88` materialized `audio_24k` files
+- `10` materialized reference files
+- `6` inventory files
+- no final `manifests/`
+- no final `report.json`
+
+Preferred remediation inside `T108`:
+
+- keep the bounded train-row routing work
+- enforce detached Hemma execution as the canonical proof mode for this task
+- only choose runtime/code remediation after detached evidence identifies the
+  actual failing phase or confirms that the attached `137` was client-path
+  termination noise rather than a true pipeline failure
+
+Detached repro evidence now closes that uncertainty:
+
+- detached container:
+  - `task109-debug-20260308a`
+- detached result:
+  - exited `137`
+  - `OOMKilled=false` in Docker state
+- kernel proof on Hemma:
+  - `python invoked oom-killer`
+  - `oom-kill: ... task=python,pid=1077392`
+  - `Out of memory: Killed process 1077392 (python)`
+- memory facts at kill time from the kernel log:
+  - `total-vm:61900384kB`
+  - `anon-rss:28714248kB`
+- observed artifact progress before the kill:
+  - `88` materialized `audio_24k` files
+  - `10` materialized reference files
+  - `51` curated `swedish_smoke_train` rows
+  - no final `manifests/`
+  - no final `report.json`
+
+That means the current `T108` blocker is now better defined:
+
+- detached execution remains mandatory on Hemma
+- the detached repro proved a real host-memory OOM in the Python process
+- future `T108` implementation should treat `T110` as the planned structural
+  remediation path for reducing long-run in-memory pressure
+
 ## Acceptance Criteria
 
 - [ ] `train_metadata.parquet` is staged on Hemma through the script-free
-      revision-pinned acquisition lane.
+  revision-pinned acquisition lane.
 - [ ] `rixvox` audio is staged on Hemma without dataset-script loading.
 - [ ] The preprocessing lane produces admitted audio-backed `rixvox` rows, not
-      just inventory metadata.
+  just inventory metadata.
 - [ ] The canonical train-family manifests are non-empty for the first bounded
-      Hemma pilot lane.
+  Hemma pilot lane.
 - [ ] The current `fleurs` and `waxholm` control/eval separation is preserved.
 - [ ] The live proof runs through the container-backed public-corpus
-      preprocessing surface, not the Hemma host venv.
+  preprocessing surface, not the Hemma host venv.
 
 ## Checklist
 

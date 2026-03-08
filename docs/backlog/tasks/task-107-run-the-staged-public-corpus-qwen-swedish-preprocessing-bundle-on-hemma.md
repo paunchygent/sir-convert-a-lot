@@ -1,9 +1,9 @@
 ---
-id: 'task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma'
-title: 'Run the staged public-corpus Qwen Swedish preprocessing bundle on Hemma'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma
+title: Run the staged public-corpus Qwen Swedish preprocessing bundle on Hemma
+type: task
+status: completed
+priority: high
 created: '2026-03-08'
 last_updated: '2026-03-08'
 related:
@@ -20,6 +20,7 @@ labels:
   - swedish
   - corpora
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -49,24 +50,24 @@ staged `rixvox` metadata before the first bounded Hemma fine-tune.
 - [x] One committed staged-public-corpus Task 103 runner surface.
 - [x] One canonical PDM command for the Hemma public-corpus preprocessing run.
 - [x] One live Hemma preprocessing evidence bundle under
-      `build/reference/qwen3-tts-swedish-corpus/`.
+  `build/reference/qwen3-tts-swedish-corpus/`.
 - [x] One docs update that records what is now real, and what remains blocked
-      for `rixvox` before `T101`.
+  for `rixvox` before `T101`.
 
 ## Acceptance Criteria
 
 - [x] `task-103-preprocess` supports an explicit staged-public-corpus mode
-      without breaking repo-fixture smoke mode.
+  without breaking repo-fixture smoke mode.
 - [x] The staged-public-corpus mode reads assets from Hemma's DATA-backed raw
-      corpus root rather than downloading anything locally.
+  corpus root rather than downloading anything locally.
 - [x] The live Hemma run emits deterministic inventory, curated, raw, and
-      prepared artifacts under `build/reference/qwen3-tts-swedish-corpus/`.
+  prepared artifacts under `build/reference/qwen3-tts-swedish-corpus/`.
 - [x] `fleurs` and labeled `waxholm` are exercised end to end through audio
-      normalization, ASR scoring, and Qwen manifest emission.
+  normalization, ASR scoring, and Qwen manifest emission.
 - [x] Staged `rixvox` metadata is included in the deterministic bundle without
-      pretending that audio materialization already exists.
+  pretending that audio materialization already exists.
 - [x] The task records the current blocker for `rixvox` training-family
-      manifests: staged audio materialization and train-family mapping.
+  manifests: staged audio materialization and train-family mapping.
 
 ## Completed Evidence
 

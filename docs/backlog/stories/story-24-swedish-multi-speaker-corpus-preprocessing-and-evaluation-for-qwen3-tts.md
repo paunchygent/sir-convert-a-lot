@@ -16,6 +16,8 @@ related:
   - docs/backlog/tasks/task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma.md
   - docs/backlog/tasks/task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing.md
   - docs/backlog/tasks/task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma.md
+  - docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
+  - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -66,6 +68,8 @@ general-language-support result.
 1. `docs/backlog/tasks/task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma.md`
 1. `docs/backlog/tasks/task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing.md`
 1. `docs/backlog/tasks/task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma.md`
+1. `docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md`
+1. `docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md`
 1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
 
 ## Acceptance Criteria
@@ -87,6 +91,11 @@ general-language-support result.
 - [x] Task 109 remediates the runtime-model drift so public-corpus
   preprocessing uses the selected Qwen container runtime rather than the Hemma
   host venv.
+- [ ] Task 110 hardens the public-corpus lane into a disk-backed
+  row-processing plus finalization pipeline before larger `rixvox` runs scale
+  out.
+- [ ] Task 111 defines a provenance-safe ASR relabeling lane without silently
+  replacing source transcripts.
 - [ ] Task 104 publishes the Colab H100 scaling lane and compares it against
   the Hemma pilot rather than treating it as an isolated notebook exercise.
 - [ ] The story documents the difference between the official Qwen
