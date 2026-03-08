@@ -455,11 +455,12 @@ Canonical Task 106 acquisition surface:
    - `rixvox` is still metadata-only in the preprocessing lane
    - admitted train families remain blocked on `rixvox` audio materialization
      plus train-family mapping
-1. Resolve `T109` before treating the preprocessing lane as operationally
-   correct.
-   - public-corpus preprocessing currently proved functionality on Hemma
-   - but execution drifted onto the host venv instead of staying in the chosen
-     containerized runtime model
+1. Treat `T109` as complete and use the container-backed preprocessing command
+   as the canonical runtime path.
+   - `pdm run task-103-preprocess-public-corpus` now dispatches to the
+     containerized Task 109 runner
+   - live remediation evidence exists under
+     `build/verification/task-109-qwen-containerized-preprocessing/`
 1. Run Task 101 as the first bounded Hemma pilot.
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 
