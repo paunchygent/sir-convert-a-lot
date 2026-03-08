@@ -2,7 +2,7 @@
 id: 'task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma'
 title: 'Containerize Qwen public-corpus preprocessing execution on Hemma'
 type: 'task'
-status: 'active'
+status: 'completed'
 priority: 'high'
 created: '2026-03-08'
 last_updated: '2026-03-08'
@@ -55,26 +55,26 @@ Qwen runtime on Hemma instead of the Hemma host virtualenv.
 
 ## Deliverables
 
-- [ ] One explicit remediation record for the host-versus-container drift.
-- [ ] One containerized command surface for public-corpus preprocessing on
+- [x] One explicit remediation record for the host-versus-container drift.
+- [x] One containerized command surface for public-corpus preprocessing on
       Hemma.
-- [ ] One updated runbook/task state describing the container-first policy for
+- [x] One updated runbook/task state describing the container-first policy for
       preprocessing and training alike.
-- [ ] One live Hemma validation proving the public-corpus preprocessing lane no
+- [x] One live Hemma validation proving the public-corpus preprocessing lane no
       longer depends on host-installed `sox`, `flash_attn`, or other drift-prone
       host runtime state.
 
 ## Acceptance Criteria
 
-- [ ] The task explains the drift in concrete terms and references the affected
+- [x] The task explains the drift in concrete terms and references the affected
       tasks (`T100`, `T103`, `T107`).
-- [ ] The preferred solution is documented explicitly:
+- [x] The preferred solution is documented explicitly:
       containerized preprocessing is canonical, host execution is not.
-- [ ] The public-corpus preprocessing command runs through the Qwen
+- [x] The public-corpus preprocessing command runs through the Qwen
       container/runtime rather than the Hemma host venv.
-- [ ] The containerized run mounts the canonical DATA-backed corpus root and
+- [x] The containerized run mounts the canonical DATA-backed corpus root and
       Hugging Face cache root.
-- [ ] The remediation leaves no ambiguity in backlog/runbook docs about the
+- [x] The remediation leaves no ambiguity in backlog/runbook docs about the
       selected processing unit.
 
 ## Drift Record
@@ -110,8 +110,55 @@ Preferred long-term repo position:
 The public-corpus preprocessing lane should therefore be moved onto the
 Task 100-style Qwen runtime rather than hardened further on the host.
 
+## Completed Evidence
+
+The remediation now exists as a committed command surface:
+
+- canonical repo command:
+  - `pdm run task-103-preprocess-public-corpus`
+- canonical Hemma wrapper command:
+  - `pdm run run-hemma -- pdm run task-103-preprocess-public-corpus`
+- committed runtime surfaces:
+  - `scripts/sir_convert_a_lot/devops/run_task109_hemma_qwen_containerized_preprocessing.py`
+  - `scripts/sir_convert_a_lot/devops/task109_qwen_containerized_preprocessing_runtime.py`
+  - `scripts/sir_convert_a_lot/devops/task100_qwen_finetune_runtime.py`
+  - `pyproject.toml`
+
+Live Hemma validation completed on `2026-03-08` and wrote deterministic
+evidence to:
+
+- `build/verification/task-109-qwen-containerized-preprocessing/report.json`
+- `build/verification/task-109-qwen-containerized-preprocessing/report.md`
+
+Key runtime facts from the live report:
+
+- image:
+  - `sir-convert-a-lot-qwen-finetune-hemma:task100`
+- image id:
+  - `sha256:e09ab71bc210812f554a3068d0d0f262d2e287e0bc078c86707cb874b42512c2`
+- canonical HF cache mounted into the container:
+  - `/srv/scratch/sir-convert-a-lot/cache/huggingface`
+- canonical DATA root mounted into the container:
+  - `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`
+- effective home-backed compatibility mounts used by Docker:
+  - `/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface`
+  - `/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`
+- clean GPU baseline recorded before launch:
+  - `No KFD PIDs currently running`
+  - `VRAM Total Used Memory (B): 59936768`
+- inner public-corpus preprocessing result:
+  - `inventory_rows=16841`
+  - `curated_rows=24`
+  - `admitted_rows=23`
+  - `prepared_rows=23`
+
+This closes the runtime-model remediation. Public-corpus preprocessing now runs
+inside the selected Qwen container runtime, and the remaining blocker before
+`T101` is `T108`: real `rixvox` audio materialization plus train-family
+mapping.
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

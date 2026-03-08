@@ -147,6 +147,16 @@ That public-corpus extension now exists through `T107`. The current remaining
 preprocessing blocker before `T101` is `T108`: real `rixvox` audio
 materialization plus train-family mapping.
 
+Runtime correction after the first public-corpus pass:
+
+- the original `T107` live run executed on the Hemma host venv and proved the
+  public-corpus bundle shape
+- `T109` remediated that drift and moved
+  `task-103-preprocess-public-corpus` onto the canonical containerized Qwen
+  runtime
+- live container-backed evidence now exists under:
+  - `build/verification/task-109-qwen-containerized-preprocessing/`
+
 ## Checklist
 
 - [x] Implementation complete

@@ -149,7 +149,7 @@ Do not overload Task 79 into the full training runtime.
 The intended processing unit for the Qwen lane is the containerized runtime,
 not the Hemma host virtualenv.
 
-Drift that must be corrected:
+Historical drift that was corrected by `T109`:
 
 - `T100` correctly established the dedicated containerized Qwen runtime
 - `T103` began as a repo/PDM preprocessing runner for fast manifest proof
@@ -159,11 +159,14 @@ Drift that must be corrected:
 That produced an unplanned split between containerized training truth and
 host-executed preprocessing truth.
 
-Preferred solution:
+Current canonical position after `T109`:
 
 - containerized Qwen runtime is canonical for preprocessing and training
 - Hemma host is orchestration only
-- `T109` owns this remediation
+- `pdm run task-103-preprocess-public-corpus` now dispatches to the
+  containerized Task 109 runtime
+- live Hemma evidence exists under:
+  - `build/verification/task-109-qwen-containerized-preprocessing/`
 
 ## Flash Attention Policy
 

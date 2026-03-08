@@ -74,17 +74,17 @@ general-language-support result.
   external evidence pass before the pilot subset is locked.
 - [x] Task 102 defines the multi-speaker Swedish corpus policy and the first
   bounded training/dev/eval split.
-- [ ] Task 103 defines and implements the preprocessing/manifest pipeline
+- [x] Task 103 defines and implements the preprocessing/manifest pipeline
   needed for Swedish
   Qwen full-finetune runs.
-- [ ] Task 106 extends the first Task 103 slice to real `rixvox` / `fleurs` /
+- [x] Task 106 extends the first Task 103 slice to real `rixvox` / `fleurs` /
   labeled `waxholm` inputs through revision-pinned script-free adapters rather
   than deprecated dataset-script loading.
-- [ ] Task 107 proves the staged-public-corpus preprocessing bundle on Hemma
+- [x] Task 107 proves the staged-public-corpus preprocessing bundle on Hemma
   and records the remaining `rixvox` blocker before `T101`.
 - [ ] Task 108 resolves the `rixvox` audio-backed train-manifest blocker before
   the first bounded Hemma pilot.
-- [ ] Task 109 remediates the runtime-model drift so public-corpus
+- [x] Task 109 remediates the runtime-model drift so public-corpus
   preprocessing uses the selected Qwen container runtime rather than the Hemma
   host venv.
 - [ ] Task 104 publishes the Colab H100 scaling lane and compares it against
