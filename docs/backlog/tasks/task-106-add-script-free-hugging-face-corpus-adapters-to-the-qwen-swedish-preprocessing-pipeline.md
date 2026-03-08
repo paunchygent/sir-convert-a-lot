@@ -2,7 +2,7 @@
 id: 'task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline'
 title: 'Add script-free Hugging Face corpus adapters to the Qwen Swedish preprocessing pipeline'
 type: 'task'
-status: 'active'
+status: 'completed'
 priority: 'high'
 created: '2026-03-08'
 last_updated: '2026-03-08'
@@ -63,7 +63,7 @@ assets onto the local workstation.
 
 - [x] One committed adapter surface for real Hugging Face targeted file
       downloads on Hemma.
-- [ ] One refactor of the Task 103 source-row contract so dataset adapters own
+- [x] One refactor of the Task 103 source-row contract so dataset adapters own
       raw source metadata and the core owns family assignment plus manifest
       materialization.
 - [x] One `fleurs` Swedish adapter that emits deterministic
@@ -72,7 +72,7 @@ assets onto the local workstation.
       `swedish_waxholm_control` rows from `.smp.mix` text.
 - [x] One `rixvox` metadata adapter that ingests parquet metadata without
       `load_dataset(...)`.
-- [ ] Updated docs that make the script-free lane canonical and explain the
+- [x] Updated docs that make the script-free lane canonical and explain the
       hard prohibition on legacy dataset-script loading.
 
 Committed runner surfaces in this slice:
@@ -84,24 +84,24 @@ Committed runner surfaces in this slice:
 
 ## Acceptance Criteria
 
-- [ ] The repo no longer depends on `datasets.load_dataset(...)` for
+- [x] The repo no longer depends on `datasets.load_dataset(...)` for
       `rixvox`, `fleurs`, or `waxholm` ingestion in the canonical T103 lane.
 - [x] All Hugging Face dataset acquisition in this slice is revision-pinned and
       reproducible from committed code.
-- [ ] Large raw corpus assets are documented to live on Hemma's DATA-backed
+- [x] Large raw corpus assets are documented to live on Hemma's DATA-backed
       storage, not on the local workstation and not on the Hemma OS disk.
 - [x] The acquisition approach uses targeted sequential downloads for large
       corpora rather than broad whole-repository fan-out.
-- [ ] The deterministic artifact/report structure under
+- [x] The deterministic artifact/report structure under
       `build/reference/qwen3-tts-swedish-corpus/` remains unchanged at the
       contract level.
-- [ ] The implementation preserves the existing family contract:
+- [x] The implementation preserves the existing family contract:
       `swedish_smoke_train`, `swedish_pilot_train`, `swedish_scaleup_train`,
       `swedish_checkpoint_dev`, `swedish_final_test`,
       `swedish_waxholm_control`.
 - [x] The docs explicitly state that raw file formats and automated data
       support are preferred long term over custom dataset scripts.
-- [ ] The task documents the allowed policy options:
+- [x] The task documents the allowed policy options:
       `script-free revision-pinned adapters` as canonical and
       `auto-converted parquet when available` as optional acceleration.
 - [x] The task explicitly forbids legacy `datasets<4` custom-script loading,
@@ -109,7 +109,7 @@ Committed runner surfaces in this slice:
 
 ## Current Status
 
-Implemented and locally validated in this slice:
+Implemented and validated in this slice:
 
 - adapter-shaped source contracts
 - `fleurs` TSV plus tar-member adapter
@@ -117,16 +117,22 @@ Implemented and locally validated in this slice:
 - `rixvox` parquet-metadata adapter
 - Hemma-only targeted acquisition runner with retry/backoff and DATA-disk
   enforcement
+- first live Hemma acquisition pass completed with:
+  - `google/fleurs`: `4` staged files for `sv_se` `dev/test`
+  - `KTH/waxholm`: `17` staged files from the bounded labeled subset
+  - `KBLab/rixvox`: `2` staged metadata parquet files for `dev/test`
+  - canonical Hemma DATA root:
+    `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`
+  - canonical Hemma report path:
+    `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json`
 
-Still pending before the task can close:
+Follow-on work after task close:
 
-- real Hemma acquisition execution and evidence
-- wiring staged Hemma raw assets into a non-fixture public-corpus preprocessing
-  run
-- final docs/checklist close-out after the first live acquisition pass
+- wire the staged Hemma raw assets into a non-fixture public-corpus
+  preprocessing run under `T103`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

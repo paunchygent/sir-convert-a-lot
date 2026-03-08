@@ -124,6 +124,12 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     `task-106-acquire` surface stages targeted revision-pinned raw assets onto
     `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/` instead of
     downloading large corpora locally.
+  - Completed the first live Hemma `T106` acquisition pass on `main`:
+    `task-106-acquire --waxholm-max-files 8 --request-pause-seconds 0.5`
+    staged `4` `fleurs` files, `17` bounded `waxholm` files, and `2` `rixvox`
+    parquet files onto the DATA disk, with revision-pinned evidence written to
+    `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json` on
+    Hemma.
 
 - 2026-03-05:
 
@@ -154,9 +160,10 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 - Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then
   `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: `T100` and the first `T103` preprocessing
-  slice are complete, and `T106` is now the active implementation lane:
-  run the first real Hemma-only acquisition pass, then feed those staged raw
-  assets into the public-corpus preprocessing run before `T101`.
+- Parallel planning focus is Epic 08: `T100`, the first `T103` preprocessing
+  slice, and `T106` are complete; the active next step is extending `T103`
+  from repo-fixture smoke rows to a real public-corpus preprocessing run over
+  the staged Hemma `fleurs` / labeled `waxholm` / `rixvox` assets before
+  `T101`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

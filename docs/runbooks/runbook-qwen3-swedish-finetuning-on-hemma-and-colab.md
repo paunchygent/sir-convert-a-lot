@@ -378,6 +378,14 @@ Canonical Task 106 acquisition surface:
   - sequential requests with retry/backoff
   - stage raw assets under
     `/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus/`
+- first live bounded Hemma execution on `2026-03-08`:
+  - `pdm run run-hemma -- pdm run task-106-acquire --waxholm-max-files 8 --request-pause-seconds 0.5`
+  - staged counts:
+    - `google/fleurs`: `4`
+    - `KTH/waxholm`: `17`
+    - `KBLab/rixvox`: `2`
+  - report path on Hemma:
+    `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json`
 
 ## Execution Order
 
