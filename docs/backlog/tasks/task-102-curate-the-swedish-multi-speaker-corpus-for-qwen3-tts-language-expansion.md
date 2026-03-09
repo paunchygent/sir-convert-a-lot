@@ -87,6 +87,9 @@ Task 102 now fixes the corpus policy for Epic 08:
   - `speaker_from_id=True` preferred for smoke/pilot; quarantine the rest until
     manual review
   - apply boilerplate-text dedup before per-speaker cap accounting
+  - treat the bounded-Hemma pilot `20s` clip target as soft guidance rather
+    than a hard upstream-Qwen rule; revise final pilot selection from live
+    duration/runtime evidence
 
 ## Hand-Off to T103
 

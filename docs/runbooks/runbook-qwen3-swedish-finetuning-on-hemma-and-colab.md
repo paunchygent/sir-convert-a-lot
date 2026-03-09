@@ -303,6 +303,32 @@ Reason:
 - staging more train breadth is more valuable right now than repeating
   training on the current narrow proof slice
 
+## Duration Policy Clarification
+
+The repo's bounded Hemma pilot `20s` clip target is currently a conservative
+repo heuristic, not a strongly evidenced upstream Qwen hard requirement.
+
+What is true:
+
+- the public Qwen model card and finetuning docs do not currently establish a
+  clear `<20s` base-model training-clip policy
+- the original repo target existed to keep the first Hemma pilot conservative
+  on runtime/sequence cost and to avoid domination by long parliamentary clips
+
+Current live evidence:
+
+- the detached `T116` row-processing run is currently averaging admitted clip
+  durations around `23.19s`
+- that is not treated as a failure signal by itself
+
+Operational rule:
+
+- keep the preprocessing run alive when runtime is healthy
+- review duration distribution before finalizing the next real
+  `swedish_pilot_train`
+- prefer median/tail review plus speaker-balance checks over a blind hard
+  cutoff at `20s`
+
 ## Fault-Tolerant Resume Contract
 
 Before longer unattended Hemma training windows, the training lane must expose

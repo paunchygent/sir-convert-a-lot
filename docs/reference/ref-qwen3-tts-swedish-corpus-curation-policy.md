@@ -131,14 +131,45 @@ good data.
 
 ### Duration Policy
 
-Initial clip-duration limits:
+Initial clip-duration guidance:
 
 - smoke subset:
   - `2s` to `15s`
 - bounded Hemma pilot:
-  - `2s` to `20s`
+  - target around `2s` to `20s`
+  - soft upper bound:
+    - allow modest spillover above `20s` when runtime remains stable and the
+      speaker-balance policy still holds
 - Colab scale-up:
   - `2s` to `30s`
+
+Important interpretation:
+
+- these are repo heuristics, not a strongly evidenced upstream Qwen hard rule
+- the official Qwen public docs/model card do not currently establish a clear
+  `<20s` training-clip requirement for the base model
+- the original bounded-Hemma pilot `20s` target existed mainly to:
+  - keep the first Hemma pilot conservative on sequence/runtime cost
+  - bias the first pilot toward more utterance diversity per hour
+  - reduce domination by a small number of long parliamentary clips
+
+Live Hemma evidence update:
+
+- the sustained detached `T116` row-processing run has so far produced an
+  average admitted clip duration around `23.19s`
+- that is not treated as a stop condition by itself
+- it is a signal that the original `20s` pilot target should be interpreted as
+  soft guidance rather than a hard cutoff
+
+Follow-on policy for pilot finalization:
+
+- inspect duration distribution before finalizing the next real
+  `swedish_pilot_train`
+- prefer:
+  - median and tail review
+  - speaker-balance enforcement
+  - runtime stability evidence
+- over a blind hard cutoff at `20s`
 
 ### Speaker-Balance Policy
 

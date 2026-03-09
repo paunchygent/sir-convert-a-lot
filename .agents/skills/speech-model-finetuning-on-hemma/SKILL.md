@@ -78,6 +78,9 @@ Prefer both when the task is strategic:
 - Treat attached remote execution as probe-only.
 - Confirm the GPU is idle before real runs.
 - Record exact runtime truth before and after the run.
+- For sustained Hemma runs, record historical GPU load from a real host
+  time-series collector when available; otherwise launch a committed detached
+  GPU monitor surface for the run and use its summary artifacts.
 - Keep cache roots explicit and stable.
 - Keep storage tiers explicit and stable:
   - `/srv/scratch` for Docker root, caches, and hot generated artifacts
@@ -148,8 +151,12 @@ At minimum, keep:
 - held-out speakers when relevant
 - manual listening notes
 - runtime and memory metrics
+- historical GPU median/min/max evidence for longer unattended Hemma windows
 - checkpoint/output locations
 - short promotion verdict
+
+Do not treat `journald` alone as historical GPU monitoring unless a separate
+sampler service is already writing periodic GPU samples into the journal.
 
 ## Failure Patterns To Watch
 

@@ -41,6 +41,7 @@ Use this skill together with the broader local skill:
 - `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
 
 - `docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
+- `docs/backlog/tasks/task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md`
 
 - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
 
@@ -160,6 +161,10 @@ this Qwen-specific order:
    - **Hemma Smoke Run:** 8-12 hours, 12-16 speakers.
    - **Hemma Pilot:** 24-36 hours, 24-40 speakers.
    - **Colab Scale-up:** 100-300 hours.
+   - for sustained Hemma row-processing or training windows, record historical
+     GPU load from a real host time-series collector when available; otherwise
+     launch the committed Task 116 detached GPU monitor in parallel and use its
+     `summary` surface for median/min/max GPU busy and VRAM evidence
 1. Evaluate:
    - pronunciation
    - intelligibility
@@ -178,6 +183,11 @@ Watch for these specifically:
 - transcript quality from `rixvox` is too noisy
 - single-speaker assumptions leaking into multi-speaker planning
 - flash attention silently disabled without being recorded
+- treating the bounded Hemma pilot `20s` clip target as a hard upstream Qwen
+  rule instead of a conservative repo heuristic that must be checked against
+  live runtime and duration evidence
+- assuming `journald` alone is historical GPU monitoring when no periodic GPU
+  sampler is actually writing to the journal
 - treating official Qwen single-speaker docs as if they already solved the
   multi-speaker Swedish language-expansion problem
 - mixing Task 79 serving constraints with the future dedicated fine-tune runtime

@@ -219,6 +219,37 @@ Default posture:
 - stage-by-stage orchestration on Hemma rather than one combined GPU-backed
   `all` stage
 
+## Duration-Policy Note
+
+The current bounded Hemma pilot duration target should be read as a heuristic,
+not as a hard upstream Qwen requirement.
+
+Current repo interpretation:
+
+- `swedish_smoke_train`
+  - prefer shorter clips
+- `swedish_pilot_train`
+  - target roughly `2s` to `20s`
+  - allow modest spillover above `20s` when:
+    - runtime remains stable,
+    - speaker caps still hold,
+    - and the duration distribution does not become obviously tail-dominated
+- `swedish_scaleup_train`
+  - broader allowance remains acceptable
+
+Reason:
+
+- the public Qwen model card and finetuning docs do not currently give a
+  strong explicit `<20s` training-clip rule for the base model
+- the repo's original `20s` target was a conservative first-pass Hemma pilot
+  heuristic rather than a canonical upstream constraint
+
+Live Hemma evidence:
+
+- the sustained detached `T116` row-processing run is currently averaging
+  admitted clip durations around `23.19s`
+- this is treated as a review signal, not an automatic rejection condition
+
 ## Modularization Contract
 
 The preprocessing lane should be split into stage-oriented modules rather than
