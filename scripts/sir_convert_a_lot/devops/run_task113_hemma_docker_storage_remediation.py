@@ -1,9 +1,9 @@
 """Run Task 113 Hemma Docker storage-root remediation.
 
 Purpose:
-    Provide the committed argv-friendly runner that migrates Docker's persistent
-    daemon state off Hemma's root disk and onto SSD scratch through a
-    home-visible bind mount compatible with the Docker snap.
+    Provide the committed argv-friendly runner that migrates Docker's bytes off
+    Hemma's root disk by bind-mounting SSD scratch onto Docker's canonical snap
+    root path.
 
 Relationships:
     - Wraps `task113_hemma_docker_storage_runtime.py`.
@@ -21,9 +21,10 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task113_hemma_docker_storage_runtime import (
+    DEFAULT_DOCKER_ROOT,
+    DEFAULT_DOCKER_ROOT_BACKUP,
     DEFAULT_FSTAB_PATH,
-    DEFAULT_HOME_DOCKER_ROOT,
-    DEFAULT_OLD_DOCKER_ROOT,
+    DEFAULT_LEGACY_HOME_DOCKER_ROOT,
     DEFAULT_SCRATCH_DOCKER_ROOT,
     Task113DockerStorageSettings,
     run_task113_docker_storage_migration,
@@ -40,22 +41,28 @@ def _parse_args(argv: list[str] | None) -> tuple[Path, Task113DockerStorageSetti
         )
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
-    parser.add_argument("--old-docker-root", type=Path, default=DEFAULT_OLD_DOCKER_ROOT)
+    parser.add_argument("--docker-root", type=Path, default=DEFAULT_DOCKER_ROOT)
     parser.add_argument("--scratch-docker-root", type=Path, default=DEFAULT_SCRATCH_DOCKER_ROOT)
-    parser.add_argument("--home-docker-root", type=Path, default=DEFAULT_HOME_DOCKER_ROOT)
+    parser.add_argument("--docker-root-backup", type=Path, default=DEFAULT_DOCKER_ROOT_BACKUP)
+    parser.add_argument(
+        "--legacy-home-docker-root",
+        type=Path,
+        default=DEFAULT_LEGACY_HOME_DOCKER_ROOT,
+    )
     parser.add_argument("--fstab-path", type=Path, default=DEFAULT_FSTAB_PATH)
     parser.add_argument(
-        "--keep-old-root",
+        "--keep-backup",
         action="store_true",
-        help="Keep the old Docker root after successful migration.",
+        help="Keep the old root backup after successful migration.",
     )
     args = parser.parse_args(argv)
     settings = Task113DockerStorageSettings(
-        old_docker_root=Path(args.old_docker_root),
+        docker_root=Path(args.docker_root),
         scratch_docker_root=Path(args.scratch_docker_root),
-        home_docker_root=Path(args.home_docker_root),
+        docker_root_backup=Path(args.docker_root_backup),
+        legacy_home_docker_root=Path(args.legacy_home_docker_root),
         fstab_path=Path(args.fstab_path),
-        remove_old_root_after_success=not bool(args.keep_old_root),
+        remove_backup_after_success=not bool(args.keep_backup),
     )
     return Path(args.output_root), settings
 
@@ -76,16 +83,19 @@ def _render_markdown(payload: dict[str, object]) -> str:
     """Render one concise Task 113 Markdown report."""
     return (
         "# Task 113 Hemma Docker Storage Remediation Report\n\n"
-        f"- Old Docker root: `{payload['old_docker_root']}`\n"
+        f"- Docker root: `{payload['docker_root']}`\n"
         f"- Scratch Docker root: `{payload['scratch_docker_root']}`\n"
-        f"- Home Docker root: `{payload['home_docker_root']}`\n"
+        f"- Docker root backup: `{payload['docker_root_backup']}`\n"
+        f"- Legacy home Docker root: `{payload['legacy_home_docker_root']}`\n"
         f"- Docker root before: `{payload['docker_root_before']}`\n"
         f"- Docker root after: `{payload['docker_root_after']}`\n"
+        f"- Docker root mount source before: `{payload['docker_root_mount_source_before']}`\n"
+        f"- Docker root mount source after: `{payload['docker_root_mount_source_after']}`\n"
+        f"- Legacy home mount source before: `{payload['legacy_home_mount_source_before']}`\n"
+        f"- Legacy home mount source after: `{payload['legacy_home_mount_source_after']}`\n"
         f"- Snap data-root before: `{payload['snap_data_root_before']}`\n"
         f"- Snap data-root after: `{payload['snap_data_root_after']}`\n"
-        f"- Bind-mount source before: `{payload['bind_mount_source_before']}`\n"
-        f"- Bind-mount source after: `{payload['bind_mount_source_after']}`\n"
-        f"- Removed old root after success: `{payload['removed_old_root_after_success']}`\n\n"
+        f"- Removed backup after success: `{payload['removed_backup_after_success']}`\n\n"
         "## Filesystem Usage Before\n\n"
         "```text\n"
         f"{payload['filesystem_df_before']}\n"

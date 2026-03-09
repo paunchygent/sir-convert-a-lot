@@ -1,14 +1,15 @@
 """Runtime helpers for Task 113 Hemma Docker storage-root migration.
 
 Purpose:
-    Move Hemma's Docker daemon state off the root disk by placing Docker's
-    configured data-root on a home-visible bind mount backed by SSD scratch.
+    Move Hemma's Docker daemon bytes onto SSD scratch without changing the
+    snap-visible logical Docker root path, by bind-mounting a scratch-backed
+    directory onto Docker's canonical snap root.
 
 Relationships:
     - Used by `run_task113_hemma_docker_storage_remediation.py`.
-    - Complements Task 112 by fixing the host-wide Docker storage contract.
-    - Aligns the live Hemma Docker layout with the DevOps runbooks and skills
-      that treat `/srv/scratch` as the fast working tier.
+    - Complements Task 112 by fixing Docker's host-wide storage contract.
+    - Replaces the earlier failed home-path bind-mount approach with a
+      snap-compatible mount onto `/var/snap/docker/common/var-lib-docker`.
 """
 
 from __future__ import annotations
@@ -19,9 +20,10 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_OLD_DOCKER_ROOT = Path("/var/snap/docker/common/var-lib-docker")
+DEFAULT_DOCKER_ROOT = Path("/var/snap/docker/common/var-lib-docker")
 DEFAULT_SCRATCH_DOCKER_ROOT = Path("/srv/scratch/docker/data-root")
-DEFAULT_HOME_DOCKER_ROOT = Path("/home/paunchygent/docker-data-root")
+DEFAULT_DOCKER_ROOT_BACKUP = Path("/var/snap/docker/common/var-lib-docker.task113-backup")
+DEFAULT_LEGACY_HOME_DOCKER_ROOT = Path("/home/paunchygent/.data/docker/data-root")
 DEFAULT_FSTAB_PATH = Path("/etc/fstab")
 
 
@@ -29,27 +31,31 @@ DEFAULT_FSTAB_PATH = Path("/etc/fstab")
 class Task113DockerStorageSettings:
     """Normalized settings for the Task 113 Docker storage migration runner."""
 
-    old_docker_root: Path
+    docker_root: Path
     scratch_docker_root: Path
-    home_docker_root: Path
+    docker_root_backup: Path
+    legacy_home_docker_root: Path
     fstab_path: Path
-    remove_old_root_after_success: bool
+    remove_backup_after_success: bool
 
 
 @dataclass(frozen=True)
 class Task113DockerStorageReport:
     """Deterministic report for one Task 113 Docker storage migration pass."""
 
-    old_docker_root: str
+    docker_root: str
     scratch_docker_root: str
-    home_docker_root: str
+    docker_root_backup: str
+    legacy_home_docker_root: str
     docker_root_before: str
     docker_root_after: str
+    docker_root_mount_source_before: str | None
+    docker_root_mount_source_after: str | None
+    legacy_home_mount_source_before: str | None
+    legacy_home_mount_source_after: str | None
     snap_data_root_before: str
     snap_data_root_after: str
-    bind_mount_source_before: str | None
-    bind_mount_source_after: str | None
-    removed_old_root_after_success: bool
+    removed_backup_after_success: bool
     filesystem_df_before: str
     filesystem_df_after: str
     docker_ps_before: str
@@ -68,11 +74,6 @@ def run_checked(command: list[str], *, label: str) -> str:
     return result.stdout.strip()
 
 
-def ensure_directory(path: Path) -> None:
-    """Create one directory tree when it does not already exist."""
-    path.mkdir(parents=True, exist_ok=True)
-
-
 def docker_root_dir() -> str:
     """Return Docker's current effective root directory."""
     return run_checked(
@@ -84,7 +85,8 @@ def docker_root_dir() -> str:
 def snap_data_root() -> str:
     """Return the configured Docker snap data-root value when present."""
     return run_checked(
-        ["sudo", "-n", "snap", "get", "docker", "data-root"], label="snap get data-root"
+        ["sudo", "-n", "snap", "get", "docker", "data-root"],
+        label="snap get data-root task113",
     )
 
 
@@ -109,8 +111,19 @@ def filesystem_df() -> str:
     return run_checked(["df", "-h", "/", "/srv/scratch", "/srv/storage"], label="df task113")
 
 
+def ensure_directory(path: Path) -> None:
+    """Create one directory tree, escalating when the parent is root-owned."""
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        run_checked(
+            ["sudo", "-n", "mkdir", "-p", path.as_posix()],
+            label="sudo mkdir -p task113",
+        )
+
+
 def find_mount_source(target: Path) -> str | None:
-    """Return the current bind-mount source for one target, if mounted."""
+    """Return the current mount source for one target, if it is a mountpoint."""
     is_mount_result = subprocess.run(
         ["mountpoint", "-q", target.as_posix()],
         check=False,
@@ -135,12 +148,21 @@ def ensure_fstab_bind_entry_text(*, current_text: str, source: Path, target: Pat
     """Ensure one bind-mount entry exists in fstab text exactly once."""
     entry = f"{source.as_posix()} {target.as_posix()} none bind 0 0"
     lines = current_text.splitlines()
-    if entry in lines:
-        return current_text if current_text.endswith("\n") else current_text + "\n"
-    normalized = (
-        current_text if current_text.endswith("\n") or current_text == "" else current_text + "\n"
-    )
-    return normalized + entry + "\n"
+    filtered_lines = [line for line in lines if line.strip() != entry]
+    filtered_lines.append(entry)
+    return "\n".join(filtered_lines).rstrip() + "\n"
+
+
+def remove_fstab_bind_entry_text(*, current_text: str, target: Path) -> str:
+    """Remove one bind-mount fstab entry that targets the given path."""
+    filtered_lines = [
+        line
+        for line in current_text.splitlines()
+        if f" {target.as_posix()} none bind " not in f" {line} "
+    ]
+    if not filtered_lines:
+        return ""
+    return "\n".join(filtered_lines).rstrip() + "\n"
 
 
 def _write_text(path: Path, *, text: str) -> None:
@@ -160,35 +182,23 @@ def _write_text(path: Path, *, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def ensure_persistent_bind_mount(
+def update_fstab_for_bind(
     *,
+    fstab_path: Path,
     source: Path,
     target: Path,
-    fstab_path: Path,
-) -> tuple[str | None, str | None]:
-    """Ensure one persistent bind mount from SSD scratch into the home-visible path."""
-    ensure_directory(source)
-    ensure_directory(target)
-    before_source = find_mount_source(target)
-    if before_source is not None and not target.samefile(source):
-        raise SystemExit(
-            f"Refusing to replace unexpected mount at `{target}` from `{before_source}`."
-        )
-    if before_source is None:
-        run_checked(
-            ["sudo", "-n", "mount", "--bind", source.as_posix(), target.as_posix()],
-            label="mount --bind task113",
-        )
+    legacy_target: Path,
+) -> None:
+    """Persist the new bind mount and remove any legacy home-path entry."""
     current_text = fstab_path.read_text(encoding="utf-8") if fstab_path.exists() else ""
+    updated_text = remove_fstab_bind_entry_text(current_text=current_text, target=legacy_target)
     updated_text = ensure_fstab_bind_entry_text(
-        current_text=current_text,
+        current_text=updated_text,
         source=source,
         target=target,
     )
     if updated_text != current_text:
         _write_text(fstab_path, text=updated_text)
-    after_source = find_mount_source(target)
-    return before_source, after_source
 
 
 def stop_docker_snap() -> None:
@@ -201,25 +211,10 @@ def start_docker_snap() -> None:
     run_checked(["sudo", "-n", "snap", "start", "docker"], label="snap start docker task113")
 
 
-def wait_for_docker_daemon(*, attempts: int = 30, sleep_seconds: float = 1.0) -> str:
-    """Wait for the Docker daemon to accept `docker info` again after restart."""
-    last_error: str | None = None
-    for _ in range(attempts):
-        try:
-            return docker_root_dir()
-        except SystemExit as exc:
-            last_error = str(exc)
-            time.sleep(sleep_seconds)
-    raise SystemExit(
-        "Docker daemon did not become ready after restart.\n"
-        f"Last error:\n{last_error or 'unknown'}"
-    )
-
-
-def set_snap_data_root(home_docker_root: Path) -> None:
-    """Set the Docker snap data-root to the home-visible bind mount path."""
+def set_snap_data_root(docker_root: Path) -> None:
+    """Set the Docker snap data-root to the canonical snap root path."""
     run_checked(
-        ["sudo", "-n", "snap", "set", "docker", f"data-root={home_docker_root.as_posix()}"],
+        ["sudo", "-n", "snap", "set", "docker", f"data-root={docker_root.as_posix()}"],
         label="snap set docker data-root task113",
     )
 
@@ -241,10 +236,51 @@ def rsync_tree(*, source: Path, destination: Path) -> None:
     )
 
 
-def remove_old_root(path: Path) -> None:
-    """Delete the old Docker root after successful migration."""
+def move_tree(source: Path, destination: Path) -> None:
+    """Move one directory tree inside the same filesystem with sudo."""
+    if source.exists():
+        run_checked(
+            ["sudo", "-n", "mv", source.as_posix(), destination.as_posix()],
+            label="mv docker root task113",
+        )
+
+
+def remove_tree(path: Path) -> None:
+    """Delete one tree with sudo."""
+    run_checked(["sudo", "-n", "rm", "-rf", path.as_posix()], label="rm -rf task113")
+
+
+def unmount_path(path: Path) -> None:
+    """Unmount one existing bind mount."""
+    run_checked(["sudo", "-n", "umount", path.as_posix()], label="umount task113")
+
+
+def mount_bind(source: Path, target: Path) -> None:
+    """Create one live bind mount."""
     run_checked(
-        ["sudo", "-n", "rm", "-rf", path.as_posix()], label="rm -rf old docker root task113"
+        ["sudo", "-n", "mount", "--bind", source.as_posix(), target.as_posix()],
+        label="mount --bind task113",
+    )
+
+
+def wait_for_docker_root(expected_root: Path, *, timeout_seconds: float) -> str:
+    """Wait until Docker reports the expected root or fail deterministically."""
+    deadline = time.time() + timeout_seconds
+    last_error = "docker root not ready"
+    while time.time() < deadline:
+        try:
+            rendered_root = docker_root_dir()
+        except SystemExit as exc:
+            last_error = str(exc)
+            time.sleep(1.0)
+            continue
+        if rendered_root == expected_root.as_posix():
+            return rendered_root
+        last_error = f"docker reported `{rendered_root}` instead of `{expected_root.as_posix()}`"
+        time.sleep(1.0)
+    raise SystemExit(
+        "Docker root did not converge after restart. "
+        f"Last observed error: {last_error}"
     )
 
 
@@ -253,11 +289,13 @@ def build_storage_report(
     *,
     docker_root_before_text: str,
     docker_root_after_text: str,
+    docker_root_mount_source_before: str | None,
+    docker_root_mount_source_after: str | None,
+    legacy_home_mount_source_before: str | None,
+    legacy_home_mount_source_after: str | None,
     snap_data_root_before_text: str,
     snap_data_root_after_text: str,
-    bind_mount_source_before: str | None,
-    bind_mount_source_after: str | None,
-    removed_old_root_after_success: bool,
+    removed_backup_after_success: bool,
     filesystem_df_before_text: str,
     filesystem_df_after_text: str,
     docker_ps_before_text: str,
@@ -265,16 +303,19 @@ def build_storage_report(
 ) -> Task113DockerStorageReport:
     """Build the deterministic Task 113 post-migration report."""
     return Task113DockerStorageReport(
-        old_docker_root=settings.old_docker_root.as_posix(),
+        docker_root=settings.docker_root.as_posix(),
         scratch_docker_root=settings.scratch_docker_root.as_posix(),
-        home_docker_root=settings.home_docker_root.as_posix(),
+        docker_root_backup=settings.docker_root_backup.as_posix(),
+        legacy_home_docker_root=settings.legacy_home_docker_root.as_posix(),
         docker_root_before=docker_root_before_text,
         docker_root_after=docker_root_after_text,
+        docker_root_mount_source_before=docker_root_mount_source_before,
+        docker_root_mount_source_after=docker_root_mount_source_after,
+        legacy_home_mount_source_before=legacy_home_mount_source_before,
+        legacy_home_mount_source_after=legacy_home_mount_source_after,
         snap_data_root_before=snap_data_root_before_text,
         snap_data_root_after=snap_data_root_after_text,
-        bind_mount_source_before=bind_mount_source_before,
-        bind_mount_source_after=bind_mount_source_after,
-        removed_old_root_after_success=removed_old_root_after_success,
+        removed_backup_after_success=removed_backup_after_success,
         filesystem_df_before=filesystem_df_before_text,
         filesystem_df_after=filesystem_df_after_text,
         docker_ps_before=docker_ps_before_text,
@@ -290,30 +331,44 @@ def run_task113_docker_storage_migration(
     snap_before = snap_data_root()
     filesystem_before = filesystem_df()
     docker_ps_before_text = docker_ps()
-    bind_before, bind_after = ensure_persistent_bind_mount(
-        source=settings.scratch_docker_root,
-        target=settings.home_docker_root,
+    docker_root_mount_before = find_mount_source(settings.docker_root)
+    legacy_home_mount_before = find_mount_source(settings.legacy_home_docker_root)
+
+    stop_docker_snap()
+    ensure_directory(settings.scratch_docker_root.parent)
+    if legacy_home_mount_before is not None:
+        unmount_path(settings.legacy_home_docker_root)
+    update_fstab_for_bind(
         fstab_path=settings.fstab_path,
+        source=settings.scratch_docker_root,
+        target=settings.docker_root,
+        legacy_target=settings.legacy_home_docker_root,
     )
 
-    removed_old_root_after_success = False
-    if docker_root_before != settings.home_docker_root.as_posix():
-        stop_docker_snap()
-        rsync_tree(source=settings.old_docker_root, destination=settings.scratch_docker_root)
-        set_snap_data_root(settings.home_docker_root)
-        start_docker_snap()
-        docker_root_after = wait_for_docker_daemon()
-        if docker_root_after != settings.home_docker_root.as_posix():
-            raise SystemExit(
-                "Docker data-root migration did not converge to the expected "
-                "home-visible bind mount."
-            )
-        if settings.remove_old_root_after_success and settings.old_docker_root.exists():
-            remove_old_root(settings.old_docker_root)
-            removed_old_root_after_success = True
-    else:
-        docker_root_after = docker_root_before
+    if docker_root_mount_before != find_mount_source(settings.docker_root):
+        docker_root_mount_before = find_mount_source(settings.docker_root)
 
+    if docker_root_mount_before is None:
+        rsync_tree(source=settings.docker_root, destination=settings.scratch_docker_root)
+        if settings.docker_root_backup.exists():
+            remove_tree(settings.docker_root_backup)
+        move_tree(settings.docker_root, settings.docker_root_backup)
+        ensure_directory(settings.docker_root)
+        mount_bind(settings.scratch_docker_root, settings.docker_root)
+    else:
+        rsync_tree(source=settings.docker_root, destination=settings.scratch_docker_root)
+
+    set_snap_data_root(settings.docker_root)
+    start_docker_snap()
+    docker_root_after = wait_for_docker_root(settings.docker_root, timeout_seconds=30.0)
+
+    removed_backup_after_success = False
+    if settings.remove_backup_after_success and settings.docker_root_backup.exists():
+        remove_tree(settings.docker_root_backup)
+        removed_backup_after_success = True
+
+    docker_root_mount_after = find_mount_source(settings.docker_root)
+    legacy_home_mount_after = find_mount_source(settings.legacy_home_docker_root)
     snap_after = snap_data_root()
     filesystem_after = filesystem_df()
     docker_ps_after_text = docker_ps()
@@ -321,11 +376,13 @@ def run_task113_docker_storage_migration(
         settings,
         docker_root_before_text=docker_root_before,
         docker_root_after_text=docker_root_after,
+        docker_root_mount_source_before=docker_root_mount_before,
+        docker_root_mount_source_after=docker_root_mount_after,
+        legacy_home_mount_source_before=legacy_home_mount_before,
+        legacy_home_mount_source_after=legacy_home_mount_after,
         snap_data_root_before_text=snap_before,
         snap_data_root_after_text=snap_after,
-        bind_mount_source_before=bind_before,
-        bind_mount_source_after=bind_after,
-        removed_old_root_after_success=removed_old_root_after_success,
+        removed_backup_after_success=removed_backup_after_success,
         filesystem_df_before_text=filesystem_before,
         filesystem_df_after_text=filesystem_after,
         docker_ps_before_text=docker_ps_before_text,

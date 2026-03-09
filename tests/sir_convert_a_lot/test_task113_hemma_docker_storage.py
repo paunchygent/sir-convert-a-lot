@@ -30,7 +30,7 @@ from scripts.sir_convert_a_lot.devops.task113_hemma_docker_storage_runtime impor
 def test_ensure_fstab_bind_entry_text_appends_once(tmp_path: Path) -> None:
     """Task 113 should add the bind-mount fstab entry exactly once."""
     source = tmp_path / "scratch" / "docker"
-    target = tmp_path / "home" / "docker"
+    target = tmp_path / "var" / "snap" / "docker" / "common" / "var-lib-docker"
 
     first = ensure_fstab_bind_entry_text(current_text="", source=source, target=target)
     second = ensure_fstab_bind_entry_text(current_text=first, source=source, target=target)
@@ -73,16 +73,19 @@ def test_task113_runner_writes_report_artifacts(
     """Task 113 runner should write deterministic report files."""
     output_root = tmp_path / "build" / "verification" / "task-113"
     expected_report = Task113DockerStorageReport(
-        old_docker_root="/var/snap/docker/common/var-lib-docker",
+        docker_root="/var/snap/docker/common/var-lib-docker",
         scratch_docker_root="/srv/scratch/docker/data-root",
-        home_docker_root="/home/paunchygent/docker-data-root",
+        docker_root_backup="/var/snap/docker/common/var-lib-docker.task113-backup",
+        legacy_home_docker_root="/home/paunchygent/.data/docker/data-root",
         docker_root_before="/var/snap/docker/common/var-lib-docker",
-        docker_root_after="/home/paunchygent/docker-data-root",
-        snap_data_root_before="",
-        snap_data_root_after="/home/paunchygent/docker-data-root",
-        bind_mount_source_before=None,
-        bind_mount_source_after="/srv/scratch/docker/data-root",
-        removed_old_root_after_success=True,
+        docker_root_after="/var/snap/docker/common/var-lib-docker",
+        docker_root_mount_source_before=None,
+        docker_root_mount_source_after="/srv/scratch/docker/data-root",
+        legacy_home_mount_source_before="/dev/sdb1[/docker/data-root]",
+        legacy_home_mount_source_after=None,
+        snap_data_root_before="/home/paunchygent/.data/docker/data-root",
+        snap_data_root_after="/var/snap/docker/common/var-lib-docker",
+        removed_backup_after_success=True,
         filesystem_df_before="before fs",
         filesystem_df_after="after fs",
         docker_ps_before="before ps",
@@ -106,12 +109,13 @@ def test_task113_runner_writes_report_artifacts(
     report_json_path = output_root / "report.json"
     report_md_path = output_root / "report.md"
     assert (
-        json.loads(report_json_path.read_text(encoding="utf-8"))["removed_old_root_after_success"]
+        json.loads(report_json_path.read_text(encoding="utf-8"))["removed_backup_after_success"]
         is True
     )
     assert "Task 113 Hemma Docker Storage Remediation Report" in report_md_path.read_text(
         encoding="utf-8"
     )
     assert (
-        '"docker_root_after": "/home/paunchygent/docker-data-root"' in capsys.readouterr().out
+        '"docker_root_after": "/var/snap/docker/common/var-lib-docker"'
+        in capsys.readouterr().out
     )
