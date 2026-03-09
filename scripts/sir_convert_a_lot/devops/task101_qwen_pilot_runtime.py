@@ -113,6 +113,17 @@ class Task101DetachedStatus:
     logs_tail: str
 
 
+@dataclass(frozen=True)
+class Task101DetachedStop:
+    """Deterministic stop result for one detached Task 101 pilot container."""
+
+    stopped_at: str
+    launch_id: str
+    container_name: str
+    container_id: str
+    stop_output: str
+
+
 def _utc_now_iso() -> str:
     """Return the current UTC timestamp in RFC3339 format."""
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -361,6 +372,21 @@ def inspect_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStat
         latest_checkpoint_found=latest_checkpoint is not None,
         latest_checkpoint=latest_checkpoint,
         logs_tail=logs_tail,
+    )
+
+
+def stop_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStop:
+    """Stop one detached Task 101 pilot container intentionally."""
+    stop_output = docker_checked(
+        ["stop", launch.container_name],
+        label="docker stop task101 detached pilot",
+    )
+    return Task101DetachedStop(
+        stopped_at=_utc_now_iso(),
+        launch_id=launch.launch_id,
+        container_name=launch.container_name,
+        container_id=launch.container_id,
+        stop_output=stop_output.strip(),
     )
 
 

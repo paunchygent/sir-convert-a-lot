@@ -42,6 +42,7 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime import (
     inspect_detached_pilot,
     launch_detached_pilot,
     settings_from_snapshot,
+    stop_detached_pilot,
 )
 from scripts.sir_convert_a_lot.devops.task112_hemma_storage_runtime import (
     DEFAULT_SCRATCH_BUILD_ROOT,
@@ -62,7 +63,7 @@ DEFAULT_LR = 2e-5
 DEFAULT_NUM_EPOCHS = 1
 DEFAULT_MAX_STEPS = 8
 DEFAULT_CHECKPOINT_INTERVAL_STEPS = 2
-LaunchCommand = Literal["launch", "resume", "status"]
+LaunchCommand = Literal["launch", "resume", "status", "stop"]
 
 
 def _default_hf_cache_dir() -> Path:
@@ -142,6 +143,10 @@ def _build_parser() -> argparse.ArgumentParser:
     status = subparsers.add_parser("status", help="Inspect one detached pilot launch.")
     status.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     status.add_argument("--launch-root", type=Path, default=None)
+
+    stop = subparsers.add_parser("stop", help="Stop one detached pilot launch intentionally.")
+    stop.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    stop.add_argument("--launch-root", type=Path, default=None)
 
     return parser
 
@@ -244,6 +249,11 @@ def _status_markdown(status: Task101DetachedStatus) -> str:
             ]
         )
     return "\n".join(lines)
+
+
+def _stop_metadata_path(launch_root: Path) -> Path:
+    """Return the stop metadata path for one detached pilot."""
+    return launch_root / "stop.json"
 
 
 def _write_latest_pointer(output_root: Path, launch_root: Path) -> None:
@@ -530,6 +540,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         _write_latest_pointer(output_root, launch_root)
         print(json.dumps(asdict(launch), indent=2, ensure_ascii=False))
+        return 0
+
+    if args.command == "stop":
+        launch_root = _resolve_launch_root(Path(args.output_root), args.launch_root)
+        launch = _load_launch(launch_root)
+        stopped = stop_detached_pilot(launch)
+        _write_json(_stop_metadata_path(launch_root), asdict(stopped))
+        print(json.dumps(asdict(stopped), indent=2, ensure_ascii=False))
         return 0
 
     launch_root = _resolve_launch_root(Path(args.output_root), args.launch_root)

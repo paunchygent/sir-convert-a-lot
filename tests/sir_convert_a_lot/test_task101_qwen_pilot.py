@@ -28,10 +28,12 @@ from scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot import (
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime import (
     Task101DetachedLaunch,
+    Task101DetachedStop,
     Task101PilotSettings,
     Task101PilotSettingsSnapshot,
     build_detached_pilot_command,
     inspect_detached_pilot,
+    stop_detached_pilot,
 )
 
 
@@ -67,6 +69,14 @@ def test_task101_resume_defaults_to_latest_checkpoint() -> None:
     assert args.checkpoint_path is None
     assert args.launch_root is None
     assert args.skip_build is False
+
+
+def test_task101_stop_defaults_to_latest_launch_pointer() -> None:
+    """Stop should target the latest detached launch when no launch root is provided."""
+    parser = _build_parser()
+    args = parser.parse_args(["stop"])
+
+    assert args.launch_root is None
 
 
 def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -> None:
@@ -460,3 +470,55 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
     assert captured["resume_dockerfile_path"] == Path("containers/custom-qwen-finetune/Dockerfile")
     assert captured["run_root"] == source_run_root
     assert captured["resume_from_checkpoint"] == checkpoint_path
+
+
+def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stopping a detached pilot should issue one deterministic docker stop."""
+    launch = Task101DetachedLaunch(
+        generated_at="2026-03-09T12:00:00Z",
+        launch_id="task101-prev",
+        container_name="task101-prev-container",
+        container_id="container-id",
+        repo_root="/home/paunchygent/apps/sir-convert-a-lot",
+        run_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-prev",
+        promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+        train_manifest_family="swedish_pilot_train",
+        dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
+        resumed_from_checkpoint_path=None,
+        settings=Task101PilotSettingsSnapshot(
+            output_root="/srv/scratch/sir-convert-a-lot/build/verification/task-101",
+            image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+            hf_cache_dir="/srv/scratch/sir_convert_a_lot/cache/huggingface",
+            hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+            scratch_build_root="/srv/scratch/sir_convert_a_lot/build",
+            scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
+            promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+            runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
+            model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+            train_manifest_family="swedish_pilot_train",
+            batch_size=1,
+            lr=2e-5,
+            num_epochs=1,
+            max_steps=8,
+            checkpoint_interval_steps=2,
+        ),
+        command=["sudo", "-n", "docker", "run", "-d"],
+    )
+    captured: dict[str, object] = {}
+
+    def _fake_docker_checked(args: list[str], *, label: str) -> str:
+        captured["args"] = args
+        captured["label"] = label
+        return "task101-prev-container"
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime.docker_checked",
+        _fake_docker_checked,
+    )
+
+    stopped = stop_detached_pilot(launch)
+
+    assert isinstance(stopped, Task101DetachedStop)
+    assert captured["args"] == ["stop", "task101-prev-container"]
+    assert captured["label"] == "docker stop task101 detached pilot"
+    assert stopped.container_name == "task101-prev-container"
