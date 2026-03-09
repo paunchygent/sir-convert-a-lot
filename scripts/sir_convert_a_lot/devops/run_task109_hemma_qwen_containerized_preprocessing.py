@@ -189,7 +189,7 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
     parser.add_argument("--task103-run-root", type=Path, default=None)
     parser.add_argument(
         "--task103-stage",
-        choices=("row-processing", "finalization", "reports", "all"),
+        choices=("source-selection", "row-processing", "finalization", "reports", "all"),
         default=DEFAULT_TASK103_STAGE,
     )
     parser.add_argument(

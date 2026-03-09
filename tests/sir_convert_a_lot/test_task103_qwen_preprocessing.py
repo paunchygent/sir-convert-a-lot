@@ -10,7 +10,7 @@ import tarfile
 import threading
 import wave
 from pathlib import Path
-from typing import Sequence
+from typing import Mapping, Sequence
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -53,6 +53,12 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
     build_rixvox_audio_locator_index,
     rixvox_source_records_from_parquet,
     rixvox_source_records_from_parquet_with_audio_locators,
+)
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
+    Task103SourceSelectionHeartbeat,
+    Task103SourceSelectionSummary,
+    selected_source_records_path,
+    write_selected_source_records,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_waxholm import (
     waxholm_labeled_source_records,
@@ -680,7 +686,7 @@ def test_task103_runner_main_prints_report_summary(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
-        lambda settings: None,
+        lambda settings, **kwargs: None,
     )
 
     exit_code = main([])
@@ -730,7 +736,7 @@ def test_task103_runner_main_uses_run_root_for_staged_public_corpus(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
-        lambda settings: [],
+        lambda settings, **kwargs: [],
     )
 
     exit_code = main(
@@ -798,7 +804,7 @@ def test_task103_runner_main_persists_row_processing_heartbeat(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
-        lambda settings: [],
+        lambda settings, **kwargs: [],
     )
 
     exit_code = main(
@@ -847,7 +853,7 @@ def test_task103_runner_main_rejects_promotion_outside_reports_stage(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
-        lambda settings: [],
+        lambda settings, **kwargs: [],
     )
 
     with pytest.raises(SystemExit, match="promotion is only allowed for the `reports` stage"):
@@ -895,7 +901,7 @@ def test_task103_runner_main_promotes_successful_reports_stage(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
-        lambda settings: [],
+        lambda settings, **kwargs: [],
     )
 
     exit_code = main(
@@ -945,7 +951,7 @@ def test_task103_runner_main_persists_traceback_on_failure(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
-        lambda settings: [],
+        lambda settings, **kwargs: [],
     )
 
     with pytest.raises(RuntimeError, match="meta tensor exploded"):
@@ -1150,6 +1156,288 @@ def test_rixvox_source_records_from_parquet_attach_audio_locators(tmp_path: Path
     assert source_records[0].source_audio_locator.archive_member == (
         "GR01KRU1/2442210220028627521_anf5_1_27.wav"
     )
+
+
+def test_rixvox_source_records_from_parquet_stops_after_max_rows_during_iteration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The bounded RixVox loader should stop iterating once the cap is satisfied."""
+    sample_rows = [
+        {
+            "dokid": "GR01KRU1",
+            "anforande_nummer": index,
+            "observation_nr": 0,
+            "speaker": "Peter Pedersen",
+            "party": "V",
+            "gender": "male",
+            "debatedate": None,
+            "electoral_district": "Örebro län",
+            "birth_year": 1954,
+            "intressent_id": "0556347007015",
+            "speaker_from_id": True,
+            "speaker_audio_meta": "Peter Pedersen (V)",
+            "text": f"Hej från Sverige {index}.",
+            "start": 0.0,
+            "end": 5.0,
+            "duration": 5.0,
+            "bleu_score": 0.39,
+            "filename": f"GR01KRU1/audio_{index}.wav",
+            "speaker_total_hours": 5.026244444444444,
+        }
+        for index in range(1, 4)
+    ]
+
+    class _FakeBatch:
+        def __init__(self, row: Mapping[str, object]) -> None:
+            self._row = row
+
+        def to_pylist(self) -> list[Mapping[str, object]]:
+            return [self._row]
+
+    class _FakeParquetFile:
+        def __init__(self, _path: Path) -> None:
+            self._batches = [_FakeBatch(row) for row in sample_rows]
+
+        def iter_batches(self):  # noqa: ANN202
+            return iter(self._batches)
+
+    batch_events: list[tuple[int, int]] = []
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox.pq.ParquetFile",
+        _FakeParquetFile,
+    )
+
+    source_records = rixvox_source_records_from_parquet_with_audio_locators(
+        Path("/tmp/fake.parquet"),
+        split="train",
+        audio_locators_by_source_path=None,
+        max_rows=2,
+        batch_progress_callback=lambda batch_index, row_count: batch_events.append(
+            (batch_index, row_count)
+        ),
+    )
+
+    assert [row.dataset_row_id for row in source_records] == ["GR01KRU1-1-0", "GR01KRU1-2-0"]
+    assert batch_events == [(1, 1), (2, 2)]
+
+
+def test_build_rixvox_audio_locator_index_stops_after_required_paths_are_resolved(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The bounded locator index should not open later archives once all targets are found."""
+    first_archive_path = tmp_path / "train_0.tar.gz"
+    second_archive_path = tmp_path / "train_1.tar.gz"
+    source_audio_path = tmp_path / "rixvox_audio.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    with tarfile.open(first_archive_path, "w:gz") as archive:
+        audio_bytes = source_audio_path.read_bytes()
+        member = tarfile.TarInfo(name="GR01KRU1/needed.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+
+    original_tarfile_open = tarfile.open
+
+    def _guarded_tarfile_open(
+        name: str | Path,
+        mode: str = "r",
+        *args: object,
+        **kwargs: object,
+    ):
+        del mode
+        if Path(name) == second_archive_path:
+            raise AssertionError(
+                "Second archive should not be opened once all required files exist."
+            )
+        del args
+        del kwargs
+        return original_tarfile_open(name, "r:*")
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox.tarfile.open",
+        _guarded_tarfile_open,
+    )
+
+    audio_index = build_rixvox_audio_locator_index(
+        [first_archive_path, second_archive_path],
+        required_source_paths={"GR01KRU1/needed.wav"},
+    )
+
+    assert list(audio_index) == ["GR01KRU1/needed.wav"]
+
+
+def test_task103_source_selection_stage_persists_selected_source_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The explicit source-selection stage should persist bounded selected-source artifacts."""
+    run_root = tmp_path / "run"
+    source_record = SourceRecord(
+        dataset="rixvox",
+        source_split="train",
+        dataset_row_id="GR01KRU1-1-0",
+        speaker_id="rixvox_0556347007015",
+        speaker_name="Peter Pedersen",
+        speaker_from_id=True,
+        source_audio_path="GR01KRU1/needed.wav",
+        source_audio_locator=None,
+        text_raw="Hej från Sverige.",
+        language="sv-SE",
+        speaker_total_hours=1.0,
+        has_label_files=False,
+        speaker_audio_meta_ok=True,
+        source_sample_rate_hz=16_000,
+        duration_seconds=5.0,
+    )
+
+    def _fake_staged_source_records(
+        *_args: object,
+        source_selection_heartbeat_callback=None,
+        **_kwargs: object,
+    ) -> list[SourceRecord]:
+        if source_selection_heartbeat_callback is not None:
+            source_selection_heartbeat_callback(
+                Task103SourceSelectionHeartbeat(
+                    phase="resolving-source-records",
+                    current_split="train",
+                    selected_row_count=1,
+                    target_row_cap=64,
+                    current_parquet_batch_index=1,
+                    resolved_audio_locator_count=None,
+                    required_audio_locator_count=None,
+                )
+            )
+        return [source_record]
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.staged_public_corpus_source_records",
+        _fake_staged_source_records,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.ensure_bulk_data_storage_path",
+        lambda path, *, label: None,
+    )
+
+    exit_code = main(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--stage",
+            "source-selection",
+            "--run-root",
+            run_root.as_posix(),
+            "--data-root",
+            tmp_path.as_posix(),
+            "--rixvox-splits",
+            "train",
+            "--rixvox-max-rows-per-split",
+            "64",
+        ]
+    )
+
+    assert exit_code == 0
+    assert selected_source_records_path(run_root).is_file()
+    status_payload = json.loads((run_root / "status.json").read_text(encoding="utf-8"))
+    assert status_payload["status"] == "completed"
+    assert status_payload["stage"] == "source-selection"
+    assert status_payload["selected_row_count"] == 1
+    assert status_payload["current_split"] == "train"
+
+
+def test_task103_row_processing_reuses_selected_source_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The row-processing stage should reuse persisted selected-source artifacts."""
+    run_root = tmp_path / "run"
+    source_record = SourceRecord(
+        dataset="rixvox",
+        source_split="train",
+        dataset_row_id="GR01KRU1-1-0",
+        speaker_id="rixvox_0556347007015",
+        speaker_name="Peter Pedersen",
+        speaker_from_id=True,
+        source_audio_path="GR01KRU1/needed.wav",
+        source_audio_locator=None,
+        text_raw="Hej från Sverige.",
+        language="sv-SE",
+        speaker_total_hours=1.0,
+        has_label_files=False,
+        speaker_audio_meta_ok=True,
+        source_sample_rate_hz=16_000,
+        duration_seconds=5.0,
+    )
+    write_selected_source_records(
+        run_root,
+        source_records=[source_record],
+        summary=Task103SourceSelectionSummary(
+            source_mode="staged-public-corpus",
+            total_selected_rows=1,
+            datasets=["rixvox"],
+            fleurs_splits=["dev", "test"],
+            rixvox_splits=["train"],
+            rixvox_max_rows_per_split=64,
+        ),
+    )
+
+    captured_dataset_row_ids: list[str] = []
+
+    def _fake_run_task103_preprocessing(
+        _settings: Task103PreprocessingSettings,
+        *,
+        source_records: Sequence[SourceRecord] | None = None,
+        row_heartbeat_callback=None,
+        finalization_heartbeat_callback=None,
+    ) -> Task103PreprocessingReport:
+        del row_heartbeat_callback
+        del finalization_heartbeat_callback
+        assert source_records is not None
+        captured_dataset_row_ids.extend(row.dataset_row_id for row in source_records)
+        return Task103PreprocessingReport(
+            output_root=run_root.as_posix(),
+            datasets=["rixvox"],
+            asr_model=DEFAULT_ASR_MODEL,
+            asr_revision=DEFAULT_ASR_REVISION,
+            tokenizer_model=DEFAULT_TOKENIZER_MODEL,
+            inventory_rows=1,
+            curated_rows=0,
+            admitted_rows=0,
+            prepared_rows=0,
+            speaker_ids=["rixvox_0556347007015"],
+            manifest_counts={family: 0 for family in CANONICAL_MANIFEST_FAMILIES},
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
+        _fake_run_task103_preprocessing,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.staged_public_corpus_source_records",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("Should reuse selection artifact")
+        ),
+    )
+
+    exit_code = main(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--stage",
+            "row-processing",
+            "--run-root",
+            run_root.as_posix(),
+            "--data-root",
+            tmp_path.as_posix(),
+            "--rixvox-splits",
+            "train",
+            "--rixvox-max-rows-per-split",
+            "64",
+        ]
+    )
+
+    assert exit_code == 0
+    assert captured_dataset_row_ids == ["GR01KRU1-1-0"]
 
 
 def test_staged_public_corpus_source_records_load_all_supported_inputs(tmp_path: Path) -> None:
@@ -1417,7 +1705,11 @@ def test_task103_runner_main_staged_public_corpus_passes_source_records(
     observed_runner_settings: list[Task103RunnerSettings] = []
     observed_source_records: list[list[SourceRecord] | None] = []
 
-    def _fake_resolve_source_records(settings: Task103RunnerSettings) -> list[SourceRecord]:
+    def _fake_resolve_source_records(
+        settings: Task103RunnerSettings,
+        **kwargs: object,
+    ) -> list[SourceRecord]:
+        del kwargs
         observed_runner_settings.append(settings)
         return expected_source_records
 

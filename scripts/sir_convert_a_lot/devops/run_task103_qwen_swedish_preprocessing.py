@@ -24,14 +24,14 @@ from typing import Literal, Sequence
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
-    CANONICAL_MANIFEST_FAMILIES,
-    ManifestFamily,
-    Task103PreprocessingReport,
     Task103PreprocessingSettings,
     run_task103_preprocessing,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
+    CANONICAL_MANIFEST_FAMILIES,
+    ManifestFamily,
     Task103FinalizationHeartbeat,
+    Task103PreprocessingReport,
     Task103RowProcessingHeartbeat,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_run_roots import (
@@ -43,6 +43,13 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_run_roots impor
     write_run_status,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
+    Task103SourceSelectionHeartbeat,
+    Task103SourceSelectionHeartbeatCallback,
+    Task103SourceSelectionSummary,
+    load_selected_source_records,
+    write_selected_source_records,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
     staged_public_corpus_source_records,
 )
@@ -139,7 +146,7 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
     parser.add_argument("--tokenizer-model", default=DEFAULT_TOKENIZER_MODEL)
     parser.add_argument(
         "--stage",
-        choices=("all", "row-processing", "finalization", "reports"),
+        choices=("all", "source-selection", "row-processing", "finalization", "reports"),
         default=DEFAULT_STAGE,
     )
     parser.add_argument(
@@ -222,25 +229,69 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
 
 def _resolve_source_records(
     settings: Task103RunnerSettings,
+    *,
+    output_root: Path,
+    source_selection_heartbeat_callback: Task103SourceSelectionHeartbeatCallback | None = None,
 ) -> Sequence[SourceRecord] | None:
     """Resolve source records for one requested Task 103 runner mode."""
     if settings.source_mode == "repo-fixture":
         return None
+    if settings.preprocessing.stage == "row-processing":
+        selected_source_records = load_selected_source_records(output_root)
+        if selected_source_records is not None:
+            return selected_source_records
     ensure_bulk_data_storage_path(settings.data_root, label="data_root")
-    return list(
+    source_records = list(
         staged_public_corpus_source_records(
             settings.data_root,
             fleurs_splits=settings.fleurs_splits,
             fleurs_max_rows_per_split=settings.fleurs_max_rows_per_split,
             rixvox_splits=settings.rixvox_splits,
             rixvox_max_rows_per_split=settings.rixvox_max_rows_per_split,
+            source_selection_heartbeat_callback=source_selection_heartbeat_callback,
         )
     )
+    write_selected_source_records(
+        output_root,
+        source_records=source_records,
+        summary=Task103SourceSelectionSummary(
+            source_mode=settings.source_mode,
+            total_selected_rows=len(source_records),
+            datasets=sorted({row.dataset for row in source_records}),
+            fleurs_splits=list(settings.fleurs_splits),
+            rixvox_splits=list(settings.rixvox_splits),
+            rixvox_max_rows_per_split=settings.rixvox_max_rows_per_split,
+        ),
+    )
+    return source_records
 
 
 def _render_stdout_summary(report: Task103PreprocessingReport) -> str:
     """Render one stable stdout summary for the completed preprocessing run."""
     return json.dumps(asdict(report), indent=2, ensure_ascii=False, sort_keys=True)
+
+
+def _source_selection_report(
+    *,
+    output_root: Path,
+    settings: Task103RunnerSettings,
+    source_records: Sequence[SourceRecord] | None,
+) -> Task103PreprocessingReport:
+    """Build one synthetic report for the source-selection-only stage."""
+    effective_source_records = list(source_records or [])
+    return Task103PreprocessingReport(
+        output_root=output_root.as_posix(),
+        datasets=sorted({row.dataset for row in effective_source_records}),
+        asr_model=settings.preprocessing.asr_model,
+        asr_revision=settings.preprocessing.asr_revision,
+        tokenizer_model=settings.preprocessing.tokenizer_model,
+        inventory_rows=len(effective_source_records),
+        curated_rows=0,
+        admitted_rows=0,
+        prepared_rows=0,
+        speaker_ids=sorted({row.speaker_id for row in effective_source_records}),
+        manifest_counts={family: 0 for family in CANONICAL_MANIFEST_FAMILIES},
+    )
 
 
 def _resolve_run_context(settings: Task103RunnerSettings) -> Task103RunContext:
@@ -306,7 +357,6 @@ def main(argv: list[str] | None = None) -> int:
         stage=settings.preprocessing.stage,
         status="allocated",
     )
-    source_records = _resolve_source_records(settings)
     effective_settings = Task103PreprocessingSettings(
         output_root=context.run_root,
         asr_model=settings.preprocessing.asr_model,
@@ -318,6 +368,20 @@ def main(argv: list[str] | None = None) -> int:
         row_worker_count=settings.preprocessing.row_worker_count,
         gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
     )
+
+    def _source_selection_heartbeat_callback(heartbeat: Task103SourceSelectionHeartbeat) -> None:
+        write_run_status(
+            context,
+            source_mode=settings.source_mode,
+            stage="source-selection",
+            status="running",
+            current_split=heartbeat.current_split,
+            selected_row_count=heartbeat.selected_row_count,
+            target_row_cap=heartbeat.target_row_cap,
+            current_parquet_batch_index=heartbeat.current_parquet_batch_index,
+            resolved_audio_locator_count=heartbeat.resolved_audio_locator_count,
+            required_audio_locator_count=heartbeat.required_audio_locator_count,
+        )
 
     def _row_heartbeat_callback(heartbeat: Task103RowProcessingHeartbeat) -> None:
         write_run_status(
@@ -344,18 +408,38 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     try:
-        write_run_status(
-            context,
-            source_mode=settings.source_mode,
-            stage=settings.preprocessing.stage,
-            status="running",
+        source_records = _resolve_source_records(
+            settings,
+            output_root=context.run_root,
+            source_selection_heartbeat_callback=_source_selection_heartbeat_callback,
         )
-        report = run_task103_preprocessing(
-            effective_settings,
-            source_records=source_records,
-            row_heartbeat_callback=_row_heartbeat_callback,
-            finalization_heartbeat_callback=_finalization_heartbeat_callback,
-        )
+        if settings.preprocessing.stage == "source-selection":
+            write_run_status(
+                context,
+                source_mode=settings.source_mode,
+                stage="source-selection",
+                status="running",
+                selected_row_count=0 if source_records is None else len(source_records),
+                target_row_cap=settings.rixvox_max_rows_per_split,
+            )
+            report = _source_selection_report(
+                output_root=context.run_root,
+                settings=settings,
+                source_records=source_records,
+            )
+        else:
+            write_run_status(
+                context,
+                source_mode=settings.source_mode,
+                stage=settings.preprocessing.stage,
+                status="running",
+            )
+            report = run_task103_preprocessing(
+                effective_settings,
+                source_records=source_records,
+                row_heartbeat_callback=_row_heartbeat_callback,
+                finalization_heartbeat_callback=_finalization_heartbeat_callback,
+            )
     except Exception:
         rendered_error = traceback.format_exc().strip()
         write_run_status(

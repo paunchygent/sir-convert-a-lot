@@ -50,6 +50,42 @@ image is portable.
 - Keep the Hemma ROCm image untouched except for shared refactors that reduce
   duplication cleanly.
 
+## Chosen Planning Shape
+
+This task should be implemented as a parallel runtime lane, not as a
+cross-platform unification exercise.
+
+Planned structure:
+
+- keep `containers/qwen-finetune-hemma/Dockerfile` ROCm-only
+- add one dedicated CUDA Dockerfile for Colab H100 activation
+- share only clearly runtime-neutral assets:
+  - patched Qwen training scripts
+  - detached launch/report contracts when applicable
+  - common manifest expectations
+
+Expected implementation order:
+
+1. define the CUDA image contract and dependency baseline
+1. add a bounded smoke or pilot surface for the Colab lane
+1. update the runbook with exact lane-selection guidance
+1. record one reproducible validation result before calling the lane active
+
+## Expected Colab-Specific Decisions
+
+- CUDA base image choice
+- PyTorch/torchaudio CUDA wheel source
+- flash-attention install/build path for Nvidia
+- cache and output-root policy in Colab storage constraints
+- whether detached Task 101 semantics are mirrored exactly or need one
+  Colab-specific wrapper
+
+## Follow-on Rule
+
+Do not weaken or generalize the Hemma ROCm runtime to make Colab easier. If
+code sharing is useful, it must happen through small neutral helpers, not by
+compromising the existing ROCm lane.
+
 ## Non-Goals
 
 - Do not switch the default training lane away from Hemma.
@@ -74,6 +110,7 @@ image is portable.
 
 ## Validation
 
+- [ ] bounded CUDA-lane validation evidence is written under `build/verification/`
 - [ ] `pdm run validate-tasks`
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

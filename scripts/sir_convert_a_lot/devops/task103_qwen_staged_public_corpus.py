@@ -17,7 +17,7 @@ Relationships:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Final, Sequence
+from typing import Callable, Final, Sequence
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_fleurs import (
     FLEURS_ALLOWED_SPLITS,
@@ -26,8 +26,13 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_fleurs import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
     RIXVOX_ALLOWED_SPLITS,
+    attach_audio_locators_to_source_records,
     build_rixvox_audio_locator_index,
     rixvox_source_records_from_parquet_with_audio_locators,
+)
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
+    Task103SourceSelectionHeartbeat,
+    Task103SourceSelectionHeartbeatCallback,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_waxholm import (
     waxholm_labeled_source_records,
@@ -39,6 +44,55 @@ WAXHOLM_STAGED_SUBDIR: Final[str] = "kth_waxholm"
 RIXVOX_STAGED_SUBDIR: Final[str] = "kblab_rixvox"
 
 
+def _source_selection_batch_callback(
+    *,
+    split: str,
+    target_row_cap: int,
+    heartbeat_callback: Task103SourceSelectionHeartbeatCallback,
+) -> Callable[[int, int], None]:
+    """Build one bounded parquet-selection heartbeat callback."""
+
+    def _callback(batch_index: int, selected_row_count: int) -> None:
+        heartbeat_callback(
+            Task103SourceSelectionHeartbeat(
+                phase="resolving-source-records",
+                current_split=split,
+                selected_row_count=selected_row_count,
+                target_row_cap=target_row_cap,
+                current_parquet_batch_index=batch_index,
+                resolved_audio_locator_count=None,
+                required_audio_locator_count=None,
+            )
+        )
+
+    return _callback
+
+
+def _source_selection_locator_callback(
+    *,
+    split: str,
+    selected_row_count: int,
+    target_row_cap: int,
+    heartbeat_callback: Task103SourceSelectionHeartbeatCallback,
+) -> Callable[[int, int], None]:
+    """Build one bounded audio-locator heartbeat callback."""
+
+    def _callback(resolved_count: int, required_count: int) -> None:
+        heartbeat_callback(
+            Task103SourceSelectionHeartbeat(
+                phase="resolving-audio-locators",
+                current_split=split,
+                selected_row_count=selected_row_count,
+                target_row_cap=target_row_cap,
+                current_parquet_batch_index=None,
+                resolved_audio_locator_count=resolved_count,
+                required_audio_locator_count=required_count,
+            )
+        )
+
+    return _callback
+
+
 def staged_public_corpus_source_records(
     data_root: Path,
     *,
@@ -47,6 +101,7 @@ def staged_public_corpus_source_records(
     rixvox_splits: Sequence[str] = ("dev", "test"),
     rixvox_max_rows_per_split: int | None = None,
     include_waxholm: bool = True,
+    source_selection_heartbeat_callback: Task103SourceSelectionHeartbeatCallback | None = None,
 ) -> list[SourceRecord]:
     """Load staged public-corpus source records from Hemma's bulk-data root."""
     raw_root = data_root / RAW_CORPUS_SUBDIR
@@ -86,6 +141,51 @@ def staged_public_corpus_source_records(
             archive_paths = sorted(archive_root.glob(f"{split}_*.tar.gz"))
         else:
             archive_paths = []
+        if archive_paths and split == "train" and rixvox_max_rows_per_split is not None:
+            selected_source_records = rixvox_source_records_from_parquet_with_audio_locators(
+                parquet_path,
+                split=split,
+                audio_locators_by_source_path=None,
+                max_rows=rixvox_max_rows_per_split,
+                batch_progress_callback=(
+                    None
+                    if (
+                        source_selection_heartbeat_callback is None
+                        or rixvox_max_rows_per_split is None
+                    )
+                    else _source_selection_batch_callback(
+                        split=split,
+                        target_row_cap=rixvox_max_rows_per_split,
+                        heartbeat_callback=source_selection_heartbeat_callback,
+                    )
+                ),
+            )
+            required_source_paths = {row.source_audio_path for row in selected_source_records}
+            audio_locators_by_source_path = build_rixvox_audio_locator_index(
+                archive_paths,
+                required_source_paths=required_source_paths,
+                progress_callback=(
+                    None
+                    if (
+                        source_selection_heartbeat_callback is None
+                        or rixvox_max_rows_per_split is None
+                    )
+                    else _source_selection_locator_callback(
+                        split=split,
+                        selected_row_count=len(selected_source_records),
+                        target_row_cap=rixvox_max_rows_per_split,
+                        heartbeat_callback=source_selection_heartbeat_callback,
+                    )
+                ),
+            )
+            source_records.extend(
+                attach_audio_locators_to_source_records(
+                    selected_source_records,
+                    audio_locators_by_source_path=audio_locators_by_source_path,
+                    include_metadata_only_rows=False,
+                )
+            )
+            continue
         if archive_paths:
             source_records.extend(
                 _limit_rows_per_split(

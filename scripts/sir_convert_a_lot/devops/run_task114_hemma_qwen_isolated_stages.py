@@ -65,7 +65,7 @@ from scripts.sir_convert_a_lot.devops.task114_qwen_isolated_stages_runtime impor
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-114-qwen-isolated-stages")
-StageSelector = Literal["auto", "row-processing", "finalization", "reports"]
+StageSelector = Literal["auto", "source-selection", "row-processing", "finalization", "reports"]
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -82,7 +82,7 @@ def _build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--task103-run-root", type=Path, default=None)
     launch.add_argument(
         "--task103-stage",
-        choices=("auto", "row-processing", "finalization", "reports"),
+        choices=("auto", "source-selection", "row-processing", "finalization", "reports"),
         default="auto",
     )
     launch.add_argument(
@@ -272,6 +272,8 @@ def _resolve_stage_selector(
     run_root: Path,
 ) -> Task103Stage:
     """Resolve the effective Task 103 stage for one launch request."""
+    if stage_selector == "source-selection":
+        return "source-selection"
     if stage_selector == "row-processing":
         return "row-processing"
     if stage_selector == "finalization":
@@ -355,6 +357,8 @@ def _required_stage(payload: dict[str, object], key: str) -> Task103Stage:
     value = payload.get(key)
     if value == "all":
         return "all"
+    if value == "source-selection":
+        return "source-selection"
     if value == "row-processing":
         return "row-processing"
     if value == "finalization":
@@ -405,12 +409,13 @@ def main(argv: list[str] | None = None) -> int:
                 effective_run_root = requested_run_root
         else:
             effective_run_root = requested_run_root
+        task103_stage: Task103Stage
         if (
             args.task103_stage == "auto"
             and args.task103_run_root is None
             and args.task103_run_id is None
         ):
-            task103_stage: Task103Stage = "row-processing"
+            task103_stage = "source-selection"
         else:
             task103_stage = _resolve_stage_selector(
                 args.task103_stage,

@@ -12,6 +12,11 @@ from scripts.sir_convert_a_lot.devops.run_task114_hemma_qwen_isolated_stages imp
     _resolve_stage_selector,
     main,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
+    Task103SourceSelectionSummary,
+    write_selected_source_records,
+)
 from scripts.sir_convert_a_lot.devops.task114_qwen_isolated_stages_runtime import (
     Task114DetachedStageLaunch,
     Task114DetachedStageStop,
@@ -38,10 +43,50 @@ def test_task114_parser_accepts_stop_command() -> None:
     assert args.command == "stop"
 
 
-def test_resolve_next_stage_prefers_row_processing_when_spool_is_missing(tmp_path: Path) -> None:
-    """A fresh run root should start with row-processing."""
+def test_resolve_next_stage_prefers_source_selection_when_selection_is_missing(
+    tmp_path: Path,
+) -> None:
+    """A fresh run root should now start with source-selection."""
     run_root = tmp_path / "run"
     run_root.mkdir(parents=True, exist_ok=True)
+
+    assert resolve_next_stage(run_root=run_root) == "source-selection"
+
+
+def test_resolve_next_stage_prefers_row_processing_after_source_selection(tmp_path: Path) -> None:
+    """A run root with selected-source artifacts but no spool should advance to row-processing."""
+    run_root = tmp_path / "run"
+    run_root.mkdir(parents=True, exist_ok=True)
+    write_selected_source_records(
+        run_root,
+        source_records=[
+            SourceRecord(
+                dataset="rixvox",
+                source_split="train",
+                dataset_row_id="GR01KRU1-1-0",
+                speaker_id="rixvox_0556347007015",
+                speaker_name="Peter Pedersen",
+                speaker_from_id=True,
+                source_audio_path="GR01KRU1/needed.wav",
+                source_audio_locator=None,
+                text_raw="Hej från Sverige.",
+                language="sv-SE",
+                speaker_total_hours=1.0,
+                has_label_files=False,
+                speaker_audio_meta_ok=True,
+                source_sample_rate_hz=16_000,
+                duration_seconds=5.0,
+            )
+        ],
+        summary=Task103SourceSelectionSummary(
+            source_mode="staged-public-corpus",
+            total_selected_rows=1,
+            datasets=["rixvox"],
+            fleurs_splits=["dev", "test"],
+            rixvox_splits=["train"],
+            rixvox_max_rows_per_split=64,
+        ),
+    )
 
     assert resolve_next_stage(run_root=run_root) == "row-processing"
 

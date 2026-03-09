@@ -26,6 +26,9 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import Task103Stage
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import spool_rows_dir
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
+    has_selected_source_records,
+)
 from scripts.sir_convert_a_lot.devops.task109_qwen_containerized_preprocessing_runtime import (
     Task109ContainerizedPreprocessingSettings,
     build_containerized_preprocessing_command,
@@ -108,17 +111,25 @@ def resolve_next_stage(
     run_status = _load_optional_json(run_root / "status.json")
     if has_report:
         return None
-    if not has_spool_rows:
-        return "row-processing"
-    if not has_prepared_manifests:
+    if has_prepared_manifests:
+        if (
+            run_status is not None
+            and run_status.get("stage") == "finalization"
+            and run_status.get("status") in {"completed", "promoted"}
+        ):
+            return "reports"
         return "finalization"
+    if has_spool_rows:
+        return "finalization"
+    if has_selected_source_records(run_root):
+        return "row-processing"
     if (
         run_status is not None
-        and run_status.get("stage") == "finalization"
+        and run_status.get("stage") == "source-selection"
         and run_status.get("status") in {"completed", "promoted"}
     ):
-        return "reports"
-    return "finalization"
+        return "row-processing"
+    return "source-selection"
 
 
 def build_detached_stage_command(

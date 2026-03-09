@@ -34,7 +34,7 @@ CANONICAL_MANIFEST_FAMILIES: tuple[ManifestFamily, ...] = (
 QualityTier = Literal["high_trust", "medium_trust", "rejected"]
 SpeakerQualityGate = Literal["speaker_from_id", "manual_review", "rejected_multi_speaker"]
 AdmissionDecision = Literal["admit", "reject"]
-Task103Stage = Literal["all", "row-processing", "finalization", "reports"]
+Task103Stage = Literal["all", "source-selection", "row-processing", "finalization", "reports"]
 
 
 class RawManifestRow(TypedDict):

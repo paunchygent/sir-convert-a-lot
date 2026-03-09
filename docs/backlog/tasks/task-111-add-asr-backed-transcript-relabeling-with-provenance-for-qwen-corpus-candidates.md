@@ -42,6 +42,16 @@ That is the correct conservative baseline, but it leaves potentially useful
 rows on the floor when the public transcript is close enough to the audio to be
 recoverable yet noisy enough to fail a strict training-admission rule.
 
+Current persisted-state truth:
+
+- row-processing already writes `asr_transcript`, `asr_wer`, `asr_model`, and
+  `asr_revision` into durable spool rows
+- finalization already carries those fields into curated artifacts
+
+So this task is **not** primarily about rerunning Whisper over completed rows.
+It is about building a provenance-safe decision and projection path that can
+promote already persisted ASR transcripts into the training lane when approved.
+
 ## Canonical Position
 
 The source transcript remains canonical by default.
@@ -58,6 +68,8 @@ relabeling must be explicit, reviewable, and provenance-preserving.
   - approve ASR relabel
   - reject row
 - Preserve both transcript versions in curated/report artifacts.
+- Reuse already persisted spool/curated ASR transcripts for the first relabel
+  candidate lane instead of requiring a fresh whole-corpus Whisper rerun.
 - Keep the Swedish ASR backend pinned to the existing policy:
   - `KBLab/kb-whisper-large`
   - `revision="strict"`
@@ -79,6 +91,8 @@ After this task:
 - the repo can preserve original transcript truth and ASR candidate text side
   by side
 - relabeling decisions are visible and auditable
+- low-BLEU or high-WER rows can be re-evaluated from already persisted ASR
+  transcript evidence
 - future Swedish corpus expansion can test whether ASR-backed recovery improves
   usable hours without losing provenance
 

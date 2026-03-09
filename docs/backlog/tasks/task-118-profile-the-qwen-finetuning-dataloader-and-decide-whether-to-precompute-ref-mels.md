@@ -52,6 +52,43 @@ expanding Task 103 artifact scope or storage cost.
 - Record the storage/runtime trade-off clearly enough to support a later
   implementation PR if the optimization is justified.
 
+## Chosen Planning Shape
+
+This task should land as an evidence PR, not an architecture-change PR.
+
+The planned execution order is:
+
+1. add lightweight timing/profiling hooks around the current dataloader path
+1. collect one bounded Hemma training trace on the current runtime
+1. decide whether the current lane is actually GPU-starved
+1. only then decide whether a follow-up implementation task is justified
+
+The expected result is one of:
+
+- `keep-runtime-mels`
+  - no Task 103 artifact change
+  - close the concern with evidence
+- `precompute-ref-mels`
+  - open one follow-up implementation PR that changes Task 103 artifacts,
+    manifests, and training-row loading in one coherent slice
+
+## Expected Evidence
+
+- dataloader wait time or per-batch data-prep time
+- model step time
+- bounded host CPU and GPU utilization for the same run window
+- sample storage-cost estimate for adding persisted `ref_mel`
+- explicit note on whether the current bottleneck is:
+  - CPU decode / mel extraction
+  - disk I/O
+  - or not meaningfully on the dataloader side at all
+
+## Follow-on Rule
+
+No one should change the Task 103 artifact contract for `ref_mel` persistence
+until this task records evidence that the current runtime path is a real
+bottleneck on Hemma.
+
 ## Non-Goals
 
 - Do not move mel extraction into Task 103 in this task.
@@ -79,6 +116,7 @@ expanding Task 103 artifact scope or storage cost.
 
 ## Validation
 
+- [ ] bounded profiling evidence is written under `build/verification/`
 - [ ] `pdm run validate-tasks`
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

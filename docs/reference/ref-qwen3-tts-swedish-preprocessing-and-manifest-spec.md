@@ -325,6 +325,36 @@ Source transcript text remains canonical by default.
 ASR output is required for mismatch scoring and quality-tier assignment. It is
 not automatically allowed to replace the public-source transcript.
 
+Current persisted state already includes the Whisper-side transcript evidence
+needed for a later relabeling experiment:
+
+- durable spool rows persist:
+  - `asr_model`
+  - `asr_revision`
+  - `asr_transcript`
+  - `asr_wer`
+- curated rows also preserve:
+  - `asr_model`
+  - `asr_revision`
+  - `asr_transcript`
+  - `asr_wer`
+
+Practical implication:
+
+- a future transcript-remediation evaluation should reuse these persisted ASR
+  transcripts from `spool/rows/` or `curated/*.jsonl`
+- rerunning Whisper for already completed rows is not required as long as the
+  run root or promoted corpus view is retained
+- the missing contract is the provenance-safe promotion path into training
+  manifests, not additional ASR persistence during row-processing
+
+Important current limitation:
+
+- final Qwen raw/prepared training manifests do **not** retain
+  `asr_transcript`
+- they currently carry only the training `text` field, which remains sourced
+  from canonical normalized public-source transcript text
+
 If the relabeling lane is enabled, the curated/report layers must preserve
 both:
 

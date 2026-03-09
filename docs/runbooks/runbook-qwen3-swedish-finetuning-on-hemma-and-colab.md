@@ -742,6 +742,11 @@ Canonical Task 106 acquisition surface:
 1. Keep `T111` as the provenance-safe transcript-improvement lane.
    - ASR remains a quality gate by default
    - any transcript relabeling must preserve original text plus provenance
+   - current preprocessing already persists Whisper transcript evidence in
+     durable spool rows and curated rows
+   - if we later test whether low BLEU rows improve when source text is
+     replaced by Whisper text, the main missing work is the approval/promotion
+     path into training manifests, not rerunning Whisper for completed rows
 1. Run Task 101 as the first bounded Hemma pilot.
    - canonical command:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
@@ -758,6 +763,28 @@ Canonical Task 106 acquisition surface:
    - durable step-based checkpoints
    - optimizer/trainer-state persistence
    - detached `resume latest` / `resume --checkpoint-path`
+
+## Transcript Remediation Note
+
+For future BLEU- or transcript-quality remediation experiments:
+
+- use persisted row-processing artifacts first
+- canonical retrieval surfaces are:
+  - `spool/rows/**/*.json`
+  - `curated/*.jsonl`
+- those artifacts already preserve:
+  - `text_normalized`
+  - `asr_transcript`
+  - `asr_wer`
+  - `asr_model`
+  - `asr_revision`
+
+Current limitation:
+
+- final `manifests/*.raw.jsonl` and `manifests/*.prepared.jsonl` do not carry
+  `asr_transcript`
+- promoting approved ASR text into the training path remains explicit future
+  work owned by `T111`
 1. Execute Task 116 before the next real long Hemma training window.
    - stage broader `rixvox` train coverage first:
      - keep `train_0`
@@ -775,6 +802,20 @@ Canonical Task 106 acquisition surface:
    - treat `2` hours as the first health gate only
    - if healthy, continue the same run into `8` to `10` hours
    - finalize only after the enlarged spool/train yield has been inspected
+1. Treat Task 119 as the current blocker for aggressive Hemma row-processing
+   probes.
+   - the failed `12:3` and non-productive `12:2` probes did not reach the
+     worker pool
+   - live evidence showed the process busy in `rixvox` train parquet inflate
+     before row-processing startup
+   - current `max_rows_per_split` is applied too late to protect startup
+   - the robust fix is:
+     - explicit `source-selection`
+     - bounded parquet iteration
+     - bounded audio-locator resolution
+     - truthful preflight status
+   - do not draw worker-concurrency conclusions from `12:x` probes until that
+     fix lands
 
 ## Hemma Versus Colab
 

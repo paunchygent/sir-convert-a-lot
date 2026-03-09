@@ -202,18 +202,14 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, and `T115` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` has proven the bounded detached pilot lane, and the live Task 115 proof closed the unattended-resume gap.
-- Active corpus-expansion focus is `T116`: broaden staged `rixvox` train
-  coverage (`train_0` plus `train_1` through `train_23`) and run one detached
-  `row-processing` window with `row_worker_count=4` and
-  `gpu_asr_worker_count=2`; use `2` hours as the first health gate and keep
-  the same run alive into `8` to `10` hours if heartbeat remains healthy.
+- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then `T83`; `T82` stays deferred.
+- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, and `T115` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` proved the bounded detached pilot lane, and `T115` closed the unattended-resume gap.
+- Active corpus-expansion focus is `T116`: broaden staged `rixvox` train coverage (`train_0` plus `train_1` through `train_23`) and run one detached `row-processing` window with `row_worker_count=4` and `gpu_asr_worker_count=2`; use `2` hours as the first health gate and keep the same run alive into `8` to `10` hours if heartbeat remains healthy.
+- Current preprocessing blocker before more aggressive `T116` worker probes is `T119`: the `12:3` and `12:2` launches showed that bounded Hemma probes can spend startup time inside full-train `rixvox` parquet inflate/materialization before row-processing begins, because the train cap is applied too late and preflight status still looks like `allocated`.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later
   provenance-safe ASR relabel candidate task.
-- `T115` evidence under `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/`
-  proves durable checkpoint at step `2`, intentional stop, detached resume, and successful completion at step `24`.
+- `T115` evidence under `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/` proves durable checkpoint at step `2`, intentional stop, detached resume, and successful completion at step `24`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once
   their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

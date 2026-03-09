@@ -59,6 +59,12 @@ class Task103RunStatusPayload:
     processed_row_count: int | None = None
     total_row_count: int | None = None
     current_dataset_row_id: str | None = None
+    current_split: str | None = None
+    selected_row_count: int | None = None
+    target_row_cap: int | None = None
+    current_parquet_batch_index: int | None = None
+    resolved_audio_locator_count: int | None = None
+    required_audio_locator_count: int | None = None
 
 
 def utc_now_iso() -> str:
@@ -154,6 +160,12 @@ def write_run_status(
     processed_row_count: int | None = None,
     total_row_count: int | None = None,
     current_dataset_row_id: str | None = None,
+    current_split: str | None = None,
+    selected_row_count: int | None = None,
+    target_row_cap: int | None = None,
+    current_parquet_batch_index: int | None = None,
+    resolved_audio_locator_count: int | None = None,
+    required_audio_locator_count: int | None = None,
 ) -> None:
     """Write one deterministic status payload into the run root."""
     existing_payload: dict[str, object] = {}
@@ -206,6 +218,32 @@ def write_run_status(
             existing_payload,
             "current_dataset_row_id",
             current_dataset_row_id,
+        ),
+        current_split=_status_string_value(existing_payload, "current_split", current_split),
+        selected_row_count=_status_int_value(
+            existing_payload,
+            "selected_row_count",
+            selected_row_count,
+        ),
+        target_row_cap=_status_int_value(
+            existing_payload,
+            "target_row_cap",
+            target_row_cap,
+        ),
+        current_parquet_batch_index=_status_int_value(
+            existing_payload,
+            "current_parquet_batch_index",
+            current_parquet_batch_index,
+        ),
+        resolved_audio_locator_count=_status_int_value(
+            existing_payload,
+            "resolved_audio_locator_count",
+            resolved_audio_locator_count,
+        ),
+        required_audio_locator_count=_status_int_value(
+            existing_payload,
+            "required_audio_locator_count",
+            required_audio_locator_count,
         ),
     )
     write_json(status_path, asdict(payload))
