@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,9 @@ import pytest
 from scripts.sir_convert_a_lot.devops.run_task115_hemma_qwen_resume_proof import (
     _build_parser,
     main,
+)
+from scripts.sir_convert_a_lot.devops.task115_qwen_resume_proof_runtime import (
+    run_remote_task101_json,
 )
 
 
@@ -138,3 +142,34 @@ def test_task115_runner_orchestrates_launch_stop_resume_flow(
     assert (proof_root / "resumed_launch.json").exists() is True
     assert (proof_root / "final_status.json").exists() is True
     assert len(captured_commands) == 6
+
+
+def test_task115_runtime_accepts_valid_json_stdout_even_on_nonzero_exit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Remote Task 101 polling should accept valid JSON stdout despite noisy exit codes."""
+
+    def _fake_subprocess_run(
+        command: list[str],
+        *,
+        check: bool,
+        capture_output: bool,
+        text: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        del command, check, capture_output, text
+        return subprocess.CompletedProcess(
+            args=[],
+            returncode=139,
+            stdout=json.dumps({"status": "exited", "exit_code": 137}),
+            stderr="segfault",
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task115_qwen_resume_proof_runtime.subprocess.run",
+        _fake_subprocess_run,
+    )
+
+    payload = run_remote_task101_json(["status"], label="task101 status poll")
+
+    assert payload["status"] == "exited"
+    assert payload["exit_code"] == 137

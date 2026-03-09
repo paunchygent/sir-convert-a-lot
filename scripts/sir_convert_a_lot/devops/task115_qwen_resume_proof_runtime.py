@@ -23,6 +23,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable
 
+from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
+    parse_json_object_from_mixed_stdout,
+)
+
 DEFAULT_REMOTE_TASK101_OUTPUT_ROOT = Path(
     "/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot"
 )
@@ -90,11 +94,24 @@ def run_local_checked(command: list[str], *, label: str) -> str:
 
 def run_remote_task101_json(args: list[str], *, label: str) -> dict[str, object]:
     """Run one committed remote Task 101 command and parse its JSON stdout."""
-    stdout = run_local_checked(
-        ["pdm", "run", "run-hemma", "--", "pdm", "run", "task-101-pilot", *args],
-        label=label,
-    )
-    payload = json.loads(stdout)
+    command = ["pdm", "run", "run-hemma", "--", "pdm", "run", "task-101-pilot", *args]
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode != 0 and result.stdout.strip() == "":
+        raise SystemExit(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        )
+    try:
+        payload = parse_json_object_from_mixed_stdout(result.stdout)
+    except SystemExit as exc:
+        raise SystemExit(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        ) from exc
+    if result.returncode != 0:
+        return payload
     if not isinstance(payload, dict):
         raise SystemExit(f"{label} returned malformed JSON output.")
     return payload
