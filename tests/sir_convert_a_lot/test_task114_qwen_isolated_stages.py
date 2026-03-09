@@ -10,9 +10,11 @@ import pytest
 from scripts.sir_convert_a_lot.devops.run_task114_hemma_qwen_isolated_stages import (
     _build_parser,
     _resolve_stage_selector,
+    main,
 )
 from scripts.sir_convert_a_lot.devops.task114_qwen_isolated_stages_runtime import (
     Task114DetachedStageLaunch,
+    Task114DetachedStageStop,
     _load_optional_json,
     inspect_detached_stage,
     resolve_next_stage,
@@ -26,6 +28,14 @@ def test_task114_parser_launch_defaults() -> None:
 
     assert args.task103_stage == "auto"
     assert args.task103_promote_on_success is False
+
+
+def test_task114_parser_accepts_stop_command() -> None:
+    """The Task 114 runner should expose a committed stop command."""
+    parser = _build_parser()
+    args = parser.parse_args(["stop"])
+
+    assert args.command == "stop"
 
 
 def test_resolve_next_stage_prefers_row_processing_when_spool_is_missing(tmp_path: Path) -> None:
@@ -176,3 +186,72 @@ def test_load_optional_json_uses_sudo_fallback_on_permission_error(
     )
 
     assert _load_optional_json(payload_path) == {"status": "running"}
+
+
+def test_task114_stop_command_writes_stop_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The Task 114 stop command should persist deterministic stop metadata."""
+    output_root = tmp_path / "verification"
+    launch_root = output_root / "task114-row-processing-20260309t120000z"
+    launch_root.mkdir(parents=True, exist_ok=True)
+    launch = Task114DetachedStageLaunch(
+        generated_at="2026-03-09T12:00:00Z",
+        launch_id="task114-row-processing-20260309t120000z",
+        stage="row-processing",
+        container_name="task114-row-processing-20260309t120000z-container",
+        container_id="container-id",
+        repo_root="/home/paunchygent/apps/sir-convert-a-lot",
+        task103_run_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/run-id",
+        task103_promoted_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+        command=["sudo", "-n", "docker", "run", "-d"],
+    )
+    (launch_root / "launch.json").write_text(
+        json.dumps(
+            {
+                "generated_at": launch.generated_at,
+                "launch_id": launch.launch_id,
+                "stage": launch.stage,
+                "container_name": launch.container_name,
+                "container_id": launch.container_id,
+                "repo_root": launch.repo_root,
+                "task103_run_root": launch.task103_run_root,
+                "task103_promoted_root": launch.task103_promoted_root,
+                "command": launch.command,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def _fake_stop_detached_stage(payload: Task114DetachedStageLaunch) -> Task114DetachedStageStop:
+        assert payload.launch_id == launch.launch_id
+        return Task114DetachedStageStop(
+            stopped_at="2026-03-09T12:05:00Z",
+            launch_id=payload.launch_id,
+            stage=payload.stage,
+            container_name=payload.container_name,
+            container_id=payload.container_id,
+            stop_output=payload.container_name,
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task114_hemma_qwen_isolated_stages.stop_detached_stage",
+        _fake_stop_detached_stage,
+    )
+
+    exit_code = main(
+        [
+            "stop",
+            "--output-root",
+            output_root.as_posix(),
+            "--launch-root",
+            launch_root.as_posix(),
+        ]
+    )
+
+    assert exit_code == 0
+    stop_payload = json.loads((launch_root / "stop.json").read_text(encoding="utf-8"))
+    assert stop_payload["launch_id"] == launch.launch_id
+    assert stop_payload["container_name"] == launch.container_name

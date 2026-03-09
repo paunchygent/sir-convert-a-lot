@@ -61,6 +61,7 @@ from scripts.sir_convert_a_lot.devops.task114_qwen_isolated_stages_runtime impor
     inspect_detached_stage,
     launch_detached_stage,
     resolve_next_stage,
+    stop_detached_stage,
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-114-qwen-isolated-stages")
@@ -148,6 +149,10 @@ def _build_parser() -> argparse.ArgumentParser:
     status.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     status.add_argument("--launch-root", type=Path, default=None)
 
+    stop = subparsers.add_parser("stop", help="Stop one detached isolated stage launch.")
+    stop.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    stop.add_argument("--launch-root", type=Path, default=None)
+
     return parser
 
 
@@ -174,6 +179,11 @@ def _status_metadata_path(launch_root: Path) -> Path:
 def _status_markdown_path(launch_root: Path) -> Path:
     """Return the markdown status path for one launch root."""
     return launch_root / "status.md"
+
+
+def _stop_metadata_path(launch_root: Path) -> Path:
+    """Return the stop metadata path for one launch root."""
+    return launch_root / "stop.json"
 
 
 def _latest_pointer_path(output_root: Path) -> Path:
@@ -243,6 +253,17 @@ def _status_markdown(status: Task114DetachedStageStatus) -> str:
             ]
         )
     return "\n".join(lines)
+
+
+def _resolve_launch_root(*, output_root: Path, requested_launch_root: Path | None) -> Path:
+    """Resolve one Task 114 launch root from explicit input or the latest pointer."""
+    if requested_launch_root is not None:
+        return requested_launch_root
+    latest_pointer = _latest_pointer_path(output_root)
+    pointer_payload = json.loads(latest_pointer.read_text(encoding="utf-8"))
+    if not isinstance(pointer_payload, dict):
+        raise SystemExit("Task 114 latest launch pointer was malformed.")
+    return Path(_required_str(pointer_payload, "launch_root"))
 
 
 def _resolve_stage_selector(
@@ -444,19 +465,26 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "status":
-        if args.launch_root is not None:
-            launch_root = Path(args.launch_root)
-        else:
-            latest_pointer = _latest_pointer_path(output_root)
-            pointer_payload = json.loads(latest_pointer.read_text(encoding="utf-8"))
-            if not isinstance(pointer_payload, dict):
-                raise SystemExit("Task 114 latest launch pointer was malformed.")
-            launch_root = Path(_required_str(pointer_payload, "launch_root"))
+        launch_root = _resolve_launch_root(
+            output_root=output_root,
+            requested_launch_root=None if args.launch_root is None else Path(args.launch_root),
+        )
         launch = _load_launch(launch_root)
         status = inspect_detached_stage(launch)
         _write_json(_status_metadata_path(launch_root), asdict(status))
         _write_markdown(_status_markdown_path(launch_root), _status_markdown(status))
         print(json.dumps(asdict(status), indent=2, ensure_ascii=False, sort_keys=True))
+        return 0
+
+    if args.command == "stop":
+        launch_root = _resolve_launch_root(
+            output_root=output_root,
+            requested_launch_root=None if args.launch_root is None else Path(args.launch_root),
+        )
+        launch = _load_launch(launch_root)
+        stopped = stop_detached_stage(launch)
+        _write_json(_stop_metadata_path(launch_root), asdict(stopped))
+        print(json.dumps(asdict(stopped), indent=2, ensure_ascii=False, sort_keys=True))
         return 0
 
     raise SystemExit(f"Unsupported command: {args.command}")
