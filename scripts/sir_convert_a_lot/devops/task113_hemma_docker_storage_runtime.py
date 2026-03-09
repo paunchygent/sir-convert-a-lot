@@ -225,6 +225,27 @@ def set_snap_data_root(docker_root: Path) -> None:
     )
 
 
+def wait_for_snap_data_root(expected_root: Path, *, timeout_seconds: float) -> str:
+    """Wait until `snap get docker data-root` reports the expected path."""
+    deadline = time.time() + timeout_seconds
+    last_error = "snap data-root not ready"
+    while time.time() < deadline:
+        try:
+            rendered_root = snap_data_root()
+        except SystemExit as exc:
+            last_error = str(exc)
+            time.sleep(1.0)
+            continue
+        if rendered_root == expected_root.as_posix():
+            return rendered_root
+        last_error = f"snap get returned `{rendered_root}` instead of `{expected_root.as_posix()}`"
+        time.sleep(1.0)
+    raise SystemExit(
+        "Docker snap data-root did not converge after configuration change. "
+        f"Last observed error: {last_error}"
+    )
+
+
 def rsync_tree(*, source: Path, destination: Path) -> None:
     """Copy one directory tree with rsync while preserving Docker state details."""
     ensure_directory(destination)
@@ -382,6 +403,7 @@ def run_task113_docker_storage_migration(
         rsync_tree(source=settings.docker_root, destination=settings.scratch_docker_root)
 
     set_snap_data_root(settings.docker_root)
+    wait_for_snap_data_root(settings.docker_root, timeout_seconds=30.0)
     start_docker_snap()
     docker_root_after = wait_for_docker_root(settings.docker_root, timeout_seconds=30.0)
 
