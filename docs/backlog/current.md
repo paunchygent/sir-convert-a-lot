@@ -184,32 +184,36 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     the canonical path is now detached row-processing first, then detached
     fresh-process finalization, then reports/promotion, never one GPU-backed
     `stage=all` run.
+  - Completed the recovered `T108` proof on Hemma after `T114` hardening:
+    the preserved crashed run root was resumed without rerunning row-processing,
+    `swedish_scaleup_train` finalized successfully in one fresh container,
+    the remaining eval/control families finalized in a second
+    fresh container, and a third fresh `reports` stage promoted the canonical
+    corpus view to the successful run root. Final counts: `smoke=52`,
+    `pilot=52`, `scaleup=58`, `checkpoint_dev=8`, `final_test=8`,
+    `waxholm_control=8`.
 
 - 2026-03-05:
-
   - Re-terminalized `T73` with sustained-load evidence and completed `T76-T77`;
     see the linked Epic 06 / Story 20 task docs for detail.
-
 - 2026-03-04:
-
   - Planned Epic 06 long PDF reliability/performance work and completed
     `T67-T71` plus `T75`; detail remains in the linked task docs and tests.
-
 ## Next Actions
 
 - Current local execution focus is Epic 07 Story 23 listening review on
   `T91`, then `T93`, then `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, and
-  `T109` are complete. The active blocker before `T101` is `T108`:
-  materialize `rixvox` audio and map admitted train rows into the canonical
-  train families, using detached Hemma execution as the required proof mode.
-- Follow-on hardening after the first detached `T108` repro is now partly in place:
-  `T110` has delivered the staged spool/finalization split plus explicit
+- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`,
+  `T108`, and `T109` are complete. The recovered `T108` run root is now the
+  canonical promoted corpus view on Hemma, so the next functional step before
+  broader scale-up is `T101`.
+- Follow-on hardening after the first detached `T108` repro is now partly in
+  place: `T110` has delivered the staged spool/finalization split plus explicit
   row/GPU concurrency controls, and `T112` / `T113` have closed the Hemma
-  storage-model blocker. The immediate next step is `T114`: fully isolate
-  detached row-processing from detached fresh-process finalization before the
-  next `T108` rerun. `T111` remains the later provenance-safe ASR relabel
-  candidate task.
+  storage-model blocker. `T114` has now proven the isolated-stage recovery
+  model end to end; the remaining open `T114` work is richer stage/family/chunk
+  heartbeat detail in `status.json`. `T111` remains the later provenance-safe
+  ASR relabel candidate task.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once
   their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

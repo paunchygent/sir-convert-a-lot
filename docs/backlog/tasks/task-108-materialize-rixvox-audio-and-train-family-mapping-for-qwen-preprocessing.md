@@ -2,7 +2,7 @@
 id: task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing
 title: Materialize RixVox audio and train-family mapping for Qwen preprocessing
 type: task
-status: active
+status: completed
 priority: high
 created: '2026-03-08'
 last_updated: '2026-03-09'
@@ -146,10 +146,51 @@ Whichever path wins, the repo contract remains the same:
 
 ## Deliverables
 
-- [ ] One committed `rixvox` audio materialization surface.
-- [ ] One committed train-family mapping path for admitted `rixvox` train rows.
-- [ ] One live Hemma evidence bundle that proves real `rixvox` audio-backed
+- [x] One committed `rixvox` audio materialization surface.
+- [x] One committed train-family mapping path for admitted `rixvox` train rows.
+- [x] One live Hemma evidence bundle that proves real `rixvox` audio-backed
   train manifests exist before `T101`.
+
+## Final Outcome
+
+`T108` is now functionally complete.
+
+The preserved crashed run root on Hemma was resumed without rerunning
+row-processing:
+
+- run root:
+  - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task108-4workers-pipeline-20260309T064950Z`
+- recovered sequence:
+  - fresh isolated `finalization` container for `swedish_scaleup_train`
+  - fresh isolated `finalization` container for
+    `swedish_checkpoint_dev,swedish_final_test,swedish_waxholm_control`
+  - fresh isolated `reports` container
+- final report:
+  - `inventory_rows=216`
+  - `curated_rows=186`
+  - `admitted_rows=186`
+  - `prepared_rows=186`
+- final manifest counts:
+  - `swedish_smoke_train=52`
+  - `swedish_pilot_train=52`
+  - `swedish_scaleup_train=58`
+  - `swedish_checkpoint_dev=8`
+  - `swedish_final_test=8`
+  - `swedish_waxholm_control=8`
+
+The canonical promoted corpus view on Hemma now points at the recovered run
+root:
+
+- `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus`
+
+## Lessons Learned
+
+- Immutable run roots plus spool-backed finalization made it possible to resume
+  the crashed proof exactly where it failed instead of rerunning row
+  processing.
+- The host wedge was specifically a finalization-stage problem, not a
+  row-processing problem.
+- Fresh-process stage isolation on Hemma is mandatory for this lane.
 
 ## Current Implementation Slice
 

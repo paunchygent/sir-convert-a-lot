@@ -200,6 +200,25 @@ Latest bounded detached `T108` proof on Hemma (`2026-03-09`) confirmed:
 - the next runtime fix is therefore strict stage/process isolation, not
   another detached-execution or output-preservation redesign
 
+Recovered `T108` run result after `T114` hard isolation (`2026-03-09`):
+
+- preserved run root:
+  - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task108-4workers-pipeline-20260309T064950Z`
+- resumed without rerunning row-processing
+- finalized successfully in three fresh detached stages:
+  - `swedish_scaleup_train`
+  - `swedish_checkpoint_dev,swedish_final_test,swedish_waxholm_control`
+  - `reports`
+- final report counts:
+  - `swedish_smoke_train=52`
+  - `swedish_pilot_train=52`
+  - `swedish_scaleup_train=58`
+  - `swedish_checkpoint_dev=8`
+  - `swedish_final_test=8`
+  - `swedish_waxholm_control=8`
+- canonical promoted corpus view now points at that recovered run root:
+  - `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus`
+
 ## Flash Attention Policy
 
 For the current repo state:

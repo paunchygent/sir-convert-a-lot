@@ -151,10 +151,10 @@ The first accepted live Hemma rerun after this task must prove:
 
 ## Deliverables
 
-- [ ] One committed detached stage-orchestration runner for Hemma.
-- [ ] One updated Task 103/109 runtime contract that makes `stage=all`
+- [x] One committed detached stage-orchestration runner for Hemma.
+- [x] One updated Task 103/109 runtime contract that makes `stage=all`
   non-canonical on Hemma.
-- [ ] One live Hemma evidence bundle proving separated row-processing and
+- [x] One live Hemma evidence bundle proving separated row-processing and
   finalization execution against the preserved `T108` run-root contract.
 
 ## Acceptance Criteria
@@ -172,9 +172,42 @@ The first accepted live Hemma rerun after this task must prove:
 
 ## Checklist
 
-- [ ] Add the dedicated detached stage orchestrator.
-- [ ] Make the Hemma public-corpus runner use the staged orchestration path.
+- [x] Add the dedicated detached stage orchestrator.
+- [x] Make the Hemma public-corpus runner use the staged orchestration path.
 - [ ] Persist stage/family/chunk heartbeat updates to `status.json`.
-- [ ] Rerun the bounded `T108` proof with isolated row-processing and
+- [x] Rerun the bounded `T108` proof with isolated row-processing and
   finalization.
-- [ ] Record exact evidence and lessons learned in the runbook and task docs.
+- [x] Record exact evidence and lessons learned in the runbook and task docs.
+
+## Execution Outcome
+
+The isolated-stage remediation succeeded on Hemma against the preserved crashed
+`T108` run root.
+
+What was proven:
+
+- `row-processing` did not need to be rerun
+- `swedish_scaleup_train` was finalized successfully in one fresh detached
+  container
+- the remaining eval/control families were finalized successfully in a second
+  fresh detached container
+- the `reports` stage completed in a third fresh detached container
+- the recovered run root was promoted into the canonical shared corpus view
+
+Recovered run root:
+
+- `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task108-4workers-pipeline-20260309T064950Z`
+
+Promoted canonical view:
+
+- `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus`
+
+## Remaining Gap
+
+`T114` stays active because one hardening item is still open:
+
+- `status.json` does not yet persist the richer stage/family/chunk heartbeat
+  promised in this task
+
+The operational isolation model is now proven. The remaining work is
+observability/detail hardening, not recovery of the preprocessing lane itself.
