@@ -206,6 +206,7 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
         gradient_accumulation_steps=4,
         mixed_precision="bf16",
         log_with="tensorboard",
+        project_dir=Path(args.output_model_path).resolve().as_posix(),
     )
 
     model_path = args.init_model_path

@@ -168,7 +168,7 @@ def build_detached_pilot_command(
         "-v",
         f"{scratch_mount.effective_root.as_posix()}:{CONTAINER_BUILD_ROOT.as_posix()}",
         "-v",
-        f"{hf_mount.effective_root.as_posix()}:{hf_mount.canonical_root.as_posix()}",
+        f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
         "--workdir",
         "/app",
         "--entrypoint",

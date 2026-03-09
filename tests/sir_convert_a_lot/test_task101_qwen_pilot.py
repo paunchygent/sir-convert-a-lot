@@ -94,6 +94,10 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
     assert "/dev/kfd" in command
     assert "--ipc=host" in command
     assert "HF_HOME=/cache/huggingface" in command
+    assert (
+        "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface:/cache/huggingface"
+        in command
+    )
     assert "/home/paunchygent/.data/sir-convert-a-lot/build:/app/build" in command
     assert (
         "/app/build/reference/qwen3-tts-swedish-corpus/manifests/"
