@@ -79,6 +79,9 @@ Prefer both when the task is strategic:
 - Confirm the GPU is idle before real runs.
 - Record exact runtime truth before and after the run.
 - Keep cache roots explicit and stable.
+- Keep storage tiers explicit and stable:
+  - `/srv/scratch` for Docker root, caches, and hot generated artifacts
+  - `/srv/storage` for raw corpora and colder retained datasets
 - If flash attention is disabled, that must be an explicit triage choice, not a
   hidden default.
 

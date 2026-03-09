@@ -210,6 +210,22 @@ Confirm the repo root and GPU cache roots through the existing runbook:
 - approved home-visible compatibility mount when needed:
   - `/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface`
 
+Verified Hemma storage tiers:
+
+- fast SSD work tier:
+  - `/srv/scratch`
+  - Docker root/BuildKit cache
+  - HF/model caches
+  - active generated preprocessing/training artifacts
+- large HDD bulk-data tier:
+  - `/srv/storage`
+  - raw Swedish corpora
+  - colder retained datasets
+- OS disk:
+  - `/`
+  - not a valid long-term target for Docker persistent state or large Qwen
+    artifact trees
+
 Always begin long training work from a clean GPU baseline:
 
 ```bash

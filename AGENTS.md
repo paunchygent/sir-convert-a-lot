@@ -154,6 +154,13 @@ Policy:
 - No silent CPU fallback.
 - Use tunnels for local dev access by default.
 - Long-running Hemma work must not depend on the stability of the local client, tunnel, or attached SSH session.
+- Hemma storage tiers are explicit and mandatory:
+  - `/srv/scratch` is the fast SSD work tier for Docker root/BuildKit cache,
+    HF/model caches, and active generated artifacts.
+  - `/srv/storage` is the large HDD bulk-data tier for raw corpora and colder
+    retained datasets.
+  - The Hemma OS disk (`/`) must not be the long-term home for Docker
+    persistent state or large ML artifact trees.
 
 ## Do Not
 

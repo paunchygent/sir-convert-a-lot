@@ -121,6 +121,24 @@ Approved long-run posture:
 - remote `tmux`/supervised execution when a committed detached runner does not
   yet exist
 
+## Hemma Storage Tiers
+
+Treat Hemma storage as three different contracts:
+
+- Fast SSD work tier:
+  - `/srv/scratch`
+  - Docker root and BuildKit cache
+  - HF/model caches
+  - active generated artifacts under repo `build/` trees
+- Large HDD bulk-data tier:
+  - `/srv/storage`
+  - raw corpora
+  - cold retained datasets
+- OS disk:
+  - `/`
+  - not the long-term home for Docker persistent state or large ML artifact
+    trees
+
 ## SSH and Service Health
 
 ```bash

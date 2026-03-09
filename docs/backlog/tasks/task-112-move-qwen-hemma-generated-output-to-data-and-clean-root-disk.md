@@ -2,7 +2,7 @@
 id: task-112-move-qwen-hemma-generated-output-to-data-and-clean-root-disk
 title: Move Qwen Hemma hot output to SSD scratch, move raw corpus to HDD storage, and clean root disk
 type: task
-status: active
+status: completed
 priority: high
 created: '2026-03-09'
 last_updated: '2026-03-09'
@@ -84,31 +84,31 @@ So three remediations are required:
 
 ## Deliverables
 
-- [ ] One committed SSD-scratch output-root contract for Hemma Qwen
+- [x] One committed SSD-scratch output-root contract for Hemma Qwen
   preprocessing/proof runs.
-- [ ] One committed Hemma migration surface that moves existing Qwen `build/`
+- [x] One committed Hemma migration surface that moves existing Qwen `build/`
   outputs from repo-root storage onto SSD scratch.
-- [ ] One committed Hemma migration surface that moves existing raw Swedish
+- [x] One committed Hemma migration surface that moves existing raw Swedish
   corpus data from SSD scratch onto HDD storage.
-- [ ] One committed cleanup surface that removes dangling Docker bloat after
+- [x] One committed cleanup surface that removes dangling Docker bloat after
   migration.
-- [ ] One updated runbook/reference contract documenting the new storage rule.
+- [x] One updated runbook/reference contract documenting the new storage rule.
 
 ## Acceptance Criteria
 
-- [ ] Future Hemma Qwen preprocessing output defaults to SSD scratch.
-- [ ] Existing Qwen preprocessing/proof artifacts are moved off the Hemma root
+- [x] Future Hemma Qwen preprocessing output defaults to SSD scratch.
+- [x] Existing Qwen preprocessing/proof artifacts are moved off the Hemma root
   disk without changing their logical subtree structure.
-- [ ] Existing raw Swedish corpus assets are moved onto the HDD storage tier
+- [x] Existing raw Swedish corpus assets are moved onto the HDD storage tier
   and the canonical raw-corpus root is updated accordingly.
-- [ ] The docs clearly state that large generated Qwen preprocessing artifacts
+- [x] The docs clearly state that large generated Qwen preprocessing artifacts
   on Hemma belong on SSD scratch, while raw corpus assets belong on HDD
   storage.
-- [ ] Root-disk cleanup removes dangling Docker leftovers and build cache based
+- [x] Root-disk cleanup removes dangling Docker leftovers and build cache based
   on measured evidence, not guesswork.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

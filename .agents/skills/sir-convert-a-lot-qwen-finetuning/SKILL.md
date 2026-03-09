@@ -82,6 +82,10 @@ explicitly narrow the scope.
   ADR-0006 and ADR-0007.
 - Long-running Hemma preprocessing, training, and corpus-acquisition work must
   run detached from the local client session.
+- Hemma storage tiers are fixed:
+  - `/srv/scratch` for Docker root, HF/model caches, and hot generated
+    preprocessing/training artifacts
+  - `/srv/storage` for raw Swedish corpora and colder retained datasets
 
 ## Qwen-Specific Decisions
 

@@ -54,6 +54,21 @@ Detached execution policy:
 - Prefer committed detached runners, named background containers, or remote
   `tmux`/supervised surfaces over foreground client-attached execution.
 
+## Hemma Storage Model
+
+Treat Hemma storage tiers as an operational contract, not a convenience choice.
+
+- `/srv/scratch` is the fast SSD working tier:
+  - Docker root and BuildKit cache
+  - Hugging Face/model caches
+  - active generated artifacts under repo `build/` trees
+- `/srv/storage` is the large HDD bulk-data tier:
+  - raw corpora
+  - cold retained datasets
+  - other large, slow-moving bulk assets
+- The Hemma OS disk (`/`) must not be used for long-lived Docker state or
+  large ML artifact trees.
+
 Deploy parity gate (one-command deploy + verify):
 
 ```bash

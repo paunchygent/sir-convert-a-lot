@@ -107,6 +107,9 @@ The repo currently passes only these Chatterbox generation arguments:
   - `pdm run run-hemma -- ...`
 - Keep the benchmark on the GPU path:
   - no silent CPU fallback
+- Keep Hemma storage tiers explicit:
+  - `/srv/scratch` for Docker root, model caches, and active benchmark output
+  - `/srv/storage` for large cold bulk data, not hot sidecar artifacts
 - Tune only supported, documented multilingual controls:
   - `cfg_weight`
   - `exaggeration`

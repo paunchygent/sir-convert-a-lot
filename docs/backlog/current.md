@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-08'
+last_updated: '2026-03-09'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -183,11 +183,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     pinned the crash to `libaotriton_v2.so.0.11.1`, and Hemma root-disk
     pressure is now confirmed as a separate operational problem because `/`
     has only about `1.3 GB` free while DATA still has ample space.
-  - Opened `T112` to correct the storage contract: Qwen Hemma hot generated
-    output must move from repo-root `build/` onto SSD scratch, raw Swedish
-    corpus storage must move onto HDD storage, and root-disk cleanup must focus
-    on measured Docker bloat rather than blaming the comparatively small
-    preprocessing output.
+  - Completed `T112` and `T113`: Hemma Qwen hot output now persists on SSD
+    scratch, raw Swedish corpora persist on HDD storage, Docker root is back on
+    the canonical snap path `/var/snap/docker/common/var-lib-docker` while
+    physically bind-mounted from `/srv/scratch/docker/data-root`, and the old
+    home-path Docker root entry was removed from `/etc/fstab`.
 
 - 2026-03-05:
 
@@ -210,10 +210,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   materialize `rixvox` audio and map admitted train rows into the canonical
   train families, using detached Hemma execution as the required proof mode.
 - Follow-on hardening after the first detached `T108` repro is now partly in place:
-  `T110` has delivered the staged spool/finalization split plus explicit row/GPU concurrency
-  controls. The immediate next step is `T112`: move Hemma Qwen hot generated output onto SSD
-  scratch, move raw corpus storage onto HDD storage, clean root-disk Docker bloat, and only then
-  rerun the bounded detached proof through the containerized Task 109 lane before advancing toward
-  `T101`. `T111` remains the later provenance-safe ASR relabel candidate task.
+  `T110` has delivered the staged spool/finalization split plus explicit row/GPU
+  concurrency controls, and `T112` / `T113` have closed the Hemma storage-model
+  blocker. The immediate next step is to rerun the bounded detached proof
+  through the containerized Task 109 lane and continue `T108` toward audio-backed
+  train manifests before advancing to `T101`. `T111` remains the later
+  provenance-safe ASR relabel candidate task.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

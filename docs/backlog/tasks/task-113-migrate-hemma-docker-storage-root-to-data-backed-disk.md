@@ -2,7 +2,7 @@
 id: task-113-migrate-hemma-docker-storage-root-to-data-backed-disk
 title: Move Hemma Docker bytes onto SSD scratch by bind-mounting the canonical snap root
 type: task
-status: active
+status: completed
 priority: high
 created: '2026-03-09'
 last_updated: '2026-03-09'
@@ -75,28 +75,28 @@ This is a host-wide infrastructure change:
 
 ## Deliverables
 
-- [ ] One committed Docker storage-root migration surface for Hemma.
-- [ ] One persisted bind mount from `/srv/scratch/docker/data-root` onto
+- [x] One committed Docker storage-root migration surface for Hemma.
+- [x] One persisted bind mount from `/srv/scratch/docker/data-root` onto
   `/var/snap/docker/common/var-lib-docker`.
-- [ ] One controlled migration path that preserves existing Docker daemon state
+- [x] One controlled migration path that preserves existing Docker daemon state
   during the move.
-- [ ] One updated runbook/skill/rule contract that documents the host-wide
+- [x] One updated runbook/skill/rule contract that documents the host-wide
   Docker storage policy.
 
 ## Acceptance Criteria
 
-- [ ] `docker info` continues to report the canonical Docker snap root:
+- [x] `docker info` continues to report the canonical Docker snap root:
   `/var/snap/docker/common/var-lib-docker`.
-- [ ] `findmnt` proves that the canonical Docker snap root is bind-mounted from
+- [x] `findmnt` proves that the canonical Docker snap root is bind-mounted from
   `/srv/scratch/docker/data-root`.
-- [ ] Existing Docker state survives the migration, or any intentionally
+- [x] Existing Docker state survives the migration, or any intentionally
   rebuilt state is explicitly recorded in the evidence.
-- [ ] The host-wide runbooks and skills clearly state that Docker persistent
+- [x] The host-wide runbooks and skills clearly state that Docker persistent
   state belongs on SSD scratch, not on the Hemma OS disk.
 
 ## Checklist
 
-- [ ] Plan approved
-- [ ] Migration executed
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Plan approved
+- [x] Migration executed
+- [x] Validation complete
+- [x] Docs updated
