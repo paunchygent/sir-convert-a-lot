@@ -18,6 +18,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_OUTPUT_ROOT,
     DEFAULT_ROW_WORKER_COUNT,
     DEFAULT_SCRATCH_BUILD,
+    DEFAULT_SCRATCH_BUILD_HOME_MOUNT,
     DEFAULT_TASK103_RUNS_ROOT,
     _parse_args,
 )
@@ -46,6 +47,7 @@ def test_task109_parse_args_defaults() -> None:
     assert settings.hf_cache_dir == DEFAULT_HF_CACHE
     assert settings.hf_cache_home_mount == DEFAULT_HF_CACHE_HOME_MOUNT
     assert settings.scratch_build_root == DEFAULT_SCRATCH_BUILD
+    assert settings.scratch_build_home_mount == DEFAULT_SCRATCH_BUILD_HOME_MOUNT
     assert settings.data_root == DEFAULT_DATA_ROOT
     assert settings.data_root_home_mount == DEFAULT_DATA_ROOT_HOME_MOUNT
     assert settings.fleurs_max_rows_per_split == DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT
@@ -70,6 +72,7 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
         scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
             "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
@@ -93,12 +96,18 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
         effective_root=settings.data_root_home_mount,
         used_home_mount=True,
     )
+    scratch_mount = MountResolution(
+        canonical_root=settings.scratch_build_root,
+        effective_root=settings.scratch_build_home_mount,
+        used_home_mount=True,
+    )
 
     command = build_containerized_preprocessing_command(
         settings,
         repo_root=repo_root,
         hf_mount=hf_mount,
         data_mount=data_mount,
+        scratch_mount=scratch_mount,
     )
 
     assert "--device" in command
@@ -107,7 +116,7 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "--workdir" in command
     assert "/app" in command
     assert f"{repo_root.as_posix()}:/app" in command
-    assert f"{settings.scratch_build_root.as_posix()}:/app/build" in command
+    assert f"{scratch_mount.effective_root.as_posix()}:/app/build" in command
     assert f"{hf_mount.effective_root.as_posix()}:{hf_mount.canonical_root.as_posix()}" in command
     assert (
         f"{data_mount.effective_root.as_posix()}:{data_mount.canonical_root.as_posix()}:ro"
@@ -117,7 +126,7 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "--source-mode" in command
     assert "staged-public-corpus" in command
     assert "--runs-root" in command
-    assert settings.task103_runs_root.as_posix() in command
+    assert "/app/build/runs/qwen3-tts-swedish-preprocessing" in command
     assert "--run-id" in command
     assert "run-123" in command
     assert "--fleurs-max-rows-per-split" in command
@@ -149,6 +158,7 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
         scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
             "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
@@ -170,6 +180,11 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
     data_mount = MountResolution(
         canonical_root=settings.data_root,
         effective_root=settings.data_root_home_mount,
+        used_home_mount=True,
+    )
+    scratch_mount = MountResolution(
+        canonical_root=settings.scratch_build_root,
+        effective_root=settings.scratch_build_home_mount,
         used_home_mount=True,
     )
 
@@ -205,6 +220,7 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
         repo_root=repo_root,
         hf_mount=hf_mount,
         data_mount=data_mount,
+        scratch_mount=scratch_mount,
     )
 
     assert result.command[0:3] == ["sudo", "-n", "docker"]

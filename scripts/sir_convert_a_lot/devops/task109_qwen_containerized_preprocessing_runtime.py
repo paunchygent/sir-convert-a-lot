@@ -45,6 +45,7 @@ class Task109ContainerizedPreprocessingSettings:
     hf_cache_dir: Path
     hf_cache_home_mount: Path
     scratch_build_root: Path
+    scratch_build_home_mount: Path
     data_root: Path
     data_root_home_mount: Path
     build_image: bool
@@ -62,6 +63,9 @@ class ContainerizedPreprocessingRun:
 
     preprocessing_report: Task103PreprocessingReport
     command: list[str]
+
+
+CONTAINER_BUILD_ROOT = Path("/app/build")
 
 
 def _required_str(payload: dict[str, object], key: str) -> str:
@@ -118,12 +122,25 @@ def _manifest_family_from_key(key: str) -> ManifestFamily:
     raise SystemExit("Task 109 preprocessing payload returned an unknown `manifest_counts` key.")
 
 
+def _containerize_scratch_path(host_path: Path, *, scratch_root: Path) -> str:
+    """Translate one host scratch path into the mounted container build path."""
+    try:
+        relative_path = host_path.relative_to(scratch_root)
+    except ValueError as exc:
+        raise SystemExit(
+            "Task 109 scratch-backed preprocessing paths must live under the configured "
+            f"scratch_build_root `{scratch_root.as_posix()}`, got `{host_path.as_posix()}`."
+        ) from exc
+    return (CONTAINER_BUILD_ROOT / relative_path).as_posix()
+
+
 def build_containerized_preprocessing_command(
     settings: Task109ContainerizedPreprocessingSettings,
     *,
     repo_root: Path,
     hf_mount: MountResolution,
     data_mount: MountResolution,
+    scratch_mount: MountResolution,
 ) -> list[str]:
     """Build the Docker command that runs Task 103 inside the Qwen runtime image."""
     container_hf_home = hf_mount.canonical_root.as_posix()
@@ -132,6 +149,10 @@ def build_containerized_preprocessing_command(
         container_hf_home,
     )
     container_torch_home = CONTAINER_TORCH_HOME.replace("/cache/huggingface", container_hf_home)
+    container_runs_root = _containerize_scratch_path(
+        settings.task103_runs_root,
+        scratch_root=settings.scratch_build_root,
+    )
     command = [
         "run",
         "--rm",
@@ -154,7 +175,7 @@ def build_containerized_preprocessing_command(
         "-v",
         f"{repo_root.as_posix()}:/app",
         "-v",
-        f"{settings.scratch_build_root.as_posix()}:/app/build",
+        f"{scratch_mount.effective_root.as_posix()}:{CONTAINER_BUILD_ROOT.as_posix()}",
         "-v",
         f"{hf_mount.effective_root.as_posix()}:{hf_mount.canonical_root.as_posix()}",
         "-v",
@@ -169,7 +190,7 @@ def build_containerized_preprocessing_command(
         "--source-mode",
         "staged-public-corpus",
         "--runs-root",
-        settings.task103_runs_root.as_posix(),
+        container_runs_root,
         "--data-root",
         data_mount.canonical_root.as_posix(),
         "--fleurs-max-rows-per-split",
@@ -186,7 +207,15 @@ def build_containerized_preprocessing_command(
     if settings.task103_run_id is not None:
         command.extend(["--run-id", settings.task103_run_id])
     if settings.task103_run_root is not None:
-        command.extend(["--run-root", settings.task103_run_root.as_posix()])
+        command.extend(
+            [
+                "--run-root",
+                _containerize_scratch_path(
+                    settings.task103_run_root,
+                    scratch_root=settings.scratch_build_root,
+                ),
+            ]
+        )
     if settings.task103_promote_on_success:
         command.append("--promote-on-success")
     if settings.rixvox_max_rows_per_split is not None:
@@ -205,6 +234,7 @@ def run_containerized_preprocessing(
     repo_root: Path,
     hf_mount: MountResolution,
     data_mount: MountResolution,
+    scratch_mount: MountResolution,
 ) -> ContainerizedPreprocessingRun:
     """Run the public-corpus preprocessing lane inside the Qwen runtime image."""
     command = build_containerized_preprocessing_command(
@@ -212,6 +242,7 @@ def run_containerized_preprocessing(
         repo_root=repo_root,
         hf_mount=hf_mount,
         data_mount=data_mount,
+        scratch_mount=scratch_mount,
     )
     raw_output = docker_checked(command, label="docker run task109 containerized preprocessing")
     payload = parse_json_object_from_mixed_stdout(raw_output)

@@ -50,9 +50,11 @@ DEFAULT_IMAGE = "sir-convert-a-lot-qwen-finetune-hemma:task100"
 DEFAULT_HEMMA_HF_CACHE_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH"
 DEFAULT_HEMMA_HF_CACHE_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT"
 DEFAULT_HEMMA_DATA_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_QWEN_CORPUS_DATA_HOME_MOUNT"
+DEFAULT_HEMMA_SCRATCH_BUILD_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_SCRATCH_BUILD_HOME_MOUNT"
 DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface")
 DEFAULT_SCRATCH_BUILD = DEFAULT_SCRATCH_BUILD_ROOT
+DEFAULT_SCRATCH_BUILD_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/build")
 DEFAULT_DATA_ROOT_HOME_MOUNT = Path(
     "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
 )
@@ -80,6 +82,8 @@ class Task109ContainerizedReport:
     effective_hf_cache_dir: str
     used_hf_home_mount: bool
     scratch_build_root: str
+    effective_scratch_build_root: str
+    used_scratch_build_home_mount: bool
     data_root: str
     effective_data_root: str
     used_data_home_mount: bool
@@ -123,6 +127,14 @@ def _default_data_root_home_mount() -> Path:
     return Path(configured_path.strip())
 
 
+def _default_scratch_build_home_mount() -> Path:
+    """Resolve the fallback home-backed scratch build mount path."""
+    configured_path = os.environ.get(DEFAULT_HEMMA_SCRATCH_BUILD_HOME_MOUNT_ENV)
+    if configured_path is None or configured_path.strip() == "":
+        return DEFAULT_SCRATCH_BUILD_HOME_MOUNT
+    return Path(configured_path.strip())
+
+
 def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSettings:
     """Parse CLI arguments into normalized Task 109 settings."""
     parser = argparse.ArgumentParser(
@@ -146,6 +158,11 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         default=_default_hf_cache_home_mount(),
     )
     parser.add_argument("--scratch-build-root", type=Path, default=DEFAULT_SCRATCH_BUILD)
+    parser.add_argument(
+        "--scratch-build-home-mount",
+        type=Path,
+        default=_default_scratch_build_home_mount(),
+    )
     parser.add_argument("--data-root", type=Path, default=default_data_root())
     parser.add_argument(
         "--data-root-home-mount",
@@ -202,6 +219,7 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         hf_cache_dir=Path(args.hf_cache_dir),
         hf_cache_home_mount=Path(args.hf_cache_home_mount),
         scratch_build_root=Path(args.scratch_build_root),
+        scratch_build_home_mount=Path(args.scratch_build_home_mount),
         data_root=Path(args.data_root),
         data_root_home_mount=Path(args.data_root_home_mount),
         build_image=not bool(args.skip_build),
@@ -235,6 +253,7 @@ def _build_report_markdown(
     report: Task109ContainerizedReport,
     *,
     hf_mount: MountResolution,
+    scratch_mount: MountResolution,
     data_mount: MountResolution,
 ) -> str:
     """Render one concise Markdown summary for the Task 109 run."""
@@ -251,6 +270,8 @@ def _build_report_markdown(
         f"- HF cache effective root: `{report.effective_hf_cache_dir}`\n"
         f"- Used HF home-backed bind mount: `{report.used_hf_home_mount}`\n"
         f"- Scratch build root: `{report.scratch_build_root}`\n"
+        f"- Scratch build effective root: `{report.effective_scratch_build_root}`\n"
+        f"- Used scratch home-backed bind mount: `{report.used_scratch_build_home_mount}`\n"
         f"- DATA canonical root: `{report.data_root}`\n"
         f"- DATA effective root: `{report.effective_data_root}`\n"
         f"- Used DATA home-backed bind mount: `{report.used_data_home_mount}`\n"
@@ -269,6 +290,8 @@ def _build_report_markdown(
         "\n## Mounts\n\n"
         f"- HF canonical root: `{hf_mount.canonical_root}`\n"
         f"- HF effective root: `{hf_mount.effective_root}`\n"
+        f"- Scratch canonical root: `{scratch_mount.canonical_root}`\n"
+        f"- Scratch effective root: `{scratch_mount.effective_root}`\n"
         f"- DATA canonical root: `{data_mount.canonical_root}`\n"
         f"- DATA effective root: `{data_mount.effective_root}`\n"
     )
@@ -298,6 +321,12 @@ def main(argv: list[str] | None = None) -> int:
         repo_root = Path.cwd().resolve()
         build_performed, image_id = ensure_image_present(settings)
         hf_mount = resolve_effective_hf_cache_dir(settings)
+        scratch_mount = resolve_effective_bind_root(
+            settings.scratch_build_root,
+            settings.scratch_build_home_mount,
+            image=settings.image,
+            sync_home_into_canonical=False,
+        )
         data_mount = resolve_effective_bind_root(
             settings.data_root,
             settings.data_root_home_mount,
@@ -309,6 +338,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_root=repo_root,
             hf_mount=hf_mount,
             data_mount=data_mount,
+            scratch_mount=scratch_mount,
         )
         report = Task109ContainerizedReport(
             generated_at=_utc_now_iso(),
@@ -320,6 +350,8 @@ def main(argv: list[str] | None = None) -> int:
             effective_hf_cache_dir=hf_mount.effective_root.as_posix(),
             used_hf_home_mount=hf_mount.used_home_mount,
             scratch_build_root=settings.scratch_build_root.as_posix(),
+            effective_scratch_build_root=scratch_mount.effective_root.as_posix(),
+            used_scratch_build_home_mount=scratch_mount.used_home_mount,
             data_root=settings.data_root.as_posix(),
             effective_data_root=data_mount.effective_root.as_posix(),
             used_data_home_mount=data_mount.used_home_mount,
@@ -335,7 +367,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         _write_json(report_json_path, asdict(report))
         report_md_path.write_text(
-            _build_report_markdown(report, hf_mount=hf_mount, data_mount=data_mount) + "\n",
+            _build_report_markdown(
+                report,
+                hf_mount=hf_mount,
+                scratch_mount=scratch_mount,
+                data_mount=data_mount,
+            )
+            + "\n",
             encoding="utf-8",
         )
         print(json.dumps(asdict(report), indent=2, ensure_ascii=False, sort_keys=True))
