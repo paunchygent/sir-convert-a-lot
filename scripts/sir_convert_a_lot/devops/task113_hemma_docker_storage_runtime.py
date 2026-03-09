@@ -258,6 +258,8 @@ def remove_tree(path: Path) -> None:
 
 def unmount_path(path: Path) -> None:
     """Unmount one existing bind mount."""
+    if find_mount_source(path) is None:
+        return
     run_checked(["sudo", "-n", "umount", path.as_posix()], label="umount task113")
 
 
