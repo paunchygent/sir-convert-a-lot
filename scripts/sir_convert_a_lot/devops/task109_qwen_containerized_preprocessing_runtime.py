@@ -36,6 +36,10 @@ class Task109ContainerizedPreprocessingSettings:
     """Normalized settings for the Task 109 containerized preprocessing runner."""
 
     output_root: Path
+    task103_runs_root: Path
+    task103_run_id: str | None
+    task103_run_root: Path | None
+    task103_promote_on_success: bool
     dockerfile_path: Path
     image: str
     hf_cache_dir: Path
@@ -164,6 +168,8 @@ def build_containerized_preprocessing_command(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing",
         "--source-mode",
         "staged-public-corpus",
+        "--runs-root",
+        settings.task103_runs_root.as_posix(),
         "--data-root",
         data_mount.canonical_root.as_posix(),
         "--fleurs-max-rows-per-split",
@@ -177,6 +183,12 @@ def build_containerized_preprocessing_command(
         "--gpu-asr-worker-count",
         str(settings.gpu_asr_worker_count),
     ]
+    if settings.task103_run_id is not None:
+        command.extend(["--run-id", settings.task103_run_id])
+    if settings.task103_run_root is not None:
+        command.extend(["--run-root", settings.task103_run_root.as_posix()])
+    if settings.task103_promote_on_success:
+        command.append("--promote-on-success")
     if settings.rixvox_max_rows_per_split is not None:
         command.extend(
             [

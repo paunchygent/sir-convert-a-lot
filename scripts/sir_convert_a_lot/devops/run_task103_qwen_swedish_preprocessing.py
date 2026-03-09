@@ -1,9 +1,10 @@
-"""Run the first deterministic Task 103 Swedish preprocessing bundle.
+"""Run the canonical Task 103 Swedish preprocessing bundle.
 
 Purpose:
-    Provide one committed CLI surface for the initial Qwen3-TTS Swedish
-    preprocessing pass so the repo can materialize deterministic inventory,
-    curated, raw, and prepared manifests without ad hoc notebooks.
+    Provide one committed CLI surface for the staged Qwen3-TTS Swedish
+    preprocessing pipeline so the repo can materialize deterministic inventory,
+    curated, raw, and prepared manifests inside immutable per-run roots and
+    optionally promote successful runs into the canonical shared corpus view.
 
 Relationships:
     - Wraps `task103_qwen_preprocessing_core.py`.
@@ -28,6 +29,14 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     Task103PreprocessingSettings,
     run_task103_preprocessing,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_run_roots import (
+    Task103RunContext,
+    prepare_run_root,
+    promote_run_root,
+    resolve_run_context,
+    write_run_metadata,
+    write_run_status,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
 from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
     staged_public_corpus_source_records,
@@ -38,6 +47,7 @@ from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime im
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/reference/qwen3-tts-swedish-corpus")
+DEFAULT_RUNS_ROOT = Path("build/runs/qwen3-tts-swedish-preprocessing")
 DEFAULT_ASR_MODEL = "KBLab/kb-whisper-large"
 DEFAULT_ASR_REVISION = "strict"
 DEFAULT_TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
@@ -64,6 +74,10 @@ class Task103RunnerSettings:
     fleurs_max_rows_per_split: int | None
     rixvox_splits: tuple[str, ...]
     rixvox_max_rows_per_split: int | None
+    runs_root: Path
+    run_id: str | None
+    run_root: Path | None
+    promote_on_success: bool
 
 
 def _parse_csv_list(raw_value: str) -> tuple[str, ...]:
@@ -104,9 +118,17 @@ def _parse_manifest_families(raw_value: str) -> tuple[ManifestFamily, ...]:
 def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
     """Parse CLI arguments into normalized Task 103 preprocessing settings."""
     parser = argparse.ArgumentParser(
-        description="Run the first deterministic Task 103 Swedish preprocessing bundle."
+        description="Run the canonical Task 103 Swedish preprocessing bundle."
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--runs-root", type=Path, default=DEFAULT_RUNS_ROOT)
+    parser.add_argument("--run-id", default=None)
+    parser.add_argument("--run-root", type=Path, default=None)
+    parser.add_argument(
+        "--promote-on-success",
+        action="store_true",
+        help="Promote the completed run root into the canonical shared corpus path.",
+    )
     parser.add_argument("--asr-model", default=DEFAULT_ASR_MODEL)
     parser.add_argument("--asr-revision", default=DEFAULT_ASR_REVISION)
     parser.add_argument("--tokenizer-model", default=DEFAULT_TOKENIZER_MODEL)
@@ -171,6 +193,10 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         fleurs_max_rows_per_split=args.fleurs_max_rows_per_split,
         rixvox_splits=_parse_csv_list(str(args.rixvox_splits)),
         rixvox_max_rows_per_split=args.rixvox_max_rows_per_split,
+        runs_root=Path(args.runs_root),
+        run_id=None if args.run_id is None else str(args.run_id),
+        run_root=None if args.run_root is None else Path(args.run_root),
+        promote_on_success=bool(args.promote_on_success),
     )
 
 
@@ -197,12 +223,108 @@ def _render_stdout_summary(report: Task103PreprocessingReport) -> str:
     return json.dumps(asdict(report), indent=2, ensure_ascii=False, sort_keys=True)
 
 
+def _resolve_run_context(settings: Task103RunnerSettings) -> Task103RunContext:
+    """Resolve the effective run-root context for one Task 103 invocation."""
+    return resolve_run_context(
+        promoted_root=settings.preprocessing.output_root,
+        runs_root=settings.runs_root,
+        source_mode=settings.source_mode,
+        run_id=settings.run_id,
+        run_root=settings.run_root,
+        promote_on_success=settings.promote_on_success,
+    )
+
+
+def _runner_payload(
+    settings: Task103RunnerSettings,
+    context: Task103RunContext,
+) -> dict[str, object]:
+    """Render a stable run-metadata payload for one Task 103 invocation."""
+    return {
+        "source_mode": settings.source_mode,
+        "data_root": settings.data_root.as_posix(),
+        "fleurs_splits": list(settings.fleurs_splits),
+        "fleurs_max_rows_per_split": settings.fleurs_max_rows_per_split,
+        "rixvox_splits": list(settings.rixvox_splits),
+        "rixvox_max_rows_per_split": settings.rixvox_max_rows_per_split,
+        "runs_root": settings.runs_root.as_posix(),
+        "run_id": context.run_id,
+        "run_root": context.run_root.as_posix(),
+        "promoted_root": context.promoted_root.as_posix(),
+        "promote_on_success": context.promote_on_success,
+        "preprocessing": asdict(
+            Task103PreprocessingSettings(
+                output_root=context.run_root,
+                asr_model=settings.preprocessing.asr_model,
+                asr_revision=settings.preprocessing.asr_revision,
+                tokenizer_model=settings.preprocessing.tokenizer_model,
+                stage=settings.preprocessing.stage,
+                finalization_families=settings.preprocessing.finalization_families,
+                audio_codes_chunk_size=settings.preprocessing.audio_codes_chunk_size,
+                row_worker_count=settings.preprocessing.row_worker_count,
+                gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
+            )
+        ),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the Task 103 preprocessing bundle and print one JSON summary."""
     settings = _parse_args(argv)
     enforce_generated_output_path(settings.preprocessing.output_root, label="output_root")
+    context = _resolve_run_context(settings)
+    prepare_run_root(context)
+    write_run_metadata(
+        context,
+        source_mode=settings.source_mode,
+        stage=settings.preprocessing.stage,
+        runner_payload=_runner_payload(settings, context),
+    )
+    write_run_status(
+        context,
+        source_mode=settings.source_mode,
+        stage=settings.preprocessing.stage,
+        status="allocated",
+    )
     source_records = _resolve_source_records(settings)
-    report = run_task103_preprocessing(settings.preprocessing, source_records=source_records)
+    effective_settings = Task103PreprocessingSettings(
+        output_root=context.run_root,
+        asr_model=settings.preprocessing.asr_model,
+        asr_revision=settings.preprocessing.asr_revision,
+        tokenizer_model=settings.preprocessing.tokenizer_model,
+        stage=settings.preprocessing.stage,
+        finalization_families=settings.preprocessing.finalization_families,
+        audio_codes_chunk_size=settings.preprocessing.audio_codes_chunk_size,
+        row_worker_count=settings.preprocessing.row_worker_count,
+        gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
+    )
+    try:
+        write_run_status(
+            context,
+            source_mode=settings.source_mode,
+            stage=settings.preprocessing.stage,
+            status="running",
+        )
+        report = run_task103_preprocessing(effective_settings, source_records=source_records)
+    except Exception as exc:
+        write_run_status(
+            context,
+            source_mode=settings.source_mode,
+            stage=settings.preprocessing.stage,
+            status="failed",
+            error=f"{type(exc).__name__}: {exc}",
+        )
+        raise
+    if context.promote_on_success and effective_settings.stage in {"all", "finalization"}:
+        promote_run_root(context)
+    write_run_status(
+        context,
+        source_mode=settings.source_mode,
+        stage=settings.preprocessing.stage,
+        status="promoted"
+        if context.promote_on_success and effective_settings.stage in {"all", "finalization"}
+        else "completed",
+    )
     print(_render_stdout_summary(report))
     return 0
 

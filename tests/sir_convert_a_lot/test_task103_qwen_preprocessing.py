@@ -22,6 +22,7 @@ from scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing imp
     DEFAULT_FLEURS_SPLITS,
     DEFAULT_OUTPUT_ROOT,
     DEFAULT_RIXVOX_SPLITS,
+    DEFAULT_RUNS_ROOT,
     DEFAULT_SOURCE_MODE,
     DEFAULT_TOKENIZER_MODEL,
     Task103RunnerSettings,
@@ -128,6 +129,10 @@ def test_task103_parse_args_defaults() -> None:
     assert runner_settings.fleurs_max_rows_per_split == DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT
     assert runner_settings.rixvox_splits == DEFAULT_RIXVOX_SPLITS
     assert runner_settings.rixvox_max_rows_per_split is None
+    assert runner_settings.runs_root == DEFAULT_RUNS_ROOT
+    assert runner_settings.run_id is None
+    assert runner_settings.run_root is None
+    assert runner_settings.promote_on_success is False
 
 
 def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
@@ -155,6 +160,27 @@ def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
     assert runner_settings.fleurs_max_rows_per_split == 8
     assert runner_settings.rixvox_splits == ("test",)
     assert runner_settings.rixvox_max_rows_per_split == 16
+    assert runner_settings.run_id is None
+    assert runner_settings.run_root is None
+
+
+def test_task103_parse_args_run_scoped_controls(tmp_path: Path) -> None:
+    """The runner should parse explicit run-root and promotion controls."""
+    runner_settings = _parse_args(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--run-id",
+            "proof-run",
+            "--runs-root",
+            (tmp_path / "runs").as_posix(),
+            "--promote-on-success",
+        ]
+    )
+
+    assert runner_settings.run_id == "proof-run"
+    assert runner_settings.runs_root == tmp_path / "runs"
+    assert runner_settings.promote_on_success is True
 
 
 def test_task103_preprocessing_emits_deterministic_bundle(
@@ -568,6 +594,121 @@ def test_task103_runner_main_prints_report_summary(
     stdout_payload = json.loads(capsys.readouterr().out)
     assert stdout_payload["output_root"] == expected_report.output_root
     assert stdout_payload["prepared_rows"] == 2
+
+
+def test_task103_runner_main_uses_run_root_for_staged_public_corpus(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The runner should allocate one immutable run root for staged public-corpus mode."""
+    expected_run_root = tmp_path / "runs" / "proof-run"
+    expected_report = Task103PreprocessingReport(
+        output_root=expected_run_root.as_posix(),
+        datasets=["rixvox"],
+        asr_model=DEFAULT_ASR_MODEL,
+        asr_revision=DEFAULT_ASR_REVISION,
+        tokenizer_model=DEFAULT_TOKENIZER_MODEL,
+        inventory_rows=1,
+        curated_rows=1,
+        admitted_rows=1,
+        prepared_rows=1,
+        speaker_ids=["speaker_a"],
+        manifest_counts={"swedish_smoke_train": 1},
+    )
+    observed_output_root: Path | None = None
+
+    def _fake_run_task103_preprocessing(
+        settings: Task103PreprocessingSettings,
+        *,
+        source_records: Sequence[SourceRecord] | None = None,
+    ) -> Task103PreprocessingReport:
+        nonlocal observed_output_root
+        observed_output_root = settings.output_root
+        return expected_report
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
+        _fake_run_task103_preprocessing,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
+        lambda settings: [],
+    )
+
+    exit_code = main(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--data-root",
+            tmp_path.as_posix(),
+            "--runs-root",
+            (tmp_path / "runs").as_posix(),
+            "--run-id",
+            "proof-run",
+        ]
+    )
+
+    assert exit_code == 0
+    assert observed_output_root == expected_run_root
+    assert (expected_run_root / "run.json").is_file()
+    status_payload = json.loads((expected_run_root / "status.json").read_text(encoding="utf-8"))
+    assert status_payload["status"] == "completed"
+    stdout_payload = json.loads(capsys.readouterr().out)
+    assert stdout_payload["output_root"] == expected_report.output_root
+
+
+def test_task103_runner_main_promotes_successful_run_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The runner should promote a successful run into the canonical shared corpus path."""
+    promoted_root = tmp_path / "build/reference/qwen3-tts-swedish-corpus"
+    expected_run_root = tmp_path / "runs" / "proof-run"
+    expected_report = Task103PreprocessingReport(
+        output_root=expected_run_root.as_posix(),
+        datasets=["rixvox"],
+        asr_model=DEFAULT_ASR_MODEL,
+        asr_revision=DEFAULT_ASR_REVISION,
+        tokenizer_model=DEFAULT_TOKENIZER_MODEL,
+        inventory_rows=1,
+        curated_rows=1,
+        admitted_rows=1,
+        prepared_rows=1,
+        speaker_ids=["speaker_a"],
+        manifest_counts={"swedish_smoke_train": 1},
+    )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
+        lambda settings, *, source_records=None: expected_report,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
+        lambda settings: [],
+    )
+
+    exit_code = main(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--data-root",
+            tmp_path.as_posix(),
+            "--runs-root",
+            (tmp_path / "runs").as_posix(),
+            "--run-id",
+            "proof-run",
+            "--output-root",
+            promoted_root.as_posix(),
+            "--promote-on-success",
+        ]
+    )
+
+    assert exit_code == 0
+    assert promoted_root.is_symlink()
+    assert promoted_root.resolve() == expected_run_root.resolve()
+    status_payload = json.loads((expected_run_root / "status.json").read_text(encoding="utf-8"))
+    assert status_payload["status"] == "promoted"
 
 
 def test_fleurs_source_records_parse_tsv_and_audio_archive(tmp_path: Path) -> None:

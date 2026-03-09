@@ -170,6 +170,14 @@ Current canonical position after `T109`:
 - live Hemma evidence exists under:
   - `build/verification/task-109-qwen-containerized-preprocessing/`
 
+Current `T110` hardening requirement:
+
+- detached and public-corpus preprocessing runs must not execute directly
+  inside the canonical shared corpus path
+- every live preprocessing run must write to an immutable run root
+- the canonical shared corpus path is promotion-only
+- failed runs remain inspectable in their original run roots
+
 ## Flash Attention Policy
 
 For the current repo state:
@@ -225,6 +233,20 @@ Verified Hemma storage tiers:
   - `/`
   - not a valid long-term target for Docker persistent state or large Qwen
     artifact trees
+
+Preprocessing execution tiers:
+
+- live preprocessing runs execute under SSD scratch-backed run roots
+- canonical shared corpus outputs are promoted views only
+- raw corpora remain on HDD storage
+
+Preferred live run root:
+
+- `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/<run_id>/`
+
+Canonical promoted corpus view:
+
+- `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus/`
 
 Always begin long training work from a clean GPU baseline:
 
@@ -428,6 +450,10 @@ Canonical Task 103 preprocessing contract:
   - `--finalization-families`
   - `--audio-codes-chunk-size`
   - `--row-worker-count`
+  - `--runs-root`
+  - `--run-id`
+  - `--run-root`
+  - `--promote-on-success`
   - `--gpu-asr-worker-count`
 
 Canonical Task 106 acquisition surface:

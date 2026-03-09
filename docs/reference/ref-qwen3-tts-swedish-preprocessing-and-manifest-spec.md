@@ -116,6 +116,34 @@ Canonical subtrees:
     - `tmp/`
     - `state/`
 
+## Run-Scoped Execution Roots
+
+Detached Hemma and public-corpus preprocessing runs must not execute directly
+inside the canonical shared corpus path.
+
+Required live execution posture:
+
+- allocate one immutable run root per preprocessing run under SSD scratch
+- write all live run artifacts into that run root
+- preserve failed and interrupted run roots for later inspection
+- treat `build/reference/qwen3-tts-swedish-corpus/` as a promoted view only
+
+Preferred Hemma run-root layout:
+
+- `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/<run_id>/`
+
+Required run-level files:
+
+- `run.json`
+- `status.json`
+- `logs/`
+
+Promotion contract:
+
+- only a successful run may update the canonical shared corpus view
+- promotion must not mutate the run root in place
+- failed runs must never overwrite the canonical shared corpus view
+
 ## Pipeline Stages
 
 The full planned preprocessing flow, including `T110` / `T111` hardening, is
@@ -142,11 +170,13 @@ The preprocessing lane should be independently controllable by stage.
 
 Required stage surfaces:
 
+- `run-allocation`
 - `inventory`
 - `row-processing`
 - `curated-projection`
 - `finalization`
 - `reports`
+- `promotion`
 
 Preferred execution behavior:
 
@@ -208,6 +238,7 @@ Expected spool semantics:
 - no partial row treated as complete
 - enough row metadata to rebuild curated/manifests/reports without rerunning
   Whisper for completed rows
+- spool rows are durable within one run root and are not shared across runs
 
 Minimum planned spool fields:
 

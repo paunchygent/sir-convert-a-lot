@@ -43,6 +43,10 @@ def test_build_detached_task108_command_drops_rm_and_adds_name() -> None:
     """The detached Task 108 command should launch a named background container."""
     settings = Task109ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/task-109-qwen-containerized-preprocessing"),
+        task103_runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        task103_run_id="task108-proof-run",
+        task103_run_root=None,
+        task103_promote_on_success=False,
         dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
@@ -84,6 +88,8 @@ def test_build_detached_task108_command_drops_rm_and_adds_name() -> None:
     assert "--rm" not in command
     assert "--audio-codes-chunk-size" in command
     assert "4" in command
+    assert "--run-id" in command
+    assert "task108-proof-run" in command
     assert "--row-worker-count" in command
     assert "10" in command
     assert "--gpu-asr-worker-count" in command
@@ -102,7 +108,11 @@ def test_load_launch_reads_recorded_metadata(tmp_path: Path) -> None:
                 "container_name": "task108-qwen-proof-20260309t120000z",
                 "container_id": "container-id",
                 "repo_root": "/home/paunchygent/apps/sir-convert-a-lot",
-                "task103_output_root": (
+                "task103_run_root": (
+                    "/srv/scratch/sir-convert-a-lot/build/runs/"
+                    "qwen3-tts-swedish-preprocessing/task108-qwen-proof-20260309t120000z"
+                ),
+                "task103_promoted_root": (
                     "/home/paunchygent/apps/sir-convert-a-lot/"
                     "build/reference/qwen3-tts-swedish-corpus"
                 ),
@@ -126,6 +136,8 @@ def test_inspect_detached_task108_proof_reads_container_and_report(
     """The detached Task 108 status surface should combine Docker and report state."""
     repo_root = tmp_path / "repo"
     report_path = repo_root / "build/reference/qwen3-tts-swedish-corpus/report.json"
+    run_root = tmp_path / "runs/task108-qwen-proof-20260309t120000z"
+    report_path = run_root / "report.json"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
         json.dumps(
@@ -143,7 +155,8 @@ def test_inspect_detached_task108_proof_reads_container_and_report(
         container_name="task108-qwen-proof-20260309t120000z",
         container_id="container-id",
         repo_root=repo_root.as_posix(),
-        task103_output_root=report_path.parent.as_posix(),
+        task103_run_root=report_path.parent.as_posix(),
+        task103_promoted_root=(repo_root / "build/reference/qwen3-tts-swedish-corpus").as_posix(),
         command=["sudo", "-n", "docker", "run", "-d"],
     )
 

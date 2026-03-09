@@ -33,6 +33,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_IMAGE,
     DEFAULT_ROW_WORKER_COUNT,
     DEFAULT_SCRATCH_BUILD,
+    DEFAULT_TASK103_RUNS_ROOT,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     ensure_image_present,
@@ -66,6 +67,10 @@ def _parse_shared_settings(args: argparse.Namespace) -> Task109ContainerizedPrep
     """Convert parsed CLI args into the canonical Task 109 settings contract."""
     return Task109ContainerizedPreprocessingSettings(
         output_root=Path(args.output_root),
+        task103_runs_root=Path(args.task103_runs_root),
+        task103_run_id=None if args.task103_run_id is None else str(args.task103_run_id),
+        task103_run_root=None if args.task103_run_root is None else Path(args.task103_run_root),
+        task103_promote_on_success=bool(args.task103_promote_on_success),
         dockerfile_path=Path(args.dockerfile_path),
         image=str(args.image),
         hf_cache_dir=Path(args.hf_cache_dir),
@@ -92,6 +97,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
     launch = subparsers.add_parser("launch", help="Launch one detached Task 108 proof container.")
     launch.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    launch.add_argument("--task103-runs-root", type=Path, default=DEFAULT_TASK103_RUNS_ROOT)
+    launch.add_argument("--task103-run-id", default=None)
+    launch.add_argument("--task103-run-root", type=Path, default=None)
+    launch.add_argument(
+        "--task103-promote-on-success",
+        action="store_true",
+        help="Promote the inner Task 103 run into the canonical shared corpus view.",
+    )
     launch.add_argument("--dockerfile-path", type=Path, default=DEFAULT_DOCKERFILE_PATH)
     launch.add_argument("--image", default=DEFAULT_IMAGE)
     launch.add_argument("--hf-cache-dir", type=Path, default=DEFAULT_HF_CACHE)
@@ -230,7 +243,8 @@ def _load_launch(output_root: Path) -> Task108DetachedProofLaunch:
         container_name=_required_str(payload, "container_name"),
         container_id=_required_str(payload, "container_id"),
         repo_root=_required_str(payload, "repo_root"),
-        task103_output_root=_required_str(payload, "task103_output_root"),
+        task103_run_root=_required_str(payload, "task103_run_root"),
+        task103_promoted_root=_required_str(payload, "task103_promoted_root"),
         command=_required_str_list(payload, "command"),
     )
 
@@ -301,7 +315,8 @@ def main(argv: list[str] | None = None) -> int:
                 container_name=str(args.container_name),
                 container_id=launch.container_id,
                 repo_root=launch.repo_root,
-                task103_output_root=launch.task103_output_root,
+                task103_run_root=launch.task103_run_root,
+                task103_promoted_root=launch.task103_promoted_root,
                 command=launch.command,
             )
         status = inspect_detached_task108_proof(launch)

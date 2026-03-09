@@ -62,6 +62,9 @@ DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
 DEFAULT_ROW_WORKER_COUNT = 1
 DEFAULT_GPU_ASR_WORKER_COUNT = 1
+DEFAULT_TASK103_RUNS_ROOT = Path(
+    "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"
+)
 
 
 @dataclass(frozen=True)
@@ -126,6 +129,14 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         description="Run Task 109 containerized Qwen public-corpus preprocessing on Hemma."
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--task103-runs-root", type=Path, default=DEFAULT_TASK103_RUNS_ROOT)
+    parser.add_argument("--task103-run-id", default=None)
+    parser.add_argument("--task103-run-root", type=Path, default=None)
+    parser.add_argument(
+        "--task103-promote-on-success",
+        action="store_true",
+        help="Promote the inner Task 103 run into the canonical shared corpus view.",
+    )
     parser.add_argument("--dockerfile-path", type=Path, default=DEFAULT_DOCKERFILE_PATH)
     parser.add_argument("--image", default=DEFAULT_IMAGE)
     parser.add_argument("--hf-cache-dir", type=Path, default=_default_hf_cache_dir())
@@ -182,6 +193,10 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
     rixvox_splits = tuple(args.rixvox_splits or DEFAULT_RIXVOX_SPLITS)
     return Task109ContainerizedPreprocessingSettings(
         output_root=Path(args.output_root),
+        task103_runs_root=Path(args.task103_runs_root),
+        task103_run_id=None if args.task103_run_id is None else str(args.task103_run_id),
+        task103_run_root=None if args.task103_run_root is None else Path(args.task103_run_root),
+        task103_promote_on_success=bool(args.task103_promote_on_success),
         dockerfile_path=Path(args.dockerfile_path),
         image=str(args.image),
         hf_cache_dir=Path(args.hf_cache_dir),

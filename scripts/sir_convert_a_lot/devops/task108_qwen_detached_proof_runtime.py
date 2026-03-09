@@ -28,7 +28,7 @@ from scripts.sir_convert_a_lot.devops.task109_qwen_containerized_preprocessing_r
     build_containerized_preprocessing_command,
 )
 
-DEFAULT_T103_OUTPUT_ROOT = Path("build/reference/qwen3-tts-swedish-corpus")
+DEFAULT_T103_PROMOTED_ROOT = Path("build/reference/qwen3-tts-swedish-corpus")
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,8 @@ class Task108DetachedProofLaunch:
     container_name: str
     container_id: str
     repo_root: str
-    task103_output_root: str
+    task103_run_root: str
+    task103_promoted_root: str
     command: list[str]
 
 
@@ -118,6 +119,11 @@ def launch_detached_task108_proof(
         data_mount=data_mount,
         container_name=container_name,
     )
+    if settings.task103_run_root is not None:
+        task103_run_root = settings.task103_run_root
+    else:
+        task103_run_id = settings.task103_run_id or container_name
+        task103_run_root = settings.task103_runs_root / task103_run_id
     container_id = docker_checked(
         command,
         label="docker run task108 detached preprocessing proof",
@@ -127,7 +133,8 @@ def launch_detached_task108_proof(
         container_name=container_name,
         container_id=container_id,
         repo_root=repo_root.as_posix(),
-        task103_output_root=(repo_root / DEFAULT_T103_OUTPUT_ROOT).as_posix(),
+        task103_run_root=task103_run_root.as_posix(),
+        task103_promoted_root=(repo_root / DEFAULT_T103_PROMOTED_ROOT).as_posix(),
         command=["sudo", "-n", "docker", *command],
     )
 
@@ -155,7 +162,7 @@ def inspect_detached_task108_proof(
     finished_at = _required_str(state, "FinishedAt")
     container_id = _required_str(inspect_payload, "Id")
 
-    task103_report_path = Path(launch.task103_output_root) / "report.json"
+    task103_report_path = Path(launch.task103_run_root) / "report.json"
     task103_report: dict[str, object] | None = None
     if task103_report_path.exists():
         loaded_report = json.loads(task103_report_path.read_text(encoding="utf-8"))

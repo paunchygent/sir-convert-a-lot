@@ -18,6 +18,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_OUTPUT_ROOT,
     DEFAULT_ROW_WORKER_COUNT,
     DEFAULT_SCRATCH_BUILD,
+    DEFAULT_TASK103_RUNS_ROOT,
     _parse_args,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
@@ -36,6 +37,10 @@ def test_task109_parse_args_defaults() -> None:
     settings = _parse_args([])
 
     assert settings.output_root == DEFAULT_OUTPUT_ROOT
+    assert settings.task103_runs_root == DEFAULT_TASK103_RUNS_ROOT
+    assert settings.task103_run_id is None
+    assert settings.task103_run_root is None
+    assert settings.task103_promote_on_success is False
     assert settings.dockerfile_path == DEFAULT_DOCKERFILE_PATH
     assert settings.image == DEFAULT_IMAGE
     assert settings.hf_cache_dir == DEFAULT_HF_CACHE
@@ -56,6 +61,10 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     """The containerized preprocessing command should reuse repo and DATA mounts."""
     settings = Task109ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/task-109-qwen-containerized-preprocessing"),
+        task103_runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        task103_run_id="run-123",
+        task103_run_root=None,
+        task103_promote_on_success=False,
         dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
@@ -107,6 +116,10 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert f"HF_HOME={hf_mount.canonical_root.as_posix()}" in command
     assert "--source-mode" in command
     assert "staged-public-corpus" in command
+    assert "--runs-root" in command
+    assert settings.task103_runs_root.as_posix() in command
+    assert "--run-id" in command
+    assert "run-123" in command
     assert "--fleurs-max-rows-per-split" in command
     assert "8" in command
     assert "--rixvox-splits" in command
@@ -127,6 +140,10 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
     """The Task 109 runtime should parse the inner Task 103 report from mixed stdout."""
     settings = Task109ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/task-109-qwen-containerized-preprocessing"),
+        task103_runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        task103_run_id=None,
+        task103_run_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/manual-run"),
+        task103_promote_on_success=True,
         dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),

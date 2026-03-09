@@ -57,6 +57,10 @@ purely speculative refactor.
 - Split the preprocessing lane into two canonical phases:
   - row-processing
   - finalization
+- Add immutable per-run output roots for every detached or public-corpus
+  execution.
+- Reserve the canonical shared corpus path for promotion only after a run has
+  completed successfully.
 - Persist row-level outputs to deterministic disk artifacts as each row
   completes:
   - normalized transcript
@@ -71,6 +75,10 @@ purely speculative refactor.
   - `build/reference/qwen3-tts-swedish-corpus/`
 - Ensure finalization reads the disk-backed spool rather than depending on a
   whole-run in-memory accumulator.
+- Add explicit promotion semantics so successful runs can update the canonical
+  shared corpus pointer without mutating the live run root.
+- Add resume semantics so reruns can target an existing run id without
+  destroying completed row-stage output.
 - Preserve containerized execution as the only canonical runtime for the
   public-corpus lane.
 - Make stage selection and resource control explicit rather than implicit:
@@ -103,6 +111,10 @@ After this task:
 
 The intended pipeline shape after `T110` is:
 
+1. run allocation
+   - allocate one immutable run id and run root on scratch
+   - write `run.json` and initial `status.json`
+   - do not write directly into the canonical shared corpus path
 1. inventory
    - deterministic source-row inventory only
    - no Whisper, no Qwen tokenizer work
@@ -125,6 +137,10 @@ The intended pipeline shape after `T110` is:
      all-at-once batch
 1. reports
    - write report surfaces last from deterministic on-disk state
+1. promotion
+   - only after successful completion
+   - update the canonical shared corpus pointer or promoted tree
+   - failed runs are never promoted
 
 ## Control Model
 
@@ -156,9 +172,33 @@ Current implemented controls:
   - `--audio-codes-chunk-size`
   - `--row-worker-count`
   - `--gpu-asr-worker-count`
+  - `--runs-root`
+  - `--run-id`
+  - `--run-root`
+  - `--promote-on-success`
 - `task-103-preprocess-public-corpus` / Task 109 containerized wrapper
   - forwards the same chunk-size and row/GPU concurrency controls into the
     canonical Qwen container runtime on Hemma
+
+Required new controls:
+
+- run selection:
+  - allocate a fresh run id
+  - resume an existing run id
+  - promote a completed run id
+- stage execution against one run root instead of one shared mutable output
+  root
+
+Current implementation progress:
+
+- row-processing and finalization are already split into dedicated modules
+- the runner now allocates immutable run roots for staged-public-corpus and
+  detached-proof work by default
+- `run.json` and `status.json` are emitted inside the live run root
+- successful runs can now be promoted into the canonical shared corpus path
+  explicitly with `--promote-on-success`
+- detached proof metadata now tracks the actual Task 103 run root rather than
+  assuming the shared promoted corpus path
 
 Default posture:
 
@@ -178,10 +218,12 @@ Current implementation progress:
 
 Remaining acceptance work:
 
-- prove the bounded detached Hemma `T108` lane against the chunked spool-based
-  pipeline
+- prove the bounded detached Hemma `T108` lane against the run-scoped,
+  chunked spool-based pipeline
 - tune row/GPU concurrency from live Hemma evidence rather than static
   assumptions
+- verify that failed detached runs preserve row-stage artifacts in their
+  immutable run roots without promotion
 
 Latest concurrency evidence:
 
@@ -222,6 +264,45 @@ Required restart rules:
 - rerunning finalization must not require rerunning Whisper or audio
   materialization for already completed rows
 - rerunning one manifest family must not invalidate other completed families
+- rerunning with a fresh run id must never delete earlier failed or partial run
+  roots
+- rerunning against the canonical shared corpus path directly is forbidden
+- the canonical shared corpus path must only be updated by a dedicated promote
+  step after a successful run
+
+## Run-Scoped Output Contract
+
+`T110` is not complete until detached and public-corpus runs use immutable
+per-run roots.
+
+Required posture:
+
+- each run gets one unique run id
+- each run writes under one unique scratch-backed run root
+- row-stage outputs, spool rows, curated artifacts, manifests, reports, and
+  logs remain inside that run root
+- failed or interrupted runs remain inspectable in place
+- canonical corpus outputs are promoted from a successful run, never executed
+  in place
+
+Required run-level artifacts:
+
+- `run.json`
+- `status.json`
+- `logs/`
+- `inventory/`
+- `audio_24k/`
+- `spool/rows/`
+- `refs/`
+- `curated/`
+- `manifests/`
+- `reports/`
+
+Promotion requirement:
+
+- a successful run may update the canonical shared corpus pointer or promoted
+  tree
+- failed runs must not overwrite the canonical shared corpus path
 
 ## Resource Posture
 
