@@ -139,7 +139,13 @@ def _resolve_manifest_path(manifest_root: Path, raw_path: str) -> str:
     candidate = Path(raw_path)
     if candidate.is_absolute():
         return candidate.as_posix()
-    return (manifest_root / candidate).resolve().as_posix()
+    manifest_relative = manifest_root / candidate
+    run_root_relative = manifest_root.parent / candidate
+    if manifest_relative.exists():
+        return manifest_relative.resolve().as_posix()
+    if run_root_relative.exists():
+        return run_root_relative.resolve().as_posix()
+    return run_root_relative.resolve().as_posix()
 
 
 def _load_config_dict(model_path: str) -> dict[str, object]:
