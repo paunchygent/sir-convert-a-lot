@@ -29,6 +29,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     ManifestFamily,
     Task103PreprocessingReport,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import Task103Stage
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,8 @@ class Task109ContainerizedPreprocessingSettings:
     task103_run_id: str | None
     task103_run_root: Path | None
     task103_promote_on_success: bool
+    task103_stage: Task103Stage
+    task103_finalization_families: tuple[ManifestFamily, ...]
     dockerfile_path: Path
     image: str
     hf_cache_dir: Path
@@ -189,6 +192,8 @@ def build_containerized_preprocessing_command(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing",
         "--source-mode",
         "staged-public-corpus",
+        "--stage",
+        settings.task103_stage,
         "--runs-root",
         container_runs_root,
         "--data-root",
@@ -203,6 +208,8 @@ def build_containerized_preprocessing_command(
         str(settings.row_worker_count),
         "--gpu-asr-worker-count",
         str(settings.gpu_asr_worker_count),
+        "--finalization-families",
+        ",".join(settings.task103_finalization_families),
     ]
     if settings.task103_run_id is not None:
         command.extend(["--run-id", settings.task103_run_id])

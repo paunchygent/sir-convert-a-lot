@@ -323,8 +323,7 @@ def test_process_rows_to_spool_prewarms_scorers_before_worker_execution(
     assert [scorer.ensure_loaded_calls for scorer in created_scorers] == [1, 1]
     spool_rows = list(
         (
-            tmp_path
-            / "build/reference/qwen3-tts-swedish-corpus/spool/rows/repo_fixture_sv/fixture"
+            tmp_path / "build/reference/qwen3-tts-swedish-corpus/spool/rows/repo_fixture_sv/fixture"
         ).rglob("*.json")
     )
     assert len(spool_rows) == 1

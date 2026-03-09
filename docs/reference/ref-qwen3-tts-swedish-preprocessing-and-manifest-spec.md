@@ -11,6 +11,7 @@ links:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
+  - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
   - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-guide.md
@@ -185,6 +186,16 @@ Preferred execution behavior:
 - rerunning later stages must not require recomputing already completed
   row-processing work
 
+Hemma hard-isolation rule:
+
+- GPU-backed public-corpus runs on Hemma must not use one long-lived
+  `stage=all` process as the canonical path
+- `row-processing` and `finalization` must run in separate fresh
+  containers/processes
+- `reports` and `promotion` should also remain independently invokable
+- finalization must start from a cold runtime with no carried-over Whisper
+  worker state from row-processing
+
 ## Parallelism Contract
 
 Parallelism must be explicit and bounded.
@@ -203,6 +214,8 @@ Default posture:
 - sequential family finalization
 - chunked `audio_codes` generation
 - detached Hemma execution for long runs
+- stage-by-stage orchestration on Hemma rather than one combined GPU-backed
+  `all` stage
 
 ## Modularization Contract
 

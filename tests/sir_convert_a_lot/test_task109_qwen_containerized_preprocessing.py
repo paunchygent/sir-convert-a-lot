@@ -19,7 +19,9 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_ROW_WORKER_COUNT,
     DEFAULT_SCRATCH_BUILD,
     DEFAULT_SCRATCH_BUILD_HOME_MOUNT,
+    DEFAULT_TASK103_FINALIZATION_FAMILIES,
     DEFAULT_TASK103_RUNS_ROOT,
+    DEFAULT_TASK103_STAGE,
     _parse_args,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
@@ -42,6 +44,8 @@ def test_task109_parse_args_defaults() -> None:
     assert settings.task103_run_id is None
     assert settings.task103_run_root is None
     assert settings.task103_promote_on_success is False
+    assert settings.task103_stage == DEFAULT_TASK103_STAGE
+    assert settings.task103_finalization_families == DEFAULT_TASK103_FINALIZATION_FAMILIES
     assert settings.dockerfile_path == DEFAULT_DOCKERFILE_PATH
     assert settings.image == DEFAULT_IMAGE
     assert settings.hf_cache_dir == DEFAULT_HF_CACHE
@@ -59,14 +63,24 @@ def test_task109_parse_args_defaults() -> None:
     assert settings.build_image is True
 
 
+def test_task109_parse_args_rejects_stage_all_without_explicit_override() -> None:
+    """The Hemma runner should reject canonical use of `task103-stage=all`."""
+    with pytest.raises(SystemExit, match="no longer treats `task103-stage=all` as canonical"):
+        _parse_args(["--task103-stage", "all"])
+
+
 def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     """The containerized preprocessing command should reuse repo and DATA mounts."""
     settings = Task109ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/task-109-qwen-containerized-preprocessing"),
-        task103_runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        task103_runs_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"
+        ),
         task103_run_id="run-123",
         task103_run_root=None,
         task103_promote_on_success=False,
+        task103_stage="finalization",
+        task103_finalization_families=("swedish_scaleup_train",),
         dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
@@ -125,6 +139,8 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert f"HF_HOME={hf_mount.canonical_root.as_posix()}" in command
     assert "--source-mode" in command
     assert "staged-public-corpus" in command
+    assert "--stage" in command
+    assert "finalization" in command
     assert "--runs-root" in command
     assert "/app/build/runs/qwen3-tts-swedish-preprocessing" in command
     assert "--run-id" in command
@@ -141,6 +157,8 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "3" in command
     assert "--gpu-asr-worker-count" in command
     assert "2" in command
+    assert "--finalization-families" in command
+    assert "swedish_scaleup_train" in command
 
 
 def test_task109_run_containerized_preprocessing_parses_inner_report(
@@ -149,10 +167,16 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
     """The Task 109 runtime should parse the inner Task 103 report from mixed stdout."""
     settings = Task109ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/task-109-qwen-containerized-preprocessing"),
-        task103_runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        task103_runs_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"
+        ),
         task103_run_id=None,
-        task103_run_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/manual-run"),
+        task103_run_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/manual-run"
+        ),
         task103_promote_on_success=True,
+        task103_stage="reports",
+        task103_finalization_families=("swedish_smoke_train", "swedish_pilot_train"),
         dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),

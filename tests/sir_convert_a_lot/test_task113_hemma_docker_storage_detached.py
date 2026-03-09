@@ -84,9 +84,7 @@ def test_task113_detached_runner_writes_launch_and_status_artifacts(
     assert launch_exit == 0
     assert status_exit == 0
     launch_payload = json.loads((output_root / "launch.json").read_text(encoding="utf-8"))
-    assert launch_payload["session_name"] == (
-        launch.session_name
-    )
+    assert launch_payload["session_name"] == (launch.session_name)
     assert json.loads((output_root / "status.json").read_text(encoding="utf-8"))["exit_code"] == 0
     assert "Task 113 Detached Docker Storage Migration Status" in (
         output_root / "status.md"

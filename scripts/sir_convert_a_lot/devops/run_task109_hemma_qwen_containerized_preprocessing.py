@@ -30,6 +30,10 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     resolve_effective_hf_cache_dir,
     run_checked,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
+    CANONICAL_MANIFEST_FAMILIES,
+)
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     default_data_root,
     ensure_bulk_data_storage_path,
@@ -67,6 +71,8 @@ DEFAULT_GPU_ASR_WORKER_COUNT = 1
 DEFAULT_TASK103_RUNS_ROOT = Path(
     "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"
 )
+DEFAULT_TASK103_STAGE = "row-processing"
+DEFAULT_TASK103_FINALIZATION_FAMILIES = CANONICAL_MANIFEST_FAMILIES
 
 
 @dataclass(frozen=True)
@@ -93,9 +99,46 @@ class Task109ContainerizedReport:
     audio_codes_chunk_size: int
     row_worker_count: int
     gpu_asr_worker_count: int
+    task103_stage: str
+    task103_finalization_families: list[str]
     command: list[str]
     preprocessing_report: dict[str, object]
     rocm_smi_before: str
+
+
+def _parse_csv_list(raw_value: str) -> tuple[str, ...]:
+    """Parse one comma-separated CLI list into a normalized tuple."""
+    rendered_values = tuple(value.strip() for value in raw_value.split(",") if value.strip() != "")
+    if not rendered_values:
+        raise SystemExit("Expected at least one split value.")
+    return rendered_values
+
+
+def _parse_manifest_families(raw_value: str) -> tuple[ManifestFamily, ...]:
+    """Parse one manifest-family CSV list into typed family literals."""
+    rendered_values = _parse_csv_list(raw_value)
+    typed_values: list[ManifestFamily] = []
+    for value in rendered_values:
+        if value == "swedish_smoke_train":
+            typed_values.append("swedish_smoke_train")
+            continue
+        if value == "swedish_pilot_train":
+            typed_values.append("swedish_pilot_train")
+            continue
+        if value == "swedish_scaleup_train":
+            typed_values.append("swedish_scaleup_train")
+            continue
+        if value == "swedish_checkpoint_dev":
+            typed_values.append("swedish_checkpoint_dev")
+            continue
+        if value == "swedish_final_test":
+            typed_values.append("swedish_final_test")
+            continue
+        if value == "swedish_waxholm_control":
+            typed_values.append("swedish_waxholm_control")
+            continue
+        raise SystemExit(f"Unknown manifest family: {value}")
+    return tuple(typed_values)
 
 
 def _utc_now_iso() -> str:
@@ -145,9 +188,23 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
     parser.add_argument("--task103-run-id", default=None)
     parser.add_argument("--task103-run-root", type=Path, default=None)
     parser.add_argument(
+        "--task103-stage",
+        choices=("row-processing", "finalization", "reports", "all"),
+        default=DEFAULT_TASK103_STAGE,
+    )
+    parser.add_argument(
+        "--task103-finalization-families",
+        default=",".join(DEFAULT_TASK103_FINALIZATION_FAMILIES),
+    )
+    parser.add_argument(
         "--task103-promote-on-success",
         action="store_true",
         help="Promote the inner Task 103 run into the canonical shared corpus view.",
+    )
+    parser.add_argument(
+        "--allow-noncanonical-stage-all",
+        action="store_true",
+        help="Allow one combined Task 103 `all` stage inside the Hemma container runner.",
     )
     parser.add_argument("--dockerfile-path", type=Path, default=DEFAULT_DOCKERFILE_PATH)
     parser.add_argument("--image", default=DEFAULT_IMAGE)
@@ -207,6 +264,12 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         help="Skip `docker buildx build` when the image already exists locally.",
     )
     args = parser.parse_args(argv)
+    if args.task103_stage == "all" and not bool(args.allow_noncanonical_stage_all):
+        raise SystemExit(
+            "Task 109 no longer treats `task103-stage=all` as canonical on Hemma. "
+            "Use the Task 114 stage orchestrator instead, or pass "
+            "`--allow-noncanonical-stage-all` only for explicit debugging."
+        )
     rixvox_splits = tuple(args.rixvox_splits or DEFAULT_RIXVOX_SPLITS)
     return Task109ContainerizedPreprocessingSettings(
         output_root=Path(args.output_root),
@@ -214,6 +277,10 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         task103_run_id=None if args.task103_run_id is None else str(args.task103_run_id),
         task103_run_root=None if args.task103_run_root is None else Path(args.task103_run_root),
         task103_promote_on_success=bool(args.task103_promote_on_success),
+        task103_stage=args.task103_stage,
+        task103_finalization_families=_parse_manifest_families(
+            str(args.task103_finalization_families)
+        ),
         dockerfile_path=Path(args.dockerfile_path),
         image=str(args.image),
         hf_cache_dir=Path(args.hf_cache_dir),
@@ -281,6 +348,8 @@ def _build_report_markdown(
         f"- Audio-codes chunk size: `{report.audio_codes_chunk_size}`\n"
         f"- Row worker count: `{report.row_worker_count}`\n"
         f"- GPU ASR worker count: `{report.gpu_asr_worker_count}`\n"
+        f"- Task 103 stage: `{report.task103_stage}`\n"
+        f"- Task 103 finalization families: `{report.task103_finalization_families}`\n"
         f"- Command: `{command_text}`\n"
         f"- Inner output root: `{inner_report['output_root']}`\n"
         f"- Inventory rows: `{inner_report['inventory_rows']}`\n"
@@ -361,6 +430,8 @@ def main(argv: list[str] | None = None) -> int:
             audio_codes_chunk_size=settings.audio_codes_chunk_size,
             row_worker_count=settings.row_worker_count,
             gpu_asr_worker_count=settings.gpu_asr_worker_count,
+            task103_stage=settings.task103_stage,
+            task103_finalization_families=list(settings.task103_finalization_families),
             command=preprocessing_run.command,
             preprocessing_report=asdict(preprocessing_run.preprocessing_report),
             rocm_smi_before=rocm_smi_before,

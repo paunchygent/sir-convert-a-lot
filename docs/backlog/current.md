@@ -61,25 +61,13 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 - 2026-03-06:
 
-  - Completed `T72` with deterministic throughput evidence in
-    `build/benchmarks/story-20/task-72-parallel-throughput-local.json`.
-  - Opened Epic 07 / Story 23 and accepted ADR-0007 for the reusable TTS
-    sidecar contract.
-  - Implemented and remediated `T81` OpenVoice on Hemma through multiple live
-    reruns, fixed the setup-artifact export path, and closed `T84`.
-  - Recorded the final qualitative `T81` decision: technically feasible, but
-    not the lead Swedish teacher-voice candidate, so Story 23 advanced to
-    `T82`.
+  - Completed `T72`, opened Epic 07 / Story 23, remediated `T81`, closed
+    `T84`, and advanced Story 23 to `T82`.
 
 - 2026-03-07:
 
-  - Redirected Story 23 to the active `T85` F5 lane, proved it technically on
-    Hemma, and rejected it qualitatively.
-  - Implemented and verified the Chatterbox Hemma lane across `T86-T93`,
-    including tuning, eSpeak preprocessing, deterministic segmentation,
-    speech-aware stitching, and clause-aware chunk planning.
-  - Established Chatterbox as the production-candidate Swedish TTS sidecar lane
-    on Hemma.
+  - Redirected Story 23 to `T85`, completed `T86-T93`, and established
+    Chatterbox as the production-candidate Swedish TTS sidecar lane on Hemma.
 
 - 2026-03-08:
 
@@ -188,23 +176,29 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     the canonical snap path `/var/snap/docker/common/var-lib-docker` while
     physically bind-mounted from `/srv/scratch/docker/data-root`, and the old
     home-path Docker root entry was removed from `/etc/fstab`.
+  - Recovered the preserved detached `4`-worker `T108` run root after the hard
+    power cycle and confirmed the host wedge happened during
+    `swedish_scaleup_train` finalization, after complete `swedish_smoke_train`
+    and `swedish_pilot_train` outputs had already been written.
+  - Opened `T114` to hard-isolate row-processing and finalization on Hemma:
+    the canonical path is now detached row-processing first, then detached
+    fresh-process finalization, then reports/promotion, never one GPU-backed
+    `stage=all` run.
 
 - 2026-03-05:
 
-  - Re-terminalized Task 73 after ruthless review remediation with sustained-load evidence in
-    `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`; validation stayed green.
-  - Completed Task 76 deploy-and-verify evidence plus Task 77 multilingual OCR hardening; detail
-    remains in the linked Epic 06 / Story 20 / Task 76 docs.
+  - Re-terminalized `T73` with sustained-load evidence and completed `T76-T77`;
+    see the linked Epic 06 / Story 20 task docs for detail.
 
 - 2026-03-04:
 
-  - Planned Epic 06 long PDF reliability/performance work and completed Tasks 67-71 plus 75 in
-    the first delivery slice; detailed progress remains in the linked task docs and tests.
+  - Planned Epic 06 long PDF reliability/performance work and completed
+    `T67-T71` plus `T75`; detail remains in the linked task docs and tests.
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then
-  `T83`, with `T82` kept deferred.
+- Current local execution focus is Epic 07 Story 23 listening review on
+  `T91`, then `T93`, then `T83`, with `T82` kept deferred.
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, and
   `T109` are complete. The active blocker before `T101` is `T108`:
   materialize `rixvox` audio and map admitted train rows into the canonical
@@ -212,9 +206,10 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 - Follow-on hardening after the first detached `T108` repro is now partly in place:
   `T110` has delivered the staged spool/finalization split plus explicit
   row/GPU concurrency controls, and `T112` / `T113` have closed the Hemma
-  storage-model blocker. The immediate next step is to fix the Qwen
-  preprocessing meta-tensor device-transfer failure exposed by the `3`-worker
-  detached proof, then rerun `T108` toward audio-backed train manifests before
-  `T101`. `T111` remains the later provenance-safe ASR relabel candidate task.
-- Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
+  storage-model blocker. The immediate next step is `T114`: fully isolate
+  detached row-processing from detached fresh-process finalization before the
+  next `T108` rerun. `T111` remains the later provenance-safe ASR relabel
+  candidate task.
+- Other devs are closing Epic 06 `T74`; sync backlog terminal states once
+  their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

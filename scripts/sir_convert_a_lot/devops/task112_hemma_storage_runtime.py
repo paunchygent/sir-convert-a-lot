@@ -211,7 +211,9 @@ def build_storage_report(
     migrated_qwen_data = False
     if settings.old_qwen_data_root.is_symlink():
         old_qwen_data_target = settings.old_qwen_data_root.resolve().as_posix()
-        migrated_qwen_data = old_qwen_data_target == settings.new_qwen_data_root.resolve().as_posix()
+        migrated_qwen_data = (
+            old_qwen_data_target == settings.new_qwen_data_root.resolve().as_posix()
+        )
     return Task112StorageReport(
         repo_build_root=settings.repo_build_root.as_posix(),
         repo_build_is_symlink=settings.repo_build_root.is_symlink(),

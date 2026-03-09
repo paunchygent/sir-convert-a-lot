@@ -116,6 +116,5 @@ def test_task113_runner_writes_report_artifacts(
         encoding="utf-8"
     )
     assert (
-        '"docker_root_after": "/var/snap/docker/common/var-lib-docker"'
-        in capsys.readouterr().out
+        '"docker_root_after": "/var/snap/docker/common/var-lib-docker"' in capsys.readouterr().out
     )

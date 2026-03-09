@@ -22,8 +22,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 DEFAULT_REMOTE_REPO_ROOT = Path("/home/paunchygent/apps/sir-convert-a-lot")
-DEFAULT_REMOTE_OUTPUT_ROOT = DEFAULT_REMOTE_REPO_ROOT / "build" / "verification" / (
-    "task-113-hemma-docker-storage-remediation"
+DEFAULT_REMOTE_OUTPUT_ROOT = (
+    DEFAULT_REMOTE_REPO_ROOT
+    / "build"
+    / "verification"
+    / ("task-113-hemma-docker-storage-remediation")
 )
 DEFAULT_SESSION_NAME_PREFIX = "task113-docker-storage"
 
@@ -225,9 +228,7 @@ def _read_optional_remote_tail(path: Path, *, line_count: int) -> str:
 def _read_optional_remote_file(path: Path) -> str | None:
     """Read one optional remote file and return its contents."""
     command = (
-        f"if [ -f {shlex.quote(path.as_posix())} ]; then "
-        f"cat {shlex.quote(path.as_posix())}; "
-        "fi"
+        f"if [ -f {shlex.quote(path.as_posix())} ]; then cat {shlex.quote(path.as_posix())}; fi"
     )
     payload = run_local_checked(
         ["pdm", "run", "run-hemma", "--", "/bin/bash", "-lc", command],

@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_ROW_WORKER_COUNT,
     DEFAULT_SCRATCH_BUILD,
     DEFAULT_SCRATCH_BUILD_HOME_MOUNT,
+    DEFAULT_TASK103_FINALIZATION_FAMILIES,
     DEFAULT_TASK103_RUNS_ROOT,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
@@ -72,6 +73,8 @@ def _parse_shared_settings(args: argparse.Namespace) -> Task109ContainerizedPrep
         task103_run_id=None if args.task103_run_id is None else str(args.task103_run_id),
         task103_run_root=None if args.task103_run_root is None else Path(args.task103_run_root),
         task103_promote_on_success=bool(args.task103_promote_on_success),
+        task103_stage="all",
+        task103_finalization_families=DEFAULT_TASK103_FINALIZATION_FAMILIES,
         dockerfile_path=Path(args.dockerfile_path),
         image=str(args.image),
         hf_cache_dir=Path(args.hf_cache_dir),

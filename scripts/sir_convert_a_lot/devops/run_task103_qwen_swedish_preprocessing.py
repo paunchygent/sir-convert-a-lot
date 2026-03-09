@@ -135,7 +135,7 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
     parser.add_argument("--tokenizer-model", default=DEFAULT_TOKENIZER_MODEL)
     parser.add_argument(
         "--stage",
-        choices=("all", "row-processing", "finalization"),
+        choices=("all", "row-processing", "finalization", "reports"),
         default=DEFAULT_STAGE,
     )
     parser.add_argument(

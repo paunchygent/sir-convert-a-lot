@@ -308,8 +308,7 @@ def wait_for_docker_root(expected_root: Path, *, timeout_seconds: float) -> str:
         last_error = f"docker reported `{rendered_root}` instead of `{expected_root.as_posix()}`"
         time.sleep(1.0)
     raise SystemExit(
-        "Docker root did not converge after restart. "
-        f"Last observed error: {last_error}"
+        f"Docker root did not converge after restart. Last observed error: {last_error}"
     )
 
 

@@ -43,10 +43,14 @@ def test_build_detached_task108_command_drops_rm_and_adds_name() -> None:
     """The detached Task 108 command should launch a named background container."""
     settings = Task109ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/task-109-qwen-containerized-preprocessing"),
-        task103_runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        task103_runs_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"
+        ),
         task103_run_id="task108-proof-run",
         task103_run_root=None,
         task103_promote_on_success=False,
+        task103_stage="row-processing",
+        task103_finalization_families=("swedish_smoke_train", "swedish_pilot_train"),
         dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),

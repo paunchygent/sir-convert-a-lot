@@ -104,4 +104,8 @@ def run_task103_preprocessing(
         )
         return build_reports(settings, output_root=output_root)
 
+    if settings.stage == "reports":
+        prepare_output_root(output_root, stage="reports")
+        return build_reports(settings, output_root=output_root)
+
     raise ValueError(f"Unsupported Task 103 stage: {settings.stage}")

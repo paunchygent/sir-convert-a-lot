@@ -11,6 +11,7 @@ related:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing.md
   - docs/backlog/tasks/task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma.md
+  - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
   - docs/reference/ref-qwen3-tts-swedish-preprocessing-and-manifest-spec.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -180,6 +181,13 @@ Current implemented controls:
   - forwards the same chunk-size and row/GPU concurrency controls into the
     canonical Qwen container runtime on Hemma
 
+Current hard rule after the latest detached `T108` proof:
+
+- on Hemma, `stage=all` is no longer the canonical GPU-backed execution mode
+- row-processing and finalization must run in separate fresh
+  containers/processes
+- this operational isolation is tracked in `T114`
+
 Required new controls:
 
 - run selection:
@@ -220,6 +228,8 @@ Remaining acceptance work:
 
 - prove the bounded detached Hemma `T108` lane against the run-scoped,
   chunked spool-based pipeline
+- complete the `T114` hard-isolation follow-on so row-processing and
+  finalization no longer share one long-lived runtime on Hemma
 - tune row/GPU concurrency from live Hemma evidence rather than static
   assumptions
 - verify that failed detached runs preserve row-stage artifacts in their

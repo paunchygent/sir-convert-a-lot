@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
   - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/backlog/tasks/task-107-run-the-staged-public-corpus-qwen-swedish-preprocessing-bundle-on-hemma.md
+  - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
   - docs/reference/ref-qwen3-tts-swedish-preprocessing-and-manifest-spec.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -258,6 +259,18 @@ Latest detached proof result on `2026-03-08`:
   - `--row-worker-count 10`
   - `--gpu-asr-worker-count 5`
   - `--audio-codes-chunk-size 4`
+
+Latest recovered run-root lesson on `2026-03-09`:
+
+- the preserved immutable run root proves the wedge happened after row-stage
+  completion and during late finalization
+- `swedish_smoke_train` and `swedish_pilot_train` completed successfully
+- the freeze point was `swedish_scaleup_train` finalization
+- therefore the next `T108` proof must run through the `T114` hard-isolation
+  model:
+  - detached row-processing first
+  - detached fresh-process finalization second
+  - detached reports/promotion afterward
 - observed runtime facts:
   - detached container started correctly and remained independent of the local
     client session

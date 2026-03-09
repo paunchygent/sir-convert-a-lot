@@ -30,6 +30,7 @@ links:
   - docs/backlog/tasks/task-108-materialize-rixvox-audio-and-train-family-mapping-for-qwen-preprocessing.md
   - docs/backlog/tasks/task-109-containerize-qwen-public-corpus-preprocessing-execution-on-hemma.md
   - docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
+  - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
   - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
@@ -178,14 +179,26 @@ Current `T110` hardening requirement:
 - the canonical shared corpus path is promotion-only
 - failed runs remain inspectable in their original run roots
 
+Current `T114` hardening requirement:
+
+- on Hemma, the canonical GPU-backed preprocessing path is no longer one
+  `stage=all` run
+- row-processing must complete in one detached fresh container/process
+- finalization must then start in a separate detached fresh container/process
+- reports and promotion remain separately invokable follow-on stages
+- this isolation is mandatory because row-processing is low-load concurrent
+  Whisper work, while finalization is high-risk Qwen tokenizer/model
+  inference that can wedge the host if it inherits the earlier GPU runtime
+
 Latest bounded detached `T108` proof on Hemma (`2026-03-09`) confirmed:
 
 - immutable scratch-backed run roots are working as intended
 - detached execution is no longer the active failure mode
-- a `3`-worker proof reached real row processing at roughly `8.1 GB` VRAM
-  before failing with a meta-tensor device-transfer error
-- the next runtime fix is therefore model/device initialization, not another
-  detached-execution or output-preservation redesign
+- the preserved `4`-worker run root shows `swedish_smoke_train` and
+  `swedish_pilot_train` completed before the host hard-wedged during
+  `swedish_scaleup_train` finalization
+- the next runtime fix is therefore strict stage/process isolation, not
+  another detached-execution or output-preservation redesign
 
 ## Flash Attention Policy
 

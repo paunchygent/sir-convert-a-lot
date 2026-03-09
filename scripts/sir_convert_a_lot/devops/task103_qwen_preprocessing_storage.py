@@ -134,7 +134,7 @@ def prepare_output_root(output_root: Path, *, stage: Task103Stage) -> None:
             subdir = output_root / subdir_name
             if subdir.exists():
                 shutil.rmtree(subdir)
-    elif stage == "finalization":
+    elif stage in {"finalization", "reports"}:
         reports_dir = output_root / "reports"
         if reports_dir.exists():
             shutil.rmtree(reports_dir)
