@@ -774,6 +774,61 @@ def test_task103_runner_main_promotes_successful_run_root(
     assert status_payload["status"] == "promoted"
 
 
+def test_task103_runner_main_promotes_successful_reports_stage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reports stage should also promote a successful run when requested."""
+    promoted_root = tmp_path / "build/reference/qwen3-tts-swedish-corpus"
+    expected_run_root = tmp_path / "runs" / "proof-run"
+    expected_report = Task103PreprocessingReport(
+        output_root=expected_run_root.as_posix(),
+        datasets=["rixvox"],
+        asr_model=DEFAULT_ASR_MODEL,
+        asr_revision=DEFAULT_ASR_REVISION,
+        tokenizer_model=DEFAULT_TOKENIZER_MODEL,
+        inventory_rows=1,
+        curated_rows=1,
+        admitted_rows=1,
+        prepared_rows=1,
+        speaker_ids=["speaker_a"],
+        manifest_counts={"swedish_smoke_train": 1},
+    )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
+        lambda settings, *, source_records=None: expected_report,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
+        lambda settings: [],
+    )
+
+    exit_code = main(
+        [
+            "--source-mode",
+            "staged-public-corpus",
+            "--data-root",
+            tmp_path.as_posix(),
+            "--runs-root",
+            (tmp_path / "runs").as_posix(),
+            "--run-id",
+            "proof-run",
+            "--output-root",
+            promoted_root.as_posix(),
+            "--promote-on-success",
+            "--stage",
+            "reports",
+        ]
+    )
+
+    assert exit_code == 0
+    assert promoted_root.is_symlink()
+    assert promoted_root.resolve() == expected_run_root.resolve()
+    status_payload = json.loads((expected_run_root / "status.json").read_text(encoding="utf-8"))
+    assert status_payload["status"] == "promoted"
+
+
 def test_task103_runner_main_persists_traceback_on_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

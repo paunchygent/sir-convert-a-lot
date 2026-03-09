@@ -317,14 +317,19 @@ def main(argv: list[str] | None = None) -> int:
             error=rendered_error,
         )
         raise
-    if context.promote_on_success and effective_settings.stage in {"all", "finalization"}:
+    if context.promote_on_success and effective_settings.stage in {
+        "all",
+        "finalization",
+        "reports",
+    }:
         promote_run_root(context)
     write_run_status(
         context,
         source_mode=settings.source_mode,
         stage=settings.preprocessing.stage,
         status="promoted"
-        if context.promote_on_success and effective_settings.stage in {"all", "finalization"}
+        if context.promote_on_success
+        and effective_settings.stage in {"all", "finalization", "reports"}
         else "completed",
     )
     print(_render_stdout_summary(report))

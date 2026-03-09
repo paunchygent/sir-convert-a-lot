@@ -221,7 +221,10 @@ def _load_optional_json(path: Path) -> dict[str, object] | None:
     """Load one optional JSON object from disk when present."""
     if not path.exists():
         return None
-    loaded = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except PermissionError:
+        return None
     if not isinstance(loaded, dict):
         raise SystemExit(f"Expected one JSON object in `{path.as_posix()}`.")
     return loaded
