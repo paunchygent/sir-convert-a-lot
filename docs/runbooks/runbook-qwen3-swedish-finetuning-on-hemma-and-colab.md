@@ -802,20 +802,19 @@ Current limitation:
    - treat `2` hours as the first health gate only
    - if healthy, continue the same run into `8` to `10` hours
    - finalize only after the enlarged spool/train yield has been inspected
-1. Treat Task 119 as the current blocker for aggressive Hemma row-processing
-   probes.
-   - the failed `12:3` and non-productive `12:2` probes did not reach the
-     worker pool
-   - live evidence showed the process busy in `rixvox` train parquet inflate
-     before row-processing startup
-   - current `max_rows_per_split` is applied too late to protect startup
-   - the robust fix is:
-     - explicit `source-selection`
-     - bounded parquet iteration
-     - bounded audio-locator resolution
-     - truthful preflight status
-   - do not draw worker-concurrency conclusions from `12:x` probes until that
-     fix lands
+1. Task 119 is now implemented and live-validated on Hemma; use it as the
+   foundation for any renewed aggressive row-processing probe.
+   - detached launch `task114-source-selection-20260309t221342z` completed
+     cleanly for run root
+     `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task119-source-selection-20260309a`
+   - status was truthful during preflight instead of remaining `allocated`
+   - the bounded `rixvox` train cap was enforced during parquet iteration
+   - the run persisted:
+     - `source_selection/selected_source_records.jsonl`
+     - `source_selection/selection_summary.json`
+   - the remaining question is no longer “does preflight stream correctly?”
+     but “does a fresh aggressive row-processing launch become productive on
+     top of the new `source-selection` stage?”
 
 ## Hemma Versus Colab
 

@@ -142,24 +142,24 @@ stalled”.
 
 ## Deliverables
 
-- [ ] One committed `source-selection` stage in the staged-public-corpus lane.
-- [ ] One streaming `rixvox` train loader that enforces caps during iteration.
-- [ ] One persisted bounded source-selection artifact set in the run root.
-- [ ] One truthful status model for preflight phases.
+- [x] One committed `source-selection` stage in the staged-public-corpus lane.
+- [x] One streaming `rixvox` train loader that enforces caps during iteration.
+- [x] One persisted bounded source-selection artifact set in the run root.
+- [x] One truthful status model for preflight phases.
 - [ ] One bounded Hemma repro proving a `12:2`-style launch reaches actual
   row-processing instead of spending the whole probe in parquet preflight.
 
 ## Acceptance Criteria
 
-- [ ] A bounded `rixvox train` launch no longer needs full-train parquet
+- [x] A bounded `rixvox train` launch no longer needs full-train parquet
   materialization before row-processing can begin.
-- [ ] `max_rows_per_split` is enforced during parquet iteration for `rixvox`
+- [x] `max_rows_per_split` is enforced during parquet iteration for `rixvox`
   train, not after a whole-split Python list has been built.
-- [ ] The run root records one persisted bounded selected-row artifact before
+- [x] The run root records one persisted bounded selected-row artifact before
   row-processing starts.
-- [ ] The run root records one persisted bounded audio-locator artifact for the
+- [x] The run root records one persisted bounded audio-locator artifact for the
   selected train rows.
-- [ ] Status clearly distinguishes:
+- [x] Status clearly distinguishes:
   - source selection
   - audio-locator resolution
   - inventory writing
@@ -169,16 +169,37 @@ stalled”.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py -q`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py tests/sir_convert_a_lot/test_task114_qwen_isolated_stages.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
+- [x] Implementation complete
+- [x] Validation complete
 - [ ] Docs updated
+
+## Progress Notes
+
+- 2026-03-09: Implemented the committed `source-selection` stage, bounded
+  `rixvox` parquet iteration, bounded audio-locator resolution, persisted
+  selected-source artifacts, and truthful preflight status fields.
+- 2026-03-09: Live Hemma validation succeeded under detached Task 114 launch
+  `task114-source-selection-20260309t221342z` against run root
+  `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task119-source-selection-20260309a`.
+  The run completed cleanly with:
+  - `stage="source-selection"`
+  - `status="completed"`
+  - `current_split="train"`
+  - `current_parquet_batch_index=1`
+  - `target_row_cap=1000`
+  - `selected_row_count=1024` total bounded rows across datasets
+  - `required_audio_locator_count=1000`
+  - `resolved_audio_locator_count=1000`
+- Remaining acceptance gap: rerun an aggressive Hemma row-processing probe on
+  top of the new `source-selection` stage and confirm it reaches first spool
+  row quickly enough to be a real concurrency experiment.
