@@ -33,6 +33,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_IMAGE,
     DEFAULT_ROW_WORKER_COUNT,
     DEFAULT_SCRATCH_BUILD,
+    DEFAULT_SCRATCH_BUILD_HOME_MOUNT,
     DEFAULT_TASK103_RUNS_ROOT,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
@@ -76,6 +77,7 @@ def _parse_shared_settings(args: argparse.Namespace) -> Task109ContainerizedPrep
         hf_cache_dir=Path(args.hf_cache_dir),
         hf_cache_home_mount=Path(args.hf_cache_home_mount),
         scratch_build_root=Path(args.scratch_build_root),
+        scratch_build_home_mount=Path(args.scratch_build_home_mount),
         data_root=Path(args.data_root),
         data_root_home_mount=Path(args.data_root_home_mount),
         build_image=not bool(args.skip_build),
@@ -110,6 +112,11 @@ def _build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--hf-cache-dir", type=Path, default=DEFAULT_HF_CACHE)
     launch.add_argument("--hf-cache-home-mount", type=Path, default=DEFAULT_HF_CACHE_HOME_MOUNT)
     launch.add_argument("--scratch-build-root", type=Path, default=DEFAULT_SCRATCH_BUILD)
+    launch.add_argument(
+        "--scratch-build-home-mount",
+        type=Path,
+        default=DEFAULT_SCRATCH_BUILD_HOME_MOUNT,
+    )
     launch.add_argument("--data-root", type=Path, default=default_data_root())
     launch.add_argument(
         "--data-root-home-mount",
