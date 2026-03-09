@@ -13,6 +13,10 @@ related:
   - docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md
   - docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
+  - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
+  - docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md
+  - docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md
+  - docs/backlog/tasks/task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -59,6 +63,10 @@ that a real Swedish optimizer step fits on the R9700.
 1. `docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md`
 1. `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
 1. `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+1. `docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md`
+1. `docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md`
+1. `docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md`
+1. `docs/backlog/tasks/task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md`
 
 ## Acceptance Criteria
 
@@ -68,8 +76,14 @@ that a real Swedish optimizer step fits on the R9700.
   aligns with the repo's existing ROCm/HF-cache discipline.
 - [ ] Task 101 records a real containerized Swedish full-finetune pilot result
   on Hemma with `AdamW`.
-- [ ] A dedicated task defines robust resumable checkpointing before the first
-  long unattended Hemma training window.
+- [ ] A dedicated task defines and proves robust resumable checkpointing before
+  the first long unattended Hemma training window.
+- [ ] A follow-on hardening task covers graceful stop behavior, resumable cache
+  sync, and cold-build operator visibility for the Hemma training lane.
+- [ ] A profiling follow-up task exists for the dataloader/mel-precompute
+  question before any architecture claim is treated as settled.
+- [ ] A separate Colab activation task exists for the CUDA runtime rather than
+  overloading the Hemma ROCm image.
 - [ ] The story documents the already-proven Hemma memory reality:
   - `32.06 GB` total VRAM,
   - clean idle baseline around `0.06 GB`,
@@ -91,7 +105,8 @@ that a real Swedish optimizer step fits on the R9700.
 The repo has one documented, containerized, reproducible Qwen `1.7B`
 fine-tuning baseline on Hemma as the default lane, a documented optional Colab
 fallback path, and an explicit resumable-checkpoint plan for longer Hemma
-training windows.
+training windows, plus explicit follow-on tasks for runtime hardening,
+dataloader profiling, and Colab CUDA activation.
 
 ## Checklist
 

@@ -7,7 +7,7 @@ priority: high
 created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
-  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md
+  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/tasks/task-49-add-v2-route-html-to-md-with-resources-and-normalization.md
   - docs/backlog/tasks/task-58-implement-v2-webhook-delivery-worker-retries-signatures-and-replay-protection.md

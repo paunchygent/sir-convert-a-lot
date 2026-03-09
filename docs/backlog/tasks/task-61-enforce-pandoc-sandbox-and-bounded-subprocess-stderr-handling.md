@@ -8,7 +8,7 @@ created: '2026-03-01'
 last_updated: '2026-03-01'
 related:
   - docs/backlog/tasks/task-60-harden-v2-converter-security-for-ssrf-traversal-and-timeout-enforcement.md
-  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md
+  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md
 labels:
   - security
   - resilience

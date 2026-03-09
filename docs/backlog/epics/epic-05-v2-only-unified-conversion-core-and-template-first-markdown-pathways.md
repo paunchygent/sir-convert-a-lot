@@ -8,7 +8,7 @@ created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
-  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md
+  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/sir_convert_a_lot.md
 labels:

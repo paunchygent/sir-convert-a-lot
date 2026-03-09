@@ -69,6 +69,18 @@ class Task114DetachedStageStatus:
     logs_tail: str
 
 
+@dataclass(frozen=True)
+class Task114DetachedStageStop:
+    """Deterministic stop result for one detached isolated-stage container."""
+
+    stopped_at: str
+    launch_id: str
+    stage: Task103Stage
+    container_name: str
+    container_id: str
+    stop_output: str
+
+
 def utc_now_iso() -> str:
     """Return the current UTC timestamp in RFC3339 format."""
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -223,6 +235,22 @@ def inspect_detached_stage(launch: Task114DetachedStageLaunch) -> Task114Detache
         task103_status_found=task103_status is not None,
         task103_status=task103_status,
         logs_tail=logs_tail,
+    )
+
+
+def stop_detached_stage(launch: Task114DetachedStageLaunch) -> Task114DetachedStageStop:
+    """Stop one detached isolated-stage container intentionally."""
+    stop_output = docker_checked(
+        ["stop", launch.container_name],
+        label="docker stop task114 detached isolated stage",
+    )
+    return Task114DetachedStageStop(
+        stopped_at=utc_now_iso(),
+        launch_id=launch.launch_id,
+        stage=launch.stage,
+        container_name=launch.container_name,
+        container_id=launch.container_id,
+        stop_output=stop_output.strip(),
     )
 
 

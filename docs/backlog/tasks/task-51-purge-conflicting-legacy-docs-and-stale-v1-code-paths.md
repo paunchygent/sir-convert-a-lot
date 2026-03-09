@@ -8,7 +8,7 @@ created: '2026-02-28'
 last_updated: '2026-02-28'
 related:
   - docs/backlog/stories/story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification.md
-  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md
+  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md
 labels:
   - cleanup
   - docs

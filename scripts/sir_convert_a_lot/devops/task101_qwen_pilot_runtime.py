@@ -378,7 +378,7 @@ def inspect_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStat
 def stop_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStop:
     """Stop one detached Task 101 pilot container intentionally."""
     stop_output = docker_checked(
-        ["stop", launch.container_name],
+        ["stop", "--time", "300", launch.container_name],
         label="docker stop task101 detached pilot",
     )
     return Task101DetachedStop(

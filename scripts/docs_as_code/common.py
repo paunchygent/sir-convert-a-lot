@@ -60,8 +60,8 @@ def next_numeric_prefix(directory: Path, width: int = 3) -> str:
 def next_prefixed_index(directory: Path, prefix: str, width: int = 4) -> str:
     """Return next index for entries named `<prefix>-<number>-...` in a directory.
 
-    This supports both file-based backlog items (example: `task-01-...md`) and
-    folder-based backlog items (example: `review-01-.../README.md`).
+    This supports flat backlog items stored directly as markdown files
+    (example: `task-01-...md` or `review-01-...md`).
     """
     max_id = 0
     pattern = re.compile(rf"^{re.escape(prefix)}-(\d+)(?:-|\.|$)")

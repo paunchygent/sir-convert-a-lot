@@ -391,7 +391,7 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
 
     captured: dict[str, object] = {}
 
-    def _fake_ensure_image_present(args: argparse.Namespace) -> tuple[bool, str]:
+    def _fake_prepare_qwen_image(args: argparse.Namespace) -> tuple[bool, str]:
         captured["dockerfile_path"] = args.dockerfile_path
         captured["image"] = args.image
         return False, "sha256:test"
@@ -438,8 +438,8 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
         return launch_payload
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.ensure_image_present",
-        _fake_ensure_image_present,
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.prepare_qwen_image",
+        _fake_prepare_qwen_image,
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.resolve_effective_hf_cache_dir",
@@ -519,6 +519,6 @@ def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) 
     stopped = stop_detached_pilot(launch)
 
     assert isinstance(stopped, Task101DetachedStop)
-    assert captured["args"] == ["stop", "task101-prev-container"]
+    assert captured["args"] == ["stop", "--time", "300", "task101-prev-container"]
     assert captured["label"] == "docker stop task101 detached pilot"
     assert stopped.container_name == "task101-prev-container"

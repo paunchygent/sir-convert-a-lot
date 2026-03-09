@@ -1,20 +1,27 @@
 ---
-id: review-02-evidence-04-hardcoded-rocm
-title: 'Evidence: Hardcoded ROCm Lock-in Blocks Colab H100'
-type: review
-status: completed
-priority: high
+type: reference
+id: REF-review-02-qwen-rocm-only-image-evidence
+title: Review 02 Qwen ROCm-Only Image Evidence
+status: active
 created: '2026-03-09'
-last_updated: '2026-03-09'
+owners:
+  - platform
+updated: '2026-03-09'
 related:
-  - docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture/README.md
-labels: []
+  - docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md
 ---
 
-**Source:** `containers/qwen-finetune-hemma/Dockerfile`
-**Lines:** 4-26
+## Purpose
 
-The base `Dockerfile` explicitly targets ROCm and specific RDNA3 AMD architecture (`gfx1201`), strictly violating the stated fallback requirement for running the container on Nvidia H100s via Colab.
+Preserve the code-level evidence behind Review 02's Colab-lane finding without
+misclassifying the evidence note as another backlog review item.
+
+**Source:** `containers/qwen-finetune-hemma/Dockerfile`
+**Lines:** `4-26`
+
+The base Dockerfile explicitly targets ROCm and specific RDNA3 AMD
+architecture (`gfx1201`). This correctly serves the Hemma lane but means a
+separate Dockerfile will be required for Nvidia H100 fallback work on Colab.
 
 ```dockerfile
 FROM rocm/dev-ubuntu-24.04:7.1.1-complete

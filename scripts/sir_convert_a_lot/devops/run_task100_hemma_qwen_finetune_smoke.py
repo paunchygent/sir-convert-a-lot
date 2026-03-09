@@ -27,7 +27,7 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     MountResolution,
     SmokeProbeResult,
     Task100SmokeSettings,
-    ensure_image_present,
+    prepare_qwen_image,
     resolve_effective_hf_cache_dir,
     run_checked,
     run_smoke_probe,
@@ -187,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
             label="rocm-smi task100 preflight",
         )
         rocminfo_output = run_checked(["rocminfo"], label="rocminfo task100 preflight")
-        build_performed, image_id = ensure_image_present(settings)
+        build_performed, image_id = prepare_qwen_image(settings)
         hf_mount = resolve_effective_hf_cache_dir(settings)
         smoke_probe_result, smoke_probe_command = run_smoke_probe(settings, hf_mount=hf_mount)
         report = Task100SmokeReport(

@@ -41,6 +41,7 @@ from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
 from safetensors.torch import save_file
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
+from training_stop import TrainingStopState, install_training_stop_handlers
 from transformers import AutoConfig
 
 EXPORT_METADATA_PATTERNS = (
@@ -74,6 +75,9 @@ class TrainingSummary:
     latest_durable_checkpoint_epoch: int | None
     durable_checkpoint_paths: list[str]
     checkpoint_paths: list[str]
+    stop_requested: bool
+    stop_signal: str | None
+    stopped_early: bool
 
 
 @dataclass(frozen=True)
@@ -333,6 +337,19 @@ def _load_durable_checkpoint_metadata(checkpoint_path: Path) -> DurableCheckpoin
     )
 
 
+def _checkpoint_advanced_since_latest_save(
+    latest_durable_checkpoint: DurableCheckpointMetadata | None,
+    *,
+    optimizer_steps_completed: int,
+) -> bool:
+    """Return whether training advanced beyond the latest durable checkpoint."""
+    if optimizer_steps_completed <= 0:
+        return False
+    if latest_durable_checkpoint is None:
+        return True
+    return latest_durable_checkpoint.optimizer_steps_completed != optimizer_steps_completed
+
+
 def train_with_args(args: argparse.Namespace) -> TrainingSummary:
     """Run one bounded Qwen fine-tuning job and return machine-readable metrics."""
     if args.max_steps is not None and args.max_steps <= 0:
@@ -384,6 +401,8 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
     optimizer_steps_completed = 0
     last_loss: float | None = None
     checkpoint_paths: list[str] = []
+    stop_state = TrainingStopState()
+    install_training_stop_handlers(stop_state)
     if args.resume_from_checkpoint is not None:
         resume_checkpoint_path = Path(args.resume_from_checkpoint)
         latest_durable_checkpoint = _load_durable_checkpoint_metadata(resume_checkpoint_path)
@@ -394,6 +413,7 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
         resume_step_in_epoch = latest_durable_checkpoint.next_step_in_epoch
         durable_checkpoint_paths.append(resume_checkpoint_path.as_posix())
     reached_max_steps = False
+    stop_requested_during_training = False
     epoch = starting_epoch
     step = 0
     for epoch in range(starting_epoch, args.num_epochs):
@@ -481,6 +501,12 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
                     reason="interval",
                 )
                 durable_checkpoint_paths.append(latest_durable_checkpoint.checkpoint_path)
+            if stop_state.stop_requested:
+                stop_requested_during_training = True
+                accelerator.print(
+                    "Received stop request; saving one final durable checkpoint before exit."
+                )
+                break
             if args.max_steps is not None and optimizer_steps_completed >= args.max_steps:
                 reached_max_steps = True
                 break
@@ -497,10 +523,12 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
             )
         if reached_max_steps:
             break
+        if stop_requested_during_training:
+            break
 
-    if optimizer_steps_completed > 0 and (
-        latest_durable_checkpoint is None
-        or latest_durable_checkpoint.optimizer_steps_completed != optimizer_steps_completed
+    if _checkpoint_advanced_since_latest_save(
+        latest_durable_checkpoint,
+        optimizer_steps_completed=optimizer_steps_completed,
     ):
         latest_durable_checkpoint = _save_durable_checkpoint(
             accelerator=accelerator,
@@ -509,7 +537,7 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
             epoch=epoch,
             step_in_epoch=step,
             dataloader_length=dataloader_length,
-            reason="final-step",
+            reason="signal-stop" if stop_requested_during_training else "final-step",
         )
         durable_checkpoint_paths.append(latest_durable_checkpoint.checkpoint_path)
 
@@ -557,6 +585,9 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
         ),
         durable_checkpoint_paths=durable_checkpoint_paths,
         checkpoint_paths=checkpoint_paths,
+        stop_requested=stop_requested_during_training,
+        stop_signal=stop_state.signal_name,
+        stopped_early=stop_requested_during_training,
     )
 
 

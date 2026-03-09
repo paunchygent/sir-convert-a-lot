@@ -77,10 +77,7 @@ def resolve_target(task_type: str, title: str) -> tuple[str, Path]:
 
     index = next_prefixed_index(base_dir, prefix, width=2)
     doc_id = f"{prefix}-{index}-{slug}"
-    if task_type == "review":
-        target = base_dir / f"{prefix}-{index}-{slug}" / "README.md"
-    else:
-        target = base_dir / f"{prefix}-{index}-{slug}.md"
+    target = base_dir / f"{prefix}-{index}-{slug}.md"
     return doc_id, target
 
 

@@ -27,7 +27,7 @@ from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_prepr
     DEFAULT_HF_CACHE_HOME_MOUNT,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
-    ensure_image_present,
+    prepare_qwen_image,
     resolve_effective_bind_root,
     resolve_effective_hf_cache_dir,
     run_checked,
@@ -434,7 +434,7 @@ def main(argv: list[str] | None = None) -> int:
             settings.promoted_corpus_root,
             settings.train_manifest_family,
         )
-        build_performed, image_id = ensure_image_present(
+        build_performed, image_id = prepare_qwen_image(
             argparse.Namespace(
                 dockerfile_path=Path(args.dockerfile_path),
                 image=str(args.image),
@@ -485,7 +485,7 @@ def main(argv: list[str] | None = None) -> int:
         source_launch_root = _resolve_launch_root(output_root, args.launch_root)
         source_launch = _load_launch(source_launch_root)
         settings = settings_from_snapshot(source_launch.settings)
-        build_performed, image_id = ensure_image_present(
+        build_performed, image_id = prepare_qwen_image(
             argparse.Namespace(
                 dockerfile_path=Path(source_launch.dockerfile_path or DEFAULT_DOCKERFILE_PATH),
                 image=settings.image,

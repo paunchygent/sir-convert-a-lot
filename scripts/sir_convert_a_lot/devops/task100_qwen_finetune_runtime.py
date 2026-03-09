@@ -17,7 +17,7 @@ import subprocess
 from dataclasses import dataclass
 from json import JSONDecodeError, JSONDecoder
 from pathlib import Path
-from typing import Protocol
+from typing import Callable, Protocol
 
 CONTAINER_HF_HOME = "/cache/huggingface"
 CONTAINER_HF_HUB_CACHE = f"{CONTAINER_HF_HOME}/hub"
@@ -63,6 +63,15 @@ class SmokeProbeResult:
     flash_attn_version: str | None
     flash_attn_model_load_ok: bool
     dependency_versions: dict[str, str | None]
+
+
+@dataclass(frozen=True)
+class QwenImageBuildPlan:
+    """Planned image-build state for one Qwen runtime image request."""
+
+    image_present: bool
+    existing_image_id: str | None
+    build_required: bool
 
 
 class QwenImageSettings(Protocol):
@@ -201,22 +210,19 @@ def _is_srv_cache_path(cache_dir: Path) -> bool:
 
 
 def _sync_home_cache_into_data_disk(canonical_dir: Path, home_mount: Path) -> None:
-    """Copy any existing home-backed cache files into the canonical cache root."""
+    """Incrementally sync any home-backed cache files into the canonical cache root."""
     if not home_mount.exists():
         return
-    for source in sorted(home_mount.iterdir()):
-        target = canonical_dir / source.name
-        if target.exists():
-            continue
-        if source.is_dir():
-            subprocess.run(
-                ["cp", "-a", source.as_posix(), target.as_posix()],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            continue
-        target.write_bytes(source.read_bytes())
+    run_checked(
+        [
+            "rsync",
+            "-a",
+            "--partial",
+            f"{home_mount.as_posix()}/",
+            canonical_dir.as_posix(),
+        ],
+        label="rsync task100 home cache",
+    )
 
 
 def _ensure_home_bind_mount(
@@ -289,19 +295,56 @@ def resolve_effective_hf_cache_dir(settings: QwenCacheSettings) -> MountResoluti
     )
 
 
-def ensure_image_present(settings: QwenImageSettings) -> tuple[bool, str]:
-    """Build the requested Qwen image with BuildKit when needed and return its id."""
-    image_present = True
+def inspect_image_build_plan(settings: QwenImageSettings) -> QwenImageBuildPlan:
+    """Inspect whether the shared Qwen image already exists and needs a build."""
     try:
         image_id = docker_checked(
             ["image", "inspect", settings.image, "--format", "{{.Id}}"],
             label="docker image inspect task100",
         )
     except SystemExit:
-        image_present = False
-        image_id = ""
-    build_performed = settings.build_image or not image_present
-    if build_performed:
+        return QwenImageBuildPlan(
+            image_present=False,
+            existing_image_id=None,
+            build_required=True,
+        )
+    return QwenImageBuildPlan(
+        image_present=True,
+        existing_image_id=image_id.strip(),
+        build_required=bool(settings.build_image),
+    )
+
+
+def _image_build_warning(settings: QwenImageSettings) -> str:
+    """Render the operator-facing warning shown before a heavy BuildKit build."""
+    return (
+        "Task 100/101 is about to run a BuildKit image build.\n"
+        f"- image: {settings.image}\n"
+        f"- dockerfile: {settings.dockerfile_path.resolve().as_posix()}\n"
+        "- expect a potentially long cold-start while dependencies compile before container start."
+    )
+
+
+def prepare_qwen_image(
+    settings: QwenImageSettings,
+    *,
+    emit: Callable[[str], None] = print,
+) -> tuple[bool, str]:
+    """Warn operators about cold builds, then ensure the Qwen image exists."""
+    build_plan = inspect_image_build_plan(settings)
+    if build_plan.build_required:
+        emit(_image_build_warning(settings))
+    return ensure_image_present(settings, build_plan=build_plan)
+
+
+def ensure_image_present(
+    settings: QwenImageSettings,
+    *,
+    build_plan: QwenImageBuildPlan | None = None,
+) -> tuple[bool, str]:
+    """Build the requested Qwen image with BuildKit when needed and return its id."""
+    effective_build_plan = build_plan or inspect_image_build_plan(settings)
+    if effective_build_plan.build_required:
         docker_checked(["buildx", "version"], label="docker buildx version task100")
         docker_checked(
             [
@@ -320,7 +363,10 @@ def ensure_image_present(settings: QwenImageSettings) -> tuple[bool, str]:
             ["image", "inspect", settings.image, "--format", "{{.Id}}"],
             label="docker image inspect qwen after build",
         )
-    return build_performed, image_id.strip()
+        return True, image_id.strip()
+    if effective_build_plan.existing_image_id is None:
+        raise SystemExit("Task 100 expected an existing image id when no build was required.")
+    return False, effective_build_plan.existing_image_id
 
 
 def build_smoke_probe_command(

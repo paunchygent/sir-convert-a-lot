@@ -150,7 +150,7 @@ def main() -> int:
         _write_json(
             status_path,
             {
-                "status": "completed",
+                "status": "stopped" if training_summary.stopped_early else "completed",
                 "stage": "training",
                 "updated_at": _utc_now_iso(),
                 "train_jsonl": args.train_jsonl.as_posix(),
@@ -160,6 +160,9 @@ def main() -> int:
                 "resumed_from_checkpoint_path": training_summary.resumed_from_checkpoint_path,
                 "latest_durable_checkpoint_path": training_summary.latest_durable_checkpoint_path,
                 "latest_durable_checkpoint_step": training_summary.latest_durable_checkpoint_step,
+                "stop_requested": training_summary.stop_requested,
+                "stop_signal": training_summary.stop_signal,
+                "stopped_early": training_summary.stopped_early,
             },
         )
         print(json.dumps(asdict(report), indent=2, sort_keys=True))

@@ -1,20 +1,29 @@
 ---
-id: review-02-evidence-01-dataset-io-bottleneck
-title: 'Evidence: Severe Dataloader I/O Bottleneck'
-type: review
-status: completed
-priority: high
+type: reference
+id: REF-review-02-qwen-dataloader-io-bottleneck-evidence
+title: Review 02 Qwen Dataloader I/O Bottleneck Evidence
+status: active
 created: '2026-03-09'
-last_updated: '2026-03-09'
+owners:
+  - platform
+updated: '2026-03-09'
 related:
-  - docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture/README.md
-labels: []
+  - docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md
 ---
 
-**Source:** `scripts/devops/qwen_finetuning_patches/dataset.py`
-**Lines:** 184-203
+## Purpose
 
-This code demonstrates that raw audio loading via `librosa` and Mel-spectrogram extraction are executed synchronously on the CPU inside the PyTorch `Dataset.__getitem__` method. This runs for every single item on every epoch, which starves the GPU of data during training.
+Preserve the code-level evidence behind Review 02's dataloader bottleneck
+finding without forcing the evidence file itself to satisfy the backlog review
+package shape.
+
+**Source:** `scripts/devops/qwen_finetuning_patches/dataset.py`
+**Lines:** `184-203`
+
+This code demonstrates that raw audio loading via `librosa` and
+Mel-spectrogram extraction are executed synchronously on the CPU inside the
+PyTorch `Dataset.__getitem__` method. This runs for every single item on every
+epoch, which introduces a potential CPU-bound risk during training.
 
 ```python
     def __getitem__(self, idx: int) -> DatasetItem:
@@ -39,7 +48,7 @@ This code demonstrates that raw audio loading via `librosa` and Mel-spectrogram 
         }
 ```
 
-**Context in `_normalize_audio_inputs` (lines 114-119):**
+**Context in `_normalize_audio_inputs` (lines `114-119`):**
 
 ```python
     def _load_audio_to_np(self, path: str) -> AudioWithRate:

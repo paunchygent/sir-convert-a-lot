@@ -9,7 +9,7 @@ last_updated: '2026-03-09'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
-  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot/README.md
+  - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md
   - docs/backlog/stories/story-14-v2-only-clean-break-and-api-surface-unification.md
   - docs/backlog/stories/story-13-docx-template-catalog-and-reference-governance.md
   - docs/backlog/stories/story-11-markdown-ingestion-routes-docx-to-md-and-html-to-md.md

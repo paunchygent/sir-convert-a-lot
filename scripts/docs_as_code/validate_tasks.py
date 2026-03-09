@@ -247,18 +247,18 @@ def validate_file(path: Path) -> list[str]:
                     break
 
         rel = path.relative_to(BACKLOG_DIR)
-        if rel.parts[0] != "reviews" or len(rel.parts) != 3 or rel.name != "README.md":
+        if rel.parts[0] != "reviews" or len(rel.parts) != 2:
             errors.append(
                 f"{repo_relative(path)}: review must be stored at "
-                "docs/backlog/reviews/<review-id>/README.md"
+                "docs/backlog/reviews/<review-id>.md"
             )
         else:
-            expected_dir = str(frontmatter.get("id", "")).strip()
-            review_dir = rel.parts[1]
-            if expected_dir and review_dir != expected_dir:
+            expected_review_name = str(frontmatter.get("id", "")).strip()
+            review_name = rel.stem
+            if expected_review_name and review_name != expected_review_name:
                 errors.append(
-                    f"{repo_relative(path)}: review folder '{review_dir}' must match "
-                    f"frontmatter id '{expected_dir}'"
+                    f"{repo_relative(path)}: review filename '{review_name}' must match "
+                    f"frontmatter id '{expected_review_name}'"
                 )
 
         if status_value in {"responded", "completed"}:
