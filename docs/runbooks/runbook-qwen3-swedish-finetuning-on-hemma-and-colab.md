@@ -4,7 +4,7 @@ id: RUN-qwen3-swedish-finetuning-on-hemma-and-colab
 title: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 status: active
 created: 2026-03-08
-updated: 2026-03-08
+updated: 2026-03-09
 owners:
   - platform
 system: hemma.hule.education
@@ -32,6 +32,7 @@ links:
   - docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
   - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
   - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
+  - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -79,7 +80,9 @@ The target is:
 - full fine-tuning objective
 - Swedish language expansion
 - multi-speaker training/evaluation discipline
-- containerized Hemma runtime first, Colab H100 scaling second
+- containerized Hemma runtime as the default training and scale lane
+- Colab H100 only as an optional fallback or comparison lane when Hemma hits
+  real runtime or wall-time limits
 
 Important current upstream constraint:
 
@@ -220,6 +223,62 @@ Recovered `T108` run result after `T114` hard isolation (`2026-03-09`):
   - `swedish_waxholm_control=8`
 - canonical promoted corpus view now points at that recovered run root:
   - `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus`
+
+## Training Lane Direction
+
+Current documented direction after the bounded `T101` pilot:
+
+- Hemma is the default training lane for bounded pilot work and the planned
+  first scale lane for longer Swedish runs.
+- Colab H100 is not the default next step anymore.
+- Colab remains an optional fallback or comparison lane only if Hemma shows a
+  real limit on:
+  - runtime stability,
+  - fault-tolerant resume robustness,
+  - or unacceptable wall-clock time for the chosen dataset slice.
+
+The bounded detached `T101` pilot already proved:
+
+- real optimizer-step training on Hemma,
+- `flash_attention_2` working on the ROCm container path,
+- peak reserved VRAM around `20.89 GB` on the `32.06 GB` card,
+- successful checkpoint-final export under detached orchestration.
+
+So the next long-run posture is Hemma-first, not H100-first.
+
+## Fault-Tolerant Resume Contract
+
+Before longer unattended Hemma training windows, the training lane must gain a
+real durable-resume path through `T115`.
+
+Required contract:
+
+- checkpoints are written at a bounded step cadence during training, not only
+  at epoch/final boundaries
+- each durable checkpoint persists:
+  - model weights,
+  - optimizer state,
+  - scheduler state if used,
+  - `accelerate` trainer/runtime state,
+  - latest durable step and epoch metadata
+- each Task 101 run root records a machine-readable latest-checkpoint pointer
+- detached recovery supports:
+  - fresh launch,
+  - resume latest from the run root,
+  - resume from an explicit checkpoint path
+- longer unattended runs are not considered operationally ready until one live
+  Hemma proof demonstrates interruption plus successful resume in a fresh
+  detached launch
+
+Current implementation status:
+
+- the training lane now has committed step-based trainer-state checkpoints
+- the Task 101 run root now records `latest_checkpoint.json`
+- the detached Task 101 surface now supports:
+  - `resume latest`
+  - `resume --checkpoint-path <path>`
+- the remaining blocker before trusting long unattended Hemma runs is one live
+  Hemma interruption-and-resume proof, not missing code surfaces
 
 ## Flash Attention Policy
 
@@ -604,7 +663,14 @@ Canonical Task 106 acquisition surface:
      - default train family: `swedish_pilot_train`
      - default batch size: `1`
      - default max steps: `8`
-1. Run Task 104 as the Colab H100 scale-up and comparison lane.
+1. Keep Task 104 as an optional Colab H100 fallback/comparison lane only.
+   - use it only if Hemma proves insufficient on stability, checkpoint
+     recovery, or unacceptable wall time at larger corpus scale
+1. Implement Task 115 before relying on long unattended training windows.
+   - robust checkpoint cadence
+   - optimizer/trainer-state persistence
+   - resume from latest durable checkpoint instead of restarting from weights
+     only
 
 ## Hemma Versus Colab
 
@@ -614,14 +680,14 @@ Use Hemma for:
 - cache and wrapper discipline
 - preprocessing validation
 - bounded full-finetune pilot work
+- longer scale-up training when the runtime remains stable
 - memory truth and optimizer-step proof
 
-Use Colab H100 for:
+Use Colab H100 only when needed for:
 
-- larger Swedish runs
-- faster iteration on longer curated subsets
-- checkpoint-heavy experiments that would be slower or more operationally
-  expensive on Hemma
+- overflow when Hemma hits hard runtime limits
+- comparison work after Hemma evidence exists
+- faster iteration only if local wall time becomes operationally unacceptable
 
 ## Time Estimates To Carry Forward
 
@@ -629,10 +695,9 @@ These are planning estimates, not acceptance guarantees:
 
 - bounded Swedish pilot subset:
   - Hemma: roughly `1-2` days end to end
-  - Colab H100: roughly `0.5-1` day
 - larger curated Swedish run:
-  - Hemma: multiple days
-  - Colab H100: roughly `1-4` days depending on subset size and session churn
+  - Hemma: multiple days and now the default planned lane
+  - Colab H100: optional fallback only if Hemma evidence becomes unacceptable
 
 The corpus definition in Task 102 must tighten these estimates before execution
 tasks can close.

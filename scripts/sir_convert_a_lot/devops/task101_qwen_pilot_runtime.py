@@ -48,6 +48,28 @@ class Task101PilotSettings:
     lr: float
     num_epochs: int
     max_steps: int
+    checkpoint_interval_steps: int
+
+
+@dataclass(frozen=True)
+class Task101PilotSettingsSnapshot:
+    """JSON-serializable snapshot of one Task 101 pilot configuration."""
+
+    output_root: str
+    image: str
+    hf_cache_dir: str
+    hf_cache_home_mount: str
+    scratch_build_root: str
+    scratch_build_home_mount: str
+    promoted_corpus_root: str
+    runs_root: str
+    model_id: str
+    train_manifest_family: str
+    batch_size: int
+    lr: float
+    num_epochs: int
+    max_steps: int
+    checkpoint_interval_steps: int
 
 
 @dataclass(frozen=True)
@@ -62,6 +84,9 @@ class Task101DetachedLaunch:
     run_root: str
     promoted_corpus_root: str
     train_manifest_family: str
+    dockerfile_path: str | None
+    resumed_from_checkpoint_path: str | None
+    settings: Task101PilotSettingsSnapshot
     command: list[str]
 
 
@@ -83,6 +108,8 @@ class Task101DetachedStatus:
     pilot_status: dict[str, object] | None
     pilot_report_found: bool
     pilot_report: dict[str, object] | None
+    latest_checkpoint_found: bool
+    latest_checkpoint: dict[str, object] | None
     logs_tail: str
 
 
@@ -104,6 +131,48 @@ def default_container_name(launch_id: str) -> str:
 def run_root_for_launch(settings: Task101PilotSettings, *, launch_id: str) -> Path:
     """Return the scratch-backed run root for one detached pilot launch."""
     return settings.runs_root / launch_id
+
+
+def snapshot_settings(settings: Task101PilotSettings) -> Task101PilotSettingsSnapshot:
+    """Convert one runtime settings object into a JSON-safe snapshot."""
+    return Task101PilotSettingsSnapshot(
+        output_root=settings.output_root.as_posix(),
+        image=settings.image,
+        hf_cache_dir=settings.hf_cache_dir.as_posix(),
+        hf_cache_home_mount=settings.hf_cache_home_mount.as_posix(),
+        scratch_build_root=settings.scratch_build_root.as_posix(),
+        scratch_build_home_mount=settings.scratch_build_home_mount.as_posix(),
+        promoted_corpus_root=settings.promoted_corpus_root.as_posix(),
+        runs_root=settings.runs_root.as_posix(),
+        model_id=settings.model_id,
+        train_manifest_family=settings.train_manifest_family,
+        batch_size=settings.batch_size,
+        lr=settings.lr,
+        num_epochs=settings.num_epochs,
+        max_steps=settings.max_steps,
+        checkpoint_interval_steps=settings.checkpoint_interval_steps,
+    )
+
+
+def settings_from_snapshot(snapshot: Task101PilotSettingsSnapshot) -> Task101PilotSettings:
+    """Rehydrate runtime settings from one launch metadata snapshot."""
+    return Task101PilotSettings(
+        output_root=Path(snapshot.output_root),
+        image=snapshot.image,
+        hf_cache_dir=Path(snapshot.hf_cache_dir),
+        hf_cache_home_mount=Path(snapshot.hf_cache_home_mount),
+        scratch_build_root=Path(snapshot.scratch_build_root),
+        scratch_build_home_mount=Path(snapshot.scratch_build_home_mount),
+        promoted_corpus_root=Path(snapshot.promoted_corpus_root),
+        runs_root=Path(snapshot.runs_root),
+        model_id=snapshot.model_id,
+        train_manifest_family=snapshot.train_manifest_family,
+        batch_size=snapshot.batch_size,
+        lr=snapshot.lr,
+        num_epochs=snapshot.num_epochs,
+        max_steps=snapshot.max_steps,
+        checkpoint_interval_steps=snapshot.checkpoint_interval_steps,
+    )
 
 
 def _containerize_scratch_path(host_path: Path, *, scratch_root: Path) -> str:
@@ -129,17 +198,27 @@ def build_detached_pilot_command(
     scratch_mount: MountResolution,
     launch_id: str,
     container_name: str,
+    run_root: Path | None = None,
+    resume_from_checkpoint: Path | None = None,
 ) -> tuple[list[str], Path]:
     """Build the detached Docker command for one Task 101 pilot run."""
-    run_root = run_root_for_launch(settings, launch_id=launch_id)
+    effective_run_root = (
+        run_root if run_root is not None else run_root_for_launch(settings, launch_id=launch_id)
+    )
     container_run_root = _containerize_scratch_path(
-        run_root,
+        effective_run_root,
         scratch_root=settings.scratch_build_root,
     )
     container_train_jsonl = _containerize_scratch_path(
         _train_manifest_path(settings),
         scratch_root=settings.scratch_build_root,
     )
+    container_resume_checkpoint = None
+    if resume_from_checkpoint is not None:
+        container_resume_checkpoint = _containerize_scratch_path(
+            resume_from_checkpoint,
+            scratch_root=settings.scratch_build_root,
+        )
     command = [
         "run",
         "-d",
@@ -190,8 +269,12 @@ def build_detached_pilot_command(
         str(settings.num_epochs),
         "--max-steps",
         str(settings.max_steps),
+        "--checkpoint-interval-steps",
+        str(settings.checkpoint_interval_steps),
     ]
-    return command, run_root
+    if container_resume_checkpoint is not None:
+        command.extend(["--resume-from-checkpoint", container_resume_checkpoint])
+    return command, effective_run_root
 
 
 def launch_detached_pilot(
@@ -202,6 +285,9 @@ def launch_detached_pilot(
     scratch_mount: MountResolution,
     launch_id: str,
     container_name: str,
+    dockerfile_path: Path | None = None,
+    run_root: Path | None = None,
+    resume_from_checkpoint: Path | None = None,
 ) -> Task101DetachedLaunch:
     """Launch one detached Task 101 pilot and return deterministic metadata."""
     command, run_root = build_detached_pilot_command(
@@ -211,6 +297,8 @@ def launch_detached_pilot(
         scratch_mount=scratch_mount,
         launch_id=launch_id,
         container_name=container_name,
+        run_root=run_root,
+        resume_from_checkpoint=resume_from_checkpoint,
     )
     container_id = docker_checked(
         command,
@@ -225,6 +313,11 @@ def launch_detached_pilot(
         run_root=run_root.as_posix(),
         promoted_corpus_root=settings.promoted_corpus_root.as_posix(),
         train_manifest_family=settings.train_manifest_family,
+        dockerfile_path=None if dockerfile_path is None else dockerfile_path.as_posix(),
+        resumed_from_checkpoint_path=(
+            None if resume_from_checkpoint is None else resume_from_checkpoint.as_posix()
+        ),
+        settings=snapshot_settings(settings),
         command=["sudo", "-n", "docker", *command],
     )
 
@@ -245,6 +338,7 @@ def inspect_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStat
     run_root = Path(launch.run_root)
     pilot_status = _load_optional_json(run_root / "status.json")
     pilot_report = _load_optional_json(run_root / "report.json")
+    latest_checkpoint = _load_optional_json(run_root / "latest_checkpoint.json")
     logs_tail = docker_checked(
         ["logs", "--tail", "200", launch.container_name],
         label="docker logs task101 detached pilot",
@@ -264,6 +358,8 @@ def inspect_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStat
         pilot_status=pilot_status,
         pilot_report_found=pilot_report is not None,
         pilot_report=pilot_report,
+        latest_checkpoint_found=latest_checkpoint is not None,
+        latest_checkpoint=latest_checkpoint,
         logs_tail=logs_tail,
     )
 

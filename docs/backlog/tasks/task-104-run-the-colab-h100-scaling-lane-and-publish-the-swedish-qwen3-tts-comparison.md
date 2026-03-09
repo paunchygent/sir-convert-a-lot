@@ -1,11 +1,11 @@
 ---
 id: task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison
-title: Run the Colab H100 scaling lane and publish the Swedish Qwen3-TTS comparison
+title: Run the optional Colab H100 fallback lane and publish the Swedish Qwen3-TTS comparison
 type: task
 status: proposed
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-08'
+last_updated: '2026-03-09'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md
@@ -25,8 +25,9 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Run the scaled Colab H100 Swedish Qwen lane and publish the comparison against
-the Hemma pilot.
+Run the optional Colab H100 fallback Swedish Qwen lane only if Hemma proves
+insufficient on stability, resume robustness, or unacceptable wall time, and
+publish the comparison against the Hemma lane.
 
 ## PR Scope
 
@@ -38,6 +39,7 @@ the Hemma pilot.
   - checkpoint behavior,
   - operational friction,
   - qualitative Swedish output.
+- Record the concrete trigger that justified leaving Hemma for this run.
 
 ## Deliverables
 
@@ -51,6 +53,8 @@ the Hemma pilot.
   Colab.
 - [ ] The task compares results against the Hemma pilot instead of publishing a
   standalone notebook-only result.
+- [ ] The task records the concrete Hemma limitation that justified using
+  Colab.
 - [ ] The task records whether the Colab lane is materially better for the
   larger Swedish run.
 

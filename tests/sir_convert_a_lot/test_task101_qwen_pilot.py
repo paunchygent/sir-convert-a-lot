@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import argparse
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
 
 from scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot import (
     DEFAULT_BATCH_SIZE,
+    DEFAULT_CHECKPOINT_INTERVAL_STEPS,
+    DEFAULT_DOCKERFILE_PATH,
     DEFAULT_LR,
     DEFAULT_MAX_STEPS,
     DEFAULT_MODEL_ID,
@@ -16,12 +20,16 @@ from scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot import (
     DEFAULT_TRAIN_MANIFEST_FAMILY,
     _build_parser,
     _ensure_train_manifest_exists,
+    _load_latest_checkpoint,
     _resolve_launch_root,
+    _validate_resume_checkpoint_path,
+    main,
 )
 from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime import (
     Task101DetachedLaunch,
     Task101PilotSettings,
+    Task101PilotSettingsSnapshot,
     build_detached_pilot_command,
     inspect_detached_pilot,
 )
@@ -38,6 +46,7 @@ def test_task101_parser_launch_defaults() -> None:
     assert args.lr == DEFAULT_LR
     assert args.num_epochs == DEFAULT_NUM_EPOCHS
     assert args.max_steps == DEFAULT_MAX_STEPS
+    assert args.checkpoint_interval_steps == DEFAULT_CHECKPOINT_INTERVAL_STEPS
     assert args.skip_build is False
 
 
@@ -47,6 +56,17 @@ def test_task101_status_defaults_to_latest_pointer() -> None:
     args = parser.parse_args(["status"])
 
     assert args.launch_root is None
+
+
+def test_task101_resume_defaults_to_latest_checkpoint() -> None:
+    """The Task 101 resume command should default to latest-checkpoint recovery."""
+    parser = _build_parser()
+    args = parser.parse_args(["resume"])
+
+    assert args.resume_mode == "latest"
+    assert args.checkpoint_path is None
+    assert args.launch_root is None
+    assert args.skip_build is False
 
 
 def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -> None:
@@ -68,6 +88,7 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
         lr=2e-5,
         num_epochs=1,
         max_steps=8,
+        checkpoint_interval_steps=2,
     )
     hf_mount = MountResolution(
         canonical_root=settings.hf_cache_dir,
@@ -95,14 +116,70 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
     assert "--ipc=host" in command
     assert "HF_HOME=/cache/huggingface" in command
     assert (
-        "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface:/cache/huggingface"
-        in command
+        "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface:/cache/huggingface" in command
     )
     assert "/home/paunchygent/.data/sir-convert-a-lot/build:/app/build" in command
     assert (
         "/app/build/reference/qwen3-tts-swedish-corpus/manifests/"
         "swedish_pilot_train.prepared.jsonl" in command
     )
+    assert "--checkpoint-interval-steps" in command
+    checkpoint_index = command.index("--checkpoint-interval-steps")
+    assert command[checkpoint_index + 1] == "2"
+
+
+def test_build_detached_pilot_command_includes_resume_checkpoint_when_requested() -> None:
+    """The detached pilot command should surface the selected resume checkpoint."""
+    settings = Task101PilotSettings(
+        output_root=Path("/srv/scratch/sir-convert-a-lot/build/verification/task-101"),
+        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
+        hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
+        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
+        promoted_corpus_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus"
+        ),
+        runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune"),
+        model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+        train_manifest_family="swedish_pilot_train",
+        batch_size=1,
+        lr=2e-5,
+        num_epochs=1,
+        max_steps=8,
+        checkpoint_interval_steps=2,
+    )
+    hf_mount = MountResolution(
+        canonical_root=settings.hf_cache_dir,
+        effective_root=settings.hf_cache_home_mount,
+        used_home_mount=True,
+    )
+    scratch_mount = MountResolution(
+        canonical_root=settings.scratch_build_root,
+        effective_root=settings.scratch_build_home_mount,
+        used_home_mount=True,
+    )
+
+    command, run_root = build_detached_pilot_command(
+        settings,
+        repo_root=Path("/home/paunchygent/apps/sir-convert-a-lot"),
+        hf_mount=hf_mount,
+        scratch_mount=scratch_mount,
+        launch_id="task101-20260309t120000z",
+        container_name="task101-20260309t120000z-container",
+        run_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-prev"
+        ),
+        resume_from_checkpoint=Path(
+            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/"
+            "task101-prev/checkpoints/state-step-00000002"
+        ),
+    )
+
+    assert run_root.as_posix().endswith("/task101-prev")
+    assert "--resume-from-checkpoint" in command
+    resume_index = command.index("--resume-from-checkpoint")
+    assert command[resume_index + 1].endswith("/checkpoints/state-step-00000002")
 
 
 def test_inspect_detached_pilot_reads_container_status_and_reports(
@@ -129,7 +206,31 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
         run_root=run_root.as_posix(),
         promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
         train_manifest_family="swedish_pilot_train",
+        dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
+        resumed_from_checkpoint_path=None,
+        settings=Task101PilotSettingsSnapshot(
+            output_root="/srv/scratch/sir-convert-a-lot/build/verification/task-101",
+            image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+            hf_cache_dir="/srv/scratch/sir-convert-a-lot/cache/huggingface",
+            hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+            scratch_build_root="/srv/scratch/sir-convert-a-lot/build",
+            scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
+            promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+            runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
+            model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+            train_manifest_family="swedish_pilot_train",
+            batch_size=1,
+            lr=2e-5,
+            num_epochs=1,
+            max_steps=8,
+            checkpoint_interval_steps=2,
+        ),
         command=["sudo", "-n", "docker", "run", "-d"],
+    )
+    (run_root / "latest_checkpoint.json").write_text(
+        json.dumps({"checkpoint_path": (run_root / "checkpoints/state-step-00000008").as_posix()})
+        + "\n",
+        encoding="utf-8",
     )
 
     def _fake_docker_checked(args: list[str], *, label: str) -> str:
@@ -164,6 +265,7 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
     assert status.exit_code == 0
     assert status.pilot_status_found is True
     assert status.pilot_report_found is True
+    assert status.latest_checkpoint_found is True
     assert status.pilot_report is not None
     training_summary = status.pilot_report.get("training_summary")
     assert isinstance(training_summary, dict)
@@ -191,3 +293,170 @@ def test_task101_requires_prepared_manifest_before_launch(tmp_path: Path) -> Non
 
     with pytest.raises(SystemExit, match="prepared manifest"):
         _ensure_train_manifest_exists(promoted_root, "swedish_pilot_train")
+
+
+def test_task101_load_latest_checkpoint_pointer(tmp_path: Path) -> None:
+    """Resume latest should resolve the run-root latest-checkpoint pointer."""
+    run_root = tmp_path / "run"
+    checkpoint_path = run_root / "checkpoints/state-step-00000008"
+    run_root.mkdir(parents=True, exist_ok=True)
+    (run_root / "latest_checkpoint.json").write_text(
+        json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+
+    assert _load_latest_checkpoint(run_root) == checkpoint_path
+
+
+def test_task101_validate_resume_checkpoint_path_rejects_cross_run_mismatch(
+    tmp_path: Path,
+) -> None:
+    """Explicit resume checkpoints must belong to the selected source run root."""
+    source_run_root = tmp_path / "run-a"
+    other_run_checkpoint = tmp_path / "run-b/checkpoints/state-step-00000008"
+    source_run_root.mkdir(parents=True, exist_ok=True)
+    other_run_checkpoint.mkdir(parents=True, exist_ok=True)
+
+    with pytest.raises(SystemExit, match="must belong to the selected source launch run root"):
+        _validate_resume_checkpoint_path(source_run_root, other_run_checkpoint)
+
+
+def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resume should reuse the original launch dockerfile path instead of the default."""
+    output_root = tmp_path / "verification"
+    source_launch_root = output_root / "task101-prev"
+    source_run_root = tmp_path / "runs/task101-prev"
+    checkpoint_path = source_run_root / "checkpoints/state-step-00000008"
+    output_root.mkdir(parents=True, exist_ok=True)
+    source_launch_root.mkdir(parents=True, exist_ok=True)
+    checkpoint_path.mkdir(parents=True, exist_ok=True)
+    latest_pointer = source_run_root / "latest_checkpoint.json"
+    latest_pointer.parent.mkdir(parents=True, exist_ok=True)
+    latest_pointer.write_text(
+        json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+
+    launch_payload = Task101DetachedLaunch(
+        generated_at="2026-03-09T12:00:00Z",
+        launch_id="task101-prev",
+        container_name="task101-prev-container",
+        container_id="container-id",
+        repo_root="/home/paunchygent/apps/sir-convert-a-lot",
+        run_root=source_run_root.as_posix(),
+        promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+        train_manifest_family="swedish_pilot_train",
+        dockerfile_path="containers/custom-qwen-finetune/Dockerfile",
+        resumed_from_checkpoint_path=None,
+        settings=Task101PilotSettingsSnapshot(
+            output_root="/srv/scratch/sir-convert-a-lot/build/verification/task-101",
+            image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+            hf_cache_dir="/srv/scratch/sir-convert-a-lot/cache/huggingface",
+            hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+            scratch_build_root="/srv/scratch/sir-convert-a-lot/build",
+            scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
+            promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+            runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
+            model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+            train_manifest_family="swedish_pilot_train",
+            batch_size=1,
+            lr=2e-5,
+            num_epochs=1,
+            max_steps=8,
+            checkpoint_interval_steps=2,
+        ),
+        command=["sudo", "-n", "docker", "run", "-d"],
+    )
+    (source_launch_root / "launch.json").write_text(
+        json.dumps(asdict(launch_payload)) + "\n",
+        encoding="utf-8",
+    )
+    (output_root / "latest-launch.json").write_text(
+        json.dumps({"launch_root": source_launch_root.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def _fake_ensure_image_present(args: argparse.Namespace) -> tuple[bool, str]:
+        captured["dockerfile_path"] = args.dockerfile_path
+        captured["image"] = args.image
+        return False, "sha256:test"
+
+    def _fake_resolve_hf_cache_dir(args: argparse.Namespace) -> MountResolution:
+        del args
+        return MountResolution(
+            canonical_root=Path("/srv/scratch/cache"),
+            effective_root=Path("/srv/scratch/cache"),
+            used_home_mount=False,
+        )
+
+    def _fake_resolve_bind_root(
+        canonical_root: Path,
+        home_mount: Path,
+        *,
+        image: str,
+        sync_home_into_canonical: bool,
+    ) -> MountResolution:
+        del home_mount, image, sync_home_into_canonical
+        return MountResolution(
+            canonical_root=canonical_root,
+            effective_root=canonical_root,
+            used_home_mount=False,
+        )
+
+    def _fake_launch_detached_pilot(
+        settings: Task101PilotSettings,
+        *,
+        repo_root: Path,
+        hf_mount: MountResolution,
+        scratch_mount: MountResolution,
+        launch_id: str,
+        container_name: str,
+        dockerfile_path: Path | None = None,
+        run_root: Path | None = None,
+        resume_from_checkpoint: Path | None = None,
+    ) -> Task101DetachedLaunch:
+        del settings, repo_root, hf_mount, scratch_mount, container_name
+        captured["launch_id"] = launch_id
+        captured["resume_dockerfile_path"] = dockerfile_path
+        captured["run_root"] = run_root
+        captured["resume_from_checkpoint"] = resume_from_checkpoint
+        return launch_payload
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.ensure_image_present",
+        _fake_ensure_image_present,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.resolve_effective_hf_cache_dir",
+        _fake_resolve_hf_cache_dir,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.resolve_effective_bind_root",
+        _fake_resolve_bind_root,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.launch_detached_pilot",
+        _fake_launch_detached_pilot,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot._write_json",
+        lambda path, payload: None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot._write_latest_pointer",
+        lambda output_root, launch_root: None,
+    )
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
+
+    result = main(["resume", "--output-root", output_root.as_posix(), "--skip-build"])
+
+    assert result == 0
+    assert captured["dockerfile_path"] == Path("containers/custom-qwen-finetune/Dockerfile")
+    assert captured["resume_dockerfile_path"] == Path("containers/custom-qwen-finetune/Dockerfile")
+    assert captured["run_root"] == source_run_root
+    assert captured["resume_from_checkpoint"] == checkpoint_path

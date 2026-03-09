@@ -29,7 +29,9 @@ import argparse
 import json
 import shutil
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 import torch
 from accelerate import Accelerator
@@ -61,11 +63,42 @@ class TrainingSummary:
     lr: float
     num_epochs: int
     max_steps: int | None
+    checkpoint_interval_steps: int
     optimizer_steps_completed: int
     last_loss: float | None
     peak_memory_allocated_bytes: int | None
     peak_memory_reserved_bytes: int | None
+    resumed_from_checkpoint_path: str | None
+    latest_durable_checkpoint_path: str | None
+    latest_durable_checkpoint_step: int | None
+    latest_durable_checkpoint_epoch: int | None
+    durable_checkpoint_paths: list[str]
     checkpoint_paths: list[str]
+
+
+@dataclass(frozen=True)
+class DurableCheckpointMetadata:
+    """Resume cursor metadata for one durable trainer-state checkpoint."""
+
+    checkpoint_path: str
+    saved_at: str
+    reason: str
+    optimizer_steps_completed: int
+    epoch: int
+    next_epoch: int
+    next_step_in_epoch: int
+
+
+class CheckpointAccelerator(Protocol):
+    """Minimal accelerator protocol required for durable checkpoint persistence."""
+
+    is_main_process: bool
+
+    def wait_for_everyone(self) -> None:
+        """Synchronize checkpointing across processes."""
+
+    def save_state(self, output_dir: str | None = None, safe_serialization: bool = True) -> None:
+        """Persist full trainer state to the selected checkpoint directory."""
 
 
 def _parse_args() -> argparse.Namespace:
@@ -77,6 +110,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num_epochs", type=int, default=3)
     parser.add_argument("--max_steps", type=int, default=None)
+    parser.add_argument("--checkpoint_interval_steps", type=int, default=100)
+    parser.add_argument("--resume_from_checkpoint", type=str, default=None)
     parser.add_argument("--metrics_output_json", type=str, default=None)
     parser.add_argument(
         "--speaker_name",
@@ -203,10 +238,107 @@ def _save_checkpoint(
     return output_dir.as_posix()
 
 
+def _write_json(path: Path, payload: object) -> None:
+    """Write one deterministic JSON artifact."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _utc_now_iso() -> str:
+    """Return the current UTC timestamp in RFC3339 format."""
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _latest_checkpoint_pointer_path(output_model_path: Path) -> Path:
+    """Return the run-root pointer that tracks the latest durable checkpoint."""
+    return output_model_path.parent / "latest_checkpoint.json"
+
+
+def _durable_checkpoint_metadata_path(checkpoint_dir: Path) -> Path:
+    """Return the metadata path stored alongside one durable checkpoint."""
+    return checkpoint_dir / "training_state.json"
+
+
+def _durable_checkpoint_dir(output_model_path: Path, optimizer_steps_completed: int) -> Path:
+    """Return the durable checkpoint directory for one optimizer step."""
+    return output_model_path / f"state-step-{optimizer_steps_completed:08d}"
+
+
+def _checkpoint_resume_cursor(
+    *,
+    epoch: int,
+    step_in_epoch: int,
+    dataloader_length: int,
+) -> tuple[int, int]:
+    """Return the next epoch and intra-epoch step after one completed batch."""
+    next_step_in_epoch = step_in_epoch + 1
+    next_epoch = epoch
+    if next_step_in_epoch >= dataloader_length:
+        next_epoch = epoch + 1
+        next_step_in_epoch = 0
+    return next_epoch, next_step_in_epoch
+
+
+def _save_durable_checkpoint(
+    *,
+    accelerator: CheckpointAccelerator,
+    output_model_path: Path,
+    optimizer_steps_completed: int,
+    epoch: int,
+    step_in_epoch: int,
+    dataloader_length: int,
+    reason: str,
+) -> DurableCheckpointMetadata:
+    """Persist one resumable trainer-state checkpoint and update the latest pointer."""
+    checkpoint_dir = _durable_checkpoint_dir(output_model_path, optimizer_steps_completed)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    accelerator.wait_for_everyone()
+    accelerator.save_state(checkpoint_dir.as_posix())
+    next_epoch, next_step_in_epoch = _checkpoint_resume_cursor(
+        epoch=epoch,
+        step_in_epoch=step_in_epoch,
+        dataloader_length=dataloader_length,
+    )
+    metadata = DurableCheckpointMetadata(
+        checkpoint_path=checkpoint_dir.as_posix(),
+        saved_at=_utc_now_iso(),
+        reason=reason,
+        optimizer_steps_completed=optimizer_steps_completed,
+        epoch=epoch,
+        next_epoch=next_epoch,
+        next_step_in_epoch=next_step_in_epoch,
+    )
+    if accelerator.is_main_process:
+        _write_json(_durable_checkpoint_metadata_path(checkpoint_dir), asdict(metadata))
+        _write_json(_latest_checkpoint_pointer_path(output_model_path), asdict(metadata))
+    accelerator.wait_for_everyone()
+    return metadata
+
+
+def _load_durable_checkpoint_metadata(checkpoint_path: Path) -> DurableCheckpointMetadata:
+    """Load durable checkpoint metadata required for exact resume."""
+    payload = json.loads(
+        _durable_checkpoint_metadata_path(checkpoint_path).read_text(encoding="utf-8")
+    )
+    if not isinstance(payload, dict):
+        raise ValueError("Expected durable checkpoint metadata to be a JSON object.")
+    return DurableCheckpointMetadata(
+        checkpoint_path=str(payload["checkpoint_path"]),
+        saved_at=str(payload["saved_at"]),
+        reason=str(payload["reason"]),
+        optimizer_steps_completed=int(payload["optimizer_steps_completed"]),
+        epoch=int(payload["epoch"]),
+        next_epoch=int(payload["next_epoch"]),
+        next_step_in_epoch=int(payload["next_step_in_epoch"]),
+    )
+
+
 def train_with_args(args: argparse.Namespace) -> TrainingSummary:
     """Run one bounded Qwen fine-tuning job and return machine-readable metrics."""
     if args.max_steps is not None and args.max_steps <= 0:
         raise ValueError("`--max_steps` must be positive when provided.")
+    if int(args.checkpoint_interval_steps) <= 0:
+        raise ValueError("`--checkpoint_interval_steps` must be positive.")
 
     accelerator = Accelerator(
         gradient_accumulation_steps=4,
@@ -239,15 +371,41 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
         train_dataloader,
     )
 
+    output_model_path = Path(args.output_model_path)
+    dataloader_length = len(train_dataloader)
+    durable_checkpoint_paths: list[str] = []
+    latest_durable_checkpoint: DurableCheckpointMetadata | None = None
+    resumed_from_checkpoint_path: str | None = None
+    starting_epoch = 0
+    resume_step_in_epoch = 0
     model.train()
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
     optimizer_steps_completed = 0
     last_loss: float | None = None
     checkpoint_paths: list[str] = []
+    if args.resume_from_checkpoint is not None:
+        resume_checkpoint_path = Path(args.resume_from_checkpoint)
+        latest_durable_checkpoint = _load_durable_checkpoint_metadata(resume_checkpoint_path)
+        accelerator.load_state(resume_checkpoint_path.as_posix())
+        resumed_from_checkpoint_path = resume_checkpoint_path.as_posix()
+        optimizer_steps_completed = latest_durable_checkpoint.optimizer_steps_completed
+        starting_epoch = latest_durable_checkpoint.next_epoch
+        resume_step_in_epoch = latest_durable_checkpoint.next_step_in_epoch
+        durable_checkpoint_paths.append(resume_checkpoint_path.as_posix())
     reached_max_steps = False
-    for epoch in range(args.num_epochs):
-        for step, batch in enumerate(train_dataloader):
+    epoch = starting_epoch
+    step = 0
+    for epoch in range(starting_epoch, args.num_epochs):
+        epoch_dataloader = train_dataloader
+        epoch_start_step = 0
+        if epoch == starting_epoch and resume_step_in_epoch > 0:
+            epoch_dataloader = accelerator.skip_first_batches(
+                train_dataloader,
+                resume_step_in_epoch,
+            )
+            epoch_start_step = resume_step_in_epoch
+        for step, batch in enumerate(epoch_dataloader, start=epoch_start_step):
             with accelerator.accumulate(model):
                 input_ids = batch["input_ids"]
                 codec_ids = batch["codec_ids"]
@@ -312,12 +470,23 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
 
             if step % 10 == 0:
                 accelerator.print(f"Epoch {epoch} | Step {step} | Loss: {loss.item():.4f}")
+            if optimizer_steps_completed % int(args.checkpoint_interval_steps) == 0:
+                latest_durable_checkpoint = _save_durable_checkpoint(
+                    accelerator=accelerator,
+                    output_model_path=output_model_path,
+                    optimizer_steps_completed=optimizer_steps_completed,
+                    epoch=epoch,
+                    step_in_epoch=step,
+                    dataloader_length=dataloader_length,
+                    reason="interval",
+                )
+                durable_checkpoint_paths.append(latest_durable_checkpoint.checkpoint_path)
             if args.max_steps is not None and optimizer_steps_completed >= args.max_steps:
                 reached_max_steps = True
                 break
 
         if accelerator.is_main_process:
-            output_dir = Path(args.output_model_path) / f"checkpoint-epoch-{epoch}"
+            output_dir = output_model_path / f"checkpoint-epoch-{epoch}"
             checkpoint_paths.append(
                 _save_checkpoint(
                     accelerator=accelerator,
@@ -329,8 +498,23 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
         if reached_max_steps:
             break
 
+    if optimizer_steps_completed > 0 and (
+        latest_durable_checkpoint is None
+        or latest_durable_checkpoint.optimizer_steps_completed != optimizer_steps_completed
+    ):
+        latest_durable_checkpoint = _save_durable_checkpoint(
+            accelerator=accelerator,
+            output_model_path=output_model_path,
+            optimizer_steps_completed=optimizer_steps_completed,
+            epoch=epoch,
+            step_in_epoch=step,
+            dataloader_length=dataloader_length,
+            reason="final-step",
+        )
+        durable_checkpoint_paths.append(latest_durable_checkpoint.checkpoint_path)
+
     if accelerator.is_main_process:
-        final_output_dir = Path(args.output_model_path) / "checkpoint-final"
+        final_output_dir = output_model_path / "checkpoint-final"
         checkpoint_paths.append(
             _save_checkpoint(
                 accelerator=accelerator,
@@ -354,10 +538,24 @@ def train_with_args(args: argparse.Namespace) -> TrainingSummary:
         lr=float(args.lr),
         num_epochs=int(args.num_epochs),
         max_steps=None if args.max_steps is None else int(args.max_steps),
+        checkpoint_interval_steps=int(args.checkpoint_interval_steps),
         optimizer_steps_completed=optimizer_steps_completed,
         last_loss=last_loss,
         peak_memory_allocated_bytes=peak_memory_allocated_bytes,
         peak_memory_reserved_bytes=peak_memory_reserved_bytes,
+        resumed_from_checkpoint_path=resumed_from_checkpoint_path,
+        latest_durable_checkpoint_path=(
+            None if latest_durable_checkpoint is None else latest_durable_checkpoint.checkpoint_path
+        ),
+        latest_durable_checkpoint_step=(
+            None
+            if latest_durable_checkpoint is None
+            else latest_durable_checkpoint.optimizer_steps_completed
+        ),
+        latest_durable_checkpoint_epoch=(
+            None if latest_durable_checkpoint is None else latest_durable_checkpoint.epoch
+        ),
+        durable_checkpoint_paths=durable_checkpoint_paths,
         checkpoint_paths=checkpoint_paths,
     )
 

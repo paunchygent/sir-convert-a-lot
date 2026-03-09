@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-08'
+last_updated: '2026-03-09'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
@@ -48,9 +48,11 @@ that a real Swedish optimizer step fits on the R9700.
   - clean GPU baseline with no resident models,
   - real model residency on Hemma,
   - real official full-finetune step with `AdamW` on a Swedish sample.
-- Define the Colab H100 runtime as the scaling lane, not as the only viable
-  path.
+- Define Hemma as the default scaling lane and Colab H100 as an optional
+  fallback only when Hemma proves insufficient.
 - Keep model training isolated from the current Epic 07 public route work.
+- Define the fault-tolerant resume/checkpoint contract required before long
+  unattended Hemma training windows.
 
 ## Tasks (Ordered)
 
@@ -66,6 +68,8 @@ that a real Swedish optimizer step fits on the R9700.
   aligns with the repo's existing ROCm/HF-cache discipline.
 - [ ] Task 101 records a real containerized Swedish full-finetune pilot result
   on Hemma with `AdamW`.
+- [ ] A dedicated task defines robust resumable checkpointing before the first
+  long unattended Hemma training window.
 - [ ] The story documents the already-proven Hemma memory reality:
   - `32.06 GB` total VRAM,
   - clean idle baseline around `0.06 GB`,
@@ -85,8 +89,9 @@ that a real Swedish optimizer step fits on the R9700.
 ## Done Definition
 
 The repo has one documented, containerized, reproducible Qwen `1.7B`
-fine-tuning baseline on Hemma and Colab, and the serving benchmark lane no
-longer preserves the older hardcoded Triton-disable assumption.
+fine-tuning baseline on Hemma as the default lane, a documented optional Colab
+fallback path, and an explicit resumable-checkpoint plan for longer Hemma
+training windows.
 
 ## Checklist
 

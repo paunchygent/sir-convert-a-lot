@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-08'
+last_updated: '2026-03-09'
 related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
@@ -50,14 +50,16 @@ This epic is complete only when:
 - the Hemma `32.06 GB` ROCm host has a reproducible containerized full-finetune
   baseline for the `1.7B` model,
 - the Swedish corpus curation and preprocessing path is explicit and reviewable,
-- a Hemma pilot run plus a Colab H100 scaling comparison are both documented,
+- a Hemma pilot run is documented and the optional Colab fallback lane is
+  decisioned explicitly,
 - and the resulting model-delivery path still fits ADR-0006 and ADR-0007.
 
 ## In Scope
 
 - A new model-training lane parallel to Epic 07, not embedded inside the
   current public `md -> wav` delivery scope.
-- Containerized GPU-first runtime work for Qwen `1.7B` on Hemma and Colab.
+- Containerized GPU-first runtime work for Qwen `1.7B` on Hemma as the default
+  lane, with Colab documented only as an optional fallback/comparison lane.
 - Re-enabling Triton flash attention for the existing Qwen Hemma benchmark lane
   so the serving/runtime baseline matches the now-understood ROCm container
   path on `AMD Radeon AI PRO R9700`.
@@ -69,7 +71,8 @@ This epic is complete only when:
   to Swedish full-finetune inputs and persistent cache discipline.
 - Hemma pilot evidence for a real full-finetune step with `AdamW` on the
   `1.7B` model.
-- Colab H100 scaling guidance and comparison evidence for the larger run.
+- Optional Colab H100 fallback guidance if Hemma later proves insufficient on
+  stability or wall time.
 - Evaluation planning focused on language support, pronunciation, prosody,
   held-out speakers, and operational fit for a future sidecar candidate.
 
@@ -95,6 +98,7 @@ This epic is complete only when:
 1. `docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md`
 1. `docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md`
 1. `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+1. `docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md`
 1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
 
 ## Acceptance Criteria
@@ -105,7 +109,8 @@ This epic is complete only when:
   a containerized ROCm path with Triton flash attention enabled by default for
   the current Qwen benchmark lane.
 - [ ] A committed backlog path exists for corpus curation, preprocessing,
-  Hemma pilot execution, and Colab H100 scaling.
+  Hemma pilot execution, robust resumable checkpointing, and optional Colab
+  fallback work.
 - [ ] The planning record captures the real Hemma evidence already established:
   clean idle baseline around `0.06 GB`, real official Waxholm full-finetune
   step around `20.19 GB`, and remaining headroom around `11.87 GB` on the

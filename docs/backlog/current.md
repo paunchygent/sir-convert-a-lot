@@ -47,8 +47,7 @@ template-governed DOCX/PDF pathways are delivered and validated).
 Active focus is Epic 06: long OCR PDF progress visibility, partial artifact/checkpoint lifecycle,
 resume reliability, and throughput scaling.
 
-This file is the canonical long-term memory index for session progress; session handoff summaries
-must be archived here when `handoff.md` is pruned.
+This file is the canonical long-term memory index for session progress; session handoff summaries must be archived here when `handoff.md` is pruned.
 
 Current epic entrypoint:
 
@@ -143,11 +142,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     bounded `--rixvox-max-rows-per-split 64` containerized preprocessing run.
   - Recorded the Hemma long-job execution rule: detached only; the earlier
     attached `137` from `T109` is not treated as canonical `T108` evidence.
-  - Detached `T108` proof then established the exact failure mode:
-    Hemma kernel logs recorded a real Python OOM kill inside the detached
-    Docker scope at `2026-03-08 21:41:24`, after `88` `audio_24k` files,
-    `10` refs, and `51` curated `swedish_smoke_train` rows had already been
-    emitted but before final manifests/reports existed.
+  - Detached `T108` proof then established the exact failure mode: Hemma
+    kernel logs recorded a real Python OOM kill inside the detached Docker
+    scope at `2026-03-08 21:41:24`, after `88` `audio_24k` files, `10` refs,
+    and `51` curated `swedish_smoke_train` rows had already been emitted but
+    before final manifests/reports existed.
   - Opened `T110` and `T111` as the next hardening slices:
     `T110` for disk-backed row/finalization split and `T111` for optional
     provenance-safe ASR relabeling.
@@ -203,18 +202,18 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 listening review on
-  `T91`, then `T93`, then `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`,
-  `T108`, and `T109` are complete. The recovered `T108` run root is now the
-  canonical promoted corpus view on Hemma, and the active next step is the
-  detached `T101` pilot lane via `pdm run run-hemma -- pdm run task-101-pilot launch`.
+- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then `T83`, with `T82` kept deferred.
+- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, and `T109` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` has proven the bounded detached pilot lane, and `T115` is now the active resume hardening lane before longer unattended Hemma runs are trusted.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110` delivered the staged spool/finalization split plus explicit row/GPU
   concurrency controls, `T112` / `T113` closed the Hemma storage-model
   blocker, and `T114` completed the isolated-stage recovery model end to end,
   including the remaining status-heartbeat and command-surface cleanup. `T111`
   remains the later provenance-safe ASR relabel candidate task.
+- Current `T115` state: committed trainer-state checkpoints, run-root latest
+  checkpoint pointers, and detached `resume latest` / `resume --checkpoint-path`
+  plumbing are implemented locally; the remaining acceptance step is one live
+  Hemma interruption-and-resume proof.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once
   their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

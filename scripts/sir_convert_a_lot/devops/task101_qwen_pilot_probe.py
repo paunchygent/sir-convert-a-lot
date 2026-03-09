@@ -69,6 +69,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num-epochs", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=8)
+    parser.add_argument("--checkpoint-interval-steps", type=int, default=2)
+    parser.add_argument("--resume-from-checkpoint", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -95,6 +97,12 @@ def main() -> int:
             "updated_at": _utc_now_iso(),
             "train_jsonl": args.train_jsonl.as_posix(),
             "output_dir": output_dir.as_posix(),
+            "checkpoint_interval_steps": int(args.checkpoint_interval_steps),
+            "resumed_from_checkpoint_path": (
+                None
+                if args.resume_from_checkpoint is None
+                else args.resume_from_checkpoint.as_posix()
+            ),
         },
     )
     try:
@@ -114,6 +122,12 @@ def main() -> int:
             lr=float(args.lr),
             num_epochs=int(args.num_epochs),
             max_steps=int(args.max_steps),
+            checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+            resume_from_checkpoint=(
+                None
+                if args.resume_from_checkpoint is None
+                else args.resume_from_checkpoint.as_posix()
+            ),
             metrics_output_json=training_summary_path.as_posix(),
             speaker_name="pilot_multi_speaker",
         )
@@ -142,6 +156,10 @@ def main() -> int:
                 "train_jsonl": args.train_jsonl.as_posix(),
                 "output_dir": output_dir.as_posix(),
                 "optimizer_steps_completed": training_summary.optimizer_steps_completed,
+                "checkpoint_interval_steps": training_summary.checkpoint_interval_steps,
+                "resumed_from_checkpoint_path": training_summary.resumed_from_checkpoint_path,
+                "latest_durable_checkpoint_path": training_summary.latest_durable_checkpoint_path,
+                "latest_durable_checkpoint_step": training_summary.latest_durable_checkpoint_step,
             },
         )
         print(json.dumps(asdict(report), indent=2, sort_keys=True))
