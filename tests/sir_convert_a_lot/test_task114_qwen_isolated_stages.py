@@ -13,6 +13,7 @@ from scripts.sir_convert_a_lot.devops.run_task114_hemma_qwen_isolated_stages imp
 )
 from scripts.sir_convert_a_lot.devops.task114_qwen_isolated_stages_runtime import (
     Task114DetachedStageLaunch,
+    _load_optional_json,
     inspect_detached_stage,
     resolve_next_stage,
 )
@@ -146,3 +147,32 @@ def test_inspect_detached_stage_reads_container_status_and_task103_outputs(
     assert status.task103_report is not None
     assert status.task103_report["prepared_rows"] == 52
     assert status.logs_tail == "finalization log tail"
+
+
+def test_load_optional_json_uses_sudo_fallback_on_permission_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unreadable Task 103 artifacts should still load through sudo fallback."""
+    payload_path = tmp_path / "status.json"
+    payload_path.write_text(json.dumps({"status": "running"}) + "\n", encoding="utf-8")
+
+    original_read_text = Path.read_text
+
+    def _fake_read_text(self: Path, encoding: str = "utf-8") -> str:
+        if self == payload_path:
+            raise PermissionError("permission denied")
+        return original_read_text(self, encoding=encoding)
+
+    def _fake_subprocess_checked(command: list[str], *, label: str) -> str:
+        assert command == ["sudo", "-n", "cat", payload_path.as_posix()]
+        assert label == "sudo cat task114 detached artifact"
+        return json.dumps({"status": "running"})
+
+    monkeypatch.setattr(Path, "read_text", _fake_read_text)
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task114_qwen_isolated_stages_runtime.subprocess_checked",
+        _fake_subprocess_checked,
+    )
+
+    assert _load_optional_json(payload_path) == {"status": "running"}

@@ -246,6 +246,63 @@ The bounded detached `T101` pilot already proved:
 
 So the next long-run posture is Hemma-first, not H100-first.
 
+## Current Corpus Reality
+
+The current promoted Task 103 corpus view is operationally valid but still a
+bounded proof slice rather than the intended bounded Hemma pilot corpus.
+
+Current prepared manifest counts on Hemma:
+
+- `swedish_smoke_train=52`
+- `swedish_pilot_train=52`
+- `swedish_scaleup_train=58`
+- `swedish_checkpoint_dev=8`
+- `swedish_final_test=8`
+- `swedish_waxholm_control=8`
+
+Current composition:
+
+- train families are still `rixvox`-only
+- held-out quantitative families are still dominated by `fleurs`
+- the current train-side prepared rows are still effectively one-speaker
+
+Interpretation:
+
+- the preprocessing/training/runtime stack is now proven
+- the current corpus is still too narrow to be treated as the real bounded
+  multi-speaker Hemma pilot target
+- the next operational move is corpus expansion first, not a larger training
+  run on the same narrow prepared slice
+
+## Next Corpus-Expansion Posture
+
+The next preprocessing effort should be aimed directly at the bounded Hemma
+pilot corpus target from `T102`, not at another tiny proof slice.
+
+Chosen immediate direction:
+
+- expand staged `rixvox` train breadth first
+- launch detached `row-processing` only
+- use:
+  - `row_worker_count=4`
+  - `gpu_asr_worker_count=2`
+- use `2` hours as a health gate only
+- if healthy, let the same detached run continue into an `8` to `10` hour
+  window
+- do not auto-enter finalization after row-processing
+
+Initial bounded staging plan:
+
+- keep staged `train_0`
+- add `train_1` through `train_23`
+
+Reason:
+
+- the next corpus-expansion objective is to grow a real high-trust
+  multi-speaker `swedish_pilot_train`
+- staging more train breadth is more valuable right now than repeating
+  training on the current narrow proof slice
+
 ## Fault-Tolerant Resume Contract
 
 Before longer unattended Hemma training windows, the training lane must expose
@@ -675,6 +732,23 @@ Canonical Task 106 acquisition surface:
    - durable step-based checkpoints
    - optimizer/trainer-state persistence
    - detached `resume latest` / `resume --checkpoint-path`
+1. Execute Task 116 before the next real long Hemma training window.
+   - stage broader `rixvox` train coverage first:
+     - keep `train_0`
+     - add `train_1` through `train_23`
+   - then run detached `row-processing` only with:
+     - `row_worker_count=4`
+     - `gpu_asr_worker_count=2`
+   - if Hemma does not already expose historical GPU time-series monitoring,
+     start the committed detached GPU sampler in parallel:
+     - `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor launch`
+     - later inspect with:
+       - `... status`
+       - `... summary`
+   - monitor every `10` minutes
+   - treat `2` hours as the first health gate only
+   - if healthy, continue the same run into `8` to `10` hours
+   - finalize only after the enlarged spool/train yield has been inspected
 
 ## Hemma Versus Colab
 
@@ -725,8 +799,13 @@ For long preprocessing runs after `T110`, evidence should also record:
 - cache roots used
 - clean-baseline GPU snapshot
 - peak VRAM and GPU busy evidence
+- median and lowest GPU busy evidence when host monitoring is not otherwise available
 - checkpoint/output paths
 - report Markdown plus machine-readable JSON
+
+`journald` is not a substitute for historical GPU monitoring by itself. Only
+treat system logs as a usable GPU history source when a dedicated sampler
+service is already writing periodic GPU samples into the journal.
 
 Suggested evidence roots:
 

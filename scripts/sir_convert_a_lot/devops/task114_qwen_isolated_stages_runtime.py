@@ -233,10 +233,28 @@ def _load_optional_json(path: Path) -> dict[str, object] | None:
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
     except PermissionError:
-        return None
+        raw_payload = subprocess_checked(
+            ["sudo", "-n", "cat", path.as_posix()],
+            label="sudo cat task114 detached artifact",
+        )
+        loaded = json.loads(raw_payload)
     if not isinstance(loaded, dict):
         raise SystemExit(f"Expected one JSON object in `{path.as_posix()}`.")
     return loaded
+
+
+def subprocess_checked(command: list[str], *, label: str) -> str:
+    """Run one subprocess command and return stdout or raise on failure."""
+    import subprocess
+
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise SystemExit(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        )
+    return result.stdout.strip()
 
 
 def _required_str(payload: dict[str, object], key: str) -> str:
