@@ -248,8 +248,8 @@ So the next long-run posture is Hemma-first, not H100-first.
 
 ## Fault-Tolerant Resume Contract
 
-Before longer unattended Hemma training windows, the training lane must gain a
-real durable-resume path through `T115`.
+Before longer unattended Hemma training windows, the training lane must expose
+the durable-resume path delivered through `T115`.
 
 Required contract:
 
@@ -277,8 +277,13 @@ Current implementation status:
 - the detached Task 101 surface now supports:
   - `resume latest`
   - `resume --checkpoint-path <path>`
-- the remaining blocker before trusting long unattended Hemma runs is one live
-  Hemma interruption-and-resume proof, not missing code surfaces
+- the live Hemma interruption-and-resume proof is now complete:
+  - proof bundle:
+    `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/`
+  - initial run interrupted cleanly from durable checkpoint
+    `state-step-00000002`
+  - fresh detached resume completed successfully through
+    `state-step-00000024`
 
 ## Flash Attention Policy
 
@@ -666,11 +671,10 @@ Canonical Task 106 acquisition surface:
 1. Keep Task 104 as an optional Colab H100 fallback/comparison lane only.
    - use it only if Hemma proves insufficient on stability, checkpoint
      recovery, or unacceptable wall time at larger corpus scale
-1. Implement Task 115 before relying on long unattended training windows.
-   - robust checkpoint cadence
+1. Use the completed Task 115 resume surface for longer unattended Hemma runs.
+   - durable step-based checkpoints
    - optimizer/trainer-state persistence
-   - resume from latest durable checkpoint instead of restarting from weights
-     only
+   - detached `resume latest` / `resume --checkpoint-path`
 
 ## Hemma Versus Colab
 

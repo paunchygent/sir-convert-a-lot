@@ -2,7 +2,7 @@
 id: task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma
 title: Add fault-tolerant resumable Qwen training checkpoints on Hemma
 type: task
-status: active
+status: completed
 priority: critical
 created: '2026-03-09'
 last_updated: '2026-03-09'
@@ -104,10 +104,16 @@ Committed implementation now exists for:
 - status/report metadata recording resume/checkpoint details,
 - focused unit coverage for checkpoint metadata and detached resume plumbing.
 
-Remaining acceptance gap:
+Live Hemma proof completed:
 
-- one live Hemma interruption-and-resume proof is still required before the
-  lane is treated as operationally ready for long unattended runs.
+- proof bundle:
+  `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/`
+- initial detached launch wrote `state-step-00000002`
+- the proof intentionally stopped the initial run at `2026-03-09T15:57:48Z`
+- a fresh detached resume launch continued from
+  `state-step-00000002`
+- the resumed run completed successfully at `2026-03-09T16:04:18Z`
+- the final durable checkpoint reached `state-step-00000024`
 
 ## Non-Goals
 
@@ -117,23 +123,24 @@ Remaining acceptance gap:
 
 ## Deliverables
 
-- [ ] Committed trainer-state checkpoint implementation for the Hemma Qwen lane.
-- [ ] Detached Task 101 resume command/flag surface.
-- [ ] Machine-readable status/report fields for latest durable checkpoint.
-- [ ] One live Hemma proof that a bounded interrupted run can resume from the
+- [x] Committed trainer-state checkpoint implementation for the Hemma Qwen lane.
+- [x] Detached Task 101 resume command/flag surface.
+- [x] Machine-readable status/report fields for latest durable checkpoint.
+- [x] One live Hemma proof that a bounded interrupted run can resume from the
   latest durable checkpoint.
 
 ## Acceptance Criteria
 
-- [ ] Checkpoints are written more frequently than end-of-epoch only.
-- [ ] A resumed run continues training from a durable checkpoint rather than
+- [x] Checkpoints are written more frequently than end-of-epoch only.
+- [x] A resumed run continues training from a durable checkpoint rather than
   restarting from bare model weights.
-- [ ] The detached Task 101 lane records the latest durable checkpoint path and
+- [x] The detached Task 101 lane records the latest durable checkpoint path and
   step count in status/report artifacts.
-- [ ] One live Hemma proof demonstrates interruption plus successful resume.
+- [x] One live Hemma proof demonstrates interruption plus successful resume.
 
 ## Checklist
 
 - [x] Implementation complete
 - [x] Validation complete
 - [x] Docs updated
+- [x] Live Hemma interruption/resume proof complete

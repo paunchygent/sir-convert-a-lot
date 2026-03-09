@@ -203,17 +203,17 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 ## Next Actions
 
 - Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then `T83`, with `T82` kept deferred.
-- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, and `T109` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` has proven the bounded detached pilot lane, and `T115` is now the active resume hardening lane before longer unattended Hemma runs are trusted.
+- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, and `T115` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` has proven the bounded detached pilot lane, and the live Task 115 proof closed the unattended-resume gap.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110` delivered the staged spool/finalization split plus explicit row/GPU
   concurrency controls, `T112` / `T113` closed the Hemma storage-model
   blocker, and `T114` completed the isolated-stage recovery model end to end,
   including the remaining status-heartbeat and command-surface cleanup. `T111`
   remains the later provenance-safe ASR relabel candidate task.
-- Current `T115` state: committed trainer-state checkpoints, run-root latest
-  checkpoint pointers, and detached `resume latest` / `resume --checkpoint-path`
-  plumbing are implemented locally; the remaining acceptance step is one live
-  Hemma interruption-and-resume proof.
+- Current `T115` evidence:
+  `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/`
+  proves durable checkpoint at step `2`, intentional stop, fresh detached
+  resume, and successful completion at step `24`.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once
   their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

@@ -161,9 +161,7 @@ def checkpoint_ready_predicate(status_payload: dict[str, object]) -> bool:
             "Task 115 proof missed the interruption window because Task 101 already completed."
         )
     if status_payload.get("status") == "exited" and not latest_checkpoint_found:
-        raise SystemExit(
-            "Task 115 proof launch exited before emitting a durable checkpoint."
-        )
+        raise SystemExit("Task 115 proof launch exited before emitting a durable checkpoint.")
     return latest_checkpoint_found and running
 
 

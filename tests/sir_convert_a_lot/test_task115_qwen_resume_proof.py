@@ -39,12 +39,8 @@ def test_task115_runner_orchestrates_launch_stop_resume_flow(
         "/srv/scratch/sir-convert-a-lot/build/runs/"
         "qwen3-tts-swedish-finetune/task115-proof-test-initial"
     )
-    initial_checkpoint = (
-        f"{initial_run_root}/checkpoints/state-step-00000002"
-    )
-    final_checkpoint = (
-        f"{initial_run_root}/checkpoints/state-step-00000024"
-    )
+    initial_checkpoint = f"{initial_run_root}/checkpoints/state-step-00000002"
+    final_checkpoint = f"{initial_run_root}/checkpoints/state-step-00000024"
     captured_commands: list[tuple[str, list[str]]] = []
     status_call_count = 0
 
