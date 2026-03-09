@@ -296,6 +296,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         ensure_image_present(settings)
         hf_mount = resolve_effective_hf_cache_dir(settings)
+        scratch_mount = resolve_effective_bind_root(
+            settings.scratch_build_root,
+            settings.scratch_build_home_mount,
+            image=settings.image,
+            sync_home_into_canonical=False,
+        )
         data_mount = resolve_effective_bind_root(
             settings.data_root,
             settings.data_root_home_mount,
@@ -308,6 +314,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_root=repo_root,
             hf_mount=hf_mount,
             data_mount=data_mount,
+            scratch_mount=scratch_mount,
             container_name=container_name,
         )
         _write_json(_launch_metadata_path(output_root), asdict(launch))

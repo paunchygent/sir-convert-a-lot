@@ -79,6 +79,7 @@ def build_detached_task108_command(
     repo_root: Path,
     hf_mount: MountResolution,
     data_mount: MountResolution,
+    scratch_mount: MountResolution,
     container_name: str,
 ) -> list[str]:
     """Build the detached Docker command for one Task 108 proof run."""
@@ -87,6 +88,7 @@ def build_detached_task108_command(
         repo_root=repo_root,
         hf_mount=hf_mount,
         data_mount=data_mount,
+        scratch_mount=scratch_mount,
     )
     detached_command = [
         "run",
@@ -109,6 +111,7 @@ def launch_detached_task108_proof(
     repo_root: Path,
     hf_mount: MountResolution,
     data_mount: MountResolution,
+    scratch_mount: MountResolution,
     container_name: str,
 ) -> Task108DetachedProofLaunch:
     """Launch one detached Task 108 proof container and return launch metadata."""
@@ -117,6 +120,7 @@ def launch_detached_task108_proof(
         repo_root=repo_root,
         hf_mount=hf_mount,
         data_mount=data_mount,
+        scratch_mount=scratch_mount,
         container_name=container_name,
     )
     if settings.task103_run_root is not None:
