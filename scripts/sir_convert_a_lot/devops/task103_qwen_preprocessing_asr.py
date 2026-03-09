@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from threading import Lock
 from typing import Protocol, runtime_checkable
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
@@ -26,6 +27,8 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     SpeakerQualityGate,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
+
+_TRANSFORMERS_PIPELINE_IMPORT_LOCK = Lock()
 
 
 @runtime_checkable
@@ -116,22 +119,28 @@ class WhisperStrictScorer:
     model_id: str
     revision: str
     _pipeline: object | None = None
+    _load_lock: Lock = field(default_factory=Lock, init=False, repr=False)
 
     def _ensure_loaded(self) -> None:
         import torch
-        from transformers import pipeline
 
         if self._pipeline is not None:
             return
-        dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-        device = 0 if torch.cuda.is_available() else -1
-        self._pipeline = pipeline(
-            task="automatic-speech-recognition",
-            model=self.model_id,
-            revision=self.revision,
-            dtype=dtype,
-            device=device,
-        )
+        with self._load_lock:
+            if self._pipeline is not None:
+                return
+            with _TRANSFORMERS_PIPELINE_IMPORT_LOCK:
+                from transformers import pipeline
+
+            dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+            device = 0 if torch.cuda.is_available() else -1
+            self._pipeline = pipeline(
+                task="automatic-speech-recognition",
+                model=self.model_id,
+                revision=self.revision,
+                dtype=dtype,
+                device=device,
+            )
 
     def transcribe(self, audio_path: Path) -> str:
         """Transcribe one canonical 24 kHz audio artifact into Swedish text."""

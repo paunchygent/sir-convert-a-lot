@@ -24,7 +24,6 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from pathlib import Path
 from queue import Queue
-from threading import Lock
 from typing import Callable, Sequence
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import (
@@ -189,8 +188,15 @@ def process_rows_to_spool(
     inventory_rows_by_key = {
         (row.dataset, row.source_split, row.dataset_row_id): row for row in inventory_rows
     }
-    scorer_slots: list[object | None] = [None] * settings.gpu_asr_worker_count
-    scorer_slots_lock = Lock()
+    source_rows_with_audio = [
+        source_row for source_row in source_records if source_row.source_audio_locator is not None
+    ]
+    scorer_slots: list[object | None] = []
+    if source_rows_with_audio:
+        scorer_slots = [
+            scorer_factory(settings.asr_model, settings.asr_revision)
+            for _ in range(settings.gpu_asr_worker_count)
+        ]
     scorer_slot_queue: Queue[int] = Queue()
     for slot_index in range(settings.gpu_asr_worker_count):
         scorer_slot_queue.put(slot_index)
@@ -219,11 +225,11 @@ def process_rows_to_spool(
         )
         scorer_slot_index = scorer_slot_queue.get()
         try:
-            with scorer_slots_lock:
-                scorer = scorer_slots[scorer_slot_index]
-                if scorer is None:
-                    scorer = scorer_factory(settings.asr_model, settings.asr_revision)
-                    scorer_slots[scorer_slot_index] = scorer
+            scorer = scorer_slots[scorer_slot_index]
+            if scorer is None:
+                raise RuntimeError(
+                    "ASR scorer slot was not initialized before row processing started."
+                )
             transcribe = getattr(scorer, "transcribe")
             asr_transcript = transcribe(audio_24k_path)
         finally:

@@ -7,6 +7,7 @@ import json
 import math
 import sys
 import tarfile
+import threading
 import wave
 from pathlib import Path
 from typing import Sequence
@@ -1319,3 +1320,57 @@ def test_whisper_strict_scorer_uses_pipeline_gpu_loading_contract(
     assert captured_kwargs["dtype"] == "float16"
     assert captured_kwargs["device"] == 0
     assert captured_kwargs["task"] == "automatic-speech-recognition"
+
+
+def test_whisper_strict_scorer_serializes_pipeline_initialization(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Concurrent scorer calls should initialize one cached pipeline per scorer."""
+
+    class _FakeTorchCuda:
+        @staticmethod
+        def is_available() -> bool:
+            return False
+
+    class _FakeTorch:
+        cuda = _FakeTorchCuda()
+        float16 = "float16"
+        float32 = "float32"
+
+    load_call_count = 0
+    load_call_lock = threading.Lock()
+
+    class _FakePipeline:
+        def __call__(
+            self,
+            inputs: object,
+            *,
+            generate_kwargs: dict[str, object] | None = None,
+        ) -> dict[str, object]:
+            assert generate_kwargs == {"task": "transcribe"}
+            return {"text": f"transcribed:{inputs}"}
+
+    def _fake_pipeline(**_: object) -> _FakePipeline:
+        nonlocal load_call_count
+        with load_call_lock:
+            load_call_count += 1
+        return _FakePipeline()
+
+    monkeypatch.setitem(sys.modules, "torch", _FakeTorch())
+    monkeypatch.setitem(
+        sys.modules,
+        "transformers",
+        type("_FakeTransformersModule", (), {"pipeline": staticmethod(_fake_pipeline)})(),
+    )
+
+    scorer = WhisperStrictScorer(model_id="KBLab/kb-whisper-large", revision="strict")
+    audio_path = Path("/tmp/example.wav")
+
+    first_thread = threading.Thread(target=scorer.transcribe, args=(audio_path,))
+    second_thread = threading.Thread(target=scorer.transcribe, args=(audio_path,))
+    first_thread.start()
+    second_thread.start()
+    first_thread.join()
+    second_thread.join()
+
+    assert load_call_count == 1
