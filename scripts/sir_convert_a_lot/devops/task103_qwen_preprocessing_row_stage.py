@@ -193,10 +193,12 @@ def process_rows_to_spool(
     ]
     scorer_slots: list[object | None] = []
     if source_rows_with_audio:
-        scorer_slots = [
-            scorer_factory(settings.asr_model, settings.asr_revision)
-            for _ in range(settings.gpu_asr_worker_count)
-        ]
+        for _ in range(settings.gpu_asr_worker_count):
+            scorer = scorer_factory(settings.asr_model, settings.asr_revision)
+            ensure_loaded = getattr(scorer, "ensure_loaded", None)
+            if callable(ensure_loaded):
+                ensure_loaded()
+            scorer_slots.append(scorer)
     scorer_slot_queue: Queue[int] = Queue()
     for slot_index in range(settings.gpu_asr_worker_count):
         scorer_slot_queue.put(slot_index)

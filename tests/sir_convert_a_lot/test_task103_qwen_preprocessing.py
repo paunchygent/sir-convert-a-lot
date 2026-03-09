@@ -41,6 +41,9 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     WhisperStrictScorer,
     run_task103_preprocessing,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_row_stage import (
+    process_rows_to_spool,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_fleurs import fleurs_sv_source_records
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import AudioLocator, SourceRecord
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
@@ -263,6 +266,68 @@ def test_task103_preprocessing_emits_deterministic_bundle(
 
     with wave.open((output_root / curated_row["audio_24k_path"]).as_posix(), "rb") as handle:
         assert handle.getframerate() == 24_000
+
+
+def test_process_rows_to_spool_prewarms_scorers_before_worker_execution(
+    tmp_path: Path,
+) -> None:
+    """Row processing should preload one ASR scorer per GPU worker slot."""
+    source_audio_path = tmp_path / "fixtures/source.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    created_scorers: list["_FakeScorer"] = []
+
+    class _FakeScorer:
+        def __init__(self) -> None:
+            self.ensure_loaded_calls = 0
+
+        def ensure_loaded(self) -> None:
+            self.ensure_loaded_calls += 1
+
+        def transcribe(self, _: Path) -> str:
+            return "Hej från Sverige."
+
+    def _fake_factory(model_id: str, revision: str) -> _FakeScorer:
+        assert model_id == "KBLab/kb-whisper-large"
+        assert revision == "strict"
+        scorer = _FakeScorer()
+        created_scorers.append(scorer)
+        return scorer
+
+    process_rows_to_spool(
+        Task103PreprocessingSettings(
+            output_root=tmp_path / "build/reference/qwen3-tts-swedish-corpus",
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            row_worker_count=2,
+            gpu_asr_worker_count=2,
+        ),
+        output_root=tmp_path / "build/reference/qwen3-tts-swedish-corpus",
+        source_records=[
+            _build_source_record(
+                dataset="repo_fixture_sv",
+                source_split="fixture",
+                dataset_row_id="repo-fixture-test-001",
+                speaker_id="speaker_test",
+                speaker_name="Test Speaker",
+                source_audio_path=source_audio_path,
+                reference_audio_path=None,
+                text_raw="Hej från Sverige.",
+            )
+        ],
+        scorer_factory=_fake_factory,
+    )
+
+    assert len(created_scorers) == 2
+    assert [scorer.ensure_loaded_calls for scorer in created_scorers] == [1, 1]
+    spool_rows = list(
+        (
+            tmp_path
+            / "build/reference/qwen3-tts-swedish-corpus/spool/rows/repo_fixture_sv/fixture"
+        ).rglob("*.json")
+    )
+    assert len(spool_rows) == 1
 
 
 def test_task103_preprocessing_supports_multiple_manifest_families(

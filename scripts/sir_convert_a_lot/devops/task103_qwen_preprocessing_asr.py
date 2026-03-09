@@ -121,6 +121,10 @@ class WhisperStrictScorer:
     _pipeline: object | None = None
     _load_lock: Lock = field(default_factory=Lock, init=False, repr=False)
 
+    def ensure_loaded(self) -> None:
+        """Initialize the cached pipeline eagerly when a caller wants warm startup."""
+        self._ensure_loaded()
+
     def _ensure_loaded(self) -> None:
         import torch
 
