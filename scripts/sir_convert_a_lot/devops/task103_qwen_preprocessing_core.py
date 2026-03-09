@@ -19,8 +19,6 @@ from pathlib import Path
 from typing import Sequence
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_asr import (
-    ProcessorOutputProtocol,
-    TorchTensorProtocol,
     WhisperStrictScorer,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
@@ -50,10 +48,8 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_repo_fixture import (
 __all__ = [
     "CANONICAL_MANIFEST_FAMILIES",
     "ManifestFamily",
-    "ProcessorOutputProtocol",
     "Task103PreprocessingReport",
     "Task103PreprocessingSettings",
-    "TorchTensorProtocol",
     "WhisperStrictScorer",
     "run_task103_preprocessing",
 ]

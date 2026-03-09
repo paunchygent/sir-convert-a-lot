@@ -11,7 +11,6 @@ import wave
 from pathlib import Path
 from typing import Sequence
 
-import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -36,10 +35,8 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import (
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     CANONICAL_MANIFEST_FAMILIES,
-    ProcessorOutputProtocol,
     Task103PreprocessingReport,
     Task103PreprocessingSettings,
-    TorchTensorProtocol,
     WhisperStrictScorer,
     run_task103_preprocessing,
 )
@@ -1252,96 +1249,37 @@ def test_task103_runner_main_staged_public_corpus_passes_source_records(
     assert stdout_payload["datasets"] == ["fleurs_sv_se", "rixvox", "waxholm"]
 
 
-def test_whisper_strict_scorer_resamples_to_processor_rate(
-    monkeypatch: pytest.MonkeyPatch,
+def test_whisper_strict_scorer_transcribes_with_pipeline(
     tmp_path: Path,
 ) -> None:
-    """The ASR scorer should resample 24 kHz training audio to 16 kHz for Whisper."""
+    """The ASR scorer should delegate transcription to the cached pipeline."""
 
-    class _FakeInputFeatures:
-        def __init__(self) -> None:
-            self.dtype_received: object | None = None
-
-        def to(self, *args: object, **kwargs: object) -> TorchTensorProtocol:
-            self.dtype_received = kwargs.get("dtype")
-            return self
-
-    class _FakeProcessor:
-        def __init__(self) -> None:
-            self.feature_extractor = type("_FeatureExtractor", (), {"sampling_rate": 16_000})()
-            self.sampling_rate_seen: int | None = None
-
-        class _Processed:
-            def __init__(self) -> None:
-                self.input_features: TorchTensorProtocol = _FakeInputFeatures()
-                self.attention_mask: TorchTensorProtocol | None = _FakeInputFeatures()
-
+    class _FakePipeline:
         def __call__(
             self,
-            waveform: object,
+            inputs: object,
             *,
-            sampling_rate: int,
-            return_tensors: str,
-            return_attention_mask: bool,
-        ) -> ProcessorOutputProtocol:
-            assert return_tensors == "pt"
-            assert return_attention_mask is True
-            self.sampling_rate_seen = sampling_rate
-            return self._Processed()
+            generate_kwargs: dict[str, object] | None = None,
+        ) -> dict[str, object]:
+            assert inputs == (tmp_path / "audio.wav").as_posix()
+            assert generate_kwargs == {"task": "transcribe"}
+            return {"text": "Hej från Sverige."}
 
-        def batch_decode(self, sequences: object, *, skip_special_tokens: bool) -> list[str]:
-            assert skip_special_tokens is True
-            return ["Hej från Sverige."]
-
-    class _FakeModel:
-        def to(self, device: object) -> "_FakeModel":
-            return self
-
-        def eval(self) -> None:
-            return None
-
-        def generate(
-            self,
-            input_features: object,
-            *,
-            attention_mask: object = None,
-            max_new_tokens: int,
-            task: str,
-        ) -> list[list[int]]:
-            assert attention_mask is not None
-            assert max_new_tokens == 256
-            assert task == "transcribe"
-            return [[1, 2, 3]]
-
-    fake_processor = _FakeProcessor()
     scorer = WhisperStrictScorer(
         model_id="KBLab/kb-whisper-large",
         revision="strict",
-        _model=_FakeModel(),
-        _processor=fake_processor,
-        _device=type("_FakeDevice", (), {"type": "cpu"})(),
-        _dtype=np.float32,
-    )
-
-    monkeypatch.setattr(
-        "soundfile.read",
-        lambda path, dtype: (np.ones(24_000, dtype=np.float32), 24_000),
-    )
-    monkeypatch.setattr(
-        "librosa.resample",
-        lambda waveform, *, orig_sr, target_sr: np.ones(target_sr, dtype=np.float32),
+        _pipeline=_FakePipeline(),
     )
 
     transcript = scorer.transcribe(tmp_path / "audio.wav")
 
     assert transcript == "Hej från Sverige."
-    assert fake_processor.sampling_rate_seen == 16_000
 
 
-def test_whisper_strict_scorer_avoids_model_to_for_cuda_meta_loads(
+def test_whisper_strict_scorer_uses_pipeline_gpu_loading_contract(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """CUDA model loading should rely on `device_map` instead of `model.to(...)`."""
+    """CUDA pipeline loading should use the documented GPU pipeline surface."""
 
     class _FakeTorchCuda:
         @staticmethod
@@ -1357,31 +1295,7 @@ def test_whisper_strict_scorer_avoids_model_to_for_cuda_meta_loads(
         def device(name: str) -> object:
             return type("_FakeDevice", (), {"type": name})()
 
-    class _FakeProcessor:
-        feature_extractor = type("_FeatureExtractor", (), {"sampling_rate": 16_000})()
-
     captured_kwargs: dict[str, object] = {}
-
-    class _FakeAutoProcessor:
-        @staticmethod
-        def from_pretrained(model_id: str, revision: str) -> _FakeProcessor:
-            assert model_id == "KBLab/kb-whisper-large"
-            assert revision == "strict"
-            return _FakeProcessor()
-
-    class _FakeModel:
-        def to(self, device: object) -> "_FakeModel":
-            raise AssertionError("CUDA path should not call model.to(...)")
-
-        def eval(self) -> None:
-            return None
-
-    class _FakeAutoModelForSpeechSeq2Seq:
-        @staticmethod
-        def from_pretrained(model_id: str, **kwargs: object) -> _FakeModel:
-            assert model_id == "KBLab/kb-whisper-large"
-            captured_kwargs.update(kwargs)
-            return _FakeModel()
 
     monkeypatch.setitem(sys.modules, "torch", _FakeTorch())
     monkeypatch.setitem(
@@ -1391,8 +1305,9 @@ def test_whisper_strict_scorer_avoids_model_to_for_cuda_meta_loads(
             "_FakeTransformersModule",
             (),
             {
-                "AutoProcessor": _FakeAutoProcessor,
-                "AutoModelForSpeechSeq2Seq": _FakeAutoModelForSpeechSeq2Seq,
+                "pipeline": staticmethod(
+                    lambda **kwargs: captured_kwargs.update(kwargs) or object()
+                ),
             },
         )(),
     )
@@ -1402,4 +1317,5 @@ def test_whisper_strict_scorer_avoids_model_to_for_cuda_meta_loads(
 
     assert captured_kwargs["revision"] == "strict"
     assert captured_kwargs["dtype"] == "float16"
-    assert captured_kwargs["device_map"] == "auto"
+    assert captured_kwargs["device"] == 0
+    assert captured_kwargs["task"] == "automatic-speech-recognition"

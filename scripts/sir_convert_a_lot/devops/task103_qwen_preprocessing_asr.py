@@ -16,7 +16,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     HIGH_TRUST_WER_MAX,
@@ -28,69 +28,17 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
 
 
-class TorchTensorProtocol(Protocol):
-    """Minimal tensor surface needed by the local ASR helper."""
-
-    def to(self, *args: object, **kwargs: object) -> "TorchTensorProtocol":
-        """Move one tensor to the requested device and dtype."""
-
-
-class ProcessorOutputProtocol(Protocol):
-    """Minimal processor output surface used by the local ASR helper."""
-
-    input_features: TorchTensorProtocol
-    attention_mask: TorchTensorProtocol | None
-
-
-class WhisperProcessorProtocol(Protocol):
-    """Minimal processor surface used by the local ASR helper."""
-
-    feature_extractor: "WhisperFeatureExtractorProtocol"
+@runtime_checkable
+class WhisperPipelineProtocol(Protocol):
+    """Minimal Hugging Face ASR pipeline surface used by the scorer."""
 
     def __call__(
         self,
-        waveform: object,
+        inputs: object,
         *,
-        sampling_rate: int,
-        return_tensors: str,
-        return_attention_mask: bool,
-    ) -> ProcessorOutputProtocol:
-        """Encode one waveform into input features."""
-
-    def batch_decode(self, sequences: object, *, skip_special_tokens: bool) -> list[str]:
-        """Decode generated token ids into text."""
-
-
-class WhisperFeatureExtractorProtocol(Protocol):
-    """Minimal feature extractor metadata used by the local ASR helper."""
-
-    sampling_rate: int
-
-
-class TorchDeviceProtocol(Protocol):
-    """Minimal device surface used by the local ASR helper."""
-
-    type: str
-
-
-class WhisperModelProtocol(Protocol):
-    """Minimal seq2seq model surface used by the local ASR helper."""
-
-    def to(self, device: TorchDeviceProtocol) -> "WhisperModelProtocol":
-        """Move the model to one target device."""
-
-    def eval(self) -> None:
-        """Set the model to evaluation mode."""
-
-    def generate(
-        self,
-        input_features: TorchTensorProtocol,
-        *,
-        attention_mask: TorchTensorProtocol | None = None,
-        max_new_tokens: int,
-        task: str,
-    ) -> object:
-        """Generate one transcription token sequence."""
+        generate_kwargs: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        """Run ASR on one input and return the structured pipeline payload."""
 
 
 def normalize_text(text: str) -> str:
@@ -167,78 +115,36 @@ class WhisperStrictScorer:
 
     model_id: str
     revision: str
-    _model: WhisperModelProtocol | None = None
-    _processor: WhisperProcessorProtocol | None = None
-    _device: TorchDeviceProtocol | None = None
-    _dtype: object | None = None
+    _pipeline: object | None = None
 
     def _ensure_loaded(self) -> None:
         import torch
-        from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+        from transformers import pipeline
 
-        if self._model is not None and self._processor is not None and self._device is not None:
+        if self._pipeline is not None:
             return
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        dtype = torch.float16 if device.type == "cuda" else torch.float32
-        processor = AutoProcessor.from_pretrained(self.model_id, revision=self.revision)
-        model_load_kwargs: dict[str, object] = {
-            "revision": self.revision,
-            "dtype": dtype,
-        }
-        if device.type == "cuda":
-            # Official Whisper examples load on GPU through `device_map`
-            # instead of calling `.to(...)` on a potentially meta-backed model.
-            model_load_kwargs["device_map"] = "auto"
-        model = AutoModelForSpeechSeq2Seq.from_pretrained(self.model_id, **model_load_kwargs)
-        if device.type != "cuda":
-            model.to(device)
-        model.eval()
-        self._model = model
-        self._processor = processor
-        self._device = device
-        self._dtype = dtype
-
-    def transcribe(self, audio_path: "Path") -> str:
-        """Transcribe one canonical 24 kHz audio artifact into Swedish text."""
-        import librosa
-        import numpy as np
-        import soundfile
-        import torch
-
-        self._ensure_loaded()
-        if self._model is None or self._processor is None or self._device is None:
-            raise RuntimeError("ASR scorer failed to initialize its model state.")
-        waveform, sample_rate_hz = soundfile.read(audio_path.as_posix(), dtype="float32")
-        if getattr(waveform, "ndim", 1) > 1:
-            waveform = waveform.mean(axis=1)
-        target_sample_rate_hz = int(self._processor.feature_extractor.sampling_rate)
-        if sample_rate_hz != target_sample_rate_hz:
-            waveform = librosa.resample(
-                np.asarray(waveform, dtype=np.float32),
-                orig_sr=sample_rate_hz,
-                target_sr=target_sample_rate_hz,
-            )
-            sample_rate_hz = target_sample_rate_hz
-        processed = self._processor(
-            waveform,
-            sampling_rate=sample_rate_hz,
-            return_tensors="pt",
-            return_attention_mask=True,
+        dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        device = 0 if torch.cuda.is_available() else -1
+        self._pipeline = pipeline(
+            task="automatic-speech-recognition",
+            model=self.model_id,
+            revision=self.revision,
+            dtype=dtype,
+            device=device,
         )
-        input_features = processed.input_features.to(self._device)
-        attention_mask = processed.attention_mask
-        if attention_mask is not None:
-            attention_mask = attention_mask.to(self._device)
-        if self._device.type == "cuda":
-            input_features = input_features.to(dtype=self._dtype)
-        with torch.inference_mode():
-            predicted_ids = self._model.generate(
-                input_features,
-                attention_mask=attention_mask,
-                max_new_tokens=256,
-                task="transcribe",
-            )
-        decoded = self._processor.batch_decode(predicted_ids, skip_special_tokens=True)
-        if not decoded:
+
+    def transcribe(self, audio_path: Path) -> str:
+        """Transcribe one canonical 24 kHz audio artifact into Swedish text."""
+        self._ensure_loaded()
+        if self._pipeline is None:
+            raise RuntimeError("ASR scorer failed to initialize its pipeline state.")
+        if not isinstance(self._pipeline, WhisperPipelineProtocol):
+            raise RuntimeError("ASR scorer initialized an unexpected pipeline object.")
+        payload = self._pipeline(
+            audio_path.as_posix(),
+            generate_kwargs={"task": "transcribe"},
+        )
+        rendered_text = payload.get("text")
+        if not isinstance(rendered_text, str) or rendered_text.strip() == "":
             raise RuntimeError(f"ASR transcription returned no text for {audio_path}.")
-        return decoded[0].strip()
+        return rendered_text.strip()
