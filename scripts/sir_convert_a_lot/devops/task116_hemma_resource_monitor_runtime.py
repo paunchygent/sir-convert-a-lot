@@ -1,13 +1,14 @@
-"""Runtime helpers for the detached Task 116 Hemma GPU monitor.
+"""Runtime helpers for the detached Task 116 Hemma resource monitor.
 
 Purpose:
     Provide the worker loop, detached-process spawn helper, and deterministic
-    artifact handling for the committed Hemma GPU monitor used during sustained
-    Qwen preprocessing windows.
+    artifact handling for the committed Hemma resource monitor used during
+    sustained Qwen preprocessing windows.
 
 Relationships:
-    - Used by `run_task116_hemma_gpu_monitor.py`.
+    - Used by `run_task116_hemma_resource_monitor.py`.
     - Reuses `gpu_utilization_snapshot` for bounded host GPU samples.
+    - Reuses `system_resource_snapshot` for bounded host CPU and RAM samples.
     - Reuses Task 103 atomic artifact writers so live operator reads do not see
       truncated JSON/JSONL during monitor updates.
 """
@@ -19,93 +20,29 @@ import signal
 import statistics
 import sys
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
     write_json,
     write_jsonl,
 )
+from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_models import (
+    RuntimeKind,
+    Task116ResourceMonitorLaunch,
+    Task116ResourceMonitorRunState,
+    Task116ResourceMonitorStatus,
+    Task116ResourceMonitorSummary,
+    Task116ResourceSample,
+)
 from scripts.sir_convert_a_lot.infrastructure.gpu_utilization_snapshot import (
     GpuUtilizationSnapshot,
     sample_gpu_utilization_snapshot,
 )
-
-RuntimeKind = Literal["rocm", "cuda", "none"]
-
-
-@dataclass(frozen=True)
-class Task116GpuMonitorLaunch:
-    """Deterministic launch metadata for one detached GPU monitor."""
-
-    generated_at: str
-    launch_id: str
-    repo_root: str
-    pid: int
-    runtime_kind: RuntimeKind
-    interval_seconds: float
-    duration_seconds: float | None
-    command: list[str]
-
-
-@dataclass(frozen=True)
-class Task116GpuMonitorRunState:
-    """Persisted worker state for one detached GPU monitor."""
-
-    launch_id: str
-    started_at: str
-    finished_at: str | None
-    exit_reason: str | None
-    sample_count: int
-    latest_sample_at: str | None
-    latest_gpu_busy_percent: int | None
-    latest_gpu_memory_used_percent: int | None
-    error: str | None
-
-
-@dataclass(frozen=True)
-class Task116GpuSample:
-    """One timestamped GPU utilization sample."""
-
-    captured_at: str
-    runtime_kind: RuntimeKind
-    gpu_busy_percent: int | None
-    gpu_memory_used_percent: int | None
-
-
-@dataclass(frozen=True)
-class Task116GpuMonitorSummary:
-    """Aggregate summary derived from one monitor's recorded samples."""
-
-    launch_id: str
-    sample_count: int
-    first_sample_at: str | None
-    last_sample_at: str | None
-    gpu_busy_percent_min: int | None
-    gpu_busy_percent_median: float | None
-    gpu_busy_percent_max: int | None
-    gpu_memory_used_percent_min: int | None
-    gpu_memory_used_percent_median: float | None
-    gpu_memory_used_percent_max: int | None
-
-
-@dataclass(frozen=True)
-class Task116GpuMonitorStatus:
-    """Operator-facing status view for one detached GPU monitor."""
-
-    checked_at: str
-    launch_id: str
-    pid: int
-    running: bool
-    runtime_kind: RuntimeKind
-    interval_seconds: float
-    duration_seconds: float | None
-    stop_requested: bool
-    worker_state_found: bool
-    worker_state: dict[str, object] | None
-    summary: dict[str, object]
+from scripts.sir_convert_a_lot.infrastructure.system_resource_snapshot import (
+    HostResourceSampler,
+)
 
 
 def utc_now_iso() -> str:
@@ -114,22 +51,22 @@ def utc_now_iso() -> str:
 
 
 def default_launch_id() -> str:
-    """Build one deterministic launch id for the GPU monitor."""
-    return datetime.now(UTC).strftime("task116-gpu-%Y%m%dt%H%M%Sz").lower()
+    """Build one deterministic launch id for the resource monitor."""
+    return datetime.now(UTC).strftime("task116-resource-%Y%m%dt%H%M%Sz").lower()
 
 
 def launch_metadata_path(launch_root: Path) -> Path:
-    """Return the launch metadata path for one GPU monitor launch."""
+    """Return the launch metadata path for one resource monitor launch."""
     return launch_root / "launch.json"
 
 
 def status_metadata_path(launch_root: Path) -> Path:
-    """Return the status metadata path for one GPU monitor launch."""
+    """Return the status metadata path for one resource monitor launch."""
     return launch_root / "status.json"
 
 
 def summary_metadata_path(launch_root: Path) -> Path:
-    """Return the summary metadata path for one GPU monitor launch."""
+    """Return the summary metadata path for one resource monitor launch."""
     return launch_root / "summary.json"
 
 
@@ -173,75 +110,97 @@ def load_json(path: Path) -> dict[str, object]:
     return payload
 
 
-def load_samples(launch_root: Path) -> list[Task116GpuSample]:
+def load_samples(launch_root: Path) -> list[Task116ResourceSample]:
     """Load all recorded samples for one launch root."""
     import json
 
     path = samples_path(launch_root)
     if not path.exists():
         return []
-    samples: list[Task116GpuSample] = []
+    samples: list[Task116ResourceSample] = []
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         if raw_line.strip() == "":
             continue
         payload = json.loads(raw_line)
         if not isinstance(payload, dict):
-            raise SystemExit(f"Malformed GPU sample in `{path.as_posix()}`.")
+            raise SystemExit(f"Malformed resource sample in `{path.as_posix()}`.")
         samples.append(
-            Task116GpuSample(
+            Task116ResourceSample(
                 captured_at=required_str(payload, "captured_at"),
                 runtime_kind=required_runtime_kind(payload, "runtime_kind"),
                 gpu_busy_percent=optional_int(payload, "gpu_busy_percent"),
                 gpu_memory_used_percent=optional_int(payload, "gpu_memory_used_percent"),
+                host_cpu_busy_percent=optional_int(payload, "host_cpu_busy_percent"),
+                host_memory_used_percent=optional_int(payload, "host_memory_used_percent"),
             )
         )
     return samples
 
 
-def summarize_samples(launch_id: str, samples: list[Task116GpuSample]) -> Task116GpuMonitorSummary:
-    """Summarize one sequence of GPU monitor samples."""
-    busy_values = [
-        sample.gpu_busy_percent for sample in samples if sample.gpu_busy_percent is not None
-    ]
-    memory_values = [
-        sample.gpu_memory_used_percent
-        for sample in samples
-        if sample.gpu_memory_used_percent is not None
-    ]
-    return Task116GpuMonitorSummary(
+def _summarize_int_values(values: list[int | None]) -> tuple[int | None, float | None, int | None]:
+    """Return min/median/max for one optional integer sample sequence."""
+    present_values = [value for value in values if value is not None]
+    if len(present_values) == 0:
+        return None, None, None
+    return (
+        min(present_values),
+        float(statistics.median(present_values)),
+        max(present_values),
+    )
+
+
+def summarize_samples(
+    launch_id: str, samples: list[Task116ResourceSample]
+) -> Task116ResourceMonitorSummary:
+    """Summarize one sequence of resource monitor samples."""
+    gpu_busy_min, gpu_busy_median, gpu_busy_max = _summarize_int_values(
+        [sample.gpu_busy_percent for sample in samples]
+    )
+    gpu_memory_min, gpu_memory_median, gpu_memory_max = _summarize_int_values(
+        [sample.gpu_memory_used_percent for sample in samples]
+    )
+    host_cpu_min, host_cpu_median, host_cpu_max = _summarize_int_values(
+        [sample.host_cpu_busy_percent for sample in samples]
+    )
+    host_memory_min, host_memory_median, host_memory_max = _summarize_int_values(
+        [sample.host_memory_used_percent for sample in samples]
+    )
+    return Task116ResourceMonitorSummary(
         launch_id=launch_id,
         sample_count=len(samples),
         first_sample_at=samples[0].captured_at if len(samples) > 0 else None,
         last_sample_at=samples[-1].captured_at if len(samples) > 0 else None,
-        gpu_busy_percent_min=min(busy_values) if len(busy_values) > 0 else None,
-        gpu_busy_percent_median=float(statistics.median(busy_values))
-        if len(busy_values) > 0
-        else None,
-        gpu_busy_percent_max=max(busy_values) if len(busy_values) > 0 else None,
-        gpu_memory_used_percent_min=min(memory_values) if len(memory_values) > 0 else None,
-        gpu_memory_used_percent_median=float(statistics.median(memory_values))
-        if len(memory_values) > 0
-        else None,
-        gpu_memory_used_percent_max=max(memory_values) if len(memory_values) > 0 else None,
+        gpu_busy_percent_min=gpu_busy_min,
+        gpu_busy_percent_median=gpu_busy_median,
+        gpu_busy_percent_max=gpu_busy_max,
+        gpu_memory_used_percent_min=gpu_memory_min,
+        gpu_memory_used_percent_median=gpu_memory_median,
+        gpu_memory_used_percent_max=gpu_memory_max,
+        host_cpu_busy_percent_min=host_cpu_min,
+        host_cpu_busy_percent_median=host_cpu_median,
+        host_cpu_busy_percent_max=host_cpu_max,
+        host_memory_used_percent_min=host_memory_min,
+        host_memory_used_percent_median=host_memory_median,
+        host_memory_used_percent_max=host_memory_max,
     )
 
 
-def write_launch_metadata(path: Path, payload: Task116GpuMonitorLaunch) -> None:
+def write_launch_metadata(path: Path, payload: Task116ResourceMonitorLaunch) -> None:
     """Write one launch metadata artifact."""
     write_json(path, asdict(payload))
 
 
-def write_worker_state(path: Path, payload: Task116GpuMonitorRunState) -> None:
+def write_worker_state(path: Path, payload: Task116ResourceMonitorRunState) -> None:
     """Write one worker-state artifact."""
     write_json(path, asdict(payload))
 
 
-def write_summary(path: Path, payload: Task116GpuMonitorSummary) -> None:
+def write_summary(path: Path, payload: Task116ResourceMonitorSummary) -> None:
     """Write one summary artifact."""
     write_json(path, asdict(payload))
 
 
-def write_status(path: Path, payload: Task116GpuMonitorStatus) -> None:
+def write_status(path: Path, payload: Task116ResourceMonitorStatus) -> None:
     """Write one status artifact."""
     write_json(path, asdict(payload))
 
@@ -287,7 +246,7 @@ def process_is_running(pid: int) -> bool:
     return True
 
 
-def build_status(launch_root: Path) -> Task116GpuMonitorStatus:
+def build_status(launch_root: Path) -> Task116ResourceMonitorStatus:
     """Build one status payload from launch metadata and recorded samples."""
     launch_payload = load_json(launch_metadata_path(launch_root))
     samples = load_samples(launch_root)
@@ -297,7 +256,7 @@ def build_status(launch_root: Path) -> Task116GpuMonitorStatus:
         if worker_state_path(launch_root).exists()
         else None
     )
-    return Task116GpuMonitorStatus(
+    return Task116ResourceMonitorStatus(
         checked_at=utc_now_iso(),
         launch_id=required_str(launch_payload, "launch_id"),
         pid=required_int(launch_payload, "pid"),
@@ -327,6 +286,7 @@ def run_worker(
     samples = load_samples(launch_root)
     sample_count = len(samples)
     latest_sample = samples[-1] if len(samples) > 0 else None
+    host_resource_sampler = HostResourceSampler()
     finished = False
 
     def _finish(reason: str, error: str | None = None) -> int:
@@ -336,7 +296,7 @@ def run_worker(
         finished = True
         write_worker_state(
             state_path,
-            Task116GpuMonitorRunState(
+            Task116ResourceMonitorRunState(
                 launch_id=launch_id,
                 started_at=started_at,
                 finished_at=utc_now_iso(),
@@ -348,6 +308,12 @@ def run_worker(
                 ),
                 latest_gpu_memory_used_percent=(
                     latest_sample.gpu_memory_used_percent if latest_sample is not None else None
+                ),
+                latest_host_cpu_busy_percent=(
+                    latest_sample.host_cpu_busy_percent if latest_sample is not None else None
+                ),
+                latest_host_memory_used_percent=(
+                    latest_sample.host_memory_used_percent if latest_sample is not None else None
                 ),
                 error=error,
             ),
@@ -362,7 +328,7 @@ def run_worker(
     started_monotonic = time.monotonic()
     write_worker_state(
         state_path,
-        Task116GpuMonitorRunState(
+        Task116ResourceMonitorRunState(
             launch_id=launch_id,
             started_at=started_at,
             finished_at=None,
@@ -374,6 +340,12 @@ def run_worker(
             else None,
             latest_gpu_memory_used_percent=(
                 latest_sample.gpu_memory_used_percent if latest_sample is not None else None
+            ),
+            latest_host_cpu_busy_percent=(
+                latest_sample.host_cpu_busy_percent if latest_sample is not None else None
+            ),
+            latest_host_memory_used_percent=(
+                latest_sample.host_memory_used_percent if latest_sample is not None else None
             ),
             error=None,
         ),
@@ -390,13 +362,16 @@ def run_worker(
             snapshot: GpuUtilizationSnapshot | None = sample_gpu_utilization_snapshot(
                 runtime_kind=runtime_kind
             )
-            latest_sample = Task116GpuSample(
+            host_resource_snapshot = host_resource_sampler.sample()
+            latest_sample = Task116ResourceSample(
                 captured_at=utc_now_iso(),
                 runtime_kind=runtime_kind,
                 gpu_busy_percent=snapshot.gpu_busy_percent if snapshot is not None else None,
                 gpu_memory_used_percent=snapshot.gpu_memory_used_percent
                 if snapshot is not None
                 else None,
+                host_cpu_busy_percent=host_resource_snapshot.host_cpu_busy_percent,
+                host_memory_used_percent=host_resource_snapshot.host_memory_used_percent,
             )
             samples.append(latest_sample)
             rendered_samples: list[object] = [asdict(sample) for sample in samples]
@@ -404,7 +379,7 @@ def run_worker(
             sample_count = len(samples)
             write_worker_state(
                 state_path,
-                Task116GpuMonitorRunState(
+                Task116ResourceMonitorRunState(
                     launch_id=launch_id,
                     started_at=started_at,
                     finished_at=None,
@@ -413,6 +388,8 @@ def run_worker(
                     latest_sample_at=latest_sample.captured_at,
                     latest_gpu_busy_percent=latest_sample.gpu_busy_percent,
                     latest_gpu_memory_used_percent=latest_sample.gpu_memory_used_percent,
+                    latest_host_cpu_busy_percent=latest_sample.host_cpu_busy_percent,
+                    latest_host_memory_used_percent=latest_sample.host_memory_used_percent,
                     error=None,
                 ),
             )

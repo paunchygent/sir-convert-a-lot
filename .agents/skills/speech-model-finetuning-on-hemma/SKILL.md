@@ -80,7 +80,8 @@ Prefer both when the task is strategic:
 - Record exact runtime truth before and after the run.
 - For sustained Hemma runs, record historical GPU load from a real host
   time-series collector when available; otherwise launch a committed detached
-  GPU monitor surface for the run and use its summary artifacts.
+  resource monitor surface for the run and use its summary artifacts for host
+  CPU, host RAM, GPU, and VRAM evidence.
 - Keep cache roots explicit and stable.
 - Keep storage tiers explicit and stable:
   - `/srv/scratch` for Docker root, caches, and hot generated artifacts

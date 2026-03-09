@@ -41,6 +41,7 @@ Use this skill together with the broader local skill:
 - `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
 
 - `docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
+
 - `docs/backlog/tasks/task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md`
 
 - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
@@ -163,8 +164,9 @@ this Qwen-specific order:
    - **Colab Scale-up:** 100-300 hours.
    - for sustained Hemma row-processing or training windows, record historical
      GPU load from a real host time-series collector when available; otherwise
-     launch the committed Task 116 detached GPU monitor in parallel and use its
-     `summary` surface for median/min/max GPU busy and VRAM evidence
+     launch the committed Task 116 detached resource monitor in parallel and
+     use its `summary` surface for median/min/max host CPU, host RAM, GPU busy,
+     and VRAM evidence
 1. Evaluate:
    - pronunciation
    - intelligibility

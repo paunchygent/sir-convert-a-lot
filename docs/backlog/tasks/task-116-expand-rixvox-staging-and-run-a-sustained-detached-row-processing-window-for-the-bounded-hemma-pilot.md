@@ -119,13 +119,18 @@ Monitor every `10` minutes with:
 - detached Task 114 status inspection
 - Task 103 `status.json` heartbeat
 - aggregate spool-row count
-- detached Task 116 GPU monitor summary when Hemma does not already provide a
-  historical GPU time-series for the host
+- detached Task 116 resource monitor summary when Hemma does not already
+  provide a historical host resource time-series for the host
 
 If Hemma lacks host-level Prometheus/Grafana GPU history or another real
-time-series collector, start the committed Task 116 GPU monitor in parallel
+time-series collector, start the committed Task 116 resource monitor in parallel
 with the row-processing window and use its `summary` surface for:
 
+- median host CPU busy
+- peak host CPU busy
+- lowest host CPU busy
+- median host RAM use
+- peak host RAM use
 - median GPU busy
 - peak GPU busy
 - lowest GPU busy

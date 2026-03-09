@@ -765,9 +765,9 @@ Canonical Task 106 acquisition surface:
    - then run detached `row-processing` only with:
      - `row_worker_count=4`
      - `gpu_asr_worker_count=2`
-   - if Hemma does not already expose historical GPU time-series monitoring,
-     start the committed detached GPU sampler in parallel:
-     - `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor launch`
+   - if Hemma does not already expose historical host resource time-series
+     monitoring, start the committed detached resource sampler in parallel:
+     - `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor launch`
      - later inspect with:
        - `... status`
        - `... summary`

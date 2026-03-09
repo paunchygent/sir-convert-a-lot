@@ -58,13 +58,13 @@ Historical GPU monitoring policy for long Hemma ML runs:
 
 - Prefer a real host time-series collector when one exists.
 - If the host does not already expose historical GPU time-series monitoring,
-  use the committed detached Task 116 GPU monitor in parallel with the long
+  use the committed detached Task 116 resource monitor in parallel with the long
   run:
 
 ```bash
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor launch
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor status
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor summary
+pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor launch
+pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor status
+pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor summary
 ```
 
 - Do not treat `journald` alone as historical GPU monitoring unless a separate

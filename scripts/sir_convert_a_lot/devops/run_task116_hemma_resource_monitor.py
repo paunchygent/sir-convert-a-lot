@@ -1,15 +1,15 @@
-"""Launch and inspect the detached Task 116 Hemma GPU monitor.
+"""Launch and inspect the detached Task 116 Hemma resource monitor.
 
 Purpose:
-    Provide the committed CLI entrypoint for a lightweight detached GPU monitor
-    that runs alongside sustained Hemma preprocessing windows and persists
-    machine-readable utilization history.
+    Provide the committed CLI entrypoint for a lightweight detached resource
+    monitor that runs alongside sustained Hemma preprocessing windows and
+    persists machine-readable host CPU, RAM, and GPU utilization history.
 
 Relationships:
-    - Uses `task116_hemma_gpu_monitor_runtime.py` for worker execution,
+    - Uses `task116_hemma_resource_monitor_runtime.py` for worker execution,
       detached-process spawn, and artifact helpers.
     - Writes deterministic evidence under
-      `build/verification/task-116-hemma-gpu-monitor/`.
+      `build/verification/task-116-hemma-resource-monitor/`.
 """
 
 from __future__ import annotations
@@ -21,11 +21,13 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import write_json
-from scripts.sir_convert_a_lot.devops.task116_hemma_gpu_monitor_runtime import (
+from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_models import (
     RuntimeKind,
-    Task116GpuMonitorLaunch,
-    Task116GpuMonitorStatus,
-    Task116GpuMonitorSummary,
+    Task116ResourceMonitorLaunch,
+    Task116ResourceMonitorStatus,
+    Task116ResourceMonitorSummary,
+)
+from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_runtime import (
     build_status,
     default_launch_id,
     latest_pointer_path,
@@ -48,17 +50,17 @@ from scripts.sir_convert_a_lot.devops.task116_hemma_gpu_monitor_runtime import (
     write_summary,
 )
 
-DEFAULT_OUTPUT_ROOT = Path("build/verification/task-116-hemma-gpu-monitor")
+DEFAULT_OUTPUT_ROOT = Path("build/verification/task-116-hemma-resource-monitor")
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the committed Task 116 GPU monitor CLI."""
+    """Build the committed Task 116 resource monitor CLI."""
     parser = argparse.ArgumentParser(
-        description="Launch and inspect a detached Hemma GPU monitor for Task 116."
+        description="Launch and inspect a detached Hemma resource monitor for Task 116."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    launch = subparsers.add_parser("launch", help="Launch one detached GPU monitor.")
+    launch = subparsers.add_parser("launch", help="Launch one detached resource monitor.")
     launch.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     launch.add_argument("--launch-id", default=None)
     launch.add_argument("--runtime-kind", choices=("rocm", "cuda", "none"), default="rocm")
@@ -73,15 +75,15 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument("--interval-seconds", type=float, required=True)
     run.add_argument("--duration-seconds", type=float, default=None)
 
-    status = subparsers.add_parser("status", help="Inspect one detached GPU monitor.")
+    status = subparsers.add_parser("status", help="Inspect one detached resource monitor.")
     status.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     status.add_argument("--launch-root", type=Path, default=None)
 
-    summary = subparsers.add_parser("summary", help="Render one GPU monitor summary.")
+    summary = subparsers.add_parser("summary", help="Render one resource monitor summary.")
     summary.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     summary.add_argument("--launch-root", type=Path, default=None)
 
-    stop = subparsers.add_parser("stop", help="Request one detached GPU monitor to stop.")
+    stop = subparsers.add_parser("stop", help="Request one detached resource monitor to stop.")
     stop.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     stop.add_argument("--launch-root", type=Path, default=None)
 
@@ -89,17 +91,17 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _launch_root(output_root: Path, launch_id: str) -> Path:
-    """Return the canonical artifact root for one GPU monitor launch."""
+    """Return the canonical artifact root for one resource monitor launch."""
     return output_root / launch_id
 
 
 def _status_markdown_path(launch_root: Path) -> Path:
-    """Return the markdown status path for one GPU monitor launch."""
+    """Return the markdown status path for one resource monitor launch."""
     return launch_root / "status.md"
 
 
 def _summary_markdown_path(launch_root: Path) -> Path:
-    """Return the markdown summary path for one GPU monitor launch."""
+    """Return the markdown summary path for one resource monitor launch."""
     return launch_root / "summary.md"
 
 
@@ -110,7 +112,7 @@ def _resolve_launch_root(output_root: Path, launch_root: Path | None) -> Path:
     payload = load_json(latest_pointer_path(output_root))
     launch_root_obj = payload.get("launch_root")
     if not isinstance(launch_root_obj, str) or launch_root_obj.strip() == "":
-        raise SystemExit("Task 116 GPU monitor latest-launch metadata was malformed.")
+        raise SystemExit("Task 116 resource monitor latest-launch metadata was malformed.")
     return Path(launch_root_obj)
 
 
@@ -121,15 +123,21 @@ def _write_markdown(path: Path, markdown: str) -> None:
     path.write_text(markdown.rstrip() + "\n", encoding="utf-8")
 
 
-def _summary_markdown(summary: Task116GpuMonitorSummary) -> str:
+def _summary_markdown(summary: Task116ResourceMonitorSummary) -> str:
     """Render one concise markdown summary."""
     lines = [
-        "# Task 116 Hemma GPU Monitor Summary",
+        "# Task 116 Hemma Resource Monitor Summary",
         "",
         f"- launch_id: `{summary.launch_id}`",
         f"- sample_count: `{summary.sample_count}`",
         f"- first_sample_at: `{summary.first_sample_at}`",
         f"- last_sample_at: `{summary.last_sample_at}`",
+        f"- host_cpu_busy_percent_min: `{summary.host_cpu_busy_percent_min}`",
+        f"- host_cpu_busy_percent_median: `{summary.host_cpu_busy_percent_median}`",
+        f"- host_cpu_busy_percent_max: `{summary.host_cpu_busy_percent_max}`",
+        f"- host_memory_used_percent_min: `{summary.host_memory_used_percent_min}`",
+        f"- host_memory_used_percent_median: `{summary.host_memory_used_percent_median}`",
+        f"- host_memory_used_percent_max: `{summary.host_memory_used_percent_max}`",
         f"- gpu_busy_percent_min: `{summary.gpu_busy_percent_min}`",
         f"- gpu_busy_percent_median: `{summary.gpu_busy_percent_median}`",
         f"- gpu_busy_percent_max: `{summary.gpu_busy_percent_max}`",
@@ -140,11 +148,23 @@ def _summary_markdown(summary: Task116GpuMonitorSummary) -> str:
     return "\n".join(lines)
 
 
-def _status_markdown(status: Task116GpuMonitorStatus) -> str:
+def _status_markdown(status: Task116ResourceMonitorStatus) -> str:
     """Render one concise markdown status summary."""
     summary_payload = status.summary
+    host_cpu_median = summary_payload.get("host_cpu_busy_percent_median")
+    host_cpu_max = summary_payload.get("host_cpu_busy_percent_max")
+    host_cpu_min = summary_payload.get("host_cpu_busy_percent_min")
+    host_memory_median = summary_payload.get("host_memory_used_percent_median")
+    host_memory_max = summary_payload.get("host_memory_used_percent_max")
+    host_memory_min = summary_payload.get("host_memory_used_percent_min")
+    gpu_busy_median = summary_payload.get("gpu_busy_percent_median")
+    gpu_busy_max = summary_payload.get("gpu_busy_percent_max")
+    gpu_busy_min = summary_payload.get("gpu_busy_percent_min")
+    gpu_memory_median = summary_payload.get("gpu_memory_used_percent_median")
+    gpu_memory_max = summary_payload.get("gpu_memory_used_percent_max")
+    gpu_memory_min = summary_payload.get("gpu_memory_used_percent_min")
     lines = [
-        "# Task 116 Hemma GPU Monitor Status",
+        "# Task 116 Hemma Resource Monitor Status",
         "",
         f"- checked_at: `{status.checked_at}`",
         f"- launch_id: `{status.launch_id}`",
@@ -156,14 +176,23 @@ def _status_markdown(status: Task116GpuMonitorStatus) -> str:
         f"- stop_requested: `{status.stop_requested}`",
         f"- worker_state_found: `{status.worker_state_found}`",
         f"- sample_count: `{summary_payload.get('sample_count')}`",
-        f"- gpu_busy_percent_median: `{summary_payload.get('gpu_busy_percent_median')}`",
-        f"- gpu_busy_percent_max: `{summary_payload.get('gpu_busy_percent_max')}`",
-        f"- gpu_busy_percent_min: `{summary_payload.get('gpu_busy_percent_min')}`",
+        f"- host_cpu_busy_percent_median: `{host_cpu_median}`",
+        f"- host_cpu_busy_percent_max: `{host_cpu_max}`",
+        f"- host_cpu_busy_percent_min: `{host_cpu_min}`",
+        f"- host_memory_used_percent_median: `{host_memory_median}`",
+        f"- host_memory_used_percent_max: `{host_memory_max}`",
+        f"- host_memory_used_percent_min: `{host_memory_min}`",
+        f"- gpu_busy_percent_median: `{gpu_busy_median}`",
+        f"- gpu_busy_percent_max: `{gpu_busy_max}`",
+        f"- gpu_busy_percent_min: `{gpu_busy_min}`",
+        f"- gpu_memory_used_percent_median: `{gpu_memory_median}`",
+        f"- gpu_memory_used_percent_max: `{gpu_memory_max}`",
+        f"- gpu_memory_used_percent_min: `{gpu_memory_min}`",
     ]
     return "\n".join(lines)
 
 
-def _summary_for_launch_root(launch_root: Path) -> Task116GpuMonitorSummary:
+def _summary_for_launch_root(launch_root: Path) -> Task116ResourceMonitorSummary:
     """Build one summary payload for the selected launch root."""
     launch_payload = load_json(launch_metadata_path(launch_root))
     return summarize_samples(required_str(launch_payload, "launch_id"), load_samples(launch_root))
@@ -182,7 +211,7 @@ def _build_worker_command(
     command = [
         sys.executable,
         "-m",
-        "scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor",
+        "scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor",
         "run",
         "--launch-root",
         launch_root.as_posix(),
@@ -201,7 +230,7 @@ def _build_worker_command(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the committed Task 116 GPU monitor CLI."""
+    """Run the committed Task 116 resource monitor CLI."""
     parser = _build_parser()
     args = parser.parse_args(argv)
     if args.command == "run":
@@ -244,7 +273,7 @@ def main(argv: list[str] | None = None) -> int:
             stdout_path=stdout_log_path(launch_root),
             stderr_path=stderr_log_path(launch_root),
         )
-        launch = Task116GpuMonitorLaunch(
+        launch = Task116ResourceMonitorLaunch(
             generated_at=started_at,
             launch_id=launch_id,
             repo_root=Path.cwd().resolve().as_posix(),

@@ -1,4 +1,4 @@
-"""Tests for the detached Task 116 Hemma GPU monitor."""
+"""Tests for the detached Task 116 Hemma resource monitor."""
 
 from __future__ import annotations
 
@@ -7,21 +7,23 @@ from pathlib import Path
 
 import pytest
 
-from scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor import (
+from scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor import (
     DEFAULT_OUTPUT_ROOT,
     _build_parser,
     main,
 )
-from scripts.sir_convert_a_lot.devops.task116_hemma_gpu_monitor_runtime import (
-    Task116GpuSample,
+from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_models import (
+    Task116ResourceSample,
+)
+from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_runtime import (
     build_status,
     run_worker,
     summarize_samples,
 )
 
 
-def test_task116_gpu_monitor_parser_launch_defaults() -> None:
-    """The GPU monitor should expose deterministic detached defaults."""
+def test_task116_resource_monitor_parser_launch_defaults() -> None:
+    """The resource monitor should expose deterministic detached defaults."""
     parser = _build_parser()
     args = parser.parse_args(["launch"])
 
@@ -32,27 +34,33 @@ def test_task116_gpu_monitor_parser_launch_defaults() -> None:
 
 
 def test_summarize_samples_computes_min_median_and_max() -> None:
-    """Summary statistics should reflect the recorded GPU sample distribution."""
+    """Summary statistics should reflect the recorded resource sample distribution."""
     summary = summarize_samples(
-        "task116-gpu-20260309t120000z",
+        "task116-resource-20260309t120000z",
         [
-            Task116GpuSample(
+            Task116ResourceSample(
                 captured_at="2026-03-09T12:00:00Z",
                 runtime_kind="rocm",
                 gpu_busy_percent=10,
                 gpu_memory_used_percent=32,
+                host_cpu_busy_percent=18,
+                host_memory_used_percent=44,
             ),
-            Task116GpuSample(
+            Task116ResourceSample(
                 captured_at="2026-03-09T12:00:30Z",
                 runtime_kind="rocm",
                 gpu_busy_percent=40,
                 gpu_memory_used_percent=35,
+                host_cpu_busy_percent=24,
+                host_memory_used_percent=47,
             ),
-            Task116GpuSample(
+            Task116ResourceSample(
                 captured_at="2026-03-09T12:01:00Z",
                 runtime_kind="rocm",
                 gpu_busy_percent=25,
                 gpu_memory_used_percent=37,
+                host_cpu_busy_percent=36,
+                host_memory_used_percent=49,
             ),
         ],
     )
@@ -64,17 +72,23 @@ def test_summarize_samples_computes_min_median_and_max() -> None:
     assert summary.gpu_memory_used_percent_min == 32
     assert summary.gpu_memory_used_percent_median == 35.0
     assert summary.gpu_memory_used_percent_max == 37
+    assert summary.host_cpu_busy_percent_min == 18
+    assert summary.host_cpu_busy_percent_median == 24.0
+    assert summary.host_cpu_busy_percent_max == 36
+    assert summary.host_memory_used_percent_min == 44
+    assert summary.host_memory_used_percent_median == 47.0
+    assert summary.host_memory_used_percent_max == 49
 
 
 def test_build_status_reads_latest_pointer_and_samples(tmp_path: Path) -> None:
     """Status should merge launch metadata, worker state, and sample summary."""
-    launch_root = tmp_path / "task116-gpu-20260309t120000z"
+    launch_root = tmp_path / "task116-resource-20260309t120000z"
     launch_root.mkdir(parents=True, exist_ok=True)
     (launch_root / "launch.json").write_text(
         json.dumps(
             {
                 "generated_at": "2026-03-09T12:00:00Z",
-                "launch_id": "task116-gpu-20260309t120000z",
+                "launch_id": "task116-resource-20260309t120000z",
                 "repo_root": "/repo",
                 "pid": 999999,
                 "runtime_kind": "rocm",
@@ -89,7 +103,7 @@ def test_build_status_reads_latest_pointer_and_samples(tmp_path: Path) -> None:
     (launch_root / "worker-state.json").write_text(
         json.dumps(
             {
-                "launch_id": "task116-gpu-20260309t120000z",
+                "launch_id": "task116-resource-20260309t120000z",
                 "started_at": "2026-03-09T12:00:00Z",
                 "finished_at": None,
                 "exit_reason": None,
@@ -97,6 +111,8 @@ def test_build_status_reads_latest_pointer_and_samples(tmp_path: Path) -> None:
                 "latest_sample_at": "2026-03-09T12:00:30Z",
                 "latest_gpu_busy_percent": 16,
                 "latest_gpu_memory_used_percent": 34,
+                "latest_host_cpu_busy_percent": 28,
+                "latest_host_memory_used_percent": 46,
                 "error": None,
             }
         )
@@ -110,6 +126,8 @@ def test_build_status_reads_latest_pointer_and_samples(tmp_path: Path) -> None:
                 "runtime_kind": "rocm",
                 "gpu_busy_percent": 8,
                 "gpu_memory_used_percent": 33,
+                "host_cpu_busy_percent": 21,
+                "host_memory_used_percent": 45,
             }
         )
         + "\n"
@@ -119,6 +137,8 @@ def test_build_status_reads_latest_pointer_and_samples(tmp_path: Path) -> None:
                 "runtime_kind": "rocm",
                 "gpu_busy_percent": 16,
                 "gpu_memory_used_percent": 34,
+                "host_cpu_busy_percent": 28,
+                "host_memory_used_percent": 46,
             }
         )
         + "\n",
@@ -127,11 +147,13 @@ def test_build_status_reads_latest_pointer_and_samples(tmp_path: Path) -> None:
 
     status = build_status(launch_root)
 
-    assert status.launch_id == "task116-gpu-20260309t120000z"
+    assert status.launch_id == "task116-resource-20260309t120000z"
     assert status.worker_state_found is True
     assert status.summary["sample_count"] == 2
     assert status.summary["gpu_busy_percent_median"] == 12.0
     assert status.summary["gpu_busy_percent_max"] == 16
+    assert status.summary["host_cpu_busy_percent_median"] == 24.5
+    assert status.summary["host_memory_used_percent_max"] == 46
 
 
 def test_main_launch_writes_launch_metadata_and_latest_pointer(
@@ -152,7 +174,7 @@ def test_main_launch_writes_launch_metadata_and_latest_pointer(
         return 4242
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.run_task116_hemma_gpu_monitor.spawn_detached_worker",
+        "scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor.spawn_detached_worker",
         _fake_spawn_detached_worker,
     )
 
@@ -162,7 +184,7 @@ def test_main_launch_writes_launch_metadata_and_latest_pointer(
             "--output-root",
             tmp_path.as_posix(),
             "--launch-id",
-            "task116-gpu-test",
+            "task116-resource-test",
             "--interval-seconds",
             "15",
         ]
@@ -170,11 +192,11 @@ def test_main_launch_writes_launch_metadata_and_latest_pointer(
 
     assert exit_code == 0
     launch_payload = json.loads(
-        (tmp_path / "task116-gpu-test/launch.json").read_text(encoding="utf-8")
+        (tmp_path / "task116-resource-test/launch.json").read_text(encoding="utf-8")
     )
     assert launch_payload["pid"] == 4242
     pointer_payload = json.loads((tmp_path / "latest-launch.json").read_text(encoding="utf-8"))
-    assert pointer_payload["launch_root"] == (tmp_path / "task116-gpu-test").as_posix()
+    assert pointer_payload["launch_root"] == (tmp_path / "task116-resource-test").as_posix()
 
 
 def test_run_worker_does_not_depend_on_launch_metadata_file(
@@ -182,13 +204,18 @@ def test_run_worker_does_not_depend_on_launch_metadata_file(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The worker should record samples even when launch metadata is written later."""
-    launch_root = tmp_path / "task116-gpu-worker"
+    launch_root = tmp_path / "task116-resource-worker"
     launch_root.mkdir(parents=True, exist_ok=True)
 
     class _FakeSnapshot:
         def __init__(self) -> None:
             self.gpu_busy_percent = 22
             self.gpu_memory_used_percent = 41
+
+    class _FakeHostSnapshot:
+        def __init__(self) -> None:
+            self.host_cpu_busy_percent = 27
+            self.host_memory_used_percent = 48
 
     def _fake_snapshot(*, runtime_kind: str) -> _FakeSnapshot | None:
         assert runtime_kind == "rocm"
@@ -199,17 +226,21 @@ def test_run_worker_does_not_depend_on_launch_metadata_file(
         (launch_root / "stop.json").write_text("{}", encoding="utf-8")
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task116_hemma_gpu_monitor_runtime.sample_gpu_utilization_snapshot",
+        "scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_runtime.sample_gpu_utilization_snapshot",
         _fake_snapshot,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task116_hemma_gpu_monitor_runtime.time.sleep",
+        "scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_runtime.HostResourceSampler.sample",
+        lambda self: _FakeHostSnapshot(),
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_runtime.time.sleep",
         _fake_sleep,
     )
 
     exit_code = run_worker(
         launch_root=launch_root,
-        launch_id="task116-gpu-worker",
+        launch_id="task116-resource-worker",
         started_at="2026-03-09T12:00:00Z",
         runtime_kind="rocm",
         interval_seconds=15.0,
@@ -219,20 +250,24 @@ def test_run_worker_does_not_depend_on_launch_metadata_file(
     assert exit_code == 0
     worker_state = json.loads((launch_root / "worker-state.json").read_text(encoding="utf-8"))
     assert worker_state["sample_count"] == 1
+    assert worker_state["latest_host_cpu_busy_percent"] == 27
+    assert worker_state["latest_host_memory_used_percent"] == 48
     samples = (launch_root / "samples.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(samples) == 1
     assert json.loads(samples[0])["gpu_busy_percent"] == 22
+    assert json.loads(samples[0])["host_cpu_busy_percent"] == 27
+    assert json.loads(samples[0])["host_memory_used_percent"] == 48
 
 
 def test_main_stop_writes_stop_request(tmp_path: Path) -> None:
     """Stop should create one durable stop-request marker for the worker."""
-    launch_root = tmp_path / "task116-gpu-test"
+    launch_root = tmp_path / "task116-resource-test"
     launch_root.mkdir(parents=True, exist_ok=True)
     (launch_root / "launch.json").write_text(
         json.dumps(
             {
                 "generated_at": "2026-03-09T12:00:00Z",
-                "launch_id": "task116-gpu-test",
+                "launch_id": "task116-resource-test",
                 "repo_root": "/repo",
                 "pid": 1234,
                 "runtime_kind": "rocm",
