@@ -87,11 +87,21 @@ def build_remote_shell_command(*, output_root: Path) -> tuple[str, Path, Path]:
     """Build the remote shell command for one detached Task 113 migration run."""
     log_path = output_root / "live.log"
     exit_code_path = output_root / "exit_code.txt"
+    report_json_path = output_root / "report.json"
+    report_md_path = output_root / "report.md"
     remote_command = " ".join(
         [
             f"mkdir -p {shlex.quote(output_root.as_posix())}",
             "&&",
             f"cd {shlex.quote(DEFAULT_REMOTE_REPO_ROOT.as_posix())}",
+            "&&",
+            (
+                "rm -f "
+                f"{shlex.quote(log_path.as_posix())} "
+                f"{shlex.quote(exit_code_path.as_posix())} "
+                f"{shlex.quote(report_json_path.as_posix())} "
+                f"{shlex.quote(report_md_path.as_posix())}"
+            ),
             "&&",
             (
                 "pdm run task-113-docker-storage-remediation "

@@ -23,7 +23,8 @@ from pathlib import Path
 DEFAULT_DOCKER_ROOT = Path("/var/snap/docker/common/var-lib-docker")
 DEFAULT_SCRATCH_DOCKER_ROOT = Path("/srv/scratch/docker/data-root")
 DEFAULT_DOCKER_ROOT_BACKUP = Path("/var/snap/docker/common/var-lib-docker.task113-backup")
-DEFAULT_LEGACY_HOME_DOCKER_ROOT = Path("/home/paunchygent/.data/docker/data-root")
+DEFAULT_LEGACY_HOME_DOCKER_ROOT = Path("/home/paunchygent/docker-data-root")
+DEFAULT_SECONDARY_LEGACY_HOME_DOCKER_ROOT = Path("/home/paunchygent/.data/docker/data-root")
 DEFAULT_FSTAB_PATH = Path("/etc/fstab")
 
 
@@ -187,11 +188,16 @@ def update_fstab_for_bind(
     fstab_path: Path,
     source: Path,
     target: Path,
-    legacy_target: Path,
+    legacy_targets: tuple[Path, ...],
 ) -> None:
     """Persist the new bind mount and remove any legacy home-path entry."""
     current_text = fstab_path.read_text(encoding="utf-8") if fstab_path.exists() else ""
-    updated_text = remove_fstab_bind_entry_text(current_text=current_text, target=legacy_target)
+    updated_text = current_text
+    for legacy_target in legacy_targets:
+        updated_text = remove_fstab_bind_entry_text(
+            current_text=updated_text,
+            target=legacy_target,
+        )
     updated_text = ensure_fstab_bind_entry_text(
         current_text=updated_text,
         source=source,
@@ -328,34 +334,49 @@ def run_task113_docker_storage_migration(
 ) -> Task113DockerStorageReport:
     """Execute the Task 113 Docker storage migration and return one report."""
     docker_root_before = docker_root_dir()
+    active_root_before = Path(docker_root_before)
     snap_before = snap_data_root()
     filesystem_before = filesystem_df()
     docker_ps_before_text = docker_ps()
     docker_root_mount_before = find_mount_source(settings.docker_root)
     legacy_home_mount_before = find_mount_source(settings.legacy_home_docker_root)
+    secondary_legacy_mount_before = find_mount_source(DEFAULT_SECONDARY_LEGACY_HOME_DOCKER_ROOT)
+    active_root_mount_before = find_mount_source(active_root_before)
 
     stop_docker_snap()
     ensure_directory(settings.scratch_docker_root.parent)
+    if active_root_before != settings.docker_root and active_root_mount_before is not None:
+        unmount_path(active_root_before)
     if legacy_home_mount_before is not None:
         unmount_path(settings.legacy_home_docker_root)
+    if secondary_legacy_mount_before is not None:
+        unmount_path(DEFAULT_SECONDARY_LEGACY_HOME_DOCKER_ROOT)
     update_fstab_for_bind(
         fstab_path=settings.fstab_path,
         source=settings.scratch_docker_root,
         target=settings.docker_root,
-        legacy_target=settings.legacy_home_docker_root,
+        legacy_targets=(
+            active_root_before,
+            settings.legacy_home_docker_root,
+            DEFAULT_SECONDARY_LEGACY_HOME_DOCKER_ROOT,
+        ),
     )
 
     if docker_root_mount_before != find_mount_source(settings.docker_root):
         docker_root_mount_before = find_mount_source(settings.docker_root)
 
     if docker_root_mount_before is None:
-        rsync_tree(source=settings.docker_root, destination=settings.scratch_docker_root)
+        if active_root_before == settings.docker_root:
+            rsync_tree(source=settings.docker_root, destination=settings.scratch_docker_root)
+        elif active_root_mount_before is None and active_root_before.exists():
+            rsync_tree(source=active_root_before, destination=settings.scratch_docker_root)
         if settings.docker_root_backup.exists():
             remove_tree(settings.docker_root_backup)
-        move_tree(settings.docker_root, settings.docker_root_backup)
+        if settings.docker_root.exists():
+            move_tree(settings.docker_root, settings.docker_root_backup)
         ensure_directory(settings.docker_root)
         mount_bind(settings.scratch_docker_root, settings.docker_root)
-    else:
+    elif active_root_before == settings.docker_root:
         rsync_tree(source=settings.docker_root, destination=settings.scratch_docker_root)
 
     set_snap_data_root(settings.docker_root)
@@ -369,6 +390,11 @@ def run_task113_docker_storage_migration(
 
     docker_root_mount_after = find_mount_source(settings.docker_root)
     legacy_home_mount_after = find_mount_source(settings.legacy_home_docker_root)
+    if (
+        active_root_before != settings.legacy_home_docker_root
+        and active_root_before != settings.docker_root
+    ):
+        legacy_home_mount_after = legacy_home_mount_after or find_mount_source(active_root_before)
     snap_after = snap_data_root()
     filesystem_after = filesystem_df()
     docker_ps_after_text = docker_ps()
