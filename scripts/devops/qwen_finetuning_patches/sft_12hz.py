@@ -27,8 +27,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import torch
@@ -50,6 +50,24 @@ EXPORT_METADATA_PATTERNS = (
 )
 
 
+@dataclass(frozen=True)
+class TrainingSummary:
+    """Machine-readable summary for one bounded Qwen fine-tuning run."""
+
+    init_model_path: str
+    output_model_path: str
+    train_jsonl: str
+    batch_size: int
+    lr: float
+    num_epochs: int
+    max_steps: int | None
+    optimizer_steps_completed: int
+    last_loss: float | None
+    peak_memory_allocated_bytes: int | None
+    peak_memory_reserved_bytes: int | None
+    checkpoint_paths: list[str]
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--init_model_path", type=str, default="Qwen/Qwen3-TTS-12Hz-1.7B-Base")
@@ -58,6 +76,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--batch_size", type=int, default=2)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num_epochs", type=int, default=3)
+    parser.add_argument("--max_steps", type=int, default=None)
+    parser.add_argument("--metrics_output_json", type=str, default=None)
     parser.add_argument(
         "--speaker_name",
         type=str,
@@ -74,8 +94,52 @@ def _load_training_rows(train_jsonl_path: Path) -> list[TrainingRow]:
     rows: list[TrainingRow] = []
     with train_jsonl_path.open("r", encoding="utf-8") as handle:
         for line in handle:
-            rows.append(json.loads(line))
+            row = json.loads(line)
+            if not isinstance(row, dict):
+                raise ValueError("Expected each training JSONL row to be a JSON object.")
+            rows.append(_resolve_training_row_paths(train_jsonl_path, row))
     return rows
+
+
+def _resolve_training_row_paths(train_jsonl_path: Path, row: dict[str, object]) -> TrainingRow:
+    """Resolve manifest-relative training paths into absolute paths."""
+    manifest_root = train_jsonl_path.parent
+    ref_audio_value = row.get("ref_audio")
+    resolved_ref_audio: str | list[str]
+    if isinstance(ref_audio_value, str):
+        resolved_ref_audio = _resolve_manifest_path(manifest_root, ref_audio_value)
+    elif isinstance(ref_audio_value, list):
+        resolved_ref_audio_list: list[str] = []
+        for item in ref_audio_value:
+            if not isinstance(item, str):
+                raise ValueError("Expected `ref_audio` list values to be strings.")
+            resolved_ref_audio_list.append(_resolve_manifest_path(manifest_root, item))
+        resolved_ref_audio = resolved_ref_audio_list
+    else:
+        raise ValueError("Training row is missing a valid `ref_audio` value.")
+    text_value = row.get("text")
+    if not isinstance(text_value, str):
+        raise ValueError("Training row is missing a valid `text` value.")
+    audio_codes_value = row.get("audio_codes")
+    if not isinstance(audio_codes_value, list):
+        raise ValueError("Training row is missing a valid `audio_codes` value.")
+    speaker_id_value = row.get("speaker_id")
+    resolved_row: TrainingRow = {
+        "text": text_value,
+        "audio_codes": audio_codes_value,
+        "ref_audio": resolved_ref_audio,
+    }
+    if isinstance(speaker_id_value, str):
+        resolved_row["speaker_id"] = speaker_id_value
+    return resolved_row
+
+
+def _resolve_manifest_path(manifest_root: Path, raw_path: str) -> str:
+    """Resolve one manifest-relative path against the training manifest root."""
+    candidate = Path(raw_path)
+    if candidate.is_absolute():
+        return candidate.as_posix()
+    return (manifest_root / candidate).resolve().as_posix()
 
 
 def _load_config_dict(model_path: str) -> dict[str, object]:
@@ -107,8 +171,36 @@ def _resolve_model_export_source_path(model_path: str) -> Path:
     return Path(snapshot_path)
 
 
-def train() -> None:
-    args = _parse_args()
+def _save_checkpoint(
+    *,
+    accelerator: Accelerator,
+    model: torch.nn.Module,
+    model_path: str,
+    output_dir: Path,
+) -> str:
+    """Export one checkpoint directory from the current training state."""
+    resolved_model_path = _resolve_model_export_source_path(model_path)
+    shutil.copytree(resolved_model_path, output_dir, dirs_exist_ok=True)
+
+    config_dict = _load_config_dict(model_path)
+    config_dict["tts_model_type"] = "base"
+
+    output_config_path = output_dir / "config.json"
+    with output_config_path.open("w", encoding="utf-8") as handle:
+        json.dump(config_dict, handle, indent=2, ensure_ascii=False)
+
+    unwrapped_model = accelerator.unwrap_model(model)
+    state_dict = {
+        key: value.detach().to("cpu") for key, value in unwrapped_model.state_dict().items()
+    }
+    save_file(state_dict, (output_dir / "model.safetensors").as_posix())
+    return output_dir.as_posix()
+
+
+def train_with_args(args: argparse.Namespace) -> TrainingSummary:
+    """Run one bounded Qwen fine-tuning job and return machine-readable metrics."""
+    if args.max_steps is not None and args.max_steps <= 0:
+        raise ValueError("`--max_steps` must be positive when provided.")
 
     accelerator = Accelerator(
         gradient_accumulation_steps=4,
@@ -141,6 +233,12 @@ def train() -> None:
     )
 
     model.train()
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+    optimizer_steps_completed = 0
+    last_loss: float | None = None
+    checkpoint_paths: list[str] = []
+    reached_max_steps = False
     for epoch in range(args.num_epochs):
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(model):
@@ -202,27 +300,69 @@ def train() -> None:
 
                 optimizer.step()
                 optimizer.zero_grad()
+                optimizer_steps_completed += 1
+                last_loss = float(loss.item())
 
             if step % 10 == 0:
                 accelerator.print(f"Epoch {epoch} | Step {step} | Loss: {loss.item():.4f}")
+            if args.max_steps is not None and optimizer_steps_completed >= args.max_steps:
+                reached_max_steps = True
+                break
 
         if accelerator.is_main_process:
-            output_dir = os.path.join(args.output_model_path, f"checkpoint-epoch-{epoch}")
-            resolved_model_path = _resolve_model_export_source_path(model_path)
-            shutil.copytree(resolved_model_path, output_dir, dirs_exist_ok=True)
+            output_dir = Path(args.output_model_path) / f"checkpoint-epoch-{epoch}"
+            checkpoint_paths.append(
+                _save_checkpoint(
+                    accelerator=accelerator,
+                    model=model,
+                    model_path=model_path,
+                    output_dir=output_dir,
+                )
+            )
+        if reached_max_steps:
+            break
 
-            config_dict = _load_config_dict(model_path)
-            config_dict["tts_model_type"] = "base"
+    if accelerator.is_main_process:
+        final_output_dir = Path(args.output_model_path) / "checkpoint-final"
+        checkpoint_paths.append(
+            _save_checkpoint(
+                accelerator=accelerator,
+                model=model,
+                model_path=model_path,
+                output_dir=final_output_dir,
+            )
+        )
 
-            output_config_path = Path(output_dir) / "config.json"
-            with output_config_path.open("w", encoding="utf-8") as handle:
-                json.dump(config_dict, handle, indent=2, ensure_ascii=False)
+    peak_memory_allocated_bytes = (
+        int(torch.cuda.max_memory_allocated()) if torch.cuda.is_available() else None
+    )
+    peak_memory_reserved_bytes = (
+        int(torch.cuda.max_memory_reserved()) if torch.cuda.is_available() else None
+    )
+    return TrainingSummary(
+        init_model_path=str(args.init_model_path),
+        output_model_path=str(args.output_model_path),
+        train_jsonl=str(args.train_jsonl),
+        batch_size=int(args.batch_size),
+        lr=float(args.lr),
+        num_epochs=int(args.num_epochs),
+        max_steps=None if args.max_steps is None else int(args.max_steps),
+        optimizer_steps_completed=optimizer_steps_completed,
+        last_loss=last_loss,
+        peak_memory_allocated_bytes=peak_memory_allocated_bytes,
+        peak_memory_reserved_bytes=peak_memory_reserved_bytes,
+        checkpoint_paths=checkpoint_paths,
+    )
 
-            unwrapped_model = accelerator.unwrap_model(model)
-            state_dict = {
-                key: value.detach().to("cpu") for key, value in unwrapped_model.state_dict().items()
-            }
-            save_file(state_dict, os.path.join(output_dir, "model.safetensors"))
+
+def train() -> None:
+    args = _parse_args()
+    summary = train_with_args(args)
+    if args.metrics_output_json is not None:
+        metrics_output_path = Path(args.metrics_output_json)
+        metrics_output_path.parent.mkdir(parents=True, exist_ok=True)
+        with metrics_output_path.open("w", encoding="utf-8") as handle:
+            json.dump(asdict(summary), handle, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":

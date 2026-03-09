@@ -2,10 +2,10 @@
 id: task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion
 title: Run the Hemma pilot full-finetune for Swedish Qwen3-TTS language expansion
 type: task
-status: proposed
+status: active
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-08'
+last_updated: '2026-03-09'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
@@ -33,6 +33,10 @@ evidence.
 
 - Use the committed Hemma runtime from Task 100 plus the first bounded Swedish
   training subset from Tasks 102 and 103.
+- Use the detached committed Task 101 runner surface:
+  - `pdm run run-hemma -- pdm run task-101-pilot launch`
+- Keep the pilot rooted in the promoted Task 103 corpus view on SSD scratch:
+  - `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus`
 - Capture:
   - clean idle GPU baseline,
   - startup/runtime metadata,
@@ -45,6 +49,7 @@ evidence.
 ## Deliverables
 
 - [ ] Hemma pilot evidence under `build/verification/`.
+- [ ] Detached launch and status metadata for the pilot lane.
 - [ ] Machine-readable report for memory/runtime truth.
 - [ ] Linked task/runbook updates with the exact command used.
 

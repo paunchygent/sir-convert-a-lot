@@ -207,8 +207,8 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   `T91`, then `T93`, then `T83`, with `T82` kept deferred.
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`,
   `T108`, and `T109` are complete. The recovered `T108` run root is now the
-  canonical promoted corpus view on Hemma, so the next functional step before
-  broader scale-up is `T101`.
+  canonical promoted corpus view on Hemma, and the active next step is the
+  detached `T101` pilot lane via `pdm run run-hemma -- pdm run task-101-pilot launch`.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110` delivered the staged spool/finalization split plus explicit row/GPU
   concurrency controls, `T112` / `T113` closed the Hemma storage-model

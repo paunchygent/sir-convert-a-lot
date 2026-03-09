@@ -596,6 +596,14 @@ Canonical Task 106 acquisition surface:
    - ASR remains a quality gate by default
    - any transcript relabeling must preserve original text plus provenance
 1. Run Task 101 as the first bounded Hemma pilot.
+   - canonical command:
+     `pdm run run-hemma -- pdm run task-101-pilot launch`
+   - inspect the detached pilot with:
+     `pdm run run-hemma -- pdm run task-101-pilot status`
+   - keep the pilot bounded and evidence-first:
+     - default train family: `swedish_pilot_train`
+     - default batch size: `1`
+     - default max steps: `8`
 1. Run Task 104 as the Colab H100 scale-up and comparison lane.
 
 ## Hemma Versus Colab
