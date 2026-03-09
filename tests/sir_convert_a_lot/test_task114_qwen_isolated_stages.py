@@ -57,6 +57,23 @@ def test_resolve_next_stage_returns_none_when_report_exists(tmp_path: Path) -> N
     assert resolve_next_stage(run_root=run_root) is None
 
 
+def test_resolve_next_stage_prefers_reports_after_completed_finalization(tmp_path: Path) -> None:
+    """A run root with completed finalization but no report should advance to reports."""
+    run_root = tmp_path / "run"
+    spool_row = run_root / "spool/rows/rixvox/train/speaker/row.json"
+    prepared_path = run_root / "manifests/swedish_smoke_train.prepared.jsonl"
+    spool_row.parent.mkdir(parents=True, exist_ok=True)
+    prepared_path.parent.mkdir(parents=True, exist_ok=True)
+    spool_row.write_text("{}", encoding="utf-8")
+    prepared_path.write_text("{}", encoding="utf-8")
+    (run_root / "status.json").write_text(
+        json.dumps({"stage": "finalization", "status": "completed"}) + "\n",
+        encoding="utf-8",
+    )
+
+    assert resolve_next_stage(run_root=run_root) == "reports"
+
+
 def test_task114_stage_selector_auto_uses_existing_run_state(tmp_path: Path) -> None:
     """The runner should resolve auto stage selection from the preserved run root."""
     run_root = tmp_path / "run"

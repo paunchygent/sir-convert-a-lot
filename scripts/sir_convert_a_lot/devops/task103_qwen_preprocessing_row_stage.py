@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import tarfile
 import tempfile
+import threading
 import wave
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -41,6 +42,8 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     InventoryRow,
     SpoolRow,
     Task103PreprocessingSettings,
+    Task103RowHeartbeatCallback,
+    Task103RowProcessingHeartbeat,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
     write_jsonl,
@@ -178,6 +181,7 @@ def process_rows_to_spool(
     output_root: Path,
     source_records: Sequence[SourceRecord],
     scorer_factory: Callable[[str, str], object],
+    row_heartbeat_callback: Task103RowHeartbeatCallback | None = None,
 ) -> None:
     """Process source rows into durable audio artifacts and spool records."""
     if settings.row_worker_count <= 0:
@@ -204,8 +208,12 @@ def process_rows_to_spool(
         scorer_slot_queue.put(slot_index)
 
     audio_24k_dir = output_root / "audio_24k"
+    total_row_count = len(source_rows_with_audio)
+    completed_row_count = 0
+    completed_row_count_lock = threading.Lock()
 
     def _process_source_row(source_row: SourceRecord) -> None:
+        nonlocal completed_row_count
         if source_row.source_audio_locator is None:
             return
 
@@ -269,6 +277,16 @@ def process_rows_to_spool(
             manifest_targets=manifest_targets,
         )
         write_spool_row(output_root, spool_row)
+        if row_heartbeat_callback is not None:
+            with completed_row_count_lock:
+                completed_row_count += 1
+                row_heartbeat_callback(
+                    Task103RowProcessingHeartbeat(
+                        processed_row_count=completed_row_count,
+                        total_row_count=total_row_count,
+                        current_dataset_row_id=source_row.dataset_row_id,
+                    )
+                )
 
     with ThreadPoolExecutor(max_workers=settings.row_worker_count) as executor:
         list(executor.map(_process_source_row, source_records))

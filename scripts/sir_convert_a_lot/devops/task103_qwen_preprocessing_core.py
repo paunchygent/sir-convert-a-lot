@@ -31,8 +31,10 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization im
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
+    Task103FinalizationHeartbeatCallback,
     Task103PreprocessingReport,
     Task103PreprocessingSettings,
+    Task103RowHeartbeatCallback,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_row_stage import (
     process_rows_to_spool,
@@ -64,6 +66,8 @@ def run_task103_preprocessing(
     settings: Task103PreprocessingSettings,
     *,
     source_records: Sequence[SourceRecord] | None = None,
+    row_heartbeat_callback: Task103RowHeartbeatCallback | None = None,
+    finalization_heartbeat_callback: Task103FinalizationHeartbeatCallback | None = None,
 ) -> Task103PreprocessingReport:
     """Run one deterministic Task 103/T110 preprocessing pass."""
     output_root = settings.output_root.resolve()
@@ -76,11 +80,13 @@ def run_task103_preprocessing(
             output_root=output_root,
             source_records=effective_source_records,
             scorer_factory=WhisperStrictScorer,
+            row_heartbeat_callback=row_heartbeat_callback,
         )
         finalize_from_spool(
             settings,
             output_root=output_root,
             encode_audio_codes_fn=_encode_audio_codes,
+            finalization_heartbeat_callback=finalization_heartbeat_callback,
         )
         return build_reports(settings, output_root=output_root)
 
@@ -92,6 +98,7 @@ def run_task103_preprocessing(
             output_root=output_root,
             source_records=effective_source_records,
             scorer_factory=WhisperStrictScorer,
+            row_heartbeat_callback=row_heartbeat_callback,
         )
         return build_reports(settings, output_root=output_root)
 
@@ -101,6 +108,7 @@ def run_task103_preprocessing(
             settings,
             output_root=output_root,
             encode_audio_codes_fn=_encode_audio_codes,
+            finalization_heartbeat_callback=finalization_heartbeat_callback,
         )
         return build_reports(settings, output_root=output_root)
 

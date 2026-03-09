@@ -177,9 +177,9 @@ Current implemented controls:
   - `--run-id`
   - `--run-root`
   - `--promote-on-success`
-- `task-103-preprocess-public-corpus` / Task 109 containerized wrapper
-  - forwards the same chunk-size and row/GPU concurrency controls into the
-    canonical Qwen container runtime on Hemma
+- `task-103-preprocess-public-corpus` / Task 114 isolated-stage orchestrator
+  - forwards the same chunk-size and row/GPU concurrency controls into fresh
+    Task 109-backed stage containers on Hemma
 
 Current hard rule after the latest detached `T108` proof:
 
@@ -204,7 +204,7 @@ Current implementation progress:
   detached-proof work by default
 - `run.json` and `status.json` are emitted inside the live run root
 - successful runs can now be promoted into the canonical shared corpus path
-  explicitly with `--promote-on-success`
+  explicitly from the `reports` stage with `--promote-on-success`
 - detached proof metadata now tracks the actual Task 103 run root rather than
   assuming the shared promoted corpus path
 

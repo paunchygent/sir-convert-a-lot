@@ -14,6 +14,7 @@ Relationships:
 
 from __future__ import annotations
 
+import json
 import shutil
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -50,6 +51,14 @@ class Task103RunStatusPayload:
     source_mode: str
     updated_at: str
     error: str | None = None
+    current_family: str | None = None
+    completed_families: tuple[str, ...] | None = None
+    current_chunk_index: int | None = None
+    completed_chunk_count: int | None = None
+    total_chunk_count: int | None = None
+    processed_row_count: int | None = None
+    total_row_count: int | None = None
+    current_dataset_row_id: str | None = None
 
 
 def utc_now_iso() -> str:
@@ -137,8 +146,22 @@ def write_run_status(
     stage: str,
     status: RunStatus,
     error: str | None = None,
+    current_family: str | None = None,
+    completed_families: tuple[str, ...] | None = None,
+    current_chunk_index: int | None = None,
+    completed_chunk_count: int | None = None,
+    total_chunk_count: int | None = None,
+    processed_row_count: int | None = None,
+    total_row_count: int | None = None,
+    current_dataset_row_id: str | None = None,
 ) -> None:
     """Write one deterministic status payload into the run root."""
+    existing_payload: dict[str, object] = {}
+    status_path = context.run_root / "status.json"
+    if status_path.exists():
+        loaded = json.loads(status_path.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+            existing_payload = loaded
     payload = Task103RunStatusPayload(
         run_id=context.run_id,
         run_root=context.run_root.as_posix(),
@@ -148,8 +171,86 @@ def write_run_status(
         source_mode=source_mode,
         updated_at=utc_now_iso(),
         error=error,
+        current_family=_status_string_value(existing_payload, "current_family", current_family),
+        completed_families=_status_string_tuple_value(
+            existing_payload,
+            "completed_families",
+            completed_families,
+        ),
+        current_chunk_index=_status_int_value(
+            existing_payload,
+            "current_chunk_index",
+            current_chunk_index,
+        ),
+        completed_chunk_count=_status_int_value(
+            existing_payload,
+            "completed_chunk_count",
+            completed_chunk_count,
+        ),
+        total_chunk_count=_status_int_value(
+            existing_payload,
+            "total_chunk_count",
+            total_chunk_count,
+        ),
+        processed_row_count=_status_int_value(
+            existing_payload,
+            "processed_row_count",
+            processed_row_count,
+        ),
+        total_row_count=_status_int_value(
+            existing_payload,
+            "total_row_count",
+            total_row_count,
+        ),
+        current_dataset_row_id=_status_string_value(
+            existing_payload,
+            "current_dataset_row_id",
+            current_dataset_row_id,
+        ),
     )
-    write_json(context.run_root / "status.json", asdict(payload))
+    write_json(status_path, asdict(payload))
+
+
+def _status_int_value(
+    existing_payload: dict[str, object],
+    key: str,
+    candidate: int | None,
+) -> int | None:
+    """Return the new status integer when present, else preserve the existing value."""
+    if candidate is not None:
+        return candidate
+    existing = existing_payload.get(key)
+    if isinstance(existing, int):
+        return existing
+    return None
+
+
+def _status_string_value(
+    existing_payload: dict[str, object],
+    key: str,
+    candidate: str | None,
+) -> str | None:
+    """Return the new status string when present, else preserve the existing value."""
+    if candidate is not None:
+        return candidate
+    existing = existing_payload.get(key)
+    if isinstance(existing, str):
+        return existing
+    return None
+
+
+def _status_string_tuple_value(
+    existing_payload: dict[str, object],
+    key: str,
+    candidate: tuple[str, ...] | None,
+) -> tuple[str, ...] | None:
+    """Return the new status string tuple when present, else preserve the existing value."""
+    if candidate is not None:
+        return candidate
+    existing = existing_payload.get(key)
+    if isinstance(existing, list) and all(isinstance(item, str) for item in existing):
+        return tuple(existing)
+    return None
 
 
 def promote_run_root(context: Task103RunContext) -> Path:

@@ -30,6 +30,10 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     Task103PreprocessingSettings,
     run_task103_preprocessing,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
+    Task103FinalizationHeartbeat,
+    Task103RowProcessingHeartbeat,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_run_roots import (
     Task103RunContext,
     prepare_run_root,
@@ -57,7 +61,7 @@ DEFAULT_FLEURS_SPLITS = ("dev", "test")
 DEFAULT_RIXVOX_SPLITS = ("dev", "test")
 DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
-DEFAULT_STAGE = "all"
+DEFAULT_STAGE = "row-processing"
 DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
 DEFAULT_ROW_WORKER_COUNT = 1
 DEFAULT_GPU_ASR_WORKER_COUNT = 1
@@ -139,6 +143,11 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         default=DEFAULT_STAGE,
     )
     parser.add_argument(
+        "--allow-noncanonical-stage-all",
+        action="store_true",
+        help="Allow one combined `all` stage for local debugging only.",
+    )
+    parser.add_argument(
         "--finalization-families",
         default=",".join(CANONICAL_MANIFEST_FAMILIES),
     )
@@ -176,6 +185,16 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         default=DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT,
     )
     args = parser.parse_args(argv)
+    if args.stage == "all" and not bool(args.allow_noncanonical_stage_all):
+        raise SystemExit(
+            "Task 103 no longer treats `stage=all` as canonical. "
+            "Use explicit row-processing/finalization/reports stages instead."
+        )
+    if bool(args.promote_on_success) and str(args.stage) != "reports":
+        raise SystemExit(
+            "Task 103 promotion is only allowed for the `reports` stage. "
+            "Run row-processing and finalization first, then promote from reports."
+        )
     return Task103RunnerSettings(
         preprocessing=Task103PreprocessingSettings(
             output_root=Path(args.output_root),
@@ -299,6 +318,31 @@ def main(argv: list[str] | None = None) -> int:
         row_worker_count=settings.preprocessing.row_worker_count,
         gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
     )
+
+    def _row_heartbeat_callback(heartbeat: Task103RowProcessingHeartbeat) -> None:
+        write_run_status(
+            context,
+            source_mode=settings.source_mode,
+            stage=effective_settings.stage,
+            status="running",
+            processed_row_count=heartbeat.processed_row_count,
+            total_row_count=heartbeat.total_row_count,
+            current_dataset_row_id=heartbeat.current_dataset_row_id,
+        )
+
+    def _finalization_heartbeat_callback(heartbeat: Task103FinalizationHeartbeat) -> None:
+        write_run_status(
+            context,
+            source_mode=settings.source_mode,
+            stage=effective_settings.stage,
+            status="running",
+            current_family=heartbeat.current_family,
+            completed_families=heartbeat.completed_families,
+            current_chunk_index=heartbeat.current_chunk_index,
+            completed_chunk_count=heartbeat.completed_chunk_count,
+            total_chunk_count=heartbeat.total_chunk_count,
+        )
+
     try:
         write_run_status(
             context,
@@ -306,7 +350,12 @@ def main(argv: list[str] | None = None) -> int:
             stage=settings.preprocessing.stage,
             status="running",
         )
-        report = run_task103_preprocessing(effective_settings, source_records=source_records)
+        report = run_task103_preprocessing(
+            effective_settings,
+            source_records=source_records,
+            row_heartbeat_callback=_row_heartbeat_callback,
+            finalization_heartbeat_callback=_finalization_heartbeat_callback,
+        )
     except Exception:
         rendered_error = traceback.format_exc().strip()
         write_run_status(
@@ -317,19 +366,14 @@ def main(argv: list[str] | None = None) -> int:
             error=rendered_error,
         )
         raise
-    if context.promote_on_success and effective_settings.stage in {
-        "all",
-        "finalization",
-        "reports",
-    }:
+    if context.promote_on_success and effective_settings.stage == "reports":
         promote_run_root(context)
     write_run_status(
         context,
         source_mode=settings.source_mode,
         stage=settings.preprocessing.stage,
         status="promoted"
-        if context.promote_on_success
-        and effective_settings.stage in {"all", "finalization", "reports"}
+        if context.promote_on_success and effective_settings.stage == "reports"
         else "completed",
     )
     print(_render_stdout_summary(report))

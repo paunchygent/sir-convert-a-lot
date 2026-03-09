@@ -93,12 +93,19 @@ def resolve_next_stage(
     has_spool_rows = any(spool_rows_dir(run_root).rglob("*.json"))
     has_prepared_manifests = any((run_root / "manifests").glob("*.prepared.jsonl"))
     has_report = (run_root / "report.json").exists()
+    run_status = _load_optional_json(run_root / "status.json")
     if has_report:
         return None
     if not has_spool_rows:
         return "row-processing"
     if not has_prepared_manifests:
         return "finalization"
+    if (
+        run_status is not None
+        and run_status.get("stage") == "finalization"
+        and run_status.get("status") in {"completed", "promoted"}
+    ):
+        return "reports"
     return "finalization"
 
 
@@ -172,7 +179,9 @@ def launch_detached_stage(
         container_id=container_id,
         repo_root=repo_root.as_posix(),
         task103_run_root=task103_run_root.as_posix(),
-        task103_promoted_root=settings.output_root.as_posix(),
+        task103_promoted_root=(
+            settings.scratch_build_root / "reference" / "qwen3-tts-swedish-corpus"
+        ).as_posix(),
         command=["sudo", "-n", "docker", *command],
     )
 

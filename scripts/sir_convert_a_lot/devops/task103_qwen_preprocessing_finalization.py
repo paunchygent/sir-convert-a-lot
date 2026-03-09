@@ -16,8 +16,9 @@ from __future__ import annotations
 
 import shutil
 from collections import Counter
+from math import ceil
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, Sequence
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     CANONICAL_MANIFEST_FAMILIES,
@@ -26,6 +27,8 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     PreparedManifestRow,
     RawManifestRow,
     SpoolRow,
+    Task103FinalizationHeartbeat,
+    Task103FinalizationHeartbeatCallback,
     Task103PreprocessingReport,
     Task103PreprocessingSettings,
 )
@@ -49,20 +52,79 @@ class AudioCodesEncoderProtocol(Protocol):
         """Encode one bounded chunk of audio paths into Qwen audio codes."""
 
 
+class _TensorLikeProtocol(Protocol):
+    """Tensor-like object that can render to nested Python lists."""
+
+    def tolist(self) -> list[list[int | float]]:
+        """Render the tensor-like value into nested Python lists."""
+
+
+class _EncodedAudioCodesProtocol(Protocol):
+    """Minimal encode result surface returned by the Qwen tokenizer."""
+
+    @property
+    def audio_codes(self) -> Sequence[_TensorLikeProtocol]:
+        """Return the encoded audio-code tensors."""
+
+
+class _QwenTokenizerProtocol(Protocol):
+    """Minimal Qwen tokenizer surface used by finalization."""
+
+    def encode(
+        self,
+        audio_paths: list[str],
+        *,
+        sr: int,
+    ) -> _EncodedAudioCodesProtocol:
+        """Encode one audio-path batch into Qwen audio codes."""
+
+
+class WarmAudioCodesEncoder:
+    """Reuse one Qwen tokenizer instance for all chunks in one finalization process."""
+
+    def __init__(self) -> None:
+        self._tokenizer_model: str | None = None
+        self._tokenizer: _QwenTokenizerProtocol | None = None
+
+    def __call__(
+        self,
+        *,
+        tokenizer_model: str,
+        audio_paths: list[Path],
+    ) -> list[list[list[int]]]:
+        """Generate Qwen `audio_codes` for one bounded audio-path chunk."""
+        tokenizer = self._ensure_tokenizer(tokenizer_model)
+        rendered_codes: list[list[list[int]]] = []
+        encoded = tokenizer.encode([path.as_posix() for path in audio_paths], sr=24_000)
+        for audio_codes in encoded.audio_codes:
+            rendered_codes.append([[int(value) for value in row] for row in audio_codes.tolist()])
+        return rendered_codes
+
+    def _ensure_tokenizer(self, tokenizer_model: str) -> _QwenTokenizerProtocol:
+        """Load the Qwen tokenizer once per finalization process."""
+        if self._tokenizer is not None and self._tokenizer_model == tokenizer_model:
+            return self._tokenizer
+        from qwen_tts import Qwen3TTSTokenizer
+
+        tokenizer: _QwenTokenizerProtocol = Qwen3TTSTokenizer.from_pretrained(tokenizer_model)
+        self._tokenizer_model = tokenizer_model
+        self._tokenizer = tokenizer
+        return tokenizer
+
+
+_DEFAULT_WARM_AUDIO_CODES_ENCODER = WarmAudioCodesEncoder()
+
+
 def encode_audio_codes(
     *,
     tokenizer_model: str,
     audio_paths: list[Path],
 ) -> list[list[list[int]]]:
     """Generate Qwen `audio_codes` for one bounded audio-path chunk."""
-    from qwen_tts import Qwen3TTSTokenizer
-
-    tokenizer = Qwen3TTSTokenizer.from_pretrained(tokenizer_model)
-    rendered_codes: list[list[list[int]]] = []
-    encoded = tokenizer.encode([path.as_posix() for path in audio_paths], sr=24_000)
-    for audio_codes in encoded.audio_codes:
-        rendered_codes.append([[int(value) for value in row] for row in audio_codes.tolist()])
-    return rendered_codes
+    return _DEFAULT_WARM_AUDIO_CODES_ENCODER(
+        tokenizer_model=tokenizer_model,
+        audio_paths=audio_paths,
+    )
 
 
 def _curated_row_from_spool(
@@ -180,6 +242,7 @@ def finalize_from_spool(
     *,
     output_root: Path,
     encode_audio_codes_fn: AudioCodesEncoderProtocol,
+    finalization_heartbeat_callback: Task103FinalizationHeartbeatCallback | None = None,
 ) -> None:
     """Project durable spool rows into curated/raw/prepared manifest artifacts."""
     if settings.audio_codes_chunk_size <= 0:
@@ -188,9 +251,21 @@ def finalize_from_spool(
     reference_audio_paths = _build_reference_audio_paths(output_root)
     curated_dir = output_root / "curated"
     manifests_dir = output_root / "manifests"
+    completed_families: list[ManifestFamily] = []
     for family in CANONICAL_MANIFEST_FAMILIES:
         if family not in selected_families:
             continue
+        admitted_row_count = sum(
+            1
+            for spool_row in iter_spool_rows(output_root)
+            if family in spool_row.manifest_targets and spool_row.admission_decision == "admit"
+        )
+        total_chunk_count = (
+            0
+            if admitted_row_count == 0
+            else ceil(admitted_row_count / settings.audio_codes_chunk_size)
+        )
+        completed_chunk_count = 0
         raw_chunk: list[RawManifestRow] = []
         with (
             JsonlAtomicWriter(curated_dir / f"{family}.jsonl") as curated_writer,
@@ -209,6 +284,16 @@ def finalize_from_spool(
                 if curated_row.admission_decision == "admit":
                     raw_chunk.append(_raw_manifest_row_from_curated(curated_row))
                     if len(raw_chunk) >= settings.audio_codes_chunk_size:
+                        if finalization_heartbeat_callback is not None:
+                            finalization_heartbeat_callback(
+                                Task103FinalizationHeartbeat(
+                                    current_family=family,
+                                    completed_families=tuple(completed_families),
+                                    current_chunk_index=completed_chunk_count + 1,
+                                    completed_chunk_count=completed_chunk_count,
+                                    total_chunk_count=total_chunk_count,
+                                )
+                            )
                         _flush_audio_codes_chunk(
                             output_root=output_root,
                             raw_writer=raw_writer,
@@ -217,13 +302,37 @@ def finalize_from_spool(
                             encode_audio_codes_fn=encode_audio_codes_fn,
                             tokenizer_model=settings.tokenizer_model,
                         )
-            _flush_audio_codes_chunk(
-                output_root=output_root,
-                raw_writer=raw_writer,
-                prepared_writer=prepared_writer,
-                raw_rows=raw_chunk,
-                encode_audio_codes_fn=encode_audio_codes_fn,
-                tokenizer_model=settings.tokenizer_model,
+                        completed_chunk_count += 1
+            if raw_chunk:
+                if finalization_heartbeat_callback is not None:
+                    finalization_heartbeat_callback(
+                        Task103FinalizationHeartbeat(
+                            current_family=family,
+                            completed_families=tuple(completed_families),
+                            current_chunk_index=completed_chunk_count + 1,
+                            completed_chunk_count=completed_chunk_count,
+                            total_chunk_count=total_chunk_count,
+                        )
+                    )
+                _flush_audio_codes_chunk(
+                    output_root=output_root,
+                    raw_writer=raw_writer,
+                    prepared_writer=prepared_writer,
+                    raw_rows=raw_chunk,
+                    encode_audio_codes_fn=encode_audio_codes_fn,
+                    tokenizer_model=settings.tokenizer_model,
+                )
+                completed_chunk_count += 1
+        completed_families.append(family)
+        if finalization_heartbeat_callback is not None:
+            finalization_heartbeat_callback(
+                Task103FinalizationHeartbeat(
+                    current_family=family,
+                    completed_families=tuple(completed_families),
+                    current_chunk_index=completed_chunk_count,
+                    completed_chunk_count=completed_chunk_count,
+                    total_chunk_count=total_chunk_count,
+                )
             )
 
 

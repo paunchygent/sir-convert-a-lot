@@ -118,9 +118,8 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     parquet files onto the HDD storage tier, with revision-pinned evidence written to
     `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json` on
     Hemma.
-  - Opened `T107` as the next active Epic 08 slice so `task-103-preprocess`
-    can run against the staged Hemma public corpora rather than repo fixtures,
-    while keeping the deterministic `build/reference/qwen3-tts-swedish-corpus/`
+  - Opened `T107` so `task-103-preprocess` could move from repo fixtures to
+    staged Hemma public corpora while keeping the deterministic corpus bundle
     contract stable.
   - Completed the first live Hemma `T107` staged public-corpus preprocessing
     pass with the bounded `task-103-preprocess-public-corpus` surface:
@@ -149,16 +148,12 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     Docker scope at `2026-03-08 21:41:24`, after `88` `audio_24k` files,
     `10` refs, and `51` curated `swedish_smoke_train` rows had already been
     emitted but before final manifests/reports existed.
-  - Opened `T110` and `T111` as the next docs-as-code hardening slices for the
-    preprocessing lane: `T110` will split row preprocessing from finalization
-    with disk-backed row results, and `T111` will define an optional
-    provenance-safe ASR relabeling lane without silently replacing source
-    transcripts.
+  - Opened `T110` and `T111` as the next hardening slices:
+    `T110` for disk-backed row/finalization split and `T111` for optional
+    provenance-safe ASR relabeling.
   - Implemented the first `T110` slice on `main`: the Task 103 preprocessing
-    monolith is now split into stage modules, row-processing persists durable
-    spool rows, finalization rebuilds canonical refs from the spool, and the
-    runtime now exposes explicit row/GPU concurrency plus chunked
-    `audio_codes` controls for the next detached `T108` proof.
+    monolith is now split into stage modules with durable spool rows,
+    spool-driven finalization, and explicit row/GPU plus chunk-size controls.
   - Ran the first bounded detached `T108` proof after the run-root and
     scratch-mount fixes with `3` row workers and `3` GPU ASR workers; the
     scratch-backed run root now preserves real partial artifacts (`inventory`,
@@ -167,10 +162,9 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     loss, or artifact-loss drift.
   - Ran the first detached post-`T110` `T108` proof with
     `row-worker-count=10`, `gpu-asr-worker-count=5`, and
-    `audio-codes-chunk-size=4`; the container exited `139`, the kernel log
-    pinned the crash to `libaotriton_v2.so.0.11.1`, and Hemma root-disk
-    pressure is now confirmed as a separate operational problem because `/`
-    has only about `1.3 GB` free while DATA still has ample space.
+    `audio-codes-chunk-size=4`; it exited `139`, the kernel log pinned the
+    crash to `libaotriton_v2.so.0.11.1`, and root-disk pressure was confirmed
+    as a separate operational problem.
   - Completed `T112` and `T113`: Hemma Qwen hot output now persists on SSD
     scratch, raw Swedish corpora persist on HDD storage, Docker root is back on
     the canonical snap path `/var/snap/docker/common/var-lib-docker` while
@@ -186,19 +180,27 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     `stage=all` run.
   - Completed the recovered `T108` proof on Hemma after `T114` hardening:
     the preserved crashed run root was resumed without rerunning row-processing,
-    `swedish_scaleup_train` finalized successfully in one fresh container,
-    the remaining eval/control families finalized in a second
-    fresh container, and a third fresh `reports` stage promoted the canonical
-    corpus view to the successful run root. Final counts: `smoke=52`,
+    finalized successfully in fresh stage-isolated containers, and then
+    promoted via a separate `reports` stage. Final counts: `smoke=52`,
     `pilot=52`, `scaleup=58`, `checkpoint_dev=8`, `final_test=8`,
     `waxholm_control=8`.
+  - Completed the remaining `T114` cleanup/alignment pass: the public
+    `task-103-preprocess-public-corpus` command now points at the detached
+    Task 114 orchestrator, `Task 103` rejects non-canonical `stage=all`
+    execution by default, `status.json` preserves row and finalization
+    heartbeat fields across stage completion, and reports-stage promotion is
+    now the only canonical promotion path.
 
 - 2026-03-05:
+
   - Re-terminalized `T73` with sustained-load evidence and completed `T76-T77`;
     see the linked Epic 06 / Story 20 task docs for detail.
+
 - 2026-03-04:
+
   - Planned Epic 06 long PDF reliability/performance work and completed
     `T67-T71` plus `T75`; detail remains in the linked task docs and tests.
+
 ## Next Actions
 
 - Current local execution focus is Epic 07 Story 23 listening review on
@@ -207,13 +209,12 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   `T108`, and `T109` are complete. The recovered `T108` run root is now the
   canonical promoted corpus view on Hemma, so the next functional step before
   broader scale-up is `T101`.
-- Follow-on hardening after the first detached `T108` repro is now partly in
-  place: `T110` has delivered the staged spool/finalization split plus explicit
-  row/GPU concurrency controls, and `T112` / `T113` have closed the Hemma
-  storage-model blocker. `T114` has now proven the isolated-stage recovery
-  model end to end; the remaining open `T114` work is richer stage/family/chunk
-  heartbeat detail in `status.json`. `T111` remains the later provenance-safe
-  ASR relabel candidate task.
+- Follow-on hardening after the first detached `T108` repro is now in place:
+  `T110` delivered the staged spool/finalization split plus explicit row/GPU
+  concurrency controls, `T112` / `T113` closed the Hemma storage-model
+  blocker, and `T114` completed the isolated-stage recovery model end to end,
+  including the remaining status-heartbeat and command-surface cleanup. `T111`
+  remains the later provenance-safe ASR relabel candidate task.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once
   their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

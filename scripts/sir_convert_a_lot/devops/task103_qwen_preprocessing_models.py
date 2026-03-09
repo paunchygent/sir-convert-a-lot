@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import Callable, Literal, TypedDict
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
 
@@ -168,3 +168,27 @@ class Task103PreprocessingReport:
     prepared_rows: int
     speaker_ids: list[str]
     manifest_counts: dict[ManifestFamily, int]
+
+
+@dataclass(frozen=True)
+class Task103RowProcessingHeartbeat:
+    """Row-processing heartbeat for durable status updates."""
+
+    processed_row_count: int
+    total_row_count: int
+    current_dataset_row_id: str
+
+
+@dataclass(frozen=True)
+class Task103FinalizationHeartbeat:
+    """Finalization heartbeat for family/chunk-aware status updates."""
+
+    current_family: ManifestFamily
+    completed_families: tuple[ManifestFamily, ...]
+    current_chunk_index: int
+    completed_chunk_count: int
+    total_chunk_count: int
+
+
+Task103RowHeartbeatCallback = Callable[[Task103RowProcessingHeartbeat], None]
+Task103FinalizationHeartbeatCallback = Callable[[Task103FinalizationHeartbeat], None]

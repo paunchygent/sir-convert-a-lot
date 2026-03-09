@@ -195,6 +195,8 @@ Hemma hard-isolation rule:
 - `reports` and `promotion` should also remain independently invokable
 - finalization must start from a cold runtime with no carried-over Whisper
   worker state from row-processing
+- live `status.json` must persist row progress plus finalization family/chunk
+  heartbeat so recovery does not depend on artifact archaeology
 
 ## Parallelism Contract
 

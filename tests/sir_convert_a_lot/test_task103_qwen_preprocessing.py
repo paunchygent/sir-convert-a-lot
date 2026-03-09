@@ -41,6 +41,9 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     WhisperStrictScorer,
     run_task103_preprocessing,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
+    Task103RowProcessingHeartbeat,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_row_stage import (
     process_rows_to_spool,
 )
@@ -113,6 +116,27 @@ def _build_source_record(
     )
 
 
+def _report_only_preprocessing_runner(
+    expected_report: Task103PreprocessingReport,
+):
+    """Return one stub Task 103 runner that simply returns the expected report."""
+
+    def _runner(
+        settings: Task103PreprocessingSettings,
+        *,
+        source_records: Sequence[SourceRecord] | None = None,
+        row_heartbeat_callback=None,
+        finalization_heartbeat_callback=None,
+    ) -> Task103PreprocessingReport:
+        del settings
+        del source_records
+        del row_heartbeat_callback
+        del finalization_heartbeat_callback
+        return expected_report
+
+    return _runner
+
+
 def test_task103_parse_args_defaults() -> None:
     """The Task 103 runner should expose deterministic defaults."""
     runner_settings = _parse_args([])
@@ -121,7 +145,7 @@ def test_task103_parse_args_defaults() -> None:
     assert runner_settings.preprocessing.asr_model == DEFAULT_ASR_MODEL
     assert runner_settings.preprocessing.asr_revision == DEFAULT_ASR_REVISION
     assert runner_settings.preprocessing.tokenizer_model == DEFAULT_TOKENIZER_MODEL
-    assert runner_settings.preprocessing.stage == "all"
+    assert runner_settings.preprocessing.stage == "row-processing"
     assert runner_settings.preprocessing.audio_codes_chunk_size == 8
     assert runner_settings.preprocessing.row_worker_count == 1
     assert runner_settings.preprocessing.gpu_asr_worker_count == 1
@@ -135,6 +159,12 @@ def test_task103_parse_args_defaults() -> None:
     assert runner_settings.run_id is None
     assert runner_settings.run_root is None
     assert runner_settings.promote_on_success is False
+
+
+def test_task103_parse_args_rejects_stage_all_without_explicit_override() -> None:
+    """The public Task 103 runner should reject non-canonical `stage=all` use."""
+    with pytest.raises(SystemExit, match="no longer treats `stage=all` as canonical"):
+        _parse_args(["--stage", "all"])
 
 
 def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
@@ -176,6 +206,8 @@ def test_task103_parse_args_run_scoped_controls(tmp_path: Path) -> None:
             "proof-run",
             "--runs-root",
             (tmp_path / "runs").as_posix(),
+            "--stage",
+            "reports",
             "--promote-on-success",
         ]
     )
@@ -644,7 +676,7 @@ def test_task103_runner_main_prints_report_summary(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
-        lambda settings, *, source_records=None: expected_report,
+        _report_only_preprocessing_runner(expected_report),
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
@@ -685,6 +717,8 @@ def test_task103_runner_main_uses_run_root_for_staged_public_corpus(
         settings: Task103PreprocessingSettings,
         *,
         source_records: Sequence[SourceRecord] | None = None,
+        row_heartbeat_callback=None,
+        finalization_heartbeat_callback=None,
     ) -> Task103PreprocessingReport:
         nonlocal observed_output_root
         observed_output_root = settings.output_root
@@ -721,12 +755,11 @@ def test_task103_runner_main_uses_run_root_for_staged_public_corpus(
     assert stdout_payload["output_root"] == expected_report.output_root
 
 
-def test_task103_runner_main_promotes_successful_run_root(
+def test_task103_runner_main_persists_row_processing_heartbeat(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The runner should promote a successful run into the canonical shared corpus path."""
-    promoted_root = tmp_path / "build/reference/qwen3-tts-swedish-corpus"
+    """The runner should persist row-level progress into the run-scoped status file."""
     expected_run_root = tmp_path / "runs" / "proof-run"
     expected_report = Task103PreprocessingReport(
         output_root=expected_run_root.as_posix(),
@@ -734,17 +767,34 @@ def test_task103_runner_main_promotes_successful_run_root(
         asr_model=DEFAULT_ASR_MODEL,
         asr_revision=DEFAULT_ASR_REVISION,
         tokenizer_model=DEFAULT_TOKENIZER_MODEL,
-        inventory_rows=1,
-        curated_rows=1,
-        admitted_rows=1,
-        prepared_rows=1,
+        inventory_rows=2,
+        curated_rows=2,
+        admitted_rows=2,
+        prepared_rows=0,
         speaker_ids=["speaker_a"],
-        manifest_counts={"swedish_smoke_train": 1},
+        manifest_counts={"swedish_smoke_train": 0},
     )
+
+    def _fake_run_task103_preprocessing(
+        settings: Task103PreprocessingSettings,
+        *,
+        source_records: Sequence[SourceRecord] | None = None,
+        row_heartbeat_callback=None,
+        finalization_heartbeat_callback=None,
+    ) -> Task103PreprocessingReport:
+        assert row_heartbeat_callback is not None
+        row_heartbeat_callback(
+            Task103RowProcessingHeartbeat(
+                processed_row_count=2,
+                total_row_count=4,
+                current_dataset_row_id="rixvox-train-0002",
+            )
+        )
+        return expected_report
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
-        lambda settings, *, source_records=None: expected_report,
+        _fake_run_task103_preprocessing,
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
@@ -761,17 +811,61 @@ def test_task103_runner_main_promotes_successful_run_root(
             (tmp_path / "runs").as_posix(),
             "--run-id",
             "proof-run",
-            "--output-root",
-            promoted_root.as_posix(),
-            "--promote-on-success",
         ]
     )
 
     assert exit_code == 0
-    assert promoted_root.is_symlink()
-    assert promoted_root.resolve() == expected_run_root.resolve()
     status_payload = json.loads((expected_run_root / "status.json").read_text(encoding="utf-8"))
-    assert status_payload["status"] == "promoted"
+    assert status_payload["processed_row_count"] == 2
+    assert status_payload["total_row_count"] == 4
+    assert status_payload["current_dataset_row_id"] == "rixvox-train-0002"
+
+
+def test_task103_runner_main_rejects_promotion_outside_reports_stage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The runner should only allow promotion from the reports stage."""
+    promoted_root = tmp_path / "build/reference/qwen3-tts-swedish-corpus"
+    expected_report = Task103PreprocessingReport(
+        output_root=(tmp_path / "runs" / "proof-run").as_posix(),
+        datasets=["rixvox"],
+        asr_model=DEFAULT_ASR_MODEL,
+        asr_revision=DEFAULT_ASR_REVISION,
+        tokenizer_model=DEFAULT_TOKENIZER_MODEL,
+        inventory_rows=1,
+        curated_rows=1,
+        admitted_rows=1,
+        prepared_rows=1,
+        speaker_ids=["speaker_a"],
+        manifest_counts={"swedish_smoke_train": 1},
+    )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
+        _report_only_preprocessing_runner(expected_report),
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
+        lambda settings: [],
+    )
+
+    with pytest.raises(SystemExit, match="promotion is only allowed for the `reports` stage"):
+        main(
+            [
+                "--source-mode",
+                "staged-public-corpus",
+                "--data-root",
+                tmp_path.as_posix(),
+                "--runs-root",
+                (tmp_path / "runs").as_posix(),
+                "--run-id",
+                "proof-run",
+                "--output-root",
+                promoted_root.as_posix(),
+                "--promote-on-success",
+            ]
+        )
 
 
 def test_task103_runner_main_promotes_successful_reports_stage(
@@ -797,7 +891,7 @@ def test_task103_runner_main_promotes_successful_reports_stage(
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
-        lambda settings, *, source_records=None: expected_report,
+        _report_only_preprocessing_runner(expected_report),
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
@@ -840,6 +934,8 @@ def test_task103_runner_main_persists_traceback_on_failure(
         settings: Task103PreprocessingSettings,
         *,
         source_records: Sequence[SourceRecord] | None = None,
+        row_heartbeat_callback=None,
+        finalization_heartbeat_callback=None,
     ) -> Task103PreprocessingReport:
         raise RuntimeError("meta tensor exploded")
 
@@ -1329,6 +1425,8 @@ def test_task103_runner_main_staged_public_corpus_passes_source_records(
         settings: Task103PreprocessingSettings,
         *,
         source_records: Sequence[SourceRecord] | None = None,
+        row_heartbeat_callback=None,
+        finalization_heartbeat_callback=None,
     ) -> Task103PreprocessingReport:
         assert source_records is not None
         observed_source_records.append(list(source_records))

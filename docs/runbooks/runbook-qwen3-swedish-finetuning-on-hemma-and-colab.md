@@ -167,7 +167,7 @@ Current canonical position after `T109`:
 - containerized Qwen runtime is canonical for preprocessing and training
 - Hemma host is orchestration only
 - `pdm run task-103-preprocess-public-corpus` now dispatches to the
-  containerized Task 109 runtime
+  detached Task 114 isolated-stage orchestrator
 - live Hemma evidence exists under:
   - `build/verification/task-109-qwen-containerized-preprocessing/`
 
@@ -179,7 +179,7 @@ Current `T110` hardening requirement:
 - the canonical shared corpus path is promotion-only
 - failed runs remain inspectable in their original run roots
 
-Current `T114` hardening requirement:
+Completed `T114` hardening shape:
 
 - on Hemma, the canonical GPU-backed preprocessing path is no longer one
   `stage=all` run
@@ -189,6 +189,8 @@ Current `T114` hardening requirement:
 - this isolation is mandatory because row-processing is low-load concurrent
   Whisper work, while finalization is high-risk Qwen tokenizer/model
   inference that can wedge the host if it inherits the earlier GPU runtime
+- `status.json` now persists row progress plus finalization family/chunk
+  heartbeat detail for recovery and inspection
 
 Latest bounded detached `T108` proof on Hemma (`2026-03-09`) confirmed:
 
@@ -566,7 +568,8 @@ Canonical Task 106 acquisition surface:
 1. Treat `T109` as complete and use the container-backed preprocessing command
    as the canonical runtime path.
    - `pdm run task-103-preprocess-public-corpus` now dispatches to the
-     containerized Task 109 runner
+     detached Task 114 orchestrator, which launches fresh Task 109-backed
+     stage containers under one immutable Task 103 run root
    - live remediation evidence exists under
      `build/verification/task-109-qwen-containerized-preprocessing/`
 1. Treat `T110` as the active resilience hardening slice for the next detached

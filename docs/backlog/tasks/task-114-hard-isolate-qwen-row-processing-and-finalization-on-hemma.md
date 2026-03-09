@@ -2,7 +2,7 @@
 id: task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma
 title: Hard-isolate Qwen row-processing and finalization on Hemma
 type: task
-status: active
+status: completed
 priority: critical
 created: '2026-03-09'
 last_updated: '2026-03-09'
@@ -174,7 +174,7 @@ The first accepted live Hemma rerun after this task must prove:
 
 - [x] Add the dedicated detached stage orchestrator.
 - [x] Make the Hemma public-corpus runner use the staged orchestration path.
-- [ ] Persist stage/family/chunk heartbeat updates to `status.json`.
+- [x] Persist stage/family/chunk heartbeat updates to `status.json`.
 - [x] Rerun the bounded `T108` proof with isolated row-processing and
   finalization.
 - [x] Record exact evidence and lessons learned in the runbook and task docs.
@@ -202,12 +202,16 @@ Promoted canonical view:
 
 - `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus`
 
-## Remaining Gap
+## Close-Out
 
-`T114` stays active because one hardening item is still open:
+`T114` is complete.
 
-- `status.json` does not yet persist the richer stage/family/chunk heartbeat
-  promised in this task
+What is now true:
 
-The operational isolation model is now proven. The remaining work is
-observability/detail hardening, not recovery of the preprocessing lane itself.
+- Hemma no longer treats one GPU-backed `stage=all` process as the canonical
+  public-corpus path
+- the public command surface now points at the detached Task 114 orchestrator
+- `status.json` persists row and finalization heartbeat detail
+- finalization keeps one warm tokenizer runtime per process rather than
+  recreating the tokenizer for every chunk
+- reports-stage promotion is the only canonical promotion path
