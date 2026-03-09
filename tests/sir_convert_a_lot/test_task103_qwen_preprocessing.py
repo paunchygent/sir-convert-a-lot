@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import sys
 import tarfile
 import wave
 from pathlib import Path
@@ -711,6 +712,49 @@ def test_task103_runner_main_promotes_successful_run_root(
     assert status_payload["status"] == "promoted"
 
 
+def test_task103_runner_main_persists_traceback_on_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The runner should persist a full traceback in the run-scoped status payload."""
+    expected_run_root = tmp_path / "runs" / "failing-run"
+
+    def _boom(
+        settings: Task103PreprocessingSettings,
+        *,
+        source_records: Sequence[SourceRecord] | None = None,
+    ) -> Task103PreprocessingReport:
+        raise RuntimeError("meta tensor exploded")
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing.run_task103_preprocessing",
+        _boom,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing._resolve_source_records",
+        lambda settings: [],
+    )
+
+    with pytest.raises(RuntimeError, match="meta tensor exploded"):
+        main(
+            [
+                "--source-mode",
+                "staged-public-corpus",
+                "--data-root",
+                tmp_path.as_posix(),
+                "--runs-root",
+                (tmp_path / "runs").as_posix(),
+                "--run-id",
+                "failing-run",
+            ]
+        )
+
+    status_payload = json.loads((expected_run_root / "status.json").read_text(encoding="utf-8"))
+    assert status_payload["status"] == "failed"
+    assert "RuntimeError: meta tensor exploded" in status_payload["error"]
+    assert "Traceback" in status_payload["error"]
+
+
 def test_fleurs_source_records_parse_tsv_and_audio_archive(tmp_path: Path) -> None:
     """The FLEURS adapter should parse TSV rows and build tar-member audio locators."""
     snapshot_root = tmp_path / "fleurs_snapshot"
@@ -1292,3 +1336,70 @@ def test_whisper_strict_scorer_resamples_to_processor_rate(
 
     assert transcript == "Hej från Sverige."
     assert fake_processor.sampling_rate_seen == 16_000
+
+
+def test_whisper_strict_scorer_avoids_model_to_for_cuda_meta_loads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """CUDA model loading should rely on `device_map` instead of `model.to(...)`."""
+
+    class _FakeTorchCuda:
+        @staticmethod
+        def is_available() -> bool:
+            return True
+
+    class _FakeTorch:
+        cuda = _FakeTorchCuda()
+        float16 = "float16"
+        float32 = "float32"
+
+        @staticmethod
+        def device(name: str) -> object:
+            return type("_FakeDevice", (), {"type": name})()
+
+    class _FakeProcessor:
+        feature_extractor = type("_FeatureExtractor", (), {"sampling_rate": 16_000})()
+
+    captured_kwargs: dict[str, object] = {}
+
+    class _FakeAutoProcessor:
+        @staticmethod
+        def from_pretrained(model_id: str, revision: str) -> _FakeProcessor:
+            assert model_id == "KBLab/kb-whisper-large"
+            assert revision == "strict"
+            return _FakeProcessor()
+
+    class _FakeModel:
+        def to(self, device: object) -> "_FakeModel":
+            raise AssertionError("CUDA path should not call model.to(...)")
+
+        def eval(self) -> None:
+            return None
+
+    class _FakeAutoModelForSpeechSeq2Seq:
+        @staticmethod
+        def from_pretrained(model_id: str, **kwargs: object) -> _FakeModel:
+            assert model_id == "KBLab/kb-whisper-large"
+            captured_kwargs.update(kwargs)
+            return _FakeModel()
+
+    monkeypatch.setitem(sys.modules, "torch", _FakeTorch())
+    monkeypatch.setitem(
+        sys.modules,
+        "transformers",
+        type(
+            "_FakeTransformersModule",
+            (),
+            {
+                "AutoProcessor": _FakeAutoProcessor,
+                "AutoModelForSpeechSeq2Seq": _FakeAutoModelForSpeechSeq2Seq,
+            },
+        )(),
+    )
+
+    scorer = WhisperStrictScorer(model_id="KBLab/kb-whisper-large", revision="strict")
+    scorer._ensure_loaded()
+
+    assert captured_kwargs["revision"] == "strict"
+    assert captured_kwargs["dtype"] == "float16"
+    assert captured_kwargs["device_map"] == "auto"

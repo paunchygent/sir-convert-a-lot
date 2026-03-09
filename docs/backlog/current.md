@@ -154,14 +154,8 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Began live `T108` bounded `rixvox` train-family proof work with
     `train_metadata.parquet` plus `train_0.tar.gz` staged on Hemma DATA and a
     bounded `--rixvox-max-rows-per-split 64` containerized preprocessing run.
-  - Recorded one important operational correction for all Hemma work: long
-    remote jobs must run detached from the local client session. An attached
-    `Task 109` foreground run exited with `137`, and that attached-mode exit
-    is not used as canonical preprocessing failure evidence for `T108`.
-  - Detached repro work for the same bounded `T108` lane showed the live
-    Python process inside ROCm/MIOpen `conv1d` work during the main
-    preprocessing loop, which means the earlier attached `137` cannot be used
-    as proof of a late-stage manifest or tokenizer failure.
+  - Recorded the Hemma long-job execution rule: detached only; the earlier
+    attached `137` from `T109` is not treated as canonical `T108` evidence.
   - Detached `T108` proof then established the exact failure mode:
     Hemma kernel logs recorded a real Python OOM kill inside the detached
     Docker scope at `2026-03-08 21:41:24`, after `88` `audio_24k` files,
@@ -174,9 +168,15 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     transcripts.
   - Implemented the first `T110` slice on `main`: the Task 103 preprocessing
     monolith is now split into stage modules, row-processing persists durable
-    spool rows, finalization rebuilds canonical refs from the spool, and the runtime now exposes
-    explicit `row-worker-count`, `gpu-asr-worker-count`, and `audio-codes-chunk-size` controls
-    for the next detached `T108` Hemma proof.
+    spool rows, finalization rebuilds canonical refs from the spool, and the
+    runtime now exposes explicit row/GPU concurrency plus chunked
+    `audio_codes` controls for the next detached `T108` proof.
+  - Ran the first bounded detached `T108` proof after the run-root and
+    scratch-mount fixes with `3` row workers and `3` GPU ASR workers; the
+    scratch-backed run root now preserves real partial artifacts (`inventory`,
+    `run.json`, `status.json`, `5` `audio_24k` files), and the blocker has
+    narrowed to a clean meta-tensor runtime error rather than OOM, detach
+    loss, or artifact-loss drift.
   - Ran the first detached post-`T110` `T108` proof with
     `row-worker-count=10`, `gpu-asr-worker-count=5`, and
     `audio-codes-chunk-size=4`; the container exited `139`, the kernel log
@@ -210,11 +210,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   materialize `rixvox` audio and map admitted train rows into the canonical
   train families, using detached Hemma execution as the required proof mode.
 - Follow-on hardening after the first detached `T108` repro is now partly in place:
-  `T110` has delivered the staged spool/finalization split plus explicit row/GPU
-  concurrency controls, and `T112` / `T113` have closed the Hemma storage-model
-  blocker. The immediate next step is to rerun the bounded detached proof
-  through the containerized Task 109 lane and continue `T108` toward audio-backed
-  train manifests before advancing to `T101`. `T111` remains the later
-  provenance-safe ASR relabel candidate task.
+  `T110` has delivered the staged spool/finalization split plus explicit
+  row/GPU concurrency controls, and `T112` / `T113` have closed the Hemma
+  storage-model blocker. The immediate next step is to fix the Qwen
+  preprocessing meta-tensor device-transfer failure exposed by the `3`-worker
+  detached proof, then rerun `T108` toward audio-backed train manifests before
+  `T101`. `T111` remains the later provenance-safe ASR relabel candidate task.
 - Other devs are closing Epic 06 `T74`; sync backlog terminal states once their Hemma evidence lands.
 - Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.

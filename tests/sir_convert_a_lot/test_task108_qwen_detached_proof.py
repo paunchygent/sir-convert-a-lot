@@ -52,6 +52,7 @@ def test_build_detached_task108_command_drops_rm_and_adds_name() -> None:
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
         scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
             "/home/paunchygent/.data/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"
@@ -75,12 +76,18 @@ def test_build_detached_task108_command_drops_rm_and_adds_name() -> None:
         effective_root=settings.data_root_home_mount,
         used_home_mount=True,
     )
+    scratch_mount = MountResolution(
+        canonical_root=settings.scratch_build_root,
+        effective_root=settings.scratch_build_home_mount,
+        used_home_mount=True,
+    )
 
     command = build_detached_task108_command(
         settings,
         repo_root=repo_root,
         hf_mount=hf_mount,
         data_mount=data_mount,
+        scratch_mount=scratch_mount,
         container_name="task108-qwen-proof-20260309t120000z",
     )
 

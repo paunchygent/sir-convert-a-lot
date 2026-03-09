@@ -178,6 +178,15 @@ Current `T110` hardening requirement:
 - the canonical shared corpus path is promotion-only
 - failed runs remain inspectable in their original run roots
 
+Latest bounded detached `T108` proof on Hemma (`2026-03-09`) confirmed:
+
+- immutable scratch-backed run roots are working as intended
+- detached execution is no longer the active failure mode
+- a `3`-worker proof reached real row processing at roughly `8.1 GB` VRAM
+  before failing with a meta-tensor device-transfer error
+- the next runtime fix is therefore model/device initialization, not another
+  detached-execution or output-preservation redesign
+
 ## Flash Attention Policy
 
 For the current repo state:

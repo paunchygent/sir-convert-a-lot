@@ -283,6 +283,37 @@ configuration. It should:
 - move the large Hemma preprocessing output/evidence lane onto SSD-scratch-backed
   storage while preserving the documented artifact structure
 
+Latest detached proof result on `2026-03-09`:
+
+- canonical detached launch with:
+  - `--row-worker-count 3`
+  - `--gpu-asr-worker-count 3`
+  - `--audio-codes-chunk-size 4`
+  - immutable Task 103 run root on SSD scratch under:
+    - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task108-3workers-20260309T061303Z`
+- detached runtime result:
+  - container launched cleanly with the corrected scratch/home bind mounts
+  - `ExitCode=1`
+  - `OOMKilled=false`
+- preserved run-scoped artifacts:
+  - `inventory/*.jsonl`
+  - `run.json`
+  - `status.json`
+  - `5` materialized `audio_24k` files
+- exact failure recorded in the immutable run status:
+  - `NotImplementedError: Cannot copy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from meta to a different device.`
+- measured live GPU evidence before failure:
+  - approximately `8.1 GB` VRAM used on Hemma
+  - detached execution and run-root preservation both held correctly
+
+That means the current `T108` blocker is now narrower and better defined:
+
+- detached execution is no longer the problem
+- run-scoped persistence is working
+- the next fix must address the meta-tensor model/device transition in the
+  preprocessing runtime before the bounded audio-backed train-family proof can
+  advance
+
 ## Acceptance Criteria
 
 - [ ] `train_metadata.parquet` is staged on Hemma through the script-free

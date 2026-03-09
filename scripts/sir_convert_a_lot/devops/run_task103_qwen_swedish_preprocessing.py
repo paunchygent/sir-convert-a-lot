@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import traceback
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal, Sequence
@@ -306,13 +307,14 @@ def main(argv: list[str] | None = None) -> int:
             status="running",
         )
         report = run_task103_preprocessing(effective_settings, source_records=source_records)
-    except Exception as exc:
+    except Exception:
+        rendered_error = traceback.format_exc().strip()
         write_run_status(
             context,
             source_mode=settings.source_mode,
             stage=settings.preprocessing.stage,
             status="failed",
-            error=f"{type(exc).__name__}: {exc}",
+            error=rendered_error,
         )
         raise
     if context.promote_on_success and effective_settings.stage in {"all", "finalization"}:

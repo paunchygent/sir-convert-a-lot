@@ -181,12 +181,17 @@ class WhisperStrictScorer:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         dtype = torch.float16 if device.type == "cuda" else torch.float32
         processor = AutoProcessor.from_pretrained(self.model_id, revision=self.revision)
-        model = AutoModelForSpeechSeq2Seq.from_pretrained(
-            self.model_id,
-            revision=self.revision,
-            dtype=dtype,
-        )
-        model.to(device)
+        model_load_kwargs: dict[str, object] = {
+            "revision": self.revision,
+            "dtype": dtype,
+        }
+        if device.type == "cuda":
+            # Official Whisper examples load on GPU through `device_map`
+            # instead of calling `.to(...)` on a potentially meta-backed model.
+            model_load_kwargs["device_map"] = "auto"
+        model = AutoModelForSpeechSeq2Seq.from_pretrained(self.model_id, **model_load_kwargs)
+        if device.type != "cuda":
+            model.to(device)
         model.eval()
         self._model = model
         self._processor = processor
