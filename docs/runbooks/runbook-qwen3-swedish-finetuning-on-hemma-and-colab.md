@@ -33,6 +33,8 @@ links:
   - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
   - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
   - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
+  - docs/backlog/tasks/task-121-add-portable-colab-slice-based-qwen-preprocessing-lane.md
+  - docs/backlog/tasks/task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -245,6 +247,35 @@ The bounded detached `T101` pilot already proved:
 - successful checkpoint-final export under detached orchestration.
 
 So the next long-run posture is Hemma-first, not H100-first.
+
+## Optional Colab Preprocessing Lane
+
+Colab may assist with row-processing only when it consumes a Hemma-issued
+portable slice bundle.
+
+Rules:
+
+- Colab must not independently select rows.
+- Colab must not invent a notebook-only preprocessing implementation.
+- Colab must reuse the Task 103 runner through the `selected-source-records`
+  source mode.
+- The first portable remote lane is intentionally limited to `rixvox train`
+  row-processing; finalization, reports, promotion, and held-out corpora remain
+  on Hemma.
+
+First live proof shape:
+
+- create one fresh Hemma `source-selection` universe dedicated to Colab proof
+- keep it bounded to roughly `512` `rixvox train` rows
+- partition with `slice_count=2`
+- assign Colab `slice_index=1`
+- run notebook-backed row-processing with:
+  - `row_worker_count=4`
+  - `gpu_asr_worker_count=1`
+
+This proof must stay independent of the live Hemma `10k` campaign; do not
+reuse or merge the current Hemma `source-selection` universe for the first
+Colab validation.
 
 ## Current Corpus Reality
 

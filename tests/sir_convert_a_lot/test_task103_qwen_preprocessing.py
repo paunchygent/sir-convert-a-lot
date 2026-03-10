@@ -28,6 +28,7 @@ from scripts.sir_convert_a_lot.devops.run_task103_qwen_swedish_preprocessing imp
     DEFAULT_TOKENIZER_MODEL,
     Task103RunnerSettings,
     _parse_args,
+    _resolve_source_records,
     main,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import (
@@ -47,8 +48,13 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_row_stage import (
     process_rows_to_spool,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import write_jsonl
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_fleurs import fleurs_sv_source_records
-from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import AudioLocator, SourceRecord
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
+    AudioLocator,
+    SourceRecord,
+    source_record_to_payload,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import (
     build_rixvox_audio_locator_index,
     rixvox_source_records_from_parquet,
@@ -202,6 +208,22 @@ def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
     assert runner_settings.run_root is None
 
 
+def test_task103_parse_args_selected_source_records_mode(tmp_path: Path) -> None:
+    """The runner should parse the portable selected-source mode explicitly."""
+    selected_source_records_path = tmp_path / "selected_source_records.jsonl"
+    runner_settings = _parse_args(
+        [
+            "--source-mode",
+            "selected-source-records",
+            "--selected-source-records-path",
+            selected_source_records_path.as_posix(),
+        ]
+    )
+
+    assert runner_settings.source_mode == "selected-source-records"
+    assert runner_settings.selected_source_records_path == selected_source_records_path
+
+
 def test_task103_parse_args_run_scoped_controls(tmp_path: Path) -> None:
     """The runner should parse explicit run-root and promotion controls."""
     runner_settings = _parse_args(
@@ -221,6 +243,71 @@ def test_task103_parse_args_run_scoped_controls(tmp_path: Path) -> None:
     assert runner_settings.run_id == "proof-run"
     assert runner_settings.runs_root == tmp_path / "runs"
     assert runner_settings.promote_on_success is True
+
+
+def test_task103_selected_source_records_mode_resolves_portable_rixvox_locators(
+    tmp_path: Path,
+) -> None:
+    """Portable selected-source rows should resolve local RixVox locators before row-processing."""
+    data_root = tmp_path / "data_root"
+    archive_root = data_root / "raw/kblab_rixvox/data/train"
+    archive_root.mkdir(parents=True, exist_ok=True)
+    archive_path = archive_root / "train_0.tar.gz"
+    audio_path = tmp_path / "needed.wav"
+    _write_test_wav(audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+    with tarfile.open(archive_path, "w:gz") as archive:
+        audio_bytes = audio_path.read_bytes()
+        member = tarfile.TarInfo(name="GR01KRU1/needed.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+
+    selected_records_path = tmp_path / "selected_source_records.jsonl"
+    write_jsonl(
+        selected_records_path,
+        [
+            source_record_to_payload(
+                SourceRecord(
+                    dataset="rixvox",
+                    source_split="train",
+                    dataset_row_id="GR01KRU1-1-0",
+                    speaker_id="rixvox_0556347007015",
+                    speaker_name="Peter Pedersen",
+                    speaker_from_id=True,
+                    source_audio_path="GR01KRU1/needed.wav",
+                    source_audio_locator=None,
+                    text_raw="Hej från Sverige.",
+                    language="sv-SE",
+                    speaker_total_hours=1.0,
+                    has_label_files=False,
+                    speaker_audio_meta_ok=True,
+                    source_sample_rate_hz=16_000,
+                    duration_seconds=5.0,
+                )
+            )
+        ],
+    )
+
+    runner_settings = _parse_args(
+        [
+            "--source-mode",
+            "selected-source-records",
+            "--selected-source-records-path",
+            selected_records_path.as_posix(),
+            "--data-root",
+            data_root.as_posix(),
+        ]
+    )
+
+    source_records = _resolve_source_records(
+        runner_settings,
+        output_root=tmp_path / "run",
+    )
+
+    assert source_records is not None
+    assert len(source_records) == 1
+    assert source_records[0].source_audio_locator is not None
+    assert source_records[0].source_audio_locator.path == archive_path
+    assert source_records[0].source_audio_locator.archive_member == "GR01KRU1/needed.wav"
 
 
 def test_task103_preprocessing_emits_deterministic_bundle(

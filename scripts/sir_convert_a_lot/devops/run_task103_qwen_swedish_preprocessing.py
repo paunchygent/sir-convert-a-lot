@@ -42,7 +42,13 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_run_roots impor
     write_run_metadata,
     write_run_status,
 )
-from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import SourceRecord
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
+    iter_jsonl_objects,
+)
+from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
+    SourceRecord,
+    source_record_from_payload,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
     Task103SourceSelectionHeartbeat,
     Task103SourceSelectionHeartbeatCallback,
@@ -51,6 +57,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
     write_selected_source_records,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
+    resolve_selected_source_records_for_local_data,
     staged_public_corpus_source_records,
 )
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
@@ -72,7 +79,7 @@ DEFAULT_STAGE = "row-processing"
 DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
 DEFAULT_ROW_WORKER_COUNT = 1
 DEFAULT_GPU_ASR_WORKER_COUNT = 1
-SourceMode = Literal["repo-fixture", "staged-public-corpus"]
+SourceMode = Literal["repo-fixture", "staged-public-corpus", "selected-source-records"]
 
 
 @dataclass(frozen=True)
@@ -82,6 +89,7 @@ class Task103RunnerSettings:
     preprocessing: Task103PreprocessingSettings
     source_mode: SourceMode
     data_root: Path
+    selected_source_records_path: Path | None
     fleurs_splits: tuple[str, ...]
     fleurs_max_rows_per_split: int | None
     rixvox_splits: tuple[str, ...]
@@ -175,10 +183,11 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
     )
     parser.add_argument(
         "--source-mode",
-        choices=("repo-fixture", "staged-public-corpus"),
+        choices=("repo-fixture", "staged-public-corpus", "selected-source-records"),
         default=DEFAULT_SOURCE_MODE,
     )
     parser.add_argument("--data-root", type=Path, default=default_data_root())
+    parser.add_argument("--selected-source-records-path", type=Path, default=None)
     parser.add_argument("--fleurs-splits", default=",".join(DEFAULT_FLEURS_SPLITS))
     parser.add_argument(
         "--fleurs-max-rows-per-split",
@@ -216,6 +225,11 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         ),
         source_mode=args.source_mode,
         data_root=Path(args.data_root),
+        selected_source_records_path=(
+            None
+            if args.selected_source_records_path is None
+            else Path(args.selected_source_records_path)
+        ),
         fleurs_splits=_parse_csv_list(str(args.fleurs_splits)),
         fleurs_max_rows_per_split=args.fleurs_max_rows_per_split,
         rixvox_splits=_parse_csv_list(str(args.rixvox_splits)),
@@ -236,6 +250,22 @@ def _resolve_source_records(
     """Resolve source records for one requested Task 103 runner mode."""
     if settings.source_mode == "repo-fixture":
         return None
+    if settings.source_mode == "selected-source-records":
+        selected_source_records_path = settings.selected_source_records_path
+        if selected_source_records_path is None:
+            raise SystemExit(
+                "`--selected-source-records-path` is required for "
+                "`--source-mode selected-source-records`."
+            )
+        persisted_source_records = [
+            source_record_from_payload(payload)
+            for payload in iter_jsonl_objects(selected_source_records_path)
+        ]
+        return resolve_selected_source_records_for_local_data(
+            data_root=settings.data_root,
+            source_records=persisted_source_records,
+            source_selection_heartbeat_callback=source_selection_heartbeat_callback,
+        )
     if settings.preprocessing.stage == "row-processing":
         selected_source_records = load_selected_source_records(output_root)
         if selected_source_records is not None:
@@ -314,6 +344,11 @@ def _runner_payload(
     return {
         "source_mode": settings.source_mode,
         "data_root": settings.data_root.as_posix(),
+        "selected_source_records_path": (
+            None
+            if settings.selected_source_records_path is None
+            else settings.selected_source_records_path.as_posix()
+        ),
         "fleurs_splits": list(settings.fleurs_splits),
         "fleurs_max_rows_per_split": settings.fleurs_max_rows_per_split,
         "rixvox_splits": list(settings.rixvox_splits),

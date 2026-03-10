@@ -9,6 +9,7 @@ owners:
   - Olof
 links:
   - docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md
+  - docs/backlog/tasks/task-121-add-portable-colab-slice-based-qwen-preprocessing-lane.md
   - docs/backlog/tasks/task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md
   - docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
   - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
@@ -26,6 +27,10 @@ quality-tier logic, and Qwen-ready manifest shapes.
 
 This reference is the contract target for `T103` and its planned follow-on
 hardening tasks `T110` and `T111`.
+
+Portable remote row-processing is allowed only through a Hemma-issued portable
+slice bundle. Colab or other remote notebook runtimes must not select rows
+independently and must reuse the same Task 103 row-processing contract.
 
 ## Source Acquisition Contract
 

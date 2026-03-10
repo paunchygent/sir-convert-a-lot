@@ -151,6 +151,7 @@ distribution = false
 "task-106-acquire" = "python -m scripts.sir_convert_a_lot.devops.run_task106_hemma_qwen_corpus_acquisition"
 "task-108-stage-rixvox-train" = "python -m scripts.sir_convert_a_lot.devops.run_task108_hemma_qwen_rixvox_train_staging"
 "task-108-detached-proof" = "python -m scripts.sir_convert_a_lot.devops.run_task108_hemma_qwen_detached_proof"
+"task-121-colab-slice-bundle" = "python -m scripts.sir_convert_a_lot.devops.task121_qwen_colab_slice_bundle"
 "task-112-storage-remediation" = "python -m scripts.sir_convert_a_lot.devops.run_task112_hemma_storage_remediation"
 "task-113-docker-storage-remediation" = "python -m scripts.sir_convert_a_lot.devops.run_task113_hemma_docker_storage_remediation"
 "task-113-detached" = "python -m scripts.sir_convert_a_lot.devops.run_task113_hemma_docker_storage_detached"

@@ -7,7 +7,8 @@ Purpose:
 
 Relationships:
     - Used by `run_task103_qwen_swedish_preprocessing.py` when the runner is
-      invoked in staged-public-corpus mode.
+      invoked in staged-public-corpus mode or when portable selected-source
+      bundles need local audio-locator resolution.
     - Consumes the staged raw asset layout produced by
       `task106_qwen_corpus_acquisition_runtime.py`.
     - Delegates dataset parsing to the committed `fleurs`, `waxholm`, and
@@ -214,6 +215,76 @@ def staged_public_corpus_source_records(
 
     return sorted(
         source_records,
+        key=lambda row: (row.dataset, row.source_split, row.speaker_id, row.dataset_row_id),
+    )
+
+
+def resolve_selected_source_records_for_local_data(
+    data_root: Path,
+    *,
+    source_records: Sequence[SourceRecord],
+    source_selection_heartbeat_callback: Task103SourceSelectionHeartbeatCallback | None = None,
+) -> list[SourceRecord]:
+    """Resolve missing local audio locators for one portable selected-source bundle."""
+    raw_root = data_root / RAW_CORPUS_SUBDIR
+    if not raw_root.is_dir():
+        raise FileNotFoundError(f"Missing staged raw corpus root: {raw_root}")
+
+    resolved_source_records: list[SourceRecord] = []
+    pending_rixvox_records_by_split: dict[str, list[SourceRecord]] = {}
+
+    for source_record in source_records:
+        if source_record.source_audio_locator is not None:
+            resolved_source_records.append(source_record)
+            continue
+        if source_record.dataset != "rixvox":
+            raise ValueError(
+                "Portable selected-source bundles currently require embedded local "
+                "locators for non-RixVox datasets."
+            )
+        pending_rixvox_records_by_split.setdefault(source_record.source_split, []).append(
+            source_record
+        )
+
+    rixvox_root = raw_root / RIXVOX_STAGED_SUBDIR
+    for split_name in sorted(pending_rixvox_records_by_split):
+        split_records = pending_rixvox_records_by_split[split_name]
+        archive_root = rixvox_root / "data" / split_name
+        archive_paths = sorted(archive_root.glob(f"{split_name}_*.tar.gz"))
+        if not archive_paths:
+            raise FileNotFoundError(f"Missing staged RixVox archive directory: {archive_root}")
+        required_source_paths = {row.source_audio_path for row in split_records}
+        audio_locators_by_source_path = build_rixvox_audio_locator_index(
+            archive_paths,
+            required_source_paths=required_source_paths,
+            progress_callback=(
+                None
+                if source_selection_heartbeat_callback is None
+                else _source_selection_locator_callback(
+                    split=split_name,
+                    selected_row_count=len(split_records),
+                    target_row_cap=len(split_records),
+                    heartbeat_callback=source_selection_heartbeat_callback,
+                )
+            ),
+        )
+        attached_source_records = attach_audio_locators_to_source_records(
+            split_records,
+            audio_locators_by_source_path=audio_locators_by_source_path,
+            include_metadata_only_rows=False,
+        )
+        if len(attached_source_records) != len(split_records):
+            unresolved_paths = sorted(
+                required_source_paths - set(audio_locators_by_source_path.keys())
+            )
+            raise FileNotFoundError(
+                "Could not resolve all portable RixVox source paths locally: "
+                f"{unresolved_paths[:5]}"
+            )
+        resolved_source_records.extend(attached_source_records)
+
+    return sorted(
+        resolved_source_records,
         key=lambda row: (row.dataset, row.source_split, row.speaker_id, row.dataset_row_id),
     )
 

@@ -207,6 +207,8 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 - Active corpus-expansion focus is `T116`: broaden staged `rixvox` train coverage (`train_0` plus `train_1` through `train_23`) and run one detached `row-processing` window with `row_worker_count=4` and `gpu_asr_worker_count=2`; use `2` hours as the first health gate and keep the same run alive into `8` to `10` hours if heartbeat remains healthy.
 - `T119` is now implemented and first live validation is complete: detached Hemma launch `task114-source-selection-20260309t221342z` proved bounded `rixvox` train source selection, bounded audio-locator resolution, persisted reusable `source_selection/` artifacts, and truthful preflight status instead of lingering in `allocated`.
 - The remaining `T119` acceptance gap is one renewed aggressive row-processing probe on top of that staged `source-selection` foundation, so the next `12:x` experiment measures real worker startup/throughput rather than full-train parquet preflight.
+- Opened `T121` for a portable Colab row-processing lane that consumes a Hemma-issued unique slice bundle, stages only required raw files, and reuses Task 103 instead of a notebook-only implementation.
+- Opened `T122` for the first live Colab GPU proof of that lane: use one fresh bounded Hemma `source-selection` universe, issue one portable slice, and run notebook-backed `selected-source-records` row-processing with `4:1` Colab workers without overlapping the live Hemma `10k` campaign.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later
   provenance-safe ASR relabel candidate task.
