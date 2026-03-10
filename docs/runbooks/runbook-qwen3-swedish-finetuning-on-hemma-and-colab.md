@@ -260,6 +260,8 @@ Rules:
 - Colab must not invent a notebook-only preprocessing implementation.
 - Colab must reuse the Task 103 runner through the `selected-source-records`
   source mode.
+- When the execution lane is Hemma-backed, repo edits, commits, and pushes
+  should happen on the Hemma repo clone, then be pulled locally as needed.
 
 When portable Colab throughput needs improvement, the next allowed optimization
 is a repo-owned portable-slice localization stage:

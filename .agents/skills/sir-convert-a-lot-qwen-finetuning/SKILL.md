@@ -33,6 +33,7 @@ description: >-
 Use this skill together with the broader local skill:
 
 - `.agents/skills/speech-model-finetuning-on-hemma/SKILL.md`
+- `.agents/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
 
 - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
 

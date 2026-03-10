@@ -32,6 +32,21 @@
   - `docs/backlog/current.md` archives the session outcome and updates next
     actions
 
+- Completed `T125` as a workflow guardrail for future iterations:
+  - added `.agents/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
+  - registered the skill in `.agents/skills/README.md` and the local global
+    skill registry under `~/.codex/skills/sir-convert-a-lot-colab-hemma`
+  - cross-linked the rule from the Qwen skill and Qwen Hemma/Colab runbook
+  - codified the rule that Hemma-backed execution lanes should be edited,
+    committed, and pushed from Hemma
+
+- Completed `T126` after the first Colab rerun exposed a stale notebook clone
+  URL:
+  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now defaults
+    to `https://github.com/paunchygent/sir-convert-a-lot.git`
+  - the notebook bootstrap now also accepts `SIR_CONVERT_A_LOT_REPO_URL` for
+    intentional overrides
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
@@ -41,11 +56,11 @@
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py -q`
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - `pdm run python -c "import json, pathlib; json.loads(pathlib.Path('colab_ml_training/qwen_portable_slice_row_processing.ipynb').read_text(encoding='utf-8')); print('notebook-json-ok')"`
+- `pdm run python /Users/olofs_mba/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/sir-convert-a-lot-colab-hemma`
+- `rg -n "paunchygent/sir-convert-a-lot|SIR_CONVERT_A_LOT_REPO_URL" colab_ml_training/qwen_portable_slice_row_processing.ipynb`
 
 ## Next Session Goals
 
-- Commit and push the `T124` local slice.
-- Pull the updated repo on Hemma so the notebook and CLI surfaces match.
 - Reload the Colab notebook from Hemma and rerun the same proof slice with:
   - the localized manifest
   - `row_worker_count=8`
@@ -56,87 +71,3 @@
   - localization
   - first-row startup
   - steady-state rows per minute
-
-- Completed the live Hemma `T89` experiment and synced the evidence bundle back locally:
-
-  - `build/verification/task-89-chatterbox-espeak-hemma/report.json`
-  - `build/verification/task-89-chatterbox-espeak-hemma/report.md`
-  - `build/verification/task-89-chatterbox-espeak-hemma/baseline/artifacts/scenario-a-sv-ref-sv-out.wav`
-  - `build/verification/task-89-chatterbox-espeak-hemma/espeak_sv/artifacts/scenario-a-sv-ref-sv-out.wav`
-  - `build/verification/task-89-chatterbox-espeak-hemma/inputs/probe_text_original.txt`
-  - `build/verification/task-89-chatterbox-espeak-hemma/inputs/probe_text_espeak_sv.txt`
-  - `build/verification/task-89-chatterbox-espeak-hemma/inputs/espeak_metadata.json`
-
-- Verified runtime truth from the live `T89` reports:
-
-  - baseline lane: `duration_seconds=32.571`, `peak_vram_used_bytes=8898465792`
-  - eSpeak lane: `duration_seconds=41.997`, `peak_vram_used_bytes=9103962112`
-  - Chatterbox image rebuilt successfully on Hemma after the deterministic
-    `spacy_pkuseg` prefetch fix
-  - helper image reused successfully without rebuild
-
-- Cleaned up dangling Hemma images after the failed attempts:
-
-  - removed dangling images only
-  - did not touch BuildKit/build cache
-  - reclaimed `14.77GB`
-
-- Implemented and ran `T90` on live Hemma:
-
-  - deterministic segmentation, chunk execution, and cross-fade stitching are
-    now part of the Chatterbox sidecar path
-  - evidence is synced locally under
-    `build/verification/task-90-chatterbox-segmented-hemma/`
-  - single-pass Swedish clone duration: `51.904`, peak VRAM `5959815168`
-  - segmented Swedish clone duration: `57.473`, peak VRAM `5742292992`
-  - segmented debug evidence includes:
-    - `segment_plan.json`
-    - `chunk_01.wav`
-    - `chunk_02.wav`
-    - `chunk_03.wav`
-    - `stitched.wav`
-
-- Updated docs-as-code records for:
-
-  - `docs/backlog/tasks/task-89-implement-benchmark-only-espeak-ng-preprocessing-for-chatterbox-swedish-lanes.md`
-  - `docs/backlog/tasks/task-90-implement-chatterbox-segmentation-batching-and-stitching-on-hemma.md`
-  - `docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md`
-  - `docs/reference/ref-espeak-ng-swedish-phoneme-integration-for-chatterbox.md`
-  - `docs/runbooks/runbook-chatterbox-multilingual-tuning-on-hemma.md`
-  - `docs/backlog/current.md`
-
-- Switched the current Task 85 F5 runtime source locally from
-  `SWivid/F5-TTS@1.1.17` to `ChiliOlavi/F5-TTS@swedish-tts`:
-
-  - `containers/tts-sidecar-f5/Dockerfile` now clones the ChiliOlavi fork by default
-  - Task 85 runtime defaults/reporting now advertise backend version `swedish-tts`
-  - Task 85 docs now explicitly mark the preserved Hemma evidence as pre-switch and require a rerun
-
-Validation evidence:
-
-- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_adapter.py tests/sir_convert_a_lot/test_task86_chatterbox_benchmark.py -q` (pass: `9 passed`)
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task86_chatterbox_benchmark.py tests/sir_convert_a_lot/test_task89_chatterbox_espeak.py -q` (pass: `12 passed`)
-- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_f5_adapter.py -q` (pass: `3 passed`)
-- `pdm run format-all` (pass)
-- `pdm run lint-fix` (pass)
-- `pdm run typecheck-all` (pass)
-- `pdm run coverage-gate` (pass: `545 passed, 5 skipped`, total coverage `95.99%`)
-- `pdm run validate-tasks` (pass)
-- `pdm run validate-docs` (pass)
-- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
-
-Known remaining work / current state:
-
-- `T89` is complete.
-- `T90` implementation and Hemma benchmark evidence are complete, but the task
-  is still open for the qualitative comparison verdict.
-- Story 23 is still not recommendation-complete; the next qualitative decision
-  is whether the segmented Chatterbox result is better, worse, or unchanged
-  versus the single-pass baseline.
-
-## Next Session Goals (2026-03-07)
-
-- Listen to the Task 90 single-pass and segmented Chatterbox outputs.
-- Record the qualitative verdict in `T90` and Story 23.
-- Decide whether Chatterbox remains the lead Swedish cloning candidate or
-  whether Story 23 advances to `T83`.

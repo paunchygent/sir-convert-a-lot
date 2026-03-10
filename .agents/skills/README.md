@@ -21,6 +21,7 @@ Index repo-local skills for Sir Convert-a-Lot and document global visibility via
 ## Local Skills
 
 - `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+- `.agents/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
 - `.agents/skills/sir-convert-a-lot-docs-governance/SKILL.md`
 - `.agents/skills/sir-convert-a-lot-session-handoff/SKILL.md`
 - `.agents/skills/sir-convert-a-lot-pdf-to-md/SKILL.md`
@@ -30,6 +31,7 @@ Index repo-local skills for Sir Convert-a-Lot and document global visibility via
 Create symlinks in `~/.codex/skills` pointing to repo-local skills:
 
 ```bash
+ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-colab-hemma" ~/.codex/skills/sir-convert-a-lot-colab-hemma
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-devops-hemma" ~/.codex/skills/sir-convert-a-lot-devops-hemma
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-docs-governance" ~/.codex/skills/sir-convert-a-lot-docs-governance
 ln -s "$(pwd)/.agents/skills/sir-convert-a-lot-session-handoff" ~/.codex/skills/sir-convert-a-lot-session-handoff

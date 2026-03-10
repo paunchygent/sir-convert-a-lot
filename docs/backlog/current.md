@@ -196,15 +196,15 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     `localized_slice_summary.json`, and the notebook remains a thin
     orchestrator around staging, localization, and canonical Task 103
     row-processing with the `8:2` Colab worker mix.
-  - Revalidated `T124` locally with `validate-tasks`, `validate-docs`,
-    focused Ruff, focused mypy, focused pytest, `index-tasks`, and a fresh
-    notebook JSON parse sanity check.
+  - Revalidated `T124`, pushed `d8d2aef`, synced Hemma, completed `T125` with
+    the new `sir-convert-a-lot-colab-hemma` skill, and fixed `T126` so the
+    Colab notebook now defaults to the canonical GitHub repo URL.
 
 ## Next Actions
 
-- Current local execution focus is Epic 08 `T124` close-out: commit/push the
-  localized portable-slice hardening, pull it on Hemma, then rerun the same
-  Colab proof slice with the localized manifest at `8:2`.
+- Current local execution focus is Epic 08 Colab follow-through: rerun the
+  same proof slice from the Hemma-synced repo with the localized manifest at
+  `8:2`, then capture throughput evidence and confirm the bootstrap fix.
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, and `T115` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` proved the bounded detached pilot lane, and `T115` closed the unattended-resume gap.
 - Active corpus-expansion focus is `T116`: broaden staged `rixvox` train coverage (`train_0` plus `train_1` through `train_23`) and run one detached `row-processing` window with `row_worker_count=4` and `gpu_asr_worker_count=2`; use `2` hours as the first health gate and keep the same run alive into `8` to `10` hours if heartbeat remains healthy.
 - `T119` is implemented and live-validated: detached Hemma source-selection now persists reusable bounded `source_selection/` artifacts with truthful preflight status, so aggressive worker probes measure real startup/throughput instead of full-train parquet preflight.

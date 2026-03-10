@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sir Convert-a-Lot Colab/Hemma"
+  short_description: "Colab notebook orchestration with Hemma-first repo iteration"
+  default_prompt: "Use the committed repo workflow for Colab preprocessing and prefer editing, committing, and pushing from Hemma when the execution lane is Hemma-backed."
