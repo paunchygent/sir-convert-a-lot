@@ -189,29 +189,29 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
 - 2026-03-10:
 
-  - Completed the local `T124` Colab throughput-hardening slice: the portable
-    slice CLI now supports repo-owned localization, extracts only required
-    archive members into `localized_audio/`, persists
-    `localized_selected_source_records.jsonl` plus
-    `localized_slice_summary.json`, and the notebook remains a thin
-    orchestrator around staging, localization, and canonical Task 103
-    row-processing with the `8:2` Colab worker mix.
-  - Revalidated `T124`, pushed `d8d2aef`, synced Hemma, completed `T125` with
-    the new `sir-convert-a-lot-colab-hemma` skill, and fixed `T126` so the
-    Colab notebook now defaults to the canonical GitHub repo URL.
-  - Added `T127` and `T128` guardrails for live Colab use: staging/localization
-    now emit archive-level progress plus timings, and the row-processing cell
-    now fails fast when `nvidia-smi`/CUDA is unavailable.
+  - Completed `T124-T128`: portable Colab slices now support repo-owned
+    localization, archive/timing progress logs, the canonical repo URL, and GPU preflight while the notebook stays a thin Task 103 orchestrator.
+  - Completed live localized Colab proof `task121-colab-proof-rowproc-20260310a`:
+    `256/256` rows finished with `256` spool rows and `256` `audio_24k` files, yielding about `11.2` rows/minute end to end and `12-13` rows/minute in steady state.
+  - Completed `T129`: the same notebook now defaults to
+    `task129-scale-slice-1-of-2-20260311a`, a stable `RUN_ID`, persistent Google Drive storage for cross-session resume safety, and the next `10:2` Colab worker mix.
 
 ## Next Actions
 
-- Current local execution focus is Epic 08 Colab follow-through: rerun the same
-  proof slice from the Hemma-synced repo with the localized manifest at `8:2`,
-  then capture throughput evidence and confirm the Colab guardrails.
-- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, and `T115` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` proved the bounded detached pilot lane, and `T115` closed the unattended-resume gap.
-- Active corpus-expansion focus is `T116`: broaden staged `rixvox` train coverage (`train_0` plus `train_1` through `train_23`) and run one detached `row-processing` window with `row_worker_count=4` and `gpu_asr_worker_count=2`; use `2` hours as the first health gate and keep the same run alive into `8` to `10` hours if heartbeat remains healthy.
-- `T119` is implemented and live-validated: detached Hemma source-selection now persists reusable bounded `source_selection/` artifacts with truthful preflight status, so aggressive worker probes measure real startup/throughput instead of full-train parquet preflight.
-- Colab follow-on work is now `T121-T124`: portable slice bundling is in place, the first live GPU proof established the invariant-compatible lane, `T123` added true row-processing resume semantics, and `T124` now hardens throughput by adding a repo-owned localization stage before rerunning the same proof slice with an `8:2` worker mix.
+- Current local execution focus is Epic 08 Colab scaling follow-through:
+  prepare one fresh bounded `rixvox train` source-selection universe capped at
+  `36,000` rows, assign Colab `slice_index=1` with `slice_count=2`, and commit
+  the `task129-scale-slice-1-of-2-20260311a` portable bundle for the next
+  persistent multi-session Colab run at `10:2`.
+- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`,
+  `T109`, and `T115` are complete, `T119` makes bounded source-selection
+  reusable, and Colab follow-on work is now `T121-T129` with live proof,
+  resume semantics, localization, progress logging, GPU preflight, and
+  persistent multi-session defaults in place.
+- Active corpus-expansion focus is `T116`: detached Hemma row-processing
+  `task116-rowproc-5x2-20260309c` resumed successfully and had reached `4637`
+  processed rows of `10024` by `2026-03-10T19:27:05Z`; refresh the Task 116
+  resource monitor so the resumed segment regains fresh historical telemetry.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later provenance-safe ASR relabel candidate task.
 - `T115` evidence under
