@@ -47,10 +47,7 @@ template-governed DOCX/PDF pathways are delivered and validated).
 Active focus is Epic 06: long OCR PDF progress visibility, partial artifact/checkpoint lifecycle,
 resume reliability, and throughput scaling.
 
-This file is the canonical long-term memory index for session progress; session handoff summaries must be archived here when `handoff.md` is pruned.
-
-Current epic entrypoint:
-
+This file is the canonical long-term memory index for session progress; session handoff summaries must be archived here when `handoff.md` is pruned. Current epic entrypoint:
 - `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
 
 Primary implementation stories (active sequence): Stories 17-19 are completed; Story 20 remains
@@ -209,6 +206,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 - The remaining `T119` acceptance gap is one renewed aggressive row-processing probe on top of that staged `source-selection` foundation, so the next `12:x` experiment measures real worker startup/throughput rather than full-train parquet preflight.
 - Opened `T121` for a portable Colab row-processing lane that consumes a Hemma-issued unique slice bundle, stages only required raw files, and reuses Task 103 instead of a notebook-only implementation.
 - Opened `T122` for the first live Colab GPU proof of that lane: use one fresh bounded Hemma `source-selection` universe, issue one portable slice, and run notebook-backed `selected-source-records` row-processing with `4:1` Colab workers without overlapping the live Hemma `10k` campaign.
+- Opened `T123` after the first live Colab proof exposed the remaining
+  preprocessing durability gap: interrupted `row-processing` runs still restart
+  from zero because the stage wipes the run root on rerun. `T123` now hardens
+  Task 103 and the Colab notebook with true row-processing resume semantics
+  based on preserved spool rows.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later
   provenance-safe ASR relabel candidate task.

@@ -91,7 +91,11 @@ def run_task103_preprocessing(
         return build_reports(settings, output_root=output_root)
 
     if settings.stage == "row-processing":
-        prepare_output_root(output_root, stage="row-processing")
+        prepare_output_root(
+            output_root,
+            stage="row-processing",
+            resume_row_processing=settings.resume_row_processing,
+        )
         effective_source_records = _resolve_source_records(source_records)
         process_rows_to_spool(
             settings,

@@ -182,6 +182,11 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         default=DEFAULT_GPU_ASR_WORKER_COUNT,
     )
     parser.add_argument(
+        "--resume-row-processing",
+        action="store_true",
+        help="Resume row-processing from an existing run root instead of wiping spool/audio state.",
+    )
+    parser.add_argument(
         "--source-mode",
         choices=("repo-fixture", "staged-public-corpus", "selected-source-records"),
         default=DEFAULT_SOURCE_MODE,
@@ -211,6 +216,10 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
             "Task 103 promotion is only allowed for the `reports` stage. "
             "Run row-processing and finalization first, then promote from reports."
         )
+    if bool(args.resume_row_processing) and str(args.stage) != "row-processing":
+        raise SystemExit(
+            "`--resume-row-processing` is only valid for the `row-processing` stage."
+        )
     return Task103RunnerSettings(
         preprocessing=Task103PreprocessingSettings(
             output_root=Path(args.output_root),
@@ -222,6 +231,7 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
             row_worker_count=int(args.row_worker_count),
             gpu_asr_worker_count=int(args.gpu_asr_worker_count),
+            resume_row_processing=bool(args.resume_row_processing),
         ),
         source_mode=args.source_mode,
         data_root=Path(args.data_root),
@@ -369,6 +379,7 @@ def _runner_payload(
                 audio_codes_chunk_size=settings.preprocessing.audio_codes_chunk_size,
                 row_worker_count=settings.preprocessing.row_worker_count,
                 gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
+                resume_row_processing=settings.preprocessing.resume_row_processing,
             )
         ),
     }
@@ -402,6 +413,7 @@ def main(argv: list[str] | None = None) -> int:
         audio_codes_chunk_size=settings.preprocessing.audio_codes_chunk_size,
         row_worker_count=settings.preprocessing.row_worker_count,
         gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
+        resume_row_processing=settings.preprocessing.resume_row_processing,
     )
 
     def _source_selection_heartbeat_callback(heartbeat: Task103SourceSelectionHeartbeat) -> None:

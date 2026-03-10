@@ -118,10 +118,17 @@ def write_jsonl(path: Path, rows: list[object]) -> None:
             writer.write_row(row)
 
 
-def prepare_output_root(output_root: Path, *, stage: Task103Stage) -> None:
+def prepare_output_root(
+    output_root: Path,
+    *,
+    stage: Task103Stage,
+    resume_row_processing: bool = False,
+) -> None:
     """Prepare the generated output root for the requested stage."""
     output_root.mkdir(parents=True, exist_ok=True)
     if stage in {"all", "row-processing"}:
+        if stage == "row-processing" and resume_row_processing:
+            return
         for subdir_name in (
             "inventory",
             "curated",

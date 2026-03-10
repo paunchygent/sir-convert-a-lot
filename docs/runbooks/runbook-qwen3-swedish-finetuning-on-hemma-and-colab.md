@@ -35,6 +35,7 @@ links:
   - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
   - docs/backlog/tasks/task-121-add-portable-colab-slice-based-qwen-preprocessing-lane.md
   - docs/backlog/tasks/task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof.md
+  - docs/backlog/tasks/task-123-add-resumable-row-processing-for-qwen-preprocessing-runs.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -259,6 +260,9 @@ Rules:
 - Colab must not invent a notebook-only preprocessing implementation.
 - Colab must reuse the Task 103 runner through the `selected-source-records`
   source mode.
+- Interrupted row-processing runs must eventually resume from the preserved run
+  root and existing spool rows instead of restarting from zero; `T123` closes
+  that remaining durability gap.
 - The first portable remote lane is intentionally limited to `rixvox train`
   row-processing; finalization, reports, promotion, and held-out corpora remain
   on Hemma.

@@ -151,6 +151,7 @@ class Task103PreprocessingSettings:
     audio_codes_chunk_size: int = 8
     row_worker_count: int = 1
     gpu_asr_worker_count: int = 1
+    resume_row_processing: bool = False
 
 
 @dataclass(frozen=True)

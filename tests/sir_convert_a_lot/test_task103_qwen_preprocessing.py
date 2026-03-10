@@ -224,6 +224,31 @@ def test_task103_parse_args_selected_source_records_mode(tmp_path: Path) -> None
     assert runner_settings.selected_source_records_path == selected_source_records_path
 
 
+def test_task103_parse_args_resume_row_processing_flag() -> None:
+    """The runner should parse explicit row-processing resume control."""
+    runner_settings = _parse_args(
+        [
+            "--stage",
+            "row-processing",
+            "--resume-row-processing",
+        ]
+    )
+
+    assert runner_settings.preprocessing.resume_row_processing is True
+
+
+def test_task103_parse_args_rejects_resume_outside_row_processing() -> None:
+    """Resume-row-processing must only be legal for the row-processing stage."""
+    with pytest.raises(SystemExit, match="only valid for the `row-processing` stage"):
+        _parse_args(
+            [
+                "--stage",
+                "reports",
+                "--resume-row-processing",
+            ]
+        )
+
+
 def test_task103_parse_args_run_scoped_controls(tmp_path: Path) -> None:
     """The runner should parse explicit run-root and promotion controls."""
     runner_settings = _parse_args(
@@ -669,6 +694,84 @@ def test_task103_row_processing_stage_emits_spool_without_manifests(
     assert (output_root / "spool/rows").is_dir()
     assert len(list((output_root / "spool/rows").rglob("*.json"))) == 1
     assert not (output_root / "manifests/swedish_smoke_train.prepared.jsonl").exists()
+
+
+def test_task103_row_processing_resume_reuses_existing_spool_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resumed row-processing should skip source rows that already have spool artifacts."""
+    workspace_root = tmp_path / "workspace"
+    first_audio_path = workspace_root / "fixtures/first.wav"
+    second_audio_path = workspace_root / "fixtures/second.wav"
+    _write_test_wav(first_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+    _write_test_wav(second_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    transcribed_paths: list[str] = []
+
+    def _fake_transcribe(self: object, audio_path: Path) -> str:
+        transcribed_paths.append(audio_path.name)
+        return "Hej från Sverige."
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        _fake_transcribe,
+    )
+
+    source_records = [
+        _build_source_record(
+            dataset="repo_fixture_sv",
+            source_split="fixture",
+            dataset_row_id="repo-fixture-test-001",
+            speaker_id="speaker_test",
+            speaker_name="Test Speaker",
+            source_audio_path=first_audio_path,
+            reference_audio_path=None,
+            text_raw="Hej från Sverige.",
+        ),
+        _build_source_record(
+            dataset="repo_fixture_sv",
+            source_split="fixture",
+            dataset_row_id="repo-fixture-test-002",
+            speaker_id="speaker_test",
+            speaker_name="Test Speaker",
+            source_audio_path=second_audio_path,
+            reference_audio_path=None,
+            text_raw="Hej från Sverige.",
+        ),
+    ]
+    output_root = workspace_root / "build/reference/qwen3-tts-swedish-corpus"
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+        ),
+        source_records=[source_records[0]],
+    )
+    transcribed_paths.clear()
+
+    heartbeats: list[Task103RowProcessingHeartbeat] = []
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+            resume_row_processing=True,
+        ),
+        source_records=source_records,
+        row_heartbeat_callback=heartbeats.append,
+    )
+
+    assert transcribed_paths == ["repo-fixture-test-002.wav"]
+    assert len(list((output_root / "spool/rows").rglob("*.json"))) == 2
+    assert heartbeats[0].processed_row_count == 1
+    assert heartbeats[-1].processed_row_count == 2
+    assert heartbeats[-1].total_row_count == 2
 
 
 def test_task103_finalization_stage_chunks_audio_code_generation(

@@ -46,6 +46,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     Task103RowProcessingHeartbeat,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
+    iter_spool_rows,
     write_jsonl,
     write_spool_row,
 )
@@ -195,8 +196,18 @@ def process_rows_to_spool(
     source_rows_with_audio = [
         source_row for source_row in source_records if source_row.source_audio_locator is not None
     ]
+    completed_row_keys = {
+        (row.dataset, row.source_split, row.dataset_row_id)
+        for row in iter_spool_rows(output_root)
+    }
+    pending_source_rows = [
+        source_row
+        for source_row in source_rows_with_audio
+        if (source_row.dataset, source_row.source_split, source_row.dataset_row_id)
+        not in completed_row_keys
+    ]
     scorer_slots: list[object | None] = []
-    if source_rows_with_audio:
+    if pending_source_rows:
         for _ in range(settings.gpu_asr_worker_count):
             scorer = scorer_factory(settings.asr_model, settings.asr_revision)
             ensure_loaded = getattr(scorer, "ensure_loaded", None)
@@ -209,8 +220,18 @@ def process_rows_to_spool(
 
     audio_24k_dir = output_root / "audio_24k"
     total_row_count = len(source_rows_with_audio)
-    completed_row_count = 0
+    completed_row_count = len(completed_row_keys)
     completed_row_count_lock = threading.Lock()
+
+    if row_heartbeat_callback is not None and completed_row_count > 0:
+        completed_dataset_row_id = source_rows_with_audio[-1].dataset_row_id
+        row_heartbeat_callback(
+            Task103RowProcessingHeartbeat(
+                processed_row_count=completed_row_count,
+                total_row_count=total_row_count,
+                current_dataset_row_id=completed_dataset_row_id,
+            )
+        )
 
     def _process_source_row(source_row: SourceRecord) -> None:
         nonlocal completed_row_count
@@ -289,4 +310,4 @@ def process_rows_to_spool(
                 )
 
     with ThreadPoolExecutor(max_workers=settings.row_worker_count) as executor:
-        list(executor.map(_process_source_row, source_records))
+        list(executor.map(_process_source_row, pending_source_rows))
