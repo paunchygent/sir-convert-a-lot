@@ -213,7 +213,10 @@ def iter_spool_rows(output_root: Path) -> Iterator[SpoolRow]:
     if not rows_root.exists():
         return
     for path in sorted(rows_root.rglob("*.json")):
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        raw_payload = path.read_text(encoding="utf-8")
+        if raw_payload.strip() == "":
+            continue
+        payload = json.loads(raw_payload)
         if not isinstance(payload, dict):
             raise ValueError(f"Expected one JSON object in spool row {path}.")
         reference_audio_24k_paths_raw = payload.get("reference_audio_24k_paths")

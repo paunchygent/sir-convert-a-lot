@@ -774,6 +774,64 @@ def test_task103_row_processing_resume_reuses_existing_spool_rows(
     assert heartbeats[-1].total_row_count == 2
 
 
+def test_task103_row_processing_resume_ignores_empty_crash_artifact_spool_rows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resume should ignore zero-byte spool files left behind by a crash."""
+    workspace_root = tmp_path / "workspace"
+    source_audio_path = workspace_root / "fixtures/source.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    transcribed_paths: list[str] = []
+
+    def _fake_transcribe(self: object, audio_path: Path) -> str:
+        transcribed_paths.append(audio_path.name)
+        return "Hej från Sverige."
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        _fake_transcribe,
+    )
+
+    source_record = _build_source_record(
+        dataset="repo_fixture_sv",
+        source_split="fixture",
+        dataset_row_id="repo-fixture-test-001",
+        speaker_id="speaker_test",
+        speaker_name="Test Speaker",
+        source_audio_path=source_audio_path,
+        reference_audio_path=None,
+        text_raw="Hej från Sverige.",
+    )
+    output_root = workspace_root / "build/reference/qwen3-tts-swedish-corpus"
+    corrupted_spool_path = (
+        output_root
+        / "spool/rows/repo_fixture_sv/fixture/speaker_test/repo-fixture-test-001.json"
+    )
+    corrupted_spool_path.parent.mkdir(parents=True, exist_ok=True)
+    corrupted_spool_path.write_text("", encoding="utf-8")
+
+    report = run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+            resume_row_processing=True,
+        ),
+        source_records=[source_record],
+    )
+
+    assert transcribed_paths == ["repo-fixture-test-001.wav"]
+    assert report.inventory_rows == 1
+    assert len(list((output_root / "spool/rows").rglob("*.json"))) == 1
+    assert json.loads(corrupted_spool_path.read_text(encoding="utf-8"))["dataset_row_id"] == (
+        "repo-fixture-test-001"
+    )
+
+
 def test_task103_finalization_stage_chunks_audio_code_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
