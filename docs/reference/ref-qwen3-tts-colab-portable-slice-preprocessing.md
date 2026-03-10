@@ -140,6 +140,34 @@ Forbidden notebook behavior:
 - notebook-only artifact shapes
 - diverging output contract
 
+## Localized Slice Follow-On
+
+The first live Colab proof exposed a real throughput issue: archive-member
+resolution plus staged-raw startup overhead can dominate small proof slices and
+make reruns expensive. The next approved optimization is therefore a
+repo-owned portable-slice localization stage.
+
+That stage must:
+
+1. read one portable selected-source bundle
+1. resolve the required local archive members from staged raw files
+1. extract those members into a deterministic plain-file tree under the slice
+   root
+1. persist one localized selected-source manifest with plain-file
+   `source_audio_locator` values
+
+After localization, the notebook should invoke Task 103 row-processing against
+the localized manifest instead of the original portable manifest. That keeps
+the notebook thin while removing repeated archive-resolution costs on rerun.
+
+The first follow-on worker mix for the localized Colab lane is:
+
+- `row_worker_count=8`
+- `gpu_asr_worker_count=2`
+
+This is an explicit throughput experiment on disposable Colab hardware, not a
+new default for Hemma.
+
 ## First Live Proof Shape
 
 The first real Colab execution should use:

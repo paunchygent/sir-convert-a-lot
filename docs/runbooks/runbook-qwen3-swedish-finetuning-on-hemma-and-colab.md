@@ -260,6 +260,17 @@ Rules:
 - Colab must not invent a notebook-only preprocessing implementation.
 - Colab must reuse the Task 103 runner through the `selected-source-records`
   source mode.
+
+When portable Colab throughput needs improvement, the next allowed optimization
+is a repo-owned portable-slice localization stage:
+
+- stage only the required raw files first
+- localize the selected slice into plain local audio files plus a persisted
+  localized selected-source manifest
+- then run Task 103 row-processing against that localized manifest
+
+Do not move archive extraction or locator resolution into notebook-only code.
+Keep those steps in repo-owned command surfaces.
 - Interrupted row-processing runs must eventually resume from the preserved run
   root and existing spool rows instead of restarting from zero; `T123` closes
   that remaining durability gap.

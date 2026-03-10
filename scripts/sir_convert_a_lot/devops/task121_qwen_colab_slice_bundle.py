@@ -21,9 +21,10 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import tarfile
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import IO, Literal, Sequence
 
 from huggingface_hub import hf_hub_download
 
@@ -33,6 +34,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import 
     write_jsonl,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
+    AudioLocator,
     SourceRecord,
     source_record_from_payload,
     source_record_to_payload,
@@ -41,12 +43,15 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import RIXVOX_D
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
     load_selected_source_records,
 )
-from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import RAW_CORPUS_SUBDIR
+from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
+    RAW_CORPUS_SUBDIR,
+    resolve_selected_source_records_for_local_data,
+)
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     default_data_root,
 )
 
-PortableSliceCommand = Literal["plan", "stage-required-files"]
+PortableSliceCommand = Literal["plan", "stage-required-files", "localize-slice"]
 RIXVOX_STAGING_PREFIX = Path("kblab_rixvox")
 
 
@@ -74,6 +79,17 @@ class PortableSliceSummary:
     required_files_count: int
 
 
+@dataclass(frozen=True)
+class LocalizedSliceSummary:
+    """Stable summary for one localized portable preprocessing slice."""
+
+    slice_root: str
+    localized_row_count: int
+    localized_audio_file_count: int
+    localized_manifest_path: str
+    localized_audio_root: str
+
+
 def portable_slice_dir(output_root: Path) -> Path:
     """Return the canonical portable-slice bundle directory."""
     return output_root
@@ -92,6 +108,21 @@ def portable_required_files_path(output_root: Path) -> Path:
 def portable_slice_summary_path(output_root: Path) -> Path:
     """Return the portable slice summary JSON path."""
     return portable_slice_dir(output_root) / "slice_summary.json"
+
+
+def localized_selected_source_records_path(slice_root: Path) -> Path:
+    """Return the localized selected-source JSONL path."""
+    return portable_slice_dir(slice_root) / "localized_selected_source_records.jsonl"
+
+
+def localized_audio_root(slice_root: Path) -> Path:
+    """Return the canonical localized-audio directory for one portable slice."""
+    return portable_slice_dir(slice_root) / "localized_audio"
+
+
+def localized_slice_summary_path(slice_root: Path) -> Path:
+    """Return the localized-slice summary JSON path."""
+    return portable_slice_dir(slice_root) / "localized_slice_summary.json"
 
 
 def build_portable_slice_bundle(
@@ -194,6 +225,43 @@ def load_portable_selected_source_records(slice_root: Path) -> list[SourceRecord
     ]
 
 
+def localize_portable_slice(
+    *,
+    slice_root: Path,
+    data_root: Path,
+) -> LocalizedSliceSummary:
+    """Materialize one portable slice into plain local files plus a localized manifest."""
+    portable_source_records = load_portable_selected_source_records(slice_root)
+    resolved_source_records = resolve_selected_source_records_for_local_data(
+        data_root=data_root,
+        source_records=portable_source_records,
+    )
+    localized_root = localized_audio_root(slice_root)
+    localized_source_records = _localize_source_records(
+        resolved_source_records,
+        localized_root=localized_root,
+    )
+    write_jsonl(
+        localized_selected_source_records_path(slice_root),
+        [source_record_to_payload(source_record) for source_record in localized_source_records],
+    )
+    summary = LocalizedSliceSummary(
+        slice_root=slice_root.as_posix(),
+        localized_row_count=len(localized_source_records),
+        localized_audio_file_count=len(
+            {
+                row.source_audio_locator.path
+                for row in localized_source_records
+                if row.source_audio_locator is not None
+            }
+        ),
+        localized_manifest_path=localized_selected_source_records_path(slice_root).as_posix(),
+        localized_audio_root=localized_root.as_posix(),
+    )
+    write_json(localized_slice_summary_path(slice_root), summary)
+    return summary
+
+
 def _required_files_for_portable_slice(
     *,
     source_records: Sequence[SourceRecord],
@@ -228,6 +296,87 @@ def _required_files_for_portable_slice(
             ),
         )
     return [required_files_by_filename[key] for key in sorted(required_files_by_filename)]
+
+
+def _localize_source_records(
+    source_records: Sequence[SourceRecord],
+    *,
+    localized_root: Path,
+) -> list[SourceRecord]:
+    """Extract archive-backed source rows into deterministic plain local files."""
+    localized_root.mkdir(parents=True, exist_ok=True)
+    localized_source_records: list[SourceRecord] = []
+    records_by_archive_path: dict[Path, list[SourceRecord]] = {}
+
+    for source_record in source_records:
+        source_audio_locator = source_record.source_audio_locator
+        if source_audio_locator is None:
+            raise ValueError("Resolved portable source records must include source_audio_locator.")
+        if source_audio_locator.archive_member is not None:
+            records_by_archive_path.setdefault(source_audio_locator.path, []).append(source_record)
+
+    localized_paths_by_key: dict[tuple[Path, str], Path] = {}
+    for archive_path in sorted(records_by_archive_path):
+        records_for_archive = records_by_archive_path[archive_path]
+        required_members = {
+            source_record.source_audio_locator.archive_member
+            for source_record in records_for_archive
+            if source_record.source_audio_locator is not None
+            and source_record.source_audio_locator.archive_member is not None
+        }
+        with tarfile.open(archive_path, "r:*") as archive:
+            extracted_member_count = 0
+            for member in archive.getmembers():
+                if not member.isfile():
+                    continue
+                member_name = member.name.strip()
+                if member_name not in required_members:
+                    continue
+                target_path = localized_root / member_name
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                if not target_path.exists():
+                    extracted_file = archive.extractfile(member)
+                    if extracted_file is None:
+                        raise FileNotFoundError(
+                            "Could not extract archive member "
+                            f"`{member_name}` from `{archive_path}`."
+                        )
+                    _write_extracted_file(target_path, extracted_file)
+                localized_paths_by_key[(archive_path, member_name)] = target_path
+                extracted_member_count += 1
+                if extracted_member_count >= len(required_members):
+                    break
+
+    for source_record in source_records:
+        source_audio_locator = source_record.source_audio_locator
+        if source_audio_locator is None:
+            raise ValueError("Resolved portable source records must include source_audio_locator.")
+        if source_audio_locator.archive_member is None:
+            localized_source_records.append(source_record)
+            continue
+        localized_path = localized_paths_by_key.get(
+            (source_audio_locator.path, source_audio_locator.archive_member)
+        )
+        if localized_path is None:
+            raise FileNotFoundError(
+                "Localized portable slice is missing extracted file for "
+                f"{source_audio_locator.path.as_posix()}::{source_audio_locator.archive_member}"
+            )
+        localized_source_records.append(
+            replace(
+                source_record,
+                source_audio_locator=AudioLocator(path=localized_path),
+            )
+        )
+
+    return localized_source_records
+
+
+def _write_extracted_file(target_path: Path, extracted_file: IO[bytes]) -> None:
+    """Persist one extracted tar member to a deterministic target path."""
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    with target_path.open("wb") as handle:
+        shutil.copyfileobj(extracted_file, handle)
 
 
 def _required_file_from_payload(payload: object) -> PortableSliceRequiredFile:
@@ -278,6 +427,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     stage_parser.add_argument("--slice-root", type=Path, required=True)
     stage_parser.add_argument("--data-root", type=Path, default=default_data_root())
     stage_parser.add_argument("--cache-dir", type=Path, default=None)
+
+    localize_parser = subparsers.add_parser("localize-slice")
+    localize_parser.add_argument("--slice-root", type=Path, required=True)
+    localize_parser.add_argument("--data-root", type=Path, default=default_data_root())
     return parser.parse_args(argv)
 
 
@@ -285,31 +438,38 @@ def main(argv: list[str] | None = None) -> int:
     """Run the portable Colab slice planner or required-file staging surface."""
     args = _parse_args(argv)
     if args.command == "plan":
-        summary = build_portable_slice_bundle(
+        planned_summary = build_portable_slice_bundle(
             source_run_root=Path(args.source_run_root),
             output_root=Path(args.output_root),
             slice_count=int(args.slice_count),
             slice_index=int(args.slice_index),
             rixvox_revision=None if args.rixvox_revision is None else str(args.rixvox_revision),
         )
-        print(json.dumps(asdict(summary), indent=2, ensure_ascii=False, sort_keys=True))
+        print(json.dumps(asdict(planned_summary), indent=2, ensure_ascii=False, sort_keys=True))
         return 0
-    staged_paths = stage_required_files_for_portable_slice(
+    if args.command == "stage-required-files":
+        staged_paths = stage_required_files_for_portable_slice(
+            slice_root=Path(args.slice_root),
+            data_root=Path(args.data_root),
+            cache_dir=None if args.cache_dir is None else Path(args.cache_dir),
+        )
+        print(
+            json.dumps(
+                {
+                    "slice_root": Path(args.slice_root).as_posix(),
+                    "staged_paths": [path.as_posix() for path in staged_paths],
+                },
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+    localized_summary = localize_portable_slice(
         slice_root=Path(args.slice_root),
         data_root=Path(args.data_root),
-        cache_dir=None if args.cache_dir is None else Path(args.cache_dir),
     )
-    print(
-        json.dumps(
-            {
-                "slice_root": Path(args.slice_root).as_posix(),
-                "staged_paths": [path.as_posix() for path in staged_paths],
-            },
-            indent=2,
-            ensure_ascii=False,
-            sort_keys=True,
-        )
-    )
+    print(json.dumps(asdict(localized_summary), indent=2, ensure_ascii=False, sort_keys=True))
     return 0
 
 

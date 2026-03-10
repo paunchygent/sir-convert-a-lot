@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-09'
+last_updated: '2026-03-10'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -187,34 +187,32 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     heartbeat fields across stage completion, and reports-stage promotion is
     now the only canonical promotion path.
 
-- 2026-03-05:
+- 2026-03-10:
 
-  - Re-terminalized `T73` with sustained-load evidence and completed `T76-T77`;
-    see the linked Epic 06 / Story 20 task docs for detail.
-
-- 2026-03-04:
-
-  - Planned Epic 06 long PDF reliability/performance work and completed
-    `T67-T71` plus `T75`; detail remains in the linked task docs and tests.
+  - Completed the local `T124` Colab throughput-hardening slice: the portable
+    slice CLI now supports repo-owned localization, extracts only required
+    archive members into `localized_audio/`, persists
+    `localized_selected_source_records.jsonl` plus
+    `localized_slice_summary.json`, and the notebook remains a thin
+    orchestrator around staging, localization, and canonical Task 103
+    row-processing with the `8:2` Colab worker mix.
+  - Revalidated `T124` locally with `validate-tasks`, `validate-docs`,
+    focused Ruff, focused mypy, focused pytest, `index-tasks`, and a fresh
+    notebook JSON parse sanity check.
 
 ## Next Actions
 
-- Current local execution focus is Epic 07 Story 23 listening review on `T91`, then `T93`, then `T83`; `T82` stays deferred.
+- Current local execution focus is Epic 08 `T124` close-out: commit/push the
+  localized portable-slice hardening, pull it on Hemma, then rerun the same
+  Colab proof slice with the localized manifest at `8:2`.
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, and `T115` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` proved the bounded detached pilot lane, and `T115` closed the unattended-resume gap.
 - Active corpus-expansion focus is `T116`: broaden staged `rixvox` train coverage (`train_0` plus `train_1` through `train_23`) and run one detached `row-processing` window with `row_worker_count=4` and `gpu_asr_worker_count=2`; use `2` hours as the first health gate and keep the same run alive into `8` to `10` hours if heartbeat remains healthy.
-- `T119` is now implemented and first live validation is complete: detached Hemma launch `task114-source-selection-20260309t221342z` proved bounded `rixvox` train source selection, bounded audio-locator resolution, persisted reusable `source_selection/` artifacts, and truthful preflight status instead of lingering in `allocated`.
-- The remaining `T119` acceptance gap is one renewed aggressive row-processing probe on top of that staged `source-selection` foundation, so the next `12:x` experiment measures real worker startup/throughput rather than full-train parquet preflight.
-- Opened `T121` for a portable Colab row-processing lane that consumes a Hemma-issued unique slice bundle, stages only required raw files, and reuses Task 103 instead of a notebook-only implementation.
-- Opened `T122` for the first live Colab GPU proof of that lane: use one fresh bounded Hemma `source-selection` universe, issue one portable slice, and run notebook-backed `selected-source-records` row-processing with `4:1` Colab workers without overlapping the live Hemma `10k` campaign.
-- Opened `T123` after the first live Colab proof exposed the remaining
-  preprocessing durability gap: interrupted `row-processing` runs still restart
-  from zero because the stage wipes the run root on rerun. `T123` now hardens
-  Task 103 and the Colab notebook with true row-processing resume semantics
-  based on preserved spool rows.
+- `T119` is implemented and live-validated: detached Hemma source-selection now persists reusable bounded `source_selection/` artifacts with truthful preflight status, so aggressive worker probes measure real startup/throughput instead of full-train parquet preflight.
+- Colab follow-on work is now `T121-T124`: portable slice bundling is in place, the first live GPU proof established the invariant-compatible lane, `T123` added true row-processing resume semantics, and `T124` now hardens throughput by adding a repo-owned localization stage before rerunning the same proof slice with an `8:2` worker mix.
 - Follow-on hardening after the first detached `T108` repro is now in place:
   `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later
   provenance-safe ASR relabel candidate task.
-- `T115` evidence under `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/` proves durable checkpoint at step `2`, intentional stop, detached resume, and successful completion at step `24`.
-- Other devs are closing Epic 06 `T74`; sync backlog terminal states once
-  their Hemma evidence lands.
-- Follow-on cleanup queue after the active TTS benchmark lane remains: `T62`, `T25` + `T26`, `T12`, `T08`.
+- `T115` evidence under
+  `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/`
+  proves durable checkpoint, intentional stop, detached resume, and
+  successful completion.

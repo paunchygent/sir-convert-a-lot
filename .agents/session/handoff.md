@@ -1,222 +1,61 @@
 # Session Handoff
 
-## Current Session Summary (2026-03-08)
+## Current Session Summary (2026-03-10)
 
-- Started `T106` as the script-free public-corpus extension lane for the Qwen
-  Swedish fine-tuning track:
+- Completed the local `T124` throughput-hardening slice for portable Colab
+  Qwen preprocessing:
+  - `scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py`
+    now exposes `localize-slice`
+  - the localization stage resolves portable selected-source rows against
+    staged raw files, extracts only required archive members into
+    `localized_audio/`, and persists:
+    - `localized_selected_source_records.jsonl`
+    - `localized_slice_summary.json`
+  - the localized manifest rewrites archive-backed locators to plain local
+    audio-file locators so reruns avoid repeated archive-member resolution
 
-  - added `task-106-add-script-free-hugging-face-corpus-adapters-to-the-qwen-swedish-preprocessing-pipeline.md`
-  - hardened the docs so legacy `datasets<4` script loading is forbidden
-  - codified Hemma-only acquisition and DATA-disk corpus storage
+- Kept the notebook thin and repo-owned:
+  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now stages
+    required files, runs `localize-slice`, and then invokes canonical Task 103
+    row-processing against the localized manifest
+  - the Colab worker mix is now:
+    - `row_worker_count=8`
+    - `gpu_asr_worker_count=2`
 
-- Refactored the Task 103 preprocessing core into adapter-shaped source
-  contracts and added the first real public-corpus adapters:
-
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_core.py`
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_family_assignment.py`
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_models.py`
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_repo_fixture.py`
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_fleurs.py`
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_waxholm.py`
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_source_rixvox.py`
-
-- Added the first Hemma-only targeted acquisition surface for real Swedish
-  corpus staging:
-
-  - `scripts/sir_convert_a_lot/devops/run_task106_hemma_qwen_corpus_acquisition.py`
-  - `scripts/sir_convert_a_lot/devops/task106_qwen_corpus_acquisition_runtime.py`
-  - `pyproject.toml`
-    - `task-106-acquire`
-
-- Local validation for the new `T103` / `T106` slice passed:
-
-  - `pdm run task-106-acquire --help`
-  - `pdm run python -m pytest -q tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py tests/sir_convert_a_lot/test_task106_qwen_corpus_acquisition.py`
-  - `pdm run python -m mypy --follow-imports=skip ...`
-  - `pdm run validate-tasks`
-  - `pdm run validate-docs`
-  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-
-- Opened the new Epic 08 Qwen Swedish fine-tuning lane as a parallel track to
-  Epic 07 rather than overloading the existing sidecar-delivery scope:
-
-  - `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
-  - `docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
-  - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
-  - `docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md`
-  - `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
-  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
-  - `docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md`
-  - `docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md`
-  - `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
-
-- Added the dedicated Qwen Swedish fine-tuning operational surfaces:
-
+- Updated docs-as-code surfaces for the new localized Colab lane:
+  - `docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md`
+    is terminalized with deliverables/checklists complete
+  - `docs/reference/ref-qwen3-tts-colab-portable-slice-preprocessing.md`
+    records the localization rationale and the `8:2` probe
   - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
-  - `.agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
-  - `.agents/skills/speech-model-finetuning-on-hemma/SKILL.md`
+    now treats localization as the next allowed Colab throughput optimization
+  - `docs/backlog/current.md` archives the session outcome and updates next
+    actions
 
-- Re-enabled Triton flash attention as the default in the Task 79 Qwen Hemma
-  benchmark lane:
+## Validation Evidence
 
-  - `scripts/sir_convert_a_lot/devops/run_task79_hemma_tts_sidecar_benchmark.py`
-  - `scripts/sir_convert_a_lot/devops/task79_hemma_tts_sidecar_runtime.py`
-  - `scripts/sir_convert_a_lot/devops/task79_hemma_tts_sidecar_reporting.py`
-  - `tests/sir_convert_a_lot/test_task79_hemma_tts_sidecar_benchmark.py`
-  - benchmark reports now record whether Triton flash attention was enabled
+- `pdm run validate-tasks`
+- `pdm run validate-docs`
+- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py`
+- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py scripts/sir_convert_a_lot/devops/task103_qwen_staged_public_corpus.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py -q`
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- `pdm run python -c "import json, pathlib; json.loads(pathlib.Path('colab_ml_training/qwen_portable_slice_row_processing.ipynb').read_text(encoding='utf-8')); print('notebook-json-ok')"`
 
-- Cross-linked the existing TTS planning docs so Epic 07 / Story 23 stay
-  delivery-and-benchmark focused while Epic 08 owns the Sir-trained Qwen lane:
+## Next Session Goals
 
-  - `docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md`
-  - `docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md`
-  - `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
-  - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
-  - `docs/backlog/current.md`
-
-- Added the research-handoff surface for the next Epic 08 decisions:
-
-  - `docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md`
-  - `docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md`
-  - `.agents/repomix_packages/research-qwen3-swedish-finetuning-brief.md`
-  - `.agents/repomix_packages/repomix-qwen3-swedish-finetuning-research-context.xml`
-
-- Validation evidence for this session's Qwen planning/runtime work:
-
-  - `pdm run format-all` (pass after cleanup)
-  - `pdm run lint-fix` (pass)
-  - `pdm run typecheck-all` (pass)
-  - `pdm run pytest-root tests/sir_convert_a_lot/test_task79_hemma_tts_sidecar_benchmark.py -q` (pass: `15 passed`)
-  - `pdm run validate-tasks` (pass)
-  - `pdm run validate-docs` (pass)
-  - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)
-
-- Implemented and pushed `e3a3a83be2656f2ad1bae46dad83a59fcbc5c1dc`
-  (`feat: align F5 reference duration and add segmented lane`):
-
-  - the F5 sidecar reference-prep cap is now configurable and defaults to
-    `12.0` seconds instead of the earlier hard `10`
-  - Task 85 now supports a repo-owned segmented F5 lane with deterministic
-    segment planning, chunk artifacts, stitching, and segment-debug evidence
-  - the public ADR-0007 sidecar contract is unchanged; segmentation lives at
-    the benchmark layer
-
-- Ran the live Hemma `T97` corrected Christian Hedlund rerun successfully:
-
-  - command root:
-    `pdm run run-hemma -- pdm run benchmark:task-85 --output-root build/verification/task-97-f5-reference-12s-hemma ... --reference-max-seconds 12.0`
-  - succeeded with:
-    - `run_id=20260308T015946Z`
-    - `repo_head=e3a3a83be2656f2ad1bae46dad83a59fcbc5c1dc`
-    - `image_id=sha256:f2161b09aefd1b000b4a6c8476e334784dd00ce9f7d5a7101259e458a53eafab`
-    - `reference_audio_duration_seconds=11.5`
-    - `sample_sha256=46c31cbb6f8eb685d64a321afde81e5387c60fed444d6d9ba2e71d91bf9f9ab7`
-    - output duration `18.538` seconds
-  - synced evidence locally under
-    `build/verification/task-97-f5-reference-12s-hemma/`
-
-- Ran the live Hemma segmented `T97` comparison lane successfully:
-
-  - command root:
-    `pdm run run-hemma -- pdm run benchmark:task-85 --output-root build/verification/task-97-f5-segmented-hemma ... --segment-text --segment-max-chars 160 --segment-cross-fade-ms 80 --segment-stitch-mode simple --skip-build`
-  - succeeded with:
-    - `run_id=20260308T020119Z`
-    - `repo_head=e3a3a83be2656f2ad1bae46dad83a59fcbc5c1dc`
-    - reused image `sha256:f2161b09aefd1b000b4a6c8476e334784dd00ce9f7d5a7101259e458a53eafab`
-    - `segment_count=4`
-    - `sample_sha256=12255eb80ab66b897425b00c09ab8feb87243e7e1008afacdcc25d7e14307b01`
-    - output duration `18.362` seconds
-  - synced evidence locally under
-    `build/verification/task-97-f5-segmented-hemma/`
-
-- Current `T97` recommendation is evidence-backed:
-
-  - the biggest improvement came from fixing the `10s`/`11.5s` reference
-    mismatch
-  - segmented F5 is worth keeping as a comparison/debug lane
-  - segmented F5 is not yet justified as the default path because its measured
-    output length is very close to the corrected single-pass run
-
-- Implemented and pushed `ec3d6ebecf9de24de6aab3d8c836ffc4e7aa2254`
-  (`feat: expose F5 tuning controls on Hemma`):
-
-  - Task 85 now exposes `speed`, `fix_duration`, `cross_fade_duration`,
-    `target_rms`, `load_vocoder_from_local`, and `--probe-text-file`
-  - the F5 sidecar now writes file-backed prompt text through `gen_file`
-  - opened and documented `T95` for the exact upstream F5 voice-tag surface
-
-- Ran the live Hemma `T95` Christian Hedlund reference rerun successfully:
-
-  - command root:
-    `pdm run run-hemma -- pdm run benchmark:task-85 --output-root build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma ...`
-  - succeeded with:
-    - `run_id=20260308T012850Z`
-    - `repo_head=ec3d6ebecf9de24de6aab3d8c836ffc4e7aa2254`
-    - `image_id=sha256:3ab9b7a15f25da99ea677670a3bce217055cf2a06ec4be2d54f1166d7d21327e`
-    - `readiness_seconds=3.13`
-    - `sample_sha256=50b38ad889dbe993668c370d28092c7a3e867052dffe7dc2e1e3c5f7a25117c5`
-  - synced evidence locally under
-    `build/verification/task-95-f5-tuning-controls-and-exact-voice-tag-support-on-hemma/`
-
-- Confirmed exact upstream `infer_cli` voice-tag behavior:
-
-  - accepted form is `[voice_name]`
-  - actual parser regex is `\[(\w+)\]`
-  - unknown/missing tags fall back to `main`
-  - no explicit IPA or SSML/paralinguistic tag support was found in the
-    installed CLI path
-
-- Committed and pushed the Task 85 runtime-source switch to `main`:
-
-  - `ec17e180efb48ad8f228e1df15f4e597ade156ff` switches the F5 sidecar from
-    `SWivid/F5-TTS@1.1.17` to `ChiliOlavi/F5-TTS@swedish-tts`
-  - `af36f5085d137bc20116086376e4d7e9b36dc9b1` adds `torchcodec` to the image
-    so the branch-backed runtime can complete `torchaudio.load()`
-
-- Ran the canonical live Hemma `T85` benchmark on the updated repo head:
-
-  - command:
-    `pdm run run-hemma -- pdm run benchmark:task-85 --reference-audio build/verification/task-85-f5-tts-hemma/inputs/reference_10s_sv.wav --reference-transcript-file build/verification/task-85-f5-tts-hemma/inputs/reference_10s_sv.txt`
-  - branch-backed rerun succeeded with:
-    - `run_id=20260308T002337Z`
-    - `repo_head=af36f5085d137bc20116086376e4d7e9b36dc9b1`
-    - `image_id=sha256:e69ffa81f883369bbde227fee1d910da3b249484c0e595e210011b147e6eb04e`
-    - `readiness_seconds=6.123`
-    - `sample_sha256=2735c0536aebc3f5324333d3a9deb95492721230b2e10ff3d4989019078e1c82`
-
-- Synced the refreshed Hemma evidence back locally under:
-
-  - `build/verification/task-85-f5-tts-hemma/report.json`
-  - `build/verification/task-85-f5-tts-hemma/report.md`
-  - `build/verification/task-85-f5-tts-hemma/docker_logs.txt`
-  - `build/verification/task-85-f5-tts-hemma/f5_help.txt`
-  - `build/verification/task-85-f5-tts-hemma/reference_transcript.txt`
-  - `build/verification/task-85-f5-tts-hemma/artifacts/sample_sv.wav`
-
-- `T85` is closed as a technically successful but qualitatively rejected Swedish cloning lane.
-
-- `T86` remains the canonical Chatterbox benchmark surface on Hemma and has already been proven
-  end to end with official multilingual runtime startup, smoke synthesis, and Swedish cloning.
-
-- Implemented and merged `T89`:
-
-  - `containers/textprep-espeak-phonemizer/Dockerfile`
-  - `scripts/sir_convert_a_lot/textprep/__init__.py`
-  - `scripts/sir_convert_a_lot/textprep/espeak_phonemizer_cli.py`
-  - `scripts/sir_convert_a_lot/devops/run_task89_chatterbox_espeak_experiment.py`
-  - `scripts/sir_convert_a_lot/devops/run_task89_hemma_chatterbox_espeak_experiment.py`
-  - `tests/sir_convert_a_lot/test_task89_chatterbox_espeak.py`
-
-- Extended the Task 86 benchmark surface to support file-backed text input via
-  `--probe-text-file`.
-
-- Fixed two real runtime issues discovered while running `T89` on Hemma:
-
-  - Chatterbox startup was relying on a live `spacy_pkuseg` model download, so
-    `containers/tts-sidecar-chatterbox/Dockerfile` now prefetches the
-    `spacy_ontonotes` asset during image build.
-  - Task 89 could not explicitly request a Chatterbox image rebuild; the
-    benchmark surface now uses `--build-benchmark-image` for that path.
+- Commit and push the `T124` local slice.
+- Pull the updated repo on Hemma so the notebook and CLI surfaces match.
+- Reload the Colab notebook from Hemma and rerun the same proof slice with:
+  - the localized manifest
+  - `row_worker_count=8`
+  - `gpu_asr_worker_count=2`
+- If throughput is still poor after localization, add timing instrumentation
+  for:
+  - required-file staging
+  - localization
+  - first-row startup
+  - steady-state rows per minute
 
 - Completed the live Hemma `T89` experiment and synced the evidence bundle back locally:
 

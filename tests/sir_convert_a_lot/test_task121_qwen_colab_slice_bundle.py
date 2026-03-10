@@ -8,11 +8,13 @@ import tarfile
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
+    iter_jsonl_objects,
     write_jsonl,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
     AudioLocator,
     SourceRecord,
+    source_record_from_payload,
     source_record_to_payload,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
@@ -22,6 +24,9 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
 from scripts.sir_convert_a_lot.devops.task121_qwen_colab_slice_bundle import (
     build_portable_slice_bundle,
     load_portable_selected_source_records,
+    localize_portable_slice,
+    localized_selected_source_records_path,
+    localized_slice_summary_path,
     portable_required_files_path,
     portable_slice_summary_path,
     stage_required_files_for_portable_slice,
@@ -195,3 +200,65 @@ def test_task121_stage_required_files_for_portable_slice(tmp_path: Path, monkeyp
         tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
     ]
     assert staged_paths[0].is_file()
+
+
+def test_task121_localize_portable_slice_persists_plain_file_manifest(tmp_path: Path) -> None:
+    """Portable slice localization should persist plain local files plus a manifest."""
+    slice_root = tmp_path / "slice"
+    staged_audio_path = tmp_path / "needed.wav"
+    _write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
+
+    staged_archive_path = (
+        tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
+    )
+    staged_archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(staged_archive_path, "w:gz") as archive:
+        audio_bytes = staged_audio_path.read_bytes()
+        member = tarfile.TarInfo(name="speaker-0/clip-0.wav")
+        member.size = len(audio_bytes)
+        archive.addfile(member, io.BytesIO(audio_bytes))
+
+    write_jsonl(
+        slice_root / "selected_source_records.jsonl",
+        [
+            source_record_to_payload(
+                SourceRecord(
+                    dataset="rixvox",
+                    source_split="train",
+                    dataset_row_id="row-0",
+                    speaker_id="speaker-0",
+                    speaker_name="speaker-0",
+                    speaker_from_id=True,
+                    source_audio_path="speaker-0/clip-0.wav",
+                    source_audio_locator=None,
+                    text_raw="Hej från Sverige.",
+                    language="sv-SE",
+                    speaker_total_hours=1.0,
+                    has_label_files=False,
+                    speaker_audio_meta_ok=True,
+                    source_sample_rate_hz=16_000,
+                    duration_seconds=5.0,
+                )
+            )
+        ],
+    )
+    (slice_root / "required_hub_files.json").write_text("[]", encoding="utf-8")
+
+    summary = localize_portable_slice(
+        slice_root=slice_root,
+        data_root=tmp_path / "data_root",
+    )
+
+    localized_rows = [
+        source_record_from_payload(payload)
+        for payload in iter_jsonl_objects(localized_selected_source_records_path(slice_root))
+    ]
+    assert summary.localized_row_count == 1
+    assert summary.localized_audio_file_count == 1
+    assert localized_slice_summary_path(slice_root).is_file()
+    assert len(localized_rows) == 1
+    localized_locator = localized_rows[0].source_audio_locator
+    assert localized_locator is not None
+    assert localized_locator.archive_member is None
+    assert localized_locator.path.is_file()
+    assert localized_locator.path.read_bytes() == staged_audio_path.read_bytes()
