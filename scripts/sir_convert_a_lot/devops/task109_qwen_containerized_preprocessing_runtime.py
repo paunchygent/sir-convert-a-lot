@@ -58,6 +58,7 @@ class Task109ContainerizedPreprocessingSettings:
     audio_codes_chunk_size: int
     row_worker_count: int
     gpu_asr_worker_count: int
+    resume_row_processing: bool
 
 
 @dataclass(frozen=True)
@@ -225,6 +226,8 @@ def build_containerized_preprocessing_command(
         )
     if settings.task103_promote_on_success:
         command.append("--promote-on-success")
+    if settings.resume_row_processing:
+        command.append("--resume-row-processing")
     if settings.rixvox_max_rows_per_split is not None:
         command.extend(
             [

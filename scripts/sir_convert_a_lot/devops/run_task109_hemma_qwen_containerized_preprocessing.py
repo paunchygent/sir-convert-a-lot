@@ -259,6 +259,14 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         default=DEFAULT_GPU_ASR_WORKER_COUNT,
     )
     parser.add_argument(
+        "--resume-row-processing",
+        action="store_true",
+        help=(
+            "Resume a preserved Task 103 row-processing run root instead of "
+            "wiping spool/audio state."
+        ),
+    )
+    parser.add_argument(
         "--skip-build",
         action="store_true",
         help="Skip `docker buildx build` when the image already exists locally.",
@@ -269,6 +277,10 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
             "Task 109 no longer treats `task103-stage=all` as canonical on Hemma. "
             "Use the Task 114 stage orchestrator instead, or pass "
             "`--allow-noncanonical-stage-all` only for explicit debugging."
+        )
+    if bool(args.resume_row_processing) and str(args.task103_stage) != "row-processing":
+        raise SystemExit(
+            "`--resume-row-processing` is only valid for `task103-stage=row-processing`."
         )
     rixvox_splits = tuple(args.rixvox_splits or DEFAULT_RIXVOX_SPLITS)
     return Task109ContainerizedPreprocessingSettings(
@@ -296,6 +308,7 @@ def _parse_args(argv: list[str] | None) -> Task109ContainerizedPreprocessingSett
         audio_codes_chunk_size=int(args.audio_codes_chunk_size),
         row_worker_count=int(args.row_worker_count),
         gpu_asr_worker_count=int(args.gpu_asr_worker_count),
+        resume_row_processing=bool(args.resume_row_processing),
     )
 
 

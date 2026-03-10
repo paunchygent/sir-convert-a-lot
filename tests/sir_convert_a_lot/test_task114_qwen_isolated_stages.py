@@ -33,6 +33,15 @@ def test_task114_parser_launch_defaults() -> None:
 
     assert args.task103_stage == "auto"
     assert args.task103_promote_on_success is False
+    assert args.resume_row_processing is False
+
+
+def test_task114_parser_accepts_resume_row_processing_flag() -> None:
+    """The Task 114 runner should accept row-processing resume launches."""
+    parser = _build_parser()
+    args = parser.parse_args(["launch", "--resume-row-processing"])
+
+    assert args.resume_row_processing is True
 
 
 def test_task114_parser_accepts_stop_command() -> None:

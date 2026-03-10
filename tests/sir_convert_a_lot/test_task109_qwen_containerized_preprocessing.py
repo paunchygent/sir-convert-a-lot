@@ -60,6 +60,7 @@ def test_task109_parse_args_defaults() -> None:
     assert settings.audio_codes_chunk_size == DEFAULT_AUDIO_CODES_CHUNK_SIZE
     assert settings.row_worker_count == DEFAULT_ROW_WORKER_COUNT
     assert settings.gpu_asr_worker_count == DEFAULT_GPU_ASR_WORKER_COUNT
+    assert settings.resume_row_processing is False
     assert settings.build_image is True
 
 
@@ -98,6 +99,7 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
         audio_codes_chunk_size=4,
         row_worker_count=3,
         gpu_asr_worker_count=2,
+        resume_row_processing=True,
     )
     repo_root = Path("/home/paunchygent/apps/sir-convert-a-lot")
     hf_mount = MountResolution(
@@ -157,6 +159,7 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "3" in command
     assert "--gpu-asr-worker-count" in command
     assert "2" in command
+    assert "--resume-row-processing" in command
     assert "--finalization-families" in command
     assert "swedish_scaleup_train" in command
 
@@ -194,6 +197,7 @@ def test_task109_run_containerized_preprocessing_parses_inner_report(
         audio_codes_chunk_size=8,
         row_worker_count=1,
         gpu_asr_worker_count=1,
+        resume_row_processing=False,
     )
     repo_root = Path("/home/paunchygent/apps/sir-convert-a-lot")
     hf_mount = MountResolution(

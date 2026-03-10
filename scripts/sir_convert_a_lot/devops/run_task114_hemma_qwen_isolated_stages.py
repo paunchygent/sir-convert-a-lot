@@ -135,6 +135,14 @@ def _build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_GPU_ASR_WORKER_COUNT,
     )
     launch.add_argument(
+        "--resume-row-processing",
+        action="store_true",
+        help=(
+            "Resume a preserved Task 103 row-processing run root instead of "
+            "wiping spool/audio state."
+        ),
+    )
+    launch.add_argument(
         "--launch-id",
         default=None,
         help="Optional stable launch id; defaults to a timestamped id.",
@@ -298,6 +306,10 @@ def _build_settings(
     task103_promote_on_success = bool(args.task103_promote_on_success)
     if task103_promote_on_success and task103_stage != "reports":
         raise SystemExit("`--task103-promote-on-success` is only allowed for the reports stage.")
+    if bool(args.resume_row_processing) and task103_stage != "row-processing":
+        raise SystemExit(
+            "`--resume-row-processing` is only valid when launching the row-processing stage."
+        )
     return Task109ContainerizedPreprocessingSettings(
         output_root=Path(args.output_root),
         task103_runs_root=Path(args.task103_runs_root),
@@ -323,6 +335,7 @@ def _build_settings(
         audio_codes_chunk_size=int(args.audio_codes_chunk_size),
         row_worker_count=int(args.row_worker_count),
         gpu_asr_worker_count=int(args.gpu_asr_worker_count),
+        resume_row_processing=bool(args.resume_row_processing),
     )
 
 
