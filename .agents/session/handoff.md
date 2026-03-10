@@ -88,6 +88,29 @@
     though it stopped before the resumed `2026-03-10 17:40Z` segment and should
     be relaunched or refreshed for fresh historical telemetry
 
+- Completed the large-slice Hemma preparation and bundle commit:
+  - fresh source-selection launch
+    `task129-colab-scale-selection-launch-20260311a` completed at
+    `2026-03-10T19:48:59Z`
+  - bounded source-selection summary reported `total_selected_rows=36024`
+  - the Colab-owned bundle summary reported:
+    - `selected_row_count=18000`
+    - `required_files_count=6`
+    - `datasets=[\"rixvox\"]`
+    - `source_splits=[\"train\"]`
+  - committed portable bundle:
+    `colab_ml_training/proof_inputs/task129-scale-slice-1-of-2-20260311a-bundle.tar.gz`
+  - pushed from Hemma as `bc2addd` (`chore: add task129 colab scale slice bundle`)
+
+- Completed `T130` after the first task129 notebook launch exposed one stale
+  checkout failure mode:
+  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now refreshes
+    any existing `/content/sir-convert-a-lot` checkout with `fetch`,
+    `checkout main`, and `pull --ff-only` before looking for the committed
+    portable bundle
+  - this fixes the false `FileNotFoundError` path where the bundle existed on
+    `main` but the already-open Colab repo clone predated the bundle commit
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
@@ -101,16 +124,20 @@
 - `pdm run run-hemma -- pdm run task-114-isolated-stages status --launch-root build/verification/task-114-qwen-isolated-stages/task116-rowproc-5x2-resume-20260310b`
 - `pdm run run-hemma --shell 'find /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task116-rowproc-5x2-20260309c/spool/rows -type f | wc -l'`
 - `pdm run run-hemma --shell 'find /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task116-rowproc-5x2-20260309c/audio_24k -type f | wc -l'`
+- `pdm run run-hemma -- pdm run task-103-preprocess-public-corpus launch --task103-stage source-selection --launch-id task129-colab-scale-selection-launch-20260311a --task103-run-id task129-colab-scale-selection-20260311a --rixvox-split train --rixvox-max-rows-per-split 36000 --skip-build`
+- `pdm run run-hemma -- sudo -n cat /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task129-colab-scale-selection-20260311a/status.json`
+- `pdm run run-hemma -- sudo -n /home/paunchygent/.local/bin/pdm run task-121-colab-slice-bundle plan --source-run-root /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task129-colab-scale-selection-20260311a --output-root /srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-colab-slices/task129-scale-slice-1-of-2-20260311a --slice-count 2 --slice-index 1`
+- `sha256sum colab_ml_training/proof_inputs/task129-scale-slice-1-of-2-20260311a-bundle.tar.gz`
+- `pdm run python -c "import json, pathlib; json.loads(pathlib.Path('colab_ml_training/qwen_portable_slice_row_processing.ipynb').read_text(encoding='utf-8')); print('notebook-json-ok')"`
+- `pdm run validate-tasks`
+- `pdm run validate-docs`
+- `pdm run index-tasks --root \"$(pwd)/docs/backlog\" --out \"/tmp/sir_tasks_index.md\" --fail-on-missing`
 
 ## Next Session Goals
 
-- Prepare the next large Colab-owned slice on Hemma with:
-  - one fresh bounded `rixvox train` source-selection universe capped at
-    `36,000` rows
-  - `slice_count=2`
-  - Colab assigned `slice_index=1`
-- Commit and push the `task129-scale-slice-1-of-2-20260311a` bundle from the
-  Hemma repo clone so the notebook can stay press-run simple.
+- Relaunch the current Colab notebook from the refreshed repo checkout and
+  confirm it now sees the committed
+  `task129-scale-slice-1-of-2-20260311a-bundle.tar.gz` bundle automatically.
 - Launch the next Colab run with the persistent Google Drive `RUN_ROOT` and
   `row_worker_count=10`, `gpu_asr_worker_count=2`.
 - Refresh or relaunch the detached Task 116 Hemma resource monitor so resumed
