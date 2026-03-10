@@ -44,6 +44,8 @@ canonical Task 103 run-root artifact contract.
 - [ ] One portable slice bundle issued from that run root.
 - [ ] One Colab notebook flow that can be executed top-to-bottom in a normal
   Colab UI session.
+- [ ] One committed proof bundle that the notebook can extract without manual
+  bundle assembly.
 - [ ] One live Colab row-processing run root with canonical Task 103 artifacts.
 - [ ] One verification summary comparing the Colab run-root shape against the
   Hemma row-processing contract.
@@ -64,6 +66,8 @@ canonical Task 103 run-root artifact contract.
   - `status.json`
 - [ ] The notebook remains orchestration only, not a second preprocessing
   implementation.
+- [ ] The notebook can prepare its proof slice from a committed proof bundle
+  without requiring manual pre-run file upload steps.
 - [ ] The proof records the exact Colab worker mix:
   - `row_worker_count=4`
   - `gpu_asr_worker_count=1`
