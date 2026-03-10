@@ -47,13 +47,21 @@
   - the notebook bootstrap now also accepts `SIR_CONVERT_A_LOT_REPO_URL` for
     intentional overrides
 
+- Completed `T127` and `T128` as live Colab operator guardrails:
+  - `scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py` now
+    prints progress for each required archive, localization start/end per
+    archive, extracted/reused file counts, and elapsed time for staging and
+    localization
+  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now checks
+    `nvidia-smi` plus `torch.cuda.is_available()` before launching Task 103 and
+    fails immediately with a clear GPU-runtime error if CUDA is unavailable
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
 - `pdm run validate-docs`
 - `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py`
-- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py scripts/sir_convert_a_lot/devops/task103_qwen_staged_public_corpus.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py -q`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py -q`
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - `pdm run python -c "import json, pathlib; json.loads(pathlib.Path('colab_ml_training/qwen_portable_slice_row_processing.ipynb').read_text(encoding='utf-8')); print('notebook-json-ok')"`
 - `pdm run python /Users/olofs_mba/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/sir-convert-a-lot-colab-hemma`
@@ -65,9 +73,7 @@
   - the localized manifest
   - `row_worker_count=8`
   - `gpu_asr_worker_count=2`
-- If throughput is still poor after localization, add timing instrumentation
-  for:
-  - required-file staging
-  - localization
-  - first-row startup
-  - steady-state rows per minute
+- Confirm the new archive/timing progress logs appear during staging and
+  localization.
+- Confirm the new GPU preflight fails fast on CPU-only runtimes and prints the
+  healthy device summary on GPU runtimes.

@@ -199,19 +199,21 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Revalidated `T124`, pushed `d8d2aef`, synced Hemma, completed `T125` with
     the new `sir-convert-a-lot-colab-hemma` skill, and fixed `T126` so the
     Colab notebook now defaults to the canonical GitHub repo URL.
+  - Added `T127` and `T128` guardrails for live Colab use: staging/localization
+    now emit archive-level progress plus timings, and the row-processing cell
+    now fails fast when `nvidia-smi`/CUDA is unavailable.
 
 ## Next Actions
 
-- Current local execution focus is Epic 08 Colab follow-through: rerun the
-  same proof slice from the Hemma-synced repo with the localized manifest at
-  `8:2`, then capture throughput evidence and confirm the bootstrap fix.
+- Current local execution focus is Epic 08 Colab follow-through: rerun the same
+  proof slice from the Hemma-synced repo with the localized manifest at `8:2`,
+  then capture throughput evidence and confirm the Colab guardrails.
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, and `T115` are complete. The recovered `T108` run root is the canonical promoted corpus view on Hemma, `T101` proved the bounded detached pilot lane, and `T115` closed the unattended-resume gap.
 - Active corpus-expansion focus is `T116`: broaden staged `rixvox` train coverage (`train_0` plus `train_1` through `train_23`) and run one detached `row-processing` window with `row_worker_count=4` and `gpu_asr_worker_count=2`; use `2` hours as the first health gate and keep the same run alive into `8` to `10` hours if heartbeat remains healthy.
 - `T119` is implemented and live-validated: detached Hemma source-selection now persists reusable bounded `source_selection/` artifacts with truthful preflight status, so aggressive worker probes measure real startup/throughput instead of full-train parquet preflight.
 - Colab follow-on work is now `T121-T124`: portable slice bundling is in place, the first live GPU proof established the invariant-compatible lane, `T123` added true row-processing resume semantics, and `T124` now hardens throughput by adding a repo-owned localization stage before rerunning the same proof slice with an `8:2` worker mix.
 - Follow-on hardening after the first detached `T108` repro is now in place:
-  `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later
-  provenance-safe ASR relabel candidate task.
+  `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later provenance-safe ASR relabel candidate task.
 - `T115` evidence under
   `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/`
   proves durable checkpoint, intentional stop, detached resume, and
