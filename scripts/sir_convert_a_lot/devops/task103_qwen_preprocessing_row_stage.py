@@ -46,7 +46,11 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     Task103RowProcessingHeartbeat,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
-    iter_spool_rows,
+    CompletedRowKeyWriter,
+    completed_row_keys_index_path,
+    load_completed_row_keys,
+    spool_row_artifact_is_complete,
+    spool_row_path_for_source,
     write_jsonl,
     write_spool_row,
 )
@@ -196,10 +200,7 @@ def process_rows_to_spool(
     source_rows_with_audio = [
         source_row for source_row in source_records if source_row.source_audio_locator is not None
     ]
-    completed_row_keys = {
-        (row.dataset, row.source_split, row.dataset_row_id)
-        for row in iter_spool_rows(output_root)
-    }
+    completed_row_keys, completed_row_key_load_source = load_completed_row_keys(output_root)
     pending_source_rows = [
         source_row
         for source_row in source_rows_with_audio
@@ -233,81 +234,112 @@ def process_rows_to_spool(
             )
         )
 
-    def _process_source_row(source_row: SourceRecord) -> None:
-        nonlocal completed_row_count
-        if source_row.source_audio_locator is None:
-            return
-
-        inventory_row = inventory_rows_by_key[
-            (source_row.dataset, source_row.source_split, source_row.dataset_row_id)
-        ]
-        utterance_slug = source_row.dataset_row_id.replace("_", "-")
-        audio_24k_path = (
-            audio_24k_dir
-            / source_row.dataset
-            / source_row.source_split
-            / source_row.speaker_id
-            / f"{utterance_slug}.wav"
+    if settings.resume_row_processing:
+        print(
+            "[task103-resume] loaded_completed_row_keys "
+            f"source={completed_row_key_load_source} count={completed_row_count} "
+            f"total={total_row_count}"
         )
 
-        duration_seconds = _materialize_audio_locator(
-            source_row.source_audio_locator,
-            audio_24k_path,
-        )
-        scorer_slot_index = scorer_slot_queue.get()
-        try:
-            scorer = scorer_slots[scorer_slot_index]
-            if scorer is None:
-                raise RuntimeError(
-                    "ASR scorer slot was not initialized before row processing started."
-                )
-            transcribe = getattr(scorer, "transcribe")
-            asr_transcript = transcribe(audio_24k_path)
-        finally:
-            scorer_slot_queue.put(scorer_slot_index)
-        asr_wer = word_error_rate(inventory_row.text_normalized, asr_transcript)
-        quality_tier = quality_tier_for_wer(asr_wer)
-        speaker_quality_gate = speaker_quality_gate_for_source(source_row)
-        admission_decision = admission_decision_for_source(quality_tier, speaker_quality_gate)
-        manifest_targets = manifest_targets_for_curated_source(
-            source_row,
-            quality_tier=quality_tier,
-            speaker_quality_gate=speaker_quality_gate,
-        )
+    with CompletedRowKeyWriter(
+        completed_row_keys_index_path(output_root)
+    ) as completed_row_key_writer:
 
-        spool_row = SpoolRow(
-            dataset=source_row.dataset,
-            source_split=source_row.source_split,
-            dataset_row_id=source_row.dataset_row_id,
-            speaker_id=source_row.speaker_id,
-            speaker_name=source_row.speaker_name,
-            speaker_from_id=source_row.speaker_from_id,
-            source_audio_path=source_row.source_audio_path,
-            audio_24k_path=audio_24k_path.relative_to(output_root).as_posix(),
-            duration_seconds=duration_seconds,
-            text_normalized=inventory_row.text_normalized,
-            reference_audio_24k_paths={},
-            asr_model=settings.asr_model,
-            asr_revision=settings.asr_revision,
-            asr_transcript=asr_transcript,
-            asr_wer=asr_wer,
-            quality_tier=quality_tier,
-            speaker_quality_gate=speaker_quality_gate,
-            dedup_applied=False,
-            admission_decision=admission_decision,
-            manifest_targets=manifest_targets,
-        )
-        write_spool_row(output_root, spool_row)
-        if row_heartbeat_callback is not None:
-            with completed_row_count_lock:
-                completed_row_count += 1
-                row_heartbeat_callback(
-                    Task103RowProcessingHeartbeat(
-                        processed_row_count=completed_row_count,
-                        total_row_count=total_row_count,
-                        current_dataset_row_id=source_row.dataset_row_id,
+        def _process_source_row(source_row: SourceRecord) -> None:
+            nonlocal completed_row_count
+            if source_row.source_audio_locator is None:
+                return
+            row_key = (source_row.dataset, source_row.source_split, source_row.dataset_row_id)
+            spool_path = spool_row_path_for_source(
+                output_root,
+                dataset=source_row.dataset,
+                source_split=source_row.source_split,
+                speaker_id=source_row.speaker_id,
+                dataset_row_id=source_row.dataset_row_id,
+            )
+            if spool_row_artifact_is_complete(spool_path):
+                completed_row_key_writer.append_key(row_key)
+                if row_heartbeat_callback is not None:
+                    with completed_row_count_lock:
+                        completed_row_count += 1
+                        row_heartbeat_callback(
+                            Task103RowProcessingHeartbeat(
+                                processed_row_count=completed_row_count,
+                                total_row_count=total_row_count,
+                                current_dataset_row_id=source_row.dataset_row_id,
+                            )
+                        )
+                return
+
+            inventory_row = inventory_rows_by_key[row_key]
+            utterance_slug = source_row.dataset_row_id.replace("_", "-")
+            audio_24k_path = (
+                audio_24k_dir
+                / source_row.dataset
+                / source_row.source_split
+                / source_row.speaker_id
+                / f"{utterance_slug}.wav"
+            )
+
+            duration_seconds = _materialize_audio_locator(
+                source_row.source_audio_locator,
+                audio_24k_path,
+            )
+            scorer_slot_index = scorer_slot_queue.get()
+            try:
+                scorer = scorer_slots[scorer_slot_index]
+                if scorer is None:
+                    raise RuntimeError(
+                        "ASR scorer slot was not initialized before row processing started."
                     )
-                )
+                transcribe = getattr(scorer, "transcribe")
+                asr_transcript = transcribe(audio_24k_path)
+            finally:
+                scorer_slot_queue.put(scorer_slot_index)
+            asr_wer = word_error_rate(inventory_row.text_normalized, asr_transcript)
+            quality_tier = quality_tier_for_wer(asr_wer)
+            speaker_quality_gate = speaker_quality_gate_for_source(source_row)
+            admission_decision = admission_decision_for_source(quality_tier, speaker_quality_gate)
+            manifest_targets = manifest_targets_for_curated_source(
+                source_row,
+                quality_tier=quality_tier,
+                speaker_quality_gate=speaker_quality_gate,
+            )
 
-    with ThreadPoolExecutor(max_workers=settings.row_worker_count) as executor:
-        list(executor.map(_process_source_row, pending_source_rows))
+            spool_row = SpoolRow(
+                dataset=source_row.dataset,
+                source_split=source_row.source_split,
+                dataset_row_id=source_row.dataset_row_id,
+                speaker_id=source_row.speaker_id,
+                speaker_name=source_row.speaker_name,
+                speaker_from_id=source_row.speaker_from_id,
+                source_audio_path=source_row.source_audio_path,
+                audio_24k_path=audio_24k_path.relative_to(output_root).as_posix(),
+                duration_seconds=duration_seconds,
+                text_normalized=inventory_row.text_normalized,
+                reference_audio_24k_paths={},
+                asr_model=settings.asr_model,
+                asr_revision=settings.asr_revision,
+                asr_transcript=asr_transcript,
+                asr_wer=asr_wer,
+                quality_tier=quality_tier,
+                speaker_quality_gate=speaker_quality_gate,
+                dedup_applied=False,
+                admission_decision=admission_decision,
+                manifest_targets=manifest_targets,
+            )
+            write_spool_row(output_root, spool_row)
+            completed_row_key_writer.append_key(row_key)
+            if row_heartbeat_callback is not None:
+                with completed_row_count_lock:
+                    completed_row_count += 1
+                    row_heartbeat_callback(
+                        Task103RowProcessingHeartbeat(
+                            processed_row_count=completed_row_count,
+                            total_row_count=total_row_count,
+                            current_dataset_row_id=source_row.dataset_row_id,
+                        )
+                    )
+
+        with ThreadPoolExecutor(max_workers=settings.row_worker_count) as executor:
+            list(executor.map(_process_source_row, pending_source_rows))

@@ -107,9 +107,23 @@
   - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now refreshes
     any existing `/content/sir-convert-a-lot` checkout with `fetch`,
     `checkout main`, and `pull --ff-only` before looking for the committed
-    portable bundle
+  portable bundle
   - this fixes the false `FileNotFoundError` path where the bundle existed on
     `main` but the already-open Colab repo clone predated the bundle commit
+
+- Completed `T131` as the next persistent-Colab resume hardening slice:
+  - Task 103 row-processing now maintains
+    `spool/completed_row_keys.jsonl` inside the run root as a sequential
+    completed-row resume index
+  - resume now prefers the index fast path, rebuilds it from canonical spool
+    JSON when the index is missing or invalid, and logs whether the fast path
+    or rebuild path was used
+  - stale crash tails self-heal: if a row is missing from the index but its
+    canonical spool JSON already exists, resume skips the expensive row work
+    and appends that key back into the index
+  - added the committed helper surface
+    `scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py`
+    with `rebuild` and `validate` commands for historical run roots
 
 ## Validation Evidence
 
@@ -132,13 +146,16 @@
 - `pdm run validate-tasks`
 - `pdm run validate-docs`
 - `pdm run index-tasks --root \"$(pwd)/docs/backlog\" --out \"/tmp/sir_tasks_index.md\" --fail-on-missing`
+- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_storage.py scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_row_stage.py scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py -q`
+- `pdm run python -m py_compile scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_storage.py scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_row_stage.py scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py`
 
 ## Next Session Goals
 
-- Relaunch the current Colab notebook from the refreshed repo checkout and
-  confirm it now sees the committed
-  `task129-scale-slice-1-of-2-20260311a-bundle.tar.gz` bundle automatically.
-- Launch the next Colab run with the persistent Google Drive `RUN_ROOT` and
-  `row_worker_count=10`, `gpu_asr_worker_count=2`.
+- Measure the next real persistent-Colab resume with `T131` in place and
+  capture the before/after restart latency improvement on the `task129`
+  run root.
+- Confirm the new `completed_row_keys.jsonl` artifact is being written and
+  reused correctly on the Drive-backed Colab run root.
 - Refresh or relaunch the detached Task 116 Hemma resource monitor so resumed
   `task116-rowproc-5x2-20260309c` telemetry covers the post-`17:40Z` segment.

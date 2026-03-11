@@ -48,7 +48,13 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_row_stage import (
     process_rows_to_spool,
 )
-from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import write_jsonl
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
+    completed_row_keys_index_path,
+    write_jsonl,
+)
+from scripts.sir_convert_a_lot.devops.task103_qwen_resume_index import (
+    main as task103_resume_index_main,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_fleurs import fleurs_sv_source_records
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
     AudioLocator,
@@ -772,6 +778,164 @@ def test_task103_row_processing_resume_reuses_existing_spool_rows(
     assert heartbeats[0].processed_row_count == 1
     assert heartbeats[-1].processed_row_count == 2
     assert heartbeats[-1].total_row_count == 2
+    completed_row_index_rows = [
+        json.loads(raw_line)
+        for raw_line in completed_row_keys_index_path(output_root).read_text(
+            encoding="utf-8"
+        ).splitlines()
+        if raw_line.strip() != ""
+    ]
+    assert len(completed_row_index_rows) == 2
+    assert completed_row_index_rows[-1]["dataset_row_id"] == "repo-fixture-test-002"
+
+
+def test_task103_row_processing_resume_rebuilds_missing_completed_row_index(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resume should rebuild the completed-row index from canonical spool rows."""
+    workspace_root = tmp_path / "workspace"
+    first_audio_path = workspace_root / "fixtures/first.wav"
+    second_audio_path = workspace_root / "fixtures/second.wav"
+    _write_test_wav(first_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+    _write_test_wav(second_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    transcribed_paths: list[str] = []
+
+    def _fake_transcribe(self: object, audio_path: Path) -> str:
+        transcribed_paths.append(audio_path.name)
+        return "Hej från Sverige."
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        _fake_transcribe,
+    )
+
+    source_records = [
+        _build_source_record(
+            dataset="repo_fixture_sv",
+            source_split="fixture",
+            dataset_row_id="repo-fixture-test-001",
+            speaker_id="speaker_test",
+            speaker_name="Test Speaker",
+            source_audio_path=first_audio_path,
+            reference_audio_path=None,
+            text_raw="Hej från Sverige.",
+        ),
+        _build_source_record(
+            dataset="repo_fixture_sv",
+            source_split="fixture",
+            dataset_row_id="repo-fixture-test-002",
+            speaker_id="speaker_test",
+            speaker_name="Test Speaker",
+            source_audio_path=second_audio_path,
+            reference_audio_path=None,
+            text_raw="Hej från Sverige.",
+        ),
+    ]
+    output_root = workspace_root / "build/reference/qwen3-tts-swedish-corpus"
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+        ),
+        source_records=[source_records[0]],
+    )
+    completed_row_keys_index_path(output_root).unlink()
+    transcribed_paths.clear()
+
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+            resume_row_processing=True,
+        ),
+        source_records=source_records,
+    )
+
+    assert transcribed_paths == ["repo-fixture-test-002.wav"]
+    rebuilt_index_rows = [
+        json.loads(raw_line)
+        for raw_line in completed_row_keys_index_path(output_root).read_text(
+            encoding="utf-8"
+        ).splitlines()
+        if raw_line.strip() != ""
+    ]
+    assert len(rebuilt_index_rows) == 2
+
+
+def test_task103_row_processing_resume_self_heals_stale_completed_row_index(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resume should skip expensive work when spool JSON exists ahead of the index."""
+    workspace_root = tmp_path / "workspace"
+    source_audio_path = workspace_root / "fixtures/source.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    transcribed_paths: list[str] = []
+
+    def _fake_transcribe(self: object, audio_path: Path) -> str:
+        transcribed_paths.append(audio_path.name)
+        return "Hej från Sverige."
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        _fake_transcribe,
+    )
+
+    source_record = _build_source_record(
+        dataset="repo_fixture_sv",
+        source_split="fixture",
+        dataset_row_id="repo-fixture-test-001",
+        speaker_id="speaker_test",
+        speaker_name="Test Speaker",
+        source_audio_path=source_audio_path,
+        reference_audio_path=None,
+        text_raw="Hej från Sverige.",
+    )
+    output_root = workspace_root / "build/reference/qwen3-tts-swedish-corpus"
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+        ),
+        source_records=[source_record],
+    )
+    completed_row_keys_index_path(output_root).write_text("", encoding="utf-8")
+    transcribed_paths.clear()
+
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+            resume_row_processing=True,
+        ),
+        source_records=[source_record],
+    )
+
+    assert transcribed_paths == []
+    healed_index_rows = [
+        json.loads(raw_line)
+        for raw_line in completed_row_keys_index_path(output_root).read_text(
+            encoding="utf-8"
+        ).splitlines()
+        if raw_line.strip() != ""
+    ]
+    assert len(healed_index_rows) == 1
+    assert healed_index_rows[0]["dataset_row_id"] == "repo-fixture-test-001"
 
 
 def test_task103_row_processing_resume_ignores_empty_crash_artifact_spool_rows(
@@ -830,6 +994,62 @@ def test_task103_row_processing_resume_ignores_empty_crash_artifact_spool_rows(
     assert json.loads(corrupted_spool_path.read_text(encoding="utf-8"))["dataset_row_id"] == (
         "repo-fixture-test-001"
     )
+
+
+def test_task103_resume_index_helper_rebuild_and_validate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The resume-index helper should rebuild and validate existing run roots."""
+    workspace_root = tmp_path / "workspace"
+    source_audio_path = workspace_root / "fixtures/source.wav"
+    _write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        lambda self, audio_path: "Hej från Sverige.",
+    )
+
+    source_record = _build_source_record(
+        dataset="repo_fixture_sv",
+        source_split="fixture",
+        dataset_row_id="repo-fixture-test-001",
+        speaker_id="speaker_test",
+        speaker_name="Test Speaker",
+        source_audio_path=source_audio_path,
+        reference_audio_path=None,
+        text_raw="Hej från Sverige.",
+    )
+    output_root = workspace_root / "build/reference/qwen3-tts-swedish-corpus"
+    run_task103_preprocessing(
+        Task103PreprocessingSettings(
+            output_root=output_root,
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            stage="row-processing",
+        ),
+        source_records=[source_record],
+    )
+    completed_row_keys_index_path(output_root).unlink()
+    capsys.readouterr()
+
+    rebuild_exit_code = task103_resume_index_main(
+        ["rebuild", "--run-root", output_root.as_posix()]
+    )
+    rebuild_payload = json.loads(capsys.readouterr().out)
+    assert rebuild_exit_code == 0
+    assert rebuild_payload["command"] == "rebuild"
+    assert rebuild_payload["completed_row_count"] == 1
+
+    validate_exit_code = task103_resume_index_main(
+        ["validate", "--run-root", output_root.as_posix()]
+    )
+    validate_payload = json.loads(capsys.readouterr().out)
+    assert validate_exit_code == 0
+    assert validate_payload["command"] == "validate"
+    assert validate_payload["completed_row_count"] == 1
 
 
 def test_task103_finalization_stage_chunks_audio_code_generation(

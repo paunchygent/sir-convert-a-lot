@@ -17,9 +17,10 @@ import json
 import re
 import shutil
 import tempfile
+import threading
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Iterator, Protocol
+from typing import Iterator, Literal, Protocol
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
@@ -30,6 +31,123 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     SpoolRow,
     Task103Stage,
 )
+
+CompletedRowKey = tuple[str, str, str]
+CompletedRowKeyLoadSource = Literal["index", "rebuild", "spool-scan"]
+
+
+class CompletedRowKeyWriter:
+    """Append completed-row keys through one process-local locked writer."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._handle: _TextWriteCloser | None = None
+        self._lock = threading.Lock()
+
+    def __enter__(self) -> "CompletedRowKeyWriter":
+        enforce_generated_output_path(self._path, label=self._path.name)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._handle = self._path.open(mode="a", encoding="utf-8", buffering=1)
+        return self
+
+    def append_key(self, row_key: CompletedRowKey) -> None:
+        """Append one completed-row key to the sequential index."""
+        if self._handle is None:
+            raise RuntimeError("Completed-row key writer must be opened before appending.")
+        payload = {
+            "dataset": row_key[0],
+            "source_split": row_key[1],
+            "dataset_row_id": row_key[2],
+        }
+        with self._lock:
+            self._handle.write(json.dumps(payload, sort_keys=True, ensure_ascii=False))
+            self._handle.write("\n")
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        del exc_type, exc, traceback
+        if self._handle is not None:
+            self._handle.close()
+
+
+def completed_row_keys_index_path(output_root: Path) -> Path:
+    """Return the canonical completed-row index path."""
+    return output_root / "spool" / "completed_row_keys.jsonl"
+
+
+def _completed_row_key_payload_to_tuple(
+    payload: dict[str, object],
+    *,
+    path: Path,
+) -> CompletedRowKey:
+    """Validate one completed-row index payload and return its typed key."""
+    dataset = payload.get("dataset")
+    source_split = payload.get("source_split")
+    dataset_row_id = payload.get("dataset_row_id")
+    if not isinstance(dataset, str):
+        raise ValueError(f"Malformed `dataset` in completed-row index {path}.")
+    if not isinstance(source_split, str):
+        raise ValueError(f"Malformed `source_split` in completed-row index {path}.")
+    if not isinstance(dataset_row_id, str):
+        raise ValueError(f"Malformed `dataset_row_id` in completed-row index {path}.")
+    return (dataset, source_split, dataset_row_id)
+
+
+def load_completed_row_keys_from_index(output_root: Path) -> set[CompletedRowKey]:
+    """Load completed-row keys from the sequential index when it exists."""
+    index_path = completed_row_keys_index_path(output_root)
+    if not index_path.exists():
+        raise FileNotFoundError(index_path)
+    completed_row_keys: set[CompletedRowKey] = set()
+    for raw_line in index_path.read_text(encoding="utf-8").splitlines():
+        if raw_line.strip() == "":
+            continue
+        payload = json.loads(raw_line)
+        if not isinstance(payload, dict):
+            raise ValueError(f"Expected JSON object rows in completed-row index {index_path}.")
+        completed_row_keys.add(
+            _completed_row_key_payload_to_tuple(payload, path=index_path)
+        )
+    return completed_row_keys
+
+
+def rebuild_completed_row_keys_index(output_root: Path) -> set[CompletedRowKey]:
+    """Rebuild the completed-row index from canonical spool rows."""
+    completed_row_keys = {
+        (row.dataset, row.source_split, row.dataset_row_id) for row in iter_spool_rows(output_root)
+    }
+    index_path = completed_row_keys_index_path(output_root)
+    with JsonlAtomicWriter(index_path) as writer:
+        for dataset, source_split, dataset_row_id in sorted(completed_row_keys):
+            writer.write_row(
+                {
+                    "dataset": dataset,
+                    "source_split": source_split,
+                    "dataset_row_id": dataset_row_id,
+                }
+            )
+    return completed_row_keys
+
+
+def load_completed_row_keys(
+    output_root: Path,
+) -> tuple[set[CompletedRowKey], CompletedRowKeyLoadSource]:
+    """Load completed-row keys with rebuild fallback for old or broken run roots."""
+    index_path = completed_row_keys_index_path(output_root)
+    if index_path.exists():
+        try:
+            return load_completed_row_keys_from_index(output_root), "index"
+        except (json.JSONDecodeError, ValueError):
+            rebuilt_keys = rebuild_completed_row_keys_index(output_root)
+            return rebuilt_keys, "rebuild"
+    rebuilt_keys = rebuild_completed_row_keys_index(output_root)
+    if rebuilt_keys:
+        return rebuilt_keys, "rebuild"
+    return set(), "spool-scan"
 
 
 def json_default(value: object) -> object:
@@ -191,14 +309,32 @@ def spool_rows_dir(output_root: Path) -> Path:
     return output_root / "spool" / "rows"
 
 
-def spool_row_path(output_root: Path, row: SpoolRow) -> Path:
-    """Return the canonical on-disk path for one spool row."""
+def spool_row_path_for_source(
+    output_root: Path,
+    *,
+    dataset: str,
+    source_split: str,
+    speaker_id: str,
+    dataset_row_id: str,
+) -> Path:
+    """Return the canonical spool-row path for one source-row identity."""
     return (
         spool_rows_dir(output_root)
-        / _safe_path_component(row.dataset)
-        / _safe_path_component(row.source_split)
-        / _safe_path_component(row.speaker_id)
-        / f"{_safe_path_component(row.dataset_row_id)}.json"
+        / _safe_path_component(dataset)
+        / _safe_path_component(source_split)
+        / _safe_path_component(speaker_id)
+        / f"{_safe_path_component(dataset_row_id)}.json"
+    )
+
+
+def spool_row_path(output_root: Path, row: SpoolRow) -> Path:
+    """Return the canonical on-disk path for one spool row."""
+    return spool_row_path_for_source(
+        output_root,
+        dataset=row.dataset,
+        source_split=row.source_split,
+        speaker_id=row.speaker_id,
+        dataset_row_id=row.dataset_row_id,
     )
 
 
@@ -256,6 +392,11 @@ def iter_spool_rows(output_root: Path) -> Iterator[SpoolRow]:
             admission_decision=_required_admission_decision(payload, path),
             manifest_targets=manifest_targets,
         )
+
+
+def spool_row_artifact_is_complete(path: Path) -> bool:
+    """Return whether one spool-row artifact looks complete enough for resume."""
+    return path.exists() and path.stat().st_size > 0
 
 
 def _required_str(payload: dict[str, object], key: str, path: Path) -> str:
