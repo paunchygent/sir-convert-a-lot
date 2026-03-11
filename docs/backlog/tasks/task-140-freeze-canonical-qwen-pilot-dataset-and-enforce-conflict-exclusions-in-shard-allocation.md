@@ -75,6 +75,18 @@ repo-owned artifact family:
 - `reports/canonical_processed_root_freeze.json` for the immutable freeze
   summary
 
+Materialized Hemma artifacts:
+
+- frozen pilot canonical root:
+  - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
+  - `retained_row_count=15748`
+  - `conflict_row_count=88`
+- post-pilot shard registry:
+  - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-shards/task140-task129-post-pilot-remaining-20260311a`
+  - `remaining_row_count=13001`
+  - `shard_count=3`
+  - `target_rows_per_shard=5000`
+
 Future shard allocation can now exclude both:
 
 - completed/owned rows from the frozen canonical pilot root
