@@ -117,6 +117,34 @@ Important current upstream constraint:
 - Keep future serving outcomes downstream of ADR-0006 and ADR-0007.
 - Once the pilot canonical processed root is frozen, future preprocessing
   allocation must exclude both its owned rows and its conflict-row manifest.
+- The first bounded Task 101 fine-tune must consume a deterministic pilot
+  bundle projected from the frozen pilot root, not the generic promoted Task
+  103 corpus view.
+
+## Frozen Pilot Dataset Rule
+
+The current canonical pilot-owned preprocessing source is:
+
+- `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
+
+The next bounded Task 101 launch must use that frozen ownership source through
+one deterministic pilot training bundle that contains:
+
+- `manifests/swedish_pilot_train.prepared.jsonl`
+- `manifests/swedish_checkpoint_dev.prepared.jsonl`
+- stable per-speaker `refs/`
+- machine-readable bundle metadata that records:
+  - the frozen source root
+  - retained row counts
+  - manifest families present
+
+Operational rule:
+
+- do not launch Task 101 against the generic promoted preprocessing root
+  `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus`
+- do not launch Task 101 against ad hoc manually selected row subsets
+- materialize the deterministic pilot bundle first, then launch the detached
+  Hemma runner from that bundle
 
 ## Current Proven Hemma Reality
 
@@ -841,6 +869,10 @@ Canonical Task 106 acquisition surface:
 1. Run Task 101 as the first bounded Hemma pilot.
    - canonical command:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
+   - canonical input contract before launch:
+     - deterministic pilot bundle projected from the frozen pilot root
+     - train family: `swedish_pilot_train`
+     - eval family: `swedish_checkpoint_dev`
    - inspect the detached pilot with:
      `pdm run run-hemma -- pdm run task-101-pilot status`
    - keep the pilot bounded and evidence-first:

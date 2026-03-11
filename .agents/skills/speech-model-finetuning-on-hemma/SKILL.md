@@ -124,6 +124,11 @@ Always separate:
 - noisy or weakly aligned data that needs filtering
 - pilot subset versus scale-up subset
 
+When a pilot subset has already been canonically frozen, do not launch
+fine-tuning from the generic preprocessing root. Require one deterministic
+training bundle projected from that frozen root so ownership, eval families,
+and reference-audio anchors remain reviewable and reproducible.
+
 For weakly aligned transcripts, require an explicit filtering policy before
 recommending scale-up training.
 
@@ -147,6 +152,8 @@ Use this order by default:
    - pilot subset
    - scale-up subset
    - eval split
+   - frozen ownership root when one exists
+   - deterministic pilot-bundle root before the first training launch
 1. Define preprocessing:
    - transcript normalization
    - audio normalization

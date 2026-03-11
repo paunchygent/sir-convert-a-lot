@@ -222,6 +222,25 @@
     so future allocation should eventually exclude those conflicts explicitly
     rather than assuming the retained root alone is a sufficient exclusion set
 
+- Completed `T141` to define the pilot-training bridge:
+  - `Task 101`, `Story 25`, the Qwen runbook, and the finetuning guide now
+    state the same rule that the first bounded Hemma fine-tune must consume a
+    deterministic Task 101 pilot bundle projected from the frozen pilot root
+    instead of the generic promoted preprocessing root
+  - the relevant operator skills now carry the same rule so the docs and skill
+    surfaces do not diverge during future planning or launch work
+
+- Opened `T142` as the next implementation slice for the training lane:
+  - materialize one deterministic Task 101 pilot bundle from
+    `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
+  - include:
+    - `manifests/swedish_pilot_train.prepared.jsonl`
+    - `manifests/swedish_checkpoint_dev.prepared.jsonl`
+    - stable per-speaker `refs/`
+    - machine-readable bundle metadata
+  - retarget the detached Task 101 runner away from the generic promoted Task
+    103 preprocessing root and onto that bundle root
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
@@ -280,3 +299,5 @@
   source-resolution and run-metadata orchestration as the next extraction
   candidate now that status lifecycle ownership has moved out of the public
   runner.
+- Execute `T142` so the next canonical Hemma Task 101 pilot launches from the
+  deterministic pilot bundle rooted in the frozen pilot ownership set.

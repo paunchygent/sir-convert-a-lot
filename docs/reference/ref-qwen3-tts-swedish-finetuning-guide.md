@@ -298,6 +298,31 @@ Nord-Parl-TTS shows that DNSMOS P.835-OVL is used as sample metadata in the Swed
 
 ## Recommendation Memo for Your Exact Setup
 
+## Current Canonical Pilot Use Rule
+
+For the next bounded Hemma fine-tuning pilot, the repo now has one canonical
+input rule:
+
+- freeze ownership first,
+- project the frozen pilot root into deterministic Task 103 finalized manifest
+  families second,
+- run Task 101 only from that deterministic pilot bundle third.
+
+Current frozen pilot ownership source:
+
+- `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
+
+Required pilot-bundle artifacts:
+
+- `manifests/swedish_pilot_train.prepared.jsonl`
+- `manifests/swedish_checkpoint_dev.prepared.jsonl`
+- stable per-speaker `refs/`
+- bundle metadata that records the frozen source root and retained row counts
+
+This means the old generic promoted preprocessing root is no longer a
+sufficient Task 101 input by itself. The fine-tuning lane should not use ad
+hoc row subsets or manually edited manifests for the pilot.
+
 ### Do This First on Hemma
 
 **Build a "Pilot-A" that is quality-protected and stresses language, not volume.**

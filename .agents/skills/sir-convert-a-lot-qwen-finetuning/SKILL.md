@@ -46,6 +46,8 @@ Use this skill together with the broader local skill:
 - `docs/backlog/tasks/task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md`
 
 - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+- `docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md`
+- `docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md`
 
 - `docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md`
 
@@ -81,6 +83,9 @@ explicitly narrow the scope.
 - Hemma is viable for bounded pilot work.
 - Colab H100 is the scale-up lane, not the only viable lane.
 - The end goal is general Swedish support, not a single teacher voice.
+- The first bounded Task 101 Hemma pilot must consume a deterministic training
+  bundle projected from the frozen pilot root, not the generic promoted Task
+  103 preprocessing root.
 - Any future production use must still fit the sidecar-only architecture from
   ADR-0006 and ADR-0007.
 - Long-running Hemma preprocessing, training, and corpus-acquisition work must
@@ -145,6 +150,14 @@ When planning the corpus, always answer:
 - how are low-confidence transcripts filtered?
 - which Swedish ASR/WER surface is used to detect transcript mismatch?
 
+For the current pilot lane, also answer:
+
+- which frozen pilot root owns the rows?
+- where is the deterministic Task 101 pilot bundle root?
+- which finalized manifest families are included?
+- how are stable per-speaker `ref_audio` anchors materialized inside the
+  bundle?
+
 ## Qwen Workflow Overlay
 
 After the broader speech-model skill has set the runtime/data/eval frame, apply
@@ -156,6 +169,8 @@ this Qwen-specific order:
    - pilot subset
    - scale-up subset
    - eval split
+   - frozen ownership root for the pilot
+   - deterministic Task 101 pilot bundle root
 1. Build or verify Qwen preprocessing:
    - transcript normalization
    - reference-audio policy: **One 5-10 second canonical reference clip per speaker, reused across all rows for that speaker.**
@@ -165,6 +180,7 @@ this Qwen-specific order:
    - dependency split: **Task 100 owns the training-image stack; Task 103 owns the extra preprocessing/eval stack.**
 1. Run a bounded pilot:
    - detached on Hemma by default
+   - only after the deterministic pilot bundle exists
    - one real optimizer step minimum
    - **Hemma Smoke Run:** 8-12 hours, 12-16 speakers.
    - **Hemma Pilot:** 24-36 hours, 24-40 speakers.
@@ -205,6 +221,8 @@ Watch for these specifically:
 - treating official Qwen single-speaker docs as if they already solved the
   multi-speaker Swedish language-expansion problem
 - mixing Task 79 serving constraints with the future dedicated fine-tune runtime
+- launching Task 101 from the generic promoted preprocessing root instead of a
+  deterministic pilot bundle projected from the frozen pilot ownership root
 
 ## Promotion Rule
 
