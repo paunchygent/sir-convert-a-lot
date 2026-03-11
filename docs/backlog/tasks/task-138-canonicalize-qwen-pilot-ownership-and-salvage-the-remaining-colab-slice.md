@@ -2,7 +2,7 @@
 id: 'task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice'
 title: 'Canonicalize qwen pilot ownership and salvage the remaining colab slice'
 type: 'task'
-status: 'in_progress'
+status: 'completed'
 priority: 'high'
 created: '2026-03-11'
 last_updated: '2026-03-11'
@@ -46,31 +46,63 @@ overlap incident by:
 
 ## Deliverables
 
-- [ ] One canonical pilot processed root exists on Hemma and is recorded in the
+- [x] One canonical pilot processed root exists on Hemma and is recorded in the
       task/docs state.
-- [ ] One exact ownership summary exists for:
+- [x] One exact ownership summary exists for:
       - Hemma-completed rows
       - Colab-completed rows
       - unique pilot rows
       - remaining rows in the original `task129` slice
-- [ ] One deduplicated remaining Colab bundle exists for the current
+- [x] One deduplicated remaining Colab bundle exists for the current
       `task129` recovery path.
-- [ ] Canonical docs and session state reflect the new owned root and recovery
+- [x] Canonical docs and session state reflect the new owned root and recovery
       bundle.
 
 ## Acceptance Criteria
 
-- [ ] The canonical pilot root can be used as the sole completed-run exclusion
-      source for future allocation decisions.
-- [ ] The Colab recovery bundle contains only rows not already owned by the
+- [x] The canonical pilot root is materialized on Hemma and its retained rows
+      are measured exactly.
+- [x] The Colab recovery bundle contains only rows not already owned by the
       canonical pilot root.
-- [ ] The live Colab lane can resume from the same run root against the
+- [x] The live Colab lane can resume from the same run root against the
       recovery bundle instead of the original overlapping `18000`-row slice.
-- [ ] Docs clearly state the canonical owned root and the remaining recovery
+- [x] Docs clearly state the canonical owned root and the remaining recovery
       bundle for the current campaign.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Outcome
+
+Materialized canonical pilot root:
+
+- `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task138-qwen-pilot-owned-20260311b`
+
+Exact current ownership result:
+
+- Hemma completed rows: `10024`
+- Colab completed rows: `7970`
+- current Colab duplicate rows against Hemma: `2158`
+- current Colab novel rows: `5812`
+- canonical retained unique pilot rows: `15748`
+- quarantined same-row conflicts: `88`
+- dropped identical duplicates: `2070`
+
+Current Colab salvage result:
+
+- original `task129` slice rows: `18000`
+- rows already owned by completed Hemma or completed Colab work: `10813`
+- remaining unique recovery rows: `7187`
+- recovery bundle:
+  - `colab_ml_training/proof_inputs/task138-task129-remaining-unique-20260311a-bundle.tar.gz`
+  - `sha256=6b260245a5daf208310489c4b4ba59eab4284c45ef4e4fb401519948a1e70d6b`
+
+Important nuance:
+
+- the retained canonical root is the safe unique pilot set
+- the `88` conflicts remain quarantined and must not be silently reissued
+- for this incident, the shipped Colab recovery bundle is the correct
+  remaining-work artifact

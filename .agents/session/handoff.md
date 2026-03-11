@@ -201,6 +201,27 @@
     - build immutable `~5000`-row shard registry
     - issue processing units from shard ids only
 
+- Completed `T138` to restore order to the live pilot and current Colab lane:
+  - materialized canonical pilot root:
+    - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task138-qwen-pilot-owned-20260311b`
+  - exact current ownership math:
+    - Hemma completed rows: `10024`
+    - Colab completed rows: `7970`
+    - duplicate completed Colab rows: `2158`
+    - novel completed Colab rows: `5812`
+    - retained canonical unique pilot rows: `15748`
+    - quarantined conflicts: `88`
+  - created and pushed the repo-owned Colab recovery bundle:
+    - `colab_ml_training/proof_inputs/task138-task129-remaining-unique-20260311a-bundle.tar.gz`
+    - `sha256=6b260245a5daf208310489c4b4ba59eab4284c45ef4e4fb401519948a1e70d6b`
+    - remaining unique rows in the original `task129` slice: `7187`
+  - Colab should now resume from the same persistent `task129` run root but
+    against the `task138` recovery bundle instead of the original `18000`-row
+    bundle
+  - important nuance: the canonical root quarantines `88` same-row conflicts,
+    so future allocation should eventually exclude those conflicts explicitly
+    rather than assuming the retained root alone is a sufficient exclusion set
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
