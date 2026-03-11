@@ -8,6 +8,7 @@ import tarfile
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
+    completed_row_keys_index_path,
     iter_jsonl_objects,
     write_jsonl,
 )
@@ -23,6 +24,9 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
 )
 from scripts.sir_convert_a_lot.devops.task121_qwen_colab_slice_bundle import (
     build_portable_slice_bundle,
+    build_remaining_unique_portable_slice_bundle,
+    dedupe_selected_source_records,
+    deduped_selected_source_summary_path,
     load_portable_selected_source_records,
     localize_portable_slice,
     localized_selected_source_records_path,
@@ -30,8 +34,9 @@ from scripts.sir_convert_a_lot.devops.task121_qwen_colab_slice_bundle import (
     portable_required_files_path,
     portable_slice_summary_path,
     stage_required_files_for_portable_slice,
+    unique_allocation_summary_path,
 )
-from tests.sir_convert_a_lot.test_task103_qwen_preprocessing import _write_test_wav
+from tests.sir_convert_a_lot.task103_test_support import write_test_wav
 
 
 def _build_rixvox_source_record(
@@ -58,6 +63,21 @@ def _build_rixvox_source_record(
         speaker_audio_meta_ok=True,
         source_sample_rate_hz=16_000,
         duration_seconds=5.0,
+    )
+
+
+def _write_completed_row_keys_index(run_root: Path, row_ids: list[str]) -> None:
+    """Persist one lightweight completed-row index for a test run root."""
+    write_jsonl(
+        completed_row_keys_index_path(run_root),
+        [
+            {
+                "dataset": "rixvox",
+                "source_split": "train",
+                "dataset_row_id": row_id,
+            }
+            for row_id in row_ids
+        ],
     )
 
 
@@ -133,12 +153,114 @@ def test_task121_build_portable_slice_bundle_is_disjoint(tmp_path: Path) -> None
     assert portable_slice_summary_path(first_slice_root).is_file()
 
 
+def test_task121_plan_remaining_unique_excludes_prior_allocations(tmp_path: Path) -> None:
+    """Guarded slice allocation should subtract completed and reserved row keys first."""
+    run_root = tmp_path / "selection-run"
+    archive_path = tmp_path / "train_0.tar.gz"
+    source_records = [
+        _build_rixvox_source_record(
+            dataset_row_id=f"row-{row_index}",
+            speaker_id=f"speaker-{row_index % 2}",
+            source_audio_path=f"speaker-{row_index}/clip-{row_index}.wav",
+            archive_path=archive_path,
+        )
+        for row_index in range(8)
+    ]
+    write_selected_source_records(
+        run_root,
+        source_records=source_records,
+        summary=Task103SourceSelectionSummary(
+            source_mode="staged-public-corpus",
+            total_selected_rows=8,
+            datasets=["rixvox"],
+            fleurs_splits=["dev", "test"],
+            rixvox_splits=["train"],
+            rixvox_max_rows_per_split=8,
+        ),
+    )
+    processed_run_root = tmp_path / "processed-run"
+    _write_completed_row_keys_index(processed_run_root, ["row-0", "row-3"])
+    reserved_records_path = tmp_path / "reserved.jsonl"
+    write_jsonl(
+        reserved_records_path,
+        [
+            source_record_to_payload(source_records[5]),
+            source_record_to_payload(source_records[6]),
+        ],
+    )
+
+    output_root = tmp_path / "remaining-slice"
+    summary = build_remaining_unique_portable_slice_bundle(
+        source_run_root=run_root,
+        output_root=output_root,
+        slice_count=2,
+        slice_index=0,
+        rixvox_revision="rev-a",
+        exclude_completed_run_roots=[processed_run_root],
+        exclude_selected_source_records_paths=[reserved_records_path],
+    )
+
+    planned_ids = {
+        row.dataset_row_id for row in load_portable_selected_source_records(output_root)
+    }
+    assert summary.remaining_train_row_count == 4
+    assert summary.selected_row_count == 2
+    assert summary.excluded_completed_row_count == 2
+    assert summary.excluded_reserved_row_count == 2
+    assert summary.total_excluded_key_count == 4
+    assert planned_ids == {"row-1", "row-2"}
+    assert unique_allocation_summary_path(output_root).is_file()
+
+
+def test_task121_dedupe_selected_source_records_filters_completed_rows(tmp_path: Path) -> None:
+    """Dedupe should emit only rows not already completed or reserved elsewhere."""
+    selected_source_records_path = tmp_path / "selected_source_records.jsonl"
+    archive_path = tmp_path / "train_0.tar.gz"
+    source_records = [
+        _build_rixvox_source_record(
+            dataset_row_id=f"row-{row_index}",
+            speaker_id=f"speaker-{row_index % 2}",
+            source_audio_path=f"speaker-{row_index}/clip-{row_index}.wav",
+            archive_path=archive_path,
+        )
+        for row_index in range(5)
+    ]
+    write_jsonl(
+        selected_source_records_path,
+        [source_record_to_payload(source_record) for source_record in source_records],
+    )
+    processed_run_root = tmp_path / "processed-run"
+    _write_completed_row_keys_index(processed_run_root, ["row-0", "row-2"])
+    reserved_records_path = tmp_path / "reserved.jsonl"
+    write_jsonl(
+        reserved_records_path,
+        [source_record_to_payload(source_records[4])],
+    )
+
+    output_path = tmp_path / "deduped-slice" / "selected_source_records.jsonl"
+    summary = dedupe_selected_source_records(
+        selected_source_records_path=selected_source_records_path,
+        output_path=output_path,
+        exclude_completed_run_roots=[processed_run_root],
+        exclude_selected_source_records_paths=[reserved_records_path],
+    )
+
+    remaining_rows = load_portable_selected_source_records(output_path.parent)
+    assert [row.dataset_row_id for row in remaining_rows] == ["row-1", "row-3"]
+    assert summary.input_row_count == 5
+    assert summary.output_row_count == 2
+    assert summary.excluded_completed_row_count == 2
+    assert summary.excluded_reserved_row_count == 1
+    assert summary.total_excluded_key_count == 3
+    assert deduped_selected_source_summary_path(output_path).is_file()
+
+
 def test_task121_stage_required_files_for_portable_slice(tmp_path: Path, monkeypatch) -> None:
     """Portable slice staging should materialize the exact required archive."""
     slice_root = tmp_path / "slice"
     cached_archive_path = tmp_path / "cached/train_0.tar.gz"
     staged_audio_path = tmp_path / "needed.wav"
-    _write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
+    write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
     cached_archive_path.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(cached_archive_path, "w:gz") as archive:
         audio_bytes = staged_audio_path.read_bytes()
@@ -209,7 +331,7 @@ def test_task121_stage_required_files_emits_progress(
     slice_root = tmp_path / "slice"
     cached_archive_path = tmp_path / "cached/train_0.tar.gz"
     staged_audio_path = tmp_path / "needed.wav"
-    _write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
+    write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
     cached_archive_path.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(cached_archive_path, "w:gz") as archive:
         audio_bytes = staged_audio_path.read_bytes()
@@ -281,7 +403,7 @@ def test_task121_localize_portable_slice_persists_plain_file_manifest(tmp_path: 
     """Portable slice localization should persist plain local files plus a manifest."""
     slice_root = tmp_path / "slice"
     staged_audio_path = tmp_path / "needed.wav"
-    _write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
+    write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
 
     staged_archive_path = (
         tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
@@ -343,7 +465,7 @@ def test_task121_localize_portable_slice_emits_progress(tmp_path: Path, capsys) 
     """Portable slice localization should emit per-archive progress and timing."""
     slice_root = tmp_path / "slice"
     staged_audio_path = tmp_path / "needed.wav"
-    _write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
+    write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
 
     staged_archive_path = (
         tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"

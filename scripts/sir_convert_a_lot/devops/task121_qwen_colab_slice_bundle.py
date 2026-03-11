@@ -30,20 +30,15 @@ from typing import IO, Literal, Sequence
 from huggingface_hub import hf_hub_download
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
-    iter_jsonl_objects,
     write_json,
     write_jsonl,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
     AudioLocator,
     SourceRecord,
-    source_record_from_payload,
     source_record_to_payload,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_rixvox import RIXVOX_DATASET_ID
-from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
-    load_selected_source_records,
-)
 from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
     RAW_CORPUS_SUBDIR,
     resolve_selected_source_records_for_local_data,
@@ -51,8 +46,20 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_staged_public_corpus import (
 from scripts.sir_convert_a_lot.devops.task106_qwen_corpus_acquisition_runtime import (
     default_data_root,
 )
+from scripts.sir_convert_a_lot.devops.task121_qwen_slice_allocation import (
+    collect_excluded_row_keys,
+    filter_source_records_against_excluded_keys,
+    load_selected_source_records_from_run_root,
+    load_source_records_from_jsonl_path,
+)
 
-PortableSliceCommand = Literal["plan", "stage-required-files", "localize-slice"]
+PortableSliceCommand = Literal[
+    "plan",
+    "plan-remaining-unique",
+    "dedupe-selected-source-records",
+    "stage-required-files",
+    "localize-slice",
+]
 RIXVOX_STAGING_PREFIX = Path("kblab_rixvox")
 
 
@@ -91,6 +98,34 @@ class LocalizedSliceSummary:
     localized_audio_root: str
 
 
+@dataclass(frozen=True)
+class UniqueAllocationSummary:
+    """Stable summary for one guarded unique-allocation planning pass."""
+
+    source_run_root: str
+    output_root: str
+    slice_count: int
+    slice_index: int
+    remaining_train_row_count: int
+    selected_row_count: int
+    excluded_completed_row_count: int
+    excluded_reserved_row_count: int
+    total_excluded_key_count: int
+
+
+@dataclass(frozen=True)
+class DedupedSelectedSourceSummary:
+    """Stable summary for one deduplicated selected-source manifest."""
+
+    input_selected_source_records_path: str
+    output_selected_source_records_path: str
+    input_row_count: int
+    output_row_count: int
+    excluded_completed_row_count: int
+    excluded_reserved_row_count: int
+    total_excluded_key_count: int
+
+
 def portable_slice_dir(output_root: Path) -> Path:
     """Return the canonical portable-slice bundle directory."""
     return output_root
@@ -111,6 +146,11 @@ def portable_slice_summary_path(output_root: Path) -> Path:
     return portable_slice_dir(output_root) / "slice_summary.json"
 
 
+def unique_allocation_summary_path(output_root: Path) -> Path:
+    """Return the guarded-allocation summary JSON path."""
+    return portable_slice_dir(output_root) / "unique_allocation_summary.json"
+
+
 def localized_selected_source_records_path(slice_root: Path) -> Path:
     """Return the localized selected-source JSONL path."""
     return portable_slice_dir(slice_root) / "localized_selected_source_records.jsonl"
@@ -124,6 +164,11 @@ def localized_audio_root(slice_root: Path) -> Path:
 def localized_slice_summary_path(slice_root: Path) -> Path:
     """Return the localized-slice summary JSON path."""
     return portable_slice_dir(slice_root) / "localized_slice_summary.json"
+
+
+def deduped_selected_source_summary_path(output_path: Path) -> Path:
+    """Return the summary JSON path for one deduplicated selected-source manifest."""
+    return output_path.with_name(f"{output_path.stem}_dedupe_summary.json")
 
 
 def _emit_progress(message: str) -> None:
@@ -145,11 +190,7 @@ def build_portable_slice_bundle(
     if slice_index < 0 or slice_index >= slice_count:
         raise ValueError("slice_index must satisfy 0 <= slice_index < slice_count.")
 
-    selected_source_records = load_selected_source_records(source_run_root)
-    if selected_source_records is None:
-        raise FileNotFoundError(
-            "The source run root does not contain selected_source_records.jsonl."
-        )
+    selected_source_records = load_selected_source_records_from_run_root(source_run_root)
 
     train_source_records = [
         source_record
@@ -191,6 +232,122 @@ def build_portable_slice_bundle(
         required_files_count=len(required_files),
     )
     write_json(portable_slice_summary_path(output_root), summary)
+    return summary
+
+
+def build_remaining_unique_portable_slice_bundle(
+    *,
+    source_run_root: Path,
+    output_root: Path,
+    slice_count: int,
+    slice_index: int,
+    rixvox_revision: str | None,
+    exclude_completed_run_roots: Sequence[Path],
+    exclude_selected_source_records_paths: Sequence[Path],
+) -> UniqueAllocationSummary:
+    """Create one deterministic portable slice from the remaining unallocated universe."""
+    if not exclude_completed_run_roots and not exclude_selected_source_records_paths:
+        raise ValueError(
+            "Guarded unique allocation requires at least one exclusion source."
+        )
+
+    selected_source_records = load_selected_source_records_from_run_root(source_run_root)
+    train_source_records = [
+        source_record
+        for source_record in selected_source_records
+        if source_record.dataset == "rixvox" and source_record.source_split == "train"
+    ]
+    exclusion_summary = collect_excluded_row_keys(
+        exclude_completed_run_roots=exclude_completed_run_roots,
+        exclude_selected_source_records_paths=exclude_selected_source_records_paths,
+    )
+    remaining_train_source_records = filter_source_records_against_excluded_keys(
+        train_source_records,
+        excluded_keys=set(exclusion_summary.excluded_keys),
+    )
+    sorted_remaining_train_source_records = sorted(
+        remaining_train_source_records,
+        key=lambda row: (row.dataset, row.source_split, row.speaker_id, row.dataset_row_id),
+    )
+    slice_source_records = [
+        source_record
+        for row_index, source_record in enumerate(sorted_remaining_train_source_records)
+        if row_index % slice_count == slice_index
+    ]
+    portable_source_records = [
+        replace(source_record, source_audio_locator=None, reference_audio_locator=None)
+        for source_record in slice_source_records
+    ]
+    required_files = _required_files_for_portable_slice(
+        source_records=slice_source_records,
+        rixvox_revision=rixvox_revision,
+    )
+    write_jsonl(
+        portable_selected_source_records_path(output_root),
+        [source_record_to_payload(source_record) for source_record in portable_source_records],
+    )
+    write_json(
+        portable_required_files_path(output_root),
+        [asdict(required_file) for required_file in required_files],
+    )
+    write_json(
+        portable_slice_summary_path(output_root),
+        PortableSliceSummary(
+            source_run_root=source_run_root.as_posix(),
+            slice_count=slice_count,
+            slice_index=slice_index,
+            selected_row_count=len(portable_source_records),
+            datasets=sorted({row.dataset for row in portable_source_records}),
+            source_splits=sorted({row.source_split for row in portable_source_records}),
+            required_files_count=len(required_files),
+        ),
+    )
+    summary = UniqueAllocationSummary(
+        source_run_root=source_run_root.as_posix(),
+        output_root=output_root.as_posix(),
+        slice_count=slice_count,
+        slice_index=slice_index,
+        remaining_train_row_count=len(remaining_train_source_records),
+        selected_row_count=len(portable_source_records),
+        excluded_completed_row_count=exclusion_summary.completed_run_root_count,
+        excluded_reserved_row_count=exclusion_summary.reserved_selected_source_count,
+        total_excluded_key_count=exclusion_summary.total_excluded_key_count,
+    )
+    write_json(unique_allocation_summary_path(output_root), summary)
+    return summary
+
+
+def dedupe_selected_source_records(
+    *,
+    selected_source_records_path: Path,
+    output_path: Path,
+    exclude_completed_run_roots: Sequence[Path],
+    exclude_selected_source_records_paths: Sequence[Path],
+) -> DedupedSelectedSourceSummary:
+    """Write one selected-source JSONL with already allocated row keys removed."""
+    input_source_records = load_source_records_from_jsonl_path(selected_source_records_path)
+    exclusion_summary = collect_excluded_row_keys(
+        exclude_completed_run_roots=exclude_completed_run_roots,
+        exclude_selected_source_records_paths=exclude_selected_source_records_paths,
+    )
+    filtered_source_records = filter_source_records_against_excluded_keys(
+        input_source_records,
+        excluded_keys=set(exclusion_summary.excluded_keys),
+    )
+    write_jsonl(
+        output_path,
+        [source_record_to_payload(source_record) for source_record in filtered_source_records],
+    )
+    summary = DedupedSelectedSourceSummary(
+        input_selected_source_records_path=selected_source_records_path.as_posix(),
+        output_selected_source_records_path=output_path.as_posix(),
+        input_row_count=len(input_source_records),
+        output_row_count=len(filtered_source_records),
+        excluded_completed_row_count=exclusion_summary.completed_run_root_count,
+        excluded_reserved_row_count=exclusion_summary.reserved_selected_source_count,
+        total_excluded_key_count=exclusion_summary.total_excluded_key_count,
+    )
+    write_json(deduped_selected_source_summary_path(output_path), summary)
     return summary
 
 
@@ -249,10 +406,7 @@ def stage_required_files_for_portable_slice(
 
 def load_portable_selected_source_records(slice_root: Path) -> list[SourceRecord]:
     """Load the portable selected-source bundle for a notebook/remote worker."""
-    return [
-        source_record_from_payload(payload)
-        for payload in iter_jsonl_objects(portable_selected_source_records_path(slice_root))
-    ]
+    return load_source_records_from_jsonl_path(portable_selected_source_records_path(slice_root))
 
 
 def localize_portable_slice(
@@ -480,6 +634,45 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     plan_parser.add_argument("--slice-index", type=int, required=True)
     plan_parser.add_argument("--rixvox-revision", default=None)
 
+    unique_plan_parser = subparsers.add_parser("plan-remaining-unique")
+    unique_plan_parser.add_argument("--source-run-root", type=Path, required=True)
+    unique_plan_parser.add_argument("--output-root", type=Path, required=True)
+    unique_plan_parser.add_argument("--slice-count", type=int, required=True)
+    unique_plan_parser.add_argument("--slice-index", type=int, required=True)
+    unique_plan_parser.add_argument("--rixvox-revision", default=None)
+    unique_plan_parser.add_argument(
+        "--exclude-completed-run-root",
+        dest="exclude_completed_run_roots",
+        action="append",
+        type=Path,
+        default=[],
+    )
+    unique_plan_parser.add_argument(
+        "--exclude-selected-source-records-path",
+        dest="exclude_selected_source_records_paths",
+        action="append",
+        type=Path,
+        default=[],
+    )
+
+    dedupe_parser = subparsers.add_parser("dedupe-selected-source-records")
+    dedupe_parser.add_argument("--selected-source-records-path", type=Path, required=True)
+    dedupe_parser.add_argument("--output-path", type=Path, required=True)
+    dedupe_parser.add_argument(
+        "--exclude-completed-run-root",
+        dest="exclude_completed_run_roots",
+        action="append",
+        type=Path,
+        default=[],
+    )
+    dedupe_parser.add_argument(
+        "--exclude-selected-source-records-path",
+        dest="exclude_selected_source_records_paths",
+        action="append",
+        type=Path,
+        default=[],
+    )
+
     stage_parser = subparsers.add_parser("stage-required-files")
     stage_parser.add_argument("--slice-root", type=Path, required=True)
     stage_parser.add_argument("--data-root", type=Path, default=default_data_root())
@@ -495,14 +688,57 @@ def main(argv: list[str] | None = None) -> int:
     """Run the portable Colab slice planner or required-file staging surface."""
     args = _parse_args(argv)
     if args.command == "plan":
-        planned_summary = build_portable_slice_bundle(
+        planned_portable_slice_summary = build_portable_slice_bundle(
             source_run_root=Path(args.source_run_root),
             output_root=Path(args.output_root),
             slice_count=int(args.slice_count),
             slice_index=int(args.slice_index),
             rixvox_revision=None if args.rixvox_revision is None else str(args.rixvox_revision),
         )
-        print(json.dumps(asdict(planned_summary), indent=2, ensure_ascii=False, sort_keys=True))
+        print(
+            json.dumps(
+                asdict(planned_portable_slice_summary),
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+    if args.command == "plan-remaining-unique":
+        planned_unique_allocation_summary = build_remaining_unique_portable_slice_bundle(
+            source_run_root=Path(args.source_run_root),
+            output_root=Path(args.output_root),
+            slice_count=int(args.slice_count),
+            slice_index=int(args.slice_index),
+            rixvox_revision=None if args.rixvox_revision is None else str(args.rixvox_revision),
+            exclude_completed_run_roots=[
+                Path(path) for path in args.exclude_completed_run_roots
+            ],
+            exclude_selected_source_records_paths=[
+                Path(path) for path in args.exclude_selected_source_records_paths
+            ],
+        )
+        print(
+            json.dumps(
+                asdict(planned_unique_allocation_summary),
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+    if args.command == "dedupe-selected-source-records":
+        dedupe_summary = dedupe_selected_source_records(
+            selected_source_records_path=Path(args.selected_source_records_path),
+            output_path=Path(args.output_path),
+            exclude_completed_run_roots=[
+                Path(path) for path in args.exclude_completed_run_roots
+            ],
+            exclude_selected_source_records_paths=[
+                Path(path) for path in args.exclude_selected_source_records_paths
+            ],
+        )
+        print(json.dumps(asdict(dedupe_summary), indent=2, ensure_ascii=False, sort_keys=True))
         return 0
     if args.command == "stage-required-files":
         staged_paths = stage_required_files_for_portable_slice(

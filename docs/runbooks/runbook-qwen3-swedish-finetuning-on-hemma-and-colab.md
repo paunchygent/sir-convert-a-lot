@@ -280,6 +280,27 @@ Keep those steps in repo-owned command surfaces.
   row-processing; finalization, reports, promotion, and held-out corpora remain
   on Hemma.
 
+After the `task116`/`task129` overlap incident, future incremental slice
+issuance has a stricter rule:
+
+- do not use the original proof-era `plan` command for follow-on allocation
+- use `task-121-colab-slice-bundle plan-remaining-unique`
+- provide every known owner of rows through:
+  - `--exclude-completed-run-root`
+  - `--exclude-selected-source-records-path`
+
+That command subtracts already completed or already reserved row keys before
+the deterministic modulo slice is issued.
+
+If an in-flight Colab manifest must be salvaged after overlap is discovered,
+use the repo-owned dedupe surface:
+
+- `task-121-colab-slice-bundle dedupe-selected-source-records`
+
+Point it at the current selected-source manifest and subtract every known
+completed run root first. The notebook should then resume against the emitted
+deduplicated manifest instead of encoding overlap logic in notebook cells.
+
 First live proof shape:
 
 - create one fresh Hemma `source-selection` universe dedicated to Colab proof

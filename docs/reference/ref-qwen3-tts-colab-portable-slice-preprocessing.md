@@ -4,7 +4,7 @@ id: REF-qwen3-tts-colab-portable-slice-preprocessing
 title: Qwen3-TTS Colab Portable Slice Preprocessing Reference
 status: active
 created: 2026-03-10
-updated: 2026-03-10
+updated: 2026-03-11
 owners:
   - Olof
 links:
@@ -84,6 +84,29 @@ This guarantees:
 - deterministic partitioning
 - no overlap between slices
 - full coverage of the chosen bounded source-selection universe
+
+## Post-Incident Hard Allocation Rule
+
+Once any prior Hemma or Colab preprocessing run root exists, future portable
+slice issuance must move from the original proof-only `plan` command to the
+guarded remaining-universe command:
+
+- `task-121-colab-slice-bundle plan-remaining-unique`
+
+That guarded command must be given every known exclusion source that already
+owns rows:
+
+- completed Task 103 run roots through `--exclude-completed-run-root`
+- already issued selected-source manifests through
+  `--exclude-selected-source-records-path`
+
+The command first subtracts those owned row keys from the source-selection
+universe and only then applies deterministic modulo partitioning.
+
+This is the canonical rule for future incremental portable slices. The old
+`plan` command remains backward compatible for proof-era artifacts, but it is
+no longer the canonical allocation path after real run roots or issued slices
+exist.
 
 ## Required File Staging
 
@@ -167,6 +190,21 @@ The first follow-on worker mix for the localized Colab lane is:
 
 This is an explicit throughput experiment on disposable Colab hardware, not a
 new default for Hemma.
+
+## In-Flight Deduplication Rule
+
+If a portable Colab run has already started and a cross-campaign overlap is
+discovered, the recovery path must stay repo-owned:
+
+- use `task-121-colab-slice-bundle dedupe-selected-source-records`
+- point it at the current portable or localized selected-source manifest
+- subtract every known completed run root through
+  `--exclude-completed-run-root`
+- optionally subtract already issued manifests through
+  `--exclude-selected-source-records-path`
+
+The output is one deduplicated remaining selected-source JSONL that the
+notebook can resume against without moving overlap logic into notebook cells.
 
 ## First Live Proof Shape
 

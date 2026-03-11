@@ -162,6 +162,29 @@
     keep their behavior coverage without triggering unnecessary CPU-side ASR
     pipeline initialization
 
+- Completed `T134` to contain the live Hemma/Colab overlap incident:
+  - added
+    `scripts/sir_convert_a_lot/devops/task121_qwen_slice_allocation.py`
+    so Task 121 can load canonical row keys from completed Task 103 run roots
+    and selected-source manifests
+  - `task121_qwen_colab_slice_bundle.py` now exposes:
+    - `plan-remaining-unique`
+    - `dedupe-selected-source-records`
+  - the guarded allocation path now subtracts already completed or already
+    reserved rows before modulo partitioning future slices
+  - the live recovery path can now emit one deduplicated remaining
+    selected-source JSONL for the in-flight Colab lane without notebook-only
+    overlap logic
+  - `ref-qwen3-tts-colab-portable-slice-preprocessing.md` and
+    `runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md` now treat guarded
+    allocation as canonical after any prior run root or issued slice exists
+  - the current live-state ownership comparison now shows:
+    - `task129` slice rows: `18000`
+    - Hemma processed rows seen in the slice: `4851`
+    - Colab completed rows: `7970`
+    - union already owned inside the slice: `10653`
+    - still-unique remaining rows in the current slice: `7347`
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
@@ -191,14 +214,22 @@
 - `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py tests/sir_convert_a_lot/test_task103_runner_status.py tests/sir_convert_a_lot/test_task103_runner.py`
 - `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task103_runner_status.py tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py -q`
+- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task121_qwen_slice_allocation.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py`
+- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task121_qwen_slice_allocation.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py -q`
+- `pdm run validate-tasks`
+- `pdm run validate-docs`
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Next Session Goals
 
-- Measure the next real persistent-Colab resume with `T131` in place and
-  capture the before/after restart latency improvement on the `task129`
-  run root.
-- Confirm the new `completed_row_keys.jsonl` artifact is being written and
-  reused correctly on the Drive-backed Colab run root.
+- Run `task121_qwen_colab_slice_bundle dedupe-selected-source-records` against
+  the live `task129` localized manifest once the synced Colab/Hemma run roots
+  are available in the same filesystem context, then resume Colab against the
+  emitted deduplicated manifest.
+- Switch any future follow-on slice issuance from the proof-era `plan` command
+  to `plan-remaining-unique` and include all known completed run roots plus
+  already-issued selected-source manifests as exclusions.
 - Refresh or relaunch the detached Task 116 Hemma resource monitor so resumed
   `task116-rowproc-5x2-20260309c` telemetry covers the post-`17:40Z` segment.
 - Use the decomposed `T132` Task 103 test surface as the guardrail for the
