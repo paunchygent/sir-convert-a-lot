@@ -45,6 +45,7 @@ links:
   - docs/backlog/tasks/task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation.md
   - docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md
   - docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md
+  - docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -114,6 +115,8 @@ Important current upstream constraint:
 - Keep training runtimes isolated from the main service image.
 - Preserve canonical persistent cache roots on Hemma.
 - Keep future serving outcomes downstream of ADR-0006 and ADR-0007.
+- Once the pilot canonical processed root is frozen, future preprocessing
+  allocation must exclude both its owned rows and its conflict-row manifest.
 
 ## Current Proven Hemma Reality
 

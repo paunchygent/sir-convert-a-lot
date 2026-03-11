@@ -70,6 +70,7 @@ class UniqueAllocationSummary:
     selected_row_count: int
     excluded_completed_row_count: int
     excluded_reserved_row_count: int
+    excluded_explicit_row_count: int
     total_excluded_key_count: int
 
 
@@ -83,6 +84,7 @@ class DedupedSelectedSourceSummary:
     output_row_count: int
     excluded_completed_row_count: int
     excluded_reserved_row_count: int
+    excluded_explicit_row_count: int
     total_excluded_key_count: int
 
 

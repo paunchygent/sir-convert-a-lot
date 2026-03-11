@@ -25,6 +25,10 @@ from typing import Iterable, Sequence
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
     load_completed_row_keys,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_row_keys import (
+    RowKey,
+    load_row_key_records,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
     SourceRecord,
     source_record_from_payload,
@@ -33,8 +37,6 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
     load_selected_source_records,
 )
 
-SourceRowKey = tuple[str, str, str]
-
 
 @dataclass(frozen=True)
 class SliceExclusionSummary:
@@ -42,11 +44,12 @@ class SliceExclusionSummary:
 
     completed_run_root_count: int
     reserved_selected_source_count: int
+    explicit_row_key_count: int
     total_excluded_key_count: int
-    excluded_keys: frozenset[SourceRowKey]
+    excluded_keys: frozenset[RowKey]
 
 
-def row_key_for_source_record(source_record: SourceRecord) -> SourceRowKey:
+def row_key_for_source_record(source_record: SourceRecord) -> RowKey:
     """Return the canonical row key for one source record."""
     return (
         source_record.dataset,
@@ -67,7 +70,7 @@ def load_source_records_from_jsonl_path(source_records_path: Path) -> list[Sourc
     return source_records
 
 
-def load_completed_row_keys_for_run_root(run_root: Path) -> set[SourceRowKey]:
+def load_completed_row_keys_for_run_root(run_root: Path) -> set[RowKey]:
     """Load completed Task 103 row keys from one run root."""
     completed_row_keys, _ = load_completed_row_keys(run_root)
     return completed_row_keys
@@ -77,11 +80,13 @@ def collect_excluded_row_keys(
     *,
     exclude_completed_run_roots: Sequence[Path],
     exclude_selected_source_records_paths: Sequence[Path],
+    exclude_row_keys_paths: Sequence[Path],
 ) -> SliceExclusionSummary:
     """Collect one deduplicated exclusion set from run roots and selected manifests."""
-    excluded_keys: set[SourceRowKey] = set()
+    excluded_keys: set[RowKey] = set()
     completed_run_root_count = 0
     reserved_selected_source_count = 0
+    explicit_row_key_count = 0
 
     for run_root in exclude_completed_run_roots:
         completed_keys = load_completed_row_keys_for_run_root(run_root)
@@ -96,9 +101,15 @@ def collect_excluded_row_keys(
         excluded_keys.update(reserved_keys)
         reserved_selected_source_count += len(reserved_keys)
 
+    for row_keys_path in exclude_row_keys_paths:
+        explicit_row_keys = load_row_key_records(row_keys_path)
+        excluded_keys.update(explicit_row_keys)
+        explicit_row_key_count += len(explicit_row_keys)
+
     return SliceExclusionSummary(
         completed_run_root_count=completed_run_root_count,
         reserved_selected_source_count=reserved_selected_source_count,
+        explicit_row_key_count=explicit_row_key_count,
         total_excluded_key_count=len(excluded_keys),
         excluded_keys=frozenset(excluded_keys),
     )
@@ -107,7 +118,7 @@ def collect_excluded_row_keys(
 def filter_source_records_against_excluded_keys(
     source_records: Sequence[SourceRecord],
     *,
-    excluded_keys: set[SourceRowKey],
+    excluded_keys: set[RowKey],
 ) -> list[SourceRecord]:
     """Return source records whose row keys are not present in the exclusion set."""
     return [

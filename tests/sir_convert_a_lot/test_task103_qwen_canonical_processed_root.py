@@ -8,14 +8,18 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_canonical_processed_root import (
     build_canonical_processed_root,
+    canonical_processed_root_conflict_row_keys_path,
     canonical_processed_root_conflicts_path,
     canonical_processed_root_duplicates_path,
+    canonical_processed_root_freeze_path,
+    canonical_processed_root_owned_row_keys_path,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import SpoolRow
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
     spool_rows_dir,
     write_spool_row,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_row_keys import load_row_key_records
 from tests.sir_convert_a_lot.task103_test_support import write_test_wav
 
 
@@ -90,6 +94,14 @@ def test_build_canonical_processed_root_keeps_unique_and_identical_duplicate_row
     assert summary.dropped_duplicate_row_count == 1
     assert summary.conflict_row_count == 0
     assert len(retained_rows) == 2
+    assert load_row_key_records(canonical_processed_root_owned_row_keys_path(output_root)) == {
+        ("rixvox", "train", "row-1"),
+        ("rixvox", "train", "row-2"),
+    }
+    assert (
+        load_row_key_records(canonical_processed_root_conflict_row_keys_path(output_root))
+        == set()
+    )
     duplicates = [
         json.loads(line)
         for line in canonical_processed_root_duplicates_path(output_root).read_text(
@@ -126,6 +138,10 @@ def test_build_canonical_processed_root_quarantines_conflicting_rows(tmp_path: P
     assert summary.retained_row_count == 0
     assert summary.conflict_row_count == 1
     assert list(spool_rows_dir(output_root).rglob("*.json")) == []
+    assert load_row_key_records(canonical_processed_root_owned_row_keys_path(output_root)) == set()
+    assert load_row_key_records(canonical_processed_root_conflict_row_keys_path(output_root)) == {
+        ("rixvox", "train", "row-1")
+    }
     conflicts = [
         json.loads(line)
         for line in canonical_processed_root_conflicts_path(output_root).read_text(
@@ -137,6 +153,12 @@ def test_build_canonical_processed_root_quarantines_conflicting_rows(tmp_path: P
         preferred_root.as_posix(),
         secondary_root.as_posix(),
     ]
+    freeze_payload = json.loads(canonical_processed_root_freeze_path(output_root).read_text())
+    assert freeze_payload["retained_row_count"] == 0
+    assert freeze_payload["conflict_row_count"] == 1
+    assert freeze_payload["conflict_row_keys_path"].endswith(
+        "canonical_processed_root_conflict_row_keys.jsonl"
+    )
 
 
 def test_build_canonical_processed_root_resolves_unicode_normalized_audio_paths(

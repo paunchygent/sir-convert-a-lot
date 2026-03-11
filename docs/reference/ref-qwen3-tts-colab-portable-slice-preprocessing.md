@@ -96,6 +96,14 @@ immutable artifacts:
 Future processing units must be issued from shard ids, not from freeform slice
 math over the remaining universe.
 
+Frozen pilot rule:
+
+- once the canonical pilot root is frozen, future shard issuance must exclude
+  both:
+  - owned pilot rows from that canonical processed root
+  - quarantined conflict rows from
+    `canonical_processed_root_conflict_row_keys.jsonl`
+
 Canonical commands:
 
 - build the canonical processed root
@@ -110,6 +118,8 @@ Default posture:
 - target roughly `5000` rows per shard
 - combine shard ids into one processing unit when a worker needs more than one
   shard
+- pass `--exclude-row-keys-path` for frozen conflict-row manifests during
+  shard-registry or remaining-unique recovery builds
 
 ## Incident Recovery Rule
 

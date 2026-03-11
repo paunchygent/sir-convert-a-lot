@@ -12,6 +12,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import 
     iter_jsonl_objects,
     write_jsonl,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_row_keys import write_row_key_records
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
     AudioLocator,
     SourceRecord,
@@ -202,6 +203,7 @@ def test_task121_plan_remaining_unique_excludes_prior_allocations(tmp_path: Path
         rixvox_revision="rev-a",
         exclude_completed_run_roots=[processed_run_root],
         exclude_selected_source_records_paths=[reserved_records_path],
+        exclude_row_keys_paths=[],
     )
 
     planned_ids = {
@@ -211,6 +213,7 @@ def test_task121_plan_remaining_unique_excludes_prior_allocations(tmp_path: Path
     assert summary.selected_row_count == 2
     assert summary.excluded_completed_row_count == 2
     assert summary.excluded_reserved_row_count == 2
+    assert summary.excluded_explicit_row_count == 0
     assert summary.total_excluded_key_count == 4
     assert planned_ids == {"row-1", "row-2"}
     assert unique_allocation_summary_path(output_root).is_file()
@@ -247,6 +250,7 @@ def test_task121_dedupe_selected_source_records_filters_completed_rows(tmp_path:
         output_path=output_path,
         exclude_completed_run_roots=[processed_run_root],
         exclude_selected_source_records_paths=[reserved_records_path],
+        exclude_row_keys_paths=[],
     )
 
     remaining_rows = load_portable_selected_source_records(output_path.parent)
@@ -255,8 +259,49 @@ def test_task121_dedupe_selected_source_records_filters_completed_rows(tmp_path:
     assert summary.output_row_count == 2
     assert summary.excluded_completed_row_count == 2
     assert summary.excluded_reserved_row_count == 1
+    assert summary.excluded_explicit_row_count == 0
     assert summary.total_excluded_key_count == 3
     assert deduped_selected_source_summary_path(output_path).is_file()
+
+
+def test_task121_dedupe_selected_source_records_filters_explicit_row_key_exclusions(
+    tmp_path: Path,
+) -> None:
+    """Dedupe should also subtract explicit row-key exclusion manifests."""
+    selected_source_records_path = tmp_path / "selected_source_records.jsonl"
+    archive_path = tmp_path / "train_0.tar.gz"
+    source_records = [
+        _build_rixvox_source_record(
+            dataset_row_id=f"row-{row_index}",
+            speaker_id=f"speaker-{row_index % 2}",
+            source_audio_path=f"speaker-{row_index}/clip-{row_index}.wav",
+            archive_path=archive_path,
+        )
+        for row_index in range(4)
+    ]
+    write_jsonl(
+        selected_source_records_path,
+        [source_record_to_payload(source_record) for source_record in source_records],
+    )
+    conflict_row_keys_path = tmp_path / "conflicts.jsonl"
+    write_row_key_records(
+        conflict_row_keys_path,
+        [("rixvox", "train", "row-1")],
+    )
+
+    output_path = tmp_path / "deduped-slice" / "selected_source_records.jsonl"
+    summary = dedupe_selected_source_records(
+        selected_source_records_path=selected_source_records_path,
+        output_path=output_path,
+        exclude_completed_run_roots=[],
+        exclude_selected_source_records_paths=[],
+        exclude_row_keys_paths=[conflict_row_keys_path],
+    )
+
+    remaining_rows = load_portable_selected_source_records(output_path.parent)
+    assert [row.dataset_row_id for row in remaining_rows] == ["row-0", "row-2", "row-3"]
+    assert summary.excluded_explicit_row_count == 1
+    assert summary.total_excluded_key_count == 1
 
 
 def test_task121_stage_required_files_for_portable_slice(tmp_path: Path, monkeypatch) -> None:

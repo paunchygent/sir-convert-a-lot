@@ -97,6 +97,7 @@ def build_remaining_unique_portable_slice_bundle(
     rixvox_revision: str | None,
     exclude_completed_run_roots: Sequence[Path],
     exclude_selected_source_records_paths: Sequence[Path],
+    exclude_row_keys_paths: Sequence[Path],
 ) -> UniqueAllocationSummary:
     """Create one deterministic portable slice from the remaining unallocated universe."""
     if not exclude_completed_run_roots and not exclude_selected_source_records_paths:
@@ -110,6 +111,7 @@ def build_remaining_unique_portable_slice_bundle(
     exclusion_summary = collect_excluded_row_keys(
         exclude_completed_run_roots=exclude_completed_run_roots,
         exclude_selected_source_records_paths=exclude_selected_source_records_paths,
+        exclude_row_keys_paths=exclude_row_keys_paths,
     )
     remaining_train_source_records = sort_train_source_records(
         filter_source_records_against_excluded_keys(
@@ -149,6 +151,7 @@ def build_remaining_unique_portable_slice_bundle(
         selected_row_count=portable_slice_summary.selected_row_count,
         excluded_completed_row_count=exclusion_summary.completed_run_root_count,
         excluded_reserved_row_count=exclusion_summary.reserved_selected_source_count,
+        excluded_explicit_row_count=exclusion_summary.explicit_row_key_count,
         total_excluded_key_count=exclusion_summary.total_excluded_key_count,
     )
     write_json(unique_allocation_summary_path(output_root), summary)
@@ -161,12 +164,14 @@ def dedupe_selected_source_records(
     output_path: Path,
     exclude_completed_run_roots: Sequence[Path],
     exclude_selected_source_records_paths: Sequence[Path],
+    exclude_row_keys_paths: Sequence[Path],
 ) -> DedupedSelectedSourceSummary:
     """Write one selected-source manifest with already owned rows removed."""
     input_source_records = load_source_records_from_jsonl_path(selected_source_records_path)
     exclusion_summary = collect_excluded_row_keys(
         exclude_completed_run_roots=exclude_completed_run_roots,
         exclude_selected_source_records_paths=exclude_selected_source_records_paths,
+        exclude_row_keys_paths=exclude_row_keys_paths,
     )
     filtered_source_records = filter_source_records_against_excluded_keys(
         input_source_records,
@@ -183,6 +188,7 @@ def dedupe_selected_source_records(
         output_row_count=len(filtered_source_records),
         excluded_completed_row_count=exclusion_summary.completed_run_root_count,
         excluded_reserved_row_count=exclusion_summary.reserved_selected_source_count,
+        excluded_explicit_row_count=exclusion_summary.explicit_row_key_count,
         total_excluded_key_count=exclusion_summary.total_excluded_key_count,
     )
     write_json(deduped_selected_source_summary_path(output_path), summary)

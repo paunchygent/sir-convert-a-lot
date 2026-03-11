@@ -66,6 +66,7 @@ class QwenShardRegistrySummary:
     shard_count: int
     excluded_completed_row_count: int
     excluded_reserved_row_count: int
+    excluded_explicit_row_count: int
     total_excluded_key_count: int
 
 
@@ -116,6 +117,7 @@ def build_shard_registry(
     target_rows_per_shard: int,
     exclude_completed_run_roots: Sequence[Path],
     exclude_selected_source_records_paths: Sequence[Path],
+    exclude_row_keys_paths: Sequence[Path],
 ) -> QwenShardRegistrySummary:
     """Build one immutable shard registry from the remaining source-selection universe."""
     if target_rows_per_shard <= 0:
@@ -127,6 +129,7 @@ def build_shard_registry(
     exclusion_summary = collect_excluded_row_keys(
         exclude_completed_run_roots=exclude_completed_run_roots,
         exclude_selected_source_records_paths=exclude_selected_source_records_paths,
+        exclude_row_keys_paths=exclude_row_keys_paths,
     )
     remaining_source_records = sort_train_source_records(
         filter_source_records_against_excluded_keys(
@@ -197,6 +200,7 @@ def build_shard_registry(
         shard_count=len(shard_ids),
         excluded_completed_row_count=exclusion_summary.completed_run_root_count,
         excluded_reserved_row_count=exclusion_summary.reserved_selected_source_count,
+        excluded_explicit_row_count=exclusion_summary.explicit_row_key_count,
         total_excluded_key_count=exclusion_summary.total_excluded_key_count,
     )
     write_json(shard_registry_summary_path(registry_root), summary)

@@ -39,8 +39,11 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import 
     write_jsonl,
     write_spool_row,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_row_keys import (
+    RowKey,
+    write_row_key_records,
+)
 
-RowKey = tuple[str, str, str]
 ConflictReason = Literal["payload_mismatch", "audio_hash_mismatch"]
 
 
@@ -87,6 +90,17 @@ class CanonicalProcessedRootSummary:
     retained_audio_file_count: int
 
 
+@dataclass(frozen=True)
+class CanonicalProcessedRootFreezeSummary:
+    """Stable freeze summary for one canonical processed root."""
+
+    output_root: str
+    retained_row_count: int
+    conflict_row_count: int
+    owned_row_keys_path: str
+    conflict_row_keys_path: str
+
+
 def canonical_processed_root_report_path(output_root: Path) -> Path:
     """Return the summary report path for one canonical processed root."""
     return output_root / "reports" / "canonical_processed_root_report.json"
@@ -100,6 +114,21 @@ def canonical_processed_root_duplicates_path(output_root: Path) -> Path:
 def canonical_processed_root_conflicts_path(output_root: Path) -> Path:
     """Return the conflicts report path for one canonical processed root."""
     return output_root / "reports" / "canonical_processed_root_conflicts.jsonl"
+
+
+def canonical_processed_root_owned_row_keys_path(output_root: Path) -> Path:
+    """Return the owned-row-key artifact path for one canonical processed root."""
+    return output_root / "reports" / "canonical_processed_root_owned_row_keys.jsonl"
+
+
+def canonical_processed_root_conflict_row_keys_path(output_root: Path) -> Path:
+    """Return the conflict-row-key artifact path for one canonical processed root."""
+    return output_root / "reports" / "canonical_processed_root_conflict_row_keys.jsonl"
+
+
+def canonical_processed_root_freeze_path(output_root: Path) -> Path:
+    """Return the freeze summary path for one canonical processed root."""
+    return output_root / "reports" / "canonical_processed_root_freeze.json"
 
 
 def build_canonical_processed_root(
@@ -177,6 +206,14 @@ def build_canonical_processed_root(
             )
 
     rebuild_completed_row_keys_index(output_root)
+    write_row_key_records(
+        canonical_processed_root_owned_row_keys_path(output_root),
+        sorted(winners),
+    )
+    write_row_key_records(
+        canonical_processed_root_conflict_row_keys_path(output_root),
+        sorted(conflicts),
+    )
     write_json(
         canonical_processed_root_report_path(output_root),
         CanonicalProcessedRootSummary(
@@ -186,6 +223,20 @@ def build_canonical_processed_root(
             dropped_duplicate_row_count=len(duplicates),
             conflict_row_count=len(conflicts),
             retained_audio_file_count=len(retained_audio_paths),
+        ),
+    )
+    write_json(
+        canonical_processed_root_freeze_path(output_root),
+        CanonicalProcessedRootFreezeSummary(
+            output_root=output_root.as_posix(),
+            retained_row_count=len(winners),
+            conflict_row_count=len(conflicts),
+            owned_row_keys_path=canonical_processed_root_owned_row_keys_path(
+                output_root
+            ).as_posix(),
+            conflict_row_keys_path=canonical_processed_root_conflict_row_keys_path(
+                output_root
+            ).as_posix(),
         ),
     )
     write_jsonl(

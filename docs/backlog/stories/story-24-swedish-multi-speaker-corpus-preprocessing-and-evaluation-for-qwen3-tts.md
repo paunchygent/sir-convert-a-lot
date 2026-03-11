@@ -31,6 +31,7 @@ related:
   - docs/backlog/tasks/task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation.md
   - docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md
   - docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md
+  - docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -95,6 +96,7 @@ general-language-support result.
 1. `docs/backlog/tasks/task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation.md`
 1. `docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md`
 1. `docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md`
+1. `docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md`
 1. `docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md`
 1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
 
@@ -132,6 +134,9 @@ general-language-support result.
 - [x] Tasks `134-139` define and synchronize the canonical ownership,
   deduplication, immutable shard registry, and shard-id-only work-allocation
   model for future preprocessing units.
+- [x] Task `140` freezes the canonical pilot root into an explicit
+  ownership/conflict artifact family and makes quarantined conflict rows part
+  of the enforced future-allocation exclusions.
 - [ ] The story documents the difference between the official Qwen
   single-speaker training surface and this repo's planned multi-speaker Swedish
   language-expansion objective.

@@ -174,6 +174,18 @@ Required canonical-root outputs:
 - `reports/canonical_processed_root_report.json`
 - `reports/canonical_processed_root_duplicates.jsonl`
 - `reports/canonical_processed_root_conflicts.jsonl`
+- `reports/canonical_processed_root_owned_row_keys.jsonl`
+- `reports/canonical_processed_root_conflict_row_keys.jsonl`
+- `reports/canonical_processed_root_freeze.json`
+
+Freeze rule:
+
+- once a canonical processed root is promoted as the pilot-owned truth, that
+  immutable root plus `canonical_processed_root_freeze.json` become the frozen
+  pilot dataset surface
+- future allocation must treat
+  `reports/canonical_processed_root_conflict_row_keys.jsonl` as unavailable
+  work, not as “maybe reusable later”
 
 ## Pipeline Stages
 
@@ -228,6 +240,8 @@ Required posture:
 - processing units must be issued from shard ids only
 - assignment state must be persisted in one append-only ledger
 - assigned or completed shard ids must be rejected for reissuance
+- explicit row-key exclusion manifests must be supported for quarantined
+  conflict rows
 
 Canonical surfaces:
 
@@ -235,6 +249,12 @@ Canonical surfaces:
 - `task-121-colab-slice-bundle issue-processing-unit-from-shards`
 - `task-121-colab-slice-bundle release-processing-unit`
 - `task-121-colab-slice-bundle complete-processing-unit`
+
+Required exclusion posture for future shard issuance:
+
+- exclude the frozen pilot-owned rows through the canonical processed root
+- exclude the frozen pilot conflict rows through:
+  - `--exclude-row-keys-path <canonical_processed_root_conflict_row_keys.jsonl>`
 
 Hemma hard-isolation rule:
 

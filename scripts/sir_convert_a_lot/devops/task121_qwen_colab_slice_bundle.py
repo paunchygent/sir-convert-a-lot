@@ -99,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
                 rixvox_revision=args.rixvox_revision,
                 exclude_completed_run_roots=args.exclude_completed_run_roots,
                 exclude_selected_source_records_paths=args.exclude_selected_source_records_paths,
+                exclude_row_keys_paths=args.exclude_row_keys_paths,
             )
         )
     if command == "dedupe-selected-source-records":
@@ -108,6 +109,7 @@ def main(argv: list[str] | None = None) -> int:
                 output_path=args.output_path,
                 exclude_completed_run_roots=args.exclude_completed_run_roots,
                 exclude_selected_source_records_paths=args.exclude_selected_source_records_paths,
+                exclude_row_keys_paths=args.exclude_row_keys_paths,
             )
         )
     if command == "build-shard-registry":
@@ -118,6 +120,7 @@ def main(argv: list[str] | None = None) -> int:
                 target_rows_per_shard=args.target_rows_per_shard,
                 exclude_completed_run_roots=args.exclude_completed_run_roots,
                 exclude_selected_source_records_paths=args.exclude_selected_source_records_paths,
+                exclude_row_keys_paths=args.exclude_row_keys_paths,
             )
         )
     if command == "issue-processing-unit-from-shards":
@@ -249,6 +252,13 @@ def _add_exclusion_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--exclude-selected-source-records-path",
         dest="exclude_selected_source_records_paths",
+        action="append",
+        type=Path,
+        default=[],
+    )
+    parser.add_argument(
+        "--exclude-row-keys-path",
+        dest="exclude_row_keys_paths",
         action="append",
         type=Path,
         default=[],

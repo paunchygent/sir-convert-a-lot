@@ -33,6 +33,7 @@ related:
   - docs/backlog/tasks/task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation.md
   - docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md
   - docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md
+  - docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md
@@ -126,6 +127,7 @@ This epic is complete only when:
 1. `docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md`
 1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
 1. `docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md`
+1. `docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md`
 
 ## Acceptance Criteria
 
@@ -141,6 +143,9 @@ This epic is complete only when:
   entrypoint: future work issuance must go through immutable shard ids, while
   `plan-remaining-unique` is incident-recovery-only for already-issued
   manifests.
+- [x] The frozen pilot canonical root and its conflict-row manifest are part
+  of the future allocation contract, so shard issuance excludes both owned and
+  quarantined rows.
 - [ ] The planning record captures the real Hemma evidence already established:
   clean idle baseline around `0.06 GB`, real official Waxholm full-finetune
   step around `20.19 GB`, and remaining headroom around `11.87 GB` on the
