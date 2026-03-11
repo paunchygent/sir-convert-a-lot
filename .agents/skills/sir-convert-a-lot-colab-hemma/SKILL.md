@@ -70,6 +70,11 @@ debugging slower.
 - Run canonical Task 103 row-processing against committed manifests.
 - Preserve restartability through repo-owned resume semantics, not notebook
   patches.
+- If Colab persists run state into Google Drive and the Drive connector is
+  authenticated, inspect `status.json`, spool JSON, and row-processing logs
+  directly through Drive before asking the user for manual notebook commands.
+- Treat Drive-backed Colab artifacts as part of the operational surface for
+  this lane, not as inaccessible notebook-only state.
 
 ## Notebook Hygiene
 
@@ -98,4 +103,6 @@ Pause and confirm with the user when:
 
 - Hemma remains the source of truth for Hemma-backed execution lanes.
 - Colab remains simple enough to "press run."
+- Drive-backed Colab artifacts are inspected directly when connector access is
+  available.
 - The repo history reflects the environment that actually executed the change.

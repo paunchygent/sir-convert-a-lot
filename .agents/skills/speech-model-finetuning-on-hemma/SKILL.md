@@ -69,6 +69,20 @@ Prefer both when the task is strategic:
 - Hemma for proof and operational fit
 - Colab for scaling and comparison
 
+## Colab Artifact Access Rule
+
+- If the Google Drive connector is authenticated, treat Drive-backed Colab run
+  artifacts as directly inspectable.
+- Before asking the user to run manual Colab status commands, try to inspect
+  the persisted Drive-backed run root, `status.json`, spool JSON files, and
+  `row_processing.stdout.log` / `row_processing.stderr.log` through the Google
+  Drive tools.
+- Do not claim that live Colab progress is inaccessible when the run root or
+  artifacts are persisted in the user's Drive and the connector is available.
+- Only fall back to manual notebook commands when the needed file cannot be
+  found, the connector lacks the relevant visibility, or the artifact was never
+  persisted out of the ephemeral Colab runtime.
+
 ## GPU and Container Rules
 
 - Use containers for serious training work.

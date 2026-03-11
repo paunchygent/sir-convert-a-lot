@@ -85,6 +85,9 @@ explicitly narrow the scope.
   ADR-0006 and ADR-0007.
 - Long-running Hemma preprocessing, training, and corpus-acquisition work must
   run detached from the local client session.
+- When Colab runs persist status, logs, or spool JSON into Google Drive and the
+  Drive connector is authenticated, inspect those artifacts directly before
+  asking the user to run notebook-side status commands.
 - Hemma storage tiers are fixed:
   - `/srv/scratch` for Docker root, HF/model caches, and hot generated
     preprocessing/training artifacts
@@ -189,6 +192,9 @@ Watch for these specifically:
 - treating the bounded Hemma pilot `20s` clip target as a hard upstream Qwen
   rule instead of a conservative repo heuristic that must be checked against
   live runtime and duration evidence
+- claiming that Colab progress cannot be inspected when the relevant status,
+  logs, or spool artifacts are already persisted in Google Drive and the Drive
+  connector is available
 - assuming `journald` alone is historical GPU monitoring when no periodic GPU
   sampler is actually writing to the journal
 - treating official Qwen single-speaker docs as if they already solved the
