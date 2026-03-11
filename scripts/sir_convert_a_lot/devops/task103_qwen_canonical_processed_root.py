@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import shutil
+import unicodedata
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal, Sequence
@@ -371,8 +372,9 @@ def _candidates_match(first: RowCandidate, second: RowCandidate) -> bool:
 
 def _hash_file(path: Path) -> str:
     """Hash one file with SHA256."""
+    resolved_path = _resolve_existing_artifact_path(path)
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
+    with resolved_path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
@@ -385,15 +387,45 @@ def _copy_artifact_with_fallback(
     relative_path: Path,
 ) -> Path:
     """Materialize one retained artifact by hardlink with copy fallback."""
+    resolved_source_path = _resolve_existing_artifact_path(source_path)
     target_path = output_root / relative_path
     target_path.parent.mkdir(parents=True, exist_ok=True)
     if target_path.exists():
         return target_path
     try:
-        os.link(source_path, target_path)
+        os.link(resolved_source_path, target_path)
     except OSError:
-        shutil.copy2(source_path, target_path)
+        shutil.copy2(resolved_source_path, target_path)
     return target_path
+
+
+def _resolve_existing_artifact_path(path: Path) -> Path:
+    """Resolve a path across Unicode-normalized filesystem variants."""
+    if path.exists():
+        return path
+    if not path.is_absolute():
+        raise FileNotFoundError(path)
+    parts = path.parts
+    if not parts:
+        raise FileNotFoundError(path)
+    current_path = Path(parts[0])
+    if not current_path.exists():
+        raise FileNotFoundError(path)
+    for part in parts[1:]:
+        candidate_path = current_path / part
+        if candidate_path.exists():
+            current_path = candidate_path
+            continue
+        normalized_part = unicodedata.normalize("NFC", part)
+        matching_paths = [
+            child_path
+            for child_path in current_path.iterdir()
+            if unicodedata.normalize("NFC", child_path.name) == normalized_part
+        ]
+        if len(matching_paths) != 1:
+            raise FileNotFoundError(path)
+        current_path = matching_paths[0]
+    return current_path
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:

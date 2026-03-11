@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_canonical_processed_root import (
@@ -136,3 +137,59 @@ def test_build_canonical_processed_root_quarantines_conflicting_rows(tmp_path: P
         preferred_root.as_posix(),
         secondary_root.as_posix(),
     ]
+
+
+def test_build_canonical_processed_root_resolves_unicode_normalized_audio_paths(
+    tmp_path: Path,
+) -> None:
+    """Canonical processed-root build should survive Unicode filename normalization drift."""
+    preferred_root = tmp_path / "preferred"
+    audio_name = "GS01FÖU5-14-0.wav"
+    decomposed_audio_name = unicodedata.normalize("NFD", audio_name)
+    audio_path = (
+        preferred_root
+        / "audio_24k"
+        / "rixvox"
+        / "train"
+        / "speaker-a"
+        / decomposed_audio_name
+    )
+    audio_24k_path = (
+        preferred_root / "audio_24k" / "rixvox" / "train" / "speaker-a" / audio_name
+    ).relative_to(preferred_root)
+    write_test_wav(audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    write_spool_row(
+        preferred_root,
+        SpoolRow(
+            dataset="rixvox",
+            source_split="train",
+            dataset_row_id="row-unicode",
+            speaker_id="speaker-a",
+            speaker_name="speaker-a",
+            speaker_from_id=True,
+            source_audio_path=f"speaker-a/{audio_name}",
+            audio_24k_path=audio_24k_path.as_posix(),
+            duration_seconds=1.0,
+            text_normalized="hej från sverige",
+            reference_audio_24k_paths={},
+            asr_model="KBLab/kb-whisper-large",
+            asr_revision="strict",
+            asr_transcript="Hej från Sverige.",
+            asr_wer=0.0,
+            quality_tier="high_trust",
+            speaker_quality_gate="speaker_from_id",
+            dedup_applied=False,
+            admission_decision="admit",
+            manifest_targets=("swedish_smoke_train",),
+        ),
+    )
+
+    output_root = tmp_path / "canonical-root"
+    summary = build_canonical_processed_root(
+        output_root=output_root,
+        run_roots=[preferred_root],
+    )
+
+    assert summary.retained_row_count == 1
+    retained_audio = output_root / "audio_24k" / "rixvox" / "train" / "speaker-a" / audio_name
+    assert retained_audio.is_file()
