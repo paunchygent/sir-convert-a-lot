@@ -280,17 +280,27 @@ Keep those steps in repo-owned command surfaces.
   row-processing; finalization, reports, promotion, and held-out corpora remain
   on Hemma.
 
-After the `task116`/`task129` overlap incident, future incremental slice
-issuance has a stricter rule:
+After the `task116`/`task129` overlap incident, future incremental allocation
+has a stricter canonical path:
 
-- do not use the original proof-era `plan` command for follow-on allocation
-- use `task-121-colab-slice-bundle plan-remaining-unique`
-- provide every known owner of rows through:
-  - `--exclude-completed-run-root`
-  - `--exclude-selected-source-records-path`
+- dedupe completed run roots into one canonical processed root
+- build one immutable shard registry from the remaining universe
+- issue worker processing units only from shard ids
 
-That command subtracts already completed or already reserved row keys before
-the deterministic modulo slice is issued.
+Canonical commands:
+
+- `python -m scripts.sir_convert_a_lot.devops.task103_qwen_canonical_processed_root build`
+- `task-121-colab-slice-bundle build-shard-registry`
+- `task-121-colab-slice-bundle issue-processing-unit-from-shards`
+
+Shard rules:
+
+- use roughly `5000` rows per shard by default
+- never recreate a shard under a different id
+- never issue work outside the shard ledger
+
+`plan-remaining-unique` remains available only for incident recovery and
+salvage of already-issued manifests.
 
 If an in-flight Colab manifest must be salvaged after overlap is discovered,
 use the repo-owned dedupe surface:

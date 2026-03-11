@@ -200,18 +200,19 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Completed `T133` as the first Task 103 production follow-on after `T132`: Task 103 run-status lifecycle and heartbeat orchestration now live in `task103_qwen_runner_status.py`, the public runner delegates to that helper instead of inlining nested callback/status logic, and the new direct helper tests make the run-status seam independently testable.
   - Tightened the decomposed Task 103 processing tests so they stub both `WhisperStrictScorer.ensure_loaded()` and `transcribe()` through shared test support, preserving row-processing/resume/finalization coverage while avoiding unnecessary local CPU ASR pipeline startup during focused test runs.
   - Completed `T134` to contain the `task116`/`task129` overlap incident: Task 121 now exposes repo-owned `plan-remaining-unique` and `dedupe-selected-source-records` commands, the portable-slice reference/runbook now require guarded allocation against completed run roots and already-issued selected-source manifests, and the live `task129` slice currently has `7347` rows still unique after subtracting both Hemma-completed and Colab-completed ownership.
+  - Completed `T137` to turn overlap containment into the first durable allocation model: Task 103 now builds one canonical deduplicated processed root from ordered run roots, Task 121 now cuts the remaining universe into immutable `~5000`-row shards plus an append-only shard-assignment ledger, and the public Task 121 CLI has been reduced to a thin canonical surface over planning, localization, shard registry, and shard assignment modules.
 
 ## Next Actions
 
-- Current local execution focus is Epic 08 overlap containment plus Colab scaling follow-through: use `T134` to emit one deduplicated remaining manifest for the live `task129` Colab lane, then use guarded remaining-universe allocation for any future follow-on slices.
+- Current local execution focus is Epic 08 canonical ownership hardening: materialize the first canonical processed root from the relevant Task 103 run roots, then use the shard registry plus assignment ledger as the only future allocation path for new preprocessing units.
 - Current reliability hardening follow-on is to validate the new `T131` resume index on the live persistent Colab run and capture the before/after restart latency once the next real resume is performed.
 - Current preprocessing-quality follow-on is to use the decomposed `T132` test surface as the guardrail for the next Task 103 production refactors, starting with runner/orchestration responsibility review and any further domain extraction inside the Task 103 runtime.
 - Current Task 103 production follow-on after `T133` is to review source-resolution and run-metadata orchestration next, now that run-status lifecycle ownership has been extracted from the public runner.
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`,
-  `T109`, and `T115` are complete, `T119` makes bounded source-selection
-  reusable, and Colab follow-on work is now `T121-T130` with live proof,
-  resume semantics, localization, progress logging, GPU preflight, persistent
-  multi-session defaults, and stale-checkout refresh behavior in place.
+  `T109`, `T115`, `T131`, `T132`, `T133`, `T134`, and `T137` are complete;
+  bounded source-selection, persistent Colab resume, overlap containment,
+  canonical processed-root dedupe, and immutable shard allocation are now in
+  place for the next preprocessing campaign.
 - Active corpus-expansion focus is `T116`: detached Hemma row-processing `task116-rowproc-5x2-20260309c` resumed successfully and had reached `4637` processed rows of `10024` by `2026-03-10T19:27:05Z`; refresh the Task 116 resource monitor so the resumed segment regains fresh historical telemetry.
 - Follow-on hardening after the first detached `T108` repro is now in place: `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later provenance-safe ASR relabel candidate task.
 - `T115` evidence under `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/` proves durable checkpoint, intentional stop, detached resume, and successful completion.

@@ -185,6 +185,22 @@
     - union already owned inside the slice: `10653`
     - still-unique remaining rows in the current slice: `7347`
 
+- Completed `T137` to turn overlap containment into a durable canonical model:
+  - added `scripts/sir_convert_a_lot/devops/task103_qwen_canonical_processed_root.py`
+    so ordered Task 103 run roots can be deduped into one immutable canonical
+    processed root with duplicates/conflicts reports
+  - split Task 121 portable slice behavior by bounded context into:
+    - `task121_qwen_portable_slice_planning.py`
+    - `task121_qwen_portable_slice_localization.py`
+    - `task121_qwen_shard_registry.py`
+    - `task121_qwen_assignment_ledger.py`
+  - rewrote `task121_qwen_colab_slice_bundle.py` into a thin canonical CLI
+    with no notebook-owned logic and no alias surfaces
+  - future work allocation is now intended to be shard-first:
+    - build canonical processed root
+    - build immutable `~5000`-row shard registry
+    - issue processing units from shard ids only
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
@@ -220,16 +236,20 @@
 - `pdm run validate-tasks`
 - `pdm run validate-docs`
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_canonical_processed_root.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py scripts/sir_convert_a_lot/devops/task121_qwen_shard_registry.py scripts/sir_convert_a_lot/devops/task121_qwen_assignment_ledger.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_planning.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_localization.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_models.py tests/sir_convert_a_lot/test_task103_qwen_canonical_processed_root.py tests/sir_convert_a_lot/test_task121_qwen_shard_registry.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py`
+- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task103_qwen_canonical_processed_root.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py scripts/sir_convert_a_lot/devops/task121_qwen_shard_registry.py scripts/sir_convert_a_lot/devops/task121_qwen_assignment_ledger.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_planning.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_localization.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_models.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_canonical_processed_root.py tests/sir_convert_a_lot/test_task121_qwen_shard_registry.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py -q`
 
 ## Next Session Goals
 
-- Run `task121_qwen_colab_slice_bundle dedupe-selected-source-records` against
-  the live `task129` localized manifest once the synced Colab/Hemma run roots
-  are available in the same filesystem context, then resume Colab against the
-  emitted deduplicated manifest.
-- Switch any future follow-on slice issuance from the proof-era `plan` command
-  to `plan-remaining-unique` and include all known completed run roots plus
-  already-issued selected-source manifests as exclusions.
+- Build the first canonical processed root from the chosen completed Task 103
+  run roots, then use that canonical root as the only durable ownership base
+  for future allocation.
+- Cut the remaining universe into immutable `~5000`-row shards and issue the
+  next processing units from shard ids only.
+- Keep `plan-remaining-unique` and `dedupe-selected-source-records` as
+  recovery-only surfaces for already-issued manifests, not the long-term
+  allocation path.
 - Refresh or relaunch the detached Task 116 Hemma resource monitor so resumed
   `task116-rowproc-5x2-20260309c` telemetry covers the post-`17:40Z` segment.
 - Use the decomposed `T132` Task 103 test surface as the guardrail for the

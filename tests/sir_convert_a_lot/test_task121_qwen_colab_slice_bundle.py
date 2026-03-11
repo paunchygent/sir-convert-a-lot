@@ -22,19 +22,23 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
     Task103SourceSelectionSummary,
     write_selected_source_records,
 )
-from scripts.sir_convert_a_lot.devops.task121_qwen_colab_slice_bundle import (
-    build_portable_slice_bundle,
-    build_remaining_unique_portable_slice_bundle,
-    dedupe_selected_source_records,
-    deduped_selected_source_summary_path,
-    load_portable_selected_source_records,
+from scripts.sir_convert_a_lot.devops.task121_qwen_portable_slice_localization import (
     localize_portable_slice,
+    stage_required_files_for_portable_slice,
+)
+from scripts.sir_convert_a_lot.devops.task121_qwen_portable_slice_models import (
+    deduped_selected_source_summary_path,
     localized_selected_source_records_path,
     localized_slice_summary_path,
     portable_required_files_path,
     portable_slice_summary_path,
-    stage_required_files_for_portable_slice,
     unique_allocation_summary_path,
+)
+from scripts.sir_convert_a_lot.devops.task121_qwen_portable_slice_planning import (
+    build_portable_slice_bundle,
+    build_remaining_unique_portable_slice_bundle,
+    dedupe_selected_source_records,
+    load_portable_selected_source_records,
 )
 from tests.sir_convert_a_lot.task103_test_support import write_test_wav
 
@@ -308,7 +312,7 @@ def test_task121_stage_required_files_for_portable_slice(tmp_path: Path, monkeyp
     )
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task121_qwen_colab_slice_bundle.hf_hub_download",
+        "scripts.sir_convert_a_lot.devops.task121_qwen_portable_slice_localization.hf_hub_download",
         lambda **_kwargs: cached_archive_path.as_posix(),
     )
 
@@ -379,7 +383,7 @@ def test_task121_stage_required_files_emits_progress(
     )
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task121_qwen_colab_slice_bundle.hf_hub_download",
+        "scripts.sir_convert_a_lot.devops.task121_qwen_portable_slice_localization.hf_hub_download",
         lambda **_kwargs: cached_archive_path.as_posix(),
     )
 

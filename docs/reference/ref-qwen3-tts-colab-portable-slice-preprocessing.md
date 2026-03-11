@@ -85,28 +85,46 @@ This guarantees:
 - no overlap between slices
 - full coverage of the chosen bounded source-selection universe
 
-## Post-Incident Hard Allocation Rule
+## Canonical Ownership Rule
 
-Once any prior Hemma or Colab preprocessing run root exists, future portable
-slice issuance must move from the original proof-only `plan` command to the
-guarded remaining-universe command:
+Once real preprocessing work exists, row ownership must be governed by two
+immutable artifacts:
+
+- one canonical processed root built from completed Task 103 run roots
+- one shard registry built from the remaining source-selection universe
+
+Future processing units must be issued from shard ids, not from freeform slice
+math over the remaining universe.
+
+Canonical commands:
+
+- build the canonical processed root
+  - `python -m scripts.sir_convert_a_lot.devops.task103_qwen_canonical_processed_root build`
+- build the immutable shard registry
+  - `task-121-colab-slice-bundle build-shard-registry`
+- issue one processing unit from shard ids
+  - `task-121-colab-slice-bundle issue-processing-unit-from-shards`
+
+Default posture:
+
+- target roughly `5000` rows per shard
+- combine shard ids into one processing unit when a worker needs more than one
+  shard
+
+## Incident Recovery Rule
+
+`plan-remaining-unique` remains available only for bounded incident recovery
+when an in-flight manifest must be salvaged against already-owned rows.
+
+Recovery command:
 
 - `task-121-colab-slice-bundle plan-remaining-unique`
 
-That guarded command must be given every known exclusion source that already
-owns rows:
+Recovery exclusions:
 
 - completed Task 103 run roots through `--exclude-completed-run-root`
 - already issued selected-source manifests through
   `--exclude-selected-source-records-path`
-
-The command first subtracts those owned row keys from the source-selection
-universe and only then applies deterministic modulo partitioning.
-
-This is the canonical rule for future incremental portable slices. The old
-`plan` command remains backward compatible for proof-era artifacts, but it is
-no longer the canonical allocation path after real run roots or issued slices
-exist.
 
 ## Required File Staging
 
@@ -224,11 +242,8 @@ using the same hybrid CPU/GPU row-processing model as the Hemma lane.
 
 ## Open Follow-On
 
-This first lane does not yet solve:
+This lane now has canonical ownership and allocation governance, but it still
+does not solve:
 
-- Hemma-plus-Colab shared slice reservation for a single live 10k-row run
-- multi-slice merge semantics
 - finalization across federated row-processing runs
-
-Those should become separate tasks after the first portable slice lane is
-proven locally and, later, in one real Colab execution.
+- downstream pilot/train-set construction from multiple canonicalized roots

@@ -4,7 +4,7 @@ id: REF-qwen3-tts-swedish-preprocessing-and-manifest-spec
 title: Qwen3-TTS Swedish Preprocessing and Manifest Specification
 status: active
 created: 2026-03-08
-updated: 2026-03-09
+updated: 2026-03-11
 owners:
   - Olof
 links:
@@ -150,6 +150,31 @@ Promotion contract:
 - promotion must not mutate the run root in place
 - failed runs must never overwrite the canonical shared corpus view
 
+## Canonical Processed Root Contract
+
+Once more than one Task 103 run root exists, the canonical processed truth
+must be materialized explicitly rather than inferred from multiple live roots.
+
+Required posture:
+
+- original run roots remain immutable evidence
+- one canonical processed root is built from ordered run roots
+- row identity is `(dataset, source_split, dataset_row_id)`
+- same-row conflicts must be quarantined, not silently merged
+
+Canonical surface:
+
+- `python -m scripts.sir_convert_a_lot.devops.task103_qwen_canonical_processed_root build`
+
+Required canonical-root outputs:
+
+- deduplicated `spool/rows/`
+- reachable `audio_24k/`
+- rebuilt `completed_row_keys.jsonl`
+- `reports/canonical_processed_root_report.json`
+- `reports/canonical_processed_root_duplicates.jsonl`
+- `reports/canonical_processed_root_conflicts.jsonl`
+
 ## Pipeline Stages
 
 The full planned preprocessing flow, including `T110` / `T111` hardening, is
@@ -190,6 +215,26 @@ Preferred execution behavior:
 - later stages consume deterministic on-disk artifacts from earlier stages
 - rerunning later stages must not require recomputing already completed
   row-processing work
+
+## Immutable Shard Allocation Contract
+
+Once a canonical processed root exists, the remaining source-selection universe
+must be cut into immutable shards before new worker assignments are issued.
+
+Required posture:
+
+- default shard target is roughly `5000` rows
+- shard ids are immutable and must never be recreated under another id
+- processing units must be issued from shard ids only
+- assignment state must be persisted in one append-only ledger
+- assigned or completed shard ids must be rejected for reissuance
+
+Canonical surfaces:
+
+- `task-121-colab-slice-bundle build-shard-registry`
+- `task-121-colab-slice-bundle issue-processing-unit-from-shards`
+- `task-121-colab-slice-bundle release-processing-unit`
+- `task-121-colab-slice-bundle complete-processing-unit`
 
 Hemma hard-isolation rule:
 
