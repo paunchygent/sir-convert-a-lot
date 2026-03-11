@@ -48,6 +48,7 @@ Active focus is Epic 06: long OCR PDF progress visibility, partial artifact/chec
 resume reliability, and throughput scaling.
 
 This file is the canonical long-term memory index for session progress; session handoff summaries must be archived here when `handoff.md` is pruned. Current epic entrypoint:
+
 - `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
 
 Primary implementation stories (active sequence): Stories 17-19 are completed; Story 20 remains
@@ -188,11 +189,13 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
     now the only canonical promotion path.
 
 - 2026-03-10:
+
   - Completed `T124-T128`: portable Colab slices now support repo-owned localization, archive/timing progress logs, the canonical repo URL, and GPU preflight while the notebook stays a thin Task 103 orchestrator.
   - Completed live localized Colab proof `task121-colab-proof-rowproc-20260310a`: `256/256` rows finished with `256` spool rows and `256` `audio_24k` files at about `11.2` rows/minute end to end and `12-13` rows/minute in steady state.
   - Completed `T129-T130`: the notebook now defaults to `task129-scale-slice-1-of-2-20260311a`, a stable `RUN_ID`, persistent Google Drive storage for cross-session resume safety, the next `10:2` Colab worker mix, and a forced refresh of any existing Colab repo checkout before bundle lookup.
 
 - 2026-03-11:
+
   - Completed `T131` to harden Drive-backed Task 103 resume performance after the persistent Colab `task129` run exposed a real bottleneck: row-processing now maintains `spool/completed_row_keys.jsonl`, resume prefers that sequential index, older run roots rebuild it from canonical spool JSON, stale crash tails self-heal by skipping rows whose spool artifact already exists, and the committed `task103_qwen_resume_index.py` helper can rebuild or validate historical run roots explicitly.
   - Completed `T132` to make the next Task 103 production refactors safer and more honest: the old `tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py` monolith was removed, shared builders moved into `tests/sir_convert_a_lot/task103_test_support.py`, and the Task 103 test surface is now split into focused runner, processing, source-adapter, and ASR modules.
   - Completed `T133` as the first Task 103 production follow-on after `T132`: Task 103 run-status lifecycle and heartbeat orchestration now live in `task103_qwen_runner_status.py`, the public runner delegates to that helper instead of inlining nested callback/status logic, and the new direct helper tests make the run-status seam independently testable.
@@ -205,16 +208,13 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Completed `T141`: Task 101, Story 25, the Qwen runbook, the finetuning guide, and the relevant skills now require the frozen pilot root plus one deterministic Task 101 training bundle with `swedish_pilot_train`, `swedish_checkpoint_dev`, stable `refs/`, and machine-readable bundle metadata before launch.
   - Completed `T142`: the repo now has the committed `task-101-pilot-bundle build` surface, the deterministic pilot bundle report contract, and a Task 101 runner that points at `pilot_bundle_root` instead of the generic promoted Task 103 corpus view.
   - Completed `T143`: the Task 101 pilot-bundle builder is now relocation-safe against copied frozen roots, detached launch preflight fails closed on broken bundle-local `audio` / `ref_audio` paths, and Task 101 launch/status/report artifacts now record both train and held-out eval manifest paths while staying explicit that upstream Qwen training remains train-only.
+  - Completed `T117`: the Hemma Qwen training lane now traps `SIGTERM` / `SIGINT`, writes a final durable `signal-stop` checkpoint when progress advanced, uses `rsync -a --partial` for fallback HF cache sync, and emits explicit BuildKit cold-build warnings before Task 100/101 image compilation.
+
 ## Next Actions
 
 - Current local execution focus is Epic 08 canonical ownership hardening: the first canonical pilot root now exists, and future allocation should use it plus the shard registry/assignment ledger instead of fresh overlapping slice math.
-- Current training follow-on is `T117` for graceful stop, cold-start visibility, and cache-sync hardening now that `T143` has closed the remaining Task 101 bundle/eval contract gaps.
+- Current training follow-on is the real bounded Task 101 Hemma pilot launch from the deterministic pilot bundle, with `T118` remaining the next code-facing optimization slice if dataloader throughput becomes the bottleneck.
 - Immediate operational follow-on is to reload Colab against `task138-task129-remaining-unique-20260311a-bundle.tar.gz` while keeping the same persistent `task129-colab-scale-rowproc-1-of-2-20260311a` run root so only the `7187` remaining unique rows are processed.
 - Current reliability hardening follow-on is to validate the new `T131` resume index on the live persistent Colab run and capture the before/after restart latency once the next real resume is performed.
 - Current preprocessing-quality follow-on is to use the decomposed `T132` test surface as the guardrail for the next Task 103 production refactors, starting with runner/orchestration responsibility review and any further domain extraction inside the Task 103 runtime.
 - Current ownership-governance follow-on is to use the existing `task140-task129-post-pilot-remaining-20260311a` shard registry as the only future allocation surface for that bounded `task129` universe once the in-flight Colab recovery run is finished.
-- Current Task 103 production follow-on after `T133` is source-resolution and run-metadata orchestration now that run-status lifecycle ownership has been extracted from the public runner.
-- Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`, `T109`, `T115`, `T131`, `T132`, `T133`, `T134`, and `T137` are complete; bounded source-selection, persistent Colab resume, overlap containment, canonical processed-root dedupe, and immutable shard allocation are in place for the next preprocessing campaign.
-- Historical corpus-expansion note: `T116` Hemma row-processing is now complete and has been folded into the `T138` canonical pilot ownership set.
-- Follow-on hardening after the first detached `T108` repro is now in place: `T110`, `T112`, `T113`, and `T114` are complete; `T111` remains the later provenance-safe ASR relabel candidate task.
-- `T115` evidence under `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/` proves durable checkpoint, intentional stop, detached resume, and successful completion.

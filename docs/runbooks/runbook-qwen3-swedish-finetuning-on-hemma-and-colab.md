@@ -313,6 +313,7 @@ is a repo-owned portable-slice localization stage:
 
 Do not move archive extraction or locator resolution into notebook-only code.
 Keep those steps in repo-owned command surfaces.
+
 - Interrupted row-processing runs must eventually resume from the preserved run
   root and existing spool rows instead of restarting from zero; `T123` closes
   that remaining durability gap.
@@ -871,6 +872,8 @@ Canonical Task 106 acquisition surface:
      `pdm run run-hemma -- pdm run task-101-pilot-bundle build`
    - canonical command:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
+   - if the launch will build the image, the runner now prints an explicit
+     BuildKit cold-build warning before compilation starts
    - canonical input contract before launch:
      - deterministic pilot bundle projected from the frozen pilot root
      - train family: `swedish_pilot_train`
@@ -883,6 +886,11 @@ Canonical Task 106 acquisition surface:
        training loop
    - inspect the detached pilot with:
      `pdm run run-hemma -- pdm run task-101-pilot status`
+   - intentional stop behavior:
+     - `pdm run run-hemma -- pdm run task-101-pilot stop`
+     - the patched training loop now traps `SIGTERM` / `SIGINT` and writes one
+       final durable checkpoint before exit when progress advanced beyond the
+       latest durable step
    - keep the pilot bounded and evidence-first:
      - default train family: `swedish_pilot_train`
      - default batch size: `1`
@@ -916,6 +924,7 @@ Current limitation:
   `asr_transcript`
 - promoting approved ASR text into the training path remains explicit future
   work owned by `T111`
+
 1. Execute Task 116 before the next real long Hemma training window.
    - stage broader `rixvox` train coverage first:
      - keep `train_0`

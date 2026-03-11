@@ -1,9 +1,9 @@
 ---
-id: 'task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety'
-title: 'Harden the Qwen Hemma training runtime for graceful stop and cold-start safety'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety
+title: Harden the Qwen Hemma training runtime for graceful stop and cold-start safety
+type: task
+status: completed
+priority: high
 created: '2026-03-09'
 last_updated: '2026-03-11'
 related:
@@ -22,6 +22,7 @@ labels:
   - hemma
   - hardening
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -133,34 +134,34 @@ Operational boundary:
 
 ## Deliverables
 
-- [ ] Graceful stop/checkpoint hardening in the patched Qwen training loop.
-- [ ] Incremental `rsync`-based Task 100 cache sync path.
-- [ ] Operator-visible cold-build warning in the Task 100/101 launch surfaces.
-- [ ] Updated runbook/task docs that describe the new stop/build behavior.
+- [x] Graceful stop/checkpoint hardening in the patched Qwen training loop.
+- [x] Incremental `rsync`-based Task 100 cache sync path.
+- [x] Operator-visible cold-build warning in the Task 100/101 launch surfaces.
+- [x] Updated runbook/task docs that describe the new stop/build behavior.
 
 ## Acceptance Criteria
 
-- [ ] An intentional Task 101 stop requests a clean training shutdown rather
+- [x] An intentional Task 101 stop requests a clean training shutdown rather
   than relying entirely on Docker's default forced termination path.
-- [ ] If progress advanced beyond the latest durable checkpoint, the stop path
+- [x] If progress advanced beyond the latest durable checkpoint, the stop path
   writes one final durable checkpoint before exit.
-- [ ] Task 100 no longer uses python-wrapped `cp -a` loops for the fallback
+- [x] Task 100 no longer uses python-wrapped `cp -a` loops for the fallback
   home-cache-to-data-disk sync path.
-- [ ] Task 100/101 launch output makes a cold image build explicit before the
+- [x] Task 100/101 launch output makes a cold image build explicit before the
   blocking BuildKit compile begins.
-- [ ] Tests cover:
+- [x] Tests cover:
   - graceful stop signaling semantics,
   - cache sync command construction or execution contract,
   - launch warning behavior.
-- [ ] Docs and runbook language match the implemented Hemma operator behavior.
+- [x] Docs and runbook language match the implemented Hemma operator behavior.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_task100_qwen_finetune_runtime.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
-- [ ] `pdm run validate-docs`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_task100_qwen_finetune_runtime.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
+- [x] `pdm run validate-docs`
 
 ## Notes
 
@@ -170,8 +171,28 @@ Current planning position after `T141`:
 - `T117` is the immediate next hardening slice once the Task 101 pilot bundle
   exists and the runner points at it
 
+## Outcome
+
+`T117` is now implemented.
+
+The Hemma Qwen training lane now:
+
+- traps `SIGTERM` / `SIGINT` inside the patched training loop,
+- writes one final durable checkpoint with `signal-stop` semantics when
+  progress advanced beyond the latest saved checkpoint,
+- uses `rsync -a --partial` for the fallback home-cache-to-data-disk sync path,
+- emits an explicit BuildKit cold-build warning before heavy Task 100/101 image
+  compilation begins.
+
+Focused tests now prove:
+
+- stop-signal recording and stop-handler installation rules,
+- final durable checkpoint persistence on intentional stop,
+- `rsync` cache-sync command construction,
+- Task 100/101 cold-build warning behavior.
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

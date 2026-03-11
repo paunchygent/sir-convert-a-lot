@@ -97,8 +97,9 @@ that a real Swedish optimizer step fits on the R9700.
   committed surface.
 - [ ] A dedicated task defines and proves robust resumable checkpointing before
   the first long unattended Hemma training window.
-- [ ] A follow-on hardening task covers graceful stop behavior, resumable cache
-  sync, and cold-build operator visibility for the Hemma training lane.
+- [x] A follow-on hardening task covers graceful stop behavior, resumable cache
+  sync, and cold-build operator visibility for the Hemma training lane, and
+  `T117` now provides that committed surface.
 - [ ] A profiling follow-up task exists for the dataloader/mel-precompute
   question before any architecture claim is treated as settled.
 - [ ] A separate Colab activation task exists for the CUDA runtime rather than

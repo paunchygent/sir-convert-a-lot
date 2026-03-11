@@ -16,6 +16,7 @@ labels:
   - qwen-tts
   - finetuning
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
@@ -99,8 +100,8 @@ This review is accepted as the baseline for the next set of hardening tasks.
 
 ## Follow-up Actions
 
-- [ ] Add `SIGTERM` handling to `sft_12hz.py` for graceful durable checkpointing on `docker stop`.
-- [ ] Replace synchronous `cp -a` in `_sync_home_cache_into_data_disk` with `rsync`.
+- [x] Add `SIGTERM` handling to `sft_12hz.py` for graceful durable checkpointing on `docker stop`.
+- [x] Replace synchronous `cp -a` in `_sync_home_cache_into_data_disk` with `rsync`.
 - [ ] Establish a `Dockerfile.cuda` when activating the Colab fallback lane.
 - [ ] Profile dataloader throughput and evaluate moving Mel-spectrogram computation into the `task103` preprocessing pipeline.
 - [ ] Expose `--sub_talker_loss_weight` in the patched training script.

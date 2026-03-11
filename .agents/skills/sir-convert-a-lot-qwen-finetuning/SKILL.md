@@ -33,6 +33,7 @@ description: >-
 Use this skill together with the broader local skill:
 
 - `.agents/skills/speech-model-finetuning-on-hemma/SKILL.md`
+
 - `.agents/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
 
 - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
@@ -46,7 +47,9 @@ Use this skill together with the broader local skill:
 - `docs/backlog/tasks/task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md`
 
 - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+
 - `docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md`
+
 - `docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md`
 
 - `docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md`
@@ -92,6 +95,10 @@ explicitly narrow the scope.
   manifest paths in launch/status/report metadata while staying explicit that
   upstream `sft_12hz.py` is still train-only and does not perform in-training
   evaluation.
+- Intentional detached Task 101 stops now request graceful shutdown and one
+  final durable checkpoint when progress advanced beyond the latest saved step.
+- Task 100/101 launch surfaces now emit an explicit BuildKit cold-build warning
+  before heavy image compilation begins.
 - Any future production use must still fit the sidecar-only architecture from
   ADR-0006 and ADR-0007.
 - Long-running Hemma preprocessing, training, and corpus-acquisition work must

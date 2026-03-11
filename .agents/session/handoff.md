@@ -4,6 +4,7 @@
 
 - Completed the local `T124` throughput-hardening slice for portable Colab
   Qwen preprocessing:
+
   - `scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py`
     now exposes `localize-slice`
   - the localization stage resolves portable selected-source rows against
@@ -15,6 +16,7 @@
     audio-file locators so reruns avoid repeated archive-member resolution
 
 - Kept the notebook thin and repo-owned:
+
   - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now stages
     required files, runs `localize-slice`, and then invokes canonical Task 103
     row-processing against the localized manifest
@@ -23,6 +25,7 @@
     - `gpu_asr_worker_count=2`
 
 - Updated docs-as-code surfaces for the new localized Colab lane:
+
   - `docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md`
     is terminalized with deliverables/checklists complete
   - `docs/reference/ref-qwen3-tts-colab-portable-slice-preprocessing.md`
@@ -33,6 +36,7 @@
     actions
 
 - Completed `T125` as a workflow guardrail for future iterations:
+
   - added `.agents/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
   - registered the skill in `.agents/skills/README.md` and the local global
     skill registry under `~/.codex/skills/sir-convert-a-lot-colab-hemma`
@@ -42,12 +46,14 @@
 
 - Completed `T126` after the first Colab rerun exposed a stale notebook clone
   URL:
+
   - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now defaults
     to `https://github.com/paunchygent/sir-convert-a-lot.git`
   - the notebook bootstrap now also accepts `SIR_CONVERT_A_LOT_REPO_URL` for
     intentional overrides
 
 - Completed `T127` and `T128` as live Colab operator guardrails:
+
   - `scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py` now
     prints progress for each required archive, localization start/end per
     archive, extracted/reused file counts, and elapsed time for staging and
@@ -57,6 +63,7 @@
     fails immediately with a clear GPU-runtime error if CUDA is unavailable
 
 - Completed `T129` as the next Colab scaling-prep slice:
+
   - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now defaults
     to the large `task129-scale-slice-1-of-2-20260311a` identifiers
   - the notebook now uses a stable `RUN_ID` plus a persistent Google Drive
@@ -70,6 +77,7 @@
     multi-session Colab run
 
 - The localized live Colab proof completed successfully:
+
   - `task121-colab-proof-rowproc-20260310a`
   - `processed_row_count=256`
   - `total_row_count=256`
@@ -80,6 +88,7 @@
 
 - The concurrently running Hemma detached row-processing lane remained healthy
   during the same window:
+
   - detached launch `task116-rowproc-5x2-resume-20260310b` was still
     `running` at `2026-03-10T19:27:05Z`
   - Task 103 status showed `processed_row_count=4637` of `10024`
@@ -89,6 +98,7 @@
     be relaunched or refreshed for fresh historical telemetry
 
 - Completed the large-slice Hemma preparation and bundle commit:
+
   - fresh source-selection launch
     `task129-colab-scale-selection-launch-20260311a` completed at
     `2026-03-10T19:48:59Z`
@@ -104,14 +114,16 @@
 
 - Completed `T130` after the first task129 notebook launch exposed one stale
   checkout failure mode:
+
   - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now refreshes
     any existing `/content/sir-convert-a-lot` checkout with `fetch`,
     `checkout main`, and `pull --ff-only` before looking for the committed
-  portable bundle
+    portable bundle
   - this fixes the false `FileNotFoundError` path where the bundle existed on
     `main` but the already-open Colab repo clone predated the bundle commit
 
 - Completed `T131` as the next persistent-Colab resume hardening slice:
+
   - Task 103 row-processing now maintains
     `spool/completed_row_keys.jsonl` inside the run root as a sequential
     completed-row resume index
@@ -126,6 +138,7 @@
     with `rebuild` and `validate` commands for historical run roots
 
 - Completed `T132` as the next preprocessing-quality hardening slice:
+
   - the oversized
     `tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py` monolith was
     removed
@@ -141,6 +154,7 @@
     modules before the next Task 103 production refactors
 
 - Completed `T133` as the first Task 103 production refactor after `T132`:
+
   - added
     `scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py`
   - extracted Task 103 run-status lifecycle and heartbeat persistence out of
@@ -154,6 +168,7 @@
     the public runner
 
 - Optimized the decomposed Task 103 processing test surface:
+
   - `tests/sir_convert_a_lot/task103_test_support.py` now exposes a shared
     helper that stubs both `WhisperStrictScorer.ensure_loaded()` and
     `transcribe()`
@@ -163,6 +178,7 @@
     pipeline initialization
 
 - Completed `T134` to contain the live Hemma/Colab overlap incident:
+
   - added
     `scripts/sir_convert_a_lot/devops/task121_qwen_slice_allocation.py`
     so Task 121 can load canonical row keys from completed Task 103 run roots
@@ -186,6 +202,7 @@
     - still-unique remaining rows in the current slice: `7347`
 
 - Completed `T137` to turn overlap containment into a durable canonical model:
+
   - added `scripts/sir_convert_a_lot/devops/task103_qwen_canonical_processed_root.py`
     so ordered Task 103 run roots can be deduped into one immutable canonical
     processed root with duplicates/conflicts reports
@@ -202,6 +219,7 @@
     - issue processing units from shard ids only
 
 - Completed `T138` to restore order to the live pilot and current Colab lane:
+
   - materialized canonical pilot root:
     - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task138-qwen-pilot-owned-20260311b`
   - exact current ownership math:
@@ -223,6 +241,7 @@
     rather than assuming the retained root alone is a sufficient exclusion set
 
 - Completed `T141` to define the pilot-training bridge:
+
   - `Task 101`, `Story 25`, the Qwen runbook, and the finetuning guide now
     state the same rule that the first bounded Hemma fine-tune must consume a
     deterministic Task 101 pilot bundle projected from the frozen pilot root
@@ -231,6 +250,7 @@
     surfaces do not diverge during future planning or launch work
 
 - Opened `T142` as the next implementation slice for the training lane:
+
   - materialize one deterministic Task 101 pilot bundle from the frozen pilot
     root through `pdm run task-101-pilot-bundle build`
   - emit:
@@ -242,6 +262,7 @@
     103 preprocessing root and onto `pilot_bundle_root`
 
 - Completed `T143` as the immediate Task 101 hardening follow-on:
+
   - copied/restored frozen pilot roots now rebuild the pilot bundle without
     depending on stale absolute freeze-ledger paths
   - detached launch preflight now validates bundle-local prepared-manifest
@@ -249,6 +270,15 @@
   - detached launch/status/report artifacts now record both train and held-out
     eval manifest paths while staying explicit that upstream `sft_12hz.py`
     remains train-only
+
+- Completed `T117` to harden the Hemma Qwen training lifecycle:
+
+  - the patched Qwen loop now traps `SIGTERM` / `SIGINT`
+  - an intentional stop writes one final durable checkpoint with
+    `signal-stop` semantics when progress advanced
+  - Task 100 fallback HF cache sync now uses `rsync -a --partial`
+  - Task 100/101 launch surfaces now print an explicit BuildKit cold-build
+    warning before heavy compilation work
 
 ## Validation Evidence
 
