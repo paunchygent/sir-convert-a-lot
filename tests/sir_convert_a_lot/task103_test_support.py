@@ -18,6 +18,8 @@ import wave
 from pathlib import Path
 from typing import Sequence
 
+import pytest
+
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     Task103PreprocessingReport,
     Task103PreprocessingSettings,
@@ -98,3 +100,30 @@ def report_only_preprocessing_runner(
         return expected_report
 
     return _runner
+
+
+def stub_whisper_strict_scorer(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    transcript: str = "Hej från Sverige.",
+    transcribed_paths: list[str] | None = None,
+) -> None:
+    """Stub Task 103 ASR loading and transcription for lightweight processing tests."""
+
+    def _fake_ensure_loaded(self: object) -> None:
+        del self
+
+    def _fake_transcribe(self: object, audio_path: Path) -> str:
+        del self
+        if transcribed_paths is not None:
+            transcribed_paths.append(audio_path.name)
+        return transcript
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.ensure_loaded",
+        _fake_ensure_loaded,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
+        _fake_transcribe,
+    )

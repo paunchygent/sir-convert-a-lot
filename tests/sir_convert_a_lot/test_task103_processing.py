@@ -47,6 +47,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
 )
 from tests.sir_convert_a_lot.task103_test_support import (
     build_source_record,
+    stub_whisper_strict_scorer,
     write_test_wav,
 )
 
@@ -62,10 +63,7 @@ def test_task103_preprocessing_emits_deterministic_bundle(
     write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.25)
     write_test_wav(reference_audio_path, sample_rate_hz=16_000, duration_seconds=6.0)
 
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        lambda self, audio_path: "Hej från Sverige.",
-    )
+    stub_whisper_strict_scorer(monkeypatch)
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core._encode_audio_codes",
         lambda *, tokenizer_model, audio_paths: [[[11, 12, 13]] for _ in audio_paths],
@@ -206,10 +204,7 @@ def test_task103_preprocessing_supports_multiple_manifest_families(
     write_test_wav(fleurs_audio_path, sample_rate_hz=16_000, duration_seconds=2.0)
     write_test_wav(waxholm_audio_path, sample_rate_hz=16_000, duration_seconds=2.0)
 
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        lambda self, audio_path: "Hej från Sverige.",
-    )
+    stub_whisper_strict_scorer(monkeypatch)
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core._encode_audio_codes",
         lambda *, tokenizer_model, audio_paths: [[[21, 22]] for _ in audio_paths],
@@ -320,10 +315,7 @@ def test_task103_preprocessing_routes_rixvox_train_into_train_manifest_families(
         member.size = len(audio_bytes)
         archive.addfile(member, io.BytesIO(audio_bytes))
 
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        lambda self, audio_path: "Hej från Sverige.",
-    )
+    stub_whisper_strict_scorer(monkeypatch)
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core._encode_audio_codes",
         lambda *, tokenizer_model, audio_paths: [[[31, 32]] for _ in audio_paths],
@@ -376,10 +368,7 @@ def test_task103_row_processing_stage_emits_spool_without_manifests(
     write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.25)
     write_test_wav(reference_audio_path, sample_rate_hz=16_000, duration_seconds=6.0)
 
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        lambda self, audio_path: "Hej från Sverige.",
-    )
+    stub_whisper_strict_scorer(monkeypatch)
 
     report = run_task103_preprocessing(
         Task103PreprocessingSettings(
@@ -425,14 +414,9 @@ def test_task103_row_processing_resume_reuses_existing_spool_rows(
 
     transcribed_paths: list[str] = []
 
-    def _fake_transcribe(self: object, audio_path: Path) -> str:
-        del self
-        transcribed_paths.append(audio_path.name)
-        return "Hej från Sverige."
-
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        _fake_transcribe,
+    stub_whisper_strict_scorer(
+        monkeypatch,
+        transcribed_paths=transcribed_paths,
     )
 
     source_records = [
@@ -513,14 +497,9 @@ def test_task103_row_processing_resume_rebuilds_missing_completed_row_index(
 
     transcribed_paths: list[str] = []
 
-    def _fake_transcribe(self: object, audio_path: Path) -> str:
-        del self
-        transcribed_paths.append(audio_path.name)
-        return "Hej från Sverige."
-
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        _fake_transcribe,
+    stub_whisper_strict_scorer(
+        monkeypatch,
+        transcribed_paths=transcribed_paths,
     )
 
     source_records = [
@@ -593,14 +572,9 @@ def test_task103_row_processing_resume_self_heals_stale_completed_row_index(
 
     transcribed_paths: list[str] = []
 
-    def _fake_transcribe(self: object, audio_path: Path) -> str:
-        del self
-        transcribed_paths.append(audio_path.name)
-        return "Hej från Sverige."
-
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        _fake_transcribe,
+    stub_whisper_strict_scorer(
+        monkeypatch,
+        transcribed_paths=transcribed_paths,
     )
 
     source_record = build_source_record(
@@ -662,14 +636,9 @@ def test_task103_row_processing_resume_ignores_empty_crash_artifact_spool_rows(
 
     transcribed_paths: list[str] = []
 
-    def _fake_transcribe(self: object, audio_path: Path) -> str:
-        del self
-        transcribed_paths.append(audio_path.name)
-        return "Hej från Sverige."
-
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        _fake_transcribe,
+    stub_whisper_strict_scorer(
+        monkeypatch,
+        transcribed_paths=transcribed_paths,
     )
 
     source_record = build_source_record(
@@ -720,10 +689,7 @@ def test_task103_resume_index_helper_rebuild_and_validate(
     source_audio_path = workspace_root / "fixtures/source.wav"
     write_test_wav(source_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
 
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        lambda self, audio_path: "Hej från Sverige.",
-    )
+    stub_whisper_strict_scorer(monkeypatch)
 
     source_record = build_source_record(
         dataset="repo_fixture_sv",
@@ -779,10 +745,7 @@ def test_task103_finalization_stage_chunks_audio_code_generation(
     write_test_wav(second_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
     write_test_wav(third_audio_path, sample_rate_hz=16_000, duration_seconds=1.0)
 
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core.WhisperStrictScorer.transcribe",
-        lambda self, audio_path: "Hej från Sverige.",
-    )
+    stub_whisper_strict_scorer(monkeypatch)
 
     source_records = [
         build_source_record(

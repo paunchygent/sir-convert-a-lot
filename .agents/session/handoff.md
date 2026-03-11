@@ -153,6 +153,15 @@
     so this seam is independently testable rather than only covered through
     the public runner
 
+- Optimized the decomposed Task 103 processing test surface:
+  - `tests/sir_convert_a_lot/task103_test_support.py` now exposes a shared
+    helper that stubs both `WhisperStrictScorer.ensure_loaded()` and
+    `transcribe()`
+  - `tests/sir_convert_a_lot/test_task103_processing.py` now uses that helper
+    in the row-processing/resume/finalization cases so focused local test runs
+    keep their behavior coverage without triggering unnecessary CPU-side ASR
+    pipeline initialization
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
