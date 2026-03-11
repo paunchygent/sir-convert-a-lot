@@ -140,6 +140,19 @@
     source-adapter parsing, and ASR runtime behavior in separate reviewable
     modules before the next Task 103 production refactors
 
+- Completed `T133` as the first Task 103 production refactor after `T132`:
+  - added
+    `scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py`
+  - extracted Task 103 run-status lifecycle and heartbeat persistence out of
+    the public runner into one dedicated helper surface
+  - `run_task103_qwen_swedish_preprocessing.py` now delegates allocation,
+    running, source-selection, row-processing heartbeat, finalization
+    heartbeat, failure, and completion/promotion status writes to the helper
+  - added direct tests in
+    `tests/sir_convert_a_lot/test_task103_runner_status.py`
+    so this seam is independently testable rather than only covered through
+    the public runner
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
@@ -166,6 +179,9 @@
 - `pdm run python -m py_compile scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_storage.py scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_row_stage.py scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py`
 - `pdm run python -m ruff check tests/sir_convert_a_lot/task103_test_support.py tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py tests/sir_convert_a_lot/test_task103_sources.py tests/sir_convert_a_lot/test_task103_asr.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py tests/sir_convert_a_lot/test_task103_sources.py tests/sir_convert_a_lot/test_task103_asr.py -q`
+- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py tests/sir_convert_a_lot/test_task103_runner_status.py tests/sir_convert_a_lot/test_task103_runner.py`
+- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_runner_status.py tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py -q`
 
 ## Next Session Goals
 
@@ -179,3 +195,7 @@
 - Use the decomposed `T132` Task 103 test surface as the guardrail for the
   next production refactor pass, starting with runner/orchestration
   responsibility review instead of adding more behavior into the old monolith.
+- Continue the Task 103 production refactor sequence after `T133` by reviewing
+  source-resolution and run-metadata orchestration as the next extraction
+  candidate now that status lifecycle ownership has moved out of the public
+  runner.

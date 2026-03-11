@@ -30,9 +30,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
-    Task103FinalizationHeartbeat,
     Task103PreprocessingReport,
-    Task103RowProcessingHeartbeat,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_run_roots import (
     Task103RunContext,
@@ -40,17 +38,18 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_run_roots impor
     promote_run_root,
     resolve_run_context,
     write_run_metadata,
-    write_run_status,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
     iter_jsonl_objects,
+)
+from scripts.sir_convert_a_lot.devops.task103_qwen_runner_status import (
+    Task103RunStatusReporter,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_models import (
     SourceRecord,
     source_record_from_payload,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_source_selection import (
-    Task103SourceSelectionHeartbeat,
     Task103SourceSelectionHeartbeatCallback,
     Task103SourceSelectionSummary,
     load_selected_source_records,
@@ -346,6 +345,26 @@ def _resolve_run_context(settings: Task103RunnerSettings) -> Task103RunContext:
     )
 
 
+def _effective_preprocessing_settings(
+    settings: Task103RunnerSettings,
+    *,
+    output_root: Path,
+) -> Task103PreprocessingSettings:
+    """Build the effective preprocessing settings for one resolved run root."""
+    return Task103PreprocessingSettings(
+        output_root=output_root,
+        asr_model=settings.preprocessing.asr_model,
+        asr_revision=settings.preprocessing.asr_revision,
+        tokenizer_model=settings.preprocessing.tokenizer_model,
+        stage=settings.preprocessing.stage,
+        finalization_families=settings.preprocessing.finalization_families,
+        audio_codes_chunk_size=settings.preprocessing.audio_codes_chunk_size,
+        row_worker_count=settings.preprocessing.row_worker_count,
+        gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
+        resume_row_processing=settings.preprocessing.resume_row_processing,
+    )
+
+
 def _runner_payload(
     settings: Task103RunnerSettings,
     context: Task103RunContext,
@@ -397,75 +416,25 @@ def main(argv: list[str] | None = None) -> int:
         stage=settings.preprocessing.stage,
         runner_payload=_runner_payload(settings, context),
     )
-    write_run_status(
-        context,
-        source_mode=settings.source_mode,
-        stage=settings.preprocessing.stage,
-        status="allocated",
-    )
-    effective_settings = Task103PreprocessingSettings(
+    effective_settings = _effective_preprocessing_settings(
+        settings,
         output_root=context.run_root,
-        asr_model=settings.preprocessing.asr_model,
-        asr_revision=settings.preprocessing.asr_revision,
-        tokenizer_model=settings.preprocessing.tokenizer_model,
-        stage=settings.preprocessing.stage,
-        finalization_families=settings.preprocessing.finalization_families,
-        audio_codes_chunk_size=settings.preprocessing.audio_codes_chunk_size,
-        row_worker_count=settings.preprocessing.row_worker_count,
-        gpu_asr_worker_count=settings.preprocessing.gpu_asr_worker_count,
-        resume_row_processing=settings.preprocessing.resume_row_processing,
     )
-
-    def _source_selection_heartbeat_callback(heartbeat: Task103SourceSelectionHeartbeat) -> None:
-        write_run_status(
-            context,
-            source_mode=settings.source_mode,
-            stage="source-selection",
-            status="running",
-            current_split=heartbeat.current_split,
-            selected_row_count=heartbeat.selected_row_count,
-            target_row_cap=heartbeat.target_row_cap,
-            current_parquet_batch_index=heartbeat.current_parquet_batch_index,
-            resolved_audio_locator_count=heartbeat.resolved_audio_locator_count,
-            required_audio_locator_count=heartbeat.required_audio_locator_count,
-        )
-
-    def _row_heartbeat_callback(heartbeat: Task103RowProcessingHeartbeat) -> None:
-        write_run_status(
-            context,
-            source_mode=settings.source_mode,
-            stage=effective_settings.stage,
-            status="running",
-            processed_row_count=heartbeat.processed_row_count,
-            total_row_count=heartbeat.total_row_count,
-            current_dataset_row_id=heartbeat.current_dataset_row_id,
-        )
-
-    def _finalization_heartbeat_callback(heartbeat: Task103FinalizationHeartbeat) -> None:
-        write_run_status(
-            context,
-            source_mode=settings.source_mode,
-            stage=effective_settings.stage,
-            status="running",
-            current_family=heartbeat.current_family,
-            completed_families=heartbeat.completed_families,
-            current_chunk_index=heartbeat.current_chunk_index,
-            completed_chunk_count=heartbeat.completed_chunk_count,
-            total_chunk_count=heartbeat.total_chunk_count,
-        )
+    status_reporter = Task103RunStatusReporter(
+        context=context,
+        source_mode=settings.source_mode,
+        stage=effective_settings.stage,
+    )
+    status_reporter.write_allocated()
 
     try:
         source_records = _resolve_source_records(
             settings,
             output_root=context.run_root,
-            source_selection_heartbeat_callback=_source_selection_heartbeat_callback,
+            source_selection_heartbeat_callback=status_reporter.source_selection_heartbeat,
         )
         if settings.preprocessing.stage == "source-selection":
-            write_run_status(
-                context,
-                source_mode=settings.source_mode,
-                stage="source-selection",
-                status="running",
+            status_reporter.write_source_selection_running(
                 selected_row_count=0 if source_records is None else len(source_records),
                 target_row_cap=settings.rixvox_max_rows_per_split,
             )
@@ -475,37 +444,21 @@ def main(argv: list[str] | None = None) -> int:
                 source_records=source_records,
             )
         else:
-            write_run_status(
-                context,
-                source_mode=settings.source_mode,
-                stage=settings.preprocessing.stage,
-                status="running",
-            )
+            status_reporter.write_stage_running()
             report = run_task103_preprocessing(
                 effective_settings,
                 source_records=source_records,
-                row_heartbeat_callback=_row_heartbeat_callback,
-                finalization_heartbeat_callback=_finalization_heartbeat_callback,
+                row_heartbeat_callback=status_reporter.row_processing_heartbeat,
+                finalization_heartbeat_callback=status_reporter.finalization_heartbeat,
             )
     except Exception:
         rendered_error = traceback.format_exc().strip()
-        write_run_status(
-            context,
-            source_mode=settings.source_mode,
-            stage=settings.preprocessing.stage,
-            status="failed",
-            error=rendered_error,
-        )
+        status_reporter.write_failed(rendered_error)
         raise
     if context.promote_on_success and effective_settings.stage == "reports":
         promote_run_root(context)
-    write_run_status(
-        context,
-        source_mode=settings.source_mode,
-        stage=settings.preprocessing.stage,
-        status="promoted"
-        if context.promote_on_success and effective_settings.stage == "reports"
-        else "completed",
+    status_reporter.write_finished(
+        promoted=context.promote_on_success and effective_settings.stage == "reports",
     )
     print(_render_stdout_summary(report))
     return 0

@@ -78,6 +78,56 @@ scoping less honest than the underlying code deserves.
 - [x] The decomposition makes the next Task 103 production refactors safer
       without changing user-facing preprocessing behavior.
 
+## Remaining Refactoring Goals
+
+The test decomposition completed the testing-side prerequisite, but it did not
+by itself finish the broader Task 103 modularity work. The remaining production
+goals are:
+
+- Make each Task 103 production module own one clear reason to change.
+- Tighten the Task 103 domain boundaries so runner orchestration, source
+  resolution, row processing, finalization, and reporting are not co-owned by
+  the same module surfaces.
+- Preserve lightweight, direct unit-test seams for Task 103 production code so
+  future behavior changes do not require broad integration scaffolding.
+- Keep shared mutable state narrow and explicit, especially around run-root
+  status, resume state, spool state, and progress heartbeat persistence.
+- Prefer small, intention-revealing helper APIs over broad orchestration
+  surfaces with many optional branches.
+- Keep failure, resume, and recovery behavior encoded in explicit contracts and
+  dedicated helpers rather than being inferred from long call chains.
+
+## Follow-On Refactoring Approach
+
+The next production refactors should stay incremental and use the decomposed
+test modules as the boundary map:
+
+1. Review the runner/orchestration surface in
+   `run_task103_qwen_swedish_preprocessing.py` and extract responsibilities
+   that do not belong in the public CLI entrypoint.
+1. Isolate run-root status persistence and heartbeat updates behind a smaller
+   dedicated helper surface so row-processing and source-selection code do not
+   need to know runner-owned status details.
+1. Re-check row-processing and finalization call paths for helpers that still
+   combine domain decisions with filesystem orchestration and split those along
+   contract boundaries.
+1. Keep source-adapter parsing logic and staged-public-corpus composition free
+   from runner concerns; adapter modules should stay data-loading focused.
+1. Add or adjust focused tests only in the domain module that owns the behavior
+   being refactored. Do not recreate a cross-domain monolith in new test code.
+1. Preserve backward-compatible resume and spool contracts while moving logic
+   into smaller units; behavioral refactors must not silently weaken existing
+   recovery guarantees.
+
+## Done / Not Done Boundary
+
+This task is done when the Task 103 test surface is honestly decomposed.
+
+This task does not claim that the full Task 103 production runtime already
+meets the final SRP, DDD, and orchestration-boundary goals. Those remaining
+runtime refactors should be tracked and delivered as follow-on task slices
+using this decomposition as the safety net.
+
 ## Checklist
 
 - [x] Implementation complete

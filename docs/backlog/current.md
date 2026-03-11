@@ -197,12 +197,14 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
   - Completed `T131` to harden Drive-backed Task 103 resume performance after the persistent Colab `task129` run exposed a real bottleneck: row-processing now maintains `spool/completed_row_keys.jsonl`, resume prefers that sequential index, older run roots rebuild it from canonical spool JSON, stale crash tails self-heal by skipping rows whose spool artifact already exists, and the committed `task103_qwen_resume_index.py` helper can rebuild or validate historical run roots explicitly.
   - Completed `T132` to make the next Task 103 production refactors safer and more honest: the old `tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py` monolith was removed, shared builders moved into `tests/sir_convert_a_lot/task103_test_support.py`, and the Task 103 test surface is now split into focused runner, processing, source-adapter, and ASR modules.
+  - Completed `T133` as the first Task 103 production follow-on after `T132`: Task 103 run-status lifecycle and heartbeat orchestration now live in `task103_qwen_runner_status.py`, the public runner delegates to that helper instead of inlining nested callback/status logic, and the new direct helper tests make the run-status seam independently testable.
 
 ## Next Actions
 
 - Current local execution focus is Epic 08 Colab scaling follow-through: the fresh bounded `rixvox train` source-selection universe is complete, the `task129-scale-slice-1-of-2-20260311a` bundle is committed, and the next step is the persistent multi-session Colab run at `10:2`.
 - Current reliability hardening follow-on is to validate the new `T131` resume index on the live persistent Colab run and capture the before/after restart latency once the next real resume is performed.
 - Current preprocessing-quality follow-on is to use the decomposed `T132` test surface as the guardrail for the next Task 103 production refactors, starting with runner/orchestration responsibility review and any further domain extraction inside the Task 103 runtime.
+- Current Task 103 production follow-on after `T133` is to review source-resolution and run-metadata orchestration next, now that run-status lifecycle ownership has been extracted from the public runner.
 - Parallel planning focus is Epic 08: `T100`, `T103`, `T106`, `T107`, `T108`,
   `T109`, and `T115` are complete, `T119` makes bounded source-selection
   reusable, and Colab follow-on work is now `T121-T130` with live proof,
