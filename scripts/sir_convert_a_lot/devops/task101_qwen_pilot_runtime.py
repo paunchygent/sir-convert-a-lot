@@ -8,8 +8,9 @@ Purpose:
 Relationships:
     - Used by `run_task101_hemma_qwen_pilot.py`.
     - Reuses the shared Task 100 image-build and cache-mount helpers.
-    - Executes `task101_qwen_pilot_probe.py` inside the shared Qwen runtime
-      image.
+    - Consumes the deterministic pilot bundle materialized by
+      `task101_qwen_pilot_bundle.py`.
+    - Executes `task101_qwen_pilot_probe.py` inside the shared Qwen runtime image.
 """
 
 from __future__ import annotations
@@ -40,10 +41,11 @@ class Task101PilotSettings:
     hf_cache_home_mount: Path
     scratch_build_root: Path
     scratch_build_home_mount: Path
-    promoted_corpus_root: Path
+    pilot_bundle_root: Path
     runs_root: Path
     model_id: str
     train_manifest_family: str
+    eval_manifest_family: str
     batch_size: int
     lr: float
     num_epochs: int
@@ -61,10 +63,11 @@ class Task101PilotSettingsSnapshot:
     hf_cache_home_mount: str
     scratch_build_root: str
     scratch_build_home_mount: str
-    promoted_corpus_root: str
+    pilot_bundle_root: str
     runs_root: str
     model_id: str
     train_manifest_family: str
+    eval_manifest_family: str
     batch_size: int
     lr: float
     num_epochs: int
@@ -82,8 +85,9 @@ class Task101DetachedLaunch:
     container_id: str
     repo_root: str
     run_root: str
-    promoted_corpus_root: str
+    pilot_bundle_root: str
     train_manifest_family: str
+    eval_manifest_family: str
     dockerfile_path: str | None
     resumed_from_checkpoint_path: str | None
     settings: Task101PilotSettingsSnapshot
@@ -153,10 +157,11 @@ def snapshot_settings(settings: Task101PilotSettings) -> Task101PilotSettingsSna
         hf_cache_home_mount=settings.hf_cache_home_mount.as_posix(),
         scratch_build_root=settings.scratch_build_root.as_posix(),
         scratch_build_home_mount=settings.scratch_build_home_mount.as_posix(),
-        promoted_corpus_root=settings.promoted_corpus_root.as_posix(),
+        pilot_bundle_root=settings.pilot_bundle_root.as_posix(),
         runs_root=settings.runs_root.as_posix(),
         model_id=settings.model_id,
         train_manifest_family=settings.train_manifest_family,
+        eval_manifest_family=settings.eval_manifest_family,
         batch_size=settings.batch_size,
         lr=settings.lr,
         num_epochs=settings.num_epochs,
@@ -174,10 +179,11 @@ def settings_from_snapshot(snapshot: Task101PilotSettingsSnapshot) -> Task101Pil
         hf_cache_home_mount=Path(snapshot.hf_cache_home_mount),
         scratch_build_root=Path(snapshot.scratch_build_root),
         scratch_build_home_mount=Path(snapshot.scratch_build_home_mount),
-        promoted_corpus_root=Path(snapshot.promoted_corpus_root),
+        pilot_bundle_root=Path(snapshot.pilot_bundle_root),
         runs_root=Path(snapshot.runs_root),
         model_id=snapshot.model_id,
         train_manifest_family=snapshot.train_manifest_family,
+        eval_manifest_family=snapshot.eval_manifest_family,
         batch_size=snapshot.batch_size,
         lr=snapshot.lr,
         num_epochs=snapshot.num_epochs,
@@ -195,7 +201,7 @@ def _containerize_scratch_path(host_path: Path, *, scratch_root: Path) -> str:
 def _train_manifest_path(settings: Task101PilotSettings) -> Path:
     """Return the selected prepared-manifest path for the detached pilot."""
     return (
-        settings.promoted_corpus_root
+        settings.pilot_bundle_root
         / "manifests"
         / f"{settings.train_manifest_family}.prepared.jsonl"
     )
@@ -322,8 +328,9 @@ def launch_detached_pilot(
         container_id=container_id,
         repo_root=repo_root.as_posix(),
         run_root=run_root.as_posix(),
-        promoted_corpus_root=settings.promoted_corpus_root.as_posix(),
+        pilot_bundle_root=settings.pilot_bundle_root.as_posix(),
         train_manifest_family=settings.train_manifest_family,
+        eval_manifest_family=settings.eval_manifest_family,
         dockerfile_path=None if dockerfile_path is None else dockerfile_path.as_posix(),
         resumed_from_checkpoint_path=(
             None if resume_from_checkpoint is None else resume_from_checkpoint.as_posix()

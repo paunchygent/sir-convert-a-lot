@@ -36,6 +36,8 @@ and capture deterministic runtime and memory evidence.
 
 - Use the committed Hemma runtime from Task 100 plus the deterministic pilot
   training bundle materialized from the frozen pilot root owned by `T140`.
+- Materialize that deterministic bundle with:
+  - `pdm run run-hemma -- pdm run task-101-pilot-bundle build`
 - Use the detached committed Task 101 runner surface:
   - `pdm run run-hemma -- pdm run task-101-pilot launch`
 - Treat the generic promoted Task 103 corpus view as insufficient for this run.

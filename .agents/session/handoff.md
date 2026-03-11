@@ -231,15 +231,15 @@
     surfaces do not diverge during future planning or launch work
 
 - Opened `T142` as the next implementation slice for the training lane:
-  - materialize one deterministic Task 101 pilot bundle from
-    `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
-  - include:
+  - materialize one deterministic Task 101 pilot bundle from the frozen pilot
+    root through `pdm run task-101-pilot-bundle build`
+  - emit:
     - `manifests/swedish_pilot_train.prepared.jsonl`
     - `manifests/swedish_checkpoint_dev.prepared.jsonl`
     - stable per-speaker `refs/`
-    - machine-readable bundle metadata
+    - `reports/task101_pilot_bundle_report.json`
   - retarget the detached Task 101 runner away from the generic promoted Task
-    103 preprocessing root and onto that bundle root
+    103 preprocessing root and onto `pilot_bundle_root`
 
 ## Validation Evidence
 

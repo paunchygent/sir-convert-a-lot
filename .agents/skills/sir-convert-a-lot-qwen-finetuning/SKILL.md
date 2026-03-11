@@ -86,6 +86,8 @@ explicitly narrow the scope.
 - The first bounded Task 101 Hemma pilot must consume a deterministic training
   bundle projected from the frozen pilot root, not the generic promoted Task
   103 preprocessing root.
+- The canonical repo-owned materialization surface for that bundle is:
+  - `pdm run task-101-pilot-bundle build`
 - Any future production use must still fit the sidecar-only architecture from
   ADR-0006 and ADR-0007.
 - Long-running Hemma preprocessing, training, and corpus-acquisition work must

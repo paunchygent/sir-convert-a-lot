@@ -867,6 +867,8 @@ Canonical Task 106 acquisition surface:
      replaced by Whisper text, the main missing work is the approval/promotion
      path into training manifests, not rerunning Whisper for completed rows
 1. Run Task 101 as the first bounded Hemma pilot.
+   - first materialize the deterministic pilot bundle:
+     `pdm run run-hemma -- pdm run task-101-pilot-bundle build`
    - canonical command:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
    - canonical input contract before launch:

@@ -5,12 +5,13 @@ type: 'task'
 status: 'in_progress'
 priority: 'high'
 created: '2026-03-09'
-last_updated: '2026-03-09'
+last_updated: '2026-03-11'
 related:
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
   - docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
+  - docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md
   - docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -49,6 +50,13 @@ around that training core:
 These are not new architecture lanes. They are hardening gaps in the already
 chosen Hemma training path.
 
+Execution order note:
+
+- `T142` should land first so the next canonical Task 101 pilot runs against
+  the correct deterministic pilot bundle.
+- `T117` then hardens the lifecycle of that corrected training lane for longer
+  unattended execution.
+
 ## PR Scope
 
 - Add graceful stop handling to the patched Qwen training loop so an intended
@@ -86,6 +94,13 @@ chosen Hemma training path.
   - write status that makes the intentional stop visible to detached operators,
   - exit cleanly before Docker escalates to `SIGKILL`.
 
+Operational boundary:
+
+- this task improves stop behavior around the existing detached Task 101 run
+  root contract
+- it does not change dataset ownership, pilot manifest families, or the
+  pilot-bundle materialization contract
+
 ### Cache Sync Hardening
 
 - Replace the python-level `cp -a` loop in Task 100 with one incremental
@@ -105,6 +120,14 @@ chosen Hemma training path.
     container start.
 - `--skip-build` remains the explicit reuse control; this task is about
   visibility, not changing the build contract.
+
+## Ordered Execution
+
+1. Finish the deterministic pilot-bundle bridge in `T142`.
+1. Add graceful signal handling and final-checkpoint-on-stop semantics.
+1. Replace fallback cache sync with one explicit incremental sync surface.
+1. Add launch-time cold-build warnings to the Task 100/101 entrypoints.
+1. Prove the stop/resume lifecycle on Hemma and update runbook language.
 
 ## Deliverables
 
@@ -139,9 +162,11 @@ chosen Hemma training path.
 
 ## Notes
 
-Current docs governance state is not fully green at task-creation time because
-the newly added `review-02` package is still failing `pdm run validate-tasks`.
-That validator drift is pre-existing planning noise, not part of `T117` scope.
+Current planning position after `T141`:
+
+- dataset/input correctness now has priority through `T142`
+- `T117` is the immediate next hardening slice once the Task 101 pilot bundle
+  exists and the runner points at it
 
 ## Checklist
 

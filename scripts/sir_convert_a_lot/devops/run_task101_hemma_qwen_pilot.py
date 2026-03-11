@@ -3,13 +3,14 @@
 Purpose:
     Provide the canonical detached Hemma entrypoint for the first bounded
     Swedish Qwen3-TTS pilot fine-tune so the training lane can continue from
-    the completed preprocessing corpus without depending on the client session.
+    one deterministic pilot bundle without depending on the client session.
 
 Relationships:
     - Uses `task101_qwen_pilot_runtime.py` for detached Docker launch and
       status inspection.
+    - Consumes the deterministic pilot bundle built by
+      `task101_qwen_pilot_bundle.py`.
     - Reuses the shared Task 100 image-build and cache-mount helpers.
-    - Consumes the promoted Task 103 corpus view produced by `T108/T114`.
 """
 
 from __future__ import annotations
@@ -32,6 +33,10 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     resolve_effective_hf_cache_dir,
     run_checked,
 )
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
+    DEFAULT_EVAL_MANIFEST_FAMILY,
+    DEFAULT_PILOT_BUNDLE_ROOT,
+)
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime import (
     Task101DetachedLaunch,
     Task101DetachedStatus,
@@ -52,7 +57,6 @@ DEFAULT_OUTPUT_ROOT = (
     DEFAULT_SCRATCH_BUILD_ROOT / "verification/task-101-qwen3-tts-swedish-hemma-pilot"
 )
 DEFAULT_RUNS_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "runs/qwen3-tts-swedish-finetune"
-DEFAULT_PROMOTED_CORPUS_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "reference/qwen3-tts-swedish-corpus"
 DEFAULT_SCRATCH_BUILD_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/build")
 DEFAULT_DOCKERFILE_PATH = Path("containers/qwen-finetune-hemma/Dockerfile")
 DEFAULT_IMAGE = "sir-convert-a-lot-qwen-finetune-hemma:task100"
@@ -92,7 +96,7 @@ def _build_parser() -> argparse.ArgumentParser:
     launch = subparsers.add_parser("launch", help="Launch the detached pilot training run.")
     launch.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     launch.add_argument("--runs-root", type=Path, default=DEFAULT_RUNS_ROOT)
-    launch.add_argument("--promoted-corpus-root", type=Path, default=DEFAULT_PROMOTED_CORPUS_ROOT)
+    launch.add_argument("--pilot-bundle-root", type=Path, default=DEFAULT_PILOT_BUNDLE_ROOT)
     launch.add_argument("--dockerfile-path", type=Path, default=DEFAULT_DOCKERFILE_PATH)
     launch.add_argument("--image", default=DEFAULT_IMAGE)
     launch.add_argument("--hf-cache-dir", type=Path, default=_default_hf_cache_dir())
@@ -109,6 +113,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     launch.add_argument("--model-id", default=DEFAULT_MODEL_ID)
     launch.add_argument("--train-manifest-family", default=DEFAULT_TRAIN_MANIFEST_FAMILY)
+    launch.add_argument("--eval-manifest-family", default=DEFAULT_EVAL_MANIFEST_FAMILY)
     launch.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     launch.add_argument("--lr", type=float, default=DEFAULT_LR)
     launch.add_argument("--num-epochs", type=int, default=DEFAULT_NUM_EPOCHS)
@@ -321,10 +326,11 @@ def _load_launch(launch_root: Path) -> Task101DetachedLaunch:
         hf_cache_home_mount=_required_str(settings_payload, "hf_cache_home_mount"),
         scratch_build_root=_required_str(settings_payload, "scratch_build_root"),
         scratch_build_home_mount=_required_str(settings_payload, "scratch_build_home_mount"),
-        promoted_corpus_root=_required_str(settings_payload, "promoted_corpus_root"),
+        pilot_bundle_root=_required_str(settings_payload, "pilot_bundle_root"),
         runs_root=_required_str(settings_payload, "runs_root"),
         model_id=_required_str(settings_payload, "model_id"),
         train_manifest_family=_required_str(settings_payload, "train_manifest_family"),
+        eval_manifest_family=_required_str(settings_payload, "eval_manifest_family"),
         batch_size=_required_int(settings_payload, "batch_size"),
         lr=_required_float(settings_payload, "lr"),
         num_epochs=_required_int(settings_payload, "num_epochs"),
@@ -338,8 +344,9 @@ def _load_launch(launch_root: Path) -> Task101DetachedLaunch:
         container_id=_required_str(payload, "container_id"),
         repo_root=_required_str(payload, "repo_root"),
         run_root=_required_str(payload, "run_root"),
-        promoted_corpus_root=_required_str(payload, "promoted_corpus_root"),
+        pilot_bundle_root=_required_str(payload, "pilot_bundle_root"),
         train_manifest_family=_required_str(payload, "train_manifest_family"),
+        eval_manifest_family=_required_str(payload, "eval_manifest_family"),
         dockerfile_path=_optional_str(payload, "dockerfile_path"),
         resumed_from_checkpoint_path=_optional_str(payload, "resumed_from_checkpoint_path"),
         settings=settings_snapshot,
@@ -393,12 +400,32 @@ def _resolve_launch_root(output_root: Path, launch_root: Path | None) -> Path:
     return Path(_required_str(payload, "launch_root"))
 
 
-def _ensure_train_manifest_exists(promoted_corpus_root: Path, manifest_family: str) -> None:
-    """Fail fast when the promoted preprocessing corpus lacks the selected family."""
-    manifest_path = promoted_corpus_root / "manifests" / f"{manifest_family}.prepared.jsonl"
-    if not manifest_path.exists():
+def _prepared_manifest_path(bundle_root: Path, manifest_family: str) -> Path:
+    """Return one prepared-manifest path inside the Task 101 pilot bundle."""
+    return bundle_root / "manifests" / f"{manifest_family}.prepared.jsonl"
+
+
+def _ensure_pilot_bundle_exists(
+    pilot_bundle_root: Path,
+    *,
+    train_manifest_family: str,
+    eval_manifest_family: str,
+) -> None:
+    """Fail fast when the deterministic pilot bundle is incomplete."""
+    missing_paths = [
+        path
+        for path in (
+            _prepared_manifest_path(pilot_bundle_root, train_manifest_family),
+            _prepared_manifest_path(pilot_bundle_root, eval_manifest_family),
+            pilot_bundle_root / "reports" / "task101_pilot_bundle_report.json",
+        )
+        if not path.exists()
+    ]
+    if missing_paths:
+        rendered_paths = ", ".join(path.as_posix() for path in missing_paths)
         raise SystemExit(
-            f"Task 101 pilot could not find the prepared manifest `{manifest_path.as_posix()}`."
+            "Task 101 pilot could not find the required pilot-bundle artifacts: "
+            f"{rendered_paths}."
         )
 
 
@@ -420,19 +447,21 @@ def main(argv: list[str] | None = None) -> int:
             hf_cache_home_mount=Path(args.hf_cache_home_mount),
             scratch_build_root=Path(args.scratch_build_root),
             scratch_build_home_mount=Path(args.scratch_build_home_mount),
-            promoted_corpus_root=Path(args.promoted_corpus_root),
+            pilot_bundle_root=Path(args.pilot_bundle_root),
             runs_root=Path(args.runs_root),
             model_id=str(args.model_id),
             train_manifest_family=str(args.train_manifest_family),
+            eval_manifest_family=str(args.eval_manifest_family),
             batch_size=int(args.batch_size),
             lr=float(args.lr),
             num_epochs=int(args.num_epochs),
             max_steps=int(args.max_steps),
             checkpoint_interval_steps=int(args.checkpoint_interval_steps),
         )
-        _ensure_train_manifest_exists(
-            settings.promoted_corpus_root,
-            settings.train_manifest_family,
+        _ensure_pilot_bundle_exists(
+            settings.pilot_bundle_root,
+            train_manifest_family=settings.train_manifest_family,
+            eval_manifest_family=settings.eval_manifest_family,
         )
         build_performed, image_id = prepare_qwen_image(
             argparse.Namespace(

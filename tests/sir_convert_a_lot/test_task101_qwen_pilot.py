@@ -13,13 +13,14 @@ from scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_CHECKPOINT_INTERVAL_STEPS,
     DEFAULT_DOCKERFILE_PATH,
+    DEFAULT_EVAL_MANIFEST_FAMILY,
     DEFAULT_LR,
     DEFAULT_MAX_STEPS,
     DEFAULT_MODEL_ID,
     DEFAULT_NUM_EPOCHS,
     DEFAULT_TRAIN_MANIFEST_FAMILY,
     _build_parser,
-    _ensure_train_manifest_exists,
+    _ensure_pilot_bundle_exists,
     _load_latest_checkpoint,
     _resolve_launch_root,
     _validate_resume_checkpoint_path,
@@ -44,6 +45,7 @@ def test_task101_parser_launch_defaults() -> None:
 
     assert args.model_id == DEFAULT_MODEL_ID
     assert args.train_manifest_family == DEFAULT_TRAIN_MANIFEST_FAMILY
+    assert args.eval_manifest_family == DEFAULT_EVAL_MANIFEST_FAMILY
     assert args.batch_size == DEFAULT_BATCH_SIZE
     assert args.lr == DEFAULT_LR
     assert args.num_epochs == DEFAULT_NUM_EPOCHS
@@ -88,12 +90,13 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
         scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
         scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
-        promoted_corpus_root=Path(
-            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus"
+        pilot_bundle_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
         ),
         runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune"),
         model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
         train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
         batch_size=1,
         lr=2e-5,
         num_epochs=1,
@@ -130,7 +133,7 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
     )
     assert "/home/paunchygent/.data/sir-convert-a-lot/build:/app/build" in command
     assert (
-        "/app/build/reference/qwen3-tts-swedish-corpus/manifests/"
+        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
         "swedish_pilot_train.prepared.jsonl" in command
     )
     assert "--checkpoint-interval-steps" in command
@@ -147,12 +150,13 @@ def test_build_detached_pilot_command_includes_resume_checkpoint_when_requested(
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
         scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
         scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
-        promoted_corpus_root=Path(
-            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus"
+        pilot_bundle_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
         ),
         runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune"),
         model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
         train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
         batch_size=1,
         lr=2e-5,
         num_epochs=1,
@@ -214,8 +218,12 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
         container_id="container-id",
         repo_root="/home/paunchygent/apps/sir-convert-a-lot",
         run_root=run_root.as_posix(),
-        promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+        pilot_bundle_root=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle"
+        ),
         train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
         dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
         resumed_from_checkpoint_path=None,
         settings=Task101PilotSettingsSnapshot(
@@ -225,10 +233,14 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
             hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
             scratch_build_root="/srv/scratch/sir-convert-a-lot/build",
             scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
-            promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+            pilot_bundle_root=(
+                "/srv/scratch/sir-convert-a-lot/build/reference/"
+                "qwen3-tts-swedish-task101-pilot-bundle"
+            ),
             runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
             model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
             train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
             batch_size=1,
             lr=2e-5,
             num_epochs=1,
@@ -296,13 +308,17 @@ def test_task101_resolve_launch_root_uses_latest_pointer(tmp_path: Path) -> None
     assert _resolve_launch_root(output_root, None) == launch_root
 
 
-def test_task101_requires_prepared_manifest_before_launch(tmp_path: Path) -> None:
-    """Launch should fail fast when the promoted preprocessing family is missing."""
-    promoted_root = tmp_path / "reference"
-    promoted_root.mkdir(parents=True, exist_ok=True)
+def test_task101_requires_pilot_bundle_artifacts_before_launch(tmp_path: Path) -> None:
+    """Launch should fail fast when the deterministic pilot bundle is incomplete."""
+    pilot_bundle_root = tmp_path / "pilot-bundle"
+    pilot_bundle_root.mkdir(parents=True, exist_ok=True)
 
-    with pytest.raises(SystemExit, match="prepared manifest"):
-        _ensure_train_manifest_exists(promoted_root, "swedish_pilot_train")
+    with pytest.raises(SystemExit, match="required pilot-bundle artifacts"):
+        _ensure_pilot_bundle_exists(
+            pilot_bundle_root,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+        )
 
 
 def test_task101_load_latest_checkpoint_pointer(tmp_path: Path) -> None:
@@ -357,8 +373,12 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
         container_id="container-id",
         repo_root="/home/paunchygent/apps/sir-convert-a-lot",
         run_root=source_run_root.as_posix(),
-        promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+        pilot_bundle_root=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle"
+        ),
         train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
         dockerfile_path="containers/custom-qwen-finetune/Dockerfile",
         resumed_from_checkpoint_path=None,
         settings=Task101PilotSettingsSnapshot(
@@ -368,10 +388,14 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
             hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
             scratch_build_root="/srv/scratch/sir-convert-a-lot/build",
             scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
-            promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+            pilot_bundle_root=(
+                "/srv/scratch/sir-convert-a-lot/build/reference/"
+                "qwen3-tts-swedish-task101-pilot-bundle"
+            ),
             runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
             model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
             train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
             batch_size=1,
             lr=2e-5,
             num_epochs=1,
@@ -481,8 +505,12 @@ def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) 
         container_id="container-id",
         repo_root="/home/paunchygent/apps/sir-convert-a-lot",
         run_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-prev",
-        promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+        pilot_bundle_root=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle"
+        ),
         train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
         dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
         resumed_from_checkpoint_path=None,
         settings=Task101PilotSettingsSnapshot(
@@ -492,10 +520,14 @@ def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) 
             hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
             scratch_build_root="/srv/scratch/sir_convert_a_lot/build",
             scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
-            promoted_corpus_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-corpus",
+            pilot_bundle_root=(
+                "/srv/scratch/sir-convert-a-lot/build/reference/"
+                "qwen3-tts-swedish-task101-pilot-bundle"
+            ),
             runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
             model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
             train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
             batch_size=1,
             lr=2e-5,
             num_epochs=1,

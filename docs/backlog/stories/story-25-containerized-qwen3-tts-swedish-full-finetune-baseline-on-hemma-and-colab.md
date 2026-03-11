@@ -86,8 +86,9 @@ that a real Swedish optimizer step fits on the R9700.
 - [x] The story now states that the first Task 101 pilot must consume a
   deterministic training bundle projected from the frozen pilot root rather
   than the generic promoted preprocessing root.
-- [ ] A dedicated implementation task exists to materialize that deterministic
-  pilot bundle before the Task 101 launch.
+- [x] A dedicated implementation task exists to materialize that deterministic
+  pilot bundle before the Task 101 launch, and `T142` now provides the
+  committed bundle-materialization surface.
 - [ ] A dedicated task defines and proves robust resumable checkpointing before
   the first long unattended Hemma training window.
 - [ ] A follow-on hardening task covers graceful stop behavior, resumable cache
