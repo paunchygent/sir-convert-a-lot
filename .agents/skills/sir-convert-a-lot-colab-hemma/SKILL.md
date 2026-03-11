@@ -75,6 +75,14 @@ debugging slower.
   directly through Drive before asking the user for manual notebook commands.
 - Treat Drive-backed Colab artifacts as part of the operational surface for
   this lane, not as inaccessible notebook-only state.
+- If the user provides a direct Drive file or folder link, use that id/path
+  first. Do not start with broad search when the precise artifact is already
+  known.
+- Expect connector quirks:
+  - canonical folder URLs work better than `/u/1/` variants
+  - metadata lookup by id may succeed even when content fetch or search is weak
+  - top-level run-root folders may expose logs immediately while deeper spool or
+    status artifacts still need direct links
 
 ## Notebook Hygiene
 

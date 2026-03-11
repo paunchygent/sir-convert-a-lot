@@ -88,6 +88,9 @@ explicitly narrow the scope.
 - When Colab runs persist status, logs, or spool JSON into Google Drive and the
   Drive connector is authenticated, inspect those artifacts directly before
   asking the user to run notebook-side status commands.
+- When the user provides a direct Drive link, prefer direct id-based metadata
+  lookup before Drive search. Search can miss artifacts that are plainly
+  reachable by id.
 - Hemma storage tiers are fixed:
   - `/srv/scratch` for Docker root, HF/model caches, and hot generated
     preprocessing/training artifacts
@@ -195,6 +198,8 @@ Watch for these specifically:
 - claiming that Colab progress cannot be inspected when the relevant status,
   logs, or spool artifacts are already persisted in Google Drive and the Drive
   connector is available
+- relying on Drive search alone when the user has already provided the direct
+  file or folder link needed for id-based lookup
 - assuming `journald` alone is historical GPU monitoring when no periodic GPU
   sampler is actually writing to the journal
 - treating official Qwen single-speaker docs as if they already solved the

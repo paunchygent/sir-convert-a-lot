@@ -73,15 +73,24 @@ Prefer both when the task is strategic:
 
 - If the Google Drive connector is authenticated, treat Drive-backed Colab run
   artifacts as directly inspectable.
+- Prefer direct Drive file or folder URLs and ids over search-first discovery
+  when the user already has the artifact open.
+- Normalize Google Drive folder links before listing them. The connector expects
+  canonical URLs like `https://drive.google.com/drive/folders/<ID>`, not `/u/1/`
+  variants.
 - Before asking the user to run manual Colab status commands, try to inspect
   the persisted Drive-backed run root, `status.json`, spool JSON files, and
   `row_processing.stdout.log` / `row_processing.stderr.log` through the Google
   Drive tools.
+- Use `google_drive_get_file_metadata` first on direct ids or URLs to confirm
+  that the exact artifact exists, has the expected mimetype, and has recent
+  timestamps even when search or content fetch is flaky.
 - Do not claim that live Colab progress is inaccessible when the run root or
   artifacts are persisted in the user's Drive and the connector is available.
 - Only fall back to manual notebook commands when the needed file cannot be
-  found, the connector lacks the relevant visibility, or the artifact was never
-  persisted out of the ephemeral Colab runtime.
+  found, the connector lacks the relevant visibility, the content fetcher
+  cannot read a private file even after direct-id lookup, or the artifact was
+  never persisted out of the ephemeral Colab runtime.
 
 ## GPU and Container Rules
 
