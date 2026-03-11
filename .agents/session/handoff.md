@@ -241,6 +241,15 @@
   - retarget the detached Task 101 runner away from the generic promoted Task
     103 preprocessing root and onto `pilot_bundle_root`
 
+- Completed `T143` as the immediate Task 101 hardening follow-on:
+  - copied/restored frozen pilot roots now rebuild the pilot bundle without
+    depending on stale absolute freeze-ledger paths
+  - detached launch preflight now validates bundle-local prepared-manifest
+    `audio` and `ref_audio` targets before container start
+  - detached launch/status/report artifacts now record both train and held-out
+    eval manifest paths while staying explicit that upstream `sft_12hz.py`
+    remains train-only
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`

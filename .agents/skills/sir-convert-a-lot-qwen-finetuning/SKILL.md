@@ -88,6 +88,10 @@ explicitly narrow the scope.
   103 preprocessing root.
 - The canonical repo-owned materialization surface for that bundle is:
   - `pdm run task-101-pilot-bundle build`
+- The detached Task 101 runtime must record both the train and held-out eval
+  manifest paths in launch/status/report metadata while staying explicit that
+  upstream `sft_12hz.py` is still train-only and does not perform in-training
+  evaluation.
 - Any future production use must still fit the sidecar-only architecture from
   ADR-0006 and ADR-0007.
 - Long-running Hemma preprocessing, training, and corpus-acquisition work must

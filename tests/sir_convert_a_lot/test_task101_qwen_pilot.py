@@ -136,9 +136,15 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
         "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
         "swedish_pilot_train.prepared.jsonl" in command
     )
+    assert (
+        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "swedish_checkpoint_dev.prepared.jsonl" in command
+    )
     assert "--checkpoint-interval-steps" in command
     checkpoint_index = command.index("--checkpoint-interval-steps")
     assert command[checkpoint_index + 1] == "2"
+    eval_index = command.index("--eval-jsonl")
+    assert command[eval_index + 1].endswith("/swedish_checkpoint_dev.prepared.jsonl")
 
 
 def test_build_detached_pilot_command_includes_resume_checkpoint_when_requested() -> None:
@@ -204,11 +210,25 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
     run_root = tmp_path / "run"
     run_root.mkdir(parents=True, exist_ok=True)
     (run_root / "status.json").write_text(
-        json.dumps({"status": "completed", "optimizer_steps_completed": 8}) + "\n",
+        json.dumps(
+            {
+                "status": "completed",
+                "optimizer_steps_completed": 8,
+                "eval_jsonl": "/bundle/manifests/swedish_checkpoint_dev.prepared.jsonl",
+            }
+        )
+        + "\n",
         encoding="utf-8",
     )
     (run_root / "report.json").write_text(
-        json.dumps({"training_summary": {"optimizer_steps_completed": 8}}) + "\n",
+        json.dumps(
+            {
+                "eval_jsonl": "/bundle/manifests/swedish_checkpoint_dev.prepared.jsonl",
+                "upstream_trainer_uses_eval_manifest": False,
+                "training_summary": {"optimizer_steps_completed": 8},
+            }
+        )
+        + "\n",
         encoding="utf-8",
     )
     launch = Task101DetachedLaunch(
@@ -221,6 +241,16 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
         pilot_bundle_root=(
             "/srv/scratch/sir-convert-a-lot/build/reference/"
             "qwen3-tts-swedish-task101-pilot-bundle"
+        ),
+        train_jsonl=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+            "swedish_pilot_train.prepared.jsonl"
+        ),
+        eval_jsonl=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+            "swedish_checkpoint_dev.prepared.jsonl"
         ),
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
@@ -288,7 +318,10 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
     assert status.pilot_status_found is True
     assert status.pilot_report_found is True
     assert status.latest_checkpoint_found is True
+    assert status.pilot_status is not None
+    assert status.pilot_status["eval_jsonl"].endswith("swedish_checkpoint_dev.prepared.jsonl")
     assert status.pilot_report is not None
+    assert status.pilot_report["upstream_trainer_uses_eval_manifest"] is False
     training_summary = status.pilot_report.get("training_summary")
     assert isinstance(training_summary, dict)
     assert training_summary["optimizer_steps_completed"] == 8
@@ -314,6 +347,49 @@ def test_task101_requires_pilot_bundle_artifacts_before_launch(tmp_path: Path) -
     pilot_bundle_root.mkdir(parents=True, exist_ok=True)
 
     with pytest.raises(SystemExit, match="required pilot-bundle artifacts"):
+        _ensure_pilot_bundle_exists(
+            pilot_bundle_root,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+        )
+
+
+def test_task101_requires_bundle_local_audio_and_ref_paths_before_launch(tmp_path: Path) -> None:
+    """Launch should fail fast when prepared manifests reference missing bundle assets."""
+    pilot_bundle_root = tmp_path / "pilot-bundle"
+    manifests_dir = pilot_bundle_root / "manifests"
+    reports_dir = pilot_bundle_root / "reports"
+    manifests_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / "task101_pilot_bundle_report.json").write_text("{}\n", encoding="utf-8")
+    prepared_row = {
+        "audio": "audio_24k/rixvox/train/speaker-a/train.wav",
+        "text": "hej",
+        "ref_audio": "refs/swedish_pilot_train/speaker-a/ref.wav",
+        "speaker_id": "speaker-a",
+        "dataset": "rixvox",
+        "source_split": "train",
+        "quality_tier": "high_trust",
+        "audio_codes": [[1, 2]],
+    }
+    (manifests_dir / "swedish_pilot_train.prepared.jsonl").write_text(
+        json.dumps(prepared_row) + "\n",
+        encoding="utf-8",
+    )
+    (manifests_dir / "swedish_checkpoint_dev.prepared.jsonl").write_text(
+        json.dumps(
+            {
+                **prepared_row,
+                "audio": "audio_24k/rixvox/dev/speaker-a/dev.wav",
+                "ref_audio": "refs/swedish_checkpoint_dev/speaker-a/ref.wav",
+                "source_split": "dev",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit, match="bundle integrity check failed"):
         _ensure_pilot_bundle_exists(
             pilot_bundle_root,
             train_manifest_family="swedish_pilot_train",
@@ -376,6 +452,16 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
         pilot_bundle_root=(
             "/srv/scratch/sir-convert-a-lot/build/reference/"
             "qwen3-tts-swedish-task101-pilot-bundle"
+        ),
+        train_jsonl=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+            "swedish_pilot_train.prepared.jsonl"
+        ),
+        eval_jsonl=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+            "swedish_checkpoint_dev.prepared.jsonl"
         ),
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
@@ -508,6 +594,16 @@ def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) 
         pilot_bundle_root=(
             "/srv/scratch/sir-convert-a-lot/build/reference/"
             "qwen3-tts-swedish-task101-pilot-bundle"
+        ),
+        train_jsonl=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+            "swedish_pilot_train.prepared.jsonl"
+        ),
+        eval_jsonl=(
+            "/srv/scratch/sir-convert-a-lot/build/reference/"
+            "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+            "swedish_checkpoint_dev.prepared.jsonl"
         ),
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",

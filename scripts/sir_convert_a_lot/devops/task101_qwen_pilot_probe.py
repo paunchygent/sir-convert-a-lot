@@ -35,7 +35,11 @@ class Task101PilotProbeReport:
     generated_at: str
     model_id: str
     train_jsonl: str
+    eval_jsonl: str
     output_dir: str
+    train_row_count: int
+    eval_row_count: int
+    upstream_trainer_uses_eval_manifest: bool
     torch_version: str
     torchaudio_version: str | None
     torch_cuda_available: bool
@@ -64,6 +68,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the detached Task 101 Qwen pilot probe.")
     parser.add_argument("--model-id", default="Qwen/Qwen3-TTS-12Hz-1.7B-Base")
     parser.add_argument("--train-jsonl", type=Path, required=True)
+    parser.add_argument("--eval-jsonl", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--lr", type=float, default=2e-5)
@@ -89,6 +94,8 @@ def main() -> int:
     report_path = output_dir / "report.json"
     failure_path = output_dir / "failure.txt"
     training_summary_path = output_dir / "training_summary.json"
+    train_row_count = _count_jsonl_rows(args.train_jsonl)
+    eval_row_count = _count_jsonl_rows(args.eval_jsonl)
     _write_json(
         status_path,
         {
@@ -96,7 +103,11 @@ def main() -> int:
             "stage": "training",
             "updated_at": _utc_now_iso(),
             "train_jsonl": args.train_jsonl.as_posix(),
+            "eval_jsonl": args.eval_jsonl.as_posix(),
             "output_dir": output_dir.as_posix(),
+            "train_row_count": train_row_count,
+            "eval_row_count": eval_row_count,
+            "upstream_trainer_uses_eval_manifest": False,
             "checkpoint_interval_steps": int(args.checkpoint_interval_steps),
             "resumed_from_checkpoint_path": (
                 None
@@ -136,7 +147,11 @@ def main() -> int:
             generated_at=_utc_now_iso(),
             model_id=str(args.model_id),
             train_jsonl=args.train_jsonl.as_posix(),
+            eval_jsonl=args.eval_jsonl.as_posix(),
             output_dir=output_dir.as_posix(),
+            train_row_count=train_row_count,
+            eval_row_count=eval_row_count,
+            upstream_trainer_uses_eval_manifest=False,
             torch_version=str(torch.__version__),
             torchaudio_version=_package_version("torchaudio"),
             torch_cuda_available=True,
@@ -154,7 +169,11 @@ def main() -> int:
                 "stage": "training",
                 "updated_at": _utc_now_iso(),
                 "train_jsonl": args.train_jsonl.as_posix(),
+                "eval_jsonl": args.eval_jsonl.as_posix(),
                 "output_dir": output_dir.as_posix(),
+                "train_row_count": train_row_count,
+                "eval_row_count": eval_row_count,
+                "upstream_trainer_uses_eval_manifest": False,
                 "optimizer_steps_completed": training_summary.optimizer_steps_completed,
                 "checkpoint_interval_steps": training_summary.checkpoint_interval_steps,
                 "resumed_from_checkpoint_path": training_summary.resumed_from_checkpoint_path,
@@ -175,10 +194,20 @@ def main() -> int:
                 "status": "failed",
                 "stage": "training",
                 "updated_at": _utc_now_iso(),
+                "train_jsonl": args.train_jsonl.as_posix(),
+                "eval_jsonl": args.eval_jsonl.as_posix(),
+                "train_row_count": train_row_count,
+                "eval_row_count": eval_row_count,
+                "upstream_trainer_uses_eval_manifest": False,
                 "error": f"{type(exc).__name__}: {exc}",
             },
         )
         raise
+
+
+def _count_jsonl_rows(path: Path) -> int:
+    """Count rows in one deterministic JSONL manifest."""
+    return sum(1 for _ in path.open("r", encoding="utf-8"))
 
 
 if __name__ == "__main__":

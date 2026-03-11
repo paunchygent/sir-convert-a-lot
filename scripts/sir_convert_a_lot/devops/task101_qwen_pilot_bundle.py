@@ -89,6 +89,14 @@ def task101_pilot_bundle_report_path(output_root: Path) -> Path:
     return output_root / "reports" / "task101_pilot_bundle_report.json"
 
 
+def task101_pilot_bundle_manifest_path(
+    output_root: Path,
+    manifest_family: str,
+) -> Path:
+    """Return one prepared-manifest path inside the Task 101 pilot bundle."""
+    return output_root / "manifests" / f"{manifest_family}.prepared.jsonl"
+
+
 def build_task101_pilot_bundle(
     *,
     source_root: Path,
@@ -162,7 +170,7 @@ def build_task101_pilot_bundle(
         encode_audio_codes_fn=encode_audio_codes_fn,
     )
 
-    _validate_bundle_paths(output_root, selected_families)
+    validate_task101_pilot_bundle_paths(output_root, selected_families)
     manifest_row_counts = _manifest_row_counts(output_root, selected_families)
     for family in selected_families:
         if manifest_row_counts[family] <= 0:
@@ -209,8 +217,14 @@ def _freeze_artifact_paths(source_root: Path) -> tuple[Path, Path, int]:
     )
     if not isinstance(freeze_payload, dict):
         raise ValueError("Frozen pilot freeze summary must be one JSON object.")
-    owned_row_keys_path = Path(_required_string(freeze_payload, "owned_row_keys_path"))
-    conflict_row_keys_path = Path(_required_string(freeze_payload, "conflict_row_keys_path"))
+    owned_row_keys_path = _resolve_freeze_report_artifact_path(
+        source_root,
+        reported_path=Path(_required_string(freeze_payload, "owned_row_keys_path")),
+    )
+    conflict_row_keys_path = _resolve_freeze_report_artifact_path(
+        source_root,
+        reported_path=Path(_required_string(freeze_payload, "conflict_row_keys_path")),
+    )
     return (
         owned_row_keys_path,
         conflict_row_keys_path,
@@ -334,14 +348,17 @@ def _git_head(repo_root: Path) -> str:
     return result.stdout.strip()
 
 
-def _validate_bundle_paths(output_root: Path, families: tuple[ManifestFamily, ...]) -> None:
+def validate_task101_pilot_bundle_paths(
+    output_root: Path,
+    families: tuple[str, ...],
+) -> None:
     """Fail closed if any prepared row points outside the materialized bundle."""
     for family in families:
-        prepared_path = output_root / "manifests" / f"{family}.prepared.jsonl"
+        prepared_path = task101_pilot_bundle_manifest_path(output_root, family)
         for payload in iter_jsonl_objects(prepared_path):
             prepared_row = _prepared_manifest_row(payload, prepared_path)
-            audio_path = output_root / prepared_row.audio
-            ref_audio_path = output_root / prepared_row.ref_audio
+            audio_path = _bundle_local_artifact_path(output_root, prepared_row.audio)
+            ref_audio_path = _bundle_local_artifact_path(output_root, prepared_row.ref_audio)
             if not audio_path.exists():
                 raise ValueError(
                     "Task 101 pilot bundle missing prepared-row audio artifact: "
@@ -352,6 +369,36 @@ def _validate_bundle_paths(output_root: Path, families: tuple[ManifestFamily, ..
                     "Task 101 pilot bundle missing prepared-row ref audio artifact: "
                     f"{ref_audio_path.as_posix()}"
                 )
+
+
+def _bundle_local_artifact_path(output_root: Path, relative_path_text: str) -> Path:
+    """Resolve one bundle-local artifact path and reject path escape."""
+    relative_path = Path(relative_path_text)
+    if relative_path.is_absolute():
+        raise ValueError(
+            "Task 101 pilot bundle prepared rows must use bundle-local relative paths."
+        )
+    candidate_path = output_root / relative_path
+    try:
+        candidate_path.resolve(strict=False).relative_to(output_root.resolve())
+    except ValueError as exc:
+        raise ValueError(
+            "Task 101 pilot bundle prepared rows must not escape the bundle root."
+        ) from exc
+    return candidate_path
+
+
+def _resolve_freeze_report_artifact_path(source_root: Path, reported_path: Path) -> Path:
+    """Resolve one freeze-ledger artifact from the current frozen source root."""
+    preferred_path = source_root / "reports" / reported_path.name
+    if preferred_path.exists():
+        return preferred_path
+    if reported_path.exists():
+        return reported_path
+    raise FileNotFoundError(
+        "Task 101 pilot bundle could not resolve the frozen-root ledger artifact "
+        f"`{reported_path.as_posix()}` from source root `{source_root.as_posix()}`."
+    )
 
 
 def _utc_now_iso() -> str:

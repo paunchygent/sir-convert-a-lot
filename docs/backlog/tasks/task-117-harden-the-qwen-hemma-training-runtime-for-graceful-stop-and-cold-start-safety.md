@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
   - docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md
+  - docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md
   - docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -52,8 +53,9 @@ chosen Hemma training path.
 
 Execution order note:
 
-- `T142` should land first so the next canonical Task 101 pilot runs against
-  the correct deterministic pilot bundle.
+- `T142` and `T143` should land first so the next canonical Task 101 pilot
+  runs against the correct deterministic pilot bundle with the hardened eval
+  and preflight contract.
 - `T117` then hardens the lifecycle of that corrected training lane for longer
   unattended execution.
 

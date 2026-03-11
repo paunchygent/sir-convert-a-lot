@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -199,3 +200,27 @@ def test_build_task101_pilot_bundle_rejects_duplicate_train_eval_family(tmp_path
             encode_audio_codes_fn=_fake_encode_audio_codes,
             repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
         )
+
+
+def test_build_task101_pilot_bundle_uses_relocated_freeze_ledger_artifacts(
+    tmp_path: Path,
+) -> None:
+    """Pilot-bundle build should prefer the copied frozen-root reports over stale absolute paths."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root)
+    relocated_root = tmp_path / "relocated-frozen-root"
+    shutil.copytree(source_root, relocated_root)
+    shutil.rmtree(source_root)
+
+    summary = build_task101_pilot_bundle(
+        source_root=relocated_root,
+        output_root=tmp_path / "pilot-bundle",
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+    )
+
+    assert summary.owned_row_keys_path.startswith(relocated_root.as_posix())
+    assert summary.conflict_row_keys_path.startswith(relocated_root.as_posix())

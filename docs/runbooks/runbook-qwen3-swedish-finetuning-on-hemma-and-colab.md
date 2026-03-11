@@ -875,6 +875,12 @@ Canonical Task 106 acquisition surface:
      - deterministic pilot bundle projected from the frozen pilot root
      - train family: `swedish_pilot_train`
      - eval family: `swedish_checkpoint_dev`
+   - runtime truth:
+     - detached launch, status, and report artifacts record both the train and
+       held-out eval manifest paths
+     - upstream `sft_12hz.py` remains train-only, so held-out evaluation is
+       reserved for post-training assessment rather than performed inside the
+       training loop
    - inspect the detached pilot with:
      `pdm run run-hemma -- pdm run task-101-pilot status`
    - keep the pilot bounded and evidence-first:

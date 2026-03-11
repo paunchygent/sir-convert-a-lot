@@ -36,6 +36,8 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
     DEFAULT_EVAL_MANIFEST_FAMILY,
     DEFAULT_PILOT_BUNDLE_ROOT,
+    task101_pilot_bundle_manifest_path,
+    validate_task101_pilot_bundle_paths,
 )
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime import (
     Task101DetachedLaunch,
@@ -345,6 +347,8 @@ def _load_launch(launch_root: Path) -> Task101DetachedLaunch:
         repo_root=_required_str(payload, "repo_root"),
         run_root=_required_str(payload, "run_root"),
         pilot_bundle_root=_required_str(payload, "pilot_bundle_root"),
+        train_jsonl=_required_str(payload, "train_jsonl"),
+        eval_jsonl=_required_str(payload, "eval_jsonl"),
         train_manifest_family=_required_str(payload, "train_manifest_family"),
         eval_manifest_family=_required_str(payload, "eval_manifest_family"),
         dockerfile_path=_optional_str(payload, "dockerfile_path"),
@@ -400,11 +404,6 @@ def _resolve_launch_root(output_root: Path, launch_root: Path | None) -> Path:
     return Path(_required_str(payload, "launch_root"))
 
 
-def _prepared_manifest_path(bundle_root: Path, manifest_family: str) -> Path:
-    """Return one prepared-manifest path inside the Task 101 pilot bundle."""
-    return bundle_root / "manifests" / f"{manifest_family}.prepared.jsonl"
-
-
 def _ensure_pilot_bundle_exists(
     pilot_bundle_root: Path,
     *,
@@ -415,8 +414,8 @@ def _ensure_pilot_bundle_exists(
     missing_paths = [
         path
         for path in (
-            _prepared_manifest_path(pilot_bundle_root, train_manifest_family),
-            _prepared_manifest_path(pilot_bundle_root, eval_manifest_family),
+            task101_pilot_bundle_manifest_path(pilot_bundle_root, train_manifest_family),
+            task101_pilot_bundle_manifest_path(pilot_bundle_root, eval_manifest_family),
             pilot_bundle_root / "reports" / "task101_pilot_bundle_report.json",
         )
         if not path.exists()
@@ -427,6 +426,16 @@ def _ensure_pilot_bundle_exists(
             "Task 101 pilot could not find the required pilot-bundle artifacts: "
             f"{rendered_paths}."
         )
+    try:
+        validate_task101_pilot_bundle_paths(
+            pilot_bundle_root,
+            (train_manifest_family, eval_manifest_family),
+        )
+    except ValueError as exc:
+        raise SystemExit(
+            "Task 101 pilot bundle integrity check failed before launch.\n"
+            f"{exc}"
+        ) from exc
 
 
 def main(argv: list[str] | None = None) -> int:

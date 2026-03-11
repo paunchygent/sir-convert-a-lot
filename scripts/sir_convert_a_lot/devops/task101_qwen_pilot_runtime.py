@@ -86,6 +86,8 @@ class Task101DetachedLaunch:
     repo_root: str
     run_root: str
     pilot_bundle_root: str
+    train_jsonl: str
+    eval_jsonl: str
     train_manifest_family: str
     eval_manifest_family: str
     dockerfile_path: str | None
@@ -207,6 +209,15 @@ def _train_manifest_path(settings: Task101PilotSettings) -> Path:
     )
 
 
+def _eval_manifest_path(settings: Task101PilotSettings) -> Path:
+    """Return the selected held-out eval-manifest path for the detached pilot."""
+    return (
+        settings.pilot_bundle_root
+        / "manifests"
+        / f"{settings.eval_manifest_family}.prepared.jsonl"
+    )
+
+
 def build_detached_pilot_command(
     settings: Task101PilotSettings,
     *,
@@ -228,6 +239,10 @@ def build_detached_pilot_command(
     )
     container_train_jsonl = _containerize_scratch_path(
         _train_manifest_path(settings),
+        scratch_root=settings.scratch_build_root,
+    )
+    container_eval_jsonl = _containerize_scratch_path(
+        _eval_manifest_path(settings),
         scratch_root=settings.scratch_build_root,
     )
     container_resume_checkpoint = None
@@ -276,6 +291,8 @@ def build_detached_pilot_command(
         settings.model_id,
         "--train-jsonl",
         container_train_jsonl,
+        "--eval-jsonl",
+        container_eval_jsonl,
         "--output-dir",
         container_run_root,
         "--batch-size",
@@ -329,6 +346,8 @@ def launch_detached_pilot(
         repo_root=repo_root.as_posix(),
         run_root=run_root.as_posix(),
         pilot_bundle_root=settings.pilot_bundle_root.as_posix(),
+        train_jsonl=_train_manifest_path(settings).as_posix(),
+        eval_jsonl=_eval_manifest_path(settings).as_posix(),
         train_manifest_family=settings.train_manifest_family,
         eval_manifest_family=settings.eval_manifest_family,
         dockerfile_path=None if dockerfile_path is None else dockerfile_path.as_posix(),

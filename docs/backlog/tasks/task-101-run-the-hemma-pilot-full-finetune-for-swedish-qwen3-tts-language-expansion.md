@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md
   - docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md
   - docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md
+  - docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -46,6 +47,10 @@ and capture deterministic runtime and memory evidence.
   - `swedish_checkpoint_dev.prepared.jsonl`
   - stable per-speaker `refs/`
   - machine-readable bundle metadata describing the frozen source root
+- Carry the held-out eval family through detached launch, status, and report
+  metadata for the pilot contract while being explicit that the current
+  upstream Qwen trainer remains train-only and does not perform in-training
+  held-out scoring.
 - The canonical frozen pilot ownership source is:
   - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
 - Capture:

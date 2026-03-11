@@ -16,6 +16,7 @@ related:
   - docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md
   - docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md
   - docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md
+  - docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md
   - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
   - docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md
   - docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md
@@ -69,6 +70,7 @@ that a real Swedish optimizer step fits on the R9700.
 1. `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
 1. `docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md`
 1. `docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md`
+1. `docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md`
 1. `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
 1. `docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md`
 1. `docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md`
@@ -89,6 +91,10 @@ that a real Swedish optimizer step fits on the R9700.
 - [x] A dedicated implementation task exists to materialize that deterministic
   pilot bundle before the Task 101 launch, and `T142` now provides the
   committed bundle-materialization surface.
+- [x] A dedicated hardening task exists to make the pilot bundle relocation-safe,
+  fail closed on broken bundle-local paths, propagate held-out eval manifest
+  metadata through the detached runtime contract, and `T143` now provides that
+  committed surface.
 - [ ] A dedicated task defines and proves robust resumable checkpointing before
   the first long unattended Hemma training window.
 - [ ] A follow-on hardening task covers graceful stop behavior, resumable cache
