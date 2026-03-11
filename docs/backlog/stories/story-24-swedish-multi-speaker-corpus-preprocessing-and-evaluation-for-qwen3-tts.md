@@ -2,10 +2,10 @@
 id: story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts
 title: Swedish multi-speaker corpus, preprocessing, and evaluation for Qwen3-TTS
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-08'
+last_updated: '2026-03-11'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
@@ -21,6 +21,16 @@ related:
   - docs/backlog/tasks/task-119-stream-rixvox-source-selection-and-make-preflight-status-truthful.md
   - docs/backlog/tasks/task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md
   - docs/backlog/tasks/task-121-add-portable-colab-slice-based-qwen-preprocessing-lane.md
+  - docs/backlog/tasks/task-123-add-resumable-row-processing-for-qwen-preprocessing-runs.md
+  - docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md
+  - docs/backlog/tasks/task-129-prepare-large-portable-colab-slice-for-multi-session-qwen-row-processing.md
+  - docs/backlog/tasks/task-131-add-backward-compatible-resume-index-for-drive-backed-qwen-row-processing.md
+  - docs/backlog/tasks/task-134-deduplicate-live-colab-remainder-and-enforce-unique-slice-allocation-for-qwen-preprocessing.md
+  - docs/backlog/tasks/task-135-plan-canonical-dedupe-of-qwen-preprocessing-storage-backups.md
+  - docs/backlog/tasks/task-136-define-immutable-qwen-shard-registry-and-enforced-unique-work-allocation.md
+  - docs/backlog/tasks/task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation.md
+  - docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md
+  - docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md
   - docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md
   - docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md
   - docs/reference/ref-qwen3-tts-swedish-corpus-curation-policy.md
@@ -75,6 +85,16 @@ general-language-support result.
 1. `docs/backlog/tasks/task-119-stream-rixvox-source-selection-and-make-preflight-status-truthful.md`
 1. `docs/backlog/tasks/task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md`
 1. `docs/backlog/tasks/task-121-add-portable-colab-slice-based-qwen-preprocessing-lane.md`
+1. `docs/backlog/tasks/task-123-add-resumable-row-processing-for-qwen-preprocessing-runs.md`
+1. `docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md`
+1. `docs/backlog/tasks/task-129-prepare-large-portable-colab-slice-for-multi-session-qwen-row-processing.md`
+1. `docs/backlog/tasks/task-131-add-backward-compatible-resume-index-for-drive-backed-qwen-row-processing.md`
+1. `docs/backlog/tasks/task-134-deduplicate-live-colab-remainder-and-enforce-unique-slice-allocation-for-qwen-preprocessing.md`
+1. `docs/backlog/tasks/task-135-plan-canonical-dedupe-of-qwen-preprocessing-storage-backups.md`
+1. `docs/backlog/tasks/task-136-define-immutable-qwen-shard-registry-and-enforced-unique-work-allocation.md`
+1. `docs/backlog/tasks/task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation.md`
+1. `docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md`
+1. `docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md`
 1. `docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md`
 1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
 
@@ -109,6 +129,9 @@ general-language-support result.
   replacing source transcripts.
 - [ ] Task 104 publishes the Colab H100 scaling lane and compares it against
   the Hemma pilot rather than treating it as an isolated notebook exercise.
+- [x] Tasks `134-139` define and synchronize the canonical ownership,
+  deduplication, immutable shard registry, and shard-id-only work-allocation
+  model for future preprocessing units.
 - [ ] The story documents the difference between the official Qwen
   single-speaker training surface and this repo's planned multi-speaker Swedish
   language-expansion objective.
@@ -127,8 +150,16 @@ The repo has one explicit Swedish multi-speaker training/evaluation plan for
 Qwen `1.7B`, instead of only ad hoc notes about Swedish benchmarks or
 single-speaker adaptation.
 
+The current preprocessing path is now explicitly governed by:
+
+- one canonical deduplicated processed-root ownership set,
+- immutable shard manifests for the remaining universe, and
+- shard-id-based issuance as the only normal path for future processing units.
+
+`plan-remaining-unique` exists only for recovery of already-issued manifests.
+
 ## Checklist
 
 - [ ] Implementation complete
 - [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Docs synchronized

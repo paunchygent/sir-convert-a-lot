@@ -97,6 +97,7 @@ Implemented surfaces:
 
 Allocation rule after `T137`:
 
-- future work issuance should be shard-first
-- `plan-remaining-unique` remains available for in-flight recovery and
-  incident salvage, not as the long-term primary allocation path
+- future work issuance must go through shard ids
+- `plan-remaining-unique` remains available only for in-flight recovery and
+  incident salvage of already-issued manifests, not as a normal allocation
+  path
