@@ -125,6 +125,21 @@
     `scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py`
     with `rebuild` and `validate` commands for historical run roots
 
+- Completed `T132` as the next preprocessing-quality hardening slice:
+  - the oversized
+    `tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py` monolith was
+    removed
+  - shared deterministic builders now live in
+    `tests/sir_convert_a_lot/task103_test_support.py`
+  - the Task 103 test surface is now decomposed into:
+    - `tests/sir_convert_a_lot/test_task103_runner.py`
+    - `tests/sir_convert_a_lot/test_task103_processing.py`
+    - `tests/sir_convert_a_lot/test_task103_sources.py`
+    - `tests/sir_convert_a_lot/test_task103_asr.py`
+  - this keeps runner/orchestration, preprocessing/resume/finalization,
+    source-adapter parsing, and ASR runtime behavior in separate reviewable
+    modules before the next Task 103 production refactors
+
 ## Validation Evidence
 
 - `pdm run validate-tasks`
@@ -149,6 +164,8 @@
 - `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_storage.py scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_row_stage.py scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py -q`
 - `pdm run python -m py_compile scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_storage.py scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_row_stage.py scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py`
+- `pdm run python -m ruff check tests/sir_convert_a_lot/task103_test_support.py tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py tests/sir_convert_a_lot/test_task103_sources.py tests/sir_convert_a_lot/test_task103_asr.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py tests/sir_convert_a_lot/test_task103_sources.py tests/sir_convert_a_lot/test_task103_asr.py -q`
 
 ## Next Session Goals
 
@@ -159,3 +176,6 @@
   reused correctly on the Drive-backed Colab run root.
 - Refresh or relaunch the detached Task 116 Hemma resource monitor so resumed
   `task116-rowproc-5x2-20260309c` telemetry covers the post-`17:40Z` segment.
+- Use the decomposed `T132` Task 103 test surface as the guardrail for the
+  next production refactor pass, starting with runner/orchestration
+  responsibility review instead of adding more behavior into the old monolith.
