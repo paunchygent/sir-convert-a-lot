@@ -210,11 +210,11 @@ def _selected_manifest_families(
 
 def _freeze_artifact_paths(source_root: Path) -> tuple[Path, Path, int]:
     """Resolve the owned/conflict freeze artifacts for one frozen pilot root."""
-    freeze_payload = json.loads(
-        (source_root / "reports" / "canonical_processed_root_freeze.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    freeze_summary_path = source_root / "reports" / "canonical_processed_root_freeze.json"
+    try:
+        freeze_payload = json.loads(freeze_summary_path.read_text(encoding="utf-8"))
+    except PermissionError:
+        return _freeze_artifact_paths_without_summary(source_root)
     if not isinstance(freeze_payload, dict):
         raise ValueError("Frozen pilot freeze summary must be one JSON object.")
     owned_row_keys_path = _resolve_freeze_report_artifact_path(
@@ -229,6 +229,23 @@ def _freeze_artifact_paths(source_root: Path) -> tuple[Path, Path, int]:
         owned_row_keys_path,
         conflict_row_keys_path,
         _required_int(freeze_payload, "conflict_row_count"),
+    )
+
+
+def _freeze_artifact_paths_without_summary(source_root: Path) -> tuple[Path, Path, int]:
+    """Fall back to canonical ledger artifacts when the freeze summary is unreadable."""
+    owned_row_keys_path = _resolve_freeze_report_artifact_path(
+        source_root,
+        reported_path=Path("canonical_processed_root_owned_row_keys.jsonl"),
+    )
+    conflict_row_keys_path = _resolve_freeze_report_artifact_path(
+        source_root,
+        reported_path=Path("canonical_processed_root_conflict_row_keys.jsonl"),
+    )
+    return (
+        owned_row_keys_path,
+        conflict_row_keys_path,
+        len(load_row_key_records(conflict_row_keys_path)),
     )
 
 
