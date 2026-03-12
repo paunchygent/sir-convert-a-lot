@@ -1,55 +1,113 @@
-"""Tests for deterministic Task 101 Qwen pilot-bundle materialization."""
+"""Tests for deterministic batched Task 101 Qwen pilot-bundle materialization."""
 
 from __future__ import annotations
 
 import errno
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
+    _run_finalization_batch_subprocess,
     build_task101_pilot_bundle,
+    copy_task101_pilot_bundle_inputs,
     task101_pilot_bundle_report_path,
 )
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_contracts import (
+    Task101PilotBundleBatchPlan,
+    load_task101_pilot_bundle_batch_plan,
+    task101_pilot_bundle_batch_plan_path,
+    task101_pilot_bundle_prepared_batch_path,
+    task101_pilot_bundle_progress_events_path,
+    task101_pilot_bundle_progress_state_path,
+)
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_execution import (
+    finalize_task101_pilot_bundle_batch,
+    task101_pilot_bundle_batch_is_complete,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
+    AudioCodesEncoderProtocol,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     QualityTier,
     SpoolRow,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
+    iter_jsonl_objects,
     write_json,
     write_spool_row,
 )
 from tests.sir_convert_a_lot.task103_test_support import write_test_wav
 
 
-def _write_frozen_root_fixture(source_root: Path) -> None:
-    """Persist one minimal frozen-root fixture with pilot/dev rows and freeze reports."""
-    _write_spool_row_fixture(
-        source_root=source_root,
-        dataset_row_id="train-row-1",
-        audio_name="train-row-1.wav",
-        manifest_targets=("swedish_pilot_train",),
-    )
-    _write_spool_row_fixture(
-        source_root=source_root,
-        dataset_row_id="dev-row-1",
-        audio_name="dev-row-1.wav",
-        manifest_targets=("swedish_checkpoint_dev",),
-    )
-    _write_spool_row_fixture(
-        source_root=source_root,
-        dataset_row_id="ignored-row",
-        audio_name="ignored-row.wav",
-        manifest_targets=("swedish_final_test",),
-    )
+def _repo_root() -> Path:
+    """Return the repository root for Task 101 bundle tests."""
+    return Path(__file__).resolve().parents[2]
+
+
+def _write_frozen_root_fixture(
+    source_root: Path,
+    *,
+    train_row_count: int = 1,
+    dev_row_count: int = 1,
+    include_ignored_row: bool = True,
+) -> None:
+    """Persist one frozen-root fixture with configurable pilot/dev row counts."""
+    owned_rows: list[dict[str, str]] = []
+    for row_index in range(train_row_count):
+        dataset_row_id = f"train-row-{row_index + 1}"
+        _write_spool_row_fixture(
+            source_root=source_root,
+            dataset_row_id=dataset_row_id,
+            audio_name=f"{dataset_row_id}.wav",
+            manifest_targets=("swedish_pilot_train",),
+        )
+        owned_rows.append(
+            {
+                "dataset": "rixvox",
+                "source_split": "train",
+                "dataset_row_id": dataset_row_id,
+            }
+        )
+    for row_index in range(dev_row_count):
+        dataset_row_id = f"dev-row-{row_index + 1}"
+        _write_spool_row_fixture(
+            source_root=source_root,
+            dataset_row_id=dataset_row_id,
+            audio_name=f"{dataset_row_id}.wav",
+            manifest_targets=("swedish_checkpoint_dev",),
+        )
+        owned_rows.append(
+            {
+                "dataset": "rixvox",
+                "source_split": "dev",
+                "dataset_row_id": dataset_row_id,
+            }
+        )
+    if include_ignored_row:
+        _write_spool_row_fixture(
+            source_root=source_root,
+            dataset_row_id="ignored-row",
+            audio_name="ignored-row.wav",
+            manifest_targets=("swedish_final_test",),
+        )
+        owned_rows.append(
+            {
+                "dataset": "rixvox",
+                "source_split": "test",
+                "dataset_row_id": "ignored-row",
+            }
+        )
     write_json(
         source_root / "reports" / "canonical_processed_root_freeze.json",
         {
             "output_root": source_root.as_posix(),
-            "retained_row_count": 3,
+            "retained_row_count": len(owned_rows),
             "conflict_row_count": 1,
             "owned_row_keys_path": (
                 source_root / "reports" / "canonical_processed_root_owned_row_keys.jsonl"
@@ -60,32 +118,7 @@ def _write_frozen_root_fixture(source_root: Path) -> None:
         },
     )
     (source_root / "reports" / "canonical_processed_root_owned_row_keys.jsonl").write_text(
-        "\n".join(
-            [
-                json.dumps(
-                    {
-                        "dataset": "rixvox",
-                        "source_split": "train",
-                        "dataset_row_id": "train-row-1",
-                    }
-                ),
-                json.dumps(
-                    {
-                        "dataset": "rixvox",
-                        "source_split": "dev",
-                        "dataset_row_id": "dev-row-1",
-                    }
-                ),
-                json.dumps(
-                    {
-                        "dataset": "rixvox",
-                        "source_split": "test",
-                        "dataset_row_id": "ignored-row",
-                    }
-                ),
-            ]
-        )
-        + "\n",
+        "\n".join(json.dumps(row) for row in owned_rows) + "\n",
         encoding="utf-8",
     )
     (source_root / "reports" / "canonical_processed_root_conflict_row_keys.jsonl").write_text(
@@ -159,10 +192,112 @@ def _fake_encode_audio_codes(
     return [[[index + 1, index + 2]] for index, _ in enumerate(audio_paths)]
 
 
-def test_build_task101_pilot_bundle_materializes_selected_manifests(tmp_path: Path) -> None:
-    """Pilot-bundle build should emit deterministic train/dev manifests and refs."""
+def _failing_encode_audio_codes(
+    *,
+    tokenizer_model: str,
+    audio_paths: list[Path],
+) -> list[list[list[int]]]:
+    """Raise one deterministic failure to emulate an interrupted batch."""
+    del tokenizer_model, audio_paths
+    raise RuntimeError("simulated audio-code failure")
+
+
+def _run_batch_in_process(
+    output_root: Path,
+    plan: Task101PilotBundleBatchPlan,
+    manifest_family: ManifestFamily,
+    batch_index: int,
+    audio_codes_chunk_size: int,
+    encode_audio_codes_fn: AudioCodesEncoderProtocol,
+    repo_root: Path,
+) -> None:
+    """Replace the fresh-process batch runner with a direct call in tests."""
+    del repo_root
+    finalize_task101_pilot_bundle_batch(
+        output_root=output_root,
+        plan=plan,
+        manifest_family=manifest_family,
+        batch_index=batch_index,
+        audio_codes_chunk_size=audio_codes_chunk_size,
+        encode_audio_codes_fn=encode_audio_codes_fn,
+    )
+
+
+def _read_event_payloads(output_root: Path) -> list[dict[str, object]]:
+    """Load the Task 101 batch events ledger for assertions."""
+    return list(iter_jsonl_objects(task101_pilot_bundle_progress_events_path(output_root)))
+
+
+def _subprocess_plan(output_root: Path) -> Task101PilotBundleBatchPlan:
+    """Return one minimal plan object for subprocess-launch contract tests."""
+    return Task101PilotBundleBatchPlan(
+        source_root="/tmp/frozen-root",
+        output_root=output_root.as_posix(),
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        retained_row_count=2,
+        conflict_row_count=0,
+        family_row_counts={
+            "swedish_pilot_train": 1,
+            "swedish_checkpoint_dev": 1,
+        },
+        owned_row_keys_path="/tmp/owned.jsonl",
+        conflict_row_keys_path="/tmp/conflict.jsonl",
+        repo_head="deadbeef",
+        generated_at="2026-03-12T00:00:00Z",
+        batches=[],
+    )
+
+
+def test_copy_task101_pilot_bundle_inputs_emits_deterministic_batch_plan(
+    tmp_path: Path,
+) -> None:
+    """Copy stage should emit a stable family-specific batch plan before tokenizer work."""
     source_root = tmp_path / "frozen-root"
-    _write_frozen_root_fixture(source_root)
+    _write_frozen_root_fixture(source_root, train_row_count=5, dev_row_count=3)
+    output_root = tmp_path / "pilot-bundle"
+
+    plan = copy_task101_pilot_bundle_inputs(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        repo_root=_repo_root(),
+    )
+
+    assert task101_pilot_bundle_batch_plan_path(output_root).is_file()
+    assert plan.retained_row_count == 8
+    assert plan.family_row_counts == {
+        "swedish_pilot_train": 5,
+        "swedish_checkpoint_dev": 3,
+    }
+    assert [
+        (batch.manifest_family, batch.batch_index, batch.row_count) for batch in plan.batches
+    ] == [
+        ("swedish_pilot_train", 0, 2),
+        ("swedish_pilot_train", 1, 2),
+        ("swedish_pilot_train", 2, 1),
+        ("swedish_checkpoint_dev", 0, 2),
+        ("swedish_checkpoint_dev", 1, 1),
+    ]
+    assert plan.batches[0].first_row_key == "rixvox/train/train-row-1"
+    assert plan.batches[0].last_row_key == "rixvox/train/train-row-2"
+    assert plan.batches[-1].first_row_key == "rixvox/dev/dev-row-3"
+    assert (output_root / "refs" / "swedish_pilot_train" / "speaker-a" / "ref.wav").is_file()
+    assert (output_root / "refs" / "swedish_checkpoint_dev" / "speaker-a" / "ref.wav").is_file()
+
+
+def test_build_task101_pilot_bundle_materializes_selected_manifests_and_logs_progress(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Batched build should emit final manifests plus plan/events/status artifacts."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=3, dev_row_count=2)
     output_root = tmp_path / "pilot-bundle"
 
     summary = build_task101_pilot_bundle(
@@ -171,15 +306,20 @@ def test_build_task101_pilot_bundle_materializes_selected_manifests(tmp_path: Pa
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
-        repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
     )
 
-    assert summary.retained_row_count == 2
+    assert summary.retained_row_count == 5
     assert summary.conflict_row_count == 1
+    assert summary.finalization_batch_row_count == 2
+    assert summary.total_batch_count == 3
     assert summary.manifest_row_counts == {
-        "swedish_pilot_train": 1,
-        "swedish_checkpoint_dev": 1,
+        "swedish_pilot_train": 3,
+        "swedish_checkpoint_dev": 2,
     }
     assert summary.speaker_counts == {
         "swedish_pilot_train": 1,
@@ -187,11 +327,295 @@ def test_build_task101_pilot_bundle_materializes_selected_manifests(tmp_path: Pa
     }
     assert (output_root / "manifests" / "swedish_pilot_train.prepared.jsonl").is_file()
     assert (output_root / "manifests" / "swedish_checkpoint_dev.prepared.jsonl").is_file()
-    assert (output_root / "refs" / "swedish_pilot_train" / "speaker-a" / "ref.wav").is_file()
-    assert (output_root / "refs" / "swedish_checkpoint_dev" / "speaker-a" / "ref.wav").is_file()
+    assert task101_pilot_bundle_report_path(output_root).is_file()
+    assert task101_pilot_bundle_batch_plan_path(output_root).is_file()
+    assert task101_pilot_bundle_progress_events_path(output_root).is_file()
+    assert task101_pilot_bundle_progress_state_path(output_root).is_file()
+    event_names = [payload["event"] for payload in _read_event_payloads(output_root)]
+    assert event_names == [
+        "copy_completed",
+        "batch_started",
+        "batch_completed",
+        "batch_started",
+        "batch_completed",
+        "batch_started",
+        "batch_completed",
+        "assemble_started",
+        "assemble_completed",
+        "report_completed",
+    ]
+    status_payload = json.loads(task101_pilot_bundle_progress_state_path(output_root).read_text())
+    assert status_payload["completed_batch_count"] == 3
+    assert status_payload["last_completed_family"] == "swedish_checkpoint_dev"
     report_payload = json.loads(task101_pilot_bundle_report_path(output_root).read_text())
-    assert report_payload["conflict_row_count"] == 1
-    assert report_payload["train_manifest_family"] == "swedish_pilot_train"
+    assert report_payload["batch_plan_path"].endswith("task101_pilot_bundle_plan.json")
+    assert report_payload["events_path"].endswith("task101_pilot_bundle_events.jsonl")
+    assert report_payload["status_path"].endswith("task101_pilot_bundle_status.json")
+    captured_stdout = capsys.readouterr().out
+    assert '"event": "copy_completed"' in captured_stdout
+    assert '"event": "batch_completed"' in captured_stdout
+    assert '"event": "report_completed"' in captured_stdout
+
+
+def test_build_task101_pilot_bundle_resumes_from_validated_batch_shards(
+    tmp_path: Path,
+) -> None:
+    """Build should skip validated completed batches and finish the remaining ones."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=3, dev_row_count=2)
+    output_root = tmp_path / "pilot-bundle"
+
+    copy_task101_pilot_bundle_inputs(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        repo_root=_repo_root(),
+    )
+    plan = load_task101_pilot_bundle_batch_plan(output_root)
+    finalize_task101_pilot_bundle_batch(
+        output_root=output_root,
+        plan=plan,
+        manifest_family="swedish_pilot_train",
+        batch_index=0,
+        audio_codes_chunk_size=1,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+    )
+
+    summary = build_task101_pilot_bundle(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
+    )
+
+    assert summary.total_batch_count == 3
+    events = _read_event_payloads(output_root)
+    assert any(
+        payload["event"] == "batch_skipped_existing"
+        and payload["manifest_family"] == "swedish_pilot_train"
+        and payload["batch_index"] == 0
+        for payload in events
+    )
+    assert any(
+        payload["event"] == "batch_completed"
+        and payload["manifest_family"] == "swedish_checkpoint_dev"
+        and payload["batch_index"] == 0
+        for payload in events
+    )
+    status_payload = json.loads(task101_pilot_bundle_progress_state_path(output_root).read_text())
+    assert status_payload["completed_batch_count"] == 3
+    assert status_payload["skipped_batch_event_count"] >= 1
+
+
+def test_task101_batch_validation_rejects_middle_row_drift(tmp_path: Path) -> None:
+    """Validated shard reuse should fail when a middle prepared row drifts."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=3, dev_row_count=1)
+    output_root = tmp_path / "pilot-bundle"
+
+    copy_task101_pilot_bundle_inputs(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=3,
+        repo_root=_repo_root(),
+    )
+    plan = load_task101_pilot_bundle_batch_plan(output_root)
+    batch = plan.batches[0]
+    finalize_task101_pilot_bundle_batch(
+        output_root=output_root,
+        plan=plan,
+        manifest_family=batch.manifest_family,
+        batch_index=batch.batch_index,
+        audio_codes_chunk_size=1,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+    )
+
+    prepared_path = task101_pilot_bundle_prepared_batch_path(
+        output_root,
+        batch.manifest_family,
+        batch.batch_index,
+    )
+    prepared_rows = list(iter_jsonl_objects(prepared_path))
+    prepared_rows[1]["text"] = "corrupted-middle-row"
+    prepared_path.write_text(
+        "\n".join(json.dumps(row, sort_keys=True) for row in prepared_rows) + "\n",
+        encoding="utf-8",
+    )
+
+    assert not task101_pilot_bundle_batch_is_complete(output_root, batch)
+
+
+def test_finalize_task101_batch_records_interrupted_progress_and_supports_resume(
+    tmp_path: Path,
+) -> None:
+    """A failed batch should preserve last-started progress evidence and allow a safe rerun."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=3, dev_row_count=2)
+    output_root = tmp_path / "pilot-bundle"
+
+    copy_task101_pilot_bundle_inputs(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        repo_root=_repo_root(),
+    )
+    plan = load_task101_pilot_bundle_batch_plan(output_root)
+
+    with pytest.raises(RuntimeError, match="simulated audio-code failure"):
+        finalize_task101_pilot_bundle_batch(
+            output_root=output_root,
+            plan=plan,
+            manifest_family="swedish_pilot_train",
+            batch_index=0,
+            audio_codes_chunk_size=1,
+            encode_audio_codes_fn=_failing_encode_audio_codes,
+        )
+
+    event_names = [payload["event"] for payload in _read_event_payloads(output_root)]
+    assert event_names == ["copy_completed", "batch_started"]
+    status_payload = json.loads(task101_pilot_bundle_progress_state_path(output_root).read_text())
+    assert status_payload["started_batch_count"] == 1
+    assert status_payload["completed_batch_count"] == 0
+    assert status_payload["last_event"] == "batch_started"
+    assert status_payload["last_started_family"] == "swedish_pilot_train"
+    assert status_payload["last_started_batch_index"] == 0
+    assert status_payload["last_completed_family"] is None
+    assert not task101_pilot_bundle_prepared_batch_path(
+        output_root,
+        "swedish_pilot_train",
+        0,
+    ).exists()
+
+    summary = build_task101_pilot_bundle(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
+    )
+
+    assert summary.total_batch_count == 3
+    assert any(
+        payload["event"] == "batch_completed"
+        and payload["manifest_family"] == "swedish_pilot_train"
+        and payload["batch_index"] == 0
+        for payload in _read_event_payloads(output_root)
+    )
+    resumed_status_payload = json.loads(
+        task101_pilot_bundle_progress_state_path(output_root).read_text()
+    )
+    assert resumed_status_payload["completed_batch_count"] == 3
+    assert resumed_status_payload["last_completed_family"] == "swedish_checkpoint_dev"
+
+
+def test_run_finalization_batch_subprocess_uses_canonical_cli_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The fresh-process batch runner should launch the committed finalize-batch CLI."""
+    output_root = tmp_path / "pilot-bundle"
+    observed_command: list[str] = []
+    observed_cwd: Path | None = None
+    observed_check: bool | None = None
+
+    def _fake_run(
+        command: list[str],
+        *,
+        cwd: Path,
+        check: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        nonlocal observed_command, observed_cwd, observed_check
+        observed_command = command
+        observed_cwd = cwd
+        observed_check = check
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle.subprocess.run",
+        _fake_run,
+    )
+
+    _run_finalization_batch_subprocess(
+        output_root=output_root,
+        plan=_subprocess_plan(output_root),
+        manifest_family="swedish_pilot_train",
+        batch_index=3,
+        audio_codes_chunk_size=5,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=_repo_root(),
+    )
+
+    assert observed_command == [
+        sys.executable,
+        "-m",
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_cli",
+        "finalize-batch",
+        "--output-root",
+        output_root.as_posix(),
+        "--manifest-family",
+        "swedish_pilot_train",
+        "--batch-index",
+        "3",
+        "--audio-codes-chunk-size",
+        "5",
+    ]
+    assert observed_cwd == _repo_root()
+    assert observed_check is False
+    assert '"event": "batch_subprocess_launch"' in capsys.readouterr().out
+
+
+def test_run_finalization_batch_subprocess_fails_closed_on_nonzero_exit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The fresh-process batch runner should stop the build when a batch subprocess fails."""
+    output_root = tmp_path / "pilot-bundle"
+
+    def _fake_run(
+        command: list[str],
+        *,
+        cwd: Path,
+        check: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        del cwd, check
+        return subprocess.CompletedProcess(command, 17)
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle.subprocess.run",
+        _fake_run,
+    )
+
+    with pytest.raises(SystemExit, match="exit code `17`"):
+        _run_finalization_batch_subprocess(
+            output_root=output_root,
+            plan=_subprocess_plan(output_root),
+            manifest_family="swedish_checkpoint_dev",
+            batch_index=1,
+            audio_codes_chunk_size=4,
+            encode_audio_codes_fn=_fake_encode_audio_codes,
+            repo_root=_repo_root(),
+        )
 
 
 def test_build_task101_pilot_bundle_rejects_duplicate_train_eval_family(tmp_path: Path) -> None:
@@ -206,8 +630,11 @@ def test_build_task101_pilot_bundle_rejects_duplicate_train_eval_family(tmp_path
             train_manifest_family="swedish_pilot_train",
             eval_manifest_family="swedish_pilot_train",
             tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            finalization_batch_row_count=2,
+            audio_codes_chunk_size=1,
             encode_audio_codes_fn=_fake_encode_audio_codes,
-            repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+            repo_root=_repo_root(),
+            run_batch_fn=_run_batch_in_process,
         )
 
 
@@ -227,8 +654,11 @@ def test_build_task101_pilot_bundle_uses_relocated_freeze_ledger_artifacts(
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
-        repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
     )
 
     assert summary.owned_row_keys_path.startswith(relocated_root.as_posix())
@@ -250,8 +680,11 @@ def test_build_task101_pilot_bundle_falls_back_when_freeze_summary_is_unreadable
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
-        repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
     )
 
     assert summary.conflict_row_count == 1
@@ -271,7 +704,7 @@ def test_build_task101_pilot_bundle_fails_closed_when_output_filesystem_is_full(
     output_root = tmp_path / "pilot-bundle"
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle._filesystem_free_bytes",
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_source.filesystem_free_bytes",
         lambda path: 1,
     )
 
@@ -291,8 +724,11 @@ def test_build_task101_pilot_bundle_fails_closed_when_output_filesystem_is_full(
             train_manifest_family="swedish_pilot_train",
             eval_manifest_family="swedish_checkpoint_dev",
             tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            finalization_batch_row_count=2,
+            audio_codes_chunk_size=1,
             encode_audio_codes_fn=_unexpected_encode_audio_codes,
-            repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+            repo_root=_repo_root(),
+            run_batch_fn=_run_batch_in_process,
         )
 
     assert exc_info.value.errno == errno.ENOSPC

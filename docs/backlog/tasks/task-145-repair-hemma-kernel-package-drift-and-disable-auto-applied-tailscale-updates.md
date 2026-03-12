@@ -1,9 +1,9 @@
 ---
-id: 'task-145-repair-hemma-kernel-package-drift-and-disable-auto-applied-tailscale-updates'
-title: 'Repair Hemma kernel package drift and disable auto-applied tailscale updates'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-145-repair-hemma-kernel-package-drift-and-disable-auto-applied-tailscale-updates
+title: Repair Hemma kernel package drift and disable auto-applied tailscale updates
+type: task
+status: completed
+priority: high
 created: '2026-03-12'
 last_updated: '2026-03-12'
 related:
@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-144-harden-task-101-bundle-against-unreadable-frozen-freeze-summary.md
 labels: []
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

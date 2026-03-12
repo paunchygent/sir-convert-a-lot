@@ -49,6 +49,14 @@ and capture deterministic runtime and memory evidence.
   - the builder now fails closed before writing any partial output when the
     target filesystem does not have enough free space for the retained bundle
     payload plus safety headroom
+  - the canonical `build` surface is now internally staged:
+    - `copy` retained spool/audio
+    - `finalize-batch` in bounded family batches
+    - `assemble` final manifests/report only after validated batch shards exist
+  - operator-visible progress artifacts now live under `reports/`:
+    - `task101_pilot_bundle_plan.json`
+    - `task101_pilot_bundle_events.jsonl`
+    - `task101_pilot_bundle_status.json`
 - Use the detached committed Task 101 runner surface:
   - `pdm run run-hemma -- pdm run task-101-pilot launch`
 - Treat the generic promoted Task 103 corpus view as insufficient for this run.

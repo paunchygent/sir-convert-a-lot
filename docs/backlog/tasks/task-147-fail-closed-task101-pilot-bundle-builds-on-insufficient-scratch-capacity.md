@@ -1,9 +1,9 @@
 ---
-id: 'task-147-fail-closed-task101-pilot-bundle-builds-on-insufficient-scratch-capacity'
-title: 'Fail closed Task101 pilot-bundle builds on insufficient scratch capacity'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-147-fail-closed-task101-pilot-bundle-builds-on-insufficient-scratch-capacity
+title: Fail closed Task101 pilot-bundle builds on insufficient scratch capacity
+type: task
+status: completed
+priority: high
 created: '2026-03-12'
 last_updated: '2026-03-12'
 related:
@@ -14,6 +14,7 @@ related:
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels: []
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

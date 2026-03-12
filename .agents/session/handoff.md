@@ -1,459 +1,59 @@
 # Session Handoff
 
-## Current Session Summary (2026-03-12)
+## Session Summary (2026-03-12)
 
-- Triaged the Hemma Task 101 incident in read-only mode first and separated it
-  into two tracks:
-  - repo-side Task 101 bundle access failure
-  - host-side interrupted `dpkg` / DKMS repair state
-- Verified the original Task 101 failure mode on Hemma:
-  - frozen pilot root:
-    `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
-  - `reports/canonical_processed_root_freeze.json` is `0600 root:root`
-  - readable ledgers still exist:
-    - `canonical_processed_root_owned_row_keys.jsonl`
-    - `canonical_processed_root_conflict_row_keys.jsonl`
-- Verified the current host package-manager state on Hemma:
-  - `sudo dpkg --audit` still reports unpacked/unconfigured `linux-*` and
-    `tailscale` packages
-  - `sudo apt-get check` still fails with interrupted `dpkg`
-  - `dkms status` is healthy for the running `6.14.0-37-generic` kernel
-  - system boot time is `2026-03-12 05:26`
-  - `sox` is still not installed on the host
-- Completed `T144` to harden the Task 101 pilot-bundle builder against
-  unreadable frozen freeze summaries:
-  - added a fallback in
-    `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py`
-    so unreadable `canonical_processed_root_freeze.json` now falls back to the
-    canonical readable owned/conflict ledgers and derives `conflict_row_count`
-    from the conflict ledger
-  - added regression coverage in
-    `tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
-  - documented the immutable source-root operator contract in:
-    - `docs/backlog/tasks/task-144-harden-task-101-bundle-against-unreadable-frozen-freeze-summary.md`
-    - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
-    - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
-- Completed `T145` to repair the host-level Hemma package drift:
-  - disabled Tailscale auto-apply updates with `AutoUpdate.Apply=false`
-  - removed the stale GA `linux-generic` / `6.8.0-94` transaction that had
-    left `dpkg` interrupted since `2026-03-07`
-  - purged the remaining GA `6.8.0-90` kernel payload so only the HWE `6.14`
-    line remains installed
-  - verified:
-    - `dpkg --audit` clean
-    - `apt-get check` clean
-    - `uname -r` still `6.14.0-37-generic`
-    - `tailscale debug prefs` now reports `AutoUpdate.Apply=false`
-- Synced the Hemma repo clone forward so it includes the minimal `T144` pilot
-  bundle fallback patch without dragging the dirty local main worktree onto the
-  host:
-  - created a clean temporary worktree branch `codex/task101-hemma-sync`
-  - committed only the Task 101 bundle script, its regression test, and the
-    `T144` task doc
-  - pushed that branch and merged it on Hemma with a merge commit
-- Completed `T146` to normalize the current frozen pilot root permissions:
-  - normalized the immutable frozen source root to `644` files / `755`
-    directories so repo-context non-sudo reads no longer fail on spool/audio
-    artifacts
-  - verified the root no longer contains `0600` files
-- Re-ran the canonical Task 101 bundle build on Hemma after both fixes:
-  - attached retries advanced past the original permission blocker and reached
-    bundle finalization, proving the unreadable-freeze-summary and
-    frozen-root-permission issues were resolved
-  - a detached retry with explicit shell capture surfaced the current real
-    blocker:
-    `OSError: [Errno 28] No space left on device`
-- Verified the current live storage truth on Hemma:
-  - `/srv/scratch` is `458G` total and `100%` full
-  - `/srv/storage` still has about `3.5T` free
-  - `/srv/scratch` pressure is dominated by:
-    - `/srv/scratch/sir-convert-a-lot/build/runs` about `208G`
-    - `/srv/scratch/sir-convert-a-lot/cache` about `117G`
-    - `/srv/scratch/docker/data-root` about `84G`
-  - failed partial Task 101 bundle roots now also consume space:
-    - `20260312a` about `9.0G`
-    - `20260312d` about `9.0G`
-    - `20260312e2` about `1.7G`
-- Completed `T147` locally to add a permanent Task 101 preflight for this
-  condition:
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py` now
-    estimates retained bundle bytes plus headroom and raises `ENOSPC` before
-    writing any partial output when the target filesystem is too full
-  - added regression coverage in
-    `tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
-  - updated the Task 101 task doc, `T145`, `T146`, and the Qwen Hemma/Colab
-    runbook to record the verified storage root cause
+- `T148` follow-up is closed in code and docs.
+- Task 101 pilot-bundle batching remains split across:
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_cli.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_source.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_validation.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_contracts.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_execution.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_progress.py`
+- Review-driven fixes landed:
+  - CLI manifest-family arguments now normalize through typed validation in the
+    dedicated `task101_qwen_pilot_bundle_cli.py` module so `typecheck-all`
+    passes again and the orchestration module stays CLI-free
+  - source/materialization and manifest/report validation helpers now live in
+    dedicated modules, leaving `task101_qwen_pilot_bundle.py` at `477` LoC and
+    focused on orchestration
+  - reusable batch-shard validation now compares ordered
+    curated/raw/prepared row signatures instead of only counts plus first/last
+    row keys
+  - regression coverage now includes interrupted-batch recovery, subprocess
+    launch/failure contract checks, and corrupted middle-row shard rejection
+- Docs-as-code surfaces updated:
+  - `docs/backlog/tasks/task-148-batch-task101-pilot-bundle-finalization-and-progress-logging-on-hemma.md`
+  - `docs/backlog/current.md`
 
-## Validation Evidence (2026-03-12)
+## Validation Status
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py -q`
-- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
-- `pdm run validate-tasks`
-- `pdm run validate-docs`
-- `pdm run run-hemma -- sudo -n tailscale set --auto-update=false --update-check=true`
-- `pdm run run-hemma -- sudo -n dpkg --remove --force-remove-reinstreq linux-generic linux-image-generic linux-headers-generic linux-image-6.8.0-94-generic linux-modules-6.8.0-94-generic linux-modules-extra-6.8.0-94-generic linux-tools-6.8.0-94 linux-tools-6.8.0-94-generic linux-headers-6.8.0-94-generic linux-headers-6.8.0-94`
-- `pdm run run-hemma -- sudo -n apt-get -f install -y`
-- `pdm run run-hemma -- sudo -n apt-get purge -y linux-image-6.8.0-90-generic linux-modules-6.8.0-90-generic linux-modules-extra-6.8.0-90-generic linux-headers-6.8.0-90 linux-headers-6.8.0-90-generic linux-image-6.8.0-94-generic linux-modules-6.8.0-94-generic linux-modules-extra-6.8.0-94-generic`
-- `pdm run run-hemma -- sudo -n dpkg --audit`
-- `pdm run run-hemma -- sudo -n apt-get check`
-- `pdm run run-hemma -- tailscale debug prefs`
-- `pdm run run-hemma -- git fetch origin codex/task101-hemma-sync`
-- `pdm run run-hemma -- git merge --no-ff origin/codex/task101-hemma-sync -m "Merge branch 'codex/task101-hemma-sync'"`
-- `pdm run run-hemma -- sudo -n find /srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a -type f -exec chmod 644 '{}' +`
-- `pdm run run-hemma -- sudo -n find /srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a -type d -exec chmod 755 '{}' +`
-- `pdm run run-hemma -- df -h /srv/scratch /srv/storage /`
-- `pdm run run-hemma -- /bin/bash -lc 'du -sh /srv/scratch/sir-convert-a-lot/cache /srv/scratch/sir-convert-a-lot/build /srv/scratch/docker/data-root'`
+- `PASS` `pdm run format-all`
+- `PASS` `pdm run lint-fix`
+- `PASS` `pdm run typecheck-all`
+- `PASS` `pdm run pytest-root tests`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py -q`
+- `PASS` `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_cli.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_source.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_validation.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_contracts.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_progress.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_execution.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
+- `PASS` `pdm run validate-tasks`
+- `PASS` `pdm run validate-docs`
+- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
-## Next Session Goals (2026-03-12)
+## Active Blocker
 
-- Reclaim `/srv/scratch` capacity safely before the next Task 101 retry.
-  - likely cleanup targets are the failed partial Task 101 bundle roots plus
-    stale hot artifacts that no longer need to stay on SSD
-  - do not delete anything without an explicit operator decision because these
-    are destructive cleanups
-- After scratch space is reclaimed, re-run the canonical non-sudo Task 101
-  pilot-bundle build to confirm the new preflight or the now-free filesystem
-  lets the build complete cleanly.
-- If the bundle materializes successfully after space recovery, continue with
-  the detached Task 101 pilot launch through the canonical runner.
+- The next live Hemma Task 101 bundle retry is still blocked by storage
+  pressure on `/srv/scratch`.
+- Verified live state from the earlier incident remains the operator truth to
+  respect until rechecked:
+  - `/srv/scratch` was `458G / 458G` used
+  - the canonical retry failed with `OSError: [Errno 28] No space left on device`
 
-## Current Session Summary (2026-03-10)
+## Immediate Next Step
 
-- Completed the local `T124` throughput-hardening slice for portable Colab
-  Qwen preprocessing:
-
-  - `scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py`
-    now exposes `localize-slice`
-  - the localization stage resolves portable selected-source rows against
-    staged raw files, extracts only required archive members into
-    `localized_audio/`, and persists:
-    - `localized_selected_source_records.jsonl`
-    - `localized_slice_summary.json`
-  - the localized manifest rewrites archive-backed locators to plain local
-    audio-file locators so reruns avoid repeated archive-member resolution
-
-- Kept the notebook thin and repo-owned:
-
-  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now stages
-    required files, runs `localize-slice`, and then invokes canonical Task 103
-    row-processing against the localized manifest
-  - the Colab worker mix is now:
-    - `row_worker_count=8`
-    - `gpu_asr_worker_count=2`
-
-- Updated docs-as-code surfaces for the new localized Colab lane:
-
-  - `docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md`
-    is terminalized with deliverables/checklists complete
-  - `docs/reference/ref-qwen3-tts-colab-portable-slice-preprocessing.md`
-    records the localization rationale and the `8:2` probe
-  - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
-    now treats localization as the next allowed Colab throughput optimization
-  - `docs/backlog/current.md` archives the session outcome and updates next
-    actions
-
-- Completed `T125` as a workflow guardrail for future iterations:
-
-  - added `.agents/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
-  - registered the skill in `.agents/skills/README.md` and the local global
-    skill registry under `~/.codex/skills/sir-convert-a-lot-colab-hemma`
-  - cross-linked the rule from the Qwen skill and Qwen Hemma/Colab runbook
-  - codified the rule that Hemma-backed execution lanes should be edited,
-    committed, and pushed from Hemma
-
-- Completed `T126` after the first Colab rerun exposed a stale notebook clone
-  URL:
-
-  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now defaults
-    to `https://github.com/paunchygent/sir-convert-a-lot.git`
-  - the notebook bootstrap now also accepts `SIR_CONVERT_A_LOT_REPO_URL` for
-    intentional overrides
-
-- Completed `T127` and `T128` as live Colab operator guardrails:
-
-  - `scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py` now
-    prints progress for each required archive, localization start/end per
-    archive, extracted/reused file counts, and elapsed time for staging and
-    localization
-  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now checks
-    `nvidia-smi` plus `torch.cuda.is_available()` before launching Task 103 and
-    fails immediately with a clear GPU-runtime error if CUDA is unavailable
-
-- Completed `T129` as the next Colab scaling-prep slice:
-
-  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now defaults
-    to the large `task129-scale-slice-1-of-2-20260311a` identifiers
-  - the notebook now uses a stable `RUN_ID` plus a persistent Google Drive
-    root under `/content/drive/MyDrive/sir-convert-a-lot` so sessions `2` and
-    `3` can resume the same Colab-owned slice safely after runtime resets
-  - the next Colab worker mix is now preconfigured to:
-    - `row_worker_count=10`
-    - `gpu_asr_worker_count=2`
-  - the Hemma-preparation cell now documents the exact bounded
-    `36,000 -> 18,000` source-selection and slice-bundling plan for the next
-    multi-session Colab run
-
-- The localized live Colab proof completed successfully:
-
-  - `task121-colab-proof-rowproc-20260310a`
-  - `processed_row_count=256`
-  - `total_row_count=256`
-  - `spool_rows=256`
-  - `audio_24k_files=256`
-  - observed wall-clock throughput was about `11.2` rows/minute end to end,
-    with steady-state intervals around `12-13` rows/minute
-
-- The concurrently running Hemma detached row-processing lane remained healthy
-  during the same window:
-
-  - detached launch `task116-rowproc-5x2-resume-20260310b` was still
-    `running` at `2026-03-10T19:27:05Z`
-  - Task 103 status showed `processed_row_count=4637` of `10024`
-  - on-disk counts were `4635` spool rows and `4636` `audio_24k` files
-  - the earlier detached Task 116 resource-monitor summary remained healthy,
-    though it stopped before the resumed `2026-03-10 17:40Z` segment and should
-    be relaunched or refreshed for fresh historical telemetry
-
-- Completed the large-slice Hemma preparation and bundle commit:
-
-  - fresh source-selection launch
-    `task129-colab-scale-selection-launch-20260311a` completed at
-    `2026-03-10T19:48:59Z`
-  - bounded source-selection summary reported `total_selected_rows=36024`
-  - the Colab-owned bundle summary reported:
-    - `selected_row_count=18000`
-    - `required_files_count=6`
-    - `datasets=[\"rixvox\"]`
-    - `source_splits=[\"train\"]`
-  - committed portable bundle:
-    `colab_ml_training/proof_inputs/task129-scale-slice-1-of-2-20260311a-bundle.tar.gz`
-  - pushed from Hemma as `bc2addd` (`chore: add task129 colab scale slice bundle`)
-
-- Completed `T130` after the first task129 notebook launch exposed one stale
-  checkout failure mode:
-
-  - `colab_ml_training/qwen_portable_slice_row_processing.ipynb` now refreshes
-    any existing `/content/sir-convert-a-lot` checkout with `fetch`,
-    `checkout main`, and `pull --ff-only` before looking for the committed
-    portable bundle
-  - this fixes the false `FileNotFoundError` path where the bundle existed on
-    `main` but the already-open Colab repo clone predated the bundle commit
-
-- Completed `T131` as the next persistent-Colab resume hardening slice:
-
-  - Task 103 row-processing now maintains
-    `spool/completed_row_keys.jsonl` inside the run root as a sequential
-    completed-row resume index
-  - resume now prefers the index fast path, rebuilds it from canonical spool
-    JSON when the index is missing or invalid, and logs whether the fast path
-    or rebuild path was used
-  - stale crash tails self-heal: if a row is missing from the index but its
-    canonical spool JSON already exists, resume skips the expensive row work
-    and appends that key back into the index
-  - added the committed helper surface
-    `scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py`
-    with `rebuild` and `validate` commands for historical run roots
-
-- Completed `T132` as the next preprocessing-quality hardening slice:
-
-  - the oversized
-    `tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py` monolith was
-    removed
-  - shared deterministic builders now live in
-    `tests/sir_convert_a_lot/task103_test_support.py`
-  - the Task 103 test surface is now decomposed into:
-    - `tests/sir_convert_a_lot/test_task103_runner.py`
-    - `tests/sir_convert_a_lot/test_task103_processing.py`
-    - `tests/sir_convert_a_lot/test_task103_sources.py`
-    - `tests/sir_convert_a_lot/test_task103_asr.py`
-  - this keeps runner/orchestration, preprocessing/resume/finalization,
-    source-adapter parsing, and ASR runtime behavior in separate reviewable
-    modules before the next Task 103 production refactors
-
-- Completed `T133` as the first Task 103 production refactor after `T132`:
-
-  - added
-    `scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py`
-  - extracted Task 103 run-status lifecycle and heartbeat persistence out of
-    the public runner into one dedicated helper surface
-  - `run_task103_qwen_swedish_preprocessing.py` now delegates allocation,
-    running, source-selection, row-processing heartbeat, finalization
-    heartbeat, failure, and completion/promotion status writes to the helper
-  - added direct tests in
-    `tests/sir_convert_a_lot/test_task103_runner_status.py`
-    so this seam is independently testable rather than only covered through
-    the public runner
-
-- Optimized the decomposed Task 103 processing test surface:
-
-  - `tests/sir_convert_a_lot/task103_test_support.py` now exposes a shared
-    helper that stubs both `WhisperStrictScorer.ensure_loaded()` and
-    `transcribe()`
-  - `tests/sir_convert_a_lot/test_task103_processing.py` now uses that helper
-    in the row-processing/resume/finalization cases so focused local test runs
-    keep their behavior coverage without triggering unnecessary CPU-side ASR
-    pipeline initialization
-
-- Completed `T134` to contain the live Hemma/Colab overlap incident:
-
-  - added
-    `scripts/sir_convert_a_lot/devops/task121_qwen_slice_allocation.py`
-    so Task 121 can load canonical row keys from completed Task 103 run roots
-    and selected-source manifests
-  - `task121_qwen_colab_slice_bundle.py` now exposes:
-    - `plan-remaining-unique`
-    - `dedupe-selected-source-records`
-  - the guarded allocation path now subtracts already completed or already
-    reserved rows before modulo partitioning future slices
-  - the live recovery path can now emit one deduplicated remaining
-    selected-source JSONL for the in-flight Colab lane without notebook-only
-    overlap logic
-  - `ref-qwen3-tts-colab-portable-slice-preprocessing.md` and
-    `runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md` now treat guarded
-    allocation as canonical after any prior run root or issued slice exists
-  - the current live-state ownership comparison now shows:
-    - `task129` slice rows: `18000`
-    - Hemma processed rows seen in the slice: `4851`
-    - Colab completed rows: `7970`
-    - union already owned inside the slice: `10653`
-    - still-unique remaining rows in the current slice: `7347`
-
-- Completed `T137` to turn overlap containment into a durable canonical model:
-
-  - added `scripts/sir_convert_a_lot/devops/task103_qwen_canonical_processed_root.py`
-    so ordered Task 103 run roots can be deduped into one immutable canonical
-    processed root with duplicates/conflicts reports
-  - split Task 121 portable slice behavior by bounded context into:
-    - `task121_qwen_portable_slice_planning.py`
-    - `task121_qwen_portable_slice_localization.py`
-    - `task121_qwen_shard_registry.py`
-    - `task121_qwen_assignment_ledger.py`
-  - rewrote `task121_qwen_colab_slice_bundle.py` into a thin canonical CLI
-    with no notebook-owned logic and no alias surfaces
-  - future work allocation is now intended to be shard-first:
-    - build canonical processed root
-    - build immutable `~5000`-row shard registry
-    - issue processing units from shard ids only
-
-- Completed `T138` to restore order to the live pilot and current Colab lane:
-
-  - materialized canonical pilot root:
-    - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task138-qwen-pilot-owned-20260311b`
-  - exact current ownership math:
-    - Hemma completed rows: `10024`
-    - Colab completed rows: `7970`
-    - duplicate completed Colab rows: `2158`
-    - novel completed Colab rows: `5812`
-    - retained canonical unique pilot rows: `15748`
-    - quarantined conflicts: `88`
-  - created and pushed the repo-owned Colab recovery bundle:
-    - `colab_ml_training/proof_inputs/task138-task129-remaining-unique-20260311a-bundle.tar.gz`
-    - `sha256=6b260245a5daf208310489c4b4ba59eab4284c45ef4e4fb401519948a1e70d6b`
-    - remaining unique rows in the original `task129` slice: `7187`
-  - Colab should now resume from the same persistent `task129` run root but
-    against the `task138` recovery bundle instead of the original `18000`-row
-    bundle
-  - important nuance: the canonical root quarantines `88` same-row conflicts,
-    so future allocation should eventually exclude those conflicts explicitly
-    rather than assuming the retained root alone is a sufficient exclusion set
-
-- Completed `T141` to define the pilot-training bridge:
-
-  - `Task 101`, `Story 25`, the Qwen runbook, and the finetuning guide now
-    state the same rule that the first bounded Hemma fine-tune must consume a
-    deterministic Task 101 pilot bundle projected from the frozen pilot root
-    instead of the generic promoted preprocessing root
-  - the relevant operator skills now carry the same rule so the docs and skill
-    surfaces do not diverge during future planning or launch work
-
-- Opened `T142` as the next implementation slice for the training lane:
-
-  - materialize one deterministic Task 101 pilot bundle from the frozen pilot
-    root through `pdm run task-101-pilot-bundle build`
-  - emit:
-    - `manifests/swedish_pilot_train.prepared.jsonl`
-    - `manifests/swedish_checkpoint_dev.prepared.jsonl`
-    - stable per-speaker `refs/`
-    - `reports/task101_pilot_bundle_report.json`
-  - retarget the detached Task 101 runner away from the generic promoted Task
-    103 preprocessing root and onto `pilot_bundle_root`
-
-- Completed `T143` as the immediate Task 101 hardening follow-on:
-
-  - copied/restored frozen pilot roots now rebuild the pilot bundle without
-    depending on stale absolute freeze-ledger paths
-  - detached launch preflight now validates bundle-local prepared-manifest
-    `audio` and `ref_audio` targets before container start
-  - detached launch/status/report artifacts now record both train and held-out
-    eval manifest paths while staying explicit that upstream `sft_12hz.py`
-    remains train-only
-
-- Completed `T117` to harden the Hemma Qwen training lifecycle:
-
-  - the patched Qwen loop now traps `SIGTERM` / `SIGINT`
-  - an intentional stop writes one final durable checkpoint with
-    `signal-stop` semantics when progress advanced
-  - Task 100 fallback HF cache sync now uses `rsync -a --partial`
-  - Task 100/101 launch surfaces now print an explicit BuildKit cold-build
-    warning before heavy compilation work
-
-## Validation Evidence
-
-- `pdm run validate-tasks`
-- `pdm run validate-docs`
-- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py -q`
-- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- `pdm run python -c "import json, pathlib; json.loads(pathlib.Path('colab_ml_training/qwen_portable_slice_row_processing.ipynb').read_text(encoding='utf-8')); print('notebook-json-ok')"`
-- `pdm run python /Users/olofs_mba/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/sir-convert-a-lot-colab-hemma`
-- `rg -n "paunchygent/sir-convert-a-lot|SIR_CONVERT_A_LOT_REPO_URL" colab_ml_training/qwen_portable_slice_row_processing.ipynb`
-- `pdm run run-hemma -- pdm run task-114-isolated-stages status --launch-root build/verification/task-114-qwen-isolated-stages/task116-rowproc-5x2-resume-20260310b`
-- `pdm run run-hemma --shell 'find /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task116-rowproc-5x2-20260309c/spool/rows -type f | wc -l'`
-- `pdm run run-hemma --shell 'find /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task116-rowproc-5x2-20260309c/audio_24k -type f | wc -l'`
-- `pdm run run-hemma -- pdm run task-103-preprocess-public-corpus launch --task103-stage source-selection --launch-id task129-colab-scale-selection-launch-20260311a --task103-run-id task129-colab-scale-selection-20260311a --rixvox-split train --rixvox-max-rows-per-split 36000 --skip-build`
-- `pdm run run-hemma -- sudo -n cat /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task129-colab-scale-selection-20260311a/status.json`
-- `pdm run run-hemma -- sudo -n /home/paunchygent/.local/bin/pdm run task-121-colab-slice-bundle plan --source-run-root /srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/task129-colab-scale-selection-20260311a --output-root /srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-colab-slices/task129-scale-slice-1-of-2-20260311a --slice-count 2 --slice-index 1`
-- `sha256sum colab_ml_training/proof_inputs/task129-scale-slice-1-of-2-20260311a-bundle.tar.gz`
-- `pdm run python -c "import json, pathlib; json.loads(pathlib.Path('colab_ml_training/qwen_portable_slice_row_processing.ipynb').read_text(encoding='utf-8')); print('notebook-json-ok')"`
-- `pdm run validate-tasks`
-- `pdm run validate-docs`
-- `pdm run index-tasks --root \"$(pwd)/docs/backlog\" --out \"/tmp/sir_tasks_index.md\" --fail-on-missing`
-- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_storage.py scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_row_stage.py scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_preprocessing.py -q`
-- `pdm run python -m py_compile scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_storage.py scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_row_stage.py scripts/sir_convert_a_lot/devops/task103_qwen_resume_index.py`
-- `pdm run python -m ruff check tests/sir_convert_a_lot/task103_test_support.py tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py tests/sir_convert_a_lot/test_task103_sources.py tests/sir_convert_a_lot/test_task103_asr.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py tests/sir_convert_a_lot/test_task103_sources.py tests/sir_convert_a_lot/test_task103_asr.py -q`
-- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py tests/sir_convert_a_lot/test_task103_runner_status.py tests/sir_convert_a_lot/test_task103_runner.py`
-- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task103_qwen_runner_status.py scripts/sir_convert_a_lot/devops/run_task103_qwen_swedish_preprocessing.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_runner_status.py tests/sir_convert_a_lot/test_task103_runner.py tests/sir_convert_a_lot/test_task103_processing.py -q`
-- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task121_qwen_slice_allocation.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py`
-- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task121_qwen_slice_allocation.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py -q`
-- `pdm run validate-tasks`
-- `pdm run validate-docs`
-- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task103_qwen_canonical_processed_root.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py scripts/sir_convert_a_lot/devops/task121_qwen_shard_registry.py scripts/sir_convert_a_lot/devops/task121_qwen_assignment_ledger.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_planning.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_localization.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_models.py tests/sir_convert_a_lot/test_task103_qwen_canonical_processed_root.py tests/sir_convert_a_lot/test_task121_qwen_shard_registry.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py`
-- `pdm run python -m mypy scripts/sir_convert_a_lot/devops/task103_qwen_canonical_processed_root.py scripts/sir_convert_a_lot/devops/task121_qwen_colab_slice_bundle.py scripts/sir_convert_a_lot/devops/task121_qwen_shard_registry.py scripts/sir_convert_a_lot/devops/task121_qwen_assignment_ledger.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_planning.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_localization.py scripts/sir_convert_a_lot/devops/task121_qwen_portable_slice_models.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_canonical_processed_root.py tests/sir_convert_a_lot/test_task121_qwen_shard_registry.py tests/sir_convert_a_lot/test_task121_qwen_colab_slice_bundle.py -q`
-
-## Next Session Goals
-
-- Build the first canonical processed root from the chosen completed Task 103
-  run roots, then use that canonical root as the only durable ownership base
-  for future allocation.
-- Cut the remaining universe into immutable `~5000`-row shards and issue the
-  next processing units from shard ids only.
-- Keep `plan-remaining-unique` and `dedupe-selected-source-records` as
-  recovery-only surfaces for already-issued manifests, not the long-term
-  allocation path.
-- Refresh or relaunch the detached Task 116 Hemma resource monitor so resumed
-  `task116-rowproc-5x2-20260309c` telemetry covers the post-`17:40Z` segment.
-- Use the decomposed `T132` Task 103 test surface as the guardrail for the
-  next production refactor pass, starting with runner/orchestration
-  responsibility review instead of adding more behavior into the old monolith.
-- Continue the Task 103 production refactor sequence after `T133` by reviewing
-  source-resolution and run-metadata orchestration as the next extraction
-  candidate now that status lifecycle ownership has moved out of the public
-  runner.
-- Execute `T142` so the next canonical Hemma Task 101 pilot launches from the
-  deterministic pilot bundle rooted in the frozen pilot ownership set.
+- Reclaim `/srv/scratch` capacity safely or choose an alternate
+  `--output-root`.
+- After that prerequisite is satisfied, run the next bounded Hemma Task 101
+  pilot-bundle retry through the batched `build` surface and inspect:
+  - `reports/task101_pilot_bundle_plan.json`
+  - `reports/task101_pilot_bundle_events.jsonl`
+  - `reports/task101_pilot_bundle_status.json`

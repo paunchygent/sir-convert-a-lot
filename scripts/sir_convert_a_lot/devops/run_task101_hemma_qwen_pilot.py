@@ -37,6 +37,8 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
     DEFAULT_EVAL_MANIFEST_FAMILY,
     DEFAULT_PILOT_BUNDLE_ROOT,
     task101_pilot_bundle_manifest_path,
+)
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_validation import (
     validate_task101_pilot_bundle_paths,
 )
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime import (

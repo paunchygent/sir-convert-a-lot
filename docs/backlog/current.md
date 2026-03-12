@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-11'
+last_updated: '2026-03-12'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -210,11 +210,11 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Completed `T143`: the Task 101 pilot-bundle builder is now relocation-safe against copied frozen roots, detached launch preflight fails closed on broken bundle-local `audio` / `ref_audio` paths, and Task 101 launch/status/report artifacts now record both train and held-out eval manifest paths while staying explicit that upstream Qwen training remains train-only.
   - Completed `T117`: the Hemma Qwen training lane now traps `SIGTERM` / `SIGINT`, writes a final durable `signal-stop` checkpoint when progress advanced, uses `rsync -a --partial` for fallback HF cache sync, and emits explicit BuildKit cold-build warnings before Task 100/101 image compilation.
 
+- 2026-03-12:
+
+  - Completed `T148`: Task 101 pilot-bundle materialization no longer performs one whole-family finalization pass. The canonical `build` surface now stages copy, bounded `finalize-batch`, and final `assemble`, persists `task101_pilot_bundle_plan.json`, `task101_pilot_bundle_events.jsonl`, and `task101_pilot_bundle_status.json`, and same-day review remediation closed the typed CLI family normalization, stronger reusable-shard validation, interrupted-batch progress coverage, subprocess launch/failure contract coverage, rerun-only-if-shards-remain-valid regressions, and the final SRP split into dedicated CLI, source/materialization, validation, contract, execution, and progress modules so the main orchestrator stays under the repo threshold.
+
 ## Next Actions
 
-- Current local execution focus is Epic 08 canonical ownership hardening: the first canonical pilot root now exists, and future allocation should use it plus the shard registry/assignment ledger instead of fresh overlapping slice math.
-- Current training follow-on is the real bounded Task 101 Hemma pilot launch from the deterministic pilot bundle, with `T118` remaining the next code-facing optimization slice if dataloader throughput becomes the bottleneck.
-- Immediate operational follow-on is to reload Colab against `task138-task129-remaining-unique-20260311a-bundle.tar.gz` while keeping the same persistent `task129-colab-scale-rowproc-1-of-2-20260311a` run root so only the `7187` remaining unique rows are processed.
-- Current reliability hardening follow-on is to validate the new `T131` resume index on the live persistent Colab run and capture the before/after restart latency once the next real resume is performed.
-- Current preprocessing-quality follow-on is to use the decomposed `T132` test surface as the guardrail for the next Task 103 production refactors, starting with runner/orchestration responsibility review and any further domain extraction inside the Task 103 runtime.
-- Current ownership-governance follow-on is to use the existing `task140-task129-post-pilot-remaining-20260311a` shard registry as the only future allocation surface for that bounded `task129` universe once the in-flight Colab recovery run is finished.
+- Current Task 101 follow-on is still scratch-space recovery or an alternate `--output-root`; only after that prerequisite is satisfied should the next bounded Hemma pilot-bundle retry use the batched build surfaces and their `reports/` progress artifacts.
+- Current training and ownership follow-on remains the detached Task 101 pilot launch once the deterministic pilot bundle materializes successfully, with `T118` still the next code-facing optimization slice and the shard-governed `task138-task129-remaining-unique-20260311a` recovery path still active for Colab ownership cleanup.

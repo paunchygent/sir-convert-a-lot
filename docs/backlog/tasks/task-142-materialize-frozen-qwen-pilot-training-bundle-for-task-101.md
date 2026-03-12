@@ -179,6 +179,17 @@ The committed bundle materializer now:
   `--pilot-bundle-root` contract
 - fails closed when required train/eval manifests or bundle metadata are missing
 
+Follow-on hardening in `T148` preserves that outer contract while changing the
+internal materialization shape:
+
+- `build` now emits a deterministic plan file plus events/status artifacts
+  under `reports/`
+- finalization now happens batch by batch through committed `copy`,
+  `finalize-batch`, and `assemble` surfaces
+- the final `manifests/*.prepared.jsonl` and
+  `reports/task101_pilot_bundle_report.json` outputs remain unchanged for
+  downstream Task 101 launch
+
 The next training hardening slice is now clearly `T117`.
 
 ## Checklist

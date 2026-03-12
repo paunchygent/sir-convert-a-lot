@@ -907,6 +907,18 @@ Canonical Task 106 acquisition surface:
      - if the target filesystem lacks enough free space for the retained bundle
        payload plus safety headroom, the builder now fails closed before writing
        partial output
+     - canonical internal stages are now:
+       - `copy`
+       - `finalize-batch`
+       - `assemble`
+     - the canonical `build` surface now runs those stages in order and no
+       longer performs one whole-family finalization pass in-process
+     - batch-finalization evidence now lands in:
+       - `reports/task101_pilot_bundle_plan.json`
+       - `reports/task101_pilot_bundle_events.jsonl`
+       - `reports/task101_pilot_bundle_status.json`
+     - a wedged or interrupted build should now still leave enough evidence to
+       identify the last started batch and the last completed batch
      - live Hemma evidence from `2026-03-12`:
        - frozen pilot source root on `/srv/storage` is about `17G`
        - retained Task 101 bundle payload is about `9-10G`
