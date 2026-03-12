@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import shutil
 from pathlib import Path
@@ -12,7 +13,11 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
     build_task101_pilot_bundle,
     task101_pilot_bundle_report_path,
 )
-from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import SpoolRow
+from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
+    QualityTier,
+    SpoolRow,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
     write_json,
     write_spool_row,
@@ -101,7 +106,7 @@ def _write_spool_row_fixture(
     source_root: Path,
     dataset_row_id: str,
     audio_name: str,
-    manifest_targets: tuple[str, ...],
+    manifest_targets: tuple[ManifestFamily, ...],
 ) -> None:
     """Persist one admitted spool row fixture and its audio."""
     split = "train"
@@ -129,13 +134,19 @@ def _write_spool_row_fixture(
             asr_revision="strict",
             asr_transcript=f"text for {dataset_row_id}",
             asr_wer=0.0,
-            quality_tier="high_trust",
+            quality_tier=_quality_tier_for_targets(manifest_targets),
             speaker_quality_gate="speaker_from_id",
             dedup_applied=False,
             admission_decision="admit",
             manifest_targets=manifest_targets,
         ),
     )
+
+
+def _quality_tier_for_targets(manifest_targets: tuple[ManifestFamily, ...]) -> QualityTier:
+    """Return one deterministic quality tier for the requested manifest families."""
+    del manifest_targets
+    return "high_trust"
 
 
 def _fake_encode_audio_codes(
@@ -177,9 +188,7 @@ def test_build_task101_pilot_bundle_materializes_selected_manifests(tmp_path: Pa
     assert (output_root / "manifests" / "swedish_pilot_train.prepared.jsonl").is_file()
     assert (output_root / "manifests" / "swedish_checkpoint_dev.prepared.jsonl").is_file()
     assert (output_root / "refs" / "swedish_pilot_train" / "speaker-a" / "ref.wav").is_file()
-    assert (
-        output_root / "refs" / "swedish_checkpoint_dev" / "speaker-a" / "ref.wav"
-    ).is_file()
+    assert (output_root / "refs" / "swedish_checkpoint_dev" / "speaker-a" / "ref.wav").is_file()
     report_payload = json.loads(task101_pilot_bundle_report_path(output_root).read_text())
     assert report_payload["conflict_row_count"] == 1
     assert report_payload["train_manifest_family"] == "swedish_pilot_train"
@@ -224,3 +233,67 @@ def test_build_task101_pilot_bundle_uses_relocated_freeze_ledger_artifacts(
 
     assert summary.owned_row_keys_path.startswith(relocated_root.as_posix())
     assert summary.conflict_row_keys_path.startswith(relocated_root.as_posix())
+
+
+def test_build_task101_pilot_bundle_falls_back_when_freeze_summary_is_unreadable(
+    tmp_path: Path,
+) -> None:
+    """Pilot-bundle build should use readable canonical ledgers when summary access is denied."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root)
+    freeze_summary_path = source_root / "reports" / "canonical_processed_root_freeze.json"
+    freeze_summary_path.chmod(0)
+
+    summary = build_task101_pilot_bundle(
+        source_root=source_root,
+        output_root=tmp_path / "pilot-bundle",
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+    )
+
+    assert summary.conflict_row_count == 1
+    assert summary.owned_row_keys_path.endswith("canonical_processed_root_owned_row_keys.jsonl")
+    assert summary.conflict_row_keys_path.endswith(
+        "canonical_processed_root_conflict_row_keys.jsonl"
+    )
+
+
+def test_build_task101_pilot_bundle_fails_closed_when_output_filesystem_is_full(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pilot-bundle build should fail before writes when the output filesystem is too full."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root)
+    output_root = tmp_path / "pilot-bundle"
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle._filesystem_free_bytes",
+        lambda path: 1,
+    )
+
+    def _unexpected_encode_audio_codes(
+        *,
+        tokenizer_model: str,
+        audio_paths: list[Path],
+    ) -> list[list[list[int]]]:
+        raise AssertionError(
+            "audio-code generation should not start when the output filesystem is full"
+        )
+
+    with pytest.raises(OSError, match="requires approximately") as exc_info:
+        build_task101_pilot_bundle(
+            source_root=source_root,
+            output_root=output_root,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            encode_audio_codes_fn=_unexpected_encode_audio_codes,
+            repo_root=Path("/Users/olofs_mba/Documents/Repos/sir-convert-a-lot"),
+        )
+
+    assert exc_info.value.errno == errno.ENOSPC
+    assert not output_root.exists()
