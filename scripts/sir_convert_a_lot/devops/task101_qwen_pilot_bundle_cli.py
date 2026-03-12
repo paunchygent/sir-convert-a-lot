@@ -33,8 +33,9 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_contracts 
     DEFAULT_FINALIZATION_BATCH_ROW_COUNT,
     load_task101_pilot_bundle_batch_plan,
 )
-from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_execution import (
-    finalize_task101_pilot_bundle_batch,
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
+    prepare_task101_pilot_bundle_batch_runtime,
+    run_containerized_task101_pilot_bundle_batch,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
@@ -145,17 +146,27 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(asdict(plan), indent=2, ensure_ascii=False))
         return 0
     if args.command == "finalize-batch":
-        plan = load_task101_pilot_bundle_batch_plan(Path(args.output_root))
-        batch = finalize_task101_pilot_bundle_batch(
-            output_root=Path(args.output_root),
-            plan=plan,
-            manifest_family=_manifest_family_from_cli_value(
-                args.manifest_family,
-                argument_name="manifest_family",
-            ),
+        output_root = Path(args.output_root)
+        manifest_family = _manifest_family_from_cli_value(
+            args.manifest_family,
+            argument_name="manifest_family",
+        )
+        hf_mount, runtime_fingerprint = prepare_task101_pilot_bundle_batch_runtime()
+        run_containerized_task101_pilot_bundle_batch(
+            repo_root=Path.cwd(),
+            output_root=output_root,
+            manifest_family=manifest_family,
             batch_index=int(args.batch_index),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
-            encode_audio_codes_fn=encode_audio_codes,
+            hf_mount=hf_mount,
+            fingerprint=runtime_fingerprint,
+        )
+        plan = load_task101_pilot_bundle_batch_plan(output_root)
+        batch = next(
+            candidate
+            for candidate in plan.batches
+            if candidate.manifest_family == manifest_family
+            and candidate.batch_index == int(args.batch_index)
         )
         print(json.dumps(asdict(batch), indent=2, ensure_ascii=False))
         return 0
@@ -168,6 +179,28 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(asdict(summary), indent=2, ensure_ascii=False))
         return 0
     if args.command == "build":
+        hf_mount, runtime_fingerprint = prepare_task101_pilot_bundle_batch_runtime()
+
+        def _run_containerized_batch(
+            output_root: Path,
+            plan: object,
+            manifest_family: ManifestFamily,
+            batch_index: int,
+            audio_codes_chunk_size: int,
+            encode_audio_codes_fn: object,
+            repo_root: Path,
+        ) -> None:
+            del plan, encode_audio_codes_fn
+            run_containerized_task101_pilot_bundle_batch(
+                repo_root=repo_root,
+                output_root=output_root,
+                manifest_family=manifest_family,
+                batch_index=batch_index,
+                audio_codes_chunk_size=audio_codes_chunk_size,
+                hf_mount=hf_mount,
+                fingerprint=runtime_fingerprint,
+            )
+
         summary = build_task101_pilot_bundle(
             source_root=Path(args.source_root),
             output_root=Path(args.output_root),
@@ -184,6 +217,8 @@ def main(argv: list[str] | None = None) -> int:
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
             encode_audio_codes_fn=encode_audio_codes,
             repo_root=Path.cwd(),
+            run_batch_fn=_run_containerized_batch,
+            expected_runtime_fingerprint=runtime_fingerprint,
         )
         print(json.dumps(asdict(summary), indent=2, ensure_ascii=False))
         return 0

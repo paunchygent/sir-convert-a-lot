@@ -913,12 +913,26 @@ Canonical Task 106 acquisition surface:
        - `assemble`
      - the canonical `build` surface now runs those stages in order and no
        longer performs one whole-family finalization pass in-process
+     - `finalize-batch` now runs inside the governed Qwen Task 100/101 image,
+       not the host PDM environment
+     - the batch runtime reuses the canonical fixed in-container HF cache
+       contract:
+       - `HF_HOME=/cache/huggingface`
+       - `HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub`
+       - `TORCH_HOME=/cache/huggingface/torch`
+     - the selected bundle output root is mounted back into the container at
+       the same host-visible path so `reports/` and final manifests stay
+       host-rooted rather than leaking container-only paths
      - batch-finalization evidence now lands in:
        - `reports/task101_pilot_bundle_plan.json`
        - `reports/task101_pilot_bundle_events.jsonl`
        - `reports/task101_pilot_bundle_status.json`
+       - `reports/task101_pilot_bundle_runtime.json`
+       - `reports/batches/<family>/batch-xxxxx.runtime.json`
      - a wedged or interrupted build should now still leave enough evidence to
        identify the last started batch and the last completed batch
+     - validated batch reuse now fails closed on legacy host-generated shards
+       that do not carry the governed runtime fingerprint
      - live Hemma evidence from `2026-03-12`:
        - frozen pilot source root on `/srv/storage` is about `17G`
        - retained Task 101 bundle payload is about `9-10G`

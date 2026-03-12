@@ -31,6 +31,13 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_contracts 
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_progress import (
     record_task101_pilot_bundle_progress_event,
 )
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
+    Task101PilotBundleRuntimeFingerprint,
+    load_task101_pilot_bundle_runtime_fingerprint,
+    task101_pilot_bundle_batch_runtime_path,
+    validate_runtime_fingerprint_matches,
+    write_task101_pilot_bundle_batch_runtime_fingerprint,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
     AudioCodesEncoderProtocol,
 )
@@ -98,6 +105,7 @@ def finalize_task101_pilot_bundle_batch(
     batch_index: int,
     audio_codes_chunk_size: int,
     encode_audio_codes_fn: AudioCodesEncoderProtocol,
+    runtime_fingerprint: Task101PilotBundleRuntimeFingerprint | None = None,
 ) -> Task101PilotBundleBatch:
     """Finalize one bounded Task 101 family batch into deterministic shards."""
     if audio_codes_chunk_size <= 0:
@@ -107,7 +115,11 @@ def finalize_task101_pilot_bundle_batch(
         manifest_family=manifest_family,
         batch_index=batch_index,
     )
-    if task101_pilot_bundle_batch_is_complete(output_root, batch):
+    if task101_pilot_bundle_batch_is_complete(
+        output_root,
+        batch,
+        expected_runtime_fingerprint=runtime_fingerprint,
+    ):
         record_task101_pilot_bundle_progress_event(
             output_root=output_root,
             plan=plan,
@@ -171,6 +183,13 @@ def finalize_task101_pilot_bundle_batch(
                 tokenizer_model=plan.tokenizer_model,
             )
     validate_task101_pilot_bundle_batch_outputs(output_root, batch)
+    if runtime_fingerprint is not None:
+        write_task101_pilot_bundle_batch_runtime_fingerprint(
+            output_root,
+            manifest_family,
+            batch_index,
+            runtime_fingerprint,
+        )
     record_task101_pilot_bundle_progress_event(
         output_root=output_root,
         plan=plan,
@@ -184,10 +203,16 @@ def finalize_task101_pilot_bundle_batch(
 def task101_pilot_bundle_batch_is_complete(
     output_root: Path,
     batch: Task101PilotBundleBatch,
+    *,
+    expected_runtime_fingerprint: Task101PilotBundleRuntimeFingerprint | None = None,
 ) -> bool:
     """Return whether one batch shard set is valid and ready to reuse."""
     try:
-        validate_task101_pilot_bundle_batch_outputs(output_root, batch)
+        validate_task101_pilot_bundle_batch_outputs(
+            output_root,
+            batch,
+            expected_runtime_fingerprint=expected_runtime_fingerprint,
+        )
     except (FileNotFoundError, ValueError):
         return False
     return True
@@ -196,6 +221,8 @@ def task101_pilot_bundle_batch_is_complete(
 def validate_task101_pilot_bundle_batch_outputs(
     output_root: Path,
     batch: Task101PilotBundleBatch,
+    *,
+    expected_runtime_fingerprint: Task101PilotBundleRuntimeFingerprint | None = None,
 ) -> None:
     """Validate one batch shard set before reuse or final assembly."""
     curated_rows = list(
@@ -267,6 +294,18 @@ def validate_task101_pilot_bundle_batch_outputs(
         )
     for prepared_row in prepared_rows:
         _validate_prepared_manifest_payload_paths(output_root, prepared_row)
+    if expected_runtime_fingerprint is not None:
+        observed_runtime_fingerprint = load_task101_pilot_bundle_runtime_fingerprint(
+            task101_pilot_bundle_batch_runtime_path(
+                output_root,
+                batch.manifest_family,
+                batch.batch_index,
+            )
+        )
+        validate_runtime_fingerprint_matches(
+            observed_runtime_fingerprint,
+            expected_runtime_fingerprint,
+        )
 
 
 def assemble_task101_pilot_bundle_from_batches(

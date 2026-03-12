@@ -15,6 +15,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
+    Task101PilotBundleRuntimeFingerprint,
+    load_task101_pilot_bundle_runtime_fingerprint,
+    task101_pilot_bundle_runtime_fingerprint_path,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     ManifestFamily,
     PreparedManifestRow,
@@ -115,6 +120,13 @@ def bundle_local_artifact_path(output_root: Path, relative_path_text: str) -> Pa
             "Task 101 pilot bundle prepared rows must not escape the bundle root."
         ) from exc
     return candidate_path
+
+
+def load_bundle_runtime_fingerprint(output_root: Path) -> Task101PilotBundleRuntimeFingerprint:
+    """Load the bundle-level governed runtime fingerprint from disk."""
+    return load_task101_pilot_bundle_runtime_fingerprint(
+        task101_pilot_bundle_runtime_fingerprint_path(output_root)
+    )
 
 
 def required_quality_tier(payload: dict[str, object], key: str) -> QualityTier:

@@ -1,0 +1,149 @@
+"""Tests for the Task 101 containerized pilot-bundle batch runtime."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
+    Task101PilotBundleContainerSettings,
+    Task101PilotBundleRuntimeFingerprint,
+    build_containerized_task101_pilot_bundle_batch_command,
+    prepare_task101_pilot_bundle_batch_runtime,
+    run_containerized_task101_pilot_bundle_batch,
+)
+
+
+def _settings() -> Task101PilotBundleContainerSettings:
+    """Return deterministic runtime settings for Task 101 batch helper tests."""
+    return Task101PilotBundleContainerSettings(
+        dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
+        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
+        hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
+        build_image=True,
+    )
+
+
+def test_build_containerized_task101_batch_command_uses_fixed_hf_cache_root() -> None:
+    """The Task 101 batch runtime should reuse the fixed in-container HF cache root."""
+    repo_root = Path("/home/paunchygent/apps/sir-convert-a-lot")
+    output_root = Path("/srv/storage/sir-convert-a-lot/tmp/task101-bundle")
+    hf_mount = MountResolution(
+        canonical_root=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
+        effective_root=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
+        used_home_mount=True,
+    )
+
+    command = build_containerized_task101_pilot_bundle_batch_command(
+        repo_root=repo_root,
+        output_root=output_root,
+        manifest_family="swedish_pilot_train",
+        batch_index=3,
+        audio_codes_chunk_size=5,
+        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        hf_mount=hf_mount,
+    )
+
+    assert "HF_HOME=/cache/huggingface" in command
+    assert "HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub" in command
+    assert "TORCH_HOME=/cache/huggingface/torch" in command
+    assert f"{hf_mount.effective_root.as_posix()}:/cache/huggingface" in command
+    assert f"{output_root.as_posix()}:{output_root.as_posix()}" in command
+    assert "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_in_container" in command
+    assert "--manifest-family" in command
+    assert "swedish_pilot_train" in command
+
+
+def test_prepare_task101_batch_runtime_reuses_qwen_image_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Preparing the Task 101 batch runtime should reuse the shared Qwen helpers."""
+    observed: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime.prepare_qwen_image",
+        lambda settings, *, emit=print: (
+            observed.setdefault("image", settings.image),
+            "sha256:test-image",
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime.resolve_effective_hf_cache_dir",
+        lambda settings: MountResolution(
+            canonical_root=settings.hf_cache_dir,
+            effective_root=settings.hf_cache_home_mount,
+            used_home_mount=True,
+        ),
+    )
+
+    hf_mount, fingerprint = prepare_task101_pilot_bundle_batch_runtime(settings=_settings())
+
+    assert observed["image"] == "sir-convert-a-lot-qwen-finetune-hemma:task100"
+    assert hf_mount.effective_root == Path(
+        "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"
+    )
+    assert fingerprint.image_id == "sha256:test-image"
+    assert fingerprint.container_hf_home == "/cache/huggingface"
+    assert fingerprint.container_hf_hub_cache == "/cache/huggingface/hub"
+    assert fingerprint.container_torch_home == "/cache/huggingface/torch"
+
+
+def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The batch runtime should record runtime provenance before Docker launch."""
+    output_root = tmp_path / "bundle"
+    output_root.mkdir(parents=True, exist_ok=True)
+    emitted: list[str] = []
+    observed_command: list[str] = []
+    hf_mount = MountResolution(
+        canonical_root=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
+        effective_root=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
+        used_home_mount=True,
+    )
+
+    def _fake_docker_checked(args: list[str], *, label: str) -> str:
+        del label
+        observed_command.extend(args)
+        return "ok"
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime.docker_checked",
+        _fake_docker_checked,
+    )
+    fingerprint = Task101PilotBundleRuntimeFingerprint(
+        runtime_kind="task101_qwen_pilot_bundle_containerized_batch_v1",
+        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        image_id="sha256:test-image",
+        dockerfile_path="containers/qwen-finetune-hemma/Dockerfile",
+        container_entry_module=(
+            "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_in_container"
+        ),
+        container_hf_home="/cache/huggingface",
+        container_hf_hub_cache="/cache/huggingface/hub",
+        container_torch_home="/cache/huggingface/torch",
+    )
+
+    result = run_containerized_task101_pilot_bundle_batch(
+        repo_root=Path("/home/paunchygent/apps/sir-convert-a-lot"),
+        output_root=output_root,
+        manifest_family="swedish_checkpoint_dev",
+        batch_index=1,
+        audio_codes_chunk_size=4,
+        settings=_settings(),
+        hf_mount=hf_mount,
+        fingerprint=fingerprint,
+        emit=emitted.append,
+    )
+
+    runtime_path = output_root / "reports" / "task101_pilot_bundle_runtime.json"
+    assert runtime_path.is_file()
+    assert result == fingerprint
+    assert observed_command[0] == "run"
+    assert "--device" in observed_command
+    assert "swedish_checkpoint_dev" in observed_command
+    assert any("batch_container_launch" in line for line in emitted)

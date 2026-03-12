@@ -5,14 +5,11 @@ from __future__ import annotations
 import errno
 import json
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
-    _run_finalization_batch_subprocess,
     build_task101_pilot_bundle,
     copy_task101_pilot_bundle_inputs,
     task101_pilot_bundle_report_path,
@@ -28,6 +25,9 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_contracts 
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_execution import (
     finalize_task101_pilot_bundle_batch,
     task101_pilot_bundle_batch_is_complete,
+)
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
+    Task101PilotBundleRuntimeFingerprint,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
@@ -223,32 +223,25 @@ def _run_batch_in_process(
     )
 
 
+def _runtime_fingerprint(*, image_id: str = "sha256:test") -> Task101PilotBundleRuntimeFingerprint:
+    """Return one deterministic governed runtime fingerprint for Task 101 tests."""
+    return Task101PilotBundleRuntimeFingerprint(
+        runtime_kind="task101_qwen_pilot_bundle_containerized_batch_v1",
+        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        image_id=image_id,
+        dockerfile_path="containers/qwen-finetune-hemma/Dockerfile",
+        container_entry_module=(
+            "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_in_container"
+        ),
+        container_hf_home="/cache/huggingface",
+        container_hf_hub_cache="/cache/huggingface/hub",
+        container_torch_home="/cache/huggingface/torch",
+    )
+
+
 def _read_event_payloads(output_root: Path) -> list[dict[str, object]]:
     """Load the Task 101 batch events ledger for assertions."""
     return list(iter_jsonl_objects(task101_pilot_bundle_progress_events_path(output_root)))
-
-
-def _subprocess_plan(output_root: Path) -> Task101PilotBundleBatchPlan:
-    """Return one minimal plan object for subprocess-launch contract tests."""
-    return Task101PilotBundleBatchPlan(
-        source_root="/tmp/frozen-root",
-        output_root=output_root.as_posix(),
-        train_manifest_family="swedish_pilot_train",
-        eval_manifest_family="swedish_checkpoint_dev",
-        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
-        finalization_batch_row_count=2,
-        retained_row_count=2,
-        conflict_row_count=0,
-        family_row_counts={
-            "swedish_pilot_train": 1,
-            "swedish_checkpoint_dev": 1,
-        },
-        owned_row_keys_path="/tmp/owned.jsonl",
-        conflict_row_keys_path="/tmp/conflict.jsonl",
-        repo_head="deadbeef",
-        generated_at="2026-03-12T00:00:00Z",
-        batches=[],
-    )
 
 
 def test_copy_task101_pilot_bundle_inputs_emits_deterministic_batch_plan(
@@ -528,93 +521,79 @@ def test_finalize_task101_batch_records_interrupted_progress_and_supports_resume
     assert resumed_status_payload["last_completed_family"] == "swedish_checkpoint_dev"
 
 
-def test_run_finalization_batch_subprocess_uses_canonical_cli_contract(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    """The fresh-process batch runner should launch the committed finalize-batch CLI."""
+def test_task101_batch_validation_requires_matching_runtime_fingerprint(tmp_path: Path) -> None:
+    """Validated shard reuse should require the expected governed runtime fingerprint."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=2, dev_row_count=1)
     output_root = tmp_path / "pilot-bundle"
-    observed_command: list[str] = []
-    observed_cwd: Path | None = None
-    observed_check: bool | None = None
 
-    def _fake_run(
-        command: list[str],
-        *,
-        cwd: Path,
-        check: bool,
-    ) -> subprocess.CompletedProcess[str]:
-        nonlocal observed_command, observed_cwd, observed_check
-        observed_command = command
-        observed_cwd = cwd
-        observed_check = check
-        return subprocess.CompletedProcess(command, 0)
-
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle.subprocess.run",
-        _fake_run,
-    )
-
-    _run_finalization_batch_subprocess(
+    copy_task101_pilot_bundle_inputs(
+        source_root=source_root,
         output_root=output_root,
-        plan=_subprocess_plan(output_root),
-        manifest_family="swedish_pilot_train",
-        batch_index=3,
-        audio_codes_chunk_size=5,
-        encode_audio_codes_fn=_fake_encode_audio_codes,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
         repo_root=_repo_root(),
     )
-
-    assert observed_command == [
-        sys.executable,
-        "-m",
-        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_cli",
-        "finalize-batch",
-        "--output-root",
-        output_root.as_posix(),
-        "--manifest-family",
-        "swedish_pilot_train",
-        "--batch-index",
-        "3",
-        "--audio-codes-chunk-size",
-        "5",
-    ]
-    assert observed_cwd == _repo_root()
-    assert observed_check is False
-    assert '"event": "batch_subprocess_launch"' in capsys.readouterr().out
-
-
-def test_run_finalization_batch_subprocess_fails_closed_on_nonzero_exit(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The fresh-process batch runner should stop the build when a batch subprocess fails."""
-    output_root = tmp_path / "pilot-bundle"
-
-    def _fake_run(
-        command: list[str],
-        *,
-        cwd: Path,
-        check: bool,
-    ) -> subprocess.CompletedProcess[str]:
-        del cwd, check
-        return subprocess.CompletedProcess(command, 17)
-
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle.subprocess.run",
-        _fake_run,
+    plan = load_task101_pilot_bundle_batch_plan(output_root)
+    batch = plan.batches[0]
+    finalize_task101_pilot_bundle_batch(
+        output_root=output_root,
+        plan=plan,
+        manifest_family=batch.manifest_family,
+        batch_index=batch.batch_index,
+        audio_codes_chunk_size=1,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        runtime_fingerprint=_runtime_fingerprint(),
     )
 
-    with pytest.raises(SystemExit, match="exit code `17`"):
-        _run_finalization_batch_subprocess(
+    assert task101_pilot_bundle_batch_is_complete(
+        output_root,
+        batch,
+        expected_runtime_fingerprint=_runtime_fingerprint(),
+    )
+    assert not task101_pilot_bundle_batch_is_complete(
+        output_root,
+        batch,
+        expected_runtime_fingerprint=_runtime_fingerprint(image_id="sha256:other"),
+    )
+
+
+def test_build_task101_pilot_bundle_rejects_completed_bundle_without_runtime_fingerprint(
+    tmp_path: Path,
+) -> None:
+    """Completed legacy bundles should not pass as governed container output."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=2, dev_row_count=1)
+    output_root = tmp_path / "pilot-bundle"
+
+    build_task101_pilot_bundle(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
+    )
+
+    with pytest.raises(ValueError, match="governed container runtime fingerprint"):
+        build_task101_pilot_bundle(
+            source_root=source_root,
             output_root=output_root,
-            plan=_subprocess_plan(output_root),
-            manifest_family="swedish_checkpoint_dev",
-            batch_index=1,
-            audio_codes_chunk_size=4,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+            tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+            finalization_batch_row_count=2,
+            audio_codes_chunk_size=1,
             encode_audio_codes_fn=_fake_encode_audio_codes,
             repo_root=_repo_root(),
+            run_batch_fn=_run_batch_in_process,
+            expected_runtime_fingerprint=_runtime_fingerprint(),
         )
 
 

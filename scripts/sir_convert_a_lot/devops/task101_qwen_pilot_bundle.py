@@ -20,8 +20,6 @@ Relationships:
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable
@@ -45,9 +43,17 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_execution 
     assemble_task101_pilot_bundle_from_batches,
     ensure_reference_audio_paths,
     task101_pilot_bundle_batch_is_complete,
+    validate_task101_pilot_bundle_batch_outputs,
 )
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_progress import (
     record_task101_pilot_bundle_progress_event,
+)
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
+    Task101PilotBundleRuntimeFingerprint,
+    prepare_task101_pilot_bundle_batch_runtime,
+    run_containerized_task101_pilot_bundle_batch,
+    validate_runtime_fingerprint_matches,
+    write_task101_pilot_bundle_runtime_fingerprint,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
     AudioCodesEncoderProtocol,
@@ -142,8 +148,39 @@ def build_task101_pilot_bundle(
     encode_audio_codes_fn: AudioCodesEncoderProtocol,
     repo_root: Path,
     run_batch_fn: Task101PilotBundleBatchRunner | None = None,
+    expected_runtime_fingerprint: Task101PilotBundleRuntimeFingerprint | None = None,
 ) -> Task101PilotBundleSummary:
     """Materialize or resume one deterministic batched Task 101 pilot bundle."""
+    effective_runtime_fingerprint = expected_runtime_fingerprint
+    effective_run_batch_fn = run_batch_fn
+    if effective_run_batch_fn is None:
+        hf_mount, effective_runtime_fingerprint = prepare_task101_pilot_bundle_batch_runtime()
+
+        def _run_containerized_batch(
+            batch_output_root: Path,
+            plan: Task101PilotBundleBatchPlan,
+            manifest_family: ManifestFamily,
+            batch_index: int,
+            batch_audio_codes_chunk_size: int,
+            batch_encode_audio_codes_fn: AudioCodesEncoderProtocol,
+            batch_repo_root: Path,
+        ) -> None:
+            del plan, batch_encode_audio_codes_fn
+            if effective_runtime_fingerprint is None:
+                raise RuntimeError(
+                    "Task 101 containerized batch runner is missing a runtime fingerprint."
+                )
+            run_containerized_task101_pilot_bundle_batch(
+                repo_root=batch_repo_root,
+                output_root=batch_output_root,
+                manifest_family=manifest_family,
+                batch_index=batch_index,
+                audio_codes_chunk_size=batch_audio_codes_chunk_size,
+                hf_mount=hf_mount,
+                fingerprint=effective_runtime_fingerprint,
+            )
+
+        effective_run_batch_fn = _run_containerized_batch
     if task101_pilot_bundle_report_path(output_root).exists():
         plan = load_task101_pilot_bundle_batch_plan(output_root)
         _ensure_loaded_plan_matches_request(
@@ -159,6 +196,11 @@ def build_task101_pilot_bundle(
             output_root,
             selected_manifest_families(plan),
         )
+        _validate_completed_bundle_runtime(
+            output_root=output_root,
+            plan=plan,
+            expected_runtime_fingerprint=effective_runtime_fingerprint,
+        )
         return _load_task101_pilot_bundle_summary(output_root)
     plan = copy_task101_pilot_bundle_inputs(
         source_root=source_root,
@@ -169,9 +211,14 @@ def build_task101_pilot_bundle(
         finalization_batch_row_count=finalization_batch_row_count,
         repo_root=repo_root,
     )
-    effective_run_batch_fn = run_batch_fn or _run_finalization_batch_subprocess
+    if effective_runtime_fingerprint is not None:
+        write_task101_pilot_bundle_runtime_fingerprint(output_root, effective_runtime_fingerprint)
     for batch in plan.batches:
-        if task101_pilot_bundle_batch_is_complete(output_root, batch):
+        if task101_pilot_bundle_batch_is_complete(
+            output_root,
+            batch,
+            expected_runtime_fingerprint=effective_runtime_fingerprint,
+        ):
             record_task101_pilot_bundle_progress_event(
                 output_root=output_root,
                 plan=plan,
@@ -384,54 +431,6 @@ def _ensure_loaded_plan_matches_request(
         raise ValueError("Existing Task 101 batch plan batch-row count does not match.")
 
 
-def _run_finalization_batch_subprocess(
-    output_root: Path,
-    plan: Task101PilotBundleBatchPlan,
-    manifest_family: ManifestFamily,
-    batch_index: int,
-    audio_codes_chunk_size: int,
-    encode_audio_codes_fn: AudioCodesEncoderProtocol,
-    repo_root: Path,
-) -> None:
-    """Run one Task 101 finalization batch in a fresh Python process."""
-    del plan, encode_audio_codes_fn
-    command = [
-        sys.executable,
-        "-m",
-        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_cli",
-        "finalize-batch",
-        "--output-root",
-        output_root.as_posix(),
-        "--manifest-family",
-        manifest_family,
-        "--batch-index",
-        str(batch_index),
-        "--audio-codes-chunk-size",
-        str(audio_codes_chunk_size),
-    ]
-    print(
-        "[task101-pilot-bundle] "
-        + json.dumps(
-            {
-                "event": "batch_subprocess_launch",
-                "manifest_family": manifest_family,
-                "batch_index": batch_index,
-                "audio_codes_chunk_size": audio_codes_chunk_size,
-                "command": command,
-            },
-            ensure_ascii=False,
-            sort_keys=True,
-        ),
-        flush=True,
-    )
-    result = subprocess.run(command, cwd=repo_root, check=False)
-    if result.returncode != 0:
-        raise SystemExit(
-            "Task 101 finalization batch subprocess failed for "
-            f"`{manifest_family}` batch `{batch_index}` with exit code `{result.returncode}`."
-        )
-
-
 def _load_task101_pilot_bundle_summary(output_root: Path) -> Task101PilotBundleSummary:
     """Load one completed Task 101 pilot-bundle summary from disk."""
     payload = json.loads(task101_pilot_bundle_report_path(output_root).read_text("utf-8"))
@@ -475,3 +474,33 @@ def _load_task101_pilot_bundle_summary(output_root: Path) -> Task101PilotBundleS
         events_path=bundle_validation.required_string(payload, "events_path"),
         status_path=bundle_validation.required_string(payload, "status_path"),
     )
+
+
+def _validate_completed_bundle_runtime(
+    *,
+    output_root: Path,
+    plan: Task101PilotBundleBatchPlan,
+    expected_runtime_fingerprint: Task101PilotBundleRuntimeFingerprint | None,
+) -> None:
+    """Fail closed when one completed bundle does not match the current runtime request."""
+    if expected_runtime_fingerprint is None:
+        return
+    try:
+        observed_runtime_fingerprint = bundle_validation.load_bundle_runtime_fingerprint(
+            output_root
+        )
+    except FileNotFoundError as exc:
+        raise ValueError(
+            "Existing completed Task 101 pilot bundle does not record the governed container "
+            "runtime fingerprint required by the current request."
+        ) from exc
+    validate_runtime_fingerprint_matches(
+        observed_runtime_fingerprint,
+        expected_runtime_fingerprint,
+    )
+    for batch in plan.batches:
+        validate_task101_pilot_bundle_batch_outputs(
+            output_root,
+            batch,
+            expected_runtime_fingerprint=expected_runtime_fingerprint,
+        )

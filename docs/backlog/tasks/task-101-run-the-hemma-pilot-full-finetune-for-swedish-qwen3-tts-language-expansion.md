@@ -53,10 +53,24 @@ and capture deterministic runtime and memory evidence.
     - `copy` retained spool/audio
     - `finalize-batch` in bounded family batches
     - `assemble` final manifests/report only after validated batch shards exist
+  - bounded `finalize-batch` execution now runs inside the governed Qwen
+    Task 100/101 image rather than the host PDM environment
+  - that batch runtime reuses the canonical fixed in-container HF cache
+    contract:
+    - `HF_HOME=/cache/huggingface`
+    - `HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub`
+    - `TORCH_HOME=/cache/huggingface/torch`
+  - the selected bundle output root is mounted back into the container at the
+    same host-visible path so progress/status/report artifacts remain
+    host-rooted
   - operator-visible progress artifacts now live under `reports/`:
     - `task101_pilot_bundle_plan.json`
     - `task101_pilot_bundle_events.jsonl`
     - `task101_pilot_bundle_status.json`
+    - `task101_pilot_bundle_runtime.json`
+    - `reports/batches/<family>/batch-xxxxx.runtime.json`
+  - validated batch reuse now fails closed on legacy host-generated shards
+    that do not carry the governed runtime fingerprint
 - Use the detached committed Task 101 runner surface:
   - `pdm run run-hemma -- pdm run task-101-pilot launch`
 - Treat the generic promoted Task 103 corpus view as insufficient for this run.
