@@ -18,13 +18,14 @@ import importlib.metadata
 import importlib.util
 import os
 import shutil
+import time
 from collections import Counter
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from math import ceil
 from pathlib import Path
-from typing import Protocol, Sequence, TypeAlias
+from typing import Protocol, Sequence, TypeAlias, TypeGuard
 
 import numpy as np
 import numpy.typing as npt
@@ -101,12 +102,38 @@ class _QwenTokenizerProtocol(Protocol):
         """Encode one audio-path batch into Qwen audio codes."""
 
 
+class _InputTensorProtocol(Protocol):
+    """Minimal tensor-like input surface for Qwen feature batches."""
+
+    def squeeze(self, dim: int) -> object:
+        """Return the squeezed input tensor passed into `model.encode(...)`."""
+
+
+class _FeatureBatchProtocol(Protocol):
+    """Minimal feature-batch surface returned by the tokenizer extractor."""
+
+    def to(self, destination: object) -> "_FeatureBatchProtocol":
+        """Move or cast the batch to one destination and return the same batch."""
+
+    def __getitem__(self, key: str) -> _InputTensorProtocol:
+        """Return one tensor-like batch field by key."""
+
+
 class _FeatureExtractorProtocol(Protocol):
     """Minimal feature-extractor surface used for tokenizer sample-rate access."""
 
     @property
     def sampling_rate(self) -> int | float:
         """Return the sample rate expected by the tokenizer feature extractor."""
+
+    def __call__(
+        self,
+        *,
+        raw_audio: list[WaveformArray],
+        sampling_rate: int,
+        return_tensors: str,
+    ) -> _FeatureBatchProtocol:
+        """Convert one waveform batch into model-ready tensors."""
 
 
 class _TensorParameterProtocol(Protocol):
@@ -146,11 +173,35 @@ class _QwenTokenizerModelProtocol(Protocol):
         """Move the tokenizer model to one device/dtype combination."""
 
 
+class _DirectEncodeQwenTokenizerModelProtocol(_QwenTokenizerModelProtocol, Protocol):
+    """Tokenizer-model surface needed for direct preloaded waveform encoding."""
+
+    @property
+    def dtype(self) -> object:
+        """Return the current model dtype."""
+
+    def encode(
+        self,
+        input_values: object,
+        padding_mask: object,
+        *,
+        return_dict: bool,
+    ) -> _EncodedAudioCodesProtocol:
+        """Encode one feature-extracted waveform batch."""
+
+
 class _ConfiguredQwenTokenizerProtocol(_QwenTokenizerProtocol, Protocol):
     """Minimal tokenizer surface that exposes model/device fields."""
 
     model: _QwenTokenizerModelProtocol
     device: object
+
+
+class _DirectEncodeConfiguredQwenTokenizerProtocol(_ConfiguredQwenTokenizerProtocol, Protocol):
+    """Configured tokenizer surface needed for direct waveform encode calls."""
+
+    model: _DirectEncodeQwenTokenizerModelProtocol
+    feature_extractor: _FeatureExtractorProtocol
 
 
 @dataclass(frozen=True)
@@ -183,6 +234,19 @@ class AudioCodesRuntimeReport:
     torch_hip_version: str | None
     flash_attn_importable: bool
     flash_attn_version: str | None
+
+
+@dataclass(frozen=True)
+class AudioCodesChunkTiming:
+    """Per-chunk timing evidence for governed audio-code generation."""
+
+    row_count: int
+    preload_seconds: float
+    feature_extract_seconds: float | None
+    model_encode_seconds: float | None
+    encode_call_seconds: float
+    render_seconds: float
+    total_seconds: float
 
 
 DEFAULT_GOVERNED_GPU_AUDIO_CODES_RUNTIME = AudioCodesRuntimeRequest(
@@ -272,6 +336,7 @@ class WarmAudioCodesEncoder:
         self._tokenizer_model: str | None = None
         self._tokenizer: _ConfiguredQwenTokenizerProtocol | None = None
         self._runtime_report: AudioCodesRuntimeReport | None = None
+        self._last_chunk_timing: AudioCodesChunkTiming | None = None
 
     def __call__(
         self,
@@ -280,16 +345,43 @@ class WarmAudioCodesEncoder:
         audio_paths: list[Path],
     ) -> list[list[list[int]]]:
         """Generate Qwen `audio_codes` for one bounded audio-path chunk."""
+        started_at = time.perf_counter()
         tokenizer = self._ensure_tokenizer(tokenizer_model)
         target_sample_rate = int(tokenizer.feature_extractor.sampling_rate)
+        preload_started_at = time.perf_counter()
         waveforms = _load_audio_arrays_for_tokenizer(
             audio_paths=audio_paths,
             target_sample_rate=target_sample_rate,
         )
+        preload_seconds = time.perf_counter() - preload_started_at
         rendered_codes: list[list[list[int]]] = []
-        encoded = tokenizer.encode(waveforms, sr=target_sample_rate)
+        feature_extract_seconds: float | None = None
+        model_encode_seconds: float | None = None
+        encode_started_at = time.perf_counter()
+        if _supports_direct_preloaded_waveform_encode(tokenizer):
+            encoded, feature_extract_seconds, model_encode_seconds = (
+                _encode_preloaded_waveforms_directly(
+                    tokenizer,
+                    waveforms,
+                    target_sample_rate=target_sample_rate,
+                )
+            )
+        else:
+            encoded = tokenizer.encode(waveforms, sr=target_sample_rate)
+        encode_call_seconds = time.perf_counter() - encode_started_at
+        render_started_at = time.perf_counter()
         for audio_codes in encoded.audio_codes:
             rendered_codes.append(audio_codes.tolist())
+        render_seconds = time.perf_counter() - render_started_at
+        self._last_chunk_timing = AudioCodesChunkTiming(
+            row_count=len(audio_paths),
+            preload_seconds=preload_seconds,
+            feature_extract_seconds=feature_extract_seconds,
+            model_encode_seconds=model_encode_seconds,
+            encode_call_seconds=encode_call_seconds,
+            render_seconds=render_seconds,
+            total_seconds=time.perf_counter() - started_at,
+        )
         return rendered_codes
 
     def describe(self, tokenizer_model: str) -> AudioCodesRuntimeReport:
@@ -298,6 +390,12 @@ class WarmAudioCodesEncoder:
         if self._runtime_report is None:
             raise RuntimeError("Audio-codes runtime report was not initialized.")
         return self._runtime_report
+
+    def take_last_chunk_timing(self) -> AudioCodesChunkTiming | None:
+        """Return and clear the latest per-chunk timing payload."""
+        timing = self._last_chunk_timing
+        self._last_chunk_timing = None
+        return timing
 
     def _ensure_tokenizer(self, tokenizer_model: str) -> _ConfiguredQwenTokenizerProtocol:
         """Load the Qwen tokenizer once per finalization process."""
@@ -380,6 +478,11 @@ def describe_governed_audio_codes_runtime(tokenizer_model: str) -> AudioCodesRun
     return _DEFAULT_GOVERNED_GPU_AUDIO_CODES_ENCODER.describe(tokenizer_model)
 
 
+def take_governed_audio_codes_chunk_timing() -> AudioCodesChunkTiming | None:
+    """Return the latest governed audio-code chunk timing payload when available."""
+    return _DEFAULT_GOVERNED_GPU_AUDIO_CODES_ENCODER.take_last_chunk_timing()
+
+
 def build_audio_codes_encoder(
     runtime_settings: Task103AudioCodesRuntimeSettings,
     *,
@@ -411,6 +514,24 @@ def encode_audio_codes(
         tokenizer_model=tokenizer_model,
         audio_paths=audio_paths,
     )
+
+
+def take_cpu_audio_codes_chunk_timing() -> AudioCodesChunkTiming | None:
+    """Return the latest CPU audio-code chunk timing payload when available."""
+    return _DEFAULT_CPU_AUDIO_CODES_ENCODER.take_last_chunk_timing()
+
+
+def take_audio_codes_chunk_timing_for_encoder(
+    encoder: AudioCodesEncoderProtocol,
+) -> AudioCodesChunkTiming | None:
+    """Return the latest timing payload for one known audio-code encoder surface."""
+    if isinstance(encoder, WarmAudioCodesEncoder):
+        return encoder.take_last_chunk_timing()
+    if encoder is encode_audio_codes_with_governed_gpu_runtime:
+        return take_governed_audio_codes_chunk_timing()
+    if encoder is encode_audio_codes:
+        return take_cpu_audio_codes_chunk_timing()
+    return None
 
 
 def _load_audio_arrays_for_tokenizer(
@@ -454,6 +575,43 @@ def _load_audio_array(path: Path, target_sample_rate: int) -> WaveformArray:
             target_sr=target_sample_rate,
         )
     return np.asarray(waveform, dtype=np.float32)
+
+
+def _supports_direct_preloaded_waveform_encode(
+    tokenizer: _ConfiguredQwenTokenizerProtocol,
+) -> TypeGuard[_DirectEncodeConfiguredQwenTokenizerProtocol]:
+    """Return whether the tokenizer exposes the direct encode surfaces we need."""
+    return callable(getattr(tokenizer.feature_extractor, "__call__", None)) and callable(
+        getattr(tokenizer.model, "encode", None)
+    )
+
+
+def _encode_preloaded_waveforms_directly(
+    tokenizer: _DirectEncodeConfiguredQwenTokenizerProtocol,
+    waveforms: list[WaveformArray],
+    *,
+    target_sample_rate: int,
+) -> tuple[_EncodedAudioCodesProtocol, float, float]:
+    """Encode already-normalized waveforms without re-entering tokenizer input normalization."""
+    import torch
+
+    feature_extract_started_at = time.perf_counter()
+    inputs = tokenizer.feature_extractor(
+        raw_audio=waveforms,
+        sampling_rate=target_sample_rate,
+        return_tensors="pt",
+    )
+    inputs = inputs.to(tokenizer.device).to(tokenizer.model.dtype)
+    feature_extract_seconds = time.perf_counter() - feature_extract_started_at
+    model_encode_started_at = time.perf_counter()
+    with torch.inference_mode():
+        encoded = tokenizer.model.encode(
+            inputs["input_values"].squeeze(1),
+            inputs["padding_mask"].squeeze(1),
+            return_dict=True,
+        )
+    model_encode_seconds = time.perf_counter() - model_encode_started_at
+    return encoded, feature_extract_seconds, model_encode_seconds
 
 
 def _curated_row_from_spool(

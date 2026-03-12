@@ -16,6 +16,8 @@ Relationships:
 from __future__ import annotations
 
 import shutil
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_contracts import (
@@ -40,6 +42,7 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
     AudioCodesEncoderProtocol,
+    take_audio_codes_chunk_timing_for_encoder,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     CuratedRow,
@@ -55,6 +58,37 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import 
 )
 
 Task101BatchRowSignature = tuple[str, str, str, str, str, str, str]
+
+
+@dataclass(frozen=True)
+class Task101AudioCodesChunkSummary:
+    """Timing summary for one Task 101 audio-code flush chunk."""
+
+    chunk_row_count: int
+    encode_call_seconds: float
+    preload_seconds: float | None
+    feature_extract_seconds: float | None
+    model_encode_seconds: float | None
+    render_seconds: float | None
+    write_seconds: float
+    total_seconds: float
+
+
+@dataclass(frozen=True)
+class Task101AudioCodesBatchSummary:
+    """Aggregate timing summary for one Task 101 finalized batch."""
+
+    chunk_count: int
+    encoded_row_count: int
+    encode_call_seconds: float
+    preload_seconds: float | None
+    feature_extract_seconds: float | None
+    model_encode_seconds: float | None
+    render_seconds: float | None
+    write_seconds: float
+    chunk_total_seconds: float
+    batch_total_seconds: float
+    non_audio_codes_seconds: float
 
 
 def ensure_reference_audio_paths(
@@ -110,6 +144,7 @@ def finalize_task101_pilot_bundle_batch(
     """Finalize one bounded Task 101 family batch into deterministic shards."""
     if audio_codes_chunk_size <= 0:
         raise ValueError("`audio_codes_chunk_size` must be positive.")
+    batch_started_at = time.perf_counter()
     batch = resolve_task101_pilot_bundle_batch(
         plan,
         manifest_family=manifest_family,
@@ -149,6 +184,7 @@ def finalize_task101_pilot_bundle_batch(
         batch_index,
     )
     raw_chunk: list[RawManifestRow] = []
+    chunk_summaries: list[Task101AudioCodesChunkSummary] = []
     with (
         JsonlAtomicWriter(curated_path) as curated_writer,
         JsonlAtomicWriter(raw_path) as raw_writer,
@@ -165,6 +201,18 @@ def finalize_task101_pilot_bundle_batch(
             curated_writer.write_row(curated_row)
             raw_chunk.append(_raw_manifest_row_from_curated(curated_row))
             if len(raw_chunk) >= audio_codes_chunk_size:
+                chunk_summaries.append(
+                    _flush_audio_codes_chunk(
+                        output_root=output_root,
+                        raw_writer=raw_writer,
+                        prepared_writer=prepared_writer,
+                        raw_rows=raw_chunk,
+                        encode_audio_codes_fn=encode_audio_codes_fn,
+                        tokenizer_model=plan.tokenizer_model,
+                    )
+                )
+        if raw_chunk:
+            chunk_summaries.append(
                 _flush_audio_codes_chunk(
                     output_root=output_root,
                     raw_writer=raw_writer,
@@ -173,15 +221,11 @@ def finalize_task101_pilot_bundle_batch(
                     encode_audio_codes_fn=encode_audio_codes_fn,
                     tokenizer_model=plan.tokenizer_model,
                 )
-        if raw_chunk:
-            _flush_audio_codes_chunk(
-                output_root=output_root,
-                raw_writer=raw_writer,
-                prepared_writer=prepared_writer,
-                raw_rows=raw_chunk,
-                encode_audio_codes_fn=encode_audio_codes_fn,
-                tokenizer_model=plan.tokenizer_model,
             )
+    batch_timing_summary = _summarize_audio_codes_batch_timings(
+        chunk_summaries,
+        batch_total_seconds=time.perf_counter() - batch_started_at,
+    )
     validate_task101_pilot_bundle_batch_outputs(output_root, batch)
     if runtime_fingerprint is not None:
         write_task101_pilot_bundle_batch_runtime_fingerprint(
@@ -196,6 +240,7 @@ def finalize_task101_pilot_bundle_batch(
         event="batch_completed",
         batch=batch,
         detail=f"prepared_row_count={batch.row_count}",
+        extra_fields=_batch_timing_summary_payload(batch_timing_summary),
     )
     return batch
 
@@ -507,15 +552,28 @@ def _flush_audio_codes_chunk(
     raw_rows: list[RawManifestRow],
     encode_audio_codes_fn: AudioCodesEncoderProtocol,
     tokenizer_model: str,
-) -> int:
+) -> Task101AudioCodesChunkSummary:
     """Encode one bounded raw chunk and append batch-local raw/prepared rows."""
     if not raw_rows:
-        return 0
+        return Task101AudioCodesChunkSummary(
+            chunk_row_count=0,
+            encode_call_seconds=0.0,
+            preload_seconds=None,
+            feature_extract_seconds=None,
+            model_encode_seconds=None,
+            render_seconds=None,
+            write_seconds=0.0,
+            total_seconds=0.0,
+        )
+    encode_started_at = time.perf_counter()
     audio_codes_list = encode_audio_codes_fn(
         tokenizer_model=tokenizer_model,
         audio_paths=[output_root / raw_row["audio"] for raw_row in raw_rows],
     )
+    encode_call_seconds = time.perf_counter() - encode_started_at
+    encoder_timing = take_audio_codes_chunk_timing_for_encoder(encode_audio_codes_fn)
     prepared_count = 0
+    write_started_at = time.perf_counter()
     for raw_row, audio_codes in zip(raw_rows, audio_codes_list, strict=True):
         raw_writer.write_row(raw_row)
         prepared_writer.write_row(
@@ -531,8 +589,74 @@ def _flush_audio_codes_chunk(
             )
         )
         prepared_count += 1
+    write_seconds = time.perf_counter() - write_started_at
     raw_rows.clear()
-    return prepared_count
+    return Task101AudioCodesChunkSummary(
+        chunk_row_count=prepared_count,
+        encode_call_seconds=encode_call_seconds,
+        preload_seconds=None if encoder_timing is None else encoder_timing.preload_seconds,
+        feature_extract_seconds=(
+            None if encoder_timing is None else encoder_timing.feature_extract_seconds
+        ),
+        model_encode_seconds=(
+            None if encoder_timing is None else encoder_timing.model_encode_seconds
+        ),
+        render_seconds=None if encoder_timing is None else encoder_timing.render_seconds,
+        write_seconds=write_seconds,
+        total_seconds=encode_call_seconds + write_seconds,
+    )
+
+
+def _summarize_audio_codes_batch_timings(
+    chunk_summaries: list[Task101AudioCodesChunkSummary],
+    *,
+    batch_total_seconds: float,
+) -> Task101AudioCodesBatchSummary:
+    """Aggregate one finalized batch's audio-code timings into machine-readable totals."""
+
+    def _sum_optional(values: list[float | None]) -> float | None:
+        rendered_values = [value for value in values if value is not None]
+        if not rendered_values:
+            return None
+        return float(sum(rendered_values))
+
+    chunk_total_seconds = float(sum(chunk.total_seconds for chunk in chunk_summaries))
+    return Task101AudioCodesBatchSummary(
+        chunk_count=len(chunk_summaries),
+        encoded_row_count=sum(chunk.chunk_row_count for chunk in chunk_summaries),
+        encode_call_seconds=float(sum(chunk.encode_call_seconds for chunk in chunk_summaries)),
+        preload_seconds=_sum_optional([chunk.preload_seconds for chunk in chunk_summaries]),
+        feature_extract_seconds=_sum_optional(
+            [chunk.feature_extract_seconds for chunk in chunk_summaries]
+        ),
+        model_encode_seconds=_sum_optional(
+            [chunk.model_encode_seconds for chunk in chunk_summaries]
+        ),
+        render_seconds=_sum_optional([chunk.render_seconds for chunk in chunk_summaries]),
+        write_seconds=float(sum(chunk.write_seconds for chunk in chunk_summaries)),
+        chunk_total_seconds=chunk_total_seconds,
+        batch_total_seconds=batch_total_seconds,
+        non_audio_codes_seconds=max(batch_total_seconds - chunk_total_seconds, 0.0),
+    )
+
+
+def _batch_timing_summary_payload(
+    summary: Task101AudioCodesBatchSummary,
+) -> dict[str, object]:
+    """Render one batch-level audio-code timing summary for progress-event payloads."""
+    return {
+        "audio_codes_batch_total_seconds": summary.batch_total_seconds,
+        "audio_codes_chunk_count": summary.chunk_count,
+        "audio_codes_chunk_total_seconds": summary.chunk_total_seconds,
+        "audio_codes_encode_call_seconds": summary.encode_call_seconds,
+        "audio_codes_encoded_row_count": summary.encoded_row_count,
+        "audio_codes_feature_extract_seconds": summary.feature_extract_seconds,
+        "audio_codes_model_encode_seconds": summary.model_encode_seconds,
+        "audio_codes_non_audio_seconds": summary.non_audio_codes_seconds,
+        "audio_codes_preload_seconds": summary.preload_seconds,
+        "audio_codes_render_seconds": summary.render_seconds,
+        "audio_codes_write_seconds": summary.write_seconds,
+    }
 
 
 def _validate_prepared_manifest_payload_paths(

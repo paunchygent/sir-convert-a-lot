@@ -32,6 +32,7 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
+    AudioCodesChunkTiming,
     AudioCodesEncoderProtocol,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
@@ -356,6 +357,66 @@ def test_build_task101_pilot_bundle_materializes_selected_manifests_and_logs_pro
     assert '"event": "copy_completed"' in captured_stdout
     assert '"event": "batch_completed"' in captured_stdout
     assert '"event": "report_completed"' in captured_stdout
+
+
+def test_build_task101_pilot_bundle_records_batch_timing_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Batch completion events should carry aggregated audio-code timing fields."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=2, dev_row_count=1)
+    output_root = tmp_path / "pilot-bundle"
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_execution.take_audio_codes_chunk_timing_for_encoder",
+        lambda encoder: AudioCodesChunkTiming(
+            row_count=1,
+            preload_seconds=0.1,
+            feature_extract_seconds=0.2,
+            model_encode_seconds=0.3,
+            encode_call_seconds=0.5,
+            render_seconds=0.05,
+            total_seconds=0.55,
+        ),
+    )
+
+    build_task101_pilot_bundle(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
+        container_batch_span=1,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
+    )
+
+    completed_payload = next(
+        payload
+        for payload in _read_event_payloads(output_root)
+        if payload["event"] == "batch_completed"
+        and payload["manifest_family"] == "swedish_pilot_train"
+    )
+
+    assert completed_payload["audio_codes_chunk_count"] == 2
+    assert completed_payload["audio_codes_encoded_row_count"] == 2
+    assert completed_payload["audio_codes_preload_seconds"] == pytest.approx(0.2)
+    assert completed_payload["audio_codes_feature_extract_seconds"] == pytest.approx(0.4)
+    assert completed_payload["audio_codes_model_encode_seconds"] == pytest.approx(0.6)
+    assert completed_payload["audio_codes_render_seconds"] == pytest.approx(0.1)
+    write_seconds = completed_payload["audio_codes_write_seconds"]
+    batch_total_seconds = completed_payload["audio_codes_batch_total_seconds"]
+    non_audio_seconds = completed_payload["audio_codes_non_audio_seconds"]
+    assert isinstance(write_seconds, float)
+    assert isinstance(batch_total_seconds, float)
+    assert isinstance(non_audio_seconds, float)
+    assert write_seconds >= 0.0
+    assert batch_total_seconds >= 0.0
+    assert non_audio_seconds >= 0.0
 
 
 def test_build_task101_pilot_bundle_groups_contiguous_batches_into_one_container_launch(

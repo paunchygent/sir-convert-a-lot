@@ -2,7 +2,7 @@
 id: task-152-optimize-task101-gpu-bundle-finalization-throughput-and-benchmark-on-hemma
 title: optimize task101 gpu bundle finalization throughput and benchmark on hemma
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-12'
 last_updated: '2026-03-12'
@@ -77,6 +77,21 @@ The most likely causes are:
 - Triton/flash-attn compilation or cache warmup may be repeated because the
   current Task 101 batch runtime does not yet persist a dedicated Triton cache
 
+Completion evidence on `2026-03-12` now shows the optimized governed lane is
+credibly faster on Hemma for the same selected Task 101 rows:
+
+- baseline benchmark root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312c/baseline-chunk8-span1`
+  - `swedish_pilot_train:batch-00000` took `9m 02s` for `128` rows
+- optimized benchmark root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312e-hostuser/preload-chunk64-span1`
+  - `swedish_pilot_train:batch-00000` took `7m 07s` for `128` rows
+  - machine-readable benchmark report:
+    `reports/task152_task101_finalization_benchmark.json`
+  - benchmark summary:
+    `duration_seconds=482.4812375620022`
+    `rows_per_minute=15.917717420074943`
+
 ## Required Implementation Shape
 
 1. Add explicit Task 101 throughput controls for the governed GPU lane.
@@ -104,41 +119,41 @@ The most likely causes are:
 
 ## Deliverables
 
-- [ ] Task 101 governed runtime updated so the GPU path no longer pays the old
+- [x] Task 101 governed runtime updated so the GPU path no longer pays the old
   warmup/throughput penalty by default.
-- [ ] Persistent Triton cache support for Task 101 governed batch containers.
-- [ ] Committed Task 152 benchmark surface plus machine-readable benchmark
+- [x] Persistent Triton cache support for Task 101 governed batch containers.
+- [x] Committed Task 152 benchmark surface plus machine-readable benchmark
   report.
-- [ ] Tests covering new runtime defaults, new cache mount behavior, and
+- [x] Tests covering new runtime defaults, new cache mount behavior, and
   benchmark-root preparation logic.
-- [ ] Docs updates that state the measured optimized Task 101 throughput
+- [x] Docs updates that state the measured optimized Task 101 throughput
   posture and operator defaults.
 
 ## Acceptance Criteria
 
-- [ ] The optimized governed Task 101 GPU path is measurably faster than the
+- [x] The optimized governed Task 101 GPU path is measurably faster than the
   current `128`-row / `chunk_size=8` governed baseline on Hemma for the same
   selected benchmark rows.
-- [ ] Task 101 no longer pays a fresh governed tokenizer/container warmup cost
+- [x] Task 101 no longer pays a fresh governed tokenizer/container warmup cost
   every `128` rows by default.
-- [ ] The governed Task 101 batch runtime persists a deterministic Triton cache
+- [x] The governed Task 101 batch runtime persists a deterministic Triton cache
   mount and records it in launch diagnostics.
-- [ ] Task 101 progress artifacts, batch shard validation, and runtime
+- [x] Task 101 progress artifacts, batch shard validation, and runtime
   provenance remain correct after the throughput changes.
-- [ ] The runbook and current-session log describe the benchmarked Task 101
+- [x] The runbook and current-session log describe the benchmarked Task 101
   throughput posture truthfully.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] focused pytest for Task 101 runtime, Task 101 bundle orchestration, and
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] focused pytest for Task 101 runtime, Task 101 bundle orchestration, and
   the Task 152 benchmark helper
-- [ ] Hemma benchmark evidence comparing baseline and optimized variants
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] Hemma benchmark evidence comparing baseline and optimized variants
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Implementation Notes
 
@@ -149,6 +164,6 @@ The most likely causes are:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

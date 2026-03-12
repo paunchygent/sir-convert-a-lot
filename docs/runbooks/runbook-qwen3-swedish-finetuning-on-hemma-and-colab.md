@@ -934,6 +934,16 @@ Canonical Task 106 acquisition surface:
      - when snap-Docker cannot mount that canonical `/srv/...` bundle root
        directly, the batch runtime now reuses the shared home-backed bind
        fallback instead of failing at container launch
+     - the in-container audio-code path now preloads waveform arrays with
+       `soundfile` plus a bounded thread pool before calling
+       `Qwen3TTSTokenizer.encode(...)`, which materially reduces the old
+       serial path-loading overhead
+     - current governed Task 101 defaults are now:
+       - `audio_codes_chunk_size=128`
+       - `container_batch_span=4`
+     - Task 101 batch containers now run as the host uid/gid plus the GPU
+       device groups so host-side `assemble` can keep appending progress and
+       report artifacts after in-container batch completion
      - batch-finalization evidence now lands in:
        - `reports/task101_pilot_bundle_plan.json`
        - `reports/task101_pilot_bundle_events.jsonl`
@@ -952,9 +962,23 @@ Canonical Task 106 acquisition surface:
          `swedish_pilot_train:batch-00012`
        - that stop was deliberate so the resumable bundle root can be retried
          after pulling the GPU-backed governed audio-code runtime
-       - do not resume the old host-runtime checkout in place; pull the new
-         governed runtime first, then rerun the bundle build so incomplete
-         batch `13` is regenerated under the GPU-backed runtime
+       - Task 152 then benchmarked the optimized governed lane on the same
+         `128`-row Task 101 slice:
+         - baseline benchmark root:
+           `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312c/baseline-chunk8-span1`
+           - train batch `00000`: `9m 02s`
+         - optimized benchmark root:
+           `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312e-hostuser/preload-chunk64-span1`
+           - train batch `00000`: `7m 07s`
+           - full benchmark report:
+             `reports/task152_task101_finalization_benchmark.json`
+           - summary:
+             `duration_seconds=482.4812375620022`
+             `rows_per_minute=15.917717420074943`
+       - do not resume the old host-runtime checkout in place; pull the
+         optimized governed runtime first, then rerun the bundle build so
+         incomplete batch `13` and later batches regenerate under the faster
+         GPU-backed lane
    - canonical command:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
    - if the launch will build the image, the runner now prints an explicit
