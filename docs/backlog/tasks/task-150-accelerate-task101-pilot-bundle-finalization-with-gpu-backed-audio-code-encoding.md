@@ -2,7 +2,7 @@
 id: task-150-accelerate-task101-pilot-bundle-finalization-with-gpu-backed-audio-code-encoding
 title: Accelerate Task101 pilot bundle finalization with GPU-backed audio-code encoding
 type: task
-status: active
+status: completed
 priority: high
 created: '2026-03-12'
 last_updated: '2026-03-12'
@@ -112,41 +112,41 @@ not using the hardware we intentionally prepared for this workload.
 
 ## Deliverables
 
-- [ ] Committed GPU-backed tokenizer/runtime helper for governed Qwen
+- [x] Committed GPU-backed tokenizer/runtime helper for governed Qwen
   audio-code finalization.
-- [ ] Task 101 batch finalization updated to require GPU-backed tokenizer
+- [x] Task 101 batch finalization updated to require GPU-backed tokenizer
   initialization in the governed runtime.
-- [ ] Runtime evidence updated so operators can verify the tokenizer used ROCm
+- [x] Runtime evidence updated so operators can verify the tokenizer used ROCm
   rather than CPU.
-- [ ] Tests covering tokenizer runtime selection, fail-closed behavior, and
+- [x] Tests covering tokenizer runtime selection, fail-closed behavior, and
   resumable bundle reuse after interrupted partial batches.
-- [ ] Docs updates describing the new Task 101 GPU-backed finalization
+- [x] Docs updates describing the new Task 101 GPU-backed finalization
   contract and the live-Hemma stop/resume rationale for the interrupted
   `2026-03-12` bundle run.
 
 ## Acceptance Criteria
 
-- [ ] Task 101 governed batch finalization no longer runs the tokenizer model
+- [x] Task 101 governed batch finalization no longer runs the tokenizer model
   on CPU by default.
-- [ ] The canonical governed Task 101 runtime fails closed when GPU-backed
+- [x] The canonical governed Task 101 runtime fails closed when GPU-backed
   tokenizer initialization is unavailable.
-- [ ] Runtime evidence proves the tokenizer model device is GPU-backed for the
+- [x] Runtime evidence proves the tokenizer model device is GPU-backed for the
   accepted path.
-- [ ] An interrupted governed bundle build remains resumable from the last
+- [x] An interrupted governed bundle build remains resumable from the last
   completed batch without redoing already validated shards.
-- [ ] The task doc, runbook, and current-session log all describe the same
+- [x] The task doc, runbook, and current-session log all describe the same
   GPU-first finalization posture.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] focused pytest for Task 101 bundle runtime plus shared finalization
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] focused pytest for Task 101 bundle runtime plus shared finalization
   helpers
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Implementation Notes
 
@@ -161,8 +161,27 @@ not using the hardware we intentionally prepared for this workload.
   next rerun can use the GPU-backed governed runtime instead of finishing the
   slower CPU-bound path.
 
+## Outcome
+
+`T150` is complete.
+
+What changed:
+
+- the shared Task 103 finalization layer now has an explicit audio-code runtime
+  contract plus a governed GPU-backed tokenizer loader
+- Task 101 in-container batch finalization now uses the governed GPU-backed
+  tokenizer path and writes
+  `reports/task101_pilot_bundle_audio_codes_runtime.json`
+- Task 109 containerized preprocessing now forwards the same governed GPU
+  tokenizer posture into the shared Task 103 CLI
+- Task 101 runtime provenance now records the audio-code runtime posture so
+  older CPU-backed output cannot be silently treated as equivalent governed
+  output
+- the stopped Hemma bundle root remains resumable from the last completed
+  batch while the next rerun moves onto the GPU-backed tokenizer path
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
