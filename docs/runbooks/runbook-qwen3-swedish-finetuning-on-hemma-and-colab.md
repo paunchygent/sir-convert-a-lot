@@ -915,6 +915,14 @@ Canonical Task 106 acquisition surface:
        longer performs one whole-family finalization pass in-process
      - `finalize-batch` now runs inside the governed Qwen Task 100/101 image,
        not the host PDM environment
+     - the canonical governed `audio_codes` runtime is now explicitly GPU
+       backed:
+       - `Qwen3TTSTokenizer` is placed on `cuda:0`
+       - governed dtype is `bfloat16`
+       - governed attention posture is `flash_attention_2`
+       - the canonical Task 101 batch runtime fails closed rather than
+         silently continuing on CPU when that tokenizer posture is not
+         available
      - the batch runtime reuses the canonical fixed in-container HF cache
        contract:
        - `HF_HOME=/cache/huggingface`
@@ -928,18 +936,22 @@ Canonical Task 106 acquisition surface:
        - `reports/task101_pilot_bundle_events.jsonl`
        - `reports/task101_pilot_bundle_status.json`
        - `reports/task101_pilot_bundle_runtime.json`
+       - `reports/task101_pilot_bundle_audio_codes_runtime.json`
        - `reports/batches/<family>/batch-xxxxx.runtime.json`
      - a wedged or interrupted build should now still leave enough evidence to
        identify the last started batch and the last completed batch
      - validated batch reuse now fails closed on legacy host-generated shards
        that do not carry the governed runtime fingerprint
      - live Hemma evidence from `2026-03-12`:
-       - frozen pilot source root on `/srv/storage` is about `17G`
-       - retained Task 101 bundle payload is about `9-10G`
-       - `/srv/scratch` was at `458G / 458G` used, so the canonical retry
-         failed with `OSError: [Errno 28] No space left on device`
-       - reclaim scratch space or choose a different output root before the
-         next canonical bundle retry
+       - one host-side bundle build reached `swedish_pilot_train:batch-00013`
+         before it was intentionally stopped
+       - last completed batch before the stop was
+         `swedish_pilot_train:batch-00012`
+       - that stop was deliberate so the resumable bundle root can be retried
+         after pulling the GPU-backed governed audio-code runtime
+       - do not resume the old host-runtime checkout in place; pull the new
+         governed runtime first, then rerun the bundle build so incomplete
+         batch `13` is regenerated under the GPU-backed runtime
    - canonical command:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
    - if the launch will build the image, the runner now prints an explicit

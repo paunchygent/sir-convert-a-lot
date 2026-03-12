@@ -34,14 +34,26 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     prepare_qwen_image,
     resolve_effective_hf_cache_dir,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_audio_codes_runtime import (
+    DEFAULT_GOVERNED_ATTN_IMPLEMENTATION,
+    DEFAULT_GOVERNED_DEVICE_MAP,
+    DEFAULT_GOVERNED_DTYPE,
+)
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
+    AudioCodesRuntimeReport,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     ManifestFamily,
 )
 
 DEFAULT_DOCKERFILE_PATH = Path("containers/qwen-finetune-hemma/Dockerfile")
 DEFAULT_IMAGE = "sir-convert-a-lot-qwen-finetune-hemma:task100"
-DEFAULT_RUNTIME_KIND = "task101_qwen_pilot_bundle_containerized_batch_v1"
+DEFAULT_RUNTIME_KIND = "task101_qwen_pilot_bundle_containerized_batch_v2"
 DEFAULT_ENTRY_MODULE = "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_in_container"
+DEFAULT_AUDIO_CODES_RUNTIME_KIND = "task101_task103_qwen_audio_codes_gpu_v1"
+DEFAULT_AUDIO_CODES_DEVICE = DEFAULT_GOVERNED_DEVICE_MAP
+DEFAULT_AUDIO_CODES_DTYPE = DEFAULT_GOVERNED_DTYPE
+DEFAULT_AUDIO_CODES_ATTN_IMPLEMENTATION = DEFAULT_GOVERNED_ATTN_IMPLEMENTATION
 
 
 @dataclass(frozen=True)
@@ -67,6 +79,12 @@ class Task101PilotBundleRuntimeFingerprint:
     container_hf_home: str
     container_hf_hub_cache: str
     container_torch_home: str
+    audio_codes_runtime_kind: str
+    audio_codes_device: str
+    audio_codes_dtype: str
+    audio_codes_attn_implementation: str
+    audio_codes_require_gpu: bool
+    audio_codes_require_flash_attn: bool
 
 
 def default_hf_cache_dir() -> Path:
@@ -99,6 +117,11 @@ def default_container_settings() -> Task101PilotBundleContainerSettings:
 def task101_pilot_bundle_runtime_fingerprint_path(output_root: Path) -> Path:
     """Return the canonical bundle-level runtime fingerprint path."""
     return output_root / "reports" / "task101_pilot_bundle_runtime.json"
+
+
+def task101_pilot_bundle_audio_codes_runtime_report_path(output_root: Path) -> Path:
+    """Return the canonical bundle-level observed audio-codes runtime report path."""
+    return output_root / "reports" / "task101_pilot_bundle_audio_codes_runtime.json"
 
 
 def task101_pilot_bundle_batch_runtime_path(
@@ -138,6 +161,16 @@ def write_task101_pilot_bundle_batch_runtime_fingerprint(
     path.write_text(json.dumps(asdict(fingerprint), indent=2, ensure_ascii=False) + "\n")
 
 
+def write_task101_pilot_bundle_audio_codes_runtime_report(
+    output_root: Path,
+    report: AudioCodesRuntimeReport,
+) -> None:
+    """Persist the observed governed audio-codes runtime report."""
+    path = task101_pilot_bundle_audio_codes_runtime_report_path(output_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(asdict(report), indent=2, ensure_ascii=False) + "\n")
+
+
 def load_task101_pilot_bundle_runtime_fingerprint(
     path: Path,
 ) -> Task101PilotBundleRuntimeFingerprint:
@@ -154,6 +187,18 @@ def load_task101_pilot_bundle_runtime_fingerprint(
         container_hf_home=_required_string(payload, "container_hf_home"),
         container_hf_hub_cache=_required_string(payload, "container_hf_hub_cache"),
         container_torch_home=_required_string(payload, "container_torch_home"),
+        audio_codes_runtime_kind=_required_string(payload, "audio_codes_runtime_kind"),
+        audio_codes_device=_required_string(payload, "audio_codes_device"),
+        audio_codes_dtype=_required_string(payload, "audio_codes_dtype"),
+        audio_codes_attn_implementation=_required_string(
+            payload,
+            "audio_codes_attn_implementation",
+        ),
+        audio_codes_require_gpu=_required_bool(payload, "audio_codes_require_gpu"),
+        audio_codes_require_flash_attn=_required_bool(
+            payload,
+            "audio_codes_require_flash_attn",
+        ),
     )
 
 
@@ -187,6 +232,12 @@ def prepare_task101_pilot_bundle_batch_runtime(
         container_hf_home=CONTAINER_HF_HOME,
         container_hf_hub_cache=CONTAINER_HF_HUB_CACHE,
         container_torch_home=CONTAINER_TORCH_HOME,
+        audio_codes_runtime_kind=DEFAULT_AUDIO_CODES_RUNTIME_KIND,
+        audio_codes_device=DEFAULT_AUDIO_CODES_DEVICE,
+        audio_codes_dtype=DEFAULT_AUDIO_CODES_DTYPE,
+        audio_codes_attn_implementation=DEFAULT_AUDIO_CODES_ATTN_IMPLEMENTATION,
+        audio_codes_require_gpu=True,
+        audio_codes_require_flash_attn=True,
     )
 
 
@@ -300,4 +351,12 @@ def _required_string(payload: dict[str, object], key: str) -> str:
     value = payload.get(key)
     if not isinstance(value, str):
         raise ValueError(f"Malformed `{key}` in Task 101 runtime fingerprint.")
+    return value
+
+
+def _required_bool(payload: dict[str, object], key: str) -> bool:
+    """Return one required boolean field from the runtime fingerprint payload."""
+    value = payload.get(key)
+    if not isinstance(value, bool):
+        raise ValueError(f"Task 101 pilot bundle runtime fingerprint is missing `{key}`.")
     return value

@@ -226,7 +226,7 @@ def _run_batch_in_process(
 def _runtime_fingerprint(*, image_id: str = "sha256:test") -> Task101PilotBundleRuntimeFingerprint:
     """Return one deterministic governed runtime fingerprint for Task 101 tests."""
     return Task101PilotBundleRuntimeFingerprint(
-        runtime_kind="task101_qwen_pilot_bundle_containerized_batch_v1",
+        runtime_kind="task101_qwen_pilot_bundle_containerized_batch_v2",
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         image_id=image_id,
         dockerfile_path="containers/qwen-finetune-hemma/Dockerfile",
@@ -236,6 +236,12 @@ def _runtime_fingerprint(*, image_id: str = "sha256:test") -> Task101PilotBundle
         container_hf_home="/cache/huggingface",
         container_hf_hub_cache="/cache/huggingface/hub",
         container_torch_home="/cache/huggingface/torch",
+        audio_codes_runtime_kind="task101_task103_qwen_audio_codes_gpu_v1",
+        audio_codes_device="cuda:0",
+        audio_codes_dtype="bfloat16",
+        audio_codes_attn_implementation="flash_attention_2",
+        audio_codes_require_gpu=True,
+        audio_codes_require_flash_attn=True,
     )
 
 

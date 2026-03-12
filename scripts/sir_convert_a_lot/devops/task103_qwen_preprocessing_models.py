@@ -13,10 +13,13 @@ Relationships:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Literal, TypedDict
 
+from scripts.sir_convert_a_lot.devops.task103_qwen_audio_codes_runtime import (
+    Task103AudioCodesRuntimeSettings,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
 
 CANONICAL_SAMPLE_RATE_HZ = 24_000
@@ -149,6 +152,9 @@ class Task103PreprocessingSettings:
     stage: Task103Stage = "all"
     finalization_families: tuple[ManifestFamily, ...] = CANONICAL_MANIFEST_FAMILIES
     audio_codes_chunk_size: int = 8
+    audio_codes_runtime: Task103AudioCodesRuntimeSettings = field(
+        default_factory=Task103AudioCodesRuntimeSettings
+    )
     row_worker_count: int = 1
     gpu_asr_worker_count: int = 1
     resume_row_processing: bool = False

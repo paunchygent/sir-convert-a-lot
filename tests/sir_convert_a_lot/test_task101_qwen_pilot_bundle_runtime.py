@@ -89,6 +89,12 @@ def test_prepare_task101_batch_runtime_reuses_qwen_image_helper(
     assert fingerprint.container_hf_home == "/cache/huggingface"
     assert fingerprint.container_hf_hub_cache == "/cache/huggingface/hub"
     assert fingerprint.container_torch_home == "/cache/huggingface/torch"
+    assert fingerprint.audio_codes_runtime_kind == "task101_task103_qwen_audio_codes_gpu_v1"
+    assert fingerprint.audio_codes_device == "cuda:0"
+    assert fingerprint.audio_codes_dtype == "bfloat16"
+    assert fingerprint.audio_codes_attn_implementation == "flash_attention_2"
+    assert fingerprint.audio_codes_require_gpu is True
+    assert fingerprint.audio_codes_require_flash_attn is True
 
 
 def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
@@ -126,6 +132,12 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
         container_hf_home="/cache/huggingface",
         container_hf_hub_cache="/cache/huggingface/hub",
         container_torch_home="/cache/huggingface/torch",
+        audio_codes_runtime_kind="task101_task103_qwen_audio_codes_gpu_v1",
+        audio_codes_device="cuda:0",
+        audio_codes_dtype="bfloat16",
+        audio_codes_attn_implementation="flash_attention_2",
+        audio_codes_require_gpu=True,
+        audio_codes_require_flash_attn=True,
     )
 
     result = run_containerized_task101_pilot_bundle_batch(

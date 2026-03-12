@@ -39,8 +39,21 @@
   - bundle-level plus per-batch runtime fingerprints now fail closed on legacy
     host-generated shards and completed bundles that lack governed runtime
     provenance
+- `T150` is now active and implementation is underway:
+  - the governed Task 101 batch runtime now initializes
+    `Qwen3TTSTokenizer` on `cuda:0` with `bfloat16` plus
+    `flash_attention_2` instead of silently staying on CPU
+  - the in-container Task 101 entrypoint now writes
+    `reports/task101_pilot_bundle_audio_codes_runtime.json` so operators can
+    verify the observed tokenizer device/runtime posture
+  - the live Hemma host-runtime bundle build at
+    `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h`
+    was intentionally stopped after completed batch `00012`; batch `00013`
+    had started but not completed, so the next governed rerun should regenerate
+    that incomplete batch under the GPU-backed runtime
 - Docs-as-code surfaces updated:
   - `docs/backlog/tasks/task-149-containerize-task101-pilot-bundle-batch-finalization-runtime.md`
+  - `docs/backlog/tasks/task-150-accelerate-task101-pilot-bundle-finalization-with-gpu-backed-audio-code-encoding.md`
   - `docs/backlog/tasks/task-148-batch-task101-pilot-bundle-finalization-and-progress-logging-on-hemma.md`
   - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
   - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
@@ -51,6 +64,8 @@
 - `PASS` `pdm run format-all`
 - `PASS` `pdm run lint-fix`
 - `PASS` `pdm run typecheck-all`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_preprocessing_finalization.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle_runtime.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py -q`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task103_processing.py tests/sir_convert_a_lot/test_task103_runner.py -q`
 - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle_runtime.py -q`
 - `PASS` `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_cli.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_source.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_validation.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_contracts.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_progress.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_execution.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_runtime.py scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_in_container.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle_runtime.py`
 - `PASS` `pdm run validate-tasks`
@@ -59,21 +74,21 @@
 
 ## Active Blocker
 
-- The next live Hemma Task 101 bundle retry is still blocked by storage
-  pressure on `/srv/scratch`.
-- Verified live state from the earlier incident remains the operator truth to
-  respect until rechecked:
-  - `/srv/scratch` was `458G / 458G` used
-  - the canonical retry failed with `OSError: [Errno 28] No space left on device`
+- The next live Hemma Task 101 bundle retry must not continue on the stopped
+  host-runtime checkout.
+- Pull the new GPU-backed governed runtime onto Hemma first, then rerun the
+  resumable bundle root.
 
 ## Immediate Next Step
 
-- Reclaim `/srv/scratch` capacity safely or choose an alternate
-  `--output-root`.
-- After that prerequisite is satisfied, run the next bounded Hemma Task 101
-  pilot-bundle retry through the governed containerized `build` surface and
-  inspect:
+- Pull the updated checkout on Hemma now that the old host-runtime bundle
+  process is stopped.
+- Rebuild or reuse the governed Task 100/101 Qwen image with the GPU-backed
+  tokenizer runtime changes.
+- Rerun the stopped bounded Hemma Task 101 pilot-bundle root through the
+  governed `build` surface and inspect:
   - `reports/task101_pilot_bundle_plan.json`
   - `reports/task101_pilot_bundle_events.jsonl`
   - `reports/task101_pilot_bundle_status.json`
   - `reports/task101_pilot_bundle_runtime.json`
+  - `reports/task101_pilot_bundle_audio_codes_runtime.json`

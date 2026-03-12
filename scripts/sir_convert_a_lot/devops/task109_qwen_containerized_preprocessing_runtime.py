@@ -25,6 +25,11 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     docker_checked,
     parse_json_object_from_mixed_stdout,
 )
+from scripts.sir_convert_a_lot.devops.task103_qwen_audio_codes_runtime import (
+    DEFAULT_GOVERNED_ATTN_IMPLEMENTATION,
+    DEFAULT_GOVERNED_DEVICE_MAP,
+    DEFAULT_GOVERNED_DTYPE,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     ManifestFamily,
     Task103PreprocessingReport,
@@ -205,6 +210,13 @@ def build_containerized_preprocessing_command(
         ",".join(settings.rixvox_splits),
         "--audio-codes-chunk-size",
         str(settings.audio_codes_chunk_size),
+        "--audio-codes-device-map",
+        DEFAULT_GOVERNED_DEVICE_MAP,
+        "--audio-codes-dtype",
+        DEFAULT_GOVERNED_DTYPE,
+        "--audio-codes-attn-implementation",
+        DEFAULT_GOVERNED_ATTN_IMPLEMENTATION,
+        "--require-audio-codes-gpu",
         "--row-worker-count",
         str(settings.row_worker_count),
         "--gpu-asr-worker-count",

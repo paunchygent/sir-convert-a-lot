@@ -23,6 +23,11 @@ from pathlib import Path
 from typing import Literal, Sequence
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
+from scripts.sir_convert_a_lot.devops.task103_qwen_audio_codes_runtime import (
+    AudioCodesAttentionImplementation,
+    AudioCodesDtype,
+    Task103AudioCodesRuntimeSettings,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_core import (
     Task103PreprocessingSettings,
     run_task103_preprocessing,
@@ -76,6 +81,9 @@ DEFAULT_FLEURS_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_STAGE = "row-processing"
 DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
+DEFAULT_AUDIO_CODES_DEVICE_MAP: str | None = None
+DEFAULT_AUDIO_CODES_DTYPE: AudioCodesDtype | None = None
+DEFAULT_AUDIO_CODES_ATTN_IMPLEMENTATION: AudioCodesAttentionImplementation | None = None
 DEFAULT_ROW_WORKER_COUNT = 1
 DEFAULT_GPU_ASR_WORKER_COUNT = 1
 SourceMode = Literal["repo-fixture", "staged-public-corpus", "selected-source-records"]
@@ -134,6 +142,34 @@ def _parse_manifest_families(raw_value: str) -> tuple[ManifestFamily, ...]:
     return tuple(typed_values)
 
 
+def _audio_codes_dtype_from_cli_value(value: object) -> AudioCodesDtype | None:
+    """Normalize one CLI audio-codes dtype into the typed runtime literal."""
+    if value is None:
+        return None
+    if value == "float16":
+        return "float16"
+    if value == "bfloat16":
+        return "bfloat16"
+    if value == "float32":
+        return "float32"
+    raise SystemExit(f"Unknown audio-codes dtype: {value}")
+
+
+def _audio_codes_attn_from_cli_value(
+    value: object,
+) -> AudioCodesAttentionImplementation | None:
+    """Normalize one CLI attention mode into the typed runtime literal."""
+    if value is None:
+        return None
+    if value == "eager":
+        return "eager"
+    if value == "sdpa":
+        return "sdpa"
+    if value == "flash_attention_2":
+        return "flash_attention_2"
+    raise SystemExit(f"Unknown audio-codes attention implementation: {value}")
+
+
 def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
     """Parse CLI arguments into normalized Task 103 preprocessing settings."""
     parser = argparse.ArgumentParser(
@@ -169,6 +205,28 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
         "--audio-codes-chunk-size",
         type=int,
         default=DEFAULT_AUDIO_CODES_CHUNK_SIZE,
+    )
+    parser.add_argument(
+        "--audio-codes-device-map",
+        default=DEFAULT_AUDIO_CODES_DEVICE_MAP,
+        help="Optional device-map string forwarded to Qwen3TTSTokenizer.from_pretrained.",
+    )
+    parser.add_argument(
+        "--audio-codes-dtype",
+        choices=("float16", "bfloat16", "float32"),
+        default=DEFAULT_AUDIO_CODES_DTYPE,
+        help="Optional dtype forwarded to Qwen3TTSTokenizer.from_pretrained.",
+    )
+    parser.add_argument(
+        "--audio-codes-attn-implementation",
+        choices=("eager", "sdpa", "flash_attention_2"),
+        default=DEFAULT_AUDIO_CODES_ATTN_IMPLEMENTATION,
+        help="Optional attention implementation forwarded to the Qwen tokenizer model.",
+    )
+    parser.add_argument(
+        "--require-audio-codes-gpu",
+        action="store_true",
+        help="Fail closed if audio-code tokenizer initialization does not land on GPU.",
     )
     parser.add_argument(
         "--row-worker-count",
@@ -226,6 +284,18 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
             stage=args.stage,
             finalization_families=_parse_manifest_families(str(args.finalization_families)),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
+            audio_codes_runtime=Task103AudioCodesRuntimeSettings(
+                device_map=(
+                    None
+                    if args.audio_codes_device_map is None
+                    else str(args.audio_codes_device_map)
+                ),
+                dtype=_audio_codes_dtype_from_cli_value(args.audio_codes_dtype),
+                attn_implementation=_audio_codes_attn_from_cli_value(
+                    args.audio_codes_attn_implementation
+                ),
+                require_gpu=bool(args.require_audio_codes_gpu),
+            ),
             row_worker_count=int(args.row_worker_count),
             gpu_asr_worker_count=int(args.gpu_asr_worker_count),
             resume_row_processing=bool(args.resume_row_processing),

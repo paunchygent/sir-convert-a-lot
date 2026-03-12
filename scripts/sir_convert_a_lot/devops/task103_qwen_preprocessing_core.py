@@ -22,6 +22,7 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_asr import (
     WhisperStrictScorer,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
+    build_audio_codes_encoder,
     build_reports,
     finalize_from_spool,
 )
@@ -82,10 +83,14 @@ def run_task103_preprocessing(
             scorer_factory=WhisperStrictScorer,
             row_heartbeat_callback=row_heartbeat_callback,
         )
+        audio_codes_encoder = build_audio_codes_encoder(
+            settings.audio_codes_runtime,
+            fallback_encoder=_encode_audio_codes,
+        )
         finalize_from_spool(
             settings,
             output_root=output_root,
-            encode_audio_codes_fn=_encode_audio_codes,
+            encode_audio_codes_fn=audio_codes_encoder,
             finalization_heartbeat_callback=finalization_heartbeat_callback,
         )
         return build_reports(settings, output_root=output_root)
@@ -108,10 +113,14 @@ def run_task103_preprocessing(
 
     if settings.stage == "finalization":
         prepare_output_root(output_root, stage="finalization")
+        audio_codes_encoder = build_audio_codes_encoder(
+            settings.audio_codes_runtime,
+            fallback_encoder=_encode_audio_codes,
+        )
         finalize_from_spool(
             settings,
             output_root=output_root,
-            encode_audio_codes_fn=_encode_audio_codes,
+            encode_audio_codes_fn=audio_codes_encoder,
             finalization_heartbeat_callback=finalization_heartbeat_callback,
         )
         return build_reports(settings, output_root=output_root)

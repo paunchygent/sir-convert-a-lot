@@ -155,6 +155,13 @@ def test_task109_build_command_uses_repo_and_absolute_mounts() -> None:
     assert "64" in command
     assert "--audio-codes-chunk-size" in command
     assert "4" in command
+    assert "--audio-codes-device-map" in command
+    assert "cuda:0" in command
+    assert "--audio-codes-dtype" in command
+    assert "bfloat16" in command
+    assert "--audio-codes-attn-implementation" in command
+    assert "flash_attention_2" in command
+    assert "--require-audio-codes-gpu" in command
     assert "--row-worker-count" in command
     assert "3" in command
     assert "--gpu-asr-worker-count" in command

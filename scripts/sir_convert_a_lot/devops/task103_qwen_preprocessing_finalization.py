@@ -14,12 +14,22 @@ Relationships:
 
 from __future__ import annotations
 
+import importlib.metadata
+import importlib.util
 import shutil
 from collections import Counter
+from collections.abc import Iterable
+from dataclasses import dataclass
 from math import ceil
 from pathlib import Path
 from typing import Protocol, Sequence
 
+from scripts.sir_convert_a_lot.devops.task103_qwen_audio_codes_runtime import (
+    DEFAULT_GOVERNED_ATTN_IMPLEMENTATION,
+    DEFAULT_GOVERNED_DEVICE_MAP,
+    DEFAULT_GOVERNED_DTYPE,
+    Task103AudioCodesRuntimeSettings,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     CANONICAL_MANIFEST_FAMILIES,
     CuratedRow,
@@ -79,12 +89,169 @@ class _QwenTokenizerProtocol(Protocol):
         """Encode one audio-path batch into Qwen audio codes."""
 
 
+class _TensorParameterProtocol(Protocol):
+    """Minimal tensor-parameter surface used for runtime introspection."""
+
+    @property
+    def device(self) -> object:
+        """Return the current device placement for one model parameter."""
+
+    @property
+    def dtype(self) -> object:
+        """Return the current dtype for one model parameter."""
+
+
+class _QwenModelConfigProtocol(Protocol):
+    """Minimal model-config surface used for attention introspection."""
+
+    @property
+    def _attn_implementation(self) -> str | None:
+        """Return the configured attention implementation when exposed."""
+
+
+class _QwenTokenizerModelProtocol(Protocol):
+    """Minimal tokenizer-model surface used for device-aware runtime setup."""
+
+    config: _QwenModelConfigProtocol
+
+    def parameters(self) -> Iterable[_TensorParameterProtocol]:
+        """Return the model parameters for runtime introspection."""
+
+    def to(
+        self,
+        device: object | None = None,
+        *,
+        dtype: object | None = None,
+    ) -> _QwenTokenizerModelProtocol:
+        """Move the tokenizer model to one device/dtype combination."""
+
+
+class _ConfiguredQwenTokenizerProtocol(_QwenTokenizerProtocol, Protocol):
+    """Minimal tokenizer surface that exposes model/device fields."""
+
+    model: _QwenTokenizerModelProtocol
+    device: object
+
+
+@dataclass(frozen=True)
+class AudioCodesRuntimeRequest:
+    """Governed runtime settings for one warm audio-code tokenizer instance."""
+
+    runtime_kind: str
+    device: str
+    dtype: str
+    attn_implementation: str
+    require_gpu: bool
+    require_flash_attn: bool
+
+
+@dataclass(frozen=True)
+class AudioCodesRuntimeReport:
+    """Observed runtime posture for one warm audio-code tokenizer instance."""
+
+    runtime_kind: str
+    tokenizer_model: str
+    requested_device: str
+    observed_device: str
+    requested_dtype: str
+    observed_dtype: str
+    requested_attn_implementation: str
+    observed_attn_implementation: str | None
+    require_gpu: bool
+    require_flash_attn: bool
+    torch_cuda_available: bool
+    torch_hip_version: str | None
+    flash_attn_importable: bool
+    flash_attn_version: str | None
+
+
+DEFAULT_GOVERNED_GPU_AUDIO_CODES_RUNTIME = AudioCodesRuntimeRequest(
+    runtime_kind="task101_task103_qwen_audio_codes_gpu_v1",
+    device=DEFAULT_GOVERNED_DEVICE_MAP,
+    dtype=DEFAULT_GOVERNED_DTYPE,
+    attn_implementation=DEFAULT_GOVERNED_ATTN_IMPLEMENTATION,
+    require_gpu=True,
+    require_flash_attn=True,
+)
+DEFAULT_CPU_AUDIO_CODES_RUNTIME = AudioCodesRuntimeRequest(
+    runtime_kind="task103_qwen_audio_codes_cpu_default_v1",
+    device="cpu",
+    dtype="float32",
+    attn_implementation="eager",
+    require_gpu=False,
+    require_flash_attn=False,
+)
+
+
+def _package_version(package_name: str) -> str | None:
+    """Return one installed package version when available."""
+    try:
+        return importlib.metadata.version(package_name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def _runtime_request_dtype(runtime_request: AudioCodesRuntimeRequest) -> object:
+    """Resolve the requested torch dtype for the governed tokenizer runtime."""
+    import torch
+
+    if runtime_request.dtype == "bfloat16":
+        return torch.bfloat16
+    if runtime_request.dtype == "float16":
+        return torch.float16
+    if runtime_request.dtype == "float32":
+        return torch.float32
+    raise ValueError(f"Unsupported audio-codes runtime dtype `{runtime_request.dtype}`.")
+
+
+def audio_codes_runtime_request_from_settings(
+    runtime_settings: Task103AudioCodesRuntimeSettings,
+) -> AudioCodesRuntimeRequest:
+    """Normalize one external runtime-settings payload into an encoder request."""
+    if runtime_settings.require_gpu:
+        return AudioCodesRuntimeRequest(
+            runtime_kind=DEFAULT_GOVERNED_GPU_AUDIO_CODES_RUNTIME.runtime_kind,
+            device=runtime_settings.device_map or DEFAULT_GOVERNED_DEVICE_MAP,
+            dtype=runtime_settings.dtype or DEFAULT_GOVERNED_DTYPE,
+            attn_implementation=(
+                runtime_settings.attn_implementation or DEFAULT_GOVERNED_ATTN_IMPLEMENTATION
+            ),
+            require_gpu=True,
+            require_flash_attn=True,
+        )
+    return AudioCodesRuntimeRequest(
+        runtime_kind=DEFAULT_CPU_AUDIO_CODES_RUNTIME.runtime_kind,
+        device=runtime_settings.device_map or DEFAULT_CPU_AUDIO_CODES_RUNTIME.device,
+        dtype=runtime_settings.dtype or DEFAULT_CPU_AUDIO_CODES_RUNTIME.dtype,
+        attn_implementation=(
+            runtime_settings.attn_implementation
+            or DEFAULT_CPU_AUDIO_CODES_RUNTIME.attn_implementation
+        ),
+        require_gpu=False,
+        require_flash_attn=False,
+    )
+
+
+def _first_model_parameter(
+    model: _QwenTokenizerModelProtocol,
+) -> _TensorParameterProtocol:
+    """Return the first model parameter for device/dtype introspection."""
+    try:
+        return next(iter(model.parameters()))
+    except StopIteration as exc:
+        raise RuntimeError(
+            "Qwen tokenizer model exposed no parameters for runtime introspection."
+        ) from exc
+
+
 class WarmAudioCodesEncoder:
     """Reuse one Qwen tokenizer instance for all chunks in one finalization process."""
 
-    def __init__(self) -> None:
+    def __init__(self, runtime_request: AudioCodesRuntimeRequest) -> None:
+        self._runtime_request = runtime_request
         self._tokenizer_model: str | None = None
-        self._tokenizer: _QwenTokenizerProtocol | None = None
+        self._tokenizer: _ConfiguredQwenTokenizerProtocol | None = None
+        self._runtime_report: AudioCodesRuntimeReport | None = None
 
     def __call__(
         self,
@@ -100,19 +267,113 @@ class WarmAudioCodesEncoder:
             rendered_codes.append([[int(value) for value in row] for row in audio_codes.tolist()])
         return rendered_codes
 
-    def _ensure_tokenizer(self, tokenizer_model: str) -> _QwenTokenizerProtocol:
+    def describe(self, tokenizer_model: str) -> AudioCodesRuntimeReport:
+        """Return the observed runtime posture for the requested tokenizer model."""
+        self._ensure_tokenizer(tokenizer_model)
+        if self._runtime_report is None:
+            raise RuntimeError("Audio-codes runtime report was not initialized.")
+        return self._runtime_report
+
+    def _ensure_tokenizer(self, tokenizer_model: str) -> _ConfiguredQwenTokenizerProtocol:
         """Load the Qwen tokenizer once per finalization process."""
         if self._tokenizer is not None and self._tokenizer_model == tokenizer_model:
             return self._tokenizer
+        import torch
         from qwen_tts import Qwen3TTSTokenizer
 
-        tokenizer: _QwenTokenizerProtocol = Qwen3TTSTokenizer.from_pretrained(tokenizer_model)
+        if self._runtime_request.require_gpu and not torch.cuda.is_available():
+            raise RuntimeError(
+                "Governed audio-codes finalization requires `torch.cuda.is_available()` to be true."
+            )
+
+        flash_attn_importable = importlib.util.find_spec("flash_attn") is not None
+        if self._runtime_request.require_flash_attn and not flash_attn_importable:
+            raise RuntimeError(
+                "Governed audio-codes finalization requires `flash_attn` inside the runtime."
+            )
+
+        tokenizer: _ConfiguredQwenTokenizerProtocol = Qwen3TTSTokenizer.from_pretrained(
+            tokenizer_model,
+            dtype=_runtime_request_dtype(self._runtime_request),
+            attn_implementation=self._runtime_request.attn_implementation,
+        )
+        if self._runtime_request.require_gpu:
+            target_device = torch.device(self._runtime_request.device)
+            tokenizer.model = tokenizer.model.to(
+                device=target_device,
+                dtype=_runtime_request_dtype(self._runtime_request),
+            )
+            tokenizer.device = target_device
+            observed_device = str(_first_model_parameter(tokenizer.model).device)
+            if not observed_device.startswith("cuda"):
+                raise RuntimeError(
+                    "Governed audio-codes finalization expected the tokenizer model on GPU, "
+                    f"but observed `{observed_device}`."
+                )
+        first_parameter = _first_model_parameter(tokenizer.model)
+        self._runtime_report = AudioCodesRuntimeReport(
+            runtime_kind=self._runtime_request.runtime_kind,
+            tokenizer_model=tokenizer_model,
+            requested_device=self._runtime_request.device,
+            observed_device=str(first_parameter.device),
+            requested_dtype=self._runtime_request.dtype,
+            observed_dtype=str(first_parameter.dtype),
+            requested_attn_implementation=self._runtime_request.attn_implementation,
+            observed_attn_implementation=tokenizer.model.config._attn_implementation,
+            require_gpu=self._runtime_request.require_gpu,
+            require_flash_attn=self._runtime_request.require_flash_attn,
+            torch_cuda_available=bool(torch.cuda.is_available()),
+            torch_hip_version=None if torch.version.hip is None else str(torch.version.hip),
+            flash_attn_importable=flash_attn_importable,
+            flash_attn_version=_package_version("flash-attn"),
+        )
         self._tokenizer_model = tokenizer_model
         self._tokenizer = tokenizer
         return tokenizer
 
 
-_DEFAULT_WARM_AUDIO_CODES_ENCODER = WarmAudioCodesEncoder()
+_DEFAULT_GOVERNED_GPU_AUDIO_CODES_ENCODER = WarmAudioCodesEncoder(
+    DEFAULT_GOVERNED_GPU_AUDIO_CODES_RUNTIME
+)
+_DEFAULT_CPU_AUDIO_CODES_ENCODER = WarmAudioCodesEncoder(DEFAULT_CPU_AUDIO_CODES_RUNTIME)
+
+
+def encode_audio_codes_with_governed_gpu_runtime(
+    *,
+    tokenizer_model: str,
+    audio_paths: list[Path],
+) -> list[list[list[int]]]:
+    """Generate Qwen `audio_codes` with the governed GPU-backed tokenizer runtime."""
+    return _DEFAULT_GOVERNED_GPU_AUDIO_CODES_ENCODER(
+        tokenizer_model=tokenizer_model,
+        audio_paths=audio_paths,
+    )
+
+
+def describe_governed_audio_codes_runtime(tokenizer_model: str) -> AudioCodesRuntimeReport:
+    """Return one machine-readable report describing the governed tokenizer runtime."""
+    return _DEFAULT_GOVERNED_GPU_AUDIO_CODES_ENCODER.describe(tokenizer_model)
+
+
+def build_audio_codes_encoder(
+    runtime_settings: Task103AudioCodesRuntimeSettings,
+    *,
+    fallback_encoder: AudioCodesEncoderProtocol,
+) -> AudioCodesEncoderProtocol:
+    """Build one encoder for the requested runtime settings.
+
+    When no explicit runtime override is requested, preserve the supplied
+    fallback encoder so existing local/test call paths stay stable.
+    """
+    if (
+        runtime_settings.device_map is None
+        and runtime_settings.dtype is None
+        and runtime_settings.attn_implementation is None
+        and not runtime_settings.require_gpu
+    ):
+        return fallback_encoder
+    runtime_request = audio_codes_runtime_request_from_settings(runtime_settings)
+    return WarmAudioCodesEncoder(runtime_request)
 
 
 def encode_audio_codes(
@@ -121,7 +382,7 @@ def encode_audio_codes(
     audio_paths: list[Path],
 ) -> list[list[list[int]]]:
     """Generate Qwen `audio_codes` for one bounded audio-path chunk."""
-    return _DEFAULT_WARM_AUDIO_CODES_ENCODER(
+    return _DEFAULT_CPU_AUDIO_CODES_ENCODER(
         tokenizer_model=tokenizer_model,
         audio_paths=audio_paths,
     )

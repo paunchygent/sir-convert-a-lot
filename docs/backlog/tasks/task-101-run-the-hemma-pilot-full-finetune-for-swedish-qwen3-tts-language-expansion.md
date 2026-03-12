@@ -55,6 +55,14 @@ and capture deterministic runtime and memory evidence.
     - `assemble` final manifests/report only after validated batch shards exist
   - bounded `finalize-batch` execution now runs inside the governed Qwen
     Task 100/101 image rather than the host PDM environment
+  - the canonical governed batch-finalization runtime is now also explicitly
+    GPU-backed for `audio_codes` generation
+    - `Qwen3TTSTokenizer` is initialized on `cuda:0`
+    - governed dtype is `bfloat16`
+    - governed attention posture is `flash_attention_2`
+    - the canonical Task 101 batch runtime now fails closed instead of
+      silently continuing on CPU when that tokenizer posture cannot be
+      established
   - that batch runtime reuses the canonical fixed in-container HF cache
     contract:
     - `HF_HOME=/cache/huggingface`
@@ -68,6 +76,7 @@ and capture deterministic runtime and memory evidence.
     - `task101_pilot_bundle_events.jsonl`
     - `task101_pilot_bundle_status.json`
     - `task101_pilot_bundle_runtime.json`
+    - `task101_pilot_bundle_audio_codes_runtime.json`
     - `reports/batches/<family>/batch-xxxxx.runtime.json`
   - validated batch reuse now fails closed on legacy host-generated shards
     that do not carry the governed runtime fingerprint
