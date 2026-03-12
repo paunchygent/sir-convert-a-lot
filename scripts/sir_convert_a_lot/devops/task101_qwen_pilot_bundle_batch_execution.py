@@ -15,6 +15,7 @@ Relationships:
 
 from __future__ import annotations
 
+import gc
 import shutil
 import time
 from dataclasses import dataclass
@@ -64,12 +65,17 @@ Task101BatchRowSignature = tuple[str, str, str, str, str, str, str]
 class Task101AudioCodesChunkSummary:
     """Timing summary for one Task 101 audio-code flush chunk."""
 
+    leaf_chunk_count: int
     chunk_row_count: int
+    min_effective_chunk_row_count: int | None
+    max_effective_chunk_row_count: int | None
     encode_call_seconds: float
     preload_seconds: float | None
     feature_extract_seconds: float | None
     model_encode_seconds: float | None
     render_seconds: float | None
+    oom_retry_count: int
+    oom_retry_seconds: float
     write_seconds: float
     total_seconds: float
 
@@ -80,11 +86,15 @@ class Task101AudioCodesBatchSummary:
 
     chunk_count: int
     encoded_row_count: int
+    min_effective_chunk_row_count: int | None
+    max_effective_chunk_row_count: int | None
     encode_call_seconds: float
     preload_seconds: float | None
     feature_extract_seconds: float | None
     model_encode_seconds: float | None
     render_seconds: float | None
+    oom_retry_count: int
+    oom_retry_seconds: float
     write_seconds: float
     chunk_total_seconds: float
     batch_total_seconds: float
@@ -556,15 +566,72 @@ def _flush_audio_codes_chunk(
     """Encode one bounded raw chunk and append batch-local raw/prepared rows."""
     if not raw_rows:
         return Task101AudioCodesChunkSummary(
+            leaf_chunk_count=0,
             chunk_row_count=0,
+            min_effective_chunk_row_count=None,
+            max_effective_chunk_row_count=None,
             encode_call_seconds=0.0,
             preload_seconds=None,
             feature_extract_seconds=None,
             model_encode_seconds=None,
             render_seconds=None,
+            oom_retry_count=0,
+            oom_retry_seconds=0.0,
             write_seconds=0.0,
             total_seconds=0.0,
         )
+    encode_started_at = time.perf_counter()
+    try:
+        return _encode_and_write_audio_codes_chunk(
+            output_root=output_root,
+            raw_writer=raw_writer,
+            prepared_writer=prepared_writer,
+            raw_rows=raw_rows,
+            encode_audio_codes_fn=encode_audio_codes_fn,
+            tokenizer_model=tokenizer_model,
+        )
+    except RuntimeError as exc:
+        failed_attempt_seconds = time.perf_counter() - encode_started_at
+        if not _is_audio_codes_out_of_memory_error(exc) or len(raw_rows) <= 1:
+            raise
+        _release_audio_codes_gpu_memory()
+        split_index = max(1, len(raw_rows) // 2)
+        leading_rows = list(raw_rows[:split_index])
+        trailing_rows = list(raw_rows[split_index:])
+        leading_summary = _flush_audio_codes_chunk(
+            output_root=output_root,
+            raw_writer=raw_writer,
+            prepared_writer=prepared_writer,
+            raw_rows=leading_rows,
+            encode_audio_codes_fn=encode_audio_codes_fn,
+            tokenizer_model=tokenizer_model,
+        )
+        trailing_summary = _flush_audio_codes_chunk(
+            output_root=output_root,
+            raw_writer=raw_writer,
+            prepared_writer=prepared_writer,
+            raw_rows=trailing_rows,
+            encode_audio_codes_fn=encode_audio_codes_fn,
+            tokenizer_model=tokenizer_model,
+        )
+        raw_rows.clear()
+        return _combine_audio_codes_chunk_summaries(
+            [leading_summary, trailing_summary],
+            extra_oom_retry_count=1,
+            extra_oom_retry_seconds=failed_attempt_seconds,
+        )
+
+
+def _encode_and_write_audio_codes_chunk(
+    *,
+    output_root: Path,
+    raw_writer: JsonlAtomicWriter,
+    prepared_writer: JsonlAtomicWriter,
+    raw_rows: list[RawManifestRow],
+    encode_audio_codes_fn: AudioCodesEncoderProtocol,
+    tokenizer_model: str,
+) -> Task101AudioCodesChunkSummary:
+    """Encode and write one chunk when no recursive backoff is needed."""
     encode_started_at = time.perf_counter()
     audio_codes_list = encode_audio_codes_fn(
         tokenizer_model=tokenizer_model,
@@ -590,9 +657,13 @@ def _flush_audio_codes_chunk(
         )
         prepared_count += 1
     write_seconds = time.perf_counter() - write_started_at
+    chunk_row_count = prepared_count
     raw_rows.clear()
     return Task101AudioCodesChunkSummary(
-        chunk_row_count=prepared_count,
+        leaf_chunk_count=1,
+        chunk_row_count=chunk_row_count,
+        min_effective_chunk_row_count=chunk_row_count,
+        max_effective_chunk_row_count=chunk_row_count,
         encode_call_seconds=encode_call_seconds,
         preload_seconds=None if encoder_timing is None else encoder_timing.preload_seconds,
         feature_extract_seconds=(
@@ -602,6 +673,8 @@ def _flush_audio_codes_chunk(
             None if encoder_timing is None else encoder_timing.model_encode_seconds
         ),
         render_seconds=None if encoder_timing is None else encoder_timing.render_seconds,
+        oom_retry_count=0,
+        oom_retry_seconds=0.0,
         write_seconds=write_seconds,
         total_seconds=encode_call_seconds + write_seconds,
     )
@@ -613,26 +686,41 @@ def _summarize_audio_codes_batch_timings(
     batch_total_seconds: float,
 ) -> Task101AudioCodesBatchSummary:
     """Aggregate one finalized batch's audio-code timings into machine-readable totals."""
-
-    def _sum_optional(values: list[float | None]) -> float | None:
-        rendered_values = [value for value in values if value is not None]
-        if not rendered_values:
-            return None
-        return float(sum(rendered_values))
-
     chunk_total_seconds = float(sum(chunk.total_seconds for chunk in chunk_summaries))
+    min_effective_chunk_row_counts = [
+        chunk.min_effective_chunk_row_count
+        for chunk in chunk_summaries
+        if chunk.min_effective_chunk_row_count is not None
+    ]
+    max_effective_chunk_row_counts = [
+        chunk.max_effective_chunk_row_count
+        for chunk in chunk_summaries
+        if chunk.max_effective_chunk_row_count is not None
+    ]
     return Task101AudioCodesBatchSummary(
-        chunk_count=len(chunk_summaries),
+        chunk_count=sum(chunk.leaf_chunk_count for chunk in chunk_summaries),
         encoded_row_count=sum(chunk.chunk_row_count for chunk in chunk_summaries),
+        min_effective_chunk_row_count=(
+            None if not min_effective_chunk_row_counts else min(min_effective_chunk_row_counts)
+        ),
+        max_effective_chunk_row_count=(
+            None if not max_effective_chunk_row_counts else max(max_effective_chunk_row_counts)
+        ),
         encode_call_seconds=float(sum(chunk.encode_call_seconds for chunk in chunk_summaries)),
-        preload_seconds=_sum_optional([chunk.preload_seconds for chunk in chunk_summaries]),
-        feature_extract_seconds=_sum_optional(
+        preload_seconds=_sum_optional_chunk_values(
+            [chunk.preload_seconds for chunk in chunk_summaries]
+        ),
+        feature_extract_seconds=_sum_optional_chunk_values(
             [chunk.feature_extract_seconds for chunk in chunk_summaries]
         ),
-        model_encode_seconds=_sum_optional(
+        model_encode_seconds=_sum_optional_chunk_values(
             [chunk.model_encode_seconds for chunk in chunk_summaries]
         ),
-        render_seconds=_sum_optional([chunk.render_seconds for chunk in chunk_summaries]),
+        render_seconds=_sum_optional_chunk_values(
+            [chunk.render_seconds for chunk in chunk_summaries]
+        ),
+        oom_retry_count=sum(chunk.oom_retry_count for chunk in chunk_summaries),
+        oom_retry_seconds=float(sum(chunk.oom_retry_seconds for chunk in chunk_summaries)),
         write_seconds=float(sum(chunk.write_seconds for chunk in chunk_summaries)),
         chunk_total_seconds=chunk_total_seconds,
         batch_total_seconds=batch_total_seconds,
@@ -651,12 +739,101 @@ def _batch_timing_summary_payload(
         "audio_codes_encode_call_seconds": summary.encode_call_seconds,
         "audio_codes_encoded_row_count": summary.encoded_row_count,
         "audio_codes_feature_extract_seconds": summary.feature_extract_seconds,
+        "audio_codes_max_effective_chunk_row_count": summary.max_effective_chunk_row_count,
+        "audio_codes_min_effective_chunk_row_count": summary.min_effective_chunk_row_count,
         "audio_codes_model_encode_seconds": summary.model_encode_seconds,
         "audio_codes_non_audio_seconds": summary.non_audio_codes_seconds,
+        "audio_codes_oom_retry_count": summary.oom_retry_count,
+        "audio_codes_oom_retry_seconds": summary.oom_retry_seconds,
         "audio_codes_preload_seconds": summary.preload_seconds,
         "audio_codes_render_seconds": summary.render_seconds,
         "audio_codes_write_seconds": summary.write_seconds,
     }
+
+
+def _combine_audio_codes_chunk_summaries(
+    chunk_summaries: list[Task101AudioCodesChunkSummary],
+    *,
+    extra_oom_retry_count: int = 0,
+    extra_oom_retry_seconds: float = 0.0,
+) -> Task101AudioCodesChunkSummary:
+    """Combine one or more chunk summaries into one aggregate summary."""
+    min_effective_chunk_row_counts = [
+        chunk.min_effective_chunk_row_count
+        for chunk in chunk_summaries
+        if chunk.min_effective_chunk_row_count is not None
+    ]
+    max_effective_chunk_row_counts = [
+        chunk.max_effective_chunk_row_count
+        for chunk in chunk_summaries
+        if chunk.max_effective_chunk_row_count is not None
+    ]
+    return Task101AudioCodesChunkSummary(
+        leaf_chunk_count=sum(chunk.leaf_chunk_count for chunk in chunk_summaries),
+        chunk_row_count=sum(chunk.chunk_row_count for chunk in chunk_summaries),
+        min_effective_chunk_row_count=(
+            None if not min_effective_chunk_row_counts else min(min_effective_chunk_row_counts)
+        ),
+        max_effective_chunk_row_count=(
+            None if not max_effective_chunk_row_counts else max(max_effective_chunk_row_counts)
+        ),
+        encode_call_seconds=float(sum(chunk.encode_call_seconds for chunk in chunk_summaries)),
+        preload_seconds=_sum_optional_chunk_values(
+            [chunk.preload_seconds for chunk in chunk_summaries]
+        ),
+        feature_extract_seconds=_sum_optional_chunk_values(
+            [chunk.feature_extract_seconds for chunk in chunk_summaries]
+        ),
+        model_encode_seconds=_sum_optional_chunk_values(
+            [chunk.model_encode_seconds for chunk in chunk_summaries]
+        ),
+        render_seconds=_sum_optional_chunk_values(
+            [chunk.render_seconds for chunk in chunk_summaries]
+        ),
+        oom_retry_count=(
+            sum(chunk.oom_retry_count for chunk in chunk_summaries) + extra_oom_retry_count
+        ),
+        oom_retry_seconds=(
+            float(sum(chunk.oom_retry_seconds for chunk in chunk_summaries))
+            + extra_oom_retry_seconds
+        ),
+        write_seconds=float(sum(chunk.write_seconds for chunk in chunk_summaries)),
+        total_seconds=(
+            float(sum(chunk.total_seconds for chunk in chunk_summaries))
+            + extra_oom_retry_seconds
+        ),
+    )
+
+
+def _sum_optional_chunk_values(values: list[float | None]) -> float | None:
+    """Sum one optional timing list when at least one value is present."""
+    rendered_values = [value for value in values if value is not None]
+    if not rendered_values:
+        return None
+    return float(sum(rendered_values))
+
+
+def _is_audio_codes_out_of_memory_error(exc: RuntimeError) -> bool:
+    """Return whether the raised runtime error is an audio-code OOM failure."""
+    message = str(exc).lower()
+    if "out of memory" in message:
+        return True
+    try:
+        import torch
+    except ImportError:
+        return False
+    return isinstance(exc, torch.OutOfMemoryError)
+
+
+def _release_audio_codes_gpu_memory() -> None:
+    """Best-effort GPU memory release after one chunk-level OOM retry trigger."""
+    gc.collect()
+    try:
+        import torch
+    except ImportError:
+        return
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 def _validate_prepared_manifest_payload_paths(

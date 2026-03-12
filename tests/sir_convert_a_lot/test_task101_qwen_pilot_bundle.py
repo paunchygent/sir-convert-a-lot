@@ -419,6 +419,54 @@ def test_build_task101_pilot_bundle_records_batch_timing_summary(
     assert non_audio_seconds >= 0.0
 
 
+def test_build_task101_pilot_bundle_splits_oversized_audio_code_chunks_after_oom(
+    tmp_path: Path,
+) -> None:
+    """Chunk-level OOM retries should split the work and still finish the batch."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=4, dev_row_count=1)
+    output_root = tmp_path / "pilot-bundle"
+
+    def _encode_with_chunk_oom(
+        *,
+        tokenizer_model: str,
+        audio_paths: list[Path],
+    ) -> list[list[list[int]]]:
+        del tokenizer_model
+        if len(audio_paths) > 2:
+            raise RuntimeError("HIP out of memory while encoding audio codes")
+        return [[[index, len(audio_paths)]] for index, _ in enumerate(audio_paths)]
+
+    build_task101_pilot_bundle(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=4,
+        audio_codes_chunk_size=4,
+        container_batch_span=1,
+        encode_audio_codes_fn=_encode_with_chunk_oom,
+        repo_root=_repo_root(),
+        run_batch_fn=_run_batch_in_process,
+    )
+
+    completed_payload = next(
+        payload
+        for payload in _read_event_payloads(output_root)
+        if payload["event"] == "batch_completed"
+        and payload["manifest_family"] == "swedish_pilot_train"
+    )
+
+    assert completed_payload["audio_codes_chunk_count"] == 2
+    assert completed_payload["audio_codes_min_effective_chunk_row_count"] == 2
+    assert completed_payload["audio_codes_max_effective_chunk_row_count"] == 2
+    assert completed_payload["audio_codes_oom_retry_count"] == 1
+    oom_retry_seconds = completed_payload["audio_codes_oom_retry_seconds"]
+    assert isinstance(oom_retry_seconds, float)
+    assert oom_retry_seconds >= 0.0
+
+
 def test_build_task101_pilot_bundle_groups_contiguous_batches_into_one_container_launch(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
