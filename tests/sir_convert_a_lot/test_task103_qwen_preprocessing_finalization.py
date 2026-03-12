@@ -16,13 +16,16 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
+from typing import cast
 
+import numpy as np
 import pytest
 import torch
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
     AudioCodesRuntimeRequest,
     WarmAudioCodesEncoder,
+    _load_audio_arrays_for_tokenizer,
 )
 
 
@@ -78,6 +81,8 @@ class _FakeTokenizer:
     def __init__(self) -> None:
         self.model = _FakeModel()
         self.device: object = torch.device("cpu")
+        self.feature_extractor = SimpleNamespace(sampling_rate=24_000)
+        self.last_encode_inputs: list[object] | None = None
 
     @classmethod
     def from_pretrained(
@@ -94,16 +99,17 @@ class _FakeTokenizer:
 
     def encode(
         self,
-        audio_paths: list[str],
+        audio_paths: list[object],
         *,
         sr: int,
     ) -> object:
         """Return one encoded-audio payload per requested path."""
         assert sr == 24_000
+        self.last_encode_inputs = audio_paths
         return SimpleNamespace(
             audio_codes=[
-                _FakeAudioCodesTensor([[index, len(path)]])
-                for index, path in enumerate(audio_paths)
+                _FakeAudioCodesTensor([[index, len(audio_paths)]])
+                for index, _ in enumerate(audio_paths)
             ]
         )
 
@@ -171,6 +177,13 @@ def test_governed_audio_codes_runtime_uses_requested_gpu_settings(
         "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization._package_version",
         lambda package_name: "2.8.3" if package_name == "flash-attn" else None,
     )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization._load_audio_arrays_for_tokenizer",
+        lambda *, audio_paths, target_sample_rate: [
+            np.asarray([float(index), float(target_sample_rate)], dtype=np.float32)
+            for index, _ in enumerate(audio_paths)
+        ],
+    )
 
     encoder = WarmAudioCodesEncoder(_runtime_request())
 
@@ -186,9 +199,61 @@ def test_governed_audio_codes_runtime_uses_requested_gpu_settings(
     )
     assert _FakeTokenizer.last_call["dtype"] == torch.bfloat16
     assert _FakeTokenizer.last_call["attn_implementation"] == "flash_attention_2"
-    assert codes == [[[0, len("/tmp/a.wav")]], [[1, len("/tmp/longer-b.wav")]]]
+    assert codes == [[[0, 2]], [[1, 2]]]
     assert report.observed_device == "cuda:0"
     assert report.observed_dtype == "torch.bfloat16"
     assert report.observed_attn_implementation == "flash_attention_2"
     assert report.flash_attn_importable is True
     assert report.flash_attn_version == "2.8.3"
+
+
+def test_governed_audio_codes_runtime_preloads_waveforms_before_encode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The governed runtime should pass waveform arrays instead of file paths."""
+    _install_fake_qwen_tts(monkeypatch)
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization.importlib.util.find_spec",
+        lambda name: object() if name == "flash_attn" else None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization._load_audio_arrays_for_tokenizer",
+        lambda *, audio_paths, target_sample_rate: [
+            np.asarray([float(index), float(target_sample_rate)], dtype=np.float32)
+            for index, _ in enumerate(audio_paths)
+        ],
+    )
+
+    encoder = WarmAudioCodesEncoder(_runtime_request())
+
+    encoder(
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        audio_paths=[Path("/tmp/a.wav"), Path("/tmp/b.wav")],
+    )
+
+    assert _FakeTokenizer.last_call is not None
+    tokenizer = cast(_FakeTokenizer | None, encoder._tokenizer)
+    assert tokenizer is not None
+    assert tokenizer.last_encode_inputs is not None
+    assert all(isinstance(item, np.ndarray) for item in tokenizer.last_encode_inputs)
+
+
+def test_load_audio_arrays_for_tokenizer_uses_parallel_loader_results() -> None:
+    """Audio array preloading should preserve order across the bounded chunk."""
+    audio_paths = [Path("/tmp/a.wav"), Path("/tmp/b.wav"), Path("/tmp/c.wav")]
+
+    arrays = _load_audio_arrays_for_tokenizer(
+        audio_paths=audio_paths,
+        target_sample_rate=24_000,
+        loader=lambda path, target_sample_rate: np.asarray(
+            [len(path.as_posix()), target_sample_rate],
+            dtype=np.float32,
+        ),
+    )
+
+    assert [array.tolist() for array in arrays] == [
+        [10.0, 24_000.0],
+        [10.0, 24_000.0],
+        [10.0, 24_000.0],
+    ]

@@ -16,13 +16,18 @@ from __future__ import annotations
 
 import importlib.metadata
 import importlib.util
+import os
 import shutil
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from math import ceil
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, TypeAlias
+
+import numpy as np
+import numpy.typing as npt
 
 from scripts.sir_convert_a_lot.devops.task103_qwen_audio_codes_runtime import (
     DEFAULT_GOVERNED_ATTN_IMPLEMENTATION,
@@ -62,31 +67,46 @@ class AudioCodesEncoderProtocol(Protocol):
         """Encode one bounded chunk of audio paths into Qwen audio codes."""
 
 
-class _TensorLikeProtocol(Protocol):
-    """Tensor-like object that can render to nested Python lists."""
+WaveformArray: TypeAlias = npt.NDArray[np.float32]
 
-    def tolist(self) -> list[list[int | float]]:
-        """Render the tensor-like value into nested Python lists."""
+
+class _AudioCodesTensorProtocol(Protocol):
+    """Audio-code tensor-like object that can render to nested integer lists."""
+
+    def tolist(self) -> list[list[int]]:
+        """Render the audio-code tensor into nested integer lists."""
 
 
 class _EncodedAudioCodesProtocol(Protocol):
     """Minimal encode result surface returned by the Qwen tokenizer."""
 
     @property
-    def audio_codes(self) -> Sequence[_TensorLikeProtocol]:
+    def audio_codes(self) -> Sequence[_AudioCodesTensorProtocol]:
         """Return the encoded audio-code tensors."""
 
 
 class _QwenTokenizerProtocol(Protocol):
     """Minimal Qwen tokenizer surface used by finalization."""
 
+    @property
+    def feature_extractor(self) -> "_FeatureExtractorProtocol":
+        """Return the feature extractor used to determine tokenizer sample rate."""
+
     def encode(
         self,
-        audio_paths: list[str],
+        audio_paths: list[WaveformArray],
         *,
         sr: int,
     ) -> _EncodedAudioCodesProtocol:
         """Encode one audio-path batch into Qwen audio codes."""
+
+
+class _FeatureExtractorProtocol(Protocol):
+    """Minimal feature-extractor surface used for tokenizer sample-rate access."""
+
+    @property
+    def sampling_rate(self) -> int | float:
+        """Return the sample rate expected by the tokenizer feature extractor."""
 
 
 class _TensorParameterProtocol(Protocol):
@@ -261,10 +281,15 @@ class WarmAudioCodesEncoder:
     ) -> list[list[list[int]]]:
         """Generate Qwen `audio_codes` for one bounded audio-path chunk."""
         tokenizer = self._ensure_tokenizer(tokenizer_model)
+        target_sample_rate = int(tokenizer.feature_extractor.sampling_rate)
+        waveforms = _load_audio_arrays_for_tokenizer(
+            audio_paths=audio_paths,
+            target_sample_rate=target_sample_rate,
+        )
         rendered_codes: list[list[list[int]]] = []
-        encoded = tokenizer.encode([path.as_posix() for path in audio_paths], sr=24_000)
+        encoded = tokenizer.encode(waveforms, sr=target_sample_rate)
         for audio_codes in encoded.audio_codes:
-            rendered_codes.append([[int(value) for value in row] for row in audio_codes.tolist()])
+            rendered_codes.append(audio_codes.tolist())
         return rendered_codes
 
     def describe(self, tokenizer_model: str) -> AudioCodesRuntimeReport:
@@ -386,6 +411,49 @@ def encode_audio_codes(
         tokenizer_model=tokenizer_model,
         audio_paths=audio_paths,
     )
+
+
+def _load_audio_arrays_for_tokenizer(
+    *,
+    audio_paths: list[Path],
+    target_sample_rate: int,
+    loader: Callable[[Path, int], WaveformArray] | None = None,
+) -> list[WaveformArray]:
+    """Load one bounded audio chunk into arrays before tokenizer feature extraction."""
+    if not audio_paths:
+        return []
+    effective_loader = loader or _load_audio_array
+    max_workers = min(len(audio_paths), max(1, min(8, os.cpu_count() or 1)))
+    if max_workers <= 1:
+        return [effective_loader(path, target_sample_rate) for path in audio_paths]
+
+    def _load_path(path: Path) -> WaveformArray:
+        """Load one path at the requested tokenizer sample rate."""
+        return effective_loader(path, target_sample_rate)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        return list(executor.map(_load_path, audio_paths))
+
+
+def _load_audio_array(path: Path, target_sample_rate: int) -> WaveformArray:
+    """Load one waveform quickly, resampling only when the source rate differs."""
+    import librosa
+    import soundfile as sf
+
+    waveform, source_sample_rate = sf.read(
+        path,
+        dtype="float32",
+        always_2d=False,
+    )
+    if isinstance(waveform, np.ndarray) and waveform.ndim > 1:
+        waveform = np.mean(waveform, axis=-1)
+    if int(source_sample_rate) != target_sample_rate:
+        waveform = librosa.resample(
+            y=np.asarray(waveform, dtype=np.float32),
+            orig_sr=int(source_sample_rate),
+            target_sr=target_sample_rate,
+        )
+    return np.asarray(waveform, dtype=np.float32)
 
 
 def _curated_row_from_spool(

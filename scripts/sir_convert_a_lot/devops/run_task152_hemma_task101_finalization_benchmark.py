@@ -175,14 +175,12 @@ def _selected_family_rows(
         )
     if (
         selected_rows
-        and render_task101_spool_row_key(selected_rows[0])
-        != selected_batches[0].first_row_key
+        and render_task101_spool_row_key(selected_rows[0]) != selected_batches[0].first_row_key
     ):
         raise ValueError("Selected Task 152 benchmark rows did not preserve the first source row.")
     if (
         selected_rows
-        and render_task101_spool_row_key(selected_rows[-1])
-        != selected_batches[-1].last_row_key
+        and render_task101_spool_row_key(selected_rows[-1]) != selected_batches[-1].last_row_key
     ):
         raise ValueError("Selected Task 152 benchmark rows did not preserve the last source row.")
     return source_plan, selected_rows

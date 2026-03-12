@@ -1,9 +1,9 @@
 ---
-id: 'task-152-optimize-task101-gpu-bundle-finalization-throughput-and-benchmark-on-hemma'
-title: 'optimize task101 gpu bundle finalization throughput and benchmark on hemma'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-152-optimize-task101-gpu-bundle-finalization-throughput-and-benchmark-on-hemma
+title: optimize task101 gpu bundle finalization throughput and benchmark on hemma
+type: task
+status: in_progress
+priority: high
 created: '2026-03-12'
 last_updated: '2026-03-12'
 related:
@@ -23,6 +23,7 @@ labels:
   - throughput
   - benchmark
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

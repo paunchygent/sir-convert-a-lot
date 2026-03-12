@@ -63,12 +63,8 @@ def test_prepare_benchmark_root_copies_only_selected_source_batch_rows(tmp_path:
     )
 
     selected_rows = list(iter_spool_rows(benchmark_root))
-    train_rows = [
-        row for row in selected_rows if "swedish_pilot_train" in row.manifest_targets
-    ]
-    eval_rows = [
-        row for row in selected_rows if "swedish_checkpoint_dev" in row.manifest_targets
-    ]
+    train_rows = [row for row in selected_rows if "swedish_pilot_train" in row.manifest_targets]
+    eval_rows = [row for row in selected_rows if "swedish_checkpoint_dev" in row.manifest_targets]
     assert len(train_rows) == 1
     assert train_rows[0].dataset_row_id == "train-row-3"
     assert len(eval_rows) == 2
