@@ -43,6 +43,7 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
     AudioCodesEncoderProtocol,
+    reset_audio_codes_encoder_after_failure,
     take_audio_codes_chunk_timing_for_encoder,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
@@ -594,6 +595,7 @@ def _flush_audio_codes_chunk(
         failed_attempt_seconds = time.perf_counter() - encode_started_at
         if not _is_audio_codes_out_of_memory_error(exc) or len(raw_rows) <= 1:
             raise
+        reset_audio_codes_encoder_after_failure(encode_audio_codes_fn)
         _release_audio_codes_gpu_memory()
         split_index = max(1, len(raw_rows) // 2)
         leading_rows = list(raw_rows[:split_index])

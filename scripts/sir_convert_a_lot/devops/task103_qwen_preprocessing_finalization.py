@@ -397,6 +397,13 @@ class WarmAudioCodesEncoder:
         self._last_chunk_timing = None
         return timing
 
+    def reset(self) -> None:
+        """Drop the cached tokenizer so the next call reinitializes cleanly."""
+        self._tokenizer_model = None
+        self._tokenizer = None
+        self._runtime_report = None
+        self._last_chunk_timing = None
+
     def _ensure_tokenizer(self, tokenizer_model: str) -> _ConfiguredQwenTokenizerProtocol:
         """Load the Qwen tokenizer once per finalization process."""
         if self._tokenizer is not None and self._tokenizer_model == tokenizer_model:
@@ -532,6 +539,20 @@ def take_audio_codes_chunk_timing_for_encoder(
     if encoder is encode_audio_codes:
         return take_cpu_audio_codes_chunk_timing()
     return None
+
+
+def reset_audio_codes_encoder_after_failure(
+    encoder: AudioCodesEncoderProtocol,
+) -> None:
+    """Reset one known audio-code encoder after a failed chunk attempt."""
+    if isinstance(encoder, WarmAudioCodesEncoder):
+        encoder.reset()
+        return
+    if encoder is encode_audio_codes_with_governed_gpu_runtime:
+        _DEFAULT_GOVERNED_GPU_AUDIO_CODES_ENCODER.reset()
+        return
+    if encoder is encode_audio_codes:
+        _DEFAULT_CPU_AUDIO_CODES_ENCODER.reset()
 
 
 def _load_audio_arrays_for_tokenizer(
