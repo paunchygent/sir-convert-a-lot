@@ -19,7 +19,7 @@ import json
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Sequence
 
 from scripts.sir_convert_a_lot.devops.run_task109_hemma_qwen_containerized_preprocessing import (
     DEFAULT_HF_CACHE,
@@ -220,6 +220,23 @@ def task101_pilot_bundle_batch_runtime_path(
     )
 
 
+def _gpu_device_group_ids() -> list[str]:
+    """Return unique numeric group ids required for Hemma GPU device access."""
+    candidate_paths = [Path("/dev/kfd")]
+    dri_root = Path("/dev/dri")
+    if dri_root.exists():
+        candidate_paths.extend(sorted(dri_root.glob("card*")))
+        candidate_paths.extend(sorted(dri_root.glob("renderD*")))
+    group_ids: list[str] = []
+    for candidate in candidate_paths:
+        if not candidate.exists():
+            continue
+        group_id = str(os.stat(candidate).st_gid)
+        if group_id not in group_ids:
+            group_ids.append(group_id)
+    return group_ids
+
+
 def write_task101_pilot_bundle_runtime_fingerprint(
     output_root: Path,
     fingerprint: Task101PilotBundleRuntimeFingerprint,
@@ -334,55 +351,69 @@ def build_containerized_task101_pilot_bundle_batch_command(
     hf_mount: MountResolution,
     triton_mount: MountResolution,
     output_root_mount: MountResolution,
+    host_uid: int | None = None,
+    host_gid: int | None = None,
+    gpu_group_ids: Sequence[str] | None = None,
 ) -> list[str]:
     """Build the Docker command for one containerized Task 101 finalization batch."""
-    return [
+    effective_host_uid = os.getuid() if host_uid is None else host_uid
+    effective_host_gid = os.getgid() if host_gid is None else host_gid
+    run_args = [
         "run",
         "--rm",
+        "--user",
+        f"{effective_host_uid}:{effective_host_gid}",
         "--device",
         "/dev/kfd",
         "--device",
         "/dev/dri",
-        "--ipc=host",
-        "--cap-add=SYS_PTRACE",
-        "--security-opt",
-        "seccomp=unconfined",
-        "-e",
-        "HF_HUB_DISABLE_XET=1",
-        "-e",
-        f"HF_HOME={CONTAINER_HF_HOME}",
-        "-e",
-        f"HUGGINGFACE_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
-        "-e",
-        f"TORCH_HOME={CONTAINER_TORCH_HOME}",
-        "-e",
-        f"TRITON_CACHE_DIR={CONTAINER_TRITON_CACHE_DIR}",
-        "-v",
-        f"{repo_root.as_posix()}:/app",
-        "-v",
-        f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
-        "-v",
-        f"{triton_mount.effective_root.as_posix()}:{CONTAINER_TRITON_CACHE_DIR}",
-        "-v",
-        f"{output_root_mount.effective_root.as_posix()}:{output_root.as_posix()}",
-        "--workdir",
-        "/app",
-        "--entrypoint",
-        "python",
-        image,
-        "-m",
-        DEFAULT_ENTRY_MODULE,
-        "--output-root",
-        output_root.as_posix(),
-        "--manifest-family",
-        manifest_family,
-        "--batch-index",
-        str(batch_index),
-        "--batch-count",
-        str(batch_count),
-        "--audio-codes-chunk-size",
-        str(audio_codes_chunk_size),
     ]
+    for group_id in gpu_group_ids or _gpu_device_group_ids():
+        run_args.extend(["--group-add", group_id])
+    run_args.extend(
+        [
+            "--ipc=host",
+            "--cap-add=SYS_PTRACE",
+            "--security-opt",
+            "seccomp=unconfined",
+            "-e",
+            "HF_HUB_DISABLE_XET=1",
+            "-e",
+            f"HF_HOME={CONTAINER_HF_HOME}",
+            "-e",
+            f"HUGGINGFACE_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
+            "-e",
+            f"TORCH_HOME={CONTAINER_TORCH_HOME}",
+            "-e",
+            f"TRITON_CACHE_DIR={CONTAINER_TRITON_CACHE_DIR}",
+            "-v",
+            f"{repo_root.as_posix()}:/app",
+            "-v",
+            f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
+            "-v",
+            f"{triton_mount.effective_root.as_posix()}:{CONTAINER_TRITON_CACHE_DIR}",
+            "-v",
+            f"{output_root_mount.effective_root.as_posix()}:{output_root.as_posix()}",
+            "--workdir",
+            "/app",
+            "--entrypoint",
+            "python",
+            image,
+            "-m",
+            DEFAULT_ENTRY_MODULE,
+            "--output-root",
+            output_root.as_posix(),
+            "--manifest-family",
+            manifest_family,
+            "--batch-index",
+            str(batch_index),
+            "--batch-count",
+            str(batch_count),
+            "--audio-codes-chunk-size",
+            str(audio_codes_chunk_size),
+        ]
+    )
+    return run_args
 
 
 def run_containerized_task101_pilot_bundle_batch(

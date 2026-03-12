@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -72,8 +73,16 @@ def test_build_containerized_task101_batch_command_uses_fixed_hf_cache_root() ->
         hf_mount=hf_mount,
         triton_mount=triton_mount,
         output_root_mount=output_root_mount,
+        host_uid=1000,
+        host_gid=1001,
+        gpu_group_ids=["44", "109"],
     )
 
+    assert "--user" in command
+    assert "1000:1001" in command
+    assert command.count("--group-add") == 2
+    assert "44" in command
+    assert "109" in command
     assert "HF_HOME=/cache/huggingface" in command
     assert "HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub" in command
     assert "TORCH_HOME=/cache/huggingface/torch" in command
@@ -227,6 +236,10 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
             used_home_mount=True,
         ),
     )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime._gpu_device_group_ids",
+        lambda: ["44", "109"],
+    )
     fingerprint = Task101PilotBundleRuntimeFingerprint(
         runtime_kind="task101_qwen_pilot_bundle_containerized_batch_v1",
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
@@ -263,6 +276,11 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
     assert runtime_path.is_file()
     assert result == fingerprint
     assert observed_command[0] == "run"
+    assert "--user" in observed_command
+    assert f"{os.getuid()}:{os.getgid()}" in observed_command
+    assert observed_command.count("--group-add") == 2
+    assert "44" in observed_command
+    assert "109" in observed_command
     assert "--device" in observed_command
     assert "swedish_checkpoint_dev" in observed_command
     assert any("batch_container_launch" in line for line in emitted)
