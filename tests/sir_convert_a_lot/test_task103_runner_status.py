@@ -48,7 +48,10 @@ def _build_run_context(tmp_path: Path) -> Task103RunContext:
 
 def _load_status_payload(run_root: Path) -> dict[str, object]:
     """Load the persisted status payload for one run root."""
-    return json.loads((run_root / "status.json").read_text(encoding="utf-8"))
+    payload = json.loads((run_root / "status.json").read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise AssertionError("Expected persisted Task 103 status payload to be a JSON object.")
+    return {str(key): value for key, value in payload.items()}
 
 
 def test_task103_run_status_reporter_writes_allocation_failure_and_completion(

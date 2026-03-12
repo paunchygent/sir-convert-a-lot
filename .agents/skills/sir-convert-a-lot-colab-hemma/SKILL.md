@@ -46,16 +46,16 @@ debugging slower.
      training, artifact generation, or the notebook source tree.
    - `Colab-only lane`: Colab is disposable compute, but the notebook still
      orchestrates committed repo commands.
-2. Decide where repo edits belong.
+1. Decide where repo edits belong.
    - If `Hemma-backed lane`, edit in the Hemma repo clone and push from Hemma.
    - If purely local planning/docs work with no Hemma execution dependency,
      local edits are acceptable.
-3. Keep notebooks thin.
+1. Keep notebooks thin.
    - The notebook may install deps, define paths, and invoke committed CLI or
      module surfaces.
    - Do not move archive resolution, row selection, or preprocessing logic into
      notebook-only cells.
-4. Sync in the safe direction.
+1. Sync in the safe direction.
    - For Hemma-backed work: edit on Hemma, commit on Hemma, push from Hemma,
      then pull locally if a local clone needs the result.
    - For local-only docs or exploratory notes: commit locally only if Hemma is

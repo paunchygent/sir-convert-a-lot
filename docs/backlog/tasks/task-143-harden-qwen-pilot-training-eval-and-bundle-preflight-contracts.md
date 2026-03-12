@@ -1,9 +1,9 @@
 ---
-id: 'task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts'
-title: 'Harden qwen pilot training eval and bundle preflight contracts'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts
+title: Harden qwen pilot training eval and bundle preflight contracts
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -15,6 +15,7 @@ related:
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels: []
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -81,21 +82,21 @@ to matter before the first canonical Task 101 pilot launch.
 
 - [x] Relocation-safe Task 101 pilot-bundle materialization.
 - [x] Fail-closed Task 101 launch preflight that validates bundle-local
-      manifest paths, `audio`, and `ref_audio` artifacts.
+  manifest paths, `audio`, and `ref_audio` artifacts.
 - [x] Detached Task 101 runtime/probe metadata that records both train and
-      held-out eval manifest inputs.
+  held-out eval manifest inputs.
 - [x] Focused tests covering the new contract.
 
 ## Acceptance Criteria
 
 - [x] The Task 101 pilot-bundle builder works from a copied or restored frozen
-      pilot root without depending on stale absolute ledger paths.
+  pilot root without depending on stale absolute ledger paths.
 - [x] Task 101 launch fails before container start if any prepared-manifest row
-      points at a missing bundle-local `audio` or `ref_audio` artifact.
+  points at a missing bundle-local `audio` or `ref_audio` artifact.
 - [x] Detached Task 101 launch metadata, status, and report artifacts all
-      record the held-out eval manifest path used for the pilot contract.
+  record the held-out eval manifest path used for the pilot contract.
 - [x] The runtime is explicit that upstream Qwen training remains train-only;
-      no fake in-training eval claim is introduced.
+  no fake in-training eval claim is introduced.
 
 ## Validation
 

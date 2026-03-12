@@ -1,9 +1,9 @@
 ---
-id: 'task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels'
-title: 'Profile the Qwen finetuning dataloader and decide whether to precompute ref mels'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels
+title: Profile the Qwen finetuning dataloader and decide whether to precompute ref mels
+type: task
+status: proposed
+priority: high
 created: '2026-03-09'
 last_updated: '2026-03-09'
 related:
@@ -19,6 +19,7 @@ labels:
   - profiling
   - preprocessing
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -98,21 +99,21 @@ bottleneck on Hemma.
 ## Deliverables
 
 - [ ] Bounded Hemma or reproducible local profiling evidence for the current
-      dataloader path.
+  dataloader path.
 - [ ] A written recommendation on whether precomputing `ref_mel` is justified.
 - [ ] If precompute is justified, a concrete follow-up implementation plan that
-      names the affected Task 103 artifacts and contracts.
+  names the affected Task 103 artifacts and contracts.
 
 ## Acceptance Criteria
 
 - [ ] The task records real timing/profiling evidence rather than intuition.
 - [ ] The decision explicitly covers GPU starvation risk, CPU cost, and storage
-      impact.
+  impact.
 - [ ] The result clearly says one of:
   - keep current runtime mel extraction,
   - implement Task 103 precompute in a later PR.
 - [ ] The runbook/reference docs are updated if the recommendation changes the
-      planned architecture.
+  planned architecture.
 
 ## Validation
 

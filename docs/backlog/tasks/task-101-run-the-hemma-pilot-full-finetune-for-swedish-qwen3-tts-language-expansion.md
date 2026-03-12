@@ -5,7 +5,7 @@ type: task
 status: active
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-11'
+last_updated: '2026-03-12'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
@@ -16,6 +16,10 @@ related:
   - docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md
   - docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md
   - docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md
+  - docs/backlog/tasks/task-144-harden-task-101-bundle-against-unreadable-frozen-freeze-summary.md
+  - docs/backlog/tasks/task-145-repair-hemma-kernel-package-drift-and-disable-auto-applied-tailscale-updates.md
+  - docs/backlog/tasks/task-146-normalize-frozen-qwen-pilot-root-permissions-for-bundle-reads.md
+  - docs/backlog/tasks/task-147-fail-closed-task101-pilot-bundle-builds-on-insufficient-scratch-capacity.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -39,6 +43,12 @@ and capture deterministic runtime and memory evidence.
   training bundle materialized from the frozen pilot root owned by `T140`.
 - Materialize that deterministic bundle with:
   - `pdm run run-hemma -- pdm run task-101-pilot-bundle build`
+  - treat the frozen `--source-root` as immutable input; the builder writes
+    only to the new output root and can fall back to the canonical readable
+    ownership ledgers when the freeze summary file itself is unreadable
+  - the builder now fails closed before writing any partial output when the
+    target filesystem does not have enough free space for the retained bundle
+    payload plus safety headroom
 - Use the detached committed Task 101 runner surface:
   - `pdm run run-hemma -- pdm run task-101-pilot launch`
 - Treat the generic promoted Task 103 corpus view as insufficient for this run.
@@ -53,6 +63,14 @@ and capture deterministic runtime and memory evidence.
   held-out scoring.
 - The canonical frozen pilot ownership source is:
   - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
+- Accepted bounded-pilot input for the next canonical Task 101 launch:
+  - current frozen `swedish_pilot_train`
+  - `8445` high-trust train rows
+  - `29` speakers
+  - about `54.996` hours total
+  - held-out `swedish_checkpoint_dev=8` rows
+  - this is intentionally accepted as the current bounded pilot even though it
+    exceeds the original `24` to `36` hour planning target
 - Capture:
   - clean idle GPU baseline,
   - startup/runtime metadata,
@@ -63,6 +81,9 @@ and capture deterministic runtime and memory evidence.
 - Keep the lane focused on pilot proof, not maximal dataset hours.
 - Do not launch Task 101 against ad hoc row subsets or a manually edited
   manifest. `T142` must materialize the deterministic pilot bundle first.
+- Do not claim that Swedish quality is proven from the current held-out split
+  alone. The current `8 + 8 + 8` eval/control rows remain enough for smoke and
+  contract checks, not for a confident “Swedish works” conclusion.
 
 ## Deliverables
 
@@ -76,7 +97,7 @@ and capture deterministic runtime and memory evidence.
 - [ ] The pilot uses the `1.7B` base model, not the `0.6B` lane.
 - [ ] The run reaches a real Swedish full-finetune optimizer step with `AdamW`.
 - [ ] The run consumes the deterministic pilot bundle projected from the frozen
-      pilot root rather than the generic promoted preprocessing root.
+  pilot root rather than the generic promoted preprocessing root.
 - [ ] The evidence records actual VRAM usage and headroom on the R9700.
 - [ ] The task explicitly states whether Hemma is good enough for the bounded
   pilot and what should move to Colab H100 for scale.

@@ -1,9 +1,9 @@
 ---
-id: 'task-120-flatten-backlog-review-docs-into-single-file-review-artifacts'
-title: 'Flatten backlog review docs into single-file review artifacts'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-120-flatten-backlog-review-docs-into-single-file-review-artifacts
+title: Flatten backlog review docs into single-file review artifacts
+type: task
+status: proposed
+priority: high
 created: '2026-03-09'
 last_updated: '2026-03-09'
 related:
@@ -15,6 +15,7 @@ labels:
   - reviews
   - validation
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -61,11 +62,11 @@ be one backlog artifact.
 ## Acceptance Criteria
 
 - [ ] `pdm run new-review "<title>"` creates one flat markdown file, not a
-      folder with `README.md`.
+  folder with `README.md`.
 - [ ] `pdm run validate-tasks` enforces the flat review location consistently.
 - [ ] Existing reviews validate without folder-specific exceptions.
 - [ ] `pdm run validate-docs` and `pdm run index-tasks ...` both pass after the
-      migration.
+  migration.
 
 ## Validation
 

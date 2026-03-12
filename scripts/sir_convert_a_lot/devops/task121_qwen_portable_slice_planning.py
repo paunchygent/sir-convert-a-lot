@@ -233,8 +233,7 @@ def required_files_for_source_records(
         archive_path_name = source_audio_locator.path.name
         if not archive_path_name.endswith(".tar.gz"):
             raise ValueError(
-                "Portable bundle planning currently supports only archive-backed "
-                "RixVox rows."
+                "Portable bundle planning currently supports only archive-backed RixVox rows."
             )
         filename = f"data/{source_record.source_split}/{archive_path_name}"
         required_files_by_filename.setdefault(

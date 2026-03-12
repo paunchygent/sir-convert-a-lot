@@ -1,9 +1,9 @@
 ---
-id: 'task-131-add-backward-compatible-resume-index-for-drive-backed-qwen-row-processing'
-title: 'Add backward-compatible resume index for Drive-backed Qwen row-processing'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-131-add-backward-compatible-resume-index-for-drive-backed-qwen-row-processing
+title: Add backward-compatible resume index for Drive-backed Qwen row-processing
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -20,6 +20,7 @@ labels:
   - reliability
   - throughput
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -55,40 +56,40 @@ multi-session slices once several thousand rows are already complete.
 ## Deliverables
 
 - [x] One persisted resume-index artifact inside the Task 103 run root, scoped
-      to the same durable storage surface as the spool tree.
+  to the same durable storage surface as the spool tree.
 - [x] One backward-compatible resume path that:
   - uses the index when it exists,
   - rebuilds it from spool JSON when it does not,
   - falls back safely if the index is missing or invalid.
 - [x] One simple process-local index writer that is safe under the existing
-      Task 103 thread pool.
+  Task 103 thread pool.
 - [x] One committed helper surface to rebuild or validate the resume index for
-      existing run roots.
+  existing run roots.
 - [x] One docs update that records the new resume contract for persistent
-      Hemma and Colab slices.
+  Hemma and Colab slices.
 
 ## Acceptance Criteria
 
 - [x] Resume no longer requires a full spool JSON tree scan for new runs that
-      already maintain the index.
+  already maintain the index.
 - [x] Older run roots with only canonical spool JSON can generate the index on
-      first resume without losing compatibility.
+  first resume without losing compatibility.
 - [x] The resume index is stored inside the same run root as the spool tree, so
-      Drive-backed Colab sessions read the persisted index directly from Drive.
+  Drive-backed Colab sessions read the persisted index directly from Drive.
 - [x] Task 103 continues to treat spool JSON rows as canonical truth; the index
-      is an accelerator, not a replacement storage model.
+  is an accelerator, not a replacement storage model.
 - [x] A corrupt or partial index does not strand a run; the system can rebuild
-      from spool JSON deterministically.
+  from spool JSON deterministically.
 - [x] The implementation defines one bounded stale-index rule after crashes and
-      prevents duplicate expensive row work for rows whose canonical spool JSON
-      already exists.
+  prevents duplicate expensive row work for rows whose canonical spool JSON
+  already exists.
 - [x] Resume emits one clear progress/log surface for:
   - loading the index fast path, or
   - rebuilding the index from spool JSON.
 - [x] The new index path does not materially regress steady-state row
-      throughput for Drive-backed Colab runs.
+  throughput for Drive-backed Colab runs.
 - [x] The notebook remains a thin orchestrator around repo-owned commands and
-      gains the faster resume behavior without notebook-only logic.
+  gains the faster resume behavior without notebook-only logic.
 
 ## Proposed Design Notes
 

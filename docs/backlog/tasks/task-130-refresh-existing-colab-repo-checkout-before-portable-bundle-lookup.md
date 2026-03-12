@@ -1,9 +1,9 @@
 ---
-id: 'task-130-refresh-existing-colab-repo-checkout-before-portable-bundle-lookup'
-title: 'Refresh existing Colab repo checkout before portable bundle lookup'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-130-refresh-existing-colab-repo-checkout-before-portable-bundle-lookup
+title: Refresh existing Colab repo checkout before portable bundle lookup
+type: task
+status: proposed
+priority: high
 created: '2026-03-10'
 last_updated: '2026-03-10'
 related: []
@@ -13,6 +13,7 @@ labels:
   - notebook
   - reliability
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -39,10 +40,10 @@ not fail with a false missing-bundle error.
 ## Acceptance Criteria
 
 - [x] Re-entering the notebook from an already-cloned `/content/sir-convert-a-lot`
-      path performs `fetch` / `checkout main` / `pull --ff-only`.
+  path performs `fetch` / `checkout main` / `pull --ff-only`.
 - [x] A newly cloned repo still works without a second manual refresh step.
 - [x] The portable bundle lookup no longer fails simply because the Colab repo
-      clone predates the latest committed bundle.
+  clone predates the latest committed bundle.
 
 ## Checklist
 

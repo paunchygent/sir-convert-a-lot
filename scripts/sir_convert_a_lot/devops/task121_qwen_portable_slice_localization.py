@@ -268,9 +268,7 @@ def _required_file_from_payload(payload: object) -> PortableSliceRequiredFile:
     if not isinstance(filename, str):
         raise ValueError("Portable slice required-file payload is missing `filename`.")
     if not isinstance(local_relative_path, str):
-        raise ValueError(
-            "Portable slice required-file payload is missing `local_relative_path`."
-        )
+        raise ValueError("Portable slice required-file payload is missing `local_relative_path`.")
     if revision is not None and not isinstance(revision, str):
         raise ValueError("Portable slice required-file `revision` must be a string or null.")
     return PortableSliceRequiredFile(

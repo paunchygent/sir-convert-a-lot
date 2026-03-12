@@ -1,9 +1,9 @@
 ---
-id: 'task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101'
-title: 'Materialize frozen qwen pilot training bundle for task 101'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101
+title: Materialize frozen qwen pilot training bundle for task 101
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -21,6 +21,7 @@ labels:
   - dataset
   - training-bundle
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -124,24 +125,24 @@ three things line up operationally.
 
 - [x] Repo-owned surface that materializes the frozen pilot training bundle.
 - [x] Deterministic pilot bundle metadata/report written with the materialized
-      root.
+  root.
 - [x] Task 101 runner updated to consume the pilot bundle root canonically.
 - [x] Tests covering row ownership, manifest family projection, and reference
-      integrity.
+  integrity.
 
 ## Acceptance Criteria
 
 - [x] Task 101 has one canonical pilot bundle root derived from the frozen
-      pilot root and no longer points at the generic promoted corpus view.
+  pilot root and no longer points at the generic promoted corpus view.
 - [x] The materialized bundle contains only retained owned pilot rows and
-      excludes all frozen conflict rows.
+  excludes all frozen conflict rows.
 - [x] `swedish_pilot_train.prepared.jsonl` and
-      `swedish_checkpoint_dev.prepared.jsonl` are present and deterministic.
+  `swedish_checkpoint_dev.prepared.jsonl` are present and deterministic.
 - [x] Every retained manifest row points at bundle-local `audio` and
-      `ref_audio` artifacts that satisfy the existing Qwen preprocessing
-      contract.
+  `ref_audio` artifacts that satisfy the existing Qwen preprocessing
+  contract.
 - [x] The bundle writes machine-readable metadata sufficient for detached Task
-      101 launch review and future pilot reproducibility.
+  101 launch review and future pilot reproducibility.
 
 ## Validation
 

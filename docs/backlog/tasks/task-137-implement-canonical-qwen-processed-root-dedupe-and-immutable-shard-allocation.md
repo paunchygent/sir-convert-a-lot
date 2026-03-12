@@ -1,9 +1,9 @@
 ---
-id: 'task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation'
-title: 'Implement canonical qwen processed-root dedupe and immutable shard allocation'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation
+title: Implement canonical qwen processed-root dedupe and immutable shard allocation
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -28,10 +28,10 @@ preprocessing so the repo can:
 
 1. materialize one canonical deduplicated processed root from multiple run
    roots,
-2. cut the remaining source-selection universe into immutable `~5000`-row
+1. cut the remaining source-selection universe into immutable `~5000`-row
    shards,
-3. reserve shards through one assignment ledger, and
-4. issue future processing units only from shard ids, not freeform overlap-prone
+1. reserve shards through one assignment ledger, and
+1. issue future processing units only from shard ids, not freeform overlap-prone
    slice math.
 
 ## PR Scope
@@ -55,20 +55,20 @@ preprocessing so the repo can:
 - [x] Shard-assignment ledger implemented and tested.
 - [x] Task 121 shard-based processing-unit issuance implemented and tested.
 - [x] Canonical docs updated so shard-based issuance becomes the required
-      future path.
+  future path.
 
 ## Acceptance Criteria
 
 - [x] The dedupe CLI can build one canonical processed root from multiple run
-      roots without mutating the originals.
+  roots without mutating the originals.
 - [x] The dedupe CLI quarantines same-row conflicts instead of silently merging
-      them.
+  them.
 - [x] The shard registry emits immutable shard manifests for a completed
-      source-selection universe with a default target around `5000` rows.
+  source-selection universe with a default target around `5000` rows.
 - [x] The assignment ledger rejects overlapping shard reservations.
 - [x] Task 121 can issue one processing unit from shard ids only.
 - [x] Focused tests cover dedupe ownership, conflict quarantine, shard
-      immutability, and assignment rejection.
+  immutability, and assignment rejection.
 
 ## Checklist
 

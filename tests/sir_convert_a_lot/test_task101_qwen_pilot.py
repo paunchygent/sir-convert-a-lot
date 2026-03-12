@@ -239,8 +239,7 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
         repo_root="/home/paunchygent/apps/sir-convert-a-lot",
         run_root=run_root.as_posix(),
         pilot_bundle_root=(
-            "/srv/scratch/sir-convert-a-lot/build/reference/"
-            "qwen3-tts-swedish-task101-pilot-bundle"
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
         ),
         train_jsonl=(
             "/srv/scratch/sir-convert-a-lot/build/reference/"
@@ -319,7 +318,9 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
     assert status.pilot_report_found is True
     assert status.latest_checkpoint_found is True
     assert status.pilot_status is not None
-    assert status.pilot_status["eval_jsonl"].endswith("swedish_checkpoint_dev.prepared.jsonl")
+    eval_jsonl = status.pilot_status["eval_jsonl"]
+    assert isinstance(eval_jsonl, str)
+    assert eval_jsonl.endswith("swedish_checkpoint_dev.prepared.jsonl")
     assert status.pilot_report is not None
     assert status.pilot_report["upstream_trainer_uses_eval_manifest"] is False
     training_summary = status.pilot_report.get("training_summary")
@@ -450,8 +451,7 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
         repo_root="/home/paunchygent/apps/sir-convert-a-lot",
         run_root=source_run_root.as_posix(),
         pilot_bundle_root=(
-            "/srv/scratch/sir-convert-a-lot/build/reference/"
-            "qwen3-tts-swedish-task101-pilot-bundle"
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
         ),
         train_jsonl=(
             "/srv/scratch/sir-convert-a-lot/build/reference/"
@@ -592,8 +592,7 @@ def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) 
         repo_root="/home/paunchygent/apps/sir-convert-a-lot",
         run_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-prev",
         pilot_bundle_root=(
-            "/srv/scratch/sir-convert-a-lot/build/reference/"
-            "qwen3-tts-swedish-task101-pilot-bundle"
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
         ),
         train_jsonl=(
             "/srv/scratch/sir-convert-a-lot/build/reference/"

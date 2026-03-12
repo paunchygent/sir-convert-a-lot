@@ -1,9 +1,9 @@
 ---
-id: 'task-125-create-colab-and-hemma-workflow-skill-for-remote-first-qwen-preprocessing-iteration'
-title: 'Create Colab and Hemma workflow skill for remote-first Qwen preprocessing iteration'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-125-create-colab-and-hemma-workflow-skill-for-remote-first-qwen-preprocessing-iteration
+title: Create Colab and Hemma workflow skill for remote-first Qwen preprocessing iteration
+type: task
+status: completed
+priority: high
 created: '2026-03-10'
 last_updated: '2026-03-10'
 related:
@@ -16,6 +16,7 @@ labels:
   - colab
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -38,22 +39,22 @@ execution environment is Hemma-backed.
 ## Deliverables
 
 - [x] One repo-local skill that covers Colab orchestration and Hemma-backed
-      repo iteration.
+  repo iteration.
 - [x] One completed task doc describing the workflow rule and expected use.
 - [x] One repo docs/skill update that points future Qwen Colab work at the new
-      workflow rule.
+  workflow rule.
 - [x] One global-symlink registration step for future skill discovery.
 
 ## Acceptance Criteria
 
 - [x] Future sessions have one named skill to use for Colab notebook and
-      Hemma-backed workflow decisions.
+  Hemma-backed workflow decisions.
 - [x] The skill explicitly states that Hemma-backed execution lanes should be
-      edited, committed, and pushed from Hemma.
+  edited, committed, and pushed from Hemma.
 - [x] The skill keeps Colab positioned as an orchestrator around committed
-      repo-owned commands.
+  repo-owned commands.
 - [x] The skill is visible from the local repo and eligible for global skill
-      discovery.
+  discovery.
 
 ## Checklist
 

@@ -475,9 +475,9 @@ def test_task103_row_processing_resume_reuses_existing_spool_rows(
     assert heartbeats[-1].total_row_count == 2
     completed_row_index_rows = [
         json.loads(raw_line)
-        for raw_line in completed_row_keys_index_path(output_root).read_text(
-            encoding="utf-8"
-        ).splitlines()
+        for raw_line in completed_row_keys_index_path(output_root)
+        .read_text(encoding="utf-8")
+        .splitlines()
         if raw_line.strip() != ""
     ]
     assert len(completed_row_index_rows) == 2
@@ -553,9 +553,9 @@ def test_task103_row_processing_resume_rebuilds_missing_completed_row_index(
     assert transcribed_paths == ["repo-fixture-test-002.wav"]
     rebuilt_index_rows = [
         json.loads(raw_line)
-        for raw_line in completed_row_keys_index_path(output_root).read_text(
-            encoding="utf-8"
-        ).splitlines()
+        for raw_line in completed_row_keys_index_path(output_root)
+        .read_text(encoding="utf-8")
+        .splitlines()
         if raw_line.strip() != ""
     ]
     assert len(rebuilt_index_rows) == 2
@@ -616,9 +616,9 @@ def test_task103_row_processing_resume_self_heals_stale_completed_row_index(
     assert transcribed_paths == []
     healed_index_rows = [
         json.loads(raw_line)
-        for raw_line in completed_row_keys_index_path(output_root).read_text(
-            encoding="utf-8"
-        ).splitlines()
+        for raw_line in completed_row_keys_index_path(output_root)
+        .read_text(encoding="utf-8")
+        .splitlines()
         if raw_line.strip() != ""
     ]
     assert len(healed_index_rows) == 1
@@ -653,8 +653,7 @@ def test_task103_row_processing_resume_ignores_empty_crash_artifact_spool_rows(
     )
     output_root = workspace_root / "build/reference/qwen3-tts-swedish-corpus"
     corrupted_spool_path = (
-        output_root
-        / "spool/rows/repo_fixture_sv/fixture/speaker_test/repo-fixture-test-001.json"
+        output_root / "spool/rows/repo_fixture_sv/fixture/speaker_test/repo-fixture-test-001.json"
     )
     corrupted_spool_path.parent.mkdir(parents=True, exist_ok=True)
     corrupted_spool_path.write_text("", encoding="utf-8")
@@ -715,9 +714,7 @@ def test_task103_resume_index_helper_rebuild_and_validate(
     completed_row_keys_index_path(output_root).unlink()
     capsys.readouterr()
 
-    rebuild_exit_code = task103_resume_index_main(
-        ["rebuild", "--run-root", output_root.as_posix()]
-    )
+    rebuild_exit_code = task103_resume_index_main(["rebuild", "--run-root", output_root.as_posix()])
     rebuild_payload = json.loads(capsys.readouterr().out)
     assert rebuild_exit_code == 0
     assert rebuild_payload["command"] == "rebuild"

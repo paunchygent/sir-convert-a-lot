@@ -109,9 +109,7 @@ def load_completed_row_keys_from_index(output_root: Path) -> set[CompletedRowKey
         payload = json.loads(raw_line)
         if not isinstance(payload, dict):
             raise ValueError(f"Expected JSON object rows in completed-row index {index_path}.")
-        completed_row_keys.add(
-            _completed_row_key_payload_to_tuple(payload, path=index_path)
-        )
+        completed_row_keys.add(_completed_row_key_payload_to_tuple(payload, path=index_path))
     return completed_row_keys
 
 

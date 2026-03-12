@@ -1,9 +1,9 @@
 ---
-id: 'task-127-add-progress-logging-for-colab-portable-slice-staging-and-localization'
-title: 'Add progress logging for Colab portable-slice staging and localization'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-127-add-progress-logging-for-colab-portable-slice-staging-and-localization
+title: Add progress logging for Colab portable-slice staging and localization
+type: task
+status: completed
+priority: high
 created: '2026-03-10'
 last_updated: '2026-03-10'
 related:
@@ -16,6 +16,7 @@ labels:
   - notebook
   - observability
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

@@ -216,9 +216,7 @@ def _parse_args(argv: list[str] | None) -> Task103RunnerSettings:
             "Run row-processing and finalization first, then promote from reports."
         )
     if bool(args.resume_row_processing) and str(args.stage) != "row-processing":
-        raise SystemExit(
-            "`--resume-row-processing` is only valid for the `row-processing` stage."
-        )
+        raise SystemExit("`--resume-row-processing` is only valid for the `row-processing` stage.")
     return Task103RunnerSettings(
         preprocessing=Task103PreprocessingSettings(
             output_root=Path(args.output_root),

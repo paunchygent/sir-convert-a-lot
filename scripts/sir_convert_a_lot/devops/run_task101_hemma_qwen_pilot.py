@@ -423,8 +423,7 @@ def _ensure_pilot_bundle_exists(
     if missing_paths:
         rendered_paths = ", ".join(path.as_posix() for path in missing_paths)
         raise SystemExit(
-            "Task 101 pilot could not find the required pilot-bundle artifacts: "
-            f"{rendered_paths}."
+            f"Task 101 pilot could not find the required pilot-bundle artifacts: {rendered_paths}."
         )
     try:
         validate_task101_pilot_bundle_paths(
@@ -433,8 +432,7 @@ def _ensure_pilot_bundle_exists(
         )
     except ValueError as exc:
         raise SystemExit(
-            "Task 101 pilot bundle integrity check failed before launch.\n"
-            f"{exc}"
+            f"Task 101 pilot bundle integrity check failed before launch.\n{exc}"
         ) from exc
 
 

@@ -29,6 +29,7 @@ labels:
   - clean-break
   - prototype-to-prod
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

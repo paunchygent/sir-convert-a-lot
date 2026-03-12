@@ -1,9 +1,9 @@
 ---
-id: 'task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook'
-title: 'Synchronize qwen shard governance across Story 24, Epic 08, and runbook'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook
+title: Synchronize qwen shard governance across Story 24, Epic 08, and runbook
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -28,9 +28,9 @@ Close the documentation-governance drift left after `T137` so the owning story,
 epic, and runbook all expose the same canonical rule:
 
 1. future Qwen preprocessing work issuance must go through immutable shard ids,
-2. `plan-remaining-unique` is incident-recovery-only for already-issued
+1. `plan-remaining-unique` is incident-recovery-only for already-issued
    manifests, and
-3. Story 24 / Epic 08 must surface the `T134-T138` ownership and allocation
+1. Story 24 / Epic 08 must surface the `T134-T138` ownership and allocation
    hardening slices from their own entrypoints.
 
 ## PR Scope
@@ -52,11 +52,11 @@ epic, and runbook all expose the same canonical rule:
 ## Acceptance Criteria
 
 - [x] A future operator starting from Story 24 can discover the shard-governed
-      allocation model without reading `T137` first.
+  allocation model without reading `T137` first.
 - [x] A future operator starting from Epic 08 can discover the shard-governed
-      allocation model without reading `T137` first.
+  allocation model without reading `T137` first.
 - [x] `T137` states that future issuance must go through shard ids, with
-      recovery commands explicitly limited to already-issued-manifest salvage.
+  recovery commands explicitly limited to already-issued-manifest salvage.
 - [x] Touched canonical docs carry `2026-03-11` freshness metadata.
 
 ## Checklist

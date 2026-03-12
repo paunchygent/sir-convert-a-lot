@@ -1,9 +1,9 @@
 ---
-id: 'task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning'
-title: 'Define frozen qwen pilot dataset use for finetuning'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning
+title: Define frozen qwen pilot dataset use for finetuning
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -29,8 +29,8 @@ Define the canonical rule for how the frozen Qwen pilot dataset is used by the
 Task 101 fine-tuning lane so the repo has one unambiguous bridge between:
 
 1. frozen pilot ownership,
-2. Qwen-ready pilot manifests and references, and
-3. the bounded Hemma pilot full-finetune run.
+1. Qwen-ready pilot manifests and references, and
+1. the bounded Hemma pilot full-finetune run.
 
 ## PR Scope
 
@@ -50,17 +50,17 @@ Task 101 fine-tuning lane so the repo has one unambiguous bridge between:
 - [x] Story 25 updated with the frozen pilot dataset bridge.
 - [x] Runbook and reference docs updated with the pilot-use rule.
 - [x] Explicit follow-on implementation target named for pilot-bundle
-      materialization.
+  materialization.
 
 ## Acceptance Criteria
 
 - [x] The repo states one canonical pilot-owned source root for the next Task
-      101 run.
+  101 run.
 - [x] The repo states that pilot fine-tuning must consume Task 103-finalized
-      Qwen manifest families projected from the frozen pilot root, not ad hoc
-      row subsets.
+  Qwen manifest families projected from the frozen pilot root, not ad hoc
+  row subsets.
 - [x] The next implementation gap is explicit: materialize the frozen pilot
-      root into a deterministic Task 101 training bundle.
+  root into a deterministic Task 101 training bundle.
 
 ## Checklist
 

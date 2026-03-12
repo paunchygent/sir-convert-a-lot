@@ -1,9 +1,9 @@
 ---
-id: 'task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile'
-title: 'Activate the Colab H100 Qwen training lane with a CUDA Dockerfile'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile
+title: Activate the Colab H100 Qwen training lane with a CUDA Dockerfile
+type: task
+status: proposed
+priority: high
 created: '2026-03-09'
 last_updated: '2026-03-09'
 related:
@@ -19,6 +19,7 @@ labels:
   - cuda
   - docker
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -98,14 +99,14 @@ compromising the existing ROCm lane.
 - [ ] Dedicated Colab CUDA Dockerfile for Qwen training.
 - [ ] Updated runbook instructions for activating the Colab lane.
 - [ ] One bounded validation surface that proves the CUDA image boots the
-      patched Qwen training stack successfully.
+  patched Qwen training stack successfully.
 
 ## Acceptance Criteria
 
 - [ ] The Colab lane uses a dedicated CUDA image rather than the ROCm image.
 - [ ] The repo docs explain when to choose Hemma versus Colab.
 - [ ] The CUDA image keeps the same patched Qwen training code path unless a
-      documented CUDA-specific divergence is required.
+  documented CUDA-specific divergence is required.
 - [ ] The task records at least one reproducible bounded validation result.
 
 ## Validation

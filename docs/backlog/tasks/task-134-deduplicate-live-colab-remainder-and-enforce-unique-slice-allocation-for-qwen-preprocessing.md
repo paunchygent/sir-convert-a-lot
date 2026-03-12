@@ -1,9 +1,9 @@
 ---
-id: 'task-134-deduplicate-live-colab-remainder-and-enforce-unique-slice-allocation-for-qwen-preprocessing'
-title: 'Deduplicate live colab remainder and enforce unique slice allocation for qwen preprocessing'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-134-deduplicate-live-colab-remainder-and-enforce-unique-slice-allocation-for-qwen-preprocessing
+title: Deduplicate live colab remainder and enforce unique slice allocation for qwen preprocessing
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -48,23 +48,23 @@ Contain the live `task116`/`task129` overlap incident by:
 
 - [x] Task 121 exposes a repo-owned `dedupe-selected-source-records` command.
 - [x] Task 121 exposes a repo-owned guarded allocation command for future
-      unique-slice issuance.
+  unique-slice issuance.
 - [x] The guarded allocation path accepts already completed run roots and
-      already issued selected-source manifests as exclusion sources.
+  already issued selected-source manifests as exclusion sources.
 - [x] The live Colab recovery path and the new hard allocation rule are
-      documented in the canonical reference/runbook surfaces.
+  documented in the canonical reference/runbook surfaces.
 - [x] Focused regression tests cover both the live dedupe path and the future
-      guarded-allocation rule.
+  guarded-allocation rule.
 
 ## Acceptance Criteria
 
 - [x] Operators can produce one deduplicated remaining selected-source manifest
-      for the in-flight `task129` Colab lane without notebook-only logic.
+  for the in-flight `task129` Colab lane without notebook-only logic.
 - [x] The future guarded allocation path can carve one new slice from the
-      remaining source-selection universe after excluding already processed and
-      already reserved rows.
+  remaining source-selection universe after excluding already processed and
+  already reserved rows.
 - [x] Future incremental slice issuance has one documented canonical command
-      that is stricter than the original proof-only `plan` flow.
+  that is stricter than the original proof-only `plan` flow.
 - [x] Focused Task 121 tests pass for the new overlap and dedupe semantics.
 
 ## Checklist

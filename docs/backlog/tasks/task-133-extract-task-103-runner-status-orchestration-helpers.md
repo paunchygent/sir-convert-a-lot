@@ -1,9 +1,9 @@
 ---
-id: 'task-133-extract-task-103-runner-status-orchestration-helpers'
-title: 'Extract Task 103 runner status orchestration helpers'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-133-extract-task-103-runner-status-orchestration-helpers
+title: Extract Task 103 runner status orchestration helpers
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -17,6 +17,7 @@ labels:
   - modularity
   - orchestration
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -42,20 +43,20 @@ wiring in one module.
 
 - [x] One dedicated Task 103 runner-status helper module with module docstring.
 - [x] A slimmer public Task 103 runner that delegates lifecycle/status writes
-      to the helper.
+  to the helper.
 - [x] Direct focused tests for the extracted helper surface.
 - [x] Updated docs memory that records the extraction as the first production
-      follow-on after `T132`.
+  follow-on after `T132`.
 
 ## Acceptance Criteria
 
 - [x] Task 103 run-status and heartbeat writing has one clear module owner
-      outside the public CLI entrypoint.
+  outside the public CLI entrypoint.
 - [x] The public Task 103 runner is smaller and easier to read without behavior
-      change.
+  change.
 - [x] Focused tests cover the extracted helper API directly.
 - [x] Existing Task 103 runner behavior and persisted status contract remain
-      unchanged.
+  unchanged.
 
 ## Checklist
 

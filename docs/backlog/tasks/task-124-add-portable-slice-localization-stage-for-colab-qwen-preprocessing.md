@@ -1,9 +1,9 @@
 ---
-id: 'task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing'
-title: 'Add portable-slice localization stage for Colab Qwen preprocessing'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing
+title: Add portable-slice localization stage for Colab Qwen preprocessing
+type: task
+status: completed
+priority: high
 created: '2026-03-10'
 last_updated: '2026-03-10'
 related:
@@ -19,6 +19,7 @@ labels:
   - notebook
   - localization
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -48,30 +49,30 @@ tax on every attempt.
 ## Deliverables
 
 - [x] One repo-owned portable-slice localization command in the existing Task
-      121 CLI surface.
+  121 CLI surface.
 - [x] One persisted localized selected-source manifest and localized-audio tree
-      rooted under the portable slice directory.
+  rooted under the portable slice directory.
 - [x] One Colab notebook flow that runs:
   - required-file staging,
   - slice localization,
   - canonical Task 103 row-processing against the localized manifest.
 - [x] One docs update that records why the localization stage exists and why
-      the Colab worker mix moved from `4:1` to `8:2`.
+  the Colab worker mix moved from `4:1` to `8:2`.
 
 ## Acceptance Criteria
 
 - [x] Portable selected-source rows can be localized into plain local files
-      without notebook-only extraction logic.
+  without notebook-only extraction logic.
 - [x] The localization step persists one localized selected-source manifest
-      that Task 103 can consume directly.
+  that Task 103 can consume directly.
 - [x] Rerunning the Colab row-processing cell reuses the localized manifest and
-      localized audio files instead of repeating archive-member resolution.
+  localized audio files instead of repeating archive-member resolution.
 - [x] The notebook remains an orchestrator around repo-owned commands only.
 - [x] The Colab follow-on probe is configured for:
   - `row_worker_count=8`
   - `gpu_asr_worker_count=2`
 - [x] Task 103 row-processing resume semantics remain compatible with the
-      localized Colab lane.
+  localized Colab lane.
 
 ## Checklist
 

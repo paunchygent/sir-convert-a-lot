@@ -50,6 +50,7 @@ def test_build_detached_task108_command_drops_rm_and_adds_name() -> None:
         task103_run_root=None,
         task103_promote_on_success=False,
         task103_stage="row-processing",
+        resume_row_processing=False,
         task103_finalization_families=("swedish_smoke_train", "swedish_pilot_train"),
         dockerfile_path=Path("containers/qwen-finetune-hemma/Dockerfile"),
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",

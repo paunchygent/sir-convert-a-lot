@@ -1,9 +1,9 @@
 ---
-id: 'task-132-decompose-task103-test-surface-by-domain'
-title: 'Decompose Task 103 test surface by domain'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-132-decompose-task103-test-surface-by-domain
+title: Decompose Task 103 test surface by domain
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -18,6 +18,7 @@ labels:
   - modularity
   - srp
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -58,25 +59,25 @@ scoping less honest than the underlying code deserves.
 
 - [x] One shared Task 103 test-support module.
 - [x] One domain-focused test module for Task 103 runner / orchestration
-      behavior.
+  behavior.
 - [x] One domain-focused test module for preprocessing, row-processing, resume,
-      and finalization behavior.
+  and finalization behavior.
 - [x] One domain-focused test module for source adapters and staged-public-corpus
-      behavior.
+  behavior.
 - [x] One domain-focused test module for ASR runtime behavior.
 - [x] Updated docs memory that records the decomposition as the next
-      preprocessing-quality hardening step.
+  preprocessing-quality hardening step.
 
 ## Acceptance Criteria
 
 - [x] The old monolithic Task 103 test file is removed or reduced so the domain
-      decomposition is real rather than duplicated.
+  decomposition is real rather than duplicated.
 - [x] Each new test module has one clear dominant reason to change.
 - [x] Shared helpers live in one support module instead of being copy-pasted
-      across the new test files.
+  across the new test files.
 - [x] Focused Task 103 tests still pass after the split.
 - [x] The decomposition makes the next Task 103 production refactors safer
-      without changing user-facing preprocessing behavior.
+  without changing user-facing preprocessing behavior.
 
 ## Remaining Refactoring Goals
 

@@ -1,5 +1,122 @@
 # Session Handoff
 
+## Current Session Summary (2026-03-12)
+
+- Triaged the Hemma Task 101 incident in read-only mode first and separated it
+  into two tracks:
+  - repo-side Task 101 bundle access failure
+  - host-side interrupted `dpkg` / DKMS repair state
+- Verified the original Task 101 failure mode on Hemma:
+  - frozen pilot root:
+    `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
+  - `reports/canonical_processed_root_freeze.json` is `0600 root:root`
+  - readable ledgers still exist:
+    - `canonical_processed_root_owned_row_keys.jsonl`
+    - `canonical_processed_root_conflict_row_keys.jsonl`
+- Verified the current host package-manager state on Hemma:
+  - `sudo dpkg --audit` still reports unpacked/unconfigured `linux-*` and
+    `tailscale` packages
+  - `sudo apt-get check` still fails with interrupted `dpkg`
+  - `dkms status` is healthy for the running `6.14.0-37-generic` kernel
+  - system boot time is `2026-03-12 05:26`
+  - `sox` is still not installed on the host
+- Completed `T144` to harden the Task 101 pilot-bundle builder against
+  unreadable frozen freeze summaries:
+  - added a fallback in
+    `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py`
+    so unreadable `canonical_processed_root_freeze.json` now falls back to the
+    canonical readable owned/conflict ledgers and derives `conflict_row_count`
+    from the conflict ledger
+  - added regression coverage in
+    `tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
+  - documented the immutable source-root operator contract in:
+    - `docs/backlog/tasks/task-144-harden-task-101-bundle-against-unreadable-frozen-freeze-summary.md`
+    - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+    - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
+- Completed `T145` to repair the host-level Hemma package drift:
+  - disabled Tailscale auto-apply updates with `AutoUpdate.Apply=false`
+  - removed the stale GA `linux-generic` / `6.8.0-94` transaction that had
+    left `dpkg` interrupted since `2026-03-07`
+  - purged the remaining GA `6.8.0-90` kernel payload so only the HWE `6.14`
+    line remains installed
+  - verified:
+    - `dpkg --audit` clean
+    - `apt-get check` clean
+    - `uname -r` still `6.14.0-37-generic`
+    - `tailscale debug prefs` now reports `AutoUpdate.Apply=false`
+- Synced the Hemma repo clone forward so it includes the minimal `T144` pilot
+  bundle fallback patch without dragging the dirty local main worktree onto the
+  host:
+  - created a clean temporary worktree branch `codex/task101-hemma-sync`
+  - committed only the Task 101 bundle script, its regression test, and the
+    `T144` task doc
+  - pushed that branch and merged it on Hemma with a merge commit
+- Completed `T146` to normalize the current frozen pilot root permissions:
+  - normalized the immutable frozen source root to `644` files / `755`
+    directories so repo-context non-sudo reads no longer fail on spool/audio
+    artifacts
+  - verified the root no longer contains `0600` files
+- Re-ran the canonical Task 101 bundle build on Hemma after both fixes:
+  - attached retries advanced past the original permission blocker and reached
+    bundle finalization, proving the unreadable-freeze-summary and
+    frozen-root-permission issues were resolved
+  - a detached retry with explicit shell capture surfaced the current real
+    blocker:
+    `OSError: [Errno 28] No space left on device`
+- Verified the current live storage truth on Hemma:
+  - `/srv/scratch` is `458G` total and `100%` full
+  - `/srv/storage` still has about `3.5T` free
+  - `/srv/scratch` pressure is dominated by:
+    - `/srv/scratch/sir-convert-a-lot/build/runs` about `208G`
+    - `/srv/scratch/sir-convert-a-lot/cache` about `117G`
+    - `/srv/scratch/docker/data-root` about `84G`
+  - failed partial Task 101 bundle roots now also consume space:
+    - `20260312a` about `9.0G`
+    - `20260312d` about `9.0G`
+    - `20260312e2` about `1.7G`
+- Completed `T147` locally to add a permanent Task 101 preflight for this
+  condition:
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py` now
+    estimates retained bundle bytes plus headroom and raises `ENOSPC` before
+    writing any partial output when the target filesystem is too full
+  - added regression coverage in
+    `tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
+  - updated the Task 101 task doc, `T145`, `T146`, and the Qwen Hemma/Colab
+    runbook to record the verified storage root cause
+
+## Validation Evidence (2026-03-12)
+
+- `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py -q`
+- `pdm run python -m ruff check scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
+- `pdm run validate-tasks`
+- `pdm run validate-docs`
+- `pdm run run-hemma -- sudo -n tailscale set --auto-update=false --update-check=true`
+- `pdm run run-hemma -- sudo -n dpkg --remove --force-remove-reinstreq linux-generic linux-image-generic linux-headers-generic linux-image-6.8.0-94-generic linux-modules-6.8.0-94-generic linux-modules-extra-6.8.0-94-generic linux-tools-6.8.0-94 linux-tools-6.8.0-94-generic linux-headers-6.8.0-94-generic linux-headers-6.8.0-94`
+- `pdm run run-hemma -- sudo -n apt-get -f install -y`
+- `pdm run run-hemma -- sudo -n apt-get purge -y linux-image-6.8.0-90-generic linux-modules-6.8.0-90-generic linux-modules-extra-6.8.0-90-generic linux-headers-6.8.0-90 linux-headers-6.8.0-90-generic linux-image-6.8.0-94-generic linux-modules-6.8.0-94-generic linux-modules-extra-6.8.0-94-generic`
+- `pdm run run-hemma -- sudo -n dpkg --audit`
+- `pdm run run-hemma -- sudo -n apt-get check`
+- `pdm run run-hemma -- tailscale debug prefs`
+- `pdm run run-hemma -- git fetch origin codex/task101-hemma-sync`
+- `pdm run run-hemma -- git merge --no-ff origin/codex/task101-hemma-sync -m "Merge branch 'codex/task101-hemma-sync'"`
+- `pdm run run-hemma -- sudo -n find /srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a -type f -exec chmod 644 '{}' +`
+- `pdm run run-hemma -- sudo -n find /srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a -type d -exec chmod 755 '{}' +`
+- `pdm run run-hemma -- df -h /srv/scratch /srv/storage /`
+- `pdm run run-hemma -- /bin/bash -lc 'du -sh /srv/scratch/sir-convert-a-lot/cache /srv/scratch/sir-convert-a-lot/build /srv/scratch/docker/data-root'`
+
+## Next Session Goals (2026-03-12)
+
+- Reclaim `/srv/scratch` capacity safely before the next Task 101 retry.
+  - likely cleanup targets are the failed partial Task 101 bundle roots plus
+    stale hot artifacts that no longer need to stay on SSD
+  - do not delete anything without an explicit operator decision because these
+    are destructive cleanups
+- After scratch space is reclaimed, re-run the canonical non-sudo Task 101
+  pilot-bundle build to confirm the new preflight or the now-free filesystem
+  lets the build complete cleanly.
+- If the bundle materializes successfully after space recovery, continue with
+  the detached Task 101 pilot launch through the canonical runner.
+
 ## Current Session Summary (2026-03-10)
 
 - Completed the local `T124` throughput-hardening slice for portable Colab

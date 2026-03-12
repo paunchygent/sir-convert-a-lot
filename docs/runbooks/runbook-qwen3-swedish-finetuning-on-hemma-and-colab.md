@@ -4,7 +4,7 @@ id: RUN-qwen3-swedish-finetuning-on-hemma-and-colab
 title: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 status: active
 created: 2026-03-08
-updated: 2026-03-11
+updated: 2026-03-12
 owners:
   - platform
 system: hemma.hule.education
@@ -368,60 +368,88 @@ Colab validation.
 
 ## Current Corpus Reality
 
-The current promoted Task 103 corpus view is operationally valid but still a
-bounded proof slice rather than the intended bounded Hemma pilot corpus.
+The frozen pilot ownership root is now the canonical Task 101 input source:
 
-Current prepared manifest counts on Hemma:
+- `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
 
-- `swedish_smoke_train=52`
-- `swedish_pilot_train=52`
-- `swedish_scaleup_train=58`
-- `swedish_checkpoint_dev=8`
-- `swedish_final_test=8`
-- `swedish_waxholm_control=8`
+Current frozen-root counts:
 
-Current composition:
+- retained owned rows:
+  - `15748`
+- quarantined conflicts:
+  - `88`
+- admitted rows:
+  - `10351`
+- manifest-family rows:
+  - `swedish_smoke_train=8445`
+  - `swedish_pilot_train=8445`
+  - `swedish_scaleup_train=10327`
+  - `swedish_checkpoint_dev=8`
+  - `swedish_final_test=8`
+  - `swedish_waxholm_control=8`
 
-- train families are still `rixvox`-only
-- held-out quantitative families are still dominated by `fleurs`
-- the current train-side prepared rows are still effectively one-speaker
+Current accepted bounded-pilot shape for the next canonical Task 101 launch:
+
+- train family:
+  - `swedish_pilot_train`
+- train rows:
+  - `8445`
+- speakers:
+  - `29`
+- total duration:
+  - about `54.996` hours
+- average admitted clip duration:
+  - about `23.444s`
+- composition:
+  - `rixvox train` only
+  - `high_trust` only
+
+Held-out evaluation reality:
+
+- `swedish_checkpoint_dev`:
+  - `8` rows
+  - `3` speakers
+  - `fleurs_sv_se` only
+- `swedish_final_test`:
+  - `8` rows
+  - `3` speakers
+  - `fleurs_sv_se` only
+- `swedish_waxholm_control`:
+  - `8` rows
+  - `1` speaker
+  - `waxholm` only
 
 Interpretation:
 
-- the preprocessing/training/runtime stack is now proven
-- the current corpus is still too narrow to be treated as the real bounded
-  multi-speaker Hemma pilot target
-- the next operational move is corpus expansion first, not a larger training
-  run on the same narrow prepared slice
+- the preprocessing/training/runtime stack is now proven on a real
+  multi-speaker frozen pilot rather than only on the earlier `52`-row proof
+  slice
+- the current bounded pilot is intentionally accepted as larger than the
+  original `24` to `36` hour target because it is still `high_trust`,
+  `29`-speaker, and operationally reviewable through one frozen ownership root
+- the current held-out split remains sufficient for smoke, contract checks, and
+  post-training spot assessment only
+- do not treat the present `8 + 8 + 8` held-out/control rows as sufficient for
+  a confident “Swedish works” conclusion; expand held-out evaluation before any
+  such claim
 
 ## Next Corpus-Expansion Posture
 
-The next preprocessing effort should be aimed directly at the bounded Hemma
-pilot corpus target from `T102`, not at another tiny proof slice.
+The next data-facing move is no longer “grow a real pilot corpus first.” That
+goal is now satisfied by the frozen pilot root above.
 
 Chosen immediate direction:
 
-- expand staged `rixvox` train breadth first
-- launch detached `row-processing` only
-- use:
-  - `row_worker_count=4`
-  - `gpu_asr_worker_count=2`
-- use `2` hours as a health gate only
-- if healthy, let the same detached run continue into an `8` to `10` hour
-  window
-- do not auto-enter finalization after row-processing
+- materialize the deterministic Task 101 pilot bundle from the frozen pilot root
+- run the bounded Hemma Task 101 pilot from that bundle
+- expand held-out evaluation before making broader Swedish quality claims
 
-Initial bounded staging plan:
+Current data-governance focus after the bundle/pilot launch:
 
-- keep staged `train_0`
-- add `train_1` through `train_23`
-
-Reason:
-
-- the next corpus-expansion objective is to grow a real high-trust
-  multi-speaker `swedish_pilot_train`
-- staging more train breadth is more valuable right now than repeating
-  training on the current narrow proof slice
+- keep future training-row allocation on shard ids only
+- preserve the frozen pilot root as immutable owned truth
+- grow held-out evaluation breadth independently of the accepted pilot train
+  family
 
 ## Duration Policy Clarification
 
@@ -870,6 +898,22 @@ Canonical Task 106 acquisition surface:
 1. Run Task 101 as the first bounded Hemma pilot.
    - first materialize the deterministic pilot bundle:
      `pdm run run-hemma -- pdm run task-101-pilot-bundle build`
+   - operator contract:
+     - treat the frozen source root as immutable input
+     - the builder writes only to a new bundle output root on scratch
+     - if the freeze summary file is unreadable but the canonical owned/conflict
+       ledgers are readable, the builder resolves those ledgers directly rather
+       than requiring sudo
+     - if the target filesystem lacks enough free space for the retained bundle
+       payload plus safety headroom, the builder now fails closed before writing
+       partial output
+     - live Hemma evidence from `2026-03-12`:
+       - frozen pilot source root on `/srv/storage` is about `17G`
+       - retained Task 101 bundle payload is about `9-10G`
+       - `/srv/scratch` was at `458G / 458G` used, so the canonical retry
+         failed with `OSError: [Errno 28] No space left on device`
+       - reclaim scratch space or choose a different output root before the
+         next canonical bundle retry
    - canonical command:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
    - if the launch will build the image, the runner now prints an explicit

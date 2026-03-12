@@ -206,9 +206,7 @@ def test_task121_plan_remaining_unique_excludes_prior_allocations(tmp_path: Path
         exclude_row_keys_paths=[],
     )
 
-    planned_ids = {
-        row.dataset_row_id for row in load_portable_selected_source_records(output_root)
-    }
+    planned_ids = {row.dataset_row_id for row in load_portable_selected_source_records(output_root)}
     assert summary.remaining_train_row_count == 4
     assert summary.selected_row_count == 2
     assert summary.excluded_completed_row_count == 2
@@ -367,15 +365,11 @@ def test_task121_stage_required_files_for_portable_slice(tmp_path: Path, monkeyp
         cache_dir=tmp_path / "cache",
     )
 
-    assert staged_paths == [
-        tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
-    ]
+    assert staged_paths == [tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"]
     assert staged_paths[0].is_file()
 
 
-def test_task121_stage_required_files_emits_progress(
-    tmp_path: Path, monkeypatch, capsys
-) -> None:
+def test_task121_stage_required_files_emits_progress(tmp_path: Path, monkeypatch, capsys) -> None:
     """Portable slice staging should emit per-archive progress and elapsed timing."""
     slice_root = tmp_path / "slice"
     cached_archive_path = tmp_path / "cached/train_0.tar.gz"
@@ -454,9 +448,7 @@ def test_task121_localize_portable_slice_persists_plain_file_manifest(tmp_path: 
     staged_audio_path = tmp_path / "needed.wav"
     write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
 
-    staged_archive_path = (
-        tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
-    )
+    staged_archive_path = tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
     staged_archive_path.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(staged_archive_path, "w:gz") as archive:
         audio_bytes = staged_audio_path.read_bytes()
@@ -516,9 +508,7 @@ def test_task121_localize_portable_slice_emits_progress(tmp_path: Path, capsys) 
     staged_audio_path = tmp_path / "needed.wav"
     write_test_wav(staged_audio_path, sample_rate_hz=16_000, duration_seconds=0.5)
 
-    staged_archive_path = (
-        tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
-    )
+    staged_archive_path = tmp_path / "data_root/raw/kblab_rixvox/data/train/train_0.tar.gz"
     staged_archive_path.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(staged_archive_path, "w:gz") as archive:
         audio_bytes = staged_audio_path.read_bytes()

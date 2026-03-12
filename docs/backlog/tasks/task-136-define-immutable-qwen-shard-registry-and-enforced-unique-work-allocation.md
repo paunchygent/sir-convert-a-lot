@@ -1,9 +1,9 @@
 ---
-id: 'task-136-define-immutable-qwen-shard-registry-and-enforced-unique-work-allocation'
-title: 'Define immutable qwen shard registry and enforced unique work allocation'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-136-define-immutable-qwen-shard-registry-and-enforced-unique-work-allocation
+title: Define immutable qwen shard registry and enforced unique work allocation
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -121,11 +121,11 @@ This should behave like an append-only ledger:
 ## Planned Implementation Shape
 
 1. Build the canonical deduped processed root from current Hemma/Colab work.
-2. Introduce one shard-registry artifact family, likely under the Qwen build
+1. Introduce one shard-registry artifact family, likely under the Qwen build
    reference tree.
-3. Cut the remaining unprocessed universe into immutable `~5000`-row shards.
-4. Introduce one allocation ledger that can reserve shard ids for workers.
-5. Replace freeform Task 121 follow-on slice creation with shard-based
+1. Cut the remaining unprocessed universe into immutable `~5000`-row shards.
+1. Introduce one allocation ledger that can reserve shard ids for workers.
+1. Replace freeform Task 121 follow-on slice creation with shard-based
    processing-unit issuance.
 
 ## Non-Negotiables
@@ -142,17 +142,17 @@ This should behave like an append-only ledger:
 - [x] One enforced allocation rule that blocks overlapping work.
 - [x] One default shard-size policy around `5000` rows.
 - [x] One lineage model linking source-selection universe, shards, assignments,
-      run roots, and deduped processed roots.
+  run roots, and deduped processed roots.
 
 ## Acceptance Criteria
 
 - [x] The plan makes shard recreation forbidden after issuance.
 - [x] The plan makes future allocation shard-based rather than freeform
-      slice-based.
+  slice-based.
 - [x] The plan makes overlap rejection an inescapable gate, not operator
-      convention.
+  convention.
 - [x] The plan is specific enough to implement as follow-on repo tasks without
-      reopening the shard semantics.
+  reopening the shard semantics.
 
 ## Checklist
 

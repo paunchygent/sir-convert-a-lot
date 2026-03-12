@@ -39,9 +39,7 @@ def mark_stop_requested(stop_state: TrainingStopState, signal_number: int) -> No
 def install_training_stop_handlers(stop_state: TrainingStopState) -> None:
     """Install SIGINT/SIGTERM handlers from the main training thread only."""
     if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError(
-            "install_training_stop_handlers must run on the main training thread."
-        )
+        raise RuntimeError("install_training_stop_handlers must run on the main training thread.")
 
     def _handle_signal(signal_number: int, _frame: object | None) -> None:
         mark_stop_requested(stop_state, signal_number)

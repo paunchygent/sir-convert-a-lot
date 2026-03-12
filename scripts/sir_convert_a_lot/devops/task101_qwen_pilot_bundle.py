@@ -19,6 +19,7 @@ Relationships:
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 import shutil
@@ -63,6 +64,8 @@ DEFAULT_TRAIN_MANIFEST_FAMILY: ManifestFamily = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY: ManifestFamily = "swedish_checkpoint_dev"
 DEFAULT_TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
 DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
+DEFAULT_BUNDLE_FREE_SPACE_HEADROOM_BYTES = 1 * 1024 * 1024 * 1024
+DEFAULT_BUNDLE_FREE_SPACE_HEADROOM_RATIO = 0.10
 
 
 @dataclass(frozen=True)
@@ -120,6 +123,12 @@ def build_task101_pilot_bundle(
         source_root
     )
     owned_row_keys = load_row_key_records(owned_row_keys_path)
+    _ensure_bundle_output_capacity(
+        source_root=source_root,
+        output_root=output_root,
+        owned_row_keys=owned_row_keys,
+        selected_families=selected_families,
+    )
     copied_row_count = 0
 
     for spool_row in iter_spool_rows(source_root):
@@ -174,9 +183,7 @@ def build_task101_pilot_bundle(
     manifest_row_counts = _manifest_row_counts(output_root, selected_families)
     for family in selected_families:
         if manifest_row_counts[family] <= 0:
-            raise ValueError(
-                f"Task 101 pilot bundle is missing retained rows for `{family}`."
-            )
+            raise ValueError(f"Task 101 pilot bundle is missing retained rows for `{family}`.")
     speaker_counts = _speaker_counts(output_root, selected_families)
     summary = Task101PilotBundleSummary(
         source_root=source_root.as_posix(),
@@ -208,13 +215,107 @@ def _selected_manifest_families(
     return (train_manifest_family, eval_manifest_family)
 
 
+def _ensure_bundle_output_capacity(
+    *,
+    source_root: Path,
+    output_root: Path,
+    owned_row_keys: set[RowKey],
+    selected_families: tuple[ManifestFamily, ...],
+) -> None:
+    """Fail closed when the output filesystem cannot hold one full pilot bundle."""
+    required_bytes = _estimated_bundle_bytes(
+        source_root=source_root,
+        owned_row_keys=owned_row_keys,
+        selected_families=selected_families,
+    )
+    filesystem_path = _existing_output_parent(output_root)
+    available_bytes = _filesystem_free_bytes(filesystem_path)
+    required_with_headroom = required_bytes + _bundle_free_space_headroom(required_bytes)
+    if available_bytes >= required_with_headroom:
+        return
+    raise OSError(
+        errno.ENOSPC,
+        "Task 101 pilot bundle requires approximately "
+        f"{_render_gib(required_with_headroom)} free under "
+        f"`{filesystem_path.as_posix()}` but only "
+        f"{_render_gib(available_bytes)} is available. "
+        "Free space on the target filesystem or choose a different "
+        "`--output-root` before retrying.",
+        output_root.as_posix(),
+    )
+
+
+def _estimated_bundle_bytes(
+    *,
+    source_root: Path,
+    owned_row_keys: set[RowKey],
+    selected_families: tuple[ManifestFamily, ...],
+) -> int:
+    """Estimate retained audio plus reference-copy bytes for one pilot bundle."""
+    required_bytes = 0
+    retained_reference_keys: set[tuple[ManifestFamily, str]] = set()
+    for spool_row in iter_spool_rows(source_root):
+        row_key = _row_key_from_spool_row(spool_row)
+        if row_key not in owned_row_keys:
+            raise ValueError(
+                "Frozen pilot bundle encountered a spool row not present in the owned-row ledger: "
+                f"{row_key!r}"
+            )
+        selected_targets = tuple(
+            family for family in spool_row.manifest_targets if family in selected_families
+        )
+        if spool_row.admission_decision != "admit" or not selected_targets:
+            continue
+        audio_path = _resolve_existing_artifact_path(source_root / spool_row.audio_24k_path)
+        audio_bytes = audio_path.stat().st_size
+        required_bytes += audio_bytes
+        for family in selected_targets:
+            speaker_key = (family, spool_row.speaker_id)
+            if speaker_key in retained_reference_keys:
+                continue
+            retained_reference_keys.add(speaker_key)
+            required_bytes += audio_bytes
+    return required_bytes
+
+
+def _existing_output_parent(output_root: Path) -> Path:
+    """Return the nearest existing parent path for one not-yet-created output root."""
+    current_path = output_root.parent
+    while not current_path.exists():
+        parent_path = current_path.parent
+        if parent_path == current_path:
+            raise FileNotFoundError(
+                "Task 101 pilot bundle could not resolve an existing parent for "
+                f"`{output_root.as_posix()}`."
+            )
+        current_path = parent_path
+    return current_path
+
+
+def _filesystem_free_bytes(path: Path) -> int:
+    """Return the free-byte capacity for the filesystem containing one path."""
+    return shutil.disk_usage(path).free
+
+
+def _bundle_free_space_headroom(required_bytes: int) -> int:
+    """Return the minimum extra free-space margin required for bundle materialization."""
+    ratio_headroom = int(required_bytes * DEFAULT_BUNDLE_FREE_SPACE_HEADROOM_RATIO)
+    return max(DEFAULT_BUNDLE_FREE_SPACE_HEADROOM_BYTES, ratio_headroom)
+
+
+def _render_gib(byte_count: int) -> str:
+    """Render one byte count as a concise gibibyte string for operator errors."""
+    gibibyte = 1024 * 1024 * 1024
+    return f"{byte_count / gibibyte:.1f} GiB"
+
+
 def _freeze_artifact_paths(source_root: Path) -> tuple[Path, Path, int]:
     """Resolve the owned/conflict freeze artifacts for one frozen pilot root."""
-    freeze_payload = json.loads(
-        (source_root / "reports" / "canonical_processed_root_freeze.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    freeze_summary_path = source_root / "reports" / "canonical_processed_root_freeze.json"
+    try:
+        freeze_payload = json.loads(freeze_summary_path.read_text(encoding="utf-8"))
+    except PermissionError:
+        return _freeze_artifact_paths_without_summary(source_root)
     if not isinstance(freeze_payload, dict):
         raise ValueError("Frozen pilot freeze summary must be one JSON object.")
     owned_row_keys_path = _resolve_freeze_report_artifact_path(
@@ -229,6 +330,23 @@ def _freeze_artifact_paths(source_root: Path) -> tuple[Path, Path, int]:
         owned_row_keys_path,
         conflict_row_keys_path,
         _required_int(freeze_payload, "conflict_row_count"),
+    )
+
+
+def _freeze_artifact_paths_without_summary(source_root: Path) -> tuple[Path, Path, int]:
+    """Fall back to canonical ledger artifacts when the freeze summary is unreadable."""
+    owned_row_keys_path = _resolve_freeze_report_artifact_path(
+        source_root,
+        reported_path=Path("canonical_processed_root_owned_row_keys.jsonl"),
+    )
+    conflict_row_keys_path = _resolve_freeze_report_artifact_path(
+        source_root,
+        reported_path=Path("canonical_processed_root_conflict_row_keys.jsonl"),
+    )
+    return (
+        owned_row_keys_path,
+        conflict_row_keys_path,
+        len(load_row_key_records(conflict_row_keys_path)),
     )
 
 

@@ -99,9 +99,7 @@ def issue_processing_unit_from_shards(
     _validate_requested_shards(registry_index=registry_index, shard_ids=requested_shard_ids)
     shard_states = replay_shard_assignment_ledger(registry_root)
     unavailable_shards = [
-        shard_id
-        for shard_id in requested_shard_ids
-        if shard_states[shard_id].status != "available"
+        shard_id for shard_id in requested_shard_ids if shard_states[shard_id].status != "available"
     ]
     if unavailable_shards:
         raise ValueError(
@@ -290,9 +288,7 @@ def _load_processing_unit_summary(processing_unit_root: Path) -> QwenProcessingU
     """Load one processing-unit summary from disk."""
     from json import loads
 
-    payload = loads(
-        processing_unit_summary_path(processing_unit_root).read_text(encoding="utf-8")
-    )
+    payload = loads(processing_unit_summary_path(processing_unit_root).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("Malformed processing-unit summary.")
     shard_ids = payload.get("shard_ids")

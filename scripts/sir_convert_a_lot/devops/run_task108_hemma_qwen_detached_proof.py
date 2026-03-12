@@ -74,6 +74,7 @@ def _parse_shared_settings(args: argparse.Namespace) -> Task109ContainerizedPrep
         task103_run_root=None if args.task103_run_root is None else Path(args.task103_run_root),
         task103_promote_on_success=bool(args.task103_promote_on_success),
         task103_stage="all",
+        resume_row_processing=False,
         task103_finalization_families=DEFAULT_TASK103_FINALIZATION_FAMILIES,
         dockerfile_path=Path(args.dockerfile_path),
         image=str(args.image),

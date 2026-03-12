@@ -1,9 +1,9 @@
 ---
-id: 'task-121-add-portable-colab-slice-based-qwen-preprocessing-lane'
-title: 'Add portable Colab slice-based Qwen preprocessing lane'
-type: 'task'
-status: 'active'
-priority: 'high'
+id: task-121-add-portable-colab-slice-based-qwen-preprocessing-lane
+title: Add portable Colab slice-based Qwen preprocessing lane
+type: task
+status: active
+priority: high
 created: '2026-03-10'
 last_updated: '2026-03-10'
 related:
@@ -21,6 +21,7 @@ labels:
   - notebook
   - slicing
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

@@ -14,7 +14,10 @@ from scripts.sir_convert_a_lot.devops.task103_qwen_canonical_processed_root impo
     canonical_processed_root_freeze_path,
     canonical_processed_root_owned_row_keys_path,
 )
-from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import SpoolRow
+from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
+    QualityTier,
+    SpoolRow,
+)
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
     spool_rows_dir,
     write_spool_row,
@@ -29,7 +32,7 @@ def _write_spool_row_fixture(
     dataset_row_id: str,
     audio_name: str,
     transcript: str = "Hej från Sverige.",
-    quality_tier: str = "high_trust",
+    quality_tier: QualityTier = "high_trust",
 ) -> None:
     """Persist one minimal spool-row fixture and its referenced audio file."""
     audio_path = run_root / "audio_24k" / "rixvox" / "train" / "speaker-a" / audio_name
@@ -99,14 +102,13 @@ def test_build_canonical_processed_root_keeps_unique_and_identical_duplicate_row
         ("rixvox", "train", "row-2"),
     }
     assert (
-        load_row_key_records(canonical_processed_root_conflict_row_keys_path(output_root))
-        == set()
+        load_row_key_records(canonical_processed_root_conflict_row_keys_path(output_root)) == set()
     )
     duplicates = [
         json.loads(line)
-        for line in canonical_processed_root_duplicates_path(output_root).read_text(
-            encoding="utf-8"
-        ).splitlines()
+        for line in canonical_processed_root_duplicates_path(output_root)
+        .read_text(encoding="utf-8")
+        .splitlines()
     ]
     assert duplicates[0]["winning_run_root"] == preferred_root.as_posix()
     assert duplicates[0]["dropped_run_root"] == secondary_root.as_posix()
@@ -144,9 +146,9 @@ def test_build_canonical_processed_root_quarantines_conflicting_rows(tmp_path: P
     }
     conflicts = [
         json.loads(line)
-        for line in canonical_processed_root_conflicts_path(output_root).read_text(
-            encoding="utf-8"
-        ).splitlines()
+        for line in canonical_processed_root_conflicts_path(output_root)
+        .read_text(encoding="utf-8")
+        .splitlines()
     ]
     assert conflicts[0]["reason"] == "payload_mismatch"
     assert sorted(conflicts[0]["candidate_run_roots"]) == [
@@ -169,12 +171,7 @@ def test_build_canonical_processed_root_resolves_unicode_normalized_audio_paths(
     audio_name = "GS01FÖU5-14-0.wav"
     decomposed_audio_name = unicodedata.normalize("NFD", audio_name)
     audio_path = (
-        preferred_root
-        / "audio_24k"
-        / "rixvox"
-        / "train"
-        / "speaker-a"
-        / decomposed_audio_name
+        preferred_root / "audio_24k" / "rixvox" / "train" / "speaker-a" / decomposed_audio_name
     )
     audio_24k_path = (
         preferred_root / "audio_24k" / "rixvox" / "train" / "speaker-a" / audio_name

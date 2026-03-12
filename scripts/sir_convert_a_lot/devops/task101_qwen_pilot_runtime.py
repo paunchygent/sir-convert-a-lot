@@ -212,9 +212,7 @@ def _train_manifest_path(settings: Task101PilotSettings) -> Path:
 def _eval_manifest_path(settings: Task101PilotSettings) -> Path:
     """Return the selected held-out eval-manifest path for the detached pilot."""
     return (
-        settings.pilot_bundle_root
-        / "manifests"
-        / f"{settings.eval_manifest_family}.prepared.jsonl"
+        settings.pilot_bundle_root / "manifests" / f"{settings.eval_manifest_family}.prepared.jsonl"
     )
 
 

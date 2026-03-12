@@ -1,9 +1,9 @@
 ---
-id: 'task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof'
-title: 'Run the first live Colab GPU portable-slice Qwen row-processing proof'
-type: 'task'
-status: 'active'
-priority: 'high'
+id: task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof
+title: Run the first live Colab GPU portable-slice Qwen row-processing proof
+type: task
+status: active
+priority: high
 created: '2026-03-10'
 last_updated: '2026-03-10'
 related:
@@ -18,6 +18,7 @@ labels:
   - notebook
   - proof
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

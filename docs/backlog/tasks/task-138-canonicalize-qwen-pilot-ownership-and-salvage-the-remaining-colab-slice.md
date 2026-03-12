@@ -1,9 +1,9 @@
 ---
-id: 'task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice'
-title: 'Canonicalize qwen pilot ownership and salvage the remaining colab slice'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice
+title: Canonicalize qwen pilot ownership and salvage the remaining colab slice
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -27,8 +27,8 @@ Restore one orderly pilot ownership model after the `task116`/`task129`
 overlap incident by:
 
 1. materializing one canonical processed root for the current pilot-owned work,
-2. measuring the exact unique pilot set from that canonical root, and
-3. replacing the live Colab input manifest with a remaining-unique slice so it
+1. measuring the exact unique pilot set from that canonical root, and
+1. replacing the live Colab input manifest with a remaining-unique slice so it
    only processes rows not already owned by the canonical pilot root.
 
 ## PR Scope
@@ -47,27 +47,27 @@ overlap incident by:
 ## Deliverables
 
 - [x] One canonical pilot processed root exists on Hemma and is recorded in the
-      task/docs state.
+  task/docs state.
 - [x] One exact ownership summary exists for:
-      - Hemma-completed rows
-      - Colab-completed rows
-      - unique pilot rows
-      - remaining rows in the original `task129` slice
+  \- Hemma-completed rows
+  \- Colab-completed rows
+  \- unique pilot rows
+  \- remaining rows in the original `task129` slice
 - [x] One deduplicated remaining Colab bundle exists for the current
-      `task129` recovery path.
+  `task129` recovery path.
 - [x] Canonical docs and session state reflect the new owned root and recovery
-      bundle.
+  bundle.
 
 ## Acceptance Criteria
 
 - [x] The canonical pilot root is materialized on Hemma and its retained rows
-      are measured exactly.
+  are measured exactly.
 - [x] The Colab recovery bundle contains only rows not already owned by the
-      canonical pilot root.
+  canonical pilot root.
 - [x] The live Colab lane can resume from the same run root against the
-      recovery bundle instead of the original overlapping `18000`-row slice.
+  recovery bundle instead of the original overlapping `18000`-row slice.
 - [x] Docs clearly state the canonical owned root and the remaining recovery
-      bundle for the current campaign.
+  bundle for the current campaign.
 
 ## Checklist
 

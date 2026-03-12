@@ -1,12 +1,11 @@
 ---
-id: 'task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation'
-title: 'Freeze canonical qwen pilot dataset and enforce conflict exclusions in shard allocation'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation
+title: Freeze canonical qwen pilot dataset and enforce conflict exclusions in shard allocation
+type: task
+status: proposed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
-related: []
 related:
   - docs/backlog/tasks/task-137-implement-canonical-qwen-processed-root-dedupe-and-immutable-shard-allocation.md
   - docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md
@@ -40,22 +39,22 @@ contract instead of relying on operator memory.
 ## Deliverables
 
 - [x] Canonical processed-root build emits explicit owned-row and
-      conflict-row-key artifacts.
+  conflict-row-key artifacts.
 - [x] Canonical processed-root build emits one freeze summary that names the
-      exclusion artifacts.
+  exclusion artifacts.
 - [x] Task 121 exclusion helpers and CLI accept explicit row-key exclusion
-      manifests.
+  manifests.
 - [x] Canonical docs explain that future shard issuance must exclude the
-      frozen pilot conflicts explicitly.
+  frozen pilot conflicts explicitly.
 
 ## Acceptance Criteria
 
 - [x] One immutable canonical processed root can be treated as the frozen pilot
-      dataset without additional operator bookkeeping.
+  dataset without additional operator bookkeeping.
 - [x] Quarantined conflicts are serialized into one machine-readable row-key
-      manifest.
+  manifest.
 - [x] `build-shard-registry` can exclude row keys from explicit manifests in
-      addition to completed run roots and already-issued manifests.
+  addition to completed run roots and already-issued manifests.
 - [x] The conflict-exclusion path is visible from the canonical docs/runbook.
 
 ## Checklist

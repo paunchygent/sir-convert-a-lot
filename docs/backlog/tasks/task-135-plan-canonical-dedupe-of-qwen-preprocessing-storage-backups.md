@@ -1,9 +1,9 @@
 ---
-id: 'task-135-plan-canonical-dedupe-of-qwen-preprocessing-storage-backups'
-title: 'Plan canonical dedupe of qwen preprocessing storage backups'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-135-plan-canonical-dedupe-of-qwen-preprocessing-storage-backups
+title: Plan canonical dedupe of qwen preprocessing storage backups
+type: task
+status: completed
+priority: high
 created: '2026-03-11'
 last_updated: '2026-03-11'
 related:
@@ -54,7 +54,7 @@ report describing:
 1. Inventory the candidate roots.
    - Enumerate every run root that will participate in the backup dedupe.
    - Require explicit inputs; do not infer roots from ambient directories.
-2. Build a canonical row-ownership ledger.
+1. Build a canonical row-ownership ledger.
    - Load completed rows from each run root through the existing Task 103
      resume-index/spool surfaces.
    - For each row key, record:
@@ -62,19 +62,19 @@ report describing:
      - spool row path
      - audio path
      - audio hash when practical
-3. Resolve ownership deterministically.
+1. Resolve ownership deterministically.
    - If one row key exists only once, retain it.
    - If one row key exists multiple times, apply the declared precedence rule.
    - If one row key exists multiple times but critical payload fields disagree,
      quarantine it into a conflict report instead of silently choosing.
-4. Materialize one deduplicated backup root.
+1. Materialize one deduplicated backup root.
    - Copy or hardlink only the winning spool rows.
    - Copy or hardlink only the winning `audio_24k` artifacts referenced by
      those spool rows.
    - Carry forward only metadata that is still reachable from the winning row
      set.
    - Do not synthesize promoted manifests in this step.
-5. Validate the deduplicated backup.
+1. Validate the deduplicated backup.
    - No duplicate row keys remain.
    - Every retained spool row points to an existing retained audio artifact.
    - The dedupe report counts match the materialized artifact counts.
@@ -92,21 +92,21 @@ report describing:
 
 - [x] One canonical row-identity rule for backup dedupe.
 - [x] One deterministic ownership rule for the current Hemma/Colab overlap
-      incident.
+  incident.
 - [x] One phased plan for inventory, ownership resolution, materialization, and
-      validation of a deduplicated backup root.
+  validation of a deduplicated backup root.
 - [x] One explicit non-goal statement that original run roots must remain
-      immutable.
+  immutable.
 
 ## Acceptance Criteria
 
 - [x] The plan explains how duplicate spool rows will be detected.
 - [x] The plan explains how duplicate audio artifacts will be retained only for
-      the canonical winning rows.
+  the canonical winning rows.
 - [x] The plan explains how conflicting same-row payloads will be quarantined
-      instead of silently merged.
+  instead of silently merged.
 - [x] The plan is specific enough to implement as one follow-on task without
-      reopening the ownership model.
+  reopening the ownership model.
 
 ## Checklist
 
