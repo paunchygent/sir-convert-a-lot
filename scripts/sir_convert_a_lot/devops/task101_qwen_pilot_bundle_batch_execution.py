@@ -801,8 +801,7 @@ def _combine_audio_codes_chunk_summaries(
         ),
         write_seconds=float(sum(chunk.write_seconds for chunk in chunk_summaries)),
         total_seconds=(
-            float(sum(chunk.total_seconds for chunk in chunk_summaries))
-            + extra_oom_retry_seconds
+            float(sum(chunk.total_seconds for chunk in chunk_summaries)) + extra_oom_retry_seconds
         ),
     )
 

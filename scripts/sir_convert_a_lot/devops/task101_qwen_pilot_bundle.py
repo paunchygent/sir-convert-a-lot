@@ -31,7 +31,6 @@ from scripts.sir_convert_a_lot.devops import (
     task101_qwen_pilot_bundle_validation as bundle_validation,
 )
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_batch_contracts import (
-    DEFAULT_FINALIZATION_BATCH_ROW_COUNT,
     Task101PilotBundleBatchPlan,
     build_task101_pilot_bundle_batch_plan,
     load_task101_pilot_bundle_batch_plan,
@@ -83,7 +82,7 @@ DEFAULT_PILOT_BUNDLE_ROOT = (
 DEFAULT_TRAIN_MANIFEST_FAMILY: ManifestFamily = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY: ManifestFamily = "swedish_checkpoint_dev"
 DEFAULT_TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
-DEFAULT_AUDIO_CODES_CHUNK_SIZE = DEFAULT_FINALIZATION_BATCH_ROW_COUNT
+DEFAULT_AUDIO_CODES_CHUNK_SIZE = 64
 DEFAULT_CONTAINER_BATCH_SPAN = 4
 
 

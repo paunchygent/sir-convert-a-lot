@@ -92,6 +92,21 @@ credibly faster on Hemma for the same selected Task 101 rows:
     `duration_seconds=482.4812375620022`
     `rows_per_minute=15.917717420074943`
 
+Same-day follow-up on the direct preloaded-waveform encode path established two
+important runtime truths:
+
+- requested `audio_codes_chunk_size=128` is not safe on the current Hemma
+  governed GPU lane; repeated bounded proofs OOMed inside tokenizer model
+  encode and must not be used as the operator default
+- the direct-encode lane remains stable at `audio_codes_chunk_size=64`, but the
+  new batch timing fields show the dominant sink is still model encode itself:
+  under
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1`
+  the `128`-row train batch recorded
+  `audio_codes_model_encode_seconds=424.4988881419995` out of
+  `audio_codes_chunk_total_seconds=425.61176394299764`, while preload, feature
+  extraction, render, and manifest writes remained near `1.11` seconds total
+
 ## Required Implementation Shape
 
 1. Add explicit Task 101 throughput controls for the governed GPU lane.
@@ -126,6 +141,8 @@ credibly faster on Hemma for the same selected Task 101 rows:
   report.
 - [x] Tests covering new runtime defaults, new cache mount behavior, and
   benchmark-root preparation logic.
+- [x] Batch-level timing telemetry that proves which inner stage dominates the
+  governed Task 101 audio-code path.
 - [x] Docs updates that state the measured optimized Task 101 throughput
   posture and operator defaults.
 
@@ -140,6 +157,9 @@ credibly faster on Hemma for the same selected Task 101 rows:
   mount and records it in launch diagnostics.
 - [x] Task 101 progress artifacts, batch shard validation, and runtime
   provenance remain correct after the throughput changes.
+- [x] The operator default remains on a chunk size that is actually stable on
+  Hemma (`64`), and the docs record that requested `128` currently OOMs on the
+  governed direct-encode lane.
 - [x] The runbook and current-session log describe the benchmarked Task 101
   throughput posture truthfully.
 

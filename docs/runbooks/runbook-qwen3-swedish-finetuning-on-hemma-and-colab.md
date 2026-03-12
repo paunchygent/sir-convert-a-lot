@@ -939,7 +939,7 @@ Canonical Task 106 acquisition surface:
        `Qwen3TTSTokenizer.encode(...)`, which materially reduces the old
        serial path-loading overhead
      - current governed Task 101 defaults are now:
-       - `audio_codes_chunk_size=128`
+       - `audio_codes_chunk_size=64`
        - `container_batch_span=4`
      - Task 101 batch containers now run as the host uid/gid plus the GPU
        device groups so host-side `assemble` can keep appending progress and
@@ -975,6 +975,19 @@ Canonical Task 106 acquisition surface:
            - summary:
              `duration_seconds=482.4812375620022`
              `rows_per_minute=15.917717420074943`
+         - direct-encode follow-up:
+           - requested `audio_codes_chunk_size=128` OOMed repeatedly on Hemma
+             and is not a safe operator default for the current governed lane
+           - stable proof root:
+             `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1`
+           - benchmark summary:
+             `duration_seconds=481.3638345239997`
+             `rows_per_minute=15.954667652991478`
+           - train batch timing truth from
+             `reports/task101_pilot_bundle_events.jsonl`:
+             `audio_codes_model_encode_seconds=424.4988881419995` out of
+             `audio_codes_chunk_total_seconds=425.61176394299764`, so model
+             encode still dominates the successful chunk-64 runtime
        - do not resume the old host-runtime checkout in place; pull the
          optimized governed runtime first, then rerun the bundle build so
          incomplete batch `13` and later batches regenerate under the faster
