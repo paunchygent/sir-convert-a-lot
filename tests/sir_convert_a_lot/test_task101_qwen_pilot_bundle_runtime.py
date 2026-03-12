@@ -12,7 +12,9 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
     Task101PilotBundleRuntimeFingerprint,
     build_containerized_task101_pilot_bundle_batch_command,
     prepare_task101_pilot_bundle_batch_runtime,
+    resolve_effective_output_root,
     run_containerized_task101_pilot_bundle_batch,
+    task101_pilot_bundle_output_root_home_mount,
 )
 
 
@@ -23,6 +25,9 @@ def _settings() -> Task101PilotBundleContainerSettings:
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
+        output_root_home_mount_base=Path(
+            "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
+        ),
         build_image=True,
     )
 
@@ -36,6 +41,14 @@ def test_build_containerized_task101_batch_command_uses_fixed_hf_cache_root() ->
         effective_root=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
         used_home_mount=True,
     )
+    output_root_mount = MountResolution(
+        canonical_root=output_root,
+        effective_root=Path(
+            "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
+            "/srv/storage/sir-convert-a-lot/tmp/task101-bundle"
+        ),
+        used_home_mount=True,
+    )
 
     command = build_containerized_task101_pilot_bundle_batch_command(
         repo_root=repo_root,
@@ -45,13 +58,14 @@ def test_build_containerized_task101_batch_command_uses_fixed_hf_cache_root() ->
         audio_codes_chunk_size=5,
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_mount=hf_mount,
+        output_root_mount=output_root_mount,
     )
 
     assert "HF_HOME=/cache/huggingface" in command
     assert "HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub" in command
     assert "TORCH_HOME=/cache/huggingface/torch" in command
     assert f"{hf_mount.effective_root.as_posix()}:/cache/huggingface" in command
-    assert f"{output_root.as_posix()}:{output_root.as_posix()}" in command
+    assert f"{output_root_mount.effective_root.as_posix()}:{output_root.as_posix()}" in command
     assert "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_in_container" in command
     assert "--manifest-family" in command
     assert "swedish_pilot_train" in command
@@ -97,6 +111,65 @@ def test_prepare_task101_batch_runtime_reuses_qwen_image_helper(
     assert fingerprint.audio_codes_require_flash_attn is True
 
 
+def test_task101_output_root_home_mount_is_deterministic() -> None:
+    """Task 101 output roots should map to a stable home-backed bind path."""
+    output_root = Path("/srv/scratch/sir-convert-a-lot/build/reference/task101-bundle")
+
+    resolved_home_mount = task101_pilot_bundle_output_root_home_mount(
+        output_root,
+        home_mount_base=Path(
+            "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
+        ),
+    )
+
+    assert resolved_home_mount == Path(
+        "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
+        "/srv/scratch/sir-convert-a-lot/build/reference/task101-bundle"
+    )
+
+
+def test_resolve_effective_output_root_reuses_shared_bind_root_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Task 101 output roots should reuse the shared home-bind fallback helper."""
+    observed: dict[str, object] = {}
+    output_root = Path("/srv/scratch/sir-convert-a-lot/build/reference/task101-bundle")
+    expected_mount = MountResolution(
+        canonical_root=output_root,
+        effective_root=Path(
+            "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
+            "/srv/scratch/sir-convert-a-lot/build/reference/task101-bundle"
+        ),
+        used_home_mount=True,
+    )
+
+    def _fake_resolve_effective_bind_root(
+        canonical_root: Path,
+        home_mount: Path,
+        *,
+        image: str,
+        sync_home_into_canonical: bool,
+    ) -> MountResolution:
+        observed["canonical_root"] = canonical_root
+        observed["home_mount"] = home_mount
+        observed["image"] = image
+        observed["sync_home_into_canonical"] = sync_home_into_canonical
+        return expected_mount
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime.resolve_effective_bind_root",
+        _fake_resolve_effective_bind_root,
+    )
+
+    resolved_mount = resolve_effective_output_root(output_root, settings=_settings())
+
+    assert resolved_mount == expected_mount
+    assert observed["canonical_root"] == output_root
+    assert observed["home_mount"] == expected_mount.effective_root
+    assert observed["image"] == "sir-convert-a-lot-qwen-finetune-hemma:task100"
+    assert observed["sync_home_into_canonical"] is False
+
+
 def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -120,6 +193,14 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime.docker_checked",
         _fake_docker_checked,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime.resolve_effective_output_root",
+        lambda output_root, *, settings: MountResolution(
+            canonical_root=output_root,
+            effective_root=Path("/home/paunchygent/.data/sir-convert-a-lot/task101-bundle"),
+            used_home_mount=True,
+        ),
     )
     fingerprint = Task101PilotBundleRuntimeFingerprint(
         runtime_kind="task101_qwen_pilot_bundle_containerized_batch_v1",
@@ -159,3 +240,8 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
     assert "--device" in observed_command
     assert "swedish_checkpoint_dev" in observed_command
     assert any("batch_container_launch" in line for line in emitted)
+    assert any(
+        item.startswith("/home/paunchygent/.data/sir-convert-a-lot/task101-bundle:")
+        for item in observed_command
+    )
+    assert any('"used_output_root_home_mount": true' in line for line in emitted)

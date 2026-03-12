@@ -39,7 +39,7 @@
   - bundle-level plus per-batch runtime fingerprints now fail closed on legacy
     host-generated shards and completed bundles that lack governed runtime
     provenance
-- `T150` is now active and implementation is underway:
+- `T150` is complete and `T151` is now active:
   - the governed Task 101 batch runtime now initializes
     `Qwen3TTSTokenizer` on `cuda:0` with `bfloat16` plus
     `flash_attention_2` instead of silently staying on CPU
@@ -51,9 +51,16 @@
     was intentionally stopped after completed batch `00012`; batch `00013`
     had started but not completed, so the next governed rerun should regenerate
     that incomplete batch under the GPU-backed runtime
+  - the first post-`T150` Hemma retry exposed one remaining Task 101 runtime
+    bug: snap-Docker rejected the direct `/srv/...` output-root mount with
+    `read-only file system`
+  - `T151` repairs that gap by resolving the selected bundle output root
+    through the same shared home-backed bind fallback pattern already used for
+    Task 100/109 cache and scratch mounts
 - Docs-as-code surfaces updated:
   - `docs/backlog/tasks/task-149-containerize-task101-pilot-bundle-batch-finalization-runtime.md`
   - `docs/backlog/tasks/task-150-accelerate-task101-pilot-bundle-finalization-with-gpu-backed-audio-code-encoding.md`
+  - `docs/backlog/tasks/task-151-repair-task101-container-output-root-bind-fallback-for-hemma.md`
   - `docs/backlog/tasks/task-148-batch-task101-pilot-bundle-finalization-and-progress-logging-on-hemma.md`
   - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
   - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
@@ -76,15 +83,15 @@
 
 - The next live Hemma Task 101 bundle retry must not continue on the stopped
   host-runtime checkout.
-- Pull the new GPU-backed governed runtime onto Hemma first, then rerun the
-  resumable bundle root.
+- Pull the repaired GPU-backed governed runtime onto Hemma first, then rerun
+  the resumable bundle root.
 
 ## Immediate Next Step
 
 - Pull the updated checkout on Hemma now that the old host-runtime bundle
   process is stopped.
 - Rebuild or reuse the governed Task 100/101 Qwen image with the GPU-backed
-  tokenizer runtime changes.
+  tokenizer runtime and repaired output-root bind fallback.
 - Rerun the stopped bounded Hemma Task 101 pilot-bundle root through the
   governed `build` surface and inspect:
   - `reports/task101_pilot_bundle_plan.json`

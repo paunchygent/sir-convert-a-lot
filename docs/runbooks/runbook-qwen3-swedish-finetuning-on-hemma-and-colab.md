@@ -927,10 +927,13 @@ Canonical Task 106 acquisition surface:
        contract:
        - `HF_HOME=/cache/huggingface`
        - `HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub`
-       - `TORCH_HOME=/cache/huggingface/torch`
+     - `TORCH_HOME=/cache/huggingface/torch`
      - the selected bundle output root is mounted back into the container at
        the same host-visible path so `reports/` and final manifests stay
        host-rooted rather than leaking container-only paths
+     - when snap-Docker cannot mount that canonical `/srv/...` bundle root
+       directly, the batch runtime now reuses the shared home-backed bind
+       fallback instead of failing at container launch
      - batch-finalization evidence now lands in:
        - `reports/task101_pilot_bundle_plan.json`
        - `reports/task101_pilot_bundle_events.jsonl`

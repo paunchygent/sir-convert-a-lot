@@ -32,6 +32,7 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     MountResolution,
     docker_checked,
     prepare_qwen_image,
+    resolve_effective_bind_root,
     resolve_effective_hf_cache_dir,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_audio_codes_runtime import (
@@ -54,6 +55,9 @@ DEFAULT_AUDIO_CODES_RUNTIME_KIND = "task101_task103_qwen_audio_codes_gpu_v1"
 DEFAULT_AUDIO_CODES_DEVICE = DEFAULT_GOVERNED_DEVICE_MAP
 DEFAULT_AUDIO_CODES_DTYPE = DEFAULT_GOVERNED_DTYPE
 DEFAULT_AUDIO_CODES_ATTN_IMPLEMENTATION = DEFAULT_GOVERNED_ATTN_IMPLEMENTATION
+DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE = Path(
+    "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
+)
 
 
 @dataclass(frozen=True)
@@ -64,6 +68,7 @@ class Task101PilotBundleContainerSettings:
     image: str
     hf_cache_dir: Path
     hf_cache_home_mount: Path
+    output_root_home_mount_base: Path
     build_image: bool
 
 
@@ -103,6 +108,14 @@ def default_hf_cache_home_mount() -> Path:
     return Path(configured_path.strip())
 
 
+def default_output_root_home_mount_base() -> Path:
+    """Resolve the home-backed fallback base for Task 101 bundle output roots."""
+    configured_path = os.environ.get("SIR_CONVERT_A_LOT_HEMMA_OUTPUT_ROOT_HOME_MOUNT_BASE")
+    if configured_path is None or configured_path.strip() == "":
+        return DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE
+    return Path(configured_path.strip())
+
+
 def default_container_settings() -> Task101PilotBundleContainerSettings:
     """Return the default governed Qwen runtime settings for Task 101 batches."""
     return Task101PilotBundleContainerSettings(
@@ -110,7 +123,38 @@ def default_container_settings() -> Task101PilotBundleContainerSettings:
         image=DEFAULT_IMAGE,
         hf_cache_dir=default_hf_cache_dir(),
         hf_cache_home_mount=default_hf_cache_home_mount(),
+        output_root_home_mount_base=default_output_root_home_mount_base(),
         build_image=True,
+    )
+
+
+def task101_pilot_bundle_output_root_home_mount(
+    output_root: Path,
+    *,
+    home_mount_base: Path,
+) -> Path:
+    """Map one canonical output root onto its deterministic home-backed bind path."""
+    if not output_root.is_absolute():
+        raise ValueError(
+            "Task 101 bundle output roots must be absolute paths before bind-root resolution."
+        )
+    return home_mount_base / output_root.relative_to("/")
+
+
+def resolve_effective_output_root(
+    output_root: Path,
+    *,
+    settings: Task101PilotBundleContainerSettings,
+) -> MountResolution:
+    """Return the Docker-mountable host path for one Task 101 bundle output root."""
+    return resolve_effective_bind_root(
+        output_root,
+        task101_pilot_bundle_output_root_home_mount(
+            output_root,
+            home_mount_base=settings.output_root_home_mount_base,
+        ),
+        image=settings.image,
+        sync_home_into_canonical=False,
     )
 
 
@@ -250,6 +294,7 @@ def build_containerized_task101_pilot_bundle_batch_command(
     audio_codes_chunk_size: int,
     image: str,
     hf_mount: MountResolution,
+    output_root_mount: MountResolution,
 ) -> list[str]:
     """Build the Docker command for one containerized Task 101 finalization batch."""
     return [
@@ -276,7 +321,7 @@ def build_containerized_task101_pilot_bundle_batch_command(
         "-v",
         f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
         "-v",
-        f"{output_root.as_posix()}:{output_root.as_posix()}",
+        f"{output_root_mount.effective_root.as_posix()}:{output_root.as_posix()}",
         "--workdir",
         "/app",
         "--entrypoint",
@@ -316,6 +361,7 @@ def run_containerized_task101_pilot_bundle_batch(
             settings=effective_settings,
             emit=emit,
         )
+    output_root_mount = resolve_effective_output_root(output_root, settings=effective_settings)
     write_task101_pilot_bundle_runtime_fingerprint(output_root, effective_fingerprint)
     command = build_containerized_task101_pilot_bundle_batch_command(
         repo_root=repo_root,
@@ -325,6 +371,7 @@ def run_containerized_task101_pilot_bundle_batch(
         audio_codes_chunk_size=audio_codes_chunk_size,
         image=effective_settings.image,
         hf_mount=effective_hf_mount,
+        output_root_mount=output_root_mount,
     )
     emit(
         "[task101-pilot-bundle] "
@@ -336,6 +383,8 @@ def run_containerized_task101_pilot_bundle_batch(
                 "audio_codes_chunk_size": audio_codes_chunk_size,
                 "image": effective_fingerprint.image,
                 "image_id": effective_fingerprint.image_id,
+                "effective_output_root": output_root_mount.effective_root.as_posix(),
+                "used_output_root_home_mount": output_root_mount.used_home_mount,
                 "command": ["sudo", "-n", "docker", *command],
             },
             ensure_ascii=False,
