@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import MountResolution
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
     build_task101_pilot_bundle,
     copy_task101_pilot_bundle_inputs,
@@ -307,6 +308,7 @@ def test_build_task101_pilot_bundle_materializes_selected_manifests_and_logs_pro
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
         finalization_batch_row_count=2,
         audio_codes_chunk_size=1,
+        container_batch_span=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
         repo_root=_repo_root(),
         run_batch_fn=_run_batch_in_process,
@@ -356,6 +358,90 @@ def test_build_task101_pilot_bundle_materializes_selected_manifests_and_logs_pro
     assert '"event": "report_completed"' in captured_stdout
 
 
+def test_build_task101_pilot_bundle_groups_contiguous_batches_into_one_container_launch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Grouped batch spans should reuse one container launch for contiguous work."""
+    source_root = tmp_path / "frozen-root"
+    _write_frozen_root_fixture(source_root, train_row_count=3, dev_row_count=2)
+    output_root = tmp_path / "pilot-bundle"
+    runtime_fingerprint = _runtime_fingerprint()
+    observed_calls: list[tuple[ManifestFamily, int, int]] = []
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle.prepare_task101_pilot_bundle_batch_runtime",
+        lambda: (
+            MountResolution(
+                canonical_root=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
+                effective_root=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
+                used_home_mount=False,
+            ),
+            runtime_fingerprint,
+        ),
+    )
+
+    def _fake_run_containerized_batch(
+        *,
+        repo_root: Path,
+        output_root: Path,
+        manifest_family: ManifestFamily,
+        batch_index: int,
+        batch_count: int,
+        audio_codes_chunk_size: int,
+        hf_mount: MountResolution,
+        fingerprint: Task101PilotBundleRuntimeFingerprint,
+        settings: object | None = None,
+        triton_mount: MountResolution | None = None,
+        emit: object = print,
+    ) -> Task101PilotBundleRuntimeFingerprint:
+        del repo_root, hf_mount, settings, triton_mount, emit
+        observed_calls.append((manifest_family, batch_index, batch_count))
+        plan = load_task101_pilot_bundle_batch_plan(output_root)
+        for current_batch_index in range(batch_index, batch_index + batch_count):
+            finalize_task101_pilot_bundle_batch(
+                output_root=output_root,
+                plan=plan,
+                manifest_family=manifest_family,
+                batch_index=current_batch_index,
+                audio_codes_chunk_size=audio_codes_chunk_size,
+                encode_audio_codes_fn=_fake_encode_audio_codes,
+                runtime_fingerprint=fingerprint,
+            )
+        return fingerprint
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle.run_containerized_task101_pilot_bundle_batch",
+        _fake_run_containerized_batch,
+    )
+
+    summary = build_task101_pilot_bundle(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        audio_codes_chunk_size=1,
+        container_batch_span=2,
+        encode_audio_codes_fn=_fake_encode_audio_codes,
+        repo_root=_repo_root(),
+    )
+
+    assert summary.total_batch_count == 3
+    assert observed_calls == [
+        ("swedish_pilot_train", 0, 2),
+        ("swedish_checkpoint_dev", 0, 1),
+    ]
+    events = _read_event_payloads(output_root)
+    assert any(
+        payload["event"] == "batch_skipped_existing"
+        and payload["manifest_family"] == "swedish_pilot_train"
+        and payload["batch_index"] == 1
+        for payload in events
+    )
+
+
 def test_build_task101_pilot_bundle_resumes_from_validated_batch_shards(
     tmp_path: Path,
 ) -> None:
@@ -391,6 +477,7 @@ def test_build_task101_pilot_bundle_resumes_from_validated_batch_shards(
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
         finalization_batch_row_count=2,
         audio_codes_chunk_size=1,
+        container_batch_span=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
         repo_root=_repo_root(),
         run_batch_fn=_run_batch_in_process,
@@ -508,6 +595,7 @@ def test_finalize_task101_batch_records_interrupted_progress_and_supports_resume
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
         finalization_batch_row_count=2,
         audio_codes_chunk_size=1,
+        container_batch_span=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
         repo_root=_repo_root(),
         run_batch_fn=_run_batch_in_process,
@@ -582,6 +670,7 @@ def test_build_task101_pilot_bundle_rejects_completed_bundle_without_runtime_fin
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
         finalization_batch_row_count=2,
         audio_codes_chunk_size=1,
+        container_batch_span=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
         repo_root=_repo_root(),
         run_batch_fn=_run_batch_in_process,
@@ -596,6 +685,7 @@ def test_build_task101_pilot_bundle_rejects_completed_bundle_without_runtime_fin
             tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
             finalization_batch_row_count=2,
             audio_codes_chunk_size=1,
+            container_batch_span=1,
             encode_audio_codes_fn=_fake_encode_audio_codes,
             repo_root=_repo_root(),
             run_batch_fn=_run_batch_in_process,
@@ -617,6 +707,7 @@ def test_build_task101_pilot_bundle_rejects_duplicate_train_eval_family(tmp_path
             tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
             finalization_batch_row_count=2,
             audio_codes_chunk_size=1,
+            container_batch_span=1,
             encode_audio_codes_fn=_fake_encode_audio_codes,
             repo_root=_repo_root(),
             run_batch_fn=_run_batch_in_process,
@@ -641,6 +732,7 @@ def test_build_task101_pilot_bundle_uses_relocated_freeze_ledger_artifacts(
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
         finalization_batch_row_count=2,
         audio_codes_chunk_size=1,
+        container_batch_span=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
         repo_root=_repo_root(),
         run_batch_fn=_run_batch_in_process,
@@ -667,6 +759,7 @@ def test_build_task101_pilot_bundle_falls_back_when_freeze_summary_is_unreadable
         tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
         finalization_batch_row_count=2,
         audio_codes_chunk_size=1,
+        container_batch_span=1,
         encode_audio_codes_fn=_fake_encode_audio_codes,
         repo_root=_repo_root(),
         run_batch_fn=_run_batch_in_process,
@@ -711,6 +804,7 @@ def test_build_task101_pilot_bundle_fails_closed_when_output_filesystem_is_full(
             tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
             finalization_batch_row_count=2,
             audio_codes_chunk_size=1,
+            container_batch_span=1,
             encode_audio_codes_fn=_unexpected_encode_audio_codes,
             repo_root=_repo_root(),
             run_batch_fn=_run_batch_in_process,

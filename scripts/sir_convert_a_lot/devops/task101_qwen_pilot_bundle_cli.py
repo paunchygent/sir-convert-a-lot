@@ -20,6 +20,7 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle import (
     DEFAULT_AUDIO_CODES_CHUNK_SIZE,
+    DEFAULT_CONTAINER_BATCH_SPAN,
     DEFAULT_EVAL_MANIFEST_FAMILY,
     DEFAULT_FROZEN_PILOT_ROOT,
     DEFAULT_PILOT_BUNDLE_ROOT,
@@ -37,12 +38,12 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime import (
     prepare_task101_pilot_bundle_batch_runtime,
     run_containerized_task101_pilot_bundle_batch,
 )
-from scripts.sir_convert_a_lot.devops.task103_qwen_family_assignment import ManifestFamily
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_finalization import (
     encode_audio_codes,
 )
 from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_models import (
     CANONICAL_MANIFEST_FAMILIES,
+    ManifestFamily,
 )
 
 
@@ -105,6 +106,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         choices=CANONICAL_MANIFEST_FAMILIES,
     )
     finalize_batch_parser.add_argument("--batch-index", type=int, required=True)
+    finalize_batch_parser.add_argument("--batch-count", type=int, default=1)
     finalize_batch_parser.add_argument(
         "--audio-codes-chunk-size",
         type=int,
@@ -120,6 +122,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--audio-codes-chunk-size",
         type=int,
         default=DEFAULT_AUDIO_CODES_CHUNK_SIZE,
+    )
+    build_parser.add_argument(
+        "--container-batch-span",
+        type=int,
+        default=DEFAULT_CONTAINER_BATCH_SPAN,
     )
     return parser.parse_args(argv)
 
@@ -157,18 +164,27 @@ def main(argv: list[str] | None = None) -> int:
             output_root=output_root,
             manifest_family=manifest_family,
             batch_index=int(args.batch_index),
+            batch_count=int(args.batch_count),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
             hf_mount=hf_mount,
             fingerprint=runtime_fingerprint,
         )
         plan = load_task101_pilot_bundle_batch_plan(output_root)
-        batch = next(
+        batches = [
             candidate
             for candidate in plan.batches
             if candidate.manifest_family == manifest_family
-            and candidate.batch_index == int(args.batch_index)
+            and int(args.batch_index)
+            <= candidate.batch_index
+            < int(args.batch_index) + int(args.batch_count)
+        ]
+        print(
+            json.dumps(
+                {"batches": [asdict(batch) for batch in batches]},
+                indent=2,
+                ensure_ascii=False,
+            )
         )
-        print(json.dumps(asdict(batch), indent=2, ensure_ascii=False))
         return 0
     if args.command == "assemble":
         plan = load_task101_pilot_bundle_batch_plan(Path(args.output_root))
@@ -179,28 +195,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(asdict(summary), indent=2, ensure_ascii=False))
         return 0
     if args.command == "build":
-        hf_mount, runtime_fingerprint = prepare_task101_pilot_bundle_batch_runtime()
-
-        def _run_containerized_batch(
-            output_root: Path,
-            plan: object,
-            manifest_family: ManifestFamily,
-            batch_index: int,
-            audio_codes_chunk_size: int,
-            encode_audio_codes_fn: object,
-            repo_root: Path,
-        ) -> None:
-            del plan, encode_audio_codes_fn
-            run_containerized_task101_pilot_bundle_batch(
-                repo_root=repo_root,
-                output_root=output_root,
-                manifest_family=manifest_family,
-                batch_index=batch_index,
-                audio_codes_chunk_size=audio_codes_chunk_size,
-                hf_mount=hf_mount,
-                fingerprint=runtime_fingerprint,
-            )
-
         summary = build_task101_pilot_bundle(
             source_root=Path(args.source_root),
             output_root=Path(args.output_root),
@@ -215,10 +209,9 @@ def main(argv: list[str] | None = None) -> int:
             tokenizer_model=str(args.tokenizer_model),
             finalization_batch_row_count=int(args.finalization_batch_row_count),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
+            container_batch_span=int(args.container_batch_span),
             encode_audio_codes_fn=encode_audio_codes,
             repo_root=Path.cwd(),
-            run_batch_fn=_run_containerized_batch,
-            expected_runtime_fingerprint=runtime_fingerprint,
         )
         print(json.dumps(asdict(summary), indent=2, ensure_ascii=False))
         return 0

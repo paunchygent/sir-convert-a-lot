@@ -25,6 +25,10 @@ def _settings() -> Task101PilotBundleContainerSettings:
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
+        triton_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/triton/task101-audio-codes"),
+        triton_cache_home_mount=Path(
+            "/home/paunchygent/.data/sir-convert-a-lot/cache/triton/task101-audio-codes"
+        ),
         output_root_home_mount_base=Path(
             "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
         ),
@@ -49,25 +53,38 @@ def test_build_containerized_task101_batch_command_uses_fixed_hf_cache_root() ->
         ),
         used_home_mount=True,
     )
+    triton_mount = MountResolution(
+        canonical_root=Path("/srv/scratch/sir-convert-a-lot/cache/triton/task101-audio-codes"),
+        effective_root=Path(
+            "/home/paunchygent/.data/sir-convert-a-lot/cache/triton/task101-audio-codes"
+        ),
+        used_home_mount=True,
+    )
 
     command = build_containerized_task101_pilot_bundle_batch_command(
         repo_root=repo_root,
         output_root=output_root,
         manifest_family="swedish_pilot_train",
         batch_index=3,
+        batch_count=4,
         audio_codes_chunk_size=5,
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
         hf_mount=hf_mount,
+        triton_mount=triton_mount,
         output_root_mount=output_root_mount,
     )
 
     assert "HF_HOME=/cache/huggingface" in command
     assert "HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub" in command
     assert "TORCH_HOME=/cache/huggingface/torch" in command
+    assert "TRITON_CACHE_DIR=/cache/triton" in command
     assert f"{hf_mount.effective_root.as_posix()}:/cache/huggingface" in command
+    assert f"{triton_mount.effective_root.as_posix()}:/cache/triton" in command
     assert f"{output_root_mount.effective_root.as_posix()}:{output_root.as_posix()}" in command
     assert "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_in_container" in command
     assert "--manifest-family" in command
+    assert "--batch-count" in command
+    assert "4" in command
     assert "swedish_pilot_train" in command
 
 
@@ -202,6 +219,14 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
             used_home_mount=True,
         ),
     )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_bundle_runtime.resolve_effective_triton_cache_dir",
+        lambda settings: MountResolution(
+            canonical_root=settings.triton_cache_dir,
+            effective_root=settings.triton_cache_home_mount,
+            used_home_mount=True,
+        ),
+    )
     fingerprint = Task101PilotBundleRuntimeFingerprint(
         runtime_kind="task101_qwen_pilot_bundle_containerized_batch_v1",
         image="sir-convert-a-lot-qwen-finetune-hemma:task100",
@@ -226,6 +251,7 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
         output_root=output_root,
         manifest_family="swedish_checkpoint_dev",
         batch_index=1,
+        batch_count=3,
         audio_codes_chunk_size=4,
         settings=_settings(),
         hf_mount=hf_mount,
@@ -244,4 +270,13 @@ def test_run_containerized_task101_batch_writes_runtime_and_launches_docker(
         item.startswith("/home/paunchygent/.data/sir-convert-a-lot/task101-bundle:")
         for item in observed_command
     )
+    assert any(
+        item.startswith(
+            "/home/paunchygent/.data/sir-convert-a-lot/cache/triton/task101-audio-codes:"
+        )
+        for item in observed_command
+    )
+    assert "--batch-count" in observed_command
+    assert "3" in observed_command
     assert any('"used_output_root_home_mount": true' in line for line in emitted)
+    assert any('"used_triton_cache_home_mount": true' in line for line in emitted)

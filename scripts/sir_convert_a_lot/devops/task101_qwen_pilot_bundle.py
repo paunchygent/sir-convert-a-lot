@@ -82,7 +82,8 @@ DEFAULT_PILOT_BUNDLE_ROOT = (
 DEFAULT_TRAIN_MANIFEST_FAMILY: ManifestFamily = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY: ManifestFamily = "swedish_checkpoint_dev"
 DEFAULT_TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
-DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
+DEFAULT_AUDIO_CODES_CHUNK_SIZE = 64
+DEFAULT_CONTAINER_BATCH_SPAN = 4
 
 
 @dataclass(frozen=True)
@@ -145,6 +146,7 @@ def build_task101_pilot_bundle(
     tokenizer_model: str,
     finalization_batch_row_count: int,
     audio_codes_chunk_size: int,
+    container_batch_span: int,
     encode_audio_codes_fn: AudioCodesEncoderProtocol,
     repo_root: Path,
     run_batch_fn: Task101PilotBundleBatchRunner | None = None,
@@ -154,6 +156,8 @@ def build_task101_pilot_bundle(
     effective_runtime_fingerprint = expected_runtime_fingerprint
     effective_run_batch_fn = run_batch_fn
     if effective_run_batch_fn is None:
+        if container_batch_span <= 0:
+            raise ValueError("`container_batch_span` must be positive.")
         hf_mount, effective_runtime_fingerprint = prepare_task101_pilot_bundle_batch_runtime()
 
         def _run_containerized_batch(
@@ -165,16 +169,25 @@ def build_task101_pilot_bundle(
             batch_encode_audio_codes_fn: AudioCodesEncoderProtocol,
             batch_repo_root: Path,
         ) -> None:
-            del plan, batch_encode_audio_codes_fn
+            del batch_encode_audio_codes_fn
             if effective_runtime_fingerprint is None:
                 raise RuntimeError(
                     "Task 101 containerized batch runner is missing a runtime fingerprint."
                 )
+            batch_count = _container_batch_span_for_request(
+                plan=plan,
+                output_root=batch_output_root,
+                manifest_family=manifest_family,
+                batch_index=batch_index,
+                requested_span=container_batch_span,
+                expected_runtime_fingerprint=effective_runtime_fingerprint,
+            )
             run_containerized_task101_pilot_bundle_batch(
                 repo_root=batch_repo_root,
                 output_root=batch_output_root,
                 manifest_family=manifest_family,
                 batch_index=batch_index,
+                batch_count=batch_count,
                 audio_codes_chunk_size=batch_audio_codes_chunk_size,
                 hf_mount=hf_mount,
                 fingerprint=effective_runtime_fingerprint,
@@ -429,6 +442,43 @@ def _ensure_loaded_plan_matches_request(
         raise ValueError("Existing Task 101 batch plan tokenizer model does not match.")
     if plan.finalization_batch_row_count != finalization_batch_row_count:
         raise ValueError("Existing Task 101 batch plan batch-row count does not match.")
+
+
+def _container_batch_span_for_request(
+    *,
+    plan: Task101PilotBundleBatchPlan,
+    output_root: Path,
+    manifest_family: ManifestFamily,
+    batch_index: int,
+    requested_span: int,
+    expected_runtime_fingerprint: Task101PilotBundleRuntimeFingerprint | None,
+) -> int:
+    """Return the contiguous incomplete batch count to launch in one container."""
+    if requested_span <= 1:
+        return 1
+    selected_batches = [
+        candidate
+        for candidate in plan.batches
+        if candidate.manifest_family == manifest_family and candidate.batch_index >= batch_index
+    ]
+    if not selected_batches:
+        return 1
+    contiguous_incomplete_count = 0
+    expected_batch_index = batch_index
+    for batch in selected_batches:
+        if batch.batch_index != expected_batch_index:
+            break
+        if task101_pilot_bundle_batch_is_complete(
+            output_root,
+            batch,
+            expected_runtime_fingerprint=expected_runtime_fingerprint,
+        ):
+            break
+        contiguous_incomplete_count += 1
+        expected_batch_index += 1
+        if contiguous_incomplete_count >= requested_span:
+            break
+    return max(contiguous_incomplete_count, 1)
 
 
 def _load_task101_pilot_bundle_summary(output_root: Path) -> Task101PilotBundleSummary:

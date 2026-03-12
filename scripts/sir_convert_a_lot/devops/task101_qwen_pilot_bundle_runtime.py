@@ -55,9 +55,14 @@ DEFAULT_AUDIO_CODES_RUNTIME_KIND = "task101_task103_qwen_audio_codes_gpu_v1"
 DEFAULT_AUDIO_CODES_DEVICE = DEFAULT_GOVERNED_DEVICE_MAP
 DEFAULT_AUDIO_CODES_DTYPE = DEFAULT_GOVERNED_DTYPE
 DEFAULT_AUDIO_CODES_ATTN_IMPLEMENTATION = DEFAULT_GOVERNED_ATTN_IMPLEMENTATION
+DEFAULT_TRITON_CACHE_DIR = Path("/srv/scratch/sir-convert-a-lot/cache/triton/task101-audio-codes")
 DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE = Path(
     "/home/paunchygent/.data/sir-convert-a-lot/task101-pilot-bundle-output-roots"
 )
+DEFAULT_TRITON_CACHE_HOME_MOUNT = Path(
+    "/home/paunchygent/.data/sir-convert-a-lot/cache/triton/task101-audio-codes"
+)
+CONTAINER_TRITON_CACHE_DIR = "/cache/triton"
 
 
 @dataclass(frozen=True)
@@ -68,6 +73,8 @@ class Task101PilotBundleContainerSettings:
     image: str
     hf_cache_dir: Path
     hf_cache_home_mount: Path
+    triton_cache_dir: Path
+    triton_cache_home_mount: Path
     output_root_home_mount_base: Path
     build_image: bool
 
@@ -116,6 +123,22 @@ def default_output_root_home_mount_base() -> Path:
     return Path(configured_path.strip())
 
 
+def default_triton_cache_dir() -> Path:
+    """Resolve the canonical Hemma Triton cache root for Task 101 batches."""
+    configured_path = os.environ.get("SIR_CONVERT_A_LOT_HEMMA_TRITON_CACHE_PATH")
+    if configured_path is None or configured_path.strip() == "":
+        return DEFAULT_TRITON_CACHE_DIR
+    return Path(configured_path.strip())
+
+
+def default_triton_cache_home_mount() -> Path:
+    """Resolve the home-backed fallback Triton cache mount path."""
+    configured_path = os.environ.get("SIR_CONVERT_A_LOT_HEMMA_TRITON_CACHE_HOME_MOUNT")
+    if configured_path is None or configured_path.strip() == "":
+        return DEFAULT_TRITON_CACHE_HOME_MOUNT
+    return Path(configured_path.strip())
+
+
 def default_container_settings() -> Task101PilotBundleContainerSettings:
     """Return the default governed Qwen runtime settings for Task 101 batches."""
     return Task101PilotBundleContainerSettings(
@@ -123,6 +146,8 @@ def default_container_settings() -> Task101PilotBundleContainerSettings:
         image=DEFAULT_IMAGE,
         hf_cache_dir=default_hf_cache_dir(),
         hf_cache_home_mount=default_hf_cache_home_mount(),
+        triton_cache_dir=default_triton_cache_dir(),
+        triton_cache_home_mount=default_triton_cache_home_mount(),
         output_root_home_mount_base=default_output_root_home_mount_base(),
         build_image=True,
     )
@@ -155,6 +180,18 @@ def resolve_effective_output_root(
         ),
         image=settings.image,
         sync_home_into_canonical=False,
+    )
+
+
+def resolve_effective_triton_cache_dir(
+    settings: Task101PilotBundleContainerSettings,
+) -> MountResolution:
+    """Return the Docker-mountable host path for the Task 101 Triton cache."""
+    return resolve_effective_bind_root(
+        settings.triton_cache_dir,
+        settings.triton_cache_home_mount,
+        image=settings.image,
+        sync_home_into_canonical=True,
     )
 
 
@@ -291,9 +328,11 @@ def build_containerized_task101_pilot_bundle_batch_command(
     output_root: Path,
     manifest_family: ManifestFamily,
     batch_index: int,
+    batch_count: int,
     audio_codes_chunk_size: int,
     image: str,
     hf_mount: MountResolution,
+    triton_mount: MountResolution,
     output_root_mount: MountResolution,
 ) -> list[str]:
     """Build the Docker command for one containerized Task 101 finalization batch."""
@@ -316,10 +355,14 @@ def build_containerized_task101_pilot_bundle_batch_command(
         f"HUGGINGFACE_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
         "-e",
         f"TORCH_HOME={CONTAINER_TORCH_HOME}",
+        "-e",
+        f"TRITON_CACHE_DIR={CONTAINER_TRITON_CACHE_DIR}",
         "-v",
         f"{repo_root.as_posix()}:/app",
         "-v",
         f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
+        "-v",
+        f"{triton_mount.effective_root.as_posix()}:{CONTAINER_TRITON_CACHE_DIR}",
         "-v",
         f"{output_root_mount.effective_root.as_posix()}:{output_root.as_posix()}",
         "--workdir",
@@ -335,6 +378,8 @@ def build_containerized_task101_pilot_bundle_batch_command(
         manifest_family,
         "--batch-index",
         str(batch_index),
+        "--batch-count",
+        str(batch_count),
         "--audio-codes-chunk-size",
         str(audio_codes_chunk_size),
     ]
@@ -346,21 +391,26 @@ def run_containerized_task101_pilot_bundle_batch(
     output_root: Path,
     manifest_family: ManifestFamily,
     batch_index: int,
+    batch_count: int = 1,
     audio_codes_chunk_size: int,
     settings: Task101PilotBundleContainerSettings | None = None,
     hf_mount: MountResolution | None = None,
+    triton_mount: MountResolution | None = None,
     fingerprint: Task101PilotBundleRuntimeFingerprint | None = None,
     emit: Callable[[str], None] = print,
 ) -> Task101PilotBundleRuntimeFingerprint:
     """Run one bounded Task 101 finalization batch inside the governed Qwen image."""
     effective_settings = settings or default_container_settings()
     effective_hf_mount = hf_mount
+    effective_triton_mount = triton_mount
     effective_fingerprint = fingerprint
     if effective_hf_mount is None or effective_fingerprint is None:
         effective_hf_mount, effective_fingerprint = prepare_task101_pilot_bundle_batch_runtime(
             settings=effective_settings,
             emit=emit,
         )
+    if effective_triton_mount is None:
+        effective_triton_mount = resolve_effective_triton_cache_dir(effective_settings)
     output_root_mount = resolve_effective_output_root(output_root, settings=effective_settings)
     write_task101_pilot_bundle_runtime_fingerprint(output_root, effective_fingerprint)
     command = build_containerized_task101_pilot_bundle_batch_command(
@@ -368,9 +418,11 @@ def run_containerized_task101_pilot_bundle_batch(
         output_root=output_root,
         manifest_family=manifest_family,
         batch_index=batch_index,
+        batch_count=batch_count,
         audio_codes_chunk_size=audio_codes_chunk_size,
         image=effective_settings.image,
         hf_mount=effective_hf_mount,
+        triton_mount=effective_triton_mount,
         output_root_mount=output_root_mount,
     )
     emit(
@@ -380,11 +432,14 @@ def run_containerized_task101_pilot_bundle_batch(
                 "event": "batch_container_launch",
                 "manifest_family": manifest_family,
                 "batch_index": batch_index,
+                "batch_count": batch_count,
                 "audio_codes_chunk_size": audio_codes_chunk_size,
                 "image": effective_fingerprint.image,
                 "image_id": effective_fingerprint.image_id,
                 "effective_output_root": output_root_mount.effective_root.as_posix(),
                 "used_output_root_home_mount": output_root_mount.used_home_mount,
+                "effective_triton_cache_dir": effective_triton_mount.effective_root.as_posix(),
+                "used_triton_cache_home_mount": effective_triton_mount.used_home_mount,
                 "command": ["sudo", "-n", "docker", *command],
             },
             ensure_ascii=False,
