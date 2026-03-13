@@ -7,6 +7,7 @@ librosa==0.11.0
 soundfile==0.13.1
 sentencepiece==0.2.1
 tensorboard==2.20.0
+mlflow==3.10.1
 einops==0.8.1
 onnxruntime==1.23.1
 sox==1.5.0

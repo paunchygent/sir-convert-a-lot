@@ -47,6 +47,22 @@ install_training_stop_handlers = importlib.import_module(
 ).install_training_stop_handlers
 
 
+@dataclass
+class _FakeMlflowRunInfo:
+    """Minimal MLflow run-info payload for tracker-summary unit tests."""
+
+    run_id: str
+    experiment_id: str
+    artifact_uri: str
+
+
+@dataclass
+class _FakeMlflowRun:
+    """Minimal unwrap-able MLflow tracker object."""
+
+    info: _FakeMlflowRunInfo
+
+
 class _FakeAccelerator:
     """Minimal accelerator stub for durable checkpoint helper tests."""
 
@@ -55,13 +71,24 @@ class _FakeAccelerator:
         *,
         gradient_accumulation_steps: int = 1,
         mixed_precision: str = "bf16",
-        log_with: str = "tensorboard",
+        log_with: str | list[str] = "tensorboard",
         project_dir: str = "",
     ) -> None:
-        del gradient_accumulation_steps, mixed_precision, log_with, project_dir
+        del gradient_accumulation_steps, mixed_precision, log_with
         self.is_main_process = True
         self.saved_paths: list[str] = []
         self.wait_count = 0
+        self.logged_metrics: list[tuple[dict[str, float | int], int]] = []
+        self.trackers_initialized = False
+        self.training_ended = False
+        artifact_root = Path(project_dir) / "mlflow-artifacts"
+        self._tracker = _FakeMlflowRun(
+            info=_FakeMlflowRunInfo(
+                run_id="fake-mlflow-run-id",
+                experiment_id="fake-mlflow-experiment-id",
+                artifact_uri=artifact_root.as_posix(),
+            )
+        )
 
     def wait_for_everyone(self) -> None:
         """Record one barrier call."""
@@ -125,6 +152,31 @@ class _FakeAccelerator:
     ) -> list[dict[str, torch.Tensor]]:
         """Return the remaining batches after one deterministic skip count."""
         return dataloader[skip:]
+
+    def init_trackers(
+        self,
+        _project_name: str,
+        config: dict[str, object] | None = None,
+        init_kwargs: dict[str, dict[str, object]] | None = None,
+    ) -> None:
+        """Accept tracker initialization without hitting real backends."""
+        del config, init_kwargs
+        self.trackers_initialized = True
+
+    def get_tracker(self, name: str, unwrap: bool = False) -> _FakeMlflowRun:
+        """Return the fake MLflow tracker expected by the summary helper."""
+        del unwrap
+        if name != "mlflow":
+            raise AssertionError(f"Unexpected tracker lookup: {name}")
+        return self._tracker
+
+    def end_training(self) -> None:
+        """Record that tracker shutdown happened."""
+        self.training_ended = True
+
+    def log(self, values: dict[str, float | int], *, step: int) -> None:
+        """Record one flat tracking payload."""
+        self.logged_metrics.append((values, step))
 
 
 class _FakeOptimizer:
@@ -733,8 +785,13 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
     assert summary.stop_requested is True
     assert summary.stop_signal == "SIGTERM"
     assert summary.stopped_early is True
+    assert summary.smoothed_loss is not None
     assert summary.latest_durable_checkpoint_step == 1
     assert summary.durable_checkpoint_retention == 2
     assert summary.durable_checkpoint_min_free_bytes == 16 * 1024**3
     assert summary.durable_checkpoint_paths == [summary.latest_durable_checkpoint_path]
+    assert summary.tracking is not None
+    assert summary.tracking.project_name == "task101-qwen-pilot"
+    assert summary.tracking.run_name == output_model_path.parent.name
+    assert summary.tracking.mlflow_run_id == "fake-mlflow-run-id"
     assert latest_checkpoint["reason"] == "signal-stop"

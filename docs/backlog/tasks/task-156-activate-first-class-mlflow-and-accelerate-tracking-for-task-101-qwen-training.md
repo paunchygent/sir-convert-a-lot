@@ -2,7 +2,7 @@
 id: task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training
 title: Activate first-class MLflow and Accelerate tracking for Task 101 Qwen training
 type: task
-status: proposed
+status: in_progress
 priority: critical
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -22,6 +22,7 @@ labels:
   - mlflow
   - tensorboard
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

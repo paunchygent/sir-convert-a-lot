@@ -50,6 +50,7 @@ qwen-preprocessing = [
     "torchaudio>=2.10.0",
     "transformers==4.57.3",
     "pyarrow==23.0.1",
+    "mlflow>=3.10.1",
 ]
 
 [tool.ruff]

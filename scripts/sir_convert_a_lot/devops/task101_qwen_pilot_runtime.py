@@ -46,6 +46,9 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime_contract import
 )
 
 CONTAINER_BUILD_ROOT = Path("/app/build")
+DEFAULT_TRACKER_PROJECT_NAME = "task101-qwen-pilot"
+DEFAULT_MLFLOW_EXPERIMENT_NAME = "task101-qwen-pilot"
+DEFAULT_TRACKER_BACKENDS = ("mlflow", "tensorboard")
 Task101PilotSettingsSnapshot = runtime_contract.Task101PilotSettingsSnapshot
 default_container_name = runtime_contract.default_container_name
 default_launch_id = runtime_contract.default_launch_id
@@ -74,6 +77,26 @@ def _eval_manifest_path(settings: Task101PilotSettings) -> Path:
     )
 
 
+def _tracker_root(run_root: Path) -> Path:
+    """Return the tracker root for one Task 101 run root."""
+    return run_root / "trackers"
+
+
+def _mlflow_tracking_uri(run_root: Path) -> str:
+    """Return the MLflow SQLite tracking URI for one Task 101 run root."""
+    return f"sqlite:///{(_tracker_root(run_root) / 'mlflow' / 'mlflow.db').as_posix()}"
+
+
+def _mlflow_artifact_root(run_root: Path) -> Path:
+    """Return the MLflow artifact root for one Task 101 run root."""
+    return _tracker_root(run_root) / "mlflow" / "artifacts"
+
+
+def _tensorboard_logging_dir(run_root: Path) -> Path:
+    """Return the TensorBoard logging directory for one Task 101 run root."""
+    return _tracker_root(run_root) / "tensorboard"
+
+
 def build_detached_pilot_command(
     settings: Task101PilotSettings,
     *,
@@ -82,6 +105,7 @@ def build_detached_pilot_command(
     scratch_mount: MountResolution,
     launch_id: str,
     container_name: str,
+    launch_root: Path,
     run_root: Path | None = None,
     resume_from_checkpoint: Path | None = None,
 ) -> tuple[list[str], Path]:
@@ -99,6 +123,22 @@ def build_detached_pilot_command(
     )
     container_eval_jsonl = _containerize_scratch_path(
         _eval_manifest_path(settings),
+        scratch_root=settings.scratch_build_root,
+    )
+    container_launch_metadata_path = _containerize_scratch_path(
+        launch_root / "launch.json",
+        scratch_root=settings.scratch_build_root,
+    )
+    container_pilot_bundle_root = _containerize_scratch_path(
+        settings.pilot_bundle_root,
+        scratch_root=settings.scratch_build_root,
+    )
+    container_mlflow_artifact_root = _containerize_scratch_path(
+        _mlflow_artifact_root(effective_run_root),
+        scratch_root=settings.scratch_build_root,
+    )
+    container_tensorboard_logging_dir = _containerize_scratch_path(
+        _tensorboard_logging_dir(effective_run_root),
         scratch_root=settings.scratch_build_root,
     )
     container_resume_checkpoint = None
@@ -143,14 +183,36 @@ def build_detached_pilot_command(
         settings.image,
         "-m",
         "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe",
+        "--launch-id",
+        launch_id,
+        "--launch-metadata-path",
+        container_launch_metadata_path,
         "--model-id",
         settings.model_id,
         "--train-jsonl",
         container_train_jsonl,
         "--eval-jsonl",
         container_eval_jsonl,
+        "--pilot-bundle-root",
+        container_pilot_bundle_root,
+        "--train-manifest-family",
+        settings.train_manifest_family,
+        "--eval-manifest-family",
+        settings.eval_manifest_family,
         "--output-dir",
         container_run_root,
+        "--tracker-project-name",
+        DEFAULT_TRACKER_PROJECT_NAME,
+        "--mlflow-experiment-name",
+        DEFAULT_MLFLOW_EXPERIMENT_NAME,
+        "--mlflow-tracking-uri",
+        _mlflow_tracking_uri(effective_run_root),
+        "--mlflow-artifact-root",
+        container_mlflow_artifact_root,
+        "--tensorboard-logging-dir",
+        container_tensorboard_logging_dir,
+        "--tracker-run-name",
+        launch_id,
         "--batch-size",
         str(settings.batch_size),
         "--lr",
@@ -179,6 +241,7 @@ def launch_detached_pilot(
     scratch_mount: MountResolution,
     launch_id: str,
     container_name: str,
+    launch_root: Path,
     dockerfile_path: Path | None = None,
     run_root: Path | None = None,
     resume_from_checkpoint: Path | None = None,
@@ -191,6 +254,7 @@ def launch_detached_pilot(
         scratch_mount=scratch_mount,
         launch_id=launch_id,
         container_name=container_name,
+        launch_root=launch_root,
         run_root=run_root,
         resume_from_checkpoint=resume_from_checkpoint,
     )
@@ -198,6 +262,7 @@ def launch_detached_pilot(
         command,
         label="docker run task101 detached pilot",
     ).strip()
+    tracking_root = _tracker_root(run_root)
     return Task101DetachedLaunch(
         generated_at=_utc_now_iso(),
         launch_id=launch_id,
@@ -216,6 +281,16 @@ def launch_detached_pilot(
         ),
         settings=snapshot_settings(settings),
         command=["sudo", "-n", "docker", *command],
+        tracking={
+            "tracker_backends": list(DEFAULT_TRACKER_BACKENDS),
+            "project_name": DEFAULT_TRACKER_PROJECT_NAME,
+            "run_name": launch_id,
+            "mlflow_experiment_name": DEFAULT_MLFLOW_EXPERIMENT_NAME,
+            "mlflow_tracking_uri": _mlflow_tracking_uri(run_root),
+            "mlflow_artifact_root": _mlflow_artifact_root(run_root).as_posix(),
+            "tensorboard_logging_dir": _tensorboard_logging_dir(run_root).as_posix(),
+            "tracker_root": tracking_root.as_posix(),
+        },
     )
 
 

@@ -28,21 +28,33 @@ import torch
 
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe_reporting import (
     _build_probe_report,
-    _completed_status_payload,
     _count_jsonl_rows,
-    _failed_status_payload,
-    _running_status_payload,
     _write_json,
+)
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_status_reporter import (
+    Task101PilotStatusReporter,
+    Task101PilotStatusReporterConfig,
 )
 
 
 def _parse_args() -> argparse.Namespace:
     """Parse CLI arguments for the detached Task 101 training probe."""
     parser = argparse.ArgumentParser(description="Run the detached Task 101 Qwen pilot probe.")
+    parser.add_argument("--launch-id", default=None)
+    parser.add_argument("--launch-metadata-path", type=Path, default=None)
     parser.add_argument("--model-id", default="Qwen/Qwen3-TTS-12Hz-1.7B-Base")
     parser.add_argument("--train-jsonl", type=Path, required=True)
     parser.add_argument("--eval-jsonl", type=Path, required=True)
+    parser.add_argument("--pilot-bundle-root", type=Path, default=None)
+    parser.add_argument("--train-manifest-family", default=None)
+    parser.add_argument("--eval-manifest-family", default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--tracker-project-name", default=None)
+    parser.add_argument("--mlflow-experiment-name", default=None)
+    parser.add_argument("--mlflow-tracking-uri", default=None)
+    parser.add_argument("--mlflow-artifact-root", default=None)
+    parser.add_argument("--tensorboard-logging-dir", default=None)
+    parser.add_argument("--tracker-run-name", default=None)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num-epochs", type=int, default=1)
@@ -65,9 +77,29 @@ def main() -> int:
     training_summary_path = output_dir / "training_summary.json"
     train_row_count = _count_jsonl_rows(args.train_jsonl)
     eval_row_count = _count_jsonl_rows(args.eval_jsonl)
-    _write_json(
-        status_path,
-        _running_status_payload(
+    tracking_plan = {
+        "tracker_backends": ["mlflow", "tensorboard"],
+        "project_name": None
+        if args.tracker_project_name is None
+        else str(args.tracker_project_name),
+        "run_name": str(args.tracker_run_name or output_dir.name),
+        "mlflow_experiment_name": None
+        if args.mlflow_experiment_name is None
+        else str(args.mlflow_experiment_name),
+        "mlflow_tracking_uri": None
+        if args.mlflow_tracking_uri is None
+        else str(args.mlflow_tracking_uri),
+        "mlflow_artifact_root": None
+        if args.mlflow_artifact_root is None
+        else str(args.mlflow_artifact_root),
+        "tensorboard_logging_dir": None
+        if args.tensorboard_logging_dir is None
+        else str(args.tensorboard_logging_dir),
+    }
+    status_reporter = Task101PilotStatusReporter(
+        Task101PilotStatusReporterConfig(
+            status_path=status_path,
+            launch_metadata_path=args.launch_metadata_path,
             train_jsonl=args.train_jsonl,
             eval_jsonl=args.eval_jsonl,
             output_dir=output_dir,
@@ -77,8 +109,10 @@ def main() -> int:
             durable_checkpoint_retention=int(args.durable_checkpoint_retention),
             durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
             resume_from_checkpoint=args.resume_from_checkpoint,
-        ),
+            tracking_plan=tracking_plan,
+        )
     )
+    status_reporter.write_startup()
     try:
         if not torch.cuda.is_available():
             raise SystemExit(
@@ -105,9 +139,42 @@ def main() -> int:
                 else args.resume_from_checkpoint.as_posix()
             ),
             metrics_output_json=training_summary_path.as_posix(),
+            tracker_project_name=(
+                None if args.tracker_project_name is None else str(args.tracker_project_name)
+            ),
+            mlflow_experiment_name=(
+                None if args.mlflow_experiment_name is None else str(args.mlflow_experiment_name)
+            ),
+            mlflow_tracking_uri=(
+                None if args.mlflow_tracking_uri is None else str(args.mlflow_tracking_uri)
+            ),
+            mlflow_artifact_root=(
+                None if args.mlflow_artifact_root is None else str(args.mlflow_artifact_root)
+            ),
+            tensorboard_logging_dir=(
+                None if args.tensorboard_logging_dir is None else str(args.tensorboard_logging_dir)
+            ),
+            tracker_run_name=(
+                None if args.tracker_run_name is None else str(args.tracker_run_name)
+            ),
+            pilot_bundle_root=(
+                None if args.pilot_bundle_root is None else args.pilot_bundle_root.as_posix()
+            ),
+            train_manifest_family=(
+                None if args.train_manifest_family is None else str(args.train_manifest_family)
+            ),
+            eval_manifest_family=(
+                None if args.eval_manifest_family is None else str(args.eval_manifest_family)
+            ),
             speaker_name="pilot_multi_speaker",
         )
-        training_summary = sft_12hz.train_with_args(training_args)
+        training_summary = sft_12hz.train_with_args(
+            training_args,
+            progress_callback=status_reporter.heartbeat,
+            tracker_ready_callback=lambda tracking: status_reporter.tracking_ready(
+                asdict(tracking)
+            ),
+        )
         report = _build_probe_report(
             model_id=str(args.model_id),
             train_jsonl=args.train_jsonl,
@@ -118,31 +185,12 @@ def main() -> int:
             training_summary=training_summary,
         )
         _write_json(report_path, asdict(report))
-        _write_json(
-            status_path,
-            _completed_status_payload(
-                train_jsonl=args.train_jsonl,
-                eval_jsonl=args.eval_jsonl,
-                output_dir=output_dir,
-                train_row_count=train_row_count,
-                eval_row_count=eval_row_count,
-                training_summary=training_summary,
-            ),
-        )
+        status_reporter.write_completed(training_summary)
         print(json.dumps(asdict(report), indent=2, sort_keys=True))
         return 0
     except Exception as exc:
         failure_path.write_text(traceback.format_exc(), encoding="utf-8")
-        _write_json(
-            status_path,
-            _failed_status_payload(
-                train_jsonl=args.train_jsonl,
-                eval_jsonl=args.eval_jsonl,
-                train_row_count=train_row_count,
-                eval_row_count=eval_row_count,
-                exc=exc,
-            ),
-        )
+        status_reporter.write_failed(exc)
         raise
 
 

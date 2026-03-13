@@ -70,6 +70,13 @@ def _write_markdown(path: Path, markdown: str) -> None:
 
 def _status_markdown(status: Task101DetachedStatus) -> str:
     """Render one concise markdown summary for the detached pilot."""
+    pilot_status = status.pilot_status or {}
+    tracking_payload = pilot_status.get("tracking")
+    mlflow_run_id = None
+    if isinstance(tracking_payload, dict):
+        raw_mlflow_run_id = tracking_payload.get("mlflow_run_id")
+        if isinstance(raw_mlflow_run_id, str):
+            mlflow_run_id = raw_mlflow_run_id
     lines = [
         "# Task 101 Detached Qwen Pilot Status",
         "",
@@ -86,6 +93,21 @@ def _status_markdown(status: Task101DetachedStatus) -> str:
         f"- pilot_status_found: `{status.pilot_status_found}`",
         f"- pilot_report_found: `{status.pilot_report_found}`",
         f"- latest_checkpoint_found: `{status.latest_checkpoint_found}`",
+        f"- pilot_updated_at: `{pilot_status.get('updated_at')}`",
+        f"- pilot_current_phase: `{pilot_status.get('current_phase')}`",
+        f"- pilot_current_epoch: `{pilot_status.get('current_epoch')}`",
+        f"- pilot_current_step: `{pilot_status.get('current_step')}`",
+        f"- pilot_latest_loss: `{pilot_status.get('latest_loss')}`",
+        f"- pilot_smoothed_loss: `{pilot_status.get('smoothed_loss')}`",
+        (
+            "- pilot_latest_durable_checkpoint_step: "
+            f"`{pilot_status.get('latest_durable_checkpoint_step')}`"
+        ),
+        (
+            "- pilot_latest_durable_checkpoint_saved_at: "
+            f"`{pilot_status.get('latest_durable_checkpoint_saved_at')}`"
+        ),
+        f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
         "",
         "## Logs Tail",
         "",
@@ -230,6 +252,9 @@ def _load_launch(
             default=default_durable_checkpoint_min_free_bytes,
         ),
     )
+    tracking_payload = payload.get("tracking")
+    if tracking_payload is not None and not isinstance(tracking_payload, dict):
+        raise SystemExit("Detached Task 101 launch metadata returned malformed `tracking`.")
     return Task101DetachedLaunch(
         generated_at=_required_str(payload, "generated_at"),
         launch_id=_required_str(payload, "launch_id"),
@@ -246,6 +271,7 @@ def _load_launch(
         resumed_from_checkpoint_path=_optional_str(payload, "resumed_from_checkpoint_path"),
         settings=settings_snapshot,
         command=_required_str_list(payload, "command"),
+        tracking=None if tracking_payload is None else dict(tracking_payload),
     )
 
 

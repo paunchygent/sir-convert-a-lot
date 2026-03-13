@@ -46,13 +46,14 @@ Active focus is Epic 08: Qwen3-TTS Swedish language expansion, the live Hemma
 Task 101 run, and Story 26 throughput/observability hardening toward the new
 `>= 90%` steady-state GPU-busy target.
 This file is the canonical long-term memory index for session progress; session handoff summaries must be archived here when `handoff.md` is pruned. Current epic entrypoint:
+
 - `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
-Primary implementation story (active sequence): Story 26 is now the explicit
-Task 101 follow-on optimization story:
-`docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
-Story 25 remains the baseline/runtime-contract story that the current live
-Hemma run still depends on:
-`docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+  Primary implementation story (active sequence): Story 26 is now the explicit
+  Task 101 follow-on optimization story:
+  `docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
+  Story 25 remains the baseline/runtime-contract story that the current live
+  Hemma run still depends on:
+  `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
 
 ## Worklog
 
@@ -204,6 +205,22 @@ Hemma run still depends on:
   - Completed `T155` under `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`: `sft_12hz.py`, `run_task101_hemma_qwen_pilot.py`, `task101_qwen_pilot_runtime.py`, and `task101_qwen_pilot_probe.py` now delegate checkpoint, metadata, runtime-contract, artifact-parsing, and report/status helpers to dedicated modules, bringing the full Task 101/Qwen refactor slice back into SRP alignment without changing the external runtime contracts.
   - Wrote the live analysis reference `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`, capturing the active Hemma run state, smoothed loss interpretation, resource-monitor evidence, checkpoint churn, missing tracker artifacts, confirmed robust surfaces, and the decision to treat `>= 90%` steady-state median GPU busy as the next saturation gate.
   - Opened Story 26 as the explicit Task 101 throughput/observability hardening lane and decomposed it into ordered tasks `T156-T165` covering first-class tracking, live heartbeat status, default high-resolution monitoring, checkpoint-cadence/step-semantics correction, dataloader/device-transfer tuning, `ref_mel` caching plus conditional precompute, bounded profiling, saturation-oriented launch profiles, and later MIOpen remediation.
+  - Implemented the first two Story 26 slices locally and kept the task order intact:
+    `T156` now adds first-class MLflow plus TensorBoard tracking to the governed
+    Task 101 lane with tracker metadata persisted into launch/status/report
+    artifacts, and `T157` now adds truthful live status heartbeats with phase
+    accounting (`startup`, `train`, `checkpoint-save`, `signal-stop`,
+    terminal completion/failure), extracted markdown status fields, and focused
+    tests for both tracker and status-reporter seams.
+  - Local validation passed for the `T156`/`T157` slice:
+    `pdm run format-all`, `pdm run lint-fix`, `pdm run typecheck-all`,
+    `pdm run pytest-root tests/sir_convert_a_lot/test_task100_qwen_finetune_smoke.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_qwen_training_tracking.py tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py -q`,
+    `pdm run validate-tasks`, `pdm run validate-docs`, and
+    `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`.
+  - The remaining same-session acceptance work is operational rather than local:
+    pull the committed branch on Hemma, resume the detached Task 101 run through
+    the governed wrapper, and confirm that live MLflow/TensorBoard artifacts plus
+    the new `status.json` heartbeat fields are visible during the resumed run.
 
 ## Next Actions
 

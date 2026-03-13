@@ -90,7 +90,7 @@ def test_task100_run_smoke_probe_parses_runtime_fields(monkeypatch: pytest.Monke
             "Warning: flash-attn is not installed. Will only run the manual PyTorch version.\n"
             "********\n\n"
             "{"
-            '"dependency_versions":{"qwen-tts":"0.1.1","torch":"2.10.0+rocm7.1"},'
+            '"dependency_versions":{"mlflow":"3.10.1","qwen-tts":"0.1.1","torch":"2.10.0+rocm7.1"},'
             '"model_id":"Qwen/Qwen3-TTS-12Hz-1.7B-Base",'
             '"resolved_config_path":"/cache/huggingface/hub/models--Qwen/config.json",'
             '"resolved_model_path":"/cache/huggingface/hub/models--Qwen",'

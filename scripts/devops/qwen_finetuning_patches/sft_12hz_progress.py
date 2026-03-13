@@ -1,0 +1,73 @@
+"""Progress heartbeat helpers for the patched Qwen fine-tuning trainer.
+
+Purpose:
+    Keep live phase/heartbeat dataclasses and heartbeat-construction helpers
+    out of `sft_12hz.py` so the trainer can emit truthful progress updates
+    without owning the detached Task 101 status payload contract directly.
+
+Relationships:
+    - Imported by `sft_12hz.py` to emit bounded live training heartbeats.
+    - Consumed by the detached Task 101 probe status reporter to persist
+      current phase, loss, and checkpoint progress into `status.json`.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Literal
+
+from sft_12hz_checkpointing import DurableCheckpointMetadata
+
+TrainingPhase = Literal["startup", "train", "checkpoint-save", "signal-stop"]
+
+
+@dataclass(frozen=True)
+class TrainingProgressHeartbeat:
+    """One bounded live heartbeat emitted by the patched Qwen trainer."""
+
+    phase: TrainingPhase
+    updated_at: str
+    current_epoch: int
+    current_step: int
+    latest_loss: float | None
+    smoothed_loss: float | None
+    latest_durable_checkpoint_path: str | None
+    latest_durable_checkpoint_step: int | None
+    latest_durable_checkpoint_saved_at: str | None
+
+
+def _utc_now_iso() -> str:
+    """Return the current UTC timestamp in RFC3339 format."""
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def build_training_progress_heartbeat(
+    *,
+    phase: TrainingPhase,
+    current_epoch: int,
+    current_step: int,
+    latest_loss: float | None,
+    smoothed_loss: float | None,
+    latest_durable_checkpoint: DurableCheckpointMetadata | None,
+) -> TrainingProgressHeartbeat:
+    """Build one immutable progress heartbeat from the trainer state."""
+    return TrainingProgressHeartbeat(
+        phase=phase,
+        updated_at=_utc_now_iso(),
+        current_epoch=current_epoch,
+        current_step=current_step,
+        latest_loss=latest_loss,
+        smoothed_loss=smoothed_loss,
+        latest_durable_checkpoint_path=(
+            None if latest_durable_checkpoint is None else latest_durable_checkpoint.checkpoint_path
+        ),
+        latest_durable_checkpoint_step=(
+            None
+            if latest_durable_checkpoint is None
+            else latest_durable_checkpoint.optimizer_steps_completed
+        ),
+        latest_durable_checkpoint_saved_at=(
+            None if latest_durable_checkpoint is None else latest_durable_checkpoint.saved_at
+        ),
+    )

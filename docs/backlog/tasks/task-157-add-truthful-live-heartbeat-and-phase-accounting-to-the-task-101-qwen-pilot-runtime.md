@@ -2,7 +2,7 @@
 id: task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime
 title: Add truthful live heartbeat and phase accounting to the Task 101 Qwen pilot runtime
 type: task
-status: proposed
+status: in_progress
 priority: critical
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -19,6 +19,7 @@ labels:
   - status
   - monitoring
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

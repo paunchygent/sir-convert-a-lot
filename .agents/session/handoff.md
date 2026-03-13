@@ -2,79 +2,75 @@
 
 ## Session Summary (2026-03-13)
 
-- Completed `T154` to reconcile the post-`T153` runtime, test, and docs gaps.
-- Completed `T155` to bring the remaining Qwen checkpoint and Task 101 pilot
-  god files and remaining runtime/probe surfaces back into SRP alignment
-  without changing runtime contracts.
+- Implemented `T156` and `T157` in Story 26 order rather than skipping ahead.
 - Code landed across:
+  - `containers/qwen-finetune-hemma/requirements.txt`
+  - `pyproject.toml`
+  - `pdm.lock`
   - `scripts/devops/qwen_finetuning_patches/sft_12hz.py`
-  - `scripts/devops/qwen_finetuning_patches/sft_12hz_checkpointing.py`
-  - `scripts/devops/qwen_finetuning_patches/sft_12hz_training_rows.py`
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_progress.py`
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_tracking.py`
   - `scripts/sir_convert_a_lot/devops/run_task101_hemma_qwen_pilot.py`
+  - `scripts/sir_convert_a_lot/devops/task100_qwen_finetune_smoke_probe.py`
   - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_metadata.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime_contract.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime_artifacts.py`
   - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe.py`
   - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe_reporting.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime_contract.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_status_reporter.py`
   - `tests/sir_convert_a_lot/test_qwen_training_resume.py`
+  - `tests/sir_convert_a_lot/test_qwen_training_tracking.py`
+  - `tests/sir_convert_a_lot/test_task100_qwen_finetune_smoke.py`
   - `tests/sir_convert_a_lot/test_task101_qwen_pilot.py`
-  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
-  - `docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md`
-  - `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`
-  - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+  - `tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py`
+  - `docs/backlog/tasks/task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training.md`
+  - `docs/backlog/tasks/task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime.md`
   - `docs/backlog/current.md`
 - Main implementation outcomes:
-  - pre-`T153` Task 101 `launch.json` payloads now fall forward with canonical
-    durable-checkpoint defaults during `status` and `resume`
-  - first durable-checkpoint saves now use a conservative fallback size based
-    on the measured Hemma trainer-state footprint
-  - durable trainer-state saves now stage through an incomplete directory and
-    clean failed attempts so one bad save does not wedge the same step forever
-  - the focused regression tests now prove validation-before-prune ordering,
-    export preservation, first-save threshold behavior, and launch/status/report
-    checkpoint-policy fields
-  - durable checkpoint persistence now lives in its own helper module, training
-    row manifest resolution now lives in its own helper module, and the
-    patched `sft_12hz.py` entrypoint is back under `500` lines
-  - detached Task 101 metadata/path/status parsing and artifact rendering now
-    live in a dedicated helper module, and
-    `run_task101_hemma_qwen_pilot.py` is back under `500` lines
-  - detached Task 101 runtime contracts and artifact/Docker-inspect parsing
-    now live in dedicated helper modules, and
-    `task101_qwen_pilot_runtime.py` is down to `272` lines
-  - in-container probe report/status payload assembly now lives in a dedicated
-    helper module, and `task101_qwen_pilot_probe.py` is down to `146` lines
-  - Task 101, Story 25, `current.md`, and the session handoff now agree on the
-    bounded pilot state and the active Epic 08 lane
+  - governed Qwen dependencies now include `mlflow==3.10.1`, and the Task 101
+    lane now initializes Accelerate tracking explicitly for MLflow plus
+    TensorBoard rather than relying on the earlier half-wired posture
+  - Task 101 launch/status/report artifacts now persist tracking metadata such
+    as run name, experiment name, tracking URI, artifact roots, and live
+    MLflow run ids once trackers initialize
+  - `sft_12hz.py` now emits smoothed loss plus bounded live progress heartbeats
+    with explicit phase accounting for `startup`, `train`,
+    `checkpoint-save`, and `signal-stop`
+  - the detached in-container probe now persists truthful `status.json`
+    heartbeats during training, maintains `phase_history`, merges tracker
+    metadata back into `launch.json`, and preserves the live fields in terminal
+    completed/failed payloads
+  - Task 101 markdown status rendering now surfaces live phase, step, loss,
+    checkpoint timestamp, and MLflow run id directly instead of burying that
+    information only inside the raw nested JSON block
 
 ## Validation Status
 
 - `PASS` `pdm run format-all`
 - `PASS` `pdm run lint-fix`
 - `PASS` `pdm run typecheck-all`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task100_qwen_finetune_smoke.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_qwen_training_tracking.py tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py -q`
 - `PASS` `pdm run validate-tasks`
 - `PASS` `pdm run validate-docs`
 - `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Active Blocker
 
-- No remediation blocker remains in the bounded checkpoint contract or its
-  planning surfaces.
-- The remaining decision is operational: choose the real Task 101 uncapped
-  launch settings and start the run under the remediated bounded checkpoint
-  contract.
+- Local implementation and validation are complete for `T156` and `T157`.
+- The remaining acceptance work is live Hemma evidence:
+  verify that a resumed detached Task 101 run produces reviewable MLflow and
+  TensorBoard artifacts while `status.json` updates truthfully during training.
 
 ## Immediate Next Step
 
-- Launch the uncapped Hemma Task 101 run from the completed governed pilot
-  bundle using the remediated bounded checkpoint policy:
-  - `durable_checkpoint_retention=2`
-  - `durable_checkpoint_min_free_bytes=17179869184`
-- Observe `latest_checkpoint.json`, `status.json`, `report.json`, and
-  `/srv/scratch` free space during the first checkpoint interval to confirm the
-  live first-save behavior matches the conservative fallback estimate.
+- Commit and push the current Story 26 `T156` + `T157` slice.
+- Pull the branch on Hemma through the canonical repo wrapper.
+- Resume the detached Task 101 run from the latest durable checkpoint.
+- Inspect the resumed run root for:
+  - `status.json` heartbeat movement while training is still running
+  - `launch.json` tracking metadata with live MLflow ids
+  - TensorBoard event files under `trackers/tensorboard/`
+  - MLflow artifacts and DB under `trackers/mlflow/`
 
 ## Earlier Session Summary (2026-03-12)
 
