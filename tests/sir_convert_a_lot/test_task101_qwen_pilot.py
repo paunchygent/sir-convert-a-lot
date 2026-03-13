@@ -55,6 +55,26 @@ def test_task101_parser_launch_defaults() -> None:
     assert args.checkpoint_interval_steps == DEFAULT_CHECKPOINT_INTERVAL_STEPS
     assert args.durable_checkpoint_retention == DEFAULT_DURABLE_CHECKPOINT_RETENTION
     assert args.durable_checkpoint_min_free_bytes == DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES
+    assert args.dataloader_num_workers == 4
+    assert args.dataloader_pin_memory == "true"
+    assert args.dataloader_persistent_workers == "true"
+    assert args.dataloader_prefetch_factor == 4
+    assert args.non_blocking_transfer == "true"
+    assert args.ref_mel_cache_enabled == "true"
+    assert args.ref_mel_cache_max_items == 2048
+    assert args.torch_profiler_enabled == "false"
+    assert args.torch_profiler_wait_steps == 1
+    assert args.torch_profiler_warmup_steps == 1
+    assert args.torch_profiler_active_steps == 4
+    assert args.torch_profiler_repeat == 1
+    assert args.torch_profiler_record_shapes == "true"
+    assert args.torch_profiler_profile_memory == "true"
+    assert args.torch_profiler_with_stack == "false"
+    assert args.rocm_profiler_enabled == "false"
+    assert args.resource_monitor_interval_seconds == 1.0
+    assert args.resource_monitor_runtime_kind == "rocm"
+    assert args.resource_monitor_duration_seconds is None
+    assert args.disable_resource_monitor is False
     assert args.skip_build is False
 
 
@@ -160,6 +180,22 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
     assert command[retention_index + 1] == "2"
     free_bytes_index = command.index("--durable-checkpoint-min-free-bytes")
     assert command[free_bytes_index + 1] == str(16 * 1024**3)
+    dataloader_workers_index = command.index("--dataloader-num-workers")
+    assert command[dataloader_workers_index + 1] == "4"
+    dataloader_pin_index = command.index("--dataloader-pin-memory")
+    assert command[dataloader_pin_index + 1] == "true"
+    dataloader_persistent_index = command.index("--dataloader-persistent-workers")
+    assert command[dataloader_persistent_index + 1] == "true"
+    dataloader_prefetch_index = command.index("--dataloader-prefetch-factor")
+    assert command[dataloader_prefetch_index + 1] == "4"
+    non_blocking_index = command.index("--non-blocking-transfer")
+    assert command[non_blocking_index + 1] == "true"
+    ref_mel_cache_enabled_index = command.index("--ref-mel-cache-enabled")
+    assert command[ref_mel_cache_enabled_index + 1] == "true"
+    ref_mel_cache_max_items_index = command.index("--ref-mel-cache-max-items")
+    assert command[ref_mel_cache_max_items_index + 1] == "2048"
+    torch_profiler_enabled_index = command.index("--torch-profiler-enabled")
+    assert command[torch_profiler_enabled_index + 1] == "false"
     eval_index = command.index("--eval-jsonl")
     assert command[eval_index + 1].endswith("/swedish_checkpoint_dev.prepared.jsonl")
     mlflow_index = command.index("--mlflow-tracking-uri")
@@ -618,7 +654,15 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
     )
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
 
-    result = main(["resume", "--output-root", output_root.as_posix(), "--skip-build"])
+    result = main(
+        [
+            "resume",
+            "--output-root",
+            output_root.as_posix(),
+            "--skip-build",
+            "--disable-resource-monitor",
+        ]
+    )
 
     assert result == 0
     assert captured["dockerfile_path"] == Path("containers/custom-qwen-finetune/Dockerfile")
@@ -816,7 +860,15 @@ def test_task101_resume_defaults_checkpoint_policy_for_pre_t153_launch_metadata(
     )
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
 
-    result = main(["resume", "--output-root", output_root.as_posix(), "--skip-build"])
+    result = main(
+        [
+            "resume",
+            "--output-root",
+            output_root.as_posix(),
+            "--skip-build",
+            "--disable-resource-monitor",
+        ]
+    )
 
     assert result == 0
     settings = captured["settings"]
@@ -1005,6 +1057,7 @@ def test_task101_launch_writes_checkpoint_policy_into_launch_metadata(
             "--durable-checkpoint-min-free-bytes",
             str(20 * 1024**3),
             "--skip-build",
+            "--disable-resource-monitor",
         ]
     )
 

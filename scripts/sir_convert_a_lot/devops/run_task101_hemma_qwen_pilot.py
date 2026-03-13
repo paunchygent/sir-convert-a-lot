@@ -18,7 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Literal
 
@@ -55,6 +55,11 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_metadata import (
     _write_latest_pointer,
     _write_markdown,
 )
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_resource_monitor import (
+    DEFAULT_TASK101_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    DEFAULT_TASK101_RESOURCE_MONITOR_RUNTIME_KIND,
+    launch_task101_resource_monitor,
+)
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime import (
     inspect_detached_pilot,
     launch_detached_pilot,
@@ -84,9 +89,25 @@ DEFAULT_BATCH_SIZE = 1
 DEFAULT_LR = 2e-5
 DEFAULT_NUM_EPOCHS = 1
 DEFAULT_MAX_STEPS = 8
-DEFAULT_CHECKPOINT_INTERVAL_STEPS = 2
+DEFAULT_CHECKPOINT_INTERVAL_STEPS = 100
 DEFAULT_DURABLE_CHECKPOINT_RETENTION = 2
 DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES = 16 * 1024**3
+DEFAULT_DATALOADER_NUM_WORKERS = 4
+DEFAULT_DATALOADER_PIN_MEMORY = True
+DEFAULT_DATALOADER_PERSISTENT_WORKERS = True
+DEFAULT_DATALOADER_PREFETCH_FACTOR = 4
+DEFAULT_NON_BLOCKING_TRANSFER = True
+DEFAULT_REF_MEL_CACHE_ENABLED = True
+DEFAULT_REF_MEL_CACHE_MAX_ITEMS = 2048
+DEFAULT_TORCH_PROFILER_ENABLED = False
+DEFAULT_TORCH_PROFILER_WAIT_STEPS = 1
+DEFAULT_TORCH_PROFILER_WARMUP_STEPS = 1
+DEFAULT_TORCH_PROFILER_ACTIVE_STEPS = 4
+DEFAULT_TORCH_PROFILER_REPEAT = 1
+DEFAULT_TORCH_PROFILER_RECORD_SHAPES = True
+DEFAULT_TORCH_PROFILER_PROFILE_MEMORY = True
+DEFAULT_TORCH_PROFILER_WITH_STACK = False
+DEFAULT_ROCM_PROFILER_ENABLED = False
 LaunchCommand = Literal["launch", "resume", "status", "stop"]
 
 
@@ -153,6 +174,106 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES,
     )
+    launch.add_argument(
+        "--dataloader-num-workers",
+        type=int,
+        default=DEFAULT_DATALOADER_NUM_WORKERS,
+    )
+    launch.add_argument(
+        "--dataloader-pin-memory",
+        choices=("true", "false"),
+        default="true" if DEFAULT_DATALOADER_PIN_MEMORY else "false",
+    )
+    launch.add_argument(
+        "--dataloader-persistent-workers",
+        choices=("true", "false"),
+        default="true" if DEFAULT_DATALOADER_PERSISTENT_WORKERS else "false",
+    )
+    launch.add_argument(
+        "--dataloader-prefetch-factor",
+        type=int,
+        default=DEFAULT_DATALOADER_PREFETCH_FACTOR,
+    )
+    launch.add_argument(
+        "--non-blocking-transfer",
+        choices=("true", "false"),
+        default="true" if DEFAULT_NON_BLOCKING_TRANSFER else "false",
+    )
+    launch.add_argument(
+        "--ref-mel-cache-enabled",
+        choices=("true", "false"),
+        default="true" if DEFAULT_REF_MEL_CACHE_ENABLED else "false",
+    )
+    launch.add_argument(
+        "--ref-mel-cache-max-items",
+        type=int,
+        default=DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
+    )
+    launch.add_argument(
+        "--torch-profiler-enabled",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_ENABLED else "false",
+    )
+    launch.add_argument(
+        "--torch-profiler-wait-steps",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_WAIT_STEPS,
+    )
+    launch.add_argument(
+        "--torch-profiler-warmup-steps",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_WARMUP_STEPS,
+    )
+    launch.add_argument(
+        "--torch-profiler-active-steps",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
+    )
+    launch.add_argument(
+        "--torch-profiler-repeat",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_REPEAT,
+    )
+    launch.add_argument(
+        "--torch-profiler-record-shapes",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_RECORD_SHAPES else "false",
+    )
+    launch.add_argument(
+        "--torch-profiler-profile-memory",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_PROFILE_MEMORY else "false",
+    )
+    launch.add_argument(
+        "--torch-profiler-with-stack",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_WITH_STACK else "false",
+    )
+    launch.add_argument(
+        "--rocm-profiler-enabled",
+        choices=("true", "false"),
+        default="true" if DEFAULT_ROCM_PROFILER_ENABLED else "false",
+    )
+    launch.add_argument(
+        "--resource-monitor-interval-seconds",
+        type=float,
+        default=DEFAULT_TASK101_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    )
+    launch.add_argument(
+        "--resource-monitor-runtime-kind",
+        choices=("rocm", "cuda", "none"),
+        default=DEFAULT_TASK101_RESOURCE_MONITOR_RUNTIME_KIND,
+    )
+    launch.add_argument(
+        "--resource-monitor-duration-seconds",
+        type=float,
+        default=None,
+    )
+    launch.add_argument(
+        "--disable-resource-monitor",
+        action="store_true",
+        help="Disable the pilot-scoped detached resource monitor companion launch.",
+    )
     launch.add_argument("--launch-id", default=None)
     launch.add_argument(
         "--skip-build",
@@ -169,6 +290,26 @@ def _build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--launch-root", type=Path, default=None)
     resume.add_argument("--checkpoint-path", type=Path, default=None)
     resume.add_argument("--launch-id", default=None)
+    resume.add_argument(
+        "--resource-monitor-interval-seconds",
+        type=float,
+        default=DEFAULT_TASK101_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    )
+    resume.add_argument(
+        "--resource-monitor-runtime-kind",
+        choices=("rocm", "cuda", "none"),
+        default=DEFAULT_TASK101_RESOURCE_MONITOR_RUNTIME_KIND,
+    )
+    resume.add_argument(
+        "--resource-monitor-duration-seconds",
+        type=float,
+        default=None,
+    )
+    resume.add_argument(
+        "--disable-resource-monitor",
+        action="store_true",
+        help="Disable the pilot-scoped detached resource monitor companion launch.",
+    )
     resume.add_argument(
         "--skip-build",
         action="store_true",
@@ -192,6 +333,22 @@ def _load_launch(launch_root: Path) -> Task101DetachedLaunch:
         launch_root,
         default_durable_checkpoint_retention=DEFAULT_DURABLE_CHECKPOINT_RETENTION,
         default_durable_checkpoint_min_free_bytes=DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES,
+        default_dataloader_num_workers=DEFAULT_DATALOADER_NUM_WORKERS,
+        default_dataloader_pin_memory=DEFAULT_DATALOADER_PIN_MEMORY,
+        default_dataloader_persistent_workers=DEFAULT_DATALOADER_PERSISTENT_WORKERS,
+        default_dataloader_prefetch_factor=DEFAULT_DATALOADER_PREFETCH_FACTOR,
+        default_non_blocking_transfer=DEFAULT_NON_BLOCKING_TRANSFER,
+        default_ref_mel_cache_enabled=DEFAULT_REF_MEL_CACHE_ENABLED,
+        default_ref_mel_cache_max_items=DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
+        default_torch_profiler_enabled=DEFAULT_TORCH_PROFILER_ENABLED,
+        default_torch_profiler_wait_steps=DEFAULT_TORCH_PROFILER_WAIT_STEPS,
+        default_torch_profiler_warmup_steps=DEFAULT_TORCH_PROFILER_WARMUP_STEPS,
+        default_torch_profiler_active_steps=DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
+        default_torch_profiler_repeat=DEFAULT_TORCH_PROFILER_REPEAT,
+        default_torch_profiler_record_shapes=DEFAULT_TORCH_PROFILER_RECORD_SHAPES,
+        default_torch_profiler_profile_memory=DEFAULT_TORCH_PROFILER_PROFILE_MEMORY,
+        default_torch_profiler_with_stack=DEFAULT_TORCH_PROFILER_WITH_STACK,
+        default_rocm_profiler_enabled=DEFAULT_ROCM_PROFILER_ENABLED,
     )
 
 
@@ -257,6 +414,26 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint_interval_steps=int(args.checkpoint_interval_steps),
             durable_checkpoint_retention=int(args.durable_checkpoint_retention),
             durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
+            dataloader_num_workers=int(args.dataloader_num_workers),
+            dataloader_pin_memory=str(args.dataloader_pin_memory).lower() == "true",
+            dataloader_persistent_workers=(
+                str(args.dataloader_persistent_workers).lower() == "true"
+            ),
+            dataloader_prefetch_factor=int(args.dataloader_prefetch_factor),
+            non_blocking_transfer=str(args.non_blocking_transfer).lower() == "true",
+            ref_mel_cache_enabled=str(args.ref_mel_cache_enabled).lower() == "true",
+            ref_mel_cache_max_items=int(args.ref_mel_cache_max_items),
+            torch_profiler_enabled=str(args.torch_profiler_enabled).lower() == "true",
+            torch_profiler_wait_steps=int(args.torch_profiler_wait_steps),
+            torch_profiler_warmup_steps=int(args.torch_profiler_warmup_steps),
+            torch_profiler_active_steps=int(args.torch_profiler_active_steps),
+            torch_profiler_repeat=int(args.torch_profiler_repeat),
+            torch_profiler_record_shapes=str(args.torch_profiler_record_shapes).lower() == "true",
+            torch_profiler_profile_memory=(
+                str(args.torch_profiler_profile_memory).lower() == "true"
+            ),
+            torch_profiler_with_stack=str(args.torch_profiler_with_stack).lower() == "true",
+            rocm_profiler_enabled=str(args.rocm_profiler_enabled).lower() == "true",
         )
         _ensure_pilot_bundle_exists(
             settings.pilot_bundle_root,
@@ -296,6 +473,20 @@ def main(argv: list[str] | None = None) -> int:
             launch_root=launch_root,
             dockerfile_path=Path(args.dockerfile_path),
         )
+        resource_monitor = None
+        if not bool(args.disable_resource_monitor):
+            resource_monitor = launch_task101_resource_monitor(
+                task101_launch_id=launch_id,
+                task101_launch_root=launch_root,
+                runtime_kind=args.resource_monitor_runtime_kind,
+                interval_seconds=float(args.resource_monitor_interval_seconds),
+                duration_seconds=(
+                    None
+                    if args.resource_monitor_duration_seconds is None
+                    else float(args.resource_monitor_duration_seconds)
+                ),
+            )
+            launch = replace(launch, resource_monitor=resource_monitor)
         _write_json(
             _launch_metadata_path(launch_root),
             {
@@ -360,6 +551,20 @@ def main(argv: list[str] | None = None) -> int:
             run_root=source_run_root,
             resume_from_checkpoint=resume_checkpoint_path,
         )
+        resource_monitor = None
+        if not bool(args.disable_resource_monitor):
+            resource_monitor = launch_task101_resource_monitor(
+                task101_launch_id=launch_id,
+                task101_launch_root=launch_root,
+                runtime_kind=args.resource_monitor_runtime_kind,
+                interval_seconds=float(args.resource_monitor_interval_seconds),
+                duration_seconds=(
+                    None
+                    if args.resource_monitor_duration_seconds is None
+                    else float(args.resource_monitor_duration_seconds)
+                ),
+            )
+            launch = replace(launch, resource_monitor=resource_monitor)
         _write_json(
             _launch_metadata_path(launch_root),
             {

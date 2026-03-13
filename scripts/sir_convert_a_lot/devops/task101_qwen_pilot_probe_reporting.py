@@ -19,10 +19,12 @@ import json
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import torch
 
-from scripts.devops.qwen_finetuning_patches.sft_12hz import TrainingSummary
+if TYPE_CHECKING:
+    from scripts.devops.qwen_finetuning_patches.sft_12hz import TrainingSummary
 
 
 @dataclass(frozen=True)
@@ -80,8 +82,12 @@ def _running_status_payload(
     train_row_count: int,
     eval_row_count: int,
     checkpoint_interval_steps: int,
+    gradient_accumulation_steps: int,
     durable_checkpoint_retention: int,
     durable_checkpoint_min_free_bytes: int,
+    dataloader_tuning: dict[str, object] | None,
+    ref_mel_cache_config: dict[str, object] | None,
+    profiling_plan: dict[str, object] | None,
     resume_from_checkpoint: Path | None,
     tracking_plan: dict[str, object] | None = None,
     tracking: dict[str, object] | None = None,
@@ -92,6 +98,20 @@ def _running_status_payload(
     current_phase = None if live_progress is None else live_progress.get("phase")
     current_epoch = None if live_progress is None else live_progress.get("current_epoch")
     current_step = None if live_progress is None else live_progress.get("current_step")
+    raw_current_optimizer_step = (
+        None if live_progress is None else live_progress.get("current_optimizer_step")
+    )
+    current_optimizer_step = (
+        current_step if raw_current_optimizer_step is None else raw_current_optimizer_step
+    )
+    raw_current_train_iteration = (
+        None if live_progress is None else live_progress.get("current_train_iteration")
+    )
+    current_train_iteration = (
+        current_optimizer_step
+        if raw_current_train_iteration is None
+        else raw_current_train_iteration
+    )
     latest_loss = None if live_progress is None else live_progress.get("latest_loss")
     smoothed_loss = None if live_progress is None else live_progress.get("smoothed_loss")
     latest_durable_checkpoint_path = (
@@ -113,15 +133,22 @@ def _running_status_payload(
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
         "upstream_trainer_uses_eval_manifest": False,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
+        "step_semantics": _step_semantics_payload(gradient_accumulation_steps),
         "checkpoint_interval_steps": checkpoint_interval_steps,
         "durable_checkpoint_retention": durable_checkpoint_retention,
         "durable_checkpoint_min_free_bytes": durable_checkpoint_min_free_bytes,
+        "dataloader_tuning": dataloader_tuning,
+        "ref_mel_cache": ref_mel_cache_config,
+        "profiling": profiling_plan,
         "resumed_from_checkpoint_path": (
             None if resume_from_checkpoint is None else resume_from_checkpoint.as_posix()
         ),
         "current_phase": current_phase,
         "current_epoch": current_epoch,
         "current_step": current_step,
+        "current_optimizer_step": current_optimizer_step,
+        "current_train_iteration": current_train_iteration,
         "latest_loss": latest_loss,
         "smoothed_loss": smoothed_loss,
         "latest_durable_checkpoint_path": latest_durable_checkpoint_path,
@@ -140,7 +167,7 @@ def _completed_status_payload(
     output_dir: Path,
     train_row_count: int,
     eval_row_count: int,
-    training_summary: TrainingSummary,
+    training_summary: "TrainingSummary",
     live_progress: dict[str, object] | None = None,
     phase_history: list[dict[str, object]] | None = None,
 ) -> dict[str, object]:
@@ -148,6 +175,20 @@ def _completed_status_payload(
     current_phase = "signal-stop" if training_summary.stopped_early else "completed"
     current_epoch = None if live_progress is None else live_progress.get("current_epoch")
     current_step = None if live_progress is None else live_progress.get("current_step")
+    raw_current_optimizer_step = (
+        None if live_progress is None else live_progress.get("current_optimizer_step")
+    )
+    current_optimizer_step = (
+        current_step if raw_current_optimizer_step is None else raw_current_optimizer_step
+    )
+    raw_current_train_iteration = (
+        None if live_progress is None else live_progress.get("current_train_iteration")
+    )
+    current_train_iteration = (
+        current_optimizer_step
+        if raw_current_train_iteration is None
+        else raw_current_train_iteration
+    )
     latest_loss = None if live_progress is None else live_progress.get("latest_loss")
     smoothed_loss = None if live_progress is None else live_progress.get("smoothed_loss")
     latest_durable_checkpoint_saved_at = (
@@ -163,15 +204,22 @@ def _completed_status_payload(
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
         "upstream_trainer_uses_eval_manifest": False,
+        "gradient_accumulation_steps": training_summary.gradient_accumulation_steps,
+        "step_semantics": _step_semantics_payload(training_summary.gradient_accumulation_steps),
         "current_phase": current_phase,
         "current_epoch": current_epoch,
         "current_step": current_step,
+        "current_optimizer_step": current_optimizer_step,
+        "current_train_iteration": current_train_iteration,
         "latest_loss": latest_loss,
         "smoothed_loss": smoothed_loss,
         "optimizer_steps_completed": training_summary.optimizer_steps_completed,
+        "train_iterations_completed": training_summary.train_iterations_completed,
         "checkpoint_interval_steps": training_summary.checkpoint_interval_steps,
         "durable_checkpoint_retention": training_summary.durable_checkpoint_retention,
         "durable_checkpoint_min_free_bytes": training_summary.durable_checkpoint_min_free_bytes,
+        "dataloader_tuning": training_summary.dataloader_tuning,
+        "ref_mel_cache": training_summary.ref_mel_cache,
         "resumed_from_checkpoint_path": training_summary.resumed_from_checkpoint_path,
         "latest_durable_checkpoint_path": training_summary.latest_durable_checkpoint_path,
         "latest_durable_checkpoint_step": training_summary.latest_durable_checkpoint_step,
@@ -201,6 +249,20 @@ def _failed_status_payload(
     """Build the terminal failure payload for the probe status artifact."""
     current_epoch = None if live_progress is None else live_progress.get("current_epoch")
     current_step = None if live_progress is None else live_progress.get("current_step")
+    raw_current_optimizer_step = (
+        None if live_progress is None else live_progress.get("current_optimizer_step")
+    )
+    current_optimizer_step = (
+        current_step if raw_current_optimizer_step is None else raw_current_optimizer_step
+    )
+    raw_current_train_iteration = (
+        None if live_progress is None else live_progress.get("current_train_iteration")
+    )
+    current_train_iteration = (
+        current_optimizer_step
+        if raw_current_train_iteration is None
+        else raw_current_train_iteration
+    )
     latest_loss = None if live_progress is None else live_progress.get("latest_loss")
     smoothed_loss = None if live_progress is None else live_progress.get("smoothed_loss")
     latest_durable_checkpoint_path = (
@@ -222,9 +284,19 @@ def _failed_status_payload(
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
         "upstream_trainer_uses_eval_manifest": False,
+        "gradient_accumulation_steps": (
+            None if live_progress is None else live_progress.get("gradient_accumulation_steps")
+        ),
+        "step_semantics": _step_semantics_payload(
+            None
+            if live_progress is None
+            else _optional_int(live_progress, "gradient_accumulation_steps")
+        ),
         "current_phase": "failed",
         "current_epoch": current_epoch,
         "current_step": current_step,
+        "current_optimizer_step": current_optimizer_step,
+        "current_train_iteration": current_train_iteration,
         "latest_loss": latest_loss,
         "smoothed_loss": smoothed_loss,
         "latest_durable_checkpoint_path": latest_durable_checkpoint_path,
@@ -244,7 +316,7 @@ def _build_probe_report(
     output_dir: Path,
     train_row_count: int,
     eval_row_count: int,
-    training_summary: TrainingSummary,
+    training_summary: "TrainingSummary",
 ) -> Task101PilotProbeReport:
     """Build the machine-readable probe report from one completed training run."""
     return Task101PilotProbeReport(
@@ -266,6 +338,29 @@ def _build_probe_report(
         tracking=None if training_summary.tracking is None else asdict(training_summary.tracking),
         training_summary=asdict(training_summary),
     )
+
+
+def _optional_int(payload: dict[str, object], key: str) -> int | None:
+    """Return one optional integer payload field."""
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, int):
+        return None
+    return value
+
+
+def _step_semantics_payload(gradient_accumulation_steps: int | None) -> dict[str, object] | None:
+    """Return a machine-readable step-semantics payload for status artifacts."""
+    if gradient_accumulation_steps is None:
+        return None
+    return {
+        "gradient_accumulation_steps": gradient_accumulation_steps,
+        "optimizer_step_definition": (
+            "increments only on iterations where accelerate.sync_gradients is true"
+        ),
+        "train_iteration_definition": "increments on every dataloader iteration",
+    }
 
 
 def _merge_launch_tracking_metadata(

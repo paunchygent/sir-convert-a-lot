@@ -17,7 +17,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal
 
-from sft_12hz_checkpointing import DurableCheckpointMetadata
+try:
+    from sft_12hz_checkpointing import DurableCheckpointMetadata
+except ModuleNotFoundError:
+    from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
+        DurableCheckpointMetadata,
+    )
 
 TrainingPhase = Literal["startup", "train", "checkpoint-save", "signal-stop"]
 
@@ -35,6 +40,9 @@ class TrainingProgressHeartbeat:
     latest_durable_checkpoint_path: str | None
     latest_durable_checkpoint_step: int | None
     latest_durable_checkpoint_saved_at: str | None
+    current_optimizer_step: int | None = None
+    current_train_iteration: int | None = None
+    gradient_accumulation_steps: int | None = None
 
 
 def _utc_now_iso() -> str:
@@ -46,7 +54,9 @@ def build_training_progress_heartbeat(
     *,
     phase: TrainingPhase,
     current_epoch: int,
-    current_step: int,
+    current_optimizer_step: int,
+    current_train_iteration: int,
+    gradient_accumulation_steps: int,
     latest_loss: float | None,
     smoothed_loss: float | None,
     latest_durable_checkpoint: DurableCheckpointMetadata | None,
@@ -56,7 +66,10 @@ def build_training_progress_heartbeat(
         phase=phase,
         updated_at=_utc_now_iso(),
         current_epoch=current_epoch,
-        current_step=current_step,
+        current_step=current_optimizer_step,
+        current_optimizer_step=current_optimizer_step,
+        current_train_iteration=current_train_iteration,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         latest_loss=latest_loss,
         smoothed_loss=smoothed_loss,
         latest_durable_checkpoint_path=(

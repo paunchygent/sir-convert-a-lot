@@ -107,6 +107,10 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     assert payload["current_phase"] == "checkpoint-save"
     assert payload["current_epoch"] == 0
     assert payload["current_step"] == 2
+    assert payload["current_optimizer_step"] == 2
+    assert payload["current_train_iteration"] == 2
+    assert payload["gradient_accumulation_steps"] == 4
+    assert payload["step_semantics"]["gradient_accumulation_steps"] == 4
     assert payload["smoothed_loss"] == 1.47
     assert payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
     assert [event["phase"] for event in payload["phase_history"]] == [

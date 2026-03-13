@@ -242,17 +242,26 @@ def log_training_metrics(
     raw_loss: float,
     smoothed_loss: float,
     current_epoch: int,
-    current_step: int,
+    current_optimizer_step: int,
+    current_train_iteration: int,
     checkpoint_interval_steps: int,
+    ref_mel_cache_metrics: dict[str, bool | float | int | None] | None = None,
 ) -> None:
     """Log one flat scalar payload to all configured trackers."""
-    accelerator.log(
-        {
-            "train/loss": raw_loss,
-            "train/loss_ema": smoothed_loss,
-            "train/current_step": current_step,
-            "train/current_epoch": current_epoch,
-            "train/checkpoint_interval_steps": checkpoint_interval_steps,
-        },
-        step=current_step,
-    )
+    payload: dict[str, bool | float | int | None] = {
+        "train/loss": raw_loss,
+        "train/loss_ema": smoothed_loss,
+        "train/current_step": current_optimizer_step,
+        "train/current_optimizer_step": current_optimizer_step,
+        "train/current_train_iteration": current_train_iteration,
+        "train/current_epoch": current_epoch,
+        "train/checkpoint_interval_steps": checkpoint_interval_steps,
+    }
+    if ref_mel_cache_metrics is not None:
+        payload["train/ref_mel_cache_enabled"] = ref_mel_cache_metrics.get("enabled")
+        payload["train/ref_mel_cache_max_items"] = ref_mel_cache_metrics.get("max_items")
+        payload["train/ref_mel_cache_hits"] = ref_mel_cache_metrics.get("cache_hits")
+        payload["train/ref_mel_cache_misses"] = ref_mel_cache_metrics.get("cache_misses")
+        payload["train/ref_mel_cache_size"] = ref_mel_cache_metrics.get("cache_size")
+        payload["train/ref_mel_cache_hit_rate"] = ref_mel_cache_metrics.get("cache_hit_rate")
+    accelerator.log(payload, step=current_optimizer_step)

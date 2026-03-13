@@ -1012,6 +1012,36 @@ Canonical Task 106 acquisition surface:
      `pdm run run-hemma -- pdm run task-101-pilot launch`
    - if the launch will build the image, the runner now prints an explicit
      BuildKit cold-build warning before compilation starts
+   - long-run defaults after Story 26 `T158-T160`:
+     - pilot-scoped detached resource monitor auto-launches under each Task 101
+       launch root with `--resource-monitor-interval-seconds 1.0`
+     - long-run durable checkpoint cadence defaults to
+       `--checkpoint-interval-steps 100` (override only for bounded smoke/profile runs)
+     - dataloader and transfer defaults now surface explicitly:
+       `--dataloader-num-workers 4`,
+       `--dataloader-pin-memory true`,
+       `--dataloader-persistent-workers true`,
+       `--dataloader-prefetch-factor 4`,
+       `--non-blocking-transfer true`
+   - opt-out controls remain explicit for bounded experiments:
+     - `--disable-resource-monitor`
+     - manual checkpoint-interval and dataloader/transfer overrides
+   - Story 26 `T161-T162` bounded investigation surfaces:
+     - ref-mel cache comparison (cache-off vs cache-on):
+       `pdm run run-hemma -- pdm run task-161-ref-mel-cache-comparison`
+     - bounded PyTorch+ROCm profiling capture:
+       `pdm run run-hemma -- pdm run task-162-task101-profiling`
+     - explicit launch flags for bounded profiling runs:
+       - `--torch-profiler-enabled true`
+       - `--torch-profiler-wait-steps <N>`
+       - `--torch-profiler-warmup-steps <N>`
+       - `--torch-profiler-active-steps <N>`
+       - `--torch-profiler-repeat <N>`
+       - `--rocm-profiler-enabled true`
+     - default Task 101 training now includes bounded runtime ref-mel cache
+       controls:
+       - `--ref-mel-cache-enabled true`
+       - `--ref-mel-cache-max-items 2048`
    - canonical input contract before launch:
      - deterministic pilot bundle projected from the frozen pilot root
      - train family: `swedish_pilot_train`

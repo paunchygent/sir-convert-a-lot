@@ -102,21 +102,60 @@ Out of scope for this story:
 1. `docs/backlog/tasks/task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md`
 1. `docs/backlog/tasks/task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md`
 
+## Implementation Blueprint (T161-T163)
+
+Execution order and ownership are fixed to keep SRP/LoC/complexity bounded:
+
+1. `T161` runtime `ref_mel` cache and promotion decision.
+1. `T162` bounded profiling surfaces.
+1. `T163` launch profiles plus saturation gate.
+1. Full local quality gates and docs gates.
+1. Commit/push before any live pilot stop or relaunch.
+1. Stop the active pilot only after the new code is pushed.
+1. Pull on Hemma with `run-hemma` and relaunch through governed surfaces.
+1. Verify the `>= 90%` saturation gate from monitor-backed evidence.
+
+Planned module ownership:
+
+- `T161`:
+  - add `scripts/devops/qwen_finetuning_patches/sft_12hz_ref_mel_cache.py`
+  - wire cache settings/metrics into `dataset.py`, `sft_12hz.py`,
+    `sft_12hz_tracking.py`, and Task 101 launcher/runtime/probe/status surfaces
+  - add bounded comparison surface
+    `scripts/sir_convert_a_lot/devops/run_task161_hemma_ref_mel_cache_comparison.py`
+- `T162`:
+  - add `scripts/devops/qwen_finetuning_patches/sft_12hz_profiling.py`
+  - add Task 101 runtime profiling orchestration module(s)
+  - add bounded profiling surface
+    `scripts/sir_convert_a_lot/devops/run_task162_hemma_task101_profiling.py`
+- `T163`:
+  - add `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_profiles.py`
+  - add `scripts/sir_convert_a_lot/devops/task101_qwen_saturation_gate.py`
+  - add gate runner
+    `scripts/sir_convert_a_lot/devops/run_task163_hemma_task101_saturation_gate.py`
+
+Verification posture for this blueprint:
+
+- no ad hoc `ssh hemma ...` for normal operations
+- no ad hoc `run-hemma --shell` profiler payloads
+- detached long-run Hemma execution only
+- monitor and saturation evidence written under `build/verification/`
+
 ## Acceptance Criteria
 
-- [ ] The Task 101 runtime emits first-class tracker artifacts during live
+- [x] The Task 101 runtime emits first-class tracker artifacts during live
   training, with MLflow as the primary run record and TensorBoard event files
   available for classical loss-curve inspection.
-- [ ] The Task 101 live status surface updates during training and exposes
+- [x] The Task 101 live status surface updates during training and exposes
   truthful current-step, current-phase, latest-checkpoint, and tracker-run
   metadata instead of behaving like launch-only state.
-- [ ] Long Task 101 runs automatically emit high-resolution resource evidence
+- [x] Long Task 101 runs automatically emit high-resolution resource evidence
   with `<= 1.0` second sampling, and the resulting summary can distinguish
   steady-state training windows from checkpoint-save windows.
-- [ ] Long-run durable checkpoint cadence is no longer `2` steps by default,
+- [x] Long-run durable checkpoint cadence is no longer `2` steps by default,
   and Task 101 step accounting is explicit enough that operators can tell loop
   iterations from optimizer-update semantics.
-- [ ] The dataloader and host-to-device transfer path expose evidence-backed
+- [x] The dataloader and host-to-device transfer path expose evidence-backed
   tuned defaults for Hemma rather than relying on synchronous single-process
   defaults.
 - [ ] Duplicate `ref_audio` rows no longer recompute `ref_mel` blindly in the
@@ -132,13 +171,13 @@ Out of scope for this story:
 
 ## Test Requirements
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_task116_hemma_resource_monitor.py -q`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_qwen_training_tracking.py tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py tests/sir_convert_a_lot/test_qwen_training_ref_mel_cache.py tests/sir_convert_a_lot/test_task161_qwen_ref_mel_cache_comparison.py tests/sir_convert_a_lot/test_qwen_training_profiling.py tests/sir_convert_a_lot/test_task101_qwen_profiling.py tests/sir_convert_a_lot/test_task101_qwen_resource_monitor.py tests/sir_convert_a_lot/test_qwen_training_dataloader_tuning.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] Real Hemma evidence for tracker artifacts, status heartbeat, monitor
   summary, and a `>= 90%` steady-state GPU-busy window is written under
   `build/verification/`.

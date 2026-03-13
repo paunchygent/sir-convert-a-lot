@@ -40,9 +40,40 @@ from huggingface_hub import hf_hub_download, snapshot_download
 from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
 from safetensors.torch import save_file
 from sft_12hz_checkpointing import DurableCheckpointMetadata
+from sft_12hz_dataloader import (
+    DEFAULT_DATALOADER_NUM_WORKERS,
+    DEFAULT_DATALOADER_PERSISTENT_WORKERS,
+    DEFAULT_DATALOADER_PIN_MEMORY,
+    DEFAULT_DATALOADER_PREFETCH_FACTOR,
+    DEFAULT_NON_BLOCKING_TRANSFER,
+    dataloader_kwargs,
+    dataloader_tuning_payload,
+    resolve_dataloader_tuning,
+    to_device_with_optional_non_blocking,
+)
+from sft_12hz_profiling import (
+    DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
+    DEFAULT_TORCH_PROFILER_ENABLED,
+    DEFAULT_TORCH_PROFILER_PROFILE_MEMORY,
+    DEFAULT_TORCH_PROFILER_RECORD_SHAPES,
+    DEFAULT_TORCH_PROFILER_REPEAT,
+    DEFAULT_TORCH_PROFILER_WAIT_STEPS,
+    DEFAULT_TORCH_PROFILER_WARMUP_STEPS,
+    DEFAULT_TORCH_PROFILER_WITH_STACK,
+    TorchProfilerSession,
+    resolve_torch_profiler_config,
+)
 from sft_12hz_progress import (
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
+)
+from sft_12hz_ref_mel_cache import (
+    DEFAULT_REF_MEL_CACHE_ENABLED,
+    DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
+    RefMelCache,
+)
+from sft_12hz_step_semantics import (
+    GRADIENT_ACCUMULATION_STEPS,
 )
 from sft_12hz_tracking import (
     DEFAULT_MLFLOW_EXPERIMENT_NAME,
@@ -93,7 +124,9 @@ class TrainingSummary:
     checkpoint_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
+    gradient_accumulation_steps: int
     optimizer_steps_completed: int
+    train_iterations_completed: int
     last_loss: float | None
     smoothed_loss: float | None
     peak_memory_allocated_bytes: int | None
@@ -107,6 +140,9 @@ class TrainingSummary:
     stop_requested: bool
     stop_signal: str | None
     stopped_early: bool
+    dataloader_tuning: dict[str, object]
+    ref_mel_cache: dict[str, bool | float | int | None]
+    profiling: dict[str, object] | None
     tracking: TrainingTrackerSummary | None = None
 
 
@@ -131,6 +167,82 @@ def _parse_args() -> argparse.Namespace:
         default=DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES,
     )
     parser.add_argument("--resume_from_checkpoint", type=str, default=None)
+    parser.add_argument(
+        "--dataloader_num_workers",
+        type=int,
+        default=DEFAULT_DATALOADER_NUM_WORKERS,
+    )
+    parser.add_argument(
+        "--dataloader_pin_memory",
+        choices=("true", "false"),
+        default="true" if DEFAULT_DATALOADER_PIN_MEMORY else "false",
+    )
+    parser.add_argument(
+        "--dataloader_persistent_workers",
+        choices=("true", "false"),
+        default="true" if DEFAULT_DATALOADER_PERSISTENT_WORKERS else "false",
+    )
+    parser.add_argument(
+        "--dataloader_prefetch_factor",
+        type=int,
+        default=DEFAULT_DATALOADER_PREFETCH_FACTOR,
+    )
+    parser.add_argument(
+        "--non_blocking_transfer",
+        choices=("true", "false"),
+        default="true" if DEFAULT_NON_BLOCKING_TRANSFER else "false",
+    )
+    parser.add_argument(
+        "--ref_mel_cache_enabled",
+        choices=("true", "false"),
+        default="true" if DEFAULT_REF_MEL_CACHE_ENABLED else "false",
+    )
+    parser.add_argument(
+        "--ref_mel_cache_max_items",
+        type=int,
+        default=DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
+    )
+    parser.add_argument(
+        "--torch_profiler_enabled",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_ENABLED else "false",
+    )
+    parser.add_argument(
+        "--torch_profiler_wait_steps",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_WAIT_STEPS,
+    )
+    parser.add_argument(
+        "--torch_profiler_warmup_steps",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_WARMUP_STEPS,
+    )
+    parser.add_argument(
+        "--torch_profiler_active_steps",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
+    )
+    parser.add_argument(
+        "--torch_profiler_repeat",
+        type=int,
+        default=DEFAULT_TORCH_PROFILER_REPEAT,
+    )
+    parser.add_argument(
+        "--torch_profiler_record_shapes",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_RECORD_SHAPES else "false",
+    )
+    parser.add_argument(
+        "--torch_profiler_profile_memory",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_PROFILE_MEMORY else "false",
+    )
+    parser.add_argument(
+        "--torch_profiler_with_stack",
+        choices=("true", "false"),
+        default="true" if DEFAULT_TORCH_PROFILER_WITH_STACK else "false",
+    )
+    parser.add_argument("--torch_profiler_trace_dir", type=str, default=None)
     parser.add_argument("--metrics_output_json", type=str, default=None)
     parser.add_argument(
         "--tracker_project_name",
@@ -230,6 +342,35 @@ def _tracker_config_payload(args: argparse.Namespace) -> dict[str, bool | float 
     pilot_bundle_root = getattr(args, "pilot_bundle_root", None)
     train_manifest_family = getattr(args, "train_manifest_family", None)
     eval_manifest_family = getattr(args, "eval_manifest_family", None)
+    dataloader_num_workers = int(
+        getattr(args, "dataloader_num_workers", DEFAULT_DATALOADER_NUM_WORKERS)
+    )
+    dataloader_pin_memory = _namespace_bool_arg(
+        args,
+        "dataloader_pin_memory",
+        default=DEFAULT_DATALOADER_PIN_MEMORY,
+    )
+    dataloader_persistent_workers = _namespace_bool_arg(
+        args,
+        "dataloader_persistent_workers",
+        default=DEFAULT_DATALOADER_PERSISTENT_WORKERS,
+    )
+    dataloader_prefetch_factor = int(
+        getattr(args, "dataloader_prefetch_factor", DEFAULT_DATALOADER_PREFETCH_FACTOR)
+    )
+    non_blocking_transfer = _namespace_bool_arg(
+        args,
+        "non_blocking_transfer",
+        default=DEFAULT_NON_BLOCKING_TRANSFER,
+    )
+    ref_mel_cache_enabled = _namespace_bool_arg(
+        args,
+        "ref_mel_cache_enabled",
+        default=DEFAULT_REF_MEL_CACHE_ENABLED,
+    )
+    ref_mel_cache_max_items = int(
+        getattr(args, "ref_mel_cache_max_items", DEFAULT_REF_MEL_CACHE_MAX_ITEMS)
+    )
     return {
         "model_id": str(args.init_model_path),
         "tracker_project_name": None if tracker_project_name is None else str(tracker_project_name),
@@ -247,12 +388,64 @@ def _tracker_config_payload(args: argparse.Namespace) -> dict[str, bool | float 
         "learning_rate": float(args.lr),
         "num_epochs": int(args.num_epochs),
         "max_steps": None if args.max_steps is None else int(args.max_steps),
-        "gradient_accumulation_steps": 4,
+        "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
         "checkpoint_interval_steps": int(args.checkpoint_interval_steps),
         "durable_checkpoint_retention": int(args.durable_checkpoint_retention),
         "durable_checkpoint_min_free_bytes": int(args.durable_checkpoint_min_free_bytes),
+        "dataloader_num_workers": dataloader_num_workers,
+        "dataloader_pin_memory": dataloader_pin_memory,
+        "dataloader_persistent_workers": dataloader_persistent_workers,
+        "dataloader_prefetch_factor": dataloader_prefetch_factor,
+        "non_blocking_transfer": non_blocking_transfer,
+        "ref_mel_cache_enabled": ref_mel_cache_enabled,
+        "ref_mel_cache_max_items": ref_mel_cache_max_items,
+        "torch_profiler_enabled": _namespace_bool_arg(
+            args,
+            "torch_profiler_enabled",
+            default=DEFAULT_TORCH_PROFILER_ENABLED,
+        ),
+        "torch_profiler_wait_steps": int(
+            getattr(args, "torch_profiler_wait_steps", DEFAULT_TORCH_PROFILER_WAIT_STEPS)
+        ),
+        "torch_profiler_warmup_steps": int(
+            getattr(args, "torch_profiler_warmup_steps", DEFAULT_TORCH_PROFILER_WARMUP_STEPS)
+        ),
+        "torch_profiler_active_steps": int(
+            getattr(args, "torch_profiler_active_steps", DEFAULT_TORCH_PROFILER_ACTIVE_STEPS)
+        ),
+        "torch_profiler_repeat": int(
+            getattr(args, "torch_profiler_repeat", DEFAULT_TORCH_PROFILER_REPEAT)
+        ),
+        "torch_profiler_record_shapes": _namespace_bool_arg(
+            args,
+            "torch_profiler_record_shapes",
+            default=DEFAULT_TORCH_PROFILER_RECORD_SHAPES,
+        ),
+        "torch_profiler_profile_memory": _namespace_bool_arg(
+            args,
+            "torch_profiler_profile_memory",
+            default=DEFAULT_TORCH_PROFILER_PROFILE_MEMORY,
+        ),
+        "torch_profiler_with_stack": _namespace_bool_arg(
+            args,
+            "torch_profiler_with_stack",
+            default=DEFAULT_TORCH_PROFILER_WITH_STACK,
+        ),
+        "torch_profiler_trace_dir": (
+            None
+            if getattr(args, "torch_profiler_trace_dir", None) in (None, "")
+            else str(getattr(args, "torch_profiler_trace_dir"))
+        ),
         "resumed_from_checkpoint": args.resume_from_checkpoint is not None,
     }
+
+
+def _namespace_bool_arg(args: argparse.Namespace, name: str, *, default: bool) -> bool:
+    """Resolve one bool-like argparse namespace field with compatibility fallbacks."""
+    raw_value = getattr(args, name, default)
+    if isinstance(raw_value, bool):
+        return raw_value
+    return str(raw_value).lower() == "true"
 
 
 def train_with_args(
@@ -270,8 +463,100 @@ def train_with_args(
         raise ValueError("`--durable-checkpoint-retention` must be positive.")
     if int(args.durable_checkpoint_min_free_bytes) <= 0:
         raise ValueError("`--durable-checkpoint-min-free-bytes` must be positive.")
+    dataloader_num_workers = int(
+        getattr(args, "dataloader_num_workers", DEFAULT_DATALOADER_NUM_WORKERS)
+    )
+    dataloader_pin_memory = _namespace_bool_arg(
+        args,
+        "dataloader_pin_memory",
+        default=DEFAULT_DATALOADER_PIN_MEMORY,
+    )
+    dataloader_persistent_workers = _namespace_bool_arg(
+        args,
+        "dataloader_persistent_workers",
+        default=DEFAULT_DATALOADER_PERSISTENT_WORKERS,
+    )
+    dataloader_prefetch_factor = int(
+        getattr(args, "dataloader_prefetch_factor", DEFAULT_DATALOADER_PREFETCH_FACTOR)
+    )
+    non_blocking_transfer = _namespace_bool_arg(
+        args,
+        "non_blocking_transfer",
+        default=DEFAULT_NON_BLOCKING_TRANSFER,
+    )
+    ref_mel_cache_enabled = _namespace_bool_arg(
+        args,
+        "ref_mel_cache_enabled",
+        default=DEFAULT_REF_MEL_CACHE_ENABLED,
+    )
+    ref_mel_cache_max_items = int(
+        getattr(args, "ref_mel_cache_max_items", DEFAULT_REF_MEL_CACHE_MAX_ITEMS)
+    )
+    if ref_mel_cache_max_items <= 0:
+        raise ValueError("`--ref_mel_cache_max_items` must be positive.")
+    effective_dataloader_tuning = resolve_dataloader_tuning(
+        num_workers=dataloader_num_workers,
+        pin_memory=dataloader_pin_memory,
+        persistent_workers=dataloader_persistent_workers,
+        prefetch_factor=dataloader_prefetch_factor,
+        non_blocking_transfer=non_blocking_transfer,
+    )
+    ref_mel_cache = RefMelCache(
+        enabled=ref_mel_cache_enabled,
+        max_items=ref_mel_cache_max_items,
+    )
 
     output_model_path = Path(args.output_model_path)
+    torch_profiler_enabled = _namespace_bool_arg(
+        args,
+        "torch_profiler_enabled",
+        default=DEFAULT_TORCH_PROFILER_ENABLED,
+    )
+    torch_profiler_wait_steps = int(
+        getattr(args, "torch_profiler_wait_steps", DEFAULT_TORCH_PROFILER_WAIT_STEPS)
+    )
+    torch_profiler_warmup_steps = int(
+        getattr(args, "torch_profiler_warmup_steps", DEFAULT_TORCH_PROFILER_WARMUP_STEPS)
+    )
+    torch_profiler_active_steps = int(
+        getattr(args, "torch_profiler_active_steps", DEFAULT_TORCH_PROFILER_ACTIVE_STEPS)
+    )
+    torch_profiler_repeat = int(
+        getattr(args, "torch_profiler_repeat", DEFAULT_TORCH_PROFILER_REPEAT)
+    )
+    torch_profiler_record_shapes = _namespace_bool_arg(
+        args,
+        "torch_profiler_record_shapes",
+        default=DEFAULT_TORCH_PROFILER_RECORD_SHAPES,
+    )
+    torch_profiler_profile_memory = _namespace_bool_arg(
+        args,
+        "torch_profiler_profile_memory",
+        default=DEFAULT_TORCH_PROFILER_PROFILE_MEMORY,
+    )
+    torch_profiler_with_stack = _namespace_bool_arg(
+        args,
+        "torch_profiler_with_stack",
+        default=DEFAULT_TORCH_PROFILER_WITH_STACK,
+    )
+    torch_profiler_trace_dir_raw = getattr(args, "torch_profiler_trace_dir", None)
+    torch_profiler_trace_dir = (
+        output_model_path.parent / "profiling" / "pytorch"
+        if torch_profiler_trace_dir_raw in (None, "")
+        else Path(str(torch_profiler_trace_dir_raw))
+    )
+    torch_profiler_config = resolve_torch_profiler_config(
+        enabled=torch_profiler_enabled,
+        trace_dir=torch_profiler_trace_dir,
+        wait_steps=torch_profiler_wait_steps,
+        warmup_steps=torch_profiler_warmup_steps,
+        active_steps=torch_profiler_active_steps,
+        repeat=torch_profiler_repeat,
+        record_shapes=torch_profiler_record_shapes,
+        profile_memory=torch_profiler_profile_memory,
+        with_stack=torch_profiler_with_stack,
+    )
+    torch_profiler_session = TorchProfilerSession(torch_profiler_config)
     tracker_run_name = getattr(args, "tracker_run_name", None)
     tracker_project_name = getattr(args, "tracker_project_name", None)
     mlflow_experiment_name = getattr(args, "mlflow_experiment_name", None)
@@ -298,7 +583,7 @@ def train_with_args(
         ),
     )
     accelerator = Accelerator(
-        gradient_accumulation_steps=4,
+        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         mixed_precision="bf16",
         log_with=list(tracker_config.tracker_backends),
         project_dir=tracker_config.tensorboard_logging_dir,
@@ -313,12 +598,19 @@ def train_with_args(
     config = AutoConfig.from_pretrained(model_path)
 
     train_data = _load_training_rows(Path(args.train_jsonl))
-    dataset = TTSDataset(train_data, qwen3tts.processor, config)
+    dataset = TTSDataset(
+        train_data,
+        qwen3tts.processor,
+        config,
+        ref_mel_cache=ref_mel_cache,
+    )
     train_dataloader = DataLoader(
         dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        collate_fn=dataset.collate_fn,
+        **dataloader_kwargs(
+            tuning=effective_dataloader_tuning,
+            batch_size=args.batch_size,
+            collate_fn=dataset.collate_fn,
+        ),
     )
     optimizer = AdamW(qwen3tts.model.parameters(), lr=args.lr, weight_decay=0.01)
 
@@ -338,6 +630,7 @@ def train_with_args(
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
     optimizer_steps_completed = 0
+    train_iterations_completed = 0
     last_loss: float | None = None
     smoothed_loss: float | None = None
     checkpoint_paths: list[str] = []
@@ -367,12 +660,15 @@ def train_with_args(
         starting_epoch = latest_durable_checkpoint.next_epoch
         resume_step_in_epoch = latest_durable_checkpoint.next_step_in_epoch
         durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
+        train_iterations_completed = (starting_epoch * dataloader_length) + resume_step_in_epoch
     if progress_callback is not None:
         progress_callback(
             build_training_progress_heartbeat(
                 phase="startup",
                 current_epoch=starting_epoch,
-                current_step=optimizer_steps_completed,
+                current_optimizer_step=optimizer_steps_completed,
+                current_train_iteration=train_iterations_completed,
+                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
                 latest_loss=last_loss,
                 smoothed_loss=smoothed_loss,
                 latest_durable_checkpoint=latest_durable_checkpoint,
@@ -382,6 +678,7 @@ def train_with_args(
     stop_requested_during_training = False
     epoch = starting_epoch
     step = 0
+    torch_profiler_session.start()
     try:
         for epoch in range(starting_epoch, args.num_epochs):
             epoch_dataloader = train_dataloader
@@ -393,68 +690,82 @@ def train_with_args(
                 )
                 epoch_start_step = resume_step_in_epoch
             for step, batch in enumerate(epoch_dataloader, start=epoch_start_step):
+                train_iterations_completed += 1
                 with accelerator.accumulate(model):
-                    input_ids = batch["input_ids"]
-                    codec_ids = batch["codec_ids"]
-                    ref_mels = batch["ref_mels"]
-                    text_embedding_mask = batch["text_embedding_mask"]
-                    codec_embedding_mask = batch["codec_embedding_mask"]
-                    attention_mask = batch["attention_mask"]
-                    codec_0_labels = batch["codec_0_labels"]
-                    codec_mask = batch["codec_mask"]
+                    with torch_profiler_session.phase("task101.batch-preparation"):
+                        input_ids = batch["input_ids"]
+                        codec_ids = batch["codec_ids"]
+                        ref_mels = batch["ref_mels"]
+                        text_embedding_mask = batch["text_embedding_mask"]
+                        codec_embedding_mask = batch["codec_embedding_mask"]
+                        attention_mask = batch["attention_mask"]
+                        codec_0_labels = batch["codec_0_labels"]
+                        codec_mask = batch["codec_mask"]
 
-                    speaker_embedding = model.speaker_encoder(
-                        ref_mels.to(model.device).to(model.dtype)
-                    ).detach()
+                        speaker_embedding = model.speaker_encoder(
+                            to_device_with_optional_non_blocking(
+                                ref_mels,
+                                device=model.device,
+                                dtype=model.dtype,
+                                non_blocking_transfer=(
+                                    effective_dataloader_tuning.non_blocking_transfer
+                                ),
+                            )
+                        ).detach()
 
-                    input_text_ids = input_ids[:, :, 0]
-                    input_codec_ids = input_ids[:, :, 1]
+                    with torch_profiler_session.phase("task101.forward-backward"):
+                        input_text_ids = input_ids[:, :, 0]
+                        input_codec_ids = input_ids[:, :, 1]
 
-                    input_text_embedding = (
-                        model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
-                    )
-                    if hasattr(model.talker.model, "text_projection"):
-                        input_text_embedding = model.talker.model.text_projection(
-                            input_text_embedding
+                        input_text_embedding = (
+                            model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
+                        )
+                        if hasattr(model.talker.model, "text_projection"):
+                            input_text_embedding = model.talker.model.text_projection(
+                                input_text_embedding
+                            )
+
+                        input_codec_embedding = (
+                            model.talker.model.codec_embedding(input_codec_ids)
+                            * codec_embedding_mask
+                        )
+                        input_codec_embedding[:, 6, :] = speaker_embedding
+                        input_embeddings = input_text_embedding + input_codec_embedding
+
+                        for codec_index in range(1, 16):
+                            codec_i_embedding = model.talker.code_predictor.get_input_embeddings()[
+                                codec_index - 1
+                            ](codec_ids[:, :, codec_index])
+                            codec_i_embedding = codec_i_embedding * codec_mask.unsqueeze(-1)
+                            input_embeddings = input_embeddings + codec_i_embedding
+
+                        outputs = model.talker(
+                            inputs_embeds=input_embeddings[:, :-1, :],
+                            attention_mask=attention_mask[:, :-1],
+                            labels=codec_0_labels[:, 1:],
+                            output_hidden_states=True,
                         )
 
-                    input_codec_embedding = (
-                        model.talker.model.codec_embedding(input_codec_ids) * codec_embedding_mask
-                    )
-                    input_codec_embedding[:, 6, :] = speaker_embedding
-                    input_embeddings = input_text_embedding + input_codec_embedding
+                        hidden_states = outputs.hidden_states[0][-1]
+                        talker_hidden_states = hidden_states[codec_mask[:, 1:]]
+                        talker_codec_ids = codec_ids[codec_mask]
 
-                    for codec_index in range(1, 16):
-                        codec_i_embedding = model.talker.code_predictor.get_input_embeddings()[
-                            codec_index - 1
-                        ](codec_ids[:, :, codec_index])
-                        codec_i_embedding = codec_i_embedding * codec_mask.unsqueeze(-1)
-                        input_embeddings = input_embeddings + codec_i_embedding
+                        _, sub_talker_loss = model.talker.forward_sub_talker_finetune(
+                            talker_codec_ids,
+                            talker_hidden_states,
+                        )
+                        loss = outputs.loss + 0.3 * sub_talker_loss
 
-                    outputs = model.talker(
-                        inputs_embeds=input_embeddings[:, :-1, :],
-                        attention_mask=attention_mask[:, :-1],
-                        labels=codec_0_labels[:, 1:],
-                        output_hidden_states=True,
-                    )
+                        accelerator.backward(loss)
+                        completed_optimizer_step = accelerator.sync_gradients
+                        if completed_optimizer_step:
+                            accelerator.clip_grad_norm_(model.parameters(), 1.0)
 
-                    hidden_states = outputs.hidden_states[0][-1]
-                    talker_hidden_states = hidden_states[codec_mask[:, 1:]]
-                    talker_codec_ids = codec_ids[codec_mask]
-
-                    _, sub_talker_loss = model.talker.forward_sub_talker_finetune(
-                        talker_codec_ids,
-                        talker_hidden_states,
-                    )
-                    loss = outputs.loss + 0.3 * sub_talker_loss
-
-                    accelerator.backward(loss)
-                    if accelerator.sync_gradients:
-                        accelerator.clip_grad_norm_(model.parameters(), 1.0)
-
-                    optimizer.step()
-                    optimizer.zero_grad()
-                    optimizer_steps_completed += 1
+                    with torch_profiler_session.phase("task101.optimizer-step"):
+                        optimizer.step()
+                        optimizer.zero_grad()
+                    if completed_optimizer_step:
+                        optimizer_steps_completed += 1
                     last_loss = float(loss.item())
                     smoothed_loss = update_smoothed_loss(smoothed_loss, last_loss)
                     log_training_metrics(
@@ -462,15 +773,19 @@ def train_with_args(
                         raw_loss=last_loss,
                         smoothed_loss=smoothed_loss,
                         current_epoch=epoch,
-                        current_step=optimizer_steps_completed,
+                        current_optimizer_step=optimizer_steps_completed,
+                        current_train_iteration=train_iterations_completed,
                         checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+                        ref_mel_cache_metrics=ref_mel_cache.payload(),
                     )
                     if progress_callback is not None:
                         progress_callback(
                             build_training_progress_heartbeat(
                                 phase="train",
                                 current_epoch=epoch,
-                                current_step=optimizer_steps_completed,
+                                current_optimizer_step=optimizer_steps_completed,
+                                current_train_iteration=train_iterations_completed,
+                                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
                                 latest_loss=last_loss,
                                 smoothed_loss=smoothed_loss,
                                 latest_durable_checkpoint=latest_durable_checkpoint,
@@ -479,27 +794,34 @@ def train_with_args(
 
                 if step % 10 == 0:
                     accelerator.print(f"Epoch {epoch} | Step {step} | Loss: {loss.item():.4f}")
-                if optimizer_steps_completed % int(args.checkpoint_interval_steps) == 0:
-                    latest_durable_checkpoint = _save_durable_checkpoint(
-                        accelerator=accelerator,
-                        output_model_path=output_model_path,
-                        optimizer_steps_completed=optimizer_steps_completed,
-                        epoch=epoch,
-                        step_in_epoch=step,
-                        dataloader_length=dataloader_length,
-                        reason="interval",
-                        durable_checkpoint_retention=int(args.durable_checkpoint_retention),
-                        durable_checkpoint_min_free_bytes=int(
-                            args.durable_checkpoint_min_free_bytes
-                        ),
-                    )
+                if (
+                    completed_optimizer_step
+                    and optimizer_steps_completed > 0
+                    and optimizer_steps_completed % int(args.checkpoint_interval_steps) == 0
+                ):
+                    with torch_profiler_session.phase("task101.checkpoint-save"):
+                        latest_durable_checkpoint = _save_durable_checkpoint(
+                            accelerator=accelerator,
+                            output_model_path=output_model_path,
+                            optimizer_steps_completed=optimizer_steps_completed,
+                            epoch=epoch,
+                            step_in_epoch=step,
+                            dataloader_length=dataloader_length,
+                            reason="interval",
+                            durable_checkpoint_retention=int(args.durable_checkpoint_retention),
+                            durable_checkpoint_min_free_bytes=int(
+                                args.durable_checkpoint_min_free_bytes
+                            ),
+                        )
                     durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
                     if progress_callback is not None:
                         progress_callback(
                             build_training_progress_heartbeat(
                                 phase="checkpoint-save",
                                 current_epoch=epoch,
-                                current_step=optimizer_steps_completed,
+                                current_optimizer_step=optimizer_steps_completed,
+                                current_train_iteration=train_iterations_completed,
+                                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
                                 latest_loss=last_loss,
                                 smoothed_loss=smoothed_loss,
                                 latest_durable_checkpoint=latest_durable_checkpoint,
@@ -512,7 +834,9 @@ def train_with_args(
                             build_training_progress_heartbeat(
                                 phase="signal-stop",
                                 current_epoch=epoch,
-                                current_step=optimizer_steps_completed,
+                                current_optimizer_step=optimizer_steps_completed,
+                                current_train_iteration=train_iterations_completed,
+                                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
                                 latest_loss=last_loss,
                                 smoothed_loss=smoothed_loss,
                                 latest_durable_checkpoint=latest_durable_checkpoint,
@@ -522,9 +846,14 @@ def train_with_args(
                         "Received stop request; saving one final durable checkpoint before exit."
                     )
                     break
-                if args.max_steps is not None and optimizer_steps_completed >= args.max_steps:
+                if (
+                    args.max_steps is not None
+                    and completed_optimizer_step
+                    and optimizer_steps_completed >= args.max_steps
+                ):
                     reached_max_steps = True
                     break
+                torch_profiler_session.step()
 
             if accelerator.is_main_process:
                 output_dir = output_model_path / f"checkpoint-epoch-{epoch}"
@@ -545,24 +874,27 @@ def train_with_args(
             latest_durable_checkpoint,
             optimizer_steps_completed=optimizer_steps_completed,
         ):
-            latest_durable_checkpoint = _save_durable_checkpoint(
-                accelerator=accelerator,
-                output_model_path=output_model_path,
-                optimizer_steps_completed=optimizer_steps_completed,
-                epoch=epoch,
-                step_in_epoch=step,
-                dataloader_length=dataloader_length,
-                reason="signal-stop" if stop_requested_during_training else "final-step",
-                durable_checkpoint_retention=int(args.durable_checkpoint_retention),
-                durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
-            )
+            with torch_profiler_session.phase("task101.checkpoint-save"):
+                latest_durable_checkpoint = _save_durable_checkpoint(
+                    accelerator=accelerator,
+                    output_model_path=output_model_path,
+                    optimizer_steps_completed=optimizer_steps_completed,
+                    epoch=epoch,
+                    step_in_epoch=step,
+                    dataloader_length=dataloader_length,
+                    reason="signal-stop" if stop_requested_during_training else "final-step",
+                    durable_checkpoint_retention=int(args.durable_checkpoint_retention),
+                    durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
+                )
             durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
             if progress_callback is not None:
                 progress_callback(
                     build_training_progress_heartbeat(
                         phase="checkpoint-save",
                         current_epoch=epoch,
-                        current_step=optimizer_steps_completed,
+                        current_optimizer_step=optimizer_steps_completed,
+                        current_train_iteration=train_iterations_completed,
+                        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
                         latest_loss=last_loss,
                         smoothed_loss=smoothed_loss,
                         latest_durable_checkpoint=latest_durable_checkpoint,
@@ -587,6 +919,7 @@ def train_with_args(
             int(torch.cuda.max_memory_reserved()) if torch.cuda.is_available() else None
         )
     finally:
+        torch_profiler_session.stop()
         if trackers_initialized:
             accelerator.end_training()
             tracker_summary = refresh_training_tracker_summary(
@@ -605,7 +938,9 @@ def train_with_args(
         checkpoint_interval_steps=int(args.checkpoint_interval_steps),
         durable_checkpoint_retention=int(args.durable_checkpoint_retention),
         durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
+        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         optimizer_steps_completed=optimizer_steps_completed,
+        train_iterations_completed=train_iterations_completed,
         last_loss=last_loss,
         smoothed_loss=smoothed_loss,
         peak_memory_allocated_bytes=peak_memory_allocated_bytes,
@@ -627,6 +962,9 @@ def train_with_args(
         stop_requested=stop_requested_during_training,
         stop_signal=stop_state.signal_name,
         stopped_early=stop_requested_during_training,
+        dataloader_tuning=dataloader_tuning_payload(effective_dataloader_tuning),
+        ref_mel_cache=ref_mel_cache.payload(),
+        profiling=torch_profiler_session.payload(),
         tracking=tracker_summary,
     )
 

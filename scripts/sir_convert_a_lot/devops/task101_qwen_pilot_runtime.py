@@ -19,6 +19,7 @@ Relationships:
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops import task101_qwen_pilot_runtime_contract as runtime_contract
@@ -28,6 +29,9 @@ from scripts.sir_convert_a_lot.devops.task100_qwen_finetune_runtime import (
     CONTAINER_TORCH_HOME,
     MountResolution,
     docker_checked,
+)
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_resource_monitor import (
+    inspect_task101_resource_monitor,
 )
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_runtime_artifacts import (
     _load_optional_json,
@@ -97,6 +101,16 @@ def _tensorboard_logging_dir(run_root: Path) -> Path:
     return _tracker_root(run_root) / "tensorboard"
 
 
+def _pytorch_profiling_dir(run_root: Path) -> Path:
+    """Return the PyTorch profiler trace directory for one Task 101 run root."""
+    return run_root / "profiling" / "pytorch"
+
+
+def _rocm_profiling_dir(run_root: Path) -> Path:
+    """Return the ROCm profiler trace directory for one Task 101 run root."""
+    return run_root / "profiling" / "rocm"
+
+
 def build_detached_pilot_command(
     settings: Task101PilotSettings,
     *,
@@ -141,48 +155,21 @@ def build_detached_pilot_command(
         _tensorboard_logging_dir(effective_run_root),
         scratch_root=settings.scratch_build_root,
     )
+    container_pytorch_profiling_dir = _containerize_scratch_path(
+        _pytorch_profiling_dir(effective_run_root),
+        scratch_root=settings.scratch_build_root,
+    )
+    container_rocm_profiling_dir = _containerize_scratch_path(
+        _rocm_profiling_dir(effective_run_root),
+        scratch_root=settings.scratch_build_root,
+    )
     container_resume_checkpoint = None
     if resume_from_checkpoint is not None:
         container_resume_checkpoint = _containerize_scratch_path(
             resume_from_checkpoint,
             scratch_root=settings.scratch_build_root,
         )
-    command = [
-        "run",
-        "-d",
-        "--name",
-        container_name,
-        "--label",
-        "sir_convert_a_lot.task=task101-qwen-pilot",
-        "--device",
-        "/dev/kfd",
-        "--device",
-        "/dev/dri",
-        "--ipc=host",
-        "--cap-add=SYS_PTRACE",
-        "--security-opt",
-        "seccomp=unconfined",
-        "-e",
-        "HF_HUB_DISABLE_XET=1",
-        "-e",
-        f"HF_HOME={CONTAINER_HF_HOME}",
-        "-e",
-        f"HUGGINGFACE_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
-        "-e",
-        f"TORCH_HOME={CONTAINER_TORCH_HOME}",
-        "-v",
-        f"{repo_root.as_posix()}:/app",
-        "-v",
-        f"{scratch_mount.effective_root.as_posix()}:{CONTAINER_BUILD_ROOT.as_posix()}",
-        "-v",
-        f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
-        "--workdir",
-        "/app",
-        "--entrypoint",
-        "python",
-        settings.image,
-        "-m",
-        "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe",
+    probe_args = [
         "--launch-id",
         launch_id,
         "--launch-metadata-path",
@@ -227,7 +214,95 @@ def build_detached_pilot_command(
         str(settings.durable_checkpoint_retention),
         "--durable-checkpoint-min-free-bytes",
         str(settings.durable_checkpoint_min_free_bytes),
+        "--dataloader-num-workers",
+        str(settings.dataloader_num_workers),
+        "--dataloader-pin-memory",
+        "true" if settings.dataloader_pin_memory else "false",
+        "--dataloader-persistent-workers",
+        "true" if settings.dataloader_persistent_workers else "false",
+        "--dataloader-prefetch-factor",
+        str(settings.dataloader_prefetch_factor),
+        "--non-blocking-transfer",
+        "true" if settings.non_blocking_transfer else "false",
+        "--ref-mel-cache-enabled",
+        "true" if settings.ref_mel_cache_enabled else "false",
+        "--ref-mel-cache-max-items",
+        str(settings.ref_mel_cache_max_items),
+        "--torch-profiler-enabled",
+        "true" if settings.torch_profiler_enabled else "false",
+        "--torch-profiler-wait-steps",
+        str(settings.torch_profiler_wait_steps),
+        "--torch-profiler-warmup-steps",
+        str(settings.torch_profiler_warmup_steps),
+        "--torch-profiler-active-steps",
+        str(settings.torch_profiler_active_steps),
+        "--torch-profiler-repeat",
+        str(settings.torch_profiler_repeat),
+        "--torch-profiler-record-shapes",
+        "true" if settings.torch_profiler_record_shapes else "false",
+        "--torch-profiler-profile-memory",
+        "true" if settings.torch_profiler_profile_memory else "false",
+        "--torch-profiler-with-stack",
+        "true" if settings.torch_profiler_with_stack else "false",
+        "--torch-profiler-trace-dir",
+        container_pytorch_profiling_dir,
     ]
+    command = [
+        "run",
+        "-d",
+        "--name",
+        container_name,
+        "--label",
+        "sir_convert_a_lot.task=task101-qwen-pilot",
+        "--device",
+        "/dev/kfd",
+        "--device",
+        "/dev/dri",
+        "--ipc=host",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined",
+        "-e",
+        "HF_HUB_DISABLE_XET=1",
+        "-e",
+        f"HF_HOME={CONTAINER_HF_HOME}",
+        "-e",
+        f"HUGGINGFACE_HUB_CACHE={CONTAINER_HF_HUB_CACHE}",
+        "-e",
+        f"TORCH_HOME={CONTAINER_TORCH_HOME}",
+        "-v",
+        f"{repo_root.as_posix()}:/app",
+        "-v",
+        f"{scratch_mount.effective_root.as_posix()}:{CONTAINER_BUILD_ROOT.as_posix()}",
+        "-v",
+        f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
+        "--workdir",
+        "/app",
+        "--entrypoint",
+        "python",
+        settings.image,
+    ]
+    if settings.rocm_profiler_enabled:
+        command.extend(
+            [
+                "-m",
+                "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe_with_rocprof",
+                "--rocprof-output-dir",
+                container_rocm_profiling_dir,
+                "--rocprof-trace-name",
+                launch_id,
+                "--",
+                *probe_args,
+            ]
+        )
+    else:
+        command.extend(
+            [
+                "-m",
+                "scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe",
+                *probe_args,
+            ]
+        )
     if container_resume_checkpoint is not None:
         command.extend(["--resume-from-checkpoint", container_resume_checkpoint])
     return command, effective_run_root
@@ -311,9 +386,22 @@ def inspect_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStat
     pilot_status = _load_optional_json(run_root / "status.json")
     pilot_report = _load_optional_json(run_root / "report.json")
     latest_checkpoint = _load_optional_json(run_root / "latest_checkpoint.json")
+    phase_history: list[Mapping[str, object]] | None = None
+    if pilot_status is not None:
+        raw_phase_history = pilot_status.get("phase_history")
+        if isinstance(raw_phase_history, list):
+            parsed_phase_history: list[Mapping[str, object]] = []
+            for event in raw_phase_history:
+                if isinstance(event, Mapping):
+                    parsed_phase_history.append(event)
+            phase_history = parsed_phase_history
     logs_tail = docker_checked(
         ["logs", "--tail", "200", launch.container_name],
         label="docker logs task101 detached pilot",
+    )
+    monitor_summary = inspect_task101_resource_monitor(
+        launch.resource_monitor,
+        phase_history=phase_history,
     )
     return Task101DetachedStatus(
         checked_at=_utc_now_iso(),
@@ -332,6 +420,7 @@ def inspect_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStat
         pilot_report=pilot_report,
         latest_checkpoint_found=latest_checkpoint is not None,
         latest_checkpoint=latest_checkpoint,
+        resource_monitor=monitor_summary,
         logs_tail=logs_tail,
     )
 

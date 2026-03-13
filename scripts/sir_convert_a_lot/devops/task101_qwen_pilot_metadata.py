@@ -71,7 +71,46 @@ def _write_markdown(path: Path, markdown: str) -> None:
 def _status_markdown(status: Task101DetachedStatus) -> str:
     """Render one concise markdown summary for the detached pilot."""
     pilot_status = status.pilot_status or {}
+    resource_monitor = status.resource_monitor or {}
+    monitor_available = resource_monitor.get("available")
+    monitor_launch_root = resource_monitor.get("launch_root")
+    monitor_interval = resource_monitor.get("interval_seconds")
+    monitor_train_summary = resource_monitor.get("summary_train")
+    monitor_checkpoint_summary = resource_monitor.get("summary_checkpoint_save")
+    monitor_train_gpu_busy_median = (
+        None
+        if not isinstance(monitor_train_summary, dict)
+        else monitor_train_summary.get("gpu_busy_percent_median")
+    )
+    monitor_checkpoint_gpu_busy_median = (
+        None
+        if not isinstance(monitor_checkpoint_summary, dict)
+        else monitor_checkpoint_summary.get("gpu_busy_percent_median")
+    )
+    steady_state_median = resource_monitor.get("steady_state_train_gpu_busy_median_percent")
+    steady_state_gate_met = resource_monitor.get("steady_state_gpu_busy_gate_met")
     tracking_payload = pilot_status.get("tracking")
+    ref_mel_cache_payload = pilot_status.get("ref_mel_cache")
+    ref_mel_cache_hit_rate = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("cache_hit_rate")
+    )
+    ref_mel_cache_enabled = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("enabled")
+    )
+    ref_mel_cache_hits = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("cache_hits")
+    )
+    ref_mel_cache_misses = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("cache_misses")
+    )
     mlflow_run_id = None
     if isinstance(tracking_payload, dict):
         raw_mlflow_run_id = tracking_payload.get("mlflow_run_id")
@@ -107,7 +146,18 @@ def _status_markdown(status: Task101DetachedStatus) -> str:
             "- pilot_latest_durable_checkpoint_saved_at: "
             f"`{pilot_status.get('latest_durable_checkpoint_saved_at')}`"
         ),
+        (f"- pilot_ref_mel_cache_enabled: `{ref_mel_cache_enabled}`"),
+        (f"- pilot_ref_mel_cache_hits: `{ref_mel_cache_hits}`"),
+        (f"- pilot_ref_mel_cache_misses: `{ref_mel_cache_misses}`"),
+        f"- pilot_ref_mel_cache_hit_rate: `{ref_mel_cache_hit_rate}`",
         f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
+        f"- resource_monitor_available: `{monitor_available}`",
+        f"- resource_monitor_launch_root: `{monitor_launch_root}`",
+        f"- resource_monitor_interval_seconds: `{monitor_interval}`",
+        f"- resource_monitor_train_gpu_busy_median: `{monitor_train_gpu_busy_median}`",
+        f"- resource_monitor_checkpoint_gpu_busy_median: `{monitor_checkpoint_gpu_busy_median}`",
+        f"- resource_monitor_steady_state_gpu_busy_median: `{steady_state_median}`",
+        f"- resource_monitor_steady_state_gpu_busy_gate_met: `{steady_state_gate_met}`",
         "",
         "## Logs Tail",
         "",
@@ -145,6 +195,17 @@ def _status_markdown(status: Task101DetachedStatus) -> str:
                 "",
                 "```json",
                 json.dumps(status.latest_checkpoint, indent=2, ensure_ascii=False, sort_keys=True),
+                "```",
+            ]
+        )
+    if status.resource_monitor is not None:
+        lines.extend(
+            [
+                "",
+                "## Resource Monitor",
+                "",
+                "```json",
+                json.dumps(status.resource_monitor, indent=2, ensure_ascii=False, sort_keys=True),
                 "```",
             ]
         )
@@ -191,6 +252,14 @@ def _required_int(payload: dict[str, object], key: str) -> int:
     return value
 
 
+def _required_bool(payload: dict[str, object], key: str) -> bool:
+    """Return one required boolean value from a JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, bool):
+        raise SystemExit(f"Detached Task 101 metadata returned malformed `{key}`.")
+    return value
+
+
 def _optional_int(payload: dict[str, object], key: str, *, default: int) -> int:
     """Return one optional integer value from a JSON payload with a fallback."""
     value = payload.get(key)
@@ -211,11 +280,37 @@ def _optional_str(payload: dict[str, object], key: str) -> str | None:
     return value
 
 
+def _optional_object(payload: dict[str, object], key: str) -> dict[str, object] | None:
+    """Return one optional JSON object from a payload."""
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise SystemExit(f"Detached Task 101 metadata returned malformed `{key}`.")
+    return dict(value)
+
+
 def _load_launch(
     launch_root: Path,
     *,
     default_durable_checkpoint_retention: int,
     default_durable_checkpoint_min_free_bytes: int,
+    default_dataloader_num_workers: int,
+    default_dataloader_pin_memory: bool,
+    default_dataloader_persistent_workers: bool,
+    default_dataloader_prefetch_factor: int,
+    default_non_blocking_transfer: bool,
+    default_ref_mel_cache_enabled: bool,
+    default_ref_mel_cache_max_items: int,
+    default_torch_profiler_enabled: bool,
+    default_torch_profiler_wait_steps: int,
+    default_torch_profiler_warmup_steps: int,
+    default_torch_profiler_active_steps: int,
+    default_torch_profiler_repeat: int,
+    default_torch_profiler_record_shapes: bool,
+    default_torch_profiler_profile_memory: bool,
+    default_torch_profiler_with_stack: bool,
+    default_rocm_profiler_enabled: bool,
 ) -> Task101DetachedLaunch:
     """Load one previously recorded detached pilot launch payload."""
     payload = json.loads(_launch_metadata_path(launch_root).read_text(encoding="utf-8"))
@@ -251,6 +346,86 @@ def _load_launch(
             "durable_checkpoint_min_free_bytes",
             default=default_durable_checkpoint_min_free_bytes,
         ),
+        dataloader_num_workers=_optional_int(
+            settings_payload,
+            "dataloader_num_workers",
+            default=default_dataloader_num_workers,
+        ),
+        dataloader_pin_memory=(
+            _required_bool(settings_payload, "dataloader_pin_memory")
+            if "dataloader_pin_memory" in settings_payload
+            else default_dataloader_pin_memory
+        ),
+        dataloader_persistent_workers=(
+            _required_bool(settings_payload, "dataloader_persistent_workers")
+            if "dataloader_persistent_workers" in settings_payload
+            else default_dataloader_persistent_workers
+        ),
+        dataloader_prefetch_factor=_optional_int(
+            settings_payload,
+            "dataloader_prefetch_factor",
+            default=default_dataloader_prefetch_factor,
+        ),
+        non_blocking_transfer=(
+            _required_bool(settings_payload, "non_blocking_transfer")
+            if "non_blocking_transfer" in settings_payload
+            else default_non_blocking_transfer
+        ),
+        ref_mel_cache_enabled=(
+            _required_bool(settings_payload, "ref_mel_cache_enabled")
+            if "ref_mel_cache_enabled" in settings_payload
+            else default_ref_mel_cache_enabled
+        ),
+        ref_mel_cache_max_items=_optional_int(
+            settings_payload,
+            "ref_mel_cache_max_items",
+            default=default_ref_mel_cache_max_items,
+        ),
+        torch_profiler_enabled=(
+            _required_bool(settings_payload, "torch_profiler_enabled")
+            if "torch_profiler_enabled" in settings_payload
+            else default_torch_profiler_enabled
+        ),
+        torch_profiler_wait_steps=_optional_int(
+            settings_payload,
+            "torch_profiler_wait_steps",
+            default=default_torch_profiler_wait_steps,
+        ),
+        torch_profiler_warmup_steps=_optional_int(
+            settings_payload,
+            "torch_profiler_warmup_steps",
+            default=default_torch_profiler_warmup_steps,
+        ),
+        torch_profiler_active_steps=_optional_int(
+            settings_payload,
+            "torch_profiler_active_steps",
+            default=default_torch_profiler_active_steps,
+        ),
+        torch_profiler_repeat=_optional_int(
+            settings_payload,
+            "torch_profiler_repeat",
+            default=default_torch_profiler_repeat,
+        ),
+        torch_profiler_record_shapes=(
+            _required_bool(settings_payload, "torch_profiler_record_shapes")
+            if "torch_profiler_record_shapes" in settings_payload
+            else default_torch_profiler_record_shapes
+        ),
+        torch_profiler_profile_memory=(
+            _required_bool(settings_payload, "torch_profiler_profile_memory")
+            if "torch_profiler_profile_memory" in settings_payload
+            else default_torch_profiler_profile_memory
+        ),
+        torch_profiler_with_stack=(
+            _required_bool(settings_payload, "torch_profiler_with_stack")
+            if "torch_profiler_with_stack" in settings_payload
+            else default_torch_profiler_with_stack
+        ),
+        rocm_profiler_enabled=(
+            _required_bool(settings_payload, "rocm_profiler_enabled")
+            if "rocm_profiler_enabled" in settings_payload
+            else default_rocm_profiler_enabled
+        ),
     )
     tracking_payload = payload.get("tracking")
     if tracking_payload is not None and not isinstance(tracking_payload, dict):
@@ -272,6 +447,7 @@ def _load_launch(
         settings=settings_snapshot,
         command=_required_str_list(payload, "command"),
         tracking=None if tracking_payload is None else dict(tracking_payload),
+        resource_monitor=_optional_object(payload, "resource_monitor"),
     )
 
 

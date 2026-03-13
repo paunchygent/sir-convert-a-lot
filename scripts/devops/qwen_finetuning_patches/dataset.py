@@ -33,6 +33,7 @@ import numpy.typing as npt
 import torch
 from qwen_tts.core.models.configuration_qwen3_tts import Qwen3TTSConfig
 from qwen_tts.core.models.modeling_qwen3_tts import mel_spectrogram
+from sft_12hz_ref_mel_cache import RefMelCache, canonical_ref_audio_cache_key
 from torch.utils.data import Dataset
 
 AudioArray: TypeAlias = npt.NDArray[np.float32]
@@ -96,11 +97,13 @@ class TTSDataset(Dataset[DatasetItem]):
         processor: ProcessorProtocol,
         config: Qwen3TTSConfig,
         lag_num: int = -1,
+        ref_mel_cache: RefMelCache | None = None,
     ) -> None:
         self.data_list = list(data_list)
         self.processor = processor
         self.lag_num = lag_num
         self.config = config
+        self.ref_mel_cache = ref_mel_cache
 
         self.spk_id_map: dict[str, int] = {}
         for item in self.data_list:
@@ -181,6 +184,12 @@ class TTSDataset(Dataset[DatasetItem]):
             fmax=12000,
         ).transpose(1, 2)
 
+    def _extract_ref_mel(self, ref_audio_value: AudioInputs) -> torch.Tensor:
+        """Return one extracted ref-mel tensor from a row ref-audio field."""
+        normalized_audio_inputs = self._normalize_audio_inputs(ref_audio_value)
+        waveform, sample_rate = normalized_audio_inputs[0]
+        return self.extract_mels(audio=waveform, sample_rate=sample_rate)
+
     def __getitem__(self, idx: int) -> DatasetItem:
         item = self.data_list[idx]
         text = self._build_assistant_text(item["text"])
@@ -191,9 +200,16 @@ class TTSDataset(Dataset[DatasetItem]):
         mapped_speaker_id = self.spk_id_map[speaker_id]
 
         ref_audio_value = item["ref_audio"]
-        normalized_audio_inputs = self._normalize_audio_inputs(ref_audio_value)
-        waveform, sample_rate = normalized_audio_inputs[0]
-        ref_mel = self.extract_mels(audio=waveform, sample_rate=sample_rate)
+        cache_key = canonical_ref_audio_cache_key(ref_audio_value)
+        if self.ref_mel_cache is not None and cache_key is not None:
+            cached_ref_mel = self.ref_mel_cache.get(cache_key)
+            if cached_ref_mel is None:
+                ref_mel = self._extract_ref_mel(ref_audio_value)
+                self.ref_mel_cache.put(cache_key, ref_mel)
+            else:
+                ref_mel = cached_ref_mel
+        else:
+            ref_mel = self._extract_ref_mel(ref_audio_value)
 
         return {
             "text_ids": text_ids[:, :-5],

@@ -205,16 +205,15 @@ This file is the canonical long-term memory index for session progress; session 
   - Completed `T155` under `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`: `sft_12hz.py`, `run_task101_hemma_qwen_pilot.py`, `task101_qwen_pilot_runtime.py`, and `task101_qwen_pilot_probe.py` now delegate checkpoint, metadata, runtime-contract, artifact-parsing, and report/status helpers to dedicated modules, bringing the full Task 101/Qwen refactor slice back into SRP alignment without changing the external runtime contracts.
   - Wrote the live analysis reference `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`, capturing the active Hemma run state, smoothed loss interpretation, resource-monitor evidence, checkpoint churn, missing tracker artifacts, confirmed robust surfaces, and the decision to treat `>= 90%` steady-state median GPU busy as the next saturation gate.
   - Opened Story 26 as the explicit Task 101 throughput/observability hardening lane and decomposed it into ordered tasks `T156-T165` covering first-class tracking, live heartbeat status, default high-resolution monitoring, checkpoint-cadence/step-semantics correction, dataloader/device-transfer tuning, `ref_mel` caching plus conditional precompute, bounded profiling, saturation-oriented launch profiles, and later MIOpen remediation.
-  - Completed Story 26 `T156-T157` in order: Task 101 now emits MLflow plus
-    TensorBoard tracking with persisted tracker metadata, `status.json` /
-    `status.md` now expose truthful live heartbeat fields plus phase history,
-    local gates passed, and Hemma resume launch `task101-20260313t184836z`
-    surfaced MLflow run `0e24db0d2c7642b8a6d8120551e260e2`, live tracker
-    artifacts, and `startup -> train -> checkpoint-save -> train` status flow.
+  - Completed Story 26 `T156-T160` first-five sequence: MLflow+TensorBoard tracking, truthful heartbeat/phase status, default `1.0s` pilot-scoped monitor, checkpoint cadence `100`, and explicit dataloader/transfer tuning defaults are now wired through launch/status/report/tracker artifacts.
+  - Implemented Story 26 `T161` code surfaces and local validation: bounded runtime `ref_mel` cache in Task 101 hot path, cache metrics propagated through tracker/status/report payloads, and committed bounded Hemma comparison runner `task-161-ref-mel-cache-comparison` with typed runtime helpers.
+  - Implemented Story 26 `T162` code surfaces and local validation: bounded PyTorch profiling with trainer phase markers, committed Task 101 `rocprofv3` probe wrapper, and committed bounded profiling runner `task-162-task101-profiling` plus artifact collector without ad hoc shell payloads.
+  - All required local quality gates passed after `T161-T162` integration; remaining acceptance work is live Hemma evidence under `build/verification/`, explicit `T164` go/no-go decision, and then Story 26 `T163` saturation-gate execution.
+
 ## Next Actions
 
 - Current Task 101 follow-on is Story 26: raise observability and throughput
   until the Hemma lane can prove `>= 90%` steady-state median GPU busy.
 - Current ownership follow-on remains the shard-governed
   `task138-task129-remaining-unique-20260311a` recovery path; `T118` only
-  remains as the earlier precursor to Story 26 `T160-T164`.
+  remains as the earlier precursor to Story 26 `T161-T164`.

@@ -2,7 +2,7 @@
 id: task-159-correct-task-101-checkpoint-cadence-and-step-semantics-for-throughput-oriented-qwen-runs
 title: Correct Task 101 checkpoint cadence and step semantics for throughput-oriented Qwen runs
 type: task
-status: proposed
+status: completed
 priority: critical
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -64,37 +64,37 @@ for a long saturation-oriented run.
 
 ## Deliverables
 
-- [ ] Long-run checkpoint cadence is reduced from the current `2`-step posture.
-- [ ] Step semantics are explicitly documented and machine-readable.
-- [ ] Task 101 metadata/report surfaces distinguish iteration-style counters
+- [x] Long-run checkpoint cadence is reduced from the current `2`-step posture.
+- [x] Step semantics are explicitly documented and machine-readable.
+- [x] Task 101 metadata/report surfaces distinguish iteration-style counters
   from optimizer-update counters where relevant.
-- [ ] Focused tests prove the new cadence/defaults and step semantics.
+- [x] Focused tests prove the new cadence/defaults and step semantics.
 
 ## Acceptance Criteria
 
-- [ ] Long Task 101 runs no longer default to durable trainer-state saves every
+- [x] Long Task 101 runs no longer default to durable trainer-state saves every
   `2` steps.
-- [ ] Smoke/profile runs retain an explicitly documented tighter checkpoint
+- [x] Smoke/profile runs retain an explicitly documented tighter checkpoint
   posture where needed.
-- [ ] The visible counters used in status, reports, and tracking are truthful
+- [x] The visible counters used in status, reports, and tracking are truthful
   enough that an operator can tell what one “step” means.
-- [ ] Checkpoint retention, latest-pointer truthfulness, exported model
+- [x] Checkpoint retention, latest-pointer truthfulness, exported model
   checkpoints, and resume compatibility do not regress.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] Bounded Hemma proof records lower checkpoint churn and the new counter
   semantics in machine-readable artifacts.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

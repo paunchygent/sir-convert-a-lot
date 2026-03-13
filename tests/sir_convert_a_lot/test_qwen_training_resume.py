@@ -301,7 +301,14 @@ class _FakeQwenWrapper:
 class _FakeDataset:
     """Minimal dataset shell for DataLoader construction in tests."""
 
-    def __init__(self, rows: list[object], _processor: object, _config: object) -> None:
+    def __init__(
+        self,
+        rows: list[object],
+        _processor: object,
+        _config: object,
+        ref_mel_cache: object | None = None,
+    ) -> None:
+        del ref_mel_cache
         self.rows = rows
         self.collate_fn = lambda batch: batch
 
@@ -789,6 +796,15 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
     assert summary.latest_durable_checkpoint_step == 1
     assert summary.durable_checkpoint_retention == 2
     assert summary.durable_checkpoint_min_free_bytes == 16 * 1024**3
+    assert summary.gradient_accumulation_steps == 4
+    assert summary.train_iterations_completed == 1
+    assert summary.dataloader_tuning["num_workers"] == 4
+    assert summary.dataloader_tuning["pin_memory"] is True
+    assert summary.dataloader_tuning["persistent_workers"] is True
+    assert summary.dataloader_tuning["prefetch_factor"] == 4
+    assert summary.dataloader_tuning["non_blocking_transfer"] is True
+    assert summary.ref_mel_cache["enabled"] is True
+    assert summary.ref_mel_cache["max_items"] == 2048
     assert summary.durable_checkpoint_paths == [summary.latest_durable_checkpoint_path]
     assert summary.tracking is not None
     assert summary.tracking.project_name == "task101-qwen-pilot"

@@ -40,6 +40,22 @@ class Task101PilotSettings:
     checkpoint_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
+    dataloader_num_workers: int = 4
+    dataloader_pin_memory: bool = True
+    dataloader_persistent_workers: bool = True
+    dataloader_prefetch_factor: int = 4
+    non_blocking_transfer: bool = True
+    ref_mel_cache_enabled: bool = True
+    ref_mel_cache_max_items: int = 2048
+    torch_profiler_enabled: bool = False
+    torch_profiler_wait_steps: int = 1
+    torch_profiler_warmup_steps: int = 1
+    torch_profiler_active_steps: int = 4
+    torch_profiler_repeat: int = 1
+    torch_profiler_record_shapes: bool = True
+    torch_profiler_profile_memory: bool = True
+    torch_profiler_with_stack: bool = False
+    rocm_profiler_enabled: bool = False
 
 
 @dataclass(frozen=True)
@@ -64,6 +80,22 @@ class Task101PilotSettingsSnapshot:
     checkpoint_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
+    dataloader_num_workers: int = 4
+    dataloader_pin_memory: bool = True
+    dataloader_persistent_workers: bool = True
+    dataloader_prefetch_factor: int = 4
+    non_blocking_transfer: bool = True
+    ref_mel_cache_enabled: bool = True
+    ref_mel_cache_max_items: int = 2048
+    torch_profiler_enabled: bool = False
+    torch_profiler_wait_steps: int = 1
+    torch_profiler_warmup_steps: int = 1
+    torch_profiler_active_steps: int = 4
+    torch_profiler_repeat: int = 1
+    torch_profiler_record_shapes: bool = True
+    torch_profiler_profile_memory: bool = True
+    torch_profiler_with_stack: bool = False
+    rocm_profiler_enabled: bool = False
 
 
 @dataclass(frozen=True)
@@ -86,6 +118,7 @@ class Task101DetachedLaunch:
     settings: Task101PilotSettingsSnapshot
     command: list[str]
     tracking: dict[str, object] | None = None
+    resource_monitor: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -109,6 +142,7 @@ class Task101DetachedStatus:
     latest_checkpoint_found: bool
     latest_checkpoint: dict[str, object] | None
     logs_tail: str
+    resource_monitor: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -163,6 +197,22 @@ def snapshot_settings(settings: Task101PilotSettings) -> Task101PilotSettingsSna
         checkpoint_interval_steps=settings.checkpoint_interval_steps,
         durable_checkpoint_retention=settings.durable_checkpoint_retention,
         durable_checkpoint_min_free_bytes=settings.durable_checkpoint_min_free_bytes,
+        dataloader_num_workers=settings.dataloader_num_workers,
+        dataloader_pin_memory=settings.dataloader_pin_memory,
+        dataloader_persistent_workers=settings.dataloader_persistent_workers,
+        dataloader_prefetch_factor=settings.dataloader_prefetch_factor,
+        non_blocking_transfer=settings.non_blocking_transfer,
+        ref_mel_cache_enabled=settings.ref_mel_cache_enabled,
+        ref_mel_cache_max_items=settings.ref_mel_cache_max_items,
+        torch_profiler_enabled=settings.torch_profiler_enabled,
+        torch_profiler_wait_steps=settings.torch_profiler_wait_steps,
+        torch_profiler_warmup_steps=settings.torch_profiler_warmup_steps,
+        torch_profiler_active_steps=settings.torch_profiler_active_steps,
+        torch_profiler_repeat=settings.torch_profiler_repeat,
+        torch_profiler_record_shapes=settings.torch_profiler_record_shapes,
+        torch_profiler_profile_memory=settings.torch_profiler_profile_memory,
+        torch_profiler_with_stack=settings.torch_profiler_with_stack,
+        rocm_profiler_enabled=settings.rocm_profiler_enabled,
     )
 
 
@@ -187,4 +237,20 @@ def settings_from_snapshot(snapshot: Task101PilotSettingsSnapshot) -> Task101Pil
         checkpoint_interval_steps=snapshot.checkpoint_interval_steps,
         durable_checkpoint_retention=snapshot.durable_checkpoint_retention,
         durable_checkpoint_min_free_bytes=snapshot.durable_checkpoint_min_free_bytes,
+        dataloader_num_workers=snapshot.dataloader_num_workers,
+        dataloader_pin_memory=snapshot.dataloader_pin_memory,
+        dataloader_persistent_workers=snapshot.dataloader_persistent_workers,
+        dataloader_prefetch_factor=snapshot.dataloader_prefetch_factor,
+        non_blocking_transfer=snapshot.non_blocking_transfer,
+        ref_mel_cache_enabled=snapshot.ref_mel_cache_enabled,
+        ref_mel_cache_max_items=snapshot.ref_mel_cache_max_items,
+        torch_profiler_enabled=snapshot.torch_profiler_enabled,
+        torch_profiler_wait_steps=snapshot.torch_profiler_wait_steps,
+        torch_profiler_warmup_steps=snapshot.torch_profiler_warmup_steps,
+        torch_profiler_active_steps=snapshot.torch_profiler_active_steps,
+        torch_profiler_repeat=snapshot.torch_profiler_repeat,
+        torch_profiler_record_shapes=snapshot.torch_profiler_record_shapes,
+        torch_profiler_profile_memory=snapshot.torch_profiler_profile_memory,
+        torch_profiler_with_stack=snapshot.torch_profiler_with_stack,
+        rocm_profiler_enabled=snapshot.rocm_profiler_enabled,
     )

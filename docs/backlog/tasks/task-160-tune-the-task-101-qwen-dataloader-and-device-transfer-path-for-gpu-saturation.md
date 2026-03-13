@@ -2,7 +2,7 @@
 id: task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation
 title: Tune the Task 101 Qwen dataloader and device-transfer path for GPU saturation
 type: task
-status: proposed
+status: completed
 priority: critical
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -61,37 +61,37 @@ while the live `2026-03-13` monitor measured a GPU-busy median of only `5%`.
 
 ## Deliverables
 
-- [ ] Task 101 exposes tuned dataloader and transfer controls.
+- [x] Task 101 exposes tuned dataloader and transfer controls.
 - [ ] One bounded Hemma tuning sweep records candidate settings and selects a
   canonical default.
-- [ ] Launch metadata and trackers record the selected dataloader posture.
-- [ ] Focused tests cover the new configuration surface.
+- [x] Launch metadata and trackers record the selected dataloader posture.
+- [x] Focused tests cover the new configuration surface.
 
 ## Acceptance Criteria
 
-- [ ] The live Task 101 lane no longer relies on implicit synchronous
+- [x] The live Task 101 lane no longer relies on implicit synchronous
   dataloader defaults alone.
 - [ ] One evidence-backed Hemma default is documented for the saturation story.
 - [ ] A bounded Hemma verification run shows materially better throughput and
   GPU-busy behavior than the `2026-03-13` baseline, even if the full
   `>= 90%` gate still depends on follow-on tasks.
-- [ ] The tuned path does not break resume compatibility or bundle-path
+- [x] The tuned path does not break resume compatibility or bundle-path
   assumptions.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py -q`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_qwen_training_dataloader_tuning.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] Bounded Hemma evidence records the selected dataloader defaults and the
   resulting resource summary.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

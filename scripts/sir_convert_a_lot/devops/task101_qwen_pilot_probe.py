@@ -59,9 +59,31 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num-epochs", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=8)
-    parser.add_argument("--checkpoint-interval-steps", type=int, default=2)
+    parser.add_argument("--checkpoint-interval-steps", type=int, default=100)
     parser.add_argument("--durable-checkpoint-retention", type=int, default=2)
     parser.add_argument("--durable-checkpoint-min-free-bytes", type=int, default=16 * 1024**3)
+    parser.add_argument("--dataloader-num-workers", type=int, default=4)
+    parser.add_argument("--dataloader-pin-memory", choices=("true", "false"), default="true")
+    parser.add_argument(
+        "--dataloader-persistent-workers",
+        choices=("true", "false"),
+        default="true",
+    )
+    parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
+    parser.add_argument("--non-blocking-transfer", choices=("true", "false"), default="true")
+    parser.add_argument("--ref-mel-cache-enabled", choices=("true", "false"), default="true")
+    parser.add_argument("--ref-mel-cache-max-items", type=int, default=2048)
+    parser.add_argument("--torch-profiler-enabled", choices=("true", "false"), default="false")
+    parser.add_argument("--torch-profiler-wait-steps", type=int, default=1)
+    parser.add_argument("--torch-profiler-warmup-steps", type=int, default=1)
+    parser.add_argument("--torch-profiler-active-steps", type=int, default=4)
+    parser.add_argument("--torch-profiler-repeat", type=int, default=1)
+    parser.add_argument("--torch-profiler-record-shapes", choices=("true", "false"), default="true")
+    parser.add_argument(
+        "--torch-profiler-profile-memory", choices=("true", "false"), default="true"
+    )
+    parser.add_argument("--torch-profiler-with-stack", choices=("true", "false"), default="false")
+    parser.add_argument("--torch-profiler-trace-dir", default=None)
     parser.add_argument("--resume-from-checkpoint", type=Path, default=None)
     return parser.parse_args()
 
@@ -105,6 +127,30 @@ def main() -> int:
             output_dir=output_dir,
             train_row_count=train_row_count,
             eval_row_count=eval_row_count,
+            gradient_accumulation_steps=sft_12hz.GRADIENT_ACCUMULATION_STEPS,
+            dataloader_tuning={
+                "num_workers": int(args.dataloader_num_workers),
+                "pin_memory": str(args.dataloader_pin_memory).lower() == "true",
+                "persistent_workers": (str(args.dataloader_persistent_workers).lower() == "true"),
+                "prefetch_factor": int(args.dataloader_prefetch_factor),
+                "non_blocking_transfer": str(args.non_blocking_transfer).lower() == "true",
+            },
+            ref_mel_cache_config={
+                "enabled": str(args.ref_mel_cache_enabled).lower() == "true",
+                "max_items": int(args.ref_mel_cache_max_items),
+            },
+            profiling_plan={
+                "torch_profiler_enabled": str(args.torch_profiler_enabled).lower() == "true",
+                "torch_profiler_trace_dir": (
+                    None
+                    if args.torch_profiler_trace_dir is None
+                    else str(args.torch_profiler_trace_dir)
+                ),
+                "torch_profiler_wait_steps": int(args.torch_profiler_wait_steps),
+                "torch_profiler_warmup_steps": int(args.torch_profiler_warmup_steps),
+                "torch_profiler_active_steps": int(args.torch_profiler_active_steps),
+                "torch_profiler_repeat": int(args.torch_profiler_repeat),
+            },
             checkpoint_interval_steps=int(args.checkpoint_interval_steps),
             durable_checkpoint_retention=int(args.durable_checkpoint_retention),
             durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
@@ -133,6 +179,30 @@ def main() -> int:
             checkpoint_interval_steps=int(args.checkpoint_interval_steps),
             durable_checkpoint_retention=int(args.durable_checkpoint_retention),
             durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
+            dataloader_num_workers=int(args.dataloader_num_workers),
+            dataloader_pin_memory=str(args.dataloader_pin_memory).lower() == "true",
+            dataloader_persistent_workers=(
+                str(args.dataloader_persistent_workers).lower() == "true"
+            ),
+            dataloader_prefetch_factor=int(args.dataloader_prefetch_factor),
+            non_blocking_transfer=str(args.non_blocking_transfer).lower() == "true",
+            ref_mel_cache_enabled=str(args.ref_mel_cache_enabled).lower() == "true",
+            ref_mel_cache_max_items=int(args.ref_mel_cache_max_items),
+            torch_profiler_enabled=str(args.torch_profiler_enabled).lower() == "true",
+            torch_profiler_wait_steps=int(args.torch_profiler_wait_steps),
+            torch_profiler_warmup_steps=int(args.torch_profiler_warmup_steps),
+            torch_profiler_active_steps=int(args.torch_profiler_active_steps),
+            torch_profiler_repeat=int(args.torch_profiler_repeat),
+            torch_profiler_record_shapes=str(args.torch_profiler_record_shapes).lower() == "true",
+            torch_profiler_profile_memory=(
+                str(args.torch_profiler_profile_memory).lower() == "true"
+            ),
+            torch_profiler_with_stack=str(args.torch_profiler_with_stack).lower() == "true",
+            torch_profiler_trace_dir=(
+                None
+                if args.torch_profiler_trace_dir is None
+                else str(args.torch_profiler_trace_dir)
+            ),
             resume_from_checkpoint=(
                 None
                 if args.resume_from_checkpoint is None

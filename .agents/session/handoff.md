@@ -1,5 +1,69 @@
 # Session Handoff
 
+## Session Update (2026-03-13, Story 26 T161-T162)
+
+- Implemented the remaining Story 26 `T161` and `T162` code surfaces while
+  preserving the live Hemma pilot rule (no branch switching or pilot stop).
+- `T161` implementation outcomes:
+  - added bounded runtime ref-mel cache module
+    `scripts/devops/qwen_finetuning_patches/sft_12hz_ref_mel_cache.py`
+  - wired cache into Task 101 dataset/trainer path and propagated cache config
+    plus stats through Task 101 launch/runtime/probe/status/report contracts
+  - added bounded Hemma comparison surface:
+    `scripts/sir_convert_a_lot/devops/run_task161_hemma_ref_mel_cache_comparison.py`
+    with helper module
+    `scripts/sir_convert_a_lot/devops/task161_qwen_ref_mel_cache_runtime.py`
+- `T162` implementation outcomes:
+  - added bounded PyTorch profiling helper module
+    `scripts/devops/qwen_finetuning_patches/sft_12hz_profiling.py`
+  - patched trainer now supports opt-in profiler config plus phase markers for
+    `batch-preparation`, `forward-backward`, `optimizer-step`, and
+    `checkpoint-save`
+  - added committed ROCm wrapper:
+    `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe_with_rocprof.py`
+    (explicit `--runtime-trace`, CSV output)
+  - added bounded profiling orchestration and artifact collector:
+    - `scripts/sir_convert_a_lot/devops/run_task162_hemma_task101_profiling.py`
+    - `scripts/sir_convert_a_lot/devops/task162_qwen_profile_artifacts.py`
+- Docs and runbook updates:
+  - Story/task docs now include concrete implementation maps for `T161-T163`
+  - `T161` and `T162` task docs moved to `in_progress` with local validation
+    checklists updated
+  - Qwen runbook now documents canonical `task-161-ref-mel-cache-comparison`
+    and `task-162-task101-profiling` command surfaces
+
+## Validation Status (T161-T162 local)
+
+- `PASS` `pdm run format-all`
+- `PASS` `pdm run lint-fix`
+- `PASS` `pdm run typecheck-all`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_qwen_training_tracking.py tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py tests/sir_convert_a_lot/test_qwen_training_ref_mel_cache.py tests/sir_convert_a_lot/test_task161_qwen_ref_mel_cache_comparison.py tests/sir_convert_a_lot/test_qwen_training_profiling.py tests/sir_convert_a_lot/test_task101_qwen_profiling.py tests/sir_convert_a_lot/test_task101_qwen_resource_monitor.py tests/sir_convert_a_lot/test_qwen_training_dataloader_tuning.py -q`
+- `PASS` `pdm run validate-tasks`
+- `PASS` `pdm run validate-docs`
+- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+## Active Blocker
+
+- `T161` and `T162` still require live Hemma evidence artifacts to reach
+  terminal status:
+  - run the bounded cache-off/cache-on comparison surface and capture
+    `build/verification/task-161-ref-mel-cache-comparison/<run-id>/`
+  - run the bounded profiling surface and capture
+    `build/verification/task-162-task101-profiling/<run-id>/`
+  - record explicit `T164` go/no-go decision from real run evidence
+
+## Immediate Next Step
+
+- Commit and push the current Story 26 `T158-T162` implementation slice.
+- On Hemma, keep merge-only workflow and wrapper-only execution:
+  - `pdm run run-hemma -- git status --short`
+  - `pdm run run-hemma -- git pull --ff-only`
+- Run live bounded evidence captures:
+  - `pdm run run-hemma -- pdm run task-161-ref-mel-cache-comparison`
+  - `pdm run run-hemma -- pdm run task-162-task101-profiling`
+- Use resulting artifacts to close `T161/T162` acceptance and then proceed to
+  `T163` saturation-oriented profile/gate execution.
+
 ## Session Summary (2026-03-13)
 
 - Implemented `T156` and `T157` in Story 26 order rather than skipping ahead.

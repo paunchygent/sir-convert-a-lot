@@ -55,6 +55,47 @@ wrong purpose.
 - Keep the CLI and runbook explicit about which profile is intended for which
   operational goal.
 
+## Implementation Plan (Concrete)
+
+Code changes:
+
+- add `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_profiles.py`
+  - canonical profile registry:
+    - `smoke`
+    - `profile`
+    - `pilot-long`
+    - `convergence`
+  - profile-default resolution with explicit override precedence
+- add `scripts/sir_convert_a_lot/devops/task101_qwen_saturation_gate.py`
+  - contiguous non-checkpoint window evaluation
+  - gate contract:
+    - `>= 90%` median GPU busy
+    - at least `10` contiguous minutes
+    - monitor interval `<= 1.0s`
+- update
+  `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_resource_monitor.py`
+  so the monitor summary exposes contiguous-window evidence fields
+- update launcher/runtime/metadata surfaces to persist and render selected
+  launch profile and gate result:
+  - `run_task101_hemma_qwen_pilot.py`
+  - `task101_qwen_pilot_runtime_contract.py`
+  - `task101_qwen_pilot_runtime.py`
+  - `task101_qwen_pilot_probe_reporting.py`
+  - `task101_qwen_pilot_metadata.py`
+- add governed gate runner:
+  - `scripts/sir_convert_a_lot/devops/run_task163_hemma_task101_saturation_gate.py`
+
+Test changes:
+
+- add `tests/sir_convert_a_lot/test_task101_qwen_launch_profiles.py`
+- add `tests/sir_convert_a_lot/test_task101_qwen_saturation_gate.py`
+- extend `tests/sir_convert_a_lot/test_task101_qwen_resource_monitor.py`
+  with contiguous-window gate assertions
+
+Hemma evidence path:
+
+- `build/verification/task-163-task101-saturation-gate/<run-id>/`
+
 ## Non-Goals
 
 - Do not itself implement precomputed bundle mels.

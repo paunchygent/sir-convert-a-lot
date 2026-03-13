@@ -16,9 +16,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Mapping
+from typing import TYPE_CHECKING, Mapping
 
-from scripts.devops.qwen_finetuning_patches.sft_12hz import TrainingSummary
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
 from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe_reporting import (
     _completed_status_payload,
@@ -27,6 +26,9 @@ from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe_reporting import 
     _running_status_payload,
     _write_json,
 )
+
+if TYPE_CHECKING:
+    from scripts.devops.qwen_finetuning_patches.sft_12hz import TrainingSummary
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,10 @@ class Task101PilotStatusReporterConfig:
     durable_checkpoint_min_free_bytes: int
     resume_from_checkpoint: Path | None
     tracking_plan: Mapping[str, object] | None
+    gradient_accumulation_steps: int = 4
+    dataloader_tuning: Mapping[str, object] | None = None
+    ref_mel_cache_config: Mapping[str, object] | None = None
+    profiling_plan: Mapping[str, object] | None = None
 
 
 @dataclass
@@ -63,6 +69,9 @@ class Task101PilotStatusReporter:
             updated_at=self._status_timestamp(),
             current_epoch=0,
             current_step=0,
+            current_optimizer_step=0,
+            current_train_iteration=0,
+            gradient_accumulation_steps=self.config.gradient_accumulation_steps,
             latest_loss=None,
             smoothed_loss=None,
             latest_durable_checkpoint_path=(
@@ -88,7 +97,7 @@ class Task101PilotStatusReporter:
         self._record_heartbeat(heartbeat)
         self._write_running_status()
 
-    def write_completed(self, training_summary: TrainingSummary) -> None:
+    def write_completed(self, training_summary: "TrainingSummary") -> None:
         """Persist the terminal completed or signal-stop status payload."""
         terminal_phase = "signal-stop" if training_summary.stopped_early else "completed"
         self._ensure_terminal_phase(terminal_phase)
@@ -135,6 +144,8 @@ class Task101PilotStatusReporter:
                     "updated_at": heartbeat.updated_at,
                     "current_epoch": heartbeat.current_epoch,
                     "current_step": heartbeat.current_step,
+                    "current_optimizer_step": heartbeat.current_optimizer_step,
+                    "current_train_iteration": heartbeat.current_train_iteration,
                 }
             )
 
@@ -149,8 +160,22 @@ class Task101PilotStatusReporter:
                 train_row_count=self.config.train_row_count,
                 eval_row_count=self.config.eval_row_count,
                 checkpoint_interval_steps=self.config.checkpoint_interval_steps,
+                gradient_accumulation_steps=self.config.gradient_accumulation_steps,
                 durable_checkpoint_retention=self.config.durable_checkpoint_retention,
                 durable_checkpoint_min_free_bytes=(self.config.durable_checkpoint_min_free_bytes),
+                dataloader_tuning=(
+                    None
+                    if self.config.dataloader_tuning is None
+                    else dict(self.config.dataloader_tuning)
+                ),
+                ref_mel_cache_config=(
+                    None
+                    if self.config.ref_mel_cache_config is None
+                    else dict(self.config.ref_mel_cache_config)
+                ),
+                profiling_plan=(
+                    None if self.config.profiling_plan is None else dict(self.config.profiling_plan)
+                ),
                 resume_from_checkpoint=self.config.resume_from_checkpoint,
                 tracking_plan=(
                     None if self.config.tracking_plan is None else dict(self.config.tracking_plan)
@@ -186,6 +211,16 @@ class Task101PilotStatusReporter:
                 "updated_at": updated_at,
                 "current_epoch": current_epoch,
                 "current_step": current_step,
+                "current_optimizer_step": current_step,
+                "current_train_iteration": (
+                    0
+                    if self.latest_heartbeat is None
+                    else (
+                        0
+                        if self.latest_heartbeat.current_train_iteration is None
+                        else self.latest_heartbeat.current_train_iteration
+                    )
+                ),
             }
         )
 
