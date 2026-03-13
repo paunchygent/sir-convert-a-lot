@@ -13,6 +13,8 @@ from scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_CHECKPOINT_INTERVAL_STEPS,
     DEFAULT_DOCKERFILE_PATH,
+    DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES,
+    DEFAULT_DURABLE_CHECKPOINT_RETENTION,
     DEFAULT_EVAL_MANIFEST_FAMILY,
     DEFAULT_LR,
     DEFAULT_MAX_STEPS,
@@ -51,6 +53,8 @@ def test_task101_parser_launch_defaults() -> None:
     assert args.num_epochs == DEFAULT_NUM_EPOCHS
     assert args.max_steps == DEFAULT_MAX_STEPS
     assert args.checkpoint_interval_steps == DEFAULT_CHECKPOINT_INTERVAL_STEPS
+    assert args.durable_checkpoint_retention == DEFAULT_DURABLE_CHECKPOINT_RETENTION
+    assert args.durable_checkpoint_min_free_bytes == DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES
     assert args.skip_build is False
 
 
@@ -102,6 +106,8 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
         num_epochs=1,
         max_steps=8,
         checkpoint_interval_steps=2,
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
     hf_mount = MountResolution(
         canonical_root=settings.hf_cache_dir,
@@ -143,6 +149,10 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
     assert "--checkpoint-interval-steps" in command
     checkpoint_index = command.index("--checkpoint-interval-steps")
     assert command[checkpoint_index + 1] == "2"
+    retention_index = command.index("--durable-checkpoint-retention")
+    assert command[retention_index + 1] == "2"
+    free_bytes_index = command.index("--durable-checkpoint-min-free-bytes")
+    assert command[free_bytes_index + 1] == str(16 * 1024**3)
     eval_index = command.index("--eval-jsonl")
     assert command[eval_index + 1].endswith("/swedish_checkpoint_dev.prepared.jsonl")
 
@@ -168,6 +178,8 @@ def test_build_detached_pilot_command_includes_resume_checkpoint_when_requested(
         num_epochs=1,
         max_steps=8,
         checkpoint_interval_steps=2,
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
     hf_mount = MountResolution(
         canonical_root=settings.hf_cache_dir,
@@ -215,6 +227,8 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
                 "status": "completed",
                 "optimizer_steps_completed": 8,
                 "eval_jsonl": "/bundle/manifests/swedish_checkpoint_dev.prepared.jsonl",
+                "durable_checkpoint_retention": 2,
+                "durable_checkpoint_min_free_bytes": 16 * 1024**3,
             }
         )
         + "\n",
@@ -225,7 +239,11 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
             {
                 "eval_jsonl": "/bundle/manifests/swedish_checkpoint_dev.prepared.jsonl",
                 "upstream_trainer_uses_eval_manifest": False,
-                "training_summary": {"optimizer_steps_completed": 8},
+                "training_summary": {
+                    "optimizer_steps_completed": 8,
+                    "durable_checkpoint_retention": 2,
+                    "durable_checkpoint_min_free_bytes": 16 * 1024**3,
+                },
             }
         )
         + "\n",
@@ -275,6 +293,8 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
             num_epochs=1,
             max_steps=8,
             checkpoint_interval_steps=2,
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
         command=["sudo", "-n", "docker", "run", "-d"],
     )
@@ -321,11 +341,15 @@ def test_inspect_detached_pilot_reads_container_status_and_reports(
     eval_jsonl = status.pilot_status["eval_jsonl"]
     assert isinstance(eval_jsonl, str)
     assert eval_jsonl.endswith("swedish_checkpoint_dev.prepared.jsonl")
+    assert status.pilot_status["durable_checkpoint_retention"] == 2
+    assert status.pilot_status["durable_checkpoint_min_free_bytes"] == 16 * 1024**3
     assert status.pilot_report is not None
     assert status.pilot_report["upstream_trainer_uses_eval_manifest"] is False
     training_summary = status.pilot_report.get("training_summary")
     assert isinstance(training_summary, dict)
     assert training_summary["optimizer_steps_completed"] == 8
+    assert training_summary["durable_checkpoint_retention"] == 2
+    assert training_summary["durable_checkpoint_min_free_bytes"] == 16 * 1024**3
     assert status.logs_tail == "pilot log tail"
 
 
@@ -487,6 +511,8 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
             num_epochs=1,
             max_steps=8,
             checkpoint_interval_steps=2,
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
         command=["sudo", "-n", "docker", "run", "-d"],
     )
@@ -582,6 +608,364 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
     assert captured["resume_from_checkpoint"] == checkpoint_path
 
 
+def test_task101_resume_defaults_checkpoint_policy_for_pre_t153_launch_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resume should remain compatible with launch metadata written before T153."""
+    output_root = tmp_path / "verification"
+    source_launch_root = output_root / "task101-prev"
+    source_run_root = tmp_path / "runs/task101-prev"
+    checkpoint_path = source_run_root / "checkpoints/state-step-00000008"
+    output_root.mkdir(parents=True, exist_ok=True)
+    source_launch_root.mkdir(parents=True, exist_ok=True)
+    checkpoint_path.mkdir(parents=True, exist_ok=True)
+    latest_pointer = source_run_root / "latest_checkpoint.json"
+    latest_pointer.parent.mkdir(parents=True, exist_ok=True)
+    latest_pointer.write_text(
+        json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+    legacy_pilot_bundle_root = (
+        "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
+    )
+    legacy_train_jsonl = (
+        "/srv/scratch/sir-convert-a-lot/build/reference/"
+        "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "swedish_pilot_train.prepared.jsonl"
+    )
+    legacy_eval_jsonl = (
+        "/srv/scratch/sir-convert-a-lot/build/reference/"
+        "qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "swedish_checkpoint_dev.prepared.jsonl"
+    )
+
+    legacy_launch_payload = {
+        "generated_at": "2026-03-09T12:00:00Z",
+        "launch_id": "task101-prev",
+        "container_name": "task101-prev-container",
+        "container_id": "container-id",
+        "repo_root": "/home/paunchygent/apps/sir-convert-a-lot",
+        "run_root": source_run_root.as_posix(),
+        "pilot_bundle_root": legacy_pilot_bundle_root,
+        "train_jsonl": legacy_train_jsonl,
+        "eval_jsonl": legacy_eval_jsonl,
+        "train_manifest_family": "swedish_pilot_train",
+        "eval_manifest_family": "swedish_checkpoint_dev",
+        "dockerfile_path": "containers/custom-qwen-finetune/Dockerfile",
+        "resumed_from_checkpoint_path": None,
+        "settings": {
+            "output_root": "/srv/scratch/sir-convert-a-lot/build/verification/task-101",
+            "image": "sir-convert-a-lot-qwen-finetune-hemma:task100",
+            "hf_cache_dir": "/srv/scratch/sir-convert-a-lot/cache/huggingface",
+            "hf_cache_home_mount": "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+            "scratch_build_root": "/srv/scratch/sir-convert-a-lot/build",
+            "scratch_build_home_mount": "/home/paunchygent/.data/sir-convert-a-lot/build",
+            "pilot_bundle_root": (
+                "/srv/scratch/sir-convert-a-lot/build/reference/"
+                "qwen3-tts-swedish-task101-pilot-bundle"
+            ),
+            "runs_root": "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
+            "model_id": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+            "train_manifest_family": "swedish_pilot_train",
+            "eval_manifest_family": "swedish_checkpoint_dev",
+            "batch_size": 1,
+            "lr": 2e-5,
+            "num_epochs": 1,
+            "max_steps": 8,
+            "checkpoint_interval_steps": 2,
+        },
+        "command": ["sudo", "-n", "docker", "run", "-d"],
+    }
+    (source_launch_root / "launch.json").write_text(
+        json.dumps(legacy_launch_payload) + "\n",
+        encoding="utf-8",
+    )
+    (output_root / "latest-launch.json").write_text(
+        json.dumps({"launch_root": source_launch_root.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def _fake_prepare_qwen_image(args: argparse.Namespace) -> tuple[bool, str]:
+        return False, str(args.image)
+
+    def _fake_resolve_hf_cache_dir(args: argparse.Namespace) -> MountResolution:
+        del args
+        return MountResolution(
+            canonical_root=Path("/srv/scratch/cache"),
+            effective_root=Path("/srv/scratch/cache"),
+            used_home_mount=False,
+        )
+
+    def _fake_resolve_bind_root(
+        canonical_root: Path,
+        home_mount: Path,
+        *,
+        image: str,
+        sync_home_into_canonical: bool,
+    ) -> MountResolution:
+        del home_mount, image, sync_home_into_canonical
+        return MountResolution(
+            canonical_root=canonical_root,
+            effective_root=canonical_root,
+            used_home_mount=False,
+        )
+
+    def _fake_launch_detached_pilot(
+        settings: Task101PilotSettings,
+        *,
+        repo_root: Path,
+        hf_mount: MountResolution,
+        scratch_mount: MountResolution,
+        launch_id: str,
+        container_name: str,
+        dockerfile_path: Path | None = None,
+        run_root: Path | None = None,
+        resume_from_checkpoint: Path | None = None,
+    ) -> Task101DetachedLaunch:
+        del repo_root, hf_mount, scratch_mount, container_name
+        captured["settings"] = settings
+        captured["launch_id"] = launch_id
+        captured["dockerfile_path"] = dockerfile_path
+        captured["run_root"] = run_root
+        captured["resume_from_checkpoint"] = resume_from_checkpoint
+        return Task101DetachedLaunch(
+            generated_at="2026-03-13T12:00:00Z",
+            launch_id=launch_id,
+            container_name="task101-prev-container",
+            container_id="container-id",
+            repo_root="/home/paunchygent/apps/sir-convert-a-lot",
+            run_root=source_run_root.as_posix(),
+            pilot_bundle_root=legacy_pilot_bundle_root,
+            train_jsonl=legacy_train_jsonl,
+            eval_jsonl=legacy_eval_jsonl,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+            dockerfile_path=None if dockerfile_path is None else dockerfile_path.as_posix(),
+            resumed_from_checkpoint_path=(
+                None if resume_from_checkpoint is None else resume_from_checkpoint.as_posix()
+            ),
+            settings=Task101PilotSettingsSnapshot(
+                output_root="/srv/scratch/sir-convert-a-lot/build/verification/task-101",
+                image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+                hf_cache_dir="/srv/scratch/sir-convert-a-lot/cache/huggingface",
+                hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+                scratch_build_root="/srv/scratch/sir-convert-a-lot/build",
+                scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
+                pilot_bundle_root=legacy_pilot_bundle_root,
+                runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
+                model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+                train_manifest_family="swedish_pilot_train",
+                eval_manifest_family="swedish_checkpoint_dev",
+                batch_size=1,
+                lr=2e-5,
+                num_epochs=1,
+                max_steps=8,
+                checkpoint_interval_steps=2,
+                durable_checkpoint_retention=DEFAULT_DURABLE_CHECKPOINT_RETENTION,
+                durable_checkpoint_min_free_bytes=DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES,
+            ),
+            command=["sudo", "-n", "docker", "run", "-d"],
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.prepare_qwen_image",
+        _fake_prepare_qwen_image,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.resolve_effective_hf_cache_dir",
+        _fake_resolve_hf_cache_dir,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.resolve_effective_bind_root",
+        _fake_resolve_bind_root,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.launch_detached_pilot",
+        _fake_launch_detached_pilot,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot._write_json",
+        lambda path, payload: None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot._write_latest_pointer",
+        lambda output_root, launch_root: None,
+    )
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
+
+    result = main(["resume", "--output-root", output_root.as_posix(), "--skip-build"])
+
+    assert result == 0
+    settings = captured["settings"]
+    assert isinstance(settings, Task101PilotSettings)
+    assert settings.durable_checkpoint_retention == DEFAULT_DURABLE_CHECKPOINT_RETENTION
+    assert settings.durable_checkpoint_min_free_bytes == DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES
+    assert captured["dockerfile_path"] == Path("containers/custom-qwen-finetune/Dockerfile")
+    assert captured["run_root"] == source_run_root
+    assert captured["resume_from_checkpoint"] == checkpoint_path
+
+
+def test_task101_launch_writes_checkpoint_policy_into_launch_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Launch metadata should record the configured checkpoint policy fields."""
+    output_root = tmp_path / "verification"
+    pilot_bundle_root = tmp_path / "pilot-bundle"
+    output_root.mkdir(parents=True, exist_ok=True)
+    pilot_bundle_root.mkdir(parents=True, exist_ok=True)
+    captured_writes: dict[str, object] = {}
+
+    def _fake_prepare_qwen_image(args: argparse.Namespace) -> tuple[bool, str]:
+        return False, "sha256:test"
+
+    def _fake_run_checked(args: list[str], *, label: str) -> str:
+        del args, label
+        return "rocm-smi-ok"
+
+    def _fake_resolve_hf_cache_dir(args: argparse.Namespace) -> MountResolution:
+        return MountResolution(
+            canonical_root=Path(args.hf_cache_dir),
+            effective_root=Path(args.hf_cache_dir),
+            used_home_mount=False,
+        )
+
+    def _fake_resolve_bind_root(
+        canonical_root: Path,
+        home_mount: Path,
+        *,
+        image: str,
+        sync_home_into_canonical: bool,
+    ) -> MountResolution:
+        del home_mount, image, sync_home_into_canonical
+        return MountResolution(
+            canonical_root=canonical_root,
+            effective_root=canonical_root,
+            used_home_mount=False,
+        )
+
+    def _fake_launch_detached_pilot(
+        settings: Task101PilotSettings,
+        *,
+        repo_root: Path,
+        hf_mount: MountResolution,
+        scratch_mount: MountResolution,
+        launch_id: str,
+        container_name: str,
+        dockerfile_path: Path | None = None,
+        run_root: Path | None = None,
+        resume_from_checkpoint: Path | None = None,
+    ) -> Task101DetachedLaunch:
+        del repo_root, hf_mount, scratch_mount, container_name, run_root, resume_from_checkpoint
+        return Task101DetachedLaunch(
+            generated_at="2026-03-13T12:00:00Z",
+            launch_id=launch_id,
+            container_name="task101-launch-container",
+            container_id="container-id",
+            repo_root="/home/paunchygent/apps/sir-convert-a-lot",
+            run_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-launch",
+            pilot_bundle_root=settings.pilot_bundle_root.as_posix(),
+            train_jsonl=(
+                settings.pilot_bundle_root
+                / "manifests"
+                / f"{settings.train_manifest_family}.prepared.jsonl"
+            ).as_posix(),
+            eval_jsonl=(
+                settings.pilot_bundle_root
+                / "manifests"
+                / f"{settings.eval_manifest_family}.prepared.jsonl"
+            ).as_posix(),
+            train_manifest_family=settings.train_manifest_family,
+            eval_manifest_family=settings.eval_manifest_family,
+            dockerfile_path=None if dockerfile_path is None else dockerfile_path.as_posix(),
+            resumed_from_checkpoint_path=None,
+            settings=Task101PilotSettingsSnapshot(
+                output_root=settings.output_root.as_posix(),
+                image=settings.image,
+                hf_cache_dir=settings.hf_cache_dir.as_posix(),
+                hf_cache_home_mount=settings.hf_cache_home_mount.as_posix(),
+                scratch_build_root=settings.scratch_build_root.as_posix(),
+                scratch_build_home_mount=settings.scratch_build_home_mount.as_posix(),
+                pilot_bundle_root=settings.pilot_bundle_root.as_posix(),
+                runs_root=settings.runs_root.as_posix(),
+                model_id=settings.model_id,
+                train_manifest_family=settings.train_manifest_family,
+                eval_manifest_family=settings.eval_manifest_family,
+                batch_size=settings.batch_size,
+                lr=settings.lr,
+                num_epochs=settings.num_epochs,
+                max_steps=settings.max_steps,
+                checkpoint_interval_steps=settings.checkpoint_interval_steps,
+                durable_checkpoint_retention=settings.durable_checkpoint_retention,
+                durable_checkpoint_min_free_bytes=settings.durable_checkpoint_min_free_bytes,
+            ),
+            command=["sudo", "-n", "docker", "run", "-d"],
+        )
+
+    def _capture_write_json(path: Path, payload: object) -> None:
+        captured_writes[path.name] = payload
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot._ensure_pilot_bundle_exists",
+        lambda pilot_bundle_root, train_manifest_family, eval_manifest_family: None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.prepare_qwen_image",
+        _fake_prepare_qwen_image,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.run_checked",
+        _fake_run_checked,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.resolve_effective_hf_cache_dir",
+        _fake_resolve_hf_cache_dir,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.resolve_effective_bind_root",
+        _fake_resolve_bind_root,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot.launch_detached_pilot",
+        _fake_launch_detached_pilot,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot._write_json",
+        _capture_write_json,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task101_hemma_qwen_pilot._write_latest_pointer",
+        lambda output_root, launch_root: None,
+    )
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
+
+    result = main(
+        [
+            "launch",
+            "--output-root",
+            output_root.as_posix(),
+            "--pilot-bundle-root",
+            pilot_bundle_root.as_posix(),
+            "--durable-checkpoint-retention",
+            "3",
+            "--durable-checkpoint-min-free-bytes",
+            str(20 * 1024**3),
+            "--skip-build",
+        ]
+    )
+
+    assert result == 0
+    launch_payload = captured_writes["launch.json"]
+    assert isinstance(launch_payload, dict)
+    settings_payload = launch_payload["settings"]
+    assert isinstance(settings_payload, dict)
+    assert settings_payload["durable_checkpoint_retention"] == 3
+    assert settings_payload["durable_checkpoint_min_free_bytes"] == 20 * 1024**3
+
+
 def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) -> None:
     """Stopping a detached pilot should issue one deterministic docker stop."""
     launch = Task101DetachedLaunch(
@@ -628,6 +1012,8 @@ def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) 
             num_epochs=1,
             max_steps=8,
             checkpoint_interval_steps=2,
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
         command=["sudo", "-n", "docker", "run", "-d"],
     )

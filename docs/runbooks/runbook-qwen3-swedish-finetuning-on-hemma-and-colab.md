@@ -33,6 +33,7 @@ links:
   - docs/backlog/tasks/task-114-hard-isolate-qwen-row-processing-and-finalization-on-hemma.md
   - docs/backlog/tasks/task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md
   - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
+  - docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md
   - docs/backlog/tasks/task-121-add-portable-colab-slice-based-qwen-preprocessing-lane.md
   - docs/backlog/tasks/task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof.md
   - docs/backlog/tasks/task-123-add-resumable-row-processing-for-qwen-preprocessing-runs.md
@@ -497,6 +498,15 @@ Required contract:
   - fresh launch,
   - resume latest from the run root,
   - resume from an explicit checkpoint path
+- longer unattended Hemma runs must not retain unbounded durable trainer-state
+  checkpoints; the canonical default is `N=2`
+- the training lane must validate a newly written durable checkpoint before
+  flipping `latest_checkpoint.json` or pruning older durable checkpoints
+- epoch/final exported model checkpoints remain separate operator artifacts and
+  are not pruned by the durable-checkpoint retention policy
+- each durable checkpoint save must fail closed before writing when the target
+  filesystem lacks enough free space for one more trainer-state checkpoint plus
+  the configured minimum free-space floor
 - longer unattended runs are not considered operationally ready until one live
   Hemma proof demonstrates interruption plus successful resume in a fresh
   detached launch
@@ -508,6 +518,12 @@ Current implementation status:
 - the detached Task 101 surface now supports:
   - `resume latest`
   - `resume --checkpoint-path <path>`
+- the longer-run Hemma contract is now bounded:
+  - retain only the latest `2` durable trainer-state checkpoints by default
+  - validate the new durable checkpoint before pruning old trainer-state
+    checkpoints
+  - keep epoch/final exports intact
+  - fail closed on low `/srv/scratch` headroom before each durable save
 - the live Hemma interruption-and-resume proof is now complete:
   - proof bundle:
     `build/verification/task-115-qwen-training-resume-proof/task115-20260309t155615z/`
@@ -1006,6 +1022,25 @@ Canonical Task 106 acquisition surface:
      - upstream `sft_12hz.py` remains train-only, so held-out evaluation is
        reserved for post-training assessment rather than performed inside the
        training loop
+   - current committed code surfaces for this lane are intentionally split:
+     - detached CLI/orchestration:
+       `run_task101_hemma_qwen_pilot.py`
+     - detached metadata/path/status rendering:
+       `task101_qwen_pilot_metadata.py`
+     - detached runtime contracts:
+       `task101_qwen_pilot_runtime_contract.py`
+     - detached runtime artifact/parsing helpers:
+       `task101_qwen_pilot_runtime_artifacts.py`
+     - detached Docker runtime orchestration:
+       `task101_qwen_pilot_runtime.py`
+     - in-container probe report/status helpers:
+       `task101_qwen_pilot_probe_reporting.py`
+     - in-container probe execution:
+       `task101_qwen_pilot_probe.py`
+     - patched trainer checkpoint helpers:
+       `sft_12hz_checkpointing.py`
+     - patched trainer manifest-row helpers:
+       `sft_12hz_training_rows.py`
    - inspect the detached pilot with:
      `pdm run run-hemma -- pdm run task-101-pilot status`
    - intentional stop behavior:
@@ -1024,6 +1059,8 @@ Canonical Task 106 acquisition surface:
    - durable step-based checkpoints
    - optimizer/trainer-state persistence
    - detached `resume latest` / `resume --checkpoint-path`
+   - bounded durable checkpoint retention (`N=2` default)
+   - fail-closed scratch-capacity guard before each durable checkpoint save
 
 ## Transcript Remediation Note
 

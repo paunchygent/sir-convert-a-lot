@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-12'
+last_updated: '2026-03-13'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -41,18 +41,16 @@ labels:
 
 ## Context
 
-Epic 05 is complete (v2-only conversion architecture, deterministic markdown ingress routes, and
-template-governed DOCX/PDF pathways are delivered and validated).
+Epic 05 is complete (v2-only conversion architecture, deterministic markdown ingress routes, and template-governed DOCX/PDF pathways are delivered and validated).
 
-Active focus is Epic 06: long OCR PDF progress visibility, partial artifact/checkpoint lifecycle,
-resume reliability, and throughput scaling.
+Active focus is Epic 08: Qwen3-TTS Swedish language expansion, bounded Hemma fine-tune hardening, and the Story 25 training/runtime contract.
 
 This file is the canonical long-term memory index for session progress; session handoff summaries must be archived here when `handoff.md` is pruned. Current epic entrypoint:
 
-- `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
+- `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
 
-Primary implementation stories (active sequence): Stories 17-19 are completed; Story 20 remains
-active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
+Primary implementation story (active sequence): Story 25 remains active:
+`docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
 
 ## Worklog
 
@@ -112,28 +110,23 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Completed the first live Hemma `T106` acquisition pass on `main`:
     `task-106-acquire --waxholm-max-files 8 --request-pause-seconds 0.5`
     staged `4` `fleurs` files, `17` bounded `waxholm` files, and `2` `rixvox`
-    parquet files onto the HDD storage tier, with revision-pinned evidence written to
-    `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json` on
-    Hemma.
+    parquet files onto the HDD storage tier with revision-pinned evidence in
+    `build/reference/qwen3-tts-swedish-corpus/acquisition/report.json`.
   - Opened `T107` so `task-103-preprocess` could move from repo fixtures to
     staged Hemma public corpora while keeping the deterministic corpus bundle
     contract stable.
   - Completed the first live Hemma `T107` staged public-corpus preprocessing
     pass with the bounded `task-103-preprocess-public-corpus` surface:
     `fleurs` dev/test were capped to `8` rows each, labeled `waxholm` ran end
-    to end, and staged `rixvox` metadata was included in inventory. The live
-    result produced `inventory_rows=16841`, `curated_rows=24`,
-    `admitted_rows=23`, and `prepared_rows=23`.
+    to end, staged `rixvox` metadata was included, and the live result produced
+    `inventory_rows=16841`, `curated_rows=24`, `admitted_rows=23`, and `prepared_rows=23`.
   - Opened `T108` as the next blocker before `T101`: `rixvox` still lacks
     committed audio materialization and train-family mapping, so the current
-    preprocessing bundle is real and useful for eval/control corpora but not
-    yet sufficient for the bounded Hemma fine-tune.
+    preprocessing bundle is useful for eval/control corpora but not yet sufficient for the bounded Hemma fine-tune.
   - Completed `T109` and corrected the runtime-model drift introduced during
     `T103` / `T107`: `task-103-preprocess-public-corpus` now runs through the
-    Task 100-style Qwen container on Hemma, and the live remediation evidence
-    under `build/verification/task-109-qwen-containerized-preprocessing/`
-    records the canonical DATA/HF cache mounts plus the reproduced
-    public-corpus preprocessing result (`inventory_rows=16841`,
+    Task 100-style Qwen container on Hemma, with canonical DATA/HF cache
+    mounts and the reproduced public-corpus result (`inventory_rows=16841`,
     `curated_rows=24`, `admitted_rows=23`, `prepared_rows=23`).
   - Began live `T108` bounded `rixvox` train-family proof work with
     `train_metadata.parquet` plus `train_0.tar.gz` staged on Hemma DATA and a
@@ -143,8 +136,7 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
   - Detached `T108` proof then established the exact failure mode: Hemma
     kernel logs recorded a real Python OOM kill inside the detached Docker
     scope at `2026-03-08 21:41:24`, after `88` `audio_24k` files, `10` refs,
-    and `51` curated `swedish_smoke_train` rows had already been emitted but
-    before final manifests/reports existed.
+    and `51` curated `swedish_smoke_train` rows but before final manifests/reports existed.
   - Opened `T110` and `T111` as the next hardening slices:
     `T110` for disk-backed row/finalization split and `T111` for optional
     provenance-safe ASR relabeling.
@@ -213,9 +205,16 @@ active: `docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimina
 
   - Completed `T148-T149`: Task 101 pilot-bundle materialization now stages copy, bounded `finalize-batch`, and final `assemble`, persists `task101_pilot_bundle_plan.json`, `task101_pilot_bundle_events.jsonl`, and `task101_pilot_bundle_status.json`, and finalization now runs inside the governed Task 100/101 Qwen image with the fixed in-container HF cache contract (`/cache/huggingface`) instead of the host PDM environment. Follow-up added runtime provenance, preserved host-visible bundle/report paths, and kept direct `finalize-batch` plus `build` under the same governed runtime contract.
   - Completed `T150` as the immediate throughput correction after the live Hemma Task 101 bundle run showed the governed runtime was still CPU-bound during `audio_codes` generation. The active host-runtime bundle build at `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h` was intentionally stopped after `swedish_pilot_train:batch-00012` completed and `batch-00013` had started so the resumable bundle root can be retried under the new GPU-backed tokenizer posture. The governed Task 101 batch runtime now loads `Qwen3TTSTokenizer` onto `cuda:0` with `bfloat16` plus `flash_attention_2`, writes `reports/task101_pilot_bundle_audio_codes_runtime.json`, and fails closed instead of silently continuing on CPU. Same-day follow-up `T151` repaired the remaining Task 101 `/srv/...` output-root bind gap by reusing the shared home-backed Docker mount fallback.
-  - Completed `T152`: the governed Task 101 audio-code path now preloads waveform arrays with `soundfile` plus a bounded thread pool before calling `Qwen3TTSTokenizer.encode(...)`, Task 101 batch containers now run as the host uid/gid plus GPU device groups, and `chunk_size=64` remains the stable Hemma operator default. Evidence: `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312e-hostuser/preload-chunk64-span1` produced `7m 07s` for `swedish_pilot_train:batch-00000`, while the direct-encode proof at `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1` produced `duration_seconds=481.3638345239997` and `rows_per_minute=15.954667652991478`. Requested `chunk_size=128` proved unsafe on Hemma and repeatedly OOMed. The new batch timing fields show model encode dominates the successful chunk-64 runtime (`audio_codes_model_encode_seconds=424.4988881419995` out of `audio_codes_chunk_total_seconds=425.61176394299764`).
+  - Completed `T152`: the governed Task 101 audio-code path now preloads waveform arrays with `soundfile`, runs batch containers as the host uid/gid plus GPU device groups, and keeps `chunk_size=64` as the stable Hemma default. Evidence: `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312e-hostuser/preload-chunk64-span1` produced `7m 07s` for `swedish_pilot_train:batch-00000`; `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1` produced `duration_seconds=481.3638345239997` and `rows_per_minute=15.954667652991478`; requested `chunk_size=128` repeatedly OOMed; and model encode still dominates chunk-64 runtime (`audio_codes_model_encode_seconds=424.4988881419995` out of `audio_codes_chunk_total_seconds=425.61176394299764`).
+
+- 2026-03-13:
+
+  - Completed the bounded Task 101 pilot bundle and the bounded detached Hemma pilot run under `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md` and `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`, proving the governed Swedish Qwen lane end to end on the real R9700.
+  - Completed `T153` under `docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md`: the longer-run Hemma lane now retains only the newest `2` durable trainer-state checkpoints by default, validates the new checkpoint before pruning, preserves `latest_checkpoint.json`, and fails closed on low `/srv/scratch` headroom before each durable save.
+  - Completed `T154` under `docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md`: pre-`T153` Task 101 launch metadata now resumes with canonical defaults, first-save scratch guards are conservative, failed durable saves no longer wedge same-step retries, and the Task 101 / Story 25 / session context docs are back in sync.
+  - Completed `T155` under `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`: `sft_12hz.py`, `run_task101_hemma_qwen_pilot.py`, `task101_qwen_pilot_runtime.py`, and `task101_qwen_pilot_probe.py` now delegate checkpoint, metadata, runtime-contract, artifact-parsing, and report/status helpers to dedicated modules, bringing the full Task 101/Qwen refactor slice back into SRP alignment without changing the external runtime contracts.
 
 ## Next Actions
 
-- Current Task 101 follow-on is to rerun the stopped pilot-bundle root on Hemma so incomplete `swedish_pilot_train:batch-00013` and later batches regenerate under the optimized governed lane (`audio_codes_chunk_size=64`, `container_batch_span=4`, waveform preloading, direct preloaded-waveform encode, persistent Triton cache, host-user container writes) with `reports/task101_pilot_bundle_audio_codes_runtime.json` and the new batch timing fields as evidence.
-- Current training and ownership follow-on remains the detached Task 101 pilot launch once the deterministic pilot bundle materializes successfully, with `T118` still the next code-facing optimization slice and the shard-governed `task138-task129-remaining-unique-20260311a` recovery path still active for Colab ownership cleanup.
+- Current Task 101 training follow-on is the uncapped Hemma run under the new bounded checkpoint policy: `N=2` durable trainer-state retention plus fail-closed scratch-capacity guards.
+- Current ownership follow-on remains the shard-governed `task138-task129-remaining-unique-20260311a` recovery path, while `T118` stays the next code-facing Qwen training optimization slice now that the checkpoint-storage contract and its SRP refactor follow-on are both complete.

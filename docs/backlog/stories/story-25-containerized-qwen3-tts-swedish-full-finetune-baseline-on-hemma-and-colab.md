@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-11'
+last_updated: '2026-03-13'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
@@ -19,6 +19,9 @@ related:
   - docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md
   - docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md
   - docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md
+  - docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md
+  - docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md
+  - docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md
   - docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md
   - docs/backlog/tasks/task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
@@ -74,6 +77,9 @@ that a real Swedish optimizer step fits on the R9700.
 1. `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
 1. `docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md`
 1. `docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md`
+1. `docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md`
+1. `docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md`
+1. `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`
 1. `docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md`
 1. `docs/backlog/tasks/task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md`
 
@@ -97,6 +103,11 @@ that a real Swedish optimizer step fits on the R9700.
   committed surface.
 - [ ] A dedicated task defines and proves robust resumable checkpointing before
   the first long unattended Hemma training window.
+- [x] A dedicated follow-on task bounds durable checkpoint retention and guards
+  scratch capacity so long unattended Hemma runs do not fill `/srv/scratch`.
+- [x] A dedicated follow-on refactor task exists to split the remaining Task
+  101 and Qwen checkpoint god files into SRP-aligned helper modules before more
+  runtime logic accumulates in them.
 - [x] A follow-on hardening task covers graceful stop behavior, resumable cache
   sync, and cold-build operator visibility for the Hemma training lane, and
   `T117` now provides that committed surface.

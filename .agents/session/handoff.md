@@ -1,6 +1,82 @@
 # Session Handoff
 
-## Session Summary (2026-03-12)
+## Session Summary (2026-03-13)
+
+- Completed `T154` to reconcile the post-`T153` runtime, test, and docs gaps.
+- Completed `T155` to bring the remaining Qwen checkpoint and Task 101 pilot
+  god files and remaining runtime/probe surfaces back into SRP alignment
+  without changing runtime contracts.
+- Code landed across:
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz.py`
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_checkpointing.py`
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_training_rows.py`
+  - `scripts/sir_convert_a_lot/devops/run_task101_hemma_qwen_pilot.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_metadata.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime_contract.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime_artifacts.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe.py`
+  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe_reporting.py`
+  - `tests/sir_convert_a_lot/test_qwen_training_resume.py`
+  - `tests/sir_convert_a_lot/test_task101_qwen_pilot.py`
+  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+  - `docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md`
+  - `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`
+  - `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+  - `docs/backlog/current.md`
+- Main implementation outcomes:
+  - pre-`T153` Task 101 `launch.json` payloads now fall forward with canonical
+    durable-checkpoint defaults during `status` and `resume`
+  - first durable-checkpoint saves now use a conservative fallback size based
+    on the measured Hemma trainer-state footprint
+  - durable trainer-state saves now stage through an incomplete directory and
+    clean failed attempts so one bad save does not wedge the same step forever
+  - the focused regression tests now prove validation-before-prune ordering,
+    export preservation, first-save threshold behavior, and launch/status/report
+    checkpoint-policy fields
+  - durable checkpoint persistence now lives in its own helper module, training
+    row manifest resolution now lives in its own helper module, and the
+    patched `sft_12hz.py` entrypoint is back under `500` lines
+  - detached Task 101 metadata/path/status parsing and artifact rendering now
+    live in a dedicated helper module, and
+    `run_task101_hemma_qwen_pilot.py` is back under `500` lines
+  - detached Task 101 runtime contracts and artifact/Docker-inspect parsing
+    now live in dedicated helper modules, and
+    `task101_qwen_pilot_runtime.py` is down to `272` lines
+  - in-container probe report/status payload assembly now lives in a dedicated
+    helper module, and `task101_qwen_pilot_probe.py` is down to `146` lines
+  - Task 101, Story 25, `current.md`, and the session handoff now agree on the
+    bounded pilot state and the active Epic 08 lane
+
+## Validation Status
+
+- `PASS` `pdm run format-all`
+- `PASS` `pdm run lint-fix`
+- `PASS` `pdm run typecheck-all`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
+- `PASS` `pdm run validate-tasks`
+- `PASS` `pdm run validate-docs`
+- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+## Active Blocker
+
+- No remediation blocker remains in the bounded checkpoint contract or its
+  planning surfaces.
+- The remaining decision is operational: choose the real Task 101 uncapped
+  launch settings and start the run under the remediated bounded checkpoint
+  contract.
+
+## Immediate Next Step
+
+- Launch the uncapped Hemma Task 101 run from the completed governed pilot
+  bundle using the remediated bounded checkpoint policy:
+  - `durable_checkpoint_retention=2`
+  - `durable_checkpoint_min_free_bytes=17179869184`
+- Observe `latest_checkpoint.json`, `status.json`, `report.json`, and
+  `/srv/scratch` free space during the first checkpoint interval to confirm the
+  live first-save behavior matches the conservative fallback estimate.
+
+## Earlier Session Summary (2026-03-12)
 
 - `T152` is now grounded in actual Hemma runtime truth rather than guesswork.
 - Code landed across:

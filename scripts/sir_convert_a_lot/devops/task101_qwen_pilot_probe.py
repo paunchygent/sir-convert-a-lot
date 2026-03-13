@@ -11,56 +11,29 @@ Relationships:
       Hemma runner.
     - Reuses the patched `sft_12hz.py` training entrypoint from
       `scripts/devops/qwen_finetuning_patches/`.
+    - Reuses `task101_qwen_pilot_probe_reporting.py` for report/status payload
+      assembly and deterministic JSON artifact writing.
 """
 
 from __future__ import annotations
 
 import argparse
-import importlib.metadata
-import importlib.util
 import json
 import traceback
-from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from dataclasses import asdict
 from pathlib import Path
 
 import sft_12hz
 import torch
 
-
-@dataclass(frozen=True)
-class Task101PilotProbeReport:
-    """Machine-readable report emitted by the detached Task 101 probe."""
-
-    generated_at: str
-    model_id: str
-    train_jsonl: str
-    eval_jsonl: str
-    output_dir: str
-    train_row_count: int
-    eval_row_count: int
-    upstream_trainer_uses_eval_manifest: bool
-    torch_version: str
-    torchaudio_version: str | None
-    torch_cuda_available: bool
-    torch_cuda_device_count: int
-    torch_hip_version: str | None
-    flash_attn_importable: bool
-    flash_attn_version: str | None
-    training_summary: dict[str, object]
-
-
-def _utc_now_iso() -> str:
-    """Return the current UTC timestamp in RFC3339 format."""
-    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def _package_version(distribution_name: str) -> str | None:
-    """Return one installed package version, or `None` when it is absent."""
-    try:
-        return importlib.metadata.version(distribution_name)
-    except importlib.metadata.PackageNotFoundError:
-        return None
+from scripts.sir_convert_a_lot.devops.task101_qwen_pilot_probe_reporting import (
+    _build_probe_report,
+    _completed_status_payload,
+    _count_jsonl_rows,
+    _failed_status_payload,
+    _running_status_payload,
+    _write_json,
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -75,14 +48,10 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--num-epochs", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=8)
     parser.add_argument("--checkpoint-interval-steps", type=int, default=2)
+    parser.add_argument("--durable-checkpoint-retention", type=int, default=2)
+    parser.add_argument("--durable-checkpoint-min-free-bytes", type=int, default=16 * 1024**3)
     parser.add_argument("--resume-from-checkpoint", type=Path, default=None)
     return parser.parse_args()
-
-
-def _write_json(path: Path, payload: object) -> None:
-    """Write one deterministic JSON artifact."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -98,23 +67,17 @@ def main() -> int:
     eval_row_count = _count_jsonl_rows(args.eval_jsonl)
     _write_json(
         status_path,
-        {
-            "status": "running",
-            "stage": "training",
-            "updated_at": _utc_now_iso(),
-            "train_jsonl": args.train_jsonl.as_posix(),
-            "eval_jsonl": args.eval_jsonl.as_posix(),
-            "output_dir": output_dir.as_posix(),
-            "train_row_count": train_row_count,
-            "eval_row_count": eval_row_count,
-            "upstream_trainer_uses_eval_manifest": False,
-            "checkpoint_interval_steps": int(args.checkpoint_interval_steps),
-            "resumed_from_checkpoint_path": (
-                None
-                if args.resume_from_checkpoint is None
-                else args.resume_from_checkpoint.as_posix()
-            ),
-        },
+        _running_status_payload(
+            train_jsonl=args.train_jsonl,
+            eval_jsonl=args.eval_jsonl,
+            output_dir=output_dir,
+            train_row_count=train_row_count,
+            eval_row_count=eval_row_count,
+            checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+            durable_checkpoint_retention=int(args.durable_checkpoint_retention),
+            durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
+            resume_from_checkpoint=args.resume_from_checkpoint,
+        ),
     )
     try:
         if not torch.cuda.is_available():
@@ -134,6 +97,8 @@ def main() -> int:
             num_epochs=int(args.num_epochs),
             max_steps=int(args.max_steps),
             checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+            durable_checkpoint_retention=int(args.durable_checkpoint_retention),
+            durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
             resume_from_checkpoint=(
                 None
                 if args.resume_from_checkpoint is None
@@ -143,46 +108,26 @@ def main() -> int:
             speaker_name="pilot_multi_speaker",
         )
         training_summary = sft_12hz.train_with_args(training_args)
-        report = Task101PilotProbeReport(
-            generated_at=_utc_now_iso(),
+        report = _build_probe_report(
             model_id=str(args.model_id),
-            train_jsonl=args.train_jsonl.as_posix(),
-            eval_jsonl=args.eval_jsonl.as_posix(),
-            output_dir=output_dir.as_posix(),
+            train_jsonl=args.train_jsonl,
+            eval_jsonl=args.eval_jsonl,
+            output_dir=output_dir,
             train_row_count=train_row_count,
             eval_row_count=eval_row_count,
-            upstream_trainer_uses_eval_manifest=False,
-            torch_version=str(torch.__version__),
-            torchaudio_version=_package_version("torchaudio"),
-            torch_cuda_available=True,
-            torch_cuda_device_count=int(torch.cuda.device_count()),
-            torch_hip_version=str(torch.version.hip),
-            flash_attn_importable=importlib.util.find_spec("flash_attn") is not None,
-            flash_attn_version=_package_version("flash-attn"),
-            training_summary=asdict(training_summary),
+            training_summary=training_summary,
         )
         _write_json(report_path, asdict(report))
         _write_json(
             status_path,
-            {
-                "status": "stopped" if training_summary.stopped_early else "completed",
-                "stage": "training",
-                "updated_at": _utc_now_iso(),
-                "train_jsonl": args.train_jsonl.as_posix(),
-                "eval_jsonl": args.eval_jsonl.as_posix(),
-                "output_dir": output_dir.as_posix(),
-                "train_row_count": train_row_count,
-                "eval_row_count": eval_row_count,
-                "upstream_trainer_uses_eval_manifest": False,
-                "optimizer_steps_completed": training_summary.optimizer_steps_completed,
-                "checkpoint_interval_steps": training_summary.checkpoint_interval_steps,
-                "resumed_from_checkpoint_path": training_summary.resumed_from_checkpoint_path,
-                "latest_durable_checkpoint_path": training_summary.latest_durable_checkpoint_path,
-                "latest_durable_checkpoint_step": training_summary.latest_durable_checkpoint_step,
-                "stop_requested": training_summary.stop_requested,
-                "stop_signal": training_summary.stop_signal,
-                "stopped_early": training_summary.stopped_early,
-            },
+            _completed_status_payload(
+                train_jsonl=args.train_jsonl,
+                eval_jsonl=args.eval_jsonl,
+                output_dir=output_dir,
+                train_row_count=train_row_count,
+                eval_row_count=eval_row_count,
+                training_summary=training_summary,
+            ),
         )
         print(json.dumps(asdict(report), indent=2, sort_keys=True))
         return 0
@@ -190,24 +135,15 @@ def main() -> int:
         failure_path.write_text(traceback.format_exc(), encoding="utf-8")
         _write_json(
             status_path,
-            {
-                "status": "failed",
-                "stage": "training",
-                "updated_at": _utc_now_iso(),
-                "train_jsonl": args.train_jsonl.as_posix(),
-                "eval_jsonl": args.eval_jsonl.as_posix(),
-                "train_row_count": train_row_count,
-                "eval_row_count": eval_row_count,
-                "upstream_trainer_uses_eval_manifest": False,
-                "error": f"{type(exc).__name__}: {exc}",
-            },
+            _failed_status_payload(
+                train_jsonl=args.train_jsonl,
+                eval_jsonl=args.eval_jsonl,
+                train_row_count=train_row_count,
+                eval_row_count=eval_row_count,
+                exc=exc,
+            ),
         )
         raise
-
-
-def _count_jsonl_rows(path: Path) -> int:
-    """Count rows in one deterministic JSONL manifest."""
-    return sum(1 for _ in path.open("r", encoding="utf-8"))
 
 
 if __name__ == "__main__":

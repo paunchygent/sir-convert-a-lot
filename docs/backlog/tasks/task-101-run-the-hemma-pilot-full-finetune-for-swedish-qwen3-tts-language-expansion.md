@@ -2,10 +2,10 @@
 id: task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion
 title: Run the Hemma pilot full-finetune for Swedish Qwen3-TTS language expansion
 type: task
-status: active
+status: completed
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-12'
+last_updated: '2026-03-13'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
@@ -20,6 +20,9 @@ related:
   - docs/backlog/tasks/task-145-repair-hemma-kernel-package-drift-and-disable-auto-applied-tailscale-updates.md
   - docs/backlog/tasks/task-146-normalize-frozen-qwen-pilot-root-permissions-for-bundle-reads.md
   - docs/backlog/tasks/task-147-fail-closed-task101-pilot-bundle-builds-on-insufficient-scratch-capacity.md
+  - docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md
+  - docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md
+  - docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -109,6 +112,26 @@ and capture deterministic runtime and memory evidence.
   - peak VRAM/GPU usage,
   - checkpoint/output locations,
   - failure notes if the run does not complete.
+- The current committed implementation surfaces for this lane are split by
+  responsibility:
+  - detached CLI/orchestration:
+    `run_task101_hemma_qwen_pilot.py`
+  - detached metadata/path/status rendering:
+    `task101_qwen_pilot_metadata.py`
+  - detached runtime contracts:
+    `task101_qwen_pilot_runtime_contract.py`
+  - detached runtime artifact/parsing helpers:
+    `task101_qwen_pilot_runtime_artifacts.py`
+  - detached Docker runtime orchestration:
+    `task101_qwen_pilot_runtime.py`
+  - in-container probe report/status helpers:
+    `task101_qwen_pilot_probe_reporting.py`
+  - in-container probe execution:
+    `task101_qwen_pilot_probe.py`
+  - patched trainer checkpoint helpers:
+    `sft_12hz_checkpointing.py`
+  - patched trainer manifest-row helpers:
+    `sft_12hz_training_rows.py`
 - Keep the lane focused on pilot proof, not maximal dataset hours.
 - Do not launch Task 101 against ad hoc row subsets or a manually edited
   manifest. `T142` must materialize the deterministic pilot bundle first.
@@ -118,23 +141,33 @@ and capture deterministic runtime and memory evidence.
 
 ## Deliverables
 
-- [ ] Hemma pilot evidence under `build/verification/`.
-- [ ] Detached launch and status metadata for the pilot lane.
-- [ ] Machine-readable report for memory/runtime truth.
-- [ ] Linked task/runbook updates with the exact command used.
+- [x] Hemma pilot evidence under `build/verification/`.
+- [x] Detached launch and status metadata for the pilot lane.
+- [x] Machine-readable report for memory/runtime truth.
+- [x] Linked task/runbook updates with the exact command used.
 
 ## Acceptance Criteria
 
-- [ ] The pilot uses the `1.7B` base model, not the `0.6B` lane.
-- [ ] The run reaches a real Swedish full-finetune optimizer step with `AdamW`.
-- [ ] The run consumes the deterministic pilot bundle projected from the frozen
+- [x] The pilot uses the `1.7B` base model, not the `0.6B` lane.
+- [x] The run reaches a real Swedish full-finetune optimizer step with `AdamW`.
+- [x] The run consumes the deterministic pilot bundle projected from the frozen
   pilot root rather than the generic promoted preprocessing root.
-- [ ] The evidence records actual VRAM usage and headroom on the R9700.
-- [ ] The task explicitly states whether Hemma is good enough for the bounded
+- [x] The evidence records actual VRAM usage and headroom on the R9700.
+- [x] The task explicitly states whether Hemma is good enough for the bounded
   pilot and what should move to Colab H100 for scale.
+
+## Validation
+
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

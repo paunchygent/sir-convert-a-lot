@@ -30,6 +30,9 @@ if SFT_PATCH_ROOT.as_posix() not in sys.path:
 SFT_12HZ = importlib.import_module("scripts.devops.qwen_finetuning_patches.sft_12hz")
 _checkpoint_resume_cursor = SFT_12HZ._checkpoint_resume_cursor
 _checkpoint_advanced_since_latest_save = SFT_12HZ._checkpoint_advanced_since_latest_save
+_current_durable_checkpoint_paths = SFT_12HZ._current_durable_checkpoint_paths
+_durable_checkpoint_staging_dir = SFT_12HZ._durable_checkpoint_staging_dir
+DEFAULT_DURABLE_CHECKPOINT_ESTIMATE_BYTES = SFT_12HZ.DEFAULT_DURABLE_CHECKPOINT_ESTIMATE_BYTES
 _load_durable_checkpoint_metadata = SFT_12HZ._load_durable_checkpoint_metadata
 _save_durable_checkpoint = SFT_12HZ._save_durable_checkpoint
 train_with_args = SFT_12HZ.train_with_args
@@ -311,6 +314,8 @@ def test_save_durable_checkpoint_writes_metadata_and_latest_pointer(tmp_path: Pa
         step_in_epoch=7,
         dataloader_length=10,
         reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
 
     checkpoint_dir = output_model_path / "state-step-00000008"
@@ -327,7 +332,223 @@ def test_save_durable_checkpoint_writes_metadata_and_latest_pointer(tmp_path: Pa
     assert saved_metadata["next_epoch"] == 0
     assert saved_metadata["next_step_in_epoch"] == 8
     assert latest_pointer["checkpoint_path"] == checkpoint_dir.as_posix()
-    assert accelerator.saved_paths == [checkpoint_dir.as_posix()]
+    assert accelerator.saved_paths == [
+        _durable_checkpoint_staging_dir(output_model_path, 8).as_posix()
+    ]
+
+
+def test_save_durable_checkpoint_prunes_older_paths_after_validation(tmp_path: Path) -> None:
+    """Retention should keep the newest durable checkpoints only after a valid new save."""
+    accelerator = _FakeAccelerator()
+    output_model_path = tmp_path / "run" / "checkpoints"
+    epoch_checkpoint = output_model_path / "checkpoint-epoch-0"
+    final_checkpoint = output_model_path / "checkpoint-final"
+    epoch_checkpoint.mkdir(parents=True, exist_ok=True)
+    final_checkpoint.mkdir(parents=True, exist_ok=True)
+    first_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=2,
+        epoch=0,
+        step_in_epoch=1,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    second_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=4,
+        epoch=0,
+        step_in_epoch=3,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    latest_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=6,
+        epoch=0,
+        step_in_epoch=5,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+
+    retained_paths = _current_durable_checkpoint_paths(output_model_path)
+    latest_pointer = json.loads(
+        (output_model_path.parent / "latest_checkpoint.json").read_text(encoding="utf-8")
+    )
+    assert first_checkpoint.checkpoint_path not in retained_paths
+    assert retained_paths == [
+        second_checkpoint.checkpoint_path,
+        latest_checkpoint.checkpoint_path,
+    ]
+    assert latest_pointer["checkpoint_path"] == latest_checkpoint.checkpoint_path
+    assert epoch_checkpoint.exists() is True
+    assert final_checkpoint.exists() is True
+
+
+def test_save_durable_checkpoint_maintains_pointer_and_retained_paths_when_validation_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed validation must not flip the latest pointer or prune older checkpoints."""
+    accelerator = _FakeAccelerator()
+    output_model_path = tmp_path / "run" / "checkpoints"
+    first_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=2,
+        epoch=0,
+        step_in_epoch=1,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    second_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=4,
+        epoch=0,
+        step_in_epoch=3,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    latest_pointer_path = output_model_path.parent / "latest_checkpoint.json"
+    before_failure_pointer = json.loads(latest_pointer_path.read_text(encoding="utf-8"))
+    original_validate = SFT_12HZ._validate_saved_durable_checkpoint
+
+    def _fail_validation(
+        checkpoint_dir: Path,
+        *,
+        expected_metadata: object,
+    ) -> None:
+        if checkpoint_dir.name == ".state-step-00000006.incomplete":
+            raise RuntimeError("simulated validation failure")
+        original_validate(checkpoint_dir, expected_metadata=expected_metadata)
+
+    monkeypatch.setattr(
+        "sft_12hz_checkpointing._validate_saved_durable_checkpoint",
+        _fail_validation,
+    )
+
+    with pytest.raises(RuntimeError, match="simulated validation failure"):
+        _save_durable_checkpoint(
+            accelerator=accelerator,
+            output_model_path=output_model_path,
+            optimizer_steps_completed=6,
+            epoch=0,
+            step_in_epoch=5,
+            dataloader_length=10,
+            reason="interval",
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
+        )
+
+    assert _current_durable_checkpoint_paths(output_model_path) == [
+        first_checkpoint.checkpoint_path,
+        second_checkpoint.checkpoint_path,
+    ]
+    assert json.loads(latest_pointer_path.read_text(encoding="utf-8")) == before_failure_pointer
+    assert (output_model_path / "state-step-00000006").exists() is False
+    assert _durable_checkpoint_staging_dir(output_model_path, 6).exists() is False
+
+
+def test_save_durable_checkpoint_cleans_partial_state_and_allows_retry(
+    tmp_path: Path,
+) -> None:
+    """A failed save should clean staging artifacts so the same step can be retried."""
+    output_model_path = tmp_path / "run" / "checkpoints"
+
+    class _FailOnceAccelerator(_FakeAccelerator):
+        """Fake accelerator that fails once after materializing a partial save."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.fail_next = True
+
+        def save_state(
+            self, output_dir: str | None = None, safe_serialization: bool = True
+        ) -> None:
+            super().save_state(output_dir=output_dir, safe_serialization=safe_serialization)
+            if self.fail_next:
+                self.fail_next = False
+                raise RuntimeError("simulated save failure")
+
+    accelerator = _FailOnceAccelerator()
+
+    with pytest.raises(RuntimeError, match="simulated save failure"):
+        _save_durable_checkpoint(
+            accelerator=accelerator,
+            output_model_path=output_model_path,
+            optimizer_steps_completed=4,
+            epoch=0,
+            step_in_epoch=3,
+            dataloader_length=10,
+            reason="interval",
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
+        )
+
+    assert (output_model_path / "state-step-00000004").exists() is False
+    assert _durable_checkpoint_staging_dir(output_model_path, 4).exists() is False
+
+    metadata = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=4,
+        epoch=0,
+        step_in_epoch=3,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+
+    assert metadata.checkpoint_path == (output_model_path / "state-step-00000004").as_posix()
+
+
+def test_save_durable_checkpoint_fails_closed_for_first_checkpoint_when_free_space_is_low(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The first durable checkpoint save should use the conservative fallback estimate."""
+    output_model_path = tmp_path / "run" / "checkpoints"
+    required_free_bytes = DEFAULT_DURABLE_CHECKPOINT_ESTIMATE_BYTES + (16 * 1024**3)
+
+    class _FakeDiskUsage:
+        """Minimal disk-usage record for the free-space guard test."""
+
+        def __init__(self, free: int) -> None:
+            self.total = free * 2
+            self.used = free
+            self.free = free
+
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz.shutil.disk_usage",
+        lambda _path: _FakeDiskUsage(required_free_bytes - 1),
+    )
+
+    with pytest.raises(RuntimeError, match="enough free space"):
+        _save_durable_checkpoint(
+            accelerator=_FakeAccelerator(),
+            output_model_path=output_model_path,
+            optimizer_steps_completed=4,
+            epoch=0,
+            step_in_epoch=3,
+            dataloader_length=10,
+            reason="interval",
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
+        )
 
 
 def test_load_durable_checkpoint_metadata_rehydrates_resume_cursor(tmp_path: Path) -> None:
@@ -368,6 +589,8 @@ def test_checkpoint_advanced_since_latest_save_detects_unsaved_progress(tmp_path
         step_in_epoch=4,
         dataloader_length=5,
         reason="interval",
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
 
     assert (
@@ -496,6 +719,8 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
             num_epochs=1,
             max_steps=8,
             checkpoint_interval_steps=100,
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
             resume_from_checkpoint=None,
             metrics_output_json=None,
             speaker_name="pilot_multi_speaker",
@@ -509,4 +734,7 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
     assert summary.stop_signal == "SIGTERM"
     assert summary.stopped_early is True
     assert summary.latest_durable_checkpoint_step == 1
+    assert summary.durable_checkpoint_retention == 2
+    assert summary.durable_checkpoint_min_free_bytes == 16 * 1024**3
+    assert summary.durable_checkpoint_paths == [summary.latest_durable_checkpoint_path]
     assert latest_checkpoint["reason"] == "signal-stop"
