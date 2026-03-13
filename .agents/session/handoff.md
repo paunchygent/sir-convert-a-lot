@@ -60,6 +60,20 @@
 - The remaining acceptance work is live Hemma evidence:
   verify that a resumed detached Task 101 run produces reviewable MLflow and
   TensorBoard artifacts while `status.json` updates truthfully during training.
+- That Hemma acceptance proof is now active:
+  - branch: `codex/story26-t156-t157-tracking-heartbeat`
+  - launch id: `task101-20260313t184836z`
+  - resumed checkpoint:
+    `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001060`
+  - live tracker proof:
+    `mlflow_run_id=0e24db0d2c7642b8a6d8120551e260e2`
+  - live TensorBoard proof:
+    `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/trackers/tensorboard/task101-qwen-pilot/events.out.tfevents.1773427767.5c74d6ec17b4.1.0`
+  - live heartbeat proof:
+    `status.json` moved from `startup` to `train`, then recorded
+    `checkpoint-save` at step `1062`, then returned to `train` with
+    `current_step=1064`, `latest_loss=6.834901332855225`,
+    `smoothed_loss=6.780460999965669`, and `latest_durable_checkpoint_step=1062`
 
 ## Immediate Next Step
 
@@ -71,6 +85,9 @@
   - `launch.json` tracking metadata with live MLflow ids
   - TensorBoard event files under `trackers/tensorboard/`
   - MLflow artifacts and DB under `trackers/mlflow/`
+- Next implementation step after this verified proof:
+  begin `T158` so the high-resolution Hemma resource monitor becomes the
+  canonical sibling surface for long Task 101 runs.
 
 ## Earlier Session Summary (2026-03-12)
 
