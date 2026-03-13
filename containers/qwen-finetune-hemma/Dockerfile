@@ -38,6 +38,7 @@ RUN apt-get update \
         git \
         hipblas-dev \
         hiprand-dev \
+        libdw1 \
         libsndfile1 \
         python-is-python3 \
         python3 \

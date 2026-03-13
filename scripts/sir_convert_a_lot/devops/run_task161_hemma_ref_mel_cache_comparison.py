@@ -54,6 +54,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_TASK161_REMOTE_TASK101_OUTPUT_ROOT,
     )
+    parser.add_argument(
+        "--pilot-bundle-root",
+        type=Path,
+        default=None,
+        help="Explicit Task 101 pilot-bundle root on Hemma.",
+    )
     parser.add_argument("--max-steps", type=int, default=DEFAULT_TASK161_MAX_STEPS)
     parser.add_argument(
         "--checkpoint-interval-steps",
@@ -140,6 +146,13 @@ def _launch_variant(
         "--resource-monitor-interval-seconds",
         str(settings.resource_monitor_interval_seconds),
     ]
+    if settings.pilot_bundle_root is not None:
+        command.extend(
+            [
+                "--pilot-bundle-root",
+                settings.pilot_bundle_root.as_posix(),
+            ]
+        )
     if settings.resource_monitor_duration_seconds is not None:
         command.extend(
             [
@@ -159,6 +172,7 @@ def main(argv: list[str] | None = None) -> int:
     settings = Task161ComparisonSettings(
         local_output_root=Path(args.output_root),
         remote_task101_output_root=Path(args.remote_task101_output_root),
+        pilot_bundle_root=args.pilot_bundle_root,
         max_steps=int(args.max_steps),
         checkpoint_interval_steps=int(args.checkpoint_interval_steps),
         batch_size=int(args.batch_size),

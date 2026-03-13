@@ -1,0 +1,441 @@
+"""Storage and atomic-write helpers for the Qwen preprocessing pipeline.
+
+Purpose:
+    Provide deterministic output-root preparation, JSON/JSONL atomic writes,
+    and durable spool read/write helpers for the preprocessing pipeline.
+
+Relationships:
+    - Shared by row-processing, finalization, and reporting modules.
+    - Owns the durable spool path contract used to decouple row-processing from
+      later manifest finalization.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import shutil
+import tempfile
+import threading
+from dataclasses import asdict, is_dataclass
+from pathlib import Path
+from typing import Iterator, Literal, Protocol
+
+from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
+from scripts.sir_convert_a_lot.ml.qwen.common.models import ManifestFamily
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.models import (
+    AdmissionDecision,
+    PreprocessingStage,
+    QualityTier,
+    SpeakerQualityGate,
+    SpoolRow,
+)
+
+CompletedRowKey = tuple[str, str, str]
+CompletedRowKeyLoadSource = Literal["index", "rebuild", "spool-scan"]
+
+
+class CompletedRowKeyWriter:
+    """Append completed-row keys through one process-local locked writer."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._handle: _TextWriteCloser | None = None
+        self._lock = threading.Lock()
+
+    def __enter__(self) -> "CompletedRowKeyWriter":
+        enforce_generated_output_path(self._path, label=self._path.name)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._handle = self._path.open(mode="a", encoding="utf-8", buffering=1)
+        return self
+
+    def append_key(self, row_key: CompletedRowKey) -> None:
+        """Append one completed-row key to the sequential index."""
+        if self._handle is None:
+            raise RuntimeError("Completed-row key writer must be opened before appending.")
+        payload = {
+            "dataset": row_key[0],
+            "source_split": row_key[1],
+            "dataset_row_id": row_key[2],
+        }
+        with self._lock:
+            self._handle.write(json.dumps(payload, sort_keys=True, ensure_ascii=False))
+            self._handle.write("\n")
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        del exc_type, exc, traceback
+        if self._handle is not None:
+            self._handle.close()
+
+
+def completed_row_keys_index_path(output_root: Path) -> Path:
+    """Return the canonical completed-row index path."""
+    return output_root / "spool" / "completed_row_keys.jsonl"
+
+
+def _completed_row_key_payload_to_tuple(
+    payload: dict[str, object],
+    *,
+    path: Path,
+) -> CompletedRowKey:
+    """Validate one completed-row index payload and return its typed key."""
+    dataset = payload.get("dataset")
+    source_split = payload.get("source_split")
+    dataset_row_id = payload.get("dataset_row_id")
+    if not isinstance(dataset, str):
+        raise ValueError(f"Malformed `dataset` in completed-row index {path}.")
+    if not isinstance(source_split, str):
+        raise ValueError(f"Malformed `source_split` in completed-row index {path}.")
+    if not isinstance(dataset_row_id, str):
+        raise ValueError(f"Malformed `dataset_row_id` in completed-row index {path}.")
+    return (dataset, source_split, dataset_row_id)
+
+
+def load_completed_row_keys_from_index(output_root: Path) -> set[CompletedRowKey]:
+    """Load completed-row keys from the sequential index when it exists."""
+    index_path = completed_row_keys_index_path(output_root)
+    if not index_path.exists():
+        raise FileNotFoundError(index_path)
+    completed_row_keys: set[CompletedRowKey] = set()
+    for raw_line in index_path.read_text(encoding="utf-8").splitlines():
+        if raw_line.strip() == "":
+            continue
+        payload = json.loads(raw_line)
+        if not isinstance(payload, dict):
+            raise ValueError(f"Expected JSON object rows in completed-row index {index_path}.")
+        completed_row_keys.add(_completed_row_key_payload_to_tuple(payload, path=index_path))
+    return completed_row_keys
+
+
+def rebuild_completed_row_keys_index(output_root: Path) -> set[CompletedRowKey]:
+    """Rebuild the completed-row index from canonical spool rows."""
+    completed_row_keys = {
+        (row.dataset, row.source_split, row.dataset_row_id) for row in iter_spool_rows(output_root)
+    }
+    index_path = completed_row_keys_index_path(output_root)
+    with JsonlAtomicWriter(index_path) as writer:
+        for dataset, source_split, dataset_row_id in sorted(completed_row_keys):
+            writer.write_row(
+                {
+                    "dataset": dataset,
+                    "source_split": source_split,
+                    "dataset_row_id": dataset_row_id,
+                }
+            )
+    return completed_row_keys
+
+
+def load_completed_row_keys(
+    output_root: Path,
+) -> tuple[set[CompletedRowKey], CompletedRowKeyLoadSource]:
+    """Load completed-row keys with rebuild fallback for old or broken run roots."""
+    index_path = completed_row_keys_index_path(output_root)
+    if index_path.exists():
+        try:
+            return load_completed_row_keys_from_index(output_root), "index"
+        except (json.JSONDecodeError, ValueError):
+            rebuilt_keys = rebuild_completed_row_keys_index(output_root)
+            return rebuilt_keys, "rebuild"
+    rebuilt_keys = rebuild_completed_row_keys_index(output_root)
+    if rebuilt_keys:
+        return rebuilt_keys, "rebuild"
+    return set(), "spool-scan"
+
+
+def json_default(value: object) -> object:
+    """Serialize supported objects into stable JSON payloads."""
+    if is_dataclass(value) and not isinstance(value, type):
+        return asdict(value)
+    if isinstance(value, Path):
+        return value.as_posix()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable.")
+
+
+class JsonlAtomicWriter:
+    """Write one JSONL artifact through a temp file and atomic rename."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._handle: _TextWriteCloser | None = None
+        self._temp_path: Path | None = None
+
+    def __enter__(self) -> "JsonlAtomicWriter":
+        enforce_generated_output_path(self._path, label=self._path.name)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        temp_handle = tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=self._path.parent,
+            delete=False,
+            suffix=".tmp",
+        )
+        self._handle = temp_handle
+        self._temp_path = Path(temp_handle.name)
+        return self
+
+    def write_row(self, row: object) -> None:
+        """Write one JSONL row to the temp artifact."""
+        if self._handle is None:
+            raise RuntimeError("JSONL writer must be opened before writing rows.")
+        rendered_row = json.dumps(row, sort_keys=True, ensure_ascii=False, default=json_default)
+        self._handle.write(rendered_row)
+        self._handle.write("\n")
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        if self._handle is not None:
+            self._handle.close()
+        if self._temp_path is None:
+            return
+        if exc_type is None:
+            self._temp_path.replace(self._path)
+        elif self._temp_path.exists():
+            self._temp_path.unlink()
+
+
+def _atomic_write_text(path: Path, rendered_text: str) -> None:
+    """Write one text artifact through a temp file and atomic rename."""
+    enforce_generated_output_path(path, label=path.name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=path.parent,
+        delete=False,
+        suffix=".tmp",
+    ) as handle:
+        temp_path = Path(handle.name)
+        handle.write(rendered_text)
+    temp_path.replace(path)
+
+
+def write_json(path: Path, payload: object) -> None:
+    """Write deterministic JSON output."""
+    _atomic_write_text(
+        path,
+        json.dumps(payload, indent=2, sort_keys=True, default=json_default) + "\n",
+    )
+
+
+def write_jsonl(path: Path, rows: list[object]) -> None:
+    """Write deterministic JSONL output from one bounded row list."""
+    with JsonlAtomicWriter(path) as writer:
+        for row in rows:
+            writer.write_row(row)
+
+
+def prepare_output_root(
+    output_root: Path,
+    *,
+    stage: PreprocessingStage,
+    resume_row_processing: bool = False,
+) -> None:
+    """Prepare the generated output root for the requested stage."""
+    output_root.mkdir(parents=True, exist_ok=True)
+    if stage in {"all", "row-processing"}:
+        if stage == "row-processing" and resume_row_processing:
+            return
+        for subdir_name in (
+            "inventory",
+            "curated",
+            "refs",
+            "audio_24k",
+            "manifests",
+            "reports",
+            "spool",
+        ):
+            subdir = output_root / subdir_name
+            if subdir.exists():
+                shutil.rmtree(subdir)
+    elif stage in {"finalization", "reports"}:
+        reports_dir = output_root / "reports"
+        if reports_dir.exists():
+            shutil.rmtree(reports_dir)
+    for generated_name in ("report.json", "report.md", "failure.txt"):
+        generated_path = output_root / generated_name
+        if generated_path.exists():
+            generated_path.unlink()
+
+
+def iter_jsonl_objects(path: Path) -> Iterator[dict[str, object]]:
+    """Yield parsed JSONL rows from one file if it exists."""
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        if raw_line.strip() == "":
+            continue
+        payload = json.loads(raw_line)
+        if not isinstance(payload, dict):
+            raise ValueError(f"Expected JSON object rows in {path}.")
+        yield payload
+
+
+def _safe_path_component(raw_value: str) -> str:
+    """Render one stable path component for spool storage."""
+    return re.sub(r"[^A-Za-z0-9._-]", "-", raw_value)
+
+
+def spool_rows_dir(output_root: Path) -> Path:
+    """Return the canonical spool row root."""
+    return output_root / "spool" / "rows"
+
+
+def spool_row_path_for_source(
+    output_root: Path,
+    *,
+    dataset: str,
+    source_split: str,
+    speaker_id: str,
+    dataset_row_id: str,
+) -> Path:
+    """Return the canonical spool-row path for one source-row identity."""
+    return (
+        spool_rows_dir(output_root)
+        / _safe_path_component(dataset)
+        / _safe_path_component(source_split)
+        / _safe_path_component(speaker_id)
+        / f"{_safe_path_component(dataset_row_id)}.json"
+    )
+
+
+def spool_row_path(output_root: Path, row: SpoolRow) -> Path:
+    """Return the canonical on-disk path for one spool row."""
+    return spool_row_path_for_source(
+        output_root,
+        dataset=row.dataset,
+        source_split=row.source_split,
+        speaker_id=row.speaker_id,
+        dataset_row_id=row.dataset_row_id,
+    )
+
+
+def write_spool_row(output_root: Path, row: SpoolRow) -> None:
+    """Persist one completed row-processing result atomically."""
+    write_json(spool_row_path(output_root, row), row)
+
+
+def iter_spool_rows(output_root: Path) -> Iterator[SpoolRow]:
+    """Yield typed spool rows from the durable row-processing subtree."""
+    rows_root = spool_rows_dir(output_root)
+    if not rows_root.exists():
+        return
+    for path in sorted(rows_root.rglob("*.json")):
+        raw_payload = path.read_text(encoding="utf-8")
+        if raw_payload.strip() == "":
+            continue
+        payload = json.loads(raw_payload)
+        if not isinstance(payload, dict):
+            raise ValueError(f"Expected one JSON object in spool row {path}.")
+        reference_audio_24k_paths_raw = payload.get("reference_audio_24k_paths")
+        if not isinstance(reference_audio_24k_paths_raw, dict):
+            raise ValueError(f"Malformed `reference_audio_24k_paths` in {path}.")
+        reference_audio_24k_paths: dict[ManifestFamily, str] = {}
+        for key, value in reference_audio_24k_paths_raw.items():
+            manifest_family = key  # type: ignore
+            if not isinstance(value, str):
+                raise ValueError(f"Malformed reference path mapping in {path}.")
+            reference_audio_24k_paths[manifest_family] = value
+        manifest_targets_raw = payload.get("manifest_targets")
+        if not isinstance(manifest_targets_raw, list):
+            raise ValueError(f"Malformed `manifest_targets` in {path}.")
+        manifest_targets = tuple(manifest_targets_raw)  # type: ignore
+        yield SpoolRow(
+            dataset=_required_str(payload, "dataset", path),
+            source_split=_required_str(payload, "source_split", path),
+            dataset_row_id=_required_str(payload, "dataset_row_id", path),
+            speaker_id=_required_str(payload, "speaker_id", path),
+            speaker_name=_required_str(payload, "speaker_name", path),
+            speaker_from_id=_required_bool(payload, "speaker_from_id", path),
+            source_audio_path=_required_str(payload, "source_audio_path", path),
+            audio_24k_path=_required_str(payload, "audio_24k_path", path),
+            duration_seconds=_required_float(payload, "duration_seconds", path),
+            text_normalized=_required_str(payload, "text_normalized", path),
+            reference_audio_24k_paths=reference_audio_24k_paths,
+            asr_model=_required_str(payload, "asr_model", path),
+            asr_revision=_required_str(payload, "asr_revision", path),
+            asr_transcript=_required_str(payload, "asr_transcript", path),
+            asr_wer=_required_float(payload, "asr_wer", path),
+            quality_tier=_required_quality_tier(payload, path),
+            speaker_quality_gate=_required_speaker_quality_gate(payload, path),
+            dedup_applied=_required_bool(payload, "dedup_applied", path),
+            admission_decision=_required_admission_decision(payload, path),
+            manifest_targets=manifest_targets,
+        )
+
+
+def spool_row_artifact_is_complete(path: Path) -> bool:
+    """Return whether one spool-row artifact looks complete enough for resume."""
+    return path.exists() and path.stat().st_size > 0
+
+
+def _required_str(payload: dict[str, object], key: str, path: Path) -> str:
+    """Return one required string field from one stored JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, str):
+        raise ValueError(f"Malformed `{key}` in {path}.")
+    return value
+
+
+class _TextWriteCloser(Protocol):
+    """Minimal text-writer surface used by the JSONL atomic writer."""
+
+    def write(self, text: str) -> object:
+        """Write text to one underlying temp file."""
+
+    def close(self) -> object:
+        """Close one underlying temp file."""
+
+
+def _required_bool(payload: dict[str, object], key: str, path: Path) -> bool:
+    """Return one required boolean field from one stored JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, bool):
+        raise ValueError(f"Malformed `{key}` in {path}.")
+    return value
+
+
+def _required_float(payload: dict[str, object], key: str, path: Path) -> float:
+    """Return one required float-like field from one stored JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, (float, int)):
+        raise ValueError(f"Malformed `{key}` in {path}.")
+    return round(float(value), 6)
+
+
+def _required_quality_tier(payload: dict[str, object], path: Path) -> QualityTier:
+    """Return one required typed quality tier from one stored spool payload."""
+    value = _required_str(payload, "quality_tier", path)
+    if value in {"high_trust", "medium_trust", "rejected"}:
+        return value  # type: ignore
+    raise ValueError(f"Malformed `quality_tier` in {path}.")
+
+
+def _required_speaker_quality_gate(
+    payload: dict[str, object],
+    path: Path,
+) -> SpeakerQualityGate:
+    """Return one required typed speaker gate from one stored spool payload."""
+    value = _required_str(payload, "speaker_quality_gate", path)
+    if value in {"speaker_from_id", "manual_review", "rejected_multi_speaker"}:
+        return value  # type: ignore
+    raise ValueError(f"Malformed `speaker_quality_gate` in {path}.")
+
+
+def _required_admission_decision(
+    payload: dict[str, object],
+    path: Path,
+) -> AdmissionDecision:
+    """Return one required typed admission decision from one stored spool payload."""
+    value = _required_str(payload, "admission_decision", path)
+    if value in {"admit", "reject"}:
+        return value  # type: ignore
+    raise ValueError(f"Malformed `admission_decision` in {path}.")

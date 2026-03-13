@@ -28,6 +28,7 @@ def test_task162_parser_defaults_are_bounded() -> None:
     assert args.checkpoint_interval_steps == 100
     assert args.poll_interval_seconds == 15
     assert args.poll_timeout_seconds == 3600
+    assert args.pilot_bundle_root is None
     assert args.torch_profiler_enabled == "true"
     assert args.rocm_profiler_enabled == "true"
 
@@ -45,15 +46,22 @@ def test_task162_runner_writes_profile_report(
         "scripts.sir_convert_a_lot.devops.run_task162_hemma_task101_profiling._default_profiling_id",
         lambda: profiling_id,
     )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.run_task162_hemma_task101_profiling.run_remote_task101_json",
-        lambda args, label: {
+    launch_args_captured: list[str] = []
+
+    def _fake_run_remote_task101_json(args: list[str], label: str) -> dict[str, object]:
+        del label
+        launch_args_captured.extend(args)
+        return {
             "launch_id": f"{profiling_id}-profile",
             "run_root": (
                 "/srv/scratch/sir-convert-a-lot/build/runs/"
                 "qwen3-tts-swedish-finetune/task162-proof-test-profile"
             ),
-        },
+        }
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task162_hemma_task101_profiling.run_remote_task101_json",
+        _fake_run_remote_task101_json,
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_task162_hemma_task101_profiling.poll_remote_task101_status",
@@ -86,6 +94,8 @@ def test_task162_runner_writes_profile_report(
             tmp_path.as_posix(),
             "--remote-task101-output-root",
             remote_output_root.as_posix(),
+            "--pilot-bundle-root",
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h",
         ]
     )
 
@@ -97,6 +107,7 @@ def test_task162_runner_writes_profile_report(
     assert report_payload["rocm_profiling_enabled"] is True
     assert len(report_payload["artifact_summary"]["pytorch_trace_files"]) == 1
     assert len(report_payload["artifact_summary"]["rocm_trace_files"]) == 1
+    assert "--pilot-bundle-root" in launch_args_captured
 
 
 def test_rocprof_wrapper_requires_probe_separator() -> None:

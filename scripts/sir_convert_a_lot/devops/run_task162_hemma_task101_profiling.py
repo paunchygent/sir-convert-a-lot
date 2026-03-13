@@ -72,6 +72,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_TASK161_REMOTE_TASK101_OUTPUT_ROOT,
     )
+    parser.add_argument(
+        "--pilot-bundle-root",
+        type=Path,
+        default=None,
+        help="Explicit Task 101 pilot-bundle root on Hemma.",
+    )
     parser.add_argument("--max-steps", type=int, default=DEFAULT_TASK162_MAX_STEPS)
     parser.add_argument(
         "--checkpoint-interval-steps",
@@ -257,6 +263,14 @@ def main(argv: list[str] | None = None) -> int:
             str(int(args.torch_profiler_repeat)),
             "--rocm-profiler-enabled",
             "true" if rocm_profiler_enabled else "false",
+            *(
+                []
+                if args.pilot_bundle_root is None
+                else [
+                    "--pilot-bundle-root",
+                    args.pilot_bundle_root.as_posix(),
+                ]
+            ),
             *([] if not bool(args.skip_build) else ["--skip-build"]),
         ],
         label="task162 launch profiling run",

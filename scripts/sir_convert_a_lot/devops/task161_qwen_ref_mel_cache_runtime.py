@@ -45,6 +45,7 @@ class Task161ComparisonSettings:
 
     local_output_root: Path
     remote_task101_output_root: Path
+    pilot_bundle_root: Path | None
     max_steps: int
     checkpoint_interval_steps: int
     batch_size: int

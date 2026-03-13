@@ -9,9 +9,11 @@ import pytest
 
 from scripts.sir_convert_a_lot.devops.run_task161_hemma_ref_mel_cache_comparison import (
     _build_parser,
+    _launch_variant,
     main,
 )
 from scripts.sir_convert_a_lot.devops.task161_qwen_ref_mel_cache_runtime import (
+    Task161ComparisonSettings,
     completed_task101_predicate,
 )
 
@@ -30,7 +32,58 @@ def test_task161_parser_defaults_are_bounded() -> None:
     assert args.ref_mel_cache_max_items == 2048
     assert args.resource_monitor_interval_seconds == 1.0
     assert args.resource_monitor_duration_seconds is None
+    assert args.pilot_bundle_root is None
     assert args.skip_build is False
+
+
+def test_task161_launch_variant_passes_pilot_bundle_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Task 161 launch variant should forward explicit pilot-bundle roots."""
+    captured_args: list[str] = []
+
+    def _fake_run_remote_task101_json(args: list[str], *, label: str) -> dict[str, object]:
+        del label
+        captured_args.extend(args)
+        return {"launch_id": "task161-proof-test-cache-on", "run_root": "/srv/scratch/run-root"}
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task161_hemma_ref_mel_cache_comparison.run_remote_task101_json",
+        _fake_run_remote_task101_json,
+    )
+    settings = Task161ComparisonSettings(
+        local_output_root=tmp_path,
+        remote_task101_output_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot"
+        ),
+        pilot_bundle_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h"
+        ),
+        max_steps=240,
+        checkpoint_interval_steps=100,
+        batch_size=1,
+        num_epochs=1,
+        poll_interval_seconds=20,
+        poll_timeout_seconds=5400,
+        ref_mel_cache_max_items=2048,
+        resource_monitor_interval_seconds=1.0,
+        resource_monitor_duration_seconds=None,
+        skip_build=False,
+    )
+
+    launch_payload = _launch_variant(
+        settings=settings,
+        comparison_id="task161-proof-test",
+        variant_id="cache-on",
+        ref_mel_cache_enabled=True,
+    )
+
+    assert launch_payload["launch_id"] == "task161-proof-test-cache-on"
+    assert "--pilot-bundle-root" in captured_args
+    assert (
+        "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h"
+        in captured_args
+    )
 
 
 def test_task161_runner_writes_comparison_report(
