@@ -46,6 +46,7 @@ def _build_dependency_versions() -> dict[str, str | None]:
         "soundfile": _package_version("soundfile"),
         "sentencepiece": _package_version("sentencepiece"),
         "tensorboard": _package_version("tensorboard"),
+        "mlflow": _package_version("mlflow"),
         "torch": _package_version("torch"),
         "torchaudio": _package_version("torchaudio"),
         "onnxruntime": _package_version("onnxruntime"),

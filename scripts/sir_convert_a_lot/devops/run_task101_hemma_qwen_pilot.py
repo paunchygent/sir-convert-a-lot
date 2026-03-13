@@ -293,6 +293,7 @@ def main(argv: list[str] | None = None) -> int:
             scratch_mount=scratch_mount,
             launch_id=launch_id,
             container_name=default_container_name(launch_id),
+            launch_root=launch_root,
             dockerfile_path=Path(args.dockerfile_path),
         )
         _write_json(
@@ -354,6 +355,7 @@ def main(argv: list[str] | None = None) -> int:
             scratch_mount=scratch_mount,
             launch_id=launch_id,
             container_name=default_container_name(launch_id),
+            launch_root=launch_root,
             dockerfile_path=Path(source_launch.dockerfile_path or DEFAULT_DOCKERFILE_PATH),
             run_root=source_run_root,
             resume_from_checkpoint=resume_checkpoint_path,

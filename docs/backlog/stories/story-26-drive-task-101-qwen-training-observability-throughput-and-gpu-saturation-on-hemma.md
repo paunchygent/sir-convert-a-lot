@@ -2,7 +2,7 @@
 id: story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma
 title: Drive Task 101 Qwen training observability throughput and GPU saturation on Hemma
 type: story
-status: proposed
+status: in_progress
 priority: critical
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -43,6 +43,7 @@ labels:
   - hemma
   - mlflow
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective

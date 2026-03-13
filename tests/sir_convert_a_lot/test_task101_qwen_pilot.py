@@ -127,6 +127,9 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
         scratch_mount=scratch_mount,
         launch_id="task101-20260309t120000z",
         container_name="task101-20260309t120000z-container",
+        launch_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/verification/task-101/task101-20260309t120000z"
+        ),
     )
 
     assert run_root.as_posix().endswith("/task101-20260309t120000z")
@@ -147,6 +150,10 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
         "swedish_checkpoint_dev.prepared.jsonl" in command
     )
     assert "--checkpoint-interval-steps" in command
+    assert "--tracker-project-name" in command
+    assert "--mlflow-experiment-name" in command
+    assert "--mlflow-tracking-uri" in command
+    assert "--tensorboard-logging-dir" in command
     checkpoint_index = command.index("--checkpoint-interval-steps")
     assert command[checkpoint_index + 1] == "2"
     retention_index = command.index("--durable-checkpoint-retention")
@@ -155,6 +162,14 @@ def test_build_detached_pilot_command_uses_rocm_mounts_and_prepared_manifest() -
     assert command[free_bytes_index + 1] == str(16 * 1024**3)
     eval_index = command.index("--eval-jsonl")
     assert command[eval_index + 1].endswith("/swedish_checkpoint_dev.prepared.jsonl")
+    mlflow_index = command.index("--mlflow-tracking-uri")
+    assert command[mlflow_index + 1].endswith(
+        "/runs/qwen3-tts-swedish-finetune/task101-20260309t120000z/trackers/mlflow/mlflow.db"
+    )
+    tensorboard_index = command.index("--tensorboard-logging-dir")
+    assert command[tensorboard_index + 1].endswith(
+        "/runs/qwen3-tts-swedish-finetune/task101-20260309t120000z/trackers/tensorboard"
+    )
 
 
 def test_build_detached_pilot_command_includes_resume_checkpoint_when_requested() -> None:
@@ -199,6 +214,9 @@ def test_build_detached_pilot_command_includes_resume_checkpoint_when_requested(
         scratch_mount=scratch_mount,
         launch_id="task101-20260309t120000z",
         container_name="task101-20260309t120000z-container",
+        launch_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/verification/task-101/task101-20260309t120000z"
+        ),
         run_root=Path(
             "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-prev"
         ),
@@ -562,11 +580,12 @@ def test_task101_resume_reuses_dockerfile_path_from_launch_metadata(
         scratch_mount: MountResolution,
         launch_id: str,
         container_name: str,
+        launch_root: Path,
         dockerfile_path: Path | None = None,
         run_root: Path | None = None,
         resume_from_checkpoint: Path | None = None,
     ) -> Task101DetachedLaunch:
-        del settings, repo_root, hf_mount, scratch_mount, container_name
+        del settings, repo_root, hf_mount, scratch_mount, container_name, launch_root
         captured["launch_id"] = launch_id
         captured["resume_dockerfile_path"] = dockerfile_path
         captured["run_root"] = run_root
@@ -721,11 +740,12 @@ def test_task101_resume_defaults_checkpoint_policy_for_pre_t153_launch_metadata(
         scratch_mount: MountResolution,
         launch_id: str,
         container_name: str,
+        launch_root: Path,
         dockerfile_path: Path | None = None,
         run_root: Path | None = None,
         resume_from_checkpoint: Path | None = None,
     ) -> Task101DetachedLaunch:
-        del repo_root, hf_mount, scratch_mount, container_name
+        del repo_root, hf_mount, scratch_mount, container_name, launch_root
         captured["settings"] = settings
         captured["launch_id"] = launch_id
         captured["dockerfile_path"] = dockerfile_path
@@ -855,11 +875,20 @@ def test_task101_launch_writes_checkpoint_policy_into_launch_metadata(
         scratch_mount: MountResolution,
         launch_id: str,
         container_name: str,
+        launch_root: Path,
         dockerfile_path: Path | None = None,
         run_root: Path | None = None,
         resume_from_checkpoint: Path | None = None,
     ) -> Task101DetachedLaunch:
-        del repo_root, hf_mount, scratch_mount, container_name, run_root, resume_from_checkpoint
+        del (
+            repo_root,
+            hf_mount,
+            scratch_mount,
+            container_name,
+            launch_root,
+            run_root,
+            resume_from_checkpoint,
+        )
         return Task101DetachedLaunch(
             generated_at="2026-03-13T12:00:00Z",
             launch_id=launch_id,
@@ -903,6 +932,28 @@ def test_task101_launch_writes_checkpoint_policy_into_launch_metadata(
                 durable_checkpoint_min_free_bytes=settings.durable_checkpoint_min_free_bytes,
             ),
             command=["sudo", "-n", "docker", "run", "-d"],
+            tracking={
+                "tracker_backends": ["mlflow", "tensorboard"],
+                "project_name": "task101-qwen-pilot",
+                "run_name": launch_id,
+                "mlflow_experiment_name": "task101-qwen-pilot",
+                "mlflow_tracking_uri": (
+                    "/srv/scratch/sir-convert-a-lot/build/runs/"
+                    "qwen3-tts-swedish-finetune/task101-launch/trackers/mlflow/mlflow.db"
+                ),
+                "mlflow_artifact_root": (
+                    "/srv/scratch/sir-convert-a-lot/build/runs/"
+                    "qwen3-tts-swedish-finetune/task101-launch/trackers/mlflow/artifacts"
+                ),
+                "tensorboard_logging_dir": (
+                    "/srv/scratch/sir-convert-a-lot/build/runs/"
+                    "qwen3-tts-swedish-finetune/task101-launch/trackers/tensorboard"
+                ),
+                "tracker_root": (
+                    "/srv/scratch/sir-convert-a-lot/build/runs/"
+                    "qwen3-tts-swedish-finetune/task101-launch/trackers"
+                ),
+            },
         )
 
     def _capture_write_json(path: Path, payload: object) -> None:
@@ -964,6 +1015,10 @@ def test_task101_launch_writes_checkpoint_policy_into_launch_metadata(
     assert isinstance(settings_payload, dict)
     assert settings_payload["durable_checkpoint_retention"] == 3
     assert settings_payload["durable_checkpoint_min_free_bytes"] == 20 * 1024**3
+    tracking_payload = launch_payload["tracking"]
+    assert isinstance(tracking_payload, dict)
+    assert tracking_payload["project_name"] == "task101-qwen-pilot"
+    assert tracking_payload["run_name"].startswith("task101-")
 
 
 def test_stop_detached_pilot_calls_docker_stop(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -2,7 +2,7 @@
 id: task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime
 title: Add truthful live heartbeat and phase accounting to the Task 101 Qwen pilot runtime
 type: task
-status: proposed
+status: completed
 priority: critical
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -19,6 +19,7 @@ labels:
   - status
   - monitoring
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -65,36 +66,36 @@ status contract misleading and prevents phase-aware monitor analysis.
 
 ## Deliverables
 
-- [ ] Task 101 writes bounded live heartbeat updates during training.
-- [ ] Phase accounting is persisted in machine-readable form.
-- [ ] Status inspection surfaces expose the new live fields.
-- [ ] Backward-compatible tests cover old and new status payloads.
+- [x] Task 101 writes bounded live heartbeat updates during training.
+- [x] Phase accounting is persisted in machine-readable form.
+- [x] Status inspection surfaces expose the new live fields.
+- [x] Backward-compatible tests cover old and new status payloads.
 
 ## Acceptance Criteria
 
-- [ ] During a bounded Task 101 run, `status.json` updates while training is
+- [x] During a bounded Task 101 run, `status.json` updates while training is
   still in progress rather than only at launch and terminal completion.
-- [ ] The live status artifact exposes current step, current epoch, latest loss,
+- [x] The live status artifact exposes current step, current epoch, latest loss,
   smoothed loss, current phase, and latest checkpoint metadata.
-- [ ] The CLI status output and metadata parsers stay truthful for both new and
+- [x] The CLI status output and metadata parsers stay truthful for both new and
   historical launches.
-- [ ] The resulting phase surface is rich enough for the resource-monitor lane
+- [x] The resulting phase surface is rich enough for the resource-monitor lane
   to exclude checkpoint-save windows from the canonical steady-state GPU-busy
   gate.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] Bounded Hemma proof shows `status.json` changing at runtime.
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] Bounded Hemma proof shows `status.json` changing at runtime.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

@@ -2,7 +2,7 @@
 id: task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training
 title: Activate first-class MLflow and Accelerate tracking for Task 101 Qwen training
 type: task
-status: proposed
+status: completed
 priority: critical
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -22,6 +22,7 @@ labels:
   - mlflow
   - tensorboard
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -76,40 +77,40 @@ throughput work blind.
 
 ## Deliverables
 
-- [ ] Governed Qwen image includes MLflow and any required system-metrics
+- [x] Governed Qwen image includes MLflow and any required system-metrics
   support packages.
-- [ ] Task 101 training initializes MLflow and TensorBoard trackers through
+- [x] Task 101 training initializes MLflow and TensorBoard trackers through
   Accelerate.
-- [ ] Live tracker artifacts are created during a bounded Task 101 run.
-- [ ] Task 101 metadata/report surfaces expose tracker ids and artifact paths.
-- [ ] Focused tests cover tracker configuration and metadata persistence.
+- [x] Live tracker artifacts are created during a bounded Task 101 run.
+- [x] Task 101 metadata/report surfaces expose tracker ids and artifact paths.
+- [x] Focused tests cover tracker configuration and metadata persistence.
 
 ## Acceptance Criteria
 
-- [ ] A bounded Task 101 run creates one MLflow run and one TensorBoard event
+- [x] A bounded Task 101 run creates one MLflow run and one TensorBoard event
   stream while training is still in progress.
-- [ ] Launch metadata records the tracker backend, run id, and artifact root.
-- [ ] The canonical tracked params include the live training configuration and
+- [x] Launch metadata records the tracker backend, run id, and artifact root.
+- [x] The canonical tracked params include the live training configuration and
   checkpoint policy.
-- [ ] The canonical tracked scalars include at least raw loss, smoothed loss,
+- [x] The canonical tracked scalars include at least raw loss, smoothed loss,
   current step, and current epoch.
-- [ ] The live operator no longer has to reconstruct a classical loss curve
+- [x] The live operator no longer has to reconstruct a classical loss curve
   only from stdout.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py -q`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] Bounded Hemma proof writes reviewable MLflow/TensorBoard artifacts under
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] Bounded Hemma proof writes reviewable MLflow/TensorBoard artifacts under
   `build/verification/`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

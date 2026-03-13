@@ -85,6 +85,7 @@ class Task101DetachedLaunch:
     resumed_from_checkpoint_path: str | None
     settings: Task101PilotSettingsSnapshot
     command: list[str]
+    tracking: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)

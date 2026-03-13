@@ -46,13 +46,14 @@ Active focus is Epic 08: Qwen3-TTS Swedish language expansion, the live Hemma
 Task 101 run, and Story 26 throughput/observability hardening toward the new
 `>= 90%` steady-state GPU-busy target.
 This file is the canonical long-term memory index for session progress; session handoff summaries must be archived here when `handoff.md` is pruned. Current epic entrypoint:
+
 - `docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
-Primary implementation story (active sequence): Story 26 is now the explicit
-Task 101 follow-on optimization story:
-`docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
-Story 25 remains the baseline/runtime-contract story that the current live
-Hemma run still depends on:
-`docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
+  Primary implementation story (active sequence): Story 26 is now the explicit
+  Task 101 follow-on optimization story:
+  `docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
+  Story 25 remains the baseline/runtime-contract story that the current live
+  Hemma run still depends on:
+  `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
 
 ## Worklog
 
@@ -204,13 +205,16 @@ Hemma run still depends on:
   - Completed `T155` under `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`: `sft_12hz.py`, `run_task101_hemma_qwen_pilot.py`, `task101_qwen_pilot_runtime.py`, and `task101_qwen_pilot_probe.py` now delegate checkpoint, metadata, runtime-contract, artifact-parsing, and report/status helpers to dedicated modules, bringing the full Task 101/Qwen refactor slice back into SRP alignment without changing the external runtime contracts.
   - Wrote the live analysis reference `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`, capturing the active Hemma run state, smoothed loss interpretation, resource-monitor evidence, checkpoint churn, missing tracker artifacts, confirmed robust surfaces, and the decision to treat `>= 90%` steady-state median GPU busy as the next saturation gate.
   - Opened Story 26 as the explicit Task 101 throughput/observability hardening lane and decomposed it into ordered tasks `T156-T165` covering first-class tracking, live heartbeat status, default high-resolution monitoring, checkpoint-cadence/step-semantics correction, dataloader/device-transfer tuning, `ref_mel` caching plus conditional precompute, bounded profiling, saturation-oriented launch profiles, and later MIOpen remediation.
-
+  - Completed Story 26 `T156-T157` in order: Task 101 now emits MLflow plus
+    TensorBoard tracking with persisted tracker metadata, `status.json` /
+    `status.md` now expose truthful live heartbeat fields plus phase history,
+    local gates passed, and Hemma resume launch `task101-20260313t184836z`
+    surfaced MLflow run `0e24db0d2c7642b8a6d8120551e260e2`, live tracker
+    artifacts, and `startup -> train -> checkpoint-save -> train` status flow.
 ## Next Actions
 
-- Current Task 101 training follow-on is Story 26: raise observability and
-  throughput until the Hemma lane can prove `>= 90%` steady-state median GPU
-  busy under truthful high-resolution monitoring.
+- Current Task 101 follow-on is Story 26: raise observability and throughput
+  until the Hemma lane can prove `>= 90%` steady-state median GPU busy.
 - Current ownership follow-on remains the shard-governed
-  `task138-task129-remaining-unique-20260311a` recovery path, while `T118` now
-  serves as the earlier dataloader-precompute precursor that has been split
-  into the more explicit `T160-T164` optimization tasks.
+  `task138-task129-remaining-unique-20260311a` recovery path; `T118` only
+  remains as the earlier precursor to Story 26 `T160-T164`.
