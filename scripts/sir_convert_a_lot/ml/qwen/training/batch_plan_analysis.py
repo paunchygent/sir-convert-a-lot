@@ -18,6 +18,7 @@ import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 import torch
 from transformers import AutoTokenizer
@@ -30,13 +31,19 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import (
     BucketedBatchSampler,
     TrainingRowBatchMetrics,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     ThroughputBatchPolicy,
     resolve_throughput_batch_policy,
     throughput_policy_payload,
 )
+
+
+class _ManifestRow(TypedDict):
+    """Minimal prepared-manifest row surface needed for occupancy analysis."""
+
+    text: str
+    audio_codes: list[list[int]]
 
 
 @dataclass(frozen=True)
@@ -102,10 +109,35 @@ def _tokenize_text(tokenizer: AutoTokenizer, text: str) -> torch.Tensor:
     return input_ids.unsqueeze(0) if input_ids.dim() == 1 else input_ids
 
 
+def _load_manifest_rows(train_jsonl: Path) -> list[_ManifestRow]:
+    """Load only the manifest fields needed for occupancy analysis."""
+    rows: list[_ManifestRow] = []
+    with train_jsonl.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            payload = json.loads(line)
+            if not isinstance(payload, dict):
+                raise ValueError("Expected each prepared manifest row to be a JSON object.")
+            text = payload.get("text")
+            audio_codes = payload.get("audio_codes")
+            if not isinstance(text, str):
+                raise ValueError("Prepared manifest row lacked a valid `text` value.")
+            if not isinstance(audio_codes, list):
+                raise ValueError("Prepared manifest row lacked a valid `audio_codes` value.")
+            rows.append(
+                _ManifestRow(
+                    text=text,
+                    audio_codes=audio_codes,
+                )
+            )
+    if len(rows) == 0:
+        raise ValueError("Prepared manifest did not contain any rows for occupancy analysis.")
+    return rows
+
+
 def build_row_metrics(*, train_jsonl: Path, model_id: str) -> list[TrainingRowBatchMetrics]:
     """Build faithful row metrics from one prepared manifest and model tokenizer."""
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    rows = _load_training_rows(train_jsonl)
+    rows = _load_manifest_rows(train_jsonl)
     row_metrics: list[TrainingRowBatchMetrics] = []
     for row in rows:
         text_ids = _tokenize_text(tokenizer, _assistant_text(row["text"]))
