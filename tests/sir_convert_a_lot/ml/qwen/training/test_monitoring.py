@@ -73,6 +73,16 @@ def test_inspect_resource_monitor_splits_train_and_checkpoint_windows(
             [
                 json.dumps(
                     {
+                        "captured_at": "2026-03-13T20:00:00Z",
+                        "runtime_kind": "rocm",
+                        "gpu_busy_percent": 99,
+                        "gpu_memory_used_percent": 59,
+                        "host_cpu_busy_percent": 29,
+                        "host_memory_used_percent": 39,
+                    }
+                ),
+                json.dumps(
+                    {
                         "captured_at": "2026-03-13T20:00:01Z",
                         "runtime_kind": "rocm",
                         "gpu_busy_percent": 20,
@@ -131,5 +141,6 @@ def test_inspect_resource_monitor_splits_train_and_checkpoint_windows(
     assert isinstance(summary_checkpoint, dict)
     assert summary_train["sample_count"] == 2
     assert summary_train["gpu_busy_percent_median"] == 30.0
+    assert summary_train["first_sample_at"] == "2026-03-13T20:00:01Z"
     assert summary_checkpoint["sample_count"] == 1
     assert summary_checkpoint["gpu_busy_percent_median"] == 10.0

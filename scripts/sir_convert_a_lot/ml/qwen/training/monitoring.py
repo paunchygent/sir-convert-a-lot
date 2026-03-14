@@ -185,9 +185,12 @@ def _group_samples_by_phase(
         return grouped
     event_index = 0
     current_phase = phase_events[event_index][1]
+    first_phase_timestamp = phase_events[0][0]
     for sample in samples:
         sample_time = _parse_iso_timestamp(sample.captured_at)
         if sample_time is None:
+            continue
+        if sample_time < first_phase_timestamp:
             continue
         while (
             event_index + 1 < len(phase_events) and phase_events[event_index + 1][0] <= sample_time
