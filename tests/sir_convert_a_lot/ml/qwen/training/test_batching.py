@@ -86,8 +86,8 @@ def test_bucketed_batch_sampler_respects_batch_size_and_budget_caps() -> None:
     assert all(len(batch) == 2 for batch in batches)
 
 
-def test_bucketed_batch_sampler_backfills_partially_filled_batches_with_best_fit() -> None:
-    """The sampler should backfill compatible rows instead of leaving avoidable tails."""
+def test_bucketed_batch_sampler_keeps_one_open_batch_per_bucket() -> None:
+    """The stable packer should flush greedily instead of reshaping row mixtures."""
     sampler = BucketedBatchSampler(
         row_metrics=[
             TrainingRowBatchMetrics(text_token_count=1, codec_frame_count=6),
@@ -96,7 +96,7 @@ def test_bucketed_batch_sampler_backfills_partially_filled_batches_with_best_fit
             TrainingRowBatchMetrics(text_token_count=1, codec_frame_count=4),
         ],
         policy=ThroughputBatchPolicy(
-            profile_label="test-best-fit",
+            profile_label="test-greedy",
             policy_kind="bucketed-frame-token-budget-v1",
             max_batch_size=3,
             max_tokens_per_batch=100,
@@ -106,7 +106,7 @@ def test_bucketed_batch_sampler_backfills_partially_filled_batches_with_best_fit
         ),
     )
 
-    assert sampler.planned_batches() == [[0, 2], [1, 3]]
+    assert sampler.planned_batches() == [[0], [1, 2], [3]]
 
 
 def test_bucketed_batch_sampler_rejects_rows_that_exceed_single_row_budget() -> None:

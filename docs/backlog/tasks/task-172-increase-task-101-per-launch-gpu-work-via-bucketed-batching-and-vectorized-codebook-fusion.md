@@ -85,26 +85,32 @@ small launches for the target saturation posture.
   - the current bucketed sampler still wastes capacity because it keeps only
     one open batch per bucket and cannot backfill earlier partially filled
     batches
-- The next T172 implementation slice therefore targets the balanced lane
-  first, before another aggressive retry:
-  - add a `hemma-throughput-balanced-plus-v1` profile with a modestly higher
-    codec-frame budget
-  - replace the current one-open-batch greedy packing logic with a deterministic
-    best-fit style packer inside each bucket so compatible rows can backfill
-    partially filled batches
-- That local implementation slice is now landed:
-  - `hemma-throughput-balanced-plus-v1` is available as a bounded profile
-    between the current balanced and aggressive lanes
-  - the bucketed sampler now performs deterministic best-fit backfilling within
-    each bucket instead of finalizing the current batch as soon as the next row
-    does not fit
-  - focused local validation passed for batching, orchestrator, reporting,
-    trainer, and train-loop surfaces
+- The attempted occupancy-lift knobs from the next local slice did not hold:
+  - `hemma-throughput-balanced-plus-v1` failed at
+    `optimizer_step=44` in
+    `task-175-throughput-proof-20260314e-balanced-plus/20260314T204711Z`
+  - the current-code `hemma-throughput-balanced-v1` isolation run also failed
+    at `optimizer_step=4` in
+    `task-175-throughput-proof-20260314f-balanced-current-packer/20260314T210257Z`
+- That isolation means the destabilizing change is the new within-bucket
+  best-fit backfilling policy, not the `640 -> 768` codec-frame-budget increase:
+  - old `balanced` + old greedy packer completed cleanly
+  - old `balanced` budget + new packer failed immediately
+  - therefore the best-fit packer changed row mixtures enough to reintroduce
+    early non-finite loss
+- The rollback/isolation decision for `T172` is now:
+  - restore the old one-open-batch greedy packer as the stable default
+  - keep `hemma-throughput-balanced-plus-v1` available only for isolated tests
+    against that old packer
+  - do not promote the earlier occupancy-lift knobs as the new default because
+    they do not currently work and they fail by destabilizing the training lane
 
 ## Deliverables
 
 - [x] Bucketed non-`batch_size=1` throughput profile(s) implemented.
 - [x] Vectorized/fused codebook path replaces the current fragmented loop.
+- [x] Destabilizing best-fit packer reverted after Hemma isolation proved it
+  breaks the stable balanced lane.
 - [ ] One evidence-backed default profile chosen for follow-on saturation runs.
 
 ## Acceptance Criteria
@@ -121,9 +127,9 @@ small launches for the target saturation posture.
 - [x] `pdm run lint-fix`
 - [x] `pdm run typecheck-all`
 - [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_bundles.py tests/sir_convert_a_lot/ml/qwen/training/test_batching.py tests/sir_convert_a_lot/ml/qwen/training/test_codebook_fusion.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] Bounded Hemma profile sweep evidence written under `build/verification/`.
 
 ## Checklist
