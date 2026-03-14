@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from contextlib import suppress
 from dataclasses import asdict
 from pathlib import Path
 
@@ -32,7 +33,12 @@ from scripts.sir_convert_a_lot.ml.qwen.training.bundle_runtime import (
     validate_runtime_fingerprint_matches,
     write_training_bundle_runtime_fingerprint,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.bundle_state import write_progress_state
+from scripts.sir_convert_a_lot.ml.qwen.training.bundle_state import (
+    bundle_batch_log_path,
+    bundle_build_exit_path,
+    utc_now_iso,
+    write_progress_state,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     DEFAULT_AUDIO_CODES_CHUNK_SIZE,
     DEFAULT_BATCH_ROW_COUNT,
@@ -148,6 +154,8 @@ def _build_bundle_in_governed_runtime(
     repo_root: Path,
 ) -> BundleSummary:
     """Materialize one bundle with host orchestration and governed batch containers."""
+    with suppress(FileNotFoundError):
+        bundle_build_exit_path(output_root).unlink()
     if bundle_report_path(output_root).exists():
         runtime_path = training_bundle_runtime_fingerprint_path(output_root)
         if not runtime_path.exists():
@@ -186,6 +194,14 @@ def _build_bundle_in_governed_runtime(
         status="running" if completed_batch_count < len(plan.batches) else "completed",
         completed_batch_count=completed_batch_count,
         total_batch_count=len(plan.batches),
+        current_phase=None,
+        current_manifest_family=None,
+        current_batch_index=None,
+        current_batch_log_path=None,
+        current_batch_started_at=None,
+        last_completed_manifest_family=None,
+        last_completed_batch_index=None,
+        last_completed_at=None,
     )
     for batch in plan.batches:
         if bundle_batch_is_complete(
@@ -194,6 +210,23 @@ def _build_bundle_in_governed_runtime(
             expected_runtime_fingerprint=fingerprint,
         ):
             continue
+        batch_started_at = utc_now_iso()
+        write_progress_state(
+            output_root,
+            status_path=bundle_progress_state_path(output_root),
+            status="running",
+            completed_batch_count=completed_batch_count,
+            total_batch_count=len(plan.batches),
+            current_phase="batch-finalization",
+            current_manifest_family=batch.manifest_family,
+            current_batch_index=batch.batch_index,
+            current_batch_log_path=bundle_batch_log_path(
+                output_root,
+                batch.manifest_family,
+                batch.batch_index,
+            ).as_posix(),
+            current_batch_started_at=batch_started_at,
+        )
         run_containerized_training_bundle_batch(
             repo_root=repo_root,
             output_root=output_root,
@@ -203,6 +236,30 @@ def _build_bundle_in_governed_runtime(
             audio_codes_chunk_size=audio_codes_chunk_size,
             hf_mount=hf_mount,
             fingerprint=fingerprint,
+        )
+        completed_batch_count = sum(
+            1
+            for candidate in plan.batches
+            if bundle_batch_is_complete(
+                output_root,
+                candidate,
+                expected_runtime_fingerprint=fingerprint,
+            )
+        )
+        write_progress_state(
+            output_root,
+            status_path=bundle_progress_state_path(output_root),
+            status="running" if completed_batch_count < len(plan.batches) else "completed",
+            completed_batch_count=completed_batch_count,
+            total_batch_count=len(plan.batches),
+            current_phase=None,
+            current_manifest_family=None,
+            current_batch_index=None,
+            current_batch_log_path=None,
+            current_batch_started_at=None,
+            last_completed_manifest_family=batch.manifest_family,
+            last_completed_batch_index=batch.batch_index,
+            last_completed_at=utc_now_iso(),
         )
     return assemble_training_bundle(output_root)
 

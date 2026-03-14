@@ -100,7 +100,7 @@ def test_run_containerized_training_bundle_batch_writes_fingerprint_and_launches
         audio_codes_require_gpu=True,
         audio_codes_require_flash_attn=True,
     )
-    docker_calls: list[list[str]] = []
+    docker_calls: list[dict[str, object]] = []
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.training.bundle_runtime.resolve_effective_triton_cache_dir",
@@ -119,14 +119,28 @@ def test_run_containerized_training_bundle_batch_writes_fingerprint_and_launches
         ),
     )
 
-    def _fake_docker_checked(args: list[str], *, label: str) -> str:
-        del label
-        docker_calls.append(args)
+    def _fake_docker_checked_streaming(
+        args: list[str],
+        *,
+        label: str,
+        log_paths: tuple[Path, ...],
+    ) -> str:
+        docker_calls.append(
+            {
+                "args": args,
+                "label": label,
+                "log_paths": log_paths,
+            }
+        )
+        for log_path in log_paths:
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            with log_path.open("a", encoding="utf-8") as handle:
+                handle.write("streamed line\n")
         return ""
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.bundle_runtime.docker_checked",
-        _fake_docker_checked,
+        "scripts.sir_convert_a_lot.ml.qwen.training.bundle_runtime._docker_checked_streaming",
+        _fake_docker_checked_streaming,
     )
 
     returned_fingerprint = run_containerized_training_bundle_batch(
@@ -146,7 +160,17 @@ def test_run_containerized_training_bundle_batch_writes_fingerprint_and_launches
 
     assert returned_fingerprint == fingerprint
     assert docker_calls
+    first_call = docker_calls[0]
+    assert first_call["label"] == "docker run qwen training-bundle batch"
+    log_paths = first_call["log_paths"]
+    assert isinstance(log_paths, tuple)
+    assert len(log_paths) == 2
     persisted_fingerprint = (output_root / "reports" / "training_bundle_runtime.json").read_text(
         encoding="utf-8"
     )
     assert '"image_id": "image-id"' in persisted_fingerprint
+    batch_log = output_root / "reports" / "batches" / "swedish_pilot_train" / "batch-00000.log"
+    build_log = output_root / "reports" / "build.log"
+    assert batch_log.read_text(encoding="utf-8").startswith("[training-bundle]")
+    assert "streamed line" in batch_log.read_text(encoding="utf-8")
+    assert "streamed line" in build_log.read_text(encoding="utf-8")

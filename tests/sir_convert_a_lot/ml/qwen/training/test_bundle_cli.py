@@ -101,6 +101,16 @@ def test_main_build_dispatches_to_containerized_bundle_runtime(
             )
         ],
     )
+    progress_states: list[dict[str, object]] = []
+    completed = False
+
+    def _mark_complete() -> None:
+        nonlocal completed
+        completed = True
+
+    def _fake_run_containerized_training_bundle_batch(**kwargs: object) -> None:
+        captured["container_batch"] = kwargs
+        _mark_complete()
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.cli.ml.qwen_bundle.prepare_training_bundle_inputs",
@@ -121,15 +131,15 @@ def test_main_build_dispatches_to_containerized_bundle_runtime(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.cli.ml.qwen_bundle.bundle_batch_is_complete",
-        lambda *args, **kwargs: False,
+        lambda *args, **kwargs: completed,
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.cli.ml.qwen_bundle.write_progress_state",
-        lambda *args, **kwargs: captured.update({"progress_state": kwargs}),
+        lambda *args, **kwargs: progress_states.append(kwargs),
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.cli.ml.qwen_bundle.run_containerized_training_bundle_batch",
-        lambda **kwargs: captured.update({"container_batch": kwargs}),
+        _fake_run_containerized_training_bundle_batch,
     )
 
     monkeypatch.setattr(
@@ -153,13 +163,21 @@ def test_main_build_dispatches_to_containerized_bundle_runtime(
     assert exit_code == 0
     assert captured["runtime_output_root"] == output_root
     assert captured["runtime_fingerprint"] == fingerprint
-    progress_state = _required_object(captured["progress_state"])
     container_batch = _required_object(captured["container_batch"])
-    assert progress_state["completed_batch_count"] == 0
     assert container_batch["output_root"] == output_root
     assert container_batch["repo_root"] == Path.cwd()
     assert container_batch["hf_mount"] == "hf-mount"
     assert container_batch["fingerprint"] == fingerprint
+    assert len(progress_states) == 3
+    assert progress_states[0]["current_phase"] is None
+    assert progress_states[1]["current_phase"] == "batch-finalization"
+    assert progress_states[1]["current_manifest_family"] == "swedish_pilot_train"
+    assert progress_states[1]["current_batch_index"] == 0
+    final_state = progress_states[-1]
+    assert final_state["completed_batch_count"] == 1
+    assert final_state["current_phase"] is None
+    assert final_state["last_completed_manifest_family"] == "swedish_pilot_train"
+    assert final_state["last_completed_batch_index"] == 0
     rendered = json.loads(capsys.readouterr().out)
     assert rendered["source_root"] == source_root.as_posix()
     assert rendered["output_root"] == output_root.as_posix()

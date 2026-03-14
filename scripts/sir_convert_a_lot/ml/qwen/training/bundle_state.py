@@ -41,6 +41,32 @@ def utc_now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def bundle_build_log_path(output_root: Path) -> Path:
+    """Return the canonical host-side build log path for one bundle root."""
+    return output_root / "reports" / "build.log"
+
+
+def bundle_build_exit_path(output_root: Path) -> Path:
+    """Return the canonical host-side build exit marker path for one bundle root."""
+    return output_root / "reports" / "build.exit"
+
+
+def bundle_batch_log_path(
+    output_root: Path,
+    manifest_family: ManifestFamily,
+    batch_index: int,
+) -> Path:
+    """Return the canonical streaming log path for one governed batch."""
+    return output_root / "reports" / "batches" / manifest_family / f"batch-{batch_index:05d}.log"
+
+
+def append_log_line(path: Path, line: str) -> None:
+    """Append one operator-facing log line and flush it immediately."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(line.rstrip("\n") + "\n")
+
+
 def append_progress_event(
     output_root: Path,
     *,
@@ -61,6 +87,14 @@ def write_progress_state(
     status: str,
     completed_batch_count: int,
     total_batch_count: int,
+    current_phase: str | None = None,
+    current_manifest_family: ManifestFamily | None = None,
+    current_batch_index: int | None = None,
+    current_batch_log_path: str | None = None,
+    current_batch_started_at: str | None = None,
+    last_completed_manifest_family: ManifestFamily | None = None,
+    last_completed_batch_index: int | None = None,
+    last_completed_at: str | None = None,
 ) -> None:
     """Persist the latest summary state for one bundle build."""
     del output_root
@@ -70,6 +104,14 @@ def write_progress_state(
             "status": status,
             "completed_batch_count": completed_batch_count,
             "total_batch_count": total_batch_count,
+            "current_phase": current_phase,
+            "current_manifest_family": current_manifest_family,
+            "current_batch_index": current_batch_index,
+            "current_batch_log_path": current_batch_log_path,
+            "current_batch_started_at": current_batch_started_at,
+            "last_completed_manifest_family": last_completed_manifest_family,
+            "last_completed_batch_index": last_completed_batch_index,
+            "last_completed_at": last_completed_at,
             "updated_at": utc_now_iso(),
         },
     )

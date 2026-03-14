@@ -17,6 +17,8 @@ Relationships:
 from __future__ import annotations
 
 import json
+import subprocess
+from collections import deque
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable
@@ -29,7 +31,6 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     CONTAINER_HF_HOME,
     CONTAINER_HF_HUB_CACHE,
     CONTAINER_TORCH_HOME,
-    docker_checked,
     prepare_qwen_image,
     resolve_effective_bind_root,
     resolve_effective_hf_cache_dir,
@@ -41,6 +42,11 @@ from scripts.sir_convert_a_lot.ml.qwen.preprocessing.audio_codes_runtime import 
 )
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import (
     AudioCodesRuntimeReport,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.bundle_state import (
+    append_log_line,
+    bundle_batch_log_path,
+    bundle_build_log_path,
 )
 
 DEFAULT_DOCKERFILE_PATH = Path("containers/qwen-finetune-hemma/Dockerfile")
@@ -378,29 +384,69 @@ def run_containerized_training_bundle_batch(
         triton_mount=effective_triton_mount,
         output_root_mount=output_root_mount,
     )
-    emit(
-        "[training-bundle] "
-        + json.dumps(
-            {
-                "event": "batch_container_launch",
-                "manifest_family": manifest_family,
-                "batch_index": batch_index,
-                "batch_count": batch_count,
-                "audio_codes_chunk_size": audio_codes_chunk_size,
-                "image": effective_fingerprint.image,
-                "image_id": effective_fingerprint.image_id,
-                "effective_output_root": output_root_mount.effective_root.as_posix(),
-                "used_output_root_home_mount": output_root_mount.used_home_mount,
-                "effective_triton_cache_dir": effective_triton_mount.effective_root.as_posix(),
-                "used_triton_cache_home_mount": effective_triton_mount.used_home_mount,
-                "command": ["sudo", "-n", "docker", *command],
-            },
-            ensure_ascii=False,
-            sort_keys=True,
-        )
+    launch_payload = json.dumps(
+        {
+            "event": "batch_container_launch",
+            "manifest_family": manifest_family,
+            "batch_index": batch_index,
+            "batch_count": batch_count,
+            "audio_codes_chunk_size": audio_codes_chunk_size,
+            "image": effective_fingerprint.image,
+            "image_id": effective_fingerprint.image_id,
+            "effective_output_root": output_root_mount.effective_root.as_posix(),
+            "used_output_root_home_mount": output_root_mount.used_home_mount,
+            "effective_triton_cache_dir": effective_triton_mount.effective_root.as_posix(),
+            "used_triton_cache_home_mount": effective_triton_mount.used_home_mount,
+            "command": ["sudo", "-n", "docker", *command],
+        },
+        ensure_ascii=False,
+        sort_keys=True,
     )
-    docker_checked(command, label="docker run qwen training-bundle batch")
+    emit("[training-bundle] " + launch_payload)
+    build_log_path = bundle_build_log_path(output_root)
+    batch_log_path = bundle_batch_log_path(output_root, manifest_family, batch_index)
+    append_log_line(build_log_path, "[training-bundle] " + launch_payload)
+    append_log_line(batch_log_path, "[training-bundle] " + launch_payload)
+    _docker_checked_streaming(
+        command,
+        label="docker run qwen training-bundle batch",
+        log_paths=(build_log_path, batch_log_path),
+    )
     return effective_fingerprint
+
+
+def _docker_checked_streaming(
+    args: list[str],
+    *,
+    label: str,
+    log_paths: tuple[Path, ...],
+) -> str:
+    """Run one Docker command while streaming combined output to bundle logs."""
+    process = subprocess.Popen(
+        ["sudo", "-n", "docker", *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    if process.stdout is None:
+        raise SystemExit(f"{label} did not expose a readable stdout pipe.")
+    recent_lines: deque[str] = deque(maxlen=40)
+    output_chunks: list[str] = []
+    for chunk in process.stdout:
+        output_chunks.append(chunk)
+        recent_lines.append(chunk)
+        for log_path in log_paths:
+            append_log_line(log_path, chunk.rstrip("\n"))
+    process.stdout.close()
+    return_code = process.wait()
+    output = "".join(output_chunks).strip()
+    if return_code != 0:
+        raise SystemExit(
+            f"{label} failed (exit={return_code}).\n"
+            f"streamed_output_tail:\n{''.join(recent_lines).strip()}"
+        )
+    return output
 
 
 def _required_string(payload: dict[str, object], key: str) -> str:

@@ -2,7 +2,7 @@
 id: task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment
 title: Close the remaining Task 101 throughput truth gaps from the review alignment
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-14'
 last_updated: '2026-03-14'
@@ -48,6 +48,13 @@ several remaining review findings:
 - short bounded train medians can still be distorted by missing export/checkpoint
   phase labeling
 
+The current bundle rebuild lane also exposed a separate operator-truth gap:
+
+- governed bundle batches do not stream live logs
+- the bundle status artifact does not expose the current batch identity
+- stale `build.exit` markers can be misread during retries if the build is
+  relaunched on the same output root
+
 ## PR Scope
 
 - Make the aggressive throughput profile contract enforce an actually aggressive
@@ -66,6 +73,9 @@ several remaining review findings:
   train-phase utilization in short bounded monitor summaries.
 - Replace or further reduce the remaining Python-side auxiliary codebook
   fragmentation so the T172 lane moves closer to one truly vectorized path.
+- Restore operator-grade bundle observability by streaming governed batch output
+  into canonical log files, surfacing current-batch status fields, and clearing
+  stale exit markers on bundle-build relaunch.
 
 ## Non-Goals
 
@@ -89,6 +99,8 @@ several remaining review findings:
   exclude those windows.
 - [ ] The auxiliary codebook path is further collapsed beyond the current
   Python-comprehension stack-and-sum posture.
+- [ ] Bundle builds stream governed batch output into canonical operator log
+  files and expose current-batch identity in the status artifact.
 
 ## Acceptance Criteria
 
