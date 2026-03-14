@@ -25,6 +25,7 @@ related:
   - docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md
   - docs/backlog/tasks/task-129-prepare-large-portable-colab-slice-for-multi-session-qwen-row-processing.md
   - docs/backlog/tasks/task-131-add-backward-compatible-resume-index-for-drive-backed-qwen-row-processing.md
+  - docs/backlog/tasks/task-176-add-a-hemma-drive-ingestion-lane-for-colab-qwen-preprocessing-run-roots.md
   - docs/backlog/tasks/task-134-deduplicate-live-colab-remainder-and-enforce-unique-slice-allocation-for-qwen-preprocessing.md
   - docs/backlog/tasks/task-135-plan-canonical-dedupe-of-qwen-preprocessing-storage-backups.md
   - docs/backlog/tasks/task-136-define-immutable-qwen-shard-registry-and-enforced-unique-work-allocation.md
@@ -90,6 +91,7 @@ general-language-support result.
 1. `docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md`
 1. `docs/backlog/tasks/task-129-prepare-large-portable-colab-slice-for-multi-session-qwen-row-processing.md`
 1. `docs/backlog/tasks/task-131-add-backward-compatible-resume-index-for-drive-backed-qwen-row-processing.md`
+1. `docs/backlog/tasks/task-176-add-a-hemma-drive-ingestion-lane-for-colab-qwen-preprocessing-run-roots.md`
 1. `docs/backlog/tasks/task-134-deduplicate-live-colab-remainder-and-enforce-unique-slice-allocation-for-qwen-preprocessing.md`
 1. `docs/backlog/tasks/task-135-plan-canonical-dedupe-of-qwen-preprocessing-storage-backups.md`
 1. `docs/backlog/tasks/task-136-define-immutable-qwen-shard-registry-and-enforced-unique-work-allocation.md`

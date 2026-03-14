@@ -10,6 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md
   - docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md
+  - docs/backlog/tasks/task-177-repair-the-hemma-hwe-6-17-package-state-in-an-idle-window-with-dkms-evidence-and-stop-rules.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
