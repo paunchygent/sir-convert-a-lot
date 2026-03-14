@@ -105,7 +105,7 @@ def default_container_settings() -> TrainingBundleContainerSettings:
         triton_cache_dir=DEFAULT_TRITON_CACHE_DIR,
         triton_cache_home_mount=DEFAULT_TRITON_CACHE_HOME_MOUNT,
         output_root_home_mount_base=DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE,
-        build_image=True,
+        build_image=False,
     )
 
 
