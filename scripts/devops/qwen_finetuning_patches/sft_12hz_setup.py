@@ -43,6 +43,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import (
     DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
     DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
+    AsyncLossObserver,
     FiniteLossGuardConfig,
     FiniteLossGuardState,
     TrainingHeartbeatPolicy,
@@ -107,6 +108,7 @@ class PreparedTrainingRun:
     torch_profiler_session: TorchProfilerSession
     tracker_config: TrainingTrackerConfig
     heartbeat_policy: TrainingHeartbeatPolicy
+    loss_observer: AsyncLossObserver
     finite_loss_guard: FiniteLossGuardState
 
 
@@ -141,6 +143,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
             )
         )
     )
+    loss_observer = AsyncLossObserver()
     dataloader_num_workers = int(
         getattr(args, "dataloader_num_workers", DEFAULT_DATALOADER_NUM_WORKERS)
     )
@@ -314,5 +317,6 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         torch_profiler_session=torch_profiler_session,
         tracker_config=tracker_config,
         heartbeat_policy=heartbeat_policy,
+        loss_observer=loss_observer,
         finite_loss_guard=finite_loss_guard,
     )

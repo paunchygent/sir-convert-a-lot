@@ -16,7 +16,9 @@ Relationships:
 from __future__ import annotations
 
 import math
+from collections import deque
 from dataclasses import dataclass
+from typing import Deque
 
 import torch
 
@@ -47,16 +49,94 @@ class TrainingHeartbeatPolicy:
 
 @dataclass(frozen=True)
 class LossObservation:
-    """One synchronized scalar loss observation for guard/logging decisions."""
+    """One host-visible loss observation for guard/logging decisions."""
 
+    optimizer_step: int
+    current_epoch: int
+    current_train_iteration: int
     loss_value: float
     is_finite: bool
 
 
-def observe_loss(loss: torch.Tensor) -> LossObservation:
-    """Synchronize one scalar loss value and classify its finiteness."""
-    loss_value = float(loss.detach())
-    return LossObservation(loss_value=loss_value, is_finite=math.isfinite(loss_value))
+@dataclass(frozen=True)
+class _PendingLossObservation:
+    """One asynchronously staged loss scalar waiting for host consumption."""
+
+    optimizer_step: int
+    current_epoch: int
+    current_train_iteration: int
+    staged_loss_cpu: torch.Tensor
+    ready_event: torch.cuda.Event | None
+
+
+@dataclass
+class AsyncLossObserver:
+    """Stage optimizer-step losses for later host inspection without blocking each step."""
+
+    _pending: Deque[_PendingLossObservation]
+
+    def __init__(self) -> None:
+        self._pending = deque()
+
+    def submit(
+        self,
+        *,
+        loss: torch.Tensor,
+        optimizer_step: int,
+        current_epoch: int,
+        current_train_iteration: int,
+    ) -> None:
+        """Stage one optimizer-step loss for later host-side inspection."""
+        detached_loss = loss.detach().to(dtype=torch.float32).view(())
+        if detached_loss.device.type != "cuda":
+            self._pending.append(
+                _PendingLossObservation(
+                    optimizer_step=optimizer_step,
+                    current_epoch=current_epoch,
+                    current_train_iteration=current_train_iteration,
+                    staged_loss_cpu=detached_loss.to(device="cpu"),
+                    ready_event=None,
+                )
+            )
+            return
+
+        staged_loss_cpu = torch.empty((), dtype=torch.float32, device="cpu", pin_memory=True)
+        staged_loss_cpu.copy_(detached_loss, non_blocking=True)
+        with torch.cuda.device(detached_loss.device):
+            ready_event = torch.cuda.Event()
+            torch.cuda.current_stream().record_event(ready_event)
+        self._pending.append(
+            _PendingLossObservation(
+                optimizer_step=optimizer_step,
+                current_epoch=current_epoch,
+                current_train_iteration=current_train_iteration,
+                staged_loss_cpu=staged_loss_cpu,
+                ready_event=ready_event,
+            )
+        )
+
+    def drain_ready(self, *, force: bool) -> list[LossObservation]:
+        """Return all ready staged losses, synchronizing only when explicitly requested."""
+        observations: list[LossObservation] = []
+        while self._pending:
+            pending = self._pending[0]
+            if pending.ready_event is not None:
+                if force:
+                    pending.ready_event.synchronize()
+                elif not pending.ready_event.query():
+                    break
+            self._pending.popleft()
+            loss_value = float(pending.staged_loss_cpu.item())
+            observations.append(
+                LossObservation(
+                    optimizer_step=pending.optimizer_step,
+                    current_epoch=pending.current_epoch,
+                    current_train_iteration=pending.current_train_iteration,
+                    loss_value=loss_value,
+                    is_finite=math.isfinite(loss_value),
+                )
+            )
+        return observations
 
 
 class NonFiniteLossError(RuntimeError):

@@ -17,6 +17,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import torch
+from accelerate import Accelerator
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
     DurableCheckpointMetadata,
@@ -35,7 +36,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     to_device_with_optional_non_blocking,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_export import save_checkpoint
-from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import observe_loss
+from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import LossObservation
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
@@ -58,6 +59,76 @@ from scripts.devops.qwen_finetuning_patches.training_stop import (
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     throughput_policy_payload,
 )
+
+
+def _consume_loss_observations(
+    *,
+    accelerator: Accelerator,
+    prepared: PreparedTrainingRun,
+    observations: list[LossObservation],
+    checkpoint_interval_steps: int,
+    progress_callback: Callable[[TrainingProgressHeartbeat], None] | None,
+    emitted_train_progress: bool,
+    smoothed_loss: float | None,
+    last_loss: float | None,
+    latest_durable_checkpoint: DurableCheckpointMetadata | None,
+) -> tuple[float | None, float | None, bool]:
+    """Apply ready loss observations to guard, heartbeat, and tracker state."""
+    for observation in observations:
+        train_progress_should_emit = progress_callback is not None and (
+            (not emitted_train_progress)
+            or prepared.heartbeat_policy.should_emit_train_update(observation.optimizer_step)
+        )
+        if train_progress_should_emit:
+            progress_callback(
+                build_training_progress_heartbeat(
+                    phase="train",
+                    current_epoch=observation.current_epoch,
+                    current_optimizer_step=observation.optimizer_step,
+                    current_train_iteration=observation.current_train_iteration,
+                    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                    latest_loss=observation.loss_value,
+                    smoothed_loss=smoothed_loss,
+                    latest_durable_checkpoint=latest_durable_checkpoint,
+                )
+            )
+            emitted_train_progress = True
+        prepared.finite_loss_guard.observe(
+            observation,
+            optimizer_step=observation.optimizer_step,
+        )
+        last_loss = observation.loss_value
+        smoothed_loss = update_smoothed_loss(smoothed_loss, last_loss)
+        if prepared.heartbeat_policy.should_emit_train_update(observation.optimizer_step):
+            log_training_metrics(
+                accelerator,
+                raw_loss=last_loss,
+                smoothed_loss=smoothed_loss,
+                current_epoch=observation.current_epoch,
+                current_optimizer_step=observation.optimizer_step,
+                current_train_iteration=observation.current_train_iteration,
+                checkpoint_interval_steps=checkpoint_interval_steps,
+                ref_mel_cache_metrics=prepared.ref_mel_cache.payload(),
+            )
+            if progress_callback is not None and not train_progress_should_emit:
+                progress_callback(
+                    build_training_progress_heartbeat(
+                        phase="train",
+                        current_epoch=observation.current_epoch,
+                        current_optimizer_step=observation.optimizer_step,
+                        current_train_iteration=observation.current_train_iteration,
+                        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                        latest_loss=last_loss,
+                        smoothed_loss=smoothed_loss,
+                        latest_durable_checkpoint=latest_durable_checkpoint,
+                    )
+                )
+            accelerator.print(
+                "Epoch "
+                f"{observation.current_epoch} | Optimizer Step {observation.optimizer_step} | "
+                f"Loss: {last_loss:.4f}"
+            )
+    return last_loss, smoothed_loss, emitted_train_progress
 
 
 def execute_training_loop(
@@ -210,64 +281,32 @@ def execute_training_loop(
                         optimizer.zero_grad()
                     if completed_optimizer_step:
                         optimizer_steps_completed += 1
-                        loss_observation = observe_loss(loss)
-                        train_progress_should_emit = progress_callback is not None and (
-                            (not emitted_train_progress)
-                            or prepared.heartbeat_policy.should_emit_train_update(
-                                optimizer_steps_completed
-                            )
-                        )
-                        if train_progress_should_emit:
-                            progress_callback(
-                                build_training_progress_heartbeat(
-                                    phase="train",
-                                    current_epoch=epoch,
-                                    current_optimizer_step=optimizer_steps_completed,
-                                    current_train_iteration=train_iterations_completed,
-                                    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-                                    latest_loss=loss_observation.loss_value,
-                                    smoothed_loss=smoothed_loss,
-                                    latest_durable_checkpoint=latest_durable_checkpoint,
-                                )
-                            )
-                            emitted_train_progress = True
-                        prepared.finite_loss_guard.observe(
-                            loss_observation,
+                        prepared.loss_observer.submit(
+                            loss=loss,
                             optimizer_step=optimizer_steps_completed,
+                            current_epoch=epoch,
+                            current_train_iteration=train_iterations_completed,
                         )
-                        last_loss = loss_observation.loss_value
-                        smoothed_loss = update_smoothed_loss(smoothed_loss, last_loss)
-                        if prepared.heartbeat_policy.should_emit_train_update(
-                            optimizer_steps_completed
-                        ):
-                            log_training_metrics(
-                                accelerator,
-                                raw_loss=last_loss,
-                                smoothed_loss=smoothed_loss,
-                                current_epoch=epoch,
-                                current_optimizer_step=optimizer_steps_completed,
-                                current_train_iteration=train_iterations_completed,
-                                checkpoint_interval_steps=int(args.checkpoint_interval_steps),
-                                ref_mel_cache_metrics=prepared.ref_mel_cache.payload(),
-                            )
-                            if progress_callback is not None and not train_progress_should_emit:
-                                progress_callback(
-                                    build_training_progress_heartbeat(
-                                        phase="train",
-                                        current_epoch=epoch,
-                                        current_optimizer_step=optimizer_steps_completed,
-                                        current_train_iteration=train_iterations_completed,
-                                        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-                                        latest_loss=last_loss,
-                                        smoothed_loss=smoothed_loss,
-                                        latest_durable_checkpoint=latest_durable_checkpoint,
+                        last_loss, smoothed_loss, emitted_train_progress = (
+                            _consume_loss_observations(
+                                accelerator=accelerator,
+                                prepared=prepared,
+                                observations=prepared.loss_observer.drain_ready(
+                                    force=(
+                                        (not emitted_train_progress)
+                                        or prepared.heartbeat_policy.should_emit_train_update(
+                                            optimizer_steps_completed
+                                        )
                                     )
-                                )
-                            accelerator.print(
-                                "Epoch "
-                                f"{epoch} | Optimizer Step {optimizer_steps_completed} | "
-                                f"Loss: {last_loss:.4f}"
+                                ),
+                                checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+                                progress_callback=progress_callback,
+                                emitted_train_progress=emitted_train_progress,
+                                smoothed_loss=smoothed_loss,
+                                last_loss=last_loss,
+                                latest_durable_checkpoint=latest_durable_checkpoint,
                             )
+                        )
                 if (
                     completed_optimizer_step
                     and optimizer_steps_completed > 0
@@ -340,6 +379,17 @@ def execute_training_loop(
                 )
             if reached_max_steps or stop_requested_during_training:
                 break
+        last_loss, smoothed_loss, emitted_train_progress = _consume_loss_observations(
+            accelerator=accelerator,
+            prepared=prepared,
+            observations=prepared.loss_observer.drain_ready(force=True),
+            checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+            progress_callback=progress_callback,
+            emitted_train_progress=emitted_train_progress,
+            smoothed_loss=smoothed_loss,
+            last_loss=last_loss,
+            latest_durable_checkpoint=latest_durable_checkpoint,
+        )
         if _checkpoint_advanced_since_latest_save(
             latest_durable_checkpoint,
             optimizer_steps_completed=optimizer_steps_completed,
