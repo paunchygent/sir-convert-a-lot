@@ -61,6 +61,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
                 "profile_label": "hemma-throughput-aggressive-v1",
                 "policy_kind": "bucketed-frame-token-budget-v1",
                 "max_batch_size": 8,
+                "minimum_required_max_batch_size": 8,
             },
         )
     )
@@ -128,6 +129,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
         "profile_label": "hemma-throughput-aggressive-v1",
         "policy_kind": "bucketed-frame-token-budget-v1",
         "max_batch_size": 8,
+        "minimum_required_max_batch_size": 8,
     }
     assert payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
     assert [event["phase"] for event in payload["phase_history"]] == [
@@ -172,6 +174,18 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
                     "profile_label": "hemma-throughput-aggressive-v1",
                     "policy_kind": "bucketed-frame-token-budget-v1",
                     "max_batch_size": 8,
+                    "minimum_required_max_batch_size": 8,
+                    "batch_occupancy": {
+                        "total_batches": 1,
+                        "realized_max_batch_size": 1,
+                        "batch_size_histogram": {"1": 1},
+                    },
+                },
+                "data_path_attribution": {
+                    "proof_mode_enabled": True,
+                    "authoritative": True,
+                    "runtime_ref_mel_extraction_count": 0,
+                    "persisted_ref_mel_load_count": 3,
                 },
             },
             pilot_report_found=False,
@@ -192,6 +206,13 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
     assert "- pilot_throughput_profile_label: `hemma-throughput-aggressive-v1`" in markdown
     assert "- pilot_throughput_policy_kind: `bucketed-frame-token-budget-v1`" in markdown
     assert "- pilot_throughput_max_batch_size: `8`" in markdown
+    assert "- pilot_throughput_minimum_required_max_batch_size: `8`" in markdown
+    assert "- pilot_throughput_total_batches: `1`" in markdown
+    assert "- pilot_throughput_realized_max_batch_size: `1`" in markdown
+    assert "- pilot_data_path_proof_mode_enabled: `True`" in markdown
+    assert "- pilot_data_path_authoritative: `True`" in markdown
+    assert "- pilot_runtime_ref_mel_extraction_count: `0`" in markdown
+    assert "- pilot_persisted_ref_mel_load_count: `3`" in markdown
 
 
 def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(

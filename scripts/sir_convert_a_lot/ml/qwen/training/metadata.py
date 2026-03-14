@@ -91,6 +91,7 @@ def render_status_markdown(status: DetachedStatus) -> str:
     ref_mel_cache_payload = pilot_status.get("ref_mel_cache")
     bundle_precomputed_reference_input = pilot_status.get("bundle_precomputed_reference_input")
     throughput_profile = pilot_status.get("throughput_profile")
+    data_path_attribution = pilot_status.get("data_path_attribution")
     ref_mel_cache_hit_rate = (
         None
         if not isinstance(ref_mel_cache_payload, dict)
@@ -144,6 +145,51 @@ def render_status_markdown(status: DetachedStatus) -> str:
         if not isinstance(throughput_profile, dict)
         else throughput_profile.get("max_batch_size")
     )
+    throughput_minimum_required_max_batch_size = (
+        None
+        if not isinstance(throughput_profile, dict)
+        else throughput_profile.get("minimum_required_max_batch_size")
+    )
+    throughput_batch_occupancy = (
+        None
+        if not isinstance(throughput_profile, dict)
+        else throughput_profile.get("batch_occupancy")
+    )
+    throughput_total_batches = (
+        None
+        if not isinstance(throughput_batch_occupancy, dict)
+        else throughput_batch_occupancy.get("total_batches")
+    )
+    throughput_realized_max_batch_size = (
+        None
+        if not isinstance(throughput_batch_occupancy, dict)
+        else throughput_batch_occupancy.get("realized_max_batch_size")
+    )
+    throughput_batch_size_histogram = (
+        None
+        if not isinstance(throughput_batch_occupancy, dict)
+        else throughput_batch_occupancy.get("batch_size_histogram")
+    )
+    data_path_proof_mode_enabled = (
+        None
+        if not isinstance(data_path_attribution, dict)
+        else data_path_attribution.get("proof_mode_enabled")
+    )
+    data_path_authoritative = (
+        None
+        if not isinstance(data_path_attribution, dict)
+        else data_path_attribution.get("authoritative")
+    )
+    runtime_ref_mel_extraction_count = (
+        None
+        if not isinstance(data_path_attribution, dict)
+        else data_path_attribution.get("runtime_ref_mel_extraction_count")
+    )
+    persisted_ref_mel_load_count = (
+        None
+        if not isinstance(data_path_attribution, dict)
+        else data_path_attribution.get("persisted_ref_mel_load_count")
+    )
     lines = [
         "# Qwen Training Detached Status",
         "",
@@ -184,6 +230,17 @@ def render_status_markdown(status: DetachedStatus) -> str:
         f"- pilot_throughput_profile_label: `{throughput_profile_label}`",
         f"- pilot_throughput_policy_kind: `{throughput_policy_kind}`",
         f"- pilot_throughput_max_batch_size: `{throughput_max_batch_size}`",
+        (
+            "- pilot_throughput_minimum_required_max_batch_size: "
+            f"`{throughput_minimum_required_max_batch_size}`"
+        ),
+        f"- pilot_throughput_total_batches: `{throughput_total_batches}`",
+        (f"- pilot_throughput_realized_max_batch_size: `{throughput_realized_max_batch_size}`"),
+        f"- pilot_throughput_batch_size_histogram: `{throughput_batch_size_histogram}`",
+        f"- pilot_data_path_proof_mode_enabled: `{data_path_proof_mode_enabled}`",
+        f"- pilot_data_path_authoritative: `{data_path_authoritative}`",
+        f"- pilot_runtime_ref_mel_extraction_count: `{runtime_ref_mel_extraction_count}`",
+        f"- pilot_persisted_ref_mel_load_count: `{persisted_ref_mel_load_count}`",
         f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
         f"- resource_monitor_available: `{monitor_available}`",
         f"- resource_monitor_launch_root: `{monitor_launch_root}`",
@@ -264,6 +321,7 @@ def load_launch(
     default_dataloader_persistent_workers: bool,
     default_dataloader_prefetch_factor: int,
     default_non_blocking_transfer: bool,
+    default_data_path_proof_mode: bool,
     default_heartbeat_interval_optimizer_steps: int,
     default_finite_loss_max_consecutive_steps: int,
     default_ref_mel_cache_enabled: bool,
@@ -340,6 +398,11 @@ def load_launch(
             _required_bool(settings_payload, "non_blocking_transfer")
             if "non_blocking_transfer" in settings_payload
             else default_non_blocking_transfer
+        ),
+        data_path_proof_mode=(
+            _required_bool(settings_payload, "data_path_proof_mode")
+            if "data_path_proof_mode" in settings_payload
+            else default_data_path_proof_mode
         ),
         heartbeat_interval_optimizer_steps=_optional_int(
             settings_payload,

@@ -38,6 +38,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_export import save_checkpoint
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import LossObservation
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
+    TrainingPhase,
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
 )
@@ -55,9 +56,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
 from scripts.devops.qwen_finetuning_patches.training_stop import (
     TrainingStopState,
     install_training_stop_handlers,
-)
-from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
-    throughput_policy_payload,
 )
 
 
@@ -129,6 +127,34 @@ def _consume_loss_observations(
                 f"Loss: {last_loss:.4f}"
             )
     return last_loss, smoothed_loss, emitted_train_progress
+
+
+def _emit_progress_phase(
+    *,
+    progress_callback: Callable[[TrainingProgressHeartbeat], None] | None,
+    phase: TrainingPhase,
+    current_epoch: int,
+    current_optimizer_step: int,
+    current_train_iteration: int,
+    latest_loss: float | None,
+    smoothed_loss: float | None,
+    latest_durable_checkpoint: DurableCheckpointMetadata | None,
+) -> None:
+    """Emit one explicit phase-transition heartbeat when reporting is enabled."""
+    if progress_callback is None:
+        return
+    progress_callback(
+        build_training_progress_heartbeat(
+            phase=phase,
+            current_epoch=current_epoch,
+            current_optimizer_step=current_optimizer_step,
+            current_train_iteration=current_train_iteration,
+            gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+            latest_loss=latest_loss,
+            smoothed_loss=smoothed_loss,
+            latest_durable_checkpoint=latest_durable_checkpoint,
+        )
+    )
 
 
 def execute_training_loop(
@@ -312,6 +338,16 @@ def execute_training_loop(
                     and optimizer_steps_completed > 0
                     and optimizer_steps_completed % int(args.checkpoint_interval_steps) == 0
                 ):
+                    _emit_progress_phase(
+                        progress_callback=progress_callback,
+                        phase="checkpoint-save",
+                        current_epoch=epoch,
+                        current_optimizer_step=optimizer_steps_completed,
+                        current_train_iteration=train_iterations_completed,
+                        latest_loss=last_loss,
+                        smoothed_loss=smoothed_loss,
+                        latest_durable_checkpoint=latest_durable_checkpoint,
+                    )
                     with torch_profiler_session.phase("task101.checkpoint-save"):
                         latest_durable_checkpoint = _save_durable_checkpoint(
                             accelerator=accelerator,
@@ -327,18 +363,18 @@ def execute_training_loop(
                             ),
                         )
                     durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
-                    if progress_callback is not None:
-                        progress_callback(
-                            build_training_progress_heartbeat(
-                                phase="checkpoint-save",
-                                current_epoch=epoch,
-                                current_optimizer_step=optimizer_steps_completed,
-                                current_train_iteration=train_iterations_completed,
-                                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-                                latest_loss=last_loss,
-                                smoothed_loss=smoothed_loss,
-                                latest_durable_checkpoint=latest_durable_checkpoint,
-                            )
+                    if not stop_state.stop_requested and not (
+                        args.max_steps is not None and optimizer_steps_completed >= args.max_steps
+                    ):
+                        _emit_progress_phase(
+                            progress_callback=progress_callback,
+                            phase="train",
+                            current_epoch=epoch,
+                            current_optimizer_step=optimizer_steps_completed,
+                            current_train_iteration=train_iterations_completed,
+                            latest_loss=last_loss,
+                            smoothed_loss=smoothed_loss,
+                            latest_durable_checkpoint=latest_durable_checkpoint,
                         )
                 if stop_state.stop_requested:
                     stop_requested_during_training = True
@@ -369,14 +405,36 @@ def execute_training_loop(
                 torch_profiler_session.step()
             if accelerator.is_main_process:
                 output_dir = output_model_path / f"checkpoint-epoch-{epoch}"
-                checkpoint_paths.append(
-                    save_checkpoint(
-                        accelerator=accelerator,
-                        model=model,
-                        model_path=prepared.model_path,
-                        output_dir=output_dir,
-                    )
+                _emit_progress_phase(
+                    progress_callback=progress_callback,
+                    phase="checkpoint-save",
+                    current_epoch=epoch,
+                    current_optimizer_step=optimizer_steps_completed,
+                    current_train_iteration=train_iterations_completed,
+                    latest_loss=last_loss,
+                    smoothed_loss=smoothed_loss,
+                    latest_durable_checkpoint=latest_durable_checkpoint,
                 )
+                with torch_profiler_session.phase("task101.checkpoint-save"):
+                    checkpoint_paths.append(
+                        save_checkpoint(
+                            accelerator=accelerator,
+                            model=model,
+                            model_path=prepared.model_path,
+                            output_dir=output_dir,
+                        )
+                    )
+                if not reached_max_steps and not stop_requested_during_training:
+                    _emit_progress_phase(
+                        progress_callback=progress_callback,
+                        phase="train",
+                        current_epoch=epoch,
+                        current_optimizer_step=optimizer_steps_completed,
+                        current_train_iteration=train_iterations_completed,
+                        latest_loss=last_loss,
+                        smoothed_loss=smoothed_loss,
+                        latest_durable_checkpoint=latest_durable_checkpoint,
+                    )
             if reached_max_steps or stop_requested_during_training:
                 break
         last_loss, smoothed_loss, emitted_train_progress = _consume_loss_observations(
@@ -394,6 +452,16 @@ def execute_training_loop(
             latest_durable_checkpoint,
             optimizer_steps_completed=optimizer_steps_completed,
         ):
+            _emit_progress_phase(
+                progress_callback=progress_callback,
+                phase="checkpoint-save",
+                current_epoch=epoch,
+                current_optimizer_step=optimizer_steps_completed,
+                current_train_iteration=train_iterations_completed,
+                latest_loss=last_loss,
+                smoothed_loss=smoothed_loss,
+                latest_durable_checkpoint=latest_durable_checkpoint,
+            )
             with torch_profiler_session.phase("task101.checkpoint-save"):
                 latest_durable_checkpoint = _save_durable_checkpoint(
                     accelerator=accelerator,
@@ -407,29 +475,27 @@ def execute_training_loop(
                     durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
                 )
             durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
-            if progress_callback is not None:
-                progress_callback(
-                    build_training_progress_heartbeat(
-                        phase="checkpoint-save",
-                        current_epoch=epoch,
-                        current_optimizer_step=optimizer_steps_completed,
-                        current_train_iteration=train_iterations_completed,
-                        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-                        latest_loss=last_loss,
-                        smoothed_loss=smoothed_loss,
-                        latest_durable_checkpoint=latest_durable_checkpoint,
-                    )
-                )
         if accelerator.is_main_process:
             final_output_dir = output_model_path / "checkpoint-final"
-            checkpoint_paths.append(
-                save_checkpoint(
-                    accelerator=accelerator,
-                    model=model,
-                    model_path=prepared.model_path,
-                    output_dir=final_output_dir,
-                )
+            _emit_progress_phase(
+                progress_callback=progress_callback,
+                phase="checkpoint-save",
+                current_epoch=epoch,
+                current_optimizer_step=optimizer_steps_completed,
+                current_train_iteration=train_iterations_completed,
+                latest_loss=last_loss,
+                smoothed_loss=smoothed_loss,
+                latest_durable_checkpoint=latest_durable_checkpoint,
             )
+            with torch_profiler_session.phase("task101.checkpoint-save"):
+                checkpoint_paths.append(
+                    save_checkpoint(
+                        accelerator=accelerator,
+                        model=model,
+                        model_path=prepared.model_path,
+                        output_dir=final_output_dir,
+                    )
+                )
         peak_memory_allocated_bytes = (
             int(torch.cuda.max_memory_allocated()) if torch.cuda.is_available() else None
         )
@@ -520,7 +586,13 @@ def _build_training_summary(
         stop_requested=stop_requested_during_training,
         stop_signal=stop_signal,
         stopped_early=stop_requested_during_training,
-        throughput_profile=throughput_policy_payload(prepared.throughput_batch_policy),
+        throughput_profile=prepared.throughput_profile_payload,
+        batch_occupancy=prepared.batch_occupancy_summary.payload(),
+        data_path_attribution=(
+            None
+            if prepared.data_path_attribution is None
+            else prepared.data_path_attribution.payload()
+        ),
         dataloader_tuning=dataloader_tuning_payload(prepared.effective_dataloader_tuning),
         heartbeat_policy=prepared.heartbeat_policy.payload(),
         finite_loss_guard=prepared.finite_loss_guard.payload(),

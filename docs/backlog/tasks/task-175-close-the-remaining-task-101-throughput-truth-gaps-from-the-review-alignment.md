@@ -55,6 +55,47 @@ The current bundle rebuild lane also exposed a separate operator-truth gap:
 - stale `build.exit` markers can be misread during retries if the build is
   relaunched on the same output root
 
+## Current Progress
+
+- First non-bundle `T175` slice is implemented locally:
+  - the aggressive throughput profile now fails closed when paired with a tiny
+    live `max_batch_size`
+  - the training lane now computes machine-readable batch-occupancy evidence
+    from the resolved sampler plan, including per-batch row/token/frame totals
+    and a realized batch-size histogram
+  - the terminal training summary/report surfaces now carry the occupancy
+    payload alongside the resolved throughput-profile contract
+- Second non-bundle `T175` slice is implemented locally:
+  - detached launch, in-container trainer, and patched trainer CLI surfaces now
+    expose an explicit `data_path_proof_mode` contract
+  - proof mode now fails closed unless `dataloader_num_workers == 0`, so the
+    dataset-path counters stay authoritative instead of being inferred across
+    worker processes
+  - the patched dataset now records persisted `ref_mel` loads, runtime
+    ref-mel extraction, `__getitem__` timings, and `collate_fn` timings into a
+    typed machine-readable payload
+  - terminal training summary/report and detached status markdown now surface
+    the data-path attribution payload for bounded proof runs
+- Third non-bundle `T175` slice is implemented locally:
+  - explicit phase transitions now wrap interval durable checkpoints, epoch-end
+    exports, final durable checkpoint writes, and final model export writes
+  - when training continues after a save/export window, the trainer now emits a
+    matching `train` phase restoration immediately instead of waiting for a
+    later cadence heartbeat
+  - monitor grouping tests now prove that later train windows are counted as
+    train after checkpoint-save restores instead of being smeared into the
+    save/export phase
+- Fourth non-bundle `T175` slice is implemented locally:
+  - the canonical detached launch surface now revalidates rebuilt bundles with
+    fail-closed persisted-ref-input requirements once a bundle report exists
+  - the patched training-row loader now has a second fail-closed path so direct
+    trainer invocation cannot silently fall back to legacy runtime reference
+    preparation when a rebuilt-bundle contract is active
+  - focused host-preflight and row-loader tests now prove rebuilt bundles are
+    rejected when `precomputed_ref_input_*` metadata is missing
+- Bundle-log / bundle-observability follow-up is intentionally deferred to the
+  next session so the current slice stays focused on core throughput-truth work.
+
 ## PR Scope
 
 - Make the aggressive throughput profile contract enforce an actually aggressive
@@ -87,15 +128,15 @@ The current bundle rebuild lane also exposed a separate operator-truth gap:
 
 ## Deliverables
 
-- [ ] Aggressive throughput-profile launches can no longer degrade silently to a
+- [x] Aggressive throughput-profile launches can no longer degrade silently to a
   misleading tiny live `max_batch_size`.
-- [ ] Live Task 101 artifacts expose realized batch occupancy and batch-budget
+- [x] Live Task 101 artifacts expose realized batch occupancy and batch-budget
   truth for each validation run.
-- [ ] One committed proof surface exists for worker-truth dataset/ref-input
+- [x] One committed proof surface exists for worker-truth dataset/ref-input
   attribution.
-- [ ] Throughput/saturation runs fail closed when the rebuilt-bundle contract is
+- [x] Throughput/saturation runs fail closed when the rebuilt-bundle contract is
   missing persisted precomputed reference inputs.
-- [ ] Export/checkpoint phases are labeled so train-only utilization summaries
+- [x] Export/checkpoint phases are labeled so train-only utilization summaries
   exclude those windows.
 - [ ] The auxiliary codebook path is further collapsed beyond the current
   Python-comprehension stack-and-sum posture.
@@ -130,4 +171,4 @@ The current bundle rebuild lane also exposed a separate operator-truth gap:
 
 - [ ] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated

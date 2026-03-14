@@ -45,6 +45,7 @@ class TrainingSettings:
     dataloader_persistent_workers: bool = True
     dataloader_prefetch_factor: int = 4
     non_blocking_transfer: bool = True
+    data_path_proof_mode: bool = False
     heartbeat_interval_optimizer_steps: int = 20
     finite_loss_max_consecutive_steps: int = 3
     ref_mel_cache_enabled: bool = True
@@ -88,6 +89,7 @@ class TrainingSettingsSnapshot:
     dataloader_persistent_workers: bool = True
     dataloader_prefetch_factor: int = 4
     non_blocking_transfer: bool = True
+    data_path_proof_mode: bool = False
     heartbeat_interval_optimizer_steps: int = 20
     finite_loss_max_consecutive_steps: int = 3
     ref_mel_cache_enabled: bool = True
@@ -215,6 +217,7 @@ def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettin
         dataloader_persistent_workers=snapshot.dataloader_persistent_workers,
         dataloader_prefetch_factor=snapshot.dataloader_prefetch_factor,
         non_blocking_transfer=snapshot.non_blocking_transfer,
+        data_path_proof_mode=snapshot.data_path_proof_mode,
         heartbeat_interval_optimizer_steps=snapshot.heartbeat_interval_optimizer_steps,
         finite_loss_max_consecutive_steps=snapshot.finite_loss_max_consecutive_steps,
         ref_mel_cache_enabled=snapshot.ref_mel_cache_enabled,

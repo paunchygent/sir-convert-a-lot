@@ -28,6 +28,7 @@ import contextlib
 import io
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from time import perf_counter
 from typing import NotRequired, Protocol, TypeAlias, TypedDict
 
 import numpy as np
@@ -39,6 +40,9 @@ with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.St
     from qwen_tts.core.models.configuration_qwen3_tts import Qwen3TTSConfig
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import TrainingRowBatchMetrics
+from scripts.devops.qwen_finetuning_patches.sft_12hz_data_path_attribution import (
+    DataPathAttributionCollector,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
     PRECOMPUTED_REF_INPUT_KIND,
     PRECOMPUTED_REF_INPUT_VERSION,
@@ -138,12 +142,14 @@ class TTSDataset(Dataset[DatasetItem]):
         config: Qwen3TTSConfig,
         lag_num: int = -1,
         ref_mel_cache: RefMelCache | None = None,
+        data_path_attribution: DataPathAttributionCollector | None = None,
     ) -> None:
         self.data_list = list(data_list)
         self.processor = processor
         self.lag_num = lag_num
         self.config = config
         self.ref_mel_cache = ref_mel_cache
+        self.data_path_attribution = data_path_attribution
         self._tokenized_text_ids = [
             self._tokenize_texts(self._build_assistant_text(item["text"]))
             for item in self.data_list
@@ -227,12 +233,19 @@ class TTSDataset(Dataset[DatasetItem]):
 
     def _extract_ref_mel(self, ref_audio_value: AudioInputs) -> torch.Tensor:
         """Return one extracted ref-mel tensor from a row ref-audio field."""
+        started_at = perf_counter()
         normalized_audio_inputs = self._normalize_audio_inputs(ref_audio_value)
         waveform, sample_rate = normalized_audio_inputs[0]
-        return self.extract_mels(audio=waveform, sample_rate=sample_rate)
+        ref_mel = self.extract_mels(audio=waveform, sample_rate=sample_rate)
+        if self.data_path_attribution is not None:
+            self.data_path_attribution.record_runtime_ref_mel_extraction(
+                perf_counter() - started_at
+            )
+        return ref_mel
 
     def _load_precomputed_ref_mel(self, item: TrainingRow) -> torch.Tensor:
         """Load one persisted precomputed ref-mel tensor from a manifest row."""
+        started_at = perf_counter()
         precomputed_ref_input_path = item.get("precomputed_ref_input_path")
         if not isinstance(precomputed_ref_input_path, str):
             raise ValueError(
@@ -248,7 +261,10 @@ class TTSDataset(Dataset[DatasetItem]):
                 "Training row referenced unsupported precomputed reference input version "
                 f"`{item['precomputed_ref_input_version']}`."
             )
-        return load_persisted_ref_mel(Path(precomputed_ref_input_path))
+        ref_mel = load_persisted_ref_mel(Path(precomputed_ref_input_path))
+        if self.data_path_attribution is not None:
+            self.data_path_attribution.record_persisted_ref_mel_load(perf_counter() - started_at)
+        return ref_mel
 
     def _load_ref_mel(self, item: TrainingRow) -> torch.Tensor:
         """Load one row ref-mel from the preferred persisted or legacy fallback path."""
@@ -265,6 +281,7 @@ class TTSDataset(Dataset[DatasetItem]):
         return canonical_ref_audio_cache_key(item["ref_audio"])
 
     def __getitem__(self, idx: int) -> DatasetItem:
+        started_at = perf_counter()
         item = self.data_list[idx]
         text_ids = self._tokenized_text_ids[idx]
         audio_codes = torch.tensor(item["audio_codes"], dtype=torch.long)
@@ -283,14 +300,18 @@ class TTSDataset(Dataset[DatasetItem]):
         else:
             ref_mel = self._load_ref_mel(item)
 
-        return {
+        dataset_item: DatasetItem = {
             "text_ids": text_ids[:, :-5],
             "audio_codes": audio_codes,
             "ref_mel": ref_mel,
             "speaker_id": mapped_speaker_id,
         }
+        if self.data_path_attribution is not None:
+            self.data_path_attribution.record_getitem(perf_counter() - started_at)
+        return dataset_item
 
     def collate_fn(self, batch: list[DatasetItem]) -> BatchTensors:
+        started_at = perf_counter()
         if self.lag_num != -1:
             raise ValueError("Only lag_num=-1 is supported by the Qwen patch set.")
 
@@ -390,7 +411,7 @@ class TTSDataset(Dataset[DatasetItem]):
 
         ref_mels = _collate_ref_mels(batch)
 
-        return {
+        collated_batch: BatchTensors = {
             "input_ids": input_ids,
             "ref_mels": ref_mels,
             "attention_mask": attention_mask,
@@ -401,3 +422,6 @@ class TTSDataset(Dataset[DatasetItem]):
             "codec_mask": codec_mask,
             "speaker_ids": speaker_ids,
         }
+        if self.data_path_attribution is not None:
+            self.data_path_attribution.record_collate(perf_counter() - started_at)
+        return collated_batch

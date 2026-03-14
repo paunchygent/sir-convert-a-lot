@@ -23,6 +23,14 @@ from scripts.devops.qwen_finetuning_patches.dataset import (
     TTSDataset,
     _collate_ref_mels,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_data_path_attribution import (
+    build_data_path_attribution_collector,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
+    PRECOMPUTED_REF_INPUT_KIND,
+    PRECOMPUTED_REF_INPUT_VERSION,
+    save_persisted_ref_mel,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
 from tests.sir_convert_a_lot.ml.qwen.preprocessing.test_support import write_test_wav
 
@@ -77,6 +85,34 @@ def test_load_training_rows_accepts_legacy_manifest_without_precomputed_ref_inpu
     assert "precomputed_ref_input_path" not in rows[0]
 
 
+def test_load_training_rows_requires_precomputed_ref_inputs_when_enforced(
+    tmp_path: Path,
+) -> None:
+    """Rebuilt-bundle enforcement should fail closed on legacy rows without persisted refs."""
+    manifest_path = tmp_path / "train.prepared.jsonl"
+    ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
+    ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
+    write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "text": "hej",
+                "audio_codes": [[1, 2]],
+                "ref_audio": ref_audio_path.relative_to(tmp_path).as_posix(),
+                "speaker_id": "speaker-a",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="missing required persisted reference-input metadata"):
+        _load_training_rows(
+            manifest_path,
+            require_precomputed_ref_inputs=True,
+        )
+
+
 def test_dataset_uses_legacy_ref_audio_fallback_without_precomputed_ref_input(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -107,6 +143,96 @@ def test_dataset_uses_legacy_ref_audio_fallback_without_precomputed_ref_input(
     item = dataset[0]
 
     assert torch.equal(item["ref_mel"], expected_ref_mel)
+
+
+def test_build_data_path_attribution_collector_rejects_multiworker_proof_mode() -> None:
+    """Proof mode should fail closed when worker-side counters would be ambiguous."""
+    with pytest.raises(ValueError, match="dataloader_num_workers=0"):
+        build_data_path_attribution_collector(
+            proof_mode_enabled=True,
+            dataloader_num_workers=4,
+        )
+
+
+def test_dataset_records_runtime_ref_mel_extraction_in_proof_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Legacy runtime extraction should be counted during authoritative proof runs."""
+    ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
+    ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
+    write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    collector = build_data_path_attribution_collector(
+        proof_mode_enabled=True,
+        dataloader_num_workers=0,
+    )
+    assert collector is not None
+    dataset = TTSDataset(
+        data_list=[
+            {
+                "text": "hej",
+                "audio_codes": [[1, 2]],
+                "ref_audio": ref_audio_path.as_posix(),
+                "speaker_id": "speaker-a",
+            }
+        ],
+        processor=_FakeProcessor(),
+        config=_FakeConfig(),
+        data_path_attribution=collector,
+    )
+    monkeypatch.setattr(
+        TTSDataset,
+        "extract_mels",
+        lambda self, audio, sample_rate: torch.ones((1, 4, 8), dtype=torch.float32),
+    )
+
+    dataset[0]
+
+    payload = collector.payload()
+    assert payload["proof_mode_enabled"] is True
+    assert payload["authoritative"] is True
+    assert payload["runtime_ref_mel_extraction_count"] == 1
+    assert payload["persisted_ref_mel_load_count"] == 0
+    assert payload["getitem_call_count"] == 1
+
+
+def test_dataset_records_persisted_ref_mel_load_in_proof_mode(tmp_path: Path) -> None:
+    """Persisted ref-mel loads should be counted separately from runtime extraction."""
+    persisted_ref_path = tmp_path / "precomputed" / "speaker-a" / "ref_mel.pt"
+    save_persisted_ref_mel(
+        persisted_ref_path,
+        torch.ones((1, 4, 8), dtype=torch.float32),
+    )
+    collector = build_data_path_attribution_collector(
+        proof_mode_enabled=True,
+        dataloader_num_workers=0,
+    )
+    assert collector is not None
+    dataset = TTSDataset(
+        data_list=[
+            {
+                "text": "hej",
+                "audio_codes": [[1, 2]],
+                "ref_audio": "refs/speaker-a/ref.wav",
+                "precomputed_ref_input_path": persisted_ref_path.as_posix(),
+                "precomputed_ref_input_kind": PRECOMPUTED_REF_INPUT_KIND,
+                "precomputed_ref_input_version": PRECOMPUTED_REF_INPUT_VERSION,
+                "precomputed_ref_input_source_audio": "refs/speaker-a/ref.wav",
+                "speaker_id": "speaker-a",
+            }
+        ],
+        processor=_FakeProcessor(),
+        config=_FakeConfig(),
+        data_path_attribution=collector,
+    )
+
+    item = dataset[0]
+
+    assert item["ref_mel"].shape == (1, 4, 8)
+    payload = collector.payload()
+    assert payload["runtime_ref_mel_extraction_count"] == 0
+    assert payload["persisted_ref_mel_load_count"] == 1
+    assert payload["getitem_call_count"] == 1
 
 
 def test_collate_ref_mels_pads_variable_length_reference_inputs() -> None:

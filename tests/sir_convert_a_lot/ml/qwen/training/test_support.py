@@ -350,8 +350,9 @@ class _FakeDataset:
         _processor: object,
         _config: object,
         ref_mel_cache: object | None = None,
+        data_path_attribution: object | None = None,
     ) -> None:
-        del ref_mel_cache
+        del ref_mel_cache, data_path_attribution
         self.rows = rows
         self.collate_fn = lambda batch: batch
 
@@ -408,7 +409,7 @@ def base_training_args(
         init_model_path="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
         output_model_path=output_model_path.as_posix(),
         train_jsonl=train_manifest.as_posix(),
-        batch_size=1,
+        batch_size=8,
         lr=2e-5,
         num_epochs=1,
         max_steps=max_steps,
@@ -417,6 +418,7 @@ def base_training_args(
         durable_checkpoint_min_free_bytes=16 * 1024**3,
         resume_from_checkpoint=None,
         metrics_output_json=None,
+        data_path_proof_mode=False,
         heartbeat_interval_optimizer_steps=heartbeat_interval_optimizer_steps,
         finite_loss_max_consecutive_steps=finite_loss_max_consecutive_steps,
     )

@@ -19,6 +19,16 @@ DEFAULT_THROUGHPUT_PROFILE_LABEL = "hemma-throughput-aggressive-v1"
 
 
 @dataclass(frozen=True)
+class ThroughputProfileDefaults:
+    """Static defaults for one named throughput profile."""
+
+    max_tokens_per_batch: int
+    max_codec_frames_per_batch: int
+    length_bucket_boundaries: tuple[int, ...]
+    minimum_required_max_batch_size: int
+
+
+@dataclass(frozen=True)
 class ThroughputBatchPolicy:
     """Resolved throughput policy for one Qwen training launch."""
 
@@ -28,18 +38,34 @@ class ThroughputBatchPolicy:
     max_tokens_per_batch: int
     max_codec_frames_per_batch: int
     length_bucket_boundaries: tuple[int, ...]
+    minimum_required_max_batch_size: int
 
 
-_PROFILE_DEFAULTS: dict[str, tuple[int, int, tuple[int, ...]]] = {
-    "hemma-throughput-balanced-v1": (
-        3072,
-        640,
-        (128, 192, 256, 320, 384, 448, 512, 640, 768, 896, 1024),
+_PROFILE_DEFAULTS: dict[str, ThroughputProfileDefaults] = {
+    "hemma-throughput-balanced-v1": ThroughputProfileDefaults(
+        max_tokens_per_batch=3072,
+        max_codec_frames_per_batch=640,
+        length_bucket_boundaries=(128, 192, 256, 320, 384, 448, 512, 640, 768, 896, 1024),
+        minimum_required_max_batch_size=1,
     ),
-    "hemma-throughput-aggressive-v1": (
-        4096,
-        1024,
-        (128, 192, 256, 320, 384, 448, 512, 640, 768, 896, 1024, 1280),
+    "hemma-throughput-aggressive-v1": ThroughputProfileDefaults(
+        max_tokens_per_batch=4096,
+        max_codec_frames_per_batch=1024,
+        length_bucket_boundaries=(
+            128,
+            192,
+            256,
+            320,
+            384,
+            448,
+            512,
+            640,
+            768,
+            896,
+            1024,
+            1280,
+        ),
+        minimum_required_max_batch_size=8,
     ),
 }
 
@@ -59,24 +85,39 @@ def resolve_throughput_batch_policy(
             "Unsupported throughput profile label "
             f"`{profile_label}`. Supported values: {supported}."
         )
-    max_tokens_per_batch, max_codec_frames_per_batch, length_bucket_boundaries = profile_defaults
+    if max_batch_size < profile_defaults.minimum_required_max_batch_size:
+        raise ValueError(
+            "Throughput profile requires a larger live `max_batch_size`: "
+            f"profile_label={profile_label} "
+            f"requested_max_batch_size={max_batch_size} "
+            f"minimum_required_max_batch_size={profile_defaults.minimum_required_max_batch_size}"
+        )
     return ThroughputBatchPolicy(
         profile_label=profile_label,
         policy_kind=DEFAULT_BATCH_POLICY_KIND,
         max_batch_size=max_batch_size,
-        max_tokens_per_batch=max_tokens_per_batch,
-        max_codec_frames_per_batch=max_codec_frames_per_batch,
-        length_bucket_boundaries=length_bucket_boundaries,
+        max_tokens_per_batch=profile_defaults.max_tokens_per_batch,
+        max_codec_frames_per_batch=profile_defaults.max_codec_frames_per_batch,
+        length_bucket_boundaries=profile_defaults.length_bucket_boundaries,
+        minimum_required_max_batch_size=profile_defaults.minimum_required_max_batch_size,
     )
 
 
-def throughput_policy_payload(policy: ThroughputBatchPolicy) -> dict[str, object]:
+def throughput_policy_payload(
+    policy: ThroughputBatchPolicy,
+    *,
+    batch_occupancy: dict[str, object] | None = None,
+) -> dict[str, object]:
     """Return a JSON-safe payload for one resolved throughput policy."""
-    return {
+    payload: dict[str, object] = {
         "profile_label": policy.profile_label,
         "policy_kind": policy.policy_kind,
         "max_batch_size": policy.max_batch_size,
         "max_tokens_per_batch": policy.max_tokens_per_batch,
         "max_codec_frames_per_batch": policy.max_codec_frames_per_batch,
         "length_bucket_boundaries": list(policy.length_bucket_boundaries),
+        "minimum_required_max_batch_size": policy.minimum_required_max_batch_size,
     }
+    if batch_occupancy is not None:
+        payload["batch_occupancy"] = batch_occupancy
+    return payload

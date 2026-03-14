@@ -109,6 +109,7 @@ def test_main_accepts_legacy_bundle_without_training_report(
             dataloader_persistent_workers=True,
             dataloader_prefetch_factor=4,
             non_blocking_transfer=True,
+            data_path_proof_mode=False,
             heartbeat_interval_optimizer_steps=20,
             finite_loss_max_consecutive_steps=3,
             ref_mel_cache_enabled=True,

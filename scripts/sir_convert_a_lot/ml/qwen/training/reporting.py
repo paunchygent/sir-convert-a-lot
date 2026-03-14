@@ -482,6 +482,8 @@ def _completed_status_payload(
         "ref_mel_cache": training_summary.ref_mel_cache,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
+        "batch_occupancy": training_summary.batch_occupancy,
+        "data_path_attribution": training_summary.data_path_attribution,
         "acceptance_measurement_valid": training_summary.acceptance_measurement_valid,
         "resumed_from_checkpoint_path": training_summary.resumed_from_checkpoint_path,
         "latest_durable_checkpoint_path": training_summary.latest_durable_checkpoint_path,

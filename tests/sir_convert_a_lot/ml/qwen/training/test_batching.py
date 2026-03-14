@@ -12,6 +12,9 @@ from __future__ import annotations
 
 import pytest
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_batch_occupancy import (
+    summarize_batch_occupancy,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import (
     BucketedBatchSampler,
     TrainingRowBatchMetrics,
@@ -34,6 +37,16 @@ def test_resolve_throughput_batch_policy_uses_aggressive_default_label() -> None
     assert policy.max_batch_size == 8
     assert policy.max_tokens_per_batch == 4096
     assert policy.max_codec_frames_per_batch == 1024
+    assert policy.minimum_required_max_batch_size == 8
+
+
+def test_resolve_throughput_batch_policy_rejects_tiny_aggressive_batch_caps() -> None:
+    """The aggressive profile should fail closed when paired with tiny caps."""
+    with pytest.raises(ValueError, match="minimum_required_max_batch_size=8"):
+        resolve_throughput_batch_policy(
+            profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+            max_batch_size=1,
+        )
 
 
 def test_bucketed_batch_sampler_respects_batch_size_and_budget_caps() -> None:
@@ -72,3 +85,58 @@ def test_bucketed_batch_sampler_rejects_rows_that_exceed_single_row_budget() -> 
             ],
             policy=policy,
         )
+
+
+def test_bucketed_batch_sampler_exposes_planned_batches_for_occupancy_reporting() -> None:
+    """The sampler should expose the resolved batch plan for occupancy reporting."""
+    policy = resolve_throughput_batch_policy(
+        profile_label="hemma-throughput-balanced-v1",
+        max_batch_size=2,
+    )
+    sampler = BucketedBatchSampler(
+        row_metrics=[
+            TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=20),
+            TrainingRowBatchMetrics(text_token_count=11, codec_frame_count=21),
+            TrainingRowBatchMetrics(text_token_count=12, codec_frame_count=22),
+        ],
+        policy=policy,
+    )
+
+    planned_batches = sampler.planned_batches()
+    yielded_batches = list(sampler)
+
+    assert sorted(planned_batches) == sorted(yielded_batches)
+
+
+def test_summarize_batch_occupancy_reports_histogram_and_per_batch_totals() -> None:
+    """Occupancy summary should expose concrete row, token, and frame totals."""
+    summary = summarize_batch_occupancy(
+        row_metrics=[
+            TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=20),
+            TrainingRowBatchMetrics(text_token_count=11, codec_frame_count=21),
+            TrainingRowBatchMetrics(text_token_count=12, codec_frame_count=22),
+        ],
+        planned_batches=[[0, 1], [2]],
+    )
+
+    assert summary.total_batches == 2
+    assert summary.total_rows == 3
+    assert summary.batch_size_histogram == {1: 1, 2: 1}
+    assert summary.realized_max_batch_size == 2
+    assert summary.realized_min_batch_size == 1
+    assert summary.peak_text_tokens_per_batch == 21
+    assert summary.peak_codec_frames_per_batch == 41
+    assert summary.payload()["batches"] == [
+        {
+            "batch_index": 0,
+            "row_count": 2,
+            "text_token_count": 21,
+            "codec_frame_count": 41,
+        },
+        {
+            "batch_index": 1,
+            "row_count": 1,
+            "text_token_count": 12,
+            "codec_frame_count": 22,
+        },
+    ]

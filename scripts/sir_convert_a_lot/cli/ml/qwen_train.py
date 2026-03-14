@@ -20,6 +20,10 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Literal
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
+    PRECOMPUTED_REF_INPUT_KIND,
+    PRECOMPUTED_REF_INPUT_VERSION,
+)
 from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     prepare_qwen_image,
     resolve_effective_bind_root,
@@ -98,6 +102,7 @@ DEFAULT_DATALOADER_PIN_MEMORY = True
 DEFAULT_DATALOADER_PERSISTENT_WORKERS = True
 DEFAULT_DATALOADER_PREFETCH_FACTOR = 4
 DEFAULT_NON_BLOCKING_TRANSFER = True
+DEFAULT_DATA_PATH_PROOF_MODE = False
 DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS = 20
 DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS = 3
 DEFAULT_REF_MEL_CACHE_ENABLED = True
@@ -203,6 +208,11 @@ def build_parser() -> argparse.ArgumentParser:
         launch,
         "--non-blocking-transfer",
         default=DEFAULT_NON_BLOCKING_TRANSFER,
+    )
+    add_boolean_argument(
+        launch,
+        "--data-path-proof-mode",
+        default=DEFAULT_DATA_PATH_PROOF_MODE,
     )
     launch.add_argument(
         "--heartbeat-interval-optimizer-steps",
@@ -342,6 +352,7 @@ def load_training_launch(launch_root_path: Path) -> DetachedLaunch:
         default_dataloader_persistent_workers=DEFAULT_DATALOADER_PERSISTENT_WORKERS,
         default_dataloader_prefetch_factor=DEFAULT_DATALOADER_PREFETCH_FACTOR,
         default_non_blocking_transfer=DEFAULT_NON_BLOCKING_TRANSFER,
+        default_data_path_proof_mode=DEFAULT_DATA_PATH_PROOF_MODE,
         default_heartbeat_interval_optimizer_steps=DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
         default_finite_loss_max_consecutive_steps=DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
         default_ref_mel_cache_enabled=DEFAULT_REF_MEL_CACHE_ENABLED,
@@ -407,11 +418,23 @@ def ensure_training_bundle_exists(
             "Qwen training bundle integrity check failed before launch.\n"
             "Training bundle did not report any persisted precomputed reference inputs."
         )
+    try:
+        validate_training_bundle_paths(
+            bundle_root,
+            (train_manifest_family, eval_manifest_family),
+            require_precomputed_ref_inputs=True,
+        )
+    except ValueError as exc:
+        raise SystemExit(
+            f"Qwen training bundle integrity check failed before launch.\n{exc}"
+        ) from exc
 
 
 def validate_training_bundle_paths(
     bundle_root: Path,
     families: tuple[str, str],
+    *,
+    require_precomputed_ref_inputs: bool = False,
 ) -> None:
     """Validate that prepared manifests reference existing local bundle assets."""
     for manifest_family in families:
@@ -428,8 +451,10 @@ def validate_training_bundle_paths(
                 manifest_path,
                 row,
                 "precomputed_ref_input_path",
-                required=False,
+                required=require_precomputed_ref_inputs,
             )
+            if require_precomputed_ref_inputs:
+                _validate_precomputed_ref_input_contract(manifest_path, row)
 
 
 def _validate_bundle_row_path(
@@ -486,6 +511,32 @@ def _row_path_values(
     )
 
 
+def _validate_precomputed_ref_input_contract(
+    manifest_path: Path,
+    row: dict[str, object],
+) -> None:
+    """Validate the canonical persisted ref-input metadata on one prepared row."""
+    kind = row.get("precomputed_ref_input_kind")
+    version = row.get("precomputed_ref_input_version")
+    source_audio = row.get("precomputed_ref_input_source_audio")
+    if kind != PRECOMPUTED_REF_INPUT_KIND:
+        raise ValueError(
+            f"Prepared manifest row in `{manifest_path}` lacked required "
+            f"`precomputed_ref_input_kind={PRECOMPUTED_REF_INPUT_KIND}`."
+        )
+    if version != PRECOMPUTED_REF_INPUT_VERSION:
+        raise ValueError(
+            "Prepared manifest row in "
+            f"`{manifest_path}` lacked required "
+            f"`precomputed_ref_input_version={PRECOMPUTED_REF_INPUT_VERSION}`."
+        )
+    if not isinstance(source_audio, str) or source_audio.strip() == "":
+        raise ValueError(
+            f"Prepared manifest row in `{manifest_path}` lacked "
+            "`precomputed_ref_input_source_audio`."
+        )
+
+
 def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:
     """Build one normalized training settings object from parsed launch args."""
     throughput_batch_policy = resolve_throughput_batch_policy(
@@ -517,6 +568,7 @@ def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:
         dataloader_persistent_workers=bool(args.dataloader_persistent_workers),
         dataloader_prefetch_factor=int(args.dataloader_prefetch_factor),
         non_blocking_transfer=bool(args.non_blocking_transfer),
+        data_path_proof_mode=bool(args.data_path_proof_mode),
         heartbeat_interval_optimizer_steps=int(args.heartbeat_interval_optimizer_steps),
         finite_loss_max_consecutive_steps=int(args.finite_loss_max_consecutive_steps),
         ref_mel_cache_enabled=bool(args.ref_mel_cache_enabled),

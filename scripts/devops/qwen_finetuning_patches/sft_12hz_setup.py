@@ -30,7 +30,15 @@ with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.St
     from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
 
 from scripts.devops.qwen_finetuning_patches.dataset import TTSDataset
+from scripts.devops.qwen_finetuning_patches.sft_12hz_batch_occupancy import (
+    BatchOccupancySummary,
+    summarize_batch_occupancy,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import BucketedBatchSampler
+from scripts.devops.qwen_finetuning_patches.sft_12hz_data_path_attribution import (
+    DataPathAttributionCollector,
+    build_data_path_attribution_collector,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     DEFAULT_DATALOADER_NUM_WORKERS,
     DEFAULT_DATALOADER_PERSISTENT_WORKERS,
@@ -75,10 +83,14 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
     _load_training_rows,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
+    load_optional_training_bundle_summary,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     ThroughputBatchPolicy,
     resolve_throughput_batch_policy,
+    throughput_policy_payload,
 )
 
 
@@ -104,6 +116,9 @@ class PreparedTrainingRun:
     dataloader_length: int
     effective_dataloader_tuning: DataloaderTuning
     throughput_batch_policy: ThroughputBatchPolicy
+    throughput_profile_payload: dict[str, object]
+    batch_occupancy_summary: BatchOccupancySummary
+    data_path_attribution: DataPathAttributionCollector | None
     ref_mel_cache: RefMelCache
     torch_profiler_session: TorchProfilerSession
     tracker_config: TrainingTrackerConfig
@@ -159,6 +174,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
     non_blocking_transfer = bool(
         getattr(args, "non_blocking_transfer", DEFAULT_NON_BLOCKING_TRANSFER)
     )
+    data_path_proof_mode = bool(getattr(args, "data_path_proof_mode", False))
     ref_mel_cache_enabled = bool(
         getattr(args, "ref_mel_cache_enabled", DEFAULT_REF_MEL_CACHE_ENABLED)
     )
@@ -187,6 +203,10 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
     ref_mel_cache = RefMelCache(
         enabled=ref_mel_cache_enabled,
         max_items=ref_mel_cache_max_items,
+    )
+    data_path_attribution = build_data_path_attribution_collector(
+        proof_mode_enabled=data_path_proof_mode,
+        dataloader_num_workers=dataloader_num_workers,
     )
     output_model_path = Path(args.output_model_path)
     torch_profiler_trace_dir_raw = getattr(args, "torch_profiler_trace_dir", None)
@@ -265,16 +285,30 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         attn_implementation="flash_attention_2",
     )
     config = AutoConfig.from_pretrained(model_path)
-    train_data = _load_training_rows(Path(args.train_jsonl))
+    bundle_summary = (
+        None
+        if getattr(args, "pilot_bundle_root", None) in (None, "")
+        else load_optional_training_bundle_summary(Path(str(args.pilot_bundle_root)))
+    )
+    train_data = _load_training_rows(
+        Path(args.train_jsonl),
+        require_precomputed_ref_inputs=bundle_summary is not None,
+    )
     dataset = TTSDataset(
         train_data,
         qwen3tts.processor,
         config,
         ref_mel_cache=ref_mel_cache,
+        data_path_attribution=data_path_attribution,
     )
+    row_metrics = dataset.batch_metrics()
     batch_sampler = BucketedBatchSampler(
-        row_metrics=dataset.batch_metrics(),
+        row_metrics=row_metrics,
         policy=throughput_batch_policy,
+    )
+    batch_occupancy_summary = summarize_batch_occupancy(
+        row_metrics=row_metrics,
+        planned_batches=batch_sampler.planned_batches(),
     )
     train_dataloader = (
         DataLoader(
@@ -313,6 +347,12 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         dataloader_length=len(train_dataloader),
         effective_dataloader_tuning=effective_dataloader_tuning,
         throughput_batch_policy=throughput_batch_policy,
+        throughput_profile_payload=throughput_policy_payload(
+            throughput_batch_policy,
+            batch_occupancy=batch_occupancy_summary.payload(),
+        ),
+        batch_occupancy_summary=batch_occupancy_summary,
+        data_path_attribution=data_path_attribution,
         ref_mel_cache=ref_mel_cache,
         torch_profiler_session=torch_profiler_session,
         tracker_config=tracker_config,

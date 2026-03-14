@@ -108,6 +108,11 @@ def parse_args() -> argparse.Namespace:
         "--non_blocking_transfer",
         default=DEFAULT_NON_BLOCKING_TRANSFER,
     )
+    _add_boolean_argument(
+        parser,
+        "--data_path_proof_mode",
+        default=False,
+    )
     parser.add_argument(
         "--heartbeat_interval_optimizer_steps",
         type=int,

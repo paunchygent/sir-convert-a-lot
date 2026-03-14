@@ -144,3 +144,101 @@ def test_inspect_resource_monitor_splits_train_and_checkpoint_windows(
     assert summary_train["first_sample_at"] == "2026-03-13T20:00:01Z"
     assert summary_checkpoint["sample_count"] == 1
     assert summary_checkpoint["gpu_busy_percent_median"] == 10.0
+
+
+def test_inspect_resource_monitor_restores_train_after_checkpoint_window(
+    tmp_path: Path,
+) -> None:
+    """Train summaries should include later train windows after checkpoint-save restores."""
+    launch_root = tmp_path / "monitor-launch"
+    launch_root.mkdir(parents=True, exist_ok=True)
+    (launch_root / "launch.json").write_text(
+        json.dumps(
+            {
+                "generated_at": "2026-03-13T20:00:00Z",
+                "launch_id": "qwen-run-resource-monitor",
+                "repo_root": "/repo",
+                "pid": 999999,
+                "runtime_kind": "rocm",
+                "interval_seconds": 1.0,
+                "duration_seconds": None,
+                "command": ["python", "-m", "monitor"],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (launch_root / "samples.jsonl").write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "captured_at": "2026-03-13T20:00:01Z",
+                        "runtime_kind": "rocm",
+                        "gpu_busy_percent": 20,
+                        "gpu_memory_used_percent": 60,
+                        "host_cpu_busy_percent": 30,
+                        "host_memory_used_percent": 40,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "captured_at": "2026-03-13T20:00:02Z",
+                        "runtime_kind": "rocm",
+                        "gpu_busy_percent": 40,
+                        "gpu_memory_used_percent": 61,
+                        "host_cpu_busy_percent": 31,
+                        "host_memory_used_percent": 41,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "captured_at": "2026-03-13T20:00:03Z",
+                        "runtime_kind": "rocm",
+                        "gpu_busy_percent": 10,
+                        "gpu_memory_used_percent": 62,
+                        "host_cpu_busy_percent": 32,
+                        "host_memory_used_percent": 42,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "captured_at": "2026-03-13T20:00:04Z",
+                        "runtime_kind": "rocm",
+                        "gpu_busy_percent": 60,
+                        "gpu_memory_used_percent": 63,
+                        "host_cpu_busy_percent": 33,
+                        "host_memory_used_percent": 43,
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    payload = inspect_resource_monitor(
+        {
+            "launch_id": "qwen-run-resource-monitor",
+            "launch_root": launch_root.as_posix(),
+            "output_root": tmp_path.as_posix(),
+            "runtime_kind": "rocm",
+            "interval_seconds": 1.0,
+            "duration_seconds": None,
+        },
+        phase_history=[
+            {"phase": "train", "updated_at": "2026-03-13T20:00:01Z"},
+            {"phase": "checkpoint-save", "updated_at": "2026-03-13T20:00:03Z"},
+            {"phase": "train", "updated_at": "2026-03-13T20:00:04Z"},
+        ],
+    )
+
+    assert payload is not None
+    summary_train = payload["summary_train"]
+    summary_checkpoint = payload["summary_checkpoint_save"]
+    assert isinstance(summary_train, dict)
+    assert isinstance(summary_checkpoint, dict)
+    assert summary_train["sample_count"] == 3
+    assert summary_train["gpu_busy_percent_median"] == 40.0
+    assert summary_checkpoint["sample_count"] == 1
+    assert summary_checkpoint["gpu_busy_percent_median"] == 10.0

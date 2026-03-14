@@ -194,21 +194,27 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
         lambda stop_state: None,
     )
 
-    summary = train_with_args(
-        base_training_args(
-            output_model_path=output_model_path,
-            train_manifest=train_manifest,
-            max_steps=3,
-            heartbeat_interval_optimizer_steps=2,
-        ),
-        progress_callback=heartbeats.append,
+    args = base_training_args(
+        output_model_path=output_model_path,
+        train_manifest=train_manifest,
+        max_steps=3,
+        heartbeat_interval_optimizer_steps=2,
     )
+    args.checkpoint_interval_steps = 2
 
-    assert [phase.phase for phase in heartbeats] == ["startup", "train", "train", "checkpoint-save"]
+    summary = train_with_args(args, progress_callback=heartbeats.append)
+
+    phases = [phase.phase for phase in heartbeats]
+    assert phases[:5] == ["startup", "train", "train", "checkpoint-save", "train"]
+    assert phases.count("checkpoint-save") >= 3
     assert heartbeats[1].current_optimizer_step == 1
     assert heartbeats[2].current_optimizer_step == 2
     assert summary.throughput_profile["profile_label"] == "hemma-throughput-aggressive-v1"
-    assert summary.throughput_profile["max_batch_size"] == 1
+    assert summary.throughput_profile["max_batch_size"] == 8
+    assert summary.throughput_profile["minimum_required_max_batch_size"] == 8
+    assert summary.batch_occupancy["total_batches"] == 1
+    assert summary.batch_occupancy["realized_max_batch_size"] == 1
+    assert summary.data_path_attribution is None
     assert accelerator.logged_metrics == [
         (
             {
@@ -218,7 +224,7 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
                 "train/current_optimizer_step": 2,
                 "train/current_train_iteration": 2,
                 "train/current_epoch": 0,
-                "train/checkpoint_interval_steps": 100,
+                "train/checkpoint_interval_steps": 2,
                 "train/ref_mel_cache_enabled": True,
                 "train/ref_mel_cache_max_items": 2048,
                 "train/ref_mel_cache_hits": 0,

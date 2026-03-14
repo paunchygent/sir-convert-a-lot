@@ -81,6 +81,7 @@ def _parse_args() -> argparse.Namespace:
     add_boolean_argument(parser, "--dataloader-persistent-workers", default=True)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     add_boolean_argument(parser, "--non-blocking-transfer", default=True)
+    add_boolean_argument(parser, "--data-path-proof-mode", default=False)
     parser.add_argument("--heartbeat-interval-optimizer-steps", type=int, default=20)
     parser.add_argument("--finite-loss-max-consecutive-steps", type=int, default=3)
     add_boolean_argument(parser, "--ref-mel-cache-enabled", default=True)
@@ -210,6 +211,7 @@ def main() -> int:
             dataloader_persistent_workers=bool(args.dataloader_persistent_workers),
             dataloader_prefetch_factor=int(args.dataloader_prefetch_factor),
             non_blocking_transfer=bool(args.non_blocking_transfer),
+            data_path_proof_mode=bool(args.data_path_proof_mode),
             heartbeat_interval_optimizer_steps=int(args.heartbeat_interval_optimizer_steps),
             finite_loss_max_consecutive_steps=int(args.finite_loss_max_consecutive_steps),
             ref_mel_cache_enabled=bool(args.ref_mel_cache_enabled),

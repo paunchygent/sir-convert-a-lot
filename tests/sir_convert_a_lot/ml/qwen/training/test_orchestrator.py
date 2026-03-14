@@ -66,6 +66,7 @@ def test_parser_launch_defaults() -> None:
     assert args.dataloader_pin_memory is True
     assert args.dataloader_persistent_workers is True
     assert args.non_blocking_transfer is True
+    assert args.data_path_proof_mode is False
     assert args.ref_mel_cache_enabled is True
     assert args.torch_profiler_enabled is False
     assert args.rocm_profiler_enabled is False
@@ -143,6 +144,7 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
     assert "--dataloader-pin-memory" in command
     assert "--dataloader-persistent-workers" in command
     assert "--non-blocking-transfer" in command
+    assert "--no-data-path-proof-mode" in command
     assert "--throughput-profile-label" in command
     assert DEFAULT_THROUGHPUT_PROFILE_LABEL in command
     assert "--ref-mel-cache-enabled" in command
@@ -367,6 +369,97 @@ def test_ensure_training_bundle_exists_accepts_legacy_bundle_without_report(tmp_
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
     )
+
+
+def test_ensure_training_bundle_exists_rejects_rebuilt_bundle_missing_precomputed_ref_metadata(
+    tmp_path: Path,
+) -> None:
+    """Rebuilt bundles should fail closed when prepared rows omit persisted ref-input fields."""
+    bundle_root = tmp_path / "bundle"
+    manifests_dir = bundle_root / "manifests"
+    reports_dir = bundle_root / "reports"
+    audio_dir = bundle_root / "audio_24k" / "rixvox" / "train" / "speaker-a"
+    refs_dir = bundle_root / "refs" / "swedish_pilot_train" / "speaker-a"
+    eval_refs_dir = bundle_root / "refs" / "swedish_checkpoint_dev" / "speaker-a"
+    manifests_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    refs_dir.mkdir(parents=True, exist_ok=True)
+    eval_refs_dir.mkdir(parents=True, exist_ok=True)
+    (audio_dir / "train.wav").write_bytes(b"audio")
+    (refs_dir / "ref.wav").write_bytes(b"ref")
+    (eval_refs_dir / "ref.wav").write_bytes(b"ref")
+    prepared_row = {
+        "audio": "audio_24k/rixvox/train/speaker-a/train.wav",
+        "text": "hej",
+        "ref_audio": "refs/swedish_pilot_train/speaker-a/ref.wav",
+        "speaker_id": "speaker-a",
+        "dataset": "rixvox",
+        "source_split": "train",
+        "quality_tier": "high_trust",
+        "audio_codes": [[1, 2]],
+    }
+    (manifests_dir / "swedish_pilot_train.prepared.jsonl").write_text(
+        json.dumps(prepared_row) + "\n",
+        encoding="utf-8",
+    )
+    (manifests_dir / "swedish_checkpoint_dev.prepared.jsonl").write_text(
+        json.dumps(
+            {
+                **prepared_row,
+                "ref_audio": "refs/swedish_checkpoint_dev/speaker-a/ref.wav",
+                "source_split": "dev",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (reports_dir / "training_bundle_report.json").write_text(
+        json.dumps(
+            {
+                "source_root": bundle_root.as_posix(),
+                "output_root": bundle_root.as_posix(),
+                "train_manifest_family": "swedish_pilot_train",
+                "eval_manifest_family": "swedish_checkpoint_dev",
+                "tokenizer_model": "Qwen/Qwen3-TTS-Tokenizer-12Hz",
+                "retained_row_count": 2,
+                "conflict_row_count": 0,
+                "manifest_row_counts": {
+                    "swedish_pilot_train": 1,
+                    "swedish_checkpoint_dev": 1,
+                },
+                "speaker_counts": {
+                    "swedish_pilot_train": 1,
+                    "swedish_checkpoint_dev": 1,
+                },
+                "owned_row_keys_path": (reports_dir / "owned.jsonl").as_posix(),
+                "conflict_row_keys_path": (reports_dir / "conflict.jsonl").as_posix(),
+                "repo_head": "test-head",
+                "generated_at": "2026-03-14T00:00:00Z",
+                "finalization_batch_row_count": 512,
+                "total_batch_count": 1,
+                "batch_plan_path": (reports_dir / "training_bundle_plan.json").as_posix(),
+                "events_path": (reports_dir / "training_bundle_events.jsonl").as_posix(),
+                "status_path": (reports_dir / "training_bundle_status.json").as_posix(),
+                "precomputed_reference_input": {
+                    "kind": "ref_mel",
+                    "version": "task101_ref_mel_v1",
+                    "source_field": "ref_audio",
+                    "artifact_root": "precomputed/ref_mel",
+                    "artifact_count": 2,
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit, match="precomputed_ref_input_path"):
+        ensure_training_bundle_exists(
+            bundle_root,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+        )
 
 
 def test_launch_detached_training_accepts_legacy_bundle_without_summary(

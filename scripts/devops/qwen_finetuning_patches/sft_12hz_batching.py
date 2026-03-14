@@ -58,6 +58,10 @@ class BucketedBatchSampler(Sampler[list[int]]):
     def __len__(self) -> int:
         return len(self._planned_batches)
 
+    def planned_batches(self) -> list[list[int]]:
+        """Return a copy of the resolved batch plan for occupancy reporting."""
+        return [list(batch) for batch in self._planned_batches]
+
     def _build_batches(self) -> list[list[int]]:
         buckets: dict[int, list[int]] = defaultdict(list)
         for index, metrics in enumerate(self._row_metrics):

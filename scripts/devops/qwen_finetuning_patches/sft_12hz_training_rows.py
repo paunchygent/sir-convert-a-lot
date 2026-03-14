@@ -23,7 +23,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
 )
 
 
-def _load_training_rows(train_jsonl_path: Path) -> list[TrainingRow]:
+def _load_training_rows(
+    train_jsonl_path: Path,
+    *,
+    require_precomputed_ref_inputs: bool = False,
+) -> list[TrainingRow]:
     """Load and validate one Task 101 training JSONL manifest."""
     rows: list[TrainingRow] = []
     with train_jsonl_path.open("r", encoding="utf-8") as handle:
@@ -31,11 +35,22 @@ def _load_training_rows(train_jsonl_path: Path) -> list[TrainingRow]:
             row = json.loads(line)
             if not isinstance(row, dict):
                 raise ValueError("Expected each training JSONL row to be a JSON object.")
-            rows.append(_resolve_training_row_paths(train_jsonl_path, row))
+            rows.append(
+                _resolve_training_row_paths(
+                    train_jsonl_path,
+                    row,
+                    require_precomputed_ref_inputs=require_precomputed_ref_inputs,
+                )
+            )
     return rows
 
 
-def _resolve_training_row_paths(train_jsonl_path: Path, row: dict[str, object]) -> TrainingRow:
+def _resolve_training_row_paths(
+    train_jsonl_path: Path,
+    row: dict[str, object],
+    *,
+    require_precomputed_ref_inputs: bool,
+) -> TrainingRow:
     """Resolve manifest-relative training paths into absolute paths."""
     manifest_root = train_jsonl_path.parent
     ref_audio_value = row.get("ref_audio")
@@ -63,7 +78,12 @@ def _resolve_training_row_paths(train_jsonl_path: Path, row: dict[str, object]) 
         "audio_codes": audio_codes_value,
         "ref_audio": resolved_ref_audio,
     }
-    _apply_precomputed_ref_input_fields(manifest_root, row, resolved_row)
+    _apply_precomputed_ref_input_fields(
+        manifest_root,
+        row,
+        resolved_row,
+        require_precomputed_ref_inputs=require_precomputed_ref_inputs,
+    )
     if isinstance(speaker_id_value, str):
         resolved_row["speaker_id"] = speaker_id_value
     return resolved_row
@@ -73,6 +93,8 @@ def _apply_precomputed_ref_input_fields(
     manifest_root: Path,
     row: dict[str, object],
     resolved_row: TrainingRow,
+    *,
+    require_precomputed_ref_inputs: bool,
 ) -> None:
     """Attach persisted ref-input fields when the manifest row carries them."""
     precomputed_ref_input_path = row.get("precomputed_ref_input_path")
@@ -89,6 +111,11 @@ def _apply_precomputed_ref_input_fields(
             raise ValueError(
                 "Training row carried partial persisted reference-input metadata without a "
                 "`precomputed_ref_input_path`."
+            )
+        if require_precomputed_ref_inputs:
+            raise ValueError(
+                "Training row is missing required persisted reference-input metadata while "
+                "precomputed-ref enforcement is enabled."
             )
         return
     if not isinstance(precomputed_ref_input_path, str):
