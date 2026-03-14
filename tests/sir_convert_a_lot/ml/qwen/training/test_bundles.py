@@ -108,13 +108,15 @@ def write_spool_row_fixture(
     dataset_row_id: str,
     audio_name: str,
     manifest_targets: tuple[ManifestFamily, ...],
+    include_reference_audio_paths: bool = True,
 ) -> None:
     """Persist one admitted spool row fixture and its audio."""
     split = "train" if "swedish_pilot_train" in manifest_targets else "dev"
     audio_path = source_root / "audio_24k" / "rixvox" / split / "speaker-a" / audio_name
     ref_audio_path = source_root / "refs" / manifest_targets[0] / "speaker-a" / "ref.wav"
     write_test_wav(audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
-    write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    if include_reference_audio_paths:
+        write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
     write_spool_row(
         source_root,
         SpoolRow(
@@ -128,9 +130,11 @@ def write_spool_row_fixture(
             audio_24k_path=audio_path.relative_to(source_root).as_posix(),
             duration_seconds=1.0,
             text_normalized=f"text for {dataset_row_id}",
-            reference_audio_24k_paths={
-                manifest_targets[0]: ref_audio_path.relative_to(source_root).as_posix()
-            },
+            reference_audio_24k_paths=(
+                {manifest_targets[0]: ref_audio_path.relative_to(source_root).as_posix()}
+                if include_reference_audio_paths
+                else {}
+            ),
             asr_model="KBLab/kb-whisper-large",
             asr_revision="strict",
             asr_transcript=f"text for {dataset_row_id}",
@@ -197,6 +201,65 @@ def test_prepare_training_bundle_inputs_emits_deterministic_batch_plan(tmp_path:
         / "speaker-a"
         / "ref_mel.metadata.json"
     ).is_file()
+
+
+def test_prepare_training_bundle_inputs_falls_back_to_row_audio_for_missing_ref_paths(
+    tmp_path: Path,
+) -> None:
+    """Preparing bundle inputs should rebuild canonical refs when frozen rows lack ref paths."""
+    source_root = tmp_path / "frozen-root"
+    output_root = tmp_path / "bundle-root"
+    write_spool_row_fixture(
+        source_root=source_root,
+        dataset_row_id="train-row-1",
+        audio_name="train-row-1.wav",
+        manifest_targets=("swedish_pilot_train",),
+        include_reference_audio_paths=False,
+    )
+    reports_root = source_root / "reports"
+    reports_root.mkdir(parents=True, exist_ok=True)
+    write_json(
+        reports_root / "canonical_processed_root_freeze.json",
+        {
+            "output_root": source_root.as_posix(),
+            "retained_row_count": 1,
+            "conflict_row_count": 0,
+            "owned_row_keys_path": (
+                reports_root / "canonical_processed_root_owned_row_keys.jsonl"
+            ).as_posix(),
+            "conflict_row_keys_path": (
+                reports_root / "canonical_processed_root_conflict_row_keys.jsonl"
+            ).as_posix(),
+        },
+    )
+    (reports_root / "canonical_processed_root_owned_row_keys.jsonl").write_text(
+        json.dumps(
+            {
+                "dataset": "rixvox",
+                "source_split": "train",
+                "dataset_row_id": "train-row-1",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (reports_root / "canonical_processed_root_conflict_row_keys.jsonl").write_text(
+        "",
+        encoding="utf-8",
+    )
+
+    prepare_training_bundle_inputs(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_pilot_train",
+        tokenizer_model="Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        finalization_batch_row_count=2,
+        repo_root=repo_root(),
+    )
+
+    canonical_ref_path = output_root / "refs" / "swedish_pilot_train" / "speaker-a" / "ref.wav"
+    assert canonical_ref_path.is_file()
 
 
 def test_finalize_training_bundle_batch_materializes_prepared_batch(tmp_path: Path) -> None:

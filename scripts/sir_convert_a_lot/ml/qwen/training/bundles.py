@@ -22,6 +22,7 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.ml.qwen.common.models import ManifestFamily
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import AudioCodesEncoderProtocol
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.models import SpoolRow
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.sharding import (
     load_row_key_records,
     row_key_for_source_identity,
@@ -292,7 +293,11 @@ def _prepare_bundle_plan(
         )
         for family in targets:
             _copy_artifact(
-                source_root / spool_row.reference_audio_24k_paths[family],
+                _source_reference_audio_path(
+                    source_root=source_root,
+                    spool_row=spool_row,
+                    family=family,
+                ),
                 output_root / canonical_reference_paths[family],
             )
             family_row_counts[family] += 1
@@ -468,6 +473,19 @@ def _copy_artifact(source: Path, target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     if not target.exists():
         shutil.copy2(source, target)
+
+
+def _source_reference_audio_path(
+    *,
+    source_root: Path,
+    spool_row: SpoolRow,
+    family: ManifestFamily,
+) -> Path:
+    """Resolve the source reference clip for one family, falling back to row audio when absent."""
+    relative_path = spool_row.reference_audio_24k_paths.get(family)
+    if isinstance(relative_path, str):
+        return source_root / relative_path
+    return source_root / spool_row.audio_24k_path
 
 
 def _canonical_reference_audio_path(*, family: ManifestFamily, speaker_id: str) -> Path:
