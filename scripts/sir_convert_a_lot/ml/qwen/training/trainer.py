@@ -25,7 +25,7 @@ import torch
 from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
     GRADIENT_ACCUMULATION_STEPS,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_training_bundle_summary
+from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_optional_training_bundle_summary
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     StatusReporter,
@@ -112,7 +112,7 @@ def main() -> int:
     bundle_summary = (
         None
         if args.pilot_bundle_root is None
-        else load_training_bundle_summary(args.pilot_bundle_root)
+        else load_optional_training_bundle_summary(args.pilot_bundle_root)
     )
     bundle_precomputed_reference_input = (
         None
