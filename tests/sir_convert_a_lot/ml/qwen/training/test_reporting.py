@@ -241,6 +241,8 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     reporter.write_failed(
         NonFiniteLossError(
             optimizer_step=8,
+            current_epoch=1,
+            current_train_iteration=32,
             consecutive_non_finite_steps=3,
             max_consecutive_non_finite_steps=3,
             loss_value=float("nan"),
@@ -249,6 +251,69 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
 
     payload = json.loads(status_path.read_text(encoding="utf-8"))
     assert payload["status"] == "failed"
+    assert payload["current_epoch"] == 1
+    assert payload["current_step"] == 8
+    assert payload["current_optimizer_step"] == 8
+    assert payload["current_train_iteration"] == 32
     assert payload["acceptance_measurement_valid"] is False
     assert payload["finite_loss_guard"]["trigger_reason"] == "non-finite-loss"
     assert payload["finite_loss_guard"]["optimizer_step"] == 8
+    assert payload["finite_loss_guard"]["current_train_iteration"] == 32
+
+
+def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Path) -> None:
+    """Failed status should report the exception step even when the last heartbeat is older."""
+    output_dir = tmp_path / "run"
+    status_path = output_dir / "status.json"
+    reporter = StatusReporter(
+        StatusReporterConfig(
+            status_path=status_path,
+            launch_metadata_path=None,
+            train_jsonl=tmp_path / "train.jsonl",
+            eval_jsonl=tmp_path / "eval.jsonl",
+            output_dir=output_dir,
+            train_row_count=10,
+            eval_row_count=2,
+            checkpoint_interval_steps=100,
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
+            resume_from_checkpoint=None,
+        )
+    )
+
+    reporter.write_startup()
+    reporter.heartbeat(
+        TrainingProgressHeartbeat(
+            phase="train",
+            updated_at="2026-03-14T18:19:00Z",
+            current_epoch=0,
+            current_step=1,
+            current_optimizer_step=1,
+            current_train_iteration=4,
+            gradient_accumulation_steps=4,
+            latest_loss=14.1,
+            smoothed_loss=14.1,
+            latest_durable_checkpoint_path=None,
+            latest_durable_checkpoint_step=None,
+            latest_durable_checkpoint_saved_at=None,
+        )
+    )
+
+    reporter.write_failed(
+        NonFiniteLossError(
+            optimizer_step=17,
+            current_epoch=0,
+            current_train_iteration=68,
+            consecutive_non_finite_steps=3,
+            max_consecutive_non_finite_steps=3,
+            loss_value=float("nan"),
+        )
+    )
+
+    payload = json.loads(status_path.read_text(encoding="utf-8"))
+    assert payload["current_optimizer_step"] == 17
+    assert payload["current_step"] == 17
+    assert payload["current_train_iteration"] == 68
+    assert payload["finite_loss_guard"]["optimizer_step"] == 17
+    assert payload["phase_history"][-1]["current_optimizer_step"] == 17
+    assert payload["phase_history"][-1]["current_train_iteration"] == 68

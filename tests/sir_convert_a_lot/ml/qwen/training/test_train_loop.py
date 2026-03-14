@@ -173,7 +173,10 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     train_manifest = tmp_path / "manifests" / "swedish_pilot_train.prepared.jsonl"
     _write_train_manifest(train_manifest)
     output_model_path = tmp_path / "run" / "checkpoints"
-    accelerator = _FakeAccelerator()
+    accelerator = _FakeAccelerator(
+        gradient_accumulation_steps=4,
+        respect_gradient_accumulation=True,
+    )
     heartbeats: list[TrainingProgressHeartbeat] = []
 
     _patch_setup(
@@ -184,6 +187,15 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.DataLoader",
         lambda *args, **kwargs: [
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
             fake_training_batch(),
             fake_training_batch(),
             fake_training_batch(),
@@ -209,6 +221,7 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     assert phases.count("checkpoint-save") >= 3
     assert heartbeats[1].current_optimizer_step == 1
     assert heartbeats[2].current_optimizer_step == 2
+    assert heartbeats[2].current_train_iteration == 8
     assert summary.throughput_profile["profile_label"] == "hemma-throughput-aggressive-v1"
     assert summary.throughput_profile["max_batch_size"] == 8
     assert summary.throughput_profile["minimum_required_max_batch_size"] == 8
@@ -222,7 +235,7 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
                 "train/loss_ema": summary.smoothed_loss,
                 "train/current_step": 2,
                 "train/current_optimizer_step": 2,
-                "train/current_train_iteration": 2,
+                "train/current_train_iteration": 8,
                 "train/current_epoch": 0,
                 "train/checkpoint_interval_steps": 2,
                 "train/ref_mel_cache_enabled": True,
@@ -237,6 +250,19 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     ]
     assert summary.optimizer_steps_completed == 3
     assert summary.heartbeat_policy == {"interval_optimizer_steps": 2}
+    assert accelerator.sync_gradients_history[:8] == [
+        False,
+        False,
+        False,
+        True,
+        False,
+        False,
+        False,
+        True,
+    ]
+    assert accelerator.prepared_optimizer is not None
+    assert accelerator.prepared_optimizer.effective_step_calls == 3
+    assert accelerator.prepared_optimizer.raw_step_attempts == 12
 
 
 def test_train_with_args_fails_after_configured_non_finite_loss_streak(
@@ -247,7 +273,10 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
     train_manifest = tmp_path / "manifests" / "swedish_pilot_train.prepared.jsonl"
     _write_train_manifest(train_manifest)
     output_model_path = tmp_path / "run" / "checkpoints"
-    accelerator = _FakeAccelerator()
+    accelerator = _FakeAccelerator(
+        gradient_accumulation_steps=4,
+        respect_gradient_accumulation=True,
+    )
 
     _patch_setup(
         monkeypatch,
@@ -257,6 +286,11 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.DataLoader",
         lambda *args, **kwargs: [
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
+            fake_training_batch(),
             fake_training_batch(),
             fake_training_batch(),
             fake_training_batch(),
@@ -282,3 +316,8 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
     assert heartbeats[-1].latest_loss is not None
     assert math.isnan(heartbeats[-1].latest_loss)
     assert accelerator.logged_metrics == []
+    assert heartbeats[-1].current_optimizer_step == 1
+    assert heartbeats[-1].current_train_iteration == 4
+    assert accelerator.prepared_optimizer is not None
+    assert accelerator.prepared_optimizer.effective_step_calls == 2
+    assert accelerator.prepared_optimizer.raw_step_attempts == 8

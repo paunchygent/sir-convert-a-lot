@@ -24,7 +24,10 @@ import torch
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import NonFiniteLossError
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
-from scripts.sir_convert_a_lot.ml.qwen.training.models import TrainingReport
+from scripts.sir_convert_a_lot.ml.qwen.training.models import (
+    TrainingFailureSummary,
+    TrainingReport,
+)
 
 if TYPE_CHECKING:
     from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import TrainingSummary
@@ -128,33 +131,35 @@ class StatusReporter:
             ),
         )
 
-    def write_failed(self, exc: Exception) -> None:
+    def write_failed(self, exc: Exception) -> dict[str, object]:
         """Persist the terminal failed status payload with the last live heartbeat."""
-        self._ensure_terminal_phase("failed")
-        write_json(
-            self.config.status_path,
-            _failed_status_payload(
-                train_jsonl=self.config.train_jsonl,
-                eval_jsonl=self.config.eval_jsonl,
-                output_dir=self.config.output_dir,
-                train_row_count=self.config.train_row_count,
-                eval_row_count=self.config.eval_row_count,
-                bundle_precomputed_reference_input=(
-                    None
-                    if self.config.bundle_precomputed_reference_input is None
-                    else dict(self.config.bundle_precomputed_reference_input)
-                ),
-                throughput_profile=(
-                    None
-                    if self.config.throughput_profile is None
-                    else dict(self.config.throughput_profile)
-                ),
-                exc=exc,
-                live_progress=self._live_progress_payload(),
-                phase_history=self.phase_history,
-                tracking=self.tracking,
-            ),
+        terminal_progress = _resolve_failed_progress(
+            live_progress=self._live_progress_payload(), exc=exc
         )
+        self._ensure_terminal_phase("failed", terminal_progress=terminal_progress)
+        payload = _failed_status_payload(
+            train_jsonl=self.config.train_jsonl,
+            eval_jsonl=self.config.eval_jsonl,
+            output_dir=self.config.output_dir,
+            train_row_count=self.config.train_row_count,
+            eval_row_count=self.config.eval_row_count,
+            bundle_precomputed_reference_input=(
+                None
+                if self.config.bundle_precomputed_reference_input is None
+                else dict(self.config.bundle_precomputed_reference_input)
+            ),
+            throughput_profile=(
+                None
+                if self.config.throughput_profile is None
+                else dict(self.config.throughput_profile)
+            ),
+            exc=exc,
+            live_progress=self._live_progress_payload(),
+            phase_history=self.phase_history,
+            tracking=self.tracking,
+        )
+        write_json(self.config.status_path, payload)
+        return payload
 
     def _record_heartbeat(self, heartbeat: TrainingProgressHeartbeat) -> None:
         """Store one live heartbeat and append a phase event when the phase changes."""
@@ -235,51 +240,52 @@ class StatusReporter:
             return None
         return asdict(self.latest_heartbeat)
 
-    def _ensure_terminal_phase(self, phase: str) -> None:
+    def _ensure_terminal_phase(
+        self,
+        phase: str,
+        *,
+        terminal_progress: dict[str, object | None] | None = None,
+    ) -> None:
         """Append one terminal phase event if it has not been recorded already."""
         live_progress = self._live_progress_payload()
         updated_at = self._status_timestamp()
-        if live_progress is None:
+        if terminal_progress is None:
+            terminal_progress = _resolve_terminal_progress(live_progress=live_progress)
+        if live_progress is None and terminal_progress is None:
             current_epoch = 0
             current_step = 0
+            current_optimizer_step = 0
+            current_train_iteration = 0
         else:
-            existing_phase = live_progress["phase"]
+            existing_phase = None if live_progress is None else live_progress["phase"]
             if existing_phase == phase:
                 return
-            current_epoch = self._required_progress_int(live_progress, "current_epoch")
-            current_step = self._required_progress_int(live_progress, "current_step")
+            if terminal_progress is None:
+                raise SystemExit("Reporter encountered missing terminal progress.")
+            current_epoch = _required_progress_int(terminal_progress, "current_epoch")
+            current_step = _required_progress_int(terminal_progress, "current_step")
+            current_optimizer_step = _required_progress_int(
+                terminal_progress,
+                "current_optimizer_step",
+            )
+            current_train_iteration = _required_progress_int(
+                terminal_progress,
+                "current_train_iteration",
+            )
         self.phase_history.append(
             {
                 "phase": phase,
                 "updated_at": updated_at,
                 "current_epoch": current_epoch,
                 "current_step": current_step,
-                "current_optimizer_step": current_step,
-                "current_train_iteration": (
-                    0
-                    if self.latest_heartbeat is None
-                    else (
-                        0
-                        if self.latest_heartbeat.current_train_iteration is None
-                        else self.latest_heartbeat.current_train_iteration
-                    )
-                ),
+                "current_optimizer_step": current_optimizer_step,
+                "current_train_iteration": current_train_iteration,
             }
         )
 
     def _status_timestamp(self) -> str:
         """Return the timestamp used for the initial startup heartbeat."""
         return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-    def _required_progress_int(self, payload: dict[str, object], key: str) -> int:
-        """Return one required integer field from the current live heartbeat payload."""
-        value = payload.get(key)
-        if not isinstance(value, int):
-            raise SystemExit(f"Reporter encountered malformed live progress `{key}`.")
-        return value
-
-
-# --- Payload Builders ---
 
 
 def build_training_report(
@@ -297,6 +303,7 @@ def build_training_report(
     """Build the machine-readable report from one completed training run."""
     return TrainingReport(
         generated_at=_utc_now_iso(),
+        status="completed",
         model_id=model_id,
         train_jsonl=train_jsonl.as_posix(),
         eval_jsonl=eval_jsonl.as_posix(),
@@ -319,6 +326,76 @@ def build_training_report(
         throughput_profile=None if throughput_profile is None else dict(throughput_profile),
         tracking=None if training_summary.tracking is None else asdict(training_summary.tracking),
         training_summary=asdict(training_summary),
+        failure=None,
+    )
+
+
+def build_failed_training_report(
+    *,
+    model_id: str,
+    train_jsonl: Path,
+    eval_jsonl: Path,
+    output_dir: Path,
+    train_row_count: int,
+    eval_row_count: int,
+    bundle_precomputed_reference_input: Mapping[str, object] | None,
+    throughput_profile: Mapping[str, object] | None,
+    tracking: Mapping[str, object] | None,
+    failed_status: Mapping[str, object],
+) -> TrainingReport:
+    """Build the machine-readable report from one failed training run."""
+    return TrainingReport(
+        generated_at=_utc_now_iso(),
+        status="failed",
+        model_id=model_id,
+        train_jsonl=train_jsonl.as_posix(),
+        eval_jsonl=eval_jsonl.as_posix(),
+        output_dir=output_dir.as_posix(),
+        train_row_count=train_row_count,
+        eval_row_count=eval_row_count,
+        upstream_trainer_uses_eval_manifest=False,
+        torch_version=str(torch.__version__),
+        torchaudio_version=_package_version("torchaudio"),
+        torch_cuda_available=True,
+        torch_cuda_device_count=int(torch.cuda.device_count()),
+        torch_hip_version=str(torch.version.hip),
+        flash_attn_importable=importlib.util.find_spec("flash_attn") is not None,
+        flash_attn_version=_package_version("flash-attn"),
+        bundle_precomputed_reference_input=(
+            None
+            if bundle_precomputed_reference_input is None
+            else dict(bundle_precomputed_reference_input)
+        ),
+        throughput_profile=None if throughput_profile is None else dict(throughput_profile),
+        tracking=None if tracking is None else dict(tracking),
+        training_summary=None,
+        failure=TrainingFailureSummary(
+            error=_required_string(failed_status, "error"),
+            current_phase=_required_string(failed_status, "current_phase"),
+            current_epoch=_optional_mapping_int(failed_status, "current_epoch"),
+            current_step=_optional_mapping_int(failed_status, "current_step"),
+            current_optimizer_step=_optional_mapping_int(failed_status, "current_optimizer_step"),
+            current_train_iteration=_optional_mapping_int(failed_status, "current_train_iteration"),
+            latest_loss=_optional_mapping_float(failed_status, "latest_loss"),
+            smoothed_loss=_optional_mapping_float(failed_status, "smoothed_loss"),
+            latest_durable_checkpoint_path=_optional_mapping_string(
+                failed_status,
+                "latest_durable_checkpoint_path",
+            ),
+            latest_durable_checkpoint_step=_optional_mapping_int(
+                failed_status,
+                "latest_durable_checkpoint_step",
+            ),
+            latest_durable_checkpoint_saved_at=_optional_mapping_string(
+                failed_status,
+                "latest_durable_checkpoint_saved_at",
+            ),
+            finite_loss_guard=_optional_mapping_dict(failed_status, "finite_loss_guard"),
+            acceptance_measurement_valid=_optional_mapping_bool(
+                failed_status,
+                "acceptance_measurement_valid",
+            ),
+        ),
     )
 
 
@@ -514,33 +591,7 @@ def _failed_status_payload(
     tracking: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Build the terminal failure payload for the training status artifact."""
-    current_epoch = None if live_progress is None else live_progress.get("current_epoch")
-    current_step = None if live_progress is None else live_progress.get("current_step")
-    raw_current_optimizer_step = (
-        None if live_progress is None else live_progress.get("current_optimizer_step")
-    )
-    current_optimizer_step = (
-        current_step if raw_current_optimizer_step is None else raw_current_optimizer_step
-    )
-    raw_current_train_iteration = (
-        None if live_progress is None else live_progress.get("current_train_iteration")
-    )
-    current_train_iteration = (
-        current_optimizer_step
-        if raw_current_train_iteration is None
-        else raw_current_train_iteration
-    )
-    latest_loss = None if live_progress is None else live_progress.get("latest_loss")
-    smoothed_loss = None if live_progress is None else live_progress.get("smoothed_loss")
-    latest_durable_checkpoint_path = (
-        None if live_progress is None else live_progress.get("latest_durable_checkpoint_path")
-    )
-    latest_durable_checkpoint_step = (
-        None if live_progress is None else live_progress.get("latest_durable_checkpoint_step")
-    )
-    latest_durable_checkpoint_saved_at = (
-        None if live_progress is None else live_progress.get("latest_durable_checkpoint_saved_at")
-    )
+    resolved_progress = _resolve_failed_progress(live_progress=live_progress, exc=exc)
     finite_loss_guard_payload = None
     acceptance_measurement_valid = None
     if isinstance(exc, NonFiniteLossError):
@@ -557,23 +608,47 @@ def _failed_status_payload(
         "eval_row_count": eval_row_count,
         "upstream_trainer_uses_eval_manifest": False,
         "gradient_accumulation_steps": (
-            None if live_progress is None else live_progress.get("gradient_accumulation_steps")
+            None
+            if resolved_progress is None
+            else resolved_progress.get("gradient_accumulation_steps")
         ),
         "step_semantics": _step_semantics_payload(
             None
-            if live_progress is None
-            else _optional_int(live_progress, "gradient_accumulation_steps")
+            if resolved_progress is None
+            else _optional_mapping_int(resolved_progress, "gradient_accumulation_steps")
         ),
         "current_phase": "failed",
-        "current_epoch": current_epoch,
-        "current_step": current_step,
-        "current_optimizer_step": current_optimizer_step,
-        "current_train_iteration": current_train_iteration,
-        "latest_loss": latest_loss,
-        "smoothed_loss": smoothed_loss,
-        "latest_durable_checkpoint_path": latest_durable_checkpoint_path,
-        "latest_durable_checkpoint_step": latest_durable_checkpoint_step,
-        "latest_durable_checkpoint_saved_at": latest_durable_checkpoint_saved_at,
+        "current_epoch": (
+            None if resolved_progress is None else resolved_progress.get("current_epoch")
+        ),
+        "current_step": None
+        if resolved_progress is None
+        else resolved_progress.get("current_step"),
+        "current_optimizer_step": (
+            None if resolved_progress is None else resolved_progress.get("current_optimizer_step")
+        ),
+        "current_train_iteration": (
+            None if resolved_progress is None else resolved_progress.get("current_train_iteration")
+        ),
+        "latest_loss": None if resolved_progress is None else resolved_progress.get("latest_loss"),
+        "smoothed_loss": (
+            None if resolved_progress is None else resolved_progress.get("smoothed_loss")
+        ),
+        "latest_durable_checkpoint_path": (
+            None
+            if resolved_progress is None
+            else resolved_progress.get("latest_durable_checkpoint_path")
+        ),
+        "latest_durable_checkpoint_step": (
+            None
+            if resolved_progress is None
+            else resolved_progress.get("latest_durable_checkpoint_step")
+        ),
+        "latest_durable_checkpoint_saved_at": (
+            None
+            if resolved_progress is None
+            else resolved_progress.get("latest_durable_checkpoint_saved_at")
+        ),
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
         "finite_loss_guard": finite_loss_guard_payload,
@@ -629,6 +704,145 @@ def _optional_int(payload: dict[str, object], key: str) -> int | None:
     if not isinstance(value, int):
         return None
     return value
+
+
+def _required_progress_int(payload: Mapping[str, object | None], key: str) -> int:
+    """Return one required integer field from resolved terminal progress."""
+    value = payload.get(key)
+    if not isinstance(value, int):
+        raise SystemExit(f"Reporter encountered malformed live progress `{key}`.")
+    return value
+
+
+def _resolve_terminal_progress(
+    *,
+    live_progress: dict[str, object] | None,
+) -> dict[str, object | None] | None:
+    """Return one normalized terminal-progress view from the latest heartbeat."""
+    if live_progress is None:
+        return None
+    current_step = _optional_int(live_progress, "current_step")
+    current_optimizer_step = _optional_int(live_progress, "current_optimizer_step")
+    resolved_optimizer_step = (
+        current_step if current_optimizer_step is None else current_optimizer_step
+    )
+    current_train_iteration = _optional_int(live_progress, "current_train_iteration")
+    return {
+        "current_epoch": _optional_int(live_progress, "current_epoch"),
+        "current_step": current_step,
+        "current_optimizer_step": resolved_optimizer_step,
+        "current_train_iteration": (
+            resolved_optimizer_step if current_train_iteration is None else current_train_iteration
+        ),
+        "gradient_accumulation_steps": _optional_int(live_progress, "gradient_accumulation_steps"),
+        "latest_loss": live_progress.get("latest_loss"),
+        "smoothed_loss": live_progress.get("smoothed_loss"),
+        "latest_durable_checkpoint_path": live_progress.get("latest_durable_checkpoint_path"),
+        "latest_durable_checkpoint_step": live_progress.get("latest_durable_checkpoint_step"),
+        "latest_durable_checkpoint_saved_at": live_progress.get(
+            "latest_durable_checkpoint_saved_at"
+        ),
+    }
+
+
+def _resolve_failed_progress(
+    *,
+    live_progress: dict[str, object] | None,
+    exc: Exception,
+) -> dict[str, object | None] | None:
+    """Return terminal progress with exception-derived counters overriding stale heartbeat data."""
+    resolved_progress = _resolve_terminal_progress(live_progress=live_progress)
+    if not isinstance(exc, NonFiniteLossError):
+        return resolved_progress
+    if resolved_progress is None:
+        gradient_accumulation_steps = None
+        smoothed_loss = None
+        latest_durable_checkpoint_path = None
+        latest_durable_checkpoint_step = None
+        latest_durable_checkpoint_saved_at = None
+    else:
+        gradient_accumulation_steps = _optional_mapping_int(
+            resolved_progress,
+            "gradient_accumulation_steps",
+        )
+        smoothed_loss = _optional_mapping_float(resolved_progress, "smoothed_loss")
+        latest_durable_checkpoint_path = _optional_mapping_string(
+            resolved_progress,
+            "latest_durable_checkpoint_path",
+        )
+        latest_durable_checkpoint_step = _optional_mapping_int(
+            resolved_progress,
+            "latest_durable_checkpoint_step",
+        )
+        latest_durable_checkpoint_saved_at = _optional_mapping_string(
+            resolved_progress,
+            "latest_durable_checkpoint_saved_at",
+        )
+    return {
+        "current_epoch": exc.current_epoch,
+        "current_step": exc.optimizer_step,
+        "current_optimizer_step": exc.optimizer_step,
+        "current_train_iteration": exc.current_train_iteration,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
+        "latest_loss": exc.loss_value,
+        "smoothed_loss": smoothed_loss,
+        "latest_durable_checkpoint_path": latest_durable_checkpoint_path,
+        "latest_durable_checkpoint_step": latest_durable_checkpoint_step,
+        "latest_durable_checkpoint_saved_at": latest_durable_checkpoint_saved_at,
+    }
+
+
+def _required_string(payload: Mapping[str, object], key: str) -> str:
+    """Return one required string field from a mapping."""
+    value = payload.get(key)
+    if not isinstance(value, str):
+        raise SystemExit(f"Reporter encountered malformed required string `{key}`.")
+    return value
+
+
+def _optional_mapping_int(payload: Mapping[str, object], key: str) -> int | None:
+    """Return one optional integer field from a generic mapping."""
+    value = payload.get(key)
+    if value is None or not isinstance(value, int):
+        return None
+    return value
+
+
+def _optional_mapping_float(payload: Mapping[str, object], key: str) -> float | None:
+    """Return one optional float field from a generic mapping."""
+    value = payload.get(key)
+    if value is None:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    return None
+
+
+def _optional_mapping_string(payload: Mapping[str, object], key: str) -> str | None:
+    """Return one optional string field from a generic mapping."""
+    value = payload.get(key)
+    if value is None or not isinstance(value, str):
+        return None
+    return value
+
+
+def _optional_mapping_bool(payload: Mapping[str, object], key: str) -> bool | None:
+    """Return one optional boolean field from a generic mapping."""
+    value = payload.get(key)
+    if value is None or not isinstance(value, bool):
+        return None
+    return value
+
+
+def _optional_mapping_dict(
+    payload: Mapping[str, object],
+    key: str,
+) -> dict[str, object] | None:
+    """Return one optional shallow dict[str, object] field from a generic mapping."""
+    value = payload.get(key)
+    if not isinstance(value, dict):
+        return None
+    return {str(mapping_key): mapping_value for mapping_key, mapping_value in value.items()}
 
 
 def _step_semantics_payload(gradient_accumulation_steps: int | None) -> dict[str, object] | None:

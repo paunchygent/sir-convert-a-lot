@@ -1,9 +1,9 @@
 ---
-id: 'task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof'
-title: 'Bound the rebuilt-bundle Task 101 non-finite loss window before retrying saturation proof'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof
+title: Bound the rebuilt-bundle Task 101 non-finite loss window before retrying saturation proof
+type: task
+status: proposed
+priority: high
 created: '2026-03-14'
 last_updated: '2026-03-14'
 related:
@@ -11,6 +11,7 @@ related:
   - docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md
   - docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md
   - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
+  - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -19,6 +20,7 @@ labels:
   - throughput
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -60,6 +62,14 @@ That means the next blocker before a fresh saturation retry is not
 observability; it is bounding the aggressive rebuilt-bundle lane's numerical
 instability.
 
+The code-side remediation tracked by `T180` is a prerequisite to this task's
+next bounded Hemma repro:
+
+- `T180` fixes accumulation-boundary correctness, failed-run report emission,
+  and failed-status counter truth
+- `T179` then re-runs the bounded rebuilt-bundle proof against those repaired
+  surfaces and decides whether the lane is ready for another saturation attempt
+
 ## PR Scope
 
 - Add one committed failure-context surface for the rebuilt-bundle aggressive
@@ -73,7 +83,8 @@ instability.
   - active manifest family / launch profile
   - resolved batch occupancy context for the failing window
 - Reproduce the current failure on a bounded rebuilt-bundle Hemma proof using
-  the same aggressive launch class and canonical detached surface.
+  the same aggressive launch class and canonical detached surface, but only
+  after the code-side remediation in `T180` lands.
 - Land the smallest numerically stabilizing fix needed to keep the rebuilt
   aggressive proof finite through the first acceptance window.
 - Preserve the existing `T175` observability and attribution work; do not

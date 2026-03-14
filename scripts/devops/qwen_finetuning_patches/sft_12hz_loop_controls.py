@@ -146,11 +146,15 @@ class NonFiniteLossError(RuntimeError):
         self,
         *,
         optimizer_step: int,
+        current_epoch: int,
+        current_train_iteration: int,
         consecutive_non_finite_steps: int,
         max_consecutive_non_finite_steps: int,
         loss_value: float,
     ) -> None:
         self.optimizer_step = optimizer_step
+        self.current_epoch = current_epoch
+        self.current_train_iteration = current_train_iteration
         self.consecutive_non_finite_steps = consecutive_non_finite_steps
         self.max_consecutive_non_finite_steps = max_consecutive_non_finite_steps
         self.loss_value = loss_value
@@ -168,6 +172,8 @@ class NonFiniteLossError(RuntimeError):
             "triggered": True,
             "trigger_reason": "non-finite-loss",
             "optimizer_step": self.optimizer_step,
+            "current_epoch": self.current_epoch,
+            "current_train_iteration": self.current_train_iteration,
             "consecutive_non_finite_steps": self.consecutive_non_finite_steps,
             "max_consecutive_non_finite_steps": self.max_consecutive_non_finite_steps,
             "loss_value": self.loss_value,
@@ -202,7 +208,7 @@ class FiniteLossGuardState:
     last_non_finite_optimizer_step: int | None = None
     last_non_finite_loss_value: float | None = None
 
-    def observe(self, observation: LossObservation, *, optimizer_step: int) -> None:
+    def observe(self, observation: LossObservation) -> None:
         """Record one optimizer-step loss observation and fail when the streak holds."""
         if observation.is_finite:
             self.consecutive_non_finite_steps = 0
@@ -211,11 +217,13 @@ class FiniteLossGuardState:
             return
 
         self.consecutive_non_finite_steps += 1
-        self.last_non_finite_optimizer_step = optimizer_step
+        self.last_non_finite_optimizer_step = observation.optimizer_step
         self.last_non_finite_loss_value = observation.loss_value
         if self.consecutive_non_finite_steps >= self.config.max_consecutive_non_finite_steps:
             raise NonFiniteLossError(
-                optimizer_step=optimizer_step,
+                optimizer_step=observation.optimizer_step,
+                current_epoch=observation.current_epoch,
+                current_train_iteration=observation.current_train_iteration,
                 consecutive_non_finite_steps=self.consecutive_non_finite_steps,
                 max_consecutive_non_finite_steps=self.config.max_consecutive_non_finite_steps,
                 loss_value=observation.loss_value,

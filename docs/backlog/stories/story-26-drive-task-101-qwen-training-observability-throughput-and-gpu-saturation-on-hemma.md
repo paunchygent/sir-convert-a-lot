@@ -30,6 +30,7 @@ related:
   - docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md
   - docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md
   - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
+  - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -112,6 +113,7 @@ Out of scope for this story:
 1. `docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
 1. `docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md`
 1. `docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md`
+1. `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
 1. `docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md`
 
 ## Implementation Blueprint (T161-T163)
@@ -204,8 +206,15 @@ Root-cause conclusion from this evidence:
   trustworthy saturation claim.
 - The first rebuilt-bundle aggressive throughput proof
   (`task175-20260314t-throughput-a2`) failed with a non-finite loss at
-  optimizer step `4`, so follow-on task `T179` now bounds that numerical
-  instability window before the next saturation retry.
+  optimizer step `4`.
+- Review of that rebuilt-bundle failure lane exposed concrete training-loop and
+  failure-reporting defects, so follow-on task `T180` now tracks the
+  accumulation-boundary audit, canonical failed-run report emission, and
+  accumulation-aware regression coverage required before trusting the next
+  bounded repro.
+- Follow-on task `T179` remains the dependent rebuilt-bundle Hemma repro that
+  runs only after `T180` lands and then decides whether the numerical
+  instability window is sufficiently bounded for another saturation retry.
 - Story 26 remains open because `T172` is still pending and `T173` still lacks
   bounded Hemma evidence under `build/verification/`.
 

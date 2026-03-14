@@ -81,17 +81,24 @@ class _FakeAccelerator:
         self,
         *,
         gradient_accumulation_steps: int = 1,
+        respect_gradient_accumulation: bool = False,
         mixed_precision: str = "bf16",
         log_with: str | list[str] = "tensorboard",
         project_dir: str = "",
     ) -> None:
-        del gradient_accumulation_steps, mixed_precision, log_with
+        del mixed_precision, log_with
+        self.gradient_accumulation_steps = gradient_accumulation_steps
+        self.respect_gradient_accumulation = respect_gradient_accumulation
         self.is_main_process = True
         self.saved_paths: list[str] = []
         self.wait_count = 0
         self.logged_metrics: list[tuple[dict[str, float | int], int]] = []
         self.trackers_initialized = False
         self.training_ended = False
+        self.accumulate_calls = 0
+        self.sync_gradients_history: list[bool] = []
+        self.prepared_optimizer: _FakePreparedOptimizer | None = None
+        self._sync_gradients = True
         artifact_root = Path(project_dir) / "mlflow-artifacts"
         self._tracker = _FakeMlflowRun(
             info=_FakeMlflowRunInfo(
@@ -117,10 +124,24 @@ class _FakeAccelerator:
 
     def prepare(self, *args: object) -> tuple[object, ...]:
         """Return prepared training objects unchanged."""
-        return args
+        prepared_args = list(args)
+        if len(prepared_args) >= 2 and isinstance(prepared_args[1], _FakeOptimizer):
+            wrapped_optimizer = _FakePreparedOptimizer(
+                optimizer=prepared_args[1],
+                accelerator=self,
+            )
+            self.prepared_optimizer = wrapped_optimizer
+            prepared_args[1] = wrapped_optimizer
+        return tuple(prepared_args)
 
     def accumulate(self, _model: object) -> "_FakeAccelerator":
         """Provide one no-op context manager for accumulate semantics."""
+        self.accumulate_calls += 1
+        if not self.respect_gradient_accumulation:
+            self._sync_gradients = True
+        else:
+            self._sync_gradients = self.accumulate_calls % self.gradient_accumulation_steps == 0
+        self.sync_gradients_history.append(self._sync_gradients)
         return self
 
     def __enter__(self) -> "_FakeAccelerator":
@@ -133,8 +154,8 @@ class _FakeAccelerator:
 
     @property
     def sync_gradients(self) -> bool:
-        """Mirror the training loop expectation that gradients are synchronized."""
-        return True
+        """Mirror Accelerate accumulation semantics for sync boundaries."""
+        return self._sync_gradients
 
     def backward(self, loss: torch.Tensor) -> None:
         """Backpropagate through the fake training graph."""
@@ -195,12 +216,44 @@ class _FakeOptimizer:
 
     def __init__(self, _parameters: object, *, lr: float, weight_decay: float) -> None:
         del _parameters, lr, weight_decay
+        self.step_calls = 0
+        self.zero_grad_calls = 0
 
     def step(self) -> None:
         """Accept one optimizer step without mutating real parameters."""
+        self.step_calls += 1
 
     def zero_grad(self) -> None:
         """Accept zero-grad requests from the training loop."""
+        self.zero_grad_calls += 1
+
+
+class _FakePreparedOptimizer:
+    """Simulate Accelerate's wrapped optimizer under accumulation mode."""
+
+    def __init__(self, *, optimizer: _FakeOptimizer, accelerator: _FakeAccelerator) -> None:
+        self._optimizer = optimizer
+        self._accelerator = accelerator
+        self.raw_step_attempts = 0
+        self.raw_zero_grad_attempts = 0
+        self.effective_step_calls = 0
+        self.effective_zero_grad_calls = 0
+
+    def step(self) -> None:
+        """Apply the optimizer step only on sync boundaries."""
+        self.raw_step_attempts += 1
+        if not self._accelerator.sync_gradients:
+            return
+        self.effective_step_calls += 1
+        self._optimizer.step()
+
+    def zero_grad(self) -> None:
+        """Zero gradients only on sync boundaries."""
+        self.raw_zero_grad_attempts += 1
+        if not self._accelerator.sync_gradients:
+            return
+        self.effective_zero_grad_calls += 1
+        self._optimizer.zero_grad()
 
 
 class _FakeEmbedding(torch.nn.Module):

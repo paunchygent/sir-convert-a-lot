@@ -91,10 +91,7 @@ def _consume_loss_observations(
                 )
             )
             emitted_train_progress = True
-        prepared.finite_loss_guard.observe(
-            observation,
-            optimizer_step=observation.optimizer_step,
-        )
+        prepared.finite_loss_guard.observe(observation)
         last_loss = observation.loss_value
         smoothed_loss = update_smoothed_loss(smoothed_loss, last_loss)
         if prepared.heartbeat_policy.should_emit_train_update(observation.optimizer_step):

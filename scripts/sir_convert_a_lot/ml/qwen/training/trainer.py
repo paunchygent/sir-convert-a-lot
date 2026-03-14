@@ -30,6 +30,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_arg
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     StatusReporter,
     StatusReporterConfig,
+    build_failed_training_report,
     build_training_report,
     write_json,
 )
@@ -269,7 +270,20 @@ def main() -> int:
         return 0
     except Exception as exc:
         failure_path.write_text(traceback.format_exc(), encoding="utf-8")
-        status_reporter.write_failed(exc)
+        failed_status = status_reporter.write_failed(exc)
+        failed_report = build_failed_training_report(
+            model_id=str(args.model_id),
+            train_jsonl=args.train_jsonl,
+            eval_jsonl=args.eval_jsonl,
+            output_dir=output_dir,
+            train_row_count=train_row_count,
+            eval_row_count=eval_row_count,
+            bundle_precomputed_reference_input=bundle_precomputed_reference_input,
+            throughput_profile=throughput_policy_payload(throughput_policy),
+            tracking=status_reporter.tracking,
+            failed_status=failed_status,
+        )
+        write_json(report_path, asdict(failed_report))
         raise
 
 

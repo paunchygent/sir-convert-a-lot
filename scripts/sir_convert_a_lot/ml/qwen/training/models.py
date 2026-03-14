@@ -166,10 +166,30 @@ class DetachedStop:
 
 
 @dataclass(frozen=True)
+class TrainingFailureSummary:
+    """Machine-readable terminal failure details for one training run."""
+
+    error: str
+    current_phase: str
+    current_epoch: int | None
+    current_step: int | None
+    current_optimizer_step: int | None
+    current_train_iteration: int | None
+    latest_loss: float | None
+    smoothed_loss: float | None
+    latest_durable_checkpoint_path: str | None
+    latest_durable_checkpoint_step: int | None
+    latest_durable_checkpoint_saved_at: str | None
+    finite_loss_guard: dict[str, object] | None
+    acceptance_measurement_valid: bool | None
+
+
+@dataclass(frozen=True)
 class TrainingReport:
     """Machine-readable report emitted by the detached training probe."""
 
     generated_at: str
+    status: str
     model_id: str
     train_jsonl: str
     eval_jsonl: str
@@ -187,7 +207,8 @@ class TrainingReport:
     bundle_precomputed_reference_input: dict[str, object] | None
     throughput_profile: dict[str, object] | None
     tracking: dict[str, object] | None
-    training_summary: dict[str, object]
+    training_summary: dict[str, object] | None
+    failure: TrainingFailureSummary | None
 
 
 def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettings:
