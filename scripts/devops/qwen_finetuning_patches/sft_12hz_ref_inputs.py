@@ -20,13 +20,18 @@ import numpy.typing as npt
 import soundfile
 import torch
 
-with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-    from qwen_tts.core.models.modeling_qwen3_tts import mel_spectrogram
-
 AudioArray = npt.NDArray[np.float32]
 PRECOMPUTED_REF_INPUT_KIND = "ref_mel"
 PRECOMPUTED_REF_INPUT_VERSION = "task101_ref_mel_v1"
 PRECOMPUTED_REF_INPUT_SOURCE_FIELD = "ref_audio"
+
+
+def _load_mel_spectrogram():
+    """Import the Qwen mel extractor lazily so metadata-only paths stay lightweight."""
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        from qwen_tts.core.models.modeling_qwen3_tts import mel_spectrogram
+
+    return mel_spectrogram
 
 
 def load_audio_to_np(path: Path) -> tuple[AudioArray, int]:
@@ -42,6 +47,7 @@ def extract_ref_mel(audio: AudioArray, *, sample_rate: int) -> torch.Tensor:
     """Extract one canonical Task 101 reference-mel tensor from 24 kHz audio."""
     if sample_rate != 24000:
         raise ValueError("Only support 24kHz audio for precomputed reference inputs.")
+    mel_spectrogram = _load_mel_spectrogram()
     mel_output = mel_spectrogram(
         torch.from_numpy(audio).unsqueeze(0),
         n_fft=1024,
