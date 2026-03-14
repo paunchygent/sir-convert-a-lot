@@ -20,7 +20,7 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Literal
 
-from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_input_contract import (
     PRECOMPUTED_REF_INPUT_KIND,
     PRECOMPUTED_REF_INPUT_VERSION,
 )
@@ -386,9 +386,17 @@ def ensure_training_bundle_exists(
     ]
     if missing_paths:
         rendered_paths = ", ".join(path.as_posix() for path in missing_paths)
+        available_manifest_families = _available_bundle_manifest_families(bundle_root)
+        rendered_available_families = (
+            "none"
+            if len(available_manifest_families) == 0
+            else ", ".join(available_manifest_families)
+        )
         raise SystemExit(
             "Qwen training could not find the required training-bundle artifacts: "
-            f"{rendered_paths}."
+            f"{rendered_paths}.\n"
+            "Available manifest families under the bundle root: "
+            f"{rendered_available_families}."
         )
     try:
         validate_training_bundle_paths(
@@ -455,6 +463,21 @@ def validate_training_bundle_paths(
             )
             if require_precomputed_ref_inputs:
                 _validate_precomputed_ref_input_contract(manifest_path, row)
+
+
+def _available_bundle_manifest_families(bundle_root: Path) -> list[str]:
+    """Return the prepared manifest families present under one bundle root."""
+    manifests_dir = bundle_root / "manifests"
+    if not manifests_dir.is_dir():
+        return []
+    families: list[str] = []
+    for manifest_path in sorted(manifests_dir.glob("*.prepared.jsonl")):
+        suffix = ".prepared.jsonl"
+        manifest_name = manifest_path.name
+        if not manifest_name.endswith(suffix):
+            continue
+        families.append(manifest_name[: -len(suffix)])
+    return families
 
 
 def _validate_bundle_row_path(

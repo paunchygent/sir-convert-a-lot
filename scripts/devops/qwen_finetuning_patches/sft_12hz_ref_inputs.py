@@ -20,10 +20,12 @@ import numpy.typing as npt
 import soundfile
 import torch
 
+from scripts.devops.qwen_finetuning_patches import sft_12hz_ref_input_contract
+
 AudioArray = npt.NDArray[np.float32]
-PRECOMPUTED_REF_INPUT_KIND = "ref_mel"
-PRECOMPUTED_REF_INPUT_VERSION = "task101_ref_mel_v1"
-PRECOMPUTED_REF_INPUT_SOURCE_FIELD = "ref_audio"
+PRECOMPUTED_REF_INPUT_KIND = sft_12hz_ref_input_contract.PRECOMPUTED_REF_INPUT_KIND
+PRECOMPUTED_REF_INPUT_VERSION = sft_12hz_ref_input_contract.PRECOMPUTED_REF_INPUT_VERSION
+PRECOMPUTED_REF_INPUT_SOURCE_FIELD = sft_12hz_ref_input_contract.PRECOMPUTED_REF_INPUT_SOURCE_FIELD
 
 
 def _load_mel_spectrogram():

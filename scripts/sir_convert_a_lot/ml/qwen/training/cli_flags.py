@@ -16,6 +16,18 @@ from __future__ import annotations
 import argparse
 
 
+def _parse_explicit_bool(raw_value: str) -> bool:
+    """Parse one explicit boolean CLI value."""
+    normalized = raw_value.strip().lower()
+    if normalized in {"1", "true", "t", "yes", "y", "on"}:
+        return True
+    if normalized in {"0", "false", "f", "no", "n", "off"}:
+        return False
+    raise argparse.ArgumentTypeError(
+        "Expected one boolean value: true/false, yes/no, on/off, or 1/0."
+    )
+
+
 def add_boolean_argument(
     parser: argparse.ArgumentParser,
     flag: str,
@@ -23,12 +35,28 @@ def add_boolean_argument(
     default: bool,
     help: str | None = None,
 ) -> None:
-    """Register one canonical `--flag` / `--no-flag` boolean option."""
+    """Register one canonical boolean option with explicit-value support."""
+    if not flag.startswith("--"):
+        raise ValueError("Boolean flags must use long-option syntax.")
+    dest = flag[2:].replace("-", "_")
+    rendered_help = (
+        help if help is None else f"{help} Also accepts explicit values like `{flag} false`."
+    )
     parser.add_argument(
         flag,
-        action=argparse.BooleanOptionalAction,
+        dest=dest,
+        nargs="?",
+        const=True,
+        type=_parse_explicit_bool,
         default=default,
-        help=help,
+        metavar="BOOL",
+        help=rendered_help,
+    )
+    parser.add_argument(
+        f"--no-{flag[2:]}",
+        dest=dest,
+        action="store_false",
+        help=argparse.SUPPRESS,
     )
 
 

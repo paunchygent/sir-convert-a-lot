@@ -76,6 +76,27 @@ def test_parser_launch_defaults() -> None:
     assert args.skip_build is False
 
 
+def test_parser_launch_accepts_explicit_boolean_values() -> None:
+    """The training parser should accept explicit boolean values for operator ergonomics."""
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "launch",
+            "--data-path-proof-mode",
+            "true",
+            "--dataloader-persistent-workers",
+            "false",
+            "--non-blocking-transfer",
+            "no",
+        ]
+    )
+
+    assert args.data_path_proof_mode is True
+    assert args.dataloader_persistent_workers is False
+    assert args.non_blocking_transfer is False
+
+
 def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest() -> None:
     """The detached training command should target prepared bundle manifests."""
     settings = TrainingSettings(
@@ -281,7 +302,24 @@ def test_ensure_training_bundle_exists_validates_required_artifacts(tmp_path: Pa
     bundle_root = tmp_path / "bundle"
     bundle_root.mkdir(parents=True, exist_ok=True)
 
-    with pytest.raises(SystemExit, match="required training-bundle artifacts"):
+    with pytest.raises(SystemExit, match="Available manifest families under the bundle root: none"):
+        ensure_training_bundle_exists(
+            bundle_root,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+        )
+
+
+def test_ensure_training_bundle_exists_reports_available_manifest_families(
+    tmp_path: Path,
+) -> None:
+    """Launch failures should report which manifest families actually exist."""
+    bundle_root = tmp_path / "bundle"
+    manifests_dir = bundle_root / "manifests"
+    manifests_dir.mkdir(parents=True, exist_ok=True)
+    (manifests_dir / "swedish_pilot_train.prepared.jsonl").write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="swedish_pilot_train"):
         ensure_training_bundle_exists(
             bundle_root,
             train_manifest_family="swedish_pilot_train",
