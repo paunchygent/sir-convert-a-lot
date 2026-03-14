@@ -54,6 +54,10 @@ throughput profiles produce a real, durable gain on Hemma.
 - Verify the rebuilt bundle exposes canonical
   `training_bundle_report.json` metadata and per-row
   `precomputed_ref_input_*` fields.
+- Normalize the upstream frozen-row reference contract so bundle-building no
+  longer has to repair empty `reference_audio_24k_paths` maps from row
+  artifacts; either make row-processing persist deterministic per-family
+  reference paths or move that field out of the pre-finalization row contract.
 - Remove the temporary legacy-bundle launch and dataset fallback branches that
   allow old bundles without `T173` metadata to launch.
 - Remove any temporary legacy-oriented `if` trees that only exist to bridge the
@@ -72,6 +76,8 @@ throughput profiles produce a real, durable gain on Hemma.
 
 - [ ] One rebuilt canonical Task 101 bundle exists on Hemma under the `T173`
   contract.
+- [ ] Upstream row artifacts expose one uniform, explicit reference-audio
+  contract instead of ambiguous empty `reference_audio_24k_paths` payloads.
 - [ ] Legacy-bundle fallback branches are removed from the training launch and
   dataset path.
 - [ ] Docs and operator surfaces point to the rebuilt-bundle path only.
@@ -82,6 +88,9 @@ throughput profiles produce a real, durable gain on Hemma.
   legacy-bundle fallback logic.
 - [ ] The rebuilt-bundle run preserves the post-`T172` throughput gain for at
   least `24` hours of observed training.
+- [ ] Bundle-building no longer depends on a fallback from empty
+  `reference_audio_24k_paths` to row audio because the upstream row contract is
+  uniform and explicit.
 - [ ] The repo no longer contains temporary legacy-bundle compatibility trees
   introduced only to bridge pre-`T173` bundles.
 
