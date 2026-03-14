@@ -137,6 +137,12 @@ def build_training_bundle(
     return _assemble_bundle(output_root=output_root, plan=plan)
 
 
+def assemble_training_bundle(output_root: Path) -> BundleSummary:
+    """Assemble one existing bundle root into final manifests and summary metadata."""
+    plan = load_training_bundle_batch_plan(output_root)
+    return _assemble_bundle(output_root=output_root, plan=plan)
+
+
 def prepare_training_bundle_inputs(
     *,
     source_root: Path,

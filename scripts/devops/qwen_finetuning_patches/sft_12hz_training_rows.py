@@ -58,45 +58,66 @@ def _resolve_training_row_paths(train_jsonl_path: Path, row: dict[str, object]) 
     if not isinstance(audio_codes_value, list):
         raise ValueError("Training row is missing a valid `audio_codes` value.")
     speaker_id_value = row.get("speaker_id")
+    resolved_row: TrainingRow = {
+        "text": text_value,
+        "audio_codes": audio_codes_value,
+        "ref_audio": resolved_ref_audio,
+    }
+    _apply_precomputed_ref_input_fields(manifest_root, row, resolved_row)
+    if isinstance(speaker_id_value, str):
+        resolved_row["speaker_id"] = speaker_id_value
+    return resolved_row
+
+
+def _apply_precomputed_ref_input_fields(
+    manifest_root: Path,
+    row: dict[str, object],
+    resolved_row: TrainingRow,
+) -> None:
+    """Attach persisted ref-input fields when the manifest row carries them."""
     precomputed_ref_input_path = row.get("precomputed_ref_input_path")
-    if not isinstance(precomputed_ref_input_path, str):
-        raise ValueError(
-            "Training row is missing `precomputed_ref_input_path`; rebuild the training bundle "
-            "with persisted precomputed reference inputs before launching training."
-        )
     precomputed_ref_input_kind = row.get("precomputed_ref_input_kind")
+    precomputed_ref_input_version = row.get("precomputed_ref_input_version")
+    precomputed_ref_input_source_audio = row.get("precomputed_ref_input_source_audio")
+
+    if precomputed_ref_input_path is None:
+        if (
+            precomputed_ref_input_kind is not None
+            or precomputed_ref_input_version is not None
+            or precomputed_ref_input_source_audio is not None
+        ):
+            raise ValueError(
+                "Training row carried partial persisted reference-input metadata without a "
+                "`precomputed_ref_input_path`."
+            )
+        return
+    if not isinstance(precomputed_ref_input_path, str):
+        raise ValueError("Training row `precomputed_ref_input_path` must be a string when present.")
     if precomputed_ref_input_kind != PRECOMPUTED_REF_INPUT_KIND:
         raise ValueError(
             "Training row referenced unsupported `precomputed_ref_input_kind`; "
             f"expected `{PRECOMPUTED_REF_INPUT_KIND}`."
         )
-    precomputed_ref_input_version = row.get("precomputed_ref_input_version")
     if precomputed_ref_input_version != PRECOMPUTED_REF_INPUT_VERSION:
         raise ValueError(
             "Training row referenced unsupported `precomputed_ref_input_version`; "
             f"expected `{PRECOMPUTED_REF_INPUT_VERSION}`."
         )
-    precomputed_ref_input_source_audio = row.get("precomputed_ref_input_source_audio")
     if not isinstance(precomputed_ref_input_source_audio, str):
-        raise ValueError("Training row is missing `precomputed_ref_input_source_audio`.")
-    resolved_row: TrainingRow = {
-        "text": text_value,
-        "audio_codes": audio_codes_value,
-        "ref_audio": resolved_ref_audio,
-        "precomputed_ref_input_path": _resolve_manifest_path(
-            manifest_root,
-            precomputed_ref_input_path,
-        ),
-        "precomputed_ref_input_kind": PRECOMPUTED_REF_INPUT_KIND,
-        "precomputed_ref_input_version": PRECOMPUTED_REF_INPUT_VERSION,
-        "precomputed_ref_input_source_audio": _resolve_manifest_path(
-            manifest_root,
-            precomputed_ref_input_source_audio,
-        ),
-    }
-    if isinstance(speaker_id_value, str):
-        resolved_row["speaker_id"] = speaker_id_value
-    return resolved_row
+        raise ValueError(
+            "Training row is missing `precomputed_ref_input_source_audio` when persisted "
+            "reference inputs are declared."
+        )
+    resolved_row["precomputed_ref_input_path"] = _resolve_manifest_path(
+        manifest_root,
+        precomputed_ref_input_path,
+    )
+    resolved_row["precomputed_ref_input_kind"] = PRECOMPUTED_REF_INPUT_KIND
+    resolved_row["precomputed_ref_input_version"] = PRECOMPUTED_REF_INPUT_VERSION
+    resolved_row["precomputed_ref_input_source_audio"] = _resolve_manifest_path(
+        manifest_root,
+        precomputed_ref_input_source_audio,
+    )
 
 
 def _resolve_manifest_path(manifest_root: Path, raw_path: str) -> str:

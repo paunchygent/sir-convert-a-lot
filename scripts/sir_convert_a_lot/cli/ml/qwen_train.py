@@ -370,7 +370,6 @@ def ensure_training_bundle_exists(
         for path in (
             bundle_manifest_path(bundle_root, train_manifest_family),
             bundle_manifest_path(bundle_root, eval_manifest_family),
-            bundle_report_path(bundle_root),
         )
         if not path.exists()
     ]
@@ -381,12 +380,20 @@ def ensure_training_bundle_exists(
             f"{rendered_paths}."
         )
     try:
-        bundle_summary = load_training_bundle_summary(bundle_root)
         validate_training_bundle_paths(
             bundle_root,
             (train_manifest_family, eval_manifest_family),
         )
     except ValueError as exc:
+        raise SystemExit(
+            f"Qwen training bundle integrity check failed before launch.\n{exc}"
+        ) from exc
+    bundle_report = bundle_report_path(bundle_root)
+    if not bundle_report.exists():
+        return
+    try:
+        bundle_summary = load_training_bundle_summary(bundle_root)
+    except (FileNotFoundError, ValueError) as exc:
         raise SystemExit(
             f"Qwen training bundle integrity check failed before launch.\n{exc}"
         ) from exc
@@ -414,23 +421,69 @@ def validate_training_bundle_paths(
                 raise ValueError(
                     f"Prepared manifest row in `{manifest_path}` was not a JSON object."
                 )
-            for key in ("audio", "ref_audio", "precomputed_ref_input_path"):
-                raw_path = row.get(key)
-                if not isinstance(raw_path, str):
-                    raise ValueError(
-                        f"Prepared manifest row in `{manifest_path}` lacked string `{key}`."
-                    )
-                resolved_path = (bundle_root / raw_path).resolve()
-                try:
-                    resolved_path.relative_to(bundle_root.resolve())
-                except ValueError as exc:
-                    raise ValueError(
-                        f"Prepared manifest `{key}` escaped the bundle root: {raw_path}"
-                    ) from exc
-                if not resolved_path.exists():
-                    raise ValueError(
-                        f"Prepared manifest `{key}` path did not exist: {resolved_path.as_posix()}"
-                    )
+            for key in ("audio", "ref_audio"):
+                _validate_bundle_row_path(bundle_root, manifest_path, row, key, required=True)
+            _validate_bundle_row_path(
+                bundle_root,
+                manifest_path,
+                row,
+                "precomputed_ref_input_path",
+                required=False,
+            )
+
+
+def _validate_bundle_row_path(
+    bundle_root: Path,
+    manifest_path: Path,
+    row: dict[str, object],
+    key: str,
+    *,
+    required: bool,
+) -> None:
+    """Validate one required or optional manifest-relative bundle path field."""
+    raw_value = row.get(key)
+    if raw_value is None:
+        if required:
+            raise ValueError(f"Prepared manifest row in `{manifest_path}` lacked `{key}`.")
+        return
+    raw_paths = _row_path_values(raw_value, key=key, manifest_path=manifest_path)
+    for raw_path in raw_paths:
+        resolved_path = (bundle_root / raw_path).resolve()
+        try:
+            resolved_path.relative_to(bundle_root.resolve())
+        except ValueError as exc:
+            raise ValueError(
+                f"Prepared manifest `{key}` escaped the bundle root: {raw_path}"
+            ) from exc
+        if not resolved_path.exists():
+            raise ValueError(
+                f"Prepared manifest `{key}` path did not exist: {resolved_path.as_posix()}"
+            )
+
+
+def _row_path_values(
+    raw_value: object,
+    *,
+    key: str,
+    manifest_path: Path,
+) -> list[str]:
+    """Normalize one manifest row path field into concrete string paths."""
+    if isinstance(raw_value, str):
+        return [raw_value]
+    if isinstance(raw_value, list):
+        values: list[str] = []
+        for item in raw_value:
+            if not isinstance(item, str):
+                raise ValueError(
+                    f"Prepared manifest row in `{manifest_path}` had non-string `{key}` entries."
+                )
+            values.append(item)
+        if len(values) == 0:
+            raise ValueError(f"Prepared manifest row in `{manifest_path}` had empty `{key}`.")
+        return values
+    raise ValueError(
+        f"Prepared manifest row in `{manifest_path}` had unsupported `{key}` value type."
+    )
 
 
 def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:

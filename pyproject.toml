@@ -153,6 +153,7 @@ distribution = false
 "qwen-rixvox-train-staging" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_rixvox_train_staging"
 "qwen-smoke" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_smoke"
 "qwen-train" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_train"
+"task-101-pilot-bundle" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_bundle"
 "task-112-storage-remediation" = "python -m scripts.sir_convert_a_lot.devops.run_task112_hemma_storage_remediation"
 "task-113-docker-storage-remediation" = "python -m scripts.sir_convert_a_lot.devops.run_task113_hemma_docker_storage_remediation"
 "task-113-detached" = "python -m scripts.sir_convert_a_lot.devops.run_task113_hemma_docker_storage_detached"

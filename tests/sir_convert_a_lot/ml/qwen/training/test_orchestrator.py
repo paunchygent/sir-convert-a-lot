@@ -321,6 +321,53 @@ def test_ensure_training_bundle_exists_rejects_missing_manifest_assets(tmp_path:
         )
 
 
+def test_ensure_training_bundle_exists_accepts_legacy_bundle_without_report(tmp_path: Path) -> None:
+    """Launch should still accept a legacy bundle that predates persisted ref-mel reports."""
+    bundle_root = tmp_path / "bundle"
+    manifests_dir = bundle_root / "manifests"
+    audio_dir = bundle_root / "audio_24k" / "rixvox" / "train" / "speaker-a"
+    refs_dir = bundle_root / "refs" / "swedish_pilot_train" / "speaker-a"
+    eval_refs_dir = bundle_root / "refs" / "swedish_checkpoint_dev" / "speaker-a"
+    manifests_dir.mkdir(parents=True, exist_ok=True)
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    refs_dir.mkdir(parents=True, exist_ok=True)
+    eval_refs_dir.mkdir(parents=True, exist_ok=True)
+    (audio_dir / "train.wav").write_bytes(b"audio")
+    (refs_dir / "ref.wav").write_bytes(b"ref")
+    (eval_refs_dir / "ref.wav").write_bytes(b"ref")
+    prepared_row = {
+        "audio": "audio_24k/rixvox/train/speaker-a/train.wav",
+        "text": "hej",
+        "ref_audio": "refs/swedish_pilot_train/speaker-a/ref.wav",
+        "speaker_id": "speaker-a",
+        "dataset": "rixvox",
+        "source_split": "train",
+        "quality_tier": "high_trust",
+        "audio_codes": [[1, 2]],
+    }
+    (manifests_dir / "swedish_pilot_train.prepared.jsonl").write_text(
+        json.dumps(prepared_row) + "\n",
+        encoding="utf-8",
+    )
+    (manifests_dir / "swedish_checkpoint_dev.prepared.jsonl").write_text(
+        json.dumps(
+            {
+                **prepared_row,
+                "ref_audio": "refs/swedish_checkpoint_dev/speaker-a/ref.wav",
+                "source_split": "dev",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    ensure_training_bundle_exists(
+        bundle_root,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+    )
+
+
 def test_resume_uses_launch_metadata_dockerfile_path(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

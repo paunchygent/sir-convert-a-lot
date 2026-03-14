@@ -77,10 +77,10 @@ class TrainingRow(TypedDict):
     text: str
     audio_codes: list[list[int]]
     ref_audio: str | list[str]
-    precomputed_ref_input_path: str
-    precomputed_ref_input_kind: str
-    precomputed_ref_input_version: str
-    precomputed_ref_input_source_audio: str
+    precomputed_ref_input_path: NotRequired[str]
+    precomputed_ref_input_kind: NotRequired[str]
+    precomputed_ref_input_version: NotRequired[str]
+    precomputed_ref_input_source_audio: NotRequired[str]
     speaker_id: NotRequired[str]
 
 
@@ -212,6 +212,11 @@ class TTSDataset(Dataset[DatasetItem]):
 
     def _load_precomputed_ref_mel(self, item: TrainingRow) -> torch.Tensor:
         """Load one persisted precomputed ref-mel tensor from a manifest row."""
+        precomputed_ref_input_path = item.get("precomputed_ref_input_path")
+        if not isinstance(precomputed_ref_input_path, str):
+            raise ValueError(
+                "Training row did not include a persisted `precomputed_ref_input_path`."
+            )
         if item["precomputed_ref_input_kind"] != PRECOMPUTED_REF_INPUT_KIND:
             raise ValueError(
                 "Training row referenced unsupported precomputed reference input kind "
@@ -222,7 +227,21 @@ class TTSDataset(Dataset[DatasetItem]):
                 "Training row referenced unsupported precomputed reference input version "
                 f"`{item['precomputed_ref_input_version']}`."
             )
-        return load_persisted_ref_mel(Path(item["precomputed_ref_input_path"]))
+        return load_persisted_ref_mel(Path(precomputed_ref_input_path))
+
+    def _load_ref_mel(self, item: TrainingRow) -> torch.Tensor:
+        """Load one row ref-mel from the preferred persisted or legacy fallback path."""
+        precomputed_ref_input_path = item.get("precomputed_ref_input_path")
+        if isinstance(precomputed_ref_input_path, str):
+            return self._load_precomputed_ref_mel(item)
+        return self._extract_ref_mel(item["ref_audio"])
+
+    def _cache_key_for_item(self, item: TrainingRow) -> str | None:
+        """Return the stable cache key for one row ref-mel source."""
+        precomputed_ref_input_path = item.get("precomputed_ref_input_path")
+        if isinstance(precomputed_ref_input_path, str):
+            return canonical_ref_audio_cache_key(precomputed_ref_input_path)
+        return canonical_ref_audio_cache_key(item["ref_audio"])
 
     def __getitem__(self, idx: int) -> DatasetItem:
         item = self.data_list[idx]
@@ -232,16 +251,16 @@ class TTSDataset(Dataset[DatasetItem]):
         speaker_id = item.get("speaker_id", "default_speaker")
         mapped_speaker_id = self.spk_id_map[speaker_id]
 
-        cache_key = canonical_ref_audio_cache_key(item["precomputed_ref_input_path"])
+        cache_key = self._cache_key_for_item(item)
         if self.ref_mel_cache is not None and cache_key is not None:
             cached_ref_mel = self.ref_mel_cache.get(cache_key)
             if cached_ref_mel is None:
-                ref_mel = self._load_precomputed_ref_mel(item)
+                ref_mel = self._load_ref_mel(item)
                 self.ref_mel_cache.put(cache_key, ref_mel)
             else:
                 ref_mel = cached_ref_mel
         else:
-            ref_mel = self._load_precomputed_ref_mel(item)
+            ref_mel = self._load_ref_mel(item)
 
         return {
             "text_ids": text_ids[:, :-5],
