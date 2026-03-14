@@ -26,6 +26,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
     _save_durable_checkpoint,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_cli import tracker_config_payload
+from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
+    fuse_auxiliary_codebook_embeddings,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import TrainingSummary
 from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     dataloader_tuning_payload,
@@ -51,6 +54,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
 from scripts.devops.qwen_finetuning_patches.training_stop import (
     TrainingStopState,
     install_training_stop_handlers,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
+    throughput_policy_payload,
 )
 
 
@@ -171,13 +177,15 @@ def execute_training_loop(
                             * codec_embedding_mask
                         )
                         input_codec_embedding[:, 6, :] = speaker_embedding
-                        input_embeddings = input_text_embedding + input_codec_embedding
-                        for codec_index in range(1, 16):
-                            codec_i_embedding = model.talker.code_predictor.get_input_embeddings()[
-                                codec_index - 1
-                            ](codec_ids[:, :, codec_index])
-                            codec_i_embedding = codec_i_embedding * codec_mask.unsqueeze(-1)
-                            input_embeddings = input_embeddings + codec_i_embedding
+                        input_embeddings = (
+                            input_text_embedding
+                            + input_codec_embedding
+                            + fuse_auxiliary_codebook_embeddings(
+                                codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
+                                codec_ids=codec_ids,
+                                codec_mask=codec_mask,
+                            )
+                        )
                         outputs = model.talker(
                             inputs_embeds=input_embeddings[:, :-1, :],
                             attention_mask=attention_mask[:, :-1],
@@ -441,6 +449,7 @@ def _build_training_summary(
         stop_requested=stop_requested_during_training,
         stop_signal=stop_signal,
         stopped_early=stop_requested_during_training,
+        throughput_profile=throughput_policy_payload(prepared.throughput_batch_policy),
         dataloader_tuning=dataloader_tuning_payload(prepared.effective_dataloader_tuning),
         heartbeat_policy=prepared.heartbeat_policy.payload(),
         finite_loss_guard=prepared.finite_loss_guard.payload(),

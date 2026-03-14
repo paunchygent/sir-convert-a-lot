@@ -381,8 +381,13 @@ class WarmAudioCodesEncoder:
         """Load the Qwen tokenizer once per finalization process."""
         if self._tokenizer is not None and self._tokenizer_model == tokenizer_model:
             return self._tokenizer
+        import contextlib
+        import io
+
         import torch
-        from qwen_tts import Qwen3TTSTokenizer
+
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            from qwen_tts import Qwen3TTSTokenizer
 
         if self._runtime_request.require_gpu and not torch.cuda.is_available():
             raise RuntimeError(

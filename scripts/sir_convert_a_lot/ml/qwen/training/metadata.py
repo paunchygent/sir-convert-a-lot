@@ -90,6 +90,7 @@ def render_status_markdown(status: DetachedStatus) -> str:
     tracking_payload = pilot_status.get("tracking")
     ref_mel_cache_payload = pilot_status.get("ref_mel_cache")
     bundle_precomputed_reference_input = pilot_status.get("bundle_precomputed_reference_input")
+    throughput_profile = pilot_status.get("throughput_profile")
     ref_mel_cache_hit_rate = (
         None
         if not isinstance(ref_mel_cache_payload, dict)
@@ -130,6 +131,19 @@ def render_status_markdown(status: DetachedStatus) -> str:
         if not isinstance(bundle_precomputed_reference_input, dict)
         else bundle_precomputed_reference_input.get("artifact_count")
     )
+    throughput_profile_label = (
+        None
+        if not isinstance(throughput_profile, dict)
+        else throughput_profile.get("profile_label")
+    )
+    throughput_policy_kind = (
+        None if not isinstance(throughput_profile, dict) else throughput_profile.get("policy_kind")
+    )
+    throughput_max_batch_size = (
+        None
+        if not isinstance(throughput_profile, dict)
+        else throughput_profile.get("max_batch_size")
+    )
     lines = [
         "# Qwen Training Detached Status",
         "",
@@ -167,6 +181,9 @@ def render_status_markdown(status: DetachedStatus) -> str:
         f"- pilot_bundle_precomputed_reference_input_kind: `{bundle_precomputed_kind}`",
         f"- pilot_bundle_precomputed_reference_input_version: `{bundle_precomputed_version}`",
         f"- pilot_bundle_precomputed_reference_input_count: `{bundle_precomputed_count}`",
+        f"- pilot_throughput_profile_label: `{throughput_profile_label}`",
+        f"- pilot_throughput_policy_kind: `{throughput_policy_kind}`",
+        f"- pilot_throughput_max_batch_size: `{throughput_max_batch_size}`",
         f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
         f"- resource_monitor_available: `{monitor_available}`",
         f"- resource_monitor_launch_root: `{monitor_launch_root}`",
@@ -284,6 +301,7 @@ def load_launch(
         train_manifest_family=_required_str(settings_payload, "train_manifest_family"),
         eval_manifest_family=_required_str(settings_payload, "eval_manifest_family"),
         batch_size=_required_int(settings_payload, "batch_size"),
+        throughput_profile_label=_required_str(settings_payload, "throughput_profile_label"),
         lr=_required_float(settings_payload, "lr"),
         num_epochs=_required_int(settings_payload, "num_epochs"),
         max_steps=_required_int(settings_payload, "max_steps"),
@@ -412,6 +430,7 @@ def load_launch(
             payload,
             "bundle_precomputed_reference_input",
         ),
+        throughput_profile=_optional_object(payload, "throughput_profile"),
         tracking=None if tracking_payload is None else dict(tracking_payload),
         resource_monitor=_optional_object(payload, "resource_monitor"),
     )

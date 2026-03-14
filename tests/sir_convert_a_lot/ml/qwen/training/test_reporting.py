@@ -57,6 +57,11 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
                 "version": "task101_ref_mel_v1",
                 "artifact_count": 2,
             },
+            throughput_profile={
+                "profile_label": "hemma-throughput-aggressive-v1",
+                "policy_kind": "bucketed-frame-token-budget-v1",
+                "max_batch_size": 8,
+            },
         )
     )
 
@@ -119,6 +124,11 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
         "version": "task101_ref_mel_v1",
         "artifact_count": 2,
     }
+    assert payload["throughput_profile"] == {
+        "profile_label": "hemma-throughput-aggressive-v1",
+        "policy_kind": "bucketed-frame-token-budget-v1",
+        "max_batch_size": 8,
+    }
     assert payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
     assert [event["phase"] for event in payload["phase_history"]] == [
         "startup",
@@ -158,6 +168,11 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
                     "version": "task101_ref_mel_v1",
                     "artifact_count": 2,
                 },
+                "throughput_profile": {
+                    "profile_label": "hemma-throughput-aggressive-v1",
+                    "policy_kind": "bucketed-frame-token-budget-v1",
+                    "max_batch_size": 8,
+                },
             },
             pilot_report_found=False,
             pilot_report=None,
@@ -174,6 +189,9 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
     assert "- pilot_bundle_precomputed_reference_input_kind: `ref_mel`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_version: `task101_ref_mel_v1`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_count: `2`" in markdown
+    assert "- pilot_throughput_profile_label: `hemma-throughput-aggressive-v1`" in markdown
+    assert "- pilot_throughput_policy_kind: `bucketed-frame-token-budget-v1`" in markdown
+    assert "- pilot_throughput_max_batch_size: `8`" in markdown
 
 
 def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(

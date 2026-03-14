@@ -14,18 +14,23 @@ Relationships:
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, Sequence
 
 import torch
 from accelerate import Accelerator
-from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from transformers import AutoConfig
 
+with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+    from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
+
 from scripts.devops.qwen_finetuning_patches.dataset import TTSDataset
+from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import BucketedBatchSampler
 from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     DEFAULT_DATALOADER_NUM_WORKERS,
     DEFAULT_DATALOADER_PERSISTENT_WORKERS,
@@ -69,6 +74,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
     _load_training_rows,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
+    DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    ThroughputBatchPolicy,
+    resolve_throughput_batch_policy,
+)
 
 
 class QwenWrapperProtocol(Protocol):
@@ -92,6 +102,7 @@ class PreparedTrainingRun:
     train_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
     dataloader_length: int
     effective_dataloader_tuning: DataloaderTuning
+    throughput_batch_policy: ThroughputBatchPolicy
     ref_mel_cache: RefMelCache
     torch_profiler_session: TorchProfilerSession
     tracker_config: TrainingTrackerConfig
@@ -153,6 +164,16 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
     )
     if ref_mel_cache_max_items <= 0:
         raise ValueError("`--ref_mel_cache_max_items` must be positive.")
+    throughput_batch_policy = resolve_throughput_batch_policy(
+        profile_label=str(
+            getattr(
+                args,
+                "throughput_profile_label",
+                DEFAULT_THROUGHPUT_PROFILE_LABEL,
+            )
+        ),
+        max_batch_size=int(args.batch_size),
+    )
     effective_dataloader_tuning = resolve_dataloader_tuning(
         num_workers=dataloader_num_workers,
         pin_memory=dataloader_pin_memory,
@@ -248,11 +269,14 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         config,
         ref_mel_cache=ref_mel_cache,
     )
+    batch_sampler = BucketedBatchSampler(
+        row_metrics=dataset.batch_metrics(),
+        policy=throughput_batch_policy,
+    )
     train_dataloader = (
         DataLoader(
             dataset,
-            batch_size=args.batch_size,
-            shuffle=True,
+            batch_sampler=batch_sampler,
             collate_fn=dataset.collate_fn,
             num_workers=effective_dataloader_tuning.num_workers,
             pin_memory=effective_dataloader_tuning.pin_memory,
@@ -262,8 +286,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         if effective_dataloader_tuning.num_workers > 0
         else DataLoader(
             dataset,
-            batch_size=args.batch_size,
-            shuffle=True,
+            batch_sampler=batch_sampler,
             collate_fn=dataset.collate_fn,
             num_workers=0,
             pin_memory=effective_dataloader_tuning.pin_memory,
@@ -286,6 +309,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         train_dataloader=train_dataloader,
         dataloader_length=len(train_dataloader),
         effective_dataloader_tuning=effective_dataloader_tuning,
+        throughput_batch_policy=throughput_batch_policy,
         ref_mel_cache=ref_mel_cache,
         torch_profiler_session=torch_profiler_session,
         tracker_config=tracker_config,

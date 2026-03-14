@@ -2,10 +2,10 @@
 id: task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion
 title: Increase Task 101 per-launch GPU work via bucketed batching and vectorized codebook fusion
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-13'
-last_updated: '2026-03-13'
+last_updated: '2026-03-14'
 related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation.md
@@ -52,10 +52,24 @@ small launches for the target saturation posture.
 - Do not weaken checkpoint durability guarantees.
 - Do not claim saturation success without monitor-backed evidence.
 
+## Implementation Notes
+
+- The local implementation slice now introduces explicit throughput profiles,
+  with the current aggressive candidate centered on `max_batch_size=8` plus
+  token/frame budgets and deterministic length bucketing.
+- The patched trainer now uses a custom batch sampler instead of a plain
+  shuffled fixed-size `DataLoader` batch policy.
+- Launch, status, and terminal report artifacts now surface truthful
+  throughput-profile metadata.
+- The hot training loop no longer performs iterative Python-side auxiliary
+  codebook accumulation inline; that logic now lives in a dedicated fusion
+  helper and aggregates the auxiliary codebook embeddings in one summed path.
+- Hemma profile-sweep evidence and default-profile selection are still pending.
+
 ## Deliverables
 
-- [ ] Bucketed non-`batch_size=1` throughput profile(s) implemented.
-- [ ] Vectorized/fused codebook path replaces the current fragmented loop.
+- [x] Bucketed non-`batch_size=1` throughput profile(s) implemented.
+- [x] Vectorized/fused codebook path replaces the current fragmented loop.
 - [ ] One evidence-backed default profile chosen for follow-on saturation runs.
 
 ## Acceptance Criteria
@@ -64,14 +78,14 @@ small launches for the target saturation posture.
   than the `T161/T162` baseline.
 - [ ] ROCm profiling confirms reduced launch/sync overhead relative to the
   baseline task evidence.
-- [ ] Throughput profile metadata is surfaced in launch/status/report artifacts.
+- [x] Throughput profile metadata is surfaced in launch/status/report artifacts.
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_training_dataloader_tuning.py tests/sir_convert_a_lot/test_qwen_training_profiling.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py -q`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_bundles.py tests/sir_convert_a_lot/ml/qwen/training/test_batching.py tests/sir_convert_a_lot/ml/qwen/training/test_codebook_fusion.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py`
 - [ ] `pdm run validate-tasks`
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
@@ -79,6 +93,6 @@ small launches for the target saturation posture.
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated

@@ -204,6 +204,8 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     )
 
     assert [phase.phase for phase in heartbeats] == ["startup", "train", "checkpoint-save"]
+    assert summary.throughput_profile["profile_label"] == "hemma-throughput-aggressive-v1"
+    assert summary.throughput_profile["max_batch_size"] == 1
     assert accelerator.logged_metrics == [
         (
             {

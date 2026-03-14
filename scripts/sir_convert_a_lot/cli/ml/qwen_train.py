@@ -66,6 +66,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.orchestrator import (
     launch_detached_training,
     stop_detached_training,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
+    DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    resolve_throughput_batch_policy,
+)
 
 DEFAULT_OUTPUT_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "verification/qwen3-tts-swedish-hemma-training"
 DEFAULT_RUNS_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "runs/qwen3-tts-swedish-finetune"
@@ -82,7 +86,7 @@ DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface")
 DEFAULT_TRAIN_MANIFEST_FAMILY = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY = "swedish_checkpoint_dev"
-DEFAULT_BATCH_SIZE = 1
+DEFAULT_BATCH_SIZE = 8
 DEFAULT_LR = 2e-5
 DEFAULT_NUM_EPOCHS = 1
 DEFAULT_MAX_STEPS = 8
@@ -153,6 +157,10 @@ def build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--train-manifest-family", default=DEFAULT_TRAIN_MANIFEST_FAMILY)
     launch.add_argument("--eval-manifest-family", default=DEFAULT_EVAL_MANIFEST_FAMILY)
     launch.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    launch.add_argument(
+        "--throughput-profile-label",
+        default=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    )
     launch.add_argument("--lr", type=float, default=DEFAULT_LR)
     launch.add_argument("--num-epochs", type=int, default=DEFAULT_NUM_EPOCHS)
     launch.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
@@ -427,6 +435,10 @@ def validate_training_bundle_paths(
 
 def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:
     """Build one normalized training settings object from parsed launch args."""
+    throughput_batch_policy = resolve_throughput_batch_policy(
+        profile_label=str(args.throughput_profile_label),
+        max_batch_size=int(args.batch_size),
+    )
     return TrainingSettings(
         output_root=Path(args.output_root),
         image=str(args.image),
@@ -439,7 +451,8 @@ def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:
         model_id=str(args.model_id),
         train_manifest_family=str(args.train_manifest_family),
         eval_manifest_family=str(args.eval_manifest_family),
-        batch_size=int(args.batch_size),
+        batch_size=throughput_batch_policy.max_batch_size,
+        throughput_profile_label=throughput_batch_policy.profile_label,
         lr=float(args.lr),
         num_epochs=int(args.num_epochs),
         max_steps=int(args.max_steps),

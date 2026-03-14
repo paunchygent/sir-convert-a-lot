@@ -24,6 +24,8 @@ reference-mel plus speaker-aware tensors expected by the patched
 
 from __future__ import annotations
 
+import contextlib
+import io
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import NotRequired, Protocol, TypeAlias, TypedDict
@@ -31,9 +33,12 @@ from typing import NotRequired, Protocol, TypeAlias, TypedDict
 import numpy as np
 import numpy.typing as npt
 import torch
-from qwen_tts.core.models.configuration_qwen3_tts import Qwen3TTSConfig
 from torch.utils.data import Dataset
 
+with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+    from qwen_tts.core.models.configuration_qwen3_tts import Qwen3TTSConfig
+
+from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import TrainingRowBatchMetrics
 from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
     PRECOMPUTED_REF_INPUT_KIND,
     PRECOMPUTED_REF_INPUT_VERSION,
@@ -118,6 +123,17 @@ class TTSDataset(Dataset[DatasetItem]):
         self.lag_num = lag_num
         self.config = config
         self.ref_mel_cache = ref_mel_cache
+        self._tokenized_text_ids = [
+            self._tokenize_texts(self._build_assistant_text(item["text"]))
+            for item in self.data_list
+        ]
+        self._row_batch_metrics = [
+            TrainingRowBatchMetrics(
+                text_token_count=int(text_ids[:, :-5].shape[1]),
+                codec_frame_count=len(item["audio_codes"]),
+            )
+            for item, text_ids in zip(self.data_list, self._tokenized_text_ids, strict=True)
+        ]
 
         self.spk_id_map: dict[str, int] = {}
         for item in self.data_list:
@@ -127,6 +143,10 @@ class TTSDataset(Dataset[DatasetItem]):
 
     def __len__(self) -> int:
         return len(self.data_list)
+
+    def batch_metrics(self) -> list[TrainingRowBatchMetrics]:
+        """Return the precomputed batching metrics for the loaded rows."""
+        return list(self._row_batch_metrics)
 
     def _normalize_audio_inputs(self, audios: AudioInputs) -> list[AudioWithRate]:
         """Normalize audio inputs into `(waveform, sample_rate)` tuples."""
@@ -206,8 +226,7 @@ class TTSDataset(Dataset[DatasetItem]):
 
     def __getitem__(self, idx: int) -> DatasetItem:
         item = self.data_list[idx]
-        text = self._build_assistant_text(item["text"])
-        text_ids = self._tokenize_texts(text)
+        text_ids = self._tokenized_text_ids[idx]
         audio_codes = torch.tensor(item["audio_codes"], dtype=torch.long)
 
         speaker_id = item.get("speaker_id", "default_speaker")

@@ -33,6 +33,7 @@ class TrainingSettings:
     train_manifest_family: str
     eval_manifest_family: str
     batch_size: int
+    throughput_profile_label: str
     lr: float
     num_epochs: int
     max_steps: int
@@ -75,6 +76,7 @@ class TrainingSettingsSnapshot:
     train_manifest_family: str
     eval_manifest_family: str
     batch_size: int
+    throughput_profile_label: str
     lr: float
     num_epochs: int
     max_steps: int
@@ -121,6 +123,7 @@ class DetachedLaunch:
     settings: TrainingSettingsSnapshot
     command: list[str]
     bundle_precomputed_reference_input: dict[str, object] | None = None
+    throughput_profile: dict[str, object] | None = None
     tracking: dict[str, object] | None = None
     resource_monitor: dict[str, object] | None = None
 
@@ -180,6 +183,7 @@ class TrainingReport:
     flash_attn_importable: bool
     flash_attn_version: str | None
     bundle_precomputed_reference_input: dict[str, object] | None
+    throughput_profile: dict[str, object] | None
     tracking: dict[str, object] | None
     training_summary: dict[str, object]
 
@@ -199,6 +203,7 @@ def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettin
         train_manifest_family=snapshot.train_manifest_family,
         eval_manifest_family=snapshot.eval_manifest_family,
         batch_size=snapshot.batch_size,
+        throughput_profile_label=snapshot.throughput_profile_label,
         lr=snapshot.lr,
         num_epochs=snapshot.num_epochs,
         max_steps=snapshot.max_steps,

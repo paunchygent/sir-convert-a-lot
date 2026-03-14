@@ -22,6 +22,8 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import TrainingRowBatchMetrics
+
 SFT_PATCH_ROOT = Path(__file__).resolve().parents[2] / "scripts/devops/qwen_finetuning_patches"
 if SFT_PATCH_ROOT.as_posix() not in sys.path:
     sys.path.insert(0, SFT_PATCH_ROOT.as_posix())
@@ -356,6 +358,10 @@ class _FakeDataset:
     def __len__(self) -> int:
         """Return the deterministic fake row count."""
         return len(self.rows)
+
+    def batch_metrics(self) -> list[TrainingRowBatchMetrics]:
+        """Return simple fake batching metrics for the patched sampler path."""
+        return [TrainingRowBatchMetrics(text_token_count=8, codec_frame_count=8) for _ in self.rows]
 
 
 def fake_save_checkpoint(**kwargs: object) -> str:

@@ -11,13 +11,17 @@ Relationships:
 
 from __future__ import annotations
 
+import contextlib
+import io
 from pathlib import Path
 
-import librosa
 import numpy as np
 import numpy.typing as npt
+import soundfile
 import torch
-from qwen_tts.core.models.modeling_qwen3_tts import mel_spectrogram
+
+with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+    from qwen_tts.core.models.modeling_qwen3_tts import mel_spectrogram
 
 AudioArray = npt.NDArray[np.float32]
 PRECOMPUTED_REF_INPUT_KIND = "ref_mel"
@@ -27,7 +31,7 @@ PRECOMPUTED_REF_INPUT_SOURCE_FIELD = "ref_audio"
 
 def load_audio_to_np(path: Path) -> tuple[AudioArray, int]:
     """Load one mono waveform into float32 numpy form."""
-    audio, sample_rate = librosa.load(path.as_posix(), sr=None, mono=True)
+    audio, sample_rate = soundfile.read(path.as_posix(), dtype="float32")
     if audio.ndim > 1:
         audio = np.mean(audio, axis=-1)
     return audio.astype(np.float32, copy=False), int(sample_rate)

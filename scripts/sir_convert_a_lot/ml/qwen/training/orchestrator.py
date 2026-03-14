@@ -37,6 +37,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
 from scripts.sir_convert_a_lot.ml.qwen.training.monitoring import (
     inspect_resource_monitor,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
+    resolve_throughput_batch_policy,
+    throughput_policy_payload,
+)
 
 CONTAINER_BUILD_ROOT = Path("/app/build")
 DEFAULT_TRACKER_PROJECT_NAME = "qwen-training"
@@ -74,6 +78,7 @@ def snapshot_settings(settings: TrainingSettings) -> TrainingSettingsSnapshot:
         train_manifest_family=settings.train_manifest_family,
         eval_manifest_family=settings.eval_manifest_family,
         batch_size=settings.batch_size,
+        throughput_profile_label=settings.throughput_profile_label,
         lr=settings.lr,
         num_epochs=settings.num_epochs,
         max_steps=settings.max_steps,
@@ -244,6 +249,8 @@ def build_detached_training_command(
         launch_id,
         "--batch-size",
         str(settings.batch_size),
+        "--throughput-profile-label",
+        settings.throughput_profile_label,
         "--lr",
         str(settings.lr),
         "--num-epochs",
@@ -380,6 +387,10 @@ def launch_detached_training(
     ).strip()
     tracking_root = _tracker_root(run_root)
     bundle_summary = load_training_bundle_summary(settings.pilot_bundle_root)
+    throughput_policy = resolve_throughput_batch_policy(
+        profile_label=settings.throughput_profile_label,
+        max_batch_size=settings.batch_size,
+    )
     return DetachedLaunch(
         generated_at=_utc_now_iso(),
         launch_id=launch_id,
@@ -405,6 +416,7 @@ def launch_detached_training(
             "artifact_root": bundle_summary.precomputed_reference_input.artifact_root,
             "artifact_count": bundle_summary.precomputed_reference_input.artifact_count,
         },
+        throughput_profile=throughput_policy_payload(throughput_policy),
         tracking={
             "tracker_backends": list(DEFAULT_TRACKER_BACKENDS),
             "project_name": DEFAULT_TRACKER_PROJECT_NAME,

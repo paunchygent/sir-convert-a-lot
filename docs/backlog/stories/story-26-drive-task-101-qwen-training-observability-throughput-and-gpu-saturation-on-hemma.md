@@ -180,6 +180,9 @@ Root-cause conclusion from this evidence:
 ## Current Implementation State (2026-03-14)
 
 - `T171` and the local implementation slice of `T173` are now in place.
+- The local implementation slice of `T172` is now in place:
+  aggressive throughput-profile metadata, budgeted length-bucketed batching,
+  and extracted codebook-fusion logic are landed in the training lane.
 - Task 101 bundles now persist canonical bundle-owned `ref_mel` artifacts and
   prepared-manifest rows now carry explicit precomputed reference-input
   provenance fields consumed by the in-container trainer.

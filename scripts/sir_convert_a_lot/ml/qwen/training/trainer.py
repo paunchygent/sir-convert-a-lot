@@ -33,6 +33,11 @@ from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     build_training_report,
     write_json,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
+    DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    resolve_throughput_batch_policy,
+    throughput_policy_payload,
+)
 
 
 def _count_jsonl_rows(path: Path) -> int:
@@ -60,7 +65,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--mlflow-artifact-root", default=None)
     parser.add_argument("--tensorboard-logging-dir", default=None)
     parser.add_argument("--tracker-run-name", default=None)
-    parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument(
+        "--throughput-profile-label",
+        default=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    )
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num-epochs", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=8)
@@ -116,6 +125,10 @@ def main() -> int:
             "artifact_count": bundle_summary.precomputed_reference_input.artifact_count,
         }
     )
+    throughput_policy = resolve_throughput_batch_policy(
+        profile_label=str(args.throughput_profile_label),
+        max_batch_size=int(args.batch_size),
+    )
 
     tracking_plan = {
         "tracker_backends": ["mlflow", "tensorboard"],
@@ -156,6 +169,7 @@ def main() -> int:
                 "max_items": int(args.ref_mel_cache_max_items),
             },
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
+            throughput_profile=throughput_policy_payload(throughput_policy),
             profiling_plan={
                 "torch_profiler_enabled": bool(args.torch_profiler_enabled),
                 "torch_profiler_trace_dir": args.torch_profiler_trace_dir,
@@ -184,6 +198,7 @@ def main() -> int:
             output_model_path=(output_dir / "checkpoints").as_posix(),
             train_jsonl=args.train_jsonl.as_posix(),
             batch_size=int(args.batch_size),
+            throughput_profile_label=str(args.throughput_profile_label),
             lr=float(args.lr),
             num_epochs=int(args.num_epochs),
             max_steps=int(args.max_steps),
@@ -243,6 +258,7 @@ def main() -> int:
             train_row_count=train_row_count,
             eval_row_count=eval_row_count,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
+            throughput_profile=throughput_policy_payload(throughput_policy),
             training_summary=training_summary,
         )
         write_json(report_path, asdict(report))

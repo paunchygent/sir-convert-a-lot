@@ -41,6 +41,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.orchestrator import (
     inspect_detached_training,
     stop_detached_training,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
+    DEFAULT_THROUGHPUT_PROFILE_LABEL,
+)
 
 
 def test_parser_launch_defaults() -> None:
@@ -54,6 +57,8 @@ def test_parser_launch_defaults() -> None:
     assert args.lr == DEFAULT_LR
     assert args.num_epochs == DEFAULT_NUM_EPOCHS
     assert args.max_steps == DEFAULT_MAX_STEPS
+    assert args.batch_size == 8
+    assert args.throughput_profile_label == DEFAULT_THROUGHPUT_PROFILE_LABEL
     assert args.checkpoint_interval_steps == DEFAULT_CHECKPOINT_INTERVAL_STEPS
     assert args.durable_checkpoint_retention == DEFAULT_DURABLE_CHECKPOINT_RETENTION
     assert args.durable_checkpoint_min_free_bytes == DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES
@@ -85,7 +90,8 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
-        batch_size=1,
+        batch_size=8,
+        throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
         lr=2e-5,
         num_epochs=1,
         max_steps=8,
@@ -136,6 +142,8 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
     assert "--dataloader-pin-memory" in command
     assert "--dataloader-persistent-workers" in command
     assert "--non-blocking-transfer" in command
+    assert "--throughput-profile-label" in command
+    assert DEFAULT_THROUGHPUT_PROFILE_LABEL in command
     assert "--ref-mel-cache-enabled" in command
     assert "--no-torch-profiler-enabled" in command
     assert "true" not in command
@@ -199,7 +207,8 @@ def test_inspect_detached_training_reads_container_status_and_reports(
             model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
             train_manifest_family="swedish_pilot_train",
             eval_manifest_family="swedish_checkpoint_dev",
-            batch_size=1,
+            batch_size=8,
+            throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
             lr=2e-5,
             num_epochs=1,
             max_steps=8,
@@ -354,7 +363,8 @@ def test_resume_uses_launch_metadata_dockerfile_path(
             model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
             train_manifest_family="swedish_pilot_train",
             eval_manifest_family="swedish_checkpoint_dev",
-            batch_size=1,
+            batch_size=8,
+            throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
             lr=2e-5,
             num_epochs=1,
             max_steps=8,
@@ -491,7 +501,8 @@ def test_stop_detached_training_calls_docker_stop(monkeypatch: pytest.MonkeyPatc
             model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
             train_manifest_family="swedish_pilot_train",
             eval_manifest_family="swedish_checkpoint_dev",
-            batch_size=1,
+            batch_size=8,
+            throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
             lr=2e-5,
             num_epochs=1,
             max_steps=8,

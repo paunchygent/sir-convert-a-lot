@@ -50,6 +50,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
     DEFAULT_MLFLOW_EXPERIMENT_NAME,
     DEFAULT_TRACKER_PROJECT_NAME,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
+    DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    resolve_throughput_batch_policy,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,7 +62,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--init_model_path", type=str, default="Qwen/Qwen3-TTS-12Hz-1.7B-Base")
     parser.add_argument("--output_model_path", type=str, default="output")
     parser.add_argument("--train_jsonl", type=str, required=True)
-    parser.add_argument("--batch_size", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument(
+        "--throughput_profile_label",
+        type=str,
+        default=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    )
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num_epochs", type=int, default=3)
     parser.add_argument("--max_steps", type=int, default=None)
@@ -195,7 +204,7 @@ def _add_boolean_argument(
     )
 
 
-def tracker_config_payload(args: argparse.Namespace) -> dict[str, bool | float | int | str | None]:
+def tracker_config_payload(args: argparse.Namespace) -> dict[str, object]:
     """Build the canonical scalar tracker configuration for one training run."""
     tracker_project_name = getattr(args, "tracker_project_name", None)
     tracker_run_name = getattr(args, "tracker_run_name", None)
@@ -224,6 +233,12 @@ def tracker_config_payload(args: argparse.Namespace) -> dict[str, bool | float |
     ref_mel_cache_max_items = int(
         getattr(args, "ref_mel_cache_max_items", DEFAULT_REF_MEL_CACHE_MAX_ITEMS)
     )
+    throughput_policy = resolve_throughput_batch_policy(
+        profile_label=str(
+            getattr(args, "throughput_profile_label", DEFAULT_THROUGHPUT_PROFILE_LABEL)
+        ),
+        max_batch_size=int(args.batch_size),
+    )
     return {
         "model_id": str(args.init_model_path),
         "tracker_project_name": None if tracker_project_name is None else str(tracker_project_name),
@@ -238,6 +253,14 @@ def tracker_config_payload(args: argparse.Namespace) -> dict[str, bool | float |
         "eval_manifest_family": None if eval_manifest_family is None else str(eval_manifest_family),
         "train_jsonl": str(args.train_jsonl),
         "batch_size": int(args.batch_size),
+        "throughput_profile_label": throughput_policy.profile_label,
+        "throughput_policy_kind": throughput_policy.policy_kind,
+        "throughput_max_batch_size": throughput_policy.max_batch_size,
+        "throughput_max_tokens_per_batch": throughput_policy.max_tokens_per_batch,
+        "throughput_max_codec_frames_per_batch": throughput_policy.max_codec_frames_per_batch,
+        "throughput_length_bucket_boundaries": ",".join(
+            str(boundary) for boundary in throughput_policy.length_bucket_boundaries
+        ),
         "learning_rate": float(args.lr),
         "num_epochs": int(args.num_epochs),
         "max_steps": None if args.max_steps is None else int(args.max_steps),

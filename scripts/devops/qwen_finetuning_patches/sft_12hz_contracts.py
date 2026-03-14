@@ -48,6 +48,7 @@ class TrainingSummary:
     stop_requested: bool
     stop_signal: str | None
     stopped_early: bool
+    throughput_profile: dict[str, object]
     dataloader_tuning: dict[str, object]
     heartbeat_policy: dict[str, int]
     finite_loss_guard: dict[str, bool | float | int | None]
