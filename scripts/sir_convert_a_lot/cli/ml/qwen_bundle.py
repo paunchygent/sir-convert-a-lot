@@ -47,19 +47,21 @@ DEFAULT_EVAL_MANIFEST_FAMILY: ManifestFamily = "swedish_checkpoint_dev"
 
 def _manifest_family_from_cli_value(value: object, *, argument_name: str) -> ManifestFamily:
     """Normalize one manifest-family CLI value into the typed literal contract."""
-    if value == "swedish_smoke_train":
-        return "swedish_smoke_train"
-    if value == "swedish_pilot_train":
-        return "swedish_pilot_train"
-    if value == "swedish_scaleup_train":
-        return "swedish_scaleup_train"
-    if value == "swedish_checkpoint_dev":
-        return "swedish_checkpoint_dev"
-    if value == "swedish_final_test":
-        return "swedish_final_test"
-    if value == "swedish_waxholm_control":
-        return "swedish_waxholm_control"
-    raise ValueError(f"Malformed `{argument_name}` manifest-family value: {value!r}.")
+    match value:
+        case "swedish_smoke_train":
+            return "swedish_smoke_train"
+        case "swedish_pilot_train":
+            return "swedish_pilot_train"
+        case "swedish_scaleup_train":
+            return "swedish_scaleup_train"
+        case "swedish_checkpoint_dev":
+            return "swedish_checkpoint_dev"
+        case "swedish_final_test":
+            return "swedish_final_test"
+        case "swedish_waxholm_control":
+            return "swedish_waxholm_control"
+        case _:
+            raise ValueError(f"Malformed `{argument_name}` manifest-family value: {value!r}.")
 
 
 def build_parser() -> argparse.ArgumentParser:
