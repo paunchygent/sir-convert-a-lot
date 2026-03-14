@@ -143,6 +143,7 @@ distribution = false
 "benchmark:task-91-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_task91_hemma_chatterbox_speech_aware_stitching_experiment"
 "benchmark:task-91-restitch" = "python -m scripts.sir_convert_a_lot.devops.run_task91_restitch_saved_chunks"
 "qwen-acquire" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_acquire"
+"qwen-batch-plan" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_batch_plan"
 "qwen-containerized-preprocessing" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_containerized_preprocessing"
 "qwen-detached-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_detached_proof"
 "qwen-finalization-benchmark" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_finalization_benchmark"

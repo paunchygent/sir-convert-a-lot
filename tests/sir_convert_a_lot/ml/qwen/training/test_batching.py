@@ -64,6 +64,45 @@ def test_resolve_throughput_batch_policy_supports_balanced_plus_profile() -> Non
     assert policy.minimum_required_max_batch_size == 1
 
 
+def test_resolve_throughput_batch_policy_supports_quarantine_profile() -> None:
+    """The quarantine profile should keep the stable cap while forcing long-row singletons."""
+    policy = resolve_throughput_batch_policy(
+        profile_label="hemma-throughput-balanced-quarantine-v1",
+        max_batch_size=8,
+    )
+
+    assert policy.profile_label == "hemma-throughput-balanced-quarantine-v1"
+    assert policy.max_tokens_per_batch == 3072
+    assert policy.max_codec_frames_per_batch == 640
+    assert policy.long_row_singleton_codec_frame_threshold == 480
+
+
+def test_resolve_throughput_batch_policy_supports_quarantine_tail_profile() -> None:
+    """The quarantine-tail profile should expose narrower upper-tail boundaries."""
+    policy = resolve_throughput_batch_policy(
+        profile_label="hemma-throughput-balanced-quarantine-tail-v1",
+        max_batch_size=8,
+    )
+
+    assert policy.profile_label == "hemma-throughput-balanced-quarantine-tail-v1"
+    assert policy.long_row_singleton_codec_frame_threshold == 480
+    assert policy.length_bucket_boundaries == (
+        128,
+        192,
+        256,
+        320,
+        384,
+        448,
+        512,
+        576,
+        640,
+        704,
+        768,
+        896,
+        1024,
+    )
+
+
 def test_bucketed_batch_sampler_respects_batch_size_and_budget_caps() -> None:
     """The sampler should cap batches by both max size and codec-frame budget."""
     policy = resolve_throughput_batch_policy(
@@ -103,10 +142,35 @@ def test_bucketed_batch_sampler_keeps_one_open_batch_per_bucket() -> None:
             max_codec_frames_per_batch=10,
             length_bucket_boundaries=(16,),
             minimum_required_max_batch_size=1,
+            long_row_singleton_codec_frame_threshold=None,
         ),
     )
 
     assert sampler.planned_batches() == [[0], [1, 2], [3]]
+
+
+def test_bucketed_batch_sampler_quarantines_long_rows_into_singletons() -> None:
+    """Long-row quarantine should remove near-budget rows from normal packing."""
+    sampler = BucketedBatchSampler(
+        row_metrics=[
+            TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=500),
+            TrainingRowBatchMetrics(text_token_count=9, codec_frame_count=480),
+            TrainingRowBatchMetrics(text_token_count=8, codec_frame_count=120),
+            TrainingRowBatchMetrics(text_token_count=7, codec_frame_count=110),
+        ],
+        policy=ThroughputBatchPolicy(
+            profile_label="test-quarantine",
+            policy_kind="bucketed-frame-token-budget-v1",
+            max_batch_size=4,
+            max_tokens_per_batch=1000,
+            max_codec_frames_per_batch=640,
+            length_bucket_boundaries=(1024,),
+            minimum_required_max_batch_size=1,
+            long_row_singleton_codec_frame_threshold=480,
+        ),
+    )
+
+    assert sampler.planned_batches() == [[0], [1], [2, 3]]
 
 
 def test_bucketed_batch_sampler_rejects_rows_that_exceed_single_row_budget() -> None:

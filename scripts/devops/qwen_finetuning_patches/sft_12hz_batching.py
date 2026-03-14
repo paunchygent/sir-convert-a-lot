@@ -64,11 +64,28 @@ class BucketedBatchSampler(Sampler[list[int]]):
 
     def _build_batches(self) -> list[list[int]]:
         buckets: dict[int, list[int]] = defaultdict(list)
+        quarantined_indices: list[int] = []
+        quarantine_threshold = self._policy.long_row_singleton_codec_frame_threshold
         for index, metrics in enumerate(self._row_metrics):
             self._validate_single_row_budget(index, metrics)
+            if (
+                quarantine_threshold is not None
+                and metrics.codec_frame_count >= quarantine_threshold
+            ):
+                quarantined_indices.append(index)
+                continue
             buckets[self._bucket_boundary(metrics.total_sequence_cost)].append(index)
 
         planned_batches: list[list[int]] = []
+        for index in sorted(
+            quarantined_indices,
+            key=lambda current_index: (
+                self._row_metrics[current_index].codec_frame_count,
+                self._row_metrics[current_index].text_token_count,
+            ),
+            reverse=True,
+        ):
+            planned_batches.append([index])
         for boundary in sorted(buckets):
             ordered_indices = sorted(
                 buckets[boundary],
