@@ -107,6 +107,27 @@ class BatchTensors(TypedDict):
     speaker_ids: torch.Tensor
 
 
+def _collate_ref_mels(batch: Sequence[DatasetItem]) -> torch.Tensor:
+    """Pad variable-length reference mels into one batch tensor."""
+    if not batch:
+        raise ValueError("Cannot collate an empty reference-mel batch.")
+    ref_mels = [item["ref_mel"] for item in batch]
+    first_ref_mel = ref_mels[0]
+    if first_ref_mel.ndim != 3 or first_ref_mel.shape[0] != 1:
+        raise ValueError("Reference mels must have shape `[1, frames, mel_bins]`.")
+    mel_bin_count = int(first_ref_mel.shape[2])
+    max_frame_count = max(int(ref_mel.shape[1]) for ref_mel in ref_mels)
+    padded_ref_mels = first_ref_mel.new_zeros((len(ref_mels), max_frame_count, mel_bin_count))
+    for batch_index, ref_mel in enumerate(ref_mels):
+        if ref_mel.ndim != 3 or ref_mel.shape[0] != 1:
+            raise ValueError("Reference mels must have shape `[1, frames, mel_bins]`.")
+        if int(ref_mel.shape[2]) != mel_bin_count:
+            raise ValueError("Reference mels in one batch must share the same mel-bin count.")
+        frame_count = int(ref_mel.shape[1])
+        padded_ref_mels[batch_index, :frame_count, :] = ref_mel[0]
+    return padded_ref_mels
+
+
 class TTSDataset(Dataset[DatasetItem]):
     """Dataset adapter for multi-speaker Qwen TTS fine-tuning."""
 
@@ -367,7 +388,7 @@ class TTSDataset(Dataset[DatasetItem]):
             ] = True
             attention_mask[batch_index, : 8 + text_ids_len + codec_ids_len] = 1
 
-        ref_mels = torch.cat([data["ref_mel"] for data in batch], dim=0)
+        ref_mels = _collate_ref_mels(batch)
 
         return {
             "input_ids": input_ids,

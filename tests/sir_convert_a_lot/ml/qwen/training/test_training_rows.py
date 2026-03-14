@@ -18,7 +18,11 @@ from pathlib import Path
 import pytest
 import torch
 
-from scripts.devops.qwen_finetuning_patches.dataset import TTSDataset
+from scripts.devops.qwen_finetuning_patches.dataset import (
+    DatasetItem,
+    TTSDataset,
+    _collate_ref_mels,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
 from tests.sir_convert_a_lot.ml.qwen.preprocessing.test_support import write_test_wav
 
@@ -103,3 +107,28 @@ def test_dataset_uses_legacy_ref_audio_fallback_without_precomputed_ref_input(
     item = dataset[0]
 
     assert torch.equal(item["ref_mel"], expected_ref_mel)
+
+
+def test_collate_ref_mels_pads_variable_length_reference_inputs() -> None:
+    """Batch collation should pad variable-length ref-mels for aggressive batches."""
+    batch: list[DatasetItem] = [
+        {
+            "text_ids": torch.tensor([[1, 2, 3, 4, 5, 6]], dtype=torch.long),
+            "audio_codes": torch.tensor([[1, 2]], dtype=torch.long),
+            "ref_mel": torch.full((1, 2, 3), 1.0, dtype=torch.float32),
+            "speaker_id": 0,
+        },
+        {
+            "text_ids": torch.tensor([[1, 2, 3, 4, 5, 6]], dtype=torch.long),
+            "audio_codes": torch.tensor([[1, 2]], dtype=torch.long),
+            "ref_mel": torch.full((1, 4, 3), 2.0, dtype=torch.float32),
+            "speaker_id": 1,
+        },
+    ]
+
+    ref_mels = _collate_ref_mels(batch)
+
+    assert ref_mels.shape == (2, 4, 3)
+    assert torch.equal(ref_mels[0, :2], torch.full((2, 3), 1.0, dtype=torch.float32))
+    assert torch.equal(ref_mels[0, 2:], torch.zeros((2, 3), dtype=torch.float32))
+    assert torch.equal(ref_mels[1], torch.full((4, 3), 2.0, dtype=torch.float32))
