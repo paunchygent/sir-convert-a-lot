@@ -819,7 +819,7 @@ def _extract_debug_artifact_archive(*, archive: tarfile.TarFile, destination_dir
                 "Task 81 received an unsafe debug-artifact path from the sidecar container: "
                 f"{member.name}"
             )
-    archive.extractall(destination_root)
+    archive.extractall(destination_root, filter="data")
 
 
 def collect_setup_artifact_evidence(artifacts_dir: Path) -> SetupArtifactEvidence:

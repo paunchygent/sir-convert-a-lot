@@ -33,8 +33,12 @@ import numpy.typing as npt
 import torch
 from qwen_tts.core.models.configuration_qwen3_tts import Qwen3TTSConfig
 from qwen_tts.core.models.modeling_qwen3_tts import mel_spectrogram
-from sft_12hz_ref_mel_cache import RefMelCache, canonical_ref_audio_cache_key
 from torch.utils.data import Dataset
+
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
+    RefMelCache,
+    canonical_ref_audio_cache_key,
+)
 
 AudioArray: TypeAlias = npt.NDArray[np.float32]
 AudioWithRate: TypeAlias = tuple[AudioArray, int]
@@ -133,6 +137,10 @@ class TTSDataset(Dataset[DatasetItem]):
                 normalized_items.append(self._load_audio_to_np(audio_input))
                 continue
             waveform, sample_rate = audio_input
+            if not isinstance(waveform, np.ndarray):
+                raise ValueError("Expected audio waveform arrays after normalization.")
+            if not isinstance(sample_rate, int):
+                raise ValueError("Expected integer sample rates after normalization.")
             normalized_items.append((waveform.astype(np.float32, copy=False), int(sample_rate)))
         return normalized_items
 
@@ -173,7 +181,7 @@ class TTSDataset(Dataset[DatasetItem]):
     def extract_mels(self, audio: AudioArray, sample_rate: int) -> torch.Tensor:
         if sample_rate != 24000:
             raise ValueError("Only support 24kHz audio.")
-        return mel_spectrogram(
+        mel_output = mel_spectrogram(
             torch.from_numpy(audio).unsqueeze(0),
             n_fft=1024,
             num_mels=128,
@@ -183,6 +191,9 @@ class TTSDataset(Dataset[DatasetItem]):
             fmin=0,
             fmax=12000,
         ).transpose(1, 2)
+        if not isinstance(mel_output, torch.Tensor):
+            raise ValueError("Expected mel_spectrogram to return a torch.Tensor.")
+        return mel_output
 
     def _extract_ref_mel(self, ref_audio_value: AudioInputs) -> torch.Tensor:
         """Return one extracted ref-mel tensor from a row ref-audio field."""

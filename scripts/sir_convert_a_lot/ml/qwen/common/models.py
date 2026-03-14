@@ -173,3 +173,101 @@ def audio_locator_from_payload(payload: object) -> AudioLocator | None:
     if archive_member_value is not None and not isinstance(archive_member_value, str):
         raise ValueError("Audio locator `archive_member` must be a string or null.")
     return AudioLocator(path=Path(path_value), archive_member=archive_member_value)
+
+
+def source_record_to_payload(source_record: SourceRecord) -> dict[str, object]:
+    """Render one source record into a JSON-serializable payload."""
+    return {
+        "dataset": source_record.dataset,
+        "source_split": source_record.source_split,
+        "dataset_row_id": source_record.dataset_row_id,
+        "speaker_id": source_record.speaker_id,
+        "speaker_name": source_record.speaker_name,
+        "speaker_from_id": source_record.speaker_from_id,
+        "source_audio_path": source_record.source_audio_path,
+        "text_raw": source_record.text_raw,
+        "language": source_record.language,
+        "speaker_total_hours": source_record.speaker_total_hours,
+        "has_label_files": source_record.has_label_files,
+        "speaker_audio_meta_ok": source_record.speaker_audio_meta_ok,
+        "source_audio_locator": audio_locator_to_payload(source_record.source_audio_locator),
+        "reference_audio_locator": audio_locator_to_payload(source_record.reference_audio_locator),
+        "source_sample_rate_hz": source_record.source_sample_rate_hz,
+        "duration_seconds": source_record.duration_seconds,
+        "boilerplate_group": source_record.boilerplate_group,
+        "notes": source_record.notes,
+    }
+
+
+def source_record_from_payload(payload: object) -> SourceRecord:
+    """Parse one JSON source-record payload back into the typed contract."""
+    if not isinstance(payload, Mapping):
+        raise ValueError("Source record payload must be a mapping.")
+    dataset = payload.get("dataset")
+    source_split = payload.get("source_split")
+    dataset_row_id = payload.get("dataset_row_id")
+    speaker_id = payload.get("speaker_id")
+    speaker_name = payload.get("speaker_name")
+    speaker_from_id = payload.get("speaker_from_id")
+    source_audio_path = payload.get("source_audio_path")
+    text_raw = payload.get("text_raw")
+    language = payload.get("language")
+    has_label_files = payload.get("has_label_files")
+    speaker_audio_meta_ok = payload.get("speaker_audio_meta_ok")
+    speaker_total_hours = payload.get("speaker_total_hours")
+    source_sample_rate_hz = payload.get("source_sample_rate_hz")
+    duration_seconds = payload.get("duration_seconds")
+    boilerplate_group = payload.get("boilerplate_group")
+    notes = payload.get("notes")
+    if not isinstance(dataset, str):
+        raise ValueError("Source record `dataset` must be a string.")
+    if not isinstance(source_split, str):
+        raise ValueError("Source record `source_split` must be a string.")
+    if not isinstance(dataset_row_id, str):
+        raise ValueError("Source record `dataset_row_id` must be a string.")
+    if not isinstance(speaker_id, str):
+        raise ValueError("Source record `speaker_id` must be a string.")
+    if not isinstance(speaker_name, str):
+        raise ValueError("Source record `speaker_name` must be a string.")
+    if not isinstance(speaker_from_id, bool):
+        raise ValueError("Source record `speaker_from_id` must be a bool.")
+    if not isinstance(source_audio_path, str):
+        raise ValueError("Source record `source_audio_path` must be a string.")
+    if not isinstance(text_raw, str):
+        raise ValueError("Source record `text_raw` must be a string.")
+    if not isinstance(language, str):
+        raise ValueError("Source record `language` must be a string.")
+    if not isinstance(has_label_files, bool):
+        raise ValueError("Source record `has_label_files` must be a bool.")
+    if not isinstance(speaker_audio_meta_ok, bool):
+        raise ValueError("Source record `speaker_audio_meta_ok` must be a bool.")
+    if speaker_total_hours is not None and not isinstance(speaker_total_hours, (int, float)):
+        raise ValueError("Source record `speaker_total_hours` must be numeric or null.")
+    if source_sample_rate_hz is not None and not isinstance(source_sample_rate_hz, int):
+        raise ValueError("Source record `source_sample_rate_hz` must be an int or null.")
+    if duration_seconds is not None and not isinstance(duration_seconds, (int, float)):
+        raise ValueError("Source record `duration_seconds` must be numeric or null.")
+    if boilerplate_group is not None and not isinstance(boilerplate_group, str):
+        raise ValueError("Source record `boilerplate_group` must be a string or null.")
+    if notes is not None and not isinstance(notes, str):
+        raise ValueError("Source record `notes` must be a string or null.")
+    return SourceRecord(
+        dataset=dataset,
+        source_split=source_split,
+        dataset_row_id=dataset_row_id,
+        speaker_id=speaker_id,
+        speaker_name=speaker_name,
+        speaker_from_id=speaker_from_id,
+        source_audio_path=source_audio_path,
+        text_raw=text_raw,
+        language=language,
+        speaker_total_hours=(None if speaker_total_hours is None else float(speaker_total_hours)),
+        has_label_files=has_label_files,
+        speaker_audio_meta_ok=speaker_audio_meta_ok,
+        source_audio_locator=audio_locator_from_payload(payload.get("source_audio_locator")),
+        reference_audio_locator=audio_locator_from_payload(payload.get("reference_audio_locator")),
+        source_sample_rate_hz=source_sample_rate_hz,
+        duration_seconds=None if duration_seconds is None else float(duration_seconds),
+        boilerplate_group=boilerplate_group,
+        notes=notes,
+    )

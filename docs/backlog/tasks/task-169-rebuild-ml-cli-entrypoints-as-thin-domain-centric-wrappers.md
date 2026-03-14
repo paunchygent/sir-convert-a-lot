@@ -1,9 +1,9 @@
 ---
-id: 'task-169-rebuild-ml-cli-entrypoints-as-thin-domain-centric-wrappers'
-title: 'Rebuild ML CLI Entrypoints as Thin Domain-Centric Wrappers'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-169-rebuild-ml-cli-entrypoints-as-thin-domain-centric-wrappers
+title: Rebuild ML CLI Entrypoints as Thin Domain-Centric Wrappers
+type: task
+status: proposed
+priority: high
 created: '2026-03-13'
 last_updated: '2026-03-13'
 related:
@@ -14,6 +14,7 @@ labels:
   - cli
   - qwen
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

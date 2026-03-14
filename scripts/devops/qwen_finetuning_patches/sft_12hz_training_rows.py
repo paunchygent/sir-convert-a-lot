@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from dataset import TrainingRow
+from scripts.devops.qwen_finetuning_patches.dataset import TrainingRow
 
 
 def _load_training_rows(train_jsonl_path: Path) -> list[TrainingRow]:

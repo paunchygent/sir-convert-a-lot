@@ -1,0 +1,499 @@
+"""Metadata and artifact helpers for Qwen training.
+
+Purpose:
+    Centralize path conventions, artifact writers, payload parsing,
+    latest-pointer resolution, and status markdown rendering for Qwen training.
+
+Relationships:
+    - Consumes data contracts from `ml.qwen.training.models`.
+    - Used by training orchestrators and CLI runners to inspect run state.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
+from scripts.sir_convert_a_lot.ml.qwen.training.models import (
+    DetachedLaunch,
+    DetachedStatus,
+    TrainingSettingsSnapshot,
+)
+
+
+def launch_root(output_root: Path, launch_id: str) -> Path:
+    """Return the canonical verification root for one launch."""
+    return output_root / launch_id
+
+
+def launch_metadata_path(launch_root: Path) -> Path:
+    """Return the launch metadata path for one detached training run."""
+    return launch_root / "launch.json"
+
+
+def status_metadata_path(launch_root: Path) -> Path:
+    """Return the status metadata path for one detached training run."""
+    return launch_root / "status.json"
+
+
+def status_markdown_path(launch_root: Path) -> Path:
+    """Return the markdown status path for one detached training run."""
+    return launch_root / "status.md"
+
+
+def latest_pointer_path(output_root: Path) -> Path:
+    """Return the pointer file that records the latest launch root."""
+    return output_root / "latest-launch.json"
+
+
+def stop_metadata_path(launch_root: Path) -> Path:
+    """Return the stop metadata path for one detached training container."""
+    return launch_root / "stop.json"
+
+
+def write_json(path: Path, payload: object) -> None:
+    """Write one deterministic JSON artifact."""
+    enforce_generated_output_path(path, label=path.name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def write_markdown(path: Path, markdown: str) -> None:
+    """Write one deterministic markdown artifact."""
+    enforce_generated_output_path(path, label=path.name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(markdown.rstrip() + "\n", encoding="utf-8")
+
+
+def render_status_markdown(status: DetachedStatus) -> str:
+    """Render one concise markdown summary for the detached training run."""
+    pilot_status = status.pilot_status or {}
+    resource_monitor = status.resource_monitor or {}
+    monitor_available = resource_monitor.get("available")
+    monitor_launch_root = resource_monitor.get("launch_root")
+    monitor_interval = resource_monitor.get("interval_seconds")
+    monitor_train_summary = resource_monitor.get("summary_train")
+    monitor_checkpoint_summary = resource_monitor.get("summary_checkpoint_save")
+    monitor_train_gpu_busy_median = (
+        None
+        if not isinstance(monitor_train_summary, dict)
+        else monitor_train_summary.get("gpu_busy_percent_median")
+    )
+    monitor_checkpoint_gpu_busy_median = (
+        None
+        if not isinstance(monitor_checkpoint_summary, dict)
+        else monitor_checkpoint_summary.get("gpu_busy_percent_median")
+    )
+    steady_state_median = resource_monitor.get("steady_state_train_gpu_busy_median_percent")
+    steady_state_gate_met = resource_monitor.get("steady_state_gpu_busy_gate_met")
+    tracking_payload = pilot_status.get("tracking")
+    ref_mel_cache_payload = pilot_status.get("ref_mel_cache")
+    ref_mel_cache_hit_rate = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("cache_hit_rate")
+    )
+    ref_mel_cache_enabled = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("enabled")
+    )
+    ref_mel_cache_hits = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("cache_hits")
+    )
+    ref_mel_cache_misses = (
+        None
+        if not isinstance(ref_mel_cache_payload, dict)
+        else ref_mel_cache_payload.get("cache_misses")
+    )
+    mlflow_run_id = None
+    if isinstance(tracking_payload, dict):
+        raw_mlflow_run_id = tracking_payload.get("mlflow_run_id")
+        if isinstance(raw_mlflow_run_id, str):
+            mlflow_run_id = raw_mlflow_run_id
+    lines = [
+        "# Qwen Training Detached Status",
+        "",
+        f"- checked_at: `{status.checked_at}`",
+        f"- launch_id: `{status.launch_id}`",
+        f"- container_name: `{status.container_name}`",
+        f"- container_id: `{status.container_id}`",
+        f"- status: `{status.status}`",
+        f"- running: `{status.running}`",
+        f"- exit_code: `{status.exit_code}`",
+        f"- oom_killed: `{status.oom_killed}`",
+        f"- started_at: `{status.started_at}`",
+        f"- finished_at: `{status.finished_at}`",
+        f"- pilot_status_found: `{status.pilot_status_found}`",
+        f"- pilot_report_found: `{status.pilot_report_found}`",
+        f"- latest_checkpoint_found: `{status.latest_checkpoint_found}`",
+        f"- pilot_updated_at: `{pilot_status.get('updated_at')}`",
+        f"- pilot_current_phase: `{pilot_status.get('current_phase')}`",
+        f"- pilot_current_epoch: `{pilot_status.get('current_epoch')}`",
+        f"- pilot_current_step: `{pilot_status.get('current_step')}`",
+        f"- pilot_latest_loss: `{pilot_status.get('latest_loss')}`",
+        f"- pilot_smoothed_loss: `{pilot_status.get('smoothed_loss')}`",
+        (
+            "- pilot_latest_durable_checkpoint_step: "
+            f"`{pilot_status.get('latest_durable_checkpoint_step')}`"
+        ),
+        (
+            "- pilot_latest_durable_checkpoint_saved_at: "
+            f"`{pilot_status.get('latest_durable_checkpoint_saved_at')}`"
+        ),
+        (f"- pilot_ref_mel_cache_enabled: `{ref_mel_cache_enabled}`"),
+        (f"- pilot_ref_mel_cache_hits: `{ref_mel_cache_hits}`"),
+        (f"- pilot_ref_mel_cache_misses: `{ref_mel_cache_misses}`"),
+        f"- pilot_ref_mel_cache_hit_rate: `{ref_mel_cache_hit_rate}`",
+        f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
+        f"- resource_monitor_available: `{monitor_available}`",
+        f"- resource_monitor_launch_root: `{monitor_launch_root}`",
+        f"- resource_monitor_interval_seconds: `{monitor_interval}`",
+        f"- resource_monitor_train_gpu_busy_median: `{monitor_train_gpu_busy_median}`",
+        f"- resource_monitor_checkpoint_gpu_busy_median: `{monitor_checkpoint_gpu_busy_median}`",
+        f"- resource_monitor_steady_state_gpu_busy_median: `{steady_state_median}`",
+        f"- resource_monitor_steady_state_gpu_busy_gate_met: `{steady_state_gate_met}`",
+        "",
+        "## Logs Tail",
+        "",
+        "```text",
+        status.logs_tail,
+        "```",
+    ]
+    if status.pilot_status is not None:
+        lines.extend(
+            [
+                "",
+                "## Pilot Status",
+                "",
+                "```json",
+                json.dumps(status.pilot_status, indent=2, ensure_ascii=False, sort_keys=True),
+                "```",
+            ]
+        )
+    if status.pilot_report is not None:
+        lines.extend(
+            [
+                "",
+                "## Pilot Report",
+                "",
+                "```json",
+                json.dumps(status.pilot_report, indent=2, ensure_ascii=False, sort_keys=True),
+                "```",
+            ]
+        )
+    if status.latest_checkpoint is not None:
+        lines.extend(
+            [
+                "",
+                "## Latest Checkpoint",
+                "",
+                "```json",
+                json.dumps(status.latest_checkpoint, indent=2, ensure_ascii=False, sort_keys=True),
+                "```",
+            ]
+        )
+    if status.resource_monitor is not None:
+        lines.extend(
+            [
+                "",
+                "## Resource Monitor",
+                "",
+                "```json",
+                json.dumps(status.resource_monitor, indent=2, ensure_ascii=False, sort_keys=True),
+                "```",
+            ]
+        )
+    return "\n".join(lines)
+
+
+def write_latest_pointer(output_root: Path, launch_root: Path) -> None:
+    """Record the latest detached launch root for status inspection."""
+    write_json(
+        latest_pointer_path(output_root),
+        {"launch_root": launch_root.as_posix()},
+    )
+
+
+def load_launch(
+    launch_root: Path,
+    *,
+    default_durable_checkpoint_retention: int,
+    default_durable_checkpoint_min_free_bytes: int,
+    default_dataloader_num_workers: int,
+    default_dataloader_pin_memory: bool,
+    default_dataloader_persistent_workers: bool,
+    default_dataloader_prefetch_factor: int,
+    default_non_blocking_transfer: bool,
+    default_ref_mel_cache_enabled: bool,
+    default_ref_mel_cache_max_items: int,
+    default_torch_profiler_enabled: bool,
+    default_torch_profiler_wait_steps: int,
+    default_torch_profiler_warmup_steps: int,
+    default_torch_profiler_active_steps: int,
+    default_torch_profiler_repeat: int,
+    default_torch_profiler_record_shapes: bool,
+    default_torch_profiler_profile_memory: bool,
+    default_torch_profiler_with_stack: bool,
+    default_rocm_profiler_enabled: bool,
+) -> DetachedLaunch:
+    """Load one previously recorded detached training launch payload."""
+    path = launch_metadata_path(launch_root)
+    if not path.exists():
+        raise FileNotFoundError(f"Launch metadata not found: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise SystemExit("Detached launch metadata was malformed.")
+    settings_payload = payload.get("settings")
+    if not isinstance(settings_payload, dict):
+        raise SystemExit("Detached launch metadata lacked a valid `settings` object.")
+    settings_snapshot = TrainingSettingsSnapshot(
+        output_root=_required_str(settings_payload, "output_root"),
+        image=_required_str(settings_payload, "image"),
+        hf_cache_dir=_required_str(settings_payload, "hf_cache_dir"),
+        hf_cache_home_mount=_required_str(settings_payload, "hf_cache_home_mount"),
+        scratch_build_root=_required_str(settings_payload, "scratch_build_root"),
+        scratch_build_home_mount=_required_str(settings_payload, "scratch_build_home_mount"),
+        pilot_bundle_root=_required_str(settings_payload, "pilot_bundle_root"),
+        runs_root=_required_str(settings_payload, "runs_root"),
+        model_id=_required_str(settings_payload, "model_id"),
+        train_manifest_family=_required_str(settings_payload, "train_manifest_family"),
+        eval_manifest_family=_required_str(settings_payload, "eval_manifest_family"),
+        batch_size=_required_int(settings_payload, "batch_size"),
+        lr=_required_float(settings_payload, "lr"),
+        num_epochs=_required_int(settings_payload, "num_epochs"),
+        max_steps=_required_int(settings_payload, "max_steps"),
+        checkpoint_interval_steps=_required_int(settings_payload, "checkpoint_interval_steps"),
+        durable_checkpoint_retention=_optional_int(
+            settings_payload,
+            "durable_checkpoint_retention",
+            default=default_durable_checkpoint_retention,
+        ),
+        durable_checkpoint_min_free_bytes=_optional_int(
+            settings_payload,
+            "durable_checkpoint_min_free_bytes",
+            default=default_durable_checkpoint_min_free_bytes,
+        ),
+        dataloader_num_workers=_optional_int(
+            settings_payload,
+            "dataloader_num_workers",
+            default=default_dataloader_num_workers,
+        ),
+        dataloader_pin_memory=(
+            _required_bool(settings_payload, "dataloader_pin_memory")
+            if "dataloader_pin_memory" in settings_payload
+            else default_dataloader_pin_memory
+        ),
+        dataloader_persistent_workers=(
+            _required_bool(settings_payload, "dataloader_persistent_workers")
+            if "dataloader_persistent_workers" in settings_payload
+            else default_dataloader_persistent_workers
+        ),
+        dataloader_prefetch_factor=_optional_int(
+            settings_payload,
+            "dataloader_prefetch_factor",
+            default=default_dataloader_prefetch_factor,
+        ),
+        non_blocking_transfer=(
+            _required_bool(settings_payload, "non_blocking_transfer")
+            if "non_blocking_transfer" in settings_payload
+            else default_non_blocking_transfer
+        ),
+        ref_mel_cache_enabled=(
+            _required_bool(settings_payload, "ref_mel_cache_enabled")
+            if "ref_mel_cache_enabled" in settings_payload
+            else default_ref_mel_cache_enabled
+        ),
+        ref_mel_cache_max_items=_optional_int(
+            settings_payload,
+            "ref_mel_cache_max_items",
+            default=default_ref_mel_cache_max_items,
+        ),
+        torch_profiler_enabled=(
+            _required_bool(settings_payload, "torch_profiler_enabled")
+            if "torch_profiler_enabled" in settings_payload
+            else default_torch_profiler_enabled
+        ),
+        torch_profiler_wait_steps=_optional_int(
+            settings_payload,
+            "torch_profiler_wait_steps",
+            default=default_torch_profiler_wait_steps,
+        ),
+        torch_profiler_warmup_steps=_optional_int(
+            settings_payload,
+            "torch_profiler_warmup_steps",
+            default=default_torch_profiler_warmup_steps,
+        ),
+        torch_profiler_active_steps=_optional_int(
+            settings_payload,
+            "torch_profiler_active_steps",
+            default=default_torch_profiler_active_steps,
+        ),
+        torch_profiler_repeat=_optional_int(
+            settings_payload,
+            "torch_profiler_repeat",
+            default=default_torch_profiler_repeat,
+        ),
+        torch_profiler_record_shapes=(
+            _required_bool(settings_payload, "torch_profiler_record_shapes")
+            if "torch_profiler_record_shapes" in settings_payload
+            else default_torch_profiler_record_shapes
+        ),
+        torch_profiler_profile_memory=(
+            _required_bool(settings_payload, "torch_profiler_profile_memory")
+            if "torch_profiler_profile_memory" in settings_payload
+            else default_torch_profiler_profile_memory
+        ),
+        torch_profiler_with_stack=(
+            _required_bool(settings_payload, "torch_profiler_with_stack")
+            if "torch_profiler_with_stack" in settings_payload
+            else default_torch_profiler_with_stack
+        ),
+        rocm_profiler_enabled=(
+            _required_bool(settings_payload, "rocm_profiler_enabled")
+            if "rocm_profiler_enabled" in settings_payload
+            else default_rocm_profiler_enabled
+        ),
+    )
+    tracking_payload = payload.get("tracking")
+    if tracking_payload is not None and not isinstance(tracking_payload, dict):
+        raise SystemExit("Detached launch metadata returned malformed `tracking`.")
+    return DetachedLaunch(
+        generated_at=_required_str(payload, "generated_at"),
+        launch_id=_required_str(payload, "launch_id"),
+        container_name=_required_str(payload, "container_name"),
+        container_id=_required_str(payload, "container_id"),
+        repo_root=_required_str(payload, "repo_root"),
+        run_root=_required_str(payload, "run_root"),
+        pilot_bundle_root=_required_str(payload, "pilot_bundle_root"),
+        train_jsonl=_required_str(payload, "train_jsonl"),
+        eval_jsonl=_required_str(payload, "eval_jsonl"),
+        train_manifest_family=_required_str(payload, "train_manifest_family"),
+        eval_manifest_family=_required_str(payload, "eval_manifest_family"),
+        dockerfile_path=_optional_str(payload, "dockerfile_path"),
+        resumed_from_checkpoint_path=_optional_str(payload, "resumed_from_checkpoint_path"),
+        settings=settings_snapshot,
+        command=_required_str_list(payload, "command"),
+        tracking=None if tracking_payload is None else dict(tracking_payload),
+        resource_monitor=_optional_object(payload, "resource_monitor"),
+    )
+
+
+def load_latest_checkpoint(run_root: Path) -> Path:
+    """Resolve the latest durable checkpoint pointer for one training run root."""
+    pointer_path = run_root / "latest_checkpoint.json"
+    if not pointer_path.exists():
+        raise SystemExit("Resume latest requires a run-root `latest_checkpoint.json` pointer.")
+    payload = json.loads(pointer_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise SystemExit("Latest-checkpoint metadata was malformed.")
+    return Path(_required_str(payload, "checkpoint_path"))
+
+
+def validate_resume_checkpoint_path(run_root: Path, checkpoint_path: Path) -> Path:
+    """Reject explicit resume checkpoints that do not belong to the source run root."""
+    resolved_run_root = run_root.resolve()
+    resolved_checkpoint_path = checkpoint_path.resolve()
+    if not resolved_checkpoint_path.exists():
+        raise SystemExit(
+            f"Resume checkpoint `{resolved_checkpoint_path.as_posix()}` does not exist."
+        )
+    try:
+        resolved_checkpoint_path.relative_to(resolved_run_root)
+    except ValueError as exc:
+        raise SystemExit(
+            "Resume --checkpoint-path must belong to the selected source launch run root."
+        ) from exc
+    return resolved_checkpoint_path
+
+
+def resolve_launch_root(output_root: Path, launch_root_arg: Path | None) -> Path:
+    """Resolve the launch root for status inspection."""
+    if launch_root_arg is not None:
+        return launch_root_arg
+    pointer_path = latest_pointer_path(output_root)
+    if not pointer_path.exists():
+        raise SystemExit(
+            "Status requires `--launch-root` until a launch has recorded "
+            "the latest detached pilot pointer."
+        )
+    payload = json.loads(pointer_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise SystemExit("Latest-launch metadata was malformed.")
+    return Path(_required_str(payload, "launch_root"))
+
+
+# --- Internal Helpers ---
+
+
+def _required_str(payload: dict[str, object], key: str) -> str:
+    """Return one required string value from a JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, str):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return value
+
+
+def _required_str_list(payload: dict[str, object], key: str) -> list[str]:
+    """Return one required string list from a JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return list(value)
+
+
+def _required_float(payload: dict[str, object], key: str) -> float:
+    """Return one required float value from a JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, (int, float)):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return float(value)
+
+
+def _required_int(payload: dict[str, object], key: str) -> int:
+    """Return one required integer value from a JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, int):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return value
+
+
+def _required_bool(payload: dict[str, object], key: str) -> bool:
+    """Return one required boolean value from a JSON payload."""
+    value = payload.get(key)
+    if not isinstance(value, bool):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return value
+
+
+def _optional_int(payload: dict[str, object], key: str, *, default: int) -> int:
+    """Return one optional integer value from a JSON payload with a fallback."""
+    value = payload.get(key)
+    if value is None:
+        return default
+    if not isinstance(value, int):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return value
+
+
+def _optional_str(payload: dict[str, object], key: str) -> str | None:
+    """Return one optional string value from a JSON payload."""
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return value
+
+
+def _optional_object(payload: dict[str, object], key: str) -> dict[str, object] | None:
+    """Return one optional JSON object from a payload."""
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise SystemExit(f"Metadata returned malformed `{key}`.")
+    return dict(value)

@@ -1,9 +1,9 @@
 ---
-id: 'task-170-align-dockerfiles-runbooks-and-backlog-to-domain-centric-structure'
-title: 'Align Dockerfiles Runbooks and Backlog to Domain-Centric Structure'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-170-align-dockerfiles-runbooks-and-backlog-to-domain-centric-structure
+title: Align Dockerfiles Runbooks and Backlog to Domain-Centric Structure
+type: task
+status: proposed
+priority: high
 created: '2026-03-13'
 last_updated: '2026-03-13'
 related:
@@ -14,6 +14,7 @@ labels:
   - docs
   - docker
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

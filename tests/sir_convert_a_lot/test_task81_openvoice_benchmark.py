@@ -43,6 +43,7 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     CONTAINER_TORCH_HOME,
     BenchmarkSettings,
     MountResolution,
+    _extract_debug_artifact_archive,
     collect_setup_artifact_evidence,
     copy_debug_artifacts_from_container,
     prefetch_openvoice_assets,
@@ -510,6 +511,40 @@ def test_copy_debug_artifacts_from_container_streams_tar_archive(
             ".",
         ]
     ]
+
+
+def test_extract_debug_artifact_archive_uses_data_filter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[Path, str | None]] = []
+    original_extractall = tarfile.TarFile.extractall
+
+    def _recording_extractall(
+        self: tarfile.TarFile,
+        path: str | Path = ".",
+        members=None,
+        *,
+        numeric_owner: bool = False,
+        filter: str | None = None,
+    ) -> None:
+        del members, numeric_owner
+        calls.append((Path(path), filter))
+
+    monkeypatch.setattr(tarfile.TarFile, "extractall", _recording_extractall)
+
+    tar_buffer = io.BytesIO()
+    with tarfile.open(fileobj=tar_buffer, mode="w:") as archive:
+        seg_bytes = b"wav"
+        seg_info = tarfile.TarInfo(name="./processed_reference/wavs/seg0.wav")
+        seg_info.size = len(seg_bytes)
+        archive.addfile(seg_info, io.BytesIO(seg_bytes))
+    tar_buffer.seek(0)
+
+    with tarfile.open(fileobj=tar_buffer, mode="r:") as archive:
+        _extract_debug_artifact_archive(archive=archive, destination_dir=tmp_path)
+
+    assert calls == [(tmp_path.resolve(), "data")]
+    monkeypatch.setattr(tarfile.TarFile, "extractall", original_extractall)
 
 
 def test_collect_setup_artifact_evidence_reads_processed_reference_and_base_files(

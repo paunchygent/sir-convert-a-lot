@@ -30,7 +30,7 @@ def test_run_benchmark_writes_expected_payload(tmp_path: Path) -> None:
         repeats=3,
         chunk_size_pages=1,
         max_chunk_workers=4,
-        stub_work_seconds=0.003,
+        stub_work_seconds=0.01,
     )
 
     assert output_json.exists()

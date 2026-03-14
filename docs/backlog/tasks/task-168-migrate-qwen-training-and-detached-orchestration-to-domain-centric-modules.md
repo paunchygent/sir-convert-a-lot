@@ -1,9 +1,9 @@
 ---
-id: 'task-168-migrate-qwen-training-and-detached-orchestration-to-domain-centric-modules'
-title: 'Migrate Qwen Training and Detached Orchestration to Domain-Centric Modules'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-168-migrate-qwen-training-and-detached-orchestration-to-domain-centric-modules
+title: Migrate Qwen Training and Detached Orchestration to Domain-Centric Modules
+type: task
+status: proposed
+priority: high
 created: '2026-03-13'
 last_updated: '2026-03-13'
 related:
@@ -14,6 +14,7 @@ labels:
   - training
   - qwen
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

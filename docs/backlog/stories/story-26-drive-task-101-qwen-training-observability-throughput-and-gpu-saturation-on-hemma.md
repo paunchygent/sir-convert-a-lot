@@ -25,6 +25,9 @@ related:
   - docs/backlog/tasks/task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma.md
   - docs/backlog/tasks/task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md
   - docs/backlog/tasks/task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md
+  - docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md
+  - docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md
+  - docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md
   - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -101,6 +104,9 @@ Out of scope for this story:
 1. `docs/backlog/tasks/task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma.md`
 1. `docs/backlog/tasks/task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md`
 1. `docs/backlog/tasks/task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md`
+1. `docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md`
+1. `docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md`
+1. `docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
 
 ## Implementation Blueprint (T161-T163)
 
@@ -141,6 +147,36 @@ Verification posture for this blueprint:
 - detached long-run Hemma execution only
 - monitor and saturation evidence written under `build/verification/`
 
+## Latest Hemma Evidence Snapshot (2026-03-13)
+
+What the evidence shows from the bounded `T161` and `T162` runs:
+
+- `T161` cache-off run (`task161-20260313t212725z-cache-off`):
+  steady-state train GPU median = `26%`
+- `T161` cache-on run (`task161-20260313t212725z-cache-on`):
+  steady-state train GPU median = `8%`
+- `T162` profiling run (`task162-20260313t220644z-profile`):
+  steady-state train GPU median = `3%`
+- in both `T161` runs and `T162`, `ref_mel_cache` stats are effectively dead:
+  `cache_hits=0`, `cache_misses=0`, `cache_size=0`
+- `T162` ROCm profiling attribution:
+  - HIP API total: `98.74s`
+  - kernel total: `102.08s`
+  - memory-copy trace total: `1.73s`
+  - top HIP API time:
+    - `hipLaunchKernel` = `44.18s`
+    - `hipMemcpyWithStream` = `21.52s`
+    - `hipEventSynchronize` = `17.89s`
+
+Root-cause conclusion from this evidence:
+
+- the lane is still host-orchestration/synchronization bound
+  (kernel launch + sync overhead), not compute-saturated
+- runtime `ref_mel` cache is not engaged in practice for this lane and cannot
+  currently lift saturation
+- the lane has a separate quality blocker: persistent `NaN` training loss,
+  which undermines throughput/saturation trustworthiness
+
 ## Acceptance Criteria
 
 - [x] The Task 101 runtime emits first-class tracker artifacts during live
@@ -161,12 +197,12 @@ Verification posture for this blueprint:
 - [ ] Duplicate `ref_audio` rows no longer recompute `ref_mel` blindly in the
   hot path, and the team has an explicit documented decision on whether
   precomputed bundle-level mels are still required.
-- [ ] Bounded PyTorch and ROCm profiling surfaces exist and produce reviewable
+- [x] Bounded PyTorch and ROCm profiling surfaces exist and produce reviewable
   traces for one Task 101 run without requiring ad hoc shell payloads.
 - [ ] One real Hemma verification run demonstrates `>= 90%` median GPU busy
   during a steady-state non-checkpoint training window lasting at least
   `10` contiguous minutes.
-- [ ] Story, epic, runbook, and reference docs all agree on the new
+- [x] Story, epic, runbook, and reference docs all agree on the new
   saturation-oriented acceptance posture.
 
 ## Test Requirements

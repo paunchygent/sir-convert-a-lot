@@ -9,8 +9,8 @@ Relationships:
     - Used by `run_task116_hemma_resource_monitor.py`.
     - Reuses `gpu_utilization_snapshot` for bounded host GPU samples.
     - Reuses `system_resource_snapshot` for bounded host CPU and RAM samples.
-    - Reuses Task 103 atomic artifact writers so live operator reads do not see
-      truncated JSON/JSONL during monitor updates.
+    - Reuses shared preprocessing storage writers so live operator reads do not
+      see truncated JSON/JSONL during monitor updates.
 """
 
 from __future__ import annotations
@@ -24,10 +24,6 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import (
-    write_json,
-    write_jsonl,
-)
 from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_models import (
     RuntimeKind,
     Task116ResourceMonitorLaunch,
@@ -42,6 +38,10 @@ from scripts.sir_convert_a_lot.infrastructure.gpu_utilization_snapshot import (
 )
 from scripts.sir_convert_a_lot.infrastructure.system_resource_snapshot import (
     HostResourceSampler,
+)
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.storage import (
+    write_json,
+    write_jsonl,
 )
 
 

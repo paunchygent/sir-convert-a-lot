@@ -20,7 +20,6 @@ import sys
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
-from scripts.sir_convert_a_lot.devops.task103_qwen_preprocessing_storage import write_json
 from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_models import (
     RuntimeKind,
     Task116ResourceMonitorLaunch,
@@ -49,6 +48,7 @@ from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_runtime imp
     write_status,
     write_summary,
 )
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.storage import write_json
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-116-hemma-resource-monitor")
 

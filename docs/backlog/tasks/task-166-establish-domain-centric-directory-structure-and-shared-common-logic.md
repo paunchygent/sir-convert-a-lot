@@ -1,9 +1,9 @@
 ---
-id: 'task-166-establish-domain-centric-directory-structure-and-shared-common-logic'
-title: 'Establish Domain-Centric Directory Structure and Shared Common Logic'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-166-establish-domain-centric-directory-structure-and-shared-common-logic
+title: Establish Domain-Centric Directory Structure and Shared Common Logic
+type: task
+status: completed
+priority: high
 created: '2026-03-13'
 last_updated: '2026-03-13'
 related:
@@ -14,6 +14,7 @@ labels:
   - architecture
   - common
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -33,18 +34,18 @@ migrate shared infrastructure logic (Docker, ROCm, Storage) into a dedicated
 
 ## Deliverables
 
-- [ ] Directory structure established.
-- [ ] `ml/qwen/common/` package populated with infrastructure logic.
-- [ ] No task-prefixed filenames in `ml/qwen/common/`.
+- [x] Directory structure established.
+- [x] `ml/qwen/common/` package populated with infrastructure logic.
+- [x] No task-prefixed filenames in `ml/qwen/common/`.
 
 ## Acceptance Criteria
 
-- [ ] `scripts/sir_convert_a_lot/ml/qwen/common/` exists and contains functional ROCm/Docker/Storage logic.
-- [ ] Unit tests for shared common logic pass.
-- [ ] Files moved in this PR do not depend on the old `devops/taskXXX` paths for their own functionality.
+- [x] `scripts/sir_convert_a_lot/ml/qwen/common/` exists and contains functional ROCm/Docker/Storage logic.
+- [x] Unit tests for shared common logic pass.
+- [x] Files moved in this PR do not depend on the old `devops/taskXXX` paths for their own functionality.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

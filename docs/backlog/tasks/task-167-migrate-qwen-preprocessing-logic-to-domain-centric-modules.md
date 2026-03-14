@@ -1,9 +1,9 @@
 ---
-id: 'task-167-migrate-qwen-preprocessing-logic-to-domain-centric-modules'
-title: 'Migrate Qwen Preprocessing Logic to Domain-Centric Modules'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-167-migrate-qwen-preprocessing-logic-to-domain-centric-modules
+title: Migrate Qwen Preprocessing Logic to Domain-Centric Modules
+type: task
+status: proposed
+priority: high
 created: '2026-03-13'
 last_updated: '2026-03-13'
 related:
@@ -14,6 +14,7 @@ labels:
   - preprocessing
   - qwen
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

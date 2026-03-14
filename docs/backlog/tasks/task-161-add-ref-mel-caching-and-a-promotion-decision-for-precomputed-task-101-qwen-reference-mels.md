@@ -85,7 +85,10 @@ Test changes:
 
 Hemma evidence path:
 
-- `build/verification/task-161-ref-mel-cache-comparison/<run-id>/`
+- `build/verification/task-101-qwen3-tts-swedish-hemma-pilot/<launch-id>/`
+- run roots:
+  - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task161-20260313t212725z-cache-off`
+  - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task161-20260313t212725z-cache-on`
 
 ## Non-Goals
 
@@ -93,12 +96,40 @@ Hemma evidence path:
 - Do not silently persist large new artifacts under `build/reference/` yet.
 - Do not close the MIOpen lane here.
 
+## Hemma Evidence (2026-03-13)
+
+One bounded comparison was executed on Hemma with identical training settings
+except for `ref_mel_cache_enabled`.
+
+Launches:
+
+- cache-off: `task161-20260313t212725z-cache-off`
+- cache-on: `task161-20260313t212725z-cache-on`
+
+Measured steady-state train GPU-busy medians (non-checkpoint train window):
+
+- cache-off median GPU busy: `26%`
+- cache-on median GPU busy: `8%`
+
+Observed cache metrics from both runs:
+
+- cache-off: `cache_hits=0`, `cache_misses=0`, `cache_size=0`
+- cache-on: `cache_hits=0`, `cache_misses=0`, `cache_size=0`
+
+Conclusion for this task:
+
+- runtime cache behavior is not engaged in practice for this lane
+- the cache path did not improve saturation in the measured comparison
+- explicit decision: proceed with `T164` and make bundle-level precomputed
+  `ref_mel` (or speaker-embedding equivalent) the next mandatory optimization
+  lane
+
 ## Deliverables
 
 - [x] Runtime `ref_mel` cache added to the Task 101 training path.
 - [x] Cache-hit metrics are visible in machine-readable output or trackers.
-- [ ] Bounded Hemma evidence compares cache-off versus cache-on behavior.
-- [ ] A documented go/no-go decision exists for `T164`.
+- [x] Bounded Hemma evidence compares cache-off versus cache-on behavior.
+- [x] A documented go/no-go decision exists for `T164`.
 
 ## Acceptance Criteria
 
@@ -106,7 +137,7 @@ Hemma evidence path:
   recompute `ref_mel` blindly during the same run.
 - [ ] The cache path measurably improves throughput or GPU-busy behavior over
   the uncached baseline.
-- [ ] The task concludes with one explicit statement:
+- [x] The task concludes with one explicit statement:
   - “cache-only is sufficient for the current story”, or
   - “proceed with `T164` bundle-level precomputed mels”.
 
@@ -119,11 +150,11 @@ Hemma evidence path:
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] Bounded Hemma comparison records cache hit rate and resource-summary
+- [x] Bounded Hemma comparison records cache hit rate and resource-summary
   deltas.
 
 ## Checklist
 
 - [x] Implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated

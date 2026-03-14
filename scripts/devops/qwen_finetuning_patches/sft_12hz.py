@@ -32,26 +32,31 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-import sft_12hz_checkpointing as checkpointing
 import torch
 from accelerate import Accelerator
-from dataset import TTSDataset
 from huggingface_hub import hf_hub_download, snapshot_download
 from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
 from safetensors.torch import save_file
-from sft_12hz_checkpointing import DurableCheckpointMetadata
-from sft_12hz_dataloader import (
+from torch.optim import AdamW
+from torch.utils.data import DataLoader
+from transformers import AutoConfig
+
+from scripts.devops.qwen_finetuning_patches import sft_12hz_checkpointing as checkpointing
+from scripts.devops.qwen_finetuning_patches.dataset import TTSDataset
+from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
+    DurableCheckpointMetadata,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     DEFAULT_DATALOADER_NUM_WORKERS,
     DEFAULT_DATALOADER_PERSISTENT_WORKERS,
     DEFAULT_DATALOADER_PIN_MEMORY,
     DEFAULT_DATALOADER_PREFETCH_FACTOR,
     DEFAULT_NON_BLOCKING_TRANSFER,
-    dataloader_kwargs,
     dataloader_tuning_payload,
     resolve_dataloader_tuning,
     to_device_with_optional_non_blocking,
 )
-from sft_12hz_profiling import (
+from scripts.devops.qwen_finetuning_patches.sft_12hz_profiling import (
     DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
     DEFAULT_TORCH_PROFILER_ENABLED,
     DEFAULT_TORCH_PROFILER_PROFILE_MEMORY,
@@ -63,19 +68,19 @@ from sft_12hz_profiling import (
     TorchProfilerSession,
     resolve_torch_profiler_config,
 )
-from sft_12hz_progress import (
+from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
 )
-from sft_12hz_ref_mel_cache import (
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
     DEFAULT_REF_MEL_CACHE_ENABLED,
     DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
     RefMelCache,
 )
-from sft_12hz_step_semantics import (
+from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
     GRADIENT_ACCUMULATION_STEPS,
 )
-from sft_12hz_tracking import (
+from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
     DEFAULT_MLFLOW_EXPERIMENT_NAME,
     DEFAULT_TRACKER_PROJECT_NAME,
     TrainingTrackerSummary,
@@ -85,11 +90,13 @@ from sft_12hz_tracking import (
     refresh_training_tracker_summary,
     update_smoothed_loss,
 )
-from sft_12hz_training_rows import _load_training_rows
-from torch.optim import AdamW
-from torch.utils.data import DataLoader
-from training_stop import TrainingStopState, install_training_stop_handlers
-from transformers import AutoConfig
+from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
+    _load_training_rows,
+)
+from scripts.devops.qwen_finetuning_patches.training_stop import (
+    TrainingStopState,
+    install_training_stop_handlers,
+)
 
 EXPORT_METADATA_PATTERNS = (
     "*.json",
@@ -604,14 +611,29 @@ def train_with_args(
         config,
         ref_mel_cache=ref_mel_cache,
     )
-    train_dataloader = DataLoader(
-        dataset,
-        **dataloader_kwargs(
-            tuning=effective_dataloader_tuning,
+    if effective_dataloader_tuning.num_workers == 0:
+        train_dataloader = DataLoader(
+            dataset,
             batch_size=args.batch_size,
+            shuffle=True,
             collate_fn=dataset.collate_fn,
-        ),
-    )
+            num_workers=0,
+            pin_memory=effective_dataloader_tuning.pin_memory,
+        )
+    else:
+        prefetch_factor = effective_dataloader_tuning.prefetch_factor
+        if prefetch_factor is None:
+            raise ValueError("Expected prefetch_factor when num_workers > 0.")
+        train_dataloader = DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+            collate_fn=dataset.collate_fn,
+            num_workers=effective_dataloader_tuning.num_workers,
+            pin_memory=effective_dataloader_tuning.pin_memory,
+            persistent_workers=effective_dataloader_tuning.persistent_workers,
+            prefetch_factor=prefetch_factor,
+        )
     optimizer = AdamW(qwen3tts.model.parameters(), lr=args.lr, weight_decay=0.01)
 
     model, optimizer, train_dataloader = accelerator.prepare(
@@ -927,6 +949,9 @@ def train_with_args(
                 tracker_config=tracker_config,
                 system_metrics_enabled=tracker_summary.mlflow_system_metrics_enabled,
             )
+    profiling_payload: dict[str, object] = {}
+    for key, value in torch_profiler_session.payload().items():
+        profiling_payload[str(key)] = value
     return TrainingSummary(
         init_model_path=str(args.init_model_path),
         output_model_path=str(args.output_model_path),
@@ -964,7 +989,7 @@ def train_with_args(
         stopped_early=stop_requested_during_training,
         dataloader_tuning=dataloader_tuning_payload(effective_dataloader_tuning),
         ref_mel_cache=ref_mel_cache.payload(),
-        profiling=torch_profiler_session.payload(),
+        profiling=profiling_payload,
         tracking=tracker_summary,
     )
 

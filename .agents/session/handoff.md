@@ -1,5 +1,196 @@
 # Session Handoff
 
+## Implementation Handoff (2026-03-14, Story 26 T171 -> T173 -> T172)
+
+### Scope for Next Developer
+
+Implement the following tasks in strict order:
+
+1. `docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md`
+1. `docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md`
+1. `docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
+
+Story to keep open while implementing:
+
+- `docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
+
+### Current Evidence Baseline (Must Be Treated as Source of Truth)
+
+- `T161` cache-off run `task161-20260313t212725z-cache-off`:
+  steady-state train GPU median `26%`
+- `T161` cache-on run `task161-20260313t212725z-cache-on`:
+  steady-state train GPU median `8%`
+- `T162` profile run `task162-20260313t220644z-profile`:
+  steady-state train GPU median `3%`
+- cache stats in all three runs were effectively dead:
+  `cache_hits=0`, `cache_misses=0`, `cache_size=0`
+- `T162` ROCm attribution:
+  - HIP API `98.74s`
+  - kernels `102.08s`
+  - memory copy `1.73s`
+  - top HIP API:
+    `hipLaunchKernel=44.18s`,
+    `hipMemcpyWithStream=21.52s`,
+    `hipEventSynchronize=17.89s`
+
+Interpretation:
+
+- lane is host-orchestration/synchronization bound
+- runtime ref-mel cache is not currently engaged in practice on this lane
+- persistent `NaN` loss is a quality blocker for trustworthy saturation claims
+
+### What Was Updated Before This Handoff
+
+- Evidence and RCA synced into:
+  - `task-161...md`
+  - `task-162...md`
+  - `story-26...md`
+  - `epic-08...md`
+  - `runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
+  - `ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`
+  - `docs/backlog/current.md`
+- New task docs created and filled:
+  - `task-171...md`
+  - `task-173...md`
+  - `task-172...md`
+
+Validation status for docs updates in this handoff:
+
+- `PASS` `pdm run validate-tasks`
+- `PASS` `pdm run validate-docs`
+- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+### Critical Environment / Repo Risks (Read Before Coding)
+
+1. Local branch is `main` with substantial uncommitted Story 27 migration state.
+1. Legacy `devops/taskXXX` scripts are deleted locally, while `pyproject` still
+   contains old script entrypoints (for example `task-101-pilot`,
+   `task-161-ref-mel-cache-comparison`, `task-162-task101-profiling`).
+1. Some new CLI files under `scripts/sir_convert_a_lot/cli/ml/` still import
+   old deleted `devops` modules.
+1. Do not revert unrelated user changes. Work with the dirty tree.
+
+Implication:
+
+- First step for the implementer should be stabilizing executable command
+  surfaces used by `T171/T173/T172` in the current domain-centric layout.
+
+### Canonical Code Areas for T171/T173/T172
+
+Training loop and hot-path behavior:
+
+- `scripts/devops/qwen_finetuning_patches/sft_12hz.py`
+- `scripts/devops/qwen_finetuning_patches/dataset.py`
+- `scripts/devops/qwen_finetuning_patches/sft_12hz_tracking.py`
+- `scripts/devops/qwen_finetuning_patches/sft_12hz_ref_mel_cache.py`
+
+Domain-centric orchestration and reporting:
+
+- `scripts/sir_convert_a_lot/ml/qwen/training/trainer.py`
+- `scripts/sir_convert_a_lot/ml/qwen/training/reporting.py`
+- `scripts/sir_convert_a_lot/ml/qwen/training/orchestrator.py`
+- `scripts/sir_convert_a_lot/ml/qwen/training/monitoring.py`
+- `scripts/sir_convert_a_lot/ml/qwen/training/metadata.py`
+- `scripts/sir_convert_a_lot/ml/qwen/training/bundles.py`
+
+Potential CLI surfaces to align:
+
+- `scripts/sir_convert_a_lot/cli/ml/qwen_train.py`
+- `scripts/sir_convert_a_lot/cli/ml/qwen_ref_mel_cache_comparison.py`
+- `pyproject.toml` script entries for any affected commands
+
+### Execution Plan (Do Not Reorder)
+
+1. **T171**: remove per-step host sync overhead and add finite-loss guard.
+1. Run focused tests + local gates.
+1. Run bounded Hemma evidence for T171 and capture profile/monitor deltas.
+1. **T173**: persist and consume precomputed reference inputs at bundle level.
+1. Run focused tests + local gates.
+1. Run bounded Hemma evidence for T173 and compare against T161 baseline.
+1. **T172**: increase per-launch work (bucketing + vectorized codebook path).
+1. Run focused tests + local gates.
+1. Run bounded Hemma sweep and pick one default profile with evidence.
+1. Update task/story docs with measured evidence only.
+
+### Guardrails
+
+- Do not close Story 26 in this slice.
+- Do not claim acceptance from `NaN` runs.
+- Do not claim saturation success without monitor-backed evidence.
+- Use canonical wrappers:
+  - local: `pdm run run-local-pdm <script>`
+  - Hemma: `pdm run run-hemma -- <command>`
+- Merge-only workflow; never rebase.
+- BuildKit only.
+
+### Minimum Required Gates Per Task
+
+- `pdm run format-all`
+- `pdm run lint-fix`
+- `pdm run typecheck-all`
+- `pdm run pytest-root <focused-paths>`
+- `pdm run validate-tasks`
+- `pdm run validate-docs`
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+### Completion Standard for This Handoff Scope
+
+This handoff scope is complete only when `T171`, `T173`, and `T172` each have:
+
+- implementation complete
+- validation complete
+- live Hemma evidence attached in docs
+- and Story 26 remains open unless its explicit saturation gate is actually met
+
+## Session Update (2026-03-13, Story 27 T166-T170)
+
+- Completed the domain-centric Qwen ML refactor implementation for Story 27
+  and Tasks `166-170`, moving the canonical code surface to
+  `scripts/sir_convert_a_lot/ml/qwen/` with `common/`, `preprocessing/`, and
+  `training/` packages plus thin public CLI wrappers under
+  `scripts/sir_convert_a_lot/cli/ml/`.
+- Main implementation outcomes:
+  - removed task-prefixed Qwen filenames and internal symbols from the active
+    ML domain
+  - decomposed former "god task" modules into SRP-aligned modules such as
+    `asr.py`, `orchestrator.py`, `bundles.py`, and typed shared contracts
+  - updated the Qwen Hemma container and the Qwen fine-tuning runbook to use
+    the new domain-centric paths and command surfaces
+- Current follow-up gap:
+  - the moved tests under `tests/sir_convert_a_lot/ml/qwen/` still need the
+    remaining import-path cleanup so the full Story 27 test surface is aligned
+    with the new package layout
+  - Story 27 backlog docs currently need final terminal status synchronization
+    once that remaining test import cleanup is complete and verified
+
+## Validation Status (Story 27 implementation)
+
+- `NOT RUN IN THIS HANDOFF UPDATE` `pdm run format-all`
+- `NOT RUN IN THIS HANDOFF UPDATE` `pdm run lint-fix`
+- `PASS` `pdm run typecheck-all`
+- `NOT YET PASSING / FOLLOW-UP REQUIRED` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/`
+- `PASS` `pdm run validate-tasks`
+- `PASS` `pdm run validate-docs`
+
+## Active Blocker
+
+- The remaining blocker for full Story 27 closure is import refactoring in the
+  moved Qwen test modules under `tests/sir_convert_a_lot/ml/qwen/`; until that
+  lands, the refactor implementation is complete but the test-alignment
+  acceptance step is not yet closed.
+
+## Immediate Next Step
+
+- Start from the moved Qwen tests and finish import rewrites so they point at
+  `scripts.sir_convert_a_lot.ml.qwen...` and the new `cli/ml/` wrappers rather
+  than the removed `devops/taskXXX` modules.
+- Run the focused Story 27 validation lane:
+  - `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/`
+  - `pdm run validate-tasks`
+  - `pdm run validate-docs`
+- After the focused test lane passes, synchronize Story 27 / Tasks `166-170`
+  backlog statuses and checklists to terminal state in strict hierarchy order.
+
 ## Session Update (2026-03-13, Story 26 T161-T162)
 
 - Implemented the remaining Story 26 `T161` and `T162` code surfaces while

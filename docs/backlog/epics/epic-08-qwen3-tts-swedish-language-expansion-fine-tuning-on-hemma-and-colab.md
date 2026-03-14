@@ -35,6 +35,9 @@ related:
   - docs/backlog/tasks/task-138-canonicalize-qwen-pilot-ownership-and-salvage-the-remaining-colab-slice.md
   - docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md
   - docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md
+  - docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md
+  - docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md
+  - docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md
   - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
@@ -101,6 +104,30 @@ This epic is complete only when:
 - Treating single-speaker cloning or custom-voice adaptation as the end goal.
 - Shipping a production default backend decision in this epic alone.
 
+## Current Story 26 Throughput Reality (2026-03-13)
+
+Latest bounded evidence from `T161` and `T162`:
+
+- `T161` cache-off steady-state train median GPU busy: `26%`
+- `T161` cache-on steady-state train median GPU busy: `8%`
+- `T162` profiling steady-state train median GPU busy: `3%`
+- all three runs reported effectively dead runtime cache stats:
+  `cache_hits=0`, `cache_misses=0`, `cache_size=0`
+- `T162` ROCm attribution:
+  - HIP API `98.74s`
+  - kernels `102.08s`
+  - memory copy `1.73s`
+  - top HIP API calls:
+    `hipLaunchKernel=44.18s`, `hipMemcpyWithStream=21.52s`,
+    `hipEventSynchronize=17.89s`
+
+Epic-level interpretation:
+
+- the current Task 101 lane remains host-orchestration/synchronization bound
+- runtime `ref_mel` cache is not currently lifting saturation on this lane
+- persistent `NaN` loss must be treated as a quality blocker before saturation
+  evidence is considered trustworthy
+
 ## Stories
 
 1. `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
@@ -138,6 +165,9 @@ This epic is complete only when:
 1. `docs/backlog/tasks/task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma.md`
 1. `docs/backlog/tasks/task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md`
 1. `docs/backlog/tasks/task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md`
+1. `docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md`
+1. `docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md`
+1. `docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
 1. `docs/backlog/tasks/task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
 1. `docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md`
 1. `docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md`

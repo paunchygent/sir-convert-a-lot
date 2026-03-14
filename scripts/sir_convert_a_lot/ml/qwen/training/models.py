@@ -176,3 +176,43 @@ class TrainingReport:
     flash_attn_version: str | None
     tracking: dict[str, object] | None
     training_summary: dict[str, object]
+
+
+def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettings:
+    """Rehydrate runtime settings from one detached-launch snapshot."""
+    return TrainingSettings(
+        output_root=Path(snapshot.output_root),
+        image=snapshot.image,
+        hf_cache_dir=Path(snapshot.hf_cache_dir),
+        hf_cache_home_mount=Path(snapshot.hf_cache_home_mount),
+        scratch_build_root=Path(snapshot.scratch_build_root),
+        scratch_build_home_mount=Path(snapshot.scratch_build_home_mount),
+        pilot_bundle_root=Path(snapshot.pilot_bundle_root),
+        runs_root=Path(snapshot.runs_root),
+        model_id=snapshot.model_id,
+        train_manifest_family=snapshot.train_manifest_family,
+        eval_manifest_family=snapshot.eval_manifest_family,
+        batch_size=snapshot.batch_size,
+        lr=snapshot.lr,
+        num_epochs=snapshot.num_epochs,
+        max_steps=snapshot.max_steps,
+        checkpoint_interval_steps=snapshot.checkpoint_interval_steps,
+        durable_checkpoint_retention=snapshot.durable_checkpoint_retention,
+        durable_checkpoint_min_free_bytes=snapshot.durable_checkpoint_min_free_bytes,
+        dataloader_num_workers=snapshot.dataloader_num_workers,
+        dataloader_pin_memory=snapshot.dataloader_pin_memory,
+        dataloader_persistent_workers=snapshot.dataloader_persistent_workers,
+        dataloader_prefetch_factor=snapshot.dataloader_prefetch_factor,
+        non_blocking_transfer=snapshot.non_blocking_transfer,
+        ref_mel_cache_enabled=snapshot.ref_mel_cache_enabled,
+        ref_mel_cache_max_items=snapshot.ref_mel_cache_max_items,
+        torch_profiler_enabled=snapshot.torch_profiler_enabled,
+        torch_profiler_wait_steps=snapshot.torch_profiler_wait_steps,
+        torch_profiler_warmup_steps=snapshot.torch_profiler_warmup_steps,
+        torch_profiler_active_steps=snapshot.torch_profiler_active_steps,
+        torch_profiler_repeat=snapshot.torch_profiler_repeat,
+        torch_profiler_record_shapes=snapshot.torch_profiler_record_shapes,
+        torch_profiler_profile_memory=snapshot.torch_profiler_profile_memory,
+        torch_profiler_with_stack=snapshot.torch_profiler_with_stack,
+        rocm_profiler_enabled=snapshot.rocm_profiler_enabled,
+    )

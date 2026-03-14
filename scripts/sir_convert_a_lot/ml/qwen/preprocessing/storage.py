@@ -19,7 +19,7 @@ import tempfile
 import threading
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Iterator, Literal, Protocol
+from typing import Iterator, Literal, Protocol, Sequence
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.ml.qwen.common.models import ManifestFamily
@@ -226,8 +226,8 @@ def write_json(path: Path, payload: object) -> None:
     )
 
 
-def write_jsonl(path: Path, rows: list[object]) -> None:
-    """Write deterministic JSONL output from one bounded row list."""
+def write_jsonl(path: Path, rows: Sequence[object]) -> None:
+    """Write deterministic JSONL output from one bounded row sequence."""
     with JsonlAtomicWriter(path) as writer:
         for row in rows:
             writer.write_row(row)

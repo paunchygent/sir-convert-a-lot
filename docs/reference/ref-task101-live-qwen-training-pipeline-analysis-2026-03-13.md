@@ -59,6 +59,36 @@ This report is intentionally detailed enough to serve as the canonical
 reference for the next monitoring, throughput, and training-program hardening
 tasks without forcing the next operator to reconstruct the evidence by hand.
 
+## Addendum: T161 and T162 Evidence Update (2026-03-13 Evening)
+
+What the evidence shows (not guesses):
+
+- `T161` cache-off run (`task161-20260313t212725z-cache-off`):
+  steady-state train GPU median = `26%`
+- `T161` cache-on run (`task161-20260313t212725z-cache-on`):
+  steady-state train GPU median = `8%`
+- `T162` profiling run (`task162-20260313t220644z-profile`):
+  steady-state train GPU median = `3%`
+- in both `T161` runs and `T162`, runtime cache metrics are effectively dead:
+  `cache_hits=0`, `cache_misses=0`, `cache_size=0`
+- `T162` ROCm profiling attribution:
+  - HIP API total: `98.74s`
+  - kernel total: `102.08s`
+  - memory-copy trace total: `1.73s`
+  - top HIP API time:
+    - `hipLaunchKernel`: `44.18s`
+    - `hipMemcpyWithStream`: `21.52s`
+    - `hipEventSynchronize`: `17.89s`
+
+Root-cause conclusion:
+
+- the lane remains host-orchestration/synchronization bound
+  (kernel launch + sync overhead), not compute-saturated
+- runtime `ref_mel` cache is not engaged in practice for this lane and cannot
+  currently lift saturation
+- training is also running with persistent `NaN` loss, which undermines
+  throughput and saturation evidence quality
+
 ## Decisioned Optimization Targets
 
 The optimization program derived from this report uses a deliberately hard

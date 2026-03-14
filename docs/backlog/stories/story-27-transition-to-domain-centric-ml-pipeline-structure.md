@@ -1,9 +1,9 @@
 ---
-id: 'story-27-transition-to-domain-centric-ml-pipeline-structure'
-title: 'Transition to Domain-Centric ML Pipeline Structure'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-27-transition-to-domain-centric-ml-pipeline-structure
+title: Transition to Domain-Centric ML Pipeline Structure
+type: story
+status: proposed
+priority: high
 created: '2026-03-13'
 last_updated: '2026-03-13'
 related:
@@ -21,6 +21,7 @@ labels:
   - architecture
   - srp
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -42,6 +43,7 @@ training, and CLI concerns into stable, SRP-aligned modules.
   clean-break structure.
 
 Out of scope:
+
 - changing runtime behavior or ML logic,
 - adding new features,
 - or maintaining backward-compatible shims/wrappers.

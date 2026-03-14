@@ -2,7 +2,7 @@
 id: task-162-add-bounded-pytorch-and-rocm-profiling-surfaces-for-task-101-qwen-bottleneck-attribution
 title: Add bounded PyTorch and ROCm profiling surfaces for Task 101 Qwen bottleneck attribution
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-13'
 last_updated: '2026-03-13'
@@ -81,7 +81,9 @@ Test changes:
 
 Hemma evidence path:
 
-- `build/verification/task-162-task101-profiling/<run-id>/`
+- `build/verification/task-101-qwen3-tts-swedish-hemma-pilot/<launch-id>/`
+- run root:
+  - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task162-20260313t220644z-profile`
 
 ## Non-Goals
 
@@ -90,11 +92,42 @@ Hemma evidence path:
 - Do not treat profiler traces as a replacement for MLflow or the resource
   monitor.
 
+## Hemma Evidence (2026-03-13)
+
+Bounded profiling run:
+
+- launch id: `task162-20260313t220644z-profile`
+- run root:
+  `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task162-20260313t220644z-profile`
+
+Measured steady-state train GPU-busy median:
+
+- `3%`
+
+Observed cache metrics (same run):
+
+- `cache_hits=0`, `cache_misses=0`, `cache_size=0`
+
+ROCm attribution extracted from `rocprofv3` traces:
+
+- HIP API total: `98.74s`
+- Kernel total: `102.08s`
+- Memory-copy trace total: `1.73s`
+- Top HIP API time:
+  - `hipLaunchKernel`: `44.18s`
+  - `hipMemcpyWithStream`: `21.52s`
+  - `hipEventSynchronize`: `17.89s`
+
+Trace-level root-cause readout:
+
+- the lane is currently host-orchestration/synchronization bound
+- compute saturation is not the dominant observed posture in this run window
+
 ## Deliverables
 
 - [x] One documented PyTorch profiler surface for Task 101.
 - [x] One documented ROCm profiler surface for Task 101.
-- [ ] Bounded trace artifacts written under `build/verification/`.
+- [x] Bounded trace artifacts written under `build/verification/`.
 - [x] Phase markers or equivalent annotations sufficient to isolate checkpoint
   windows from steady-state training.
 
@@ -102,7 +135,7 @@ Hemma evidence path:
 
 - [x] An operator can run one bounded Task 101 profiling command without
   inventing ad hoc shell payloads.
-- [ ] The resulting traces are sufficient to answer whether time is dominated
+- [x] The resulting traces are sufficient to answer whether time is dominated
   by data loading, host-device transfer, forward/backward, optimizer, or
   checkpoint-save windows.
 - [x] The profiling surfaces are bounded and documented enough that they can be
@@ -117,11 +150,11 @@ Hemma evidence path:
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] Bounded profiler traces and operator commands are written under
+- [x] Bounded profiler traces and operator commands are written under
   `build/verification/`.
 
 ## Checklist
 
 - [x] Implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated

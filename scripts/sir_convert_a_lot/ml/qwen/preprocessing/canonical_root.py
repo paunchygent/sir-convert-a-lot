@@ -24,8 +24,12 @@ import shutil
 import unicodedata
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import Literal, Sequence, cast
 
+from scripts.sir_convert_a_lot.ml.qwen.common.models import (
+    CANONICAL_MANIFEST_FAMILIES,
+    ManifestFamily,
+)
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.models import (
     SpoolRow,
 )
@@ -287,9 +291,27 @@ def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
     reference_audio_24k_paths_raw = payload.get("reference_audio_24k_paths")
     if not isinstance(reference_audio_24k_paths_raw, dict):
         raise ValueError("Malformed `reference_audio_24k_paths` in spool payload.")
+
+    reference_audio_24k_paths: dict[ManifestFamily, str] = {}
+    for key, val in reference_audio_24k_paths_raw.items():
+        if key in CANONICAL_MANIFEST_FAMILIES:
+            # Type narrowing via CANONICAL_MANIFEST_FAMILIES check
+            manifest_family_key = cast(ManifestFamily, key)
+            reference_audio_24k_paths[manifest_family_key] = str(val)
+        else:
+            raise ValueError(f"Unknown manifest family in spool payload: {key}")
+
     manifest_targets_raw = payload.get("manifest_targets")
     if not isinstance(manifest_targets_raw, list):
         raise ValueError("Malformed `manifest_targets` in spool payload.")
+
+    manifest_targets: list[ManifestFamily] = []
+    for target in manifest_targets_raw:
+        if target in CANONICAL_MANIFEST_FAMILIES:
+            manifest_targets.append(cast(ManifestFamily, target))
+        else:
+            raise ValueError(f"Unknown manifest target in spool payload: {target}")
+
     return SpoolRow(
         dataset=str(payload["dataset"]),
         source_split=str(payload["source_split"]),
@@ -299,20 +321,18 @@ def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
         speaker_from_id=bool(payload["speaker_from_id"]),
         source_audio_path=str(payload["source_audio_path"]),
         audio_24k_path=str(payload["audio_24k_path"]),
-        duration_seconds=float(payload["duration_seconds"]), # type: ignore
+        duration_seconds=float(payload["duration_seconds"]),  # type: ignore
         text_normalized=str(payload["text_normalized"]),
-        reference_audio_24k_paths={
-            str(k): str(v) for k, v in reference_audio_24k_paths_raw.items()
-        },
+        reference_audio_24k_paths=reference_audio_24k_paths,
         asr_model=str(payload["asr_model"]),
         asr_revision=str(payload["asr_revision"]),
         asr_transcript=str(payload["asr_transcript"]),
-        asr_wer=float(payload["asr_wer"]), # type: ignore
-        quality_tier=payload["quality_tier"], # type: ignore
-        speaker_quality_gate=payload["speaker_quality_gate"], # type: ignore
+        asr_wer=float(payload["asr_wer"]),  # type: ignore
+        quality_tier=payload["quality_tier"],  # type: ignore
+        speaker_quality_gate=payload["speaker_quality_gate"],  # type: ignore
         dedup_applied=bool(payload["dedup_applied"]),
-        admission_decision=payload["admission_decision"], # type: ignore
-        manifest_targets=tuple(str(t) for t in manifest_targets_raw), # type: ignore
+        admission_decision=payload["admission_decision"],  # type: ignore
+        manifest_targets=tuple(manifest_targets),
     )
 
 
