@@ -93,6 +93,11 @@ The current bundle rebuild lane also exposed a separate operator-truth gap:
     preparation when a rebuilt-bundle contract is active
   - focused host-preflight and row-loader tests now prove rebuilt bundles are
     rejected when `precomputed_ref_input_*` metadata is missing
+- Fifth non-bundle `T175` slice is implemented locally:
+  - auxiliary codebook fusion now uses one vectorized indexed lookup across a
+    stacked weight tensor instead of one Python/module call per codebook
+  - focused tests prove the new path matches the previous summed semantics for
+    both wrapped fake embeddings and direct `nn.Embedding` modules
 - Bundle-log / bundle-observability follow-up is intentionally deferred to the
   next session so the current slice stays focused on core throughput-truth work.
 
@@ -138,7 +143,7 @@ The current bundle rebuild lane also exposed a separate operator-truth gap:
   missing persisted precomputed reference inputs.
 - [x] Export/checkpoint phases are labeled so train-only utilization summaries
   exclude those windows.
-- [ ] The auxiliary codebook path is further collapsed beyond the current
+- [x] The auxiliary codebook path is further collapsed beyond the current
   Python-comprehension stack-and-sum posture.
 - [ ] Bundle builds stream governed batch output into canonical operator log
   files and expose current-batch identity in the status artifact.
