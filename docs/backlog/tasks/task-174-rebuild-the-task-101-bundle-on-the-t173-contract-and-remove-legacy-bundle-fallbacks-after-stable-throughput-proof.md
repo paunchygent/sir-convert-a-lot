@@ -2,7 +2,7 @@
 id: task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof
 title: Rebuild the Task 101 bundle on the T173 contract and remove legacy-bundle fallbacks after stable throughput proof
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-14'
 last_updated: '2026-03-14'
@@ -31,21 +31,44 @@ that were kept only to unblock live `T172` throughput validation.
 ## Why This Exists
 
 The current training lane contains temporary legacy-bundle fallback logic so we
-can validate `T171` and `T172` against the already-materialized Hemma bundle
+could validate `T171` and `T172` against the already-materialized Hemma bundle
 without paying an immediate training reset cost. That fallback must not become
 permanent architecture.
 
-This cleanup is only justified after we have strong evidence that the tuned
-throughput profiles produce a real, durable gain on Hemma.
+This task has two phases:
+
+1. rebuild the canonical bundle now on the governed `T173` contract
+1. remove the temporary legacy fallback trees only after the rebuilt-bundle
+   lane has proven stable throughput gain on Hemma
+
+## Current Progress
+
+- The public `task-101-pilot-bundle` surface is being restored to the governed
+  service/container runtime so bundle batch finalization no longer executes in
+  host Python.
+- Hemma scratch-capacity remediation is in progress:
+  - failed `2026-03-14` bundle roots were removed from `/srv/scratch`
+  - the old canonical `20260312h` bundle root was backed up to
+    `/srv/storage/sir-convert-a-lot/backups/reference/`
+  - exited containers, stale Qwen image lineage, and unused BuildKit cache
+    were pruned to recover rebuild headroom
+- The task is intentionally still open because the rebuilt canonical bundle,
+  the fallback-removal step, and the one-day rebuilt-bundle throughput proof
+  are not complete yet.
 
 ## Entry Criteria
 
-- `T172` throughput-profile tuning is complete.
-- Real Hemma evidence shows improved throughput/GPU utilization versus the
-  pre-`T172` baseline.
-- The improved behavior is stable for at least `24` hours of training evidence,
-  not just one short profiling window.
-- The team has chosen the canonical post-`T172` launch profile from evidence.
+- The governed bundle build/runtime surface is restored and launchable on
+  Hemma.
+- Hemma scratch/storage capacity is sufficient for a fresh canonical rebuild.
+- The repo is ready to write the rebuilt bundle under the `T173` contract.
+
+The following do **not** gate task start; they gate fallback removal and task
+closeout:
+
+- real Hemma throughput improvement versus the pre-`T172` baseline
+- at least `24` hours of stable rebuilt-bundle training evidence
+- final selection of the canonical post-`T172` launch profile from evidence
 
 ## PR Scope
 
@@ -59,7 +82,8 @@ throughput profiles produce a real, durable gain on Hemma.
   artifacts; either make row-processing persist deterministic per-family
   reference paths or move that field out of the pre-finalization row contract.
 - Remove the temporary legacy-bundle launch and dataset fallback branches that
-  allow old bundles without `T173` metadata to launch.
+  allow old bundles without `T173` metadata to launch, but only after the
+  rebuilt-bundle lane has demonstrated stable throughput gain.
 - Remove any temporary legacy-oriented `if` trees that only exist to bridge the
   old bundle contract.
 - Update runbooks and backlog docs so operators rebuild the bundle before new
@@ -79,7 +103,7 @@ throughput profiles produce a real, durable gain on Hemma.
 - [ ] Upstream row artifacts expose one uniform, explicit reference-audio
   contract instead of ambiguous empty `reference_audio_24k_paths` payloads.
 - [ ] Legacy-bundle fallback branches are removed from the training launch and
-  dataset path.
+  dataset path after rebuilt-bundle throughput proof.
 - [ ] Docs and operator surfaces point to the rebuilt-bundle path only.
 
 ## Acceptance Criteria

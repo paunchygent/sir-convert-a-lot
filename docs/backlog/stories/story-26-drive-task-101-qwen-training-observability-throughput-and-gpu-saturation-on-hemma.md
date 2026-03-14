@@ -29,6 +29,7 @@ related:
   - docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md
   - docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md
   - docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md
+  - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
   - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -109,6 +110,7 @@ Out of scope for this story:
 1. `docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md`
 1. `docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
 1. `docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md`
+1. `docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md`
 
 ## Implementation Blueprint (T161-T163)
 
@@ -194,6 +196,10 @@ Root-cause conclusion from this evidence:
   live `T172` validation can proceed against the existing Hemma bundle without
   forcing an immediate two-day training reset; follow-on task `T174` removes
   that fallback after one day of stable post-tuning throughput evidence.
+- Review-aligned follow-on task `T175` now tracks the remaining occupancy,
+  worker-truth attribution, strict rebuilt-bundle performance-lane enforcement,
+  phase-labeling, and auxiliary-codebook-collapse gaps that still block a fully
+  trustworthy saturation claim.
 - Story 26 remains open because `T172` is still pending and `T173` still lacks
   bounded Hemma evidence under `build/verification/`.
 

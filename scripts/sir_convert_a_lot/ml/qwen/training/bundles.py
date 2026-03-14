@@ -44,6 +44,13 @@ from scripts.sir_convert_a_lot.ml.qwen.training.bundle_precomputed_ref_inputs im
     materialize_precomputed_reference_inputs,
     precomputed_ref_input_relative_path,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.bundle_runtime import (
+    TrainingBundleRuntimeFingerprint,
+    load_training_bundle_runtime_fingerprint,
+    training_bundle_batch_runtime_path,
+    validate_runtime_fingerprint_matches,
+    write_training_bundle_batch_runtime_fingerprint,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.bundle_state import (
     append_progress_event,
     find_batch,
@@ -184,11 +191,37 @@ def load_optional_training_bundle_summary(output_root: Path) -> BundleSummary | 
     return load_bundle_summary(report_path)
 
 
-def bundle_batch_is_complete(output_root: Path, batch: BundleBatch) -> bool:
+def bundle_batch_is_complete(
+    output_root: Path,
+    batch: BundleBatch,
+    *,
+    expected_runtime_fingerprint: TrainingBundleRuntimeFingerprint | None = None,
+) -> bool:
     """Return whether one bundle batch already has its prepared shard."""
-    return bundle_prepared_batch_path(
-        output_root, batch.manifest_family, batch.batch_index
-    ).exists()
+    prepared_path = bundle_prepared_batch_path(
+        output_root,
+        batch.manifest_family,
+        batch.batch_index,
+    )
+    if not prepared_path.exists():
+        return False
+    if expected_runtime_fingerprint is None:
+        return True
+    try:
+        observed_runtime_fingerprint = load_training_bundle_runtime_fingerprint(
+            training_bundle_batch_runtime_path(
+                output_root,
+                batch.manifest_family,
+                batch.batch_index,
+            )
+        )
+        validate_runtime_fingerprint_matches(
+            observed_runtime_fingerprint,
+            expected_runtime_fingerprint,
+        )
+    except (FileNotFoundError, ValueError):
+        return False
+    return True
 
 
 def finalize_training_bundle_batch(
@@ -199,6 +232,7 @@ def finalize_training_bundle_batch(
     batch_index: int,
     audio_codes_chunk_size: int,
     encode_audio_codes_fn: AudioCodesEncoderProtocol,
+    runtime_fingerprint: TrainingBundleRuntimeFingerprint | None = None,
 ) -> None:
     """Finalize one selected batch inside an existing bundle root."""
     batch = find_batch(plan, manifest_family=manifest_family, batch_index=batch_index)
@@ -209,6 +243,7 @@ def finalize_training_bundle_batch(
         batch_row_count=plan.finalization_batch_row_count,
         audio_codes_chunk_size=audio_codes_chunk_size,
         encode_audio_codes_fn=encode_audio_codes_fn,
+        runtime_fingerprint=runtime_fingerprint,
     )
     completed_batch_count = sum(
         1 for candidate in plan.batches if bundle_batch_is_complete(output_root, candidate)
@@ -351,6 +386,7 @@ def _finalize_batch(
     batch_row_count: int,
     audio_codes_chunk_size: int,
     encode_audio_codes_fn: AudioCodesEncoderProtocol,
+    runtime_fingerprint: TrainingBundleRuntimeFingerprint | None,
 ) -> None:
     """Finalize one bundle batch by generating audio codes and manifest rows."""
     from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import (
@@ -410,6 +446,13 @@ def _finalize_batch(
                 encode_audio_codes_fn=encode_audio_codes_fn,
                 tokenizer_model=tokenizer_model,
             )
+    if runtime_fingerprint is not None:
+        write_training_bundle_batch_runtime_fingerprint(
+            output_root,
+            batch.manifest_family,
+            batch.batch_index,
+            runtime_fingerprint,
+        )
 
 
 def _assemble_bundle(*, output_root: Path, plan: BundleBatchPlan) -> BundleSummary:

@@ -7,7 +7,8 @@ Purpose:
 
 Relationships:
     - Delegates orchestration to `ml.qwen.training.bundles`.
-    - Reuses GPU-backed audio-code finalization from `ml.qwen.preprocessing.finalization`.
+    - Reuses the governed Qwen container runtime from
+      `ml.qwen.training.bundle_runtime`.
     - Exposes the public `pdm run task-101-pilot-bundle ...` contract.
 """
 
@@ -22,16 +23,24 @@ from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
 )
-from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import (
-    encode_audio_codes_with_governed_gpu_runtime,
+from scripts.sir_convert_a_lot.ml.qwen.training.bundle_contracts import BundleSummary
+from scripts.sir_convert_a_lot.ml.qwen.training.bundle_runtime import (
+    load_training_bundle_runtime_fingerprint,
+    prepare_training_bundle_batch_runtime,
+    run_containerized_training_bundle_batch,
+    training_bundle_runtime_fingerprint_path,
+    validate_runtime_fingerprint_matches,
+    write_training_bundle_runtime_fingerprint,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.bundle_state import write_progress_state
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     DEFAULT_AUDIO_CODES_CHUNK_SIZE,
     DEFAULT_BATCH_ROW_COUNT,
     DEFAULT_TOKENIZER_MODEL,
     assemble_training_bundle,
-    build_training_bundle,
-    finalize_training_bundle_batch,
+    bundle_batch_is_complete,
+    bundle_progress_state_path,
+    bundle_report_path,
     load_training_bundle_batch_plan,
     prepare_training_bundle_inputs,
 )
@@ -127,6 +136,77 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _build_bundle_in_governed_runtime(
+    *,
+    source_root: Path,
+    output_root: Path,
+    train_manifest_family: ManifestFamily,
+    eval_manifest_family: ManifestFamily,
+    tokenizer_model: str,
+    finalization_batch_row_count: int,
+    audio_codes_chunk_size: int,
+    repo_root: Path,
+) -> BundleSummary:
+    """Materialize one bundle with host orchestration and governed batch containers."""
+    if bundle_report_path(output_root).exists():
+        runtime_path = training_bundle_runtime_fingerprint_path(output_root)
+        if not runtime_path.exists():
+            raise SystemExit(
+                "Existing training bundle report was found, but the governed runtime "
+                "fingerprint is missing. Rebuild the bundle under the container runtime."
+            )
+        _, fingerprint = prepare_training_bundle_batch_runtime()
+        observed_fingerprint = load_training_bundle_runtime_fingerprint(runtime_path)
+        validate_runtime_fingerprint_matches(observed_fingerprint, fingerprint)
+        return assemble_training_bundle(output_root)
+
+    plan = prepare_training_bundle_inputs(
+        source_root=source_root,
+        output_root=output_root,
+        train_manifest_family=train_manifest_family,
+        eval_manifest_family=eval_manifest_family,
+        tokenizer_model=tokenizer_model,
+        finalization_batch_row_count=finalization_batch_row_count,
+        repo_root=repo_root,
+    )
+    hf_mount, fingerprint = prepare_training_bundle_batch_runtime()
+    write_training_bundle_runtime_fingerprint(output_root, fingerprint)
+    completed_batch_count = sum(
+        1
+        for batch in plan.batches
+        if bundle_batch_is_complete(
+            output_root,
+            batch,
+            expected_runtime_fingerprint=fingerprint,
+        )
+    )
+    write_progress_state(
+        output_root,
+        status_path=bundle_progress_state_path(output_root),
+        status="running" if completed_batch_count < len(plan.batches) else "completed",
+        completed_batch_count=completed_batch_count,
+        total_batch_count=len(plan.batches),
+    )
+    for batch in plan.batches:
+        if bundle_batch_is_complete(
+            output_root,
+            batch,
+            expected_runtime_fingerprint=fingerprint,
+        ):
+            continue
+        run_containerized_training_bundle_batch(
+            repo_root=repo_root,
+            output_root=output_root,
+            manifest_family=batch.manifest_family,
+            batch_index=batch.batch_index,
+            batch_count=1,
+            audio_codes_chunk_size=audio_codes_chunk_size,
+            hf_mount=hf_mount,
+            fingerprint=fingerprint,
+        )
+    return assemble_training_bundle(output_root)
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the restored Task 101 training-bundle CLI surface."""
     args = build_parser().parse_args(argv)
@@ -149,18 +229,23 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(asdict(plan), indent=2, ensure_ascii=False))
         return 0
     if args.command == "finalize-batch":
-        plan = load_training_bundle_batch_plan(Path(args.output_root))
+        output_root = Path(args.output_root)
+        plan = load_training_bundle_batch_plan(output_root)
         manifest_family = _manifest_family_from_cli_value(
             args.manifest_family,
             argument_name="manifest_family",
         )
-        finalize_training_bundle_batch(
-            output_root=Path(args.output_root),
-            plan=plan,
+        hf_mount, fingerprint = prepare_training_bundle_batch_runtime()
+        write_training_bundle_runtime_fingerprint(output_root, fingerprint)
+        run_containerized_training_bundle_batch(
+            repo_root=Path.cwd(),
+            output_root=output_root,
             manifest_family=manifest_family,
             batch_index=int(args.batch_index),
+            batch_count=1,
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
-            encode_audio_codes_fn=encode_audio_codes_with_governed_gpu_runtime,
+            hf_mount=hf_mount,
+            fingerprint=fingerprint,
         )
         batch = next(
             candidate
@@ -175,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(asdict(summary), indent=2, ensure_ascii=False))
         return 0
     if args.command == "build":
-        summary = build_training_bundle(
+        summary = _build_bundle_in_governed_runtime(
             source_root=Path(args.source_root),
             output_root=Path(args.output_root),
             train_manifest_family=_manifest_family_from_cli_value(
@@ -189,7 +274,6 @@ def main(argv: list[str] | None = None) -> int:
             tokenizer_model=str(args.tokenizer_model),
             finalization_batch_row_count=int(args.finalization_batch_row_count),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
-            encode_audio_codes_fn=encode_audio_codes_with_governed_gpu_runtime,
             repo_root=Path.cwd(),
         )
         print(json.dumps(asdict(summary), indent=2, ensure_ascii=False))
