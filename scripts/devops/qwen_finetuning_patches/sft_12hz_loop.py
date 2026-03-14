@@ -129,6 +129,7 @@ def execute_training_loop(
         )
     reached_max_steps = False
     stop_requested_during_training = False
+    emitted_train_progress = False
     epoch = starting_epoch
     step = 0
     torch_profiler_session.start()
@@ -210,6 +211,26 @@ def execute_training_loop(
                     if completed_optimizer_step:
                         optimizer_steps_completed += 1
                         loss_observation = observe_loss(loss)
+                        train_progress_should_emit = progress_callback is not None and (
+                            (not emitted_train_progress)
+                            or prepared.heartbeat_policy.should_emit_train_update(
+                                optimizer_steps_completed
+                            )
+                        )
+                        if train_progress_should_emit:
+                            progress_callback(
+                                build_training_progress_heartbeat(
+                                    phase="train",
+                                    current_epoch=epoch,
+                                    current_optimizer_step=optimizer_steps_completed,
+                                    current_train_iteration=train_iterations_completed,
+                                    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                                    latest_loss=loss_observation.loss_value,
+                                    smoothed_loss=smoothed_loss,
+                                    latest_durable_checkpoint=latest_durable_checkpoint,
+                                )
+                            )
+                            emitted_train_progress = True
                         prepared.finite_loss_guard.observe(
                             loss_observation,
                             optimizer_step=optimizer_steps_completed,
@@ -229,7 +250,7 @@ def execute_training_loop(
                                 checkpoint_interval_steps=int(args.checkpoint_interval_steps),
                                 ref_mel_cache_metrics=prepared.ref_mel_cache.payload(),
                             )
-                            if progress_callback is not None:
+                            if progress_callback is not None and not train_progress_should_emit:
                                 progress_callback(
                                     build_training_progress_heartbeat(
                                         phase="train",

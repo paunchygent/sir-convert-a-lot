@@ -14,6 +14,7 @@ Relationships:
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 import pytest
@@ -203,7 +204,9 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
         progress_callback=heartbeats.append,
     )
 
-    assert [phase.phase for phase in heartbeats] == ["startup", "train", "checkpoint-save"]
+    assert [phase.phase for phase in heartbeats] == ["startup", "train", "train", "checkpoint-save"]
+    assert heartbeats[1].current_optimizer_step == 1
+    assert heartbeats[2].current_optimizer_step == 2
     assert summary.throughput_profile["profile_label"] == "hemma-throughput-aggressive-v1"
     assert summary.throughput_profile["max_batch_size"] == 1
     assert accelerator.logged_metrics == [
@@ -257,6 +260,7 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.install_training_stop_handlers",
         lambda stop_state: None,
     )
+    heartbeats: list[TrainingProgressHeartbeat] = []
 
     with pytest.raises(NonFiniteLossError, match="Non-finite loss guard triggered"):
         train_with_args(
@@ -264,7 +268,11 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
                 output_model_path=output_model_path,
                 train_manifest=train_manifest,
                 finite_loss_max_consecutive_steps=2,
-            )
+            ),
+            progress_callback=heartbeats.append,
         )
 
+    assert [phase.phase for phase in heartbeats] == ["startup", "train"]
+    assert heartbeats[-1].latest_loss is not None
+    assert math.isnan(heartbeats[-1].latest_loss)
     assert accelerator.logged_metrics == []
