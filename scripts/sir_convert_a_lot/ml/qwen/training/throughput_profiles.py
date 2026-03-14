@@ -48,6 +48,12 @@ _PROFILE_DEFAULTS: dict[str, ThroughputProfileDefaults] = {
         length_bucket_boundaries=(128, 192, 256, 320, 384, 448, 512, 640, 768, 896, 1024),
         minimum_required_max_batch_size=1,
     ),
+    "hemma-throughput-balanced-plus-v1": ThroughputProfileDefaults(
+        max_tokens_per_batch=3072,
+        max_codec_frames_per_batch=768,
+        length_bucket_boundaries=(128, 192, 256, 320, 384, 448, 576, 768, 1024),
+        minimum_required_max_batch_size=1,
+    ),
     "hemma-throughput-aggressive-v1": ThroughputProfileDefaults(
         max_tokens_per_batch=4096,
         max_codec_frames_per_batch=1024,

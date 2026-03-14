@@ -66,6 +66,41 @@ small launches for the target saturation posture.
   helper and aggregates the auxiliary codebook embeddings in one summed path.
 - Hemma profile-sweep evidence and default-profile selection are still pending.
 
+## Current Progress
+
+- The rebuilt-bundle aggressive proof remains numerically unstable:
+  - `task-175-throughput-proof-20260314c/20260314T193710Z`
+  - failed at `optimizer_step=4` with a real `NaN` loss after the failure
+    reporting surfaces were corrected
+- The rebuilt-bundle balanced proof completed cleanly:
+  - `task-175-throughput-proof-20260314d-balanced/20260314T195507Z`
+  - `optimizer_steps_completed=91`
+  - steady-state train GPU median `37%`
+  - mean batch size `1.4065934065934067`
+  - realized max batch size `7`
+  - batch histogram dominated by `1`-row and `2`-row batches
+- The balanced proof shows the lane is stable but still badly occupancy-bound:
+  - text-token budget is not the active limiter
+  - codec-frame budget is the active limiter
+  - the current bucketed sampler still wastes capacity because it keeps only
+    one open batch per bucket and cannot backfill earlier partially filled
+    batches
+- The next T172 implementation slice therefore targets the balanced lane
+  first, before another aggressive retry:
+  - add a `hemma-throughput-balanced-plus-v1` profile with a modestly higher
+    codec-frame budget
+  - replace the current one-open-batch greedy packing logic with a deterministic
+    best-fit style packer inside each bucket so compatible rows can backfill
+    partially filled batches
+- That local implementation slice is now landed:
+  - `hemma-throughput-balanced-plus-v1` is available as a bounded profile
+    between the current balanced and aggressive lanes
+  - the bucketed sampler now performs deterministic best-fit backfilling within
+    each bucket instead of finalizing the current batch as soon as the next row
+    does not fit
+  - focused local validation passed for batching, orchestrator, reporting,
+    trainer, and train-loop surfaces
+
 ## Deliverables
 
 - [x] Bucketed non-`batch_size=1` throughput profile(s) implemented.

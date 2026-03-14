@@ -35,6 +35,26 @@ class TrainingRowBatchMetrics:
         return self.text_token_count + self.codec_frame_count
 
 
+@dataclass
+class _OpenBatch:
+    """Mutable planned batch used by the within-bucket packer."""
+
+    indices: list[int]
+    text_token_count: int
+    codec_frame_count: int
+
+    @property
+    def row_count(self) -> int:
+        """Return the current number of rows in the open batch."""
+        return len(self.indices)
+
+    def add(self, index: int, metrics: TrainingRowBatchMetrics) -> None:
+        """Append one row and update cumulative budget usage."""
+        self.indices.append(index)
+        self.text_token_count += metrics.text_token_count
+        self.codec_frame_count += metrics.codec_frame_count
+
+
 class BucketedBatchSampler(Sampler[list[int]]):
     """Yield bounded training batches grouped by approximate sequence length."""
 
@@ -78,33 +98,55 @@ class BucketedBatchSampler(Sampler[list[int]]):
                 ),
                 reverse=True,
             )
-            current_batch: list[int] = []
-            current_token_count = 0
-            current_codec_frame_count = 0
+            open_batches: list[_OpenBatch] = []
             for index in ordered_indices:
                 metrics = self._row_metrics[index]
-                exceeds_batch_size = len(current_batch) >= self._policy.max_batch_size
-                exceeds_token_budget = (
-                    current_token_count + metrics.text_token_count
-                    > self._policy.max_tokens_per_batch
-                )
-                exceeds_frame_budget = (
-                    current_codec_frame_count + metrics.codec_frame_count
-                    > self._policy.max_codec_frames_per_batch
-                )
-                if current_batch and (
-                    exceeds_batch_size or exceeds_token_budget or exceeds_frame_budget
-                ):
-                    planned_batches.append(current_batch)
-                    current_batch = []
-                    current_token_count = 0
-                    current_codec_frame_count = 0
-                current_batch.append(index)
-                current_token_count += metrics.text_token_count
-                current_codec_frame_count += metrics.codec_frame_count
-            if current_batch:
-                planned_batches.append(current_batch)
+                best_fit_batch = self._select_best_fit_batch(open_batches, metrics)
+                if best_fit_batch is None:
+                    open_batches.append(
+                        _OpenBatch(
+                            indices=[index],
+                            text_token_count=metrics.text_token_count,
+                            codec_frame_count=metrics.codec_frame_count,
+                        )
+                    )
+                    continue
+                best_fit_batch.add(index, metrics)
+            planned_batches.extend(list(open_batch.indices) for open_batch in open_batches)
         return planned_batches
+
+    def _select_best_fit_batch(
+        self,
+        open_batches: list[_OpenBatch],
+        metrics: TrainingRowBatchMetrics,
+    ) -> _OpenBatch | None:
+        """Return the tightest-fitting open batch for one row when possible."""
+        best_batch: _OpenBatch | None = None
+        best_score: tuple[int, int, int, int] | None = None
+        for open_batch in open_batches:
+            if open_batch.row_count >= self._policy.max_batch_size:
+                continue
+            next_token_count = open_batch.text_token_count + metrics.text_token_count
+            if next_token_count > self._policy.max_tokens_per_batch:
+                continue
+            next_codec_frame_count = open_batch.codec_frame_count + metrics.codec_frame_count
+            if next_codec_frame_count > self._policy.max_codec_frames_per_batch:
+                continue
+            remaining_codec_budget = (
+                self._policy.max_codec_frames_per_batch - next_codec_frame_count
+            )
+            remaining_token_budget = self._policy.max_tokens_per_batch - next_token_count
+            remaining_batch_capacity = self._policy.max_batch_size - (open_batch.row_count + 1)
+            score = (
+                remaining_codec_budget,
+                remaining_token_budget,
+                remaining_batch_capacity,
+                open_batch.indices[0],
+            )
+            if best_score is None or score < best_score:
+                best_batch = open_batch
+                best_score = score
+        return best_batch
 
     def _bucket_boundary(self, total_sequence_cost: int) -> int:
         for boundary in self._policy.length_bucket_boundaries:

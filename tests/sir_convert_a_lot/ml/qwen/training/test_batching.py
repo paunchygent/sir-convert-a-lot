@@ -21,6 +21,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
+    ThroughputBatchPolicy,
     resolve_throughput_batch_policy,
 )
 
@@ -49,6 +50,20 @@ def test_resolve_throughput_batch_policy_rejects_tiny_aggressive_batch_caps() ->
         )
 
 
+def test_resolve_throughput_batch_policy_supports_balanced_plus_profile() -> None:
+    """The balanced-plus profile should lift frame budget without forcing aggressiveness."""
+    policy = resolve_throughput_batch_policy(
+        profile_label="hemma-throughput-balanced-plus-v1",
+        max_batch_size=8,
+    )
+
+    assert policy.profile_label == "hemma-throughput-balanced-plus-v1"
+    assert policy.max_tokens_per_batch == 3072
+    assert policy.max_codec_frames_per_batch == 768
+    assert policy.length_bucket_boundaries == (128, 192, 256, 320, 384, 448, 576, 768, 1024)
+    assert policy.minimum_required_max_batch_size == 1
+
+
 def test_bucketed_batch_sampler_respects_batch_size_and_budget_caps() -> None:
     """The sampler should cap batches by both max size and codec-frame budget."""
     policy = resolve_throughput_batch_policy(
@@ -69,6 +84,29 @@ def test_bucketed_batch_sampler_respects_batch_size_and_budget_caps() -> None:
 
     assert len(batches) == 2
     assert all(len(batch) == 2 for batch in batches)
+
+
+def test_bucketed_batch_sampler_backfills_partially_filled_batches_with_best_fit() -> None:
+    """The sampler should backfill compatible rows instead of leaving avoidable tails."""
+    sampler = BucketedBatchSampler(
+        row_metrics=[
+            TrainingRowBatchMetrics(text_token_count=1, codec_frame_count=6),
+            TrainingRowBatchMetrics(text_token_count=1, codec_frame_count=6),
+            TrainingRowBatchMetrics(text_token_count=1, codec_frame_count=4),
+            TrainingRowBatchMetrics(text_token_count=1, codec_frame_count=4),
+        ],
+        policy=ThroughputBatchPolicy(
+            profile_label="test-best-fit",
+            policy_kind="bucketed-frame-token-budget-v1",
+            max_batch_size=3,
+            max_tokens_per_batch=100,
+            max_codec_frames_per_batch=10,
+            length_bucket_boundaries=(16,),
+            minimum_required_max_batch_size=1,
+        ),
+    )
+
+    assert sampler.planned_batches() == [[0, 2], [1, 3]]
 
 
 def test_bucketed_batch_sampler_rejects_rows_that_exceed_single_row_budget() -> None:
