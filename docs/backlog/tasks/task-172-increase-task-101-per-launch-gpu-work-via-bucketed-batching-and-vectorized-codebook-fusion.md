@@ -167,6 +167,28 @@ and test smaller batching-policy changes first.
   - committed offline batch-plan analysis surface `qwen-batch-plan`
   - bounded quarantine candidate profile under the stable `640` cap
   - bounded quarantine plus upper-tail bucket candidate under the same cap
+- `M0` has now been executed against the rebuilt bundle:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/task-172-batch-plan-analysis-20260315a/20260314T231848Z`
+  - all three compared profiles produced identical occupancy:
+    - `hemma-throughput-balanced-v1`
+    - `hemma-throughput-balanced-quarantine-v1`
+    - `hemma-throughput-balanced-quarantine-tail-v1`
+  - mean batch size remained `1.4065934065934067`
+  - singleton share remained `0.6675824175824175`
+  - two-row share remained `0.2857142857142857`
+  - peak batch codec frames remained `640`
+  - quarantined row count remained `0`
+- The key `M0` finding is that the architect's first quarantine threshold does
+  not engage on this rebuilt bundle:
+  - maximum per-row codec frames are only `375`
+  - so the proposed `>= 480` singleton rule never fires
+  - the upper-tail boundary refinement also makes no difference under the
+    current combined-cost bucket key
+- `M1` is therefore intentionally blocked for the moment:
+  - there is no promoted occupancy candidate yet because `M0` produced only
+    baseline-equivalent plans
+  - launching a duplicate Hemma proof would not answer a new question
 
 ## Deliverables
 
@@ -176,6 +198,8 @@ and test smaller batching-policy changes first.
   breaks the stable balanced lane.
 - [x] Committed offline batch-plan analysis surface exists for `M0`.
 - [ ] One evidence-backed smaller uplift candidate chosen from `M0`.
+- [x] One bounded `M0` replay was completed and explicitly rejected as a no-op
+  for the initial quarantine threshold.
 - [ ] One finite `M1` Hemma uplift proof completed or rejected with evidence.
 - [ ] One evidence-backed default profile chosen for follow-on saturation runs.
 
@@ -184,6 +208,8 @@ and test smaller batching-policy changes first.
 - [ ] `M0` produces a committed occupancy report for the rebuilt bundle that
   compares baseline, quarantine, and quarantine-tail candidates under the same
   stable `640` codec-frame cap.
+- [x] If `M0` produces only baseline-equivalent plans, the task records that
+  null result explicitly and does not launch a duplicate `M1` proof.
 - [ ] `M1` launches exactly one promoted `M0` candidate and records whether it
   stays finite through `30` optimizer steps / first durable checkpoint.
 - [ ] If `M1` stays finite, bounded Hemma evidence shows higher steady-state
