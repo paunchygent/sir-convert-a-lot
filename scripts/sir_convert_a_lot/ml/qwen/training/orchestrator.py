@@ -25,6 +25,8 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     MountResolution,
     docker_checked,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_training_bundle_summary
+from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import boolean_flag
 from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedLaunch,
     DetachedStatus,
@@ -83,6 +85,8 @@ def snapshot_settings(settings: TrainingSettings) -> TrainingSettingsSnapshot:
         dataloader_persistent_workers=settings.dataloader_persistent_workers,
         dataloader_prefetch_factor=settings.dataloader_prefetch_factor,
         non_blocking_transfer=settings.non_blocking_transfer,
+        heartbeat_interval_optimizer_steps=settings.heartbeat_interval_optimizer_steps,
+        finite_loss_max_consecutive_steps=settings.finite_loss_max_consecutive_steps,
         ref_mel_cache_enabled=settings.ref_mel_cache_enabled,
         ref_mel_cache_max_items=settings.ref_mel_cache_max_items,
         torch_profiler_enabled=settings.torch_profiler_enabled,
@@ -254,20 +258,22 @@ def build_detached_training_command(
         str(settings.durable_checkpoint_min_free_bytes),
         "--dataloader-num-workers",
         str(settings.dataloader_num_workers),
-        "--dataloader-pin-memory",
-        "true" if settings.dataloader_pin_memory else "false",
-        "--dataloader-persistent-workers",
-        "true" if settings.dataloader_persistent_workers else "false",
+        boolean_flag("--dataloader-pin-memory", settings.dataloader_pin_memory),
+        boolean_flag(
+            "--dataloader-persistent-workers",
+            settings.dataloader_persistent_workers,
+        ),
         "--dataloader-prefetch-factor",
         str(settings.dataloader_prefetch_factor),
-        "--non-blocking-transfer",
-        "true" if settings.non_blocking_transfer else "false",
-        "--ref-mel-cache-enabled",
-        "true" if settings.ref_mel_cache_enabled else "false",
+        boolean_flag("--non-blocking-transfer", settings.non_blocking_transfer),
+        "--heartbeat-interval-optimizer-steps",
+        str(settings.heartbeat_interval_optimizer_steps),
+        "--finite-loss-max-consecutive-steps",
+        str(settings.finite_loss_max_consecutive_steps),
+        boolean_flag("--ref-mel-cache-enabled", settings.ref_mel_cache_enabled),
         "--ref-mel-cache-max-items",
         str(settings.ref_mel_cache_max_items),
-        "--torch-profiler-enabled",
-        "true" if settings.torch_profiler_enabled else "false",
+        boolean_flag("--torch-profiler-enabled", settings.torch_profiler_enabled),
         "--torch-profiler-wait-steps",
         str(settings.torch_profiler_wait_steps),
         "--torch-profiler-warmup-steps",
@@ -276,12 +282,9 @@ def build_detached_training_command(
         str(settings.torch_profiler_active_steps),
         "--torch-profiler-repeat",
         str(settings.torch_profiler_repeat),
-        "--torch-profiler-record-shapes",
-        "true" if settings.torch_profiler_record_shapes else "false",
-        "--torch-profiler-profile-memory",
-        "true" if settings.torch_profiler_profile_memory else "false",
-        "--torch-profiler-with-stack",
-        "true" if settings.torch_profiler_with_stack else "false",
+        boolean_flag("--torch-profiler-record-shapes", settings.torch_profiler_record_shapes),
+        boolean_flag("--torch-profiler-profile-memory", settings.torch_profiler_profile_memory),
+        boolean_flag("--torch-profiler-with-stack", settings.torch_profiler_with_stack),
         "--torch-profiler-trace-dir",
         container_pytorch_profiling_dir,
     ]
@@ -376,6 +379,7 @@ def launch_detached_training(
         label="docker run qwen detached training",
     ).strip()
     tracking_root = _tracker_root(run_root)
+    bundle_summary = load_training_bundle_summary(settings.pilot_bundle_root)
     return DetachedLaunch(
         generated_at=_utc_now_iso(),
         launch_id=launch_id,
@@ -394,6 +398,13 @@ def launch_detached_training(
         ),
         settings=snapshot_settings(settings),
         command=["sudo", "-n", "docker", *command],
+        bundle_precomputed_reference_input={
+            "kind": bundle_summary.precomputed_reference_input.kind,
+            "version": bundle_summary.precomputed_reference_input.version,
+            "source_field": bundle_summary.precomputed_reference_input.source_field,
+            "artifact_root": bundle_summary.precomputed_reference_input.artifact_root,
+            "artifact_count": bundle_summary.precomputed_reference_input.artifact_count,
+        },
         tracking={
             "tracker_backends": list(DEFAULT_TRACKER_BACKENDS),
             "project_name": DEFAULT_TRACKER_PROJECT_NAME,

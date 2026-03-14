@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: critical
 created: '2026-03-13'
-last_updated: '2026-03-13'
+last_updated: '2026-03-14'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
@@ -177,6 +177,17 @@ Root-cause conclusion from this evidence:
 - the lane has a separate quality blocker: persistent `NaN` training loss,
   which undermines throughput/saturation trustworthiness
 
+## Current Implementation State (2026-03-14)
+
+- `T171` and the local implementation slice of `T173` are now in place.
+- Task 101 bundles now persist canonical bundle-owned `ref_mel` artifacts and
+  prepared-manifest rows now carry explicit precomputed reference-input
+  provenance fields consumed by the in-container trainer.
+- The bundle orchestration surface was split under the SRP/LoC ceiling without
+  introducing compatibility aliases or shims.
+- Story 26 remains open because `T172` is still pending and `T173` still lacks
+  bounded Hemma evidence under `build/verification/`.
+
 ## Acceptance Criteria
 
 - [x] The Task 101 runtime emits first-class tracker artifacts during live
@@ -194,7 +205,7 @@ Root-cause conclusion from this evidence:
 - [x] The dataloader and host-to-device transfer path expose evidence-backed
   tuned defaults for Hemma rather than relying on synchronous single-process
   defaults.
-- [ ] Duplicate `ref_audio` rows no longer recompute `ref_mel` blindly in the
+- [x] Duplicate `ref_audio` rows no longer recompute `ref_mel` blindly in the
   hot path, and the team has an explicit documented decision on whether
   precomputed bundle-level mels are still required.
 - [x] Bounded PyTorch and ROCm profiling surfaces exist and produce reviewable

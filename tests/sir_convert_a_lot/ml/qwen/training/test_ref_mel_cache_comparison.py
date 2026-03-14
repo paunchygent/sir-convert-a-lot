@@ -79,6 +79,9 @@ def test_launch_variant_passes_training_bundle_root(
 
     assert launch_payload["launch_id"] == "qwen-ref-mel-test-cache-on"
     assert "--pilot-bundle-root" in captured_args
+    assert "--ref-mel-cache-enabled" in captured_args
+    assert "true" not in captured_args
+    assert "false" not in captured_args
     assert (
         "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-training-bundle-20260312h"
         in captured_args

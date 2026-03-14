@@ -31,7 +31,9 @@ from scripts.sir_convert_a_lot.ml.qwen.preprocessing.storage import iter_jsonl_o
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     bundle_manifest_path,
     bundle_report_path,
+    load_training_bundle_summary,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
 from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     launch_metadata_path,
     launch_root,
@@ -92,6 +94,8 @@ DEFAULT_DATALOADER_PIN_MEMORY = True
 DEFAULT_DATALOADER_PERSISTENT_WORKERS = True
 DEFAULT_DATALOADER_PREFETCH_FACTOR = 4
 DEFAULT_NON_BLOCKING_TRANSFER = True
+DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS = 20
+DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS = 3
 DEFAULT_REF_MEL_CACHE_ENABLED = True
 DEFAULT_REF_MEL_CACHE_MAX_ITEMS = 2048
 DEFAULT_TORCH_PROFILER_ENABLED = False
@@ -172,40 +176,50 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_DATALOADER_NUM_WORKERS,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--dataloader-pin-memory",
-        choices=("true", "false"),
-        default="true" if DEFAULT_DATALOADER_PIN_MEMORY else "false",
+        default=DEFAULT_DATALOADER_PIN_MEMORY,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--dataloader-persistent-workers",
-        choices=("true", "false"),
-        default="true" if DEFAULT_DATALOADER_PERSISTENT_WORKERS else "false",
+        default=DEFAULT_DATALOADER_PERSISTENT_WORKERS,
     )
     launch.add_argument(
         "--dataloader-prefetch-factor",
         type=int,
         default=DEFAULT_DATALOADER_PREFETCH_FACTOR,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--non-blocking-transfer",
-        choices=("true", "false"),
-        default="true" if DEFAULT_NON_BLOCKING_TRANSFER else "false",
+        default=DEFAULT_NON_BLOCKING_TRANSFER,
     )
     launch.add_argument(
+        "--heartbeat-interval-optimizer-steps",
+        type=int,
+        default=DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
+    )
+    launch.add_argument(
+        "--finite-loss-max-consecutive-steps",
+        type=int,
+        default=DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
+    )
+    add_boolean_argument(
+        launch,
         "--ref-mel-cache-enabled",
-        choices=("true", "false"),
-        default="true" if DEFAULT_REF_MEL_CACHE_ENABLED else "false",
+        default=DEFAULT_REF_MEL_CACHE_ENABLED,
     )
     launch.add_argument(
         "--ref-mel-cache-max-items",
         type=int,
         default=DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--torch-profiler-enabled",
-        choices=("true", "false"),
-        default="true" if DEFAULT_TORCH_PROFILER_ENABLED else "false",
+        default=DEFAULT_TORCH_PROFILER_ENABLED,
     )
     launch.add_argument(
         "--torch-profiler-wait-steps",
@@ -227,25 +241,25 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_TORCH_PROFILER_REPEAT,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--torch-profiler-record-shapes",
-        choices=("true", "false"),
-        default="true" if DEFAULT_TORCH_PROFILER_RECORD_SHAPES else "false",
+        default=DEFAULT_TORCH_PROFILER_RECORD_SHAPES,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--torch-profiler-profile-memory",
-        choices=("true", "false"),
-        default="true" if DEFAULT_TORCH_PROFILER_PROFILE_MEMORY else "false",
+        default=DEFAULT_TORCH_PROFILER_PROFILE_MEMORY,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--torch-profiler-with-stack",
-        choices=("true", "false"),
-        default="true" if DEFAULT_TORCH_PROFILER_WITH_STACK else "false",
+        default=DEFAULT_TORCH_PROFILER_WITH_STACK,
     )
-    launch.add_argument(
+    add_boolean_argument(
+        launch,
         "--rocm-profiler-enabled",
-        choices=("true", "false"),
-        default="true" if DEFAULT_ROCM_PROFILER_ENABLED else "false",
+        default=DEFAULT_ROCM_PROFILER_ENABLED,
     )
     launch.add_argument(
         "--resource-monitor-interval-seconds",
@@ -320,6 +334,8 @@ def load_training_launch(launch_root_path: Path) -> DetachedLaunch:
         default_dataloader_persistent_workers=DEFAULT_DATALOADER_PERSISTENT_WORKERS,
         default_dataloader_prefetch_factor=DEFAULT_DATALOADER_PREFETCH_FACTOR,
         default_non_blocking_transfer=DEFAULT_NON_BLOCKING_TRANSFER,
+        default_heartbeat_interval_optimizer_steps=DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
+        default_finite_loss_max_consecutive_steps=DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
         default_ref_mel_cache_enabled=DEFAULT_REF_MEL_CACHE_ENABLED,
         default_ref_mel_cache_max_items=DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
         default_torch_profiler_enabled=DEFAULT_TORCH_PROFILER_ENABLED,
@@ -357,6 +373,7 @@ def ensure_training_bundle_exists(
             f"{rendered_paths}."
         )
     try:
+        bundle_summary = load_training_bundle_summary(bundle_root)
         validate_training_bundle_paths(
             bundle_root,
             (train_manifest_family, eval_manifest_family),
@@ -365,6 +382,16 @@ def ensure_training_bundle_exists(
         raise SystemExit(
             f"Qwen training bundle integrity check failed before launch.\n{exc}"
         ) from exc
+    if bundle_summary.precomputed_reference_input.kind != "ref_mel":
+        raise SystemExit(
+            "Qwen training bundle integrity check failed before launch.\n"
+            "Unsupported bundle precomputed reference-input kind; expected `ref_mel`."
+        )
+    if bundle_summary.precomputed_reference_input.artifact_count <= 0:
+        raise SystemExit(
+            "Qwen training bundle integrity check failed before launch.\n"
+            "Training bundle did not report any persisted precomputed reference inputs."
+        )
 
 
 def validate_training_bundle_paths(
@@ -379,7 +406,7 @@ def validate_training_bundle_paths(
                 raise ValueError(
                     f"Prepared manifest row in `{manifest_path}` was not a JSON object."
                 )
-            for key in ("audio", "ref_audio"):
+            for key in ("audio", "ref_audio", "precomputed_ref_input_path"):
                 raw_path = row.get(key)
                 if not isinstance(raw_path, str):
                     raise ValueError(
@@ -420,21 +447,23 @@ def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:
         durable_checkpoint_retention=int(args.durable_checkpoint_retention),
         durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
         dataloader_num_workers=int(args.dataloader_num_workers),
-        dataloader_pin_memory=str(args.dataloader_pin_memory).lower() == "true",
-        dataloader_persistent_workers=str(args.dataloader_persistent_workers).lower() == "true",
+        dataloader_pin_memory=bool(args.dataloader_pin_memory),
+        dataloader_persistent_workers=bool(args.dataloader_persistent_workers),
         dataloader_prefetch_factor=int(args.dataloader_prefetch_factor),
-        non_blocking_transfer=str(args.non_blocking_transfer).lower() == "true",
-        ref_mel_cache_enabled=str(args.ref_mel_cache_enabled).lower() == "true",
+        non_blocking_transfer=bool(args.non_blocking_transfer),
+        heartbeat_interval_optimizer_steps=int(args.heartbeat_interval_optimizer_steps),
+        finite_loss_max_consecutive_steps=int(args.finite_loss_max_consecutive_steps),
+        ref_mel_cache_enabled=bool(args.ref_mel_cache_enabled),
         ref_mel_cache_max_items=int(args.ref_mel_cache_max_items),
-        torch_profiler_enabled=str(args.torch_profiler_enabled).lower() == "true",
+        torch_profiler_enabled=bool(args.torch_profiler_enabled),
         torch_profiler_wait_steps=int(args.torch_profiler_wait_steps),
         torch_profiler_warmup_steps=int(args.torch_profiler_warmup_steps),
         torch_profiler_active_steps=int(args.torch_profiler_active_steps),
         torch_profiler_repeat=int(args.torch_profiler_repeat),
-        torch_profiler_record_shapes=str(args.torch_profiler_record_shapes).lower() == "true",
-        torch_profiler_profile_memory=str(args.torch_profiler_profile_memory).lower() == "true",
-        torch_profiler_with_stack=str(args.torch_profiler_with_stack).lower() == "true",
-        rocm_profiler_enabled=str(args.rocm_profiler_enabled).lower() == "true",
+        torch_profiler_record_shapes=bool(args.torch_profiler_record_shapes),
+        torch_profiler_profile_memory=bool(args.torch_profiler_profile_memory),
+        torch_profiler_with_stack=bool(args.torch_profiler_with_stack),
+        rocm_profiler_enabled=bool(args.rocm_profiler_enabled),
     )
 
 

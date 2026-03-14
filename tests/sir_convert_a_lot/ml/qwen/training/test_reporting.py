@@ -13,6 +13,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     StatusReporterConfig,
 )
 
+NonFiniteLossError = importlib.import_module(
+    "scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls"
+).NonFiniteLossError
 TrainingProgressHeartbeat = importlib.import_module(
     "scripts.devops.qwen_finetuning_patches.sft_12hz_progress"
 ).TrainingProgressHeartbeat
@@ -43,6 +46,16 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
             tracking_plan={
                 "project_name": "qwen-training",
                 "run_name": "qwen-run",
+            },
+            heartbeat_policy={"interval_optimizer_steps": 20},
+            finite_loss_guard_config={
+                "enabled": True,
+                "max_consecutive_non_finite_steps": 3,
+            },
+            bundle_precomputed_reference_input={
+                "kind": "ref_mel",
+                "version": "task101_ref_mel_v1",
+                "artifact_count": 2,
             },
         )
     )
@@ -96,6 +109,16 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     assert payload["gradient_accumulation_steps"] == 4
     assert payload["step_semantics"]["gradient_accumulation_steps"] == 4
     assert payload["smoothed_loss"] == 1.47
+    assert payload["heartbeat_policy"] == {"interval_optimizer_steps": 20}
+    assert payload["finite_loss_guard"] == {
+        "enabled": True,
+        "max_consecutive_non_finite_steps": 3,
+    }
+    assert payload["bundle_precomputed_reference_input"] == {
+        "kind": "ref_mel",
+        "version": "task101_ref_mel_v1",
+        "artifact_count": 2,
+    }
     assert payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
     assert [event["phase"] for event in payload["phase_history"]] == [
         "startup",
@@ -130,6 +153,11 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
                 "latest_durable_checkpoint_step": 2,
                 "latest_durable_checkpoint_saved_at": "2026-03-13T12:00:03Z",
                 "tracking": {"mlflow_run_id": "mlflow-run-id"},
+                "bundle_precomputed_reference_input": {
+                    "kind": "ref_mel",
+                    "version": "task101_ref_mel_v1",
+                    "artifact_count": 2,
+                },
             },
             pilot_report_found=False,
             pilot_report=None,
@@ -143,3 +171,45 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
     assert "- pilot_current_step: `3`" in markdown
     assert "- pilot_smoothed_loss: `1.3`" in markdown
     assert "- pilot_mlflow_run_id: `mlflow-run-id`" in markdown
+    assert "- pilot_bundle_precomputed_reference_input_kind: `ref_mel`" in markdown
+    assert "- pilot_bundle_precomputed_reference_input_version: `task101_ref_mel_v1`" in markdown
+    assert "- pilot_bundle_precomputed_reference_input_count: `2`" in markdown
+
+
+def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
+    tmp_path: Path,
+) -> None:
+    """Failed status should surface the finite-loss guard blocker explicitly."""
+    output_dir = tmp_path / "run"
+    status_path = output_dir / "status.json"
+    reporter = StatusReporter(
+        StatusReporterConfig(
+            status_path=status_path,
+            launch_metadata_path=None,
+            train_jsonl=tmp_path / "train.jsonl",
+            eval_jsonl=tmp_path / "eval.jsonl",
+            output_dir=output_dir,
+            train_row_count=10,
+            eval_row_count=2,
+            checkpoint_interval_steps=100,
+            durable_checkpoint_retention=2,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
+            resume_from_checkpoint=None,
+        )
+    )
+
+    reporter.write_startup()
+    reporter.write_failed(
+        NonFiniteLossError(
+            optimizer_step=8,
+            consecutive_non_finite_steps=3,
+            max_consecutive_non_finite_steps=3,
+            loss_value=float("nan"),
+        )
+    )
+
+    payload = json.loads(status_path.read_text(encoding="utf-8"))
+    assert payload["status"] == "failed"
+    assert payload["acceptance_measurement_valid"] is False
+    assert payload["finite_loss_guard"]["trigger_reason"] == "non-finite-loss"
+    assert payload["finite_loss_guard"]["optimizer_step"] == 8

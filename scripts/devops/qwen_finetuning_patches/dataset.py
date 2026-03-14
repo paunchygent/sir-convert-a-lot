@@ -25,16 +25,22 @@ reference-mel plus speaker-aware tensors expected by the patched
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import NotRequired, Protocol, TypeAlias, TypedDict
 
-import librosa
 import numpy as np
 import numpy.typing as npt
 import torch
 from qwen_tts.core.models.configuration_qwen3_tts import Qwen3TTSConfig
-from qwen_tts.core.models.modeling_qwen3_tts import mel_spectrogram
 from torch.utils.data import Dataset
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
+    PRECOMPUTED_REF_INPUT_KIND,
+    PRECOMPUTED_REF_INPUT_VERSION,
+    extract_ref_mel,
+    load_audio_to_np,
+    load_persisted_ref_mel,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
     RefMelCache,
     canonical_ref_audio_cache_key,
@@ -66,6 +72,10 @@ class TrainingRow(TypedDict):
     text: str
     audio_codes: list[list[int]]
     ref_audio: str | list[str]
+    precomputed_ref_input_path: str
+    precomputed_ref_input_kind: str
+    precomputed_ref_input_version: str
+    precomputed_ref_input_source_audio: str
     speaker_id: NotRequired[str]
 
 
@@ -118,13 +128,6 @@ class TTSDataset(Dataset[DatasetItem]):
     def __len__(self) -> int:
         return len(self.data_list)
 
-    def _load_audio_to_np(self, path: str) -> AudioWithRate:
-        audio, sample_rate = librosa.load(path, sr=None, mono=True)
-        if audio.ndim > 1:
-            audio = np.mean(audio, axis=-1)
-        normalized_audio = audio.astype(np.float32, copy=False)
-        return normalized_audio, int(sample_rate)
-
     def _normalize_audio_inputs(self, audios: AudioInputs) -> list[AudioWithRate]:
         """Normalize audio inputs into `(waveform, sample_rate)` tuples."""
         if isinstance(audios, list):
@@ -134,7 +137,7 @@ class TTSDataset(Dataset[DatasetItem]):
         normalized_items: list[AudioWithRate] = []
         for audio_input in items:
             if isinstance(audio_input, str):
-                normalized_items.append(self._load_audio_to_np(audio_input))
+                normalized_items.append(load_audio_to_np(Path(audio_input)))
                 continue
             waveform, sample_rate = audio_input
             if not isinstance(waveform, np.ndarray):
@@ -179,27 +182,27 @@ class TTSDataset(Dataset[DatasetItem]):
 
     @torch.inference_mode()
     def extract_mels(self, audio: AudioArray, sample_rate: int) -> torch.Tensor:
-        if sample_rate != 24000:
-            raise ValueError("Only support 24kHz audio.")
-        mel_output = mel_spectrogram(
-            torch.from_numpy(audio).unsqueeze(0),
-            n_fft=1024,
-            num_mels=128,
-            sampling_rate=24000,
-            hop_size=256,
-            win_size=1024,
-            fmin=0,
-            fmax=12000,
-        ).transpose(1, 2)
-        if not isinstance(mel_output, torch.Tensor):
-            raise ValueError("Expected mel_spectrogram to return a torch.Tensor.")
-        return mel_output
+        return extract_ref_mel(audio, sample_rate=sample_rate)
 
     def _extract_ref_mel(self, ref_audio_value: AudioInputs) -> torch.Tensor:
         """Return one extracted ref-mel tensor from a row ref-audio field."""
         normalized_audio_inputs = self._normalize_audio_inputs(ref_audio_value)
         waveform, sample_rate = normalized_audio_inputs[0]
         return self.extract_mels(audio=waveform, sample_rate=sample_rate)
+
+    def _load_precomputed_ref_mel(self, item: TrainingRow) -> torch.Tensor:
+        """Load one persisted precomputed ref-mel tensor from a manifest row."""
+        if item["precomputed_ref_input_kind"] != PRECOMPUTED_REF_INPUT_KIND:
+            raise ValueError(
+                "Training row referenced unsupported precomputed reference input kind "
+                f"`{item['precomputed_ref_input_kind']}`."
+            )
+        if item["precomputed_ref_input_version"] != PRECOMPUTED_REF_INPUT_VERSION:
+            raise ValueError(
+                "Training row referenced unsupported precomputed reference input version "
+                f"`{item['precomputed_ref_input_version']}`."
+            )
+        return load_persisted_ref_mel(Path(item["precomputed_ref_input_path"]))
 
     def __getitem__(self, idx: int) -> DatasetItem:
         item = self.data_list[idx]
@@ -210,17 +213,16 @@ class TTSDataset(Dataset[DatasetItem]):
         speaker_id = item.get("speaker_id", "default_speaker")
         mapped_speaker_id = self.spk_id_map[speaker_id]
 
-        ref_audio_value = item["ref_audio"]
-        cache_key = canonical_ref_audio_cache_key(ref_audio_value)
+        cache_key = canonical_ref_audio_cache_key(item["precomputed_ref_input_path"])
         if self.ref_mel_cache is not None and cache_key is not None:
             cached_ref_mel = self.ref_mel_cache.get(cache_key)
             if cached_ref_mel is None:
-                ref_mel = self._extract_ref_mel(ref_audio_value)
+                ref_mel = self._load_precomputed_ref_mel(item)
                 self.ref_mel_cache.put(cache_key, ref_mel)
             else:
                 ref_mel = cached_ref_mel
         else:
-            ref_mel = self._extract_ref_mel(ref_audio_value)
+            ref_mel = self._load_precomputed_ref_mel(item)
 
         return {
             "text_ids": text_ids[:, :-5],

@@ -17,6 +17,10 @@ import json
 from pathlib import Path
 
 from scripts.devops.qwen_finetuning_patches.dataset import TrainingRow
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
+    PRECOMPUTED_REF_INPUT_KIND,
+    PRECOMPUTED_REF_INPUT_VERSION,
+)
 
 
 def _load_training_rows(train_jsonl_path: Path) -> list[TrainingRow]:
@@ -54,10 +58,41 @@ def _resolve_training_row_paths(train_jsonl_path: Path, row: dict[str, object]) 
     if not isinstance(audio_codes_value, list):
         raise ValueError("Training row is missing a valid `audio_codes` value.")
     speaker_id_value = row.get("speaker_id")
+    precomputed_ref_input_path = row.get("precomputed_ref_input_path")
+    if not isinstance(precomputed_ref_input_path, str):
+        raise ValueError(
+            "Training row is missing `precomputed_ref_input_path`; rebuild the training bundle "
+            "with persisted precomputed reference inputs before launching training."
+        )
+    precomputed_ref_input_kind = row.get("precomputed_ref_input_kind")
+    if precomputed_ref_input_kind != PRECOMPUTED_REF_INPUT_KIND:
+        raise ValueError(
+            "Training row referenced unsupported `precomputed_ref_input_kind`; "
+            f"expected `{PRECOMPUTED_REF_INPUT_KIND}`."
+        )
+    precomputed_ref_input_version = row.get("precomputed_ref_input_version")
+    if precomputed_ref_input_version != PRECOMPUTED_REF_INPUT_VERSION:
+        raise ValueError(
+            "Training row referenced unsupported `precomputed_ref_input_version`; "
+            f"expected `{PRECOMPUTED_REF_INPUT_VERSION}`."
+        )
+    precomputed_ref_input_source_audio = row.get("precomputed_ref_input_source_audio")
+    if not isinstance(precomputed_ref_input_source_audio, str):
+        raise ValueError("Training row is missing `precomputed_ref_input_source_audio`.")
     resolved_row: TrainingRow = {
         "text": text_value,
         "audio_codes": audio_codes_value,
         "ref_audio": resolved_ref_audio,
+        "precomputed_ref_input_path": _resolve_manifest_path(
+            manifest_root,
+            precomputed_ref_input_path,
+        ),
+        "precomputed_ref_input_kind": PRECOMPUTED_REF_INPUT_KIND,
+        "precomputed_ref_input_version": PRECOMPUTED_REF_INPUT_VERSION,
+        "precomputed_ref_input_source_audio": _resolve_manifest_path(
+            manifest_root,
+            precomputed_ref_input_source_audio,
+        ),
     }
     if isinstance(speaker_id_value, str):
         resolved_row["speaker_id"] = speaker_id_value

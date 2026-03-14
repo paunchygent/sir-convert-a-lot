@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Literal, TypedDict
+from typing import Callable, Literal, NotRequired, TypedDict
 
 from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     CANONICAL_MANIFEST_FAMILIES,
@@ -38,6 +38,10 @@ class RawManifestRow(TypedDict):
     audio: str
     text: str
     ref_audio: str
+    precomputed_ref_input_path: NotRequired[str]
+    precomputed_ref_input_kind: NotRequired[str]
+    precomputed_ref_input_version: NotRequired[str]
+    precomputed_ref_input_source_audio: NotRequired[str]
     speaker_id: str
     dataset: str
     source_split: str
@@ -93,13 +97,16 @@ class CuratedRow:
     manifest_target: ManifestFamily
 
 
-@dataclass(frozen=True)
-class PreparedManifestRow:
+class PreparedManifestRow(TypedDict):
     """One Qwen-ready prepared manifest row with `audio_codes`."""
 
     audio: str
     text: str
     ref_audio: str
+    precomputed_ref_input_path: NotRequired[str]
+    precomputed_ref_input_kind: NotRequired[str]
+    precomputed_ref_input_version: NotRequired[str]
+    precomputed_ref_input_source_audio: NotRequired[str]
     speaker_id: str
     dataset: str
     source_split: str

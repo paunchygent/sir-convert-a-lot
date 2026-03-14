@@ -24,6 +24,7 @@ from typing import Callable
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.ml.qwen.common.runtime import parse_json_object_from_mixed_stdout
+from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import boolean_flag
 
 DEFAULT_REMOTE_TRAINING_OUTPUT_ROOT = Path(
     "/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training"
@@ -319,8 +320,7 @@ def launch_variant(
         str(settings.batch_size),
         "--num-epochs",
         str(settings.num_epochs),
-        "--ref-mel-cache-enabled",
-        "true" if ref_mel_cache_enabled else "false",
+        boolean_flag("--ref-mel-cache-enabled", ref_mel_cache_enabled),
         "--ref-mel-cache-max-items",
         str(settings.ref_mel_cache_max_items),
         "--resource-monitor-interval-seconds",

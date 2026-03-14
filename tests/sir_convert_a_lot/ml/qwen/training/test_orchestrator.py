@@ -57,6 +57,12 @@ def test_parser_launch_defaults() -> None:
     assert args.checkpoint_interval_steps == DEFAULT_CHECKPOINT_INTERVAL_STEPS
     assert args.durable_checkpoint_retention == DEFAULT_DURABLE_CHECKPOINT_RETENTION
     assert args.durable_checkpoint_min_free_bytes == DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES
+    assert args.dataloader_pin_memory is True
+    assert args.dataloader_persistent_workers is True
+    assert args.non_blocking_transfer is True
+    assert args.ref_mel_cache_enabled is True
+    assert args.torch_profiler_enabled is False
+    assert args.rocm_profiler_enabled is False
     assert args.resource_monitor_interval_seconds == 1.0
     assert args.resource_monitor_runtime_kind == "rocm"
     assert args.disable_resource_monitor is False
@@ -127,6 +133,13 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
         "swedish_checkpoint_dev.prepared.jsonl" in command
     )
+    assert "--dataloader-pin-memory" in command
+    assert "--dataloader-persistent-workers" in command
+    assert "--non-blocking-transfer" in command
+    assert "--ref-mel-cache-enabled" in command
+    assert "--no-torch-profiler-enabled" in command
+    assert "true" not in command
+    assert "false" not in command
 
 
 def test_inspect_detached_training_reads_container_status_and_reports(

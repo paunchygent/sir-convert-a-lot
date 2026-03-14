@@ -44,6 +44,8 @@ class TrainingSettings:
     dataloader_persistent_workers: bool = True
     dataloader_prefetch_factor: int = 4
     non_blocking_transfer: bool = True
+    heartbeat_interval_optimizer_steps: int = 20
+    finite_loss_max_consecutive_steps: int = 3
     ref_mel_cache_enabled: bool = True
     ref_mel_cache_max_items: int = 2048
     torch_profiler_enabled: bool = False
@@ -84,6 +86,8 @@ class TrainingSettingsSnapshot:
     dataloader_persistent_workers: bool = True
     dataloader_prefetch_factor: int = 4
     non_blocking_transfer: bool = True
+    heartbeat_interval_optimizer_steps: int = 20
+    finite_loss_max_consecutive_steps: int = 3
     ref_mel_cache_enabled: bool = True
     ref_mel_cache_max_items: int = 2048
     torch_profiler_enabled: bool = False
@@ -116,6 +120,7 @@ class DetachedLaunch:
     resumed_from_checkpoint_path: str | None
     settings: TrainingSettingsSnapshot
     command: list[str]
+    bundle_precomputed_reference_input: dict[str, object] | None = None
     tracking: dict[str, object] | None = None
     resource_monitor: dict[str, object] | None = None
 
@@ -174,6 +179,7 @@ class TrainingReport:
     torch_hip_version: str | None
     flash_attn_importable: bool
     flash_attn_version: str | None
+    bundle_precomputed_reference_input: dict[str, object] | None
     tracking: dict[str, object] | None
     training_summary: dict[str, object]
 
@@ -204,6 +210,8 @@ def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettin
         dataloader_persistent_workers=snapshot.dataloader_persistent_workers,
         dataloader_prefetch_factor=snapshot.dataloader_prefetch_factor,
         non_blocking_transfer=snapshot.non_blocking_transfer,
+        heartbeat_interval_optimizer_steps=snapshot.heartbeat_interval_optimizer_steps,
+        finite_loss_max_consecutive_steps=snapshot.finite_loss_max_consecutive_steps,
         ref_mel_cache_enabled=snapshot.ref_mel_cache_enabled,
         ref_mel_cache_max_items=snapshot.ref_mel_cache_max_items,
         torch_profiler_enabled=snapshot.torch_profiler_enabled,

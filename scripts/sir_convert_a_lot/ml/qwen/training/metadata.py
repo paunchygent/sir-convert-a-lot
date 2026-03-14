@@ -89,6 +89,7 @@ def render_status_markdown(status: DetachedStatus) -> str:
     steady_state_gate_met = resource_monitor.get("steady_state_gpu_busy_gate_met")
     tracking_payload = pilot_status.get("tracking")
     ref_mel_cache_payload = pilot_status.get("ref_mel_cache")
+    bundle_precomputed_reference_input = pilot_status.get("bundle_precomputed_reference_input")
     ref_mel_cache_hit_rate = (
         None
         if not isinstance(ref_mel_cache_payload, dict)
@@ -114,6 +115,21 @@ def render_status_markdown(status: DetachedStatus) -> str:
         raw_mlflow_run_id = tracking_payload.get("mlflow_run_id")
         if isinstance(raw_mlflow_run_id, str):
             mlflow_run_id = raw_mlflow_run_id
+    bundle_precomputed_kind = (
+        None
+        if not isinstance(bundle_precomputed_reference_input, dict)
+        else bundle_precomputed_reference_input.get("kind")
+    )
+    bundle_precomputed_version = (
+        None
+        if not isinstance(bundle_precomputed_reference_input, dict)
+        else bundle_precomputed_reference_input.get("version")
+    )
+    bundle_precomputed_count = (
+        None
+        if not isinstance(bundle_precomputed_reference_input, dict)
+        else bundle_precomputed_reference_input.get("artifact_count")
+    )
     lines = [
         "# Qwen Training Detached Status",
         "",
@@ -148,6 +164,9 @@ def render_status_markdown(status: DetachedStatus) -> str:
         (f"- pilot_ref_mel_cache_hits: `{ref_mel_cache_hits}`"),
         (f"- pilot_ref_mel_cache_misses: `{ref_mel_cache_misses}`"),
         f"- pilot_ref_mel_cache_hit_rate: `{ref_mel_cache_hit_rate}`",
+        f"- pilot_bundle_precomputed_reference_input_kind: `{bundle_precomputed_kind}`",
+        f"- pilot_bundle_precomputed_reference_input_version: `{bundle_precomputed_version}`",
+        f"- pilot_bundle_precomputed_reference_input_count: `{bundle_precomputed_count}`",
         f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
         f"- resource_monitor_available: `{monitor_available}`",
         f"- resource_monitor_launch_root: `{monitor_launch_root}`",
@@ -228,6 +247,8 @@ def load_launch(
     default_dataloader_persistent_workers: bool,
     default_dataloader_prefetch_factor: int,
     default_non_blocking_transfer: bool,
+    default_heartbeat_interval_optimizer_steps: int,
+    default_finite_loss_max_consecutive_steps: int,
     default_ref_mel_cache_enabled: bool,
     default_ref_mel_cache_max_items: int,
     default_torch_profiler_enabled: bool,
@@ -301,6 +322,16 @@ def load_launch(
             _required_bool(settings_payload, "non_blocking_transfer")
             if "non_blocking_transfer" in settings_payload
             else default_non_blocking_transfer
+        ),
+        heartbeat_interval_optimizer_steps=_optional_int(
+            settings_payload,
+            "heartbeat_interval_optimizer_steps",
+            default=default_heartbeat_interval_optimizer_steps,
+        ),
+        finite_loss_max_consecutive_steps=_optional_int(
+            settings_payload,
+            "finite_loss_max_consecutive_steps",
+            default=default_finite_loss_max_consecutive_steps,
         ),
         ref_mel_cache_enabled=(
             _required_bool(settings_payload, "ref_mel_cache_enabled")
@@ -377,6 +408,10 @@ def load_launch(
         resumed_from_checkpoint_path=_optional_str(payload, "resumed_from_checkpoint_path"),
         settings=settings_snapshot,
         command=_required_str_list(payload, "command"),
+        bundle_precomputed_reference_input=_optional_object(
+            payload,
+            "bundle_precomputed_reference_input",
+        ),
         tracking=None if tracking_payload is None else dict(tracking_payload),
         resource_monitor=_optional_object(payload, "resource_monitor"),
     )

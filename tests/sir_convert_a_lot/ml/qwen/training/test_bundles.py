@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
+    PRECOMPUTED_REF_INPUT_KIND,
+    PRECOMPUTED_REF_INPUT_VERSION,
+)
 from scripts.sir_convert_a_lot.ml.qwen.common.models import ManifestFamily
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.models import SpoolRow
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.storage import (
@@ -167,10 +171,32 @@ def test_prepare_training_bundle_inputs_emits_deterministic_batch_plan(tmp_path:
     )
 
     copied_rows = list(iter_spool_rows(output_root))
+    train_row = next(
+        row for row in copied_rows if "swedish_pilot_train" in row.reference_audio_24k_paths
+    )
     assert len(copied_rows) == 5
     assert plan.family_row_counts["swedish_pilot_train"] == 3
     assert plan.family_row_counts["swedish_checkpoint_dev"] == 2
     assert bundle_batch_plan_path(output_root).is_file()
+    assert train_row.reference_audio_24k_paths["swedish_pilot_train"] == (
+        "refs/swedish_pilot_train/speaker-a/ref.wav"
+    )
+    assert (
+        output_root
+        / "precomputed"
+        / PRECOMPUTED_REF_INPUT_KIND
+        / "swedish_pilot_train"
+        / "speaker-a"
+        / "ref_mel.pt"
+    ).is_file()
+    assert (
+        output_root
+        / "precomputed"
+        / PRECOMPUTED_REF_INPUT_KIND
+        / "swedish_checkpoint_dev"
+        / "speaker-a"
+        / "ref_mel.metadata.json"
+    ).is_file()
 
 
 def test_finalize_training_bundle_batch_materializes_prepared_batch(tmp_path: Path) -> None:
@@ -236,7 +262,18 @@ def test_build_training_bundle_materializes_manifests_and_progress(tmp_path: Pat
 
     assert len(train_manifest) == 2
     assert len(eval_manifest) == 1
+    assert train_manifest[0]["precomputed_ref_input_kind"] == PRECOMPUTED_REF_INPUT_KIND
+    assert train_manifest[0]["precomputed_ref_input_version"] == PRECOMPUTED_REF_INPUT_VERSION
+    assert train_manifest[0]["precomputed_ref_input_path"] == (
+        "precomputed/ref_mel/swedish_pilot_train/speaker-a/ref_mel.pt"
+    )
+    assert train_manifest[0]["precomputed_ref_input_source_audio"] == (
+        "refs/swedish_pilot_train/speaker-a/ref.wav"
+    )
     assert summary.total_batch_count == 3
+    assert summary.precomputed_reference_input.kind == PRECOMPUTED_REF_INPUT_KIND
+    assert summary.precomputed_reference_input.version == PRECOMPUTED_REF_INPUT_VERSION
+    assert summary.precomputed_reference_input.artifact_count == 2
     assert bundle_report_path(output_root).is_file()
     assert progress_state["status"] == "completed"
     assert len(progress_events) == 3

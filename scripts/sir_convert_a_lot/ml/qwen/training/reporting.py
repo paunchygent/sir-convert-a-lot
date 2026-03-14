@@ -22,11 +22,12 @@ from typing import TYPE_CHECKING, Mapping
 
 import torch
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import NonFiniteLossError
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
 from scripts.sir_convert_a_lot.ml.qwen.training.models import TrainingReport
 
 if TYPE_CHECKING:
-    from scripts.devops.qwen_finetuning_patches.sft_12hz import TrainingSummary
+    from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import TrainingSummary
 
 
 @dataclass(frozen=True)
@@ -44,10 +45,13 @@ class StatusReporterConfig:
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
     resume_from_checkpoint: Path | None
-    tracking_plan: Mapping[str, object] | None
+    tracking_plan: Mapping[str, object] | None = None
     gradient_accumulation_steps: int = 4
     dataloader_tuning: Mapping[str, object] | None = None
+    heartbeat_policy: Mapping[str, object] | None = None
+    finite_loss_guard_config: Mapping[str, object] | None = None
     ref_mel_cache_config: Mapping[str, object] | None = None
+    bundle_precomputed_reference_input: Mapping[str, object] | None = None
     profiling_plan: Mapping[str, object] | None = None
 
 
@@ -107,6 +111,11 @@ class StatusReporter:
                 output_dir=self.config.output_dir,
                 train_row_count=self.config.train_row_count,
                 eval_row_count=self.config.eval_row_count,
+                bundle_precomputed_reference_input=(
+                    None
+                    if self.config.bundle_precomputed_reference_input is None
+                    else dict(self.config.bundle_precomputed_reference_input)
+                ),
                 training_summary=training_summary,
                 live_progress=self._live_progress_payload(),
                 phase_history=self.phase_history,
@@ -124,6 +133,11 @@ class StatusReporter:
                 output_dir=self.config.output_dir,
                 train_row_count=self.config.train_row_count,
                 eval_row_count=self.config.eval_row_count,
+                bundle_precomputed_reference_input=(
+                    None
+                    if self.config.bundle_precomputed_reference_input is None
+                    else dict(self.config.bundle_precomputed_reference_input)
+                ),
                 exc=exc,
                 live_progress=self._live_progress_payload(),
                 phase_history=self.phase_history,
@@ -166,10 +180,25 @@ class StatusReporter:
                     if self.config.dataloader_tuning is None
                     else dict(self.config.dataloader_tuning)
                 ),
+                heartbeat_policy=(
+                    None
+                    if self.config.heartbeat_policy is None
+                    else dict(self.config.heartbeat_policy)
+                ),
+                finite_loss_guard_config=(
+                    None
+                    if self.config.finite_loss_guard_config is None
+                    else dict(self.config.finite_loss_guard_config)
+                ),
                 ref_mel_cache_config=(
                     None
                     if self.config.ref_mel_cache_config is None
                     else dict(self.config.ref_mel_cache_config)
+                ),
+                bundle_precomputed_reference_input=(
+                    None
+                    if self.config.bundle_precomputed_reference_input is None
+                    else dict(self.config.bundle_precomputed_reference_input)
                 ),
                 profiling_plan=(
                     None if self.config.profiling_plan is None else dict(self.config.profiling_plan)
@@ -245,6 +274,7 @@ def build_training_report(
     output_dir: Path,
     train_row_count: int,
     eval_row_count: int,
+    bundle_precomputed_reference_input: Mapping[str, object] | None,
     training_summary: TrainingSummary,
 ) -> TrainingReport:
     """Build the machine-readable report from one completed training run."""
@@ -264,6 +294,11 @@ def build_training_report(
         torch_hip_version=str(torch.version.hip),
         flash_attn_importable=importlib.util.find_spec("flash_attn") is not None,
         flash_attn_version=_package_version("flash-attn"),
+        bundle_precomputed_reference_input=(
+            None
+            if bundle_precomputed_reference_input is None
+            else dict(bundle_precomputed_reference_input)
+        ),
         tracking=None if training_summary.tracking is None else asdict(training_summary.tracking),
         training_summary=asdict(training_summary),
     )
@@ -281,7 +316,10 @@ def _running_status_payload(
     durable_checkpoint_retention: int,
     durable_checkpoint_min_free_bytes: int,
     dataloader_tuning: dict[str, object] | None,
+    heartbeat_policy: dict[str, object] | None,
+    finite_loss_guard_config: dict[str, object] | None,
     ref_mel_cache_config: dict[str, object] | None,
+    bundle_precomputed_reference_input: dict[str, object] | None,
     profiling_plan: dict[str, object] | None,
     resume_from_checkpoint: Path | None,
     tracking_plan: dict[str, object] | None = None,
@@ -334,7 +372,10 @@ def _running_status_payload(
         "durable_checkpoint_retention": durable_checkpoint_retention,
         "durable_checkpoint_min_free_bytes": durable_checkpoint_min_free_bytes,
         "dataloader_tuning": dataloader_tuning,
+        "heartbeat_policy": heartbeat_policy,
+        "finite_loss_guard": finite_loss_guard_config,
         "ref_mel_cache": ref_mel_cache_config,
+        "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "profiling": profiling_plan,
         "resumed_from_checkpoint_path": (
             None if resume_from_checkpoint is None else resume_from_checkpoint.as_posix()
@@ -362,6 +403,7 @@ def _completed_status_payload(
     output_dir: Path,
     train_row_count: int,
     eval_row_count: int,
+    bundle_precomputed_reference_input: dict[str, object] | None,
     training_summary: TrainingSummary,
     live_progress: dict[str, object] | None = None,
     phase_history: list[dict[str, object]] | None = None,
@@ -414,7 +456,11 @@ def _completed_status_payload(
         "durable_checkpoint_retention": training_summary.durable_checkpoint_retention,
         "durable_checkpoint_min_free_bytes": training_summary.durable_checkpoint_min_free_bytes,
         "dataloader_tuning": training_summary.dataloader_tuning,
+        "heartbeat_policy": training_summary.heartbeat_policy,
+        "finite_loss_guard": training_summary.finite_loss_guard,
         "ref_mel_cache": training_summary.ref_mel_cache,
+        "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
+        "acceptance_measurement_valid": training_summary.acceptance_measurement_valid,
         "resumed_from_checkpoint_path": training_summary.resumed_from_checkpoint_path,
         "latest_durable_checkpoint_path": training_summary.latest_durable_checkpoint_path,
         "latest_durable_checkpoint_step": training_summary.latest_durable_checkpoint_step,
@@ -436,6 +482,7 @@ def _failed_status_payload(
     output_dir: Path,
     train_row_count: int,
     eval_row_count: int,
+    bundle_precomputed_reference_input: dict[str, object] | None = None,
     exc: Exception,
     live_progress: dict[str, object] | None = None,
     phase_history: list[dict[str, object]] | None = None,
@@ -469,6 +516,11 @@ def _failed_status_payload(
     latest_durable_checkpoint_saved_at = (
         None if live_progress is None else live_progress.get("latest_durable_checkpoint_saved_at")
     )
+    finite_loss_guard_payload = None
+    acceptance_measurement_valid = None
+    if isinstance(exc, NonFiniteLossError):
+        finite_loss_guard_payload = exc.payload()
+        acceptance_measurement_valid = False
     return {
         "status": "failed",
         "stage": "training",
@@ -497,6 +549,9 @@ def _failed_status_payload(
         "latest_durable_checkpoint_path": latest_durable_checkpoint_path,
         "latest_durable_checkpoint_step": latest_durable_checkpoint_step,
         "latest_durable_checkpoint_saved_at": latest_durable_checkpoint_saved_at,
+        "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
+        "finite_loss_guard": finite_loss_guard_payload,
+        "acceptance_measurement_valid": acceptance_measurement_valid,
         "tracking": tracking,
         "phase_history": [] if phase_history is None else phase_history,
         "error": f"{type(exc).__name__}: {exc}",

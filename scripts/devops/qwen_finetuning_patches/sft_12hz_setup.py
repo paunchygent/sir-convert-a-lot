@@ -1,0 +1,294 @@
+"""Training-setup helpers for the patched Qwen fine-tuning trainer.
+
+Purpose:
+    Prepare the trainer runtime, dataloader, tracker config, and loop-control
+    state outside the public `sft_12hz.py` facade so the facade can stay below
+    the repo's LoC ceiling.
+
+Relationships:
+    - Imported by `sft_12hz.py`.
+    - Reuses the patch-directory dataloader, profiling, tracking, and loop
+      control helpers.
+"""
+
+from __future__ import annotations
+
+import argparse
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Protocol, Sequence
+
+import torch
+from accelerate import Accelerator
+from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
+from torch.optim import AdamW
+from torch.utils.data import DataLoader
+from transformers import AutoConfig
+
+from scripts.devops.qwen_finetuning_patches.dataset import TTSDataset
+from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
+    DEFAULT_DATALOADER_NUM_WORKERS,
+    DEFAULT_DATALOADER_PERSISTENT_WORKERS,
+    DEFAULT_DATALOADER_PIN_MEMORY,
+    DEFAULT_DATALOADER_PREFETCH_FACTOR,
+    DEFAULT_NON_BLOCKING_TRANSFER,
+    DataloaderTuning,
+    resolve_dataloader_tuning,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import (
+    DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
+    DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
+    FiniteLossGuardConfig,
+    FiniteLossGuardState,
+    TrainingHeartbeatPolicy,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_profiling import (
+    DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
+    DEFAULT_TORCH_PROFILER_ENABLED,
+    DEFAULT_TORCH_PROFILER_PROFILE_MEMORY,
+    DEFAULT_TORCH_PROFILER_RECORD_SHAPES,
+    DEFAULT_TORCH_PROFILER_REPEAT,
+    DEFAULT_TORCH_PROFILER_WAIT_STEPS,
+    DEFAULT_TORCH_PROFILER_WARMUP_STEPS,
+    DEFAULT_TORCH_PROFILER_WITH_STACK,
+    TorchProfilerSession,
+    resolve_torch_profiler_config,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
+    DEFAULT_REF_MEL_CACHE_ENABLED,
+    DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
+    RefMelCache,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
+    GRADIENT_ACCUMULATION_STEPS,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
+    TrainingTrackerConfig,
+    build_training_tracker_config,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
+    _load_training_rows,
+)
+
+
+class QwenWrapperProtocol(Protocol):
+    """Minimal loaded Qwen wrapper surface needed by the trainer."""
+
+    processor: object
+    model: torch.nn.Module
+
+
+@dataclass(frozen=True)
+class PreparedTrainingRun:
+    """Resolved training runtime and loop-control dependencies."""
+
+    args: argparse.Namespace
+    output_model_path: Path
+    model_path: str
+    qwen3tts: QwenWrapperProtocol
+    accelerator: Accelerator
+    model: torch.nn.Module
+    optimizer: AdamW
+    train_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
+    dataloader_length: int
+    effective_dataloader_tuning: DataloaderTuning
+    ref_mel_cache: RefMelCache
+    torch_profiler_session: TorchProfilerSession
+    tracker_config: TrainingTrackerConfig
+    heartbeat_policy: TrainingHeartbeatPolicy
+    finite_loss_guard: FiniteLossGuardState
+
+
+def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
+    """Validate args and prepare one bounded Qwen training runtime."""
+    if args.max_steps is not None and args.max_steps <= 0:
+        raise ValueError("`--max_steps` must be positive when provided.")
+    if int(args.checkpoint_interval_steps) <= 0:
+        raise ValueError("`--checkpoint_interval_steps` must be positive.")
+    if int(args.durable_checkpoint_retention) <= 0:
+        raise ValueError("`--durable-checkpoint-retention` must be positive.")
+    if int(args.durable_checkpoint_min_free_bytes) <= 0:
+        raise ValueError("`--durable-checkpoint-min-free-bytes` must be positive.")
+
+    heartbeat_policy = TrainingHeartbeatPolicy(
+        interval_optimizer_steps=int(
+            getattr(
+                args,
+                "heartbeat_interval_optimizer_steps",
+                DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
+            )
+        )
+    )
+    finite_loss_guard = FiniteLossGuardState(
+        config=FiniteLossGuardConfig(
+            max_consecutive_non_finite_steps=int(
+                getattr(
+                    args,
+                    "finite_loss_max_consecutive_steps",
+                    DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
+                )
+            )
+        )
+    )
+    dataloader_num_workers = int(
+        getattr(args, "dataloader_num_workers", DEFAULT_DATALOADER_NUM_WORKERS)
+    )
+    dataloader_pin_memory = bool(
+        getattr(args, "dataloader_pin_memory", DEFAULT_DATALOADER_PIN_MEMORY)
+    )
+    dataloader_persistent_workers = bool(
+        getattr(args, "dataloader_persistent_workers", DEFAULT_DATALOADER_PERSISTENT_WORKERS)
+    )
+    dataloader_prefetch_factor = int(
+        getattr(args, "dataloader_prefetch_factor", DEFAULT_DATALOADER_PREFETCH_FACTOR)
+    )
+    non_blocking_transfer = bool(
+        getattr(args, "non_blocking_transfer", DEFAULT_NON_BLOCKING_TRANSFER)
+    )
+    ref_mel_cache_enabled = bool(
+        getattr(args, "ref_mel_cache_enabled", DEFAULT_REF_MEL_CACHE_ENABLED)
+    )
+    ref_mel_cache_max_items = int(
+        getattr(args, "ref_mel_cache_max_items", DEFAULT_REF_MEL_CACHE_MAX_ITEMS)
+    )
+    if ref_mel_cache_max_items <= 0:
+        raise ValueError("`--ref_mel_cache_max_items` must be positive.")
+    effective_dataloader_tuning = resolve_dataloader_tuning(
+        num_workers=dataloader_num_workers,
+        pin_memory=dataloader_pin_memory,
+        persistent_workers=dataloader_persistent_workers,
+        prefetch_factor=dataloader_prefetch_factor,
+        non_blocking_transfer=non_blocking_transfer,
+    )
+    ref_mel_cache = RefMelCache(
+        enabled=ref_mel_cache_enabled,
+        max_items=ref_mel_cache_max_items,
+    )
+    output_model_path = Path(args.output_model_path)
+    torch_profiler_trace_dir_raw = getattr(args, "torch_profiler_trace_dir", None)
+    torch_profiler_trace_dir = (
+        output_model_path.parent / "profiling" / "pytorch"
+        if torch_profiler_trace_dir_raw in (None, "")
+        else Path(str(torch_profiler_trace_dir_raw))
+    )
+    torch_profiler_config = resolve_torch_profiler_config(
+        enabled=bool(getattr(args, "torch_profiler_enabled", DEFAULT_TORCH_PROFILER_ENABLED)),
+        trace_dir=torch_profiler_trace_dir,
+        wait_steps=int(
+            getattr(args, "torch_profiler_wait_steps", DEFAULT_TORCH_PROFILER_WAIT_STEPS)
+        ),
+        warmup_steps=int(
+            getattr(args, "torch_profiler_warmup_steps", DEFAULT_TORCH_PROFILER_WARMUP_STEPS)
+        ),
+        active_steps=int(
+            getattr(args, "torch_profiler_active_steps", DEFAULT_TORCH_PROFILER_ACTIVE_STEPS)
+        ),
+        repeat=int(getattr(args, "torch_profiler_repeat", DEFAULT_TORCH_PROFILER_REPEAT)),
+        record_shapes=bool(
+            getattr(args, "torch_profiler_record_shapes", DEFAULT_TORCH_PROFILER_RECORD_SHAPES)
+        ),
+        profile_memory=bool(
+            getattr(args, "torch_profiler_profile_memory", DEFAULT_TORCH_PROFILER_PROFILE_MEMORY)
+        ),
+        with_stack=bool(
+            getattr(args, "torch_profiler_with_stack", DEFAULT_TORCH_PROFILER_WITH_STACK)
+        ),
+    )
+    torch_profiler_session = TorchProfilerSession(torch_profiler_config)
+    tracker_config = build_training_tracker_config(
+        output_model_path=output_model_path,
+        tracker_run_name=(
+            None
+            if getattr(args, "tracker_run_name", None) in (None, "")
+            else str(args.tracker_run_name)
+        ),
+        tracker_project_name=(
+            None
+            if getattr(args, "tracker_project_name", None) in (None, "")
+            else str(args.tracker_project_name)
+        ),
+        mlflow_experiment_name=(
+            None
+            if getattr(args, "mlflow_experiment_name", None) in (None, "")
+            else str(args.mlflow_experiment_name)
+        ),
+        mlflow_tracking_uri=(
+            None
+            if getattr(args, "mlflow_tracking_uri", None) in (None, "")
+            else str(args.mlflow_tracking_uri)
+        ),
+        mlflow_artifact_root=(
+            None
+            if getattr(args, "mlflow_artifact_root", None) in (None, "")
+            else str(args.mlflow_artifact_root)
+        ),
+        tensorboard_logging_dir=(
+            None
+            if getattr(args, "tensorboard_logging_dir", None) in (None, "")
+            else str(args.tensorboard_logging_dir)
+        ),
+    )
+    accelerator = Accelerator(
+        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        mixed_precision="bf16",
+        log_with=list(tracker_config.tracker_backends),
+        project_dir=tracker_config.tensorboard_logging_dir,
+    )
+    model_path = args.init_model_path
+    qwen3tts = Qwen3TTSModel.from_pretrained(
+        model_path,
+        dtype=torch.bfloat16,
+        attn_implementation="flash_attention_2",
+    )
+    config = AutoConfig.from_pretrained(model_path)
+    train_data = _load_training_rows(Path(args.train_jsonl))
+    dataset = TTSDataset(
+        train_data,
+        qwen3tts.processor,
+        config,
+        ref_mel_cache=ref_mel_cache,
+    )
+    train_dataloader = (
+        DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+            collate_fn=dataset.collate_fn,
+            num_workers=effective_dataloader_tuning.num_workers,
+            pin_memory=effective_dataloader_tuning.pin_memory,
+            persistent_workers=effective_dataloader_tuning.persistent_workers,
+            prefetch_factor=effective_dataloader_tuning.prefetch_factor,
+        )
+        if effective_dataloader_tuning.num_workers > 0
+        else DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+            collate_fn=dataset.collate_fn,
+            num_workers=0,
+            pin_memory=effective_dataloader_tuning.pin_memory,
+        )
+    )
+    optimizer = AdamW(qwen3tts.model.parameters(), lr=args.lr, weight_decay=0.01)
+    model, optimizer, train_dataloader = accelerator.prepare(
+        qwen3tts.model,
+        optimizer,
+        train_dataloader,
+    )
+    return PreparedTrainingRun(
+        args=args,
+        output_model_path=output_model_path,
+        model_path=model_path,
+        qwen3tts=qwen3tts,
+        accelerator=accelerator,
+        model=model,
+        optimizer=optimizer,
+        train_dataloader=train_dataloader,
+        dataloader_length=len(train_dataloader),
+        effective_dataloader_tuning=effective_dataloader_tuning,
+        ref_mel_cache=ref_mel_cache,
+        torch_profiler_session=torch_profiler_session,
+        tracker_config=tracker_config,
+        heartbeat_policy=heartbeat_policy,
+        finite_loss_guard=finite_loss_guard,
+    )

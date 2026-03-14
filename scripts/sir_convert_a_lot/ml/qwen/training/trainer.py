@@ -22,6 +22,11 @@ from pathlib import Path
 import sft_12hz
 import torch
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
+    GRADIENT_ACCUMULATION_STEPS,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_training_bundle_summary
+from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     StatusReporter,
     StatusReporterConfig,
@@ -63,26 +68,22 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--durable-checkpoint-retention", type=int, default=2)
     parser.add_argument("--durable-checkpoint-min-free-bytes", type=int, default=16 * 1024**3)
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
-    parser.add_argument("--dataloader-pin-memory", choices=("true", "false"), default="true")
-    parser.add_argument(
-        "--dataloader-persistent-workers",
-        choices=("true", "false"),
-        default="true",
-    )
+    add_boolean_argument(parser, "--dataloader-pin-memory", default=True)
+    add_boolean_argument(parser, "--dataloader-persistent-workers", default=True)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
-    parser.add_argument("--non-blocking-transfer", choices=("true", "false"), default="true")
-    parser.add_argument("--ref-mel-cache-enabled", choices=("true", "false"), default="true")
+    add_boolean_argument(parser, "--non-blocking-transfer", default=True)
+    parser.add_argument("--heartbeat-interval-optimizer-steps", type=int, default=20)
+    parser.add_argument("--finite-loss-max-consecutive-steps", type=int, default=3)
+    add_boolean_argument(parser, "--ref-mel-cache-enabled", default=True)
     parser.add_argument("--ref-mel-cache-max-items", type=int, default=2048)
-    parser.add_argument("--torch-profiler-enabled", choices=("true", "false"), default="false")
+    add_boolean_argument(parser, "--torch-profiler-enabled", default=False)
     parser.add_argument("--torch-profiler-wait-steps", type=int, default=1)
     parser.add_argument("--torch-profiler-warmup-steps", type=int, default=1)
     parser.add_argument("--torch-profiler-active-steps", type=int, default=4)
     parser.add_argument("--torch-profiler-repeat", type=int, default=1)
-    parser.add_argument("--torch-profiler-record-shapes", choices=("true", "false"), default="true")
-    parser.add_argument(
-        "--torch-profiler-profile-memory", choices=("true", "false"), default="true"
-    )
-    parser.add_argument("--torch-profiler-with-stack", choices=("true", "false"), default="false")
+    add_boolean_argument(parser, "--torch-profiler-record-shapes", default=True)
+    add_boolean_argument(parser, "--torch-profiler-profile-memory", default=True)
+    add_boolean_argument(parser, "--torch-profiler-with-stack", default=False)
     parser.add_argument("--torch-profiler-trace-dir", default=None)
     parser.add_argument("--resume-from-checkpoint", type=Path, default=None)
     return parser.parse_args()
@@ -99,6 +100,22 @@ def main() -> int:
     training_summary_path = output_dir / "training_summary.json"
     train_row_count = _count_jsonl_rows(args.train_jsonl)
     eval_row_count = _count_jsonl_rows(args.eval_jsonl)
+    bundle_summary = (
+        None
+        if args.pilot_bundle_root is None
+        else load_training_bundle_summary(args.pilot_bundle_root)
+    )
+    bundle_precomputed_reference_input = (
+        None
+        if bundle_summary is None
+        else {
+            "kind": bundle_summary.precomputed_reference_input.kind,
+            "version": bundle_summary.precomputed_reference_input.version,
+            "source_field": bundle_summary.precomputed_reference_input.source_field,
+            "artifact_root": bundle_summary.precomputed_reference_input.artifact_root,
+            "artifact_count": bundle_summary.precomputed_reference_input.artifact_count,
+        }
+    )
 
     tracking_plan = {
         "tracker_backends": ["mlflow", "tensorboard"],
@@ -119,20 +136,28 @@ def main() -> int:
             output_dir=output_dir,
             train_row_count=train_row_count,
             eval_row_count=eval_row_count,
-            gradient_accumulation_steps=sft_12hz.GRADIENT_ACCUMULATION_STEPS,
+            gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
             dataloader_tuning={
                 "num_workers": int(args.dataloader_num_workers),
-                "pin_memory": str(args.dataloader_pin_memory).lower() == "true",
-                "persistent_workers": (str(args.dataloader_persistent_workers).lower() == "true"),
+                "pin_memory": bool(args.dataloader_pin_memory),
+                "persistent_workers": bool(args.dataloader_persistent_workers),
                 "prefetch_factor": int(args.dataloader_prefetch_factor),
-                "non_blocking_transfer": str(args.non_blocking_transfer).lower() == "true",
+                "non_blocking_transfer": bool(args.non_blocking_transfer),
+            },
+            heartbeat_policy={
+                "interval_optimizer_steps": int(args.heartbeat_interval_optimizer_steps),
+            },
+            finite_loss_guard_config={
+                "enabled": True,
+                "max_consecutive_non_finite_steps": int(args.finite_loss_max_consecutive_steps),
             },
             ref_mel_cache_config={
-                "enabled": str(args.ref_mel_cache_enabled).lower() == "true",
+                "enabled": bool(args.ref_mel_cache_enabled),
                 "max_items": int(args.ref_mel_cache_max_items),
             },
+            bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             profiling_plan={
-                "torch_profiler_enabled": str(args.torch_profiler_enabled).lower() == "true",
+                "torch_profiler_enabled": bool(args.torch_profiler_enabled),
                 "torch_profiler_trace_dir": args.torch_profiler_trace_dir,
                 "torch_profiler_wait_steps": int(args.torch_profiler_wait_steps),
                 "torch_profiler_warmup_steps": int(args.torch_profiler_warmup_steps),
@@ -166,24 +191,22 @@ def main() -> int:
             durable_checkpoint_retention=int(args.durable_checkpoint_retention),
             durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
             dataloader_num_workers=int(args.dataloader_num_workers),
-            dataloader_pin_memory=str(args.dataloader_pin_memory).lower() == "true",
-            dataloader_persistent_workers=(
-                str(args.dataloader_persistent_workers).lower() == "true"
-            ),
+            dataloader_pin_memory=bool(args.dataloader_pin_memory),
+            dataloader_persistent_workers=bool(args.dataloader_persistent_workers),
             dataloader_prefetch_factor=int(args.dataloader_prefetch_factor),
-            non_blocking_transfer=str(args.non_blocking_transfer).lower() == "true",
-            ref_mel_cache_enabled=str(args.ref_mel_cache_enabled).lower() == "true",
+            non_blocking_transfer=bool(args.non_blocking_transfer),
+            heartbeat_interval_optimizer_steps=int(args.heartbeat_interval_optimizer_steps),
+            finite_loss_max_consecutive_steps=int(args.finite_loss_max_consecutive_steps),
+            ref_mel_cache_enabled=bool(args.ref_mel_cache_enabled),
             ref_mel_cache_max_items=int(args.ref_mel_cache_max_items),
-            torch_profiler_enabled=str(args.torch_profiler_enabled).lower() == "true",
+            torch_profiler_enabled=bool(args.torch_profiler_enabled),
             torch_profiler_wait_steps=int(args.torch_profiler_wait_steps),
             torch_profiler_warmup_steps=int(args.torch_profiler_warmup_steps),
             torch_profiler_active_steps=int(args.torch_profiler_active_steps),
             torch_profiler_repeat=int(args.torch_profiler_repeat),
-            torch_profiler_record_shapes=str(args.torch_profiler_record_shapes).lower() == "true",
-            torch_profiler_profile_memory=(
-                str(args.torch_profiler_profile_memory).lower() == "true"
-            ),
-            torch_profiler_with_stack=str(args.torch_profiler_with_stack).lower() == "true",
+            torch_profiler_record_shapes=bool(args.torch_profiler_record_shapes),
+            torch_profiler_profile_memory=bool(args.torch_profiler_profile_memory),
+            torch_profiler_with_stack=bool(args.torch_profiler_with_stack),
             torch_profiler_trace_dir=args.torch_profiler_trace_dir,
             resume_from_checkpoint=(
                 None
@@ -202,7 +225,6 @@ def main() -> int:
             ),
             train_manifest_family=args.train_manifest_family,
             eval_manifest_family=args.eval_manifest_family,
-            speaker_name="qwen_multi_speaker",
         )
 
         training_summary = sft_12hz.train_with_args(
@@ -220,6 +242,7 @@ def main() -> int:
             output_dir=output_dir,
             train_row_count=train_row_count,
             eval_row_count=eval_row_count,
+            bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             training_summary=training_summary,
         )
         write_json(report_path, asdict(report))

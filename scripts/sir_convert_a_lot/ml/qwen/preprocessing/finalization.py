@@ -680,18 +680,27 @@ def _flush_audio_codes_chunk(
     prepared_count = 0
     for raw_row, audio_codes in zip(raw_rows, audio_codes_list, strict=True):
         raw_writer.write_row(raw_row)
-        prepared_writer.write_row(
-            PreparedManifestRow(
-                audio=raw_row["audio"],
-                text=raw_row["text"],
-                ref_audio=raw_row["ref_audio"],
-                speaker_id=raw_row["speaker_id"],
-                dataset=raw_row["dataset"],
-                source_split=raw_row["source_split"],
-                quality_tier=raw_row["quality_tier"],
-                audio_codes=audio_codes,
-            )
-        )
+        prepared_row: PreparedManifestRow = {
+            "audio": raw_row["audio"],
+            "text": raw_row["text"],
+            "ref_audio": raw_row["ref_audio"],
+            "speaker_id": raw_row["speaker_id"],
+            "dataset": raw_row["dataset"],
+            "source_split": raw_row["source_split"],
+            "quality_tier": raw_row["quality_tier"],
+            "audio_codes": audio_codes,
+        }
+        if "precomputed_ref_input_path" in raw_row:
+            prepared_row["precomputed_ref_input_path"] = raw_row["precomputed_ref_input_path"]
+        if "precomputed_ref_input_kind" in raw_row:
+            prepared_row["precomputed_ref_input_kind"] = raw_row["precomputed_ref_input_kind"]
+        if "precomputed_ref_input_version" in raw_row:
+            prepared_row["precomputed_ref_input_version"] = raw_row["precomputed_ref_input_version"]
+        if "precomputed_ref_input_source_audio" in raw_row:
+            prepared_row["precomputed_ref_input_source_audio"] = raw_row[
+                "precomputed_ref_input_source_audio"
+            ]
+        prepared_writer.write_row(prepared_row)
         prepared_count += 1
     raw_rows.clear()
     return prepared_count
