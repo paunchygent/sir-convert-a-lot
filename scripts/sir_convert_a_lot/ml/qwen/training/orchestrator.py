@@ -25,7 +25,7 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     MountResolution,
     docker_checked,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_training_bundle_summary
+from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_optional_training_bundle_summary
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import boolean_flag
 from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedLaunch,
@@ -386,7 +386,7 @@ def launch_detached_training(
         label="docker run qwen detached training",
     ).strip()
     tracking_root = _tracker_root(run_root)
-    bundle_summary = load_training_bundle_summary(settings.pilot_bundle_root)
+    bundle_summary = load_optional_training_bundle_summary(settings.pilot_bundle_root)
     throughput_policy = resolve_throughput_batch_policy(
         profile_label=settings.throughput_profile_label,
         max_batch_size=settings.batch_size,
@@ -409,13 +409,17 @@ def launch_detached_training(
         ),
         settings=snapshot_settings(settings),
         command=["sudo", "-n", "docker", *command],
-        bundle_precomputed_reference_input={
-            "kind": bundle_summary.precomputed_reference_input.kind,
-            "version": bundle_summary.precomputed_reference_input.version,
-            "source_field": bundle_summary.precomputed_reference_input.source_field,
-            "artifact_root": bundle_summary.precomputed_reference_input.artifact_root,
-            "artifact_count": bundle_summary.precomputed_reference_input.artifact_count,
-        },
+        bundle_precomputed_reference_input=(
+            None
+            if bundle_summary is None
+            else {
+                "kind": bundle_summary.precomputed_reference_input.kind,
+                "version": bundle_summary.precomputed_reference_input.version,
+                "source_field": bundle_summary.precomputed_reference_input.source_field,
+                "artifact_root": bundle_summary.precomputed_reference_input.artifact_root,
+                "artifact_count": bundle_summary.precomputed_reference_input.artifact_count,
+            }
+        ),
         throughput_profile=throughput_policy_payload(throughput_policy),
         tracking={
             "tracker_backends": list(DEFAULT_TRACKER_BACKENDS),

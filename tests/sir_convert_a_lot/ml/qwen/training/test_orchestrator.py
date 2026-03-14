@@ -39,6 +39,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
 from scripts.sir_convert_a_lot.ml.qwen.training.orchestrator import (
     build_detached_training_command,
     inspect_detached_training,
+    launch_detached_training,
     stop_detached_training,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
@@ -366,6 +367,63 @@ def test_ensure_training_bundle_exists_accepts_legacy_bundle_without_report(tmp_
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
     )
+
+
+def test_launch_detached_training_accepts_legacy_bundle_without_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Detached launch metadata should omit precomputed-ref payload for legacy bundles."""
+    settings = TrainingSettings(
+        output_root=tmp_path / "verification",
+        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        hf_cache_dir=tmp_path / "cache/hf",
+        hf_cache_home_mount=tmp_path / "home/cache/hf",
+        scratch_build_root=tmp_path / "build",
+        scratch_build_home_mount=tmp_path / "home/build",
+        pilot_bundle_root=tmp_path / "bundle",
+        runs_root=tmp_path / "runs",
+        model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        batch_size=8,
+        throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+        lr=2e-5,
+        num_epochs=1,
+        max_steps=8,
+        checkpoint_interval_steps=2,
+        durable_checkpoint_retention=2,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.build_detached_training_command",
+        lambda *args, **kwargs: (["run", "-d"], tmp_path / "runs/launch"),
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.docker_checked",
+        lambda args, *, label: "container-id\n",
+    )
+
+    launch = launch_detached_training(
+        settings,
+        repo_root=tmp_path / "repo",
+        hf_mount=MountResolution(
+            canonical_root=settings.hf_cache_dir,
+            effective_root=settings.hf_cache_home_mount,
+            used_home_mount=True,
+        ),
+        scratch_mount=MountResolution(
+            canonical_root=settings.scratch_build_root,
+            effective_root=settings.scratch_build_home_mount,
+            used_home_mount=True,
+        ),
+        launch_id="legacy-launch",
+        container_name="legacy-container",
+        launch_root=tmp_path / "verification/legacy-launch",
+    )
+
+    assert launch.container_id == "container-id"
+    assert launch.bundle_precomputed_reference_input is None
 
 
 def test_resume_uses_launch_metadata_dockerfile_path(

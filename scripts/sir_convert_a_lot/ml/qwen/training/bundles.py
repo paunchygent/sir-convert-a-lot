@@ -175,6 +175,14 @@ def load_training_bundle_summary(output_root: Path) -> BundleSummary:
     return load_bundle_summary(bundle_report_path(output_root))
 
 
+def load_optional_training_bundle_summary(output_root: Path) -> BundleSummary | None:
+    """Load the bundle summary when the canonical report exists for one bundle."""
+    report_path = bundle_report_path(output_root)
+    if not report_path.exists():
+        return None
+    return load_bundle_summary(report_path)
+
+
 def bundle_batch_is_complete(output_root: Path, batch: BundleBatch) -> bool:
     """Return whether one bundle batch already has its prepared shard."""
     return bundle_prepared_batch_path(
