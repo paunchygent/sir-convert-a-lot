@@ -17,10 +17,9 @@ Relationships:
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Callable
 
 from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     ManifestFamily,
@@ -283,25 +282,16 @@ def build_containerized_training_bundle_batch_command(
     hf_mount: MountResolution,
     triton_mount: MountResolution,
     output_root_mount: MountResolution,
-    host_uid: int | None = None,
-    host_gid: int | None = None,
-    gpu_group_ids: Sequence[str] | None = None,
 ) -> list[str]:
     """Build the Docker command for one containerized training-bundle batch."""
-    effective_host_uid = os.getuid() if host_uid is None else host_uid
-    effective_host_gid = os.getgid() if host_gid is None else host_gid
     run_args = [
         "run",
         "--rm",
-        "--user",
-        f"{effective_host_uid}:{effective_host_gid}",
         "--device",
         "/dev/kfd",
         "--device",
         "/dev/dri",
     ]
-    for group_id in gpu_group_ids or _gpu_device_group_ids():
-        run_args.extend(["--group-add", group_id])
     run_args.extend(
         [
             "--ipc=host",
@@ -411,23 +401,6 @@ def run_containerized_training_bundle_batch(
     )
     docker_checked(command, label="docker run qwen training-bundle batch")
     return effective_fingerprint
-
-
-def _gpu_device_group_ids() -> list[str]:
-    """Return unique numeric group ids required for Hemma GPU device access."""
-    candidate_paths = [Path("/dev/kfd")]
-    dri_root = Path("/dev/dri")
-    if dri_root.exists():
-        candidate_paths.extend(sorted(dri_root.glob("card*")))
-        candidate_paths.extend(sorted(dri_root.glob("renderD*")))
-    group_ids: list[str] = []
-    for candidate in candidate_paths:
-        if not candidate.exists():
-            continue
-        group_id = str(os.stat(candidate).st_gid)
-        if group_id not in group_ids:
-            group_ids.append(group_id)
-    return group_ids
 
 
 def _required_string(payload: dict[str, object], key: str) -> str:

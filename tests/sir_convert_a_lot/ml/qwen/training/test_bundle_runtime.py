@@ -47,22 +47,16 @@ def test_build_containerized_training_bundle_batch_command_uses_repo_and_mounts(
             effective_root=Path("/srv/scratch/bundle-root"),
             used_home_mount=False,
         ),
-        host_uid=1000,
-        host_gid=1000,
-        gpu_group_ids=["44", "109"],
     )
 
-    assert command[:8] == [
+    assert command[:6] == [
         "run",
         "--rm",
-        "--user",
-        "1000:1000",
         "--device",
         "/dev/kfd",
         "--device",
         "/dev/dri",
     ]
-    assert "--group-add" in command
     assert "/repo:/app" in command
     assert "/srv/scratch/cache/hf:/cache/huggingface" in command
     assert "/srv/scratch/cache/triton:/cache/triton" in command
