@@ -23,6 +23,9 @@ from scripts.sir_convert_a_lot.cli.ml.qwen_bundle import (
     build_parser,
     main,
 )
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import (
+    encode_audio_codes_with_governed_gpu_runtime,
+)
 
 
 def test_parser_build_defaults() -> None:
@@ -74,6 +77,7 @@ def test_main_build_dispatches_to_domain_bundle_builder(
     assert exit_code == 0
     assert captured["source_root"] == source_root
     assert captured["output_root"] == output_root
+    assert captured["encode_audio_codes_fn"] is encode_audio_codes_with_governed_gpu_runtime
     rendered = json.loads(capsys.readouterr().out)
     assert rendered["source_root"] == source_root.as_posix()
     assert rendered["output_root"] == output_root.as_posix()

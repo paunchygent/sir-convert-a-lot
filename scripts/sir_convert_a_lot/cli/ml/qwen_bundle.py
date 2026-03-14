@@ -22,7 +22,9 @@ from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
 )
-from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import encode_audio_codes
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import (
+    encode_audio_codes_with_governed_gpu_runtime,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     DEFAULT_AUDIO_CODES_CHUNK_SIZE,
     DEFAULT_BATCH_ROW_COUNT,
@@ -158,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
             manifest_family=manifest_family,
             batch_index=int(args.batch_index),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
-            encode_audio_codes_fn=encode_audio_codes,
+            encode_audio_codes_fn=encode_audio_codes_with_governed_gpu_runtime,
         )
         batch = next(
             candidate
@@ -187,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
             tokenizer_model=str(args.tokenizer_model),
             finalization_batch_row_count=int(args.finalization_batch_row_count),
             audio_codes_chunk_size=int(args.audio_codes_chunk_size),
-            encode_audio_codes_fn=encode_audio_codes,
+            encode_audio_codes_fn=encode_audio_codes_with_governed_gpu_runtime,
             repo_root=Path.cwd(),
         )
         print(json.dumps(asdict(summary), indent=2, ensure_ascii=False))
