@@ -104,6 +104,18 @@ small launches for the target saturation posture.
     against that old packer
   - do not promote the earlier occupancy-lift knobs as the new default because
     they do not currently work and they fail by destabilizing the training lane
+- The old-packer `768` isolation run is now also recorded:
+  - `task-175-throughput-proof-20260314g-balanced-plus-old-packer/20260314T212920Z`
+  - entered `train`, survived well past the old step-`4` crash boundary, and
+    then still failed with a real `NaN` at `optimizer_step=21`
+- That final isolation means both attempted uplift knobs are currently
+  non-promotable:
+  - the best-fit packer is an immediate destabilizer
+  - the `640 -> 768` codec-frame-budget increase is still numerically unstable
+    even after restoring the old greedy packer
+- The stable default therefore remains the old-packer
+  `hemma-throughput-balanced-v1` lane until a smaller bounded uplift is proven
+  with real Hemma evidence
 
 ## Deliverables
 
