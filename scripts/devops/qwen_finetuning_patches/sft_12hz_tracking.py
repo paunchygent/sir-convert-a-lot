@@ -265,3 +265,30 @@ def log_training_metrics(
         payload["train/ref_mel_cache_size"] = ref_mel_cache_metrics.get("cache_size")
         payload["train/ref_mel_cache_hit_rate"] = ref_mel_cache_metrics.get("cache_hit_rate")
     accelerator.log(payload, step=current_optimizer_step)
+
+
+def log_eval_metrics(
+    accelerator: Accelerator,
+    *,
+    eval_loss: float,
+    best_eval_loss: float,
+    best_eval_step: int,
+    current_epoch: int,
+    current_optimizer_step: int,
+    current_train_iteration: int,
+    eval_runs_completed: int,
+) -> None:
+    """Log one held-out eval payload to all configured trackers."""
+    accelerator.log(
+        {
+            "eval/loss": eval_loss,
+            "eval/best_loss": best_eval_loss,
+            "eval/best_step": best_eval_step,
+            "eval/current_step": current_optimizer_step,
+            "eval/current_optimizer_step": current_optimizer_step,
+            "eval/current_train_iteration": current_train_iteration,
+            "eval/current_epoch": current_epoch,
+            "eval/runs_completed": eval_runs_completed,
+        },
+        step=current_optimizer_step,
+    )

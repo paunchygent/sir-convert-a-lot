@@ -45,6 +45,7 @@ class StatusReporterConfig:
     train_row_count: int
     eval_row_count: int
     checkpoint_interval_steps: int
+    eval_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
     resume_from_checkpoint: Path | None
@@ -131,7 +132,7 @@ class StatusReporter:
             ),
         )
 
-    def write_failed(self, exc: Exception) -> dict[str, object]:
+    def write_failed(self, exc: BaseException) -> dict[str, object]:
         """Persist the terminal failed status payload with the last live heartbeat."""
         terminal_progress = _resolve_failed_progress(
             live_progress=self._live_progress_payload(), exc=exc
@@ -188,6 +189,7 @@ class StatusReporter:
                 train_row_count=self.config.train_row_count,
                 eval_row_count=self.config.eval_row_count,
                 checkpoint_interval_steps=self.config.checkpoint_interval_steps,
+                eval_interval_steps=self.config.eval_interval_steps,
                 gradient_accumulation_steps=self.config.gradient_accumulation_steps,
                 durable_checkpoint_retention=self.config.durable_checkpoint_retention,
                 durable_checkpoint_min_free_bytes=(self.config.durable_checkpoint_min_free_bytes),
@@ -310,7 +312,7 @@ def build_training_report(
         output_dir=output_dir.as_posix(),
         train_row_count=train_row_count,
         eval_row_count=eval_row_count,
-        upstream_trainer_uses_eval_manifest=False,
+        upstream_trainer_uses_eval_manifest=True,
         torch_version=str(torch.__version__),
         torchaudio_version=_package_version("torchaudio"),
         torch_cuda_available=True,
@@ -353,7 +355,7 @@ def build_failed_training_report(
         output_dir=output_dir.as_posix(),
         train_row_count=train_row_count,
         eval_row_count=eval_row_count,
-        upstream_trainer_uses_eval_manifest=False,
+        upstream_trainer_uses_eval_manifest=True,
         torch_version=str(torch.__version__),
         torchaudio_version=_package_version("torchaudio"),
         torch_cuda_available=True,
@@ -395,6 +397,10 @@ def build_failed_training_report(
                 failed_status,
                 "acceptance_measurement_valid",
             ),
+            latest_eval_loss=_optional_mapping_float(failed_status, "latest_eval_loss"),
+            best_eval_loss=_optional_mapping_float(failed_status, "best_eval_loss"),
+            best_eval_step=_optional_mapping_int(failed_status, "best_eval_step"),
+            eval_runs_completed=_optional_mapping_int(failed_status, "eval_runs_completed"),
         ),
     )
 
@@ -407,6 +413,7 @@ def _running_status_payload(
     train_row_count: int,
     eval_row_count: int,
     checkpoint_interval_steps: int,
+    eval_interval_steps: int,
     gradient_accumulation_steps: int,
     durable_checkpoint_retention: int,
     durable_checkpoint_min_free_bytes: int,
@@ -443,6 +450,12 @@ def _running_status_payload(
     )
     latest_loss = None if live_progress is None else live_progress.get("latest_loss")
     smoothed_loss = None if live_progress is None else live_progress.get("smoothed_loss")
+    latest_eval_loss = None if live_progress is None else live_progress.get("latest_eval_loss")
+    best_eval_loss = None if live_progress is None else live_progress.get("best_eval_loss")
+    best_eval_step = None if live_progress is None else live_progress.get("best_eval_step")
+    eval_runs_completed = (
+        None if live_progress is None else live_progress.get("eval_runs_completed")
+    )
     latest_durable_checkpoint_path = (
         None if live_progress is None else live_progress.get("latest_durable_checkpoint_path")
     )
@@ -461,10 +474,11 @@ def _running_status_payload(
         "output_dir": output_dir.as_posix(),
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
-        "upstream_trainer_uses_eval_manifest": False,
+        "upstream_trainer_uses_eval_manifest": True,
         "gradient_accumulation_steps": gradient_accumulation_steps,
         "step_semantics": _step_semantics_payload(gradient_accumulation_steps),
         "checkpoint_interval_steps": checkpoint_interval_steps,
+        "eval_interval_steps": eval_interval_steps,
         "durable_checkpoint_retention": durable_checkpoint_retention,
         "durable_checkpoint_min_free_bytes": durable_checkpoint_min_free_bytes,
         "dataloader_tuning": dataloader_tuning,
@@ -484,6 +498,10 @@ def _running_status_payload(
         "current_train_iteration": current_train_iteration,
         "latest_loss": latest_loss,
         "smoothed_loss": smoothed_loss,
+        "latest_eval_loss": latest_eval_loss,
+        "best_eval_loss": best_eval_loss,
+        "best_eval_step": best_eval_step,
+        "eval_runs_completed": eval_runs_completed,
         "latest_durable_checkpoint_path": latest_durable_checkpoint_path,
         "latest_durable_checkpoint_step": latest_durable_checkpoint_step,
         "latest_durable_checkpoint_saved_at": latest_durable_checkpoint_saved_at,
@@ -538,7 +556,7 @@ def _completed_status_payload(
         "output_dir": output_dir.as_posix(),
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
-        "upstream_trainer_uses_eval_manifest": False,
+        "upstream_trainer_uses_eval_manifest": True,
         "gradient_accumulation_steps": training_summary.gradient_accumulation_steps,
         "step_semantics": _step_semantics_payload(training_summary.gradient_accumulation_steps),
         "current_phase": current_phase,
@@ -548,9 +566,15 @@ def _completed_status_payload(
         "current_train_iteration": current_train_iteration,
         "latest_loss": latest_loss,
         "smoothed_loss": smoothed_loss,
+        "latest_eval_loss": training_summary.latest_eval_loss,
+        "best_eval_loss": training_summary.best_eval_loss,
+        "best_eval_step": training_summary.best_eval_step,
+        "eval_runs_completed": training_summary.eval_runs_completed,
+        "eval_batches_completed": training_summary.eval_batches_completed,
         "optimizer_steps_completed": training_summary.optimizer_steps_completed,
         "train_iterations_completed": training_summary.train_iterations_completed,
         "checkpoint_interval_steps": training_summary.checkpoint_interval_steps,
+        "eval_interval_steps": training_summary.eval_interval_steps,
         "durable_checkpoint_retention": training_summary.durable_checkpoint_retention,
         "durable_checkpoint_min_free_bytes": training_summary.durable_checkpoint_min_free_bytes,
         "dataloader_tuning": training_summary.dataloader_tuning,
@@ -585,7 +609,7 @@ def _failed_status_payload(
     eval_row_count: int,
     bundle_precomputed_reference_input: dict[str, object] | None = None,
     throughput_profile: dict[str, object] | None = None,
-    exc: Exception,
+    exc: BaseException,
     live_progress: dict[str, object] | None = None,
     phase_history: list[dict[str, object]] | None = None,
     tracking: dict[str, object] | None = None,
@@ -606,7 +630,7 @@ def _failed_status_payload(
         "output_dir": output_dir.as_posix(),
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
-        "upstream_trainer_uses_eval_manifest": False,
+        "upstream_trainer_uses_eval_manifest": True,
         "gradient_accumulation_steps": (
             None
             if resolved_progress is None
@@ -633,6 +657,18 @@ def _failed_status_payload(
         "latest_loss": None if resolved_progress is None else resolved_progress.get("latest_loss"),
         "smoothed_loss": (
             None if resolved_progress is None else resolved_progress.get("smoothed_loss")
+        ),
+        "latest_eval_loss": (
+            None if resolved_progress is None else resolved_progress.get("latest_eval_loss")
+        ),
+        "best_eval_loss": (
+            None if resolved_progress is None else resolved_progress.get("best_eval_loss")
+        ),
+        "best_eval_step": (
+            None if resolved_progress is None else resolved_progress.get("best_eval_step")
+        ),
+        "eval_runs_completed": (
+            None if resolved_progress is None else resolved_progress.get("eval_runs_completed")
         ),
         "latest_durable_checkpoint_path": (
             None
@@ -737,6 +773,10 @@ def _resolve_terminal_progress(
         "gradient_accumulation_steps": _optional_int(live_progress, "gradient_accumulation_steps"),
         "latest_loss": live_progress.get("latest_loss"),
         "smoothed_loss": live_progress.get("smoothed_loss"),
+        "latest_eval_loss": live_progress.get("latest_eval_loss"),
+        "best_eval_loss": live_progress.get("best_eval_loss"),
+        "best_eval_step": _optional_int(live_progress, "best_eval_step"),
+        "eval_runs_completed": _optional_int(live_progress, "eval_runs_completed"),
         "latest_durable_checkpoint_path": live_progress.get("latest_durable_checkpoint_path"),
         "latest_durable_checkpoint_step": live_progress.get("latest_durable_checkpoint_step"),
         "latest_durable_checkpoint_saved_at": live_progress.get(
@@ -748,7 +788,7 @@ def _resolve_terminal_progress(
 def _resolve_failed_progress(
     *,
     live_progress: dict[str, object] | None,
-    exc: Exception,
+    exc: BaseException,
 ) -> dict[str, object | None] | None:
     """Return terminal progress with exception-derived counters overriding stale heartbeat data."""
     resolved_progress = _resolve_terminal_progress(live_progress=live_progress)
@@ -757,6 +797,10 @@ def _resolve_failed_progress(
     if resolved_progress is None:
         gradient_accumulation_steps = None
         smoothed_loss = None
+        latest_eval_loss = None
+        best_eval_loss = None
+        best_eval_step = None
+        eval_runs_completed = None
         latest_durable_checkpoint_path = None
         latest_durable_checkpoint_step = None
         latest_durable_checkpoint_saved_at = None
@@ -766,6 +810,10 @@ def _resolve_failed_progress(
             "gradient_accumulation_steps",
         )
         smoothed_loss = _optional_mapping_float(resolved_progress, "smoothed_loss")
+        latest_eval_loss = _optional_mapping_float(resolved_progress, "latest_eval_loss")
+        best_eval_loss = _optional_mapping_float(resolved_progress, "best_eval_loss")
+        best_eval_step = _optional_mapping_int(resolved_progress, "best_eval_step")
+        eval_runs_completed = _optional_mapping_int(resolved_progress, "eval_runs_completed")
         latest_durable_checkpoint_path = _optional_mapping_string(
             resolved_progress,
             "latest_durable_checkpoint_path",
@@ -786,6 +834,10 @@ def _resolve_failed_progress(
         "gradient_accumulation_steps": gradient_accumulation_steps,
         "latest_loss": exc.loss_value,
         "smoothed_loss": smoothed_loss,
+        "latest_eval_loss": latest_eval_loss,
+        "best_eval_loss": best_eval_loss,
+        "best_eval_step": best_eval_step,
+        "eval_runs_completed": eval_runs_completed,
         "latest_durable_checkpoint_path": latest_durable_checkpoint_path,
         "latest_durable_checkpoint_step": latest_durable_checkpoint_step,
         "latest_durable_checkpoint_saved_at": latest_durable_checkpoint_saved_at,

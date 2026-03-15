@@ -61,6 +61,7 @@ def test_parser_launch_defaults() -> None:
     assert args.batch_size == 8
     assert args.throughput_profile_label == DEFAULT_THROUGHPUT_PROFILE_LABEL
     assert args.checkpoint_interval_steps == DEFAULT_CHECKPOINT_INTERVAL_STEPS
+    assert args.eval_interval_steps == 100
     assert args.durable_checkpoint_retention == DEFAULT_DURABLE_CHECKPOINT_RETENTION
     assert args.durable_checkpoint_min_free_bytes == DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES
     assert args.dataloader_pin_memory is True
@@ -119,6 +120,7 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         num_epochs=1,
         max_steps=8,
         checkpoint_interval_steps=2,
+        eval_interval_steps=100,
         durable_checkpoint_retention=2,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
@@ -168,6 +170,8 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
     assert "--no-data-path-proof-mode" in command
     assert "--throughput-profile-label" in command
     assert DEFAULT_THROUGHPUT_PROFILE_LABEL in command
+    assert "--eval-interval-steps" in command
+    assert "100" in command
     assert "--ref-mel-cache-enabled" in command
     assert "--no-torch-profiler-enabled" in command
     assert "true" not in command
@@ -196,7 +200,7 @@ def test_inspect_detached_training_reads_container_status_and_reports(
         json.dumps(
             {
                 "eval_jsonl": "/bundle/manifests/swedish_checkpoint_dev.prepared.jsonl",
-                "upstream_trainer_uses_eval_manifest": False,
+                "upstream_trainer_uses_eval_manifest": True,
                 "training_summary": {
                     "optimizer_steps_completed": 8,
                 },
@@ -237,6 +241,7 @@ def test_inspect_detached_training_reads_container_status_and_reports(
             num_epochs=1,
             max_steps=8,
             checkpoint_interval_steps=2,
+            eval_interval_steps=100,
             durable_checkpoint_retention=2,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
@@ -523,6 +528,7 @@ def test_launch_detached_training_accepts_legacy_bundle_without_summary(
         num_epochs=1,
         max_steps=8,
         checkpoint_interval_steps=2,
+        eval_interval_steps=100,
         durable_checkpoint_retention=2,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
@@ -605,6 +611,7 @@ def test_resume_uses_launch_metadata_dockerfile_path(
             num_epochs=1,
             max_steps=8,
             checkpoint_interval_steps=2,
+            eval_interval_steps=100,
             durable_checkpoint_retention=2,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
@@ -743,6 +750,7 @@ def test_stop_detached_training_calls_docker_stop(monkeypatch: pytest.MonkeyPatc
             num_epochs=1,
             max_steps=8,
             checkpoint_interval_steps=2,
+            eval_interval_steps=100,
             durable_checkpoint_retention=2,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),

@@ -212,6 +212,10 @@ def render_status_markdown(status: DetachedStatus) -> str:
         f"- pilot_current_step: `{pilot_status.get('current_step')}`",
         f"- pilot_latest_loss: `{pilot_status.get('latest_loss')}`",
         f"- pilot_smoothed_loss: `{pilot_status.get('smoothed_loss')}`",
+        f"- pilot_latest_eval_loss: `{pilot_status.get('latest_eval_loss')}`",
+        f"- pilot_best_eval_loss: `{pilot_status.get('best_eval_loss')}`",
+        f"- pilot_best_eval_step: `{pilot_status.get('best_eval_step')}`",
+        f"- pilot_eval_runs_completed: `{pilot_status.get('eval_runs_completed')}`",
         (
             "- pilot_latest_durable_checkpoint_step: "
             f"`{pilot_status.get('latest_durable_checkpoint_step')}`"
@@ -323,6 +327,7 @@ def load_launch(
     default_non_blocking_transfer: bool,
     default_data_path_proof_mode: bool,
     default_heartbeat_interval_optimizer_steps: int,
+    default_eval_interval_steps: int,
     default_finite_loss_max_consecutive_steps: int,
     default_ref_mel_cache_enabled: bool,
     default_ref_mel_cache_max_items: int,
@@ -364,6 +369,11 @@ def load_launch(
         num_epochs=_required_int(settings_payload, "num_epochs"),
         max_steps=_required_int(settings_payload, "max_steps"),
         checkpoint_interval_steps=_required_int(settings_payload, "checkpoint_interval_steps"),
+        eval_interval_steps=_optional_int(
+            settings_payload,
+            "eval_interval_steps",
+            default=default_eval_interval_steps,
+        ),
         durable_checkpoint_retention=_optional_int(
             settings_payload,
             "durable_checkpoint_retention",

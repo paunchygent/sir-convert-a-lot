@@ -24,7 +24,7 @@ except ModuleNotFoundError:
         DurableCheckpointMetadata,
     )
 
-TrainingPhase = Literal["startup", "train", "checkpoint-save", "signal-stop"]
+TrainingPhase = Literal["startup", "train", "eval", "checkpoint-save", "signal-stop"]
 
 
 @dataclass(frozen=True)
@@ -43,6 +43,10 @@ class TrainingProgressHeartbeat:
     current_optimizer_step: int | None = None
     current_train_iteration: int | None = None
     gradient_accumulation_steps: int | None = None
+    latest_eval_loss: float | None = None
+    best_eval_loss: float | None = None
+    best_eval_step: int | None = None
+    eval_runs_completed: int | None = None
 
 
 def _utc_now_iso() -> str:
@@ -60,6 +64,10 @@ def build_training_progress_heartbeat(
     latest_loss: float | None,
     smoothed_loss: float | None,
     latest_durable_checkpoint: DurableCheckpointMetadata | None,
+    latest_eval_loss: float | None = None,
+    best_eval_loss: float | None = None,
+    best_eval_step: int | None = None,
+    eval_runs_completed: int | None = None,
 ) -> TrainingProgressHeartbeat:
     """Build one immutable progress heartbeat from the trainer state."""
     return TrainingProgressHeartbeat(
@@ -72,6 +80,10 @@ def build_training_progress_heartbeat(
         gradient_accumulation_steps=gradient_accumulation_steps,
         latest_loss=latest_loss,
         smoothed_loss=smoothed_loss,
+        latest_eval_loss=latest_eval_loss,
+        best_eval_loss=best_eval_loss,
+        best_eval_step=best_eval_step,
+        eval_runs_completed=eval_runs_completed,
         latest_durable_checkpoint_path=(
             None if latest_durable_checkpoint is None else latest_durable_checkpoint.checkpoint_path
         ),

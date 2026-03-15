@@ -32,6 +32,7 @@ related:
   - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
+  - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
   - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -87,11 +88,13 @@ The formal performance gate for this story is:
 - Triage the persistent MIOpen workspace warnings after the pipeline starvation
   work lands, so backend-level issues are not confused with obvious host/I/O
   bottlenecks.
+- Upgrade the held-out eval contract from metadata-only truth to a real
+  in-training eval loop so long Hemma runs expose held-out loss while they are
+  still in flight.
 
 Out of scope for this story:
 
 - changing the Qwen training objective,
-- adding in-training evaluation,
 - changing the deterministic pilot-bundle ownership rule,
 - or undoing the detached Hemma launch architecture and bounded durable
   checkpoint design.
@@ -114,6 +117,7 @@ Out of scope for this story:
 1. `docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md`
 1. `docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md`
 1. `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+1. `docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md`
 1. `docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md`
 
 ## Implementation Blueprint (T161-T163)
@@ -215,6 +219,9 @@ Root-cause conclusion from this evidence:
 - Follow-on task `T179` remains the dependent rebuilt-bundle Hemma repro that
   runs only after `T180` lands and then decides whether the numerical
   instability window is sufficiently bounded for another saturation retry.
+- Follow-on task `T181` now tracks the real held-out eval loop required before
+  the team commits multi-hour Task 101 pilot time without in-run validation
+  loss truth.
 - Story 26 remains open because `T172` is still pending and `T173` still lacks
   bounded Hemma evidence under `build/verification/`.
 
@@ -240,6 +247,9 @@ Root-cause conclusion from this evidence:
   precomputed bundle-level mels are still required.
 - [x] Bounded PyTorch and ROCm profiling surfaces exist and produce reviewable
   traces for one Task 101 run without requiring ad hoc shell payloads.
+- [ ] The canonical Task 101 lane performs real in-training held-out eval
+  against `swedish_checkpoint_dev` and persists eval loss in tracker, status,
+  and terminal report artifacts.
 - [ ] One real Hemma verification run demonstrates `>= 90%` median GPU busy
   during a steady-state non-checkpoint training window lasting at least
   `10` contiguous minutes.

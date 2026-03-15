@@ -20,6 +20,9 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Literal
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import (
+    DEFAULT_EVAL_INTERVAL_STEPS,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_input_contract import (
     PRECOMPUTED_REF_INPUT_KIND,
     PRECOMPUTED_REF_INPUT_VERSION,
@@ -95,6 +98,7 @@ DEFAULT_LR = 2e-5
 DEFAULT_NUM_EPOCHS = 1
 DEFAULT_MAX_STEPS = 8
 DEFAULT_CHECKPOINT_INTERVAL_STEPS = 100
+DEFAULT_EVAL_INTERVAL_STEPS_CLI = DEFAULT_EVAL_INTERVAL_STEPS
 DEFAULT_DURABLE_CHECKPOINT_RETENTION = 2
 DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES = 16 * 1024**3
 DEFAULT_DATALOADER_NUM_WORKERS = 4
@@ -173,6 +177,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--checkpoint-interval-steps",
         type=int,
         default=DEFAULT_CHECKPOINT_INTERVAL_STEPS,
+    )
+    launch.add_argument(
+        "--eval-interval-steps",
+        type=int,
+        default=DEFAULT_EVAL_INTERVAL_STEPS_CLI,
     )
     launch.add_argument(
         "--durable-checkpoint-retention",
@@ -354,6 +363,7 @@ def load_training_launch(launch_root_path: Path) -> DetachedLaunch:
         default_non_blocking_transfer=DEFAULT_NON_BLOCKING_TRANSFER,
         default_data_path_proof_mode=DEFAULT_DATA_PATH_PROOF_MODE,
         default_heartbeat_interval_optimizer_steps=DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
+        default_eval_interval_steps=DEFAULT_EVAL_INTERVAL_STEPS_CLI,
         default_finite_loss_max_consecutive_steps=DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
         default_ref_mel_cache_enabled=DEFAULT_REF_MEL_CACHE_ENABLED,
         default_ref_mel_cache_max_items=DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
@@ -584,6 +594,7 @@ def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:
         num_epochs=int(args.num_epochs),
         max_steps=int(args.max_steps),
         checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+        eval_interval_steps=int(args.eval_interval_steps),
         durable_checkpoint_retention=int(args.durable_checkpoint_retention),
         durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
         dataloader_num_workers=int(args.dataloader_num_workers),

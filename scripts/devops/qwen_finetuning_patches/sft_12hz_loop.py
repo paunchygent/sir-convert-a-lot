@@ -35,6 +35,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     dataloader_tuning_payload,
     to_device_with_optional_non_blocking,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import run_eval_pass
 from scripts.devops.qwen_finetuning_patches.sft_12hz_export import save_checkpoint
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import LossObservation
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
@@ -69,6 +70,10 @@ def _consume_loss_observations(
     emitted_train_progress: bool,
     smoothed_loss: float | None,
     last_loss: float | None,
+    latest_eval_loss: float | None,
+    best_eval_loss: float | None,
+    best_eval_step: int | None,
+    eval_runs_completed: int,
     latest_durable_checkpoint: DurableCheckpointMetadata | None,
 ) -> tuple[float | None, float | None, bool]:
     """Apply ready loss observations to guard, heartbeat, and tracker state."""
@@ -78,6 +83,8 @@ def _consume_loss_observations(
             or prepared.heartbeat_policy.should_emit_train_update(observation.optimizer_step)
         )
         if train_progress_should_emit:
+            if progress_callback is None:
+                raise SystemExit("Reporter callback was missing while emitting train progress.")
             progress_callback(
                 build_training_progress_heartbeat(
                     phase="train",
@@ -88,6 +95,10 @@ def _consume_loss_observations(
                     latest_loss=observation.loss_value,
                     smoothed_loss=smoothed_loss,
                     latest_durable_checkpoint=latest_durable_checkpoint,
+                    latest_eval_loss=latest_eval_loss,
+                    best_eval_loss=best_eval_loss,
+                    best_eval_step=best_eval_step,
+                    eval_runs_completed=eval_runs_completed,
                 )
             )
             emitted_train_progress = True
@@ -116,6 +127,10 @@ def _consume_loss_observations(
                         latest_loss=last_loss,
                         smoothed_loss=smoothed_loss,
                         latest_durable_checkpoint=latest_durable_checkpoint,
+                        latest_eval_loss=latest_eval_loss,
+                        best_eval_loss=best_eval_loss,
+                        best_eval_step=best_eval_step,
+                        eval_runs_completed=eval_runs_completed,
                     )
                 )
             accelerator.print(
@@ -135,6 +150,10 @@ def _emit_progress_phase(
     current_train_iteration: int,
     latest_loss: float | None,
     smoothed_loss: float | None,
+    latest_eval_loss: float | None,
+    best_eval_loss: float | None,
+    best_eval_step: int | None,
+    eval_runs_completed: int,
     latest_durable_checkpoint: DurableCheckpointMetadata | None,
 ) -> None:
     """Emit one explicit phase-transition heartbeat when reporting is enabled."""
@@ -150,6 +169,10 @@ def _emit_progress_phase(
             latest_loss=latest_loss,
             smoothed_loss=smoothed_loss,
             latest_durable_checkpoint=latest_durable_checkpoint,
+            latest_eval_loss=latest_eval_loss,
+            best_eval_loss=best_eval_loss,
+            best_eval_step=best_eval_step,
+            eval_runs_completed=eval_runs_completed,
         )
     )
 
@@ -193,6 +216,12 @@ def execute_training_loop(
     train_iterations_completed = 0
     last_loss: float | None = None
     smoothed_loss: float | None = None
+    latest_eval_loss: float | None = None
+    latest_eval_step: int | None = None
+    best_eval_loss: float | None = None
+    best_eval_step: int | None = None
+    eval_runs_completed = 0
+    eval_batches_completed = 0
     checkpoint_paths: list[str] = []
     stop_state = TrainingStopState()
     install_training_stop_handlers(stop_state)
@@ -219,6 +248,10 @@ def execute_training_loop(
                 latest_loss=last_loss,
                 smoothed_loss=smoothed_loss,
                 latest_durable_checkpoint=latest_durable_checkpoint,
+                latest_eval_loss=latest_eval_loss,
+                best_eval_loss=best_eval_loss,
+                best_eval_step=best_eval_step,
+                eval_runs_completed=eval_runs_completed,
             )
         )
     reached_max_steps = False
@@ -327,14 +360,20 @@ def execute_training_loop(
                                 emitted_train_progress=emitted_train_progress,
                                 smoothed_loss=smoothed_loss,
                                 last_loss=last_loss,
+                                latest_eval_loss=latest_eval_loss,
+                                best_eval_loss=best_eval_loss,
+                                best_eval_step=best_eval_step,
+                                eval_runs_completed=eval_runs_completed,
                                 latest_durable_checkpoint=latest_durable_checkpoint,
                             )
                         )
+                checkpoint_saved = False
                 if (
                     completed_optimizer_step
                     and optimizer_steps_completed > 0
                     and optimizer_steps_completed % int(args.checkpoint_interval_steps) == 0
                 ):
+                    checkpoint_saved = True
                     _emit_progress_phase(
                         progress_callback=progress_callback,
                         phase="checkpoint-save",
@@ -343,6 +382,10 @@ def execute_training_loop(
                         current_train_iteration=train_iterations_completed,
                         latest_loss=last_loss,
                         smoothed_loss=smoothed_loss,
+                        latest_eval_loss=latest_eval_loss,
+                        best_eval_loss=best_eval_loss,
+                        best_eval_step=best_eval_step,
+                        eval_runs_completed=eval_runs_completed,
                         latest_durable_checkpoint=latest_durable_checkpoint,
                     )
                     with torch_profiler_session.phase("task101.checkpoint-save"):
@@ -360,19 +403,54 @@ def execute_training_loop(
                             ),
                         )
                     durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
-                    if not stop_state.stop_requested and not (
+                should_run_interval_eval = (
+                    completed_optimizer_step
+                    and optimizer_steps_completed > 0
+                    and optimizer_steps_completed % int(args.eval_interval_steps) == 0
+                )
+                if should_run_interval_eval:
+                    eval_result = run_eval_pass(
+                        prepared=prepared,
+                        current_epoch=epoch,
+                        current_optimizer_step=optimizer_steps_completed,
+                        current_train_iteration=train_iterations_completed,
+                        latest_loss=last_loss,
+                        smoothed_loss=smoothed_loss,
+                        latest_durable_checkpoint=latest_durable_checkpoint,
+                        latest_eval_loss=latest_eval_loss,
+                        best_eval_loss=best_eval_loss,
+                        best_eval_step=best_eval_step,
+                        eval_runs_completed=eval_runs_completed,
+                        eval_batches_completed=eval_batches_completed,
+                        progress_callback=progress_callback,
+                    )
+                    latest_eval_loss = eval_result.latest_eval_loss
+                    latest_eval_step = eval_result.latest_eval_step
+                    best_eval_loss = eval_result.best_eval_loss
+                    best_eval_step = eval_result.best_eval_step
+                    eval_runs_completed = eval_result.eval_runs_completed
+                    eval_batches_completed = eval_result.eval_batches_completed
+                if (
+                    (checkpoint_saved or should_run_interval_eval)
+                    and not stop_state.stop_requested
+                    and not (
                         args.max_steps is not None and optimizer_steps_completed >= args.max_steps
-                    ):
-                        _emit_progress_phase(
-                            progress_callback=progress_callback,
-                            phase="train",
-                            current_epoch=epoch,
-                            current_optimizer_step=optimizer_steps_completed,
-                            current_train_iteration=train_iterations_completed,
-                            latest_loss=last_loss,
-                            smoothed_loss=smoothed_loss,
-                            latest_durable_checkpoint=latest_durable_checkpoint,
-                        )
+                    )
+                ):
+                    _emit_progress_phase(
+                        progress_callback=progress_callback,
+                        phase="train",
+                        current_epoch=epoch,
+                        current_optimizer_step=optimizer_steps_completed,
+                        current_train_iteration=train_iterations_completed,
+                        latest_loss=last_loss,
+                        smoothed_loss=smoothed_loss,
+                        latest_eval_loss=latest_eval_loss,
+                        best_eval_loss=best_eval_loss,
+                        best_eval_step=best_eval_step,
+                        eval_runs_completed=eval_runs_completed,
+                        latest_durable_checkpoint=latest_durable_checkpoint,
+                    )
                 if stop_state.stop_requested:
                     stop_requested_during_training = True
                     if progress_callback is not None:
@@ -386,6 +464,10 @@ def execute_training_loop(
                                 latest_loss=last_loss,
                                 smoothed_loss=smoothed_loss,
                                 latest_durable_checkpoint=latest_durable_checkpoint,
+                                latest_eval_loss=latest_eval_loss,
+                                best_eval_loss=best_eval_loss,
+                                best_eval_step=best_eval_step,
+                                eval_runs_completed=eval_runs_completed,
                             )
                         )
                     accelerator.print(
@@ -410,13 +492,17 @@ def execute_training_loop(
                     current_train_iteration=train_iterations_completed,
                     latest_loss=last_loss,
                     smoothed_loss=smoothed_loss,
+                    latest_eval_loss=latest_eval_loss,
+                    best_eval_loss=best_eval_loss,
+                    best_eval_step=best_eval_step,
+                    eval_runs_completed=eval_runs_completed,
                     latest_durable_checkpoint=latest_durable_checkpoint,
                 )
                 with torch_profiler_session.phase("task101.checkpoint-save"):
                     checkpoint_paths.append(
                         save_checkpoint(
                             accelerator=accelerator,
-                            model=model,
+                            model=prepared.checkpointable_model,
                             model_path=prepared.model_path,
                             output_dir=output_dir,
                         )
@@ -430,6 +516,10 @@ def execute_training_loop(
                         current_train_iteration=train_iterations_completed,
                         latest_loss=last_loss,
                         smoothed_loss=smoothed_loss,
+                        latest_eval_loss=latest_eval_loss,
+                        best_eval_loss=best_eval_loss,
+                        best_eval_step=best_eval_step,
+                        eval_runs_completed=eval_runs_completed,
                         latest_durable_checkpoint=latest_durable_checkpoint,
                     )
             if reached_max_steps or stop_requested_during_training:
@@ -443,6 +533,10 @@ def execute_training_loop(
             emitted_train_progress=emitted_train_progress,
             smoothed_loss=smoothed_loss,
             last_loss=last_loss,
+            latest_eval_loss=latest_eval_loss,
+            best_eval_loss=best_eval_loss,
+            best_eval_step=best_eval_step,
+            eval_runs_completed=eval_runs_completed,
             latest_durable_checkpoint=latest_durable_checkpoint,
         )
         if _checkpoint_advanced_since_latest_save(
@@ -457,6 +551,10 @@ def execute_training_loop(
                 current_train_iteration=train_iterations_completed,
                 latest_loss=last_loss,
                 smoothed_loss=smoothed_loss,
+                latest_eval_loss=latest_eval_loss,
+                best_eval_loss=best_eval_loss,
+                best_eval_step=best_eval_step,
+                eval_runs_completed=eval_runs_completed,
                 latest_durable_checkpoint=latest_durable_checkpoint,
             )
             with torch_profiler_session.phase("task101.checkpoint-save"):
@@ -472,6 +570,28 @@ def execute_training_loop(
                     durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
                 )
             durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
+        if optimizer_steps_completed > 0 and latest_eval_step != optimizer_steps_completed:
+            eval_result = run_eval_pass(
+                prepared=prepared,
+                current_epoch=epoch,
+                current_optimizer_step=optimizer_steps_completed,
+                current_train_iteration=train_iterations_completed,
+                latest_loss=last_loss,
+                smoothed_loss=smoothed_loss,
+                latest_durable_checkpoint=latest_durable_checkpoint,
+                latest_eval_loss=latest_eval_loss,
+                best_eval_loss=best_eval_loss,
+                best_eval_step=best_eval_step,
+                eval_runs_completed=eval_runs_completed,
+                eval_batches_completed=eval_batches_completed,
+                progress_callback=progress_callback,
+            )
+            latest_eval_loss = eval_result.latest_eval_loss
+            latest_eval_step = eval_result.latest_eval_step
+            best_eval_loss = eval_result.best_eval_loss
+            best_eval_step = eval_result.best_eval_step
+            eval_runs_completed = eval_result.eval_runs_completed
+            eval_batches_completed = eval_result.eval_batches_completed
         if accelerator.is_main_process:
             final_output_dir = output_model_path / "checkpoint-final"
             _emit_progress_phase(
@@ -482,13 +602,17 @@ def execute_training_loop(
                 current_train_iteration=train_iterations_completed,
                 latest_loss=last_loss,
                 smoothed_loss=smoothed_loss,
+                latest_eval_loss=latest_eval_loss,
+                best_eval_loss=best_eval_loss,
+                best_eval_step=best_eval_step,
+                eval_runs_completed=eval_runs_completed,
                 latest_durable_checkpoint=latest_durable_checkpoint,
             )
             with torch_profiler_session.phase("task101.checkpoint-save"):
                 checkpoint_paths.append(
                     save_checkpoint(
                         accelerator=accelerator,
-                        model=model,
+                        model=prepared.checkpointable_model,
                         model_path=prepared.model_path,
                         output_dir=final_output_dir,
                     )
@@ -514,6 +638,11 @@ def execute_training_loop(
         train_iterations_completed=train_iterations_completed,
         last_loss=last_loss,
         smoothed_loss=smoothed_loss,
+        latest_eval_loss=latest_eval_loss,
+        best_eval_loss=best_eval_loss,
+        best_eval_step=best_eval_step,
+        eval_runs_completed=eval_runs_completed,
+        eval_batches_completed=eval_batches_completed,
         peak_memory_allocated_bytes=peak_memory_allocated_bytes,
         peak_memory_reserved_bytes=peak_memory_reserved_bytes,
         resumed_from_checkpoint_path=resumed_from_checkpoint_path,
@@ -534,6 +663,11 @@ def _build_training_summary(
     train_iterations_completed: int,
     last_loss: float | None,
     smoothed_loss: float | None,
+    latest_eval_loss: float | None,
+    best_eval_loss: float | None,
+    best_eval_step: int | None,
+    eval_runs_completed: int,
+    eval_batches_completed: int,
     peak_memory_allocated_bytes: int | None,
     peak_memory_reserved_bytes: int | None,
     resumed_from_checkpoint_path: str | None,
@@ -562,8 +696,14 @@ def _build_training_summary(
         gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
         optimizer_steps_completed=optimizer_steps_completed,
         train_iterations_completed=train_iterations_completed,
+        latest_eval_loss=latest_eval_loss,
+        best_eval_loss=best_eval_loss,
+        best_eval_step=best_eval_step,
+        eval_runs_completed=eval_runs_completed,
+        eval_batches_completed=eval_batches_completed,
         last_loss=last_loss,
         smoothed_loss=smoothed_loss,
+        eval_interval_steps=int(args.eval_interval_steps),
         peak_memory_allocated_bytes=peak_memory_allocated_bytes,
         peak_memory_reserved_bytes=peak_memory_reserved_bytes,
         resumed_from_checkpoint_path=resumed_from_checkpoint_path,

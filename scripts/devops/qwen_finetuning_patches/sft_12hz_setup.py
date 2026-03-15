@@ -18,6 +18,7 @@ import contextlib
 import io
 from dataclasses import dataclass
 from pathlib import Path
+from collections.abc import Iterator
 from typing import Protocol, Sequence
 
 import torch
@@ -47,6 +48,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     DEFAULT_NON_BLOCKING_TRANSFER,
     DataloaderTuning,
     resolve_dataloader_tuning,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import (
+    DEFAULT_EVAL_INTERVAL_STEPS,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import (
     DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
@@ -98,7 +102,88 @@ class QwenWrapperProtocol(Protocol):
     """Minimal loaded Qwen wrapper surface needed by the trainer."""
 
     processor: object
-    model: torch.nn.Module
+    model: "TrainableQwenModelProtocol"
+
+
+class CodePredictorProtocol(Protocol):
+    """Minimal codec-predictor surface used by the patched trainer."""
+
+    def get_input_embeddings(self) -> Sequence[torch.nn.Module]:
+        """Return the auxiliary codebook embeddings."""
+
+
+class EmbeddingLayerProtocol(Protocol):
+    """Callable embedding surface used by the patched trainer."""
+
+    def __call__(self, indices: torch.Tensor) -> torch.Tensor:
+        """Embed one integer tensor."""
+
+
+class ProjectionLayerProtocol(Protocol):
+    """Callable projection surface used by the patched trainer."""
+
+    def __call__(self, values: torch.Tensor) -> torch.Tensor:
+        """Project one dense tensor."""
+
+
+class TalkerModelProtocol(Protocol):
+    """Minimal talker-model embedding surface used by the patched trainer."""
+
+    text_embedding: EmbeddingLayerProtocol
+    codec_embedding: EmbeddingLayerProtocol
+    text_projection: ProjectionLayerProtocol
+
+
+class TalkerOutputsProtocol(Protocol):
+    """Minimal talker forward-output surface used by the patched trainer."""
+
+    loss: torch.Tensor
+    hidden_states: Sequence[Sequence[torch.Tensor]]
+
+
+class TalkerProtocol(Protocol):
+    """Minimal talker surface used by the patched trainer."""
+
+    model: TalkerModelProtocol
+    code_predictor: CodePredictorProtocol
+
+    def __call__(
+        self,
+        *,
+        inputs_embeds: torch.Tensor,
+        attention_mask: torch.Tensor,
+        labels: torch.Tensor,
+        output_hidden_states: bool,
+    ) -> TalkerOutputsProtocol:
+        """Run one forward pass."""
+
+    def forward_sub_talker_finetune(
+        self,
+        talker_codec_ids: torch.Tensor,
+        talker_hidden_states: torch.Tensor,
+    ) -> tuple[object | None, torch.Tensor]:
+        """Run the auxiliary talker path."""
+
+
+class TrainableQwenModelProtocol(Protocol):
+    """Minimal Qwen model surface consumed by the patched trainer."""
+
+    device: torch.device
+    dtype: torch.dtype
+    training: bool
+    talker: TalkerProtocol
+
+    def parameters(self, recurse: bool = True) -> Iterator[torch.nn.Parameter]:
+        """Return trainable parameters."""
+
+    def train(self, mode: bool = True) -> object:
+        """Toggle training mode."""
+
+    def eval(self) -> object:
+        """Toggle eval mode."""
+
+    def speaker_encoder(self, ref_mels: torch.Tensor) -> torch.Tensor:
+        """Encode reference mels into speaker embeddings."""
 
 
 @dataclass(frozen=True)
@@ -110,10 +195,13 @@ class PreparedTrainingRun:
     model_path: str
     qwen3tts: QwenWrapperProtocol
     accelerator: Accelerator
-    model: torch.nn.Module
+    model: TrainableQwenModelProtocol
+    checkpointable_model: torch.nn.Module
     optimizer: AdamW
     train_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
+    eval_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
     dataloader_length: int
+    eval_dataloader_length: int
     effective_dataloader_tuning: DataloaderTuning
     throughput_batch_policy: ThroughputBatchPolicy
     throughput_profile_payload: dict[str, object]
@@ -133,6 +221,8 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         raise ValueError("`--max_steps` must be positive when provided.")
     if int(args.checkpoint_interval_steps) <= 0:
         raise ValueError("`--checkpoint_interval_steps` must be positive.")
+    if int(getattr(args, "eval_interval_steps", DEFAULT_EVAL_INTERVAL_STEPS)) <= 0:
+        raise ValueError("`--eval_interval_steps` must be positive.")
     if int(args.durable_checkpoint_retention) <= 0:
         raise ValueError("`--durable-checkpoint-retention` must be positive.")
     if int(args.durable_checkpoint_min_free_bytes) <= 0:
@@ -294,6 +384,12 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         Path(args.train_jsonl),
         require_precomputed_ref_inputs=bundle_summary is not None,
     )
+    eval_data = _load_training_rows(
+        Path(args.eval_jsonl),
+        require_precomputed_ref_inputs=bundle_summary is not None,
+    )
+    if len(eval_data) == 0:
+        raise ValueError("`--eval_jsonl` must contain at least one prepared row.")
     dataset = TTSDataset(
         train_data,
         qwen3tts.processor,
@@ -301,39 +397,43 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         ref_mel_cache=ref_mel_cache,
         data_path_attribution=data_path_attribution,
     )
+    eval_dataset = TTSDataset(
+        eval_data,
+        qwen3tts.processor,
+        config,
+        ref_mel_cache=ref_mel_cache,
+        data_path_attribution=None,
+    )
     row_metrics = dataset.batch_metrics()
+    eval_row_metrics = eval_dataset.batch_metrics()
     batch_sampler = BucketedBatchSampler(
         row_metrics=row_metrics,
+        policy=throughput_batch_policy,
+    )
+    eval_batch_sampler = BucketedBatchSampler(
+        row_metrics=eval_row_metrics,
         policy=throughput_batch_policy,
     )
     batch_occupancy_summary = summarize_batch_occupancy(
         row_metrics=row_metrics,
         planned_batches=batch_sampler.planned_batches(),
     )
-    train_dataloader = (
-        DataLoader(
-            dataset,
-            batch_sampler=batch_sampler,
-            collate_fn=dataset.collate_fn,
-            num_workers=effective_dataloader_tuning.num_workers,
-            pin_memory=effective_dataloader_tuning.pin_memory,
-            persistent_workers=effective_dataloader_tuning.persistent_workers,
-            prefetch_factor=effective_dataloader_tuning.prefetch_factor,
-        )
-        if effective_dataloader_tuning.num_workers > 0
-        else DataLoader(
-            dataset,
-            batch_sampler=batch_sampler,
-            collate_fn=dataset.collate_fn,
-            num_workers=0,
-            pin_memory=effective_dataloader_tuning.pin_memory,
-        )
+    train_dataloader = _build_dataloader(
+        dataset=dataset,
+        batch_sampler=batch_sampler,
+        tuning=effective_dataloader_tuning,
+    )
+    eval_dataloader = _build_dataloader(
+        dataset=eval_dataset,
+        batch_sampler=eval_batch_sampler,
+        tuning=effective_dataloader_tuning,
     )
     optimizer = AdamW(qwen3tts.model.parameters(), lr=args.lr, weight_decay=0.01)
-    model, optimizer, train_dataloader = accelerator.prepare(
+    model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
         qwen3tts.model,
         optimizer,
         train_dataloader,
+        eval_dataloader,
     )
     return PreparedTrainingRun(
         args=args,
@@ -342,9 +442,12 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         qwen3tts=qwen3tts,
         accelerator=accelerator,
         model=model,
+        checkpointable_model=qwen3tts.model,
         optimizer=optimizer,
         train_dataloader=train_dataloader,
+        eval_dataloader=eval_dataloader,
         dataloader_length=len(train_dataloader),
+        eval_dataloader_length=len(eval_dataloader),
         effective_dataloader_tuning=effective_dataloader_tuning,
         throughput_batch_policy=throughput_batch_policy,
         throughput_profile_payload=throughput_policy_payload(
@@ -359,4 +462,30 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         heartbeat_policy=heartbeat_policy,
         loss_observer=loss_observer,
         finite_loss_guard=finite_loss_guard,
+    )
+
+
+def _build_dataloader(
+    *,
+    dataset: TTSDataset,
+    batch_sampler: BucketedBatchSampler,
+    tuning: DataloaderTuning,
+) -> DataLoader[object]:
+    """Build one canonical dataloader for train or held-out eval rows."""
+    if tuning.num_workers > 0:
+        return DataLoader(
+            dataset,
+            batch_sampler=batch_sampler,
+            collate_fn=dataset.collate_fn,
+            num_workers=tuning.num_workers,
+            pin_memory=tuning.pin_memory,
+            persistent_workers=tuning.persistent_workers,
+            prefetch_factor=tuning.prefetch_factor,
+        )
+    return DataLoader(
+        dataset,
+        batch_sampler=batch_sampler,
+        collate_fn=dataset.collate_fn,
+        num_workers=0,
+        pin_memory=tuning.pin_memory,
     )

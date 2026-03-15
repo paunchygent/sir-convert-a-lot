@@ -30,13 +30,19 @@ class TrainingSummary:
     num_epochs: int
     max_steps: int | None
     checkpoint_interval_steps: int
+    eval_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
     gradient_accumulation_steps: int
     optimizer_steps_completed: int
     train_iterations_completed: int
+    eval_runs_completed: int
+    eval_batches_completed: int
     last_loss: float | None
     smoothed_loss: float | None
+    latest_eval_loss: float | None
+    best_eval_loss: float | None
+    best_eval_step: int | None
     peak_memory_allocated_bytes: int | None
     peak_memory_reserved_bytes: int | None
     resumed_from_checkpoint_path: str | None

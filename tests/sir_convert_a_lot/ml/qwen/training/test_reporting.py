@@ -40,6 +40,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
             train_row_count=10,
             eval_row_count=2,
             checkpoint_interval_steps=100,
+            eval_interval_steps=100,
             durable_checkpoint_retention=2,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
             resume_from_checkpoint=None,
@@ -102,12 +103,34 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
             latest_durable_checkpoint_saved_at="2026-03-13T12:00:03Z",
         )
     )
+    reporter.heartbeat(
+        TrainingProgressHeartbeat(
+            phase="eval",
+            updated_at="2026-03-13T12:00:04Z",
+            current_epoch=0,
+            current_step=2,
+            current_optimizer_step=2,
+            current_train_iteration=2,
+            gradient_accumulation_steps=4,
+            latest_loss=1.2,
+            smoothed_loss=1.47,
+            latest_eval_loss=0.9,
+            best_eval_loss=0.9,
+            best_eval_step=2,
+            eval_runs_completed=1,
+            latest_durable_checkpoint_path=(
+                output_dir / "checkpoints" / "state-step-00000002"
+            ).as_posix(),
+            latest_durable_checkpoint_step=2,
+            latest_durable_checkpoint_saved_at="2026-03-13T12:00:03Z",
+        )
+    )
 
     payload = json.loads(status_path.read_text(encoding="utf-8"))
     launch_payload = json.loads(launch_metadata_path.read_text(encoding="utf-8"))
 
     assert payload["status"] == "running"
-    assert payload["current_phase"] == "checkpoint-save"
+    assert payload["current_phase"] == "eval"
     assert payload["current_epoch"] == 0
     assert payload["current_step"] == 2
     assert payload["current_optimizer_step"] == 2
@@ -115,6 +138,10 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     assert payload["gradient_accumulation_steps"] == 4
     assert payload["step_semantics"]["gradient_accumulation_steps"] == 4
     assert payload["smoothed_loss"] == 1.47
+    assert payload["latest_eval_loss"] == 0.9
+    assert payload["best_eval_loss"] == 0.9
+    assert payload["best_eval_step"] == 2
+    assert payload["eval_runs_completed"] == 1
     assert payload["heartbeat_policy"] == {"interval_optimizer_steps": 20}
     assert payload["finite_loss_guard"] == {
         "enabled": True,
@@ -136,6 +163,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
         "startup",
         "train",
         "checkpoint-save",
+        "eval",
     ]
     assert launch_payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
 
@@ -162,6 +190,10 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
                 "current_step": 3,
                 "latest_loss": 1.1,
                 "smoothed_loss": 1.3,
+                "latest_eval_loss": 0.7,
+                "best_eval_loss": 0.7,
+                "best_eval_step": 2,
+                "eval_runs_completed": 1,
                 "latest_durable_checkpoint_step": 2,
                 "latest_durable_checkpoint_saved_at": "2026-03-13T12:00:03Z",
                 "tracking": {"mlflow_run_id": "mlflow-run-id"},
@@ -199,6 +231,10 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
     assert "- pilot_current_phase: `train`" in markdown
     assert "- pilot_current_step: `3`" in markdown
     assert "- pilot_smoothed_loss: `1.3`" in markdown
+    assert "- pilot_latest_eval_loss: `0.7`" in markdown
+    assert "- pilot_best_eval_loss: `0.7`" in markdown
+    assert "- pilot_best_eval_step: `2`" in markdown
+    assert "- pilot_eval_runs_completed: `1`" in markdown
     assert "- pilot_mlflow_run_id: `mlflow-run-id`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_kind: `ref_mel`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_version: `task101_ref_mel_v1`" in markdown
@@ -231,6 +267,7 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
             train_row_count=10,
             eval_row_count=2,
             checkpoint_interval_steps=100,
+            eval_interval_steps=100,
             durable_checkpoint_retention=2,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
             resume_from_checkpoint=None,
@@ -275,6 +312,7 @@ def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Pa
             train_row_count=10,
             eval_row_count=2,
             checkpoint_interval_steps=100,
+            eval_interval_steps=100,
             durable_checkpoint_retention=2,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
             resume_from_checkpoint=None,
@@ -293,6 +331,10 @@ def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Pa
             gradient_accumulation_steps=4,
             latest_loss=14.1,
             smoothed_loss=14.1,
+            latest_eval_loss=0.8,
+            best_eval_loss=0.8,
+            best_eval_step=1,
+            eval_runs_completed=1,
             latest_durable_checkpoint_path=None,
             latest_durable_checkpoint_step=None,
             latest_durable_checkpoint_saved_at=None,
@@ -314,6 +356,10 @@ def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Pa
     assert payload["current_optimizer_step"] == 17
     assert payload["current_step"] == 17
     assert payload["current_train_iteration"] == 68
+    assert payload["latest_eval_loss"] == 0.8
+    assert payload["best_eval_loss"] == 0.8
+    assert payload["best_eval_step"] == 1
+    assert payload["eval_runs_completed"] == 1
     assert payload["finite_loss_guard"]["optimizer_step"] == 17
     assert payload["phase_history"][-1]["current_optimizer_step"] == 17
     assert payload["phase_history"][-1]["current_train_iteration"] == 68

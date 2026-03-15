@@ -25,6 +25,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     DEFAULT_DATALOADER_PREFETCH_FACTOR,
     DEFAULT_NON_BLOCKING_TRANSFER,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import (
+    DEFAULT_EVAL_INTERVAL_STEPS,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import (
     DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
     DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
@@ -62,6 +65,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--init_model_path", type=str, default="Qwen/Qwen3-TTS-12Hz-1.7B-Base")
     parser.add_argument("--output_model_path", type=str, default="output")
     parser.add_argument("--train_jsonl", type=str, required=True)
+    parser.add_argument("--eval_jsonl", type=str, required=True)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument(
         "--throughput_profile_label",
@@ -72,6 +76,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num_epochs", type=int, default=3)
     parser.add_argument("--max_steps", type=int, default=None)
     parser.add_argument("--checkpoint_interval_steps", type=int, default=100)
+    parser.add_argument("--eval_interval_steps", type=int, default=DEFAULT_EVAL_INTERVAL_STEPS)
     parser.add_argument(
         "--durable-checkpoint-retention",
         type=int,
@@ -209,7 +214,9 @@ def _add_boolean_argument(
     )
 
 
-def tracker_config_payload(args: argparse.Namespace) -> dict[str, object]:
+def tracker_config_payload(
+    args: argparse.Namespace,
+) -> dict[str, bool | float | int | str | None]:
     """Build the canonical scalar tracker configuration for one training run."""
     tracker_project_name = getattr(args, "tracker_project_name", None)
     tracker_run_name = getattr(args, "tracker_run_name", None)
@@ -257,6 +264,7 @@ def tracker_config_payload(args: argparse.Namespace) -> dict[str, object]:
         ),
         "eval_manifest_family": None if eval_manifest_family is None else str(eval_manifest_family),
         "train_jsonl": str(args.train_jsonl),
+        "eval_jsonl": str(args.eval_jsonl),
         "batch_size": int(args.batch_size),
         "throughput_profile_label": throughput_policy.profile_label,
         "throughput_policy_kind": throughput_policy.policy_kind,
@@ -271,6 +279,9 @@ def tracker_config_payload(args: argparse.Namespace) -> dict[str, object]:
         "max_steps": None if args.max_steps is None else int(args.max_steps),
         "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
         "checkpoint_interval_steps": int(args.checkpoint_interval_steps),
+        "eval_interval_steps": int(
+            getattr(args, "eval_interval_steps", DEFAULT_EVAL_INTERVAL_STEPS)
+        ),
         "durable_checkpoint_retention": int(args.durable_checkpoint_retention),
         "durable_checkpoint_min_free_bytes": int(args.durable_checkpoint_min_free_bytes),
         "dataloader_num_workers": dataloader_num_workers,

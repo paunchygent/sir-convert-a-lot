@@ -38,6 +38,7 @@ class TrainingSettings:
     num_epochs: int
     max_steps: int
     checkpoint_interval_steps: int
+    eval_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
     dataloader_num_workers: int = 4
@@ -82,6 +83,7 @@ class TrainingSettingsSnapshot:
     num_epochs: int
     max_steps: int
     checkpoint_interval_steps: int
+    eval_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
     dataloader_num_workers: int = 4
@@ -182,6 +184,10 @@ class TrainingFailureSummary:
     latest_durable_checkpoint_saved_at: str | None
     finite_loss_guard: dict[str, object] | None
     acceptance_measurement_valid: bool | None
+    latest_eval_loss: float | None = None
+    best_eval_loss: float | None = None
+    best_eval_step: int | None = None
+    eval_runs_completed: int | None = None
 
 
 @dataclass(frozen=True)
@@ -231,6 +237,7 @@ def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettin
         num_epochs=snapshot.num_epochs,
         max_steps=snapshot.max_steps,
         checkpoint_interval_steps=snapshot.checkpoint_interval_steps,
+        eval_interval_steps=snapshot.eval_interval_steps,
         durable_checkpoint_retention=snapshot.durable_checkpoint_retention,
         durable_checkpoint_min_free_bytes=snapshot.durable_checkpoint_min_free_bytes,
         dataloader_num_workers=snapshot.dataloader_num_workers,

@@ -218,6 +218,7 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
 
     phases = [phase.phase for phase in heartbeats]
     assert phases[:5] == ["startup", "train", "train", "checkpoint-save", "train"]
+    assert "eval" in phases
     assert phases.count("checkpoint-save") >= 3
     assert heartbeats[1].current_optimizer_step == 1
     assert heartbeats[2].current_optimizer_step == 2
@@ -228,28 +229,30 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     assert summary.batch_occupancy["total_batches"] == 1
     assert summary.batch_occupancy["realized_max_batch_size"] == 1
     assert summary.data_path_attribution is None
-    assert accelerator.logged_metrics == [
-        (
-            {
-                "train/loss": summary.last_loss,
-                "train/loss_ema": summary.smoothed_loss,
-                "train/current_step": 2,
-                "train/current_optimizer_step": 2,
-                "train/current_train_iteration": 8,
-                "train/current_epoch": 0,
-                "train/checkpoint_interval_steps": 2,
-                "train/ref_mel_cache_enabled": True,
-                "train/ref_mel_cache_max_items": 2048,
-                "train/ref_mel_cache_hits": 0,
-                "train/ref_mel_cache_misses": 0,
-                "train/ref_mel_cache_size": 0,
-                "train/ref_mel_cache_hit_rate": None,
-            },
-            2,
-        )
-    ]
+    assert accelerator.logged_metrics[0] == (
+        {
+            "train/loss": summary.last_loss,
+            "train/loss_ema": summary.smoothed_loss,
+            "train/current_step": 2,
+            "train/current_optimizer_step": 2,
+            "train/current_train_iteration": 8,
+            "train/current_epoch": 0,
+            "train/checkpoint_interval_steps": 2,
+            "train/ref_mel_cache_enabled": True,
+            "train/ref_mel_cache_max_items": 2048,
+            "train/ref_mel_cache_hits": 0,
+            "train/ref_mel_cache_misses": 0,
+            "train/ref_mel_cache_size": 0,
+            "train/ref_mel_cache_hit_rate": None,
+        },
+        2,
+    )
+    assert any("eval/loss" in payload for payload, _step in accelerator.logged_metrics)
     assert summary.optimizer_steps_completed == 3
     assert summary.heartbeat_policy == {"interval_optimizer_steps": 2}
+    assert summary.latest_eval_loss is not None
+    assert summary.best_eval_loss is not None
+    assert summary.eval_runs_completed >= 1
     assert accelerator.sync_gradients_history[:8] == [
         False,
         False,

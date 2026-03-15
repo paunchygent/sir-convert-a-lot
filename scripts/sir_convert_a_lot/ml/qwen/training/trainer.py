@@ -22,6 +22,9 @@ from pathlib import Path
 import sft_12hz
 import torch
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import (
+    DEFAULT_EVAL_INTERVAL_STEPS,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
     GRADIENT_ACCUMULATION_STEPS,
 )
@@ -75,6 +78,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--num-epochs", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=8)
     parser.add_argument("--checkpoint-interval-steps", type=int, default=100)
+    parser.add_argument("--eval-interval-steps", type=int, default=DEFAULT_EVAL_INTERVAL_STEPS)
     parser.add_argument("--durable-checkpoint-retention", type=int, default=2)
     parser.add_argument("--durable-checkpoint-min-free-bytes", type=int, default=16 * 1024**3)
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
@@ -162,6 +166,7 @@ def main() -> int:
             heartbeat_policy={
                 "interval_optimizer_steps": int(args.heartbeat_interval_optimizer_steps),
             },
+            eval_interval_steps=int(args.eval_interval_steps),
             finite_loss_guard_config={
                 "enabled": True,
                 "max_consecutive_non_finite_steps": int(args.finite_loss_max_consecutive_steps),
@@ -199,12 +204,14 @@ def main() -> int:
             init_model_path=str(args.model_id),
             output_model_path=(output_dir / "checkpoints").as_posix(),
             train_jsonl=args.train_jsonl.as_posix(),
+            eval_jsonl=args.eval_jsonl.as_posix(),
             batch_size=int(args.batch_size),
             throughput_profile_label=str(args.throughput_profile_label),
             lr=float(args.lr),
             num_epochs=int(args.num_epochs),
             max_steps=int(args.max_steps),
             checkpoint_interval_steps=int(args.checkpoint_interval_steps),
+            eval_interval_steps=int(args.eval_interval_steps),
             durable_checkpoint_retention=int(args.durable_checkpoint_retention),
             durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
             dataloader_num_workers=int(args.dataloader_num_workers),
@@ -268,7 +275,7 @@ def main() -> int:
         status_reporter.write_completed(training_summary)
         print(json.dumps(asdict(report), indent=2, sort_keys=True))
         return 0
-    except Exception as exc:
+    except BaseException as exc:
         failure_path.write_text(traceback.format_exc(), encoding="utf-8")
         failed_status = status_reporter.write_failed(exc)
         failed_report = build_failed_training_report(

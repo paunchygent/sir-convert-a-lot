@@ -4,7 +4,7 @@ id: RUN-qwen3-swedish-finetuning-on-hemma-and-colab
 title: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 status: active
 created: 2026-03-08
-updated: 2026-03-13
+updated: 2026-03-15
 owners:
   - platform
 system: hemma.hule.education
@@ -19,6 +19,7 @@ links:
   - .agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-27-transition-to-domain-centric-ml-pipeline-structure.md
+  - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
 ---
 
 ## Purpose
@@ -113,6 +114,26 @@ Operational interpretation:
 - runtime `ref_mel` cache should not be treated as a proven saturation lever
 - persistent `NaN` loss is a quality blocker; no saturation acceptance should
   be claimed from a run with unfixed `NaN` training state
+
+## Held-Out Eval Posture
+
+The Task 101 lane already carries the held-out `swedish_checkpoint_dev`
+manifest through launch metadata, status, and terminal reports. That contract
+is no longer sufficient for long pilot runs.
+
+Current implementation truth after the `T181` eval slice lands locally:
+
+- the held-out eval manifest exists and is required,
+- the inner patched Qwen trainer prepares a real eval dataset and dataloader
+  from `--eval-jsonl`,
+- bounded in-training held-out eval runs at explicit optimizer-step cadence,
+- and eval loss now persists into trackers, live status, and terminal reports.
+
+The next required proof is operational rather than contractual:
+
+- run one short bounded Hemma launch with the real eval loop enabled,
+- confirm `status.json` and `report.json` carry live and terminal eval fields,
+- then promote the eval loop into the longer pilot lane.
 
 ## Shard and Work Allocation
 

@@ -23,6 +23,7 @@ related:
   - docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md
   - docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md
   - docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md
+  - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -92,9 +93,10 @@ and capture deterministic runtime and memory evidence.
   - stable per-speaker `refs/`
   - machine-readable bundle metadata describing the frozen source root
 - Carry the held-out eval family through detached launch, status, and report
-  metadata for the pilot contract while being explicit that the current
-  upstream Qwen trainer remains train-only and does not perform in-training
-  held-out scoring.
+  metadata for the pilot contract. Historical note: at Task 101 completion the
+  upstream Qwen trainer still remained train-only; follow-on task `T181`
+  upgrades that contract to a real in-training held-out eval loop and now
+  requires a bounded Hemma proof before long pilot spend.
 - The canonical frozen pilot ownership source is:
   - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
 - Accepted bounded-pilot input for the next canonical Task 101 launch:
