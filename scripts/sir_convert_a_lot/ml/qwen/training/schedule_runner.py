@@ -6,7 +6,7 @@ Purpose:
     held-out eval.
 
 Relationships:
-    - Consumes detached launch/inspect/stop helpers from `orchestrator.py`.
+    - Consumes detached launch/inspect/stop helpers from `detached_runtime`.
     - Reuses one-shot standalone eval from `eval_orchestrator.py`.
     - Persisted schedule artifacts are consumed by the public `qwen-train`
       command surface.
@@ -35,6 +35,13 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     resolve_effective_hf_cache_dir,
     run_checked,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime import (
+    default_container_name,
+    default_launch_id,
+    inspect_detached_training,
+    launch_detached_training,
+    stop_detached_training,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.eval_orchestrator import (
     default_eval_id,
     default_eval_output_dir,
@@ -59,13 +66,6 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.monitoring import (
     launch_resource_monitor,
-)
-from scripts.sir_convert_a_lot.ml.qwen.training.orchestrator import (
-    default_container_name,
-    default_launch_id,
-    inspect_detached_training,
-    launch_detached_training,
-    stop_detached_training,
 )
 
 

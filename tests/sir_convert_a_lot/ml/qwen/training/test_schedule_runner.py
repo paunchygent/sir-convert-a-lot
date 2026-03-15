@@ -21,8 +21,11 @@ import pytest
 from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
     DurableCheckpointMetadata,
 )
-from scripts.sir_convert_a_lot.cli.ml.qwen_train import DEFAULT_DOCKERFILE_PATH, main
+from scripts.sir_convert_a_lot.cli.ml.qwen_train import main
 from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
+    DEFAULT_DOCKERFILE_PATH,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedLaunch,
     DetachedStatus,
@@ -67,6 +70,7 @@ def _launch_payload(*, scratch_root: Path, repo_root: Path) -> DetachedLaunch:
     settings = _settings(scratch_root=scratch_root)
     return DetachedLaunch(
         generated_at="2026-03-15T10:00:00Z",
+        launch_kind="training",
         launch_id="launch-a",
         container_name="qwen-train-launch-a",
         container_id="container-id",
@@ -206,6 +210,7 @@ def test_resume_from_checkpoint_uses_recorded_repo_root_and_dockerfile(
         )
         return DetachedLaunch(
             generated_at="2026-03-15T10:30:00Z",
+            launch_kind="training",
             launch_id=launch_id,
             container_name=container_name,
             container_id="container-id",
@@ -360,6 +365,7 @@ def test_run_schedule_cycle_writes_failure_artifacts_when_segment_exits_early(
         "scripts.sir_convert_a_lot.ml.qwen.training.schedule_runner.inspect_detached_training",
         lambda launch: DetachedStatus(
             checked_at="2026-03-15T10:40:00Z",
+            launch_kind=launch.launch_kind,
             launch_id=launch.launch_id,
             container_name=launch.container_name,
             container_id=launch.container_id,
@@ -384,6 +390,7 @@ def test_run_schedule_cycle_writes_failure_artifacts_when_segment_exits_early(
         lambda *, launch, target_optimizer_step, poll_interval_seconds: (
             DetachedStatus(
                 checked_at="2026-03-15T10:45:00Z",
+                launch_kind=launch.launch_kind,
                 launch_id=launch.launch_id,
                 container_name=launch.container_name,
                 container_id=launch.container_id,
@@ -480,7 +487,7 @@ def test_schedule_command_rejects_eval_paths_outside_scratch_root(
     called = {"value": False}
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.run_schedule_cycle",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.schedule_use_case.run_schedule_cycle",
         lambda **kwargs: called.__setitem__("value", True),
     )
 
@@ -546,7 +553,7 @@ def test_schedule_command_rejects_launch_metadata_eval_path_outside_scratch_root
     called = {"value": False}
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.run_schedule_cycle",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.schedule_use_case.run_schedule_cycle",
         lambda **kwargs: called.__setitem__("value", True),
     )
 
@@ -617,7 +624,7 @@ def test_schedule_command_rejects_launch_metadata_bundle_root_outside_scratch_ro
     called = {"value": False}
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.run_schedule_cycle",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.schedule_use_case.run_schedule_cycle",
         lambda **kwargs: called.__setitem__("value", True),
     )
 

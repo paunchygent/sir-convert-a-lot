@@ -110,6 +110,13 @@ explicitly narrow the scope.
 - If a preserved legacy launch still carries stale checkpoint cadence or
   retention values, pass explicit resume overrides so the relaunched lane
   truthfully matches the current `500/100/3` scheduled posture.
+- If a resumed Task 101 lane fails with repeated non-finite behavior, do not
+  keep retrying blind full training runs. The canonical next step is:
+  `status -> diagnose-non-finite -> fix -> bounded retry`.
+- Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
+  the Qwen training control plane. Do not keep adding new feature logic to
+  `qwen_train.py`, `orchestrator.py`, `reporting.py`, or `sft_12hz_loop.py`;
+  extract bounded module owners instead.
 - Do not trust reused-run `status.json` or `report.json` artifacts unless they
   clearly belong to the active resumed container.
 - Intentional detached Task 101 stops now request graceful shutdown and one

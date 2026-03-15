@@ -2,7 +2,7 @@
 id: task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness
 title: Remediate Task 101 finite-loss guard forensics, sampler truth, failure reporting, and checkpoint-phase truth
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-14'
 last_updated: '2026-03-15'
@@ -13,6 +13,8 @@ related:
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
   - docs/backlog/tasks/task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md
+  - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -28,10 +30,10 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Fix the concrete Task 101 training/runtime defects exposed by the rebuilt-bundle
-throughput proofs and the resumed `1238` recovery lane so the finite-loss
-guard, batch sampler, checkpoint phases, and terminal artifacts tell the truth
-before `T179` launches the next bounded Hemma saturation repro.
+Fix the first-layer Task 101 training/runtime truth defects exposed by the
+rebuilt-bundle throughput proofs and the resumed `1238` recovery lane so the
+finite-loss guard, batch sampler, checkpoint phases, and terminal artifacts
+tell the truth before deeper optimizer-boundary remediation begins.
 
 ## Why This Exists
 
@@ -90,6 +92,10 @@ The current recovery evidence makes that more urgent, not less:
   `1300`, and `1332`, but those phase labels were not specific enough to prove
   which saves were durable versus export-only
 
+This task is now the completed first-layer truth/forensics slice. Permanent
+SRP/DDD hardening moved to Story 28 / `T187-T191`, while the deeper
+optimizer-boundary replay and fail-closed guard moved to `T186`.
+
 This task is intentionally narrower than `T179`:
 
 - `T180` owns the code-side remediation and regression coverage
@@ -139,6 +145,8 @@ This task is intentionally narrower than `T179`:
 - Do not broaden this work into bundle observability, drive ingestion, or host
   package-manager recovery.
 - Do not claim the `NaN` root cause is fully solved in this task alone.
+- Do not own the optimizer-boundary corruption replay and fail-closed guard
+  work that now belongs to `T186`.
 - Do not use this task to close the bounded Hemma repro work that belongs to
   `T179`.
 - Do not silently reinterpret an operator-facing zero-based epoch index as a
@@ -279,8 +287,19 @@ This task is intentionally narrower than `T179`:
   - a typed batch-contract validator used by both train and eval paths
   - focused regression coverage in dedicated forensic and batching tests
 
+## Historical Follow-On Note
+
+`T180` is the delivered first-pass truth layer, not the canonical owner of the
+remaining optimizer-boundary root-cause work.
+
+That deeper remediation now lives in:
+
+- `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
+
+`T179` must wait for `T186`, not reopen `T180`.
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

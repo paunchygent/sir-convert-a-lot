@@ -1,0 +1,56 @@
+---
+id: task-187-define-and-codify-qwen-training-control-plane-architecture-rules
+title: Define and codify Qwen training control-plane architecture rules
+type: task
+status: proposed
+priority: high
+created: '2026-03-15'
+last_updated: '2026-03-15'
+related:
+  - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
+  - .agents/rules/095-qwen-training-architecture-boundaries.md
+  - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
+  - .agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
+labels:
+  - qwen
+  - architecture
+  - rules
+---
+
+PR-sized execution unit; may be linked to a story or standalone.
+
+## Objective
+
+Make the Qwen training control-plane architecture policy explicit and
+non-optional so future changes cannot silently reintroduce god files or mixed
+concerns.
+
+## PR Scope
+
+- Add one dedicated repo rule for Qwen training/control-plane architecture.
+- Update Story 28, Story 26, `T186`, Epic 08, the runbook, the Qwen skill, and
+  `current.md` so architecture hardening is tracked as a first-class blocker.
+- Define the stricter `400` LoC cap and DRY/SOLID/SRP/DDD expectations for this
+  lane.
+
+## Deliverables
+
+- [ ] `RULE-095` exists and is indexed from `000-rule-index.md`.
+- [ ] Story 28 and `T187-T191` are fully linked from the active Qwen backlog.
+- [ ] Operator/docs surfaces explicitly say new feature work must not grow the
+  current god files further.
+
+## Acceptance Criteria
+
+- [ ] The backlog and repo rules agree on the new architecture lane and
+  sequencing.
+- [ ] The runbook and skill mention the canonical control-plane architecture
+  path and the no-shim/no-compat-wrapper rule.
+- [ ] `current.md` records Story 28 as the architecture blocker for future Task
+  101 control-plane work.
+
+## Checklist
+
+- [ ] Implementation complete
+- [ ] Validation complete
+- [ ] Docs updated

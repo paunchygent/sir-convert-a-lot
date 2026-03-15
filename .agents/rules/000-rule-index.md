@@ -20,6 +20,7 @@ scope: repo
 - `081-pdm-and-dependency-management.md`: PDM workflow and dependency standards.
 - `085-postgresql-and-migrations.md`: PostgreSQL and migration invariants.
 - `090-documentation-standards.md`: Documentation-as-code requirements and update cadence.
+- `095-qwen-training-architecture-boundaries.md`: Hard SRP/DDD boundaries for the Qwen control-plane and training-runtime lane.
 
 Session context (non-rule):
 

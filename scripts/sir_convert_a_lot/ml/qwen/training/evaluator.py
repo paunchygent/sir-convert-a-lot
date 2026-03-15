@@ -10,7 +10,8 @@ Relationships:
       schedule orchestration.
     - Delegates core model/dataloader bootstrap to the patched `sft_12hz.py`
       standalone-eval helpers.
-    - Reuses shared report-writing helpers from `ml.qwen.training.reporting`.
+    - Reuses shared report-writing helpers from the
+      `ml.qwen.training.reporting` package.
 """
 
 from __future__ import annotations

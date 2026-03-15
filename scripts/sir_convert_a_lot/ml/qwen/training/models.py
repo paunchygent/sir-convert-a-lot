@@ -112,6 +112,7 @@ class DetachedLaunch:
     """Deterministic launch metadata for one detached training run."""
 
     generated_at: str
+    launch_kind: str
     launch_id: str
     container_name: str
     container_id: str
@@ -130,6 +131,7 @@ class DetachedLaunch:
     throughput_profile: dict[str, object] | None = None
     tracking: dict[str, object] | None = None
     resource_monitor: dict[str, object] | None = None
+    diagnostic: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -137,6 +139,7 @@ class DetachedStatus:
     """Deterministic status view for one detached training run."""
 
     checked_at: str
+    launch_kind: str
     launch_id: str
     container_name: str
     container_id: str
@@ -184,6 +187,7 @@ class TrainingFailureSummary:
     latest_durable_checkpoint_step: int | None
     latest_durable_checkpoint_saved_at: str | None
     finite_loss_guard: dict[str, object] | None
+    optimizer_boundary_guard: dict[str, object] | None
     acceptance_measurement_valid: bool | None
     latest_eval_loss: float | None = None
     best_eval_loss: float | None = None
@@ -214,6 +218,7 @@ class TrainingReport:
     bundle_precomputed_reference_input: dict[str, object] | None
     throughput_profile: dict[str, object] | None
     tracking: dict[str, object] | None
+    diagnostic: dict[str, object] | None
     training_summary: dict[str, object] | None
     failure: TrainingFailureSummary | None
 

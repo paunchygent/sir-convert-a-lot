@@ -195,6 +195,14 @@ def render_status_markdown(status: DetachedStatus) -> str:
         if not isinstance(pilot_status.get("finite_loss_guard"), dict)
         else pilot_status.get("finite_loss_guard")
     )
+    diagnostic_payload = (
+        None
+        if not isinstance(pilot_status.get("diagnostic"), dict)
+        else pilot_status.get("diagnostic")
+    )
+    diagnostic_kind = (
+        None if not isinstance(diagnostic_payload, dict) else diagnostic_payload.get("kind")
+    )
     first_non_finite_tensor = (
         None
         if not isinstance(finite_loss_guard, dict)
@@ -217,6 +225,7 @@ def render_status_markdown(status: DetachedStatus) -> str:
         "# Qwen Training Detached Status",
         "",
         f"- checked_at: `{status.checked_at}`",
+        f"- launch_kind: `{status.launch_kind}`",
         f"- launch_id: `{status.launch_id}`",
         f"- container_name: `{status.container_name}`",
         f"- container_id: `{status.container_id}`",
@@ -271,6 +280,7 @@ def render_status_markdown(status: DetachedStatus) -> str:
         f"- pilot_first_non_finite_tensor: `{first_non_finite_tensor}`",
         (f"- pilot_recent_non_finite_optimizer_steps: `{recent_non_finite_observation_steps}`"),
         f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
+        f"- pilot_diagnostic_kind: `{diagnostic_kind}`",
         f"- resource_monitor_available: `{monitor_available}`",
         f"- resource_monitor_launch_root: `{monitor_launch_root}`",
         f"- resource_monitor_interval_seconds: `{monitor_interval}`",
@@ -520,6 +530,7 @@ def load_launch(
         raise SystemExit("Detached launch metadata returned malformed `tracking`.")
     return DetachedLaunch(
         generated_at=_required_str(payload, "generated_at"),
+        launch_kind=_optional_str(payload, "launch_kind") or "training",
         launch_id=_required_str(payload, "launch_id"),
         container_name=_required_str(payload, "container_name"),
         container_id=_required_str(payload, "container_id"),
@@ -541,6 +552,7 @@ def load_launch(
         throughput_profile=_optional_object(payload, "throughput_profile"),
         tracking=None if tracking_payload is None else dict(tracking_payload),
         resource_monitor=_optional_object(payload, "resource_monitor"),
+        diagnostic=_optional_object(payload, "diagnostic"),
     )
 
 

@@ -8,7 +8,8 @@ Purpose:
 Relationships:
     - Executed inside the shared Qwen runtime image by the host orchestrator.
     - Delegates core training to the patched `sft_12hz.py`.
-    - Uses `ml.qwen.training.reporting` for live heartbeat and terminal reports.
+    - Uses the `ml.qwen.training.reporting` package for live heartbeat and
+      terminal reports.
 """
 
 from __future__ import annotations
@@ -30,6 +31,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_optional_training_bundle_summary
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
+from scripts.sir_convert_a_lot.ml.qwen.training.diagnostic_artifacts import (
+    build_diagnostic_replay_bundle,
+    diagnostic_replay_bundle_path,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     StatusReporter,
     StatusReporterConfig,
@@ -101,6 +106,11 @@ def _parse_args() -> argparse.Namespace:
     add_boolean_argument(parser, "--torch-profiler-with-stack", default=False)
     parser.add_argument("--torch-profiler-trace-dir", default=None)
     parser.add_argument("--resume-from-checkpoint", type=Path, default=None)
+    parser.add_argument("--diagnostic-kind", default=None)
+    parser.add_argument("--diagnostic-source-launch-root", type=Path, default=None)
+    parser.add_argument("--diagnostic-source-checkpoint-path", type=Path, default=None)
+    parser.add_argument("--diagnostic-start-optimizer-step", type=int, default=None)
+    parser.add_argument("--diagnostic-end-optimizer-step", type=int, default=None)
     return parser.parse_args()
 
 
@@ -145,6 +155,34 @@ def main() -> int:
         "mlflow_artifact_root": args.mlflow_artifact_root,
         "tensorboard_logging_dir": args.tensorboard_logging_dir,
     }
+    diagnostic = (
+        None
+        if getattr(args, "diagnostic_kind", None) is None
+        else {
+            "kind": str(getattr(args, "diagnostic_kind")),
+            "source_launch_root": (
+                None
+                if getattr(args, "diagnostic_source_launch_root", None) is None
+                else getattr(args, "diagnostic_source_launch_root").as_posix()
+            ),
+            "source_checkpoint_path": (
+                None
+                if getattr(args, "diagnostic_source_checkpoint_path", None) is None
+                else getattr(args, "diagnostic_source_checkpoint_path").as_posix()
+            ),
+            "start_optimizer_step": (
+                None
+                if getattr(args, "diagnostic_start_optimizer_step", None) is None
+                else int(getattr(args, "diagnostic_start_optimizer_step"))
+            ),
+            "end_optimizer_step": (
+                None
+                if getattr(args, "diagnostic_end_optimizer_step", None) is None
+                else int(getattr(args, "diagnostic_end_optimizer_step"))
+            ),
+            "replay_bundle_path": diagnostic_replay_bundle_path(output_dir).as_posix(),
+        }
+    )
 
     status_reporter = StatusReporter(
         StatusReporterConfig(
@@ -190,6 +228,7 @@ def main() -> int:
             durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
             resume_from_checkpoint=args.resume_from_checkpoint,
             tracking_plan=tracking_plan,
+            diagnostic=diagnostic,
         )
     )
     status_reporter.write_startup()
@@ -269,10 +308,20 @@ def main() -> int:
             eval_row_count=eval_row_count,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_policy_payload(throughput_policy),
+            diagnostic=diagnostic,
             training_summary=training_summary,
         )
         write_json(report_path, asdict(report))
         status_reporter.write_completed(training_summary)
+        if diagnostic is not None:
+            write_json(
+                diagnostic_replay_bundle_path(output_dir),
+                build_diagnostic_replay_bundle(
+                    diagnostic=diagnostic,
+                    report=asdict(report),
+                    status=json.loads(status_path.read_text(encoding="utf-8")),
+                ),
+            )
         print(json.dumps(asdict(report), indent=2, sort_keys=True))
         return 0
     except BaseException as exc:
@@ -288,9 +337,19 @@ def main() -> int:
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_policy_payload(throughput_policy),
             tracking=status_reporter.tracking,
+            diagnostic=diagnostic,
             failed_status=failed_status,
         )
         write_json(report_path, asdict(failed_report))
+        if diagnostic is not None:
+            write_json(
+                diagnostic_replay_bundle_path(output_dir),
+                build_diagnostic_replay_bundle(
+                    diagnostic=diagnostic,
+                    report=asdict(failed_report),
+                    status=failed_status,
+                ),
+            )
         raise
 
 

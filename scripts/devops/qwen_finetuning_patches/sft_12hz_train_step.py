@@ -1,0 +1,323 @@
+"""Train-step execution helpers for the patched Qwen training loop.
+
+Purpose:
+    Own one accumulation window of forward/backward/update work so the main
+    loop file only orchestrates epoch control, checkpoint/eval transitions, and
+    terminal summary assembly.
+
+Relationships:
+    - Imported by `sft_12hz_loop.py`.
+    - Consumes forensics, optimizer-guard, batching, and loss-runtime helpers.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Protocol
+
+import torch
+from accelerate import Accelerator
+
+from scripts.devops.qwen_finetuning_patches.dataset import require_batch_tensors
+from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import DurableCheckpointMetadata
+from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
+    fuse_auxiliary_codebook_embeddings,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
+    to_device_with_optional_non_blocking,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
+    build_microbatch_forensics,
+    build_optimizer_step_forensics_window,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import LossObservation
+from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard import (
+    build_post_step_optimizer_boundary_failure,
+    build_pre_step_optimizer_boundary_failure,
+    capture_pre_step_optimizer_boundary_probes,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
+
+from .sft_12hz_loss_runtime import consume_loss_observations
+
+
+class _ProfilerSessionLike(Protocol):
+    """Protocol for the profiler session surface used during one train step."""
+
+    def phase(self, name: str): ...
+
+
+class _DataloaderTuningLike(Protocol):
+    """Protocol for the dataloader tuning surface used during one train step."""
+
+    non_blocking_transfer: bool
+
+
+class _LossObserverLike(Protocol):
+    """Protocol for the loss observer surface used during one train step."""
+
+    def submit(self, **kwargs: object) -> None: ...
+
+    def drain_ready(self, force: bool) -> list[LossObservation]: ...
+
+
+class _HeartbeatPolicyLike(Protocol):
+    """Protocol for the heartbeat policy surface used during one train step."""
+
+    def should_emit_train_update(self, optimizer_step: int) -> bool: ...
+
+
+class _FiniteLossGuardLike(Protocol):
+    """Protocol for the finite-loss guard surface used during one train step."""
+
+    def observe(self, observation: LossObservation) -> None: ...
+
+
+class _RefMelCacheLike(Protocol):
+    """Protocol for the ref-mel cache surface used during one train step."""
+
+    def payload(self) -> dict[str, bool | float | int | None]: ...
+
+
+class TrainStepPreparedRuntime(Protocol):
+    """Focused prepared-runtime surface needed by one train-step window."""
+
+    torch_profiler_session: _ProfilerSessionLike
+    effective_dataloader_tuning: _DataloaderTuningLike
+    loss_observer: _LossObserverLike
+    heartbeat_policy: _HeartbeatPolicyLike
+    finite_loss_guard: _FiniteLossGuardLike
+    ref_mel_cache: _RefMelCacheLike
+    dataloader_length: int
+    eval_dataloader_length: int
+
+
+@dataclass(frozen=True)
+class TrainStepResult:
+    """Resolved state after one dataloader iteration in the training loop."""
+
+    train_iterations_completed: int
+    optimizer_steps_completed: int
+    last_loss: float | None
+    smoothed_loss: float | None
+    emitted_train_progress: bool
+    completed_optimizer_step: bool
+    optimizer_step_microbatches: list[dict[str, object]]
+
+
+def execute_train_iteration(
+    *,
+    accelerator: Accelerator,
+    prepared: TrainStepPreparedRuntime,
+    model,
+    optimizer,
+    epoch: int,
+    batch: object,
+    train_iterations_completed: int,
+    optimizer_steps_completed: int,
+    last_loss: float | None,
+    smoothed_loss: float | None,
+    latest_eval_loss: float | None,
+    best_eval_loss: float | None,
+    best_eval_step: int | None,
+    eval_runs_completed: int,
+    latest_durable_checkpoint: DurableCheckpointMetadata | None,
+    emitted_train_progress: bool,
+    optimizer_step_microbatches: list[dict[str, object]],
+    checkpoint_interval_steps: int,
+    progress_callback: Callable[[TrainingProgressHeartbeat], None] | None,
+) -> TrainStepResult:
+    """Execute one dataloader iteration and return the updated loop state."""
+    resolved_batch = require_batch_tensors(batch)
+    current_train_iteration = train_iterations_completed + 1
+    with accelerator.accumulate(model):
+        grad_norm: torch.Tensor | float | None = None
+        with prepared.torch_profiler_session.phase("task101.batch-preparation"):
+            input_ids = resolved_batch["input_ids"]
+            codec_ids = resolved_batch["codec_ids"]
+            ref_mels = resolved_batch["ref_mels"]
+            batch_provenance = resolved_batch["batch_provenance"]
+            text_embedding_mask = resolved_batch["text_embedding_mask"]
+            codec_embedding_mask = resolved_batch["codec_embedding_mask"]
+            attention_mask = resolved_batch["attention_mask"]
+            codec_0_labels = resolved_batch["codec_0_labels"]
+            codec_mask = resolved_batch["codec_mask"]
+            ref_mels_on_device = to_device_with_optional_non_blocking(
+                ref_mels,
+                device=model.device,
+                dtype=model.dtype,
+                non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
+            )
+            speaker_embedding = model.speaker_encoder(ref_mels_on_device).detach()
+        with prepared.torch_profiler_session.phase("task101.forward-backward"):
+            input_text_ids = input_ids[:, :, 0]
+            input_codec_ids = input_ids[:, :, 1]
+            input_text_embedding = (
+                model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
+            )
+            if hasattr(model.talker.model, "text_projection"):
+                input_text_embedding = model.talker.model.text_projection(input_text_embedding)
+            input_codec_embedding = (
+                model.talker.model.codec_embedding(input_codec_ids) * codec_embedding_mask
+            )
+            input_codec_embedding[:, 6, :] = speaker_embedding
+            fused_auxiliary_embedding = fuse_auxiliary_codebook_embeddings(
+                codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
+                codec_ids=codec_ids,
+                codec_mask=codec_mask,
+            )
+            input_embeddings = (
+                input_text_embedding + input_codec_embedding + fused_auxiliary_embedding
+            )
+            outputs = model.talker(
+                inputs_embeds=input_embeddings[:, :-1, :],
+                attention_mask=attention_mask[:, :-1],
+                labels=codec_0_labels[:, 1:],
+                output_hidden_states=True,
+            )
+            hidden_states = outputs.hidden_states[0][-1]
+            talker_hidden_states = hidden_states[codec_mask[:, 1:]]
+            talker_codec_ids = codec_ids[codec_mask]
+            _, sub_talker_loss = model.talker.forward_sub_talker_finetune(
+                talker_codec_ids,
+                talker_hidden_states,
+            )
+            loss = outputs.loss + 0.3 * sub_talker_loss
+            accelerator.backward(loss)
+            completed_optimizer_step = accelerator.sync_gradients
+            if completed_optimizer_step:
+                grad_norm = accelerator.clip_grad_norm_(model.parameters(), 1.0)
+            grad_norm_tensor = (
+                None
+                if grad_norm is None
+                else grad_norm
+                if isinstance(grad_norm, torch.Tensor)
+                else torch.tensor(float(grad_norm), dtype=torch.float32, device=loss.device)
+            )
+            optimizer_step_microbatches = [
+                *optimizer_step_microbatches,
+                build_microbatch_forensics(
+                    train_iteration=current_train_iteration,
+                    microbatch_index_in_optimizer_step=len(optimizer_step_microbatches) + 1,
+                    batch_provenance=batch_provenance,
+                    probes=[
+                        ("ref_mels", ref_mels_on_device),
+                        ("speaker_embedding", speaker_embedding),
+                        ("input_text_embedding", input_text_embedding),
+                        ("input_codec_embedding", input_codec_embedding),
+                        ("fused_auxiliary_embedding", fused_auxiliary_embedding),
+                        ("input_embeddings", input_embeddings),
+                        ("talker_hidden_states", talker_hidden_states),
+                        ("main_loss", outputs.loss),
+                        ("sub_talker_loss", sub_talker_loss),
+                        ("combined_loss", loss),
+                        ("grad_norm", grad_norm_tensor),
+                    ],
+                ),
+            ]
+        step_forensics = None
+        pre_step_probes = None
+        if completed_optimizer_step:
+            step_forensics = build_optimizer_step_forensics_window(
+                microbatches=optimizer_step_microbatches,
+            )
+            pre_step_probes = capture_pre_step_optimizer_boundary_probes(
+                model=model,
+                optimizer=optimizer,
+            )
+            pre_step_failure = build_pre_step_optimizer_boundary_failure(
+                model=model,
+                optimizer=optimizer,
+                optimizer_step=optimizer_steps_completed + 1,
+                current_epoch=epoch,
+                current_train_iteration=current_train_iteration,
+                loss=loss,
+                main_loss=outputs.loss,
+                sub_talker_loss=sub_talker_loss,
+                grad_norm=grad_norm,
+                step_forensics=step_forensics,
+                pre_step_probes=pre_step_probes,
+            )
+            if pre_step_failure is not None:
+                raise pre_step_failure
+        with prepared.torch_profiler_session.phase("task101.optimizer-step"):
+            optimizer.step()
+            if not completed_optimizer_step:
+                optimizer.zero_grad()
+        if not completed_optimizer_step:
+            return TrainStepResult(
+                train_iterations_completed=current_train_iteration,
+                optimizer_steps_completed=optimizer_steps_completed,
+                last_loss=last_loss,
+                smoothed_loss=smoothed_loss,
+                emitted_train_progress=emitted_train_progress,
+                completed_optimizer_step=False,
+                optimizer_step_microbatches=optimizer_step_microbatches,
+            )
+        post_step_failure = build_post_step_optimizer_boundary_failure(
+            model=model,
+            optimizer=optimizer,
+            optimizer_step=optimizer_steps_completed + 1,
+            current_epoch=epoch,
+            current_train_iteration=current_train_iteration,
+            loss=loss,
+            main_loss=outputs.loss,
+            sub_talker_loss=sub_talker_loss,
+            grad_norm=grad_norm,
+            step_forensics=step_forensics,
+            pre_step_parameter_probes=(
+                None if pre_step_probes is None else pre_step_probes.parameter_probes
+            ),
+            pre_step_gradient_probes=(
+                None if pre_step_probes is None else pre_step_probes.gradient_probes
+            ),
+            pre_step_optimizer_state_probes=(
+                None if pre_step_probes is None else pre_step_probes.optimizer_state_probes
+            ),
+        )
+        if post_step_failure is not None:
+            raise post_step_failure
+        optimizer.zero_grad()
+        next_optimizer_steps_completed = optimizer_steps_completed + 1
+        prepared.loss_observer.submit(
+            loss=loss,
+            main_loss=outputs.loss,
+            sub_talker_loss=sub_talker_loss,
+            grad_norm=grad_norm,
+            step_forensics=step_forensics,
+            optimizer_step=next_optimizer_steps_completed,
+            current_epoch=epoch,
+            current_train_iteration=current_train_iteration,
+        )
+        next_last_loss, next_smoothed_loss, next_emitted_train_progress = consume_loss_observations(
+            accelerator=accelerator,
+            prepared=prepared,
+            observations=prepared.loss_observer.drain_ready(
+                force=(
+                    (not emitted_train_progress)
+                    or prepared.heartbeat_policy.should_emit_train_update(
+                        next_optimizer_steps_completed
+                    )
+                )
+            ),
+            checkpoint_interval_steps=checkpoint_interval_steps,
+            progress_callback=progress_callback,
+            emitted_train_progress=emitted_train_progress,
+            smoothed_loss=smoothed_loss,
+            last_loss=last_loss,
+            latest_eval_loss=latest_eval_loss,
+            best_eval_loss=best_eval_loss,
+            best_eval_step=best_eval_step,
+            eval_runs_completed=eval_runs_completed,
+            latest_durable_checkpoint=latest_durable_checkpoint,
+        )
+        return TrainStepResult(
+            train_iterations_completed=current_train_iteration,
+            optimizer_steps_completed=next_optimizer_steps_completed,
+            last_loss=next_last_loss,
+            smoothed_loss=next_smoothed_loss,
+            emitted_train_progress=next_emitted_train_progress,
+            completed_optimizer_step=True,
+            optimizer_step_microbatches=[],
+        )

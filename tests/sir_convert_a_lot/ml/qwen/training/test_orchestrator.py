@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
 
 import pytest
 
-from scripts.sir_convert_a_lot.cli.ml.qwen_train import (
+from scripts.sir_convert_a_lot.cli.ml.qwen_train import main
+from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane import build_parser
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.bundle_contract import (
+    ensure_training_bundle_exists,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
     DEFAULT_CHECKPOINT_INTERVAL_STEPS,
     DEFAULT_DOCKERFILE_PATH,
     DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES,
@@ -19,13 +24,16 @@ from scripts.sir_convert_a_lot.cli.ml.qwen_train import (
     DEFAULT_MAX_STEPS,
     DEFAULT_MODEL_ID,
     DEFAULT_NUM_EPOCHS,
+    DEFAULT_THROUGHPUT_PROFILE_LABEL,
     DEFAULT_TRAIN_MANIFEST_FAMILY,
     LEGACY_SMALL_BATCH_THROUGHPUT_PROFILE_LABEL,
-    build_parser,
-    ensure_training_bundle_exists,
-    main,
 )
-from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
+from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime import (
+    build_detached_training_command,
+    inspect_detached_training,
+    launch_detached_training,
+    stop_detached_training,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     load_latest_checkpoint,
     resolve_launch_root,
@@ -36,15 +44,6 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedStop,
     TrainingSettings,
     TrainingSettingsSnapshot,
-)
-from scripts.sir_convert_a_lot.ml.qwen.training.orchestrator import (
-    build_detached_training_command,
-    inspect_detached_training,
-    launch_detached_training,
-    stop_detached_training,
-)
-from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
-    DEFAULT_THROUGHPUT_PROFILE_LABEL,
 )
 
 
@@ -212,6 +211,7 @@ def test_inspect_detached_training_reads_container_status_and_reports(
     )
     launch = DetachedLaunch(
         generated_at="2026-03-09T12:00:00Z",
+        launch_kind="training",
         launch_id="qwen-20260309t120000z",
         container_name="qwen-20260309t120000z-container",
         container_id="container-id",
@@ -276,7 +276,7 @@ def test_inspect_detached_training_reads_container_status_and_reports(
         raise AssertionError(f"Unexpected docker args: {args} ({label})")
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.docker_checked",
+        "scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.inspect_service.docker_checked",
         fake_docker_checked,
     )
 
@@ -320,6 +320,7 @@ def test_inspect_detached_training_hides_stale_resumed_run_artifacts(
     )
     launch = DetachedLaunch(
         generated_at="2026-03-15T10:21:50Z",
+        launch_kind="training",
         launch_id="resume-launch",
         container_name="resume-container",
         container_id="container-id",
@@ -382,7 +383,7 @@ def test_inspect_detached_training_hides_stale_resumed_run_artifacts(
         raise AssertionError(f"Unexpected docker args: {args} ({label})")
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.docker_checked",
+        "scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.inspect_service.docker_checked",
         fake_docker_checked,
     )
 
@@ -425,6 +426,7 @@ def test_inspect_detached_training_hides_stale_resumed_run_artifacts_after_stop(
     )
     launch = DetachedLaunch(
         generated_at="2026-03-15T10:21:50Z",
+        launch_kind="training",
         launch_id="resume-launch",
         container_name="resume-container",
         container_id="container-id",
@@ -487,7 +489,7 @@ def test_inspect_detached_training_hides_stale_resumed_run_artifacts_after_stop(
         raise AssertionError(f"Unexpected docker args: {args} ({label})")
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.docker_checked",
+        "scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.inspect_service.docker_checked",
         fake_docker_checked,
     )
 
@@ -743,11 +745,11 @@ def test_launch_detached_training_accepts_legacy_bundle_without_summary(
         durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.build_detached_training_command",
+        "scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.launch_service.build_detached_training_command",
         lambda *args, **kwargs: (["run", "-d"], tmp_path / "runs/launch"),
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.docker_checked",
+        "scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.launch_service.docker_checked",
         lambda args, *, label: "container-id\n",
     )
 
@@ -791,6 +793,7 @@ def test_resume_uses_launch_metadata_dockerfile_path(
     )
     launch_payload = DetachedLaunch(
         generated_at="2026-03-09T12:00:00Z",
+        launch_kind="training",
         launch_id="qwen-prev",
         container_name="qwen-prev-container",
         container_id="container-id",
@@ -838,30 +841,27 @@ def test_resume_uses_launch_metadata_dockerfile_path(
 
     captured: dict[str, object] = {}
 
-    def fake_prepare_qwen_image(args: argparse.Namespace) -> tuple[bool, str]:
-        captured["dockerfile_path"] = args.dockerfile_path
-        return False, "sha256:test"
-
-    def fake_resolve_hf_cache_dir(args: argparse.Namespace) -> MountResolution:
-        del args
-        return MountResolution(
-            canonical_root=Path("/srv/scratch/cache"),
-            effective_root=Path("/srv/scratch/cache"),
-            used_home_mount=False,
-        )
-
-    def fake_resolve_bind_root(
-        canonical_root: Path,
-        home_mount: Path,
+    def fake_prepare_runtime_dependencies(
         *,
-        image: str,
-        sync_home_into_canonical: bool,
-    ) -> MountResolution:
-        del home_mount, image, sync_home_into_canonical
-        return MountResolution(
-            canonical_root=canonical_root,
-            effective_root=canonical_root,
-            used_home_mount=False,
+        settings: TrainingSettings,
+        dockerfile_path: Path,
+        skip_build: bool,
+    ) -> tuple[bool, str, MountResolution, MountResolution]:
+        del settings, skip_build
+        captured["dockerfile_path"] = dockerfile_path
+        return (
+            False,
+            "sha256:test",
+            MountResolution(
+                canonical_root=Path("/srv/scratch/cache"),
+                effective_root=Path("/srv/scratch/cache"),
+                used_home_mount=False,
+            ),
+            MountResolution(
+                canonical_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+                effective_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+                used_home_mount=False,
+            ),
         )
 
     def fake_launch_detached_training(
@@ -884,31 +884,23 @@ def test_resume_uses_launch_metadata_dockerfile_path(
         return launch_payload
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.prepare_qwen_image",
-        fake_prepare_qwen_image,
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.prepare_runtime_dependencies",
+        fake_prepare_runtime_dependencies,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_hf_cache_dir",
-        fake_resolve_hf_cache_dir,
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_bind_root",
-        fake_resolve_bind_root,
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.ensure_training_bundle_exists",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.ensure_training_bundle_exists",
         lambda bundle_root, *, train_manifest_family, eval_manifest_family: None,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.launch_detached_training",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.launch_detached_training",
         fake_launch_detached_training,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_json",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.write_json",
         lambda path, payload: None,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_latest_pointer",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.write_latest_pointer",
         lambda output_root, launch_root: None,
     )
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
@@ -995,7 +987,7 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.ensure_training_bundle_exists",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.ensure_training_bundle_exists",
         lambda bundle_root, *, train_manifest_family, eval_manifest_family: captured.update(
             {
                 "bundle_root": bundle_root,
@@ -1005,23 +997,20 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
         ),
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.prepare_qwen_image",
-        lambda args: (False, "sha256:test"),
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_hf_cache_dir",
-        lambda args: MountResolution(
-            canonical_root=Path("/srv/scratch/cache"),
-            effective_root=Path("/srv/scratch/cache"),
-            used_home_mount=False,
-        ),
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_bind_root",
-        lambda canonical_root, home_mount, *, image, sync_home_into_canonical: MountResolution(
-            canonical_root=canonical_root,
-            effective_root=canonical_root,
-            used_home_mount=False,
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.prepare_runtime_dependencies",
+        lambda *, settings, dockerfile_path, skip_build: (
+            False,
+            "sha256:test",
+            MountResolution(
+                canonical_root=Path("/srv/scratch/cache"),
+                effective_root=Path("/srv/scratch/cache"),
+                used_home_mount=False,
+            ),
+            MountResolution(
+                canonical_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+                effective_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+                used_home_mount=False,
+            ),
         ),
     )
 
@@ -1052,6 +1041,7 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
         captured["resume_from_checkpoint"] = resume_from_checkpoint
         return DetachedLaunch(
             generated_at="2026-03-15T10:00:00Z",
+            launch_kind="training",
             launch_id="resume-launch",
             container_name="resume-container",
             container_id="container-id",
@@ -1096,15 +1086,15 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
         )
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.launch_detached_training",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.launch_detached_training",
         fake_launch_detached_training,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_json",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.write_json",
         lambda path, payload: None,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_latest_pointer",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.write_latest_pointer",
         lambda output_root, launch_root: None,
     )
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
@@ -1198,27 +1188,24 @@ def test_resume_accepts_explicit_control_posture_overrides(
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.ensure_training_bundle_exists",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.ensure_training_bundle_exists",
         lambda bundle_root, *, train_manifest_family, eval_manifest_family: None,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.prepare_qwen_image",
-        lambda args: (False, "sha256:test"),
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_hf_cache_dir",
-        lambda args: MountResolution(
-            canonical_root=Path("/srv/scratch/cache"),
-            effective_root=Path("/srv/scratch/cache"),
-            used_home_mount=False,
-        ),
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_bind_root",
-        lambda canonical_root, home_mount, *, image, sync_home_into_canonical: MountResolution(
-            canonical_root=canonical_root,
-            effective_root=canonical_root,
-            used_home_mount=False,
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.prepare_runtime_dependencies",
+        lambda *, settings, dockerfile_path, skip_build: (
+            False,
+            "sha256:test",
+            MountResolution(
+                canonical_root=Path("/srv/scratch/cache"),
+                effective_root=Path("/srv/scratch/cache"),
+                used_home_mount=False,
+            ),
+            MountResolution(
+                canonical_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+                effective_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+                used_home_mount=False,
+            ),
         ),
     )
 
@@ -1249,6 +1236,7 @@ def test_resume_accepts_explicit_control_posture_overrides(
         captured["settings"] = settings
         return DetachedLaunch(
             generated_at="2026-03-15T10:00:00Z",
+            launch_kind="training",
             launch_id="resume-launch",
             container_name="resume-container",
             container_id="container-id",
@@ -1291,15 +1279,15 @@ def test_resume_accepts_explicit_control_posture_overrides(
         )
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.launch_detached_training",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.launch_detached_training",
         fake_launch_detached_training,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_json",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.write_json",
         lambda path, payload: None,
     )
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_latest_pointer",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.resume_use_case.write_latest_pointer",
         lambda output_root, launch_root: None,
     )
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
@@ -1408,6 +1396,7 @@ def test_stop_detached_training_calls_docker_stop(monkeypatch: pytest.MonkeyPatc
     """Stopping a detached launch should issue one deterministic docker stop."""
     launch = DetachedLaunch(
         generated_at="2026-03-09T12:00:00Z",
+        launch_kind="training",
         launch_id="qwen-prev",
         container_name="qwen-prev-container",
         container_id="container-id",
@@ -1452,7 +1441,7 @@ def test_stop_detached_training_calls_docker_stop(monkeypatch: pytest.MonkeyPatc
         return "qwen-prev-container"
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.docker_checked",
+        "scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.stop_service.docker_checked",
         fake_docker_checked,
     )
 

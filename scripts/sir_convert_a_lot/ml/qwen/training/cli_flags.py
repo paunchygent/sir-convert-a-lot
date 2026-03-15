@@ -7,7 +7,8 @@ Purpose:
 
 Relationships:
     - Imported by `cli/ml/qwen_train.py` for launch-argument parsing.
-    - Imported by `ml.qwen.training.orchestrator` when materializing Docker args.
+    - Imported by `ml.qwen.training.detached_runtime.command_builder` when
+      materializing Docker args.
     - Imported by `ml.qwen.training.trainer` for in-container argument parsing.
 """
 

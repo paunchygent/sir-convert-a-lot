@@ -26,6 +26,8 @@ related:
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md
+  - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -193,5 +195,10 @@ Current live-lane caveat after the strict `1238` relaunch:
 - the latest durable checkpoint still remained `state-step-00001238`
 - and the active remediation for bounded non-finite forensics, truthful
   checkpoint phase labels, explicit batch-provenance capture, deterministic
-  sampler truth, and explicit epoch semantics is now tracked under
+  sampler truth, and explicit epoch semantics is tracked under
   `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+  while the remaining optimizer-boundary corruption replay and fail-closed
+  diagnostic guard now live under
+  `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
+  while permanent SRP/DDD hardening for the Qwen control plane and patched
+  runtime now lives under Story 28 / `T187-T191`

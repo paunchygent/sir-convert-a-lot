@@ -1,0 +1,91 @@
+"""Focused tests for detached Qwen Docker command construction.
+
+Purpose:
+    Verify the bounded detached-runtime command builder without routing through
+    broader orchestration tests.
+
+Relationships:
+    - Exercises `detached_runtime.command_builder`.
+    - Keeps Docker argv assertions close to the module that owns them.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
+    DEFAULT_THROUGHPUT_PROFILE_LABEL,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime import (
+    build_detached_training_command,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.models import TrainingSettings
+
+
+def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest() -> None:
+    """Detached training should target prepared manifests and governed mounts."""
+    settings = TrainingSettings(
+        output_root=Path("/srv/scratch/sir-convert-a-lot/build/verification/qwen-training"),
+        image="sir-convert-a-lot-qwen-finetune-hemma:latest",
+        hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
+        hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
+        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
+        pilot_bundle_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
+        ),
+        runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune"),
+        model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        batch_size=8,
+        throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+        lr=2e-5,
+        num_epochs=1,
+        max_steps=8,
+        checkpoint_interval_steps=500,
+        eval_interval_steps=100,
+        durable_checkpoint_retention=3,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    hf_mount = MountResolution(
+        canonical_root=settings.hf_cache_dir,
+        effective_root=settings.hf_cache_home_mount,
+        used_home_mount=True,
+    )
+    scratch_mount = MountResolution(
+        canonical_root=settings.scratch_build_root,
+        effective_root=settings.scratch_build_home_mount,
+        used_home_mount=True,
+    )
+
+    command, run_root = build_detached_training_command(
+        settings,
+        repo_root=Path("/home/paunchygent/apps/sir-convert-a-lot"),
+        hf_mount=hf_mount,
+        scratch_mount=scratch_mount,
+        launch_id="qwen-20260309t120000z",
+        container_name="qwen-20260309t120000z-container",
+        launch_root=Path(
+            "/srv/scratch/sir-convert-a-lot/build/verification/qwen-training/qwen-20260309t120000z"
+        ),
+    )
+
+    assert run_root.as_posix().endswith("/qwen-20260309t120000z")
+    assert "--device" in command
+    assert "/dev/kfd" in command
+    assert "--ipc=host" in command
+    assert "HF_HOME=/cache/huggingface" in command
+    assert (
+        "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface:/cache/huggingface" in command
+    )
+    assert "/home/paunchygent/.data/sir-convert-a-lot/build:/app/build" in command
+    assert (
+        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "swedish_pilot_train.prepared.jsonl" in command
+    )
+    assert (
+        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "swedish_checkpoint_dev.prepared.jsonl" in command
+    )

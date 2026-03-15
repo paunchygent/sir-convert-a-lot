@@ -19,7 +19,14 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.cli.ml.qwen_train import (
+from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
+    CONTAINER_HF_HOME,
+    docker_checked,
+    prepare_qwen_image,
+    resolve_effective_bind_root,
+    resolve_effective_hf_cache_dir,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_DOCKERFILE_PATH,
     DEFAULT_IMAGE,
@@ -29,13 +36,6 @@ from scripts.sir_convert_a_lot.cli.ml.qwen_train import (
     DEFAULT_SCRATCH_BUILD_ROOT,
     default_hf_cache_dir,
     default_hf_cache_home_mount,
-)
-from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
-    CONTAINER_HF_HOME,
-    docker_checked,
-    prepare_qwen_image,
-    resolve_effective_bind_root,
-    resolve_effective_hf_cache_dir,
 )
 
 CONTAINER_BUILD_ROOT = Path("/app/build")

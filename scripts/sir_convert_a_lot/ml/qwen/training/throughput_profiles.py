@@ -5,7 +5,7 @@ Purpose:
     work per launch without hiding the active batching policy.
 
 Relationships:
-    - Imported by the detached training CLI/orchestrator for launch defaults.
+    - Imported by the control-plane defaults and launch use case for launch defaults.
     - Imported by the patched in-container trainer setup to resolve the active
       bucketed batching policy.
 """

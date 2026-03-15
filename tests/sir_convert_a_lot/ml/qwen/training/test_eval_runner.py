@@ -17,8 +17,11 @@ from pathlib import Path
 
 import pytest
 
-from scripts.sir_convert_a_lot.cli.ml.qwen_train import DEFAULT_DOCKERFILE_PATH, main
+from scripts.sir_convert_a_lot.cli.ml.qwen_train import main
 from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
+    DEFAULT_DOCKERFILE_PATH,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.eval_orchestrator import (
     build_standalone_eval_command,
 )
@@ -62,6 +65,7 @@ def _launch_payload(*, scratch_root: Path, repo_root: Path) -> DetachedLaunch:
     run_root = settings.runs_root / "launch-a"
     return DetachedLaunch(
         generated_at="2026-03-15T10:00:00Z",
+        launch_kind="training",
         launch_id="launch-a",
         container_name="qwen-train-launch-a",
         container_id="container-id",
@@ -183,28 +187,24 @@ def test_eval_command_uses_recorded_launch_repo_root(
         encoding="utf-8",
     )
 
-    captured: dict[str, object] = {}
-
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.prepare_qwen_image",
-        lambda args: (False, "sha256:test"),
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_hf_cache_dir",
-        lambda args: MountResolution(
-            canonical_root=scratch_root / "cache/huggingface",
-            effective_root=scratch_root / "cache/huggingface",
-            used_home_mount=False,
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.eval_use_case.prepare_runtime_dependencies",
+        lambda *, settings, dockerfile_path, skip_build: (
+            False,
+            "sha256:test",
+            MountResolution(
+                canonical_root=scratch_root / "cache/huggingface",
+                effective_root=scratch_root / "cache/huggingface",
+                used_home_mount=False,
+            ),
+            MountResolution(
+                canonical_root=scratch_root,
+                effective_root=scratch_root,
+                used_home_mount=False,
+            ),
         ),
     )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_bind_root",
-        lambda canonical_root, home_mount, *, image, sync_home_into_canonical: MountResolution(
-            canonical_root=canonical_root,
-            effective_root=canonical_root,
-            used_home_mount=False,
-        ),
-    )
+    printed: dict[str, object] = {}
 
     def fake_run_standalone_eval(
         settings: TrainingSettings,
@@ -218,11 +218,11 @@ def test_eval_command_uses_recorded_launch_repo_root(
         pilot_bundle_root: Path | None,
     ) -> StandaloneEvalReport:
         del settings, hf_mount, scratch_mount
-        captured["repo_root"] = repo_root
-        captured["output_dir"] = output_dir
-        captured["checkpoint_path"] = checkpoint_path
-        captured["eval_jsonl"] = eval_jsonl
-        captured["pilot_bundle_root"] = pilot_bundle_root
+        printed["repo_root"] = repo_root
+        printed["output_dir"] = output_dir
+        printed["checkpoint_path"] = checkpoint_path
+        printed["eval_jsonl"] = eval_jsonl
+        printed["pilot_bundle_root"] = pilot_bundle_root
         return StandaloneEvalReport(
             generated_at="2026-03-15T10:10:00Z",
             status="completed",
@@ -238,7 +238,7 @@ def test_eval_command_uses_recorded_launch_repo_root(
         )
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.cli.ml.qwen_train.run_standalone_eval",
+        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.eval_use_case.run_standalone_eval",
         fake_run_standalone_eval,
     )
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
@@ -255,7 +255,7 @@ def test_eval_command_uses_recorded_launch_repo_root(
     )
 
     assert result == 0
-    assert captured["repo_root"] == repo_root
-    assert captured["checkpoint_path"] == checkpoint_path.resolve()
-    assert captured["eval_jsonl"] == eval_jsonl_path.resolve()
-    assert captured["pilot_bundle_root"] == bundle_root.resolve()
+    assert printed["repo_root"] == repo_root
+    assert printed["checkpoint_path"] == checkpoint_path.resolve()
+    assert printed["eval_jsonl"] == eval_jsonl_path.resolve()
+    assert printed["pilot_bundle_root"] == bundle_root.resolve()

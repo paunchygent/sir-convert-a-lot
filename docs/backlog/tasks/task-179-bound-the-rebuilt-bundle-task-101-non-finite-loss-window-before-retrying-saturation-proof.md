@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md
   - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
+  - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -62,11 +63,14 @@ That means the next blocker before a fresh saturation retry is not
 observability; it is bounding the aggressive rebuilt-bundle lane's numerical
 instability.
 
-The code-side remediation tracked by `T180` is a prerequisite to this task's
-next bounded Hemma repro:
+The code-side remediation tracked by `T180` and `T186` is a prerequisite to
+this task's next bounded Hemma repro:
 
 - `T180` fixes accumulation-boundary correctness, failed-run report emission,
   and failed-status counter truth
+- `T186` adds deterministic optimizer-boundary replay and the fail-closed guard
+  that must prove where corruption starts and stop the lane before weights are
+  poisoned
 - `T179` then re-runs the bounded rebuilt-bundle proof against those repaired
   surfaces and decides whether the lane is ready for another saturation attempt
 
@@ -84,7 +88,7 @@ next bounded Hemma repro:
   - resolved batch occupancy context for the failing window
 - Reproduce the current failure on a bounded rebuilt-bundle Hemma proof using
   the same aggressive launch class and canonical detached surface, but only
-  after the code-side remediation in `T180` lands.
+  after the code-side remediation in `T180` and `T186` lands.
 - Land the smallest numerically stabilizing fix needed to keep the rebuilt
   aggressive proof finite through the first acceptance window.
 - Preserve the existing `T175` observability and attribution work; do not

@@ -17,6 +17,8 @@ tags:
 links:
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
+  - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
   - docs/backlog/tasks/task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md
@@ -46,8 +48,12 @@ For the preserved Task 101 legacy lane:
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
 - record future live training/eval progress here, not in the skill doc
-- treat `T180` as the active remediation owner for the new non-finite and
-  checkpoint-phase truth issues exposed by the strict `1238` relaunch
+- treat `T186` as the active remediation owner for the remaining
+  optimizer-boundary corruption and deterministic replay work
+- treat `T180` as the delivered first-pass truth/forensics slice
+- treat Story 28 / `T187-T191` as the permanent architecture-hardening lane;
+  new control-plane or runtime logic must land there instead of growing the
+  old central files again
 
 Why this is now the clean plan:
 
@@ -198,10 +204,10 @@ Important operator interpretation:
   should not assume those later `checkpoint-save` entries represent durable
   recovery points
 
-Remediation owner for this failure:
+Remediation owners for this failure:
 
 - `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
-  now owns:
+  delivered:
   - bounded forensic instrumentation for the combined loss, main talker loss,
     sub-talker loss, and gradient norm
   - per-microbatch row provenance and ordered tensor-finiteness probes so the
@@ -211,6 +217,26 @@ Remediation owner for this failure:
     `random.shuffle(...)` behavior
   - truthful durable-versus-export checkpoint phase labels
   - explicit epoch-semantics reporting in status/report artifacts
+- `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
+  now owns:
+  - deterministic detached replay for the `1238 -> 1405/1406` failure window
+  - targeted text-embedding / text-projection parameter probes
+  - targeted optimizer-state probes for those params
+  - the fail-closed guard that must stop the lane before a corrupt update is
+    applied
+
+### 2026-03-15: Deterministic Replay Pivot
+
+The approved plan is no longer “keep rerunning the full resumed lane and learn
+one small thing each time.”
+
+The canonical next root-cause workflow is:
+
+1. `pdm run qwen-train diagnose-non-finite`
+1. inspect the bounded detached diagnostic report
+1. land the targeted optimizer-boundary fix
+1. rerun the same detached diagnostic surface
+1. only then decide whether `T179` can retry a bounded stability proof
 
 ### 2026-03-15: Abandoned Artifact Cleanup
 
@@ -255,9 +281,14 @@ That plan is now superseded because:
 
 Do not relaunch the recovered training lane yet.
 
-The next canonical action is to complete `T180` so operators can see:
+The next canonical action is to complete `T186` so operators can see:
 
-- exactly which loss component and gradient signal the non-finite guard is
+- whether the targeted text-embedding / text-projection params are finite
+  before and after the update,
+- whether optimizer state for those params is already corrupted,
+- whether `optimizer.step()` must be skipped before a corrupt update is
+  applied,
+- and exactly which loss component and gradient signal the non-finite guard is
   tripping on
 - exactly which microbatches and manifest rows fed the offending optimizer
   step window

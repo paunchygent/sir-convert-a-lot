@@ -19,6 +19,7 @@ links:
   - .agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-27-transition-to-domain-centric-ml-pipeline-structure.md
+  - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
 ---
 
@@ -141,6 +142,13 @@ Follow-on control posture after `T182`:
   material when we want a real check without rebuilding the full pilot bundle,
 - and use the schedule runner for planned
   `train -> stop -> eval -> resume` cadence around durable checkpoints.
+- when a resumed lane fails with non-finite behavior, use
+  `qwen-train diagnose-non-finite` as the canonical next step before any new
+  bounded retry.
+- Story 28 / `T187-T191` is the permanent architecture-governance lane for the
+  Qwen training control plane and patched runtime. New feature work must not
+  keep growing `qwen_train.py`, `orchestrator.py`, `reporting.py`, or
+  `sft_12hz_loop.py`; extract by bounded module ownership instead.
 
 ## Shard and Work Allocation
 
@@ -252,6 +260,8 @@ Operator interpretation:
 - Keep live recovery and progress notes in the dedicated reference ledger,
   `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`,
   rather than adding operational logs to the skill doc.
+- For repeated non-finite failures, the canonical flow is now:
+  `status -> diagnose-non-finite -> fix -> bounded retry`.
 
 ## Hemma Storage Tiers
 

@@ -31,6 +31,13 @@ related:
   - docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md
   - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
+  - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
+  - docs/backlog/tasks/task-187-define-and-codify-qwen-training-control-plane-architecture-rules.md
+  - docs/backlog/tasks/task-188-refactor-host-qwen-cli-control-plane-use-cases-out-of-qwen-train-py.md
+  - docs/backlog/tasks/task-189-replace-qwen-detached-orchestrator-with-bounded-runtime-modules.md
+  - docs/backlog/tasks/task-190-replace-qwen-reporting-module-with-bounded-reporting-packages.md
+  - docs/backlog/tasks/task-191-split-qwen-patched-training-loop-into-bounded-runtime-modules.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
@@ -118,6 +125,7 @@ Out of scope for this story:
 1. `docs/backlog/tasks/task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md`
 1. `docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md`
 1. `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+1. `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
 1. `docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md`
 1. `docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md`
 1. `docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md`
@@ -218,9 +226,18 @@ Root-cause conclusion from this evidence:
   accumulation-boundary audit, canonical failed-run report emission, and
   accumulation-aware regression coverage required before trusting the next
   bounded repro.
+- The next strict-recovery replay showed the remaining root cause is at the
+  optimizer boundary rather than in generic loss reporting alone, so follow-on
+  task `T186` now owns deterministic replay, targeted parameter/optimizer-state
+  probes, and the fail-closed guard that must land before another bounded
+  retry.
 - Follow-on task `T179` remains the dependent rebuilt-bundle Hemma repro that
-  runs only after `T180` lands and then decides whether the numerical
-  instability window is sufficiently bounded for another saturation retry.
+  runs only after `T180` and `T186` land and then decides whether the
+  numerical instability window is sufficiently bounded for another saturation
+  retry.
+- Story 28 with `T187-T191` is now the permanent architecture-hardening lane
+  that blocks further feature growth in the current Qwen control-plane and
+  runtime god files while the numerical-stability work continues.
 - Follow-on task `T181` now tracks the real held-out eval loop required before
   the team commits multi-hour Task 101 pilot time without in-run validation
   loss truth.

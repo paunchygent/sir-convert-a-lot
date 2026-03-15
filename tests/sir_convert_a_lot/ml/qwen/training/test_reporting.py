@@ -174,6 +174,7 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
     markdown = render_status_markdown(
         DetachedStatus(
             checked_at="2026-03-13T12:00:10Z",
+            launch_kind="training",
             launch_id="qwen-run",
             container_name="qwen-run-container",
             container_id="container-id",
@@ -220,6 +221,9 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
                     "runtime_ref_mel_extraction_count": 0,
                     "persisted_ref_mel_load_count": 3,
                 },
+                "diagnostic": {
+                    "kind": "diagnose-non-finite",
+                },
             },
             pilot_report_found=False,
             pilot_report=None,
@@ -229,6 +233,7 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
         )
     )
 
+    assert "- launch_kind: `training`" in markdown
     assert "- pilot_current_phase: `train`" in markdown
     assert "- pilot_current_step: `3`" in markdown
     assert "- pilot_smoothed_loss: `1.3`" in markdown
@@ -237,6 +242,7 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
     assert "- pilot_best_eval_step: `2`" in markdown
     assert "- pilot_eval_runs_completed: `1`" in markdown
     assert "- pilot_mlflow_run_id: `mlflow-run-id`" in markdown
+    assert "- pilot_diagnostic_kind: `diagnose-non-finite`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_kind: `ref_mel`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_version: `task101_ref_mel_v1`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_count: `2`" in markdown
