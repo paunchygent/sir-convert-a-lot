@@ -1,5 +1,34 @@
 # Session Handoff
 
+## Session Update (2026-03-15, Task 185 legacy checkpoint recovery)
+
+- Advanced `task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md`.
+- Confirmed good recovery behavior:
+  - legacy `1236`-step launch metadata now loads without manual JSON edits
+  - `qwen-train resume` can override a stale bundle root
+  - the diagnostic recovery probe restored trainer state and wrote a new
+    durable checkpoint at step `1238`
+- Confirmed unsafe behavior that must remain source-of-truth for the next
+  developer:
+  - a resumed launch reusing the old run root can initially surface stale
+    `report.json` from the earlier failed attempt
+  - the saved legacy cursor `next_step_in_epoch=1236` was accepted against a
+    replacement bundle with `dataloader_length=128`, which produced misleading
+    partial-epoch status until the next durable save normalized the cursor
+  - no standalone held-out eval baseline was captured before the first resume
+- Remediation already landed locally and on `origin/main`:
+  - `510786e` hides stale pre-launch status/report artifacts for active resumed
+    containers in detached inspection
+  - current local follow-up adds a trainer-side fail-closed guard for impossible
+    saved resume cursors
+- Operational rule now in docs/runbook/skill:
+  - legacy checkpoint recovery order is `standalone eval -> resume`, never
+    blind resume first
+- Hemma note:
+  - do not pull the stale-artifact fix onto Hemma until the active resumed
+    container `20260315T102149Z` is fully stopped, because the trainer
+    bind-mounts the live repo checkout
+
 ## Session Update (2026-03-15, Task 184 remediation)
 
 - Completed `task-184-remediate-task-101-qwen-schedule-pointer-truth-schedule-path-fail-closed-validation-and-retention-3-checkpoint-proof-coverage.md`.

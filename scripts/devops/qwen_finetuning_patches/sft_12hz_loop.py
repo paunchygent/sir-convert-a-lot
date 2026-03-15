@@ -60,6 +60,28 @@ from scripts.devops.qwen_finetuning_patches.training_stop import (
 )
 
 
+def _validate_resume_cursor_compatibility(
+    *,
+    checkpoint_metadata: DurableCheckpointMetadata,
+    dataloader_length: int,
+) -> None:
+    """Fail closed when one saved resume cursor is impossible for the current bundle."""
+    if checkpoint_metadata.next_step_in_epoch < 0:
+        raise SystemExit(
+            "Durable checkpoint metadata contained a negative `next_step_in_epoch`; "
+            "refusing resume."
+        )
+    if checkpoint_metadata.next_step_in_epoch > dataloader_length:
+        raise SystemExit(
+            "Durable checkpoint resume cursor exceeded the current dataloader length. "
+            f"checkpoint_next_step_in_epoch={checkpoint_metadata.next_step_in_epoch} "
+            f"dataloader_length={dataloader_length}. "
+            "This usually means the checkpoint is being resumed against a different bundle "
+            "or a stale cursor contract. Run standalone eval first and only resume when the "
+            "checkpoint cursor matches the current bundle."
+        )
+
+
 def _consume_loss_observations(
     *,
     accelerator: Accelerator,
@@ -236,6 +258,10 @@ def execute_training_loop(
     if args.resume_from_checkpoint is not None:
         resume_checkpoint_path = Path(args.resume_from_checkpoint)
         latest_durable_checkpoint = _load_durable_checkpoint_metadata(resume_checkpoint_path)
+        _validate_resume_cursor_compatibility(
+            checkpoint_metadata=latest_durable_checkpoint,
+            dataloader_length=prepared.dataloader_length,
+        )
         accelerator.load_state(resume_checkpoint_path.as_posix())
         resumed_from_checkpoint_path = resume_checkpoint_path.as_posix()
         optimizer_steps_completed = latest_durable_checkpoint.optimizer_steps_completed

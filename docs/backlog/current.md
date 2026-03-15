@@ -204,13 +204,11 @@ This file is the canonical long-term memory index for session progress; session 
   - Opened follow-on hard-fix tasks `T171`, `T173`, and `T172`.
   - Completed Story 27 and Tasks 166-170 (domain-centric ML structure, CLI rebuild, Docker/runbook alignment).
 - 2026-03-15:
-  - Completed `T184` as the post-review control-plane remediation slice for
-    Task 101 scheduled Qwen runs: schedule-driven resume now advances the
-    latest-launch pointer, schedule preflight fails closed for launch-derived
-    checkpoint/eval/bundle paths, and checkpoint persistence tests now prove
-    the shipped retention-`3` boundary.
+  - Completed `T184`: schedule-driven resume now advances the latest-launch pointer, schedule preflight fails closed for launch-derived checkpoint/eval/bundle paths, and checkpoint persistence proves retention `3`.
+  - Opened `T185`: the legacy `1236`-step run can relaunch without manual JSON edits and can override a stale bundle root, but the first probe exposed stale reused-run artifacts during active resume and an impossible saved `next_step_in_epoch` that did not fail closed against the replacement bundle `dataloader_length`. Active posture: stop, standalone eval, fail closed on incompatible resume cursors, then relaunch.
 
 ## Next Actions
 
 - Story 26 follow-on: execute `T171`, `T173`, and `T172` in order, then rerun acceptance evidence until the lane can prove `>= 90%` steady-state median GPU busy on a finite-loss window.
 - Story 27 follow-on: finish remaining moved-test import refactor under `tests/sir_convert_a_lot/ml/qwen/`, then run the focused Qwen test lane for status synchronization.
+- Task 185 follow-on: finish incompatible-resume-cursor remediation, pull the stale-artifact status fix onto Hemma after the active container stops, run standalone eval against the preserved legacy checkpoint, then consider the next detached relaunch.

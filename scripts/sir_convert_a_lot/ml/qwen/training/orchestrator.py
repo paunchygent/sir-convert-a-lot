@@ -542,8 +542,8 @@ def _filter_stale_resumed_run_artifacts(
     pilot_status: dict[str, object] | None,
     pilot_report: dict[str, object] | None,
 ) -> tuple[dict[str, object] | None, dict[str, object] | None]:
-    """Hide stale run-root artifacts while a resumed container is still warming up."""
-    if launch.resumed_from_checkpoint_path is None or not bool(state.get("Running")):
+    """Hide stale run-root artifacts that predate the current resumed container."""
+    if launch.resumed_from_checkpoint_path is None:
         return pilot_status, pilot_report
     container_started_at = _parse_rfc3339_utc(str(state.get("StartedAt", "")))
     if container_started_at is None:

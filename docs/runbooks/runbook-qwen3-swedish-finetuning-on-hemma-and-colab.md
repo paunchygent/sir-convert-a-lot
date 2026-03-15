@@ -217,6 +217,31 @@ Canonical repo surface for the preprocessing lane:
   paths escape the mounted scratch root or are missing from disk.
 - Resume with: `pdm run qwen-train resume`.
 
+## Legacy Checkpoint Recovery Rule
+
+When recovering an older Task 101 checkpoint that predates the current
+scheduled-control contract, do not jump straight into resumed training.
+
+Canonical recovery order:
+
+1. Run standalone held-out eval against the candidate checkpoint first.
+1. Only then consider `qwen-train resume`.
+1. If the legacy launch metadata points at a stale bundle root, pass an
+   explicit replacement `--pilot-bundle-root`.
+1. If the saved durable checkpoint cursor is impossible for the current bundle
+   length, treat that as a hard stop rather than a recoverable warning.
+
+Operator interpretation:
+
+- A resumed launch that reuses an old run root must not surface stale
+  pre-resume `status.json` or `report.json` artifacts as if they belonged to
+  the active container.
+- A checkpoint whose saved `next_step_in_epoch` exceeds the current
+  `dataloader_length` is not safe to resume blindly; this usually means the
+  checkpoint is being paired with a different bundle contract.
+- Short recovery probes that only prove "the container came back and wrote a
+  new checkpoint" are diagnostic evidence, not acceptance evidence.
+
 ## Hemma Storage Tiers
 
 - SSD work tier: `/srv/scratch` (Builds, caches, active training).

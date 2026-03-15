@@ -95,6 +95,17 @@ explicitly narrow the scope.
   manifest paths in launch/status/report metadata while staying explicit that
   upstream `sft_12hz.py` is still train-only and does not perform in-training
   evaluation.
+- Scheduled Task 101 runs now use the canonical `500/100/3` posture:
+  durable checkpoint every `500` optimizer steps, held-out eval every `100`
+  steps, retain newest `3` durable trainer-state checkpoints.
+- For older pre-schedule checkpoints, the canonical recovery order is:
+  standalone held-out eval first, then resume only if the saved cursor is
+  compatible with the current bundle contract.
+- If a legacy launch requires `--pilot-bundle-root` override, do not assume the
+  saved intra-epoch cursor is still meaningful; treat any impossible cursor as
+  a fail-closed condition, not a warning.
+- Do not trust reused-run `status.json` or `report.json` artifacts unless they
+  clearly belong to the active resumed container.
 - Intentional detached Task 101 stops now request graceful shutdown and one
   final durable checkpoint when progress advanced beyond the latest saved step.
 - Task 100/101 launch surfaces now emit an explicit BuildKit cold-build warning

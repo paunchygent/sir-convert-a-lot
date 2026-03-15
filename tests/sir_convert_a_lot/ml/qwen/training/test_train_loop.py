@@ -268,6 +268,83 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     assert accelerator.prepared_optimizer.raw_step_attempts == 12
 
 
+def test_train_with_args_fails_closed_when_resume_cursor_exceeds_dataloader_length(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resume should reject impossible saved cursors for the current bundle length."""
+    train_manifest = tmp_path / "manifests" / "swedish_pilot_train.prepared.jsonl"
+    _write_train_manifest(train_manifest)
+    output_model_path = tmp_path / "run" / "checkpoints"
+    checkpoint_dir = output_model_path / "state-step-00001236"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    (checkpoint_dir / "training_state.json").write_text(
+        json.dumps(
+            {
+                "checkpoint_path": checkpoint_dir.as_posix(),
+                "saved_at": "2026-03-13T21:21:26Z",
+                "reason": "interval",
+                "optimizer_steps_completed": 1236,
+                "epoch": 0,
+                "next_epoch": 0,
+                "next_step_in_epoch": 1236,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.Accelerator",
+        _FakeAccelerator,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.Qwen3TTSModel.from_pretrained",
+        lambda *args, **kwargs: _FakeQwenWrapper(processor=object(), model=_FakeQwenModel(4)),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.AutoConfig.from_pretrained",
+        lambda *args, **kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.TTSDataset",
+        _FakeDataset,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.DataLoader",
+        lambda *args, **kwargs: [fake_training_batch()],
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.AdamW",
+        _FakeOptimizer,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.save_checkpoint",
+        fake_save_checkpoint,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.install_training_stop_handlers",
+        lambda stop_state: None,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.torch.cuda.is_available",
+        lambda: False,
+    )
+
+    args = base_training_args(
+        output_model_path=output_model_path,
+        train_manifest=train_manifest,
+        max_steps=1,
+    )
+    args.resume_from_checkpoint = checkpoint_dir.as_posix()
+
+    with pytest.raises(
+        SystemExit,
+        match="Durable checkpoint resume cursor exceeded the current dataloader length",
+    ):
+        train_with_args(args)
+
+
 def test_train_with_args_fails_after_configured_non_finite_loss_streak(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
