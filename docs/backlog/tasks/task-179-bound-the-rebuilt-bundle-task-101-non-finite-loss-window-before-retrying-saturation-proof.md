@@ -2,7 +2,7 @@
 id: task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof
 title: Bound the rebuilt-bundle Task 101 non-finite loss window before retrying saturation proof
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-14'
 last_updated: '2026-03-14'
@@ -135,6 +135,28 @@ this task's next bounded Hemma repro:
 - [ ] One bounded rebuilt-bundle Hemma proof under `build/verification/`
   demonstrates a finite early training window or a deterministic non-finite
   failure artifact.
+
+## Current Progress
+
+- The completed `T186` guarded proof isolated the first unsafe optimizer
+  boundary at step `1405`, with finite forward losses but non-finite
+  `text_embedding.weight.grad` before `optimizer.step()`.
+- A runtime-shape audit against the installed upstream Qwen model found that
+  the patched trainer, eval, and optimizer-boundary guard were resolving
+  `text_projection` from `model.talker.model`, while upstream exposes that
+  layer on `model.talker`.
+- The text/codec embedding and text-projection access path is now centralized
+  under
+  `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_runtime.py`, and the
+  train, eval, and optimizer-guard surfaces now consume that shared resolver.
+- The Qwen test doubles now mirror the upstream talker contract more closely,
+  and regression coverage now checks that:
+  - train-step execution applies the talker-level text projection when present
+  - optimizer-boundary probes include `text_projection.weight` in the targeted
+    surface family
+- The next acceptance step is a bounded Hemma replay to determine whether this
+  runtime-alignment fix removes the NaN boundary or moves the first non-finite
+  surface to a different component.
 
 ## Checklist
 

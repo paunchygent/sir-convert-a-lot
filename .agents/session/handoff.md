@@ -65,16 +65,20 @@
 
 ## Immediate Next Step
 
-Decide the next bounded `T179` stability retry from the completed `T186`
-proof artifacts. Do not restart broad training first.
+Run one bounded Hemma `T179` replay with the talker-runtime alignment fix in
+place and confirm whether the first non-finite boundary disappears or moves.
+Do not restart broad training first.
 
 ## Open Risks
 
 - Do not ignore the stale legacy-source diagnostic lesson: future detached
   proofs must reuse a truthful source launch root rather than inheriting stale
   `2/100/2` checkpoint cadence settings.
-- `T179` should proceed only as a bounded next slice that explicitly uses the
-  completed `T186` fail-closed evidence.
+- `T179` now has one concrete code-side remediation in place:
+  - train, eval, and optimizer-boundary probes now resolve `text_projection`
+    from the upstream talker surface rather than the wrong nested path
+  - a bounded Hemma proof is still required before concluding that this fixes
+    the NaN lane
 - Do not add new Qwen feature logic to central files; use the Story 28 package
   owners enforced by `RULE-095`.
 

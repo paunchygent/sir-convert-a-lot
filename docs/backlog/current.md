@@ -70,11 +70,21 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   - `text_embedding.weight` and its optimizer state stayed finite pre-step
     while `text_embedding.weight.grad` was already non-finite, which closes
     `T186` as the optimizer-boundary proof slice.
+  - The first `T179` remediation slice is now in progress:
+    - an upstream-shape audit found the patched trainer/eval/guard were
+      resolving `text_projection` from `model.talker.model` even though
+      upstream Qwen exposes it on `model.talker`
+    - the text path is now centralized in
+      `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_runtime.py`
+      so train, eval, and optimizer-boundary probes share one runtime-shape
+      contract
+    - local Qwen regressions and `pdm run typecheck-ml` passed after the fix
 
 ## Next Actions
 
-- Use the completed `T186` proof to decide the next bounded `T179`
-  stability-retry slice rather than relaunching broad training blindly.
+- Run one bounded Hemma `T179` replay with the talker-runtime alignment fix in
+  place and determine whether the first non-finite boundary disappears or
+  shifts to a different surface.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in
