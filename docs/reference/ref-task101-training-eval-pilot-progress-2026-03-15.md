@@ -119,6 +119,69 @@ What this probe does not count as:
 - not the baseline eval result
 - not a reason to keep resuming from `1236` when `1238` already exists
 
+### 2026-03-15: Canonical Strict Resume Relaunch
+
+- Relaunch command used:
+
+```bash
+pdm run run-hemma -- pdm run qwen-train resume \
+  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot/task101-20260313t102144z \
+  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
+  --checkpoint-interval-steps 500 \
+  --eval-interval-steps 100 \
+  --durable-checkpoint-retention 3 \
+  --skip-build
+```
+
+- New detached launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T110545Z`
+- New container:
+  `qwen-train-20260315T110545Z`
+- Relaunch source checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
+
+Truth confirmed from detached status at `2026-03-15T11:09:57Z`:
+
+- `status=running`
+- `checkpoint_interval_steps=500`
+- `eval_interval_steps=100`
+- `durable_checkpoint_retention=3`
+- `current_optimizer_step=1268`
+- `latest_loss=6.697592735290527`
+- `smoothed_loss=6.445340894588681`
+
+Interpretation:
+
+- the active lane is no longer carrying forward the stale legacy
+  `2/100/2` posture
+- operators can now read launch/status artifacts and see the truthful
+  scheduled-control contract from the start of the resumed lane
+- the preserved legacy checkpoint has advanced beyond `1238` without requiring
+  manual launch JSON edits or a cursor-reset workaround
+
+### 2026-03-15: Abandoned Artifact Cleanup
+
+Removed after the canonical relaunch was confirmed healthy:
+
+- exited containers:
+  - `qwen-train-20260315T095620Z`
+  - `qwen-train-20260315T102149Z`
+  - `qwen-train-20260315T105831Z`
+  - `qwen-train-20260315T083102Z`
+- abandoned verification roots:
+  - `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T095620Z`
+  - `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T102149Z`
+  - `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T105831Z`
+- stale detached resource-monitor workers that kept recreating those abandoned
+  roots
+
+Post-cleanup Hemma check:
+
+- only active Qwen training container:
+  `qwen-train-20260315T110545Z`
+- `/srv/scratch` free space:
+  about `99GB`
+
 ## Superseded Operator Plan
 
 The abandoned plan is:

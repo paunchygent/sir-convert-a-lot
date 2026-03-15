@@ -2,7 +2,7 @@
 id: task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery
 title: Backport legacy Qwen resume compatibility and stale bundle override for Task 101 checkpoint recovery
 type: task
-status: active
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -123,10 +123,10 @@ Bad or unsafe behavior observed on the same recovery attempt:
   bundle length.
 - [x] A standalone held-out eval baseline is recorded for the `1236`
   checkpoint before the next training relaunch.
-- [ ] `qwen-train resume` can override checkpoint/eval cadence and retention
+- [x] `qwen-train resume` can override checkpoint/eval cadence and retention
   when a preserved legacy lane must be promoted onto the current scheduled
   contract.
-- [ ] The canonical next relaunch targets the compatible `1238` durable
+- [x] The canonical next relaunch targets the compatible `1238` durable
   checkpoint rather than reusing the incompatible legacy cursor from `1236`.
 - [x] Live recovery progress is tracked in a dedicated reference document.
 
@@ -142,20 +142,35 @@ Bad or unsafe behavior observed on the same recovery attempt:
   impossible for the current bundle length.
 - [x] Operators have a clean standalone eval baseline for the checkpoint being
   considered for relaunch.
-- [ ] Operators can promote a preserved legacy lane onto the current
+- [x] Operators can promote a preserved legacy lane onto the current
   `500/100/3` control posture without editing launch JSON by hand.
-- [ ] The canonical next relaunch uses the newer compatible `1238` checkpoint
+- [x] The canonical next relaunch uses the newer compatible `1238` checkpoint
   instead of resetting to `1236`.
-- [ ] The compatibility fallback does not change current canonical launch
+- [x] The compatibility fallback does not change current canonical launch
   defaults for new runs.
-- [ ] Focused Qwen training orchestration tests pass with the new compatibility
+- [x] Focused Qwen training orchestration tests pass with the new compatibility
   coverage.
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [x] Validation complete
 - [x] Hemma resume retried
 - [x] Standalone eval baseline captured
 - [x] Docs updated
-- [ ] Strict `1238` relaunch complete
+- [x] Strict `1238` relaunch complete
+
+## Completion Notes
+
+- The first `1238` relaunch exposed one more stale-default bug: resume still
+  inherited the legacy `checkpoint_interval_steps=2` and
+  `durable_checkpoint_retention=2` posture from the preserved launch snapshot.
+- Follow-up remediation added explicit resume-time overrides for checkpoint
+  cadence, eval cadence, and retention, with focused regression coverage.
+- The canonical recovery lane was then relaunched on Hemma from
+  `state-step-00001238` with explicit `500/100/3`, and detached status at
+  `2026-03-15T11:09:57Z` confirmed the running lane now reports the truthful
+  scheduled-control posture.
+- Abandoned failed launch roots, exited Qwen containers, and stale detached
+  resource-monitor workers were cleaned up after the canonical relaunch was
+  confirmed healthy.

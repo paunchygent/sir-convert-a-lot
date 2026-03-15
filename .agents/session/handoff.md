@@ -39,10 +39,22 @@
   - keep live recovery and progress notes in
     `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
     rather than extending the skill doc with operational logs
+- Follow-up after that note:
+  - the first strict `1238` relaunch exposed one more stale-default bug:
+    resume inherited the preserved launch's old `2/100/2` control posture
+  - remediation is now landed on `origin/main` as `f0e8cde`
+  - Hemma was fast-forwarded to that commit after the stale launch stopped
+  - the active recovered lane is now `20260315T110545Z`, and detached status at
+    `2026-03-15T11:09:57Z` confirms truthful
+    `checkpoint_interval_steps=500`, `eval_interval_steps=100`, and
+    `durable_checkpoint_retention=3`
+  - abandoned failed launch roots, exited Qwen containers, and stale detached
+    resource-monitor workers from the failed relaunch attempts were cleaned up
 - Hemma note:
-  - do not pull the stale-artifact fix onto Hemma until the active resumed
-    container `20260315T102149Z` is fully stopped, because the trainer
-    bind-mounts the live repo checkout
+  - code commit `f0e8cde` is already pulled onto Hemma because the stale
+    `20260315T105831Z` launch was fully stopped first
+  - any later docs-only follow-up commits should wait to be pulled until the
+    current live container `20260315T110545Z` is intentionally stopped
 
 ## Session Update (2026-03-15, Task 184 remediation)
 
