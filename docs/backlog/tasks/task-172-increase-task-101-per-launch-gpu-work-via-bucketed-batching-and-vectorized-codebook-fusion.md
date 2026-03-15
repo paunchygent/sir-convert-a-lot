@@ -52,16 +52,16 @@ and test smaller batching-policy changes first.
 
 ## PR Scope
 
-- Restructure `T172` around the architect-guided bounded experiment matrix:
-  - `M0`: offline occupancy replay against the rebuilt bundle
-  - `M1`: one finite Hemma uplift proof on the best offline candidate
-  - `M3`: one post-change ROCm attribution proof if `M1` stays finite
+- Restructure `T172` around the revised bounded experiment matrix:
+  - `M0`: offline fit-opportunity audit over the singleton tail
+  - `M1`: implement exactly one targeted batching change promoted by `M0`
+  - `M2`: one finite Hemma uplift proof on that promoted candidate
+  - `M3`: one post-change ROCm attribution proof if `M2` stays finite
 - Keep the old greedy one-open-batch packer as the only promotable default
   packer until a smaller bounded uplift is proven.
-- Add smaller, policy-level uplift candidates that do not repeat the already
-  disproven knobs:
-  - long-row singleton quarantine under the stable `640` codec-frame cap
-  - optional upper-tail bucket refinement under the same stable cap
+- Add committed offline analysis surfaces that can distinguish:
+  - same-bucket missed fits caused by greedy ordering
+  - adjacent-lower-bucket missed fits caused by the current bucket signal
 - Keep launch/report metadata truthful:
   - explicit profile label
   - explicit batch-policy settings
@@ -80,46 +80,56 @@ and test smaller batching-policy changes first.
 
 ## Experiment Matrix
 
-### `M0` Offline occupancy replay
+### `M0` Offline fit-opportunity audit
 
 - Run a committed batch-plan analysis surface against the rebuilt bundle train
-  manifest.
-- Compare exactly these profiles:
-  - `hemma-throughput-balanced-v1`
-  - `hemma-throughput-balanced-quarantine-v1`
-  - `hemma-throughput-balanced-quarantine-tail-v1`
-- Keep all of them on:
+  manifest with the stable:
   - old greedy one-open-batch packer
   - `max_codec_frames_per_batch=640`
   - no optimizer or runtime changes
-- Compare:
-  - mean batch size
-  - singleton-batch share
-  - two-row-batch share
-  - peak batch codec frames
-- Promote exactly one candidate into `M1`.
+- Audit singleton rows in the problematic `320-375` codec-frame band.
+- For each audited singleton row, record:
+  - whether a fitting partner exists later in the same bucket under unchanged
+    frame/token caps
+  - whether a fitting partner exists in the adjacent lower bucket under those
+    same caps
+- Use that discriminator to choose the smallest next change:
+  - same-bucket fits dominate -> narrow local lookahead candidate
+  - adjacent-lower-bucket fits dominate -> frame-primary / retuned bucketing
+    candidate
+  - neither dominates -> batching-only uplift is weaker than hoped and the task
+    should record that explicitly
 
-### `M1` Finite uplift proof on Hemma
+### `M1` Targeted candidate implementation
 
-- Launch the promoted `M0` candidate through the canonical detached
+- Land exactly one targeted batching change promoted by `M0`.
+- Keep:
+  - old greedy packer semantics everywhere outside the targeted intervention
+  - global codec-frame budget `640`
+  - no optimizer or runtime changes
+- Do not mix multiple uplift ideas in the same code slice.
+
+### `M2` Finite uplift proof on Hemma
+
+- Launch the promoted `M1` candidate through the canonical detached
   `qwen-train launch` surface.
 - Keep:
   - train/eval manifest family pairing aligned to the rebuilt bundle reality
   - `batch_size=8`
-  - old greedy packer
-  - global codec-frame budget `640`
-  - no LR or optimizer changes
+  - unchanged `640` global codec-frame budget
+  - unchanged LR, optimizer, precision, and checkpoint policy
 - Bound the proof at:
   - `max_steps=30`
   - `checkpoint_interval_steps=30`
 - Accept only if:
   - the run stays finite through the bounded window
   - mean batch size beats the stable balanced baseline
+  - singleton share beats the stable balanced baseline
   - steady-state train GPU median beats the stable balanced baseline
 
 ### `M3` Post-change ROCm attribution proof
 
-- Only run this if `M1` yields a finite candidate worth attributing.
+- Only run this if `M2` yields a finite candidate worth attributing.
 - Capture one bounded ROCm proof on the best finite candidate to verify whether
   higher occupancy actually reduces launch/sync dominance.
 
@@ -163,11 +173,11 @@ and test smaller batching-policy changes first.
 - So both prior uplift knobs are now explicitly non-promotable:
   - best-fit/backfill packer
   - global `640 -> 768` codec-frame-budget uplift
-- The new local implementation slice for this task adds:
+- The earlier local implementation slice added:
   - committed offline batch-plan analysis surface `qwen-batch-plan`
   - bounded quarantine candidate profile under the stable `640` cap
   - bounded quarantine plus upper-tail bucket candidate under the same cap
-- `M0` has now been executed against the rebuilt bundle:
+- The first offline replay precursor has already been executed against the rebuilt bundle:
   - output root:
     `/srv/scratch/sir-convert-a-lot/build/verification/task-172-batch-plan-analysis-20260315a/20260314T231848Z`
   - all three compared profiles produced identical occupancy:
@@ -185,9 +195,11 @@ and test smaller batching-policy changes first.
   - so the proposed `>= 480` singleton rule never fires
   - the upper-tail boundary refinement also makes no difference under the
     current combined-cost bucket key
-- `M1` is therefore intentionally blocked for the moment:
-  - there is no promoted occupancy candidate yet because `M0` produced only
-    baseline-equivalent plans
+- The revised `M0` is therefore now the fit-opportunity audit rather than
+  another quarantine replay:
+  - the prior quarantine hypothesis is falsified for this rebuilt bundle
+  - there is no promoted occupancy candidate yet because the first replay
+    produced only baseline-equivalent plans
   - launching a duplicate Hemma proof would not answer a new question
 
 ## Deliverables
@@ -197,25 +209,27 @@ and test smaller batching-policy changes first.
 - [x] Destabilizing best-fit packer reverted after Hemma isolation proved it
   breaks the stable balanced lane.
 - [x] Committed offline batch-plan analysis surface exists for `M0`.
-- [ ] One evidence-backed smaller uplift candidate chosen from `M0`.
-- [x] One bounded `M0` replay was completed and explicitly rejected as a no-op
+- [ ] One evidence-backed smaller uplift candidate chosen from the revised `M0`.
+- [x] One bounded quarantine replay precursor was completed and explicitly rejected as a no-op
   for the initial quarantine threshold.
-- [ ] One finite `M1` Hemma uplift proof completed or rejected with evidence.
+- [ ] One targeted `M1` batching change implemented from the revised `M0`.
+- [ ] One finite `M2` Hemma uplift proof completed or rejected with evidence.
 - [ ] One evidence-backed default profile chosen for follow-on saturation runs.
 
 ## Acceptance Criteria
 
-- [ ] `M0` produces a committed occupancy report for the rebuilt bundle that
-  compares baseline, quarantine, and quarantine-tail candidates under the same
-  stable `640` codec-frame cap.
-- [x] If `M0` produces only baseline-equivalent plans, the task records that
-  null result explicitly and does not launch a duplicate `M1` proof.
-- [ ] `M1` launches exactly one promoted `M0` candidate and records whether it
+- [ ] The revised `M0` produces a committed fit-opportunity audit for singleton
+  rows in the `320-375` codec-frame band.
+- [x] If the quarantine replay precursor produces only baseline-equivalent
+  plans, the task records that null result explicitly and does not launch a
+  duplicate Hemma proof.
+- [ ] `M1` lands exactly one targeted batching change promoted by the revised `M0`.
+- [ ] `M2` launches exactly one promoted `M1` candidate and records whether it
   stays finite through `30` optimizer steps / first durable checkpoint.
-- [ ] If `M1` stays finite, bounded Hemma evidence shows higher steady-state
+- [ ] If `M2` stays finite, bounded Hemma evidence shows higher steady-state
   train median GPU busy and better realized occupancy than the stable balanced
   baseline.
-- [ ] If `M1` stays finite, `M3` records whether ROCm launch/sync overhead
+- [ ] If `M2` stays finite, `M3` records whether ROCm launch/sync overhead
   dropped relative to the March 13 baseline evidence.
 - [x] Throughput profile metadata is surfaced in launch/status/report artifacts.
 
@@ -228,9 +242,9 @@ and test smaller batching-policy changes first.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run run-hemma -- pdm run qwen-batch-plan --pilot-bundle-root <rebuilt_bundle_root>`
-- [ ] `pdm run run-hemma -- pdm run qwen-train launch ... --throughput-profile-label hemma-throughput-balanced-quarantine-v1`
-- [ ] If `M1` stays finite, one bounded ROCm attribution proof written under
+- [ ] `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.cli.ml.qwen_batch_plan --pilot-bundle-root <rebuilt_bundle_root> --fit-audit-codec-frame-band-min 320 --fit-audit-codec-frame-band-max 375`
+- [ ] `pdm run run-hemma -- pdm run qwen-train launch ...` for the promoted `M1` candidate
+- [ ] If `M2` stays finite, one bounded ROCm attribution proof written under
   `build/verification/`.
 
 ## Checklist

@@ -45,6 +45,8 @@ DEFAULT_PROFILE_LABELS = (
     "hemma-throughput-balanced-quarantine-v1",
     "hemma-throughput-balanced-quarantine-tail-v1",
 )
+DEFAULT_FIT_AUDIT_CODEC_FRAME_BAND_MIN = 320
+DEFAULT_FIT_AUDIT_CODEC_FRAME_BAND_MAX = 375
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -71,6 +73,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--model-id", default=DEFAULT_MODEL_ID)
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    parser.add_argument(
+        "--fit-audit-codec-frame-band-min",
+        type=int,
+        default=DEFAULT_FIT_AUDIT_CODEC_FRAME_BAND_MIN,
+    )
+    parser.add_argument(
+        "--fit-audit-codec-frame-band-max",
+        type=int,
+        default=DEFAULT_FIT_AUDIT_CODEC_FRAME_BAND_MAX,
+    )
     parser.add_argument(
         "--profile-label",
         action="append",
@@ -165,6 +177,10 @@ def main(argv: list[str] | None = None) -> int:
         _containerize_scratch_path(train_jsonl, scratch_root=Path(args.scratch_build_root)),
         "--batch-size",
         str(int(args.batch_size)),
+        "--fit-audit-codec-frame-band-min",
+        str(int(args.fit_audit_codec_frame_band_min)),
+        "--fit-audit-codec-frame-band-max",
+        str(int(args.fit_audit_codec_frame_band_max)),
         "--output-json",
         _containerize_scratch_path(report_json, scratch_root=Path(args.scratch_build_root)),
         "--output-md",
@@ -182,6 +198,8 @@ def main(argv: list[str] | None = None) -> int:
             "train_jsonl": train_jsonl.as_posix(),
             "profile_labels": profile_labels,
             "batch_size": int(args.batch_size),
+            "fit_audit_codec_frame_band_min": int(args.fit_audit_codec_frame_band_min),
+            "fit_audit_codec_frame_band_max": int(args.fit_audit_codec_frame_band_max),
             "report_json": report_json.as_posix(),
             "report_md": report_md.as_posix(),
         },

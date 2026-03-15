@@ -19,6 +19,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import (
     BucketedBatchSampler,
     TrainingRowBatchMetrics,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.batch_plan_analysis import (
+    build_singleton_fit_audit,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     ThroughputBatchPolicy,
@@ -242,3 +245,71 @@ def test_summarize_batch_occupancy_reports_histogram_and_per_batch_totals() -> N
             "codec_frame_count": 22,
         },
     ]
+
+
+def test_singleton_fit_audit_detects_later_same_bucket_partner() -> None:
+    """The audit should flag singleton rows that have a later fit in the same bucket."""
+    policy = ThroughputBatchPolicy(
+        profile_label="test-fit-audit-same-bucket",
+        policy_kind="bucketed-frame-token-budget-v1",
+        max_batch_size=8,
+        max_tokens_per_batch=1000,
+        max_codec_frames_per_batch=640,
+        length_bucket_boundaries=(400, 800),
+        minimum_required_max_batch_size=1,
+        long_row_singleton_codec_frame_threshold=None,
+    )
+    row_metrics = [
+        TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=350),
+        TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=300),
+        TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=290),
+    ]
+    sampler = BucketedBatchSampler(row_metrics=row_metrics, policy=policy)
+
+    summary = build_singleton_fit_audit(
+        row_metrics=row_metrics,
+        policy=policy,
+        planned_batches=sampler.planned_batches(),
+        codec_frame_band_min=320,
+        codec_frame_band_max=375,
+    )
+
+    assert summary is not None
+    assert summary.audited_singleton_count == 1
+    assert summary.same_bucket_fit_count == 1
+    assert summary.adjacent_lower_bucket_fit_count == 0
+    assert summary.same_bucket_only_count == 1
+
+
+def test_singleton_fit_audit_detects_adjacent_lower_bucket_partner() -> None:
+    """The audit should flag singleton rows whose fit only exists in the adjacent lower bucket."""
+    policy = ThroughputBatchPolicy(
+        profile_label="test-fit-audit-lower-bucket",
+        policy_kind="bucketed-frame-token-budget-v1",
+        max_batch_size=8,
+        max_tokens_per_batch=1000,
+        max_codec_frames_per_batch=640,
+        length_bucket_boundaries=(300, 500, 800),
+        minimum_required_max_batch_size=1,
+        long_row_singleton_codec_frame_threshold=None,
+    )
+    row_metrics = [
+        TrainingRowBatchMetrics(text_token_count=50, codec_frame_count=350),
+        TrainingRowBatchMetrics(text_token_count=40, codec_frame_count=300),
+        TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=280),
+    ]
+    sampler = BucketedBatchSampler(row_metrics=row_metrics, policy=policy)
+
+    summary = build_singleton_fit_audit(
+        row_metrics=row_metrics,
+        policy=policy,
+        planned_batches=sampler.planned_batches(),
+        codec_frame_band_min=320,
+        codec_frame_band_max=375,
+    )
+
+    assert summary is not None
+    assert summary.audited_singleton_count == 1
+    assert summary.same_bucket_fit_count == 0
+    assert summary.adjacent_lower_bucket_fit_count == 1
+    assert summary.adjacent_lower_only_count == 1
