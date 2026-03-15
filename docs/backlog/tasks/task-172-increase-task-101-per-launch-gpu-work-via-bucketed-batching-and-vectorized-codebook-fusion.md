@@ -201,6 +201,32 @@ and test smaller batching-policy changes first.
   - there is no promoted occupancy candidate yet because the first replay
     produced only baseline-equivalent plans
   - launching a duplicate Hemma proof would not answer a new question
+- The revised `M0` fit-opportunity audit has now been executed:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/task-172-fit-audit-20260315a/20260315T004614Z`
+  - profile:
+    `hemma-throughput-balanced-v1`
+  - codec-frame audit band:
+    `320-375`
+  - audited singleton count:
+    `242`
+  - same-bucket fit count:
+    `55`
+  - adjacent-lower-bucket fit count:
+    `227`
+  - same-bucket-only count:
+    `0`
+  - adjacent-lower-only count:
+    `172`
+  - both-fit count:
+    `55`
+  - neither-fit count:
+    `15`
+- That discriminator materially changes the next recommended change:
+  - adjacent-lower-bucket opportunities dominate
+  - same-bucket-only opportunities do not dominate at all
+  - so the next promoted `M1` candidate should target the bucket signal /
+    boundaries rather than a same-bucket lookahead policy
 
 ## Deliverables
 
@@ -212,6 +238,8 @@ and test smaller batching-policy changes first.
 - [ ] One evidence-backed smaller uplift candidate chosen from the revised `M0`.
 - [x] One bounded quarantine replay precursor was completed and explicitly rejected as a no-op
   for the initial quarantine threshold.
+- [x] The revised `M0` fit-opportunity audit completed and selected bucket-signal
+  retuning as the next promoted `M1` direction.
 - [ ] One targeted `M1` batching change implemented from the revised `M0`.
 - [ ] One finite `M2` Hemma uplift proof completed or rejected with evidence.
 - [ ] One evidence-backed default profile chosen for follow-on saturation runs.
@@ -220,6 +248,8 @@ and test smaller batching-policy changes first.
 
 - [ ] The revised `M0` produces a committed fit-opportunity audit for singleton
   rows in the `320-375` codec-frame band.
+- [x] The revised `M0` explicitly distinguishes same-bucket ordering misses from
+  adjacent-lower-bucket grouping misses on the rebuilt bundle.
 - [x] If the quarantine replay precursor produces only baseline-equivalent
   plans, the task records that null result explicitly and does not launch a
   duplicate Hemma proof.
