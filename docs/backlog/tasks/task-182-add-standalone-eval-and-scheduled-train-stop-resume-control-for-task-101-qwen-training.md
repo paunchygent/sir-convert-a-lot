@@ -1,0 +1,117 @@
+---
+id: task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training
+title: Add standalone eval and scheduled train-stop-resume control for Task 101 Qwen training
+type: task
+status: in_progress
+priority: critical
+created: '2026-03-15'
+last_updated: '2026-03-15'
+related:
+  - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
+  - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
+  - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
+  - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
+labels:
+  - qwen
+  - finetuning
+  - eval
+  - scheduling
+  - hemma
+---
+
+PR-sized execution unit; may be linked to a story or standalone.
+
+## Objective
+
+Add a real standalone `qwen-train eval` command plus an epoch-aware schedule
+runner that can drive `train -> stop -> eval -> resume` from durable
+checkpoints without forcing a full pilot-bundle rebuild before each held-out
+check.
+
+## PR Scope
+
+- Add a public `qwen-train eval` surface that loads one Task 101 checkpoint,
+  runs a real held-out eval pass against explicit eval material, and persists
+  machine-readable eval artifacts.
+- Reuse the canonical Qwen training image and checkpoint contract rather than
+  inventing a host-only or reporting-only eval path.
+- Add one schedule runner that orchestrates detached training windows together
+  with intentional stop, standalone eval, and resume.
+- Make the schedule runner epoch-aware by reading canonical dataloader-length
+  truth and durable checkpoint metadata instead of guessing epoch boundaries
+  from row counts alone.
+- Keep the first slice bounded to held-out loss and schedule control truth; do
+  not expand into broad generation metrics or speculative throughput tuning.
+
+## Non-Goals
+
+- Do not require a full pilot-bundle rebuild just to run held-out eval on an
+  existing checkpoint.
+- Do not add a fake shell-script scheduler that depends on operator memory and
+  produces no machine-readable evidence.
+- Do not redesign the Qwen training objective in this task.
+- Do not collapse the held-out eval contract back into train-manifest eval.
+
+## Ordered Execution
+
+1. Open the task/docs slice for standalone eval and scheduled control.
+1. Add the public `qwen-train eval` surface and in-container standalone eval
+   implementation.
+1. Add schedule-runner orchestration that can launch or resume training,
+   request a graceful stop at the next planned boundary, run standalone eval,
+   and resume again.
+1. Persist eval and schedule truth into deterministic status/report artifacts.
+1. Add focused regression coverage for CLI parsing, checkpoint/eval path
+   validation, epoch-boundary math, and schedule orchestration.
+1. Run local quality gates, docs gates, and one bounded Hemma proof before any
+   longer pilot spend.
+
+## Deliverables
+
+- [x] Public `qwen-train eval` command with deterministic artifact output.
+- [x] In-container standalone eval entrypoint that restores a checkpoint and
+  runs held-out loss truthfully.
+- [x] Epoch-aware schedule runner for `train -> stop -> eval -> resume`.
+- [x] Focused tests for standalone eval and schedule control.
+- [x] Updated task/story/runbook docs describing the new control surface.
+
+## Acceptance Criteria
+
+- [x] `qwen-train eval` accepts an explicit checkpoint plus held-out eval
+  material and runs a real eval pass with `model.eval()` and `torch.no_grad()`
+  inside the governed training image.
+- [x] Standalone eval writes deterministic machine-readable artifacts that
+  expose at least latest eval loss, checkpoint path, eval manifest path, and
+  bundle/reference-input posture.
+- [x] The schedule runner can intentionally stop a detached training run,
+  launch standalone eval against the resulting durable checkpoint, and resume
+  training from that checkpoint afterwards.
+- [x] Epoch-aware schedule boundaries are computed from canonical
+  `dataloader_length` and durable checkpoint metadata rather than inferred from
+  raw row counts alone.
+- [x] Focused tests prove the schedule runner chooses the correct next boundary
+  and wires train/eval/resume calls in order without needing a long Hemma run.
+
+## Validation
+
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py -q`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+## Checklist
+
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Notes
+
+- Local implementation and focused validation are complete.
+- Hemma now has scratch-root held-out eval manifests that can drive the new
+  standalone eval surface without forcing a full pilot-bundle rebuild.
+- A bounded remote smoke run is still pending from a pushed revision of this
+  slice.

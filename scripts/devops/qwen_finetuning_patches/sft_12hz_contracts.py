@@ -33,6 +33,8 @@ class TrainingSummary:
     eval_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
+    dataloader_length: int
+    eval_dataloader_length: int
     gradient_accumulation_steps: int
     optimizer_steps_completed: int
     train_iterations_completed: int
@@ -64,3 +66,24 @@ class TrainingSummary:
     ref_mel_cache: dict[str, bool | float | int | None]
     profiling: dict[str, object] | None
     tracking: TrainingTrackerSummary | None = None
+
+
+@dataclass(frozen=True)
+class StandaloneEvalSummary:
+    """Machine-readable summary for one standalone held-out evaluation pass."""
+
+    init_model_path: str
+    checkpoint_path: str
+    eval_jsonl: str
+    batch_size: int
+    eval_batches_completed: int
+    eval_dataloader_length: int
+    checkpoint_optimizer_steps_completed: int
+    checkpoint_epoch: int
+    checkpoint_next_epoch: int
+    checkpoint_next_step_in_epoch: int
+    eval_loss: float
+    throughput_profile: dict[str, object]
+    dataloader_tuning: dict[str, object]
+    ref_mel_cache: dict[str, bool | float | int | None]
+    profiling: dict[str, object] | None

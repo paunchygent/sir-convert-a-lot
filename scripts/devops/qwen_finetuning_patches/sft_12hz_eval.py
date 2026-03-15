@@ -16,13 +16,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 import torch
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
     fuse_auxiliary_codebook_embeddings,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import StandaloneEvalSummary
 from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     to_device_with_optional_non_blocking,
 )
@@ -36,7 +37,12 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import log_eval_metrics
 
 if TYPE_CHECKING:
+    from scripts.devops.qwen_finetuning_patches.sft_12hz_eval_setup import (
+        PreparedStandaloneEvalRun,
+    )
     from scripts.devops.qwen_finetuning_patches.sft_12hz_setup import PreparedTrainingRun
+
+    EvalPreparedRun: TypeAlias = PreparedTrainingRun | PreparedStandaloneEvalRun
 
 DEFAULT_EVAL_INTERVAL_STEPS = 100
 
@@ -81,6 +87,8 @@ def run_eval_pass(
                 current_optimizer_step=current_optimizer_step,
                 current_train_iteration=current_train_iteration,
                 gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                dataloader_length=None,
+                eval_dataloader_length=prepared.eval_dataloader_length,
                 latest_loss=latest_loss,
                 smoothed_loss=smoothed_loss,
                 latest_durable_checkpoint=latest_durable_checkpoint,
@@ -91,71 +99,11 @@ def run_eval_pass(
             )
         )
     model.eval()
-    total_eval_loss = 0.0
-    completed_batches = 0
     try:
-        with torch.no_grad(), prepared.torch_profiler_session.phase("task101.eval"):
-            for batch in prepared.eval_dataloader:
-                input_ids = batch["input_ids"]
-                codec_ids = batch["codec_ids"]
-                ref_mels = batch["ref_mels"]
-                text_embedding_mask = batch["text_embedding_mask"]
-                codec_embedding_mask = batch["codec_embedding_mask"]
-                attention_mask = batch["attention_mask"]
-                codec_0_labels = batch["codec_0_labels"]
-                codec_mask = batch["codec_mask"]
-                speaker_embedding = model.speaker_encoder(
-                    to_device_with_optional_non_blocking(
-                        ref_mels,
-                        device=model.device,
-                        dtype=model.dtype,
-                        non_blocking_transfer=(
-                            prepared.effective_dataloader_tuning.non_blocking_transfer
-                        ),
-                    )
-                ).detach()
-                input_text_ids = input_ids[:, :, 0]
-                input_codec_ids = input_ids[:, :, 1]
-                input_text_embedding = (
-                    model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
-                )
-                if hasattr(model.talker.model, "text_projection"):
-                    input_text_embedding = model.talker.model.text_projection(input_text_embedding)
-                input_codec_embedding = (
-                    model.talker.model.codec_embedding(input_codec_ids) * codec_embedding_mask
-                )
-                input_codec_embedding[:, 6, :] = speaker_embedding
-                input_embeddings = (
-                    input_text_embedding
-                    + input_codec_embedding
-                    + fuse_auxiliary_codebook_embeddings(
-                        codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
-                        codec_ids=codec_ids,
-                        codec_mask=codec_mask,
-                    )
-                )
-                outputs = model.talker(
-                    inputs_embeds=input_embeddings[:, :-1, :],
-                    attention_mask=attention_mask[:, :-1],
-                    labels=codec_0_labels[:, 1:],
-                    output_hidden_states=True,
-                )
-                hidden_states = outputs.hidden_states[0][-1]
-                talker_hidden_states = hidden_states[codec_mask[:, 1:]]
-                talker_codec_ids = codec_ids[codec_mask]
-                _, sub_talker_loss = model.talker.forward_sub_talker_finetune(
-                    talker_codec_ids,
-                    talker_hidden_states,
-                )
-                loss = outputs.loss + 0.3 * sub_talker_loss
-                total_eval_loss += float(loss.detach().float().item())
-                completed_batches += 1
+        resolved_eval_loss, completed_batches = _run_eval_batches(prepared)
     finally:
         if previous_training_mode:
             model.train()
-    if completed_batches <= 0:
-        raise SystemExit("Held-out eval dataloader produced zero batches.")
-    resolved_eval_loss = total_eval_loss / completed_batches
     resolved_best_eval_loss = resolved_eval_loss
     resolved_best_eval_step = current_optimizer_step
     if best_eval_loss is not None and best_eval_step is not None:
@@ -182,6 +130,8 @@ def run_eval_pass(
                 current_optimizer_step=current_optimizer_step,
                 current_train_iteration=current_train_iteration,
                 gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                dataloader_length=None,
+                eval_dataloader_length=prepared.eval_dataloader_length,
                 latest_loss=latest_loss,
                 smoothed_loss=smoothed_loss,
                 latest_durable_checkpoint=latest_durable_checkpoint,
@@ -199,3 +149,111 @@ def run_eval_pass(
         eval_runs_completed=eval_runs_completed + 1,
         eval_batches_completed=eval_batches_completed + completed_batches,
     )
+
+
+def run_standalone_eval(prepared: PreparedStandaloneEvalRun) -> StandaloneEvalSummary:
+    """Run one standalone held-out eval pass against a restored durable checkpoint."""
+    model = prepared.model
+    previous_training_mode = model.training
+    model.eval()
+    try:
+        eval_loss, completed_batches = _run_eval_batches(prepared)
+    finally:
+        if previous_training_mode:
+            model.train()
+    profiling_payload: dict[str, object] = {}
+    for key, value in prepared.torch_profiler_session.payload().items():
+        profiling_payload[str(key)] = value
+    return StandaloneEvalSummary(
+        init_model_path=str(prepared.args.init_model_path),
+        checkpoint_path=str(prepared.args.resume_from_checkpoint),
+        eval_jsonl=str(prepared.args.eval_jsonl),
+        batch_size=int(prepared.args.batch_size),
+        eval_batches_completed=completed_batches,
+        eval_dataloader_length=prepared.eval_dataloader_length,
+        checkpoint_optimizer_steps_completed=(
+            prepared.checkpoint_metadata.optimizer_steps_completed
+        ),
+        checkpoint_epoch=prepared.checkpoint_metadata.epoch,
+        checkpoint_next_epoch=prepared.checkpoint_metadata.next_epoch,
+        checkpoint_next_step_in_epoch=prepared.checkpoint_metadata.next_step_in_epoch,
+        eval_loss=eval_loss,
+        throughput_profile=prepared.throughput_profile_payload,
+        dataloader_tuning={
+            "num_workers": prepared.effective_dataloader_tuning.num_workers,
+            "pin_memory": bool(prepared.effective_dataloader_tuning.pin_memory),
+            "persistent_workers": bool(prepared.effective_dataloader_tuning.persistent_workers),
+            "prefetch_factor": prepared.effective_dataloader_tuning.prefetch_factor,
+            "non_blocking_transfer": bool(
+                prepared.effective_dataloader_tuning.non_blocking_transfer
+            ),
+        },
+        ref_mel_cache=prepared.ref_mel_cache.payload(),
+        profiling=profiling_payload,
+    )
+
+
+def _run_eval_batches(prepared: EvalPreparedRun) -> tuple[float, int]:
+    """Execute the shared held-out eval batch loop and return mean loss plus count."""
+    model = prepared.model
+    total_eval_loss = 0.0
+    completed_batches = 0
+    with torch.no_grad(), prepared.torch_profiler_session.phase("task101.eval"):
+        for batch in prepared.eval_dataloader:
+            input_ids = batch["input_ids"]
+            codec_ids = batch["codec_ids"]
+            ref_mels = batch["ref_mels"]
+            text_embedding_mask = batch["text_embedding_mask"]
+            codec_embedding_mask = batch["codec_embedding_mask"]
+            attention_mask = batch["attention_mask"]
+            codec_0_labels = batch["codec_0_labels"]
+            codec_mask = batch["codec_mask"]
+            speaker_embedding = model.speaker_encoder(
+                to_device_with_optional_non_blocking(
+                    ref_mels,
+                    device=model.device,
+                    dtype=model.dtype,
+                    non_blocking_transfer=(
+                        prepared.effective_dataloader_tuning.non_blocking_transfer
+                    ),
+                )
+            ).detach()
+            input_text_ids = input_ids[:, :, 0]
+            input_codec_ids = input_ids[:, :, 1]
+            input_text_embedding = (
+                model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
+            )
+            if hasattr(model.talker.model, "text_projection"):
+                input_text_embedding = model.talker.model.text_projection(input_text_embedding)
+            input_codec_embedding = (
+                model.talker.model.codec_embedding(input_codec_ids) * codec_embedding_mask
+            )
+            input_codec_embedding[:, 6, :] = speaker_embedding
+            input_embeddings = (
+                input_text_embedding
+                + input_codec_embedding
+                + fuse_auxiliary_codebook_embeddings(
+                    codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
+                    codec_ids=codec_ids,
+                    codec_mask=codec_mask,
+                )
+            )
+            outputs = model.talker(
+                inputs_embeds=input_embeddings[:, :-1, :],
+                attention_mask=attention_mask[:, :-1],
+                labels=codec_0_labels[:, 1:],
+                output_hidden_states=True,
+            )
+            hidden_states = outputs.hidden_states[0][-1]
+            talker_hidden_states = hidden_states[codec_mask[:, 1:]]
+            talker_codec_ids = codec_ids[codec_mask]
+            _, sub_talker_loss = model.talker.forward_sub_talker_finetune(
+                talker_codec_ids,
+                talker_hidden_states,
+            )
+            loss = outputs.loss + 0.3 * sub_talker_loss
+            total_eval_loss += float(loss.detach().float().item())
+            completed_batches += 1
+    if completed_batches <= 0:
+        raise SystemExit("Held-out eval dataloader produced zero batches.")
+    return total_eval_loss / completed_batches, completed_batches

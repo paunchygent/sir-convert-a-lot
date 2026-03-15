@@ -135,6 +135,13 @@ The next required proof is operational rather than contractual:
 - confirm `status.json` and `report.json` carry live and terminal eval fields,
 - then promote the eval loop into the longer pilot lane.
 
+Follow-on control posture after `T182`:
+
+- use `qwen-train eval` for standalone checkpoint eval against explicit held-out
+  material when we want a real check without rebuilding the full pilot bundle,
+- and use the schedule runner for planned
+  `train -> stop -> eval -> resume` cadence around durable checkpoints.
+
 ## Shard and Work Allocation
 
 Future incremental allocation has a strict canonical path:

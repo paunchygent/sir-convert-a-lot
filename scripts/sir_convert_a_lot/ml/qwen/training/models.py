@@ -217,6 +217,52 @@ class TrainingReport:
     failure: TrainingFailureSummary | None
 
 
+@dataclass(frozen=True)
+class StandaloneEvalReport:
+    """Machine-readable report emitted by standalone checkpoint eval."""
+
+    generated_at: str
+    status: str
+    model_id: str
+    checkpoint_path: str
+    eval_jsonl: str
+    output_dir: str
+    eval_row_count: int
+    bundle_precomputed_reference_input: dict[str, object] | None
+    throughput_profile: dict[str, object] | None
+    eval_summary: dict[str, object] | None
+    failure: dict[str, object] | None
+
+
+@dataclass(frozen=True)
+class ScheduleSegmentReport:
+    """One train-stop-eval-resume segment executed by the schedule runner."""
+
+    segment_index: int
+    source_launch_root: str
+    resume_launch_root: str
+    target_optimizer_step: int
+    checkpoint_path: str
+    eval_output_dir: str
+    eval_loss: float
+    checkpoint_next_epoch: int
+    checkpoint_next_step_in_epoch: int
+
+
+@dataclass(frozen=True)
+class ScheduleReport:
+    """Machine-readable summary for one Qwen schedule-runner execution."""
+
+    generated_at: str
+    source_launch_root: str
+    source_run_root: str
+    dataloader_length: int
+    epochs_per_segment: int
+    segments_completed: int
+    final_checkpoint_path: str
+    segment_reports: list[ScheduleSegmentReport]
+
+
 def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettings:
     """Rehydrate runtime settings from one detached-launch snapshot."""
     return TrainingSettings(

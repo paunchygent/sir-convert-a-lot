@@ -319,6 +319,11 @@ def _load_durable_checkpoint_metadata(checkpoint_path: Path) -> DurableCheckpoin
     )
 
 
+def load_durable_checkpoint_metadata(checkpoint_path: Path) -> DurableCheckpointMetadata:
+    """Load the typed durable checkpoint metadata for one saved trainer state."""
+    return _load_durable_checkpoint_metadata(checkpoint_path)
+
+
 def _checkpoint_advanced_since_latest_save(
     latest_durable_checkpoint: DurableCheckpointMetadata | None,
     *,

@@ -22,13 +22,21 @@ below the repository's hard LoC ceiling.
 
 from __future__ import annotations
 
+import argparse
 import json
 from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_cli import parse_args
-from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import TrainingSummary
+from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import (
+    StandaloneEvalSummary,
+    TrainingSummary,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import run_standalone_eval
+from scripts.devops.qwen_finetuning_patches.sft_12hz_eval_setup import (
+    prepare_standalone_eval_run,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop import execute_training_loop
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
 from scripts.devops.qwen_finetuning_patches.sft_12hz_setup import prepare_training_run
@@ -42,7 +50,7 @@ def train_with_args(
     tracker_ready_callback: Callable[[TrainingTrackerSummary], None] | None = None,
 ) -> TrainingSummary:
     """Run one bounded Qwen fine-tuning job and return machine-readable metrics."""
-    if not hasattr(args, "__dict__"):
+    if not isinstance(args, argparse.Namespace):
         raise TypeError("Expected an argparse-style namespace for training arguments.")
     prepared = prepare_training_run(args)
     return execute_training_loop(
@@ -50,6 +58,14 @@ def train_with_args(
         progress_callback=progress_callback,
         tracker_ready_callback=tracker_ready_callback,
     )
+
+
+def evaluate_with_args(args: object) -> StandaloneEvalSummary:
+    """Run one standalone held-out evaluation against a durable checkpoint."""
+    if not isinstance(args, argparse.Namespace):
+        raise TypeError("Expected an argparse-style namespace for eval arguments.")
+    prepared = prepare_standalone_eval_run(args)
+    return run_standalone_eval(prepared)
 
 
 def train() -> None:

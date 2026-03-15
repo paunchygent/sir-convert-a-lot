@@ -49,6 +49,8 @@ class StatusReporterConfig:
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
     resume_from_checkpoint: Path | None
+    dataloader_length: int | None = None
+    eval_dataloader_length: int | None = None
     tracking_plan: Mapping[str, object] | None = None
     gradient_accumulation_steps: int = 4
     dataloader_tuning: Mapping[str, object] | None = None
@@ -79,6 +81,8 @@ class StatusReporter:
             current_optimizer_step=0,
             current_train_iteration=0,
             gradient_accumulation_steps=self.config.gradient_accumulation_steps,
+            dataloader_length=self.config.dataloader_length,
+            eval_dataloader_length=self.config.eval_dataloader_length,
             latest_loss=None,
             smoothed_loss=None,
             latest_durable_checkpoint_path=(
@@ -144,6 +148,8 @@ class StatusReporter:
             output_dir=self.config.output_dir,
             train_row_count=self.config.train_row_count,
             eval_row_count=self.config.eval_row_count,
+            dataloader_length=self.config.dataloader_length,
+            eval_dataloader_length=self.config.eval_dataloader_length,
             bundle_precomputed_reference_input=(
                 None
                 if self.config.bundle_precomputed_reference_input is None
@@ -188,6 +194,8 @@ class StatusReporter:
                 output_dir=self.config.output_dir,
                 train_row_count=self.config.train_row_count,
                 eval_row_count=self.config.eval_row_count,
+                dataloader_length=self.config.dataloader_length,
+                eval_dataloader_length=self.config.eval_dataloader_length,
                 checkpoint_interval_steps=self.config.checkpoint_interval_steps,
                 eval_interval_steps=self.config.eval_interval_steps,
                 gradient_accumulation_steps=self.config.gradient_accumulation_steps,
@@ -412,6 +420,8 @@ def _running_status_payload(
     output_dir: Path,
     train_row_count: int,
     eval_row_count: int,
+    dataloader_length: int | None,
+    eval_dataloader_length: int | None,
     checkpoint_interval_steps: int,
     eval_interval_steps: int,
     gradient_accumulation_steps: int,
@@ -465,6 +475,20 @@ def _running_status_payload(
     latest_durable_checkpoint_saved_at = (
         None if live_progress is None else live_progress.get("latest_durable_checkpoint_saved_at")
     )
+    resolved_dataloader_length = (
+        dataloader_length
+        if dataloader_length is not None
+        else None
+        if live_progress is None
+        else live_progress.get("dataloader_length")
+    )
+    resolved_eval_dataloader_length = (
+        eval_dataloader_length
+        if eval_dataloader_length is not None
+        else None
+        if live_progress is None
+        else live_progress.get("eval_dataloader_length")
+    )
     return {
         "status": "running",
         "stage": "training",
@@ -474,6 +498,8 @@ def _running_status_payload(
         "output_dir": output_dir.as_posix(),
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
+        "dataloader_length": resolved_dataloader_length,
+        "eval_dataloader_length": resolved_eval_dataloader_length,
         "upstream_trainer_uses_eval_manifest": True,
         "gradient_accumulation_steps": gradient_accumulation_steps,
         "step_semantics": _step_semantics_payload(gradient_accumulation_steps),
@@ -556,6 +582,8 @@ def _completed_status_payload(
         "output_dir": output_dir.as_posix(),
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
+        "dataloader_length": training_summary.dataloader_length,
+        "eval_dataloader_length": training_summary.eval_dataloader_length,
         "upstream_trainer_uses_eval_manifest": True,
         "gradient_accumulation_steps": training_summary.gradient_accumulation_steps,
         "step_semantics": _step_semantics_payload(training_summary.gradient_accumulation_steps),
@@ -607,6 +635,8 @@ def _failed_status_payload(
     output_dir: Path,
     train_row_count: int,
     eval_row_count: int,
+    dataloader_length: int | None,
+    eval_dataloader_length: int | None,
     bundle_precomputed_reference_input: dict[str, object] | None = None,
     throughput_profile: dict[str, object] | None = None,
     exc: BaseException,
@@ -630,6 +660,8 @@ def _failed_status_payload(
         "output_dir": output_dir.as_posix(),
         "train_row_count": train_row_count,
         "eval_row_count": eval_row_count,
+        "dataloader_length": dataloader_length,
+        "eval_dataloader_length": eval_dataloader_length,
         "upstream_trainer_uses_eval_manifest": True,
         "gradient_accumulation_steps": (
             None

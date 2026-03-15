@@ -40,6 +40,8 @@ class TrainingProgressHeartbeat:
     latest_durable_checkpoint_path: str | None
     latest_durable_checkpoint_step: int | None
     latest_durable_checkpoint_saved_at: str | None
+    dataloader_length: int | None = None
+    eval_dataloader_length: int | None = None
     current_optimizer_step: int | None = None
     current_train_iteration: int | None = None
     gradient_accumulation_steps: int | None = None
@@ -61,6 +63,8 @@ def build_training_progress_heartbeat(
     current_optimizer_step: int,
     current_train_iteration: int,
     gradient_accumulation_steps: int,
+    dataloader_length: int | None,
+    eval_dataloader_length: int | None,
     latest_loss: float | None,
     smoothed_loss: float | None,
     latest_durable_checkpoint: DurableCheckpointMetadata | None,
@@ -78,6 +82,8 @@ def build_training_progress_heartbeat(
         current_optimizer_step=current_optimizer_step,
         current_train_iteration=current_train_iteration,
         gradient_accumulation_steps=gradient_accumulation_steps,
+        dataloader_length=dataloader_length,
+        eval_dataloader_length=eval_dataloader_length,
         latest_loss=latest_loss,
         smoothed_loss=smoothed_loss,
         latest_eval_loss=latest_eval_loss,

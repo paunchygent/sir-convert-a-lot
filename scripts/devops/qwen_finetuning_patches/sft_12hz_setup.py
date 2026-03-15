@@ -16,9 +16,9 @@ from __future__ import annotations
 import argparse
 import contextlib
 import io
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from collections.abc import Iterator
 from typing import Protocol, Sequence
 
 import torch

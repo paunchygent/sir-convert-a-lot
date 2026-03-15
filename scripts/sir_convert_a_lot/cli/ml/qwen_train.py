@@ -41,6 +41,11 @@ from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     load_training_bundle_summary,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
+from scripts.sir_convert_a_lot.ml.qwen.training.eval_orchestrator import (
+    default_eval_id,
+    default_eval_output_dir,
+    run_standalone_eval,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     launch_metadata_path,
     launch_root,
@@ -72,6 +77,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.orchestrator import (
     inspect_detached_training,
     launch_detached_training,
     stop_detached_training,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.schedule_runner import (
+    run_schedule_cycle,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
@@ -120,7 +128,8 @@ DEFAULT_TORCH_PROFILER_RECORD_SHAPES = True
 DEFAULT_TORCH_PROFILER_PROFILE_MEMORY = True
 DEFAULT_TORCH_PROFILER_WITH_STACK = False
 DEFAULT_ROCM_PROFILER_ENABLED = False
-TrainingCommand = Literal["launch", "resume", "status", "stop"]
+DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS = 15.0
+TrainingCommand = Literal["launch", "resume", "eval", "schedule", "status", "stop"]
 
 
 def default_hf_cache_dir() -> Path:
@@ -334,6 +343,60 @@ def build_parser() -> argparse.ArgumentParser:
         help="Disable the detached resource-monitor companion launch.",
     )
     resume.add_argument(
+        "--skip-build",
+        action="store_true",
+        help="Skip `docker buildx build` if the image already exists.",
+    )
+
+    standalone_eval = subparsers.add_parser(
+        "eval",
+        help="Run standalone held-out eval against a durable checkpoint.",
+    )
+    standalone_eval.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    standalone_eval.add_argument("--launch-root", type=Path, default=None)
+    standalone_eval.add_argument("--checkpoint-path", type=Path, default=None)
+    standalone_eval.add_argument("--eval-jsonl", type=Path, default=None)
+    standalone_eval.add_argument("--pilot-bundle-root", type=Path, default=None)
+    standalone_eval.add_argument("--eval-output-dir", type=Path, default=None)
+    standalone_eval.add_argument("--eval-id", default=None)
+    standalone_eval.add_argument(
+        "--skip-build",
+        action="store_true",
+        help="Skip `docker buildx build` if the image already exists.",
+    )
+
+    schedule = subparsers.add_parser(
+        "schedule",
+        help="Run one epoch-aware train-stop-eval-resume control cycle.",
+    )
+    schedule.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    schedule.add_argument("--launch-root", type=Path, default=None)
+    schedule.add_argument("--checkpoint-path", type=Path, default=None)
+    schedule.add_argument("--eval-jsonl", type=Path, default=None)
+    schedule.add_argument("--pilot-bundle-root", type=Path, default=None)
+    schedule.add_argument("--epochs-per-segment", type=int, default=1)
+    schedule.add_argument(
+        "--poll-interval-seconds",
+        type=float,
+        default=DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS,
+    )
+    schedule.add_argument(
+        "--resource-monitor-interval-seconds",
+        type=float,
+        default=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    )
+    schedule.add_argument(
+        "--resource-monitor-runtime-kind",
+        choices=("rocm", "cuda", "none"),
+        default=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
+    )
+    schedule.add_argument("--resource-monitor-duration-seconds", type=float, default=None)
+    schedule.add_argument(
+        "--disable-resource-monitor",
+        action="store_true",
+        help="Disable the detached resource-monitor companion launch.",
+    )
+    schedule.add_argument(
         "--skip-build",
         action="store_true",
         help="Skip `docker buildx build` if the image already exists.",
@@ -570,6 +633,26 @@ def _validate_precomputed_ref_input_contract(
         )
 
 
+def _require_under_scratch_root(settings: TrainingSettings, path: Path, *, label: str) -> Path:
+    """Fail closed when one eval-related path escapes the mounted scratch root."""
+    resolved_path = path.resolve()
+    try:
+        resolved_path.relative_to(settings.scratch_build_root.resolve())
+    except ValueError as exc:
+        raise SystemExit(
+            f"`{label}` must live under `{settings.scratch_build_root.as_posix()}`."
+        ) from exc
+    return resolved_path
+
+
+def _require_existing_path(path: Path, *, label: str) -> Path:
+    """Fail closed when one operator-supplied path does not exist."""
+    resolved_path = path.resolve()
+    if not resolved_path.exists():
+        raise SystemExit(f"`{label}` did not exist: {resolved_path.as_posix()}")
+    return resolved_path
+
+
 def build_settings_from_args(args: argparse.Namespace) -> TrainingSettings:
     """Build one normalized training settings object from parsed launch args."""
     throughput_batch_policy = resolve_throughput_batch_policy(
@@ -701,6 +784,7 @@ def main(argv: list[str] | None = None) -> int:
         output_root.mkdir(parents=True, exist_ok=True)
         source_launch_root = resolve_launch_root(output_root, args.launch_root)
         source_launch = load_training_launch(source_launch_root)
+        source_repo_root = Path(source_launch.repo_root)
         settings = settings_from_snapshot(source_launch.settings)
         dockerfile_path = Path(source_launch.dockerfile_path or DEFAULT_DOCKERFILE_PATH)
         build_performed, image_id = prepare_qwen_image(
@@ -738,7 +822,7 @@ def main(argv: list[str] | None = None) -> int:
         current_launch_root.mkdir(parents=True, exist_ok=True)
         launch = launch_detached_training(
             settings,
-            repo_root=Path.cwd(),
+            repo_root=source_repo_root,
             hf_mount=hf_mount,
             scratch_mount=scratch_mount,
             launch_id=current_launch_id,
@@ -773,6 +857,159 @@ def main(argv: list[str] | None = None) -> int:
         )
         write_latest_pointer(output_root, current_launch_root)
         print(json.dumps(asdict(launch), indent=2, ensure_ascii=False))
+        return 0
+
+    if args.command == "eval":
+        output_root = Path(args.output_root)
+        source_launch_root = resolve_launch_root(output_root, args.launch_root)
+        source_launch = load_training_launch(source_launch_root)
+        source_repo_root = Path(source_launch.repo_root)
+        settings = settings_from_snapshot(source_launch.settings)
+        dockerfile_path = Path(source_launch.dockerfile_path or DEFAULT_DOCKERFILE_PATH)
+        prepare_qwen_image(
+            argparse.Namespace(
+                dockerfile_path=dockerfile_path,
+                image=settings.image,
+                build_image=not bool(args.skip_build),
+            )
+        )
+        hf_mount = resolve_effective_hf_cache_dir(
+            argparse.Namespace(
+                image=settings.image,
+                hf_cache_dir=settings.hf_cache_dir,
+                hf_cache_home_mount=settings.hf_cache_home_mount,
+            )
+        )
+        scratch_mount = resolve_effective_bind_root(
+            settings.scratch_build_root,
+            settings.scratch_build_home_mount,
+            image=settings.image,
+            sync_home_into_canonical=False,
+        )
+        source_run_root = Path(source_launch.run_root)
+        resolved_checkpoint_path = validate_resume_checkpoint_path(
+            source_run_root,
+            load_latest_checkpoint(source_run_root)
+            if args.checkpoint_path is None
+            else Path(args.checkpoint_path),
+        )
+        resolved_eval_jsonl = (
+            Path(source_launch.eval_jsonl) if args.eval_jsonl is None else Path(args.eval_jsonl)
+        )
+        resolved_bundle_root = (
+            settings.pilot_bundle_root
+            if args.pilot_bundle_root is None
+            else Path(args.pilot_bundle_root)
+        )
+        resolved_checkpoint_path = _require_under_scratch_root(
+            settings,
+            resolved_checkpoint_path,
+            label="checkpoint_path",
+        )
+        resolved_eval_jsonl = _require_under_scratch_root(
+            settings,
+            resolved_eval_jsonl,
+            label="eval_jsonl",
+        )
+        resolved_eval_jsonl = _require_existing_path(
+            resolved_eval_jsonl,
+            label="eval_jsonl",
+        )
+        resolved_eval_output_dir = (
+            default_eval_output_dir(
+                source_run_root,
+                eval_id=str(args.eval_id or default_eval_id()),
+            )
+            if args.eval_output_dir is None
+            else Path(args.eval_output_dir)
+        )
+        resolved_eval_output_dir = _require_under_scratch_root(
+            settings,
+            resolved_eval_output_dir,
+            label="eval_output_dir",
+        )
+        if resolved_bundle_root is not None:
+            resolved_bundle_root = _require_under_scratch_root(
+                settings,
+                resolved_bundle_root,
+                label="pilot_bundle_root",
+            )
+            resolved_bundle_root = _require_existing_path(
+                resolved_bundle_root,
+                label="pilot_bundle_root",
+            )
+        eval_report = run_standalone_eval(
+            settings,
+            repo_root=source_repo_root,
+            hf_mount=hf_mount,
+            scratch_mount=scratch_mount,
+            output_dir=resolved_eval_output_dir,
+            checkpoint_path=resolved_checkpoint_path,
+            eval_jsonl=resolved_eval_jsonl,
+            pilot_bundle_root=resolved_bundle_root,
+        )
+        print(json.dumps(asdict(eval_report), indent=2, ensure_ascii=False))
+        return 0
+
+    if args.command == "schedule":
+        output_root = Path(args.output_root)
+        source_launch_root = resolve_launch_root(output_root, args.launch_root)
+        source_launch = load_training_launch(source_launch_root)
+        settings = settings_from_snapshot(source_launch.settings)
+        source_run_root = Path(source_launch.run_root)
+        schedule_checkpoint_path: Path | None = (
+            None
+            if args.checkpoint_path is None
+            else _require_under_scratch_root(
+                settings,
+                validate_resume_checkpoint_path(source_run_root, Path(args.checkpoint_path)),
+                label="checkpoint_path",
+            )
+        )
+        schedule_eval_jsonl: Path | None = (
+            None
+            if args.eval_jsonl is None
+            else _require_existing_path(
+                _require_under_scratch_root(
+                    settings,
+                    Path(args.eval_jsonl),
+                    label="eval_jsonl",
+                ),
+                label="eval_jsonl",
+            )
+        )
+        schedule_bundle_root: Path | None = (
+            None
+            if args.pilot_bundle_root is None
+            else _require_existing_path(
+                _require_under_scratch_root(
+                    settings,
+                    Path(args.pilot_bundle_root),
+                    label="pilot_bundle_root",
+                ),
+                label="pilot_bundle_root",
+            )
+        )
+        schedule_report = run_schedule_cycle(
+            source_launch_root=source_launch_root,
+            source_launch=source_launch,
+            output_root=output_root,
+            checkpoint_path=schedule_checkpoint_path,
+            eval_jsonl=schedule_eval_jsonl,
+            pilot_bundle_root=schedule_bundle_root,
+            epochs_per_segment=int(args.epochs_per_segment),
+            poll_interval_seconds=float(args.poll_interval_seconds),
+            skip_build=bool(args.skip_build),
+            disable_resource_monitor=bool(args.disable_resource_monitor),
+            resource_monitor_interval_seconds=float(args.resource_monitor_interval_seconds),
+            resource_monitor_runtime_kind=args.resource_monitor_runtime_kind,
+            resource_monitor_duration_seconds=(
+                None
+                if args.resource_monitor_duration_seconds is None
+                else float(args.resource_monitor_duration_seconds)
+            ),
+        )
+        print(json.dumps(asdict(schedule_report), indent=2, ensure_ascii=False))
         return 0
 
     if args.command == "stop":
