@@ -327,6 +327,9 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--launch-root", type=Path, default=None)
     resume.add_argument("--checkpoint-path", type=Path, default=None)
     resume.add_argument("--pilot-bundle-root", type=Path, default=None)
+    resume.add_argument("--checkpoint-interval-steps", type=int, default=None)
+    resume.add_argument("--eval-interval-steps", type=int, default=None)
+    resume.add_argument("--durable-checkpoint-retention", type=int, default=None)
     resume.add_argument("--launch-id", default=None)
     resume.add_argument(
         "--resource-monitor-interval-seconds",
@@ -797,7 +800,25 @@ def main(argv: list[str] | None = None) -> int:
             if args.pilot_bundle_root is None
             else Path(args.pilot_bundle_root)
         )
-        settings = replace(settings, pilot_bundle_root=effective_bundle_root)
+        settings = replace(
+            settings,
+            pilot_bundle_root=effective_bundle_root,
+            checkpoint_interval_steps=(
+                settings.checkpoint_interval_steps
+                if args.checkpoint_interval_steps is None
+                else int(args.checkpoint_interval_steps)
+            ),
+            eval_interval_steps=(
+                settings.eval_interval_steps
+                if args.eval_interval_steps is None
+                else int(args.eval_interval_steps)
+            ),
+            durable_checkpoint_retention=(
+                settings.durable_checkpoint_retention
+                if args.durable_checkpoint_retention is None
+                else int(args.durable_checkpoint_retention)
+            ),
+        )
         ensure_training_bundle_exists(
             settings.pilot_bundle_root,
             train_manifest_family=settings.train_manifest_family,

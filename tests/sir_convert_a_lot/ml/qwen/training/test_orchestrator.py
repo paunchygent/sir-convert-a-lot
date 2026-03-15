@@ -1133,6 +1133,206 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
     assert captured["resume_from_checkpoint"] == checkpoint_path
 
 
+def test_resume_accepts_explicit_control_posture_overrides(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resume should let operators move a recovered legacy lane onto 500/100/3."""
+    output_root = tmp_path / "verification"
+    source_launch_root = tmp_path / "legacy-source"
+    source_run_root = tmp_path / "runs/qwen-prev"
+    checkpoint_path = source_run_root / "checkpoints/state-step-00001238"
+    replacement_bundle_root = tmp_path / "replacement-bundle"
+    legacy_output_root = (
+        "/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot"
+    )
+    output_root.mkdir(parents=True, exist_ok=True)
+    source_launch_root.mkdir(parents=True, exist_ok=True)
+    checkpoint_path.mkdir(parents=True, exist_ok=True)
+    replacement_bundle_root.mkdir(parents=True, exist_ok=True)
+    (source_run_root / "latest_checkpoint.json").write_text(
+        json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+    legacy_launch_payload = {
+        "generated_at": "2026-03-13T10:21:45Z",
+        "launch_id": "task101-20260313t102144z",
+        "container_name": "task101-20260313t102144z-container",
+        "container_id": "container-id",
+        "repo_root": "/home/paunchygent/apps/sir-convert-a-lot",
+        "run_root": source_run_root.as_posix(),
+        "pilot_bundle_root": (tmp_path / "missing-bundle").as_posix(),
+        "train_jsonl": (tmp_path / "missing-bundle/manifests/train.jsonl").as_posix(),
+        "eval_jsonl": (tmp_path / "missing-bundle/manifests/eval.jsonl").as_posix(),
+        "train_manifest_family": "swedish_pilot_train",
+        "eval_manifest_family": "swedish_checkpoint_dev",
+        "dockerfile_path": "containers/qwen-finetune-hemma/Dockerfile",
+        "resumed_from_checkpoint_path": None,
+        "settings": {
+            "output_root": legacy_output_root,
+            "image": "sir-convert-a-lot-qwen-finetune-hemma:task100",
+            "hf_cache_dir": "/srv/scratch/sir-convert-a-lot/cache/huggingface",
+            "hf_cache_home_mount": "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+            "scratch_build_root": "/srv/scratch/sir-convert-a-lot/build",
+            "scratch_build_home_mount": "/home/paunchygent/.data/sir-convert-a-lot/build",
+            "pilot_bundle_root": (tmp_path / "missing-bundle").as_posix(),
+            "runs_root": "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
+            "model_id": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+            "train_manifest_family": "swedish_pilot_train",
+            "eval_manifest_family": "swedish_checkpoint_dev",
+            "batch_size": 1,
+            "lr": 2e-5,
+            "num_epochs": 1000,
+            "max_steps": 1000000,
+            "checkpoint_interval_steps": 2,
+            "durable_checkpoint_retention": 2,
+            "durable_checkpoint_min_free_bytes": 16 * 1024**3,
+        },
+        "command": ["sudo", "-n", "docker", "run", "-d"],
+    }
+    (source_launch_root / "launch.json").write_text(
+        json.dumps(legacy_launch_payload) + "\n",
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.ensure_training_bundle_exists",
+        lambda bundle_root, *, train_manifest_family, eval_manifest_family: None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.prepare_qwen_image",
+        lambda args: (False, "sha256:test"),
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_hf_cache_dir",
+        lambda args: MountResolution(
+            canonical_root=Path("/srv/scratch/cache"),
+            effective_root=Path("/srv/scratch/cache"),
+            used_home_mount=False,
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.resolve_effective_bind_root",
+        lambda canonical_root, home_mount, *, image, sync_home_into_canonical: MountResolution(
+            canonical_root=canonical_root,
+            effective_root=canonical_root,
+            used_home_mount=False,
+        ),
+    )
+
+    def fake_launch_detached_training(
+        settings: TrainingSettings,
+        *,
+        repo_root: Path,
+        hf_mount: MountResolution,
+        scratch_mount: MountResolution,
+        launch_id: str,
+        container_name: str,
+        launch_root: Path,
+        dockerfile_path: Path | None = None,
+        run_root: Path | None = None,
+        resume_from_checkpoint: Path | None = None,
+    ) -> DetachedLaunch:
+        del (
+            repo_root,
+            hf_mount,
+            scratch_mount,
+            launch_id,
+            container_name,
+            launch_root,
+            dockerfile_path,
+            run_root,
+            resume_from_checkpoint,
+        )
+        captured["settings"] = settings
+        return DetachedLaunch(
+            generated_at="2026-03-15T10:00:00Z",
+            launch_id="resume-launch",
+            container_name="resume-container",
+            container_id="container-id",
+            repo_root="/home/paunchygent/apps/sir-convert-a-lot",
+            run_root=source_run_root.as_posix(),
+            pilot_bundle_root=settings.pilot_bundle_root.as_posix(),
+            train_jsonl=(
+                settings.pilot_bundle_root / "manifests/swedish_pilot_train.prepared.jsonl"
+            ).as_posix(),
+            eval_jsonl=(
+                settings.pilot_bundle_root / "manifests/swedish_checkpoint_dev.prepared.jsonl"
+            ).as_posix(),
+            train_manifest_family=settings.train_manifest_family,
+            eval_manifest_family=settings.eval_manifest_family,
+            dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
+            resumed_from_checkpoint_path=checkpoint_path.as_posix(),
+            settings=TrainingSettingsSnapshot(
+                output_root=settings.output_root.as_posix(),
+                image=settings.image,
+                hf_cache_dir=settings.hf_cache_dir.as_posix(),
+                hf_cache_home_mount=settings.hf_cache_home_mount.as_posix(),
+                scratch_build_root=settings.scratch_build_root.as_posix(),
+                scratch_build_home_mount=settings.scratch_build_home_mount.as_posix(),
+                pilot_bundle_root=settings.pilot_bundle_root.as_posix(),
+                runs_root=settings.runs_root.as_posix(),
+                model_id=settings.model_id,
+                train_manifest_family=settings.train_manifest_family,
+                eval_manifest_family=settings.eval_manifest_family,
+                batch_size=settings.batch_size,
+                throughput_profile_label=settings.throughput_profile_label,
+                lr=settings.lr,
+                num_epochs=settings.num_epochs,
+                max_steps=settings.max_steps,
+                checkpoint_interval_steps=settings.checkpoint_interval_steps,
+                eval_interval_steps=settings.eval_interval_steps,
+                durable_checkpoint_retention=settings.durable_checkpoint_retention,
+                durable_checkpoint_min_free_bytes=settings.durable_checkpoint_min_free_bytes,
+            ),
+            command=["sudo", "-n", "docker", "run", "-d"],
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.launch_detached_training",
+        fake_launch_detached_training,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_json",
+        lambda path, payload: None,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.write_latest_pointer",
+        lambda output_root, launch_root: None,
+    )
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
+
+    result = main(
+        [
+            "resume",
+            "--output-root",
+            output_root.as_posix(),
+            "--launch-root",
+            source_launch_root.as_posix(),
+            "--pilot-bundle-root",
+            replacement_bundle_root.as_posix(),
+            "--checkpoint-interval-steps",
+            "500",
+            "--eval-interval-steps",
+            "100",
+            "--durable-checkpoint-retention",
+            "3",
+            "--skip-build",
+            "--disable-resource-monitor",
+        ]
+    )
+
+    assert result == 0
+    settings = captured["settings"]
+    assert isinstance(settings, TrainingSettings)
+    assert settings.pilot_bundle_root == replacement_bundle_root
+    assert settings.checkpoint_interval_steps == 500
+    assert settings.eval_interval_steps == 100
+    assert settings.durable_checkpoint_retention == 3
+
+
 def test_resume_fails_closed_when_legacy_source_bundle_root_is_missing(tmp_path: Path) -> None:
     """Resume should fail before launch when the effective legacy bundle root is gone."""
     output_root = tmp_path / "verification"

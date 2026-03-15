@@ -31,6 +31,14 @@
     `/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot/task101-20260313t102144z/evals/eval-20260315T104201Z`
   - `eval_loss=6.440637648105621`
   - `eval_batches_completed=8`
+- Canonical next operator action for this lane:
+  - do not resume from `1236` again
+  - use the newer compatible durable checkpoint
+    `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
+    for the next strict resume
+  - keep live recovery and progress notes in
+    `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+    rather than extending the skill doc with operational logs
 - Hemma note:
   - do not pull the stale-artifact fix onto Hemma until the active resumed
     container `20260315T102149Z` is fully stopped, because the trainer

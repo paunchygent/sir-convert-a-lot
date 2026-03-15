@@ -5,7 +5,7 @@ type: task
 status: completed
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-13'
+last_updated: '2026-03-15'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
@@ -25,6 +25,8 @@ related:
   - docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
+  - docs/backlog/tasks/task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md
+  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -175,3 +177,11 @@ and capture deterministic runtime and memory evidence.
 - [x] Implementation complete
 - [x] Validation complete
 - [x] Docs updated
+
+## Historical Follow-On Note
+
+The original Task 101 pilot launch is complete as a delivered baseline task,
+but live recovery/eval progress for the preserved checkpoint-backed lane now
+lives in
+`docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+rather than in this completed task record.

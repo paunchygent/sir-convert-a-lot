@@ -4,7 +4,7 @@ id: REF-task101-live-qwen-training-pipeline-analysis-2026-03-13
 title: Task 101 Live Qwen Training Pipeline Analysis and Monitoring Evidence (2026-03-13)
 status: active
 created: 2026-03-13
-updated: 2026-03-13
+updated: 2026-03-15
 owners:
   - platform
 tags:
@@ -34,6 +34,10 @@ links:
   - docs/backlog/tasks/task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma.md
   - docs/backlog/tasks/task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md
   - docs/backlog/tasks/task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md
+  - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
+  - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
+  - docs/backlog/tasks/task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md
+  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - https://huggingface.co/docs/accelerate/en/usage_guides/tracking
@@ -58,6 +62,21 @@ Qwen3-TTS Hemma training pipeline as observed on Friday, 2026-03-13, including:
 This report is intentionally detailed enough to serve as the canonical
 reference for the next monitoring, throughput, and training-program hardening
 tasks without forcing the next operator to reconstruct the evidence by hand.
+
+## Historical Scope Note (2026-03-15)
+
+This document remains the detailed historical analysis for the March 13 live
+throughput/bottleneck window. It is no longer the canonical operator plan for
+the preserved Task 101 recovery lane.
+
+For the live training/eval recovery posture after Task 182/183/185:
+
+- use
+  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+  as the operator-facing progress ledger
+- treat this March 13 report as historical throughput evidence only
+- do not use its checkpoint cadence, live-state assumptions, or run posture as
+  the current recovery plan
 
 ## Addendum: T161 and T162 Evidence Update (2026-03-13 Evening)
 

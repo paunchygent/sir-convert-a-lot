@@ -104,6 +104,12 @@ explicitly narrow the scope.
 - If a legacy launch requires `--pilot-bundle-root` override, do not assume the
   saved intra-epoch cursor is still meaningful; treat any impossible cursor as
   a fail-closed condition, not a warning.
+- If a bounded recovery probe already produced a newer durable checkpoint with
+  a compatible cursor, prefer that newer checkpoint for the next strict resume
+  rather than resetting to the older legacy step.
+- If a preserved legacy launch still carries stale checkpoint cadence or
+  retention values, pass explicit resume overrides so the relaunched lane
+  truthfully matches the current `500/100/3` scheduled posture.
 - Do not trust reused-run `status.json` or `report.json` artifacts unless they
   clearly belong to the active resumed container.
 - Intentional detached Task 101 stops now request graceful shutdown and one

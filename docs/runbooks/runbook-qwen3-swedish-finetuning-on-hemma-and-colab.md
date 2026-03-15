@@ -228,8 +228,16 @@ Canonical recovery order:
 1. Only then consider `qwen-train resume`.
 1. If the legacy launch metadata points at a stale bundle root, pass an
    explicit replacement `--pilot-bundle-root`.
+1. If that preserved legacy launch also carries stale checkpoint cadence or
+   retention settings, pass explicit resume overrides for
+   `--checkpoint-interval-steps`, `--eval-interval-steps`, and
+   `--durable-checkpoint-retention` so the relaunched lane truthfully matches
+   the current scheduled contract.
 1. If the saved durable checkpoint cursor is impossible for the current bundle
    length, treat that as a hard stop rather than a recoverable warning.
+1. If a bounded diagnostic recovery probe already wrote a newer durable
+   checkpoint with a compatible cursor, prefer that newer checkpoint for the
+   next strict resume instead of rolling back to the older legacy step.
 
 Operator interpretation:
 
@@ -241,6 +249,9 @@ Operator interpretation:
   checkpoint is being paired with a different bundle contract.
 - Short recovery probes that only prove "the container came back and wrote a
   new checkpoint" are diagnostic evidence, not acceptance evidence.
+- Keep live recovery and progress notes in the dedicated reference ledger,
+  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`,
+  rather than adding operational logs to the skill doc.
 
 ## Hemma Storage Tiers
 
