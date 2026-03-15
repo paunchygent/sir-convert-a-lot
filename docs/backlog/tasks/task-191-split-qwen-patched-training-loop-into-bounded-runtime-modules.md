@@ -2,7 +2,7 @@
 id: task-191-split-qwen-patched-training-loop-into-bounded-runtime-modules
 title: Split Qwen patched training loop into bounded runtime modules
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -37,28 +37,28 @@ projection into focused runtime modules that can be tested in isolation.
 
 ## Deliverables
 
-- [ ] Focused runtime modules exist for resume runtime, train-step runtime,
+- [x] Focused runtime modules exist for resume runtime, train-step runtime,
   phase runtime, loss runtime, and summary projection.
-- [ ] `sft_12hz_loop.py` is reduced to top-level orchestration under the Story
+- [x] `sft_12hz_loop.py` is reduced to top-level orchestration under the Story
   28 cap.
-- [ ] Focused train-step tests own the new runtime logic instead of enlarging
+- [x] Focused train-step tests own the new runtime logic instead of enlarging
   `test_train_loop.py`.
-- [ ] Architecture guard tests enforce the line-count caps and banned-module
+- [x] Architecture guard tests enforce the line-count caps and banned-module
   regressions.
 
 ## Acceptance Criteria
 
-- [ ] The training loop file no longer mixes resume logic, optimizer-step
+- [x] The training loop file no longer mixes resume logic, optimizer-step
   execution, phase control, loss tracking, and summary building in one module.
-- [ ] The new runtime modules preserve truthful `diagnose-non-finite`,
+- [x] The new runtime modules preserve truthful `diagnose-non-finite`,
   checkpoint/eval/stop, and failure-report behavior.
-- [ ] `test_train_loop.py` remains an integration surface rather than becoming
+- [x] `test_train_loop.py` remains an integration surface rather than becoming
   the owner of all new runtime scenarios.
-- [ ] Permanent architecture guard tests fail if the hot-path modules exceed
+- [x] Permanent architecture guard tests fail if the hot-path modules exceed
   the cap or the old broad modules reappear.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

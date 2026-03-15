@@ -48,11 +48,20 @@ class _RefMelCacheLike(Protocol):
 class LossRuntimePrepared(Protocol):
     """Focused prepared-runtime surface needed by loss-observation helpers."""
 
-    heartbeat_policy: _HeartbeatPolicyLike
-    finite_loss_guard: _FiniteLossGuardLike
-    ref_mel_cache: _RefMelCacheLike
-    dataloader_length: int
-    eval_dataloader_length: int
+    @property
+    def heartbeat_policy(self) -> _HeartbeatPolicyLike: ...
+
+    @property
+    def finite_loss_guard(self) -> _FiniteLossGuardLike: ...
+
+    @property
+    def ref_mel_cache(self) -> _RefMelCacheLike: ...
+
+    @property
+    def dataloader_length(self) -> int: ...
+
+    @property
+    def eval_dataloader_length(self) -> int: ...
 
 
 def consume_loss_observations(

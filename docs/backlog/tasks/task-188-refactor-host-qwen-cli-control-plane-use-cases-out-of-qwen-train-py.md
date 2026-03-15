@@ -2,7 +2,7 @@
 id: task-188-refactor-host-qwen-cli-control-plane-use-cases-out-of-qwen-train-py
 title: Refactor host Qwen CLI control-plane use cases out of qwen_train.py
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -37,26 +37,26 @@ command use cases move into bounded domain modules.
 
 ## Deliverables
 
-- [ ] `qwen_train.py` is reduced to parser wiring, command registry, and
+- [x] `qwen_train.py` is reduced to parser wiring, command registry, and
   `main(argv)`.
-- [ ] Shared defaults and parser-building live outside the CLI entrypoint.
-- [ ] Launch, resume, eval, diagnose, schedule, status, and stop behavior are
+- [x] Shared defaults and parser-building live outside the CLI entrypoint.
+- [x] Launch, resume, eval, diagnose, schedule, status, and stop behavior are
   owned by dedicated control-plane use-case modules.
-- [ ] Scratch-root path-policy enforcement and bundle-contract validation are
+- [x] Scratch-root path-policy enforcement and bundle-contract validation are
   shared domain services rather than inline CLI helpers.
 
 ## Acceptance Criteria
 
-- [ ] `qwen_train.py` is at or below the Story 28 cap and no longer owns
+- [x] `qwen_train.py` is at or below the Story 28 cap and no longer owns
   domain validation or orchestration logic.
-- [ ] The control-plane package exposes one bounded module per command family.
-- [ ] Existing `qwen-train` command behavior remains stable from the operator
+- [x] The control-plane package exposes one bounded module per command family.
+- [x] Existing `qwen-train` command behavior remains stable from the operator
   perspective, including `diagnose-non-finite`.
-- [ ] Focused tests cover the extracted command use cases without growing the
+- [x] Focused tests cover the extracted command use cases without growing the
   CLI entrypoint test surface into another god file.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

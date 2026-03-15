@@ -107,43 +107,43 @@ forensics.” It is:
 
 ## Deliverables
 
-- [ ] `T186` backlog, runbook, skill, and operator-reference docs are aligned
+- [x] `T186` backlog, runbook, skill, and operator-reference docs are aligned
   to one canonical diagnostic flow before code changes are landed.
-- [ ] `qwen-train diagnose-non-finite` exists as a detached, repo-owned,
+- [x] `qwen-train diagnose-non-finite` exists as a detached, repo-owned,
   realistic diagnostic surface.
-- [ ] The optimizer-boundary guard records and exposes pre-step and post-step
+- [x] The optimizer-boundary guard records and exposes pre-step and post-step
   finiteness for:
   - `model.talker.model.text_embedding`
   - `model.talker.model.text_projection` when present
   - optimizer-state tensors for those params
-- [ ] The training loop fails closed before a corrupt update is applied when
+- [x] The training loop fails closed before a corrupt update is applied when
   targeted pre-step signals are non-finite.
-- [ ] The training loop fails closed immediately after a corrupt update when
+- [x] The training loop fails closed immediately after a corrupt update when
   targeted parameters or optimizer state become non-finite.
-- [ ] Replay artifacts are reusable by tests so the repo does not remain
+- [x] Replay artifacts are reusable by tests so the repo does not remain
   dependent on repeated 20-minute live reruns to inspect the same failure
   window.
-- [ ] Focused tests own the new optimizer-boundary and replay logic instead of
+- [x] Focused tests own the new optimizer-boundary and replay logic instead of
   expanding the existing god test files again.
 
 ## Acceptance Criteria
 
-- [ ] A focused guard test proves finite losses plus non-finite `grad_norm`
+- [x] A focused guard test proves finite losses plus non-finite `grad_norm`
   skip `optimizer.step()` and fail with
   `pre_step_non_finite_grad_norm`.
-- [ ] A focused guard test proves finite `grad_norm` plus a targeted
+- [x] A focused guard test proves finite `grad_norm` plus a targeted
   non-finite gradient skip `optimizer.step()` and fail with
   `pre_step_non_finite_gradients`.
-- [ ] A focused post-step test proves a newly corrupted
+- [x] A focused post-step test proves a newly corrupted
   `text_embedding.weight` fails immediately with
   `post_step_non_finite_parameters`.
-- [ ] A focused post-step test proves corrupted optimizer state
+- [x] A focused post-step test proves corrupted optimizer state
   (`exp_avg` / `exp_avg_sq`) fails immediately with
   `post_step_non_finite_optimizer_state`.
-- [ ] A replay test proves the captured `1405 -> 1406` window can be replayed
+- [x] A replay test proves the captured `1405 -> 1406` window can be replayed
   deterministically from the persisted replay artifact without depending on
   hidden sampler state.
-- [ ] `status.json`, `report.json`, and the failure payload agree on:
+- [x] `status.json`, `report.json`, and the failure payload agree on:
   - failure reason,
   - optimizer step,
   - targeted parameter family, and
@@ -156,13 +156,13 @@ forensics.” It is:
 
 ## Validation
 
-- [ ] `pdm run format-all`
-- [ ] `pdm run lint-fix`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_optimizer_guard.py tests/sir_convert_a_lot/ml/qwen/training/test_diagnostic_replay.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_optimizer_guard.py tests/sir_convert_a_lot/ml/qwen/training/test_diagnostic_replay.py tests/sir_convert_a_lot/ml/qwen/training/test_train_step_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_diagnose_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_status_payloads.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_failure_projection.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] One detached Hemma `qwen-train diagnose-non-finite` proof exists under
   `build/verification/`.
 
@@ -174,9 +174,12 @@ forensics.” It is:
   closed out as historical context rather than expanded further.
 - The currently approved default diagnostic target is strict replay from
   `state-step-00001238` against the replacement Task 152 bundle.
+- Story 28 / `T187-T191` is now delivered, so `T186` continues only on the
+  optimizer-boundary remediation and Hemma proof surfaces rather than
+  architecture hardening.
 
 ## Checklist
 
 - [ ] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated

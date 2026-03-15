@@ -74,7 +74,7 @@ def _patch_setup(monkeypatch: pytest.MonkeyPatch, *, accelerator: object, model:
         _FakeOptimizer,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.save_checkpoint",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_transition_runtime.save_checkpoint",
         fake_save_checkpoint,
     )
     monkeypatch.setattr(
@@ -119,7 +119,7 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
         _FakeOptimizer,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.save_checkpoint",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_transition_runtime.save_checkpoint",
         fake_save_checkpoint,
     )
     monkeypatch.setattr(
@@ -320,7 +320,7 @@ def test_train_with_args_fails_closed_when_resume_cursor_exceeds_dataloader_leng
         _FakeOptimizer,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.save_checkpoint",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_transition_runtime.save_checkpoint",
         fake_save_checkpoint,
     )
     monkeypatch.setattr(

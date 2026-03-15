@@ -114,9 +114,12 @@ explicitly narrow the scope.
   keep retrying blind full training runs. The canonical next step is:
   `status -> diagnose-non-finite -> fix -> bounded retry`.
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
-  the Qwen training control plane. Do not keep adding new feature logic to
-  `qwen_train.py`, `orchestrator.py`, `reporting.py`, or `sft_12hz_loop.py`;
-  extract bounded module owners instead.
+  the Qwen training control plane and is now delivered. Keep new host-side
+  logic in `ml/qwen/training/control_plane/`, detached launch logic in
+  `ml/qwen/training/detached_runtime/`, reporting logic in
+  `ml/qwen/training/reporting/`, and patched runtime logic in the bounded
+  `sft_12hz_*` runtime modules. `orchestrator.py` and `reporting.py` are gone
+  and must not be reintroduced.
 - Do not trust reused-run `status.json` or `report.json` artifacts unless they
   clearly belong to the active resumed container.
 - Intentional detached Task 101 stops now request graceful shutdown and one

@@ -5,11 +5,11 @@
 This repository is the canonical home for **Sir Convert-a-Lot**. It is designed for
 reliable, LLM-friendly document conversion workflows with Hemma offloading and GPU-first governance.
 
-## Golden Rules
+## Golden Rules (Mandatory)
 
 1. No behavior change without docs-as-code planning.
 1. Contract-first delivery: docs/API/ADR are normative.
-1. Preserve SRP and split modules before ~500 LoC.
+1. Strict DRY and SOLID code only - no duplication, no god objects \<400 LoC.
 1. No typing shortcuts (`Any`, casts, `# type: ignore`, lint ignores) in new code.
 1. Use canonical wrappers for local vs remote command context.
 

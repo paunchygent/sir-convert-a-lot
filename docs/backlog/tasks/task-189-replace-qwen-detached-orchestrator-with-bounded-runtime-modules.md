@@ -2,7 +2,7 @@
 id: task-189-replace-qwen-detached-orchestrator-with-bounded-runtime-modules
 title: Replace Qwen detached orchestrator with bounded runtime modules
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -36,23 +36,23 @@ owners.
 
 ## Deliverables
 
-- [ ] Bounded detached-runtime modules exist for ids, settings snapshots,
+- [x] Bounded detached-runtime modules exist for ids, settings snapshots,
   paths, command building, launch, inspection, artifact freshness, and stop.
-- [ ] All internal imports are migrated away from the old mixed-concern module.
-- [ ] The old `orchestrator.py` file is deleted rather than kept as a shim.
-- [ ] Focused tests cover detached command building and status inspection.
+- [x] All internal imports are migrated away from the old mixed-concern module.
+- [x] The old `orchestrator.py` file is deleted rather than kept as a shim.
+- [x] Focused tests cover detached command building and status inspection.
 
 ## Acceptance Criteria
 
-- [ ] No mixed-concern detached-runtime module exceeds the Story 28 cap.
-- [ ] Detached launch/status/report artifacts remain truthful after import
+- [x] No mixed-concern detached-runtime module exceeds the Story 28 cap.
+- [x] Detached launch/status/report artifacts remain truthful after import
   migration.
-- [ ] Resumed-launch stale-artifact filtering remains correct on the new module
+- [x] Resumed-launch stale-artifact filtering remains correct on the new module
   boundaries.
-- [ ] No compatibility wrapper or deprecated alias module remains.
+- [x] No compatibility wrapper or deprecated alias module remains.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

@@ -2,7 +2,7 @@
 id: story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries
 title: Permanently harden Qwen training SRP and DDD boundaries
 type: story
-status: proposed
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -58,27 +58,27 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] Story 28 is the explicit blocker on further growth in the current Qwen
+- [x] Story 28 is the explicit blocker on further growth in the current Qwen
   control-plane and runtime god files.
-- [ ] A repo rule makes the `400` LoC cap and SRP/DDD/DRY/SOLID boundaries
+- [x] A repo rule makes the `400` LoC cap and SRP/DDD/DRY/SOLID boundaries
   normative for this lane.
-- [ ] `qwen_train.py` is reduced to a composition root and no longer owns
+- [x] `qwen_train.py` is reduced to a composition root and no longer owns
   bundle validation, path policy, or use-case orchestration.
-- [ ] The detached host runtime is split into bounded modules and the old
+- [x] The detached host runtime is split into bounded modules and the old
   mixed-concern `orchestrator.py` is removed.
-- [ ] The reporting/status/report-building lane is split into bounded modules
+- [x] The reporting/status/report-building lane is split into bounded modules
   and the old mixed-concern `reporting.py` is removed.
-- [ ] The patched Qwen training loop is split into bounded runtime modules and
+- [x] The patched Qwen training loop is split into bounded runtime modules and
   the old loop file is reduced to orchestration only.
-- [ ] Architecture guard tests enforce the new boundaries and line-count caps.
+- [x] Architecture guard tests enforce the new boundaries and line-count caps.
 
 ## Test Requirements
 
-- [ ] Focused tests exist for control-plane use cases, detached-runtime
+- [x] Focused tests exist for control-plane use cases, detached-runtime
   command/inspect behavior, reporting payload builders, and train-step runtime.
-- [ ] Integration tests still prove truthful detached launch/status/report and
+- [x] Integration tests still prove truthful detached launch/status/report and
   `diagnose-non-finite` behavior after import migration.
-- [ ] Architecture guard tests fail if the named hot-path modules exceed the
+- [x] Architecture guard tests fail if the named hot-path modules exceed the
   cap or if old mixed-concern module paths reappear.
 
 ## Done Definition
@@ -86,10 +86,10 @@ Out of scope:
 Done when the four current god files are deleted or reduced to bounded
 composition roots under the new cap, all Qwen training tests pass, and the
 runbook/skill/current-task memory point at Story 28 as the permanent
-architecture guardrail.
+architecture guardrail. This is now delivered in commit `338a0df`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

@@ -2,7 +2,7 @@
 id: task-190-replace-qwen-reporting-module-with-bounded-reporting-packages
 title: Replace Qwen reporting module with bounded reporting packages
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -35,27 +35,27 @@ writer configuration stop accumulating in one umbrella file.
 
 ## Deliverables
 
-- [ ] Reporting modules exist for config, writer, status payloads, report
+- [x] Reporting modules exist for config, writer, status payloads, report
   builders, failure projection, step semantics, artifact I/O, and runtime
   versions.
-- [ ] One canonical artifact-I/O owner exists for status/report JSON writes.
-- [ ] The old `reporting.py` umbrella is removed rather than preserved as a
+- [x] One canonical artifact-I/O owner exists for status/report JSON writes.
+- [x] The old `reporting.py` umbrella is removed rather than preserved as a
   compatibility layer.
-- [ ] Focused tests cover status payload builders and failure projection.
+- [x] Focused tests cover status payload builders and failure projection.
 
 ## Acceptance Criteria
 
-- [ ] Reporting/status/report-building concerns are separated on stable module
+- [x] Reporting/status/report-building concerns are separated on stable module
   boundaries under the Story 28 cap.
-- [ ] `status.json`, `report.json`, and failure payloads stay contract-aligned
+- [x] `status.json`, `report.json`, and failure payloads stay contract-aligned
   after the refactor.
-- [ ] Diagnostic launch kinds and optimizer-boundary failure fields remain
+- [x] Diagnostic launch kinds and optimizer-boundary failure fields remain
   visible and truthful in the new reporting package.
-- [ ] No duplicate artifact-writing paths remain between reporting and
+- [x] No duplicate artifact-writing paths remain between reporting and
   metadata.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

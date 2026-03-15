@@ -51,9 +51,10 @@ For the preserved Task 101 legacy lane:
 - treat `T186` as the active remediation owner for the remaining
   optimizer-boundary corruption and deterministic replay work
 - treat `T180` as the delivered first-pass truth/forensics slice
-- treat Story 28 / `T187-T191` as the permanent architecture-hardening lane;
-  new control-plane or runtime logic must land there instead of growing the
-  old central files again
+- treat Story 28 / `T187-T191` as the delivered permanent
+  architecture-hardening lane; new control-plane or runtime logic must stay in
+  the bounded `control_plane/`, `detached_runtime/`, `reporting/`, and
+  focused `sft_12hz_*` runtime modules
 
 Why this is now the clean plan:
 
@@ -238,6 +239,43 @@ The canonical next root-cause workflow is:
 1. rerun the same detached diagnostic surface
 1. only then decide whether `T179` can retry a bounded stability proof
 
+### 2026-03-15: Instrumented Replay Evidence
+
+- Instrumented replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T134652Z`
+- Terminal failure:
+  - `NonFiniteLossError`
+  - `optimizer_step=1408`
+  - first pre-corruption boundary at `optimizer_step=1405`
+- What the replay proved:
+  - step `1405` still had finite forward losses but already had non-finite
+    `grad_norm`
+  - the loop then allowed `optimizer.step()` to execute
+  - step `1406` entered with `input_text_embedding` already poisoned, which
+    then propagated through the rest of the forward path
+  - the later `1406-1408` rows are therefore victims of post-update weight
+    corruption, not the original trigger
+- Operator conclusion:
+  - this is an optimizer-boundary corruption bug, not just a status/reporting
+    bug and not just a guessed bad-row issue
+  - `T186` remains active until the detached diagnostic surface proves the
+    lane stops before applying the corrupt update
+
+### 2026-03-15: Story 28 Delivered
+
+The permanent architecture-hardening lane is no longer future work.
+
+- `qwen_train.py` is now a composition root
+- host-side orchestration is split across
+  `ml/qwen/training/control_plane/`
+- detached launch/inspect/stop behavior is split across
+  `ml/qwen/training/detached_runtime/`
+- reporting is split across `ml/qwen/training/reporting/`
+- the patched training runtime is reduced to orchestration plus bounded
+  `sft_12hz_*` runtime modules
+- `orchestrator.py` and `reporting.py` are deleted and must not return
+- `RULE-095` and architecture guard tests now enforce the split
+
 ### 2026-03-15: Abandoned Artifact Cleanup
 
 Removed after the canonical relaunch was confirmed healthy:
@@ -273,9 +311,10 @@ That plan is now superseded because:
 - `1238` preserves more training progress
 - `1238` has a truthful compatible cursor for the replacement bundle
 - rolling back to `1236` would spend operator time for no gain
-- after the strict `1238` relaunch failed at `1358`, the next move is no longer
-  "resume immediately again"; it is "land `T180` bounded forensics and phase
-  truth first, then decide the next bounded retry"
+- after the strict `1238` relaunch failed at `1358`, and the later
+  instrumented replay failed at `1408`, the next move is no longer
+  "resume immediately again"; it is "complete `T186` and prove the
+  fail-closed optimizer-boundary behavior first"
 
 ## Canonical Next Step
 

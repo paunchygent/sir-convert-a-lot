@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol
+from typing import ContextManager, Protocol
 
 import torch
 from accelerate import Accelerator
@@ -45,21 +45,33 @@ from .sft_12hz_loss_runtime import consume_loss_observations
 class _ProfilerSessionLike(Protocol):
     """Protocol for the profiler session surface used during one train step."""
 
-    def phase(self, name: str): ...
+    def phase(self, name: str) -> ContextManager[object]: ...
 
 
 class _DataloaderTuningLike(Protocol):
     """Protocol for the dataloader tuning surface used during one train step."""
 
-    non_blocking_transfer: bool
+    @property
+    def non_blocking_transfer(self) -> bool: ...
 
 
 class _LossObserverLike(Protocol):
     """Protocol for the loss observer surface used during one train step."""
 
-    def submit(self, **kwargs: object) -> None: ...
+    def submit(
+        self,
+        *,
+        loss: torch.Tensor,
+        main_loss: torch.Tensor,
+        sub_talker_loss: torch.Tensor,
+        grad_norm: torch.Tensor | float | None,
+        step_forensics: dict[str, object] | None,
+        optimizer_step: int,
+        current_epoch: int,
+        current_train_iteration: int,
+    ) -> None: ...
 
-    def drain_ready(self, force: bool) -> list[LossObservation]: ...
+    def drain_ready(self, *, force: bool) -> list[LossObservation]: ...
 
 
 class _HeartbeatPolicyLike(Protocol):
@@ -83,14 +95,29 @@ class _RefMelCacheLike(Protocol):
 class TrainStepPreparedRuntime(Protocol):
     """Focused prepared-runtime surface needed by one train-step window."""
 
-    torch_profiler_session: _ProfilerSessionLike
-    effective_dataloader_tuning: _DataloaderTuningLike
-    loss_observer: _LossObserverLike
-    heartbeat_policy: _HeartbeatPolicyLike
-    finite_loss_guard: _FiniteLossGuardLike
-    ref_mel_cache: _RefMelCacheLike
-    dataloader_length: int
-    eval_dataloader_length: int
+    @property
+    def torch_profiler_session(self) -> _ProfilerSessionLike: ...
+
+    @property
+    def effective_dataloader_tuning(self) -> _DataloaderTuningLike: ...
+
+    @property
+    def loss_observer(self) -> _LossObserverLike: ...
+
+    @property
+    def heartbeat_policy(self) -> _HeartbeatPolicyLike: ...
+
+    @property
+    def finite_loss_guard(self) -> _FiniteLossGuardLike: ...
+
+    @property
+    def ref_mel_cache(self) -> _RefMelCacheLike: ...
+
+    @property
+    def dataloader_length(self) -> int: ...
+
+    @property
+    def eval_dataloader_length(self) -> int: ...
 
 
 @dataclass(frozen=True)

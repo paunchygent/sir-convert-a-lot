@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import io
 from pathlib import Path
+from typing import TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -22,7 +23,7 @@ import torch
 
 from scripts.devops.qwen_finetuning_patches import sft_12hz_ref_input_contract
 
-AudioArray = npt.NDArray[np.float32]
+AudioArray: TypeAlias = npt.NDArray[np.float32]
 PRECOMPUTED_REF_INPUT_KIND = sft_12hz_ref_input_contract.PRECOMPUTED_REF_INPUT_KIND
 PRECOMPUTED_REF_INPUT_VERSION = sft_12hz_ref_input_contract.PRECOMPUTED_REF_INPUT_VERSION
 PRECOMPUTED_REF_INPUT_SOURCE_FIELD = sft_12hz_ref_input_contract.PRECOMPUTED_REF_INPUT_SOURCE_FIELD

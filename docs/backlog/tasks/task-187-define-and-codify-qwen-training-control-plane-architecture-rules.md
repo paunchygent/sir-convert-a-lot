@@ -2,7 +2,7 @@
 id: task-187-define-and-codify-qwen-training-control-plane-architecture-rules
 title: Define and codify Qwen training control-plane architecture rules
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -35,22 +35,22 @@ concerns.
 
 ## Deliverables
 
-- [ ] `RULE-095` exists and is indexed from `000-rule-index.md`.
-- [ ] Story 28 and `T187-T191` are fully linked from the active Qwen backlog.
-- [ ] Operator/docs surfaces explicitly say new feature work must not grow the
+- [x] `RULE-095` exists and is indexed from `000-rule-index.md`.
+- [x] Story 28 and `T187-T191` are fully linked from the active Qwen backlog.
+- [x] Operator/docs surfaces explicitly say new feature work must not grow the
   current god files further.
 
 ## Acceptance Criteria
 
-- [ ] The backlog and repo rules agree on the new architecture lane and
+- [x] The backlog and repo rules agree on the new architecture lane and
   sequencing.
-- [ ] The runbook and skill mention the canonical control-plane architecture
+- [x] The runbook and skill mention the canonical control-plane architecture
   path and the no-shim/no-compat-wrapper rule.
-- [ ] `current.md` records Story 28 as the architecture blocker for future Task
+- [x] `current.md` records Story 28 as the architecture blocker for future Task
   101 control-plane work.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

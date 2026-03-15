@@ -1,629 +1,86 @@
 # Session Handoff
 
-## Session Update (2026-03-15, Task 180 forensic provenance + sampler truth)
+## Current State
 
-- Advanced
-  `task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
-  so the active remediation now explicitly owns:
-  - default-on per-microbatch row provenance
-  - ordered tensor-finiteness probes
-  - explicit sampler-randomness governance instead of hidden global
-    `random.shuffle(...)`
-  - continued checkpoint-phase truth and failure-artifact truth
-- Implemented a focused forensic helper module:
-  - `scripts/devops/qwen_finetuning_patches/sft_12hz_forensics.py`
-  - purpose: keep tensor-summary and optimizer-step-window logic out of the
-    already-large loop module
-- Added stable manifest provenance to the training data path:
-  - `sft_12hz_training_rows.py` now stamps `row_id`, `manifest_path`, and
-    `manifest_line_number`
-  - `dataset.py` now carries that identity into `batch_row_provenance` and
-    collated `batch_provenance`
-- Hardened batch-contract truth instead of relaxing types:
-  - `dataset.py` now exposes `require_batch_tensors(...)`
-  - both `sft_12hz_loop.py` and `sft_12hz_eval.py` validate/resolve batches
-    through that helper before touching tensor fields
-- The finite-loss path now preserves the real failing window:
-  - `sft_12hz_loop.py` records per-microbatch provenance plus tensor
-    finiteness across each accumulation window
-  - `sft_12hz_loop_controls.py` now persists `step_forensics` and
-    `recent_observations` into `NonFiniteLossError.payload()`
-- Sampler truth is improved:
-  - `BucketedBatchSampler` now owns explicit `shuffle`, `shuffle_seed`, and
-    `set_epoch(...)`
-  - train batching uses deterministic epoch-seeded shuffle
-  - held-out eval batching is now non-shuffled
-- Operator-facing status summary now surfaces the forensic headline in
-  `metadata.py`:
-  - `pilot_first_non_finite_tensor`
-  - `pilot_recent_non_finite_optimizer_steps`
-- Test refocus / anti-god-file work:
-  - created dedicated
-    `tests/sir_convert_a_lot/ml/qwen/training/test_forensics.py`
-  - kept integration assertions in existing train/report/trainer tests only
-    where end-to-end contract coverage was actually needed
-- Doc alignment updated in:
-  - `docs/backlog/current.md`
-  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
-  - `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
-  - `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
-- Validation:
-  - `PASS` `pdm run format-all`
-  - `PASS` `pdm run lint-fix`
-  - `PASS` `pdm run typecheck-all`
-  - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_forensics.py tests/sir_convert_a_lot/ml/qwen/training/test_batching.py tests/sir_convert_a_lot/ml/qwen/training/test_training_rows.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py -q`
-  - `PASS` `pdm run validate-tasks`
-  - `PASS` `pdm run validate-docs`
-  - `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- Active epic: Epic 08 Qwen Swedish language expansion on Hemma.
+- Active story: Story 26 remains in progress for Task 101 throughput and
+  numerical-stability closure.
+- Active remediation task: `T186`
+  (`docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`).
+- Delivered architecture lane: Story 28 / `T187-T191` is complete and now
+  governs all future Qwen control-plane/runtime changes.
 
-## Immediate Next Step
+## What Landed
 
-- Pull this remediation onto Hemma and run the next bounded `1238` repro so the
-  failing `1356-1358` window, offending rows, and first non-finite tensor
-  family are captured from the live lane before any NaN-guard policy change is
-  considered.
+- `qwen-train diagnose-non-finite` now exists as the canonical detached
+  diagnostic surface.
+- Fast ML quality gates now exist for the Qwen lane:
+  - `pdm run test-ml`
+  - `pdm run typecheck-ml`
+  - `test-ml` uses `pytest --import-mode=importlib` so duplicate test
+    basenames under `tests/sir_convert_a_lot/ml/qwen/` collect safely from the
+    repo root
+- Optimizer-boundary diagnostics now probe:
+  - pre-step and post-step finiteness for text-embedding / text-projection
+    params
+  - targeted optimizer-state tensors
+  - whether `optimizer.step()` was attempted, skipped, or completed
+- Story 28 refactor is delivered:
+  - `scripts/sir_convert_a_lot/cli/ml/qwen_train.py` is now a composition root
+  - host control-plane logic lives under
+    `scripts/sir_convert_a_lot/ml/qwen/training/control_plane/`
+  - detached runtime logic lives under
+    `scripts/sir_convert_a_lot/ml/qwen/training/detached_runtime/`
+  - reporting lives under
+    `scripts/sir_convert_a_lot/ml/qwen/training/reporting/`
+  - patched runtime logic is split across focused `sft_12hz_*` modules
+  - `orchestrator.py` and `reporting.py` are deleted and must not return
+- Docs were synchronized so Story 28 is marked completed while `T186` remains
+  honestly in progress pending the Hemma proof.
 
-## Session Update (2026-03-15, Task 180 NaN forensics + checkpoint-phase truth)
+## Latest Task 101 Truth
 
-- Expanded
-  `task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
-  so the active remediation contract now explicitly owns:
-  - bounded non-finite loss forensics
-  - truthful durable-versus-export checkpoint phase labels
-  - explicit zero-based epoch semantics in status/report artifacts
-- Updated the long-term task memory and operator ledger:
-  - `docs/backlog/current.md`
-  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
-  - `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
-- Confirmed the "epoch 4" confusion was not a fresh-lane counter bug:
-  - the resumed durable checkpoint `state-step-00001238` already carried
-    `next_epoch=1` and `next_step_in_epoch=8`
-  - the trainer/status surface reports a zero-based resumed epoch cursor, which
-    was truthful internally but previously under-explained for operators
-- Implemented bounded NaN forensics in
-  `scripts/devops/qwen_finetuning_patches/sft_12hz_loop_controls.py` and
-  `scripts/devops/qwen_finetuning_patches/sft_12hz_loop.py`:
-  - each observed optimizer-step loss now stages:
-    - combined loss
-    - main talker loss
-    - sub-talker loss
-    - gradient norm
-  - `NonFiniteLossError` now carries and serializes those values plus per-signal
-    finiteness booleans
-- Implemented truthful checkpoint phase labels:
-  - durable trainer-state saves now emit `durable-checkpoint-save`
-  - export-only epoch/final saves now emit `export-checkpoint-save`
-  - resource-monitor summaries still preserve a combined
-    `summary_checkpoint_save` view while also exposing durable/export splits
-- Extended status/report truth:
-  - `step_semantics` now includes:
-    - `epoch_index_base=0`
-    - explicit epoch-definition text
-  - failed training reports now persist the same step-semantics payload inside
-    `failure`
-- Added/updated focused regression coverage in:
-  - `tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py`
-  - `tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py`
-  - `tests/sir_convert_a_lot/ml/qwen/training/test_monitoring.py`
-  - `tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py`
-- Validation:
-  - `PASS` `pdm run format-all`
-  - `PASS` `pdm run lint-fix`
-  - `PASS` `pdm run typecheck-all`
-  - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_monitoring.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py -q`
-  - `PASS` `pdm run validate-tasks`
-  - `PASS` `pdm run validate-docs`
-  - `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-
-## Immediate Next Step
-
-- If the user wants to continue the Hemma recovery lane, inspect the new
-  `finite_loss_guard` payload from the next bounded repro before changing guard
-  policy. The repo can now tell whether the failing signal is the combined
-  loss, the main talker loss, the sub-talker loss, the gradient norm, or a
-  combination of them, and phase history will no longer imply durable
-  checkpoints when only export saves occurred.
-
-## Session Update (2026-03-15, Task 185 legacy checkpoint recovery)
-
-- Advanced `task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md`.
-- Confirmed good recovery behavior:
-  - legacy `1236`-step launch metadata now loads without manual JSON edits
-  - `qwen-train resume` can override a stale bundle root
-  - the diagnostic recovery probe restored trainer state and wrote a new
-    durable checkpoint at step `1238`
-- Confirmed unsafe behavior that must remain source-of-truth for the next
-  developer:
-  - a resumed launch reusing the old run root can initially surface stale
-    `report.json` from the earlier failed attempt
-  - the saved legacy cursor `next_step_in_epoch=1236` was accepted against a
-    replacement bundle with `dataloader_length=128`, which produced misleading
-    partial-epoch status until the next durable save normalized the cursor
-  - no standalone held-out eval baseline was captured before the first resume
-- Remediation already landed locally and on `origin/main`:
-  - `510786e` hides stale pre-launch status/report artifacts for active resumed
-    containers in detached inspection
-  - current local follow-up adds a trainer-side fail-closed guard for impossible
-    saved resume cursors
-- Operational rule now in docs/runbook/skill:
-  - legacy checkpoint recovery order is `standalone eval -> resume`, never
-    blind resume first
-- Standalone eval baseline now exists for the original `1236` checkpoint:
-  - held-out eval manifest:
-    `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1/manifests/swedish_checkpoint_dev.prepared.jsonl`
-  - eval output root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot/task101-20260313t102144z/evals/eval-20260315T104201Z`
+- Baseline held-out eval exists for `state-step-00001236`:
   - `eval_loss=6.440637648105621`
-  - `eval_batches_completed=8`
-- Canonical next operator action for this lane:
-  - do not resume from `1236` again
-  - use the newer compatible durable checkpoint
-    `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
-    for the next strict resume
-  - keep live recovery and progress notes in
-    `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
-    rather than extending the skill doc with operational logs
-- Follow-up after that note:
-  - the first strict `1238` relaunch exposed one more stale-default bug:
-    resume inherited the preserved launch's old `2/100/2` control posture
-  - remediation is now landed on `origin/main` as `f0e8cde`
-  - Hemma was fast-forwarded to that commit after the stale launch stopped
-  - the active recovered lane is now `20260315T110545Z`, and detached status at
-    `2026-03-15T11:09:57Z` confirms truthful
-    `checkpoint_interval_steps=500`, `eval_interval_steps=100`, and
-    `durable_checkpoint_retention=3`
-  - abandoned failed launch roots, exited Qwen containers, and stale detached
-    resource-monitor workers from the failed relaunch attempts were cleaned up
-- Hemma note:
-  - code commit `f0e8cde` is already pulled onto Hemma because the stale
-    `20260315T105831Z` launch was fully stopped first
-  - any later docs-only follow-up commits should wait to be pulled until the
-    current live container `20260315T110545Z` is intentionally stopped
+- Canonical strict-resume checkpoint is:
+  - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
+- The later instrumented replay proved:
+  - step `1405` still had finite forward losses but non-finite `grad_norm`
+  - the loop then applied `optimizer.step()`
+  - step `1406` entered with `input_text_embedding` already poisoned
+  - this is an optimizer-boundary corruption bug, not just a reporting bug
 
-## Session Update (2026-03-15, Task 184 remediation)
+## Immediate Next Step
 
-- Completed `task-184-remediate-task-101-qwen-schedule-pointer-truth-schedule-path-fail-closed-validation-and-retention-3-checkpoint-proof-coverage.md`.
-- Code outcomes:
-  - schedule-driven `_resume_from_checkpoint()` now advances
-    `latest-launch.json`
-  - `qwen-train schedule` now validates launch-derived default checkpoint,
-    eval-manifest, and bundle-root paths instead of only explicit overrides
-  - checkpoint persistence coverage now proves the newest-`3` durable
-    checkpoint contract after the fourth valid save
-- Validation:
-  - `PASS` `pdm run format-all`
-  - `PASS` `pdm run lint-fix`
-  - `PASS` `pdm run typecheck-all`
-  - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_checkpoint_persistence.py -q`
-  - `PASS` `pdm run validate-tasks`
-  - `PASS` `pdm run validate-docs`
-  - `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+Run one detached Hemma `qwen-train diagnose-non-finite` proof from
+`state-step-00001238` and confirm the guarded lane now stops before applying
+the corrupt optimizer update. Do not restart broad training first.
 
-## Implementation Handoff (2026-03-14, Story 26 T171 -> T173 -> T172)
+## Open Risks
 
-### Scope for Next Developer
+- `T186` is not complete until the detached Hemma proof exists under
+  `build/verification/`.
+- `T179` must stay blocked until that proof shows fail-closed behavior before
+  weight corruption.
+- Do not add new Qwen feature logic to central files; use the Story 28 package
+  owners enforced by `RULE-095`.
 
-Implement the following tasks in strict order:
+## Validation
 
-1. `docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md`
-1. `docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md`
-1. `docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
+- `PASS` `pdm run typecheck-ml`
+- `PASS` `pdm run test-ml -q` (`225 passed`)
+- `PASS` `pdm run format-all`
+- `PASS` `pdm run lint-fix`
+- `PASS` `pdm run typecheck-all`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_launch_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_diagnose_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_command_builder.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_inspect_service.py tests/sir_convert_a_lot/ml/qwen/training/test_diagnostic_replay.py tests/sir_convert_a_lot/ml/qwen/training/test_optimizer_guard.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_status_payloads.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_failure_projection.py tests/sir_convert_a_lot/ml/qwen/training/test_train_step_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py -q`
+- `PASS` `pdm run validate-tasks`
+- `PASS` `pdm run validate-docs`
 
-Story to keep open while implementing:
+## Key References
 
+- `docs/backlog/current.md`
 - `docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
-
-### Current Evidence Baseline (Must Be Treated as Source of Truth)
-
-- `T161` cache-off run `task161-20260313t212725z-cache-off`:
-  steady-state train GPU median `26%`
-- `T161` cache-on run `task161-20260313t212725z-cache-on`:
-  steady-state train GPU median `8%`
-- `T162` profile run `task162-20260313t220644z-profile`:
-  steady-state train GPU median `3%`
-- cache stats in all three runs were effectively dead:
-  `cache_hits=0`, `cache_misses=0`, `cache_size=0`
-- `T162` ROCm attribution:
-  - HIP API `98.74s`
-  - kernels `102.08s`
-  - memory copy `1.73s`
-  - top HIP API:
-    `hipLaunchKernel=44.18s`,
-    `hipMemcpyWithStream=21.52s`,
-    `hipEventSynchronize=17.89s`
-
-Interpretation:
-
-- lane is host-orchestration/synchronization bound
-- runtime ref-mel cache is not currently engaged in practice on this lane
-- persistent `NaN` loss is a quality blocker for trustworthy saturation claims
-
-### What Was Updated Before This Handoff
-
-- Evidence and RCA synced into:
-  - `task-161...md`
-  - `task-162...md`
-  - `story-26...md`
-  - `epic-08...md`
-  - `runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
-  - `ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`
-  - `docs/backlog/current.md`
-- New task docs created and filled:
-  - `task-171...md`
-  - `task-173...md`
-  - `task-172...md`
-
-Validation status for docs updates in this handoff:
-
-- `PASS` `pdm run validate-tasks`
-- `PASS` `pdm run validate-docs`
-- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-
-### Critical Environment / Repo Risks (Read Before Coding)
-
-1. Local branch is `main` with substantial uncommitted Story 27 migration state.
-1. Legacy `devops/taskXXX` scripts are deleted locally, while `pyproject` still
-   contains old script entrypoints (for example `task-101-pilot`,
-   `task-161-ref-mel-cache-comparison`, `task-162-task101-profiling`).
-1. Some new CLI files under `scripts/sir_convert_a_lot/cli/ml/` still import
-   old deleted `devops` modules.
-1. Do not revert unrelated user changes. Work with the dirty tree.
-
-Implication:
-
-- First step for the implementer should be stabilizing executable command
-  surfaces used by `T171/T173/T172` in the current domain-centric layout.
-
-### Canonical Code Areas for T171/T173/T172
-
-Training loop and hot-path behavior:
-
-- `scripts/devops/qwen_finetuning_patches/sft_12hz.py`
-- `scripts/devops/qwen_finetuning_patches/dataset.py`
-- `scripts/devops/qwen_finetuning_patches/sft_12hz_tracking.py`
-- `scripts/devops/qwen_finetuning_patches/sft_12hz_ref_mel_cache.py`
-
-Domain-centric orchestration and reporting:
-
-- `scripts/sir_convert_a_lot/ml/qwen/training/trainer.py`
-- `scripts/sir_convert_a_lot/ml/qwen/training/reporting.py`
-- `scripts/sir_convert_a_lot/ml/qwen/training/orchestrator.py`
-- `scripts/sir_convert_a_lot/ml/qwen/training/monitoring.py`
-- `scripts/sir_convert_a_lot/ml/qwen/training/metadata.py`
-- `scripts/sir_convert_a_lot/ml/qwen/training/bundles.py`
-
-Potential CLI surfaces to align:
-
-- `scripts/sir_convert_a_lot/cli/ml/qwen_train.py`
-- `scripts/sir_convert_a_lot/cli/ml/qwen_ref_mel_cache_comparison.py`
-- `pyproject.toml` script entries for any affected commands
-
-### Execution Plan (Do Not Reorder)
-
-1. **T171**: remove per-step host sync overhead and add finite-loss guard.
-1. Run focused tests + local gates.
-1. Run bounded Hemma evidence for T171 and capture profile/monitor deltas.
-1. **T173**: persist and consume precomputed reference inputs at bundle level.
-1. Run focused tests + local gates.
-1. Run bounded Hemma evidence for T173 and compare against T161 baseline.
-1. **T172**: increase per-launch work (bucketing + vectorized codebook path).
-1. Run focused tests + local gates.
-1. Run bounded Hemma sweep and pick one default profile with evidence.
-1. Update task/story docs with measured evidence only.
-
-### Guardrails
-
-- Do not close Story 26 in this slice.
-- Do not claim acceptance from `NaN` runs.
-- Do not claim saturation success without monitor-backed evidence.
-- Use canonical wrappers:
-  - local: `pdm run run-local-pdm <script>`
-  - Hemma: `pdm run run-hemma -- <command>`
-- Merge-only workflow; never rebase.
-- BuildKit only.
-
-### Minimum Required Gates Per Task
-
-- `pdm run format-all`
-- `pdm run lint-fix`
-- `pdm run typecheck-all`
-- `pdm run pytest-root <focused-paths>`
-- `pdm run validate-tasks`
-- `pdm run validate-docs`
-- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-
-### Completion Standard for This Handoff Scope
-
-This handoff scope is complete only when `T171`, `T173`, and `T172` each have:
-
-- implementation complete
-- validation complete
-- live Hemma evidence attached in docs
-- and Story 26 remains open unless its explicit saturation gate is actually met
-
-## Session Update (2026-03-13, Story 27 T166-T170)
-
-- Completed the domain-centric Qwen ML refactor implementation for Story 27
-  and Tasks `166-170`, moving the canonical code surface to
-  `scripts/sir_convert_a_lot/ml/qwen/` with `common/`, `preprocessing/`, and
-  `training/` packages plus thin public CLI wrappers under
-  `scripts/sir_convert_a_lot/cli/ml/`.
-- Main implementation outcomes:
-  - removed task-prefixed Qwen filenames and internal symbols from the active
-    ML domain
-  - decomposed former "god task" modules into SRP-aligned modules such as
-    `asr.py`, `orchestrator.py`, `bundles.py`, and typed shared contracts
-  - updated the Qwen Hemma container and the Qwen fine-tuning runbook to use
-    the new domain-centric paths and command surfaces
-- Current follow-up gap:
-  - the moved tests under `tests/sir_convert_a_lot/ml/qwen/` still need the
-    remaining import-path cleanup so the full Story 27 test surface is aligned
-    with the new package layout
-  - Story 27 backlog docs currently need final terminal status synchronization
-    once that remaining test import cleanup is complete and verified
-
-## Validation Status (Story 27 implementation)
-
-- `NOT RUN IN THIS HANDOFF UPDATE` `pdm run format-all`
-- `NOT RUN IN THIS HANDOFF UPDATE` `pdm run lint-fix`
-- `PASS` `pdm run typecheck-all`
-- `NOT YET PASSING / FOLLOW-UP REQUIRED` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/`
-- `PASS` `pdm run validate-tasks`
-- `PASS` `pdm run validate-docs`
-
-## Active Blocker
-
-- The remaining blocker for full Story 27 closure is import refactoring in the
-  moved Qwen test modules under `tests/sir_convert_a_lot/ml/qwen/`; until that
-  lands, the refactor implementation is complete but the test-alignment
-  acceptance step is not yet closed.
-
-## Immediate Next Step
-
-- Start from the moved Qwen tests and finish import rewrites so they point at
-  `scripts.sir_convert_a_lot.ml.qwen...` and the new `cli/ml/` wrappers rather
-  than the removed `devops/taskXXX` modules.
-- Run the focused Story 27 validation lane:
-  - `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/`
-  - `pdm run validate-tasks`
-  - `pdm run validate-docs`
-- After the focused test lane passes, synchronize Story 27 / Tasks `166-170`
-  backlog statuses and checklists to terminal state in strict hierarchy order.
-
-## Session Update (2026-03-13, Story 26 T161-T162)
-
-- Implemented the remaining Story 26 `T161` and `T162` code surfaces while
-  preserving the live Hemma pilot rule (no branch switching or pilot stop).
-- `T161` implementation outcomes:
-  - added bounded runtime ref-mel cache module
-    `scripts/devops/qwen_finetuning_patches/sft_12hz_ref_mel_cache.py`
-  - wired cache into Task 101 dataset/trainer path and propagated cache config
-    plus stats through Task 101 launch/runtime/probe/status/report contracts
-  - added bounded Hemma comparison surface:
-    `scripts/sir_convert_a_lot/devops/run_task161_hemma_ref_mel_cache_comparison.py`
-    with helper module
-    `scripts/sir_convert_a_lot/devops/task161_qwen_ref_mel_cache_runtime.py`
-- `T162` implementation outcomes:
-  - added bounded PyTorch profiling helper module
-    `scripts/devops/qwen_finetuning_patches/sft_12hz_profiling.py`
-  - patched trainer now supports opt-in profiler config plus phase markers for
-    `batch-preparation`, `forward-backward`, `optimizer-step`, and
-    `checkpoint-save`
-  - added committed ROCm wrapper:
-    `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe_with_rocprof.py`
-    (explicit `--runtime-trace`, CSV output)
-  - added bounded profiling orchestration and artifact collector:
-    - `scripts/sir_convert_a_lot/devops/run_task162_hemma_task101_profiling.py`
-    - `scripts/sir_convert_a_lot/devops/task162_qwen_profile_artifacts.py`
-- Docs and runbook updates:
-  - Story/task docs now include concrete implementation maps for `T161-T163`
-  - `T161` and `T162` task docs moved to `in_progress` with local validation
-    checklists updated
-  - Qwen runbook now documents canonical `task-161-ref-mel-cache-comparison`
-    and `task-162-task101-profiling` command surfaces
-
-## Validation Status (T161-T162 local)
-
-- `PASS` `pdm run format-all`
-- `PASS` `pdm run lint-fix`
-- `PASS` `pdm run typecheck-all`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_qwen_training_tracking.py tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py tests/sir_convert_a_lot/test_qwen_training_ref_mel_cache.py tests/sir_convert_a_lot/test_task161_qwen_ref_mel_cache_comparison.py tests/sir_convert_a_lot/test_qwen_training_profiling.py tests/sir_convert_a_lot/test_task101_qwen_profiling.py tests/sir_convert_a_lot/test_task101_qwen_resource_monitor.py tests/sir_convert_a_lot/test_qwen_training_dataloader_tuning.py -q`
-- `PASS` `pdm run validate-tasks`
-- `PASS` `pdm run validate-docs`
-- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-
-## Active Blocker
-
-- `T161` and `T162` still require live Hemma evidence artifacts to reach
-  terminal status:
-  - run the bounded cache-off/cache-on comparison surface and capture
-    `build/verification/task-161-ref-mel-cache-comparison/<run-id>/`
-  - run the bounded profiling surface and capture
-    `build/verification/task-162-task101-profiling/<run-id>/`
-  - record explicit `T164` go/no-go decision from real run evidence
-
-## Immediate Next Step
-
-- Commit and push the current Story 26 `T158-T162` implementation slice.
-- On Hemma, keep merge-only workflow and wrapper-only execution:
-  - `pdm run run-hemma -- git status --short`
-  - `pdm run run-hemma -- git pull --ff-only`
-- Run live bounded evidence captures:
-  - `pdm run run-hemma -- pdm run task-161-ref-mel-cache-comparison`
-  - `pdm run run-hemma -- pdm run task-162-task101-profiling`
-- Use resulting artifacts to close `T161/T162` acceptance and then proceed to
-  `T163` saturation-oriented profile/gate execution.
-
-## Session Summary (2026-03-13)
-
-- Implemented `T156` and `T157` in Story 26 order rather than skipping ahead.
-- Code landed across:
-  - `containers/qwen-finetune-hemma/requirements.txt`
-  - `pyproject.toml`
-  - `pdm.lock`
-  - `scripts/devops/qwen_finetuning_patches/sft_12hz.py`
-  - `scripts/devops/qwen_finetuning_patches/sft_12hz_progress.py`
-  - `scripts/devops/qwen_finetuning_patches/sft_12hz_tracking.py`
-  - `scripts/sir_convert_a_lot/devops/run_task101_hemma_qwen_pilot.py`
-  - `scripts/sir_convert_a_lot/devops/task100_qwen_finetune_smoke_probe.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_metadata.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_probe_reporting.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime_contract.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_status_reporter.py`
-  - `tests/sir_convert_a_lot/test_qwen_training_resume.py`
-  - `tests/sir_convert_a_lot/test_qwen_training_tracking.py`
-  - `tests/sir_convert_a_lot/test_task100_qwen_finetune_smoke.py`
-  - `tests/sir_convert_a_lot/test_task101_qwen_pilot.py`
-  - `tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py`
-  - `docs/backlog/tasks/task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training.md`
-  - `docs/backlog/tasks/task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime.md`
-  - `docs/backlog/current.md`
-- Main implementation outcomes:
-  - governed Qwen dependencies now include `mlflow==3.10.1`, and the Task 101
-    lane now initializes Accelerate tracking explicitly for MLflow plus
-    TensorBoard rather than relying on the earlier half-wired posture
-  - Task 101 launch/status/report artifacts now persist tracking metadata such
-    as run name, experiment name, tracking URI, artifact roots, and live
-    MLflow run ids once trackers initialize
-  - `sft_12hz.py` now emits smoothed loss plus bounded live progress heartbeats
-    with explicit phase accounting for `startup`, `train`,
-    `checkpoint-save`, and `signal-stop`
-  - the detached in-container probe now persists truthful `status.json`
-    heartbeats during training, maintains `phase_history`, merges tracker
-    metadata back into `launch.json`, and preserves the live fields in terminal
-    completed/failed payloads
-  - Task 101 markdown status rendering now surfaces live phase, step, loss,
-    checkpoint timestamp, and MLflow run id directly instead of burying that
-    information only inside the raw nested JSON block
-
-## Validation Status
-
-- `PASS` `pdm run format-all`
-- `PASS` `pdm run lint-fix`
-- `PASS` `pdm run typecheck-all`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task100_qwen_finetune_smoke.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_qwen_training_resume.py tests/sir_convert_a_lot/test_qwen_training_tracking.py tests/sir_convert_a_lot/test_task101_qwen_status_reporter.py -q`
-- `PASS` `pdm run validate-tasks`
-- `PASS` `pdm run validate-docs`
-- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-
-## Active Blocker
-
-- Local implementation and validation are complete for `T156` and `T157`.
-- The remaining acceptance work is live Hemma evidence:
-  verify that a resumed detached Task 101 run produces reviewable MLflow and
-  TensorBoard artifacts while `status.json` updates truthfully during training.
-- That Hemma acceptance proof is now active:
-  - branch: `codex/story26-t156-t157-tracking-heartbeat`
-  - launch id: `task101-20260313t184836z`
-  - resumed checkpoint:
-    `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001060`
-  - live tracker proof:
-    `mlflow_run_id=0e24db0d2c7642b8a6d8120551e260e2`
-  - live TensorBoard proof:
-    `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/trackers/tensorboard/task101-qwen-pilot/events.out.tfevents.1773427767.5c74d6ec17b4.1.0`
-  - live heartbeat proof:
-    `status.json` moved from `startup` to `train`, then recorded
-    `checkpoint-save` at step `1062`, then returned to `train` with
-    `current_step=1064`, `latest_loss=6.834901332855225`,
-    `smoothed_loss=6.780460999965669`, and `latest_durable_checkpoint_step=1062`
-
-## Immediate Next Step
-
-- Commit and push the current Story 26 `T156` + `T157` slice.
-- Pull the branch on Hemma through the canonical repo wrapper.
-- Resume the detached Task 101 run from the latest durable checkpoint.
-- Inspect the resumed run root for:
-  - `status.json` heartbeat movement while training is still running
-  - `launch.json` tracking metadata with live MLflow ids
-  - TensorBoard event files under `trackers/tensorboard/`
-  - MLflow artifacts and DB under `trackers/mlflow/`
-- Next implementation step after this verified proof:
-  begin `T158` so the high-resolution Hemma resource monitor becomes the
-  canonical sibling surface for long Task 101 runs.
-
-## Earlier Session Summary (2026-03-12)
-
-- `T152` is now grounded in actual Hemma runtime truth rather than guesswork.
-- Code landed across:
-  - `scripts/sir_convert_a_lot/devops/task103_qwen_preprocessing_finalization.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle.py`
-  - `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_bundle_batch_execution.py`
-  - `tests/sir_convert_a_lot/test_task103_qwen_preprocessing_finalization.py`
-  - `tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py`
-- Main implementation outcomes:
-  - direct preloaded-waveform encode path now bypasses the redundant tokenizer
-    normalization loop and records per-chunk timing fields
-  - batch-completed events now include machine-readable audio-code timing
-    evidence:
-    `audio_codes_preload_seconds`,
-    `audio_codes_feature_extract_seconds`,
-    `audio_codes_model_encode_seconds`,
-    `audio_codes_write_seconds`,
-    `audio_codes_chunk_total_seconds`,
-    `audio_codes_batch_total_seconds`,
-    plus effective chunk-size and OOM-retry fields
-  - attempted in-batch OOM backoff/reset logic was implemented and tested
-    locally, but live Hemma proof showed that requested
-    `audio_codes_chunk_size=128` is still not viable on the current governed
-    lane
-  - the public Task 101 default is now back to `audio_codes_chunk_size=64`
-    because `128` repeatedly OOMed on Hemma
-- Hemma benchmark truth:
-  - baseline:
-    `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312c/baseline-chunk8-span1`
-    - `swedish_pilot_train:batch-00000` = `9m 02s`
-  - preload + chunk64:
-    `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312e-hostuser/preload-chunk64-span1`
-    - `swedish_pilot_train:batch-00000` = `7m 07s`
-  - direct-encode + chunk64:
-    `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1`
-    - `duration_seconds=481.3638345239997`
-    - `rows_per_minute=15.954667652991478`
-    - train batch timing from `reports/task101_pilot_bundle_events.jsonl`:
-      `audio_codes_model_encode_seconds=424.4988881419995` out of
-      `audio_codes_chunk_total_seconds=425.61176394299764`
-  - requested `chunk128` proofs that failed on Hemma:
-    - `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312f/direct-encode-chunk128-span1`
-    - `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312g/direct-encode-chunk128-span1`
-    - `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312i/direct-encode-chunk128-span1`
-- Commits pushed:
-  - `07b9e31` `Cut Task 101 audio-code overhead further`
-  - `480f016` `Back off Task 101 audio-code chunks on GPU OOM`
-  - `fb14eda` `Reset warm Task 101 encoder after GPU OOM`
-
-## Validation Status
-
-- `PASS` `pdm run format-all`
-- `PASS` `pdm run lint-fix`
-- `PASS` `pdm run typecheck-all --cache-dir /tmp/scl-mypy-cache-task152-final`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task103_qwen_preprocessing_finalization.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle.py tests/sir_convert_a_lot/test_task101_qwen_pilot_bundle_runtime.py tests/sir_convert_a_lot/test_run_task152_hemma_task101_finalization_benchmark.py -q`
-- `PASS` `pdm run validate-tasks`
-- `PASS` `pdm run validate-docs`
-- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- `PASS` Hemma governed benchmark:
-  - `direct-encode-chunk64-span1`
-  - benchmark root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1`
-
-## Active Blocker
-
-- No blocking implementation bug remains in the stable chunk-64 governed lane.
-- The remaining limitation is runtime truth: model encode dominates, and
-  requested `chunk128` is not safe on the current Hemma GPU posture.
-
-## Immediate Next Step
-
-- Rerun the stopped bounded Hemma Task 101 pilot-bundle root through the
-  governed `build` surface with the stable defaults:
-  - `audio_codes_chunk_size=64`
-  - `container_batch_span=4`
-- Inspect:
-  - `reports/task101_pilot_bundle_plan.json`
-  - `reports/task101_pilot_bundle_events.jsonl`
-  - `reports/task101_pilot_bundle_status.json`
-  - `reports/task101_pilot_bundle_runtime.json`
-  - `reports/task101_pilot_bundle_audio_codes_runtime.json`
-- Treat any future `chunk128` retry as a new experiment, not as the default
-  production path, unless the runtime or hardware changes.
+- `docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md`
+- `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
+- `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+- `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`

@@ -146,9 +146,12 @@ Follow-on control posture after `T182`:
   `qwen-train diagnose-non-finite` as the canonical next step before any new
   bounded retry.
 - Story 28 / `T187-T191` is the permanent architecture-governance lane for the
-  Qwen training control plane and patched runtime. New feature work must not
-  keep growing `qwen_train.py`, `orchestrator.py`, `reporting.py`, or
-  `sft_12hz_loop.py`; extract by bounded module ownership instead.
+  Qwen training control plane and patched runtime and is now delivered. New
+  feature work must stay inside the bounded package owners:
+  `ml/qwen/training/control_plane/`,
+  `ml/qwen/training/detached_runtime/`,
+  `ml/qwen/training/reporting/`, and the focused `sft_12hz_*` runtime modules.
+  The deleted `orchestrator.py` and `reporting.py` files must not return.
 
 ## Shard and Work Allocation
 

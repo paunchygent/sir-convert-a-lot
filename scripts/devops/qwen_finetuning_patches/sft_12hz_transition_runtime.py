@@ -12,6 +12,7 @@ Relationships:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import torch
@@ -248,7 +249,7 @@ def finalize_training_runtime(
     durable_checkpoint_paths: list[str],
     checkpoint_paths: list[str],
     stop_requested_during_training: bool,
-    progress_callback: callable | None,
+    progress_callback: Callable | None,
 ) -> TerminalTransitionResult:
     """Run terminal loss drain, final saves, trailing eval, and final export."""
     last_loss, smoothed_loss, emitted_train_progress = consume_loss_observations(

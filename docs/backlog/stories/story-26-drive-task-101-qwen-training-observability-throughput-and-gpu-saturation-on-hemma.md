@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: critical
 created: '2026-03-13'
-last_updated: '2026-03-14'
+last_updated: '2026-03-15'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
@@ -235,9 +235,11 @@ Root-cause conclusion from this evidence:
   runs only after `T180` and `T186` land and then decides whether the
   numerical instability window is sufficiently bounded for another saturation
   retry.
-- Story 28 with `T187-T191` is now the permanent architecture-hardening lane
-  that blocks further feature growth in the current Qwen control-plane and
-  runtime god files while the numerical-stability work continues.
+- Story 28 with `T187-T191` is now delivered as the permanent
+  architecture-hardening lane. `RULE-095` and the extracted
+  `control_plane/`, `detached_runtime/`, `reporting/`, and bounded
+  `sft_12hz_*` runtime modules now block future god-file regression while the
+  numerical-stability work continues.
 - Follow-on task `T181` now tracks the real held-out eval loop required before
   the team commits multi-hour Task 101 pilot time without in-run validation
   loss truth.

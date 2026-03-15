@@ -27,7 +27,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_phase_runtime import (
     emit_progress_phase,
     set_dataloader_epoch_if_supported,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
+from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
+    TrainingPhase,
+    TrainingProgressHeartbeat,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_resume_runtime import (
     initialize_resume_runtime,
 )
@@ -115,7 +118,7 @@ def execute_training_loop(
     epoch = starting_epoch
     step = 0
 
-    def emit_loop_phase(phase: str) -> None:
+    def emit_loop_phase(phase: TrainingPhase) -> None:
         """Emit one progress heartbeat for the current loop state."""
         emit_progress_phase(
             progress_callback=progress_callback,

@@ -168,13 +168,19 @@ def copy_selected_rows_into_benchmark_root(
     benchmark_root: Path,
     selected_rows: list[SpoolRow],
 ) -> None:
-    """Copy only the selected spool rows and local audio files."""
+    """Copy only the selected spool rows, local audio, and canonical refs."""
     for spool_row in selected_rows:
         write_spool_row(benchmark_root, spool_row)
         source_audio_path = source_bundle_root / spool_row.audio_24k_path
         target_audio_path = benchmark_root / spool_row.audio_24k_path
         target_audio_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source_audio_path, target_audio_path)
+        for reference_audio_path in spool_row.reference_audio_24k_paths.values():
+            source_reference_path = source_bundle_root / reference_audio_path
+            target_reference_path = benchmark_root / reference_audio_path
+            target_reference_path.parent.mkdir(parents=True, exist_ok=True)
+            if not target_reference_path.exists():
+                shutil.copyfile(source_reference_path, target_reference_path)
 
 
 def prepare_benchmark_root(

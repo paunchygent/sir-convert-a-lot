@@ -211,7 +211,9 @@ distribution = false
 ] }
 "typecheck" = "mypy --no-incremental --config-file pyproject.toml"
 "typecheck-all" = "mypy --no-incremental --config-file pyproject.toml"
+"typecheck-ml" = "mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches tests/sir_convert_a_lot/ml/qwen"
 "test" = "pytest -s"
+"test-ml" = "pytest -s --import-mode=importlib tests/sir_convert_a_lot/ml/qwen"
 "pytest-root" = "pytest -s"
 "coverage-gate" = "pytest -s --cov=scripts.sir_convert_a_lot.application.contracts_v2 --cov=scripts.sir_convert_a_lot.domain.specs_v2 --cov=scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2 --cov=scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor --cov=scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 --cov=scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2 --cov-branch --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml"
 

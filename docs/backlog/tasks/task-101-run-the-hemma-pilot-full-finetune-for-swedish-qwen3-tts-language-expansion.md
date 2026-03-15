@@ -201,4 +201,4 @@ Current live-lane caveat after the strict `1238` relaunch:
   diagnostic guard now live under
   `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
   while permanent SRP/DDD hardening for the Qwen control plane and patched
-  runtime now lives under Story 28 / `T187-T191`
+  runtime is now delivered under Story 28 / `T187-T191`

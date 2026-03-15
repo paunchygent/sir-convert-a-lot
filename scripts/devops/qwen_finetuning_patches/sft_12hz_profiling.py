@@ -11,10 +11,10 @@ Relationships:
 
 from __future__ import annotations
 
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ContextManager
+from typing import ContextManager, Iterator
 
 import torch
 from torch.profiler import ProfilerActivity, profile, schedule, tensorboard_trace_handler
@@ -90,7 +90,7 @@ class TorchProfilerSession:
     def phase(self, name: str) -> ContextManager[None]:
         """Return one context manager that marks a profiling phase."""
         if self._profiler is None:
-            return nullcontext()
+            return _null_phase_context()
         return torch.autograd.profiler.record_function(name)
 
     def payload(self) -> dict[str, bool | int | str | list[str]]:
@@ -112,6 +112,13 @@ class TorchProfilerSession:
             "with_stack": self._config.with_stack,
             "trace_files": trace_files,
         }
+
+
+@contextmanager
+def _null_phase_context() -> Iterator[None]:
+    """Return one typed no-op phase context for disabled profiling."""
+    with nullcontext():
+        yield
 
 
 def resolve_torch_profiler_config(
