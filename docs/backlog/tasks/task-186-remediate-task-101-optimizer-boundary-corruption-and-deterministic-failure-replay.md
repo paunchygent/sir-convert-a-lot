@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
+  - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -116,10 +117,9 @@ forensics.” It is:
   - the resolved text-embedding surface, preferring
     `model.talker.get_text_embeddings()` and falling back to
     `model.talker.model.text_embedding`
-  - the resolved text-projection surface, preferring
-    `model.talker.text_projection` and falling back to
-    `model.talker.model.text_projection` when present
-  - optimizer-state tensors for those params
+  - optimizer-state tensors for the active targeted training params
+  - reusable diagnostic artifacts so later slices can extend the targeted
+    surface or stage attribution without repeating the whole live proof
 - [x] The training loop fails closed before a corrupt update is applied when
   targeted pre-step signals are non-finite.
 - [x] The training loop fails closed immediately after a corrupt update when
@@ -196,8 +196,12 @@ forensics.” It is:
   finite before the update while `text_embedding.weight.grad` was already
   non-finite, which is the acceptance signal that the lane stopped before
   applying the corrupt optimizer update.
-- `T186` now serves as the completed prerequisite proof slice for the next
-  bounded `T179` decision.
+- The later projection-enabled replay/restart experiments do not invalidate
+  this proof. They are now treated as diagnostic experiments that diverged
+  from the upstream no-projection fine-tuning contract.
+- The preserved Task 101 lane remains meaningful evidence, and `T186` now
+  serves as the completed prerequisite proof slice for `T193` and the next
+  bounded `T179` decision on the restored no-projection graph.
 
 ## Checklist
 

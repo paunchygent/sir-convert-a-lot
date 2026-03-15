@@ -33,15 +33,18 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import LossObservation
 from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard import (
+    build_clip_boundary_optimizer_failure,
     build_post_step_optimizer_boundary_failure,
     build_pre_step_optimizer_boundary_failure,
     capture_pre_step_optimizer_boundary_probes,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard_probes import (
+    capture_targeted_gradient_probes,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
     resolve_talker_codec_embedding,
     resolve_talker_text_embedding,
-    resolve_talker_text_projection,
 )
 
 from .sft_12hz_loss_runtime import consume_loss_observations
@@ -165,6 +168,8 @@ def execute_train_iteration(
     current_train_iteration = train_iterations_completed + 1
     with accelerator.accumulate(model):
         grad_norm: torch.Tensor | float | None = None
+        pre_step_probes = None
+        post_clip_gradient_probes: dict[str, object] | None = None
         with prepared.torch_profiler_session.phase("task101.batch-preparation"):
             input_ids = resolved_batch["input_ids"]
             codec_ids = resolved_batch["codec_ids"]
@@ -185,12 +190,9 @@ def execute_train_iteration(
         with prepared.torch_profiler_session.phase("task101.forward-backward"):
             text_embedding = resolve_talker_text_embedding(model)
             codec_embedding = resolve_talker_codec_embedding(model)
-            text_projection = resolve_talker_text_projection(model)
             input_text_ids = input_ids[:, :, 0]
             input_codec_ids = input_ids[:, :, 1]
             input_text_embedding = text_embedding(input_text_ids) * text_embedding_mask
-            if text_projection is not None:
-                input_text_embedding = text_projection(input_text_embedding)
             input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
             input_codec_embedding[:, 6, :] = speaker_embedding
             fused_auxiliary_embedding = fuse_auxiliary_codebook_embeddings(
@@ -218,6 +220,10 @@ def execute_train_iteration(
             accelerator.backward(loss)
             completed_optimizer_step = accelerator.sync_gradients
             if completed_optimizer_step:
+                pre_step_probes = capture_pre_step_optimizer_boundary_probes(
+                    model=model,
+                    optimizer=optimizer,
+                )
                 grad_norm = accelerator.clip_grad_norm_(model.parameters(), 1.0)
             grad_norm_tensor = (
                 None
@@ -248,18 +254,28 @@ def execute_train_iteration(
                 ),
             ]
         step_forensics = None
-        pre_step_probes = None
         if completed_optimizer_step:
             step_forensics = build_optimizer_step_forensics_window(
                 microbatches=optimizer_step_microbatches,
             )
-            pre_step_probes = capture_pre_step_optimizer_boundary_probes(
+            if pre_step_probes is None:
+                raise RuntimeError("Expected pre-step probes on a sync optimizer boundary.")
+            pre_clip_failure = build_pre_step_optimizer_boundary_failure(
                 model=model,
                 optimizer=optimizer,
+                optimizer_step=optimizer_steps_completed + 1,
+                current_epoch=epoch,
+                current_train_iteration=current_train_iteration,
+                loss=loss,
+                main_loss=outputs.loss,
+                sub_talker_loss=sub_talker_loss,
+                step_forensics=step_forensics,
+                pre_step_probes=pre_step_probes,
             )
-            pre_step_failure = build_pre_step_optimizer_boundary_failure(
-                model=model,
-                optimizer=optimizer,
+            if pre_clip_failure is not None:
+                raise pre_clip_failure
+            post_clip_gradient_probes = capture_targeted_gradient_probes(model=model)
+            clip_boundary_failure = build_clip_boundary_optimizer_failure(
                 optimizer_step=optimizer_steps_completed + 1,
                 current_epoch=epoch,
                 current_train_iteration=current_train_iteration,
@@ -269,9 +285,12 @@ def execute_train_iteration(
                 grad_norm=grad_norm,
                 step_forensics=step_forensics,
                 pre_step_probes=pre_step_probes,
+                post_clip_gradient_probes=(
+                    {} if post_clip_gradient_probes is None else post_clip_gradient_probes
+                ),
             )
-            if pre_step_failure is not None:
-                raise pre_step_failure
+            if clip_boundary_failure is not None:
+                raise clip_boundary_failure
         with prepared.torch_profiler_session.phase("task101.optimizer-step"):
             optimizer.step()
             if not completed_optimizer_step:
@@ -300,9 +319,10 @@ def execute_train_iteration(
             pre_step_parameter_probes=(
                 None if pre_step_probes is None else pre_step_probes.parameter_probes
             ),
-            pre_step_gradient_probes=(
-                None if pre_step_probes is None else pre_step_probes.gradient_probes
+            pre_clip_gradient_probes=(
+                None if pre_step_probes is None else pre_step_probes.pre_clip_gradient_probes
             ),
+            post_clip_gradient_probes=post_clip_gradient_probes,
             pre_step_optimizer_state_probes=(
                 None if pre_step_probes is None else pre_step_probes.optimizer_state_probes
             ),

@@ -153,9 +153,7 @@ def test_running_status_payload_preserves_diagnostic_and_step_truth() -> None:
     assert payload["diagnostic"] == {"kind": "diagnose-non-finite"}
     talker_runtime = _required_mapping(payload, "talker_runtime")
     text_projection = _required_mapping(talker_runtime, "text_projection")
-    assert text_projection["resolved_path"] == (
-        "model.talker.text_projection"
-    )
+    assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["current_phase"] == "train"
     assert payload["current_optimizer_step"] == 1405
     assert payload["current_train_iteration"] == 804
@@ -180,8 +178,6 @@ def test_completed_status_payload_serializes_tracking_summary() -> None:
     assert tracking["mlflow_run_id"] == "run-id"
     talker_runtime = _required_mapping(payload, "talker_runtime")
     text_projection = _required_mapping(talker_runtime, "text_projection")
-    assert text_projection["resolved_path"] == (
-        "model.talker.text_projection"
-    )
+    assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["checkpoint_interval_steps"] == 500
     assert payload["durable_checkpoint_retention"] == 3

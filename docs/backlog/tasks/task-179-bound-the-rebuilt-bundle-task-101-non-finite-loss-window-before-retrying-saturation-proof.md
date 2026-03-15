@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -149,35 +150,34 @@ this task's next bounded Hemma repro:
   under
   `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_runtime.py`, and the
   train, eval, and optimizer-guard surfaces now consume that shared resolver.
-- The Qwen test doubles now mirror the upstream talker contract more closely,
-  and regression coverage now checks that:
-  - train-step execution applies the talker-level text projection when present
-  - optimizer-boundary probes include `text_projection.weight` in the targeted
-    surface family
-- The bounded corrected-graph Hemma replay
-  `task179-20260315t-textpath-replay-a1` then proved that the runtime-shape
-  fix was active but not sufficient to stabilize the resumed lane:
-  - the targeted parameter family now included
-    `text_projection.linear_fc1.*` and `text_projection.linear_fc2.*`
-  - the run failed earlier at optimizer step `1239`, not the old guarded
-    boundary at `1405`
-  - forward losses stayed finite, all probed text-path parameters remained
-    finite pre-step, and probed optimizer state remained finite, but
-    `text_embedding.weight.grad` and all probed `text_projection.*` gradients
-    were already `NaN` before `optimizer.step()`
-- This reclassifies `state-step-00001238` as a diagnostic-only corrected-graph
-  checkpoint. It is still useful for bounded replay and salvage staging, but
-  it should not be treated as a trustworthy smooth-continuation checkpoint for
-  the corrected graph.
+- The first projection-enabled replay and the later clean-base restart are now
+  recorded as diagnostic experiments, not as the canonical Task 101 training
+  graph:
+  - the replay `task179-20260315t-textpath-replay-a1` proved the shared talker
+    resolver was active and that a projection-enabled resumed lane could fail
+    earlier at optimizer step `1239`
+  - the later clean-base projection-enabled restart failed immediately at
+    optimizer step `1`, which is evidence against projection injection in the
+    fine-tuning graph rather than evidence that the preserved no-projection
+    lane is worthless
+- `state-step-00001238` is therefore back in standing as the canonical
+  no-projection RCA checkpoint for the preserved Task 101 lane. It is not
+  promoted as "smooth continuation proven," but it is also no longer demoted
+  as trash or salvage-only merely because it omitted `text_projection`.
 - The runtime contract is now harder to hide:
   - startup/reporting artifacts persist a `talker_runtime` fingerprint that
     records the resolved text embedding, codec embedding, and text projection
     paths plus whether each surface is probeable as an `nn.Module`
   - resolver-matrix tests now cover talker-level projection, nested fallback,
     no-projection, and callable-but-non-module projection cases
-- The next acceptance step is now the clean corrected-graph restart itself.
-  Model-only salvage from `state-step-00001238` is optional follow-up
-  evidence, not the authoritative lane.
+- `T193` is now the active follow-on:
+  - train and eval were restored to the upstream no-projection fine-tuning
+    contract
+  - optimizer-boundary probes now split the first bad stage into
+    `pre_clip`, `clip_grad_norm`, `post_clip`, and `post_step`
+  - the next bounded live proof should mint a fresh diagnostic checkpoint near
+    optimizer step `1401` and replay `1401 -> 1406` on the preserved
+    no-projection graph
 
 ## Checklist
 

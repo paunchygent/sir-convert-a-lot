@@ -18,6 +18,7 @@ links:
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
@@ -44,16 +45,18 @@ from task notes, skill policy, or ad hoc Hemma terminal history. It records:
 For the preserved Task 101 legacy lane:
 
 - treat `state-step-00001236` as the evaluated baseline checkpoint
-- treat `state-step-00001238` as the canonical corrected-graph diagnostic
-  checkpoint and salvage-staging source, not as the authoritative next smooth
-  continuation target
+- treat `state-step-00001238` as the canonical no-projection RCA checkpoint
+  for the preserved Task 101 lane
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
-- do not count legacy-graph and corrected-graph loss/eval curves as one
-  continuous training series
+- do not count the projection-enabled diagnostic experiments and the preserved
+  no-projection lane as one continuous training series
 - record future live training/eval progress here, not in the skill doc
 - treat `T186` as the delivered optimizer-boundary remediation and proof slice
-  that now informs the next `T179` bounded-retry decision
+  that now informs `T193` and the next `T179` bounded-retry decision
+- treat `T193` as the active numerical-stability slice that restores the
+  upstream no-projection fine-tuning contract and adds clip-boundary stage
+  forensics
 - treat `T180` as the delivered first-pass truth/forensics slice
 - treat Story 28 / `T187-T191` as the delivered permanent
   architecture-hardening lane; new control-plane or runtime logic must stay in
@@ -69,9 +72,9 @@ Why this is now the clean plan:
 - that newer checkpoint carries a compatible saved cursor
   (`next_step_in_epoch=8`) for the current replacement bundle contract, so it
   avoids the confusing legacy cursor mismatch that existed at `1236`
-- the corrected-graph replay now shows that this same trainer-state checkpoint
-  fails earlier at `1239` once the text path is resolved truthfully, so it is
-  evidence and salvage input, not clean continuation truth
+- the projection-enabled replay and base restart both failed, which is
+  evidence against injecting `text_projection` into the fine-tuning graph
+  rather than evidence that the preserved no-projection lane is worthless
 - the runtime now writes a `talker_runtime` fingerprint so future shape drift
   cannot hide behind silent fallback resolution
 - the original legacy launch snapshot still carries stale checkpoint cadence
@@ -301,9 +304,9 @@ The canonical next root-cause workflow is:
   - `T186` is complete as the required proof slice for the next bounded `T179`
     decision
 
-### 2026-03-15: Corrected-Graph Replay Fails Earlier At `1239`
+### 2026-03-15: Projection-Enabled Replay Fails Earlier At `1239`
 
-- Corrected-graph replay launch root:
+- Projection-enabled replay launch root:
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task179-20260315t-textpath-replay-a1`
 - Status checked at:
   `2026-03-15T19:36:45Z`
@@ -317,13 +320,13 @@ The canonical next root-cause workflow is:
   - `current_train_iteration=140`
   - `optimizer_step_attempted=false`
   - `optimizer_step_completed=false`
-- Corrected targeted text-path family:
+- Diagnostic targeted text-path family:
   - `text_embedding.weight`
   - `text_projection.linear_fc1.weight`
   - `text_projection.linear_fc1.bias`
   - `text_projection.linear_fc2.weight`
   - `text_projection.linear_fc2.bias`
-- Pre-step truth at the corrected boundary:
+- Pre-step truth at the projection-enabled boundary:
   - forward losses remained finite
   - all probed text-path parameters remained finite
   - probed optimizer state remained finite
@@ -331,16 +334,12 @@ The canonical next root-cause workflow is:
     were already `NaN`
 - Operator conclusion:
   - the talker-runtime alignment fix was necessary because it removed the old
-    projection blind spot and proved the corrected graph was actually running
-  - the fix was not sufficient to make the resumed trainer-state lane stable
-  - `state-step-00001238` is therefore diagnostic-only on the corrected graph:
-    useful for replay and salvage staging, but not trustworthy as a smooth
-    continuation checkpoint
+    projection blind spot and proved the projection-enabled experiment was
+    actually running
+  - the fix was not sufficient to make the resumed lane stable
   - the current diagnostic surface did not skip directly to the old `1405`
-    window in practice; it exposed an earlier corrected-graph boundary at
+    window in practice; it exposed an earlier projection-enabled boundary at
     `1239`
-  - the authoritative next lane is now a clean base restart on the corrected
-    graph, not another strict trainer-state resume
 
 ### 2026-03-15: Runtime Fingerprint Hardening Landed
 
@@ -363,6 +362,41 @@ The canonical next root-cause workflow is:
   - future runtime-shape drift should now be visible immediately in artifacts
     rather than inferred indirectly from missing guard probes
 
+### 2026-03-15: Projection-Enabled Base Restart Failed At Step `1`
+
+- Projection-enabled restart launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task101-20260315t-clean-restart-a1`
+- Failure truth:
+  - clean base weights still failed before `optimizer.step()`
+  - the first optimizer boundary was already non-finite at step `1`
+  - forward losses remained finite while gradients across the projection-enabled
+    text path were already `NaN`
+- Operator conclusion:
+  - this is evidence against injecting `text_projection` into the fine-tuning
+    graph
+  - it is not evidence that the preserved Task 101 no-projection lane is
+    worthless
+  - the projection-enabled replay and restart are now classified as diagnostic
+    experiments, not as the new canonical lane
+
+### 2026-03-15: No-Projection Contract Restored Locally
+
+- `T193` now owns the active numerical-stability slice:
+  - train and eval were restored to the upstream no-projection fine-tuning
+    contract
+  - `talker_runtime` still fingerprints the projection surface when present,
+    but the fine-tuning forward graph no longer injects it
+  - optimizer-boundary artifacts now distinguish:
+    - `pre_clip`
+    - `clip_grad_norm`
+    - `post_clip`
+    - `post_step`
+- Operator conclusion:
+  - `state-step-00001238` remains the canonical no-projection RCA checkpoint
+  - the next bounded live proof should mint a fresh diagnostic checkpoint near
+    optimizer step `1401` and replay `1401 -> 1406` with the new stage
+    probes
+
 ### 2026-03-15: Story 28 Delivered
 
 The permanent architecture-hardening lane is no longer future work.
@@ -380,7 +414,8 @@ The permanent architecture-hardening lane is no longer future work.
 
 ### 2026-03-15: Abandoned Artifact Cleanup
 
-Removed after the canonical relaunch was confirmed healthy:
+Removed after the March 15 relaunch candidate was superseded by later proof
+work:
 
 - exited containers:
   - `qwen-train-20260315T095620Z`
@@ -406,8 +441,8 @@ Post-cleanup Hemma check:
 The abandoned plan is:
 
 - “run standalone eval on `1236`, then resume from `1236` again”
-- “treat `1238` as the authoritative next corrected-graph continuation
-  checkpoint”
+- “promote the projection-enabled replay/restart as the authoritative new
+  mainline”
 
 That plan is now superseded because:
 
@@ -419,23 +454,23 @@ That plan is now superseded because:
   instrumented replay failed at `1408`, and the guarded diagnostic then failed
   closed at `1405`, the next move is no longer "resume immediately again"; it
   is "use the completed `T186` proof to decide the next bounded `T179` retry"
-- after the corrected-graph replay failed even earlier at `1239`, the next
-  move is no longer "resume from durable trainer state again"; it is "run the
-  clean corrected-graph base restart as the mainline and demote salvage to an
-  optional side experiment"
+- after the projection-enabled replay failed even earlier at `1239` and the
+  projection-enabled base restart failed at step `1`, the next move is no
+  longer "promote the projection-enabled graph"; it is "restore the upstream
+  no-projection contract and debug the preserved lane with better stage
+  forensics"
 
 ## Canonical Next Step
 
-Do not relaunch the recovered training lane from trainer state again.
+Do not relaunch the projection-enabled training experiment.
 
-The next canonical action is a clean corrected-graph base restart using the
-same truthful bundle and runtime posture as the last valid Hemma lane:
+The next canonical action is a bounded no-projection RCA proof using the same
+truthful bundle and runtime posture as the preserved lane:
 
-1. Launch `qwen-train launch` from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`.
-1. Reuse the Task 152 replacement bundle and the truthful `500/100/3`
-   checkpoint/eval posture.
-1. Treat any later model-only salvage warm-in from `state-step-00001238` as an
-   optional side experiment only after the clean restart is active.
+1. Mint a fresh diagnostic checkpoint near optimizer step `1401`.
+1. Run `qwen-train diagnose-non-finite` across `1401 -> 1406`.
+1. Use the new stage-separated probes to decide whether the first bad event is
+   `pre_clip`, `clip_grad_norm`, `post_clip`, or `post_step`.
 
 ## Historical Reference Boundary
 

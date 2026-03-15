@@ -178,9 +178,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     }
     talker_runtime = _required_mapping(payload, "talker_runtime")
     text_projection = _required_mapping(talker_runtime, "text_projection")
-    assert text_projection["resolved_path"] == (
-        "model.talker.text_projection"
-    )
+    assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
     assert [event["phase"] for event in payload["phase_history"]] == [
         "startup",
@@ -337,9 +335,7 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     assert payload["acceptance_measurement_valid"] is False
     talker_runtime = _required_mapping(payload, "talker_runtime")
     text_projection = _required_mapping(talker_runtime, "text_projection")
-    assert text_projection["resolved_path"] == (
-        "model.talker.text_projection"
-    )
+    assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["finite_loss_guard"]["trigger_reason"] == "non-finite-loss"
     assert payload["finite_loss_guard"]["optimizer_step"] == 8
     assert payload["finite_loss_guard"]["current_train_iteration"] == 32

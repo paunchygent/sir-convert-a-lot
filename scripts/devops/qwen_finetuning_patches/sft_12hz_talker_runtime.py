@@ -126,7 +126,9 @@ def _resolve_talker_embedding_surface(
         if resolved_callable is not None:
             return _resolved_surface(resolved_callable, accessor_path)
     talker_model = getattr(talker, "model", None)
-    fallback = None if talker_model is None else getattr(talker_model, fallback_attribute_name, None)
+    fallback = (
+        None if talker_model is None else getattr(talker_model, fallback_attribute_name, None)
+    )
     resolved_fallback = _as_tensor_callable(fallback)
     if resolved_fallback is not None:
         return _resolved_surface(resolved_fallback, fallback_path)

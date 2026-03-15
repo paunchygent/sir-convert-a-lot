@@ -412,17 +412,20 @@ def test_trainer_persists_optimizer_boundary_failure_and_replay_bundle(
                 grad_norm_value=1.0,
                 optimizer_step_attempted=True,
                 optimizer_step_completed=True,
-                targeted_parameter_names=[
-                    "text_embedding.embedding.weight",
-                    "text_projection.weight",
-                ],
+                targeted_parameter_names=["text_embedding.embedding.weight"],
+                first_non_finite_stage="post_step",
                 first_non_finite_surface="text_embedding.embedding.weight",
                 pre_step_parameter_probes={
                     "probe_kind": "parameters",
                     "first_non_finite_surface": None,
                     "probes": {},
                 },
-                pre_step_gradient_probes={
+                pre_clip_gradient_probes={
+                    "probe_kind": "gradients",
+                    "first_non_finite_surface": None,
+                    "probes": {},
+                },
+                post_clip_gradient_probes={
                     "probe_kind": "gradients",
                     "first_non_finite_surface": None,
                     "probes": {},

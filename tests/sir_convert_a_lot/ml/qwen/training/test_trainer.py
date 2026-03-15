@@ -228,7 +228,9 @@ def test_main_forwards_eval_jsonl_into_inner_training_args(
         *,
         progress_callback: object,
         tracker_ready_callback: object,
+        runtime_ready_callback: object,
     ) -> object:
+        del progress_callback, tracker_ready_callback, runtime_ready_callback
         captured_training_args["value"] = training_args
         return argparse.Namespace(
             tracking=None,

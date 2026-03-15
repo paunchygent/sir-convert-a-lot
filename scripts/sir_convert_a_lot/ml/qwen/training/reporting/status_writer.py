@@ -221,9 +221,7 @@ class StatusReporter:
                 diagnostic=(
                     None if self.config.diagnostic is None else dict(self.config.diagnostic)
                 ),
-                talker_runtime=(
-                    None if self.talker_runtime is None else dict(self.talker_runtime)
-                ),
+                talker_runtime=(None if self.talker_runtime is None else dict(self.talker_runtime)),
                 resume_from_checkpoint=self.config.resume_from_checkpoint,
                 tracking_plan=(
                     None if self.config.tracking_plan is None else dict(self.config.tracking_plan)

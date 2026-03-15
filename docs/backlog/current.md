@@ -11,8 +11,10 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
+  - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/tasks/task-192-add-ml-specific-quality-gates-and-importlib-safe-qwen-test-collection.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -70,7 +72,7 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   - `text_embedding.weight` and its optimizer state stayed finite pre-step
     while `text_embedding.weight.grad` was already non-finite, which closes
     `T186` as the optimizer-boundary proof slice.
-  - The first `T179` remediation slice is now in progress:
+  - The first `T179` remediation slice established one important runtime fact:
     - an upstream-shape audit found the patched trainer/eval/guard were
       resolving `text_projection` from `model.talker.model` even though
       upstream Qwen exposes it on `model.talker`
@@ -79,30 +81,38 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
       so train, eval, and optimizer-boundary probes share one runtime-shape
       contract
     - local Qwen regressions and `pdm run typecheck-ml` passed after the fix
-  - The first corrected-graph `T179` replay then finished at
+  - The first projection-enabled `T179` replay then finished at
     `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task179-20260315t-textpath-replay-a1`
-    and proved the fix was active but the resumed trainer-state lane still
-    failed earlier at optimizer step `1239`.
-  - That replay included the full text-path probe family
-    (`text_embedding.weight` plus `text_projection.linear_fc1/2.*`) and showed
-    finite forward losses with finite pre-step parameters/optimizer state, but
-    already-`NaN` text-embedding and text-projection gradients.
-  - `state-step-00001238` is therefore no longer treated as the authoritative
-    next corrected-graph continuation checkpoint; it is now diagnostic/salvage
-    input only.
+    and proved the shared resolver was active, but that a projection-enabled
+    resumed lane could fail earlier at optimizer step `1239`.
+  - The later clean projection-enabled base restart also failed immediately at
+    optimizer step `1`. That is now treated as evidence against injecting
+    `text_projection` into the fine-tuning graph, not as evidence that the
+    preserved no-projection Task 101 lane is worthless.
   - Runtime-shape visibility is now explicit in artifacts:
     - the trainer writes a `talker_runtime` fingerprint with resolved text,
       codec, and projection paths plus probeability truth
     - focused resolver tests now cover talker-level projection, nested
       fallback, missing projection, and callable-but-non-module projection
-  - Decision taken: clean corrected-graph base restart is the new mainline.
-    Salvage from `1238` is optional side evidence only.
+  - `T193` is now the active numerical-stability slice:
+    - the patched train and eval paths are restored to the upstream
+      no-projection fine-tuning contract
+    - optimizer-boundary artifacts now distinguish `pre_clip`,
+      `clip_grad_norm`, `post_clip`, and `post_step`
+    - `state-step-00001238` is back in standing as the canonical
+      no-projection RCA checkpoint for the preserved Task 101 lane
+    - the next live proof should mint a fresh diagnostic checkpoint near
+      optimizer step `1401` and replay `1401 -> 1406`
 
 ## Next Actions
 
-- Launch the clean corrected-graph base restart on Hemma using the same Task
-  152 replacement bundle and truthful `500/100/3` control posture as the last
-  valid lane.
+- Keep the preserved Task 101 lane on the restored no-projection fine-tuning
+  graph; do not relaunch the projection-enabled experiment.
+- Mint a fresh diagnostic checkpoint near optimizer step `1401` on Hemma so
+  RCA iterations no longer have to replay from `1238`.
+- Run one bounded `qwen-train diagnose-non-finite` proof from that fresh
+  checkpoint across `1401 -> 1406` and inspect whether the first bad stage is
+  `pre_clip`, `clip_grad_norm`, `post_clip`, or `post_step`.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in

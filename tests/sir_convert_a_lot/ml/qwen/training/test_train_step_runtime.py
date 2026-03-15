@@ -168,8 +168,9 @@ def test_execute_train_iteration_skips_optimizer_step_on_pre_step_failure(
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.capture_pre_step_optimizer_boundary_probes",
         lambda **kwargs: SimpleNamespace(
+            targeted_parameter_names=["text_embedding.embedding.weight"],
             parameter_probes={},
-            gradient_probes={},
+            pre_clip_gradient_probes={},
             optimizer_state_probes={},
         ),
     )
@@ -204,10 +205,10 @@ def test_execute_train_iteration_skips_optimizer_step_on_pre_step_failure(
     assert optimizer.step_called is False
 
 
-def test_execute_train_iteration_uses_talker_level_text_projection(
+def test_execute_train_iteration_does_not_apply_text_projection_in_finetune_forward(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Train-step runtime should apply the upstream talker-level text projection."""
+    """Train-step runtime should fingerprint projection without injecting it."""
     optimizer = _FakeOptimizer()
     accelerator = _FakeAccelerator()
     prepared = SimpleNamespace(
@@ -258,13 +259,18 @@ def test_execute_train_iteration_uses_talker_level_text_projection(
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.capture_pre_step_optimizer_boundary_probes",
         lambda **kwargs: SimpleNamespace(
+            targeted_parameter_names=["text_embedding.embedding.weight"],
             parameter_probes={},
-            gradient_probes={},
+            pre_clip_gradient_probes={},
             optimizer_state_probes={},
         ),
     )
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_pre_step_optimizer_boundary_failure",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_clip_boundary_optimizer_failure",
         lambda **kwargs: None,
     )
     monkeypatch.setattr(
@@ -294,5 +300,5 @@ def test_execute_train_iteration_uses_talker_level_text_projection(
         progress_callback=None,
     )
 
-    assert projection.called is True
+    assert projection.called is False
     assert result.completed_optimizer_step is True

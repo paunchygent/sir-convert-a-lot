@@ -22,7 +22,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.reporting.failure_projection imp
 def test_resolve_failed_progress_prefers_optimizer_boundary_error_counters() -> None:
     """Failure projection should override stale live counters with exception truth."""
     exc = OptimizerBoundaryCorruptionError(
-        trigger_reason="pre_step_non_finite_grad_norm",
+        trigger_reason="clip_grad_norm_non_finite",
         optimizer_step=1405,
         current_epoch=5,
         current_train_iteration=804,
@@ -33,9 +33,11 @@ def test_resolve_failed_progress_prefers_optimizer_boundary_error_counters() -> 
         optimizer_step_attempted=False,
         optimizer_step_completed=False,
         targeted_parameter_names=["text_embedding.weight"],
+        first_non_finite_stage="clip_grad_norm",
         first_non_finite_surface="grad_norm",
         pre_step_parameter_probes={},
-        pre_step_gradient_probes={},
+        pre_clip_gradient_probes={},
+        post_clip_gradient_probes={},
         pre_step_optimizer_state_probes={},
         post_step_parameter_probes=None,
         post_step_optimizer_state_probes=None,

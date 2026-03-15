@@ -92,6 +92,18 @@ The Hemma host is for orchestration only.
 - Hemma is the default training lane for bounded pilot work and scale-up.
 - Colab remains an optional fallback or comparison lane.
 
+## Fine-Tune Graph Contract
+
+For the canonical fine-tuning lane, keep the upstream no-projection training
+graph:
+
+- train and held-out eval use text embeddings directly in the fine-tune
+  forward path
+- `talker_runtime` should still fingerprint `text_projection` when present so
+  runtime-shape drift remains visible
+- do not inject `text_projection` into the fine-tune graph unless a future
+  task explicitly redefines the training contract and proves it live
+
 ## Current Saturation Evidence (2026-03-13)
 
 Bounded Story 26 evidence currently shows:
@@ -263,8 +275,9 @@ Operator interpretation:
 - Keep live recovery and progress notes in the dedicated reference ledger,
   `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`,
   rather than adding operational logs to the skill doc.
-- For repeated non-finite failures, the canonical flow is now:
-  `status -> diagnose-non-finite -> fix -> bounded retry`.
+- For repeated non-finite failures on the preserved Task 101 lane, the
+  canonical flow is now:
+  `status -> keep the no-projection graph -> mint a checkpoint near the known boundary -> diagnose-non-finite -> fix -> bounded retry`.
 
 ## Hemma Storage Tiers
 

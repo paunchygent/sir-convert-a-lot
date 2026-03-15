@@ -14,11 +14,12 @@ Relationships:
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Protocol, TypeAlias
 
 import torch
+from accelerate import Accelerator
 
 from scripts.devops.qwen_finetuning_patches.dataset import require_batch_tensors
 from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
@@ -38,19 +39,49 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
     resolve_talker_codec_embedding,
     resolve_talker_text_embedding,
-    resolve_talker_text_projection,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import log_eval_metrics
 
 if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
+
+    from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import DataloaderTuning
     from scripts.devops.qwen_finetuning_patches.sft_12hz_eval_setup import (
         PreparedStandaloneEvalRun,
     )
-    from scripts.devops.qwen_finetuning_patches.sft_12hz_setup import PreparedTrainingRun
+    from scripts.devops.qwen_finetuning_patches.sft_12hz_profiling import (
+        TorchProfilerSession,
+    )
+    from scripts.devops.qwen_finetuning_patches.sft_12hz_setup import (
+        PreparedTrainingRun,
+        TrainableQwenModelProtocol,
+    )
 
     EvalPreparedRun: TypeAlias = PreparedTrainingRun | PreparedStandaloneEvalRun
 
 DEFAULT_EVAL_INTERVAL_STEPS = 100
+
+
+class EvalPreparedRuntime(Protocol):
+    """Focused prepared-runtime surface needed by one eval pass."""
+
+    @property
+    def model(self) -> "TrainableQwenModelProtocol": ...
+
+    @property
+    def accelerator(self) -> Accelerator: ...
+
+    @property
+    def eval_dataloader(self) -> "DataLoader[object] | Sequence[object]": ...
+
+    @property
+    def eval_dataloader_length(self) -> int: ...
+
+    @property
+    def torch_profiler_session(self) -> "TorchProfilerSession": ...
+
+    @property
+    def effective_dataloader_tuning(self) -> "DataloaderTuning": ...
 
 
 @dataclass(frozen=True)
@@ -67,7 +98,7 @@ class EvalPassResult:
 
 def run_eval_pass(
     *,
-    prepared: PreparedTrainingRun,
+    prepared: EvalPreparedRuntime,
     current_epoch: int,
     current_optimizer_step: int,
     current_train_iteration: int,
@@ -199,7 +230,7 @@ def run_standalone_eval(prepared: PreparedStandaloneEvalRun) -> StandaloneEvalSu
     )
 
 
-def _run_eval_batches(prepared: EvalPreparedRun) -> tuple[float, int]:
+def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
     """Execute the shared held-out eval batch loop and return mean loss plus count."""
     model = prepared.model
     total_eval_loss = 0.0
@@ -227,12 +258,9 @@ def _run_eval_batches(prepared: EvalPreparedRun) -> tuple[float, int]:
             ).detach()
             text_embedding = resolve_talker_text_embedding(model)
             codec_embedding = resolve_talker_codec_embedding(model)
-            text_projection = resolve_talker_text_projection(model)
             input_text_ids = input_ids[:, :, 0]
             input_codec_ids = input_ids[:, :, 1]
             input_text_embedding = text_embedding(input_text_ids) * text_embedding_mask
-            if text_projection is not None:
-                input_text_embedding = text_projection(input_text_embedding)
             input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
             input_codec_embedding[:, 6, :] = speaker_embedding
             input_embeddings = (

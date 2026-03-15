@@ -32,6 +32,7 @@ related:
   - docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-187-define-and-codify-qwen-training-control-plane-architecture-rules.md
   - docs/backlog/tasks/task-188-refactor-host-qwen-cli-control-plane-use-cases-out-of-qwen-train-py.md
@@ -126,6 +127,7 @@ Out of scope for this story:
 1. `docs/backlog/tasks/task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md`
 1. `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
 1. `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
+1. `docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md`
 1. `docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md`
 1. `docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md`
 1. `docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md`
@@ -218,6 +220,10 @@ Root-cause conclusion from this evidence:
   worker-truth attribution, strict rebuilt-bundle performance-lane enforcement,
   phase-labeling, and auxiliary-codebook-collapse gaps that still block a fully
   trustworthy saturation claim.
+- The current numerical-stability follow-on is now `T193`, which restores the
+  upstream no-projection fine-tuning contract, adds clip-boundary stage
+  forensics, and keeps the preserved Task 101 lane as the canonical RCA lane
+  while `T179` prepares the next bounded Hemma proof.
 - The first rebuilt-bundle aggressive throughput proof
   (`task175-20260314t-throughput-a2`) failed with a non-finite loss at
   optimizer step `4`.
