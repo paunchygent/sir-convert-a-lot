@@ -59,17 +59,25 @@ class BucketedBatchSampler(Sampler[list[int]]):
         *,
         row_metrics: list[TrainingRowBatchMetrics],
         policy: ThroughputBatchPolicy,
+        shuffle: bool = True,
+        shuffle_seed: int = 0,
     ) -> None:
         if not row_metrics:
             raise ValueError("Bucketed batch sampler requires at least one training row.")
         self._row_metrics = row_metrics
         self._policy = policy
+        self._shuffle = shuffle
+        self._shuffle_seed = shuffle_seed
+        self._current_epoch = 0
         self._planned_batches = self._build_batches()
 
     def __iter__(self) -> Iterator[list[int]]:
-        shuffled_batches = [list(batch) for batch in self._planned_batches]
-        random.shuffle(shuffled_batches)
-        yield from shuffled_batches
+        resolved_batches = [list(batch) for batch in self._planned_batches]
+        if not self._shuffle:
+            yield from resolved_batches
+            return
+        random.Random(self._shuffle_seed + self._current_epoch).shuffle(resolved_batches)
+        yield from resolved_batches
 
     def __len__(self) -> int:
         return len(self._planned_batches)
@@ -77,6 +85,12 @@ class BucketedBatchSampler(Sampler[list[int]]):
     def planned_batches(self) -> list[list[int]]:
         """Return a copy of the resolved batch plan for occupancy reporting."""
         return [list(batch) for batch in self._planned_batches]
+
+    def set_epoch(self, epoch: int) -> None:
+        """Set the epoch-specific shuffle cursor for deterministic replay."""
+        if epoch < 0:
+            raise ValueError("Bucketed batch sampler epoch must be non-negative.")
+        self._current_epoch = epoch
 
     def _build_batches(self) -> list[list[int]]:
         buckets: dict[int, list[int]] = defaultdict(list)

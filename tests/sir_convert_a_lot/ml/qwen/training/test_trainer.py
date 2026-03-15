@@ -354,6 +354,8 @@ def test_main_writes_failed_report_artifacts_for_non_finite_loss(
     assert report_payload["failure"]["step_semantics"]["epoch_index_base"] == 0
     assert report_payload["failure"]["finite_loss_guard"]["optimizer_step"] == 17
     assert report_payload["failure"]["finite_loss_guard"]["sub_talker_loss_value"] == 0.1
+    assert "step_forensics" in report_payload["failure"]["finite_loss_guard"]
+    assert "recent_observations" in report_payload["failure"]["finite_loss_guard"]
 
 
 def test_main_writes_failure_artifacts_for_startup_system_exit(

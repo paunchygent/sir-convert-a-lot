@@ -42,6 +42,24 @@ class _FakeConfig:
     tts_pad_token_id: int = 0
     tts_bos_token_id: int = 1
     tts_eos_token_id: int = 2
+    talker_config: object = None
+
+    def __post_init__(self) -> None:
+        """Populate the minimal nested talker-config surface used in collation."""
+        if self.talker_config is None:
+            self.talker_config = _FakeTalkerConfig()
+
+
+@dataclass
+class _FakeTalkerConfig:
+    """Minimal nested talker-config stub for dataset collation tests."""
+
+    codec_nothink_id: int = 3
+    codec_think_bos_id: int = 4
+    codec_think_eos_id: int = 5
+    codec_pad_id: int = 6
+    codec_bos_id: int = 7
+    codec_eos_token_id: int = 8
 
 
 class _FakeProcessor:
@@ -82,6 +100,9 @@ def test_load_training_rows_accepts_legacy_manifest_without_precomputed_ref_inpu
     rows = _load_training_rows(manifest_path)
 
     assert rows[0]["ref_audio"] == ref_audio_path.as_posix()
+    assert rows[0]["row_id"] == f"{manifest_path.as_posix()}#L1"
+    assert rows[0]["manifest_path"] == manifest_path.as_posix()
+    assert rows[0]["manifest_line_number"] == 1
     assert "precomputed_ref_input_path" not in rows[0]
 
 
@@ -143,6 +164,9 @@ def test_dataset_uses_legacy_ref_audio_fallback_without_precomputed_ref_input(
     item = dataset[0]
 
     assert torch.equal(item["ref_mel"], expected_ref_mel)
+    assert item["batch_row_provenance"]["row_id"] == "dataset-row-0"
+    assert item["batch_row_provenance"]["speaker_id"] == "speaker-a"
+    assert item["batch_row_provenance"]["codec_frame_count"] == 1
 
 
 def test_build_data_path_attribution_collector_rejects_multiworker_proof_mode() -> None:
@@ -243,12 +267,32 @@ def test_collate_ref_mels_pads_variable_length_reference_inputs() -> None:
             "audio_codes": torch.tensor([[1, 2]], dtype=torch.long),
             "ref_mel": torch.full((1, 2, 3), 1.0, dtype=torch.float32),
             "speaker_id": 0,
+            "batch_row_provenance": {
+                "row_id": "train.jsonl#L1",
+                "manifest_path": "train.jsonl",
+                "manifest_line_number": 1,
+                "dataset_index": 0,
+                "speaker_id": "speaker-a",
+                "text_preview": "hej",
+                "codec_frame_count": 1,
+                "ref_audio": "refs/speaker-a/ref.wav",
+            },
         },
         {
             "text_ids": torch.tensor([[1, 2, 3, 4, 5, 6]], dtype=torch.long),
             "audio_codes": torch.tensor([[1, 2]], dtype=torch.long),
             "ref_mel": torch.full((1, 4, 3), 2.0, dtype=torch.float32),
             "speaker_id": 1,
+            "batch_row_provenance": {
+                "row_id": "train.jsonl#L2",
+                "manifest_path": "train.jsonl",
+                "manifest_line_number": 2,
+                "dataset_index": 1,
+                "speaker_id": "speaker-b",
+                "text_preview": "världen",
+                "codec_frame_count": 1,
+                "ref_audio": "refs/speaker-b/ref.wav",
+            },
         },
     ]
 
@@ -258,3 +302,48 @@ def test_collate_ref_mels_pads_variable_length_reference_inputs() -> None:
     assert torch.equal(ref_mels[0, :2], torch.full((2, 3), 1.0, dtype=torch.float32))
     assert torch.equal(ref_mels[0, 2:], torch.zeros((2, 3), dtype=torch.float32))
     assert torch.equal(ref_mels[1], torch.full((4, 3), 2.0, dtype=torch.float32))
+
+
+def test_collate_fn_preserves_batch_row_provenance(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The collated batch should preserve stable row provenance for forensics."""
+    ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
+    ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
+    write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    dataset = TTSDataset(
+        data_list=[
+            {
+                "text": "hej världen",
+                "audio_codes": [list(range(16))],
+                "ref_audio": ref_audio_path.as_posix(),
+                "row_id": "train.jsonl#L1",
+                "manifest_path": "train.jsonl",
+                "manifest_line_number": 1,
+                "speaker_id": "speaker-a",
+            }
+        ],
+        processor=_FakeProcessor(),
+        config=_FakeConfig(),
+    )
+    monkeypatch.setattr(
+        TTSDataset,
+        "extract_mels",
+        lambda self, audio, sample_rate: torch.ones((1, 4, 8), dtype=torch.float32),
+    )
+
+    collated = dataset.collate_fn([dataset[0]])
+
+    assert collated["batch_provenance"] == [
+        {
+            "row_id": "train.jsonl#L1",
+            "manifest_path": "train.jsonl",
+            "manifest_line_number": 1,
+            "dataset_index": 0,
+            "speaker_id": "speaker-a",
+            "text_preview": "hej världen",
+            "codec_frame_count": 1,
+            "ref_audio": ref_audio_path.as_posix(),
+        }
+    ]

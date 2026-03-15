@@ -190,6 +190,29 @@ def render_status_markdown(status: DetachedStatus) -> str:
         if not isinstance(data_path_attribution, dict)
         else data_path_attribution.get("persisted_ref_mel_load_count")
     )
+    finite_loss_guard = (
+        None
+        if not isinstance(pilot_status.get("finite_loss_guard"), dict)
+        else pilot_status.get("finite_loss_guard")
+    )
+    first_non_finite_tensor = (
+        None
+        if not isinstance(finite_loss_guard, dict)
+        else (
+            None
+            if not isinstance(finite_loss_guard.get("step_forensics"), dict)
+            else finite_loss_guard["step_forensics"].get("first_non_finite_tensor")
+        )
+    )
+    recent_non_finite_observation_steps = (
+        []
+        if not isinstance(finite_loss_guard, dict)
+        else [
+            observation.get("optimizer_step")
+            for observation in finite_loss_guard.get("recent_observations", [])
+            if isinstance(observation, dict) and isinstance(observation.get("optimizer_step"), int)
+        ]
+    )
     lines = [
         "# Qwen Training Detached Status",
         "",
@@ -245,6 +268,8 @@ def render_status_markdown(status: DetachedStatus) -> str:
         f"- pilot_data_path_authoritative: `{data_path_authoritative}`",
         f"- pilot_runtime_ref_mel_extraction_count: `{runtime_ref_mel_extraction_count}`",
         f"- pilot_persisted_ref_mel_load_count: `{persisted_ref_mel_load_count}`",
+        f"- pilot_first_non_finite_tensor: `{first_non_finite_tensor}`",
+        (f"- pilot_recent_non_finite_optimizer_steps: `{recent_non_finite_observation_steps}`"),
         f"- pilot_mlflow_run_id: `{mlflow_run_id}`",
         f"- resource_monitor_available: `{monitor_available}`",
         f"- resource_monitor_launch_root: `{monitor_launch_root}`",

@@ -192,5 +192,6 @@ Current live-lane caveat after the strict `1238` relaunch:
   before failing at optimizer step `1358` with `NonFiniteLossError`
 - the latest durable checkpoint still remained `state-step-00001238`
 - and the active remediation for bounded non-finite forensics, truthful
-  checkpoint phase labels, and explicit epoch semantics is now tracked under
+  checkpoint phase labels, explicit batch-provenance capture, deterministic
+  sampler truth, and explicit epoch semantics is now tracked under
   `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`

@@ -1,5 +1,68 @@
 # Session Handoff
 
+## Session Update (2026-03-15, Task 180 forensic provenance + sampler truth)
+
+- Advanced
+  `task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+  so the active remediation now explicitly owns:
+  - default-on per-microbatch row provenance
+  - ordered tensor-finiteness probes
+  - explicit sampler-randomness governance instead of hidden global
+    `random.shuffle(...)`
+  - continued checkpoint-phase truth and failure-artifact truth
+- Implemented a focused forensic helper module:
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_forensics.py`
+  - purpose: keep tensor-summary and optimizer-step-window logic out of the
+    already-large loop module
+- Added stable manifest provenance to the training data path:
+  - `sft_12hz_training_rows.py` now stamps `row_id`, `manifest_path`, and
+    `manifest_line_number`
+  - `dataset.py` now carries that identity into `batch_row_provenance` and
+    collated `batch_provenance`
+- Hardened batch-contract truth instead of relaxing types:
+  - `dataset.py` now exposes `require_batch_tensors(...)`
+  - both `sft_12hz_loop.py` and `sft_12hz_eval.py` validate/resolve batches
+    through that helper before touching tensor fields
+- The finite-loss path now preserves the real failing window:
+  - `sft_12hz_loop.py` records per-microbatch provenance plus tensor
+    finiteness across each accumulation window
+  - `sft_12hz_loop_controls.py` now persists `step_forensics` and
+    `recent_observations` into `NonFiniteLossError.payload()`
+- Sampler truth is improved:
+  - `BucketedBatchSampler` now owns explicit `shuffle`, `shuffle_seed`, and
+    `set_epoch(...)`
+  - train batching uses deterministic epoch-seeded shuffle
+  - held-out eval batching is now non-shuffled
+- Operator-facing status summary now surfaces the forensic headline in
+  `metadata.py`:
+  - `pilot_first_non_finite_tensor`
+  - `pilot_recent_non_finite_optimizer_steps`
+- Test refocus / anti-god-file work:
+  - created dedicated
+    `tests/sir_convert_a_lot/ml/qwen/training/test_forensics.py`
+  - kept integration assertions in existing train/report/trainer tests only
+    where end-to-end contract coverage was actually needed
+- Doc alignment updated in:
+  - `docs/backlog/current.md`
+  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+  - `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+  - `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+- Validation:
+  - `PASS` `pdm run format-all`
+  - `PASS` `pdm run lint-fix`
+  - `PASS` `pdm run typecheck-all`
+  - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_forensics.py tests/sir_convert_a_lot/ml/qwen/training/test_batching.py tests/sir_convert_a_lot/ml/qwen/training/test_training_rows.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py -q`
+  - `PASS` `pdm run validate-tasks`
+  - `PASS` `pdm run validate-docs`
+  - `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+## Immediate Next Step
+
+- Pull this remediation onto Hemma and run the next bounded `1238` repro so the
+  failing `1356-1358` window, offending rows, and first non-finite tensor
+  family are captured from the live lane before any NaN-guard policy change is
+  considered.
+
 ## Session Update (2026-03-15, Task 180 NaN forensics + checkpoint-phase truth)
 
 - Expanded

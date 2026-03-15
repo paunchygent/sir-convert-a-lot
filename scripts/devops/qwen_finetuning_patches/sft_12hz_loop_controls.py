@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import math
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Deque
 
 import torch
 
 DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS = 20
 DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS = 3
+DEFAULT_FINITE_LOSS_RECENT_OBSERVATION_WINDOW = 8
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,25 @@ class LossObservation:
     main_loss_is_finite: bool
     sub_talker_loss_is_finite: bool
     grad_norm_is_finite: bool | None
+    step_forensics: dict[str, object] | None = None
+
+    def payload(self) -> dict[str, object]:
+        """Return one JSON-safe payload for history and failure artifacts."""
+        return {
+            "optimizer_step": self.optimizer_step,
+            "current_epoch": self.current_epoch,
+            "current_train_iteration": self.current_train_iteration,
+            "loss_value": self.loss_value,
+            "combined_loss_value": self.loss_value,
+            "main_loss_value": self.main_loss_value,
+            "sub_talker_loss_value": self.sub_talker_loss_value,
+            "grad_norm_value": self.grad_norm_value,
+            "combined_loss_is_finite": self.is_finite,
+            "main_loss_is_finite": self.main_loss_is_finite,
+            "sub_talker_loss_is_finite": self.sub_talker_loss_is_finite,
+            "grad_norm_is_finite": self.grad_norm_is_finite,
+            "step_forensics": self.step_forensics,
+        }
 
 
 @dataclass(frozen=True)
@@ -76,6 +96,7 @@ class _PendingLossObservation:
     staged_sub_talker_loss_cpu: torch.Tensor
     staged_grad_norm_cpu: torch.Tensor | None
     ready_event: torch.cuda.Event | None
+    step_forensics: dict[str, object] | None
 
 
 @dataclass
@@ -94,6 +115,7 @@ class AsyncLossObserver:
         main_loss: torch.Tensor,
         sub_talker_loss: torch.Tensor,
         grad_norm: torch.Tensor | float | None,
+        step_forensics: dict[str, object] | None,
         optimizer_step: int,
         current_epoch: int,
         current_train_iteration: int,
@@ -121,6 +143,7 @@ class AsyncLossObserver:
                         None if detached_grad_norm is None else detached_grad_norm.to(device="cpu")
                     ),
                     ready_event=None,
+                    step_forensics=step_forensics,
                 )
             )
             return
@@ -154,6 +177,7 @@ class AsyncLossObserver:
                 staged_sub_talker_loss_cpu=staged_sub_talker_loss_cpu,
                 staged_grad_norm_cpu=staged_grad_norm_cpu,
                 ready_event=ready_event,
+                step_forensics=step_forensics,
             )
         )
 
@@ -191,6 +215,7 @@ class AsyncLossObserver:
                     grad_norm_is_finite=(
                         None if grad_norm_value is None else math.isfinite(grad_norm_value)
                     ),
+                    step_forensics=pending.step_forensics,
                 )
             )
         return observations
@@ -211,6 +236,8 @@ class NonFiniteLossError(RuntimeError):
         main_loss_value: float | None = None,
         sub_talker_loss_value: float | None = None,
         grad_norm_value: float | None = None,
+        step_forensics: dict[str, object] | None = None,
+        recent_observations: list[dict[str, object]] | None = None,
     ) -> None:
         self.optimizer_step = optimizer_step
         self.current_epoch = current_epoch
@@ -221,6 +248,8 @@ class NonFiniteLossError(RuntimeError):
         self.main_loss_value = main_loss_value
         self.sub_talker_loss_value = sub_talker_loss_value
         self.grad_norm_value = grad_norm_value
+        self.step_forensics = step_forensics
+        self.recent_observations = recent_observations
         self.loss_is_finite = math.isfinite(loss_value)
         self.main_loss_is_finite = (
             None if main_loss_value is None else math.isfinite(main_loss_value)
@@ -260,6 +289,8 @@ class NonFiniteLossError(RuntimeError):
             "main_loss_is_finite": self.main_loss_is_finite,
             "sub_talker_loss_is_finite": self.sub_talker_loss_is_finite,
             "grad_norm_is_finite": self.grad_norm_is_finite,
+            "step_forensics": self.step_forensics,
+            "recent_observations": self.recent_observations,
             "acceptance_measurement_valid": False,
         }
 
@@ -290,9 +321,15 @@ class FiniteLossGuardState:
     consecutive_non_finite_steps: int = 0
     last_non_finite_optimizer_step: int | None = None
     last_non_finite_loss_value: float | None = None
+    recent_observations: Deque[dict[str, object]] = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        """Initialize the bounded recent-observation history."""
+        self.recent_observations = deque(maxlen=DEFAULT_FINITE_LOSS_RECENT_OBSERVATION_WINDOW)
 
     def observe(self, observation: LossObservation) -> None:
         """Record one optimizer-step loss observation and fail when the streak holds."""
+        self.recent_observations.append(observation.payload())
         if observation.is_finite:
             self.consecutive_non_finite_steps = 0
             self.last_non_finite_optimizer_step = None
@@ -313,6 +350,8 @@ class FiniteLossGuardState:
                 main_loss_value=observation.main_loss_value,
                 sub_talker_loss_value=observation.sub_talker_loss_value,
                 grad_norm_value=observation.grad_norm_value,
+                step_forensics=observation.step_forensics,
+                recent_observations=list(self.recent_observations),
             )
 
     def payload(self) -> dict[str, bool | float | int | None]:

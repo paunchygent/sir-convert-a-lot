@@ -198,8 +198,8 @@ class PreparedTrainingRun:
     model: TrainableQwenModelProtocol
     checkpointable_model: torch.nn.Module
     optimizer: AdamW
-    train_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
-    eval_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
+    train_dataloader: DataLoader[object] | Sequence[object]
+    eval_dataloader: DataLoader[object] | Sequence[object]
     dataloader_length: int
     eval_dataloader_length: int
     effective_dataloader_tuning: DataloaderTuning
@@ -409,10 +409,14 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
     batch_sampler = BucketedBatchSampler(
         row_metrics=row_metrics,
         policy=throughput_batch_policy,
+        shuffle=True,
+        shuffle_seed=0,
     )
     eval_batch_sampler = BucketedBatchSampler(
         row_metrics=eval_row_metrics,
         policy=throughput_batch_policy,
+        shuffle=False,
+        shuffle_seed=0,
     )
     batch_occupancy_summary = summarize_batch_occupancy(
         row_metrics=row_metrics,

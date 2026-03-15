@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, TypeAlias
 
 import torch
 
+from scripts.devops.qwen_finetuning_patches.dataset import require_batch_tensors
 from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
     fuse_auxiliary_codebook_embeddings,
 )
@@ -200,14 +201,15 @@ def _run_eval_batches(prepared: EvalPreparedRun) -> tuple[float, int]:
     completed_batches = 0
     with torch.no_grad(), prepared.torch_profiler_session.phase("task101.eval"):
         for batch in prepared.eval_dataloader:
-            input_ids = batch["input_ids"]
-            codec_ids = batch["codec_ids"]
-            ref_mels = batch["ref_mels"]
-            text_embedding_mask = batch["text_embedding_mask"]
-            codec_embedding_mask = batch["codec_embedding_mask"]
-            attention_mask = batch["attention_mask"]
-            codec_0_labels = batch["codec_0_labels"]
-            codec_mask = batch["codec_mask"]
+            resolved_batch = require_batch_tensors(batch)
+            input_ids = resolved_batch["input_ids"]
+            codec_ids = resolved_batch["codec_ids"]
+            ref_mels = resolved_batch["ref_mels"]
+            text_embedding_mask = resolved_batch["text_embedding_mask"]
+            codec_embedding_mask = resolved_batch["codec_embedding_mask"]
+            attention_mask = resolved_batch["attention_mask"]
+            codec_0_labels = resolved_batch["codec_0_labels"]
+            codec_mask = resolved_batch["codec_mask"]
             speaker_embedding = model.speaker_encoder(
                 to_device_with_optional_non_blocking(
                     ref_mels,

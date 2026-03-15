@@ -303,6 +303,8 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     assert payload["finite_loss_guard"]["main_loss_is_finite"] is False
     assert payload["finite_loss_guard"]["sub_talker_loss_is_finite"] is True
     assert payload["finite_loss_guard"]["grad_norm_is_finite"] is False
+    assert payload["finite_loss_guard"]["step_forensics"] is None
+    assert payload["finite_loss_guard"]["recent_observations"] is None
 
 
 def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Path) -> None:
@@ -375,5 +377,6 @@ def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Pa
         payload["finite_loss_guard"]["main_loss_value"]
         != payload["finite_loss_guard"]["sub_talker_loss_value"]
     )
+    assert payload["finite_loss_guard"]["step_forensics"] is None
     assert payload["phase_history"][-1]["current_optimizer_step"] == 17
     assert payload["phase_history"][-1]["current_train_iteration"] == 68

@@ -191,9 +191,9 @@ class _FakeAccelerator:
 
     def skip_first_batches(
         self,
-        dataloader: list[dict[str, torch.Tensor]],
+        dataloader: list[dict[str, object]],
         skip: int,
-    ) -> list[dict[str, torch.Tensor]]:
+    ) -> list[dict[str, object]]:
         """Return the remaining batches after one deterministic skip count."""
         return dataloader[skip:]
 
@@ -437,7 +437,7 @@ def fake_save_checkpoint(**kwargs: object) -> str:
     return output_dir.as_posix()
 
 
-def fake_training_batch() -> dict[str, torch.Tensor]:
+def fake_training_batch() -> dict[str, object]:
     """Return one minimal batch compatible with the patched Qwen loop."""
     embedding_dim = 4
     sequence_length = 8
@@ -449,6 +449,7 @@ def fake_training_batch() -> dict[str, torch.Tensor]:
     attention_mask = torch.ones((1, sequence_length), dtype=torch.long)
     codec_0_labels = torch.zeros((1, sequence_length), dtype=torch.long)
     codec_mask = torch.ones((1, sequence_length), dtype=torch.bool)
+    speaker_ids = torch.zeros((1,), dtype=torch.long)
     return {
         "input_ids": input_ids,
         "codec_ids": codec_ids,
@@ -458,6 +459,19 @@ def fake_training_batch() -> dict[str, torch.Tensor]:
         "attention_mask": attention_mask,
         "codec_0_labels": codec_0_labels,
         "codec_mask": codec_mask,
+        "speaker_ids": speaker_ids,
+        "batch_provenance": [
+            {
+                "row_id": "tests/train.jsonl#L1",
+                "manifest_path": "tests/train.jsonl",
+                "manifest_line_number": 1,
+                "dataset_index": 0,
+                "speaker_id": "speaker-a",
+                "text_preview": "hej världen",
+                "codec_frame_count": 8,
+                "ref_audio": "refs/speaker-a/ref.wav",
+            }
+        ],
     }
 
 

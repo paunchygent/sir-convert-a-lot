@@ -31,7 +31,7 @@ def _load_training_rows(
     """Load and validate one Task 101 training JSONL manifest."""
     rows: list[TrainingRow] = []
     with train_jsonl_path.open("r", encoding="utf-8") as handle:
-        for line in handle:
+        for line_number, line in enumerate(handle, start=1):
             row = json.loads(line)
             if not isinstance(row, dict):
                 raise ValueError("Expected each training JSONL row to be a JSON object.")
@@ -39,6 +39,7 @@ def _load_training_rows(
                 _resolve_training_row_paths(
                     train_jsonl_path,
                     row,
+                    line_number=line_number,
                     require_precomputed_ref_inputs=require_precomputed_ref_inputs,
                 )
             )
@@ -49,6 +50,7 @@ def _resolve_training_row_paths(
     train_jsonl_path: Path,
     row: dict[str, object],
     *,
+    line_number: int,
     require_precomputed_ref_inputs: bool,
 ) -> TrainingRow:
     """Resolve manifest-relative training paths into absolute paths."""
@@ -77,6 +79,9 @@ def _resolve_training_row_paths(
         "text": text_value,
         "audio_codes": audio_codes_value,
         "ref_audio": resolved_ref_audio,
+        "row_id": f"{train_jsonl_path.as_posix()}#L{line_number}",
+        "manifest_path": train_jsonl_path.as_posix(),
+        "manifest_line_number": line_number,
     }
     _apply_precomputed_ref_input_fields(
         manifest_root,

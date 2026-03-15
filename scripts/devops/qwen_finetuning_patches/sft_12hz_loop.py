@@ -19,6 +19,7 @@ from pathlib import Path
 import torch
 from accelerate import Accelerator
 
+from scripts.devops.qwen_finetuning_patches.dataset import require_batch_tensors
 from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
     DurableCheckpointMetadata,
     _checkpoint_advanced_since_latest_save,
@@ -37,6 +38,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import run_eval_pass
 from scripts.devops.qwen_finetuning_patches.sft_12hz_export import save_checkpoint
+from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
+    build_microbatch_forensics,
+    build_optimizer_step_forensics_window,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import LossObservation
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     TrainingPhase,
@@ -207,6 +212,14 @@ def _emit_progress_phase(
     )
 
 
+def _set_dataloader_epoch_if_supported(dataloader: object, *, epoch: int) -> None:
+    """Set one epoch cursor on batch samplers that support deterministic replay."""
+    batch_sampler = getattr(dataloader, "batch_sampler", None)
+    set_epoch = getattr(batch_sampler, "set_epoch", None)
+    if callable(set_epoch):
+        set_epoch(epoch)
+
+
 def execute_training_loop(
     prepared: PreparedTrainingRun,
     *,
@@ -293,11 +306,13 @@ def execute_training_loop(
     reached_max_steps = False
     stop_requested_during_training = False
     emitted_train_progress = False
+    optimizer_step_microbatches: list[dict[str, object]] = []
     epoch = starting_epoch
     step = 0
     torch_profiler_session.start()
     try:
         for epoch in range(starting_epoch, args.num_epochs):
+            _set_dataloader_epoch_if_supported(train_dataloader, epoch=epoch)
             epoch_dataloader = train_dataloader
             epoch_start_step = 0
             if epoch == starting_epoch and resume_step_in_epoch > 0:
@@ -307,26 +322,27 @@ def execute_training_loop(
                 )
                 epoch_start_step = resume_step_in_epoch
             for step, batch in enumerate(epoch_dataloader, start=epoch_start_step):
+                resolved_batch = require_batch_tensors(batch)
                 train_iterations_completed += 1
                 with accelerator.accumulate(model):
                     grad_norm: torch.Tensor | float | None = None
                     with torch_profiler_session.phase("task101.batch-preparation"):
-                        input_ids = batch["input_ids"]
-                        codec_ids = batch["codec_ids"]
-                        ref_mels = batch["ref_mels"]
-                        text_embedding_mask = batch["text_embedding_mask"]
-                        codec_embedding_mask = batch["codec_embedding_mask"]
-                        attention_mask = batch["attention_mask"]
-                        codec_0_labels = batch["codec_0_labels"]
-                        codec_mask = batch["codec_mask"]
-                        speaker_embedding = model.speaker_encoder(
-                            to_device_with_optional_non_blocking(
-                                ref_mels,
-                                device=model.device,
-                                dtype=model.dtype,
-                                non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
-                            )
-                        ).detach()
+                        input_ids = resolved_batch["input_ids"]
+                        codec_ids = resolved_batch["codec_ids"]
+                        ref_mels = resolved_batch["ref_mels"]
+                        batch_provenance = resolved_batch["batch_provenance"]
+                        text_embedding_mask = resolved_batch["text_embedding_mask"]
+                        codec_embedding_mask = resolved_batch["codec_embedding_mask"]
+                        attention_mask = resolved_batch["attention_mask"]
+                        codec_0_labels = resolved_batch["codec_0_labels"]
+                        codec_mask = resolved_batch["codec_mask"]
+                        ref_mels_on_device = to_device_with_optional_non_blocking(
+                            ref_mels,
+                            device=model.device,
+                            dtype=model.dtype,
+                            non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
+                        )
+                        speaker_embedding = model.speaker_encoder(ref_mels_on_device).detach()
                     with torch_profiler_session.phase("task101.forward-backward"):
                         input_text_ids = input_ids[:, :, 0]
                         input_codec_ids = input_ids[:, :, 1]
@@ -342,14 +358,13 @@ def execute_training_loop(
                             * codec_embedding_mask
                         )
                         input_codec_embedding[:, 6, :] = speaker_embedding
+                        fused_auxiliary_embedding = fuse_auxiliary_codebook_embeddings(
+                            codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
+                            codec_ids=codec_ids,
+                            codec_mask=codec_mask,
+                        )
                         input_embeddings = (
-                            input_text_embedding
-                            + input_codec_embedding
-                            + fuse_auxiliary_codebook_embeddings(
-                                codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
-                                codec_ids=codec_ids,
-                                codec_mask=codec_mask,
-                            )
+                            input_text_embedding + input_codec_embedding + fused_auxiliary_embedding
                         )
                         outputs = model.talker(
                             inputs_embeds=input_embeddings[:, :-1, :],
@@ -369,20 +384,58 @@ def execute_training_loop(
                         completed_optimizer_step = accelerator.sync_gradients
                         if completed_optimizer_step:
                             grad_norm = accelerator.clip_grad_norm_(model.parameters(), 1.0)
+                        grad_norm_tensor = (
+                            None
+                            if grad_norm is None
+                            else grad_norm
+                            if isinstance(grad_norm, torch.Tensor)
+                            else torch.tensor(
+                                float(grad_norm),
+                                dtype=torch.float32,
+                                device=loss.device,
+                            )
+                        )
+                        optimizer_step_microbatches.append(
+                            build_microbatch_forensics(
+                                train_iteration=train_iterations_completed,
+                                microbatch_index_in_optimizer_step=(
+                                    len(optimizer_step_microbatches) + 1
+                                ),
+                                batch_provenance=batch_provenance,
+                                probes=[
+                                    ("ref_mels", ref_mels_on_device),
+                                    ("speaker_embedding", speaker_embedding),
+                                    ("input_text_embedding", input_text_embedding),
+                                    ("input_codec_embedding", input_codec_embedding),
+                                    ("fused_auxiliary_embedding", fused_auxiliary_embedding),
+                                    ("input_embeddings", input_embeddings),
+                                    ("talker_hidden_states", talker_hidden_states),
+                                    ("main_loss", outputs.loss),
+                                    ("sub_talker_loss", sub_talker_loss),
+                                    ("combined_loss", loss),
+                                    ("grad_norm", grad_norm_tensor),
+                                ],
+                            )
+                        )
                     with torch_profiler_session.phase("task101.optimizer-step"):
                         optimizer.step()
                         optimizer.zero_grad()
                     if completed_optimizer_step:
                         optimizer_steps_completed += 1
+                        step_forensics = build_optimizer_step_forensics_window(
+                            microbatches=optimizer_step_microbatches,
+                        )
                         prepared.loss_observer.submit(
                             loss=loss,
                             main_loss=outputs.loss,
                             sub_talker_loss=sub_talker_loss,
                             grad_norm=grad_norm,
+                            step_forensics=step_forensics,
                             optimizer_step=optimizer_steps_completed,
                             current_epoch=epoch,
                             current_train_iteration=train_iterations_completed,
                         )
+                        optimizer_step_microbatches = []
                         last_loss, smoothed_loss, emitted_train_progress = (
                             _consume_loss_observations(
                                 accelerator=accelerator,

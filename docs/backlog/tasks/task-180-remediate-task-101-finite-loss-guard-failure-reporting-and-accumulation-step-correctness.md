@@ -1,6 +1,6 @@
 ---
 id: task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness
-title: Remediate Task 101 finite-loss guard forensics, failure reporting, and checkpoint-phase truth
+title: Remediate Task 101 finite-loss guard forensics, sampler truth, failure reporting, and checkpoint-phase truth
 type: task
 status: in_progress
 priority: high
@@ -30,8 +30,8 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 Fix the concrete Task 101 training/runtime defects exposed by the rebuilt-bundle
 throughput proofs and the resumed `1238` recovery lane so the finite-loss
-guard, checkpoint phases, and terminal artifacts tell the truth before `T179`
-launches the next bounded Hemma saturation repro.
+guard, batch sampler, checkpoint phases, and terminal artifacts tell the truth
+before `T179` launches the next bounded Hemma saturation repro.
 
 ## Why This Exists
 
@@ -60,6 +60,10 @@ gaps that operators can trip over:
   made the post-eval lane look as if durable checkpoints fired at optimizer
   steps `1300` and `1332` even though `latest_checkpoint.json` never advanced
   past `1238`
+- the current bucketed batch sampler uses process-global `random.shuffle(...)`
+  inside `__iter__`, so the exact rows that fed optimizer steps `1356-1358`
+  cannot be reconstructed truthfully after the fact unless the trainer itself
+  persists batch provenance
 - `current_epoch` is currently surfaced as the trainer's zero-based epoch index
   without an explicit semantics note, which is truthful internally but easy for
   operators to misread after resume
@@ -101,6 +105,12 @@ This task is intentionally narrower than `T179`:
 - Extend the finite-loss guard so failed runs persist bounded forensic evidence
   for the combined loss, main talker loss, auxiliary sub-talker loss, and
   gradient norm at the failing optimizer step.
+- Persist per-microbatch batch provenance and ordered tensor-finiteness probes
+  inside each completed optimizer-step window so a future `NaN` tells us the
+  exact rows and tensor families that poisoned the step.
+- Move batch-sampler randomness behind an explicit typed contract instead of
+  process-global `random.shuffle(...)`, and keep held-out eval batching
+  deterministic.
 - Make terminal failed runs write a canonical machine-readable failure report in
   addition to `failure.txt` and `status.json`.
 - Ensure failed `status.json` uses the actual failure-step counters rather than
@@ -111,6 +121,8 @@ This task is intentionally narrower than `T179`:
 - Clarify epoch semantics in live status/report artifacts so operators can tell
   that `current_epoch` is a zero-based trainer cursor, not a fresh-lane human
   epoch label.
+- Keep the remediation SRP-aligned instead of restuffing `sft_12hz_loop.py`
+  or the largest Qwen training test files with new god-file behavior.
 - Strengthen the fake-accelerator / fake-optimizer test harness so unit tests
   model real gradient-accumulation semantics instead of treating every batch as
   a completed optimizer step.
@@ -145,14 +157,20 @@ This task is intentionally narrower than `T179`:
   - main talker loss
   - sub-talker loss
   - gradient norm
+- [ ] Failed non-finite runs persist the exact batch provenance and tensor
+  finiteness window for the offending optimizer step.
 - [ ] Failed Qwen training runs persist canonical `report.json` artifacts with
   failure metadata.
 - [ ] Failed `status.json` payloads report the actual terminal progress counters
   rather than stale heartbeat counters.
 - [ ] Live phase history distinguishes durable checkpoint saves from export-only
   checkpoint saves.
+- [ ] Train-batch randomization no longer depends on process-global
+  `random.shuffle(...)`, and held-out eval order remains deterministic.
 - [ ] Status artifacts explain that `current_epoch` is a zero-based trainer
   cursor.
+- [ ] The new forensic behavior lands in focused modules/tests rather than
+  growing the existing god files again.
 - [ ] The unit-test harness can simulate `gradient_accumulation_steps > 1`
   truthfully.
 - [ ] Regression tests cover the exact reviewed failure modes.
@@ -169,10 +187,12 @@ This task is intentionally narrower than `T179`:
   - `status.json`
   - `report.json`
     with matching failing-step truth and the same bounded loss-forensics
-    payload.
+    payload, including the offending optimizer-step forensic window.
 - [ ] A focused status/monitoring test proves `phase_history` and resource
   monitor summaries do not collapse durable trainer-state checkpoint saves
   together with export-only checkpoint saves.
+- [ ] A focused sampler test proves train-batch shuffling is deterministic by
+  explicit contract and held-out eval batching is non-shuffled.
 - [ ] If the optimizer-step audit disproves the suspected accumulation bug, the
   task records that evidence explicitly and still lands the failed-artifact and
   regression-harness fixes without making an unproven behavior change.
@@ -201,8 +221,12 @@ This task is intentionally narrower than `T179`:
     `finite_loss_guard.optimizer_step`
   - failed `finite_loss_guard` payloads expose combined/main/sub-talker loss
     plus gradient-norm forensics
+  - failed `finite_loss_guard` payloads expose the offending microbatch window
+    and row provenance
   - live phase history distinguishes durable checkpoint saves from
     export-only checkpoint saves
+  - train-batch shuffling is deterministic by explicit contract and held-out
+    eval batching is non-shuffled
   - accumulation-mode tests exercise non-sync microbatches before one sync
     boundary
 - [ ] `pdm run validate-tasks`
@@ -238,6 +262,22 @@ This task is intentionally narrower than `T179`:
 - The next implementation slice therefore focuses on bounded non-finite
   forensics, truthful checkpoint phase labels, and explicit epoch semantics in
   status/report artifacts before any guard-policy change is considered.
+- The current implementation now also owns two additional truth fixes because
+  the user correctly called them out as first-class defects:
+  - batch provenance must be persisted because the old sampler order could not
+    be reconstructed truthfully after failure
+  - sampler randomness itself must move behind an explicit typed contract
+    instead of hidden process-global RNG behavior
+- Local remediation now includes:
+  - a focused `sft_12hz_forensics.py` helper instead of stuffing more probe
+    code into the loop module
+  - manifest-stamped row identity carried through dataset collation into
+    `batch_provenance`
+  - per-microbatch tensor-finiteness probes persisted into the optimizer-step
+    forensic window and the `NonFiniteLossError` payload
+  - deterministic train sampler epoch seeding plus non-shuffled eval batching
+  - a typed batch-contract validator used by both train and eval paths
+  - focused regression coverage in dedicated forensic and batching tests
 
 ## Checklist
 

@@ -204,6 +204,11 @@ Remediation owner for this failure:
   now owns:
   - bounded forensic instrumentation for the combined loss, main talker loss,
     sub-talker loss, and gradient norm
+  - per-microbatch row provenance and ordered tensor-finiteness probes so the
+    next `NaN` shows the exact rows and tensor families behind optimizer steps
+    like `1356-1358`
+  - explicit sampler-randomness governance instead of hidden global
+    `random.shuffle(...)` behavior
   - truthful durable-versus-export checkpoint phase labels
   - explicit epoch-semantics reporting in status/report artifacts
 
@@ -254,8 +259,14 @@ The next canonical action is to complete `T180` so operators can see:
 
 - exactly which loss component and gradient signal the non-finite guard is
   tripping on
+- exactly which microbatches and manifest rows fed the offending optimizer
+  step window
+- whether the first non-finite signal appears in reference inputs, embeddings,
+  hidden states, or the reduced loss surfaces
 - which checkpoint phases are durable versus export-only
-- and why the resumed epoch cursor is reported as a zero-based value
+- why the resumed epoch cursor is reported as a zero-based value
+- and a deterministic sampler contract rather than hidden process-global batch
+  shuffling
 
 ## Historical Reference Boundary
 

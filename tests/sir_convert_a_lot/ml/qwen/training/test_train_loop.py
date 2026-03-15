@@ -406,6 +406,21 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
     assert error.sub_talker_loss_is_finite is True
     assert error.grad_norm_value is not None
     assert error.grad_norm_is_finite is not None
+    assert error.step_forensics is not None
+    assert error.step_forensics["microbatch_count"] == 4
+    assert error.step_forensics["microbatches"][-1]["batch_provenance"][0]["row_id"] == (
+        "tests/train.jsonl#L1"
+    )
+    assert (
+        error.step_forensics["microbatches"][-1]["tensor_finiteness"]["tensors"]["main_loss"][
+            "is_finite"
+        ]
+        is False
+    )
+    assert error.recent_observations is not None
+    assert len(error.recent_observations) == 2
+    assert error.recent_observations[-1]["optimizer_step"] == 2
+    assert error.recent_observations[-1]["step_forensics"]["microbatch_count"] == 4
     assert accelerator.prepared_optimizer is not None
     assert accelerator.prepared_optimizer.effective_step_calls == 2
     assert accelerator.prepared_optimizer.raw_step_attempts == 8

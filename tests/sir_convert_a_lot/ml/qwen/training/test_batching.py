@@ -120,6 +120,66 @@ def test_resolve_throughput_batch_policy_supports_quarantine_tail_profile() -> N
     )
 
 
+def test_bucketed_batch_sampler_replays_deterministic_epoch_shuffle() -> None:
+    """Train-batch shuffling should be explicit and reproducible per epoch."""
+    sampler = BucketedBatchSampler(
+        row_metrics=[
+            TrainingRowBatchMetrics(text_token_count=16, codec_frame_count=80),
+            TrainingRowBatchMetrics(text_token_count=16, codec_frame_count=70),
+            TrainingRowBatchMetrics(text_token_count=16, codec_frame_count=60),
+            TrainingRowBatchMetrics(text_token_count=16, codec_frame_count=50),
+        ],
+        policy=ThroughputBatchPolicy(
+            profile_label="test-profile",
+            policy_kind="bucketed-frame-token-budget-v1",
+            max_batch_size=1,
+            max_tokens_per_batch=512,
+            max_codec_frames_per_batch=512,
+            length_bucket_boundaries=(64, 96, 128),
+            minimum_required_max_batch_size=1,
+            bucket_signal_kind="combined-sequence-cost-v1",
+            long_row_singleton_codec_frame_threshold=None,
+        ),
+        shuffle=True,
+        shuffle_seed=23,
+    )
+
+    sampler.set_epoch(1)
+    epoch_one_first = list(iter(sampler))
+    epoch_one_second = list(iter(sampler))
+    sampler.set_epoch(2)
+    epoch_two = list(iter(sampler))
+
+    assert epoch_one_first == epoch_one_second
+    assert epoch_one_first != epoch_two
+
+
+def test_bucketed_batch_sampler_can_disable_shuffle_for_eval_truth() -> None:
+    """Held-out eval batching should preserve the planned deterministic order."""
+    sampler = BucketedBatchSampler(
+        row_metrics=[
+            TrainingRowBatchMetrics(text_token_count=16, codec_frame_count=80),
+            TrainingRowBatchMetrics(text_token_count=16, codec_frame_count=70),
+            TrainingRowBatchMetrics(text_token_count=16, codec_frame_count=60),
+        ],
+        policy=ThroughputBatchPolicy(
+            profile_label="test-profile",
+            policy_kind="bucketed-frame-token-budget-v1",
+            max_batch_size=1,
+            max_tokens_per_batch=512,
+            max_codec_frames_per_batch=512,
+            length_bucket_boundaries=(64, 96, 128),
+            minimum_required_max_batch_size=1,
+            bucket_signal_kind="combined-sequence-cost-v1",
+            long_row_singleton_codec_frame_threshold=None,
+        ),
+        shuffle=False,
+        shuffle_seed=23,
+    )
+
+    assert list(iter(sampler)) == sampler.planned_batches()
+
+
 def test_bucketed_batch_sampler_respects_batch_size_and_budget_caps() -> None:
     """The sampler should cap batches by both max size and codec-frame budget."""
     policy = resolve_throughput_batch_policy(

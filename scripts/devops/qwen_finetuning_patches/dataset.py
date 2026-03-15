@@ -81,11 +81,27 @@ class TrainingRow(TypedDict):
     text: str
     audio_codes: list[list[int]]
     ref_audio: str | list[str]
+    row_id: NotRequired[str]
+    manifest_path: NotRequired[str]
+    manifest_line_number: NotRequired[int]
     precomputed_ref_input_path: NotRequired[str]
     precomputed_ref_input_kind: NotRequired[str]
     precomputed_ref_input_version: NotRequired[str]
     precomputed_ref_input_source_audio: NotRequired[str]
     speaker_id: NotRequired[str]
+
+
+class BatchRowProvenance(TypedDict):
+    """Stable operator-facing identity for one collated manifest row."""
+
+    row_id: str
+    manifest_path: str | None
+    manifest_line_number: int | None
+    dataset_index: int
+    speaker_id: str
+    text_preview: str
+    codec_frame_count: int
+    ref_audio: str | list[str]
 
 
 class DatasetItem(TypedDict):
@@ -95,6 +111,7 @@ class DatasetItem(TypedDict):
     audio_codes: torch.Tensor
     ref_mel: torch.Tensor
     speaker_id: int
+    batch_row_provenance: BatchRowProvenance
 
 
 class BatchTensors(TypedDict):
@@ -109,6 +126,121 @@ class BatchTensors(TypedDict):
     codec_ids: torch.Tensor
     codec_mask: torch.Tensor
     speaker_ids: torch.Tensor
+    batch_provenance: list[BatchRowProvenance]
+
+
+def require_batch_tensors(batch: object) -> BatchTensors:
+    """Validate one collated batch object and return the typed batch payload."""
+    if not isinstance(batch, Mapping):
+        raise TypeError("Expected the collated Qwen batch to be a mapping.")
+    input_ids = _required_tensor(batch, "input_ids")
+    ref_mels = _required_tensor(batch, "ref_mels")
+    attention_mask = _required_tensor(batch, "attention_mask")
+    text_embedding_mask = _required_tensor(batch, "text_embedding_mask")
+    codec_embedding_mask = _required_tensor(batch, "codec_embedding_mask")
+    codec_0_labels = _required_tensor(batch, "codec_0_labels")
+    codec_ids = _required_tensor(batch, "codec_ids")
+    codec_mask = _required_tensor(batch, "codec_mask")
+    speaker_ids = _required_tensor(batch, "speaker_ids")
+    raw_batch_provenance = batch.get("batch_provenance")
+    if not isinstance(raw_batch_provenance, list):
+        raise TypeError("Expected collated Qwen batch `batch_provenance` to be a list.")
+    batch_provenance: list[BatchRowProvenance] = []
+    for provenance in raw_batch_provenance:
+        if not isinstance(provenance, Mapping):
+            raise TypeError("Expected each batch-provenance entry to be a mapping.")
+        batch_provenance.append(
+            {
+                "row_id": _required_str(provenance, "row_id"),
+                "manifest_path": _optional_str(provenance, "manifest_path"),
+                "manifest_line_number": _optional_int(provenance, "manifest_line_number"),
+                "dataset_index": _required_int(provenance, "dataset_index"),
+                "speaker_id": _required_str(provenance, "speaker_id"),
+                "text_preview": _required_str(provenance, "text_preview"),
+                "codec_frame_count": _required_int(provenance, "codec_frame_count"),
+                "ref_audio": _required_ref_audio(provenance),
+            }
+        )
+    return {
+        "input_ids": input_ids,
+        "ref_mels": ref_mels,
+        "attention_mask": attention_mask,
+        "text_embedding_mask": text_embedding_mask,
+        "codec_embedding_mask": codec_embedding_mask,
+        "codec_0_labels": codec_0_labels,
+        "codec_ids": codec_ids,
+        "codec_mask": codec_mask,
+        "speaker_ids": speaker_ids,
+        "batch_provenance": batch_provenance,
+    }
+
+
+def _copy_batch_row_provenance(provenance: BatchRowProvenance) -> BatchRowProvenance:
+    """Return one explicit copy of a row-provenance payload."""
+    return {
+        "row_id": provenance["row_id"],
+        "manifest_path": provenance["manifest_path"],
+        "manifest_line_number": provenance["manifest_line_number"],
+        "dataset_index": provenance["dataset_index"],
+        "speaker_id": provenance["speaker_id"],
+        "text_preview": provenance["text_preview"],
+        "codec_frame_count": provenance["codec_frame_count"],
+        "ref_audio": provenance["ref_audio"],
+    }
+
+
+def _required_tensor(batch: Mapping[str, object], key: str) -> torch.Tensor:
+    """Return one required tensor field from a generic batch mapping."""
+    value = batch.get(key)
+    if not isinstance(value, torch.Tensor):
+        raise TypeError(f"Expected collated Qwen batch `{key}` to be a tensor.")
+    return value
+
+
+def _required_int(payload: Mapping[str, object], key: str) -> int:
+    """Return one required integer field from a generic mapping."""
+    value = payload.get(key)
+    if not isinstance(value, int):
+        raise TypeError(f"Expected batch provenance `{key}` to be an integer.")
+    return value
+
+
+def _optional_int(payload: Mapping[str, object], key: str) -> int | None:
+    """Return one optional integer field from a generic mapping."""
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, int):
+        raise TypeError(f"Expected batch provenance `{key}` to be an integer when present.")
+    return value
+
+
+def _required_str(payload: Mapping[str, object], key: str) -> str:
+    """Return one required string field from a generic mapping."""
+    value = payload.get(key)
+    if not isinstance(value, str):
+        raise TypeError(f"Expected batch provenance `{key}` to be a string.")
+    return value
+
+
+def _optional_str(payload: Mapping[str, object], key: str) -> str | None:
+    """Return one optional string field from a generic mapping."""
+    value = payload.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise TypeError(f"Expected batch provenance `{key}` to be a string when present.")
+    return value
+
+
+def _required_ref_audio(payload: Mapping[str, object]) -> str | list[str]:
+    """Return one required ref-audio provenance field from a generic mapping."""
+    value = payload.get("ref_audio")
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    raise TypeError("Expected batch provenance `ref_audio` to be a string or list of strings.")
 
 
 def _collate_ref_mels(batch: Sequence[DatasetItem]) -> torch.Tensor:
@@ -305,6 +437,16 @@ class TTSDataset(Dataset[DatasetItem]):
             "audio_codes": audio_codes,
             "ref_mel": ref_mel,
             "speaker_id": mapped_speaker_id,
+            "batch_row_provenance": {
+                "row_id": item.get("row_id", f"dataset-row-{idx}"),
+                "manifest_path": item.get("manifest_path"),
+                "manifest_line_number": item.get("manifest_line_number"),
+                "dataset_index": idx,
+                "speaker_id": speaker_id,
+                "text_preview": item["text"][:120],
+                "codec_frame_count": len(item["audio_codes"]),
+                "ref_audio": item["ref_audio"],
+            },
         }
         if self.data_path_attribution is not None:
             self.data_path_attribution.record_getitem(perf_counter() - started_at)
@@ -421,6 +563,9 @@ class TTSDataset(Dataset[DatasetItem]):
             "codec_ids": codec_ids,
             "codec_mask": codec_mask,
             "speaker_ids": speaker_ids,
+            "batch_provenance": [
+                _copy_batch_row_provenance(item["batch_row_provenance"]) for item in batch
+            ],
         }
         if self.data_path_attribution is not None:
             self.data_path_attribution.record_collate(perf_counter() - started_at)
