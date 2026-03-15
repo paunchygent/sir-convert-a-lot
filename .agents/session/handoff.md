@@ -94,19 +94,38 @@
   preserved lane is worthless.
 - `T193` now restores the upstream no-projection fine-tuning contract and adds
   stage-resolved clip-boundary forensics.
+- `T194` now owns the next RCA narrowing slice: use the captured no-projection
+  `1405` artifact to identify the exact text-embedding rows, token ids, and
+  backward surface that first go non-finite.
 
 ## Immediate Next Step
 
-Keep the preserved Task 101 lane on the restored no-projection graph, mint a
-fresh diagnostic checkpoint near optimizer step `1401`, and then run one
-bounded `diagnose-non-finite` proof across `1401 -> 1406` so the first bad
-stage is captured truthfully.
+Start `T194`. Use the captured no-projection `1405` boundary artifact from
+`task193-20260315t-pre1401-resume-a1` to answer three questions with committed
+artifacts:
+
+1. Which `text_embedding` row ids first go non-finite?
+1. Which token ids / decoded text context map to those rows?
+1. Does the first non-finite backward event appear on
+   `input_text_embedding` gradients before the parameter gradient, and does it
+   require accumulation across microbatches `801-804`?
+
+Do not keep paying the full `1238 -> 1405` replay cost for every hypothesis.
+The intended `T194` posture is:
+
+1. mint one reusable near-boundary diagnostic state with automated stop-by-step
+   control
+1. then run cheap micro-window experiments against only the failing `1405`
+   window and its prefixes
 
 ## Open Risks
 
 - Do not ignore the stale legacy-source diagnostic lesson: future detached
   proofs must reuse a truthful source launch root rather than inheriting stale
   `2/100/2` checkpoint cadence settings.
+- Do not ignore the March 15 operator-control failure: manual sleep-based
+  monitoring was too coarse to stop the resumed lane near `1401`, and it let
+  the run continue into the known `1405` failure boundary.
 - Do not count the projection-enabled diagnostic experiments and the preserved
   no-projection Task 101 lane as one continuous training series.
 - Do not add new Qwen feature logic to central files; use the Story 28 package

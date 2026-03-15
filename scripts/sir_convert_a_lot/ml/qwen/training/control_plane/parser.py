@@ -18,6 +18,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_arg
 
 from .defaults import (
     DEFAULT_BATCH_SIZE,
+    DEFAULT_CAPTURE_DIAGNOSTIC_STATE_TARGET_OPTIMIZER_STEP,
     DEFAULT_CHECKPOINT_INTERVAL_STEPS,
     DEFAULT_DATA_PATH_PROOF_MODE,
     DEFAULT_DATALOADER_NUM_WORKERS,
@@ -199,6 +200,49 @@ def build_parser() -> argparse.ArgumentParser:
         help="Disable the detached resource-monitor companion launch.",
     )
     resume.add_argument(
+        "--skip-build",
+        action="store_true",
+        help="Skip `docker buildx build` if the image already exists.",
+    )
+
+    capture = subparsers.add_parser(
+        "capture-diagnostic-state",
+        help="Resume to one target optimizer step and mint a reusable RCA checkpoint.",
+    )
+    capture.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    capture.add_argument("--launch-root", type=Path, default=None)
+    capture.add_argument("--checkpoint-path", type=Path, default=None)
+    capture.add_argument("--pilot-bundle-root", type=Path, default=None)
+    capture.add_argument(
+        "--target-optimizer-step",
+        type=int,
+        default=DEFAULT_CAPTURE_DIAGNOSTIC_STATE_TARGET_OPTIMIZER_STEP,
+    )
+    capture.add_argument("--checkpoint-interval-steps", type=int, default=1)
+    capture.add_argument("--eval-interval-steps", type=int, default=None)
+    capture.add_argument(
+        "--poll-interval-seconds",
+        type=float,
+        default=DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS,
+    )
+    capture.add_argument("--launch-id", default=None)
+    capture.add_argument(
+        "--resource-monitor-interval-seconds",
+        type=float,
+        default=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    )
+    capture.add_argument(
+        "--resource-monitor-runtime-kind",
+        choices=("rocm", "cuda", "none"),
+        default=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
+    )
+    capture.add_argument("--resource-monitor-duration-seconds", type=float, default=None)
+    capture.add_argument(
+        "--disable-resource-monitor",
+        action="store_true",
+        help="Disable the detached resource-monitor companion launch.",
+    )
+    capture.add_argument(
         "--skip-build",
         action="store_true",
         help="Skip `docker buildx build` if the image already exists.",

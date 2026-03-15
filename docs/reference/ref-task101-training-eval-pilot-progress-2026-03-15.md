@@ -397,6 +397,48 @@ The canonical next root-cause workflow is:
     optimizer step `1401` and replay `1401 -> 1406` with the new stage
     probes
 
+### 2026-03-15: Resume Reached `1405`, But The Planned `1401` Checkpoint Was Missed
+
+- Resume launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task193-20260315t-pre1401-resume-a1`
+- Source checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
+- What happened:
+  - the restored no-projection lane resumed cleanly and advanced through
+    optimizer step `1400`
+  - the operator plan was to stop near `1401` to mint a fresh durable
+    checkpoint before the known failure band
+  - that stop never happened, and the lane was allowed to continue into the
+    known failing boundary at optimizer step `1405`
+- Failure truth at `1405`:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - forward losses were still finite
+  - pre-step parameters and optimizer state were still finite
+- Operator failure:
+  - this was a monitoring and control failure, not a model-side surprise
+  - the run was watched manually with coarse sleep-based polling even though
+    the lane was paying for real eval and export-checkpoint phases on the way
+    to the stop window
+  - that timing assumption was catastrophically wrong for a near-boundary
+    checkpoint mint and caused the planned `1401` checkpoint to be missed
+- Avoidance rule:
+  - do not rely on manual sleep-based timing when the goal is a checkpoint
+    just ahead of a known failure boundary
+  - the next checkpoint-minting attempt must use an explicit automated stop
+    threshold tied to `current_optimizer_step`, with the stop request issued
+    before the target boundary is reached
+  - specifically, use a committed polling/stop surface that requests the stop
+    at or before `1398-1400`; do not wait for `1401` to appear in a human
+    status check
+- Consequence:
+  - no fresh durable checkpoint was minted; `latest_checkpoint.json` still
+    points to `state-step-00001238`
+  - despite that operator failure, the resumed lane still produced the
+    stage-resolved RCA truth we needed: the first non-finite event is
+    `pre_clip`, not `clip_grad_norm`, `post_clip`, or `optimizer.step()`
+
 ### 2026-03-15: Story 28 Delivered
 
 The permanent architecture-hardening lane is no longer future work.
@@ -467,10 +509,14 @@ Do not relaunch the projection-enabled training experiment.
 The next canonical action is a bounded no-projection RCA proof using the same
 truthful bundle and runtime posture as the preserved lane:
 
-1. Mint a fresh diagnostic checkpoint near optimizer step `1401`.
-1. Run `qwen-train diagnose-non-finite` across `1401 -> 1406`.
-1. Use the new stage-separated probes to decide whether the first bad event is
-   `pre_clip`, `clip_grad_norm`, `post_clip`, or `post_step`.
+1. Record the failed `1401` checkpoint-mint attempt as an operator control
+   error and do not treat it as acceptable run handling.
+1. If a fresh near-boundary checkpoint is still required, mint it with an
+   automated stop threshold keyed to `current_optimizer_step`, not manual
+   sleep-based monitoring.
+1. Continue RCA from the now-proven `pre_clip` boundary at optimizer step
+   `1405`, using the captured microbatches and targeted `text_embedding`
+   gradient surface as the active debugging focus.
 
 ## Historical Reference Boundary
 

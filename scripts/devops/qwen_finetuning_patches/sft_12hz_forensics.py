@@ -30,19 +30,33 @@ def build_optimizer_step_forensics_window(
     """Return one JSON-safe forensic window for a completed optimizer step."""
     first_non_finite_tensor = None
     first_non_finite_train_iteration = None
+    first_non_finite_gradient_surface = None
+    first_non_finite_gradient_train_iteration = None
     for microbatch in microbatches:
         candidate = microbatch.get("first_non_finite_tensor")
         if not isinstance(candidate, str):
-            continue
-        first_non_finite_tensor = candidate
-        train_iteration = microbatch.get("train_iteration")
-        if isinstance(train_iteration, int):
-            first_non_finite_train_iteration = train_iteration
-        break
+            pass
+        elif first_non_finite_tensor is None:
+            first_non_finite_tensor = candidate
+            train_iteration = microbatch.get("train_iteration")
+            if isinstance(train_iteration, int):
+                first_non_finite_train_iteration = train_iteration
+        gradient_forensics = microbatch.get("gradient_forensics")
+        if isinstance(gradient_forensics, Mapping) and first_non_finite_gradient_surface is None:
+            gradient_candidate = gradient_forensics.get("first_non_finite_surface")
+            if isinstance(gradient_candidate, str):
+                first_non_finite_gradient_surface = gradient_candidate
+                train_iteration = microbatch.get("train_iteration")
+                if isinstance(train_iteration, int):
+                    first_non_finite_gradient_train_iteration = train_iteration
+        if first_non_finite_tensor is not None and first_non_finite_gradient_surface is not None:
+            break
     return {
         "microbatch_count": len(microbatches),
         "first_non_finite_tensor": first_non_finite_tensor,
         "first_non_finite_train_iteration": first_non_finite_train_iteration,
+        "first_non_finite_gradient_surface": first_non_finite_gradient_surface,
+        "first_non_finite_gradient_train_iteration": (first_non_finite_gradient_train_iteration),
         "microbatches": [dict(microbatch) for microbatch in microbatches],
     }
 
@@ -53,6 +67,7 @@ def build_microbatch_forensics(
     microbatch_index_in_optimizer_step: int,
     batch_provenance: Sequence[BatchProvenanceEntry] | None,
     probes: Sequence[TensorProbe],
+    gradient_forensics: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     """Return one JSON-safe forensic payload for one microbatch."""
     tensor_finiteness = build_tensor_finiteness_payload(probes=probes)
@@ -66,6 +81,7 @@ def build_microbatch_forensics(
         ),
         "tensor_finiteness": tensor_finiteness,
         "first_non_finite_tensor": tensor_finiteness["first_non_finite_tensor"],
+        "gradient_forensics": (None if gradient_forensics is None else dict(gradient_forensics)),
     }
 
 

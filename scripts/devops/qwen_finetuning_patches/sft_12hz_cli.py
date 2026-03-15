@@ -197,6 +197,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pilot_bundle_root", type=str, default=None)
     parser.add_argument("--train_manifest_family", type=str, default=None)
     parser.add_argument("--eval_manifest_family", type=str, default=None)
+    parser.add_argument("--diagnostic_kind", type=str, default=None)
+    parser.add_argument("--diagnostic_start_optimizer_step", type=int, default=None)
+    parser.add_argument("--diagnostic_end_optimizer_step", type=int, default=None)
     return parser.parse_args()
 
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import ContextManager, Protocol
 
 import torch
@@ -27,9 +28,18 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     to_device_with_optional_non_blocking,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_window import (
+    DiagnosticWindowConfig,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_window_artifacts import (
+    write_diagnostic_window_artifact,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
     build_microbatch_forensics,
     build_optimizer_step_forensics_window,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_gradient_rca import (
+    build_gradient_rca_forensics,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_loop_controls import LossObservation
 from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard import (
@@ -127,6 +137,12 @@ class TrainStepPreparedRuntime(Protocol):
     @property
     def eval_dataloader_length(self) -> int: ...
 
+    @property
+    def output_model_path(self) -> Path: ...
+
+    @property
+    def diagnostic_window(self) -> DiagnosticWindowConfig | None: ...
+
 
 @dataclass(frozen=True)
 class TrainStepResult:
@@ -166,6 +182,7 @@ def execute_train_iteration(
     """Execute one dataloader iteration and return the updated loop state."""
     resolved_batch = require_batch_tensors(batch)
     current_train_iteration = train_iterations_completed + 1
+    current_optimizer_step = optimizer_steps_completed + 1
     with accelerator.accumulate(model):
         grad_norm: torch.Tensor | float | None = None
         pre_step_probes = None
@@ -193,6 +210,13 @@ def execute_train_iteration(
             input_text_ids = input_ids[:, :, 0]
             input_codec_ids = input_ids[:, :, 1]
             input_text_embedding = text_embedding(input_text_ids) * text_embedding_mask
+            diagnostic_window = getattr(prepared, "diagnostic_window", None)
+            diagnostic_step_active = (
+                diagnostic_window is not None
+                and diagnostic_window.includes_optimizer_step(current_optimizer_step)
+            )
+            if diagnostic_step_active:
+                input_text_embedding.retain_grad()
             input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
             input_codec_embedding[:, 6, :] = speaker_embedding
             fused_auxiliary_embedding = fuse_auxiliary_codebook_embeddings(
@@ -219,6 +243,16 @@ def execute_train_iteration(
             loss = outputs.loss + 0.3 * sub_talker_loss
             accelerator.backward(loss)
             completed_optimizer_step = accelerator.sync_gradients
+            gradient_forensics = (
+                None
+                if not diagnostic_step_active
+                else build_gradient_rca_forensics(
+                    model=model,
+                    input_text_ids=input_text_ids,
+                    input_text_embedding=input_text_embedding,
+                    batch_provenance=batch_provenance,
+                )
+            )
             if completed_optimizer_step:
                 pre_step_probes = capture_pre_step_optimizer_boundary_probes(
                     model=model,
@@ -238,6 +272,7 @@ def execute_train_iteration(
                     train_iteration=current_train_iteration,
                     microbatch_index_in_optimizer_step=len(optimizer_step_microbatches) + 1,
                     batch_provenance=batch_provenance,
+                    gradient_forensics=gradient_forensics,
                     probes=[
                         ("ref_mels", ref_mels_on_device),
                         ("speaker_embedding", speaker_embedding),
@@ -253,6 +288,23 @@ def execute_train_iteration(
                     ],
                 ),
             ]
+            if (
+                diagnostic_step_active
+                and accelerator.is_main_process
+                and hasattr(prepared, "output_model_path")
+            ):
+                assert diagnostic_window is not None
+                write_diagnostic_window_artifact(
+                    output_model_path=prepared.output_model_path,
+                    optimizer_step=current_optimizer_step,
+                    current_train_iteration=current_train_iteration,
+                    diagnostic_kind=diagnostic_window.kind,
+                    start_optimizer_step=diagnostic_window.start_optimizer_step,
+                    end_optimizer_step=diagnostic_window.end_optimizer_step,
+                    step_forensics=build_optimizer_step_forensics_window(
+                        microbatches=optimizer_step_microbatches,
+                    ),
+                )
         step_forensics = None
         if completed_optimizer_step:
             step_forensics = build_optimizer_step_forensics_window(
@@ -263,7 +315,7 @@ def execute_train_iteration(
             pre_clip_failure = build_pre_step_optimizer_boundary_failure(
                 model=model,
                 optimizer=optimizer,
-                optimizer_step=optimizer_steps_completed + 1,
+                optimizer_step=current_optimizer_step,
                 current_epoch=epoch,
                 current_train_iteration=current_train_iteration,
                 loss=loss,
@@ -276,7 +328,7 @@ def execute_train_iteration(
                 raise pre_clip_failure
             post_clip_gradient_probes = capture_targeted_gradient_probes(model=model)
             clip_boundary_failure = build_clip_boundary_optimizer_failure(
-                optimizer_step=optimizer_steps_completed + 1,
+                optimizer_step=current_optimizer_step,
                 current_epoch=epoch,
                 current_train_iteration=current_train_iteration,
                 loss=loss,
@@ -308,7 +360,7 @@ def execute_train_iteration(
         post_step_failure = build_post_step_optimizer_boundary_failure(
             model=model,
             optimizer=optimizer,
-            optimizer_step=optimizer_steps_completed + 1,
+            optimizer_step=current_optimizer_step,
             current_epoch=epoch,
             current_train_iteration=current_train_iteration,
             loss=loss,

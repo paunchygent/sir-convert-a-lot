@@ -10,6 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
+  - docs/backlog/tasks/task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405.md
   - docs/backlog/current.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -62,6 +63,11 @@ discarded progress.
   lane as "wrong graph" merely because it omitted `text_projection`.
 - [ ] One bounded Hemma proof mints a fresh diagnostic checkpoint near the
   failure boundary and replays the `1401 -> 1406` window with the new probes.
+  - March 15 operator note: the first attempt failed operationally because the
+    resumed lane was monitored manually with coarse sleep-based polling and was
+    allowed to run into the `1405` boundary before the planned stop near
+    `1401`; a retry must use an automated stop threshold keyed to
+    `current_optimizer_step`.
 
 ## Acceptance Criteria
 
@@ -80,6 +86,10 @@ discarded progress.
 - [ ] One bounded Hemma proof from a fresh diagnostic checkpoint near optimizer
   step `1401` writes machine-readable stage truth for the first non-finite
   event.
+  - Current partial truth: the resumed no-projection lane already proved the
+    first bad stage at optimizer step `1405` is `pre_clip`, with
+    `text_embedding.weight.grad` as the first non-finite surface, but it did
+    not mint the intended fresh near-`1401` checkpoint.
 
 ## Validation
 

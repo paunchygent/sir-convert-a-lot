@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_arg
 from scripts.sir_convert_a_lot.ml.qwen.training.diagnostic_artifacts import (
     build_diagnostic_replay_bundle,
     diagnostic_replay_bundle_path,
+    diagnostic_window_artifact_dir,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     StatusReporter,
@@ -181,6 +182,7 @@ def main() -> int:
                 if getattr(args, "diagnostic_end_optimizer_step", None) is None
                 else int(getattr(args, "diagnostic_end_optimizer_step"))
             ),
+            "window_artifact_dir": diagnostic_window_artifact_dir(output_dir).as_posix(),
             "replay_bundle_path": diagnostic_replay_bundle_path(output_dir).as_posix(),
         }
     )
@@ -291,6 +293,9 @@ def main() -> int:
             ),
             train_manifest_family=args.train_manifest_family,
             eval_manifest_family=args.eval_manifest_family,
+            diagnostic_kind=args.diagnostic_kind,
+            diagnostic_start_optimizer_step=args.diagnostic_start_optimizer_step,
+            diagnostic_end_optimizer_step=args.diagnostic_end_optimizer_step,
         )
 
         training_summary = sft_12hz.train_with_args(

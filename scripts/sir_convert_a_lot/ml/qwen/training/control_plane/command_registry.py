@@ -11,6 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
+from .capture_diagnostic_state_use_case import handle_capture_diagnostic_state
 from .diagnose_use_case import handle_diagnose
 from .eval_use_case import handle_eval
 from .launch_use_case import handle_launch
@@ -25,6 +26,7 @@ def dispatch_command(args) -> int:
     handlers = {
         "launch": handle_launch,
         "resume": handle_resume,
+        "capture-diagnostic-state": handle_capture_diagnostic_state,
         "eval": handle_eval,
         "diagnose-non-finite": handle_diagnose,
         "schedule": handle_schedule,

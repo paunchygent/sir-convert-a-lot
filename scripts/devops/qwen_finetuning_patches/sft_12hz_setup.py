@@ -49,6 +49,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     DataloaderTuning,
     resolve_dataloader_tuning,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_window import (
+    DiagnosticWindowConfig,
+    build_diagnostic_window_config,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import (
     DEFAULT_EVAL_INTERVAL_STEPS,
 )
@@ -220,6 +224,7 @@ class PreparedTrainingRun:
     torch_profiler_session: TorchProfilerSession
     tracker_config: TrainingTrackerConfig
     talker_runtime: dict[str, object]
+    diagnostic_window: DiagnosticWindowConfig | None
     heartbeat_policy: TrainingHeartbeatPolicy
     loss_observer: AsyncLossObserver
     finite_loss_guard: FiniteLossGuardState
@@ -385,6 +390,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         attn_implementation="flash_attention_2",
     )
     talker_runtime = talker_runtime_fingerprint(qwen3tts.model)
+    diagnostic_window = build_diagnostic_window_config(args)
     config = AutoConfig.from_pretrained(model_path)
     bundle_summary = (
         None
@@ -475,6 +481,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         torch_profiler_session=torch_profiler_session,
         tracker_config=tracker_config,
         talker_runtime=talker_runtime,
+        diagnostic_window=diagnostic_window,
         heartbeat_policy=heartbeat_policy,
         loss_observer=loss_observer,
         finite_loss_guard=finite_loss_guard,

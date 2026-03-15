@@ -101,18 +101,29 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
       `clip_grad_norm`, `post_clip`, and `post_step`
     - `state-step-00001238` is back in standing as the canonical
       no-projection RCA checkpoint for the preserved Task 101 lane
-    - the next live proof should mint a fresh diagnostic checkpoint near
-      optimizer step `1401` and replay `1401 -> 1406`
+  - `T194` now owns the next RCA narrowing slice:
+    - use the captured `1405` no-projection failure artifact rather than
+      another blind training retry
+    - identify the exact `text_embedding` rows and token ids behind the first
+      `pre_clip` non-finite gradient
+    - determine whether corruption appears on `input_text_embedding` gradients
+      before parameter gradients and whether accumulation across
+      microbatches `801-804` is required
 
 ## Next Actions
 
 - Keep the preserved Task 101 lane on the restored no-projection fine-tuning
   graph; do not relaunch the projection-enabled experiment.
-- Mint a fresh diagnostic checkpoint near optimizer step `1401` on Hemma so
-  RCA iterations no longer have to replay from `1238`.
-- Run one bounded `qwen-train diagnose-non-finite` proof from that fresh
-  checkpoint across `1401 -> 1406` and inspect whether the first bad stage is
-  `pre_clip`, `clip_grad_norm`, `post_clip`, or `post_step`.
+- Start `T194` as the active RCA task for the `1405` no-projection boundary.
+- Mint one reusable near-boundary diagnostic state with automated stop-by-step
+  control, then reuse that state for cheap `1405` micro-window experiments
+  instead of replaying the full `1238 -> 1405` lane for every hypothesis.
+- Use the captured `801-804` microbatch window to map the first non-finite
+  `text_embedding` gradient rows back to token ids and decoded text context.
+- Add one bounded RCA surface that proves whether
+  `input_text_embedding` gradients go non-finite before the parameter
+  gradient and whether the corruption requires accumulation across the full
+  optimizer step.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in
