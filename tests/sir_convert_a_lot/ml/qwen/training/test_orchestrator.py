@@ -290,6 +290,111 @@ def test_inspect_detached_training_reads_container_status_and_reports(
     assert status.logs_tail == "training log tail"
 
 
+def test_inspect_detached_training_hides_stale_resumed_run_artifacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Running resumed launches should not surface stale pre-launch run-root artifacts."""
+    run_root = tmp_path / "run"
+    run_root.mkdir(parents=True, exist_ok=True)
+    (run_root / "status.json").write_text(
+        json.dumps(
+            {
+                "status": "failed",
+                "updated_at": "2026-03-15T09:56:58Z",
+                "current_phase": "failed",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (run_root / "report.json").write_text(
+        json.dumps(
+            {
+                "status": "failed",
+                "generated_at": "2026-03-15T09:56:58Z",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    launch = DetachedLaunch(
+        generated_at="2026-03-15T10:21:50Z",
+        launch_id="resume-launch",
+        container_name="resume-container",
+        container_id="container-id",
+        repo_root="/home/paunchygent/apps/sir-convert-a-lot",
+        run_root=run_root.as_posix(),
+        pilot_bundle_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen-bundle",
+        train_jsonl="/srv/scratch/sir-convert-a-lot/build/reference/qwen-bundle/manifests/swedish_pilot_train.prepared.jsonl",
+        eval_jsonl="/srv/scratch/sir-convert-a-lot/build/reference/qwen-bundle/manifests/swedish_checkpoint_dev.prepared.jsonl",
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
+        resumed_from_checkpoint_path=(
+            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/"
+            "task101-20260313t102144z/checkpoints/state-step-00001236"
+        ),
+        settings=TrainingSettingsSnapshot(
+            output_root="/srv/scratch/sir-convert-a-lot/build/verification/qwen-training",
+            image="sir-convert-a-lot-qwen-finetune-hemma:latest",
+            hf_cache_dir="/srv/scratch/sir-convert-a-lot/cache/huggingface",
+            hf_cache_home_mount="/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+            scratch_build_root="/srv/scratch/sir-convert-a-lot/build",
+            scratch_build_home_mount="/home/paunchygent/.data/sir-convert-a-lot/build",
+            pilot_bundle_root="/srv/scratch/sir-convert-a-lot/build/reference/qwen-bundle",
+            runs_root="/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune",
+            model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+            batch_size=8,
+            throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+            lr=2e-5,
+            num_epochs=1,
+            max_steps=8,
+            checkpoint_interval_steps=500,
+            eval_interval_steps=100,
+            durable_checkpoint_retention=3,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
+        ),
+        command=["sudo", "-n", "docker", "run", "-d"],
+    )
+
+    def fake_docker_checked(args: list[str], *, label: str) -> str:
+        if args[0] == "inspect":
+            return json.dumps(
+                [
+                    {
+                        "Id": "container-id",
+                        "State": {
+                            "Status": "running",
+                            "Running": True,
+                            "ExitCode": 0,
+                            "OOMKilled": False,
+                            "StartedAt": "2026-03-15T10:21:49.938119681Z",
+                            "FinishedAt": "0001-01-01T00:00:00Z",
+                        },
+                    }
+                ]
+            )
+        if args[0] == "logs":
+            return ""
+        raise AssertionError(f"Unexpected docker args: {args} ({label})")
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.training.orchestrator.docker_checked",
+        fake_docker_checked,
+    )
+
+    status = inspect_detached_training(launch)
+
+    assert status.running is True
+    assert status.pilot_status_found is False
+    assert status.pilot_status is None
+    assert status.pilot_report_found is False
+    assert status.pilot_report is None
+
+
 def test_resolve_launch_root_uses_latest_pointer(tmp_path: Path) -> None:
     """Status inspection should reuse the latest recorded launch when present."""
     output_root = tmp_path / "verification"

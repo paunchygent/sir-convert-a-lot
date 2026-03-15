@@ -456,6 +456,12 @@ def inspect_detached_training(launch: DetachedLaunch) -> DetachedStatus:
     pilot_status = _load_optional_json(run_root / "status.json")
     pilot_report = _load_optional_json(run_root / "report.json")
     latest_checkpoint = _load_optional_json(run_root / "latest_checkpoint.json")
+    pilot_status, pilot_report = _filter_stale_resumed_run_artifacts(
+        launch,
+        state=state,
+        pilot_status=pilot_status,
+        pilot_report=pilot_report,
+    )
     phase_history: list[Mapping[str, object]] | None = None
     if pilot_status is not None:
         raw_phase_history = pilot_status.get("phase_history")
@@ -526,4 +532,81 @@ def _load_optional_json(path: Path) -> dict[str, object] | None:
         payload = json.loads(path.read_text(encoding="utf-8"))
         return payload if isinstance(payload, dict) else None
     except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _filter_stale_resumed_run_artifacts(
+    launch: DetachedLaunch,
+    *,
+    state: dict[str, object],
+    pilot_status: dict[str, object] | None,
+    pilot_report: dict[str, object] | None,
+) -> tuple[dict[str, object] | None, dict[str, object] | None]:
+    """Hide stale run-root artifacts while a resumed container is still warming up."""
+    if launch.resumed_from_checkpoint_path is None or not bool(state.get("Running")):
+        return pilot_status, pilot_report
+    container_started_at = _parse_rfc3339_utc(str(state.get("StartedAt", "")))
+    if container_started_at is None:
+        return pilot_status, pilot_report
+    filtered_status = pilot_status
+    filtered_report = pilot_report
+    if _artifact_timestamp_before_container_start(
+        pilot_status,
+        timestamp_key="updated_at",
+        container_started_at=container_started_at,
+    ):
+        filtered_status = None
+    if _artifact_timestamp_before_container_start(
+        pilot_report,
+        timestamp_key="generated_at",
+        container_started_at=container_started_at,
+    ):
+        filtered_report = None
+    return filtered_status, filtered_report
+
+
+def _artifact_timestamp_before_container_start(
+    payload: dict[str, object] | None,
+    *,
+    timestamp_key: str,
+    container_started_at: datetime,
+) -> bool:
+    """Return whether one artifact timestamp predates the current resumed container."""
+    if payload is None:
+        return False
+    raw_timestamp = payload.get(timestamp_key)
+    if not isinstance(raw_timestamp, str):
+        return False
+    parsed_timestamp = _parse_rfc3339_utc(raw_timestamp)
+    if parsed_timestamp is None:
+        return False
+    return parsed_timestamp < container_started_at
+
+
+def _parse_rfc3339_utc(raw_timestamp: str) -> datetime | None:
+    """Parse one RFC3339 timestamp into UTC, tolerating nanosecond precision."""
+    normalized = raw_timestamp.strip()
+    if normalized == "":
+        return None
+    if normalized.endswith("Z"):
+        normalized = f"{normalized[:-1]}+00:00"
+    if "." not in normalized:
+        try:
+            return datetime.fromisoformat(normalized).astimezone(UTC)
+        except ValueError:
+            return None
+    prefix, suffix = normalized.split(".", maxsplit=1)
+    timezone_index = suffix.find("+")
+    if timezone_index == -1:
+        timezone_index = suffix.find("-")
+    if timezone_index == -1:
+        fractional_seconds = suffix
+        timezone_suffix = ""
+    else:
+        fractional_seconds = suffix[:timezone_index]
+        timezone_suffix = suffix[timezone_index:]
+    normalized = f"{prefix}.{fractional_seconds[:6]}{timezone_suffix}"
+    try:
+        return datetime.fromisoformat(normalized).astimezone(UTC)
+    except ValueError:
         return None

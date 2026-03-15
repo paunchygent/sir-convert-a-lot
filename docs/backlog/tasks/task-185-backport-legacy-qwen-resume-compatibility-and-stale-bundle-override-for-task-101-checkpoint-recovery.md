@@ -31,6 +31,8 @@ optimizer step `1236` by:
   settings fields
 - allowing operators to override a stale bundle root at resume time
 - failing closed when the effective replacement bundle is missing or malformed
+- suppressing stale pre-resume status/report artifacts while a resumed launch is
+  still warming up on the reused run root
 - proving the behavior with regression tests before the Hemma retry
 
 ## PR Scope
@@ -39,6 +41,8 @@ optimizer step `1236` by:
 - Resume CLI support for overriding `pilot_bundle_root`.
 - Fail-closed preflight validation of the effective bundle root before detached
   relaunch.
+- Detached status inspection truthfulness for resumed running launches that
+  reuse a prior run root.
 - Focused test coverage for legacy launch recovery and stale-bundle rejection.
 - Docs/status updates for the recovery slice.
 
@@ -50,6 +54,8 @@ optimizer step `1236` by:
   resumed launch settings.
 - [ ] Resume fails before launch when the effective bundle root is missing or
   incomplete.
+- [ ] Resumed running launches do not surface stale pre-resume `status.json` or
+  `report.json` payloads as if they described the current container.
 - [ ] Regression tests cover both successful override-based recovery and
   fail-closed stale-bundle behavior.
 - [ ] Hemma resume is retried against the `1236`-step checkpoint after local
@@ -61,6 +67,8 @@ optimizer step `1236` by:
   launch JSON editing.
 - [ ] Operators receive a clear bundle-integrity or missing-path failure before
   any detached container launch if the bundle override is wrong.
+- [ ] Detached status/report inspection does not contradict the active resumed
+  container with pre-resume artifacts from the reused run root.
 - [ ] The compatibility fallback does not change current canonical launch
   defaults for new runs.
 - [ ] Focused Qwen training orchestration tests pass with the new compatibility
