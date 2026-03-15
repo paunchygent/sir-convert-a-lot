@@ -129,6 +129,7 @@ DEFAULT_TORCH_PROFILER_PROFILE_MEMORY = True
 DEFAULT_TORCH_PROFILER_WITH_STACK = False
 DEFAULT_ROCM_PROFILER_ENABLED = False
 DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS = 15.0
+LEGACY_SMALL_BATCH_THROUGHPUT_PROFILE_LABEL = "hemma-throughput-balanced-v1"
 TrainingCommand = Literal["launch", "resume", "eval", "schedule", "status", "stop"]
 
 
@@ -325,6 +326,7 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     resume.add_argument("--launch-root", type=Path, default=None)
     resume.add_argument("--checkpoint-path", type=Path, default=None)
+    resume.add_argument("--pilot-bundle-root", type=Path, default=None)
     resume.add_argument("--launch-id", default=None)
     resume.add_argument(
         "--resource-monitor-interval-seconds",
@@ -417,6 +419,10 @@ def load_training_launch(launch_root_path: Path) -> DetachedLaunch:
     """Load one previously recorded detached training launch payload."""
     return load_launch(
         launch_root_path,
+        default_throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
+        default_legacy_small_batch_throughput_profile_label=(
+            LEGACY_SMALL_BATCH_THROUGHPUT_PROFILE_LABEL
+        ),
         default_durable_checkpoint_retention=DEFAULT_DURABLE_CHECKPOINT_RETENTION,
         default_durable_checkpoint_min_free_bytes=DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES,
         default_dataloader_num_workers=DEFAULT_DATALOADER_NUM_WORKERS,
@@ -786,6 +792,17 @@ def main(argv: list[str] | None = None) -> int:
         source_launch = load_training_launch(source_launch_root)
         source_repo_root = Path(source_launch.repo_root)
         settings = settings_from_snapshot(source_launch.settings)
+        effective_bundle_root = (
+            settings.pilot_bundle_root
+            if args.pilot_bundle_root is None
+            else Path(args.pilot_bundle_root)
+        )
+        settings = replace(settings, pilot_bundle_root=effective_bundle_root)
+        ensure_training_bundle_exists(
+            settings.pilot_bundle_root,
+            train_manifest_family=settings.train_manifest_family,
+            eval_manifest_family=settings.eval_manifest_family,
+        )
         dockerfile_path = Path(source_launch.dockerfile_path or DEFAULT_DOCKERFILE_PATH)
         build_performed, image_id = prepare_qwen_image(
             argparse.Namespace(

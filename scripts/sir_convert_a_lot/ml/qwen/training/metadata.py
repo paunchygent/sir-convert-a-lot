@@ -318,6 +318,8 @@ def write_latest_pointer(output_root: Path, launch_root: Path) -> None:
 def load_launch(
     launch_root: Path,
     *,
+    default_throughput_profile_label: str,
+    default_legacy_small_batch_throughput_profile_label: str,
     default_durable_checkpoint_retention: int,
     default_durable_checkpoint_min_free_bytes: int,
     default_dataloader_num_workers: int,
@@ -351,6 +353,7 @@ def load_launch(
     settings_payload = payload.get("settings")
     if not isinstance(settings_payload, dict):
         raise SystemExit("Detached launch metadata lacked a valid `settings` object.")
+    batch_size = _required_int(settings_payload, "batch_size")
     settings_snapshot = TrainingSettingsSnapshot(
         output_root=_required_str(settings_payload, "output_root"),
         image=_required_str(settings_payload, "image"),
@@ -363,8 +366,15 @@ def load_launch(
         model_id=_required_str(settings_payload, "model_id"),
         train_manifest_family=_required_str(settings_payload, "train_manifest_family"),
         eval_manifest_family=_required_str(settings_payload, "eval_manifest_family"),
-        batch_size=_required_int(settings_payload, "batch_size"),
-        throughput_profile_label=_required_str(settings_payload, "throughput_profile_label"),
+        batch_size=batch_size,
+        throughput_profile_label=_compat_throughput_profile_label(
+            settings_payload,
+            batch_size=batch_size,
+            default_throughput_profile_label=default_throughput_profile_label,
+            default_legacy_small_batch_throughput_profile_label=(
+                default_legacy_small_batch_throughput_profile_label
+            ),
+        ),
         lr=_required_float(settings_payload, "lr"),
         num_epochs=_required_int(settings_payload, "num_epochs"),
         max_steps=_required_int(settings_payload, "max_steps"),
@@ -554,6 +564,24 @@ def resolve_launch_root(output_root: Path, launch_root_arg: Path | None) -> Path
 
 
 # --- Internal Helpers ---
+
+
+def _compat_throughput_profile_label(
+    payload: dict[str, object],
+    *,
+    batch_size: int,
+    default_throughput_profile_label: str,
+    default_legacy_small_batch_throughput_profile_label: str,
+) -> str:
+    """Return one throughput profile label with legacy launch compatibility."""
+    raw_value = payload.get("throughput_profile_label")
+    if raw_value is None:
+        if batch_size < 8:
+            return default_legacy_small_batch_throughput_profile_label
+        return default_throughput_profile_label
+    if not isinstance(raw_value, str):
+        raise SystemExit("Metadata returned malformed `throughput_profile_label`.")
+    return raw_value
 
 
 def _required_str(payload: dict[str, object], key: str) -> str:
