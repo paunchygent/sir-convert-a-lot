@@ -68,9 +68,16 @@ class _FakeTalker:
 
     def __init__(self) -> None:
         self.model = _FakeTalkerModel()
+        self.text_projection: object | None = None
         self.code_predictor = SimpleNamespace(
             get_input_embeddings=lambda: torch.zeros(1, 1, 4, dtype=torch.float32)
         )
+
+    def get_input_embeddings(self) -> object:
+        return self.model.codec_embedding
+
+    def get_text_embeddings(self) -> object:
+        return self.model.text_embedding
 
     def __call__(self, *, inputs_embeds, attention_mask, labels, output_hidden_states):
         del attention_mask, labels, output_hidden_states
@@ -97,6 +104,17 @@ class _FakeModel:
     def speaker_encoder(self, ref_mels: torch.Tensor) -> torch.Tensor:
         batch_size = ref_mels.shape[0]
         return torch.zeros((batch_size, 4), dtype=torch.float32)
+
+
+class _ProjectionRecorder:
+    """Record whether the talker-level text projection was applied."""
+
+    def __init__(self) -> None:
+        self.called = False
+
+    def __call__(self, values: torch.Tensor) -> torch.Tensor:
+        self.called = True
+        return values + 1.0
 
 
 def test_execute_train_iteration_skips_optimizer_step_on_pre_step_failure(
@@ -184,3 +202,97 @@ def test_execute_train_iteration_skips_optimizer_step_on_pre_step_failure(
         )
 
     assert optimizer.step_called is False
+
+
+def test_execute_train_iteration_uses_talker_level_text_projection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Train-step runtime should apply the upstream talker-level text projection."""
+    optimizer = _FakeOptimizer()
+    accelerator = _FakeAccelerator()
+    prepared = SimpleNamespace(
+        torch_profiler_session=SimpleNamespace(phase=lambda name: nullcontext()),
+        effective_dataloader_tuning=SimpleNamespace(non_blocking_transfer=False),
+        loss_observer=SimpleNamespace(submit=lambda **kwargs: None, drain_ready=lambda force: []),
+        heartbeat_policy=SimpleNamespace(should_emit_train_update=lambda step: False),
+        finite_loss_guard=SimpleNamespace(observe=lambda observation: None),
+        ref_mel_cache=SimpleNamespace(payload=lambda: {"enabled": True}),
+        dataloader_length=128,
+        eval_dataloader_length=8,
+    )
+    batch = {
+        "input_ids": torch.zeros((1, 8, 2), dtype=torch.long),
+        "codec_ids": torch.zeros((1, 8), dtype=torch.long),
+        "ref_mels": torch.zeros((1, 4, 4), dtype=torch.float32),
+        "batch_provenance": [{"row_id": "L99"}],
+        "text_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
+        "codec_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
+        "attention_mask": torch.ones((1, 8), dtype=torch.long),
+        "codec_0_labels": torch.zeros((1, 8), dtype=torch.long),
+        "codec_mask": torch.ones((1, 8), dtype=torch.bool),
+    }
+    model = _FakeModel()
+    projection = _ProjectionRecorder()
+    model.talker.text_projection = projection
+
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.require_batch_tensors",
+        lambda payload: payload,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.to_device_with_optional_non_blocking",
+        lambda tensor, **kwargs: tensor,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.fuse_auxiliary_codebook_embeddings",
+        lambda **kwargs: torch.zeros((1, 8, 4), dtype=torch.float32),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_microbatch_forensics",
+        lambda **kwargs: {"row_id": "L99"},
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_optimizer_step_forensics_window",
+        lambda microbatches: {"microbatches": list(microbatches)},
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.capture_pre_step_optimizer_boundary_probes",
+        lambda **kwargs: SimpleNamespace(
+            parameter_probes={},
+            gradient_probes={},
+            optimizer_state_probes={},
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_pre_step_optimizer_boundary_failure",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_post_step_optimizer_boundary_failure",
+        lambda **kwargs: None,
+    )
+
+    result = execute_train_iteration(
+        accelerator=accelerator,
+        prepared=prepared,
+        model=model,
+        optimizer=optimizer,
+        epoch=5,
+        batch=batch,
+        train_iterations_completed=803,
+        optimizer_steps_completed=1404,
+        last_loss=3.9,
+        smoothed_loss=3.7,
+        latest_eval_loss=6.57,
+        best_eval_loss=6.57,
+        best_eval_step=1300,
+        eval_runs_completed=1,
+        latest_durable_checkpoint=None,
+        emitted_train_progress=True,
+        optimizer_step_microbatches=[],
+        checkpoint_interval_steps=500,
+        progress_callback=None,
+    )
+
+    assert projection.called is True
+    assert result.completed_optimizer_step is True

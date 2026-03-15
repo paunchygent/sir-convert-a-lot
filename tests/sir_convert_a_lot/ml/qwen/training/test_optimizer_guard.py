@@ -65,6 +65,7 @@ def test_pre_step_guard_blocks_non_finite_grad_norm() -> None:
     payload = error.payload()
     assert payload["pre_step_gradient_probes"] is not None
     assert payload["pre_step_parameter_probes"] is not None
+    assert "text_projection.weight" in error.targeted_parameter_names
 
 
 def test_pre_step_guard_blocks_non_finite_targeted_gradient() -> None:
@@ -72,7 +73,7 @@ def test_pre_step_guard_blocks_non_finite_targeted_gradient() -> None:
     model = _FakeQwenModel(embedding_dim=4)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
     _assign_finite_gradients(model)
-    text_projection_grad = model.talker.model.text_projection.weight.grad
+    text_projection_grad = model.talker.text_projection.weight.grad
     assert text_projection_grad is not None
     text_projection_grad.fill_(float("nan"))
     loss, main_loss, sub_talker_loss = _loss_tensors()

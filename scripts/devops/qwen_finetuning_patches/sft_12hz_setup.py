@@ -131,7 +131,6 @@ class TalkerModelProtocol(Protocol):
 
     text_embedding: EmbeddingLayerProtocol
     codec_embedding: EmbeddingLayerProtocol
-    text_projection: ProjectionLayerProtocol
 
 
 class TalkerOutputsProtocol(Protocol):
@@ -146,6 +145,13 @@ class TalkerProtocol(Protocol):
 
     model: TalkerModelProtocol
     code_predictor: CodePredictorProtocol
+    text_projection: ProjectionLayerProtocol
+
+    def get_input_embeddings(self) -> object:
+        """Return the canonical codec/input embedding surface."""
+
+    def get_text_embeddings(self) -> object:
+        """Return the canonical text embedding surface."""
 
     def __call__(
         self,

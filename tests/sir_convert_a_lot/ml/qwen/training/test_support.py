@@ -298,7 +298,6 @@ class _FakeTalkerModel(torch.nn.Module):
         super().__init__()
         self.text_embedding = _FakeEmbedding(embedding_dim)
         self.codec_embedding = _FakeEmbedding(embedding_dim)
-        self.text_projection = torch.nn.Linear(embedding_dim, embedding_dim)
 
 
 @dataclass
@@ -315,7 +314,16 @@ class _FakeTalker(torch.nn.Module):
     def __init__(self, embedding_dim: int) -> None:
         super().__init__()
         self.model = _FakeTalkerModel(embedding_dim)
+        self.text_projection = torch.nn.Linear(embedding_dim, embedding_dim)
         self.code_predictor = _FakeCodePredictor(embedding_dim)
+
+    def get_input_embeddings(self) -> _FakeEmbedding:
+        """Mirror the upstream talker codec/input embedding accessor."""
+        return self.model.codec_embedding
+
+    def get_text_embeddings(self) -> _FakeEmbedding:
+        """Mirror the upstream talker text-embedding accessor."""
+        return self.model.text_embedding
 
     def forward(
         self,

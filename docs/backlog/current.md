@@ -24,8 +24,8 @@ labels:
 ## Context
 
 Epic 08 is the active lane. The current repo focus is no longer broad Task 101
-bring-up; it is bounded closure on Story 26 and `T186`, with live operator
-truth tracked in
+bring-up; it is bounded closure on Story 26 after the completed `T186` proof,
+with live operator truth tracked in
 `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
 
 Story 28 / `T187-T191` is delivered and now part of core operating policy:
@@ -52,19 +52,29 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   - The later instrumented replay proved the remaining bug is at the
     optimizer boundary: step `1405` already had non-finite `grad_norm`, and
     step `1406` entered with `input_text_embedding` already poisoned.
-  - `T186` now owns the remaining root-cause and fail-closed diagnostic work.
+  - `T186` landed the root-cause and fail-closed diagnostic proof slice.
   - Story 28 / `T187-T191` landed the permanent SRP/DDD architecture split.
   - `T192` added the fast ML gate lane:
     - `pdm run test-ml`
     - `pdm run typecheck-ml`
     - Qwen ML pytest now uses `--import-mode=importlib` so duplicate test
       basenames do not break collection from repo root.
+  - The canonical guarded Hemma proof completed at launch root
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T180643Z`.
+  - That proof reused the truthful `500/100/3` source launch root
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T110545Z`
+    and proved fail-closed behavior at optimizer step `1405` with
+    `trigger_reason=pre_step_non_finite_grad_norm`,
+    `optimizer_step_attempted=false`, and
+    `optimizer_step_completed=false`.
+  - `text_embedding.weight` and its optimizer state stayed finite pre-step
+    while `text_embedding.weight.grad` was already non-finite, which closes
+    `T186` as the optimizer-boundary proof slice.
 
 ## Next Actions
 
-- Run one detached Hemma `qwen-train diagnose-non-finite` proof from
-  `state-step-00001238`.
-- Confirm the guarded diagnostic lane stops before applying the corrupt update.
+- Use the completed `T186` proof to decide the next bounded `T179`
+  stability-retry slice rather than relaunching broad training blindly.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in

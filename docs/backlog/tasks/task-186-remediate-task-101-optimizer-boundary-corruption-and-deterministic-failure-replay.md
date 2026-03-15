@@ -2,7 +2,7 @@
 id: task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay
 title: Remediate Task 101 optimizer-boundary corruption and deterministic failure replay
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-15'
 last_updated: '2026-03-15'
@@ -148,10 +148,10 @@ forensics.” It is:
   - optimizer step,
   - targeted parameter family, and
   - whether the optimizer step was skipped or completed
-- [ ] One bounded Hemma `diagnose-non-finite` run from
+- [x] One bounded Hemma `diagnose-non-finite` run from
   `state-step-00001238` writes a clear machine-readable root-cause report
   for the failing window.
-- [ ] After the guard lands, rerunning the same detached diagnostic surface
+- [x] After the guard lands, rerunning the same detached diagnostic surface
   proves the lane stops before weight corruption rather than after it.
 
 ## Validation
@@ -163,7 +163,7 @@ forensics.” It is:
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] One detached Hemma `qwen-train diagnose-non-finite` proof exists under
+- [x] One detached Hemma `qwen-train diagnose-non-finite` proof exists under
   `build/verification/`.
 
 ## Current Progress
@@ -177,9 +177,26 @@ forensics.” It is:
 - Story 28 / `T187-T191` is now delivered, so `T186` continues only on the
   optimizer-boundary remediation and Hemma proof surfaces rather than
   architecture hardening.
+- The canonical guarded proof launch root is
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T180643Z`.
+- That proof reused the truthful `500/100/3` source launch root
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T110545Z`
+  instead of the stale legacy launch metadata that still inherited `2/100/2`.
+- `status.json`, `report.json`, and
+  `diagnostic_replay_bundle.json` agree that optimizer step `1405` failed
+  closed with `trigger_reason=pre_step_non_finite_grad_norm`,
+  `first_non_finite_surface=grad_norm`,
+  `optimizer_step_attempted=false`, and
+  `optimizer_step_completed=false`.
+- The same proof shows `text_embedding.weight` and its optimizer state remained
+  finite before the update while `text_embedding.weight.grad` was already
+  non-finite, which is the acceptance signal that the lane stopped before
+  applying the corrupt optimizer update.
+- `T186` now serves as the completed prerequisite proof slice for the next
+  bounded `T179` decision.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
+- [x] Implementation complete
+- [x] Validation complete
 - [x] Docs updated

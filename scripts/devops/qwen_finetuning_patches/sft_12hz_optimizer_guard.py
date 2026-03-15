@@ -23,6 +23,10 @@ import torch
 from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
     build_tensor_finiteness_payload,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
+    resolve_talker_text_embedding_module,
+    resolve_talker_text_projection_module,
+)
 
 
 @dataclass(frozen=True)
@@ -302,14 +306,12 @@ def build_post_step_optimizer_boundary_failure(
 
 def _targeted_parameter_surfaces(model: object) -> list[_TargetedParameterSurface]:
     """Return the targeted text-embedding / text-projection parameter surfaces."""
-    talker = getattr(model, "talker", None)
-    talker_model = None if talker is None else getattr(talker, "model", None)
-    if talker_model is None:
+    text_embedding = resolve_talker_text_embedding_module(model)
+    if text_embedding is None:
         return []
     surfaces: list[_TargetedParameterSurface] = []
-    text_embedding = getattr(talker_model, "text_embedding", None)
     surfaces.extend(_module_parameter_surfaces("text_embedding", text_embedding))
-    text_projection = getattr(talker_model, "text_projection", None)
+    text_projection = resolve_talker_text_projection_module(model)
     surfaces.extend(_module_parameter_surfaces("text_projection", text_projection))
     return surfaces
 

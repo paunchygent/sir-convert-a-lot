@@ -38,6 +38,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard import (
     capture_pre_step_optimizer_boundary_probes,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
+    resolve_talker_codec_embedding,
+    resolve_talker_text_embedding,
+    resolve_talker_text_projection,
+)
 
 from .sft_12hz_loss_runtime import consume_loss_observations
 
@@ -178,16 +183,15 @@ def execute_train_iteration(
             )
             speaker_embedding = model.speaker_encoder(ref_mels_on_device).detach()
         with prepared.torch_profiler_session.phase("task101.forward-backward"):
+            text_embedding = resolve_talker_text_embedding(model)
+            codec_embedding = resolve_talker_codec_embedding(model)
+            text_projection = resolve_talker_text_projection(model)
             input_text_ids = input_ids[:, :, 0]
             input_codec_ids = input_ids[:, :, 1]
-            input_text_embedding = (
-                model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
-            )
-            if hasattr(model.talker.model, "text_projection"):
-                input_text_embedding = model.talker.model.text_projection(input_text_embedding)
-            input_codec_embedding = (
-                model.talker.model.codec_embedding(input_codec_ids) * codec_embedding_mask
-            )
+            input_text_embedding = text_embedding(input_text_ids) * text_embedding_mask
+            if text_projection is not None:
+                input_text_embedding = text_projection(input_text_embedding)
+            input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
             input_codec_embedding[:, 6, :] = speaker_embedding
             fused_auxiliary_embedding = fuse_auxiliary_codebook_embeddings(
                 codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),

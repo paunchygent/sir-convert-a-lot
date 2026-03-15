@@ -48,8 +48,8 @@ For the preserved Task 101 legacy lane:
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
 - record future live training/eval progress here, not in the skill doc
-- treat `T186` as the active remediation owner for the remaining
-  optimizer-boundary corruption and deterministic replay work
+- treat `T186` as the delivered optimizer-boundary remediation and proof slice
+  that now informs the next `T179` bounded-retry decision
 - treat `T180` as the delivered first-pass truth/forensics slice
 - treat Story 28 / `T187-T191` as the delivered permanent
   architecture-hardening lane; new control-plane or runtime logic must stay in
@@ -258,8 +258,39 @@ The canonical next root-cause workflow is:
 - Operator conclusion:
   - this is an optimizer-boundary corruption bug, not just a status/reporting
     bug and not just a guessed bad-row issue
-  - `T186` remains active until the detached diagnostic surface proves the
-    lane stops before applying the corrupt update
+  - the next accepted proof must show the guarded lane stops before
+    `optimizer.step()` is attempted
+
+### 2026-03-15: Guarded Detached Proof Completed
+
+- Canonical guarded proof launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T180643Z`
+- Source launch root reused for truthful control settings:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T110545Z`
+- Relaunch source checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
+- Why the earlier detached attempt was discarded:
+  - the legacy source launch metadata still carried stale `2/100/2`
+    checkpoint controls, so it spent the lane in misleading
+    `durable-checkpoint-save` churn instead of proving the guarded boundary
+- Machine-readable agreement across `status.json`, `report.json`, and
+  `diagnostic_replay_bundle.json`:
+  - `status=failed`
+  - `current_optimizer_step=1405`
+  - `trigger_reason=pre_step_non_finite_grad_norm`
+  - `first_non_finite_surface=grad_norm`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+- Pre-step probe truth at the guarded boundary:
+  - `text_embedding.weight` parameters remained finite
+  - `text_embedding.weight.grad` was already non-finite
+  - optimizer state for `text_embedding.weight` (`step`, `exp_avg`,
+    `exp_avg_sq`) remained finite
+- Operator conclusion:
+  - the lane now fails closed at optimizer step `1405` before applying the
+    corrupt update
+  - `T186` is complete as the required proof slice for the next bounded `T179`
+    decision
 
 ### 2026-03-15: Story 28 Delivered
 
@@ -311,32 +342,23 @@ That plan is now superseded because:
 - `1238` preserves more training progress
 - `1238` has a truthful compatible cursor for the replacement bundle
 - rolling back to `1236` would spend operator time for no gain
-- after the strict `1238` relaunch failed at `1358`, and the later
-  instrumented replay failed at `1408`, the next move is no longer
-  "resume immediately again"; it is "complete `T186` and prove the
-  fail-closed optimizer-boundary behavior first"
+- after the strict `1238` relaunch failed at `1358`, the later
+  instrumented replay failed at `1408`, and the guarded diagnostic then failed
+  closed at `1405`, the next move is no longer "resume immediately again"; it
+  is "use the completed `T186` proof to decide the next bounded `T179` retry"
 
 ## Canonical Next Step
 
-Do not relaunch the recovered training lane yet.
+Do not relaunch the recovered training lane blindly.
 
-The next canonical action is to complete `T186` so operators can see:
+The next canonical action is to use the completed `T186` proof so operators
+can decide whether and how to run the next bounded `T179` retry:
 
-- whether the targeted text-embedding / text-projection params are finite
-  before and after the update,
-- whether optimizer state for those params is already corrupted,
-- whether `optimizer.step()` must be skipped before a corrupt update is
-  applied,
-- and exactly which loss component and gradient signal the non-finite guard is
-  tripping on
-- exactly which microbatches and manifest rows fed the offending optimizer
-  step window
-- whether the first non-finite signal appears in reference inputs, embeddings,
-  hidden states, or the reduced loss surfaces
-- which checkpoint phases are durable versus export-only
-- why the resumed epoch cursor is reported as a zero-based value
-- and a deterministic sampler contract rather than hidden process-global batch
-  shuffling
+- the guarded proof already established that `optimizer.step()` is skipped
+  before the corrupt update is applied at step `1405`
+- the remaining decision is whether the rebuilt-bundle lane is now sufficiently
+  bounded to justify the next `T179` stability retry, and under what exact
+  runtime controls
 
 ## Historical Reference Boundary
 

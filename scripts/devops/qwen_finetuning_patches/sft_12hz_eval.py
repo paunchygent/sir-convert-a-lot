@@ -35,6 +35,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
     GRADIENT_ACCUMULATION_STEPS,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
+    resolve_talker_codec_embedding,
+    resolve_talker_text_embedding,
+    resolve_talker_text_projection,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import log_eval_metrics
 
 if TYPE_CHECKING:
@@ -220,16 +225,15 @@ def _run_eval_batches(prepared: EvalPreparedRun) -> tuple[float, int]:
                     ),
                 )
             ).detach()
+            text_embedding = resolve_talker_text_embedding(model)
+            codec_embedding = resolve_talker_codec_embedding(model)
+            text_projection = resolve_talker_text_projection(model)
             input_text_ids = input_ids[:, :, 0]
             input_codec_ids = input_ids[:, :, 1]
-            input_text_embedding = (
-                model.talker.model.text_embedding(input_text_ids) * text_embedding_mask
-            )
-            if hasattr(model.talker.model, "text_projection"):
-                input_text_embedding = model.talker.model.text_projection(input_text_embedding)
-            input_codec_embedding = (
-                model.talker.model.codec_embedding(input_codec_ids) * codec_embedding_mask
-            )
+            input_text_embedding = text_embedding(input_text_ids) * text_embedding_mask
+            if text_projection is not None:
+                input_text_embedding = text_projection(input_text_embedding)
+            input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
             input_codec_embedding[:, 6, :] = speaker_embedding
             input_embeddings = (
                 input_text_embedding

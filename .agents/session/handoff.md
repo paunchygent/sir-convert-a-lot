@@ -5,7 +5,7 @@
 - Active epic: Epic 08 Qwen Swedish language expansion on Hemma.
 - Active story: Story 26 remains in progress for Task 101 throughput and
   numerical-stability closure.
-- Active remediation task: `T186`
+- Completed remediation task: `T186`
   (`docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`).
 - Delivered architecture lane: Story 28 / `T187-T191` is complete and now
   governs all future Qwen control-plane/runtime changes.
@@ -35,8 +35,8 @@
     `scripts/sir_convert_a_lot/ml/qwen/training/reporting/`
   - patched runtime logic is split across focused `sft_12hz_*` modules
   - `orchestrator.py` and `reporting.py` are deleted and must not return
-- Docs were synchronized so Story 28 is marked completed while `T186` remains
-  honestly in progress pending the Hemma proof.
+- Docs were synchronized so Story 28 is marked completed and `T186` is now
+  closed out with the finished Hemma proof.
 
 ## Latest Task 101 Truth
 
@@ -49,19 +49,32 @@
   - the loop then applied `optimizer.step()`
   - step `1406` entered with `input_text_embedding` already poisoned
   - this is an optimizer-boundary corruption bug, not just a reporting bug
+- The guarded detached proof now exists at:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T180643Z`
+- The completed proof showed:
+  - `trigger_reason=pre_step_non_finite_grad_norm`
+  - `optimizer_step=1405`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+  - `text_embedding.weight` and optimizer state were still finite pre-step
+  - `text_embedding.weight.grad` was already non-finite pre-step
+- Acceptance conclusion:
+  - the guarded lane stopped before the corrupt optimizer update was applied
+  - `T186` is complete as the prerequisite proof slice for the next `T179`
+    decision
 
 ## Immediate Next Step
 
-Run one detached Hemma `qwen-train diagnose-non-finite` proof from
-`state-step-00001238` and confirm the guarded lane now stops before applying
-the corrupt optimizer update. Do not restart broad training first.
+Decide the next bounded `T179` stability retry from the completed `T186`
+proof artifacts. Do not restart broad training first.
 
 ## Open Risks
 
-- `T186` is not complete until the detached Hemma proof exists under
-  `build/verification/`.
-- `T179` must stay blocked until that proof shows fail-closed behavior before
-  weight corruption.
+- Do not ignore the stale legacy-source diagnostic lesson: future detached
+  proofs must reuse a truthful source launch root rather than inheriting stale
+  `2/100/2` checkpoint cadence settings.
+- `T179` should proceed only as a bounded next slice that explicitly uses the
+  completed `T186` fail-closed evidence.
 - Do not add new Qwen feature logic to central files; use the Story 28 package
   owners enforced by `RULE-095`.
 
