@@ -107,6 +107,7 @@ def build_training_summary(
         finite_loss_guard=prepared.finite_loss_guard.payload(),
         acceptance_measurement_valid=True,
         ref_mel_cache=prepared.ref_mel_cache.payload(),
+        talker_runtime=prepared.talker_runtime,
         profiling=profiling_payload,
         tracking=tracker_summary,
     )

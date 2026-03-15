@@ -79,12 +79,30 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
       so train, eval, and optimizer-boundary probes share one runtime-shape
       contract
     - local Qwen regressions and `pdm run typecheck-ml` passed after the fix
+  - The first corrected-graph `T179` replay then finished at
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task179-20260315t-textpath-replay-a1`
+    and proved the fix was active but the resumed trainer-state lane still
+    failed earlier at optimizer step `1239`.
+  - That replay included the full text-path probe family
+    (`text_embedding.weight` plus `text_projection.linear_fc1/2.*`) and showed
+    finite forward losses with finite pre-step parameters/optimizer state, but
+    already-`NaN` text-embedding and text-projection gradients.
+  - `state-step-00001238` is therefore no longer treated as the authoritative
+    next corrected-graph continuation checkpoint; it is now diagnostic/salvage
+    input only.
+  - Runtime-shape visibility is now explicit in artifacts:
+    - the trainer writes a `talker_runtime` fingerprint with resolved text,
+      codec, and projection paths plus probeability truth
+    - focused resolver tests now cover talker-level projection, nested
+      fallback, missing projection, and callable-but-non-module projection
+  - Decision taken: clean corrected-graph base restart is the new mainline.
+    Salvage from `1238` is optional side evidence only.
 
 ## Next Actions
 
-- Run one bounded Hemma `T179` replay with the talker-runtime alignment fix in
-  place and determine whether the first non-finite boundary disappears or
-  shifts to a different surface.
+- Launch the clean corrected-graph base restart on Hemma using the same Task
+  152 replacement bundle and truthful `500/100/3` control posture as the last
+  valid lane.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in

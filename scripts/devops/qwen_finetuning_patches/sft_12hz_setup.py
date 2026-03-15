@@ -80,6 +80,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
     GRADIENT_ACCUMULATION_STEPS,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
+    talker_runtime_fingerprint,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
     TrainingTrackerConfig,
     build_training_tracker_config,
@@ -216,6 +219,7 @@ class PreparedTrainingRun:
     ref_mel_cache: RefMelCache
     torch_profiler_session: TorchProfilerSession
     tracker_config: TrainingTrackerConfig
+    talker_runtime: dict[str, object]
     heartbeat_policy: TrainingHeartbeatPolicy
     loss_observer: AsyncLossObserver
     finite_loss_guard: FiniteLossGuardState
@@ -380,6 +384,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         dtype=torch.bfloat16,
         attn_implementation="flash_attention_2",
     )
+    talker_runtime = talker_runtime_fingerprint(qwen3tts.model)
     config = AutoConfig.from_pretrained(model_path)
     bundle_summary = (
         None
@@ -469,6 +474,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         ref_mel_cache=ref_mel_cache,
         torch_profiler_session=torch_profiler_session,
         tracker_config=tracker_config,
+        talker_runtime=talker_runtime,
         heartbeat_policy=heartbeat_policy,
         loss_observer=loss_observer,
         finite_loss_guard=finite_loss_guard,

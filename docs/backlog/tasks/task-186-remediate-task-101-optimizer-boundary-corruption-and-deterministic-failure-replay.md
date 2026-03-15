@@ -113,8 +113,12 @@ forensics.” It is:
   realistic diagnostic surface.
 - [x] The optimizer-boundary guard records and exposes pre-step and post-step
   finiteness for:
-  - `model.talker.model.text_embedding`
-  - `model.talker.model.text_projection` when present
+  - the resolved text-embedding surface, preferring
+    `model.talker.get_text_embeddings()` and falling back to
+    `model.talker.model.text_embedding`
+  - the resolved text-projection surface, preferring
+    `model.talker.text_projection` and falling back to
+    `model.talker.model.text_projection` when present
   - optimizer-state tensors for those params
 - [x] The training loop fails closed before a corrupt update is applied when
   targeted pre-step signals are non-finite.

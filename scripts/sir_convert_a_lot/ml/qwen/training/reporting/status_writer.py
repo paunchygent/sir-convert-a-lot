@@ -41,6 +41,7 @@ class StatusReporter:
 
     config: StatusReporterConfig
     tracking: dict[str, object] | None = None
+    talker_runtime: dict[str, object] | None = None
     latest_heartbeat: TrainingProgressHeartbeat | None = None
     phase_history: list[dict[str, object]] = field(default_factory=list)
 
@@ -75,6 +76,13 @@ class StatusReporter:
         self._write_running_status()
         if self.config.launch_metadata_path is not None:
             merge_launch_tracking_metadata(self.config.launch_metadata_path, tracking=tracking)
+
+    def runtime_ready(self, talker_runtime: dict[str, object]) -> None:
+        """Persist the resolved talker-runtime fingerprint once the model is loaded."""
+        self.talker_runtime = talker_runtime
+        if self.config.talker_runtime_path is not None:
+            write_json(self.config.talker_runtime_path, talker_runtime)
+        self._write_running_status()
 
     def heartbeat(self, heartbeat: TrainingProgressHeartbeat) -> None:
         """Persist one live heartbeat emitted by the patched trainer."""
@@ -139,6 +147,7 @@ class StatusReporter:
             live_progress=self._live_progress_payload(),
             phase_history=self.phase_history,
             tracking=self.tracking,
+            talker_runtime=self.talker_runtime,
         )
         write_json(self.config.status_path, payload)
         return payload
@@ -211,6 +220,9 @@ class StatusReporter:
                 ),
                 diagnostic=(
                     None if self.config.diagnostic is None else dict(self.config.diagnostic)
+                ),
+                talker_runtime=(
+                    None if self.talker_runtime is None else dict(self.talker_runtime)
                 ),
                 resume_from_checkpoint=self.config.resume_from_checkpoint,
                 tracking_plan=(

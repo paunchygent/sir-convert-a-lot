@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-14'
-last_updated: '2026-03-14'
+last_updated: '2026-03-15'
 related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md
@@ -154,9 +154,30 @@ this task's next bounded Hemma repro:
   - train-step execution applies the talker-level text projection when present
   - optimizer-boundary probes include `text_projection.weight` in the targeted
     surface family
-- The next acceptance step is a bounded Hemma replay to determine whether this
-  runtime-alignment fix removes the NaN boundary or moves the first non-finite
-  surface to a different component.
+- The bounded corrected-graph Hemma replay
+  `task179-20260315t-textpath-replay-a1` then proved that the runtime-shape
+  fix was active but not sufficient to stabilize the resumed lane:
+  - the targeted parameter family now included
+    `text_projection.linear_fc1.*` and `text_projection.linear_fc2.*`
+  - the run failed earlier at optimizer step `1239`, not the old guarded
+    boundary at `1405`
+  - forward losses stayed finite, all probed text-path parameters remained
+    finite pre-step, and probed optimizer state remained finite, but
+    `text_embedding.weight.grad` and all probed `text_projection.*` gradients
+    were already `NaN` before `optimizer.step()`
+- This reclassifies `state-step-00001238` as a diagnostic-only corrected-graph
+  checkpoint. It is still useful for bounded replay and salvage staging, but
+  it should not be treated as a trustworthy smooth-continuation checkpoint for
+  the corrected graph.
+- The runtime contract is now harder to hide:
+  - startup/reporting artifacts persist a `talker_runtime` fingerprint that
+    records the resolved text embedding, codec embedding, and text projection
+    paths plus whether each surface is probeable as an `nn.Module`
+  - resolver-matrix tests now cover talker-level projection, nested fallback,
+    no-projection, and callable-but-non-module projection cases
+- The next acceptance step is now the clean corrected-graph restart itself.
+  Model-only salvage from `state-step-00001238` is optional follow-up
+  evidence, not the authoritative lane.
 
 ## Checklist
 

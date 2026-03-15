@@ -50,6 +50,7 @@ def running_status_payload(
     throughput_profile: dict[str, object] | None,
     profiling_plan: dict[str, object] | None,
     diagnostic: dict[str, object] | None,
+    talker_runtime: dict[str, object] | None,
     resume_from_checkpoint: Path | None,
     tracking_plan: dict[str, object] | None = None,
     tracking: dict[str, object] | None = None,
@@ -131,6 +132,7 @@ def running_status_payload(
         "throughput_profile": throughput_profile,
         "profiling": profiling_plan,
         "diagnostic": diagnostic,
+        "talker_runtime": talker_runtime,
         "resumed_from_checkpoint_path": (
             None if resume_from_checkpoint is None else resume_from_checkpoint.as_posix()
         ),
@@ -227,6 +229,7 @@ def completed_status_payload(
         "finite_loss_guard": training_summary.finite_loss_guard,
         "optimizer_boundary_guard": None,
         "ref_mel_cache": training_summary.ref_mel_cache,
+        "talker_runtime": training_summary.talker_runtime,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
         "batch_occupancy": training_summary.batch_occupancy,
@@ -262,6 +265,7 @@ def failed_status_payload(
     live_progress: dict[str, object] | None = None,
     phase_history: list[dict[str, object]] | None = None,
     tracking: dict[str, object] | None = None,
+    talker_runtime: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Build the terminal failure payload for the training status artifact."""
     resolved_progress = resolve_failed_progress(live_progress=live_progress, exc=exc)
@@ -345,6 +349,7 @@ def failed_status_payload(
         "diagnostic": diagnostic,
         "finite_loss_guard": finite_loss_guard_payload,
         "optimizer_boundary_guard": optimizer_boundary_guard_payload,
+        "talker_runtime": None if talker_runtime is None else dict(talker_runtime),
         "acceptance_measurement_valid": acceptance_measurement_valid,
         "tracking": tracking,
         "phase_history": [] if phase_history is None else phase_history,

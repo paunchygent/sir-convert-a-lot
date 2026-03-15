@@ -22,6 +22,7 @@ class StatusReporterConfig:
 
     status_path: Path
     launch_metadata_path: Path | None
+    talker_runtime_path: Path | None
     train_jsonl: Path
     eval_jsonl: Path
     output_dir: Path

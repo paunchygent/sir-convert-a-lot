@@ -62,12 +62,36 @@
   - the guarded lane stopped before the corrupt optimizer update was applied
   - `T186` is complete as the prerequisite proof slice for the next `T179`
     decision
+- The first corrected-graph `T179` replay then ran at:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task179-20260315t-textpath-replay-a1`
+- That replay proved:
+  - the talker-runtime fix was active because the targeted parameter family now
+    included `text_projection.linear_fc1/2.*`
+  - the resumed lane failed earlier at optimizer step `1239`, not the old
+    guarded boundary at `1405`
+  - forward losses stayed finite and probed parameters/optimizer state stayed
+    finite pre-step, but `text_embedding.weight.grad` and all probed
+    `text_projection.*` gradients were already `NaN`
+- Updated operator conclusion:
+  - `state-step-00001238` is still useful for bounded replay and salvage
+    staging, but it is no longer trustworthy as a smooth corrected-graph
+    continuation checkpoint
+- Runtime hardening landed after that replay:
+  - `talker_runtime.json`, `status.json`, and terminal training artifacts now
+    record the resolved text/codec/projection paths plus whether each surface
+    is probeable as an `nn.Module`
+  - focused resolver tests now cover talker-level projection, nested fallback,
+    missing projection, and callable-but-non-module projection
+- Decision taken:
+  - clean corrected-graph base restart is the authoritative next lane
+  - any model-only salvage from `state-step-00001238` is optional side
+    evidence only
 
 ## Immediate Next Step
 
-Run one bounded Hemma `T179` replay with the talker-runtime alignment fix in
-place and confirm whether the first non-finite boundary disappears or moves.
-Do not restart broad training first.
+Launch the clean corrected-graph base restart on Hemma from
+`Qwen/Qwen3-TTS-12Hz-1.7B-Base` using the Task 152 replacement bundle and the
+truthful `500/100/3` control posture.
 
 ## Open Risks
 
@@ -77,8 +101,10 @@ Do not restart broad training first.
 - `T179` now has one concrete code-side remediation in place:
   - train, eval, and optimizer-boundary probes now resolve `text_projection`
     from the upstream talker surface rather than the wrong nested path
-  - a bounded Hemma proof is still required before concluding that this fixes
-    the NaN lane
+  - the first corrected-graph replay proved this fix was necessary but not
+    sufficient to stabilize the resumed trainer-state lane
+- Do not count legacy-graph and corrected-graph training curves as one
+  continuous progress series.
 - Do not add new Qwen feature logic to central files; use the Story 28 package
   owners enforced by `RULE-095`.
 

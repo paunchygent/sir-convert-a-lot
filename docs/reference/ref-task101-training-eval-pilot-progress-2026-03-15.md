@@ -44,9 +44,13 @@ from task notes, skill policy, or ad hoc Hemma terminal history. It records:
 For the preserved Task 101 legacy lane:
 
 - treat `state-step-00001236` as the evaluated baseline checkpoint
-- treat `state-step-00001238` as the canonical next strict resume target
+- treat `state-step-00001238` as the canonical corrected-graph diagnostic
+  checkpoint and salvage-staging source, not as the authoritative next smooth
+  continuation target
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
+- do not count legacy-graph and corrected-graph loss/eval curves as one
+  continuous training series
 - record future live training/eval progress here, not in the skill doc
 - treat `T186` as the delivered optimizer-boundary remediation and proof slice
   that now informs the next `T179` bounded-retry decision
@@ -65,6 +69,11 @@ Why this is now the clean plan:
 - that newer checkpoint carries a compatible saved cursor
   (`next_step_in_epoch=8`) for the current replacement bundle contract, so it
   avoids the confusing legacy cursor mismatch that existed at `1236`
+- the corrected-graph replay now shows that this same trainer-state checkpoint
+  fails earlier at `1239` once the text path is resolved truthfully, so it is
+  evidence and salvage input, not clean continuation truth
+- the runtime now writes a `talker_runtime` fingerprint so future shape drift
+  cannot hide behind silent fallback resolution
 - the original legacy launch snapshot still carries stale checkpoint cadence
   settings (`2/100/2`), so the next strict resume must pass explicit control
   overrides rather than inheriting those stale values
@@ -292,6 +301,68 @@ The canonical next root-cause workflow is:
   - `T186` is complete as the required proof slice for the next bounded `T179`
     decision
 
+### 2026-03-15: Corrected-Graph Replay Fails Earlier At `1239`
+
+- Corrected-graph replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task179-20260315t-textpath-replay-a1`
+- Status checked at:
+  `2026-03-15T19:36:45Z`
+- Diagnostic metadata still requested:
+  - `start_optimizer_step=1405`
+  - `end_optimizer_step=1406`
+- Actual failure truth from `status.json` / `report.json`:
+  - `status=failed`
+  - `trigger_reason=pre_step_non_finite_grad_norm`
+  - `current_optimizer_step=1239`
+  - `current_train_iteration=140`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+- Corrected targeted text-path family:
+  - `text_embedding.weight`
+  - `text_projection.linear_fc1.weight`
+  - `text_projection.linear_fc1.bias`
+  - `text_projection.linear_fc2.weight`
+  - `text_projection.linear_fc2.bias`
+- Pre-step truth at the corrected boundary:
+  - forward losses remained finite
+  - all probed text-path parameters remained finite
+  - probed optimizer state remained finite
+  - `text_embedding.weight.grad` and all probed `text_projection.*` gradients
+    were already `NaN`
+- Operator conclusion:
+  - the talker-runtime alignment fix was necessary because it removed the old
+    projection blind spot and proved the corrected graph was actually running
+  - the fix was not sufficient to make the resumed trainer-state lane stable
+  - `state-step-00001238` is therefore diagnostic-only on the corrected graph:
+    useful for replay and salvage staging, but not trustworthy as a smooth
+    continuation checkpoint
+  - the current diagnostic surface did not skip directly to the old `1405`
+    window in practice; it exposed an earlier corrected-graph boundary at
+    `1239`
+  - the authoritative next lane is now a clean base restart on the corrected
+    graph, not another strict trainer-state resume
+
+### 2026-03-15: Runtime Fingerprint Hardening Landed
+
+- The shared talker resolver now emits a machine-readable runtime fingerprint
+  covering:
+  - resolved text-embedding path
+  - resolved codec-embedding path
+  - resolved text-projection path
+  - whether each resolved surface is probeable as an `nn.Module`
+- The in-container trainer persists that payload into:
+  - `talker_runtime.json`
+  - live `status.json`
+  - terminal `report.json` / `training_summary`
+- Focused resolver-matrix tests now cover:
+  - talker-level projection present
+  - nested `model.talker.model.text_projection` fallback
+  - no projection present
+  - callable-but-non-module projection present
+- Operator conclusion:
+  - future runtime-shape drift should now be visible immediately in artifacts
+    rather than inferred indirectly from missing guard probes
+
 ### 2026-03-15: Story 28 Delivered
 
 The permanent architecture-hardening lane is no longer future work.
@@ -335,6 +406,8 @@ Post-cleanup Hemma check:
 The abandoned plan is:
 
 - “run standalone eval on `1236`, then resume from `1236` again”
+- “treat `1238` as the authoritative next corrected-graph continuation
+  checkpoint”
 
 That plan is now superseded because:
 
@@ -346,19 +419,23 @@ That plan is now superseded because:
   instrumented replay failed at `1408`, and the guarded diagnostic then failed
   closed at `1405`, the next move is no longer "resume immediately again"; it
   is "use the completed `T186` proof to decide the next bounded `T179` retry"
+- after the corrected-graph replay failed even earlier at `1239`, the next
+  move is no longer "resume from durable trainer state again"; it is "run the
+  clean corrected-graph base restart as the mainline and demote salvage to an
+  optional side experiment"
 
 ## Canonical Next Step
 
-Do not relaunch the recovered training lane blindly.
+Do not relaunch the recovered training lane from trainer state again.
 
-The next canonical action is to use the completed `T186` proof so operators
-can decide whether and how to run the next bounded `T179` retry:
+The next canonical action is a clean corrected-graph base restart using the
+same truthful bundle and runtime posture as the last valid Hemma lane:
 
-- the guarded proof already established that `optimizer.step()` is skipped
-  before the corrupt update is applied at step `1405`
-- the remaining decision is whether the rebuilt-bundle lane is now sufficiently
-  bounded to justify the next `T179` stability retry, and under what exact
-  runtime controls
+1. Launch `qwen-train launch` from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`.
+1. Reuse the Task 152 replacement bundle and the truthful `500/100/3`
+   checkpoint/eval posture.
+1. Treat any later model-only salvage warm-in from `state-step-00001238` as an
+   optional side experiment only after the clean restart is active.
 
 ## Historical Reference Boundary
 

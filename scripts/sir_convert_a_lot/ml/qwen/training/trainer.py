@@ -123,6 +123,7 @@ def main() -> int:
     report_path = output_dir / "report.json"
     failure_path = output_dir / "failure.txt"
     training_summary_path = output_dir / "training_summary.json"
+    talker_runtime_path = output_dir / "talker_runtime.json"
     train_row_count = _count_jsonl_rows(args.train_jsonl)
     eval_row_count = _count_jsonl_rows(args.eval_jsonl)
     bundle_summary = (
@@ -188,6 +189,7 @@ def main() -> int:
         StatusReporterConfig(
             status_path=status_path,
             launch_metadata_path=args.launch_metadata_path,
+            talker_runtime_path=talker_runtime_path,
             train_jsonl=args.train_jsonl,
             eval_jsonl=args.eval_jsonl,
             output_dir=output_dir,
@@ -296,6 +298,9 @@ def main() -> int:
             progress_callback=status_reporter.heartbeat,
             tracker_ready_callback=lambda tracking: status_reporter.tracking_ready(
                 asdict(tracking)
+            ),
+            runtime_ready_callback=lambda talker_runtime: status_reporter.runtime_ready(
+                dict(talker_runtime)
             ),
         )
 

@@ -148,6 +148,7 @@ def build_failed_training_report(
                 failed_status,
                 "optimizer_boundary_guard",
             ),
+            talker_runtime=optional_mapping_dict(failed_status, "talker_runtime"),
             acceptance_measurement_valid=optional_mapping_bool(
                 failed_status,
                 "acceptance_measurement_valid",

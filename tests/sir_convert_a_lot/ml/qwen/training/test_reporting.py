@@ -21,6 +21,13 @@ TrainingProgressHeartbeat = importlib.import_module(
 ).TrainingProgressHeartbeat
 
 
+def _required_mapping(payload: dict[str, object], key: str) -> dict[str, object]:
+    """Return one nested mapping from a reporter payload."""
+    resolved = payload[key]
+    assert isinstance(resolved, dict)
+    return resolved
+
+
 def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path) -> None:
     """The reporter should preserve live progress, phase history, and tracker ids."""
     output_dir = tmp_path / "run"
@@ -34,6 +41,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
         StatusReporterConfig(
             status_path=status_path,
             launch_metadata_path=launch_metadata_path,
+            talker_runtime_path=output_dir / "talker_runtime.json",
             train_jsonl=tmp_path / "train.jsonl",
             eval_jsonl=tmp_path / "eval.jsonl",
             output_dir=output_dir,
@@ -73,6 +81,15 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
             "project_name": "qwen-training",
             "run_name": "qwen-run",
             "mlflow_run_id": "mlflow-run-id",
+        }
+    )
+    reporter.runtime_ready(
+        {
+            "text_projection": {
+                "available": True,
+                "resolved_path": "model.talker.text_projection",
+                "probeable_as_module": True,
+            }
         }
     )
     reporter.heartbeat(
@@ -159,6 +176,11 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
         "max_batch_size": 8,
         "minimum_required_max_batch_size": 8,
     }
+    talker_runtime = _required_mapping(payload, "talker_runtime")
+    text_projection = _required_mapping(talker_runtime, "text_projection")
+    assert text_projection["resolved_path"] == (
+        "model.talker.text_projection"
+    )
     assert payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
     assert [event["phase"] for event in payload["phase_history"]] == [
         "startup",
@@ -268,6 +290,7 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
         StatusReporterConfig(
             status_path=status_path,
             launch_metadata_path=None,
+            talker_runtime_path=output_dir / "talker_runtime.json",
             train_jsonl=tmp_path / "train.jsonl",
             eval_jsonl=tmp_path / "eval.jsonl",
             output_dir=output_dir,
@@ -282,6 +305,15 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     )
 
     reporter.write_startup()
+    reporter.runtime_ready(
+        {
+            "text_projection": {
+                "available": True,
+                "resolved_path": "model.talker.text_projection",
+                "probeable_as_module": True,
+            }
+        }
+    )
     reporter.write_failed(
         NonFiniteLossError(
             optimizer_step=8,
@@ -303,6 +335,11 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     assert payload["current_optimizer_step"] == 8
     assert payload["current_train_iteration"] == 32
     assert payload["acceptance_measurement_valid"] is False
+    talker_runtime = _required_mapping(payload, "talker_runtime")
+    text_projection = _required_mapping(talker_runtime, "text_projection")
+    assert text_projection["resolved_path"] == (
+        "model.talker.text_projection"
+    )
     assert payload["finite_loss_guard"]["trigger_reason"] == "non-finite-loss"
     assert payload["finite_loss_guard"]["optimizer_step"] == 8
     assert payload["finite_loss_guard"]["current_train_iteration"] == 32
@@ -321,6 +358,7 @@ def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Pa
         StatusReporterConfig(
             status_path=status_path,
             launch_metadata_path=None,
+            talker_runtime_path=output_dir / "talker_runtime.json",
             train_jsonl=tmp_path / "train.jsonl",
             eval_jsonl=tmp_path / "eval.jsonl",
             output_dir=output_dir,

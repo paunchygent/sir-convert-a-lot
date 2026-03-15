@@ -188,6 +188,7 @@ class TrainingFailureSummary:
     latest_durable_checkpoint_saved_at: str | None
     finite_loss_guard: dict[str, object] | None
     optimizer_boundary_guard: dict[str, object] | None
+    talker_runtime: dict[str, object] | None
     acceptance_measurement_valid: bool | None
     latest_eval_loss: float | None = None
     best_eval_loss: float | None = None

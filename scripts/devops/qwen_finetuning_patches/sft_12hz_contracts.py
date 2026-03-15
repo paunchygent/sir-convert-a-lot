@@ -64,6 +64,7 @@ class TrainingSummary:
     finite_loss_guard: dict[str, bool | float | int | None]
     acceptance_measurement_valid: bool
     ref_mel_cache: dict[str, bool | float | int | None]
+    talker_runtime: dict[str, object]
     profiling: dict[str, object] | None
     tracking: TrainingTrackerSummary | None = None
 

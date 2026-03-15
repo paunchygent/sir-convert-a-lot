@@ -48,11 +48,14 @@ def train_with_args(
     *,
     progress_callback: Callable[[TrainingProgressHeartbeat], None] | None = None,
     tracker_ready_callback: Callable[[TrainingTrackerSummary], None] | None = None,
+    runtime_ready_callback: Callable[[dict[str, object]], None] | None = None,
 ) -> TrainingSummary:
     """Run one bounded Qwen fine-tuning job and return machine-readable metrics."""
     if not isinstance(args, argparse.Namespace):
         raise TypeError("Expected an argparse-style namespace for training arguments.")
     prepared = prepare_training_run(args)
+    if runtime_ready_callback is not None:
+        runtime_ready_callback(prepared.talker_runtime)
     return execute_training_loop(
         prepared,
         progress_callback=progress_callback,

@@ -66,6 +66,23 @@ def _training_summary() -> TrainingSummary:
         finite_loss_guard={"enabled": True, "max_consecutive_non_finite_steps": 3},
         acceptance_measurement_valid=True,
         ref_mel_cache={"enabled": True},
+        talker_runtime={
+            "text_embedding": {
+                "available": True,
+                "resolved_path": "model.talker.get_text_embeddings()",
+                "probeable_as_module": True,
+            },
+            "codec_embedding": {
+                "available": True,
+                "resolved_path": "model.talker.get_input_embeddings()",
+                "probeable_as_module": True,
+            },
+            "text_projection": {
+                "available": True,
+                "resolved_path": "model.talker.text_projection",
+                "probeable_as_module": True,
+            },
+        },
         profiling=None,
         tracking=TrainingTrackerSummary(
             tracker_backends=["mlflow"],
@@ -84,6 +101,13 @@ def _training_summary() -> TrainingSummary:
             tensorboard_event_files=["/tmp/tensorboard/event"],
         ),
     )
+
+
+def _required_mapping(payload: dict[str, object], key: str) -> dict[str, object]:
+    """Return one nested mapping from a status payload."""
+    resolved = payload[key]
+    assert isinstance(resolved, dict)
+    return resolved
 
 
 def test_running_status_payload_preserves_diagnostic_and_step_truth() -> None:
@@ -109,6 +133,13 @@ def test_running_status_payload_preserves_diagnostic_and_step_truth() -> None:
         throughput_profile={"profile_label": "hemma-throughput-balanced-v1"},
         profiling_plan=None,
         diagnostic={"kind": "diagnose-non-finite"},
+        talker_runtime={
+            "text_projection": {
+                "available": True,
+                "resolved_path": "model.talker.text_projection",
+                "probeable_as_module": True,
+            }
+        },
         resume_from_checkpoint=None,
         live_progress={
             "phase": "train",
@@ -120,6 +151,11 @@ def test_running_status_payload_preserves_diagnostic_and_step_truth() -> None:
     )
 
     assert payload["diagnostic"] == {"kind": "diagnose-non-finite"}
+    talker_runtime = _required_mapping(payload, "talker_runtime")
+    text_projection = _required_mapping(talker_runtime, "text_projection")
+    assert text_projection["resolved_path"] == (
+        "model.talker.text_projection"
+    )
     assert payload["current_phase"] == "train"
     assert payload["current_optimizer_step"] == 1405
     assert payload["current_train_iteration"] == 804
@@ -142,5 +178,10 @@ def test_completed_status_payload_serializes_tracking_summary() -> None:
     tracking = payload["tracking"]
     assert isinstance(tracking, dict)
     assert tracking["mlflow_run_id"] == "run-id"
+    talker_runtime = _required_mapping(payload, "talker_runtime")
+    text_projection = _required_mapping(talker_runtime, "text_projection")
+    assert text_projection["resolved_path"] == (
+        "model.talker.text_projection"
+    )
     assert payload["checkpoint_interval_steps"] == 500
     assert payload["durable_checkpoint_retention"] == 3
