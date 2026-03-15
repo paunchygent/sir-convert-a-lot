@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import TypedDict
 
 import torch
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_batch_occupancy import (
     BatchOccupancySummary,
@@ -30,6 +30,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_batch_occupancy import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_batching import (
     BucketedBatchSampler,
     TrainingRowBatchMetrics,
+    bucket_signal_value,
 )
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
@@ -160,7 +161,7 @@ def _assistant_text(text: str) -> str:
     return f"<|im_start|>assistant\n{text}<|im_end|>\n<|im_start|>assistant\n"
 
 
-def _tokenize_text(tokenizer: AutoTokenizer, text: str) -> torch.Tensor:
+def _tokenize_text(tokenizer: PreTrainedTokenizerBase, text: str) -> torch.Tensor:
     """Tokenize one assistant prompt into a stable tensor shape."""
     encoded = tokenizer(text, return_tensors="pt", padding=True)
     input_ids = encoded["input_ids"]
@@ -196,7 +197,10 @@ def _load_manifest_rows(train_jsonl: Path) -> list[_ManifestRow]:
 
 def build_row_metrics(*, train_jsonl: Path, model_id: str) -> list[TrainingRowBatchMetrics]:
     """Build faithful row metrics from one prepared manifest and model tokenizer."""
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    tokenizer: PreTrainedTokenizerBase = AutoTokenizer.from_pretrained(
+        model_id,
+        trust_remote_code=True,
+    )
     rows = _load_manifest_rows(train_jsonl)
     row_metrics: list[TrainingRowBatchMetrics] = []
     for row in rows:
@@ -267,12 +271,13 @@ def _quarantined_row_count(
 
 def _bucket_boundary(
     *,
-    total_sequence_cost: int,
+    metrics: TrainingRowBatchMetrics,
     policy: ThroughputBatchPolicy,
 ) -> int:
-    """Return the policy bucket boundary for one combined-cost value."""
+    """Return the policy bucket boundary for one row under the active signal."""
+    bucket_value = bucket_signal_value(metrics=metrics, policy=policy)
     for boundary in policy.length_bucket_boundaries:
-        if total_sequence_cost <= boundary:
+        if bucket_value <= boundary:
             return boundary
     return policy.length_bucket_boundaries[-1] + 1
 
@@ -289,7 +294,7 @@ def _ordered_bucket_indices(
         if quarantine_threshold is not None and metrics.codec_frame_count >= quarantine_threshold:
             continue
         boundary = _bucket_boundary(
-            total_sequence_cost=metrics.total_sequence_cost,
+            metrics=metrics,
             policy=policy,
         )
         buckets.setdefault(boundary, []).append(row_index)

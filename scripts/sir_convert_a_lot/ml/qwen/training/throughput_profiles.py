@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 DEFAULT_BATCH_POLICY_KIND = "bucketed-frame-token-budget-v1"
 DEFAULT_THROUGHPUT_PROFILE_LABEL = "hemma-throughput-aggressive-v1"
+DEFAULT_BUCKET_SIGNAL_KIND = "combined-sequence-cost-v1"
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,7 @@ class ThroughputProfileDefaults:
     max_codec_frames_per_batch: int
     length_bucket_boundaries: tuple[int, ...]
     minimum_required_max_batch_size: int
+    bucket_signal_kind: str = DEFAULT_BUCKET_SIGNAL_KIND
     long_row_singleton_codec_frame_threshold: int | None = None
 
 
@@ -40,6 +42,7 @@ class ThroughputBatchPolicy:
     max_codec_frames_per_batch: int
     length_bucket_boundaries: tuple[int, ...]
     minimum_required_max_batch_size: int
+    bucket_signal_kind: str
     long_row_singleton_codec_frame_threshold: int | None
 
 
@@ -49,6 +52,13 @@ _PROFILE_DEFAULTS: dict[str, ThroughputProfileDefaults] = {
         max_codec_frames_per_batch=640,
         length_bucket_boundaries=(128, 192, 256, 320, 384, 448, 512, 640, 768, 896, 1024),
         minimum_required_max_batch_size=1,
+    ),
+    "hemma-throughput-balanced-frame-primary-v1": ThroughputProfileDefaults(
+        max_tokens_per_batch=3072,
+        max_codec_frames_per_batch=640,
+        length_bucket_boundaries=(128, 192, 256, 320, 384, 448, 512, 640),
+        minimum_required_max_batch_size=1,
+        bucket_signal_kind="codec-frame-count-v1",
     ),
     "hemma-throughput-balanced-quarantine-v1": ThroughputProfileDefaults(
         max_tokens_per_batch=3072,
@@ -136,6 +146,7 @@ def resolve_throughput_batch_policy(
         max_codec_frames_per_batch=profile_defaults.max_codec_frames_per_batch,
         length_bucket_boundaries=profile_defaults.length_bucket_boundaries,
         minimum_required_max_batch_size=profile_defaults.minimum_required_max_batch_size,
+        bucket_signal_kind=profile_defaults.bucket_signal_kind,
         long_row_singleton_codec_frame_threshold=(
             profile_defaults.long_row_singleton_codec_frame_threshold
         ),
@@ -156,6 +167,7 @@ def throughput_policy_payload(
         "max_codec_frames_per_batch": policy.max_codec_frames_per_batch,
         "length_bucket_boundaries": list(policy.length_bucket_boundaries),
         "minimum_required_max_batch_size": policy.minimum_required_max_batch_size,
+        "bucket_signal_kind": policy.bucket_signal_kind,
         "long_row_singleton_codec_frame_threshold": (
             policy.long_row_singleton_codec_frame_threshold
         ),

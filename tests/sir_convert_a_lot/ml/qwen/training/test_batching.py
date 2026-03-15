@@ -67,6 +67,20 @@ def test_resolve_throughput_batch_policy_supports_balanced_plus_profile() -> Non
     assert policy.minimum_required_max_batch_size == 1
 
 
+def test_resolve_throughput_batch_policy_supports_frame_primary_profile() -> None:
+    """The frame-primary profile should switch bucket grouping to codec-frame counts."""
+    policy = resolve_throughput_batch_policy(
+        profile_label="hemma-throughput-balanced-frame-primary-v1",
+        max_batch_size=8,
+    )
+
+    assert policy.profile_label == "hemma-throughput-balanced-frame-primary-v1"
+    assert policy.max_tokens_per_batch == 3072
+    assert policy.max_codec_frames_per_batch == 640
+    assert policy.length_bucket_boundaries == (128, 192, 256, 320, 384, 448, 512, 640)
+    assert policy.bucket_signal_kind == "codec-frame-count-v1"
+
+
 def test_resolve_throughput_batch_policy_supports_quarantine_profile() -> None:
     """The quarantine profile should keep the stable cap while forcing long-row singletons."""
     policy = resolve_throughput_batch_policy(
@@ -145,6 +159,7 @@ def test_bucketed_batch_sampler_keeps_one_open_batch_per_bucket() -> None:
             max_codec_frames_per_batch=10,
             length_bucket_boundaries=(16,),
             minimum_required_max_batch_size=1,
+            bucket_signal_kind="combined-sequence-cost-v1",
             long_row_singleton_codec_frame_threshold=None,
         ),
     )
@@ -169,6 +184,7 @@ def test_bucketed_batch_sampler_quarantines_long_rows_into_singletons() -> None:
             max_codec_frames_per_batch=640,
             length_bucket_boundaries=(1024,),
             minimum_required_max_batch_size=1,
+            bucket_signal_kind="combined-sequence-cost-v1",
             long_row_singleton_codec_frame_threshold=480,
         ),
     )
@@ -211,6 +227,46 @@ def test_bucketed_batch_sampler_exposes_planned_batches_for_occupancy_reporting(
     yielded_batches = list(sampler)
 
     assert sorted(planned_batches) == sorted(yielded_batches)
+
+
+def test_bucketed_batch_sampler_can_use_codec_frame_primary_bucket_signal() -> None:
+    """Frame-primary bucketing should group rows by codec frames rather than combined cost."""
+    row_metrics = [
+        TrainingRowBatchMetrics(text_token_count=140, codec_frame_count=300),
+        TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=300),
+        TrainingRowBatchMetrics(text_token_count=10, codec_frame_count=280),
+    ]
+    combined_cost_sampler = BucketedBatchSampler(
+        row_metrics=row_metrics,
+        policy=ThroughputBatchPolicy(
+            profile_label="test-combined-cost",
+            policy_kind="bucketed-frame-token-budget-v1",
+            max_batch_size=8,
+            max_tokens_per_batch=1000,
+            max_codec_frames_per_batch=640,
+            length_bucket_boundaries=(400, 800),
+            minimum_required_max_batch_size=1,
+            bucket_signal_kind="combined-sequence-cost-v1",
+            long_row_singleton_codec_frame_threshold=None,
+        ),
+    )
+    frame_primary_sampler = BucketedBatchSampler(
+        row_metrics=row_metrics,
+        policy=ThroughputBatchPolicy(
+            profile_label="test-frame-primary",
+            policy_kind="bucketed-frame-token-budget-v1",
+            max_batch_size=8,
+            max_tokens_per_batch=1000,
+            max_codec_frames_per_batch=640,
+            length_bucket_boundaries=(280, 320),
+            minimum_required_max_batch_size=1,
+            bucket_signal_kind="codec-frame-count-v1",
+            long_row_singleton_codec_frame_threshold=None,
+        ),
+    )
+
+    assert combined_cost_sampler.planned_batches() == [[1, 2], [0]]
+    assert frame_primary_sampler.planned_batches() == [[2], [0, 1]]
 
 
 def test_summarize_batch_occupancy_reports_histogram_and_per_batch_totals() -> None:
@@ -257,6 +313,7 @@ def test_singleton_fit_audit_detects_later_same_bucket_partner() -> None:
         max_codec_frames_per_batch=640,
         length_bucket_boundaries=(400, 800),
         minimum_required_max_batch_size=1,
+        bucket_signal_kind="combined-sequence-cost-v1",
         long_row_singleton_codec_frame_threshold=None,
     )
     row_metrics = [
@@ -291,6 +348,7 @@ def test_singleton_fit_audit_detects_adjacent_lower_bucket_partner() -> None:
         max_codec_frames_per_batch=640,
         length_bucket_boundaries=(300, 500, 800),
         minimum_required_max_batch_size=1,
+        bucket_signal_kind="combined-sequence-cost-v1",
         long_row_singleton_codec_frame_threshold=None,
     )
     row_metrics = [

@@ -227,6 +227,20 @@ and test smaller batching-policy changes first.
   - same-bucket-only opportunities do not dominate at all
   - so the next promoted `M1` candidate should target the bucket signal /
     boundaries rather than a same-bucket lookahead policy
+- The promoted `M1` implementation direction is now explicit:
+  - add `hemma-throughput-balanced-frame-primary-v1`
+  - keep the old greedy one-open-batch packer
+  - keep the global codec-frame cap at `640`
+  - switch only the bucket signal from combined sequence cost to
+    codec-frame-count bucketing
+  - reuse a narrower boundary ladder aligned to the active frame-limited regime
+- The local `M1` implementation is now landed and covered by focused tests:
+  - throughput profiles now expose an explicit `bucket_signal_kind`
+  - the live sampler now buckets by the active policy signal rather than
+    always using combined sequence cost
+  - the offline fit-opportunity audit now uses the same active signal logic
+  - focused batching tests now prove the frame-primary candidate changes the
+    planned grouping while preserving the stable greedy packer semantics
 
 ## Deliverables
 
@@ -240,7 +254,7 @@ and test smaller batching-policy changes first.
   for the initial quarantine threshold.
 - [x] The revised `M0` fit-opportunity audit completed and selected bucket-signal
   retuning as the next promoted `M1` direction.
-- [ ] One targeted `M1` batching change implemented from the revised `M0`.
+- [x] One targeted `M1` batching change implemented from the revised `M0`.
 - [ ] One finite `M2` Hemma uplift proof completed or rejected with evidence.
 - [ ] One evidence-backed default profile chosen for follow-on saturation runs.
 
@@ -254,6 +268,7 @@ and test smaller batching-policy changes first.
   plans, the task records that null result explicitly and does not launch a
   duplicate Hemma proof.
 - [ ] `M1` lands exactly one targeted batching change promoted by the revised `M0`.
+- [x] `M1` lands exactly one targeted batching change promoted by the revised `M0`.
 - [ ] `M2` launches exactly one promoted `M1` candidate and records whether it
   stays finite through `30` optimizer steps / first durable checkpoint.
 - [ ] If `M2` stays finite, bounded Hemma evidence shows higher steady-state

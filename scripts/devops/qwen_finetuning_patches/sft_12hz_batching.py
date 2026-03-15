@@ -35,6 +35,22 @@ class TrainingRowBatchMetrics:
         return self.text_token_count + self.codec_frame_count
 
 
+def bucket_signal_value(
+    *,
+    metrics: TrainingRowBatchMetrics,
+    policy: ThroughputBatchPolicy,
+) -> int:
+    """Return the active bucket-signal value for one row under one policy."""
+    if policy.bucket_signal_kind == "combined-sequence-cost-v1":
+        return metrics.total_sequence_cost
+    if policy.bucket_signal_kind == "codec-frame-count-v1":
+        return metrics.codec_frame_count
+    raise ValueError(
+        "Unsupported throughput bucket signal kind "
+        f"`{policy.bucket_signal_kind}` for profile `{policy.profile_label}`."
+    )
+
+
 class BucketedBatchSampler(Sampler[list[int]]):
     """Yield bounded training batches grouped by approximate sequence length."""
 
@@ -74,7 +90,7 @@ class BucketedBatchSampler(Sampler[list[int]]):
             ):
                 quarantined_indices.append(index)
                 continue
-            buckets[self._bucket_boundary(metrics.total_sequence_cost)].append(index)
+            buckets[self._bucket_boundary(metrics)].append(index)
 
         planned_batches: list[list[int]] = []
         for index in sorted(
@@ -123,9 +139,10 @@ class BucketedBatchSampler(Sampler[list[int]]):
                 planned_batches.append(current_batch)
         return planned_batches
 
-    def _bucket_boundary(self, total_sequence_cost: int) -> int:
+    def _bucket_boundary(self, metrics: TrainingRowBatchMetrics) -> int:
+        bucket_value = bucket_signal_value(metrics=metrics, policy=self._policy)
         for boundary in self._policy.length_bucket_boundaries:
-            if total_sequence_cost <= boundary:
+            if bucket_value <= boundary:
                 return boundary
         return self._policy.length_bucket_boundaries[-1] + 1
 
