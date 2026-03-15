@@ -64,6 +64,11 @@ Good behavior confirmed on `2026-03-15`:
   `/srv/scratch/.../direct-encode-chunk64-span1`.
 - The resumed container restored the trainer state and wrote a new durable
   checkpoint at optimizer step `1238`.
+- Standalone held-out eval against the original `1236` checkpoint completed on
+  the replacement eval manifest with `eval_loss=6.440637648105621` across
+  `8` eval batches.
+- After the Hemma pull of the stale-artifact inspection fix, the stopped
+  resumed launch no longer surfaces the old failed `report.json`.
 
 Bad or unsafe behavior observed on the same recovery attempt:
 
@@ -103,9 +108,9 @@ Bad or unsafe behavior observed on the same recovery attempt:
   fail-closed stale-bundle behavior.
 - [x] Hemma resume is retried against the `1236`-step checkpoint after local
   verification passes.
-- [ ] The trainer rejects impossible saved resume cursors for the current
+- [x] The trainer rejects impossible saved resume cursors for the current
   bundle length.
-- [ ] A standalone held-out eval baseline is recorded for the `1236`
+- [x] A standalone held-out eval baseline is recorded for the `1236`
   checkpoint before the next training relaunch.
 
 ## Acceptance Criteria
@@ -118,7 +123,7 @@ Bad or unsafe behavior observed on the same recovery attempt:
   container with pre-resume artifacts from the reused run root.
 - [ ] The trainer fails closed when a saved durable checkpoint cursor is
   impossible for the current bundle length.
-- [ ] Operators have a clean standalone eval baseline for the checkpoint being
+- [x] Operators have a clean standalone eval baseline for the checkpoint being
   considered for relaunch.
 - [ ] The compatibility fallback does not change current canonical launch
   defaults for new runs.
@@ -128,7 +133,7 @@ Bad or unsafe behavior observed on the same recovery attempt:
 ## Checklist
 
 - [ ] Implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Hemma resume retried
-- [ ] Standalone eval baseline captured
-- [ ] Docs updated
+- [x] Standalone eval baseline captured
+- [x] Docs updated

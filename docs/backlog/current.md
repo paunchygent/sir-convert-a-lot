@@ -205,7 +205,7 @@ This file is the canonical long-term memory index for session progress; session 
   - Completed Story 27 and Tasks 166-170 (domain-centric ML structure, CLI rebuild, Docker/runbook alignment).
 - 2026-03-15:
   - Completed `T184`: schedule-driven resume now advances the latest-launch pointer, schedule preflight fails closed for launch-derived checkpoint/eval/bundle paths, and checkpoint persistence proves retention `3`.
-  - Opened `T185`: the legacy `1236`-step run can relaunch without manual JSON edits and can override a stale bundle root, but the first probe exposed stale reused-run artifacts during active resume and an impossible saved `next_step_in_epoch` that did not fail closed against the replacement bundle `dataloader_length`. Active posture: stop, standalone eval, fail closed on incompatible resume cursors, then relaunch.
+  - Opened `T185`: the legacy `1236`-step run can relaunch without manual JSON edits and can override a stale bundle root, but the first probe exposed stale reused-run artifacts and an impossible saved `next_step_in_epoch` that did not fail closed against the replacement bundle `dataloader_length`. Follow-up landed stale-artifact filtering, a trainer-side resume-cursor guard, and a standalone eval baseline for the original `1236` checkpoint (`eval_loss=6.440637648105621` over `8` eval batches). The next relaunch decision should now be based on that baseline rather than blind resume.
 
 ## Next Actions
 

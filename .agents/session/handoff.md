@@ -24,6 +24,13 @@
 - Operational rule now in docs/runbook/skill:
   - legacy checkpoint recovery order is `standalone eval -> resume`, never
     blind resume first
+- Standalone eval baseline now exists for the original `1236` checkpoint:
+  - held-out eval manifest:
+    `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1/manifests/swedish_checkpoint_dev.prepared.jsonl`
+  - eval output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot/task101-20260313t102144z/evals/eval-20260315T104201Z`
+  - `eval_loss=6.440637648105621`
+  - `eval_batches_completed=8`
 - Hemma note:
   - do not pull the stale-artifact fix onto Hemma until the active resumed
     container `20260315T102149Z` is fully stopped, because the trainer
