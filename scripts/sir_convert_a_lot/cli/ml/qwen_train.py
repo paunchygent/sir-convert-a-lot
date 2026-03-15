@@ -917,7 +917,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         resolved_eval_output_dir = (
             default_eval_output_dir(
-                source_run_root,
+                source_launch_root,
                 eval_id=str(args.eval_id or default_eval_id()),
             )
             if args.eval_output_dir is None

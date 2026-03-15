@@ -44,9 +44,9 @@ def default_eval_id() -> str:
     return datetime.now(UTC).strftime("eval-%Y%m%dT%H%M%SZ")
 
 
-def default_eval_output_dir(run_root: Path, *, eval_id: str) -> Path:
-    """Return the canonical eval output dir under one training run root."""
-    return run_root / "evals" / eval_id
+def default_eval_output_dir(launch_root: Path, *, eval_id: str) -> Path:
+    """Return the canonical eval output dir under one verification launch root."""
+    return launch_root / "evals" / eval_id
 
 
 def build_standalone_eval_command(
@@ -104,8 +104,6 @@ def build_standalone_eval_command(
         "-w",
         "/app",
         settings.image,
-        "pdm",
-        "run",
         "python",
         "-m",
         "scripts.sir_convert_a_lot.ml.qwen.training.evaluator",

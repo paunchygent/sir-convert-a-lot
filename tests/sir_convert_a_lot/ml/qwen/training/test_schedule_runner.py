@@ -422,8 +422,9 @@ def test_run_schedule_cycle_writes_failure_artifacts_when_segment_exits_early(
             resource_monitor_duration_seconds=None,
         )
 
-    failure_report_path = run_root / "schedules/schedule-test/report.json"
-    failure_status_path = run_root / "schedules/schedule-test/status.json"
+    schedule_output_root = Path(launch_payload.settings.output_root) / "schedules/schedule-test"
+    failure_report_path = schedule_output_root / "report.json"
+    failure_status_path = schedule_output_root / "status.json"
     failure_report = json.loads(failure_report_path.read_text(encoding="utf-8"))
     failure_status = json.loads(failure_status_path.read_text(encoding="utf-8"))
 

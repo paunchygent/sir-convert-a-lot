@@ -110,9 +110,9 @@ def default_schedule_id() -> str:
     return default_eval_id().replace("eval-", "schedule-")
 
 
-def default_schedule_output_dir(run_root: Path, *, schedule_id: str) -> Path:
+def default_schedule_output_dir(output_root: Path, *, schedule_id: str) -> Path:
     """Return the canonical output dir for one schedule control cycle."""
-    return run_root / "schedules" / schedule_id
+    return output_root / "schedules" / schedule_id
 
 
 def run_schedule_cycle(
@@ -137,7 +137,7 @@ def run_schedule_cycle(
     output_root.mkdir(parents=True, exist_ok=True)
     source_run_root = Path(source_launch.run_root)
     schedule_output_dir = default_schedule_output_dir(
-        source_run_root,
+        output_root,
         schedule_id=default_schedule_id(),
     )
     dataloader_length: int | None = None
@@ -228,7 +228,7 @@ def run_schedule_cycle(
             settings.pilot_bundle_root if pilot_bundle_root is None else pilot_bundle_root
         )
         eval_id = default_eval_id()
-        eval_output_dir = default_eval_output_dir(source_run_root, eval_id=eval_id)
+        eval_output_dir = default_eval_output_dir(active_launch_root, eval_id=eval_id)
         eval_report = run_standalone_eval(
             settings,
             repo_root=Path(source_launch.repo_root),
