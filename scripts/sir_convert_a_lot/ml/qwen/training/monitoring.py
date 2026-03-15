@@ -148,6 +148,14 @@ def inspect_resource_monitor(
         f"{status.launch_id}-checkpoint-save",
         samples_by_phase["checkpoint-save"],
     )
+    durable_checkpoint_summary = summarize_samples(
+        f"{status.launch_id}-durable-checkpoint-save",
+        samples_by_phase["durable-checkpoint-save"],
+    )
+    export_checkpoint_summary = summarize_samples(
+        f"{status.launch_id}-export-checkpoint-save",
+        samples_by_phase["export-checkpoint-save"],
+    )
     train_gpu_busy_median = train_summary.gpu_busy_percent_median
     return {
         "available": True,
@@ -161,6 +169,8 @@ def inspect_resource_monitor(
         "summary_overall": asdict(overall_summary),
         "summary_train": asdict(train_summary),
         "summary_checkpoint_save": asdict(checkpoint_summary),
+        "summary_durable_checkpoint_save": asdict(durable_checkpoint_summary),
+        "summary_export_checkpoint_save": asdict(export_checkpoint_summary),
         "steady_state_gpu_busy_threshold_percent": 90.0,
         "steady_state_train_gpu_busy_median_percent": train_gpu_busy_median,
         "steady_state_train_sample_count": train_summary.sample_count,
@@ -179,6 +189,8 @@ def _group_samples_by_phase(
     grouped: dict[str, list[Task116ResourceSample]] = {
         "train": [],
         "checkpoint-save": [],
+        "durable-checkpoint-save": [],
+        "export-checkpoint-save": [],
     }
     phase_events = _sorted_phase_events(phase_history)
     if len(phase_events) == 0:
@@ -197,7 +209,13 @@ def _group_samples_by_phase(
         ):
             event_index += 1
             current_phase = phase_events[event_index][1]
-        if current_phase in grouped:
+        if current_phase == "durable-checkpoint-save":
+            grouped["durable-checkpoint-save"].append(sample)
+            grouped["checkpoint-save"].append(sample)
+        elif current_phase == "export-checkpoint-save":
+            grouped["export-checkpoint-save"].append(sample)
+            grouped["checkpoint-save"].append(sample)
+        elif current_phase in grouped:
             grouped[current_phase].append(sample)
     return grouped
 
@@ -214,7 +232,12 @@ def _sorted_phase_events(
         updated_at_value = event.get("updated_at")
         if not isinstance(phase_value, str):
             continue
-        if phase_value not in {"train", "checkpoint-save"}:
+        if phase_value not in {
+            "train",
+            "checkpoint-save",
+            "durable-checkpoint-save",
+            "export-checkpoint-save",
+        }:
             continue
         if not isinstance(updated_at_value, str):
             continue

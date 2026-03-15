@@ -217,9 +217,10 @@ def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     summary = train_with_args(args, progress_callback=heartbeats.append)
 
     phases = [phase.phase for phase in heartbeats]
-    assert phases[:5] == ["startup", "train", "train", "checkpoint-save", "train"]
+    assert phases[:5] == ["startup", "train", "train", "durable-checkpoint-save", "train"]
     assert "eval" in phases
-    assert phases.count("checkpoint-save") >= 3
+    assert phases.count("durable-checkpoint-save") >= 1
+    assert phases.count("export-checkpoint-save") >= 2
     assert heartbeats[1].current_optimizer_step == 1
     assert heartbeats[2].current_optimizer_step == 2
     assert heartbeats[2].current_train_iteration == 8
@@ -382,7 +383,7 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
     )
     heartbeats: list[TrainingProgressHeartbeat] = []
 
-    with pytest.raises(NonFiniteLossError, match="Non-finite loss guard triggered"):
+    with pytest.raises(NonFiniteLossError, match="Non-finite loss guard triggered") as exc_info:
         train_with_args(
             base_training_args(
                 output_model_path=output_model_path,
@@ -392,12 +393,19 @@ def test_train_with_args_fails_after_configured_non_finite_loss_streak(
             progress_callback=heartbeats.append,
         )
 
+    error = exc_info.value
     assert [phase.phase for phase in heartbeats] == ["startup", "train"]
     assert heartbeats[-1].latest_loss is not None
     assert math.isnan(heartbeats[-1].latest_loss)
     assert accelerator.logged_metrics == []
     assert heartbeats[-1].current_optimizer_step == 1
     assert heartbeats[-1].current_train_iteration == 4
+    assert math.isnan(error.loss_value)
+    assert math.isnan(error.main_loss_value if error.main_loss_value is not None else float("nan"))
+    assert error.sub_talker_loss_value == pytest.approx(0.1)
+    assert error.sub_talker_loss_is_finite is True
+    assert error.grad_norm_value is not None
+    assert error.grad_norm_is_finite is not None
     assert accelerator.prepared_optimizer is not None
     assert accelerator.prepared_optimizer.effective_step_calls == 2
     assert accelerator.prepared_optimizer.raw_step_attempts == 8

@@ -185,3 +185,12 @@ but live recovery/eval progress for the preserved checkpoint-backed lane now
 lives in
 `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
 rather than in this completed task record.
+
+Current live-lane caveat after the strict `1238` relaunch:
+
+- the resumed pilot completed a real held-out eval at optimizer step `1300`
+  before failing at optimizer step `1358` with `NonFiniteLossError`
+- the latest durable checkpoint still remained `state-step-00001238`
+- and the active remediation for bounded non-finite forensics, truthful
+  checkpoint phase labels, and explicit epoch semantics is now tracked under
+  `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`

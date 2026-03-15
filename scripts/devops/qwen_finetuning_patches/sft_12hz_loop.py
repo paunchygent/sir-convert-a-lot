@@ -309,6 +309,7 @@ def execute_training_loop(
             for step, batch in enumerate(epoch_dataloader, start=epoch_start_step):
                 train_iterations_completed += 1
                 with accelerator.accumulate(model):
+                    grad_norm: torch.Tensor | float | None = None
                     with torch_profiler_session.phase("task101.batch-preparation"):
                         input_ids = batch["input_ids"]
                         codec_ids = batch["codec_ids"]
@@ -367,7 +368,7 @@ def execute_training_loop(
                         accelerator.backward(loss)
                         completed_optimizer_step = accelerator.sync_gradients
                         if completed_optimizer_step:
-                            accelerator.clip_grad_norm_(model.parameters(), 1.0)
+                            grad_norm = accelerator.clip_grad_norm_(model.parameters(), 1.0)
                     with torch_profiler_session.phase("task101.optimizer-step"):
                         optimizer.step()
                         optimizer.zero_grad()
@@ -375,6 +376,9 @@ def execute_training_loop(
                         optimizer_steps_completed += 1
                         prepared.loss_observer.submit(
                             loss=loss,
+                            main_loss=outputs.loss,
+                            sub_talker_loss=sub_talker_loss,
+                            grad_norm=grad_norm,
                             optimizer_step=optimizer_steps_completed,
                             current_epoch=epoch,
                             current_train_iteration=train_iterations_completed,
@@ -412,7 +416,7 @@ def execute_training_loop(
                     checkpoint_saved = True
                     _emit_progress_phase(
                         progress_callback=progress_callback,
-                        phase="checkpoint-save",
+                        phase="durable-checkpoint-save",
                         current_epoch=epoch,
                         current_optimizer_step=optimizer_steps_completed,
                         current_train_iteration=train_iterations_completed,
@@ -426,7 +430,7 @@ def execute_training_loop(
                         eval_runs_completed=eval_runs_completed,
                         latest_durable_checkpoint=latest_durable_checkpoint,
                     )
-                    with torch_profiler_session.phase("task101.checkpoint-save"):
+                    with torch_profiler_session.phase("task101.durable-checkpoint-save"):
                         latest_durable_checkpoint = _save_durable_checkpoint(
                             accelerator=accelerator,
                             output_model_path=output_model_path,
@@ -528,7 +532,7 @@ def execute_training_loop(
                 output_dir = output_model_path / f"checkpoint-epoch-{epoch}"
                 _emit_progress_phase(
                     progress_callback=progress_callback,
-                    phase="checkpoint-save",
+                    phase="export-checkpoint-save",
                     current_epoch=epoch,
                     current_optimizer_step=optimizer_steps_completed,
                     current_train_iteration=train_iterations_completed,
@@ -542,7 +546,7 @@ def execute_training_loop(
                     eval_runs_completed=eval_runs_completed,
                     latest_durable_checkpoint=latest_durable_checkpoint,
                 )
-                with torch_profiler_session.phase("task101.checkpoint-save"):
+                with torch_profiler_session.phase("task101.export-checkpoint-save"):
                     checkpoint_paths.append(
                         save_checkpoint(
                             accelerator=accelerator,
@@ -591,7 +595,7 @@ def execute_training_loop(
         ):
             _emit_progress_phase(
                 progress_callback=progress_callback,
-                phase="checkpoint-save",
+                phase="durable-checkpoint-save",
                 current_epoch=epoch,
                 current_optimizer_step=optimizer_steps_completed,
                 current_train_iteration=train_iterations_completed,
@@ -605,7 +609,7 @@ def execute_training_loop(
                 eval_runs_completed=eval_runs_completed,
                 latest_durable_checkpoint=latest_durable_checkpoint,
             )
-            with torch_profiler_session.phase("task101.checkpoint-save"):
+            with torch_profiler_session.phase("task101.durable-checkpoint-save"):
                 latest_durable_checkpoint = _save_durable_checkpoint(
                     accelerator=accelerator,
                     output_model_path=output_model_path,
@@ -644,7 +648,7 @@ def execute_training_loop(
             final_output_dir = output_model_path / "checkpoint-final"
             _emit_progress_phase(
                 progress_callback=progress_callback,
-                phase="checkpoint-save",
+                phase="export-checkpoint-save",
                 current_epoch=epoch,
                 current_optimizer_step=optimizer_steps_completed,
                 current_train_iteration=train_iterations_completed,
@@ -658,7 +662,7 @@ def execute_training_loop(
                 eval_runs_completed=eval_runs_completed,
                 latest_durable_checkpoint=latest_durable_checkpoint,
             )
-            with torch_profiler_session.phase("task101.checkpoint-save"):
+            with torch_profiler_session.phase("task101.export-checkpoint-save"):
                 checkpoint_paths.append(
                     save_checkpoint(
                         accelerator=accelerator,

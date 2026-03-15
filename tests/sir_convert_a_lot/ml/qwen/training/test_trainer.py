@@ -330,6 +330,9 @@ def test_main_writes_failed_report_artifacts_for_non_finite_loss(
                 consecutive_non_finite_steps=3,
                 max_consecutive_non_finite_steps=3,
                 loss_value=float("nan"),
+                main_loss_value=float("nan"),
+                sub_talker_loss_value=0.1,
+                grad_norm_value=float("nan"),
             )
         ),
     )
@@ -348,7 +351,9 @@ def test_main_writes_failed_report_artifacts_for_non_finite_loss(
     assert report_payload["training_summary"] is None
     assert report_payload["failure"]["current_optimizer_step"] == 17
     assert report_payload["failure"]["current_train_iteration"] == 68
+    assert report_payload["failure"]["step_semantics"]["epoch_index_base"] == 0
     assert report_payload["failure"]["finite_loss_guard"]["optimizer_step"] == 17
+    assert report_payload["failure"]["finite_loss_guard"]["sub_talker_loss_value"] == 0.1
 
 
 def test_main_writes_failure_artifacts_for_startup_system_exit(

@@ -173,6 +173,7 @@ class TrainingFailureSummary:
 
     error: str
     current_phase: str
+    step_semantics: dict[str, object] | None
     current_epoch: int | None
     current_step: int | None
     current_optimizer_step: int | None

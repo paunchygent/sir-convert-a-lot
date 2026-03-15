@@ -16,6 +16,7 @@ tags:
   - training
 links:
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
+  - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
   - docs/backlog/tasks/task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md
@@ -45,6 +46,8 @@ For the preserved Task 101 legacy lane:
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
 - record future live training/eval progress here, not in the skill doc
+- treat `T180` as the active remediation owner for the new non-finite and
+  checkpoint-phase truth issues exposed by the strict `1238` relaunch
 
 Why this is now the clean plan:
 
@@ -159,6 +162,51 @@ Interpretation:
 - the preserved legacy checkpoint has advanced beyond `1238` without requiring
   manual launch JSON edits or a cursor-reset workaround
 
+### 2026-03-15: Strict `1238` Relaunch Failure
+
+- Failed detached launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T110545Z`
+- Failure status checked at:
+  `2026-03-15T12:18:25Z`
+- Terminal failure:
+  - `NonFiniteLossError`
+  - `optimizer_step=1358`
+  - `current_train_iteration=616`
+  - `current_epoch=4`
+  - `consecutive_non_finite_steps=3`
+- Held-out eval truth preserved from the same lane:
+  - `latest_eval_loss=6.574727833271027`
+  - `best_eval_loss=6.574727833271027`
+  - `best_eval_step=1300`
+  - `eval_runs_completed=1`
+- Durable checkpoint truth:
+  - `latest_checkpoint.json` still points to
+    `state-step-00001238`
+  - no newer durable trainer-state checkpoint finalized before failure
+
+Important operator interpretation:
+
+- `current_epoch=4` is the trainer's zero-based resumed epoch cursor, not proof
+  that this relaunch began from a fresh human-facing "epoch 1"
+- the resumed `1238` durable checkpoint already carried `next_epoch=1` and
+  `next_step_in_epoch=8`, so the relaunched lane was already inside a later
+  resumed epoch window
+- the live `phase_history` entries at optimizer steps `1300` and `1332` used
+  the generic phase label `checkpoint-save`, but that label currently conflates
+  durable trainer-state saves with export-only epoch/final checkpoint saves
+- because `latest_checkpoint.json` never advanced beyond `1238`, operators
+  should not assume those later `checkpoint-save` entries represent durable
+  recovery points
+
+Remediation owner for this failure:
+
+- `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+  now owns:
+  - bounded forensic instrumentation for the combined loss, main talker loss,
+    sub-talker loss, and gradient norm
+  - truthful durable-versus-export checkpoint phase labels
+  - explicit epoch-semantics reporting in status/report artifacts
+
 ### 2026-03-15: Abandoned Artifact Cleanup
 
 Removed after the canonical relaunch was confirmed healthy:
@@ -194,22 +242,20 @@ That plan is now superseded because:
 - `1238` preserves more training progress
 - `1238` has a truthful compatible cursor for the replacement bundle
 - rolling back to `1236` would spend operator time for no gain
+- after the strict `1238` relaunch failed at `1358`, the next move is no longer
+  "resume immediately again"; it is "land `T180` bounded forensics and phase
+  truth first, then decide the next bounded retry"
 
-## Canonical Next Command
+## Canonical Next Step
 
-Use the canonical wrapper and let the CLI consume the latest durable checkpoint
-pointer, which now resolves to `state-step-00001238`, while explicitly
-promoting the resumed lane onto the canonical scheduled posture:
+Do not relaunch the recovered training lane yet.
 
-```bash
-pdm run run-hemma -- pdm run qwen-train resume \
-  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot/task101-20260313t102144z \
-  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
-  --checkpoint-interval-steps 500 \
-  --eval-interval-steps 100 \
-  --durable-checkpoint-retention 3 \
-  --skip-build
-```
+The next canonical action is to complete `T180` so operators can see:
+
+- exactly which loss component and gradient signal the non-finite guard is
+  tripping on
+- which checkpoint phases are durable versus export-only
+- and why the resumed epoch cursor is reported as a zero-based value
 
 ## Historical Reference Boundary
 

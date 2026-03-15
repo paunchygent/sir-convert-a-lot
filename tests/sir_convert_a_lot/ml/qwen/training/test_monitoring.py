@@ -49,7 +49,7 @@ def test_launch_resource_monitor_writes_launch_metadata(
 def test_inspect_resource_monitor_splits_train_and_checkpoint_windows(
     tmp_path: Path,
 ) -> None:
-    """Monitor summaries should split train and checkpoint-save windows by phase history."""
+    """Monitor summaries should split train, durable, and export save windows by phase history."""
     launch_root = tmp_path / "monitor-launch"
     launch_root.mkdir(parents=True, exist_ok=True)
     (launch_root / "launch.json").write_text(
@@ -129,7 +129,7 @@ def test_inspect_resource_monitor_splits_train_and_checkpoint_windows(
         phase_history=[
             {"phase": "startup", "updated_at": "2026-03-13T20:00:00Z"},
             {"phase": "train", "updated_at": "2026-03-13T20:00:01Z"},
-            {"phase": "checkpoint-save", "updated_at": "2026-03-13T20:00:03Z"},
+            {"phase": "durable-checkpoint-save", "updated_at": "2026-03-13T20:00:03Z"},
         ],
     )
 
@@ -137,13 +137,19 @@ def test_inspect_resource_monitor_splits_train_and_checkpoint_windows(
     assert payload["available"] is True
     summary_train = payload["summary_train"]
     summary_checkpoint = payload["summary_checkpoint_save"]
+    summary_durable_checkpoint = payload["summary_durable_checkpoint_save"]
+    summary_export_checkpoint = payload["summary_export_checkpoint_save"]
     assert isinstance(summary_train, dict)
     assert isinstance(summary_checkpoint, dict)
+    assert isinstance(summary_durable_checkpoint, dict)
+    assert isinstance(summary_export_checkpoint, dict)
     assert summary_train["sample_count"] == 2
     assert summary_train["gpu_busy_percent_median"] == 30.0
     assert summary_train["first_sample_at"] == "2026-03-13T20:00:01Z"
     assert summary_checkpoint["sample_count"] == 1
     assert summary_checkpoint["gpu_busy_percent_median"] == 10.0
+    assert summary_durable_checkpoint["sample_count"] == 1
+    assert summary_export_checkpoint["sample_count"] == 0
 
 
 def test_inspect_resource_monitor_restores_train_after_checkpoint_window(
@@ -228,7 +234,7 @@ def test_inspect_resource_monitor_restores_train_after_checkpoint_window(
         },
         phase_history=[
             {"phase": "train", "updated_at": "2026-03-13T20:00:01Z"},
-            {"phase": "checkpoint-save", "updated_at": "2026-03-13T20:00:03Z"},
+            {"phase": "export-checkpoint-save", "updated_at": "2026-03-13T20:00:03Z"},
             {"phase": "train", "updated_at": "2026-03-13T20:00:04Z"},
         ],
     )
@@ -236,9 +242,15 @@ def test_inspect_resource_monitor_restores_train_after_checkpoint_window(
     assert payload is not None
     summary_train = payload["summary_train"]
     summary_checkpoint = payload["summary_checkpoint_save"]
+    summary_durable_checkpoint = payload["summary_durable_checkpoint_save"]
+    summary_export_checkpoint = payload["summary_export_checkpoint_save"]
     assert isinstance(summary_train, dict)
     assert isinstance(summary_checkpoint, dict)
+    assert isinstance(summary_durable_checkpoint, dict)
+    assert isinstance(summary_export_checkpoint, dict)
     assert summary_train["sample_count"] == 3
     assert summary_train["gpu_busy_percent_median"] == 40.0
     assert summary_checkpoint["sample_count"] == 1
     assert summary_checkpoint["gpu_busy_percent_median"] == 10.0
+    assert summary_durable_checkpoint["sample_count"] == 0
+    assert summary_export_checkpoint["sample_count"] == 1

@@ -382,6 +382,7 @@ def build_failed_training_report(
         failure=TrainingFailureSummary(
             error=_required_string(failed_status, "error"),
             current_phase=_required_string(failed_status, "current_phase"),
+            step_semantics=_optional_mapping_dict(failed_status, "step_semantics"),
             current_epoch=_optional_mapping_int(failed_status, "current_epoch"),
             current_step=_optional_mapping_int(failed_status, "current_step"),
             current_optimizer_step=_optional_mapping_int(failed_status, "current_optimizer_step"),
@@ -939,4 +940,8 @@ def _step_semantics_payload(gradient_accumulation_steps: int | None) -> dict[str
             "increments only on iterations where accelerate.sync_gradients is true"
         ),
         "train_iteration_definition": "increments on every dataloader iteration",
+        "epoch_index_base": 0,
+        "epoch_definition": (
+            "zero-based dataloader pass index restored from the durable checkpoint cursor on resume"
+        ),
     }

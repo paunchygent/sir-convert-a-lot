@@ -1,5 +1,66 @@
 # Session Handoff
 
+## Session Update (2026-03-15, Task 180 NaN forensics + checkpoint-phase truth)
+
+- Expanded
+  `task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+  so the active remediation contract now explicitly owns:
+  - bounded non-finite loss forensics
+  - truthful durable-versus-export checkpoint phase labels
+  - explicit zero-based epoch semantics in status/report artifacts
+- Updated the long-term task memory and operator ledger:
+  - `docs/backlog/current.md`
+  - `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+  - `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+- Confirmed the "epoch 4" confusion was not a fresh-lane counter bug:
+  - the resumed durable checkpoint `state-step-00001238` already carried
+    `next_epoch=1` and `next_step_in_epoch=8`
+  - the trainer/status surface reports a zero-based resumed epoch cursor, which
+    was truthful internally but previously under-explained for operators
+- Implemented bounded NaN forensics in
+  `scripts/devops/qwen_finetuning_patches/sft_12hz_loop_controls.py` and
+  `scripts/devops/qwen_finetuning_patches/sft_12hz_loop.py`:
+  - each observed optimizer-step loss now stages:
+    - combined loss
+    - main talker loss
+    - sub-talker loss
+    - gradient norm
+  - `NonFiniteLossError` now carries and serializes those values plus per-signal
+    finiteness booleans
+- Implemented truthful checkpoint phase labels:
+  - durable trainer-state saves now emit `durable-checkpoint-save`
+  - export-only epoch/final saves now emit `export-checkpoint-save`
+  - resource-monitor summaries still preserve a combined
+    `summary_checkpoint_save` view while also exposing durable/export splits
+- Extended status/report truth:
+  - `step_semantics` now includes:
+    - `epoch_index_base=0`
+    - explicit epoch-definition text
+  - failed training reports now persist the same step-semantics payload inside
+    `failure`
+- Added/updated focused regression coverage in:
+  - `tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py`
+  - `tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py`
+  - `tests/sir_convert_a_lot/ml/qwen/training/test_monitoring.py`
+  - `tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py`
+- Validation:
+  - `PASS` `pdm run format-all`
+  - `PASS` `pdm run lint-fix`
+  - `PASS` `pdm run typecheck-all`
+  - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_monitoring.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py -q`
+  - `PASS` `pdm run validate-tasks`
+  - `PASS` `pdm run validate-docs`
+  - `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
+## Immediate Next Step
+
+- If the user wants to continue the Hemma recovery lane, inspect the new
+  `finite_loss_guard` payload from the next bounded repro before changing guard
+  policy. The repo can now tell whether the failing signal is the combined
+  loss, the main talker loss, the sub-talker loss, the gradient norm, or a
+  combination of them, and phase history will no longer imply durable
+  checkpoints when only export saves occurred.
+
 ## Session Update (2026-03-15, Task 185 legacy checkpoint recovery)
 
 - Advanced `task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md`.

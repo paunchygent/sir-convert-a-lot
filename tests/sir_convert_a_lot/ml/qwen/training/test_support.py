@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -161,9 +162,20 @@ class _FakeAccelerator:
         """Backpropagate through the fake training graph."""
         loss.backward()
 
-    def clip_grad_norm_(self, parameters: object, _max_norm: float) -> None:
-        """Accept gradient clipping requests without altering the test graph."""
-        del parameters
+    def clip_grad_norm_(self, parameters: Iterable[object], _max_norm: float) -> torch.Tensor:
+        """Return one deterministic gradient norm from the fake parameter set."""
+        total_squared_norm = torch.tensor(0.0, dtype=torch.float32)
+        saw_gradient = False
+        for parameter in parameters:
+            gradient = getattr(parameter, "grad", None)
+            if gradient is None:
+                continue
+            saw_gradient = True
+            gradient_norm = gradient.detach().to(dtype=torch.float32).norm()
+            total_squared_norm = total_squared_norm + (gradient_norm * gradient_norm)
+        if not saw_gradient:
+            return torch.tensor(0.0, dtype=torch.float32)
+        return total_squared_norm.sqrt()
 
     def unwrap_model(self, model: object) -> object:
         """Return the wrapped model unchanged."""

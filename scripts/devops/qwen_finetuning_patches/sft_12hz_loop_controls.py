@@ -55,7 +55,13 @@ class LossObservation:
     current_epoch: int
     current_train_iteration: int
     loss_value: float
+    main_loss_value: float
+    sub_talker_loss_value: float
+    grad_norm_value: float | None
     is_finite: bool
+    main_loss_is_finite: bool
+    sub_talker_loss_is_finite: bool
+    grad_norm_is_finite: bool | None
 
 
 @dataclass(frozen=True)
@@ -66,6 +72,9 @@ class _PendingLossObservation:
     current_epoch: int
     current_train_iteration: int
     staged_loss_cpu: torch.Tensor
+    staged_main_loss_cpu: torch.Tensor
+    staged_sub_talker_loss_cpu: torch.Tensor
+    staged_grad_norm_cpu: torch.Tensor | None
     ready_event: torch.cuda.Event | None
 
 
@@ -82,27 +91,57 @@ class AsyncLossObserver:
         self,
         *,
         loss: torch.Tensor,
+        main_loss: torch.Tensor,
+        sub_talker_loss: torch.Tensor,
+        grad_norm: torch.Tensor | float | None,
         optimizer_step: int,
         current_epoch: int,
         current_train_iteration: int,
     ) -> None:
         """Stage one optimizer-step loss for later host-side inspection."""
-        detached_loss = loss.detach().to(dtype=torch.float32).view(())
-        if detached_loss.device.type != "cuda":
+        detached_loss = _detach_scalar(loss)
+        detached_main_loss = _detach_scalar(main_loss)
+        detached_sub_talker_loss = _detach_scalar(sub_talker_loss)
+        detached_grad_norm = None if grad_norm is None else _detach_scalar(grad_norm)
+        if (
+            detached_loss.device.type != "cuda"
+            and detached_main_loss.device.type != "cuda"
+            and detached_sub_talker_loss.device.type != "cuda"
+            and (detached_grad_norm is None or detached_grad_norm.device.type != "cuda")
+        ):
             self._pending.append(
                 _PendingLossObservation(
                     optimizer_step=optimizer_step,
                     current_epoch=current_epoch,
                     current_train_iteration=current_train_iteration,
                     staged_loss_cpu=detached_loss.to(device="cpu"),
+                    staged_main_loss_cpu=detached_main_loss.to(device="cpu"),
+                    staged_sub_talker_loss_cpu=detached_sub_talker_loss.to(device="cpu"),
+                    staged_grad_norm_cpu=(
+                        None if detached_grad_norm is None else detached_grad_norm.to(device="cpu")
+                    ),
                     ready_event=None,
                 )
             )
             return
 
-        staged_loss_cpu = torch.empty((), dtype=torch.float32, device="cpu", pin_memory=True)
-        staged_loss_cpu.copy_(detached_loss, non_blocking=True)
-        with torch.cuda.device(detached_loss.device):
+        staged_loss_cpu = _copy_scalar_to_cpu(detached_loss)
+        staged_main_loss_cpu = _copy_scalar_to_cpu(detached_main_loss)
+        staged_sub_talker_loss_cpu = _copy_scalar_to_cpu(detached_sub_talker_loss)
+        staged_grad_norm_cpu = (
+            None if detached_grad_norm is None else _copy_scalar_to_cpu(detached_grad_norm)
+        )
+        event_device = next(
+            scalar.device
+            for scalar in (
+                detached_loss,
+                detached_main_loss,
+                detached_sub_talker_loss,
+                detached_grad_norm,
+            )
+            if scalar is not None and scalar.device.type == "cuda"
+        )
+        with torch.cuda.device(event_device):
             ready_event = torch.cuda.Event()
             torch.cuda.current_stream().record_event(ready_event)
         self._pending.append(
@@ -111,6 +150,9 @@ class AsyncLossObserver:
                 current_epoch=current_epoch,
                 current_train_iteration=current_train_iteration,
                 staged_loss_cpu=staged_loss_cpu,
+                staged_main_loss_cpu=staged_main_loss_cpu,
+                staged_sub_talker_loss_cpu=staged_sub_talker_loss_cpu,
+                staged_grad_norm_cpu=staged_grad_norm_cpu,
                 ready_event=ready_event,
             )
         )
@@ -127,13 +169,28 @@ class AsyncLossObserver:
                     break
             self._pending.popleft()
             loss_value = float(pending.staged_loss_cpu.item())
+            main_loss_value = float(pending.staged_main_loss_cpu.item())
+            sub_talker_loss_value = float(pending.staged_sub_talker_loss_cpu.item())
+            grad_norm_value = (
+                None
+                if pending.staged_grad_norm_cpu is None
+                else float(pending.staged_grad_norm_cpu.item())
+            )
             observations.append(
                 LossObservation(
                     optimizer_step=pending.optimizer_step,
                     current_epoch=pending.current_epoch,
                     current_train_iteration=pending.current_train_iteration,
                     loss_value=loss_value,
+                    main_loss_value=main_loss_value,
+                    sub_talker_loss_value=sub_talker_loss_value,
+                    grad_norm_value=grad_norm_value,
                     is_finite=math.isfinite(loss_value),
+                    main_loss_is_finite=math.isfinite(main_loss_value),
+                    sub_talker_loss_is_finite=math.isfinite(sub_talker_loss_value),
+                    grad_norm_is_finite=(
+                        None if grad_norm_value is None else math.isfinite(grad_norm_value)
+                    ),
                 )
             )
         return observations
@@ -151,6 +208,9 @@ class NonFiniteLossError(RuntimeError):
         consecutive_non_finite_steps: int,
         max_consecutive_non_finite_steps: int,
         loss_value: float,
+        main_loss_value: float | None = None,
+        sub_talker_loss_value: float | None = None,
+        grad_norm_value: float | None = None,
     ) -> None:
         self.optimizer_step = optimizer_step
         self.current_epoch = current_epoch
@@ -158,14 +218,29 @@ class NonFiniteLossError(RuntimeError):
         self.consecutive_non_finite_steps = consecutive_non_finite_steps
         self.max_consecutive_non_finite_steps = max_consecutive_non_finite_steps
         self.loss_value = loss_value
+        self.main_loss_value = main_loss_value
+        self.sub_talker_loss_value = sub_talker_loss_value
+        self.grad_norm_value = grad_norm_value
+        self.loss_is_finite = math.isfinite(loss_value)
+        self.main_loss_is_finite = (
+            None if main_loss_value is None else math.isfinite(main_loss_value)
+        )
+        self.sub_talker_loss_is_finite = (
+            None if sub_talker_loss_value is None else math.isfinite(sub_talker_loss_value)
+        )
+        self.grad_norm_is_finite = (
+            None if grad_norm_value is None else math.isfinite(grad_norm_value)
+        )
         super().__init__(
             "Non-finite loss guard triggered after "
             f"{consecutive_non_finite_steps} consecutive optimizer steps "
             f"(threshold={max_consecutive_non_finite_steps}, "
-            f"optimizer_step={optimizer_step}, loss={loss_value})."
+            f"optimizer_step={optimizer_step}, loss={loss_value}, "
+            f"main_loss={main_loss_value}, sub_talker_loss={sub_talker_loss_value}, "
+            f"grad_norm={grad_norm_value})."
         )
 
-    def payload(self) -> dict[str, bool | float | int | str]:
+    def payload(self) -> dict[str, object]:
         """Return a JSON-safe failure payload for status/report artifacts."""
         return {
             "enabled": True,
@@ -177,6 +252,14 @@ class NonFiniteLossError(RuntimeError):
             "consecutive_non_finite_steps": self.consecutive_non_finite_steps,
             "max_consecutive_non_finite_steps": self.max_consecutive_non_finite_steps,
             "loss_value": self.loss_value,
+            "combined_loss_value": self.loss_value,
+            "main_loss_value": self.main_loss_value,
+            "sub_talker_loss_value": self.sub_talker_loss_value,
+            "grad_norm_value": self.grad_norm_value,
+            "combined_loss_is_finite": self.loss_is_finite,
+            "main_loss_is_finite": self.main_loss_is_finite,
+            "sub_talker_loss_is_finite": self.sub_talker_loss_is_finite,
+            "grad_norm_is_finite": self.grad_norm_is_finite,
             "acceptance_measurement_valid": False,
         }
 
@@ -227,6 +310,9 @@ class FiniteLossGuardState:
                 consecutive_non_finite_steps=self.consecutive_non_finite_steps,
                 max_consecutive_non_finite_steps=self.config.max_consecutive_non_finite_steps,
                 loss_value=observation.loss_value,
+                main_loss_value=observation.main_loss_value,
+                sub_talker_loss_value=observation.sub_talker_loss_value,
+                grad_norm_value=observation.grad_norm_value,
             )
 
     def payload(self) -> dict[str, bool | float | int | None]:
@@ -239,3 +325,19 @@ class FiniteLossGuardState:
             "last_non_finite_optimizer_step": self.last_non_finite_optimizer_step,
             "last_non_finite_loss_value": self.last_non_finite_loss_value,
         }
+
+
+def _detach_scalar(value: torch.Tensor | float | int) -> torch.Tensor:
+    """Detach one scalar-like value into a float32 rank-0 tensor."""
+    if isinstance(value, torch.Tensor):
+        return value.detach().to(dtype=torch.float32).view(())
+    return torch.tensor(float(value), dtype=torch.float32)
+
+
+def _copy_scalar_to_cpu(value: torch.Tensor) -> torch.Tensor:
+    """Copy one detached scalar to CPU, using pinned memory for CUDA tensors."""
+    if value.device.type != "cuda":
+        return value.to(device="cpu")
+    staged_value = torch.empty((), dtype=torch.float32, device="cpu", pin_memory=True)
+    staged_value.copy_(value, non_blocking=True)
+    return staged_value

@@ -90,7 +90,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     )
     reporter.heartbeat(
         TrainingProgressHeartbeat(
-            phase="checkpoint-save",
+            phase="durable-checkpoint-save",
             updated_at="2026-03-13T12:00:03Z",
             current_epoch=0,
             current_step=2,
@@ -137,6 +137,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     assert payload["current_train_iteration"] == 2
     assert payload["gradient_accumulation_steps"] == 4
     assert payload["step_semantics"]["gradient_accumulation_steps"] == 4
+    assert payload["step_semantics"]["epoch_index_base"] == 0
     assert payload["smoothed_loss"] == 1.47
     assert payload["latest_eval_loss"] == 0.9
     assert payload["best_eval_loss"] == 0.9
@@ -162,7 +163,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     assert [event["phase"] for event in payload["phase_history"]] == [
         "startup",
         "train",
-        "checkpoint-save",
+        "durable-checkpoint-save",
         "eval",
     ]
     assert launch_payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
@@ -283,6 +284,9 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
             consecutive_non_finite_steps=3,
             max_consecutive_non_finite_steps=3,
             loss_value=float("nan"),
+            main_loss_value=float("nan"),
+            sub_talker_loss_value=0.1,
+            grad_norm_value=float("nan"),
         )
     )
 
@@ -296,6 +300,9 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     assert payload["finite_loss_guard"]["trigger_reason"] == "non-finite-loss"
     assert payload["finite_loss_guard"]["optimizer_step"] == 8
     assert payload["finite_loss_guard"]["current_train_iteration"] == 32
+    assert payload["finite_loss_guard"]["main_loss_is_finite"] is False
+    assert payload["finite_loss_guard"]["sub_talker_loss_is_finite"] is True
+    assert payload["finite_loss_guard"]["grad_norm_is_finite"] is False
 
 
 def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Path) -> None:
@@ -349,6 +356,9 @@ def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Pa
             consecutive_non_finite_steps=3,
             max_consecutive_non_finite_steps=3,
             loss_value=float("nan"),
+            main_loss_value=float("nan"),
+            sub_talker_loss_value=0.1,
+            grad_norm_value=float("nan"),
         )
     )
 
@@ -361,5 +371,9 @@ def test_status_reporter_failure_overrides_stale_live_step_counters(tmp_path: Pa
     assert payload["best_eval_step"] == 1
     assert payload["eval_runs_completed"] == 1
     assert payload["finite_loss_guard"]["optimizer_step"] == 17
+    assert (
+        payload["finite_loss_guard"]["main_loss_value"]
+        != payload["finite_loss_guard"]["sub_talker_loss_value"]
+    )
     assert payload["phase_history"][-1]["current_optimizer_step"] == 17
     assert payload["phase_history"][-1]["current_train_iteration"] == 68

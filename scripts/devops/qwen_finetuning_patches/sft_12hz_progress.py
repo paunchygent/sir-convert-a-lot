@@ -24,7 +24,14 @@ except ModuleNotFoundError:
         DurableCheckpointMetadata,
     )
 
-TrainingPhase = Literal["startup", "train", "eval", "checkpoint-save", "signal-stop"]
+TrainingPhase = Literal[
+    "startup",
+    "train",
+    "eval",
+    "durable-checkpoint-save",
+    "export-checkpoint-save",
+    "signal-stop",
+]
 
 
 @dataclass(frozen=True)
@@ -73,7 +80,12 @@ def build_training_progress_heartbeat(
     best_eval_step: int | None = None,
     eval_runs_completed: int | None = None,
 ) -> TrainingProgressHeartbeat:
-    """Build one immutable progress heartbeat from the trainer state."""
+    """Build one immutable progress heartbeat from the trainer state.
+
+    The `current_epoch` field is the trainer's zero-based dataloader-pass
+    cursor. On resume it reflects the restored durable-checkpoint cursor, not a
+    human-facing one-based epoch label for the relaunch itself.
+    """
     return TrainingProgressHeartbeat(
         phase=phase,
         updated_at=_utc_now_iso(),
