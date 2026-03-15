@@ -241,6 +241,29 @@ and test smaller batching-policy changes first.
   - the offline fit-opportunity audit now uses the same active signal logic
   - focused batching tests now prove the frame-primary candidate changes the
     planned grouping while preserving the stable greedy packer semantics
+- The promoted `M1` frame-primary candidate has now been compared offline on
+  Hemma against the rebuilt bundle:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/task-172-batch-plan-analysis-20260315b-frame-primary/20260315T010121Z`
+  - compared profiles:
+    - `hemma-throughput-balanced-v1`
+    - `hemma-throughput-balanced-frame-primary-v1`
+  - the frame-primary candidate is not an uplift:
+    - baseline mean batch size:
+      `1.4065934065934067`
+    - frame-primary mean batch size:
+      `1.4027397260273973`
+    - baseline singleton share:
+      `0.6675824175824175`
+    - frame-primary singleton share:
+      `0.6684931506849315`
+    - baseline two-row share:
+      `0.2857142857142857`
+    - frame-primary two-row share:
+      `0.2876712328767123`
+  - the candidate does change grouping, but not in a way that improves the
+    stable occupancy envelope
+  - so `M2` is intentionally not launched for this candidate
 
 ## Deliverables
 
@@ -269,6 +292,8 @@ and test smaller batching-policy changes first.
   duplicate Hemma proof.
 - [ ] `M1` lands exactly one targeted batching change promoted by the revised `M0`.
 - [x] `M1` lands exactly one targeted batching change promoted by the revised `M0`.
+- [x] If the promoted `M1` candidate is baseline-equivalent or worse in offline
+  replay, the task records that null result explicitly and does not launch `M2`.
 - [ ] `M2` launches exactly one promoted `M1` candidate and records whether it
   stays finite through `30` optimizer steps / first durable checkpoint.
 - [ ] If `M2` stays finite, bounded Hemma evidence shows higher steady-state
