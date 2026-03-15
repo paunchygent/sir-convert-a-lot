@@ -10,6 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
+  - docs/backlog/tasks/task-184-remediate-task-101-qwen-schedule-pointer-truth-schedule-path-fail-closed-validation-and-retention-3-checkpoint-proof-coverage.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -108,10 +109,33 @@ check.
 - [x] Validation complete
 - [x] Docs updated
 
+## Follow-on Remediation
+
+- [x] Remediate post-review schedule pointer truth, schedule-path fail-closed
+  validation, and retention-`3` proof coverage in
+  `docs/backlog/tasks/task-184-remediate-task-101-qwen-schedule-pointer-truth-schedule-path-fail-closed-validation-and-retention-3-checkpoint-proof-coverage.md`.
+
 ## Notes
 
 - Local implementation and focused validation are complete.
 - Hemma now has scratch-root held-out eval manifests that can drive the new
   standalone eval surface without forcing a full pilot-bundle rebuild.
-- A bounded remote smoke run is still pending from a pushed revision of this
-  slice.
+- Remote standalone eval smoke passed on Hemma against the stable balanced
+  launch root
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-175-throughput-proof-20260314d-balanced/20260314T195507Z`
+  using held-out eval material from
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1/manifests/swedish_checkpoint_dev.prepared.jsonl`.
+- The passing standalone eval wrote canonical machine-readable artifacts under
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-175-throughput-proof-20260314d-balanced/20260314T195507Z/evals/eval-20260315T082624Z`
+  with `status=completed`, `eval_dataloader_length=3`, `eval_batches_completed=3`,
+  and `eval_loss=6.681333859761556`.
+- The first remote schedule smoke against a pre-Task-182 source launch failed
+  closed as designed because `dataloader_length` was absent from the older
+  launch artifacts.
+- A second remote schedule smoke minted a fresh Task 182-compliant source
+  launch on the compact Task 152 benchmark bundle and populated
+  `dataloader_length=92`, `eval_dataloader_length=3`, and real in-training eval
+  fields, but exposed a practical blocker: durable checkpoint finalization is
+  extremely slow on Hemma, with per-step checkpoint materialization producing
+  multi-gigabyte artifacts and keeping the launch in `checkpoint-save` long
+  enough that an end-to-end schedule cycle is still pending.

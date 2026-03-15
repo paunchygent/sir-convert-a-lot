@@ -143,7 +143,7 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
     assert summary.stopped_early is True
     assert summary.smoothed_loss is not None
     assert summary.latest_durable_checkpoint_step == 1
-    assert summary.durable_checkpoint_retention == 2
+    assert summary.durable_checkpoint_retention == 3
     assert summary.durable_checkpoint_min_free_bytes == 16 * 1024**3
     assert summary.gradient_accumulation_steps == 4
     assert summary.train_iterations_completed == 1

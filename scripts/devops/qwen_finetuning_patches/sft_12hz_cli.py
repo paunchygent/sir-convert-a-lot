@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num_epochs", type=int, default=3)
     parser.add_argument("--max_steps", type=int, default=None)
-    parser.add_argument("--checkpoint_interval_steps", type=int, default=100)
+    parser.add_argument("--checkpoint_interval_steps", type=int, default=500)
     parser.add_argument("--eval_interval_steps", type=int, default=DEFAULT_EVAL_INTERVAL_STEPS)
     parser.add_argument(
         "--durable-checkpoint-retention",

@@ -105,9 +105,9 @@ DEFAULT_BATCH_SIZE = 8
 DEFAULT_LR = 2e-5
 DEFAULT_NUM_EPOCHS = 1
 DEFAULT_MAX_STEPS = 8
-DEFAULT_CHECKPOINT_INTERVAL_STEPS = 100
+DEFAULT_CHECKPOINT_INTERVAL_STEPS = 500
 DEFAULT_EVAL_INTERVAL_STEPS_CLI = DEFAULT_EVAL_INTERVAL_STEPS
-DEFAULT_DURABLE_CHECKPOINT_RETENTION = 2
+DEFAULT_DURABLE_CHECKPOINT_RETENTION = 3
 DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES = 16 * 1024**3
 DEFAULT_DATALOADER_NUM_WORKERS = 4
 DEFAULT_DATALOADER_PIN_MEMORY = True
@@ -957,38 +957,35 @@ def main(argv: list[str] | None = None) -> int:
         source_launch = load_training_launch(source_launch_root)
         settings = settings_from_snapshot(source_launch.settings)
         source_run_root = Path(source_launch.run_root)
-        schedule_checkpoint_path: Path | None = (
-            None
-            if args.checkpoint_path is None
-            else _require_under_scratch_root(
+        schedule_checkpoint_path = _require_under_scratch_root(
+            settings,
+            validate_resume_checkpoint_path(
+                source_run_root,
+                load_latest_checkpoint(source_run_root)
+                if args.checkpoint_path is None
+                else Path(args.checkpoint_path),
+            ),
+            label="checkpoint_path",
+        )
+        schedule_eval_jsonl = _require_existing_path(
+            _require_under_scratch_root(
                 settings,
-                validate_resume_checkpoint_path(source_run_root, Path(args.checkpoint_path)),
-                label="checkpoint_path",
-            )
-        )
-        schedule_eval_jsonl: Path | None = (
-            None
-            if args.eval_jsonl is None
-            else _require_existing_path(
-                _require_under_scratch_root(
-                    settings,
-                    Path(args.eval_jsonl),
-                    label="eval_jsonl",
-                ),
+                Path(source_launch.eval_jsonl)
+                if args.eval_jsonl is None
+                else Path(args.eval_jsonl),
                 label="eval_jsonl",
-            )
+            ),
+            label="eval_jsonl",
         )
-        schedule_bundle_root: Path | None = (
-            None
-            if args.pilot_bundle_root is None
-            else _require_existing_path(
-                _require_under_scratch_root(
-                    settings,
-                    Path(args.pilot_bundle_root),
-                    label="pilot_bundle_root",
-                ),
+        schedule_bundle_root = _require_existing_path(
+            _require_under_scratch_root(
+                settings,
+                settings.pilot_bundle_root
+                if args.pilot_bundle_root is None
+                else Path(args.pilot_bundle_root),
                 label="pilot_bundle_root",
-            )
+            ),
+            label="pilot_bundle_root",
         )
         schedule_report = run_schedule_cycle(
             source_launch_root=source_launch_root,

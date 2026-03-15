@@ -204,8 +204,17 @@ Canonical repo surface for the preprocessing lane:
 
 ## Fault-Tolerant Resume
 
-- Checkpoints are written at a bounded step cadence (default 100).
+- Scheduled Task 101 runs use this canonical control posture:
+  - durable checkpoint every `500` optimizer steps
+  - held-out eval every `100` optimizer steps
+  - retain newest `3` durable trainer-state checkpoints
+  - force one durable checkpoint at epoch end before resume/eval decisions
 - Latest durable step is recorded in `latest_checkpoint.json`.
+- Schedule-driven resumes advance the canonical latest detached launch pointer,
+  so pointerless `qwen-train status` and `qwen-train stop` target the resumed
+  launch rather than the earlier stopped source launch.
+- Schedule control fails closed when checkpoint, eval-manifest, or bundle-root
+  paths escape the mounted scratch root or are missing from disk.
 - Resume with: `pdm run qwen-train resume`.
 
 ## Hemma Storage Tiers

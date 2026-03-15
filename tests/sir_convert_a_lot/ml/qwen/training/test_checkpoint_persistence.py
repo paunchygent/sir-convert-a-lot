@@ -121,6 +121,72 @@ def test_save_durable_checkpoint_prunes_older_paths_after_validation(tmp_path: P
     assert final_checkpoint.exists() is True
 
 
+def test_save_durable_checkpoint_retention_three_keeps_newest_three_after_fourth_save(
+    tmp_path: Path,
+) -> None:
+    """The shipped retention-3 contract should keep the newest three durable saves."""
+    accelerator = _FakeAccelerator()
+    output_model_path = tmp_path / "run" / "checkpoints"
+
+    first_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=2,
+        epoch=0,
+        step_in_epoch=1,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=3,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    second_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=4,
+        epoch=0,
+        step_in_epoch=3,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=3,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    third_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=6,
+        epoch=0,
+        step_in_epoch=5,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=3,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+    latest_checkpoint = _save_durable_checkpoint(
+        accelerator=accelerator,
+        output_model_path=output_model_path,
+        optimizer_steps_completed=8,
+        epoch=0,
+        step_in_epoch=7,
+        dataloader_length=10,
+        reason="interval",
+        durable_checkpoint_retention=3,
+        durable_checkpoint_min_free_bytes=16 * 1024**3,
+    )
+
+    retained_paths = _current_durable_checkpoint_paths(output_model_path)
+    latest_pointer = json.loads(
+        (output_model_path.parent / "latest_checkpoint.json").read_text(encoding="utf-8")
+    )
+
+    assert first_checkpoint.checkpoint_path not in retained_paths
+    assert retained_paths == [
+        second_checkpoint.checkpoint_path,
+        third_checkpoint.checkpoint_path,
+        latest_checkpoint.checkpoint_path,
+    ]
+    assert latest_pointer["checkpoint_path"] == latest_checkpoint.checkpoint_path
+
+
 def test_save_durable_checkpoint_maintains_pointer_and_retained_paths_when_validation_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

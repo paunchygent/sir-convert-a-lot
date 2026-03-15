@@ -121,7 +121,7 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         max_steps=8,
         checkpoint_interval_steps=2,
         eval_interval_steps=100,
-        durable_checkpoint_retention=2,
+        durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
     hf_mount = MountResolution(
@@ -242,7 +242,7 @@ def test_inspect_detached_training_reads_container_status_and_reports(
             max_steps=8,
             checkpoint_interval_steps=2,
             eval_interval_steps=100,
-            durable_checkpoint_retention=2,
+            durable_checkpoint_retention=3,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
         command=["sudo", "-n", "docker", "run", "-d"],
@@ -529,7 +529,7 @@ def test_launch_detached_training_accepts_legacy_bundle_without_summary(
         max_steps=8,
         checkpoint_interval_steps=2,
         eval_interval_steps=100,
-        durable_checkpoint_retention=2,
+        durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
     monkeypatch.setattr(
@@ -612,7 +612,7 @@ def test_resume_uses_launch_metadata_dockerfile_path(
             max_steps=8,
             checkpoint_interval_steps=2,
             eval_interval_steps=100,
-            durable_checkpoint_retention=2,
+            durable_checkpoint_retention=3,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
         command=["sudo", "-n", "docker", "run", "-d"],
@@ -751,7 +751,7 @@ def test_stop_detached_training_calls_docker_stop(monkeypatch: pytest.MonkeyPatc
             max_steps=8,
             checkpoint_interval_steps=2,
             eval_interval_steps=100,
-            durable_checkpoint_retention=2,
+            durable_checkpoint_retention=3,
             durable_checkpoint_min_free_bytes=16 * 1024**3,
         ),
         command=["sudo", "-n", "docker", "run", "-d"],

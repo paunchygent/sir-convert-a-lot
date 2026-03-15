@@ -1,5 +1,24 @@
 # Session Handoff
 
+## Session Update (2026-03-15, Task 184 remediation)
+
+- Completed `task-184-remediate-task-101-qwen-schedule-pointer-truth-schedule-path-fail-closed-validation-and-retention-3-checkpoint-proof-coverage.md`.
+- Code outcomes:
+  - schedule-driven `_resume_from_checkpoint()` now advances
+    `latest-launch.json`
+  - `qwen-train schedule` now validates launch-derived default checkpoint,
+    eval-manifest, and bundle-root paths instead of only explicit overrides
+  - checkpoint persistence coverage now proves the newest-`3` durable
+    checkpoint contract after the fourth valid save
+- Validation:
+  - `PASS` `pdm run format-all`
+  - `PASS` `pdm run lint-fix`
+  - `PASS` `pdm run typecheck-all`
+  - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting.py tests/sir_convert_a_lot/ml/qwen/training/test_checkpoint_persistence.py -q`
+  - `PASS` `pdm run validate-tasks`
+  - `PASS` `pdm run validate-docs`
+  - `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 ## Implementation Handoff (2026-03-14, Story 26 T171 -> T173 -> T172)
 
 ### Scope for Next Developer

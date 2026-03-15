@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
-DEFAULT_DURABLE_CHECKPOINT_RETENTION = 2
+DEFAULT_DURABLE_CHECKPOINT_RETENTION = 3
 DEFAULT_DURABLE_CHECKPOINT_MIN_FREE_BYTES = 16 * 1024**3
 # Conservative first-save fallback based on the measured Hemma trainer-state size.
 DEFAULT_DURABLE_CHECKPOINT_ESTIMATE_BYTES = 12 * 1024**3

@@ -49,9 +49,9 @@ def _settings(*, scratch_root: Path) -> TrainingSettings:
         lr=2e-5,
         num_epochs=6,
         max_steps=6000,
-        checkpoint_interval_steps=100,
+        checkpoint_interval_steps=500,
         eval_interval_steps=100,
-        durable_checkpoint_retention=2,
+        durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
 

@@ -55,9 +55,9 @@ def _settings(*, scratch_root: Path) -> TrainingSettings:
         lr=2e-5,
         num_epochs=6,
         max_steps=6000,
-        checkpoint_interval_steps=100,
+        checkpoint_interval_steps=500,
         eval_interval_steps=100,
-        durable_checkpoint_retention=2,
+        durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
     )
 
@@ -160,7 +160,7 @@ def test_resume_from_checkpoint_uses_recorded_repo_root_and_dockerfile(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Schedule resume should relaunch from the source repo root and dockerfile."""
+    """Schedule resume should relaunch from the source repo root and advance the latest pointer."""
     scratch_root = tmp_path / "srv/scratch/sir-convert-a-lot/build"
     settings = _settings(scratch_root=scratch_root)
     repo_root = tmp_path / "recorded-repo"
@@ -289,6 +289,8 @@ def test_resume_from_checkpoint_uses_recorded_repo_root_and_dockerfile(
     assert captured["dockerfile_path"] == dockerfile_path
     assert captured["run_root"] == source_run_root
     assert captured["resume_from_checkpoint"] == checkpoint_path
+    latest_pointer = json.loads((output_root / "latest-launch.json").read_text(encoding="utf-8"))
+    assert latest_pointer == {"launch_root": (output_root / "launch-b").as_posix()}
 
 
 def test_run_schedule_cycle_writes_failure_artifacts_when_segment_exits_early(
@@ -320,6 +322,11 @@ def test_run_schedule_cycle_writes_failure_artifacts_when_segment_exits_early(
         json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
         encoding="utf-8",
     )
+    eval_jsonl_path = Path(launch_payload.eval_jsonl)
+    eval_jsonl_path.parent.mkdir(parents=True, exist_ok=True)
+    eval_jsonl_path.write_text("{}\n", encoding="utf-8")
+    bundle_root = Path(launch_payload.pilot_bundle_root)
+    bundle_root.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.training.schedule_runner.default_schedule_id",
@@ -452,6 +459,20 @@ def test_schedule_command_rejects_eval_paths_outside_scratch_root(
         json.dumps(asdict(launch_payload)) + "\n",
         encoding="utf-8",
     )
+    run_root = Path(launch_payload.run_root)
+    checkpoint_path = run_root / "checkpoints/state-step-00000040"
+    _write_checkpoint_metadata(
+        checkpoint_path,
+        optimizer_steps_completed=40,
+        epoch=0,
+        next_epoch=0,
+        next_step_in_epoch=20,
+    )
+    run_root.mkdir(parents=True, exist_ok=True)
+    (run_root / "latest_checkpoint.json").write_text(
+        json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
     (output_root / "latest-launch.json").write_text(
         json.dumps({"launch_root": launch_root.as_posix()}) + "\n",
         encoding="utf-8",
@@ -476,6 +497,138 @@ def test_schedule_command_rejects_eval_paths_outside_scratch_root(
                 launch_root.as_posix(),
                 "--eval-jsonl",
                 outside_eval_path.as_posix(),
+            ]
+        )
+
+    assert called["value"] is False
+
+
+def test_schedule_command_rejects_launch_metadata_eval_path_outside_scratch_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Schedule should fail closed when the source launch metadata points outside scratch."""
+    scratch_root = tmp_path / "srv/scratch/sir-convert-a-lot/build"
+    output_root = scratch_root / "verification/qwen-training"
+    repo_root = tmp_path / "recorded-repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+    launch_payload = _launch_payload(scratch_root=scratch_root, repo_root=repo_root)
+    launch_payload = DetachedLaunch(
+        **{
+            **asdict(launch_payload),
+            "eval_jsonl": (tmp_path / "outside-eval.jsonl").as_posix(),
+        }
+    )
+    launch_root = output_root / launch_payload.launch_id
+    launch_root.mkdir(parents=True, exist_ok=True)
+    (launch_root / "launch.json").write_text(
+        json.dumps(asdict(launch_payload)) + "\n",
+        encoding="utf-8",
+    )
+    run_root = Path(launch_payload.run_root)
+    checkpoint_path = run_root / "checkpoints/state-step-00000040"
+    _write_checkpoint_metadata(
+        checkpoint_path,
+        optimizer_steps_completed=40,
+        epoch=0,
+        next_epoch=0,
+        next_step_in_epoch=20,
+    )
+    run_root.mkdir(parents=True, exist_ok=True)
+    (run_root / "latest_checkpoint.json").write_text(
+        json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+    (output_root / "latest-launch.json").write_text(
+        json.dumps({"launch_root": launch_root.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+    called = {"value": False}
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.run_schedule_cycle",
+        lambda **kwargs: called.__setitem__("value", True),
+    )
+
+    with pytest.raises(SystemExit, match="`eval_jsonl` must live under"):
+        main(
+            [
+                "schedule",
+                "--output-root",
+                output_root.as_posix(),
+                "--launch-root",
+                launch_root.as_posix(),
+            ]
+        )
+
+    assert called["value"] is False
+
+
+def test_schedule_command_rejects_launch_metadata_bundle_root_outside_scratch_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Schedule should fail closed when the source launch bundle root escapes scratch."""
+    scratch_root = tmp_path / "srv/scratch/sir-convert-a-lot/build"
+    output_root = scratch_root / "verification/qwen-training"
+    repo_root = tmp_path / "recorded-repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+    launch_payload = _launch_payload(scratch_root=scratch_root, repo_root=repo_root)
+    outside_bundle_root = tmp_path / "outside-bundle"
+    eval_jsonl_path = (
+        scratch_root / "reference/qwen-bundle/manifests/swedish_checkpoint_dev.prepared.jsonl"
+    )
+    eval_jsonl_path.parent.mkdir(parents=True, exist_ok=True)
+    eval_jsonl_path.write_text("{}\n", encoding="utf-8")
+    settings_payload = {
+        **asdict(launch_payload.settings),
+        "pilot_bundle_root": outside_bundle_root.as_posix(),
+    }
+    launch_payload = DetachedLaunch(
+        **{
+            **asdict(launch_payload),
+            "settings": TrainingSettingsSnapshot(**settings_payload),
+        }
+    )
+    launch_root = output_root / launch_payload.launch_id
+    launch_root.mkdir(parents=True, exist_ok=True)
+    (launch_root / "launch.json").write_text(
+        json.dumps(asdict(launch_payload)) + "\n",
+        encoding="utf-8",
+    )
+    run_root = Path(launch_payload.run_root)
+    checkpoint_path = run_root / "checkpoints/state-step-00000040"
+    _write_checkpoint_metadata(
+        checkpoint_path,
+        optimizer_steps_completed=40,
+        epoch=0,
+        next_epoch=0,
+        next_step_in_epoch=20,
+    )
+    run_root.mkdir(parents=True, exist_ok=True)
+    (run_root / "latest_checkpoint.json").write_text(
+        json.dumps({"checkpoint_path": checkpoint_path.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+    (output_root / "latest-launch.json").write_text(
+        json.dumps({"launch_root": launch_root.as_posix()}) + "\n",
+        encoding="utf-8",
+    )
+    called = {"value": False}
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.cli.ml.qwen_train.run_schedule_cycle",
+        lambda **kwargs: called.__setitem__("value", True),
+    )
+
+    with pytest.raises(SystemExit, match="`pilot_bundle_root` must live under"):
+        main(
+            [
+                "schedule",
+                "--output-root",
+                output_root.as_posix(),
+                "--launch-root",
+                launch_root.as_posix(),
             ]
         )
 

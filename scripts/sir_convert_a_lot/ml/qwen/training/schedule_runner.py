@@ -47,6 +47,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     status_metadata_path,
     validate_resume_checkpoint_path,
     write_json,
+    write_latest_pointer,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedLaunch,
@@ -148,11 +149,33 @@ def run_schedule_cycle(
             source_launch.dockerfile_path or "containers/qwen-finetune-hemma/Dockerfile"
         )
         dataloader_length = _resolve_dataloader_length(source_launch_root, source_launch)
-        resolved_checkpoint_path = validate_resume_checkpoint_path(
-            source_run_root,
-            load_latest_checkpoint(source_run_root) if checkpoint_path is None else checkpoint_path,
+        resolved_checkpoint_path = _require_under_scratch_root(
+            settings,
+            validate_resume_checkpoint_path(
+                source_run_root,
+                load_latest_checkpoint(source_run_root)
+                if checkpoint_path is None
+                else checkpoint_path,
+            ),
+            label="checkpoint_path",
         )
         checkpoint_metadata = load_durable_checkpoint_metadata(resolved_checkpoint_path)
+        resolved_eval_jsonl = _require_existing_path(
+            _require_under_scratch_root(
+                settings,
+                Path(source_launch.eval_jsonl) if eval_jsonl is None else eval_jsonl,
+                label="eval_jsonl",
+            ),
+            label="eval_jsonl",
+        )
+        resolved_pilot_bundle_root = _require_existing_path(
+            _require_under_scratch_root(
+                settings,
+                settings.pilot_bundle_root if pilot_bundle_root is None else pilot_bundle_root,
+                label="pilot_bundle_root",
+            ),
+            label="pilot_bundle_root",
+        )
         target_optimizer_step = _target_optimizer_step(
             checkpoint_metadata=checkpoint_metadata,
             dataloader_length=dataloader_length,
@@ -223,10 +246,6 @@ def run_schedule_cycle(
             load_latest_checkpoint(source_run_root),
         )
         latest_checkpoint_metadata = load_durable_checkpoint_metadata(latest_checkpoint_path)
-        resolved_eval_jsonl = Path(source_launch.eval_jsonl) if eval_jsonl is None else eval_jsonl
-        resolved_pilot_bundle_root = (
-            settings.pilot_bundle_root if pilot_bundle_root is None else pilot_bundle_root
-        )
         eval_id = default_eval_id()
         eval_output_dir = default_eval_output_dir(active_launch_root, eval_id=eval_id)
         eval_report = run_standalone_eval(
@@ -311,6 +330,26 @@ def _settings_from_launch(source_launch: DetachedLaunch) -> TrainingSettings:
     from scripts.sir_convert_a_lot.ml.qwen.training.models import settings_from_snapshot
 
     return settings_from_snapshot(source_launch.settings)
+
+
+def _require_under_scratch_root(settings: TrainingSettings, path: Path, *, label: str) -> Path:
+    """Fail closed when one schedule-control path escapes the mounted scratch root."""
+    resolved_path = path.resolve()
+    try:
+        resolved_path.relative_to(settings.scratch_build_root.resolve())
+    except ValueError as exc:
+        raise SystemExit(
+            f"`{label}` must live under `{settings.scratch_build_root.as_posix()}`."
+        ) from exc
+    return resolved_path
+
+
+def _require_existing_path(path: Path, *, label: str) -> Path:
+    """Fail closed when one required schedule-control path does not exist."""
+    resolved_path = path.resolve()
+    if not resolved_path.exists():
+        raise SystemExit(f"`{label}` did not exist: {resolved_path.as_posix()}")
+    return resolved_path
 
 
 def _resolve_dataloader_length(source_launch_root: Path, source_launch: DetachedLaunch) -> int:
@@ -469,6 +508,7 @@ def _resume_from_checkpoint(
             "source_launch_root": source_launch_root.as_posix(),
         },
     )
+    write_latest_pointer(output_root, current_launch_root)
     return current_launch_root, launch
 
 

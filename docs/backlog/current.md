@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-13'
+last_updated: '2026-03-15'
 related:
   - docs/backlog/epics/epic-05-v2-only-unified-conversion-core-and-template-first-markdown-pathways.md
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
@@ -203,6 +203,12 @@ This file is the canonical long-term memory index for session progress; session 
   - Synced Story 26, Epic 08, the Qwen runbook, and the Task 101 reference analysis to one root-cause posture: host-orchestration/synchronization bound lane with persistent `NaN` quality risk.
   - Opened follow-on hard-fix tasks `T171`, `T173`, and `T172`.
   - Completed Story 27 and Tasks 166-170 (domain-centric ML structure, CLI rebuild, Docker/runbook alignment).
+- 2026-03-15:
+  - Completed `T184` as the post-review control-plane remediation slice for
+    Task 101 scheduled Qwen runs: schedule-driven resume now advances the
+    latest-launch pointer, schedule preflight fails closed for launch-derived
+    checkpoint/eval/bundle paths, and checkpoint persistence tests now prove
+    the shipped retention-`3` boundary.
 
 ## Next Actions
 
