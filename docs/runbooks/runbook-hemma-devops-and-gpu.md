@@ -144,11 +144,24 @@ Recurring scratch-governance rule for high-churn Qwen lanes:
 
 - audit scratch before long detached proof/training launches:
   `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
+- prefer the recurring idle-safe maintenance pass for routine headroom
+  recovery:
+  `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
 - archive explicit cold scratch roots onto storage with symlink-back path
   stability instead of deleting referenced evidence blindly:
   `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --source-path <scratch-path> ...`
 - use `--prune-docker-state` only for non-active Docker cleanup when reclaiming
   additional headroom
+- install the lightweight recurring user-level timer when the host should keep
+  itself healthy between proof runs:
+  `pdm run run-hemma -- pdm run qwen-scratch-policy install-timer --enable-linger --prune-docker-state`
+- inspect timer state with:
+  `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
+- the recurring pass is scratch-first and idle-safe by contract:
+  - active `qwen-*` containers block maintenance
+  - the explicit scratch-maintenance block file blocks maintenance
+  - cold roots are archived onto `/srv/storage`, not written there directly by
+    active training jobs
 
 ## SSH and Service Health
 

@@ -85,6 +85,27 @@ Treat Hemma storage tiers as an operational contract, not a convenience choice.
 - The Hemma OS disk (`/`) must not be used for long-lived Docker state or
   large ML artifact trees.
 
+Recurring scratch-governance rule for high-churn Qwen lanes:
+
+- keep active proof, training, and evaluation roots on `/srv/scratch`
+- demote only cold completed artifact trees onto `/srv/storage` and keep a
+  symlink at the original scratch path
+- block recurring maintenance while active `qwen-*` containers or an explicit
+  scratch-maintenance block file are present
+- prefer the committed recurring maintenance surface over ad hoc cleanup:
+
+```bash
+pdm run run-hemma -- pdm run qwen-scratch-policy audit
+pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state
+pdm run run-hemma -- pdm run qwen-scratch-policy install-timer --enable-linger --prune-docker-state
+pdm run run-hemma -- pdm run qwen-scratch-policy status-timer
+```
+
+- use `remediate --source-path ...` when you need one explicit, operator-chosen
+  archive move rather than the policy-driven recurring pass
+- Story 29 proof wrappers now fail early on insufficient scratch headroom, so
+  restore headroom before rerunning `qwen-t197-proof` or `qwen-t198-proof`
+
 Deploy parity gate (one-command deploy + verify):
 
 ```bash
