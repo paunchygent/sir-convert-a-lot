@@ -357,10 +357,10 @@ Operator notes:
   packages the exact `diagnose-non-finite`, `status`, and `resume` calls so
   the proof can be handed off cleanly without ad hoc shell assembly.
 
-## Task 198 Detached Accumulation-2 Proof Surface
+## Task 198 Detached Accumulation And Fallback Proof Surface
 
-Use the committed local wrapper to prepare the next Story 29 accumulation-`2`
-lane from the same canonical `1406` checkpoint:
+Use the committed local wrapper to prepare and operate the Story 29
+accumulation and fallback lanes from the same canonical `1406` checkpoint:
 
 1. Prepare the proof package locally:
    `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
@@ -372,6 +372,16 @@ lane from the same canonical `1406` checkpoint:
    `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
 1. Inspect the detached `1500` continuation:
    `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
+1. If the preferred gate still fails after the planned accumulation ladder,
+   launch the fallback replay directly from `1406`:
+   `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
+1. Inspect the fallback replay:
+   `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
+1. Launch the detached fallback standalone eval only after the fallback replay
+   exits cleanly with a truthful `1470` checkpoint:
+   `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
+1. Inspect the detached fallback standalone eval:
+   `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
 
 Operator notes:
 
@@ -382,6 +392,9 @@ Operator notes:
   - `gradient_accumulation_steps=2`
 - The generated `plan.md` and `checklist.md` serve the same role as the `T197`
   package, but for the accumulation-ablation lane.
+- The fallback standalone eval is detached by contract and uses the committed
+  remote helper:
+  `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
 - Both Story 29 proof wrappers now fail early when Hemma scratch free space is
   below the required headroom threshold.
 

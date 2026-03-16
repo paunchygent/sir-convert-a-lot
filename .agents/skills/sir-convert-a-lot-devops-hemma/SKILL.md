@@ -105,6 +105,10 @@ pdm run run-hemma -- pdm run qwen-scratch-policy status-timer
   archive move rather than the policy-driven recurring pass
 - Story 29 proof wrappers now fail early on insufficient scratch headroom, so
   restore headroom before rerunning `qwen-t197-proof` or `qwen-t198-proof`
+- Story 29 fallback standalone eval is also detached by contract:
+  `pdm run run-hemma -- pdm run qwen-story29-eval-detached launch ...`
+  and
+  `pdm run run-hemma -- pdm run qwen-story29-eval-detached status ...`
 
 Deploy parity gate (one-command deploy + verify):
 

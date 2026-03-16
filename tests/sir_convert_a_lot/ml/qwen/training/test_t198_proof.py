@@ -28,10 +28,14 @@ def test_prepare_uses_t198_defaults_and_commands(
     assert config_payload["task_label"] == "Task 198"
     assert config_payload["command_name"] == "qwen-t198-proof"
     assert config_payload["gradient_accumulation_steps"] == 2
+    assert config_payload["fallback_max_steps"] == 1470
     assert "Task 198 Proof Plan" in plan_markdown
     assert "qwen-t198-proof prepare" in plan_markdown
+    assert "launch-fallback1470" in plan_markdown
+    assert "launch-fallback-eval" in plan_markdown
     assert "Task 198 Proof Checklist" in checklist_markdown
     assert "gradient_accumulation_steps=2" in checklist_markdown
+    assert "Fallback 1470 Gate" in checklist_markdown
 
 
 def test_launch_window_defaults_to_accumulation_two(

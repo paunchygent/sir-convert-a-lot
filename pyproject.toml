@@ -154,6 +154,7 @@ distribution = false
 "qwen-ref-mel-cache-comparison" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_ref_mel_cache_comparison"
 "qwen-resume-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_resume_proof"
 "qwen-scratch-policy" = "python -m scripts.sir_convert_a_lot.devops.run_task204_hemma_scratch_policy"
+"qwen-story29-eval-detached" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story29_eval_detached"
 "qwen-t197-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t197_proof"
 "qwen-t198-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t198_proof"
 "qwen-rixvox-train-staging" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_rixvox_train_staging"

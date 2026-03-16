@@ -18,6 +18,8 @@ import subprocess
 from scripts.sir_convert_a_lot.ml.qwen.common.runtime import parse_json_object_from_mixed_stdout
 from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_artifacts import (
     Story29ProofConfig,
+    remote_fallback_eval_output_root,
+    remote_fallback_launch_root,
     remote_gate_launch_root,
     remote_window_launch_root,
 )
@@ -40,6 +42,15 @@ RUN_HEMMA_QWEN_SCRATCH_POLICY_PREFIX = [
     "run",
     "qwen-scratch-policy",
 ]
+RUN_HEMMA_QWEN_STORY29_EVAL_DETACHED_PREFIX = [
+    "pdm",
+    "run",
+    "run-hemma",
+    "--",
+    "pdm",
+    "run",
+    "qwen-story29-eval-detached",
+]
 
 
 def full_remote_command(qwen_train_args: list[str]) -> list[str]:
@@ -50,6 +61,32 @@ def full_remote_command(qwen_train_args: list[str]) -> list[str]:
 def run_remote_training_json(qwen_train_args: list[str], *, label: str) -> dict[str, object]:
     """Run one remote `qwen-train` command and parse its JSON payload."""
     command = full_remote_command(qwen_train_args)
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode != 0 and result.stdout.strip() == "":
+        raise SystemExit(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        )
+    try:
+        payload = parse_json_object_from_mixed_stdout(result.stdout)
+    except SystemExit as exc:
+        raise SystemExit(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        ) from exc
+    return payload
+
+
+def full_remote_eval_detached_command(eval_args: list[str]) -> list[str]:
+    """Wrap raw detached-eval args in the canonical `run-hemma` command prefix."""
+    return [*RUN_HEMMA_QWEN_STORY29_EVAL_DETACHED_PREFIX, *eval_args]
+
+
+def run_remote_eval_detached_json(eval_args: list[str], *, label: str) -> dict[str, object]:
+    """Run one remote detached Story 29 eval command and parse its JSON payload."""
+    command = full_remote_eval_detached_command(eval_args)
     result = subprocess.run(command, check=False, capture_output=True, text=True)
     if result.returncode != 0 and result.stdout.strip() == "":
         raise SystemExit(
@@ -163,6 +200,53 @@ def status_window_remote_command(config: Story29ProofConfig) -> list[str]:
     return full_remote_command(status_window_qwen_train_args(config))
 
 
+def fallback1470_qwen_train_args(config: Story29ProofConfig) -> list[str]:
+    """Return raw `qwen-train` args for the fallback `1406 -> 1470` replay phase."""
+    command = [
+        "diagnose-non-finite",
+        "--output-root",
+        config.remote_training_output_root,
+        "--launch-root",
+        config.source_launch_root,
+        "--checkpoint-path",
+        config.source_checkpoint_path,
+        "--launch-id",
+        config.fallback_launch_id,
+        "--text-embedding-mask-policy",
+        config.text_embedding_mask_policy,
+        "--gradient-accumulation-steps",
+        str(config.gradient_accumulation_steps),
+        "--start-optimizer-step",
+        str(config.window_start_optimizer_step),
+        "--end-optimizer-step",
+        str(config.fallback_max_steps),
+    ]
+    if config.skip_build:
+        command.append("--skip-build")
+    return command
+
+
+def fallback1470_remote_command(config: Story29ProofConfig) -> list[str]:
+    """Return the full remote command for the fallback `1406 -> 1470` replay."""
+    return full_remote_command(fallback1470_qwen_train_args(config))
+
+
+def status_fallback1470_qwen_train_args(config: Story29ProofConfig) -> list[str]:
+    """Return raw `qwen-train` args for fallback `1470` replay status inspection."""
+    return [
+        "status",
+        "--output-root",
+        config.remote_training_output_root,
+        "--launch-root",
+        remote_fallback_launch_root(config).as_posix(),
+    ]
+
+
+def status_fallback1470_remote_command(config: Story29ProofConfig) -> list[str]:
+    """Return the full remote status command for the fallback `1470` phase."""
+    return full_remote_command(status_fallback1470_qwen_train_args(config))
+
+
 def gate_qwen_train_args(config: Story29ProofConfig) -> list[str]:
     """Return raw `qwen-train` args for the `1500` continuation phase."""
     command = [
@@ -210,6 +294,56 @@ def status_gate_remote_command(config: Story29ProofConfig) -> list[str]:
     return full_remote_command(status_gate_qwen_train_args(config))
 
 
+def fallback_eval_detached_args(
+    config: Story29ProofConfig,
+    *,
+    checkpoint_path: str | None = None,
+) -> list[str]:
+    """Return raw detached-eval args for the fallback standalone eval phase."""
+    command = [
+        "launch",
+        "--output-root",
+        remote_fallback_eval_output_root(config).as_posix(),
+        "--",
+        "--output-root",
+        config.remote_training_output_root,
+        "--launch-root",
+        remote_fallback_launch_root(config).as_posix(),
+        "--eval-id",
+        config.fallback_eval_id,
+        "--eval-output-dir",
+        remote_fallback_eval_output_root(config).as_posix(),
+        "--text-embedding-mask-policy",
+        config.text_embedding_mask_policy,
+        "--gradient-accumulation-steps",
+        str(config.gradient_accumulation_steps),
+    ]
+    if checkpoint_path is not None:
+        command.extend(["--checkpoint-path", checkpoint_path])
+    if config.skip_build:
+        command.append("--skip-build")
+    return command
+
+
+def fallback_eval_remote_command(config: Story29ProofConfig) -> list[str]:
+    """Return the full remote detached-eval command for the fallback checkpoint."""
+    return full_remote_eval_detached_command(fallback_eval_detached_args(config))
+
+
+def status_fallback_eval_detached_args(config: Story29ProofConfig) -> list[str]:
+    """Return raw detached-eval args for fallback standalone eval status inspection."""
+    return [
+        "status",
+        "--output-root",
+        remote_fallback_eval_output_root(config).as_posix(),
+    ]
+
+
+def status_fallback_eval_remote_command(config: Story29ProofConfig) -> list[str]:
+    """Return the full remote status command for fallback standalone eval."""
+    return full_remote_eval_detached_command(status_fallback_eval_detached_args(config))
+
+
 def status_summary_markdown(phase_name: str, status_payload: dict[str, object]) -> str:
     """Render one concise markdown summary for a proof phase status payload."""
     pilot_status = status_payload.get("pilot_status")
@@ -224,7 +358,7 @@ def status_summary_markdown(phase_name: str, status_payload: dict[str, object]) 
     )
     return "\n".join(
         [
-            f"# Task 197 {phase_name} Status",
+            f"# Story 29 {phase_name} Status",
             "",
             f"- status: `{status_payload.get('status')}`",
             f"- running: `{status_payload.get('running')}`",
@@ -271,3 +405,55 @@ def ensure_window_passed(config: Story29ProofConfig) -> dict[str, object]:
             "optimizer-step gate before `1500` continuation."
         )
     return status_payload
+
+
+def ensure_fallback_passed(config: Story29ProofConfig) -> dict[str, object]:
+    """Require a successful fallback replay before launching standalone eval."""
+    status_payload = run_remote_training_json(
+        status_fallback1470_qwen_train_args(config),
+        label=f"{config.task_label.lower()} fallback `1470` status",
+    )
+    pilot_status = status_payload.get("pilot_status")
+    current_optimizer_step = (
+        None if not isinstance(pilot_status, dict) else pilot_status.get("current_optimizer_step")
+    )
+    if status_payload.get("running") is True:
+        raise SystemExit(
+            f"{config.task_label} fallback `1470` replay is still running; "
+            "do not launch standalone eval yet."
+        )
+    if status_payload.get("exit_code") != 0:
+        raise SystemExit(
+            f"{config.task_label} fallback `1470` replay did not exit cleanly; "
+            "do not launch standalone eval."
+        )
+    if (
+        not isinstance(current_optimizer_step, int)
+        or current_optimizer_step < config.fallback_max_steps
+    ):
+        raise SystemExit(
+            f"{config.task_label} fallback replay did not reach optimizer step "
+            f"`{config.fallback_max_steps}` before standalone eval."
+        )
+    checkpoint_path = latest_checkpoint_path(status_payload)
+    if checkpoint_path is None:
+        raise SystemExit(
+            f"{config.task_label} fallback replay did not expose a durable checkpoint path for "
+            "standalone eval."
+        )
+    return status_payload
+
+
+def latest_checkpoint_path(status_payload: dict[str, object]) -> str | None:
+    """Return the best available durable checkpoint path from one training status payload."""
+    latest_checkpoint = status_payload.get("latest_checkpoint")
+    if isinstance(latest_checkpoint, dict):
+        checkpoint_path = latest_checkpoint.get("checkpoint_path")
+        if isinstance(checkpoint_path, str):
+            return checkpoint_path
+    pilot_status = status_payload.get("pilot_status")
+    if isinstance(pilot_status, dict):
+        checkpoint_path = pilot_status.get("latest_durable_checkpoint_path")
+        if isinstance(checkpoint_path, str):
+            return checkpoint_path
+    return None

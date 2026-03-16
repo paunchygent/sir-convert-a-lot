@@ -189,6 +189,17 @@ numerical stability.
   planned accumulation ladder from `4` to `2` to `1`.
 - The documented fallback `1470 + standalone eval` gate is now the immediate
   next governed lane.
+- The fallback lane is now prepared in the committed Story 29 proof surface:
+  - direct bounded replay:
+    `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
+  - fallback replay status:
+    `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
+  - detached standalone eval launch:
+    `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
+  - detached standalone eval status:
+    `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
+  - detached eval worker:
+    `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
 
 ## Checklist
 

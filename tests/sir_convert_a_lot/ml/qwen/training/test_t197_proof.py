@@ -28,9 +28,14 @@ def test_prepare_writes_config_plan_and_checklist(
     checklist_markdown = (proof_root / "checklist.md").read_text(encoding="utf-8")
     assert "1406 -> 1418" in plan_markdown
     assert "pdm run run-hemma -- pdm run qwen-train diagnose-non-finite" in plan_markdown
+    assert "launch-fallback1470" in plan_markdown
+    assert "launch-fallback-eval" in plan_markdown
+    assert "1470" in plan_markdown
     assert "required_scratch_free_bytes" in plan_markdown
     assert "1406 -> 1418" in checklist_markdown
     assert "1500" in checklist_markdown
+    assert "Fallback 1470 Gate" in checklist_markdown
+    assert "Fallback Standalone Eval" in checklist_markdown
     assert "scratch free space" in checklist_markdown
     latest_pointer = json.loads((tmp_path / "latest-proof.json").read_text(encoding="utf-8"))
     assert latest_pointer["proof_id"] == "t197-proof"
@@ -180,6 +185,142 @@ def test_launch_gate1500_requires_clean_window_status(
     assert (tmp_path / "t197-proof" / "gate1500-launch.json").exists() is True
 
 
+def test_launch_fallback1470_uses_bounded_diagnose_surface(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The fallback replay launch should use the detached diagnose surface to step `1470`."""
+    prepare_result = main(
+        ["prepare", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
+    )
+    assert prepare_result == 0
+    capsys.readouterr()
+    calls: list[list[str]] = []
+
+    def fake_run(
+        command: list[str], *, check: bool, capture_output: bool, text: bool
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(list(command))
+        if "qwen-scratch-policy" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                json.dumps(
+                    {
+                        "scratch_free_bytes": 80 * 1024**3,
+                        "required_free_bytes": 64 * 1024**3,
+                        "meets_required_headroom": True,
+                    }
+                ),
+                "",
+            )
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            json.dumps({"launch_id": "t197-proof-fallback1470", "container_name": "qwen-diagnose"}),
+            "",
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_runtime.subprocess.run",
+        fake_run,
+    )
+
+    result = main(
+        ["launch-fallback1470", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
+    )
+    capsys.readouterr()
+
+    assert result == 0
+    assert len(calls) == 2
+    command = calls[1]
+    assert "diagnose-non-finite" in command
+    assert "--end-optimizer-step" in command
+    assert "1470" in command
+    assert "--gradient-accumulation-steps" in command
+    assert "4" in command
+    assert (tmp_path / "t197-proof" / "fallback1470-launch.json").exists() is True
+
+
+def test_launch_fallback_eval_requires_clean_fallback_status(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The fallback eval should only launch after a clean fallback replay and checkpoint."""
+    prepare_result = main(
+        ["prepare", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
+    )
+    assert prepare_result == 0
+    capsys.readouterr()
+    calls: list[list[str]] = []
+
+    def fake_run(
+        command: list[str], *, check: bool, capture_output: bool, text: bool
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(list(command))
+        if "qwen-scratch-policy" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                json.dumps(
+                    {
+                        "scratch_free_bytes": 80 * 1024**3,
+                        "required_free_bytes": 64 * 1024**3,
+                        "meets_required_headroom": True,
+                    }
+                ),
+                "",
+            )
+        if "qwen-story29-eval-detached" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                json.dumps({"launch_id": "fallback-eval", "pid": 12345, "running": True}),
+                "",
+            )
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            json.dumps(
+                {
+                    "status": "exited",
+                    "running": False,
+                    "exit_code": 0,
+                    "latest_checkpoint": {
+                        "checkpoint_path": "/srv/scratch/checkpoints/state-step-00001470"
+                    },
+                    "pilot_status": {"current_optimizer_step": 1470},
+                }
+            ),
+            "",
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_runtime.subprocess.run",
+        fake_run,
+    )
+
+    result = main(
+        ["launch-fallback-eval", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
+    )
+    capsys.readouterr()
+
+    assert result == 0
+    assert len(calls) == 3
+    status_command = calls[0]
+    audit_command = calls[1]
+    eval_command = calls[2]
+    assert "status" in status_command
+    assert "qwen-scratch-policy" in audit_command
+    assert "qwen-story29-eval-detached" in eval_command
+    assert "launch" in eval_command
+    assert "--checkpoint-path" in eval_command
+    assert "/srv/scratch/checkpoints/state-step-00001470" in eval_command
+    assert (tmp_path / "t197-proof" / "fallback-eval-launch.json").exists() is True
+
+
 def test_status_commands_write_phase_artifacts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -202,6 +343,21 @@ def test_status_commands_write_phase_artifacts(
                 "exit_code": None,
                 "pilot_status": {"current_optimizer_step": 1452, "eval_runs_completed": 0},
             }
+        elif "qwen-story29-eval-detached" in command:
+            payload = {
+                "running": False,
+                "exit_code": 0,
+                "report_found": True,
+                "eval_status_found": True,
+                "launch_id": "fallback-eval",
+            }
+        elif "t197-proof-fallback1470" in command:
+            payload = {
+                "status": "exited",
+                "running": False,
+                "exit_code": 0,
+                "pilot_status": {"current_optimizer_step": 1470, "eval_runs_completed": 1},
+            }
         else:
             payload = {
                 "status": "exited",
@@ -222,14 +378,26 @@ def test_status_commands_write_phase_artifacts(
     gate_result = main(
         ["status-gate1500", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
     )
+    fallback_result = main(
+        ["status-fallback1470", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
+    )
+    fallback_eval_result = main(
+        ["status-fallback-eval", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
+    )
     capsys.readouterr()
 
     assert window_result == 0
     assert gate_result == 0
+    assert fallback_result == 0
+    assert fallback_eval_result == 0
     assert (tmp_path / "t197-proof" / "window-status.json").exists() is True
     assert (tmp_path / "t197-proof" / "window-status.md").exists() is True
     assert (tmp_path / "t197-proof" / "gate1500-status.json").exists() is True
     assert (tmp_path / "t197-proof" / "gate1500-status.md").exists() is True
+    assert (tmp_path / "t197-proof" / "fallback1470-status.json").exists() is True
+    assert (tmp_path / "t197-proof" / "fallback1470-status.md").exists() is True
+    assert (tmp_path / "t197-proof" / "fallback-eval-status.json").exists() is True
+    assert (tmp_path / "t197-proof" / "fallback-eval-status.md").exists() is True
 
 
 def test_launch_window_fails_closed_on_insufficient_scratch_headroom(

@@ -66,6 +66,12 @@ the preferred or fallback stability proof.
   - `gate1500-launch.json`
   - `gate1500-status.json`
   - `gate1500-status.md`
+  - `fallback1470-launch.json`
+  - `fallback1470-status.json`
+  - `fallback1470-status.md`
+  - `fallback-eval-launch.json`
+  - `fallback-eval-status.json`
+  - `fallback-eval-status.md`
 - First prepared accumulation-`2` package:
   - proof id: `task198-20260316t185616z-accum2-a1`
   - local root:
@@ -136,6 +142,17 @@ the preferred or fallback stability proof.
     - accumulation `1` still did not satisfy the preferred `1500` gate
     - the documented fallback `1470 + standalone eval` gate is now the
       strongest next governed lane unless a new design reason argues otherwise
+  - committed fallback surface:
+    - `qwen-t198-proof` now exposes the fallback commands directly:
+      - `launch-fallback1470`
+      - `status-fallback1470`
+      - `launch-fallback-eval`
+      - `status-fallback-eval`
+    - the fallback replay is a direct bounded `1406 -> 1470`
+      `diagnose-non-finite` run from the canonical RCA checkpoint
+    - the fallback standalone eval launches through the detached Hemma helper
+      `qwen-story29-eval-detached` so the eval result no longer depends on an
+      attached local session
 
 ## Exact Command Sequence
 
@@ -151,6 +168,16 @@ the preferred or fallback stability proof.
    `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
 1. For the next focused ablation lane, prepare accumulation `1` explicitly:
    `pdm run qwen-t198-proof prepare --proof-id <proof-id> --gradient-accumulation-steps 1 --skip-build`
+1. If the preferred gate still fails after the planned accumulation ladder,
+   launch the direct fallback replay:
+   `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
+1. Inspect the direct fallback replay:
+   `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
+1. Launch detached standalone eval only after the fallback replay exits
+   cleanly with a truthful `1470` checkpoint:
+   `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
+1. Inspect the detached fallback eval:
+   `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
 
 ## Deliverables
 
@@ -183,6 +210,6 @@ the preferred or fallback stability proof.
 ## Checklist
 
 - [x] Prepare surface complete
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

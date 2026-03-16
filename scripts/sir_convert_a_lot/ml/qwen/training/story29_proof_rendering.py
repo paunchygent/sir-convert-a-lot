@@ -16,6 +16,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_artifacts import (
+    remote_fallback_eval_output_root,
+    remote_fallback_launch_root,
     remote_gate_launch_root,
     remote_window_launch_root,
 )
@@ -31,6 +33,10 @@ def render_plan_markdown(
     *,
     window_command: list[str],
     status_window_command: list[str],
+    fallback_command: list[str],
+    status_fallback_command: list[str],
+    fallback_eval_command: list[str],
+    status_fallback_eval_command: list[str],
     gate_command: list[str],
     status_gate_command: list[str],
 ) -> str:
@@ -50,6 +56,7 @@ def render_plan_markdown(
                 f"- bounded_window: `{config.window_start_optimizer_step} -> "
                 f"{config.window_end_optimizer_step}`"
             ),
+            f"- fallback_gate_step: `{config.fallback_max_steps}`",
             f"- preferred_gate_step: `{config.gate_max_steps}`",
             f"- gate_checkpoint_interval_steps: `{config.gate_checkpoint_interval_steps}`",
             f"- gate_eval_interval_steps: `{config.gate_eval_interval_steps}`",
@@ -74,6 +81,22 @@ def render_plan_markdown(
                 f"- status-gate1500: `pdm run {config.command_name} status-gate1500 "
                 f"--proof-id {config.proof_id}`"
             ),
+            (
+                f"- launch-fallback1470: `pdm run {config.command_name} launch-fallback1470 "
+                f"--proof-id {config.proof_id}`"
+            ),
+            (
+                f"- status-fallback1470: `pdm run {config.command_name} status-fallback1470 "
+                f"--proof-id {config.proof_id}`"
+            ),
+            (
+                f"- launch-fallback-eval: `pdm run {config.command_name} launch-fallback-eval "
+                f"--proof-id {config.proof_id}`"
+            ),
+            (
+                f"- status-fallback-eval: `pdm run {config.command_name} status-fallback-eval "
+                f"--proof-id {config.proof_id}`"
+            ),
             "",
             "## Raw Remote Commands",
             "",
@@ -81,6 +104,10 @@ def render_plan_markdown(
             f"- replay status: `{' '.join(status_window_command)}`",
             f"- 1500 gate: `{' '.join(gate_command)}`",
             f"- 1500 status: `{' '.join(status_gate_command)}`",
+            f"- fallback 1470 replay: `{' '.join(fallback_command)}`",
+            f"- fallback 1470 status: `{' '.join(status_fallback_command)}`",
+            f"- fallback eval launch: `{' '.join(fallback_eval_command)}`",
+            f"- fallback eval status: `{' '.join(status_fallback_eval_command)}`",
         ]
     )
 
@@ -88,6 +115,8 @@ def render_plan_markdown(
 def render_checklist_markdown(config: Story29ProofConfig) -> str:
     """Render the operator checklist for one prepared Story 29 proof."""
     window_launch_root = remote_window_launch_root(config)
+    fallback_launch_root = remote_fallback_launch_root(config)
+    fallback_eval_output_root = remote_fallback_eval_output_root(config)
     gate_launch_root = remote_gate_launch_root(config)
     return "\n".join(
         [
@@ -151,7 +180,43 @@ def render_checklist_markdown(config: Story29ProofConfig) -> str:
             ),
             (
                 f"- [ ] Fail condition: the run fails before `{config.gate_max_steps}`; if so, "
-                "`T198` becomes the next active task."
+                "prepare the fallback `1470 + standalone eval` lane."
+            ),
+            "",
+            "## Fallback 1470 Gate",
+            "",
+            (
+                f"- [ ] Launch the bounded fallback replay with `pdm run {config.command_name} "
+                f"launch-fallback1470 --proof-id {config.proof_id}`"
+            ),
+            (
+                f"- [ ] Inspect fallback status with `pdm run {config.command_name} "
+                f"status-fallback1470 --proof-id {config.proof_id}`"
+            ),
+            f"- [ ] Verify the fallback replay launch root: `{fallback_launch_root}`",
+            (
+                f"- [ ] Pass condition: detached run exits `0`, reaches optimizer step "
+                f"`{config.fallback_max_steps}`, and mints a truthful durable checkpoint."
+            ),
+            (
+                f"- [ ] Fail condition: the run fails before `{config.fallback_max_steps}`; "
+                "restart remains blocked."
+            ),
+            "",
+            "## Fallback Standalone Eval",
+            "",
+            (
+                f"- [ ] Launch detached standalone eval only after fallback replay passes: "
+                f"`pdm run {config.command_name} launch-fallback-eval --proof-id {config.proof_id}`"
+            ),
+            (
+                f"- [ ] Inspect detached fallback eval with `pdm run {config.command_name} "
+                f"status-fallback-eval --proof-id {config.proof_id}`"
+            ),
+            f"- [ ] Verify the fallback eval output root: `{fallback_eval_output_root}`",
+            (
+                "- [ ] Pass condition: detached eval exits `0` and writes a standalone "
+                "`report.json` with `eval_summary`."
             ),
             "",
             "## Close-Out",
@@ -162,8 +227,8 @@ def render_checklist_markdown(config: Story29ProofConfig) -> str:
                 "mitigation for the preferred gate."
             ),
             (
-                "- [ ] If the proof fails, record the failure step and first bad "
-                "surface before touching `T198`."
+                "- [ ] If the proof falls back, record the `1470` checkpoint and standalone "
+                "eval result before touching `T199`."
             ),
         ]
     )

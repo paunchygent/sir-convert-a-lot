@@ -30,6 +30,7 @@ DEFAULT_SOURCE_CHECKPOINT_PATH = (
 DEFAULT_TEXT_EMBEDDING_MASK_POLICY = "text_span_only"
 DEFAULT_WINDOW_START_OPTIMIZER_STEP = 1406
 DEFAULT_WINDOW_END_OPTIMIZER_STEP = 1418
+DEFAULT_FALLBACK_MAX_STEPS = 1470
 DEFAULT_GATE_MAX_STEPS = 1500
 DEFAULT_GATE_CHECKPOINT_INTERVAL_STEPS = 500
 DEFAULT_GATE_EVAL_INTERVAL_STEPS = 100
@@ -80,12 +81,15 @@ class Story29ProofConfig:
     gradient_accumulation_steps: int
     window_start_optimizer_step: int
     window_end_optimizer_step: int
+    fallback_max_steps: int
     gate_max_steps: int
     gate_checkpoint_interval_steps: int
     gate_eval_interval_steps: int
     required_scratch_free_bytes: int
     skip_build: bool
     window_launch_id: str
+    fallback_launch_id: str
+    fallback_eval_id: str
     gate_launch_id: str
 
 
@@ -155,9 +159,49 @@ def gate_status_markdown_path(local_proof_root: Path) -> Path:
     return local_proof_root / "gate1500-status.md"
 
 
+def fallback_launch_path(local_proof_root: Path) -> Path:
+    """Return the launch artifact path for the fallback `1470` phase."""
+    return local_proof_root / "fallback1470-launch.json"
+
+
+def fallback_status_path(local_proof_root: Path) -> Path:
+    """Return the status artifact path for the fallback `1470` phase."""
+    return local_proof_root / "fallback1470-status.json"
+
+
+def fallback_status_markdown_path(local_proof_root: Path) -> Path:
+    """Return the markdown status artifact path for the fallback `1470` phase."""
+    return local_proof_root / "fallback1470-status.md"
+
+
+def fallback_eval_launch_path(local_proof_root: Path) -> Path:
+    """Return the launch artifact path for the fallback standalone eval phase."""
+    return local_proof_root / "fallback-eval-launch.json"
+
+
+def fallback_eval_status_path(local_proof_root: Path) -> Path:
+    """Return the status artifact path for the fallback standalone eval phase."""
+    return local_proof_root / "fallback-eval-status.json"
+
+
+def fallback_eval_status_markdown_path(local_proof_root: Path) -> Path:
+    """Return the markdown status artifact path for the fallback standalone eval phase."""
+    return local_proof_root / "fallback-eval-status.md"
+
+
 def remote_window_launch_root(config: Story29ProofConfig) -> Path:
     """Return the remote launch root for the bounded replay phase."""
     return Path(config.remote_training_output_root) / config.window_launch_id
+
+
+def remote_fallback_launch_root(config: Story29ProofConfig) -> Path:
+    """Return the remote launch root for the fallback `1470` phase."""
+    return Path(config.remote_training_output_root) / config.fallback_launch_id
+
+
+def remote_fallback_eval_output_root(config: Story29ProofConfig) -> Path:
+    """Return the remote output root for the fallback standalone eval phase."""
+    return remote_fallback_launch_root(config) / "evals" / config.fallback_eval_id
 
 
 def remote_gate_launch_root(config: Story29ProofConfig) -> Path:
@@ -199,12 +243,15 @@ def build_prepare_config(
         gradient_accumulation_steps=int(args.gradient_accumulation_steps),
         window_start_optimizer_step=int(args.window_start_optimizer_step),
         window_end_optimizer_step=int(args.window_end_optimizer_step),
+        fallback_max_steps=int(args.fallback_max_steps),
         gate_max_steps=int(args.gate_max_steps),
         gate_checkpoint_interval_steps=int(args.gate_checkpoint_interval_steps),
         gate_eval_interval_steps=int(args.gate_eval_interval_steps),
         required_scratch_free_bytes=int(args.required_scratch_free_bytes),
         skip_build=bool(args.skip_build),
         window_launch_id=f"{proof_id}-window",
+        fallback_launch_id=f"{proof_id}-fallback1470",
+        fallback_eval_id=f"{proof_id}-fallback-eval",
         gate_launch_id=f"{proof_id}-gate1500",
     )
 
@@ -244,13 +291,44 @@ def load_config(local_proof_root: Path) -> Story29ProofConfig:
         gradient_accumulation_steps=_required_int(payload, "gradient_accumulation_steps"),
         window_start_optimizer_step=_required_int(payload, "window_start_optimizer_step"),
         window_end_optimizer_step=_required_int(payload, "window_end_optimizer_step"),
-        gate_max_steps=_required_int(payload, "gate_max_steps"),
-        gate_checkpoint_interval_steps=_required_int(payload, "gate_checkpoint_interval_steps"),
-        gate_eval_interval_steps=_required_int(payload, "gate_eval_interval_steps"),
-        required_scratch_free_bytes=_required_int(payload, "required_scratch_free_bytes"),
-        skip_build=_required_bool(payload, "skip_build"),
+        fallback_max_steps=_optional_int(
+            payload,
+            "fallback_max_steps",
+            default=DEFAULT_FALLBACK_MAX_STEPS,
+        ),
+        gate_max_steps=_optional_int(payload, "gate_max_steps", default=DEFAULT_GATE_MAX_STEPS),
+        gate_checkpoint_interval_steps=_optional_int(
+            payload,
+            "gate_checkpoint_interval_steps",
+            default=DEFAULT_GATE_CHECKPOINT_INTERVAL_STEPS,
+        ),
+        gate_eval_interval_steps=_optional_int(
+            payload,
+            "gate_eval_interval_steps",
+            default=DEFAULT_GATE_EVAL_INTERVAL_STEPS,
+        ),
+        required_scratch_free_bytes=_optional_int(
+            payload,
+            "required_scratch_free_bytes",
+            default=DEFAULT_REQUIRED_SCRATCH_FREE_BYTES,
+        ),
+        skip_build=_optional_bool(payload, "skip_build", default=False),
         window_launch_id=_required_str(payload, "window_launch_id"),
-        gate_launch_id=_required_str(payload, "gate_launch_id"),
+        fallback_launch_id=_optional_str(
+            payload,
+            "fallback_launch_id",
+            default=f"{_required_str(payload, 'proof_id')}-fallback1470",
+        ),
+        fallback_eval_id=_optional_str(
+            payload,
+            "fallback_eval_id",
+            default=f"{_required_str(payload, 'proof_id')}-fallback-eval",
+        ),
+        gate_launch_id=_optional_str(
+            payload,
+            "gate_launch_id",
+            default=f"{_required_str(payload, 'proof_id')}-gate1500",
+        ),
     )
 
 
@@ -273,6 +351,36 @@ def _required_int(payload: dict[str, object], key: str) -> int:
 def _required_bool(payload: dict[str, object], key: str) -> bool:
     """Return one required boolean field from a JSON payload."""
     value = payload.get(key)
+    if not isinstance(value, bool):
+        raise SystemExit(f"Story 29 proof metadata expected boolean field `{key}`.")
+    return value
+
+
+def _optional_str(payload: dict[str, object], key: str, *, default: str) -> str:
+    """Return one optional string field from a JSON payload with a stable default."""
+    value = payload.get(key)
+    if value is None:
+        return default
+    if not isinstance(value, str):
+        raise SystemExit(f"Story 29 proof metadata expected string field `{key}`.")
+    return value
+
+
+def _optional_int(payload: dict[str, object], key: str, *, default: int) -> int:
+    """Return one optional integer field from a JSON payload with a stable default."""
+    value = payload.get(key)
+    if value is None:
+        return default
+    if not isinstance(value, int):
+        raise SystemExit(f"Story 29 proof metadata expected integer field `{key}`.")
+    return value
+
+
+def _optional_bool(payload: dict[str, object], key: str, *, default: bool) -> bool:
+    """Return one optional boolean field from a JSON payload with a stable default."""
+    value = payload.get(key)
+    if value is None:
+        return default
     if not isinstance(value, bool):
         raise SystemExit(f"Story 29 proof metadata expected boolean field `{key}`.")
     return value

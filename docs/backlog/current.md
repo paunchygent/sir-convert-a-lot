@@ -103,8 +103,8 @@ Story 28 is now operating policy:
       without a non-finite gradient, but it failed during durable checkpoint
       save because Hemma scratch free space fell to about `9 GB`
   - `T204` added the manual scratch audit/remediation lane and the proof
-      launch headroom preflight so detached Story 29 work now fails early on
-      insufficient scratch headroom
+    launch headroom preflight so detached Story 29 work now fails early on
+    insufficient scratch headroom
     - `T205` then restored healthy recurring scratch governance on Hemma:
       - idle-safe `qwen-scratch-policy maintain`
       - a user-level maintenance timer
@@ -184,6 +184,13 @@ Story 28 is now operating policy:
   - therefore accumulation `1` still did not satisfy the preferred gate
 - The documented fallback `1406 -> 1470` plus standalone eval gate is now the
   strongest next governed lane unless Story 29 is deliberately widened again
+- The fallback gate is now prepared in the shared Story 29 proof surface:
+  - `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
+  - `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
+  - `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
+  - `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
+  - the standalone eval phase is detached through
+    `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
 - Keep Task 101 operator truth in

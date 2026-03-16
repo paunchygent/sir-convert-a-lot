@@ -26,6 +26,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story29_proof_rendering import (
     render_plan_markdown,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_artifacts import (
+    DEFAULT_FALLBACK_MAX_STEPS,
     DEFAULT_GATE_CHECKPOINT_INTERVAL_STEPS,
     DEFAULT_GATE_EVAL_INTERVAL_STEPS,
     DEFAULT_GATE_MAX_STEPS,
@@ -41,6 +42,12 @@ from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_artifacts import (
     build_prepare_config,
     checklist_path,
     config_path,
+    fallback_eval_launch_path,
+    fallback_eval_status_markdown_path,
+    fallback_eval_status_path,
+    fallback_launch_path,
+    fallback_status_markdown_path,
+    fallback_status_path,
     gate_launch_path,
     gate_status_markdown_path,
     gate_status_path,
@@ -55,11 +62,22 @@ from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_artifacts import (
     write_markdown,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_runtime import (
+    ensure_fallback_passed,
     ensure_remote_scratch_headroom,
     ensure_window_passed,
+    fallback1470_qwen_train_args,
+    fallback1470_remote_command,
+    fallback_eval_detached_args,
+    fallback_eval_remote_command,
     gate_qwen_train_args,
     gate_remote_command,
+    latest_checkpoint_path,
+    run_remote_eval_detached_json,
     run_remote_training_json,
+    status_fallback1470_qwen_train_args,
+    status_fallback1470_remote_command,
+    status_fallback_eval_detached_args,
+    status_fallback_eval_remote_command,
     status_gate_qwen_train_args,
     status_gate_remote_command,
     status_summary_markdown,
@@ -115,6 +133,7 @@ def build_parser(profile: Story29ProofProfile) -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_WINDOW_END_OPTIMIZER_STEP,
     )
+    prepare.add_argument("--fallback-max-steps", type=int, default=DEFAULT_FALLBACK_MAX_STEPS)
     prepare.add_argument("--gate-max-steps", type=int, default=DEFAULT_GATE_MAX_STEPS)
     prepare.add_argument(
         "--gate-checkpoint-interval-steps",
@@ -136,6 +155,10 @@ def build_parser(profile: Story29ProofProfile) -> argparse.ArgumentParser:
     for command_name, help_text in (
         ("launch-window", "Launch the bounded `1406 -> 1418` replay phase."),
         ("status-window", "Inspect the bounded `1406 -> 1418` replay phase."),
+        ("launch-fallback1470", "Launch the bounded fallback `1406 -> 1470` replay phase."),
+        ("status-fallback1470", "Inspect the bounded fallback `1406 -> 1470` replay phase."),
+        ("launch-fallback-eval", "Launch the detached fallback standalone eval phase."),
+        ("status-fallback-eval", "Inspect the detached fallback standalone eval phase."),
         ("launch-gate1500", "Launch the follow-on `1500` continuation phase."),
         ("status-gate1500", "Inspect the follow-on `1500` continuation phase."),
     ):
@@ -162,6 +185,10 @@ def run_main(profile: Story29ProofProfile, argv: list[str] | None = None) -> int
                 config,
                 window_command=window_remote_command(config),
                 status_window_command=status_window_remote_command(config),
+                fallback_command=fallback1470_remote_command(config),
+                status_fallback_command=status_fallback1470_remote_command(config),
+                fallback_eval_command=fallback_eval_remote_command(config),
+                status_fallback_eval_command=status_fallback_eval_remote_command(config),
                 gate_command=gate_remote_command(config),
                 status_gate_command=status_gate_remote_command(config),
             ),
@@ -200,6 +227,63 @@ def run_main(profile: Story29ProofProfile, argv: list[str] | None = None) -> int
         write_markdown(
             window_status_markdown_path(local_root),
             status_summary_markdown("Window", status_payload),
+        )
+        print(json.dumps(status_payload, indent=2, ensure_ascii=False))
+        return 0
+
+    if args.command == "launch-fallback1470":
+        ensure_remote_scratch_headroom(config)
+        launch_payload = run_remote_training_json(
+            fallback1470_qwen_train_args(config),
+            label=f"{config.task_label.lower()} fallback `1470` replay launch",
+        )
+        write_json(fallback_launch_path(local_root), launch_payload)
+        print(json.dumps(launch_payload, indent=2, ensure_ascii=False))
+        return 0
+
+    if args.command == "status-fallback1470":
+        status_payload = run_remote_training_json(
+            status_fallback1470_qwen_train_args(config),
+            label=f"{config.task_label.lower()} fallback `1470` replay status",
+        )
+        write_json(fallback_status_path(local_root), status_payload)
+        write_markdown(
+            fallback_status_markdown_path(local_root),
+            status_summary_markdown("Fallback1470", status_payload),
+        )
+        print(json.dumps(status_payload, indent=2, ensure_ascii=False))
+        return 0
+
+    if args.command == "launch-fallback-eval":
+        status_payload = ensure_fallback_passed(config)
+        write_json(fallback_status_path(local_root), status_payload)
+        write_markdown(
+            fallback_status_markdown_path(local_root),
+            status_summary_markdown("Fallback1470", status_payload),
+        )
+        ensure_remote_scratch_headroom(config)
+        checkpoint_path = latest_checkpoint_path(status_payload)
+        if checkpoint_path is None:
+            raise SystemExit(
+                f"{config.task_label} fallback replay did not expose a durable checkpoint path."
+            )
+        launch_payload = run_remote_eval_detached_json(
+            fallback_eval_detached_args(config, checkpoint_path=checkpoint_path),
+            label=f"{config.task_label.lower()} fallback standalone eval launch",
+        )
+        write_json(fallback_eval_launch_path(local_root), launch_payload)
+        print(json.dumps(launch_payload, indent=2, ensure_ascii=False))
+        return 0
+
+    if args.command == "status-fallback-eval":
+        status_payload = run_remote_eval_detached_json(
+            status_fallback_eval_detached_args(config),
+            label=f"{config.task_label.lower()} fallback standalone eval status",
+        )
+        write_json(fallback_eval_status_path(local_root), status_payload)
+        write_markdown(
+            fallback_eval_status_markdown_path(local_root),
+            status_summary_markdown("FallbackEval", status_payload),
         )
         print(json.dumps(status_payload, indent=2, ensure_ascii=False))
         return 0

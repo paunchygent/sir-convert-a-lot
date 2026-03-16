@@ -113,6 +113,16 @@ explicitly narrow the scope.
 - If a resumed Task 101 lane fails with repeated non-finite behavior, do not
   keep retrying blind full training runs. The canonical next step is:
   `status -> diagnose-non-finite -> fix -> bounded retry`.
+- Story 29 now has explicit committed proof commands for both the preferred
+  and fallback gates:
+  - preferred gate:
+    `qwen-t197-proof launch-window|status-window|launch-gate1500|status-gate1500`
+    and
+    `qwen-t198-proof launch-window|status-window|launch-gate1500|status-gate1500`
+  - fallback gate:
+    `qwen-t198-proof launch-fallback1470|status-fallback1470|launch-fallback-eval|status-fallback-eval`
+  - the fallback standalone eval is detached through
+    `qwen-story29-eval-detached`
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in
