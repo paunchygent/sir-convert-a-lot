@@ -11,7 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
-from tests.sir_convert_a_lot.ml.qwen.training.test_support import (
+from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import (
     _checkpoint_resume_cursor,
 )
 

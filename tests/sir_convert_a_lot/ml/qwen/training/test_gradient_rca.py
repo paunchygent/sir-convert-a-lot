@@ -24,7 +24,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_gradient_rca import (
     build_gradient_rca_forensics,
 )
-from tests.sir_convert_a_lot.ml.qwen.training.test_support import _FakeQwenModel
+from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import _FakeQwenModel
 
 
 def test_build_gradient_rca_forensics_maps_rows_tokens_and_full_text_context(

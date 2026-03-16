@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.sir_convert_a_lot.ml.qwen.training.test_support import (
+from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import (
     DEFAULT_DURABLE_CHECKPOINT_ESTIMATE_BYTES,
     SFT_12HZ_CHECKPOINTING,
     _checkpoint_advanced_since_latest_save,

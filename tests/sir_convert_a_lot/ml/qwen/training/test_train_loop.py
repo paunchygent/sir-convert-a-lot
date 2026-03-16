@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Exercises `train_with_args` in
       `scripts/devops/qwen_finetuning_patches/sft_12hz.py`.
-    - Uses fakes and factory helpers from `test_support`.
+    - Uses fakes and factory helpers from `training_test_support`.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
-from tests.sir_convert_a_lot.ml.qwen.training.test_support import (
+from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import (
     NonFiniteLossError,
     _FakeAccelerator,
     _FakeDataset,

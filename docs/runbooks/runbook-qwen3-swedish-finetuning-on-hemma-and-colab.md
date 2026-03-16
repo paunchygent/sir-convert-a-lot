@@ -199,6 +199,32 @@ Wrapper-driven Hemma smoke command:
 pdm run run-hemma -- pdm run qwen-smoke
 ```
 
+Task 203 codebook-fusion proof commands:
+
+- Attached short proof when the image already exists:
+
+```bash
+pdm run run-hemma -- pdm run qwen-codebook-fusion-proof --skip-build
+```
+
+- Detached proof launch for longer Hemma evidence collection:
+
+```bash
+pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch -- --skip-build
+```
+
+- Detached proof status / artifact refresh:
+
+```bash
+pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status
+```
+
+Artifacts land under:
+
+- `build/verification/qwen-codebook-fusion-proof/`
+- `launch.json`, `status.json`, `status.md`, `proof.log`,
+  `worker-status.json`, `report.json`, `report.md`, and `failure.txt`
+
 Preprocessing/eval baseline:
 
 - `datasets`, `jiwer`, `librosa`, `soundfile`

@@ -17,6 +17,8 @@ related:
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/tasks/task-192-add-ml-specific-quality-gates-and-importlib-safe-qwen-test-collection.md
+  - docs/backlog/tasks/task-202-harden-qwen-auxiliary-codebook-fusion-numerical-stability-and-assertion-contract.md
+  - docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -153,9 +155,15 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
       fresh-launch default
     - `T196` landed runtime-configurable accumulation across launch, resume,
       capture, diagnose, eval, and schedule
-    - `T197` owns the preferred `1500` gate
-    - `T198` owns the conditional fallback `1470 + standalone eval` gate
-    - `T199` stays blocked until one of those gates passes
+    - `T202` closed a local auxiliary-codebook fusion test failure but did not
+      yet prove that the new hot-path reducer belongs in the Story 29 proof
+      lane
+    - `T203` now owns the keep/replace/revert decision for that helper change
+      before `T197` evidence can rely on it, and that decision must come from
+      Hemma ROCm evidence rather than local Mac CPU probes
+    - `T197` owns the preferred `1500` gate after the `T203` contract audit
+      - `T198` owns the conditional fallback `1470 + standalone eval` gate
+      - `T199` stays blocked until one of those gates passes
 
 ## Next Actions
 
@@ -176,7 +184,18 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   - `gradient_accumulation_steps` is now explicit and runtime-configurable
   - launch, resume, capture, diagnose, eval, and schedule artifacts all record
     the effective value
-- Use `T197` as the preferred bounded proof:
+- Run `T203` before treating the auxiliary codebook fusion reducer as part of
+  the canonical Story 29 proof lane.
+- Make the `T203` decision from Hemma GPU-stack evidence only; local Mac CPU
+  probes are not acceptance evidence for this lane.
+- Use the committed `T203` proof surfaces instead of ad hoc remote commands:
+  - attached short proof:
+    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof --skip-build`
+  - detached long proof launch:
+    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch -- --skip-build`
+  - detached proof status:
+    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status`
+- Use `T197` as the preferred bounded proof after `T203` closes:
   - clear `1406 -> 1418`
   - then reach `1500`
   - then complete the scheduled eval there

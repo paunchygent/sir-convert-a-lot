@@ -23,7 +23,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard_probes import (
     capture_targeted_gradient_probes,
 )
-from tests.sir_convert_a_lot.ml.qwen.training.test_support import _FakeQwenModel
+from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import _FakeQwenModel
 
 
 def _loss_tensors() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:

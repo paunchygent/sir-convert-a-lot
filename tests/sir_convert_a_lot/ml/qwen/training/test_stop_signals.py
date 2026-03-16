@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.sir_convert_a_lot.ml.qwen.training.test_support import (
+from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import (
     TrainingStopState,
     install_training_stop_handlers,
     mark_stop_requested,

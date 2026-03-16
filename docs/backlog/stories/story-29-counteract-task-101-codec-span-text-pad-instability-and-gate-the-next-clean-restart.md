@@ -12,6 +12,7 @@ related:
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/tasks/task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405.md
+  - docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -37,6 +38,10 @@ any new clean base restart until that proof gate is satisfied.
   runtime and control plane.
 - Add one explicit runtime override for `gradient_accumulation_steps` so
   bounded proofs can compare `4`, `2`, and `1` without ad hoc code edits.
+- Audit any auxiliary codebook-fusion hot-path change separately before
+  accepting it as part of the bounded proof contract; do not let a local
+  test-fix slice redefine the Story 29 mitigation without mixed-precision and
+  hot-path evidence.
 - Treat `legacy_codec_span` as an RCA reproduction surface only while the
   mitigation proof is still open.
 - Once `T197` or `T198` proves the winning mitigation, remove
@@ -76,6 +81,10 @@ Out of scope:
   - then run standalone held-out eval from the `1470` checkpoint
 - [ ] No fresh clean base restart is allowed before either the preferred or
   fallback proof gate is met.
+- [ ] Any auxiliary codebook-fusion helper change in the proof lane is either
+  separately proven beneficial and acceptable for mixed-precision hot-path use
+  on the Hemma ROCm stack, or removed before `T197` proof artifacts are
+  treated as canonical.
 - [ ] The training reference ledger is a required update target for every proof
   and decision in this story.
 - [ ] Proof closure on `text_span_only` or `text_span_only` plus reduced
@@ -107,6 +116,7 @@ numerical stability.
 
 1. `docs/backlog/tasks/task-195-land-an-explicit-task-101-text-embedding-mask-policy-and-text-span-only-mitigation.md`
 1. `docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md`
+1. `docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md`
 1. `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
 1. `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
 1. `docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md`
@@ -118,7 +128,14 @@ numerical stability.
 - `T196` is complete and made `gradient_accumulation_steps` explicit and
   runtime-configurable across launch, resume, capture, diagnose, eval, and
   schedule flows.
-- `T197` is now the next active proof step.
+- `T203` is now the next contract-audit step because the current local
+  auxiliary codebook fusion change is not yet accepted as canonical Story 29
+  proof-lane behavior.
+- `T203` now has committed attached and detached Hemma proof surfaces:
+  `qwen-codebook-fusion-proof` and
+  `qwen-codebook-fusion-proof-detached`.
+- `T197` remains the first bounded proof step after `T203` decides whether the
+  fusion helper change stays, is replaced, or is removed from the proof lane.
 
 ## Checklist
 
