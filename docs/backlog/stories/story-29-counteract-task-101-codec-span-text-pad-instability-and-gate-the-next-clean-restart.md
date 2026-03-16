@@ -140,6 +140,10 @@ numerical stability.
 - `T197` now has a committed local wrapper that prepares deterministic proof
   artifacts plus the exact detached Hemma launch/status commands:
   `pdm run qwen-t197-proof`.
+- `T197` then completed on Hemma under `task197-20260316t183555z-a1` and
+  failed again at optimizer step `1417`, so `text_span_only` plus
+  accumulation `4` did not satisfy the preferred gate.
+- `T198` is now the next active task.
 
 ## Checklist
 

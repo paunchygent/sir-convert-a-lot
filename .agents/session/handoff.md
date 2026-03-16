@@ -28,6 +28,9 @@
     `1500` continuation
   - renders `checklist.md` with the canonical Story 29 preflight/pass/fail
     checks for the `1406 -> 1418 -> 1500` gate
+- `T197` then ran on Hemma under `task197-20260316t183555z-a1` and failed
+  again at optimizer step `1417`, so the preferred `1500` continuation did
+  not launch
 - `qwen-train diagnose-non-finite` now exists as the canonical detached
   diagnostic surface.
 - Fast ML quality gates now exist for the Qwen lane:
@@ -157,15 +160,12 @@ Implement Story 29 before any new restart attempt:
    - `gradient_accumulation_steps` is now runtime-configurable
    - launch, resume, capture, diagnose, eval, and schedule artifacts all
      record the effective value
-1. run `T197` as the preferred gate:
-   - prepare one proof package:
-     `pdm run qwen-t197-proof prepare --proof-id <proof-id> --skip-build`
-   - launch/status the bounded replay:
-     `pdm run qwen-t197-proof launch-window --proof-id <proof-id>`
-     `pdm run qwen-t197-proof status-window --proof-id <proof-id>`
-   - only after the replay passes, launch/status the `1500` gate:
-     `pdm run qwen-t197-proof launch-gate1500 --proof-id <proof-id>`
-     `pdm run qwen-t197-proof status-gate1500 --proof-id <proof-id>`
+1. run `T198` as the next active lane:
+   - keep `text_embedding_mask_policy=text_span_only`
+   - start from the same canonical RCA checkpoint `state-step-00001406`
+   - test `gradient_accumulation_steps=2`, then `1` if needed
+   - only use the fallback `1470 + standalone eval` gate if the preferred
+     lane still cannot be cleared
 1. only if `1500` still fails, run `T198`:
    - try accumulation `2`, then `1`
    - if no new design gap remains, use the fallback gate

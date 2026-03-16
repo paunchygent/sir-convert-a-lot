@@ -161,10 +161,12 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
     - `T203` is now complete and reverted that helper change from the Story 29
       proof lane after Hemma ROCm evidence showed identical oracle error and
       about `1.26x` hot-path slowdown for both `bf16` and `fp16`
-    - `T197` now owns the preferred `1500` gate after the closed `T203`
-      contract audit
-      - `T198` owns the conditional fallback `1470 + standalone eval` gate
-      - `T199` stays blocked until one of those gates passes
+    - `T197` then ran on Hemma under `task197-20260316t183555z-a1` and failed
+      again at optimizer step `1417` with
+      `trigger_reason=pre_clip_non_finite_gradients`, so the `1500`
+      continuation did not launch
+    - `T198` now owns the next accumulation-ablation slice and `T199` stays
+      blocked until a preferred or fallback gate passes
 
 ## Next Actions
 
@@ -191,22 +193,14 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof`,
   `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch`,
   and `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status`.
-- Use `T197` as the preferred bounded proof now that `T203` is closed:
-  clear `1406 -> 1418`, then reach `1500`, then complete the scheduled eval
-  there.
-- The committed `T197` wrapper now prepares the exact detached proof surface:
-  - local prepare:
-    `pdm run qwen-t197-proof prepare --proof-id <proof-id> --skip-build`
-  - detached replay launch/status:
-    `pdm run qwen-t197-proof launch-window --proof-id <proof-id>`
-    `pdm run qwen-t197-proof status-window --proof-id <proof-id>`
-  - detached `1500` launch/status:
-    `pdm run qwen-t197-proof launch-gate1500 --proof-id <proof-id>`
-    `pdm run qwen-t197-proof status-gate1500 --proof-id <proof-id>`
-  - deterministic local artifacts land in:
-    `build/verification/qwen-t197-proof/<proof-id>/`
-- Use `T198` only if `T197` clears the old window but still fails before
-  `1500`.
+- Keep the committed `T197` wrapper for future bounded proofs:
+  `pdm run qwen-t197-proof prepare --proof-id <proof-id> --skip-build`,
+  `launch-window`, `status-window`, `launch-gate1500`, and
+  `status-gate1500`.
+- Treat the completed `T197` Hemma proof as negative evidence:
+  `text_span_only` plus accumulation `4` did not clear the old `1417` window.
+- Use `T198` as the next active task for accumulation ablations from the same
+  `1406` RCA checkpoint.
 - Once Story 29 proves the winning mitigation, remove `legacy_codec_span`
   before `T199` launches the next clean restart.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before

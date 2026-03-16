@@ -2,7 +2,7 @@
 id: task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate
 title: Prove the text-span-only mitigation on the 1406-1418 window and the preferred 1500 gate
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
@@ -74,15 +74,36 @@ enough to clear the old failure window and the preferred next review gate.
 1. Inspect the detached `1500` continuation:
    `pdm run qwen-t197-proof status-gate1500 --proof-id <proof-id>`
 
+## Outcome
+
+- Hemma proof id:
+  `task197-20260316t183555z-a1`
+- Local artifact root:
+  `build/verification/qwen-t197-proof/task197-20260316t183555z-a1/`
+- Remote replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task197-20260316t183555z-a1-window`
+- Replay result:
+  - detached replay exited with `exit_code=1`
+  - `current_optimizer_step=1417`
+  - `current_train_iteration=852`
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - the first bad backward surface remained `input_text_embedding.grad`
+- Operator decision:
+  - `text_span_only` plus accumulation `4` did not clear the preferred gate
+  - the `1500` continuation was not launched
+  - `T198` is now the next active task
+
 ## Deliverables
 
-- [ ] One committed `qwen-t197-proof` wrapper prepares deterministic local
+- [x] One committed `qwen-t197-proof` wrapper prepares deterministic local
   proof artifacts and renders the exact detached Hemma commands/checklist.
-- [ ] One bounded replay artifact proves whether the mask-only mitigation
+- [x] One bounded replay artifact proves whether the mask-only mitigation
   clears the `1417` window.
-- [ ] One bounded continuation or equivalent proof artifact proves whether the
-  same mitigation reaches step `1500` and completes eval there.
-- [ ] The training reference ledger records the proof outcome, the active mask
+- [x] One bounded continuation or an explicit no-launch decision records
+  whether the same mitigation can proceed toward step `1500`.
+- [x] The training reference ledger records the proof outcome, the active mask
   policy, the active accumulation value, and the resulting operator decision.
 
 ## Acceptance Criteria
@@ -90,6 +111,9 @@ enough to clear the old failure window and the preferred next review gate.
 - [ ] The `1406 -> 1418` proof artifact is self-describing and records
   `text_embedding_mask_policy=text_span_only` with
   `gradient_accumulation_steps=4`.
+- [ ] If the replay fails before `1418`, the failure step and first bad
+  surface are written into the training reference ledger and `T198` becomes
+  the next active task.
 - [ ] If the proof reaches `1500`, the step-`1500` eval result is written into
   the training reference ledger and treated as the preferred restart gate.
 - [ ] If the proof fails before `1500`, the failure step and first bad surface
@@ -101,7 +125,7 @@ enough to clear the old failure window and the preferred next review gate.
 
 ## Checklist
 
-- [ ] Prepare surface complete
-- [ ] Hemma proof launched
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Prepare surface complete
+- [x] Hemma proof launched
+- [x] Validation complete
+- [x] Docs updated

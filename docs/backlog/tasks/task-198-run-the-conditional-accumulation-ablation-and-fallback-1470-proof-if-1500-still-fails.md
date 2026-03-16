@@ -2,7 +2,7 @@
 id: task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails
 title: Run the conditional accumulation ablation and fallback 1470 proof if 1500 still fails
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
@@ -22,14 +22,17 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Run the planned accumulation ablations only if the structural
-`text_span_only` proof clears the old `1417` window but still fails before the
-preferred `1500` gate, and use those ablations to decide whether the next
-restart can be justified through the preferred or fallback stability proof.
+Run the planned accumulation ablations after the structural
+`text_span_only` proof shows that mask policy alone is insufficient, and use
+those ablations to decide whether the next restart can be justified through
+the preferred or fallback stability proof.
 
 ## PR Scope
 
 - Keep `text_embedding_mask_policy=text_span_only` fixed.
+- Start from the completed `T197` Hemma proof result under
+  `task197-20260316t183555z-a1`, which failed again at optimizer step `1417`
+  before the `1500` continuation could launch.
 - Repeat the bounded proof sequence with:
   - `gradient_accumulation_steps=2`
   - then `gradient_accumulation_steps=1` if needed
@@ -54,8 +57,9 @@ restart can be justified through the preferred or fallback stability proof.
 
 ## Acceptance Criteria
 
-- [ ] The task remains blocked unless `T197` clears `1418` but fails before
-  `1500`.
+- [ ] The task remains blocked unless `T197` has produced a truthful Hemma
+  proof artifact showing that `text_span_only` alone did not satisfy the
+  preferred gate.
 - [ ] Each ablation artifact records both the active mask policy and the active
   accumulation value.
 - [ ] If the fallback gate is used, the resulting `1470` checkpoint and

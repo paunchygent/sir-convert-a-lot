@@ -826,6 +826,38 @@ Operator conclusion:
     must not be treated as part of the restart-gating proof lane
   - `T197` is now the next canonical step from `state-step-00001406`
 
+### 2026-03-16: `T197` Hemma Proof Failed Again At `1417` Under `text_span_only`
+
+- Delivered task:
+  `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
+- Proof id:
+  `task197-20260316t183555z-a1`
+- Local proof artifact root:
+  `build/verification/qwen-t197-proof/task197-20260316t183555z-a1/`
+- Remote replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task197-20260316t183555z-a1-window`
+- Runtime truth:
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=4`
+  - the replay reused the canonical RCA checkpoint `state-step-00001406`
+- Replay result:
+  - detached replay exited with `exit_code=1`
+  - `current_optimizer_step=1417`
+  - `current_train_iteration=852`
+  - the preferred `1500` continuation did not launch
+- Failure truth:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - the first bad backward surface remained `input_text_embedding.grad`
+  - the replay preserved the same step-`1417` failure shape as the earlier
+    bounded RCA lane
+- Operator conclusion:
+  - `text_span_only` alone is not sufficient to clear the preferred Story 29
+    gate
+  - `T198` is now the next active task for the planned accumulation ablations
+  - the next clean restart remains blocked
+
 ## Historical Reference Boundary
 
 `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`
