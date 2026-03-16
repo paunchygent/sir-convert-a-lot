@@ -139,6 +139,8 @@ def build_detached_training_command(
         str(settings.num_epochs),
         "--max-steps",
         str(settings.max_steps),
+        "--gradient-accumulation-steps",
+        str(settings.gradient_accumulation_steps),
         "--checkpoint-interval-steps",
         str(settings.checkpoint_interval_steps),
         "--eval-interval-steps",

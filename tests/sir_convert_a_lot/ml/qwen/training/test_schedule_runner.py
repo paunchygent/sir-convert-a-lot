@@ -62,6 +62,7 @@ def _settings(*, scratch_root: Path) -> TrainingSettings:
         eval_interval_steps=100,
         durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
+        gradient_accumulation_steps=4,
     )
 
 
@@ -155,9 +156,32 @@ def test_target_optimizer_step_uses_checkpoint_cursor_and_epoch_length() -> None
         checkpoint_metadata=checkpoint_metadata,
         dataloader_length=100,
         epochs_per_segment=2,
+        gradient_accumulation_steps=4,
     )
 
     assert target_step == 79
+
+
+def test_target_optimizer_step_uses_effective_gradient_accumulation_steps() -> None:
+    """Schedule target math should honor bounded accumulation overrides."""
+    checkpoint_metadata = DurableCheckpointMetadata(
+        checkpoint_path="/tmp/state-step-00000042",
+        saved_at="2026-03-15T10:20:00Z",
+        reason="interval",
+        optimizer_steps_completed=42,
+        epoch=0,
+        next_epoch=0,
+        next_step_in_epoch=53,
+    )
+
+    target_step = _target_optimizer_step(
+        checkpoint_metadata=checkpoint_metadata,
+        dataloader_length=100,
+        epochs_per_segment=2,
+        gradient_accumulation_steps=2,
+    )
+
+    assert target_step == 116
 
 
 def test_resume_from_checkpoint_uses_recorded_repo_root_and_dockerfile(

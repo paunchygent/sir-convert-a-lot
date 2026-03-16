@@ -60,6 +60,9 @@ enough to clear the old failure window and the preferred next review gate.
 - [ ] If the proof fails before `1500`, the failure step and first bad surface
   are written into the training reference ledger and `T198` becomes the next
   active task.
+- [ ] If this proof establishes `text_span_only` as part of the winning
+  mitigation, the ledger records that `legacy_codec_span` is no longer allowed
+  on the restart lane and must be removed before `T199`.
 
 ## Checklist
 

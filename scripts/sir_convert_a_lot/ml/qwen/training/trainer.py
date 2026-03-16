@@ -30,15 +30,17 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_capture import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import (
     DEFAULT_EVAL_INTERVAL_STEPS,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
-    GRADIENT_ACCUMULATION_STEPS,
-)
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import load_optional_training_bundle_summary
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
 from scripts.sir_convert_a_lot.ml.qwen.training.diagnostic_artifacts import (
     build_diagnostic_replay_bundle,
     diagnostic_replay_bundle_path,
     diagnostic_window_artifact_dir,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    GRADIENT_ACCUMULATION_STEP_CHOICES,
+    resolve_gradient_accumulation_steps,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     StatusReporter,
@@ -97,6 +99,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num-epochs", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=8)
+    parser.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
     parser.add_argument("--checkpoint-interval-steps", type=int, default=500)
     parser.add_argument("--eval-interval-steps", type=int, default=DEFAULT_EVAL_INTERVAL_STEPS)
     parser.add_argument("--durable-checkpoint-retention", type=int, default=3)
@@ -187,6 +195,10 @@ def main() -> int:
         profile_label=str(args.throughput_profile_label),
         max_batch_size=int(args.batch_size),
     )
+    gradient_accumulation_steps = resolve_gradient_accumulation_steps(
+        getattr(args, "gradient_accumulation_steps", None),
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
 
     tracking_plan = {
         "tracker_backends": ["mlflow", "tensorboard"],
@@ -242,7 +254,7 @@ def main() -> int:
             output_dir=output_dir,
             train_row_count=train_row_count,
             eval_row_count=eval_row_count,
-            gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+            gradient_accumulation_steps=gradient_accumulation_steps,
             dataloader_tuning={
                 "num_workers": int(args.dataloader_num_workers),
                 "pin_memory": bool(args.dataloader_pin_memory),
@@ -302,6 +314,7 @@ def main() -> int:
             lr=float(args.lr),
             num_epochs=int(args.num_epochs),
             max_steps=int(args.max_steps),
+            gradient_accumulation_steps=gradient_accumulation_steps,
             checkpoint_interval_steps=int(args.checkpoint_interval_steps),
             eval_interval_steps=int(args.eval_interval_steps),
             durable_checkpoint_retention=int(args.durable_checkpoint_retention),

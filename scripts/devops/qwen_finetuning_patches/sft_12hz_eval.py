@@ -33,9 +33,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
-    GRADIENT_ACCUMULATION_STEPS,
-)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
     resolve_talker_codec_embedding,
     resolve_talker_text_embedding,
@@ -76,6 +73,9 @@ class EvalPreparedRuntime(Protocol):
 
     @property
     def eval_dataloader_length(self) -> int: ...
+
+    @property
+    def gradient_accumulation_steps(self) -> int: ...
 
     @property
     def torch_profiler_session(self) -> "TorchProfilerSession": ...
@@ -123,7 +123,7 @@ def run_eval_pass(
                 current_epoch=current_epoch,
                 current_optimizer_step=current_optimizer_step,
                 current_train_iteration=current_train_iteration,
-                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                gradient_accumulation_steps=prepared.gradient_accumulation_steps,
                 dataloader_length=None,
                 eval_dataloader_length=prepared.eval_dataloader_length,
                 latest_loss=latest_loss,
@@ -166,7 +166,7 @@ def run_eval_pass(
                 current_epoch=current_epoch,
                 current_optimizer_step=current_optimizer_step,
                 current_train_iteration=current_train_iteration,
-                gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+                gradient_accumulation_steps=prepared.gradient_accumulation_steps,
                 dataloader_length=None,
                 eval_dataloader_length=prepared.eval_dataloader_length,
                 latest_loss=latest_loss,
@@ -205,6 +205,7 @@ def run_standalone_eval(prepared: PreparedStandaloneEvalRun) -> StandaloneEvalSu
         init_model_path=str(prepared.args.init_model_path),
         checkpoint_path=str(prepared.args.resume_from_checkpoint),
         eval_jsonl=str(prepared.args.eval_jsonl),
+        gradient_accumulation_steps=prepared.gradient_accumulation_steps,
         batch_size=int(prepared.args.batch_size),
         eval_batches_completed=completed_batches,
         eval_dataloader_length=prepared.eval_dataloader_length,

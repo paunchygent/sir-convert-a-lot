@@ -61,6 +61,8 @@ restart can be justified through the preferred or fallback stability proof.
 - [ ] If the fallback gate is used, the resulting `1470` checkpoint and
   standalone eval result are written into the training reference ledger before
   any restart is allowed.
+- [ ] If the winning mitigation still includes `text_span_only`, the ledger
+  records that `legacy_codec_span` must be removed before `T199` starts.
 
 ## Checklist
 

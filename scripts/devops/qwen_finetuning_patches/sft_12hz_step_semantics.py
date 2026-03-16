@@ -14,7 +14,11 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-GRADIENT_ACCUMULATION_STEPS = 4
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+)
+
+GRADIENT_ACCUMULATION_STEPS = DEFAULT_GRADIENT_ACCUMULATION_STEPS
 
 
 @dataclass(frozen=True)
@@ -26,10 +30,12 @@ class TrainingStepSemantics:
     train_iteration_definition: str
 
 
-def default_training_step_semantics() -> TrainingStepSemantics:
+def default_training_step_semantics(
+    gradient_accumulation_steps: int = GRADIENT_ACCUMULATION_STEPS,
+) -> TrainingStepSemantics:
     """Return the canonical Task 101 step-semantics payload."""
     return TrainingStepSemantics(
-        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         optimizer_step_definition=(
             "increments only on iterations where accelerate.sync_gradients is true"
         ),
@@ -39,6 +45,12 @@ def default_training_step_semantics() -> TrainingStepSemantics:
     )
 
 
-def step_semantics_payload() -> dict[str, object]:
+def step_semantics_payload(
+    gradient_accumulation_steps: int = GRADIENT_ACCUMULATION_STEPS,
+) -> dict[str, object]:
     """Return a JSON-safe mapping for status/report payload embedding."""
-    return asdict(default_training_step_semantics())
+    return asdict(
+        default_training_step_semantics(
+            gradient_accumulation_steps=gradient_accumulation_steps,
+        )
+    )

@@ -30,6 +30,11 @@ from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     load_optional_training_bundle_summary,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    GRADIENT_ACCUMULATION_STEP_CHOICES,
+    resolve_gradient_accumulation_steps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.models import StandaloneEvalReport
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import write_json
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
@@ -66,6 +71,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--checkpoint-path", type=Path, required=True)
     parser.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
+    parser.add_argument(
         "--text-embedding-mask-policy",
         choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
         default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
@@ -100,6 +111,7 @@ def _running_status_payload(
     eval_jsonl: Path,
     output_dir: Path,
     eval_row_count: int,
+    gradient_accumulation_steps: int,
     text_embedding_mask_policy: TextEmbeddingMaskPolicy,
     bundle_precomputed_reference_input: dict[str, object] | None,
     throughput_profile: dict[str, object],
@@ -113,6 +125,7 @@ def _running_status_payload(
         "eval_jsonl": eval_jsonl.as_posix(),
         "output_dir": output_dir.as_posix(),
         "eval_row_count": eval_row_count,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
         "text_embedding_mask_policy": text_embedding_mask_policy,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
@@ -125,6 +138,7 @@ def _completed_status_payload(
     eval_jsonl: Path,
     output_dir: Path,
     eval_row_count: int,
+    gradient_accumulation_steps: int,
     text_embedding_mask_policy: TextEmbeddingMaskPolicy,
     bundle_precomputed_reference_input: dict[str, object] | None,
     throughput_profile: dict[str, object],
@@ -139,6 +153,7 @@ def _completed_status_payload(
         "eval_jsonl": eval_jsonl.as_posix(),
         "output_dir": output_dir.as_posix(),
         "eval_row_count": eval_row_count,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
         "text_embedding_mask_policy": text_embedding_mask_policy,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
@@ -152,6 +167,7 @@ def _failed_status_payload(
     eval_jsonl: Path,
     output_dir: Path,
     eval_row_count: int,
+    gradient_accumulation_steps: int,
     text_embedding_mask_policy: TextEmbeddingMaskPolicy,
     bundle_precomputed_reference_input: dict[str, object] | None,
     throughput_profile: dict[str, object],
@@ -166,6 +182,7 @@ def _failed_status_payload(
         "eval_jsonl": eval_jsonl.as_posix(),
         "output_dir": output_dir.as_posix(),
         "eval_row_count": eval_row_count,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
         "text_embedding_mask_policy": text_embedding_mask_policy,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
@@ -204,6 +221,10 @@ def main() -> int:
         max_batch_size=int(args.batch_size),
     )
     throughput_profile = throughput_policy_payload(throughput_policy)
+    gradient_accumulation_steps = resolve_gradient_accumulation_steps(
+        getattr(args, "gradient_accumulation_steps", None),
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
     text_embedding_mask_policy = resolve_text_embedding_mask_policy(
         getattr(args, "text_embedding_mask_policy", None),
         default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
@@ -215,6 +236,7 @@ def main() -> int:
             eval_jsonl=args.eval_jsonl,
             output_dir=output_dir,
             eval_row_count=eval_row_count,
+            gradient_accumulation_steps=gradient_accumulation_steps,
             text_embedding_mask_policy=text_embedding_mask_policy,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_profile,
@@ -230,6 +252,7 @@ def main() -> int:
             eval_jsonl=args.eval_jsonl.as_posix(),
             output_model_path=(output_dir / "checkpoints").as_posix(),
             batch_size=int(args.batch_size),
+            gradient_accumulation_steps=gradient_accumulation_steps,
             throughput_profile_label=str(args.throughput_profile_label),
             dataloader_num_workers=int(args.dataloader_num_workers),
             dataloader_pin_memory=bool(args.dataloader_pin_memory),
@@ -262,6 +285,7 @@ def main() -> int:
                 eval_jsonl=args.eval_jsonl,
                 output_dir=output_dir,
                 eval_row_count=eval_row_count,
+                gradient_accumulation_steps=gradient_accumulation_steps,
                 text_embedding_mask_policy=text_embedding_mask_policy,
                 bundle_precomputed_reference_input=bundle_precomputed_reference_input,
                 throughput_profile=throughput_profile,
@@ -276,6 +300,7 @@ def main() -> int:
             eval_jsonl=args.eval_jsonl.as_posix(),
             output_dir=output_dir.as_posix(),
             eval_row_count=eval_row_count,
+            gradient_accumulation_steps=gradient_accumulation_steps,
             text_embedding_mask_policy=text_embedding_mask_policy,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_profile,
@@ -294,6 +319,7 @@ def main() -> int:
                 eval_jsonl=args.eval_jsonl,
                 output_dir=output_dir,
                 eval_row_count=eval_row_count,
+                gradient_accumulation_steps=gradient_accumulation_steps,
                 text_embedding_mask_policy=text_embedding_mask_policy,
                 bundle_precomputed_reference_input=bundle_precomputed_reference_input,
                 throughput_profile=throughput_profile,
@@ -308,6 +334,7 @@ def main() -> int:
             eval_jsonl=args.eval_jsonl.as_posix(),
             output_dir=output_dir.as_posix(),
             eval_row_count=eval_row_count,
+            gradient_accumulation_steps=gradient_accumulation_steps,
             text_embedding_mask_policy=text_embedding_mask_policy,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_profile,

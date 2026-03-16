@@ -29,6 +29,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.paths import (
 from scripts.sir_convert_a_lot.ml.qwen.training.diagnostic_artifacts import (
     diagnostic_state_capture_path,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    resolve_gradient_accumulation_steps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     launch_metadata_path,
     launch_root,
@@ -91,6 +94,10 @@ def handle_capture_diagnostic_state(args) -> int:
     settings = replace(
         settings,
         pilot_bundle_root=effective_bundle_root,
+        gradient_accumulation_steps=resolve_gradient_accumulation_steps(
+            getattr(args, "gradient_accumulation_steps", None),
+            default=settings.gradient_accumulation_steps,
+        ),
         text_embedding_mask_policy=resolve_text_embedding_mask_policy(
             getattr(args, "text_embedding_mask_policy", None),
             default=settings.text_embedding_mask_policy,

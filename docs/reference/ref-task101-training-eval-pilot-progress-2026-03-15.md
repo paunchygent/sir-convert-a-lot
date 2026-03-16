@@ -761,10 +761,44 @@ Why this matters:
 Operator conclusion:
 
 - the first structural mitigation surface is now committed and visible
+- `legacy_codec_span` is now a bounded RCA reproduction mode only; it is not
+  allowed to silently ride along into the future restart lane
 - the next implementation step is `T196`, so the same bounded proof lane can
   compare accumulation `4`, `2`, and `1` without code edits
 - the next Hemma proof must use the explicit Story 29 contract rather than any
   implicit batch-mask behavior
+
+### 2026-03-16: `T196` Landed Runtime-Configurable Gradient Accumulation
+
+- Delivered task:
+  `docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md`
+- Runtime/control-plane contract:
+  - supported values are `1`, `2`, and `4`
+  - canonical default remains `4`
+- Control-plane truth:
+  - `launch`, `resume`, `capture-diagnostic-state`, `diagnose-non-finite`,
+    `eval`, and `schedule` now all accept
+    `--gradient-accumulation-steps`
+- Artifact truth:
+  - detached launch metadata now snapshots the effective accumulation value
+  - in-container trainer and standalone evaluator entrypoints both receive the
+    same explicit setting
+  - status/report payloads, step semantics, standalone eval artifacts, replay
+    bundles, and schedule control math now surface the effective value
+- Validation truth:
+  - focused tests passed across launch/control-plane parsing, detached command
+    building, standalone eval orchestration, schedule targeting, diagnostic
+    replay, capture flow, and train-loop reporting
+
+Operator conclusion:
+
+- the bounded proof lane no longer needs code edits to compare accumulation
+  `4`, `2`, and `1`
+- reduced accumulation remains the secondary ablation only; the first proof is
+  still `text_span_only` with accumulation `4`
+- if Story 29 proves `text_span_only` as part of the winning mitigation,
+  `legacy_codec_span` must be removed before `T199` launches the next clean
+  restart
 
 ## Historical Reference Boundary
 

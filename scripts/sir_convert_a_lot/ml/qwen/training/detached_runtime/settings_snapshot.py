@@ -41,6 +41,7 @@ def snapshot_settings(settings: TrainingSettings) -> TrainingSettingsSnapshot:
         eval_interval_steps=settings.eval_interval_steps,
         durable_checkpoint_retention=settings.durable_checkpoint_retention,
         durable_checkpoint_min_free_bytes=settings.durable_checkpoint_min_free_bytes,
+        gradient_accumulation_steps=settings.gradient_accumulation_steps,
         dataloader_num_workers=settings.dataloader_num_workers,
         dataloader_pin_memory=settings.dataloader_pin_memory,
         dataloader_persistent_workers=settings.dataloader_persistent_workers,

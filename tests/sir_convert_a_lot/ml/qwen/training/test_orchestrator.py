@@ -58,6 +58,7 @@ def test_parser_launch_defaults() -> None:
     assert args.lr == DEFAULT_LR
     assert args.num_epochs == DEFAULT_NUM_EPOCHS
     assert args.max_steps == DEFAULT_MAX_STEPS
+    assert args.gradient_accumulation_steps == 4
     assert args.batch_size == 8
     assert args.throughput_profile_label == DEFAULT_THROUGHPUT_PROFILE_LABEL
     assert args.checkpoint_interval_steps == DEFAULT_CHECKPOINT_INTERVAL_STEPS
@@ -114,6 +115,21 @@ def test_parser_resume_accepts_bounded_training_overrides() -> None:
 
     assert args.num_epochs == 12
     assert args.max_steps == 1566
+
+
+def test_parser_resume_accepts_gradient_accumulation_override() -> None:
+    """Resume should accept bounded accumulation overrides for proof runs."""
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "resume",
+            "--gradient-accumulation-steps",
+            "2",
+        ]
+    )
+
+    assert args.gradient_accumulation_steps == 2
 
 
 def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest() -> None:
@@ -188,6 +204,8 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
     assert "--no-data-path-proof-mode" in command
     assert "--throughput-profile-label" in command
     assert DEFAULT_THROUGHPUT_PROFILE_LABEL in command
+    assert "--gradient-accumulation-steps" in command
+    assert "4" in command
     assert "--eval-interval-steps" in command
     assert "100" in command
     assert "--ref-mel-cache-enabled" in command

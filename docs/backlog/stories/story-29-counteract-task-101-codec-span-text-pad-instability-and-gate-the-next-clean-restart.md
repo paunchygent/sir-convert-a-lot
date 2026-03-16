@@ -37,6 +37,10 @@ any new clean base restart until that proof gate is satisfied.
   runtime and control plane.
 - Add one explicit runtime override for `gradient_accumulation_steps` so
   bounded proofs can compare `4`, `2`, and `1` without ad hoc code edits.
+- Treat `legacy_codec_span` as an RCA reproduction surface only while the
+  mitigation proof is still open.
+- Once `T197` or `T198` proves the winning mitigation, remove
+  `legacy_codec_span` before `T199` launches the next clean restart.
 - Use the canonical RCA checkpoint
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
   for all bounded proofs in this story.
@@ -74,6 +78,9 @@ Out of scope:
   fallback proof gate is met.
 - [ ] The training reference ledger is a required update target for every proof
   and decision in this story.
+- [ ] Proof closure on `text_span_only` or `text_span_only` plus reduced
+  accumulation explicitly triggers removal of the `legacy_codec_span` mask
+  surface before the next clean restart.
 - [ ] Story 29 stays aligned with Story 28 package boundaries and does not
   reopen god-file style runtime/control-plane changes.
 
@@ -103,6 +110,15 @@ numerical stability.
 1. `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
 1. `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
 1. `docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md`
+
+## Current Status
+
+- `T195` is complete and made `text_span_only` the fresh-launch default while
+  preserving `legacy_codec_span` only for bounded RCA reproduction.
+- `T196` is complete and made `gradient_accumulation_steps` explicit and
+  runtime-configurable across launch, resume, capture, diagnose, eval, and
+  schedule flows.
+- `T197` is now the next active proof step.
 
 ## Checklist
 

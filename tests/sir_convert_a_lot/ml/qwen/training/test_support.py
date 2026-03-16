@@ -490,6 +490,7 @@ def base_training_args(
     output_model_path: Path,
     train_manifest: Path,
     max_steps: int = 8,
+    gradient_accumulation_steps: int = 4,
     heartbeat_interval_optimizer_steps: int = 20,
     finite_loss_max_consecutive_steps: int = 3,
 ) -> argparse.Namespace:
@@ -503,6 +504,7 @@ def base_training_args(
         lr=2e-5,
         num_epochs=1,
         max_steps=max_steps,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         checkpoint_interval_steps=500,
         eval_interval_steps=100,
         durable_checkpoint_retention=3,

@@ -19,9 +19,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     dataloader_tuning_payload,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_setup import PreparedTrainingRun
-from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
-    GRADIENT_ACCUMULATION_STEPS,
-)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import TrainingTrackerSummary
 
 
@@ -65,7 +62,7 @@ def build_training_summary(
         durable_checkpoint_min_free_bytes=int(args.durable_checkpoint_min_free_bytes),
         dataloader_length=prepared.dataloader_length,
         eval_dataloader_length=prepared.eval_dataloader_length,
-        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        gradient_accumulation_steps=prepared.gradient_accumulation_steps,
         optimizer_steps_completed=optimizer_steps_completed,
         train_iterations_completed=train_iterations_completed,
         latest_eval_loss=latest_eval_loss,

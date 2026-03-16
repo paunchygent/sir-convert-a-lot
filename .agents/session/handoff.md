@@ -144,8 +144,10 @@ Implement Story 29 before any new restart attempt:
    - `text_embedding_mask_policy` is now explicit
    - fresh launches default to `text_span_only`
    - older launch metadata remains reproducible as `legacy_codec_span`
-1. land `T196` so `gradient_accumulation_steps` becomes runtime-configurable
-   for bounded proofs
+1. keep `T196` as the landed bounded-proof control surface:
+   - `gradient_accumulation_steps` is now runtime-configurable
+   - launch, resume, capture, diagnose, eval, and schedule artifacts all
+     record the effective value
 1. run `T197` as the preferred gate:
    - clear `1406 -> 1418`
    - then reach `1500`
@@ -156,6 +158,8 @@ Implement Story 29 before any new restart attempt:
      `1470 + standalone eval`
 1. keep `T199` blocked until either the preferred or fallback proof gate is
    satisfied and recorded in the training reference ledger
+1. once Story 29 proves the winning mitigation, remove `legacy_codec_span`
+   before `T199` launches the next clean restart
 
 ## Open Risks
 
@@ -177,12 +181,13 @@ Implement Story 29 before any new restart attempt:
 - `PASS` `pdm run format-all`
 - `PASS` `pdm run lint-fix`
 - `PASS` `pdm run typecheck-all`
+- `PASS` `pdm run test-ml -q` (`244 passed`)
 - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_launch_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_diagnose_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_command_builder.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_inspect_service.py tests/sir_convert_a_lot/ml/qwen/training/test_diagnostic_replay.py tests/sir_convert_a_lot/ml/qwen/training/test_optimizer_guard.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_status_payloads.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_failure_projection.py tests/sir_convert_a_lot/ml/qwen/training/test_train_step_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py -q`
 - `PASS` `pdm run validate-tasks`
 - `PASS` `pdm run validate-docs`
-- `PASS` focused `T195` tests covering dataset collation, launch defaults,
-  detached commands, runtime fingerprint artifacts, and standalone eval/report
-  payloads
+- `PASS` focused `T196` tests covering launch defaults, detached commands,
+  replay/capture parser defaults, standalone eval artifacts, schedule control
+  math, and accumulation-aware train-loop/runtime reporting
 
 ## Key References
 

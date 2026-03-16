@@ -92,3 +92,5 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
     )
     assert "--text-embedding-mask-policy" in command
     assert "text_span_only" in command
+    assert "--gradient-accumulation-steps" in command
+    assert "4" in command

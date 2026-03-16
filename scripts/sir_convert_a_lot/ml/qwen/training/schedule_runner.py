@@ -25,9 +25,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
     DurableCheckpointMetadata,
     load_durable_checkpoint_metadata,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
-    GRADIENT_ACCUMULATION_STEPS,
-)
 from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     MountResolution,
     prepare_qwen_image,
@@ -180,6 +177,7 @@ def run_schedule_cycle(
             checkpoint_metadata=checkpoint_metadata,
             dataloader_length=dataloader_length,
             epochs_per_segment=epochs_per_segment,
+            gradient_accumulation_steps=settings.gradient_accumulation_steps,
         )
 
         rocm_smi_before = run_checked(
@@ -383,6 +381,7 @@ def _target_optimizer_step(
     checkpoint_metadata: DurableCheckpointMetadata,
     dataloader_length: int,
     epochs_per_segment: int,
+    gradient_accumulation_steps: int,
 ) -> int:
     """Return the optimizer-step boundary for the next scheduled stop."""
     remaining_microbatches = dataloader_length - checkpoint_metadata.next_step_in_epoch
@@ -390,7 +389,7 @@ def _target_optimizer_step(
         remaining_microbatches = dataloader_length
     total_microbatches = remaining_microbatches + max(epochs_per_segment - 1, 0) * dataloader_length
     return checkpoint_metadata.optimizer_steps_completed + ceil(
-        total_microbatches / GRADIENT_ACCUMULATION_STEPS
+        total_microbatches / gradient_accumulation_steps
     )
 
 

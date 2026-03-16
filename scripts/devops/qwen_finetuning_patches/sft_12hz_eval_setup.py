@@ -65,6 +65,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     load_optional_training_bundle_summary,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    resolve_gradient_accumulation_steps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     resolve_text_embedding_mask_policy,
@@ -86,6 +90,7 @@ class PreparedStandaloneEvalRun:
     model: TrainableQwenModelProtocol
     eval_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
     eval_dataloader_length: int
+    gradient_accumulation_steps: int
     effective_dataloader_tuning: DataloaderTuning
     throughput_batch_policy: ThroughputBatchPolicy
     throughput_profile_payload: dict[str, object]
@@ -178,6 +183,10 @@ def prepare_standalone_eval_run(args: argparse.Namespace) -> PreparedStandaloneE
             ),
         )
     )
+    gradient_accumulation_steps = resolve_gradient_accumulation_steps(
+        getattr(args, "gradient_accumulation_steps", None),
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
     accelerator = Accelerator(mixed_precision="bf16")
     checkpoint_metadata = load_durable_checkpoint_metadata(checkpoint_path)
     bundle_summary = (
@@ -227,6 +236,7 @@ def prepare_standalone_eval_run(args: argparse.Namespace) -> PreparedStandaloneE
         model=model,
         eval_dataloader=eval_dataloader,
         eval_dataloader_length=len(eval_dataloader),
+        gradient_accumulation_steps=gradient_accumulation_steps,
         effective_dataloader_tuning=effective_dataloader_tuning,
         throughput_batch_policy=throughput_batch_policy,
         throughput_profile_payload=throughput_policy_payload(throughput_batch_policy),

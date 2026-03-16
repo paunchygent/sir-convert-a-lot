@@ -159,6 +159,7 @@ def _trainer_args(
         lr=2e-5,
         num_epochs=1,
         max_steps=1406,
+        gradient_accumulation_steps=4,
         checkpoint_interval_steps=500,
         eval_interval_steps=100,
         durable_checkpoint_retention=3,
@@ -198,6 +199,7 @@ def test_parser_diagnose_non_finite_defaults() -> None:
 
     assert args.start_optimizer_step == DEFAULT_DIAGNOSTIC_START_OPTIMIZER_STEP
     assert args.end_optimizer_step == DEFAULT_DIAGNOSTIC_END_OPTIMIZER_STEP
+    assert args.gradient_accumulation_steps is None
     assert args.disable_resource_monitor is False
     assert args.skip_build is False
 

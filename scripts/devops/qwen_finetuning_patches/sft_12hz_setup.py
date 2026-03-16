@@ -81,9 +81,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
     DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
     RefMelCache,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
-    GRADIENT_ACCUMULATION_STEPS,
-)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
     talker_runtime_fingerprint,
 )
@@ -96,6 +93,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     load_optional_training_bundle_summary,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    resolve_gradient_accumulation_steps,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
@@ -219,6 +220,7 @@ class PreparedTrainingRun:
     eval_dataloader: DataLoader[object] | Sequence[object]
     dataloader_length: int
     eval_dataloader_length: int
+    gradient_accumulation_steps: int
     effective_dataloader_tuning: DataloaderTuning
     throughput_batch_policy: ThroughputBatchPolicy
     throughput_profile_payload: dict[str, object]
@@ -381,8 +383,12 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
             else str(args.tensorboard_logging_dir)
         ),
     )
+    gradient_accumulation_steps = resolve_gradient_accumulation_steps(
+        getattr(args, "gradient_accumulation_steps", None),
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
     accelerator = Accelerator(
-        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         mixed_precision="bf16",
         log_with=list(tracker_config.tracker_backends),
         project_dir=tracker_config.tensorboard_logging_dir,
@@ -482,6 +488,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         eval_dataloader=eval_dataloader,
         dataloader_length=len(train_dataloader),
         eval_dataloader_length=len(eval_dataloader),
+        gradient_accumulation_steps=gradient_accumulation_steps,
         effective_dataloader_tuning=effective_dataloader_tuning,
         throughput_batch_policy=throughput_batch_policy,
         throughput_profile_payload=throughput_policy_payload(

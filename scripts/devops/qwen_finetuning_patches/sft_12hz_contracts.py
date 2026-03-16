@@ -76,6 +76,7 @@ class StandaloneEvalSummary:
     init_model_path: str
     checkpoint_path: str
     eval_jsonl: str
+    gradient_accumulation_steps: int
     batch_size: int
     eval_batches_completed: int
     eval_dataloader_length: int

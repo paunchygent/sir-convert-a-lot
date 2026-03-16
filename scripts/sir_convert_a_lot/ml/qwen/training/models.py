@@ -16,6 +16,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    GradientAccumulationSteps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     TextEmbeddingMaskPolicy,
@@ -46,6 +50,7 @@ class TrainingSettings:
     eval_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
+    gradient_accumulation_steps: GradientAccumulationSteps = DEFAULT_GRADIENT_ACCUMULATION_STEPS
     dataloader_num_workers: int = 4
     dataloader_pin_memory: bool = True
     dataloader_persistent_workers: bool = True
@@ -92,6 +97,7 @@ class TrainingSettingsSnapshot:
     eval_interval_steps: int
     durable_checkpoint_retention: int
     durable_checkpoint_min_free_bytes: int
+    gradient_accumulation_steps: GradientAccumulationSteps = DEFAULT_GRADIENT_ACCUMULATION_STEPS
     dataloader_num_workers: int = 4
     dataloader_pin_memory: bool = True
     dataloader_persistent_workers: bool = True
@@ -242,6 +248,7 @@ class StandaloneEvalReport:
     eval_jsonl: str
     output_dir: str
     eval_row_count: int
+    gradient_accumulation_steps: GradientAccumulationSteps
     text_embedding_mask_policy: TextEmbeddingMaskPolicy
     bundle_precomputed_reference_input: dict[str, object] | None
     throughput_profile: dict[str, object] | None
@@ -292,6 +299,7 @@ def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettin
         model_id=snapshot.model_id,
         train_manifest_family=snapshot.train_manifest_family,
         eval_manifest_family=snapshot.eval_manifest_family,
+        gradient_accumulation_steps=snapshot.gradient_accumulation_steps,
         text_embedding_mask_policy=snapshot.text_embedding_mask_policy,
         batch_size=snapshot.batch_size,
         throughput_profile_label=snapshot.throughput_profile_label,

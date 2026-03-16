@@ -115,6 +115,7 @@ def test_capture_diagnostic_state_parser_exposes_canonical_defaults() -> None:
     args = parser.parse_args(["capture-diagnostic-state"])
 
     assert args.target_optimizer_step == DEFAULT_CAPTURE_DIAGNOSTIC_STATE_TARGET_OPTIMIZER_STEP
+    assert args.gradient_accumulation_steps is None
     assert args.checkpoint_interval_steps is None
     assert args.disable_resource_monitor is False
     assert args.skip_build is False

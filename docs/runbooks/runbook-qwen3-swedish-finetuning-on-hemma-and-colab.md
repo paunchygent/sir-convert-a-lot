@@ -278,9 +278,19 @@ Operational consequence:
   - fresh `qwen-train launch` runs default to `text_span_only`
   - replay/resume/eval/capture flows keep backward-compatible legacy behavior
     unless operators pass an override
+- `T196` now makes accumulation explicit in the same operator surface:
+  - `--gradient-accumulation-steps 4`
+  - `--gradient-accumulation-steps 2`
+  - `--gradient-accumulation-steps 1`
+  - the canonical default remains `4`
+  - launch/resume/capture/diagnose/eval/schedule artifacts now record the
+    effective value
 - only if that mask-only mitigation does not clear the `1417` failure should
   operators test lower `gradient_accumulation_steps` as the secondary bounded
   ablation
+- once Story 29 proves the winning mitigation, remove `legacy_codec_span`
+  before launching the next clean restart; keep the legacy mode only for
+  bounded RCA reproduction until that point
 - the preferred proof target before any clean restart is:
   - clear `1406 -> 1418`
   - then reach step `1500`

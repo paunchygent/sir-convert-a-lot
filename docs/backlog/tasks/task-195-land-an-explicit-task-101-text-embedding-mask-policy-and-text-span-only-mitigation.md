@@ -74,6 +74,10 @@ the codec-span text-pad instability proven from `state-step-00001406`.
 - Runtime fingerprint, detached launch metadata, standalone eval artifacts, and
   reporting payloads now expose the effective policy so bounded Story 29 proofs
   are self-describing.
+- `legacy_codec_span` remains in the repo only as a bounded RCA reproduction
+  surface until Story 29 proves the winning mitigation; once that proof closes,
+  the legacy mask surface must be removed before the clean restart task
+  proceeds.
 
 ## Checklist
 

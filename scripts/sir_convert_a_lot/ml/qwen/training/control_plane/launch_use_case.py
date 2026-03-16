@@ -20,6 +20,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime import (
     default_launch_id,
     launch_detached_training,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    resolve_gradient_accumulation_steps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     launch_metadata_path,
     launch_root,
@@ -122,6 +126,10 @@ def build_settings_from_args(args) -> TrainingSettings:
         lr=float(args.lr),
         num_epochs=int(args.num_epochs),
         max_steps=int(args.max_steps),
+        gradient_accumulation_steps=resolve_gradient_accumulation_steps(
+            getattr(args, "gradient_accumulation_steps", None),
+            default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+        ),
         checkpoint_interval_steps=int(args.checkpoint_interval_steps),
         eval_interval_steps=int(args.eval_interval_steps),
         durable_checkpoint_retention=int(args.durable_checkpoint_retention),

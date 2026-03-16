@@ -15,6 +15,10 @@ import json
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    resolve_gradient_accumulation_steps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedLaunch,
     DetachedStatus,
@@ -440,6 +444,14 @@ def load_launch(
             settings_payload,
             "durable_checkpoint_min_free_bytes",
             default=default_durable_checkpoint_min_free_bytes,
+        ),
+        gradient_accumulation_steps=resolve_gradient_accumulation_steps(
+            (
+                None
+                if "gradient_accumulation_steps" not in settings_payload
+                else _required_int(settings_payload, "gradient_accumulation_steps")
+            ),
+            default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
         ),
         dataloader_num_workers=_optional_int(
             settings_payload,

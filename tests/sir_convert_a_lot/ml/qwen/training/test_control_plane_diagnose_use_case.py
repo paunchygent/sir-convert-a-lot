@@ -25,5 +25,6 @@ def test_diagnose_parser_exposes_the_canonical_replay_window_defaults() -> None:
 
     assert args.start_optimizer_step == DEFAULT_DIAGNOSTIC_START_OPTIMIZER_STEP
     assert args.end_optimizer_step == DEFAULT_DIAGNOSTIC_END_OPTIMIZER_STEP
+    assert args.gradient_accumulation_steps is None
     assert args.disable_resource_monitor is False
     assert args.skip_build is False

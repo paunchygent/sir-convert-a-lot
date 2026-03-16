@@ -15,6 +15,9 @@ import argparse
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    GRADIENT_ACCUMULATION_STEP_CHOICES,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     TEXT_EMBEDDING_MASK_POLICY_CHOICES,
 )
@@ -36,6 +39,7 @@ from .defaults import (
     DEFAULT_EVAL_INTERVAL_STEPS_CLI,
     DEFAULT_EVAL_MANIFEST_FAMILY,
     DEFAULT_FINITE_LOSS_MAX_CONSECUTIVE_STEPS,
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     DEFAULT_HEARTBEAT_INTERVAL_OPTIMIZER_STEPS,
     DEFAULT_IMAGE,
     DEFAULT_LR,
@@ -100,6 +104,12 @@ def build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--lr", type=float, default=DEFAULT_LR)
     launch.add_argument("--num-epochs", type=int, default=DEFAULT_NUM_EPOCHS)
     launch.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
+    launch.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
     launch.add_argument(
         "--checkpoint-interval-steps", type=int, default=DEFAULT_CHECKPOINT_INTERVAL_STEPS
     )
@@ -193,6 +203,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
         default=None,
     )
+    resume.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
+        default=None,
+    )
     resume.add_argument("--num-epochs", type=int, default=None)
     resume.add_argument("--max-steps", type=int, default=None)
     resume.add_argument("--checkpoint-interval-steps", type=int, default=None)
@@ -232,6 +248,12 @@ def build_parser() -> argparse.ArgumentParser:
     capture.add_argument(
         "--text-embedding-mask-policy",
         choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=None,
+    )
+    capture.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
         default=None,
     )
     capture.add_argument(
@@ -283,6 +305,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
     )
     diagnose.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
+        default=None,
+    )
+    diagnose.add_argument(
         "--start-optimizer-step", type=int, default=DEFAULT_DIAGNOSTIC_START_OPTIMIZER_STEP
     )
     diagnose.add_argument(
@@ -324,6 +352,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
         default=None,
     )
+    standalone_eval.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
+        default=None,
+    )
     standalone_eval.add_argument("--eval-output-dir", type=Path, default=None)
     standalone_eval.add_argument("--eval-id", default=None)
     standalone_eval.add_argument(
@@ -343,6 +377,12 @@ def build_parser() -> argparse.ArgumentParser:
     schedule.add_argument(
         "--text-embedding-mask-policy",
         choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=None,
+    )
+    schedule.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
         default=None,
     )
     schedule.add_argument("--epochs-per-segment", type=int, default=1)

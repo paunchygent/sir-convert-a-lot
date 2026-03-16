@@ -46,12 +46,14 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
     DEFAULT_REF_MEL_CACHE_ENABLED,
     DEFAULT_REF_MEL_CACHE_MAX_ITEMS,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
-    GRADIENT_ACCUMULATION_STEPS,
-)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import (
     DEFAULT_MLFLOW_EXPERIMENT_NAME,
     DEFAULT_TRACKER_PROJECT_NAME,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    GRADIENT_ACCUMULATION_STEP_CHOICES,
+    resolve_gradient_accumulation_steps,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
@@ -75,6 +77,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--num_epochs", type=int, default=3)
     parser.add_argument("--max_steps", type=int, default=None)
+    parser.add_argument(
+        "--gradient_accumulation_steps",
+        type=int,
+        choices=GRADIENT_ACCUMULATION_STEP_CHOICES,
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
     parser.add_argument("--checkpoint_interval_steps", type=int, default=500)
     parser.add_argument("--eval_interval_steps", type=int, default=DEFAULT_EVAL_INTERVAL_STEPS)
     parser.add_argument(
@@ -260,6 +268,10 @@ def tracker_config_payload(
         ),
         max_batch_size=int(args.batch_size),
     )
+    gradient_accumulation_steps = resolve_gradient_accumulation_steps(
+        getattr(args, "gradient_accumulation_steps", None),
+        default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+    )
     return {
         "model_id": str(args.init_model_path),
         "tracker_project_name": None if tracker_project_name is None else str(tracker_project_name),
@@ -286,7 +298,7 @@ def tracker_config_payload(
         "learning_rate": float(args.lr),
         "num_epochs": int(args.num_epochs),
         "max_steps": None if args.max_steps is None else int(args.max_steps),
-        "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
         "checkpoint_interval_steps": int(args.checkpoint_interval_steps),
         "eval_interval_steps": int(
             getattr(args, "eval_interval_steps", DEFAULT_EVAL_INTERVAL_STEPS)

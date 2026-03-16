@@ -130,6 +130,7 @@ def execute_training_loop(
             current_epoch=epoch,
             current_optimizer_step=optimizer_steps_completed,
             current_train_iteration=train_iterations_completed,
+            gradient_accumulation_steps=prepared.gradient_accumulation_steps,
             dataloader_length=prepared.dataloader_length,
             eval_dataloader_length=prepared.eval_dataloader_length,
             latest_loss=last_loss,

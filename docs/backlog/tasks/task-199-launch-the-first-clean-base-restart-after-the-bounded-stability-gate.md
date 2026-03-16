@@ -34,6 +34,8 @@ numerical stability through either the preferred `1500` gate or the fallback
   - `T198` satisfies the fallback `1470 + standalone eval` gate
 - Launch from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`, not from a legacy checkpoint.
 - Use the winning mitigation contract from the proof phase.
+- If the winning mitigation confirms `text_span_only` as the right fix, remove
+  `legacy_codec_span` from the live restart lane before launch.
 - Use the canonical scheduled posture:
   - checkpoint every `500`
   - eval every `100`
@@ -45,6 +47,8 @@ numerical stability through either the preferred `1500` gate or the fallback
 - [ ] One proof-gated clean restart launch record exists.
 - [ ] One operator-facing ledger entry records which proof gate justified the
   restart.
+- [ ] If the proof closed in favor of `text_span_only`, one explicit cleanup
+  record exists showing `legacy_codec_span` was removed before restart.
 - [ ] One restart acceptance record states whether step `100` eval completed
   without a non-finite guard event.
 

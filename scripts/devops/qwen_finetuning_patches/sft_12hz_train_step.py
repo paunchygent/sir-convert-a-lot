@@ -138,6 +138,9 @@ class TrainStepPreparedRuntime(Protocol):
     def eval_dataloader_length(self) -> int: ...
 
     @property
+    def gradient_accumulation_steps(self) -> int: ...
+
+    @property
     def output_model_path(self) -> Path: ...
 
     @property

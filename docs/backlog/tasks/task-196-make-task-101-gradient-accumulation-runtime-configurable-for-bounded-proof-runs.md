@@ -2,7 +2,7 @@
 id: task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs
 title: Make Task 101 gradient accumulation runtime-configurable for bounded proof runs
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
@@ -23,7 +23,8 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 Replace the Task 101 hard-coded accumulation posture with a runtime-configurable
 setting so bounded mitigation proofs can compare `gradient_accumulation_steps`
-`4`, `2`, and `1` without code edits.
+`4`, `2`, and `1` without code edits while keeping every proof artifact
+self-describing.
 
 ## PR Scope
 
@@ -33,6 +34,8 @@ setting so bounded mitigation proofs can compare `gradient_accumulation_steps`
   - `resume`
   - `capture-diagnostic-state`
   - `diagnose-non-finite`
+  - `eval`
+  - `schedule`
 - Keep `4` as the default value for the canonical lane.
 - Treat `2` and `1` as first-class bounded-proof overrides.
 - Surface the effective value in:
@@ -40,26 +43,41 @@ setting so bounded mitigation proofs can compare `gradient_accumulation_steps`
   - status/report payloads
   - replay bundles
   - launch metadata
+  - standalone eval artifacts
 - Keep the change compatible with the exact-capture and bounded-replay surfaces
   already used for `1401`, `1406`, and `1417`.
 
 ## Deliverables
 
-- [ ] One committed runtime override exists for `gradient_accumulation_steps`.
-- [ ] Proof artifacts record the effective accumulation value.
-- [ ] The training reference ledger records that reduced accumulation is the
+- [x] One committed runtime override exists for `gradient_accumulation_steps`.
+- [x] Proof artifacts record the effective accumulation value.
+- [x] The training reference ledger records that reduced accumulation is the
   secondary ablation only after the structural mask-policy proof.
 
 ## Acceptance Criteria
 
-- [ ] Focused parser/control-plane tests prove the override is accepted on all
-  four committed training surfaces.
-- [ ] Focused runtime/reporting tests prove the effective accumulation value is
+- [x] Focused parser/control-plane tests prove the override is accepted on the
+  committed training/eval/schedule surfaces.
+- [x] Focused runtime/reporting tests prove the effective accumulation value is
   visible in machine-readable artifacts.
-- [ ] Default behavior remains `4` when the override is omitted.
+- [x] Default behavior remains `4` when the override is omitted.
+
+## Notes
+
+- The committed accumulation contract lives in
+  `scripts/sir_convert_a_lot/ml/qwen/training/gradient_accumulation.py`.
+- The effective value now flows through detached launch metadata, in-container
+  trainer/evaluator entrypoints, standalone eval reports, schedule control
+  math, replay artifacts, and live status/report payloads.
+- Story 29 still treats reduced accumulation as the secondary ablation only:
+  `text_span_only` remains the first mitigation to prove from
+  `state-step-00001406`.
+- `legacy_codec_span` remains allowed only as a bounded RCA reproduction mode
+  until Story 29 proves the winning mitigation; after that proof, the legacy
+  mask surface must be removed before the clean restart task proceeds.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

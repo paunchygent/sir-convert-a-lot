@@ -19,9 +19,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_step_semantics import (
-    GRADIENT_ACCUMULATION_STEPS,
-)
 
 
 def emit_progress_phase(
@@ -31,6 +28,7 @@ def emit_progress_phase(
     current_epoch: int,
     current_optimizer_step: int,
     current_train_iteration: int,
+    gradient_accumulation_steps: int,
     dataloader_length: int,
     eval_dataloader_length: int,
     latest_loss: float | None,
@@ -50,7 +48,7 @@ def emit_progress_phase(
             current_epoch=current_epoch,
             current_optimizer_step=current_optimizer_step,
             current_train_iteration=current_train_iteration,
-            gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+            gradient_accumulation_steps=gradient_accumulation_steps,
             dataloader_length=dataloader_length,
             eval_dataloader_length=eval_dataloader_length,
             latest_loss=latest_loss,

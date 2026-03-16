@@ -15,6 +15,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    DEFAULT_GRADIENT_ACCUMULATION_STEPS,
+)
+
 
 @dataclass(frozen=True)
 class StatusReporterConfig:
@@ -36,7 +40,7 @@ class StatusReporterConfig:
     dataloader_length: int | None = None
     eval_dataloader_length: int | None = None
     tracking_plan: Mapping[str, object] | None = None
-    gradient_accumulation_steps: int = 4
+    gradient_accumulation_steps: int = DEFAULT_GRADIENT_ACCUMULATION_STEPS
     dataloader_tuning: Mapping[str, object] | None = None
     heartbeat_policy: Mapping[str, object] | None = None
     finite_loss_guard_config: Mapping[str, object] | None = None

@@ -20,6 +20,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.eval_orchestrator import (
     default_eval_output_dir,
     run_standalone_eval,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    resolve_gradient_accumulation_steps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     load_latest_checkpoint,
     resolve_launch_root,
@@ -44,6 +47,10 @@ def handle_eval(args) -> int:
     settings = settings_from_snapshot(source_launch.settings)
     settings = replace(
         settings,
+        gradient_accumulation_steps=resolve_gradient_accumulation_steps(
+            getattr(args, "gradient_accumulation_steps", None),
+            default=settings.gradient_accumulation_steps,
+        ),
         text_embedding_mask_policy=resolve_text_embedding_mask_policy(
             getattr(args, "text_embedding_mask_policy", None),
             default=settings.text_embedding_mask_policy,

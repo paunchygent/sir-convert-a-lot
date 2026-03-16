@@ -29,6 +29,7 @@ def test_build_settings_from_args_normalizes_the_launch_profile() -> None:
     settings = build_settings_from_args(args)
 
     assert settings.batch_size == 8
+    assert settings.gradient_accumulation_steps == 4
     assert settings.throughput_profile_label == "hemma-throughput-balanced-v1"
     assert settings.text_embedding_mask_policy == "text_span_only"
     assert settings.checkpoint_interval_steps == 500

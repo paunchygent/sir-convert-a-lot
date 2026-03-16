@@ -23,6 +23,9 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     MountResolution,
     docker_checked,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
+    resolve_gradient_accumulation_steps,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     StandaloneEvalReport,
     TrainingSettings,
@@ -119,6 +122,8 @@ def build_standalone_eval_command(
         container_output_dir,
         "--checkpoint-path",
         container_checkpoint_path,
+        "--gradient-accumulation-steps",
+        str(settings.gradient_accumulation_steps),
         "--text-embedding-mask-policy",
         settings.text_embedding_mask_policy,
         "--batch-size",
@@ -205,6 +210,14 @@ def run_standalone_eval(
         eval_jsonl=str(payload["eval_jsonl"]),
         output_dir=str(payload["output_dir"]),
         eval_row_count=int(payload["eval_row_count"]),
+        gradient_accumulation_steps=resolve_gradient_accumulation_steps(
+            (
+                None
+                if "gradient_accumulation_steps" not in payload
+                else int(payload["gradient_accumulation_steps"])
+            ),
+            default=settings.gradient_accumulation_steps,
+        ),
         text_embedding_mask_policy=resolve_text_embedding_mask_policy(
             (
                 None

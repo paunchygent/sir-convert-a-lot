@@ -63,6 +63,9 @@ class LossRuntimePrepared(Protocol):
     @property
     def eval_dataloader_length(self) -> int: ...
 
+    @property
+    def gradient_accumulation_steps(self) -> int: ...
+
 
 def consume_loss_observations(
     *,
@@ -93,6 +96,7 @@ def consume_loss_observations(
                 current_epoch=observation.current_epoch,
                 current_optimizer_step=observation.optimizer_step,
                 current_train_iteration=observation.current_train_iteration,
+                gradient_accumulation_steps=prepared.gradient_accumulation_steps,
                 dataloader_length=prepared.dataloader_length,
                 eval_dataloader_length=prepared.eval_dataloader_length,
                 latest_loss=observation.loss_value,
@@ -125,6 +129,7 @@ def consume_loss_observations(
                     current_epoch=observation.current_epoch,
                     current_optimizer_step=observation.optimizer_step,
                     current_train_iteration=observation.current_train_iteration,
+                    gradient_accumulation_steps=prepared.gradient_accumulation_steps,
                     dataloader_length=prepared.dataloader_length,
                     eval_dataloader_length=prepared.eval_dataloader_length,
                     latest_loss=last_loss,
