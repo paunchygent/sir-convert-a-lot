@@ -102,12 +102,27 @@ Story 28 is now operating policy:
     - that replay cleared the old `1417` numerical window and reached `1418`
       without a non-finite gradient, but it failed during durable checkpoint
       save because Hemma scratch free space fell to about `9 GB`
-    - `T204` added the manual scratch audit/remediation lane and the proof
+  - `T204` added the manual scratch audit/remediation lane and the proof
       launch headroom preflight so detached Story 29 work now fails early on
       insufficient scratch headroom
-    - `T205` is the active follow-on: add idle-safe recurring maintenance,
-      a small user-level timer, and recurring cold-artifact archive policy so
-      scratch does not collapse again between proof runs
+    - `T205` then restored healthy recurring scratch governance on Hemma:
+      - idle-safe `qwen-scratch-policy maintain`
+      - a user-level maintenance timer
+      - enough reclaimed SSD headroom for the clean accumulation-`2` rerun
+    - the clean `T198` rerun under
+      `task198-20260316t202541z-accum2-a2`
+      then exited the bounded `1406 -> 1418` replay cleanly, minted
+      `state-step-00001418`, and completed the scheduled eval at that replay
+      boundary
+    - the preferred `1500` continuation from that clean `1418` checkpoint then
+      failed at optimizer step `1428` with the same optimizer-boundary class:
+      - `trigger_reason=pre_clip_non_finite_gradients`
+      - `first_non_finite_stage=pre_clip`
+      - `first_non_finite_surface=text_embedding.weight.grad`
+      - `current_train_iteration=852`
+    - no newer durable checkpoint beyond `1418` was minted during that failed
+      continuation, so `1418` remains the latest truthful accumulation-`2`
+      recovery anchor for this rerun
 
 ## Next Actions
 
@@ -123,20 +138,22 @@ Story 28 is now operating policy:
   - `pdm run qwen-t197-proof ...`
   - `pdm run qwen-t198-proof ...`
   - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof ...`
-- Treat the completed `T197` Hemma proof as negative evidence and the first
-  `T198` replay as positive numerical evidence but incomplete proof.
-- Use `T204/T205` as the active enabling slice before the clean `T198` rerun:
-  - audit Hemma scratch with
-    `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
-  - run one idle-safe maintenance pass with
-    `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
-  - install the recurring timer with
-    `pdm run run-hemma -- pdm run qwen-scratch-policy install-timer --enable-linger --prune-docker-state`
-  - inspect timer state with
-    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-- Once scratch headroom is healthy again, rerun the same accumulation-`2` lane:
-  - `pdm run qwen-t198-proof launch-window --proof-id task198-20260316t185616z-accum2-a1`
-  - only then allow `launch-gate1500` if the bounded replay exits cleanly
+- Treat the completed `T197` Hemma proof as negative evidence.
+- Treat the first `T198` replay as positive numerical evidence but storage
+  blocked.
+- Treat the clean `T198` rerun as stronger negative preferred-gate evidence:
+  - accumulation `2` cleared `1418`
+  - the preferred `1500` gate still failed at `1428`
+  - therefore accumulation `2` is not yet sufficient to justify a clean
+    restart through the preferred gate
+- Keep the Hemma scratch-governance surfaces active and available:
+  - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
+  - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
+  - `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
+- Use the failed `1500` outcome to choose the next Story 29 lane explicitly
+  before any relaunch:
+  - either the documented fallback `1406 -> 1470` plus standalone eval gate
+  - or the next accumulation ablation lane if that is judged more valuable
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
 - Keep Task 101 operator truth in

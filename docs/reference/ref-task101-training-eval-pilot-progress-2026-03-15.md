@@ -891,6 +891,53 @@ Operator conclusion:
     symlink-backed path stability, and make future Story 29 proof launches
     fail early on insufficient headroom
 
+## 2026-03-16: T198 Clean Rerun Cleared 1418 But The Preferred 1500 Gate Failed At 1428
+
+- Delivered tasks:
+  - `docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md`
+  - `docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md`
+  - `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
+- Proof id:
+  `task198-20260316t202541z-accum2-a2`
+- Local proof artifact root:
+  `build/verification/qwen-t198-proof/task198-20260316t202541z-accum2-a2/`
+- Remote replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task198-20260316t202541z-accum2-a2-window`
+- Remote preferred-gate launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task198-20260316t202541z-accum2-a2-gate1500`
+- Runtime truth:
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=2`
+  - the rerun reused the canonical RCA checkpoint `state-step-00001406`
+- Bounded replay result:
+  - the detached `1406 -> 1418` replay exited cleanly with `exit_code=0`
+  - `current_optimizer_step=1418`
+  - one scheduled eval completed at that replay boundary
+  - the replay minted
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task198-20260316t202541z-accum2-a2-window/diagnostic-run/checkpoints/state-step-00001418`
+- Preferred `1500` continuation result:
+  - the continuation launched from that clean `1418` checkpoint
+  - the detached continuation exited with `exit_code=1`
+  - `current_optimizer_step=1428`
+  - `current_train_iteration=852`
+  - no newer durable checkpoint beyond `1418` was minted
+- Failure truth:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `optimizer_step_attempted=false`
+  - parameters and optimizer state probes remained finite before the attempted
+    optimizer step
+- Operator conclusion:
+  - accumulation `2` is strong positive evidence for clearing the old `1417`
+    boundary
+  - accumulation `2` is still negative preferred-gate evidence because the
+    continuation failed before `1500`
+  - the next clean restart remains blocked
+  - the next operator move must now be chosen explicitly:
+    - either the documented fallback `1406 -> 1470` plus standalone eval gate
+    - or the next accumulation ablation lane if that is judged more valuable
+
 ## Historical Reference Boundary
 
 `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`

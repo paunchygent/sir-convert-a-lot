@@ -77,6 +77,25 @@ the preferred or fallback stability proof.
     space dropped below the required headroom
   - `1500` continuation therefore did not launch
   - `T204/T205` are the required enabling tasks before the clean rerun
+- Clean rerun after `T204/T205`:
+  - proof id: `task198-20260316t202541z-accum2-a2`
+  - the bounded replay exited cleanly at optimizer step `1418`
+  - the replay minted
+    `state-step-00001418`
+    under the window run root and completed one scheduled eval there
+  - the preferred `1500` continuation then launched from that `1418`
+    checkpoint and failed at optimizer step `1428`
+  - the terminal failure shape remained the same optimizer-boundary class:
+    - `trigger_reason=pre_clip_non_finite_gradients`
+    - `first_non_finite_stage=pre_clip`
+    - `first_non_finite_surface=text_embedding.weight.grad`
+    - `current_train_iteration=852`
+  - no new durable checkpoint beyond `1418` was written during that failed
+    continuation
+  - the fallback decision is intentionally still open:
+    - either run the documented `1470 + standalone eval` gate
+    - or run the next accumulation ablation if the story owner decides the
+      preferred-gate miss still warrants it
 
 ## Exact Command Sequence
 

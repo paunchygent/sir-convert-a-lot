@@ -156,10 +156,23 @@ numerical stability.
 - `T204` restored the manual scratch audit/remediation lane and added the
   proof-launch headroom gate so detached Story 29 work now fails early on
   insufficient scratch headroom.
-- `T205` is now the recurring follow-on for the clean `T198` rerun:
-  it adds the idle-safe `maintain` command, the lightweight user-level timer,
-  and the recurring cold-artifact archive policy needed to keep scratch from
-  collapsing again between proof runs.
+- `T205` then enabled the clean `T198` rerun by adding the idle-safe
+  `maintain` command, the lightweight user-level timer, and the recurring
+  cold-artifact archive policy needed to keep scratch from collapsing again
+  between proof runs.
+- The clean `T198` rerun under `task198-20260316t202541z-accum2-a2` then
+  exited the bounded `1406 -> 1418` replay cleanly, minted
+  `state-step-00001418`, and completed the scheduled eval at that replay
+  boundary.
+- The preferred `1500` continuation from that clean `1418` checkpoint then
+  failed at optimizer step `1428` with the same optimizer-boundary class:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `current_train_iteration=852`
+- Story 29 therefore still does not have a preferred-gate win, and the next
+  move remains an explicit choice between the documented fallback `1470` gate
+  and the next accumulation ablation lane.
 
 ## Checklist
 
