@@ -115,26 +115,29 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   - the bounded `1401 -> 1406` replay under
     `task194-20260316t-1405-rca-a1` crossed the old `1405` failure window
     cleanly and minted a new durable checkpoint at `state-step-00001406`
-  - the live continuation policy is now explicit:
-    - one full pass over the current pilot material = `32` optimizer steps
-    - next review point = optimizer step `1500`
-    - bounded continuation target = optimizer step `1566`
-    - absolute resume cap = `num_epochs=12`
-  - the canonical detached resume surface now accepts bounded
-    `--num-epochs` / `--max-steps` overrides, so the `1406 -> 1566`
-    continuation can run on the normal `qwen-train resume` command instead of
-    an ad hoc launcher
+  - the bounded `1406` continuation then failed again at optimizer step
+    `1417`
+  - failure mode stayed the same:
+    - `trigger_reason=pre_clip_non_finite_gradients`
+    - `first_non_finite_surface=text_embedding.weight.grad`
+    - parameters and optimizer state still finite
+  - the active operator conclusion is now:
+    - `1406` is a reusable RCA checkpoint, not a trusted continuation
+      baseline
+    - the next step is a bounded `1406 -> 1418` diagnostic replay, not
+      another continuation
 
 ## Next Actions
 
 - Keep the preserved Task 101 lane on the restored no-projection fine-tuning
   graph; do not relaunch the projection-enabled experiment.
-- Keep `T194` open as the RCA lane, but the immediate operator move is now the
-  bounded `1406 -> 1566` continuation, not another replay by default.
-- Review the continued lane at optimizer step `1500`.
-- Stop the bounded continuation at optimizer step `1566` if it remains finite.
-- Reopen the `1405` RCA track as the primary operator move only if the new
-  continuation reintroduces a non-finite boundary.
+- Keep `T194` open as the RCA lane and restore `state-step-00001406` as the
+  canonical RCA checkpoint.
+- Run one bounded `diagnose-non-finite` replay from `1406` across the new
+  `1417` boundary.
+- Compare the new `1417` replay artifact with the earlier clean `1405` replay
+  artifact to decide whether the instability is data-window specific,
+  accumulation specific, or genuinely non-deterministic.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in

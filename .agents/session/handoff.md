@@ -103,42 +103,43 @@
 - The bounded replay from that checkpoint then crossed the old `1405` failure
   window cleanly and minted a new durable checkpoint at
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`.
-- Current pilot math from the live bundle:
-  - `128` train rows
-  - `batch_size=1`
-  - `gradient_accumulation_steps=4`
-  - one full pass over all pilot rows = `32` optimizer steps
-- Current bounded continuation policy from `1406`:
-  - next review point: optimizer step `1500`
-  - bounded target: optimizer step `1566`
-  - absolute resume cap: `num_epochs=12`
-  - standard control posture remains `500/100/3`
+- The later bounded continuation from `1406` failed again at optimizer step
+  `1417`.
+- The `1417` failure preserved the same root-cause shape:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - parameters and optimizer state remained finite
+  - `text_embedding.weight.grad` contained `190464` `NaN` elements
+    (`93` full rows at width `2048`)
+- Active operator posture:
+  - `state-step-00001406` is now the canonical RCA checkpoint again
+  - do not treat the failed `1406` continuation as the new mainline
+  - the next move is a bounded `1406 -> 1418` replay, not another continuation
 
 ## Immediate Next Step
 
-Launch the bounded `1406 -> 1566` continuation, not another replay, unless a
-new instability appears first.
+Launch one bounded RCA replay from `state-step-00001406` over the new `1417`
+window.
 
 Canonical Hemma command:
 
 ```bash
-pdm run run-hemma -- pdm run qwen-train resume \
+pdm run run-hemma -- pdm run qwen-train diagnose-non-finite \
   --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training \
   --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1 \
   --checkpoint-path /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406 \
   --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
-  --num-epochs 12 \
-  --max-steps 1566 \
-  --checkpoint-interval-steps 500 \
-  --eval-interval-steps 100 \
-  --durable-checkpoint-retention 3 \
-  --launch-id task101-20260316t-5pass-pilot-a1 \
+  --start-optimizer-step 1417 \
+  --end-optimizer-step 1418 \
+  --launch-id task194-20260316t-1417-rca-a1 \
   --skip-build
 ```
 
-Review that lane again at step `1500`. If it remains finite, let it finish at
-step `1566`. Keep `T194` open for RCA only if the continued lane reintroduces a
-non-finite boundary.
+Then compare the resulting `1417` diagnostic-window artifact with the earlier
+clean `1405` replay artifact to decide whether the instability is tied to the
+new microbatch window, accumulation across that window, or a broader
+non-deterministic numerical cliff.
 
 ## Open Risks
 

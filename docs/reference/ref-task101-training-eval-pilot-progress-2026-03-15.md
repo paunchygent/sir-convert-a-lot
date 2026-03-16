@@ -48,7 +48,7 @@ For the preserved Task 101 legacy lane:
 - treat `state-step-00001238` as the canonical no-projection RCA checkpoint
   for the preserved Task 101 lane
 - treat `state-step-00001406` from the bounded no-projection replay as the
-  current bounded pilot-continuation checkpoint
+  current canonical RCA checkpoint
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
 - do not count the projection-enabled diagnostic experiments and the preserved
@@ -83,8 +83,9 @@ Why this is now the clean plan:
   settings (`2/100/2`), so the next strict resume must pass explicit control
   overrides rather than inheriting those stale values
 - the clean `1401 -> 1406` replay crossed the old failure boundary without a
-  new non-finite event, so the next operator move is a bounded continuation
-  from `1406` rather than another blind RCA replay
+  new non-finite event, but the later bounded continuation still failed at
+  `1417`, so `1406` is now treated as a reusable RCA checkpoint rather than a
+  newly trusted continuation baseline
 
 ## Active Artifact Roots
 
@@ -100,7 +101,7 @@ Why this is now the clean plan:
   `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
 - Exact diagnostic capture checkpoint:
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-capture1401-a3/diagnostic-state/checkpoints/state-step-00001401`
-- Current bounded pilot continuation checkpoint:
+- Current canonical RCA checkpoint:
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
 - Latest checkpoint pointer:
   `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/latest_checkpoint.json`
@@ -526,75 +527,52 @@ Operator conclusion:
 Operator conclusion:
 
 - the exact `1401` checkpoint cleared the old `1405` boundary
-- `state-step-00001406` is now the right checkpoint for the next bounded pilot
-  continuation
-- the next operator action is no longer another RCA replay by default; it is a
-  bounded continuation from `1406` with the standard `500/100/3` control
-  posture
+- `state-step-00001406` is now the right reusable checkpoint for the next RCA
+  slice
+- crossing `1405` once did not prove the lane is stable; it only proved that
+  the old `1405` failure was not deterministic from the exact `1401`
+  checkpoint
 
-### 2026-03-16: Bounded Pilot Continuation Policy From `1406`
+### 2026-03-16: Bounded `1406` Continuation Failed Again At `1417`
 
-The bounded continuation policy is now:
+- Continuation launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task101-20260316t-5pass-pilot-a1`
+- Source checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
+- Failure checked at:
+  `2026-03-16T10:13:03Z`
+- Terminal truth:
+  - `status=failed`
+  - `current_optimizer_step=1417`
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+- Probe truth:
+  - forward losses stayed finite
+  - parameters stayed finite
+  - optimizer state stayed finite
+  - `text_embedding.weight.grad` had `190464` `NaN` elements
+    (`93` full embedding rows at width `2048`)
+- Failing accumulated microbatch window:
+  - train iteration `849`:
+    manifest line `39`
+  - train iteration `850`:
+    manifest line `31`
+  - train iteration `851`:
+    manifest line `101`
+  - train iteration `852`:
+    manifest line `20`
 
-- resume from `state-step-00001406`
-- keep the standard live control posture:
-  - `checkpoint_interval_steps=500`
-  - `eval_interval_steps=100`
-  - `durable_checkpoint_retention=3`
-- define the pilot in full dataset passes from the current cursor, not by
-  vague long-run sentinel values
+Operator conclusion:
 
-Current pilot math from the live bundle:
-
-- `train_row_count=128`
-- `batch_size=1`
-- `gradient_accumulation_steps=4`
-- one full pass over all pilot rows = `32` optimizer steps
-- the next scheduled review point is optimizer step `1500`
-- the bounded pilot budget is `5` full passes from `1406`
-- that means:
-  - `160` additional optimizer steps
-  - target optimizer step `1566`
-  - absolute `num_epochs=12` for the resumed launch
-
-Persisted operator metadata:
-
-```yaml
-pilot_profile_label: pilot-5pass-continuation-v1
-pilot_boundary_kind: bounded_resume
-resume_checkpoint_path: state-step-00001406
-resume_optimizer_step: 1406
-resume_epoch_index: 6
-resume_step_in_epoch: 40
-pilot_rows_per_full_pass: 128
-pilot_train_iterations_per_full_pass: 128
-pilot_optimizer_steps_per_full_pass: 32
-pilot_full_passes_from_resume: 5
-pilot_additional_optimizer_steps: 160
-pilot_target_optimizer_step: 1566
-pilot_review_step: 1500
-pilot_checkpoint_interval_steps: 500
-pilot_eval_interval_steps: 100
-pilot_absolute_num_epochs_cap: 12
-pilot_success_condition: reached_step_1566_without_non_finite_guard
-```
-
-Canonical Hemma launch command for that bounded continuation:
-
-```bash
-pdm run run-hemma -- pdm run qwen-train resume \
-  --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training \
-  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1 \
-  --checkpoint-path /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406 \
-  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
-  --num-epochs 12 \
-  --max-steps 1566 \
-  --checkpoint-interval-steps 500 \
-  --eval-interval-steps 100 \
-  --durable-checkpoint-retention 3 \
-  --launch-id task101-20260316t-5pass-pilot-a1 \
-  --skip-build
-```
+- the lane is still numerically unstable
+- the instability is not tied only to the old `1405` window
+- `1406` must be treated as the canonical RCA checkpoint again, not as a
+  trusted pilot-continuation baseline
+- the next accepted operator move is a bounded RCA replay from `1406` over the
+  `1417` window, not another continuation attempt
 
 ## Superseded Operator Plan
 
@@ -624,13 +602,14 @@ That plan is now superseded because:
 
 Do not relaunch the projection-enabled training experiment.
 
-The next canonical action is a bounded no-projection continuation from
+The next canonical action is a bounded no-projection RCA replay from
 `state-step-00001406`:
 
-1. review the live lane again at optimizer step `1500`
-1. keep the bounded target at optimizer step `1566`
-1. only reopen `T194` RCA-by-replay as the primary operator move if the new
-   continuation reintroduces a non-finite boundary
+1. reuse `state-step-00001406` as the canonical RCA checkpoint
+1. run `diagnose-non-finite` only across the `1417` window
+1. compare the `1417` window against the earlier clean `1405` replay to decide
+   whether the instability is sample-window specific, accumulation specific, or
+   genuinely non-deterministic
 
 ## Historical Reference Boundary
 

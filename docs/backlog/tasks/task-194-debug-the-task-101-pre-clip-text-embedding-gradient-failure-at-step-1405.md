@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-15'
-last_updated: '2026-03-15'
+last_updated: '2026-03-16'
 related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
@@ -27,15 +27,20 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Use the proven no-projection failure boundary at optimizer step `1405` to
-identify which text-embedding rows and upstream backward surfaces first become
-non-finite, and determine whether the corruption depends on the accumulated
-`801-804` microbatch window rather than on clipping or optimizer state.
+Use the bounded no-projection RCA checkpoints at optimizer steps `1401` and
+`1406` to identify why the preserved Task 101 lane remains numerically
+unstable, including:
+
+- the original `1405` boundary that now no longer reproduces from the exact
+  `1401` capture checkpoint
+- the new continuation failure at optimizer step `1417`
+- the text-embedding rows and upstream backward surfaces that first become
+  non-finite when the lane re-enters instability
 
 ## PR Scope
 
-- Add one committed RCA surface for the `1405` no-projection boundary that can
-  report, for the failing optimizer step:
+- Add one committed RCA surface for bounded no-projection failure windows that
+  can report, for a failing optimizer step such as `1405` or `1417`:
   - token ids used by each microbatch in the accumulated `801-804` window
   - text previews / decoded token context for the failing rows
   - the exact `text_embedding` row ids that first become non-finite
@@ -46,7 +51,8 @@ non-finite, and determine whether the corruption depends on the accumulated
 - Keep the new RCA logic bounded and reusable rather than embedding more ad
   hoc analysis inside the live training loop.
 - Reuse the truthful no-projection lane and the new `pre_clip` guard surfaces
-  instead of reopening the projection-enabled experiment.
+  instead of reopening the projection-enabled experiment or treating the
+  `1406` continuation checkpoint as a new mainline checkpoint.
 - Update operator docs with the new narrowing conclusion once the RCA artifact
   exists.
 
@@ -71,8 +77,9 @@ The intended implementation shape is:
   - failing microbatch provenance rows
   - token ids / decoded text context for each microbatch
 - Run bounded micro-window experiments from that state:
-  - full failing accumulation window `801-804`
-  - prefix windows `801`, `801-802`, `801-803`
+  - original `1405` accumulation window `801-804`
+  - new `1417` accumulation window `849-852`
+  - prefix windows inside the active failing window
   - single-row ablations or substitutions once the bad token rows are known
 - Treat the reusable near-boundary state as the expensive artifact and each
   micro-window replay as the cheap iteration surface.
@@ -85,8 +92,14 @@ Hypotheses to test with that workflow:
 - upstream-backward hypothesis:
   `input_text_embedding` gradients go non-finite before the parameter gradient
 - accumulation hypothesis:
-  the bad gradient appears only after accumulation across the full
-  `801-804` window, not on any single microbatch alone
+  the bad gradient appears only after accumulation across a full optimizer
+  step window such as `801-804` or `849-852`, not on any single microbatch
+  alone
+- stability-drift hypothesis:
+  the exact `1401 -> 1406` replay staying finite while the bounded
+  continuation fails at `1417` means the instability is not tied to one fixed
+  deterministic step number and should be treated as a re-emerging numerical
+  cliff, not a single permanently bad row
 - token-context hypothesis:
   the failing rows correspond to a small token/context family that can be
   identified from decoded text and replayed cheaply
@@ -104,8 +117,8 @@ Hypotheses to test with that workflow:
   diagnostic state with automated stop-by-step control rather than manual
   sleep-based timing.
 - [ ] One machine-readable RCA artifact maps the first non-finite
-  `text_embedding` gradient rows at optimizer step `1405` to token ids and
-  human-readable text context from the failing `801-804` microbatches.
+  `text_embedding` gradient rows at the active failing optimizer step to token
+  ids and human-readable text context from the failing microbatch window.
 - [ ] One machine-readable RCA artifact records whether the first non-finite
   backward surface appears on `input_text_embedding` gradients before the
   parameter gradient itself.
@@ -130,7 +143,7 @@ Hypotheses to test with that workflow:
   run a bounded micro-window replay without re-running the full `1238 -> 1405`
   lane.
 - [ ] One bounded Hemma or deterministic replay artifact for optimizer step
-  `1405` captures:
+  `1405` or `1417` captures:
   - the failing microbatch ids / provenance rows
   - the first non-finite text-embedding row ids
   - the associated token ids / decoded text context
@@ -149,7 +162,7 @@ Hypotheses to test with that workflow:
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] One bounded Hemma or deterministic replay RCA proof persists the
-  `1405` token/row attribution artifact.
+  active token/row attribution artifact.
 
 ## Checklist
 
