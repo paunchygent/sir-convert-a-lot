@@ -170,9 +170,25 @@ numerical stability.
   - `first_non_finite_stage=pre_clip`
   - `first_non_finite_surface=text_embedding.weight.grad`
   - `current_train_iteration=852`
-- Story 29 therefore still does not have a preferred-gate win, and the next
-  move remains an explicit choice between the documented fallback `1470` gate
-  and the next accumulation ablation lane.
+- Story 29 therefore still does not have a preferred-gate win.
+- The next focused move is the planned accumulation-`1` ablation on the same
+  preferred-gate lane.
+- That next focused lane is already prepared locally under
+  `task198-20260316t213409z-accum1-a1`.
+- The accumulation-`1` bounded replay then exited cleanly at optimizer step
+  `1418`, completed the scheduled eval there, and minted
+  `state-step-00001418`.
+- The preferred `1500` continuation from that clean `1418` checkpoint then
+  failed at optimizer step `1449` with the same optimizer-boundary class:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `current_train_iteration=851`
+  - `first_non_finite_tensor=grad_norm`
+- Story 29 still does not have a preferred-gate win after exhausting the
+  planned accumulation ladder from `4` to `2` to `1`.
+- The documented fallback `1470 + standalone eval` gate is now the immediate
+  next governed lane.
 
 ## Checklist
 

@@ -123,6 +123,18 @@ Story 28 is now operating policy:
     - no newer durable checkpoint beyond `1418` was minted during that failed
       continuation, so `1418` remains the latest truthful accumulation-`2`
       recovery anchor for this rerun
+    - the focused accumulation-`1` replay under
+      `task198-20260316t213409z-accum1-a1`
+      then exited the bounded `1406 -> 1418` replay cleanly, minted its own
+      `state-step-00001418`, completed the scheduled eval there, and pushed
+      the preferred `1500` continuation farther before failing
+    - that accumulation-`1` preferred-gate attempt then failed at optimizer
+      step `1449` with the same optimizer-boundary class:
+      - `trigger_reason=pre_clip_non_finite_gradients`
+      - `first_non_finite_stage=pre_clip`
+      - `first_non_finite_surface=text_embedding.weight.grad`
+      - `current_train_iteration=851`
+      - `first_non_finite_tensor=grad_norm`
 
 ## Next Actions
 
@@ -150,10 +162,28 @@ Story 28 is now operating policy:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-- Use the failed `1500` outcome to choose the next Story 29 lane explicitly
-  before any relaunch:
-  - either the documented fallback `1406 -> 1470` plus standalone eval gate
-  - or the next accumulation ablation lane if that is judged more valuable
+- Use the failed `1500` outcome to drive one focused next Story 29 lane:
+  - run the next accumulation ablation with
+    `gradient_accumulation_steps=1`
+  - prepared proof package:
+    `task198-20260316t213409z-accum1-a1`
+  - keep the same preferred-gate posture:
+    - clear `1406 -> 1418`
+    - then continue toward `1500`
+  - only activate the documented fallback
+    `1406 -> 1470` plus standalone eval gate if accumulation `1` still does
+    not clear the preferred lane
+- Treat the completed accumulation-`1` proof as the strongest negative
+  preferred-gate evidence so far:
+  - the bounded replay exited cleanly at `1418`
+  - the preferred `1500` continuation then failed at `1449`
+  - the failure class still remained
+    `pre_clip_non_finite_gradients` on
+    `text_embedding.weight.grad`
+  - no newer durable checkpoint beyond `1418` was minted
+  - therefore accumulation `1` still did not satisfy the preferred gate
+- The documented fallback `1406 -> 1470` plus standalone eval gate is now the
+  strongest next governed lane unless Story 29 is deliberately widened again
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
 - Keep Task 101 operator truth in

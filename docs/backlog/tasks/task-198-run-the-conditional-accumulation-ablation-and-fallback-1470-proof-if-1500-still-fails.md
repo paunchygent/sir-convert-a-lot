@@ -96,6 +96,46 @@ the preferred or fallback stability proof.
     - either run the documented `1470 + standalone eval` gate
     - or run the next accumulation ablation if the story owner decides the
       preferred-gate miss still warrants it
+- Focused next lane after the failed preferred gate:
+  - use the existing `qwen-t198-proof` surface again
+  - keep `text_embedding_mask_policy=text_span_only`
+  - lower `gradient_accumulation_steps` from `2` to `1`
+  - attempt the preferred gate again before the fallback gate is activated
+  - keep the fallback `1470 + standalone eval` gate as the immediate next
+    contingency if accumulation `1` still does not clear the preferred lane
+  - prepared proof id:
+    `task198-20260316t213409z-accum1-a1`
+  - local root:
+    `build/verification/qwen-t198-proof/task198-20260316t213409z-accum1-a1/`
+  - bounded replay outcome:
+    - the detached `1406 -> 1418` replay exited cleanly with `exit_code=0`
+    - `current_optimizer_step=1418`
+    - one scheduled eval completed there with
+      `latest_eval_loss=8.293148636817932`
+    - durable checkpoint
+      `state-step-00001418`
+      exists under the window run root
+  - preferred `1500` continuation outcome:
+    - the continuation launched directly from that clean `1418` checkpoint
+    - the detached continuation exited with `exit_code=1`
+    - `current_optimizer_step=1449`
+    - `current_train_iteration=851`
+    - no newer durable checkpoint beyond `1418` was minted
+  - exact failure shape:
+    - `trigger_reason=pre_clip_non_finite_gradients`
+    - `first_non_finite_stage=pre_clip`
+    - `first_non_finite_surface=text_embedding.weight.grad`
+    - `first_non_finite_tensor=grad_norm`
+    - `optimizer_step_attempted=false`
+    - `optimizer_step_completed=false`
+    - parameters and optimizer-state probes remained finite before the
+      attempted optimizer step
+    - `microbatch_count=1` at the failing optimizer step
+  - operator interpretation:
+    - accumulation `1` improved the preferred-gate reach from `1428` to `1449`
+    - accumulation `1` still did not satisfy the preferred `1500` gate
+    - the documented fallback `1470 + standalone eval` gate is now the
+      strongest next governed lane unless a new design reason argues otherwise
 
 ## Exact Command Sequence
 
@@ -109,6 +149,8 @@ the preferred or fallback stability proof.
    `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
 1. Inspect the detached `1500` continuation:
    `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
+1. For the next focused ablation lane, prepare accumulation `1` explicitly:
+   `pdm run qwen-t198-proof prepare --proof-id <proof-id> --gradient-accumulation-steps 1 --skip-build`
 
 ## Deliverables
 

@@ -938,6 +938,52 @@ Operator conclusion:
     - either the documented fallback `1406 -> 1470` plus standalone eval gate
     - or the next accumulation ablation lane if that is judged more valuable
 
+## 2026-03-16: T198 Accumulation-1 Cleared 1418 But The Preferred 1500 Gate Failed At 1449
+
+- Delivered task:
+  `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
+- Proof id:
+  `task198-20260316t213409z-accum1-a1`
+- Local proof artifact root:
+  `build/verification/qwen-t198-proof/task198-20260316t213409z-accum1-a1/`
+- Remote replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task198-20260316t213409z-accum1-a1-window`
+- Runtime truth:
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=1`
+  - the replay reused the canonical RCA checkpoint `state-step-00001406`
+- Live bounded replay status at the time of this ledger update:
+  - the detached `1406 -> 1418` replay exited cleanly with `exit_code=0`
+  - `current_optimizer_step=1418`
+  - one scheduled eval completed there with
+    `latest_eval_loss=8.293148636817932`
+  - durable checkpoint
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task198-20260316t213409z-accum1-a1-window/diagnostic-run/checkpoints/state-step-00001418`
+    exists
+- Preferred `1500` continuation result:
+  - the continuation launched directly from that clean `1418` checkpoint
+  - the detached continuation exited with `exit_code=1`
+  - `current_optimizer_step=1449`
+  - `current_train_iteration=851`
+  - no newer durable checkpoint beyond `1418` was minted
+- Failure truth:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `first_non_finite_tensor=grad_norm`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+  - `microbatch_count=1` at the failing optimizer step
+  - parameters and optimizer-state probes remained finite before the attempted
+    optimizer step
+- Operator conclusion:
+  - accumulation `1` is stronger preferred-gate evidence than accumulation `2`
+    because it reached `1449` instead of `1428`
+  - accumulation `1` still did not satisfy the preferred `1500` gate
+  - the next clean restart remains blocked
+  - the documented fallback `1406 -> 1470` plus standalone eval gate is now
+    the strongest next governed lane
+
 ## Historical Reference Boundary
 
 `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`
