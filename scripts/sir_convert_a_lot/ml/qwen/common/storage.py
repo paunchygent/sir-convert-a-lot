@@ -137,11 +137,23 @@ def _replace_with_symlink(source_path: Path, target_path: Path) -> None:
     if source_path.is_symlink():
         if source_path.resolve() == target_path.resolve():
             return
-        source_path.unlink()
+        try:
+            source_path.unlink()
+        except PermissionError:
+            run_checked(
+                ["sudo", "-n", "rm", "-f", source_path.as_posix()],
+                label="sudo rm symlink",
+            )
     elif source_path.exists():
         raise SystemExit(f"Refusing to replace existing non-symlink path: {source_path}")
     ensure_directory(source_path.parent)
-    source_path.symlink_to(target_path)
+    try:
+        source_path.symlink_to(target_path)
+    except PermissionError:
+        run_checked(
+            ["sudo", "-n", "ln", "-s", target_path.as_posix(), source_path.as_posix()],
+            label="sudo ln symlink",
+        )
 
 
 def migrate_tree_to_tier(source: Path, destination: Path) -> None:
