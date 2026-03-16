@@ -134,10 +134,21 @@ Treat Hemma storage as three different contracts:
   - `/srv/storage`
   - raw corpora
   - cold retained datasets
+  - cold retained proof/run artifacts that no longer need SSD residency
 - OS disk:
   - `/`
   - not the long-term home for Docker persistent state or large ML artifact
     trees
+
+Recurring scratch-governance rule for high-churn Qwen lanes:
+
+- audit scratch before long detached proof/training launches:
+  `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
+- archive explicit cold scratch roots onto storage with symlink-back path
+  stability instead of deleting referenced evidence blindly:
+  `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --source-path <scratch-path> ...`
+- use `--prune-docker-state` only for non-active Docker cleanup when reclaiming
+  additional headroom
 
 ## SSH and Service Health
 

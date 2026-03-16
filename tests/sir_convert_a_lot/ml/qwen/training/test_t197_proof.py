@@ -28,8 +28,10 @@ def test_prepare_writes_config_plan_and_checklist(
     checklist_markdown = (proof_root / "checklist.md").read_text(encoding="utf-8")
     assert "1406 -> 1418" in plan_markdown
     assert "pdm run run-hemma -- pdm run qwen-train diagnose-non-finite" in plan_markdown
+    assert "required_scratch_free_bytes" in plan_markdown
     assert "1406 -> 1418" in checklist_markdown
     assert "1500" in checklist_markdown
+    assert "scratch free space" in checklist_markdown
     latest_pointer = json.loads((tmp_path / "latest-proof.json").read_text(encoding="utf-8"))
     assert latest_pointer["proof_id"] == "t197-proof"
 
@@ -45,12 +47,25 @@ def test_launch_window_uses_detached_diagnose_surface(
     )
     assert prepare_result == 0
     capsys.readouterr()
-    captured: dict[str, object] = {}
+    calls: list[list[str]] = []
 
     def fake_run(
         command: list[str], *, check: bool, capture_output: bool, text: bool
     ) -> subprocess.CompletedProcess[str]:
-        captured["command"] = list(command)
+        calls.append(list(command))
+        if "qwen-scratch-policy" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                json.dumps(
+                    {
+                        "scratch_free_bytes": 80 * 1024**3,
+                        "required_free_bytes": 64 * 1024**3,
+                        "meets_required_headroom": True,
+                    }
+                ),
+                "",
+            )
         return subprocess.CompletedProcess(
             command,
             0,
@@ -69,7 +84,11 @@ def test_launch_window_uses_detached_diagnose_surface(
     capsys.readouterr()
 
     assert result == 0
-    command = captured["command"]
+    assert len(calls) == 2
+    audit_command = calls[0]
+    command = calls[1]
+    assert "qwen-scratch-policy" in audit_command
+    assert "audit" in audit_command
     assert isinstance(command, list)
     assert command[:7] == ["pdm", "run", "run-hemma", "--", "pdm", "run", "qwen-train"]
     assert "diagnose-non-finite" in command
@@ -101,6 +120,19 @@ def test_launch_gate1500_requires_clean_window_status(
         command: list[str], *, check: bool, capture_output: bool, text: bool
     ) -> subprocess.CompletedProcess[str]:
         calls.append(list(command))
+        if "qwen-scratch-policy" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                json.dumps(
+                    {
+                        "scratch_free_bytes": 80 * 1024**3,
+                        "required_free_bytes": 64 * 1024**3,
+                        "meets_required_headroom": True,
+                    }
+                ),
+                "",
+            )
         if "status" in command:
             return subprocess.CompletedProcess(
                 command,
@@ -134,8 +166,10 @@ def test_launch_gate1500_requires_clean_window_status(
 
     assert result == 0
     status_command = calls[0]
-    gate_command = calls[1]
+    audit_command = calls[1]
+    gate_command = calls[2]
     assert "status" in status_command
+    assert "qwen-scratch-policy" in audit_command
     assert "resume" in gate_command
     assert "--max-steps" in gate_command
     assert "1500" in gate_command
@@ -196,3 +230,41 @@ def test_status_commands_write_phase_artifacts(
     assert (tmp_path / "t197-proof" / "window-status.md").exists() is True
     assert (tmp_path / "t197-proof" / "gate1500-status.json").exists() is True
     assert (tmp_path / "t197-proof" / "gate1500-status.md").exists() is True
+
+
+def test_launch_window_fails_closed_on_insufficient_scratch_headroom(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The bounded replay launch should fail before remote work when scratch is too full."""
+    prepare_result = main(
+        ["prepare", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"]
+    )
+    assert prepare_result == 0
+    capsys.readouterr()
+
+    def fake_run(
+        command: list[str], *, check: bool, capture_output: bool, text: bool
+    ) -> subprocess.CompletedProcess[str]:
+        assert "qwen-scratch-policy" in command
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            json.dumps(
+                {
+                    "scratch_free_bytes": 8 * 1024**3,
+                    "required_free_bytes": 64 * 1024**3,
+                    "meets_required_headroom": False,
+                }
+            ),
+            "",
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_runtime.subprocess.run",
+        fake_run,
+    )
+
+    with pytest.raises(SystemExit, match="scratch headroom is below the required threshold"):
+        main(["launch-window", "--output-root", tmp_path.as_posix(), "--proof-id", "t197-proof"])

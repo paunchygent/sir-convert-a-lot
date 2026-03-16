@@ -144,18 +144,28 @@ def _replace_with_symlink(source_path: Path, target_path: Path) -> None:
     source_path.symlink_to(target_path)
 
 
+def migrate_tree_to_tier(source: Path, destination: Path) -> None:
+    """Move one tree between storage tiers while preserving existing contents."""
+    _migrate_tree(source, destination)
+
+
+def replace_with_canonical_symlink(source_path: Path, target_path: Path) -> None:
+    """Replace one path with a symlink to the canonical migrated target."""
+    _replace_with_symlink(source_path, target_path)
+
+
 def migrate_repo_build_to_scratch(settings: StorageSettings) -> None:
     """Move the repo build tree onto SSD scratch and replace it with a symlink."""
     ensure_directory(settings.scratch_build_root.parent)
-    _migrate_tree(settings.repo_build_root, settings.scratch_build_root)
-    _replace_with_symlink(settings.repo_build_root, settings.scratch_build_root)
+    migrate_tree_to_tier(settings.repo_build_root, settings.scratch_build_root)
+    replace_with_canonical_symlink(settings.repo_build_root, settings.scratch_build_root)
 
 
 def migrate_qwen_data_to_storage(settings: StorageSettings) -> None:
     """Move raw Qwen corpus data from SSD scratch onto HDD storage and symlink back."""
     ensure_directory(settings.new_qwen_data_root.parent)
-    _migrate_tree(settings.old_qwen_data_root, settings.new_qwen_data_root)
-    _replace_with_symlink(settings.old_qwen_data_root, settings.new_qwen_data_root)
+    migrate_tree_to_tier(settings.old_qwen_data_root, settings.new_qwen_data_root)
+    replace_with_canonical_symlink(settings.old_qwen_data_root, settings.new_qwen_data_root)
 
 
 def docker_system_df() -> str:

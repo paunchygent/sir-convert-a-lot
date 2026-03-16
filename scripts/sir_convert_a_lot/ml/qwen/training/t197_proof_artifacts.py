@@ -33,6 +33,7 @@ DEFAULT_WINDOW_END_OPTIMIZER_STEP = 1418
 DEFAULT_GATE_MAX_STEPS = 1500
 DEFAULT_GATE_CHECKPOINT_INTERVAL_STEPS = 500
 DEFAULT_GATE_EVAL_INTERVAL_STEPS = 100
+DEFAULT_REQUIRED_SCRATCH_FREE_BYTES = 64 * 1024**3
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,7 @@ class Story29ProofConfig:
     gate_max_steps: int
     gate_checkpoint_interval_steps: int
     gate_eval_interval_steps: int
+    required_scratch_free_bytes: int
     skip_build: bool
     window_launch_id: str
     gate_launch_id: str
@@ -200,6 +202,7 @@ def build_prepare_config(
         gate_max_steps=int(args.gate_max_steps),
         gate_checkpoint_interval_steps=int(args.gate_checkpoint_interval_steps),
         gate_eval_interval_steps=int(args.gate_eval_interval_steps),
+        required_scratch_free_bytes=int(args.required_scratch_free_bytes),
         skip_build=bool(args.skip_build),
         window_launch_id=f"{proof_id}-window",
         gate_launch_id=f"{proof_id}-gate1500",
@@ -244,6 +247,7 @@ def load_config(local_proof_root: Path) -> Story29ProofConfig:
         gate_max_steps=_required_int(payload, "gate_max_steps"),
         gate_checkpoint_interval_steps=_required_int(payload, "gate_checkpoint_interval_steps"),
         gate_eval_interval_steps=_required_int(payload, "gate_eval_interval_steps"),
+        required_scratch_free_bytes=_required_int(payload, "required_scratch_free_bytes"),
         skip_build=_required_bool(payload, "skip_build"),
         window_launch_id=_required_str(payload, "window_launch_id"),
         gate_launch_id=_required_str(payload, "gate_launch_id"),

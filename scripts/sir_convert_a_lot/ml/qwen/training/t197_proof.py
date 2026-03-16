@@ -30,6 +30,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_artifacts import (
     DEFAULT_GATE_EVAL_INTERVAL_STEPS,
     DEFAULT_GATE_MAX_STEPS,
     DEFAULT_REMOTE_TRAINING_OUTPUT_ROOT,
+    DEFAULT_REQUIRED_SCRATCH_FREE_BYTES,
     DEFAULT_SOURCE_CHECKPOINT_PATH,
     DEFAULT_SOURCE_LAUNCH_ROOT,
     DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
@@ -54,6 +55,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_artifacts import (
     write_markdown,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.t197_proof_runtime import (
+    ensure_remote_scratch_headroom,
     ensure_window_passed,
     gate_qwen_train_args,
     gate_remote_command,
@@ -124,6 +126,11 @@ def build_parser(profile: Story29ProofProfile) -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_GATE_EVAL_INTERVAL_STEPS,
     )
+    prepare.add_argument(
+        "--required-scratch-free-bytes",
+        type=int,
+        default=DEFAULT_REQUIRED_SCRATCH_FREE_BYTES,
+    )
     prepare.add_argument("--skip-build", action="store_true")
 
     for command_name, help_text in (
@@ -175,6 +182,7 @@ def run_main(profile: Story29ProofProfile, argv: list[str] | None = None) -> int
     config = load_config(local_root)
 
     if args.command == "launch-window":
+        ensure_remote_scratch_headroom(config)
         launch_payload = run_remote_training_json(
             window_qwen_train_args(config),
             label=f"{config.task_label.lower()} bounded replay launch",
@@ -203,6 +211,7 @@ def run_main(profile: Story29ProofProfile, argv: list[str] | None = None) -> int
             window_status_markdown_path(local_root),
             status_summary_markdown("Window", status_payload),
         )
+        ensure_remote_scratch_headroom(config)
         launch_payload = run_remote_training_json(
             gate_qwen_train_args(config),
             label=f"{config.task_label.lower()} `1500` gate launch",

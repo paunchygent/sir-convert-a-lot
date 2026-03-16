@@ -31,6 +31,15 @@ RUN_HEMMA_QWEN_TRAIN_PREFIX = [
     "run",
     "qwen-train",
 ]
+RUN_HEMMA_QWEN_SCRATCH_POLICY_PREFIX = [
+    "pdm",
+    "run",
+    "run-hemma",
+    "--",
+    "pdm",
+    "run",
+    "qwen-scratch-policy",
+]
 
 
 def full_remote_command(qwen_train_args: list[str]) -> list[str]:
@@ -57,6 +66,54 @@ def run_remote_training_json(qwen_train_args: list[str], *, label: str) -> dict[
             f"stderr:\n{result.stderr.strip()}"
         ) from exc
     return payload
+
+
+def _run_remote_scratch_policy_json(
+    policy_args: list[str],
+    *,
+    label: str,
+) -> dict[str, object]:
+    """Run one remote scratch-policy command and parse its JSON payload."""
+    command = [*RUN_HEMMA_QWEN_SCRATCH_POLICY_PREFIX, *policy_args]
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode != 0 and result.stdout.strip() == "":
+        raise SystemExit(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        )
+    try:
+        payload = parse_json_object_from_mixed_stdout(result.stdout)
+    except SystemExit as exc:
+        raise SystemExit(
+            f"{label} failed (exit={result.returncode}).\n"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
+        ) from exc
+    return payload
+
+
+def ensure_remote_scratch_headroom(config: Story29ProofConfig) -> dict[str, object]:
+    """Require enough Hemma scratch headroom before a detached proof launch starts."""
+    payload = _run_remote_scratch_policy_json(
+        [
+            "audit",
+            "--required-free-bytes",
+            str(config.required_scratch_free_bytes),
+        ],
+        label=f"{config.task_label.lower()} scratch audit",
+    )
+    free_bytes = payload.get("scratch_free_bytes")
+    meets_headroom = payload.get("meets_required_headroom")
+    if meets_headroom is True:
+        return payload
+    raise SystemExit(
+        f"{config.task_label} launch blocked because Hemma scratch headroom is below the "
+        "required threshold. "
+        f"free_bytes={free_bytes} required_free_bytes={config.required_scratch_free_bytes}. "
+        "Run `pdm run run-hemma -- pdm run qwen-scratch-policy audit` and "
+        "`pdm run run-hemma -- pdm run qwen-scratch-policy remediate ...` first."
+    )
 
 
 def window_qwen_train_args(config: Story29ProofConfig) -> list[str]:

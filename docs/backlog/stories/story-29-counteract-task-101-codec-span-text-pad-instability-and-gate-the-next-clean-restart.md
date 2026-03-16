@@ -13,6 +13,8 @@ related:
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/tasks/task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405.md
   - docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md
+  - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
+  - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -119,6 +121,8 @@ numerical stability.
 1. `docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md`
 1. `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
 1. `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
+1. `docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md`
+1. `docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md`
 1. `docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md`
 
 ## Current Status
@@ -146,6 +150,16 @@ numerical stability.
 - `T198` is now the next active task.
 - `T198` now has a committed local wrapper for the detached accumulation-`2`
   proof lane: `pdm run qwen-t198-proof`.
+- The first `T198` accumulation-`2` replay then reached optimizer step `1418`
+  cleanly but failed during durable checkpoint save because Hemma scratch
+  headroom had collapsed below the required free-space threshold.
+- `T204` restored the manual scratch audit/remediation lane and added the
+  proof-launch headroom gate so detached Story 29 work now fails early on
+  insufficient scratch headroom.
+- `T205` is now the recurring follow-on for the clean `T198` rerun:
+  it adds the idle-safe `maintain` command, the lightweight user-level timer,
+  and the recurring cold-artifact archive policy needed to keep scratch from
+  collapsing again between proof runs.
 
 ## Checklist
 

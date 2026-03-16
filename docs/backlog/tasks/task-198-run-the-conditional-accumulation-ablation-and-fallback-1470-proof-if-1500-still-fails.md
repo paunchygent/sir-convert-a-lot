@@ -10,6 +10,8 @@ related:
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md
   - docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md
+  - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
+  - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
@@ -68,6 +70,13 @@ the preferred or fallback stability proof.
   - proof id: `task198-20260316t185616z-accum2-a1`
   - local root:
     `build/verification/qwen-t198-proof/task198-20260316t185616z-accum2-a1/`
+- First live accumulation-`2` outcome:
+  - the bounded replay reached optimizer step `1418`
+  - the replay did not fail on a non-finite gradient
+  - it then failed during durable checkpoint save because Hemma scratch free
+    space dropped below the required headroom
+  - `1500` continuation therefore did not launch
+  - `T204/T205` are the required enabling tasks before the clean rerun
 
 ## Exact Command Sequence
 
@@ -99,6 +108,9 @@ the preferred or fallback stability proof.
 - [ ] The task remains blocked unless `T197` has produced a truthful Hemma
   proof artifact showing that `text_span_only` alone did not satisfy the
   preferred gate.
+- [ ] The task remains blocked for relaunch while `T204/T205` scratch-headroom
+  remediation and recurring-maintenance setup are still open, or while the
+  proof wrappers report insufficient Hemma free space.
 - [ ] Each ablation artifact records both the active mask policy and the active
   accumulation value.
 - [ ] If the fallback gate is used, the resulting `1470` checkpoint and

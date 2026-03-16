@@ -382,6 +382,33 @@ Operator notes:
   - `gradient_accumulation_steps=2`
 - The generated `plan.md` and `checklist.md` serve the same role as the `T197`
   package, but for the accumulation-ablation lane.
+- Both Story 29 proof wrappers now fail early when Hemma scratch free space is
+  below the required headroom threshold.
+
+## Story 29 Scratch Governance
+
+Story 29 proof lanes are now governed by an explicit hot-versus-cold storage
+policy on Hemma:
+
+- keep active proof/run roots on `/srv/scratch`
+- demote cold completed artifact trees onto `/srv/storage` while preserving
+  symlink-backed path stability at the original scratch path
+- prune only non-active Docker state when reclaiming scratch headroom
+
+Canonical commands:
+
+1. Audit current pressure:
+   `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
+1. Archive explicit cold artifact trees and optionally prune Docker:
+   `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --source-path <scratch-path> [--source-path <scratch-path> ...] [--prune-docker-state]`
+
+Operator rule:
+
+- do not relaunch `T197` or `T198` until the scratch audit reports enough free
+  bytes for the proof wrapper headroom gate
+- when older proof/run roots must remain referenceable from docs, archive them
+  onto `/srv/storage` and keep a symlink at the original path instead of
+  deleting them blindly
 
 ## Legacy Checkpoint Recovery Rule
 
@@ -425,5 +452,6 @@ Operator interpretation:
 ## Hemma Storage Tiers
 
 - SSD work tier: `/srv/scratch` (Builds, caches, active training).
-- HDD bulk-data tier: `/srv/storage` (Raw corpora, frozen roots).
+- HDD bulk-data tier: `/srv/storage` (Raw corpora, frozen roots, cold retained
+  proof/run artifacts).
 - OS disk: `/` (Avoid for ML artifacts).

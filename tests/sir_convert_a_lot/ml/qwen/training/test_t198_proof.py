@@ -45,12 +45,25 @@ def test_launch_window_defaults_to_accumulation_two(
     )
     assert prepare_result == 0
     capsys.readouterr()
-    captured: dict[str, object] = {}
+    calls: list[list[str]] = []
 
     def fake_run(
         command: list[str], *, check: bool, capture_output: bool, text: bool
     ) -> subprocess.CompletedProcess[str]:
-        captured["command"] = list(command)
+        calls.append(list(command))
+        if "qwen-scratch-policy" in command:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                json.dumps(
+                    {
+                        "scratch_free_bytes": 80 * 1024**3,
+                        "required_free_bytes": 64 * 1024**3,
+                        "meets_required_headroom": True,
+                    }
+                ),
+                "",
+            )
         return subprocess.CompletedProcess(
             command,
             0,
@@ -69,7 +82,9 @@ def test_launch_window_defaults_to_accumulation_two(
     capsys.readouterr()
 
     assert result == 0
-    command = captured["command"]
+    assert len(calls) == 2
+    assert "qwen-scratch-policy" in calls[0]
+    command = calls[1]
     assert isinstance(command, list)
     assert "--gradient-accumulation-steps" in command
     assert "2" in command

@@ -53,6 +53,7 @@ def render_plan_markdown(
             f"- preferred_gate_step: `{config.gate_max_steps}`",
             f"- gate_checkpoint_interval_steps: `{config.gate_checkpoint_interval_steps}`",
             f"- gate_eval_interval_steps: `{config.gate_eval_interval_steps}`",
+            f"- required_scratch_free_bytes: `{config.required_scratch_free_bytes}`",
             "",
             "## Wrapper Commands",
             "",
@@ -105,6 +106,10 @@ def render_checklist_markdown(config: Story29ProofConfig) -> str:
             (
                 f"- [ ] Confirm the bounded replay target is exactly optimizer steps "
                 f"`{config.window_start_optimizer_step} -> {config.window_end_optimizer_step}`."
+            ),
+            (
+                f"- [ ] Confirm Hemma scratch free space is at least "
+                f"`{config.required_scratch_free_bytes}` bytes before launch."
             ),
             "",
             "## Window Gate",

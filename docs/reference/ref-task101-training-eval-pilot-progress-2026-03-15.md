@@ -858,6 +858,39 @@ Operator conclusion:
   - `T198` is now the next active task for the planned accumulation ablations
   - the next clean restart remains blocked
 
+## 2026-03-16: T198 Accumulation-2 Cleared 1417 But Hit Scratch-Capacity Failure
+
+- Delivered task:
+  `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
+- Proof id:
+  `task198-20260316t185616z-accum2-a1`
+- Local proof artifact root:
+  `build/verification/qwen-t198-proof/task198-20260316t185616z-accum2-a1/`
+- Remote replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task198-20260316t185616z-accum2-a1-window`
+- Runtime truth:
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=2`
+  - the replay reused the canonical RCA checkpoint `state-step-00001406`
+- Replay result:
+  - detached replay exited with `exit_code=1`
+  - `current_optimizer_step=1418`
+  - the replay did not fail on a non-finite gradient
+  - the `1500` continuation did not launch
+- Failure truth:
+  - the terminal blocker was storage, not the old `1417` numerical failure
+  - the durable checkpoint save refused to proceed because Hemma scratch free
+    space was about `9 GB` while the save guard required about `30 GB`
+- Operator conclusion:
+  - accumulation `2` is positive numerical evidence because it cleared the old
+    `1417` failure window
+  - the preferred gate is still incomplete because the replay did not exit
+    cleanly
+  - `T204` is now the active enabling task:
+    restore scratch headroom, archive cold artifact trees onto storage with
+    symlink-backed path stability, and make future Story 29 proof launches
+    fail early on insufficient headroom
+
 ## Historical Reference Boundary
 
 `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`
