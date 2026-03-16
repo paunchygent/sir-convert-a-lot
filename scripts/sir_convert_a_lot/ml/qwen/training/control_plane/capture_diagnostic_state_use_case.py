@@ -39,6 +39,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.models import settings_from_snapshot
 from scripts.sir_convert_a_lot.ml.qwen.training.monitoring import launch_resource_monitor
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    resolve_text_embedding_mask_policy,
+)
 
 from .bundle_contract import ensure_training_bundle_exists
 from .launch_loader import load_training_launch
@@ -88,6 +91,10 @@ def handle_capture_diagnostic_state(args) -> int:
     settings = replace(
         settings,
         pilot_bundle_root=effective_bundle_root,
+        text_embedding_mask_policy=resolve_text_embedding_mask_policy(
+            getattr(args, "text_embedding_mask_policy", None),
+            default=settings.text_embedding_mask_policy,
+        ),
         checkpoint_interval_steps=effective_checkpoint_interval_steps,
         eval_interval_steps=effective_eval_interval_steps,
         max_steps=target_optimizer_step,

@@ -140,8 +140,10 @@
 
 Implement Story 29 before any new restart attempt:
 
-1. land `T195` so `text_embedding_mask_policy` becomes an explicit runtime
-   contract with `legacy_codec_span` and `text_span_only`
+1. keep `T195` as the new structural baseline:
+   - `text_embedding_mask_policy` is now explicit
+   - fresh launches default to `text_span_only`
+   - older launch metadata remains reproducible as `legacy_codec_span`
 1. land `T196` so `gradient_accumulation_steps` becomes runtime-configurable
    for bounded proofs
 1. run `T197` as the preferred gate:
@@ -178,6 +180,9 @@ Implement Story 29 before any new restart attempt:
 - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_launch_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_diagnose_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_command_builder.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_inspect_service.py tests/sir_convert_a_lot/ml/qwen/training/test_diagnostic_replay.py tests/sir_convert_a_lot/ml/qwen/training/test_optimizer_guard.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_status_payloads.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_failure_projection.py tests/sir_convert_a_lot/ml/qwen/training/test_train_step_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py -q`
 - `PASS` `pdm run validate-tasks`
 - `PASS` `pdm run validate-docs`
+- `PASS` focused `T195` tests covering dataset collation, launch defaults,
+  detached commands, runtime fingerprint artifacts, and standalone eval/report
+  payloads
 
 ## Key References
 

@@ -1,9 +1,9 @@
 ---
-id: 'task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate'
-title: 'Prove the text-span-only mitigation on the 1406-1418 window and the preferred 1500 gate'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate
+title: Prove the text-span-only mitigation on the 1406-1418 window and the preferred 1500 gate
+type: task
+status: proposed
+priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
 related:
@@ -18,6 +18,7 @@ labels:
   - proof
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

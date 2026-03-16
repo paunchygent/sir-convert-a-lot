@@ -653,6 +653,14 @@ Operator conclusion:
 - the next accepted operator move is one bounded mitigation proof from `1406`
   that removes or detaches the codec-span text-pad surface and replays the
   `1417` window
+- `T195` has now landed that first structural mitigation surface:
+  - `text_embedding_mask_policy` is an explicit runtime/control-plane contract
+  - supported values are `legacy_codec_span` and `text_span_only`
+  - fresh `qwen-train launch` runs now default to `text_span_only`
+  - older launch metadata still rehydrates as `legacy_codec_span` unless
+    operators explicitly override it
+  - runtime fingerprint, launch metadata, standalone eval artifacts, and
+    machine-readable reporting now surface the active policy
 
 ## Superseded Operator Plan
 
@@ -725,6 +733,38 @@ Why this matters:
 - the training reference ledger is now the mandatory place to record whether
   the preferred `1500` gate or the fallback `1470 + standalone eval` gate
   justified the next clean restart
+
+### 2026-03-16: `T195` Landed The Explicit Text-Embedding Mask Policy
+
+- Delivered task:
+  `docs/backlog/tasks/task-195-land-an-explicit-task-101-text-embedding-mask-policy-and-text-span-only-mitigation.md`
+- Runtime/control-plane contract:
+  - `legacy_codec_span`
+  - `text_span_only`
+- Launch/control truth:
+  - fresh `qwen-train launch` defaults to `text_span_only`
+  - `resume`, `capture-diagnostic-state`, `diagnose-non-finite`, standalone
+    eval, and schedule flows accept explicit overrides while keeping older
+    launch metadata compatible through `legacy_codec_span`
+- Artifact truth:
+  - dataset collation now computes the active text-embedding span from the
+    explicit policy rather than a hard-coded codec-span assumption
+  - `talker_runtime` fingerprints now record the active
+    `text_embedding_mask_policy`
+  - detached launch metadata, training status/report payloads, replay bundle
+    settings, and standalone eval artifacts now surface the same policy
+- Validation truth:
+  - focused tests proved `legacy_codec_span` preserves the old active span
+  - focused tests proved `text_span_only` narrows the active text-embedding
+    surface to the true text span only
+
+Operator conclusion:
+
+- the first structural mitigation surface is now committed and visible
+- the next implementation step is `T196`, so the same bounded proof lane can
+  compare accumulation `4`, `2`, and `1` without code edits
+- the next Hemma proof must use the explicit Story 29 contract rather than any
+  implicit batch-mask behavior
 
 ## Historical Reference Boundary
 

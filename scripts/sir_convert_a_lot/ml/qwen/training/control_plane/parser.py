@@ -15,6 +15,9 @@ import argparse
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_argument
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+)
 
 from .defaults import (
     DEFAULT_BATCH_SIZE,
@@ -51,6 +54,7 @@ from .defaults import (
     DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS,
     DEFAULT_SCRATCH_BUILD_HOME_MOUNT,
     DEFAULT_SCRATCH_BUILD_ROOT,
+    DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
     DEFAULT_TORCH_PROFILER_ENABLED,
@@ -86,6 +90,11 @@ def build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--model-id", default=DEFAULT_MODEL_ID)
     launch.add_argument("--train-manifest-family", default=DEFAULT_TRAIN_MANIFEST_FAMILY)
     launch.add_argument("--eval-manifest-family", default=DEFAULT_EVAL_MANIFEST_FAMILY)
+    launch.add_argument(
+        "--text-embedding-mask-policy",
+        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+    )
     launch.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     launch.add_argument("--throughput-profile-label", default=DEFAULT_THROUGHPUT_PROFILE_LABEL)
     launch.add_argument("--lr", type=float, default=DEFAULT_LR)
@@ -179,6 +188,11 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--launch-root", type=Path, default=None)
     resume.add_argument("--checkpoint-path", type=Path, default=None)
     resume.add_argument("--pilot-bundle-root", type=Path, default=None)
+    resume.add_argument(
+        "--text-embedding-mask-policy",
+        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=None,
+    )
     resume.add_argument("--num-epochs", type=int, default=None)
     resume.add_argument("--max-steps", type=int, default=None)
     resume.add_argument("--checkpoint-interval-steps", type=int, default=None)
@@ -215,6 +229,11 @@ def build_parser() -> argparse.ArgumentParser:
     capture.add_argument("--launch-root", type=Path, default=None)
     capture.add_argument("--checkpoint-path", type=Path, default=None)
     capture.add_argument("--pilot-bundle-root", type=Path, default=None)
+    capture.add_argument(
+        "--text-embedding-mask-policy",
+        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=None,
+    )
     capture.add_argument(
         "--target-optimizer-step",
         type=int,
@@ -259,6 +278,11 @@ def build_parser() -> argparse.ArgumentParser:
     diagnose.add_argument("--checkpoint-path", type=Path, default=None)
     diagnose.add_argument("--pilot-bundle-root", type=Path, default=None)
     diagnose.add_argument(
+        "--text-embedding-mask-policy",
+        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=None,
+    )
+    diagnose.add_argument(
         "--start-optimizer-step", type=int, default=DEFAULT_DIAGNOSTIC_START_OPTIMIZER_STEP
     )
     diagnose.add_argument(
@@ -295,6 +319,11 @@ def build_parser() -> argparse.ArgumentParser:
     standalone_eval.add_argument("--checkpoint-path", type=Path, default=None)
     standalone_eval.add_argument("--eval-jsonl", type=Path, default=None)
     standalone_eval.add_argument("--pilot-bundle-root", type=Path, default=None)
+    standalone_eval.add_argument(
+        "--text-embedding-mask-policy",
+        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=None,
+    )
     standalone_eval.add_argument("--eval-output-dir", type=Path, default=None)
     standalone_eval.add_argument("--eval-id", default=None)
     standalone_eval.add_argument(
@@ -311,6 +340,11 @@ def build_parser() -> argparse.ArgumentParser:
     schedule.add_argument("--checkpoint-path", type=Path, default=None)
     schedule.add_argument("--eval-jsonl", type=Path, default=None)
     schedule.add_argument("--pilot-bundle-root", type=Path, default=None)
+    schedule.add_argument(
+        "--text-embedding-mask-policy",
+        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=None,
+    )
     schedule.add_argument("--epochs-per-segment", type=int, default=1)
     schedule.add_argument(
         "--poll-interval-seconds", type=float, default=DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS

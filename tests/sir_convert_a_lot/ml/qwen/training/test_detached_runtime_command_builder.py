@@ -48,6 +48,7 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         eval_interval_steps=100,
         durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
+        text_embedding_mask_policy="text_span_only",
     )
     hf_mount = MountResolution(
         canonical_root=settings.hf_cache_dir,
@@ -89,3 +90,5 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
         "swedish_checkpoint_dev.prepared.jsonl" in command
     )
+    assert "--text-embedding-mask-policy" in command
+    assert "text_span_only" in command

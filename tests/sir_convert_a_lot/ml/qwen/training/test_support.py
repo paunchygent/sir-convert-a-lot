@@ -424,9 +424,11 @@ class _FakeDataset:
         _config: object,
         ref_mel_cache: object | None = None,
         data_path_attribution: object | None = None,
+        text_embedding_mask_policy: str = "legacy_codec_span",
     ) -> None:
         del ref_mel_cache, data_path_attribution
         self.rows = rows
+        self.text_embedding_mask_policy = text_embedding_mask_policy
         self.collate_fn = lambda batch: batch
 
     def __len__(self) -> int:

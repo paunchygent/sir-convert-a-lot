@@ -32,6 +32,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
     save_persisted_ref_mel,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_CODEC_SPAN_TEXT_EMBEDDING_MASK_POLICY,
+    TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY,
+)
 from tests.sir_convert_a_lot.ml.qwen.preprocessing.test_support import write_test_wav
 
 
@@ -74,6 +78,20 @@ class _FakeProcessor:
     ) -> dict[str, torch.Tensor]:
         del text, return_tensors, padding
         return {"input_ids": torch.tensor([[1, 2, 3, 4, 5, 6]], dtype=torch.long)}
+
+
+class _LongTokenProcessor:
+    """Processor stub that leaves a meaningful post-trim text span for mask tests."""
+
+    def __call__(
+        self,
+        *,
+        text: str,
+        return_tensors: str,
+        padding: bool,
+    ) -> dict[str, torch.Tensor]:
+        del text, return_tensors, padding
+        return {"input_ids": torch.tensor([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], dtype=torch.long)}
 
 
 def test_load_training_rows_accepts_legacy_manifest_without_precomputed_ref_input(
@@ -347,3 +365,52 @@ def test_collate_fn_preserves_batch_row_provenance(
             "ref_audio": ref_audio_path.as_posix(),
         }
     ]
+
+
+@pytest.mark.parametrize(
+    ("policy", "expected_active_length"),
+    [
+        (LEGACY_CODEC_SPAN_TEXT_EMBEDDING_MASK_POLICY, 16),
+        (TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY, 11),
+    ],
+)
+def test_collate_fn_applies_the_configured_text_embedding_mask_policy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    policy: str,
+    expected_active_length: int,
+) -> None:
+    """Collation should respect the explicit text-embedding mask policy."""
+    ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
+    ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
+    write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    dataset = TTSDataset(
+        data_list=[
+            {
+                "text": "hej världen igen",
+                "audio_codes": [list(range(16)), list(range(16, 32)), list(range(32, 48))],
+                "ref_audio": ref_audio_path.as_posix(),
+                "speaker_id": "speaker-a",
+            }
+        ],
+        processor=_LongTokenProcessor(),
+        config=_FakeConfig(),
+        text_embedding_mask_policy=policy,
+    )
+    monkeypatch.setattr(
+        TTSDataset,
+        "extract_mels",
+        lambda self, audio, sample_rate: torch.ones((1, 4, 8), dtype=torch.float32),
+    )
+
+    collated = dataset.collate_fn([dataset[0]])
+
+    mask = collated["text_embedding_mask"][0, :, 0]
+    assert int(mask.sum().item()) == expected_active_length
+    assert torch.equal(
+        mask[:expected_active_length], torch.ones(expected_active_length, dtype=torch.bool)
+    )
+    assert torch.equal(
+        mask[expected_active_length:],
+        torch.zeros(mask.shape[0] - expected_active_length, dtype=torch.bool),
+    )

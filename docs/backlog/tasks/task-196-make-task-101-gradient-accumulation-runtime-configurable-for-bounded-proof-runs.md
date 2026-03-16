@@ -1,9 +1,9 @@
 ---
-id: 'task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs'
-title: 'Make Task 101 gradient accumulation runtime-configurable for bounded proof runs'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs
+title: Make Task 101 gradient accumulation runtime-configurable for bounded proof runs
+type: task
+status: proposed
+priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
 related:
@@ -16,6 +16,7 @@ labels:
   - accumulation
   - stability
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

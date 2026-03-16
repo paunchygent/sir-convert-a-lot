@@ -56,6 +56,7 @@ def _settings(*, scratch_root: Path) -> TrainingSettings:
         eval_interval_steps=100,
         durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
+        text_embedding_mask_policy="text_span_only",
     )
 
 
@@ -151,6 +152,8 @@ def test_build_standalone_eval_command_containerizes_checkpoint_and_eval_paths()
     )
     assert "--pilot-bundle-root" in command
     assert "/app/build/reference/qwen-bundle" in command
+    assert "--text-embedding-mask-policy" in command
+    assert "text_span_only" in command
 
 
 def test_eval_command_uses_recorded_launch_repo_root(
@@ -217,7 +220,7 @@ def test_eval_command_uses_recorded_launch_repo_root(
         eval_jsonl: Path,
         pilot_bundle_root: Path | None,
     ) -> StandaloneEvalReport:
-        del settings, hf_mount, scratch_mount
+        del hf_mount, scratch_mount
         printed["repo_root"] = repo_root
         printed["output_dir"] = output_dir
         printed["checkpoint_path"] = checkpoint_path
@@ -231,6 +234,7 @@ def test_eval_command_uses_recorded_launch_repo_root(
             eval_jsonl=eval_jsonl.as_posix(),
             output_dir=output_dir.as_posix(),
             eval_row_count=1,
+            text_embedding_mask_policy=settings.text_embedding_mask_policy,
             bundle_precomputed_reference_input=None,
             throughput_profile=None,
             eval_summary={"eval_loss": 1.25},

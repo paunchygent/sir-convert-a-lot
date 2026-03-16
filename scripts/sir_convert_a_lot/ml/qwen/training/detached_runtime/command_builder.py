@@ -113,6 +113,8 @@ def build_detached_training_command(
         settings.train_manifest_family,
         "--eval-manifest-family",
         settings.eval_manifest_family,
+        "--text-embedding-mask-policy",
+        settings.text_embedding_mask_policy,
         "--output-dir",
         container_run_root,
         "--tracker-project-name",

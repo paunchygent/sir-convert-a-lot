@@ -54,6 +54,12 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
     RefMelCache,
     canonical_ref_audio_cache_key,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    TextEmbeddingMaskPolicy,
+    active_text_embedding_length,
+    resolve_text_embedding_mask_policy,
+)
 
 AudioArray: TypeAlias = npt.NDArray[np.float32]
 AudioWithRate: TypeAlias = tuple[AudioArray, int]
@@ -275,6 +281,7 @@ class TTSDataset(Dataset[DatasetItem]):
         lag_num: int = -1,
         ref_mel_cache: RefMelCache | None = None,
         data_path_attribution: DataPathAttributionCollector | None = None,
+        text_embedding_mask_policy: str = LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     ) -> None:
         self.data_list = list(data_list)
         self.processor = processor
@@ -282,6 +289,12 @@ class TTSDataset(Dataset[DatasetItem]):
         self.config = config
         self.ref_mel_cache = ref_mel_cache
         self.data_path_attribution = data_path_attribution
+        self.text_embedding_mask_policy: TextEmbeddingMaskPolicy = (
+            resolve_text_embedding_mask_policy(
+                text_embedding_mask_policy,
+                default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+            )
+        )
         self._tokenized_text_ids = [
             self._tokenize_texts(self._build_assistant_text(item["text"]))
             for item in self.data_list
@@ -489,7 +502,14 @@ class TTSDataset(Dataset[DatasetItem]):
                 8 + text_ids_len - 2 : 8 + text_ids_len + codec_ids_len,
                 0,
             ] = self.config.tts_pad_token_id
-            text_embedding_mask[batch_index, : 8 + text_ids_len + codec_ids_len] = True
+            text_embedding_mask[
+                batch_index,
+                : active_text_embedding_length(
+                    policy=self.text_embedding_mask_policy,
+                    text_ids_len=text_ids_len,
+                    codec_ids_len=codec_ids_len,
+                ),
+            ] = True
 
             input_ids[batch_index, 3:8, 1] = torch.tensor(
                 [

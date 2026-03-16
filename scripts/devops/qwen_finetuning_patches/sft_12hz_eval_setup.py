@@ -65,6 +65,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     load_optional_training_bundle_summary,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    resolve_text_embedding_mask_policy,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     ThroughputBatchPolicy,
@@ -194,12 +198,17 @@ def prepare_standalone_eval_run(args: argparse.Namespace) -> PreparedStandaloneE
         attn_implementation="flash_attention_2",
     )
     config = AutoConfig.from_pretrained(str(args.init_model_path))
+    text_embedding_mask_policy = resolve_text_embedding_mask_policy(
+        getattr(args, "text_embedding_mask_policy", None),
+        default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    )
     eval_dataset = TTSDataset(
         eval_data,
         qwen3tts.processor,
         config,
         ref_mel_cache=ref_mel_cache,
         data_path_attribution=None,
+        text_embedding_mask_policy=text_embedding_mask_policy,
     )
     eval_batch_sampler = BucketedBatchSampler(
         row_metrics=eval_dataset.batch_metrics(),

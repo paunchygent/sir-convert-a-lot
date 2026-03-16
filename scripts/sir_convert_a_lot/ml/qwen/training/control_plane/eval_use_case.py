@@ -12,7 +12,7 @@ Relationships:
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.ml.qwen.training.eval_orchestrator import (
@@ -26,6 +26,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
     validate_resume_checkpoint_path,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.models import settings_from_snapshot
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    resolve_text_embedding_mask_policy,
+)
 
 from .launch_loader import load_training_launch
 from .path_policy import require_existing_path, require_under_scratch_root
@@ -39,6 +42,13 @@ def handle_eval(args) -> int:
     source_launch = load_training_launch(source_launch_root)
     source_repo_root = Path(source_launch.repo_root)
     settings = settings_from_snapshot(source_launch.settings)
+    settings = replace(
+        settings,
+        text_embedding_mask_policy=resolve_text_embedding_mask_policy(
+            getattr(args, "text_embedding_mask_policy", None),
+            default=settings.text_embedding_mask_policy,
+        ),
+    )
     dockerfile_path = Path(source_launch.dockerfile_path or args.default_dockerfile_path)
     _, _, hf_mount, scratch_mount = prepare_runtime_dependencies(
         settings=settings,

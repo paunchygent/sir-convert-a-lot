@@ -1,9 +1,9 @@
 ---
-id: 'story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart'
-title: 'Counteract Task 101 codec-span text-pad instability and gate the next clean restart'
-type: 'story'
-status: 'in_progress'
-priority: 'high'
+id: story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart
+title: Counteract Task 101 codec-span text-pad instability and gate the next clean restart
+type: story
+status: in_progress
+priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
 related:
@@ -21,6 +21,7 @@ labels:
   - hemma
   - rca
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective

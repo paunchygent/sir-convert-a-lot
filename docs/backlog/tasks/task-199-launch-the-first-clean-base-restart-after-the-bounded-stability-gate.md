@@ -1,9 +1,9 @@
 ---
-id: 'task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate'
-title: 'Launch the first clean base restart after the bounded stability gate'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate
+title: Launch the first clean base restart after the bounded stability gate
+type: task
+status: proposed
+priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
 related:
@@ -18,6 +18,7 @@ labels:
   - restart
   - proof-gated
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

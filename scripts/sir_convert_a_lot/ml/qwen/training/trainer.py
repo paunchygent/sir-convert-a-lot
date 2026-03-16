@@ -47,6 +47,11 @@ from scripts.sir_convert_a_lot.ml.qwen.training.reporting import (
     build_training_report,
     write_json,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+    resolve_text_embedding_mask_policy,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     resolve_throughput_batch_policy,
@@ -72,6 +77,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--pilot-bundle-root", type=Path, default=None)
     parser.add_argument("--train-manifest-family", default=None)
     parser.add_argument("--eval-manifest-family", default=None)
+    parser.add_argument(
+        "--text-embedding-mask-policy",
+        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
+        default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--tracker-project-name", default="qwen-training")
     parser.add_argument("--mlflow-experiment-name", default="qwen-training")
@@ -277,6 +287,10 @@ def main() -> int:
             raise SystemExit("Trainer expected GPU-visible torch inside the container.")
         if torch.version.hip is None:
             raise SystemExit("Trainer expected ROCm-enabled torch inside the container.")
+        text_embedding_mask_policy = resolve_text_embedding_mask_policy(
+            getattr(args, "text_embedding_mask_policy", None),
+            default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+        )
 
         training_args = argparse.Namespace(
             init_model_path=str(args.model_id),
@@ -328,6 +342,7 @@ def main() -> int:
             ),
             train_manifest_family=args.train_manifest_family,
             eval_manifest_family=args.eval_manifest_family,
+            text_embedding_mask_policy=text_embedding_mask_policy,
             diagnostic_kind=getattr(args, "diagnostic_kind", None),
             diagnostic_source_launch_root=(
                 None

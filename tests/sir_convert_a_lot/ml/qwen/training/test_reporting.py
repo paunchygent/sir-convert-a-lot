@@ -85,11 +85,12 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     )
     reporter.runtime_ready(
         {
+            "text_embedding_mask_policy": "text_span_only",
             "text_projection": {
                 "available": True,
                 "resolved_path": "model.talker.text_projection",
                 "probeable_as_module": True,
-            }
+            },
         }
     )
     reporter.heartbeat(
@@ -177,6 +178,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
         "minimum_required_max_batch_size": 8,
     }
     talker_runtime = _required_mapping(payload, "talker_runtime")
+    assert talker_runtime["text_embedding_mask_policy"] == "text_span_only"
     text_projection = _required_mapping(talker_runtime, "text_projection")
     assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["tracking"]["mlflow_run_id"] == "mlflow-run-id"
@@ -305,11 +307,12 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     reporter.write_startup()
     reporter.runtime_ready(
         {
+            "text_embedding_mask_policy": "text_span_only",
             "text_projection": {
                 "available": True,
                 "resolved_path": "model.talker.text_projection",
                 "probeable_as_module": True,
-            }
+            },
         }
     )
     reporter.write_failed(
@@ -334,6 +337,7 @@ def test_status_reporter_marks_non_finite_loss_failures_invalid_for_acceptance(
     assert payload["current_train_iteration"] == 32
     assert payload["acceptance_measurement_valid"] is False
     talker_runtime = _required_mapping(payload, "talker_runtime")
+    assert talker_runtime["text_embedding_mask_policy"] == "text_span_only"
     text_projection = _required_mapping(talker_runtime, "text_projection")
     assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["finite_loss_guard"]["trigger_reason"] == "non-finite-loss"

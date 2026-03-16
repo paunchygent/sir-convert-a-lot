@@ -28,6 +28,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.models import TrainingSettings
 from scripts.sir_convert_a_lot.ml.qwen.training.monitoring import launch_resource_monitor
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+    resolve_text_embedding_mask_policy,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     resolve_throughput_batch_policy,
 )
@@ -141,4 +145,8 @@ def build_settings_from_args(args) -> TrainingSettings:
         torch_profiler_profile_memory=bool(args.torch_profiler_profile_memory),
         torch_profiler_with_stack=bool(args.torch_profiler_with_stack),
         rocm_profiler_enabled=bool(args.rocm_profiler_enabled),
+        text_embedding_mask_policy=resolve_text_embedding_mask_policy(
+            getattr(args, "text_embedding_mask_policy", None),
+            default=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+        ),
     )

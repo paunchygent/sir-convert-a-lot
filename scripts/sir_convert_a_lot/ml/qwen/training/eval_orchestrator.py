@@ -27,6 +27,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     StandaloneEvalReport,
     TrainingSettings,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    resolve_text_embedding_mask_policy,
+)
 
 CONTAINER_BUILD_ROOT = Path("/app/build")
 
@@ -115,6 +119,8 @@ def build_standalone_eval_command(
         container_output_dir,
         "--checkpoint-path",
         container_checkpoint_path,
+        "--text-embedding-mask-policy",
+        settings.text_embedding_mask_policy,
         "--batch-size",
         str(settings.batch_size),
         "--throughput-profile-label",
@@ -199,6 +205,14 @@ def run_standalone_eval(
         eval_jsonl=str(payload["eval_jsonl"]),
         output_dir=str(payload["output_dir"]),
         eval_row_count=int(payload["eval_row_count"]),
+        text_embedding_mask_policy=resolve_text_embedding_mask_policy(
+            (
+                None
+                if "text_embedding_mask_policy" not in payload
+                else str(payload["text_embedding_mask_policy"])
+            ),
+            default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+        ),
         bundle_precomputed_reference_input=(
             None
             if payload.get("bundle_precomputed_reference_input") is None

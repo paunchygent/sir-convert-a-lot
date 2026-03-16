@@ -67,6 +67,7 @@ def _training_summary() -> TrainingSummary:
         acceptance_measurement_valid=True,
         ref_mel_cache={"enabled": True},
         talker_runtime={
+            "text_embedding_mask_policy": "text_span_only",
             "text_embedding": {
                 "available": True,
                 "resolved_path": "model.talker.get_text_embeddings()",
@@ -134,11 +135,12 @@ def test_running_status_payload_preserves_diagnostic_and_step_truth() -> None:
         profiling_plan=None,
         diagnostic={"kind": "diagnose-non-finite"},
         talker_runtime={
+            "text_embedding_mask_policy": "text_span_only",
             "text_projection": {
                 "available": True,
                 "resolved_path": "model.talker.text_projection",
                 "probeable_as_module": True,
-            }
+            },
         },
         resume_from_checkpoint=None,
         live_progress={
@@ -152,6 +154,7 @@ def test_running_status_payload_preserves_diagnostic_and_step_truth() -> None:
 
     assert payload["diagnostic"] == {"kind": "diagnose-non-finite"}
     talker_runtime = _required_mapping(payload, "talker_runtime")
+    assert talker_runtime["text_embedding_mask_policy"] == "text_span_only"
     text_projection = _required_mapping(talker_runtime, "text_projection")
     assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["current_phase"] == "train"
@@ -177,6 +180,7 @@ def test_completed_status_payload_serializes_tracking_summary() -> None:
     assert isinstance(tracking, dict)
     assert tracking["mlflow_run_id"] == "run-id"
     talker_runtime = _required_mapping(payload, "talker_runtime")
+    assert talker_runtime["text_embedding_mask_policy"] == "text_span_only"
     text_projection = _required_mapping(talker_runtime, "text_projection")
     assert text_projection["resolved_path"] == ("model.talker.text_projection")
     assert payload["checkpoint_interval_steps"] == 500

@@ -149,7 +149,8 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
     - the next step is a bounded mitigation proof from `1406`, not another
       continuation or restart
   - Story 29 / `T195-T199` is now the explicit execution lane for that proof:
-    - `T195` lands the explicit mask policy
+    - `T195` landed the explicit mask policy and made `text_span_only` the
+      fresh-launch default
     - `T196` lands runtime-configurable accumulation
     - `T197` owns the preferred `1500` gate
     - `T198` owns the conditional fallback `1470 + standalone eval` gate
@@ -166,9 +167,12 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
     `1470 + standalone eval` gate passes
 - Treat the `1417` replay as proving a sequence-level backward blow-up on the
   active text-embedding path rather than a clip or optimizer-step issue.
-- Land `T195` and `T196` before the next Hemma proof so the mask policy and
-  accumulation setting are explicit, runtime-configurable, and visible in
-  artifacts.
+- Keep `T195` as the landed structural mitigation baseline:
+  - `text_embedding_mask_policy` is now explicit
+  - fresh launches default to `text_span_only`
+  - older launch metadata remains reproducible through `legacy_codec_span`
+- Land `T196` before the next Hemma proof so the accumulation setting is
+  explicit, runtime-configurable, and visible in artifacts.
 - Use `T197` as the preferred bounded proof:
   - clear `1406 -> 1418`
   - then reach `1500`

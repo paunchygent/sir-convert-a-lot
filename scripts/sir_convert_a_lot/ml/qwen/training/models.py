@@ -16,6 +16,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    TextEmbeddingMaskPolicy,
+)
+
 
 @dataclass(frozen=True)
 class TrainingSettings:
@@ -60,6 +65,7 @@ class TrainingSettings:
     torch_profiler_profile_memory: bool = True
     torch_profiler_with_stack: bool = False
     rocm_profiler_enabled: bool = False
+    text_embedding_mask_policy: TextEmbeddingMaskPolicy = LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT
 
 
 @dataclass(frozen=True)
@@ -105,6 +111,7 @@ class TrainingSettingsSnapshot:
     torch_profiler_profile_memory: bool = True
     torch_profiler_with_stack: bool = False
     rocm_profiler_enabled: bool = False
+    text_embedding_mask_policy: TextEmbeddingMaskPolicy = LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT
 
 
 @dataclass(frozen=True)
@@ -235,6 +242,7 @@ class StandaloneEvalReport:
     eval_jsonl: str
     output_dir: str
     eval_row_count: int
+    text_embedding_mask_policy: TextEmbeddingMaskPolicy
     bundle_precomputed_reference_input: dict[str, object] | None
     throughput_profile: dict[str, object] | None
     eval_summary: dict[str, object] | None
@@ -284,6 +292,7 @@ def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettin
         model_id=snapshot.model_id,
         train_manifest_family=snapshot.train_manifest_family,
         eval_manifest_family=snapshot.eval_manifest_family,
+        text_embedding_mask_policy=snapshot.text_embedding_mask_policy,
         batch_size=snapshot.batch_size,
         throughput_profile_label=snapshot.throughput_profile_label,
         lr=snapshot.lr,

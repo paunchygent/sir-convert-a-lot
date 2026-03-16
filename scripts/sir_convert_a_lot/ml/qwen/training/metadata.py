@@ -20,6 +20,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedStatus,
     TrainingSettingsSnapshot,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    resolve_text_embedding_mask_policy,
+)
 
 
 def launch_root(output_root: Path, launch_id: str) -> Path:
@@ -401,6 +405,14 @@ def load_launch(
         model_id=_required_str(settings_payload, "model_id"),
         train_manifest_family=_required_str(settings_payload, "train_manifest_family"),
         eval_manifest_family=_required_str(settings_payload, "eval_manifest_family"),
+        text_embedding_mask_policy=resolve_text_embedding_mask_policy(
+            (
+                None
+                if "text_embedding_mask_policy" not in settings_payload
+                else _required_str(settings_payload, "text_embedding_mask_policy")
+            ),
+            default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+        ),
         batch_size=batch_size,
         throughput_profile_label=_compat_throughput_profile_label(
             settings_payload,

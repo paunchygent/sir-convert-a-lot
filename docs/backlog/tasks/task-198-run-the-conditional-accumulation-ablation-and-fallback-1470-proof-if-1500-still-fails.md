@@ -1,9 +1,9 @@
 ---
-id: 'task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails'
-title: 'Run the conditional accumulation ablation and fallback 1470 proof if 1500 still fails'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails
+title: Run the conditional accumulation ablation and fallback 1470 proof if 1500 still fails
+type: task
+status: proposed
+priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
 related:
@@ -17,6 +17,7 @@ labels:
   - ablation
   - fallback
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

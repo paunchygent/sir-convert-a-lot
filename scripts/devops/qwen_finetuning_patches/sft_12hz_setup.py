@@ -97,6 +97,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import (
 from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
     load_optional_training_bundle_summary,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
+    LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    resolve_text_embedding_mask_policy,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     ThroughputBatchPolicy,
@@ -389,7 +393,14 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         dtype=torch.bfloat16,
         attn_implementation="flash_attention_2",
     )
-    talker_runtime = talker_runtime_fingerprint(qwen3tts.model)
+    text_embedding_mask_policy = resolve_text_embedding_mask_policy(
+        getattr(args, "text_embedding_mask_policy", None),
+        default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
+    )
+    talker_runtime = talker_runtime_fingerprint(
+        qwen3tts.model,
+        text_embedding_mask_policy=text_embedding_mask_policy,
+    )
     diagnostic_window = build_diagnostic_window_config(args)
     config = AutoConfig.from_pretrained(model_path)
     bundle_summary = (
@@ -413,6 +424,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         config,
         ref_mel_cache=ref_mel_cache,
         data_path_attribution=data_path_attribution,
+        text_embedding_mask_policy=text_embedding_mask_policy,
     )
     eval_dataset = TTSDataset(
         eval_data,
@@ -420,6 +432,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         config,
         ref_mel_cache=ref_mel_cache,
         data_path_attribution=None,
+        text_embedding_mask_policy=text_embedding_mask_policy,
     )
     row_metrics = dataset.batch_metrics()
     eval_row_metrics = eval_dataset.batch_metrics()

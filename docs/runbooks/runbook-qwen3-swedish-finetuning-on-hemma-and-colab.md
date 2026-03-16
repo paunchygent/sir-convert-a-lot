@@ -272,6 +272,12 @@ Operational consequence:
 - the first mitigation to test is narrowing `text_embedding_mask` to the true
   text span only, or equivalently zeroing/detaching the codec-span text-pad
   positions
+- `T195` now makes that mitigation explicit in the committed control plane:
+  - `--text-embedding-mask-policy legacy_codec_span`
+  - `--text-embedding-mask-policy text_span_only`
+  - fresh `qwen-train launch` runs default to `text_span_only`
+  - replay/resume/eval/capture flows keep backward-compatible legacy behavior
+    unless operators pass an override
 - only if that mask-only mitigation does not clear the `1417` failure should
   operators test lower `gradient_accumulation_steps` as the secondary bounded
   ablation
