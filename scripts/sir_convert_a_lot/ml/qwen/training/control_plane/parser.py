@@ -179,6 +179,8 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--launch-root", type=Path, default=None)
     resume.add_argument("--checkpoint-path", type=Path, default=None)
     resume.add_argument("--pilot-bundle-root", type=Path, default=None)
+    resume.add_argument("--num-epochs", type=int, default=None)
+    resume.add_argument("--max-steps", type=int, default=None)
     resume.add_argument("--checkpoint-interval-steps", type=int, default=None)
     resume.add_argument("--eval-interval-steps", type=int, default=None)
     resume.add_argument("--durable-checkpoint-retention", type=int, default=None)

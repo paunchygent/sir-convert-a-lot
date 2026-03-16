@@ -53,6 +53,8 @@ def handle_resume(args) -> int:
     settings = replace(
         settings,
         pilot_bundle_root=effective_bundle_root,
+        num_epochs=(settings.num_epochs if args.num_epochs is None else int(args.num_epochs)),
+        max_steps=(settings.max_steps if args.max_steps is None else int(args.max_steps)),
         checkpoint_interval_steps=(
             settings.checkpoint_interval_steps
             if args.checkpoint_interval_steps is None

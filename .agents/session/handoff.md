@@ -97,26 +97,48 @@
 - `T194` now owns the next RCA narrowing slice: use the captured no-projection
   `1405` artifact to identify the exact text-embedding rows, token ids, and
   backward surface that first go non-finite.
+- Trainer-native exact capture now exists and succeeded at optimizer step
+  `1401` under
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-capture1401-a3`.
+- The bounded replay from that checkpoint then crossed the old `1405` failure
+  window cleanly and minted a new durable checkpoint at
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`.
+- Current pilot math from the live bundle:
+  - `128` train rows
+  - `batch_size=1`
+  - `gradient_accumulation_steps=4`
+  - one full pass over all pilot rows = `32` optimizer steps
+- Current bounded continuation policy from `1406`:
+  - next review point: optimizer step `1500`
+  - bounded target: optimizer step `1566`
+  - absolute resume cap: `num_epochs=12`
+  - standard control posture remains `500/100/3`
 
 ## Immediate Next Step
 
-Start `T194`. Use the captured no-projection `1405` boundary artifact from
-`task193-20260315t-pre1401-resume-a1` to answer three questions with committed
-artifacts:
+Launch the bounded `1406 -> 1566` continuation, not another replay, unless a
+new instability appears first.
 
-1. Which `text_embedding` row ids first go non-finite?
-1. Which token ids / decoded text context map to those rows?
-1. Does the first non-finite backward event appear on
-   `input_text_embedding` gradients before the parameter gradient, and does it
-   require accumulation across microbatches `801-804`?
+Canonical Hemma command:
 
-Do not keep paying the full `1238 -> 1405` replay cost for every hypothesis.
-The intended `T194` posture is:
+```bash
+pdm run run-hemma -- pdm run qwen-train resume \
+  --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training \
+  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1 \
+  --checkpoint-path /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406 \
+  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
+  --num-epochs 12 \
+  --max-steps 1566 \
+  --checkpoint-interval-steps 500 \
+  --eval-interval-steps 100 \
+  --durable-checkpoint-retention 3 \
+  --launch-id task101-20260316t-5pass-pilot-a1 \
+  --skip-build
+```
 
-1. mint one reusable near-boundary diagnostic state with automated stop-by-step
-   control
-1. then run cheap micro-window experiments against only the failing `1405`
-   window and its prefixes
+Review that lane again at step `1500`. If it remains finite, let it finish at
+step `1566`. Keep `T194` open for RCA only if the continued lane reintroduces a
+non-finite boundary.
 
 ## Open Risks
 

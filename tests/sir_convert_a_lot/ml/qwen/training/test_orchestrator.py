@@ -98,6 +98,24 @@ def test_parser_launch_accepts_explicit_boolean_values() -> None:
     assert args.non_blocking_transfer is False
 
 
+def test_parser_resume_accepts_bounded_training_overrides() -> None:
+    """Resume should accept explicit num-epochs and max-steps overrides."""
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "resume",
+            "--num-epochs",
+            "12",
+            "--max-steps",
+            "1566",
+        ]
+    )
+
+    assert args.num_epochs == 12
+    assert args.max_steps == 1566
+
+
 def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest() -> None:
     """The detached training command should target prepared bundle manifests."""
     settings = TrainingSettings(
@@ -1127,7 +1145,7 @@ def test_resume_accepts_explicit_control_posture_overrides(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Resume should let operators move a recovered legacy lane onto 500/100/3."""
+    """Resume should let operators move a recovered legacy lane onto a bounded 500/100/3 pilot."""
     output_root = tmp_path / "verification"
     source_launch_root = tmp_path / "legacy-source"
     source_run_root = tmp_path / "runs/qwen-prev"
@@ -1301,6 +1319,10 @@ def test_resume_accepts_explicit_control_posture_overrides(
             source_launch_root.as_posix(),
             "--pilot-bundle-root",
             replacement_bundle_root.as_posix(),
+            "--num-epochs",
+            "12",
+            "--max-steps",
+            "1566",
             "--checkpoint-interval-steps",
             "500",
             "--eval-interval-steps",
@@ -1316,6 +1338,8 @@ def test_resume_accepts_explicit_control_posture_overrides(
     settings = captured["settings"]
     assert isinstance(settings, TrainingSettings)
     assert settings.pilot_bundle_root == replacement_bundle_root
+    assert settings.num_epochs == 12
+    assert settings.max_steps == 1566
     assert settings.checkpoint_interval_steps == 500
     assert settings.eval_interval_steps == 100
     assert settings.durable_checkpoint_retention == 3

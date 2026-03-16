@@ -4,7 +4,7 @@ id: RUN-qwen3-swedish-finetuning-on-hemma-and-colab
 title: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 status: active
 created: 2026-03-08
-updated: 2026-03-15
+updated: 2026-03-16
 owners:
   - platform
 system: hemma.hule.education
@@ -239,6 +239,50 @@ Canonical repo surface for the preprocessing lane:
 - Schedule control fails closed when checkpoint, eval-manifest, or bundle-root
   paths escape the mounted scratch root or are missing from disk.
 - Resume with: `pdm run qwen-train resume`.
+
+## Bounded Pilot Continuation From `1406`
+
+After the exact `1401` capture and the clean bounded replay through `1406`, the
+current bounded pilot policy is no longer "resume with sentinel values and
+watch for trouble." It is:
+
+- resume from
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
+- keep the standard scheduled control posture:
+  - durable checkpoint every `500` optimizer steps
+  - held-out eval every `100` optimizer steps
+  - retain newest `3` durable checkpoints
+- define the continuation in full dataset passes from the current cursor
+
+Current live pilot math:
+
+- `train_row_count=128`
+- `batch_size=1`
+- `gradient_accumulation_steps=4`
+- one full pass over all pilot rows = `32` optimizer steps
+- the next review point is optimizer step `1500`
+- the bounded continuation target is `5` full passes from `1406`
+- that means:
+  - `160` additional optimizer steps
+  - target optimizer step `1566`
+  - absolute resume cap `num_epochs=12`
+
+Canonical Hemma command:
+
+```bash
+pdm run run-hemma -- pdm run qwen-train resume \
+  --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training \
+  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1 \
+  --checkpoint-path /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406 \
+  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
+  --num-epochs 12 \
+  --max-steps 1566 \
+  --checkpoint-interval-steps 500 \
+  --eval-interval-steps 100 \
+  --durable-checkpoint-retention 3 \
+  --launch-id task101-20260316t-5pass-pilot-a1 \
+  --skip-build
+```
 
 ## Legacy Checkpoint Recovery Rule
 

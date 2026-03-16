@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-15'
+last_updated: '2026-03-16'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
@@ -109,21 +109,32 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
     - determine whether corruption appears on `input_text_embedding` gradients
       before parameter gradients and whether accumulation across
       microbatches `801-804` is required
+- 2026-03-16:
+  - trainer-native exact capture succeeded at optimizer step `1401` under
+    `task194-20260316t-capture1401-a3`
+  - the bounded `1401 -> 1406` replay under
+    `task194-20260316t-1405-rca-a1` crossed the old `1405` failure window
+    cleanly and minted a new durable checkpoint at `state-step-00001406`
+  - the live continuation policy is now explicit:
+    - one full pass over the current pilot material = `32` optimizer steps
+    - next review point = optimizer step `1500`
+    - bounded continuation target = optimizer step `1566`
+    - absolute resume cap = `num_epochs=12`
+  - the canonical detached resume surface now accepts bounded
+    `--num-epochs` / `--max-steps` overrides, so the `1406 -> 1566`
+    continuation can run on the normal `qwen-train resume` command instead of
+    an ad hoc launcher
 
 ## Next Actions
 
 - Keep the preserved Task 101 lane on the restored no-projection fine-tuning
   graph; do not relaunch the projection-enabled experiment.
-- Start `T194` as the active RCA task for the `1405` no-projection boundary.
-- Mint one reusable near-boundary diagnostic state with automated stop-by-step
-  control, then reuse that state for cheap `1405` micro-window experiments
-  instead of replaying the full `1238 -> 1405` lane for every hypothesis.
-- Use the captured `801-804` microbatch window to map the first non-finite
-  `text_embedding` gradient rows back to token ids and decoded text context.
-- Add one bounded RCA surface that proves whether
-  `input_text_embedding` gradients go non-finite before the parameter
-  gradient and whether the corruption requires accumulation across the full
-  optimizer step.
+- Keep `T194` open as the RCA lane, but the immediate operator move is now the
+  bounded `1406 -> 1566` continuation, not another replay by default.
+- Review the continued lane at optimizer step `1500`.
+- Stop the bounded continuation at optimizer step `1566` if it remains finite.
+- Reopen the `1405` RCA track as the primary operator move only if the new
+  continuation reintroduces a non-finite boundary.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in

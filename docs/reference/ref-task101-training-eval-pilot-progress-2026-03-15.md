@@ -4,7 +4,7 @@ id: REF-task101-training-eval-pilot-progress-2026-03-15
 title: Task 101 Training/Eval Pilot Progress Ledger (2026-03-15)
 status: active
 created: 2026-03-15
-updated: 2026-03-15
+updated: 2026-03-16
 owners:
   - platform
 tags:
@@ -47,6 +47,8 @@ For the preserved Task 101 legacy lane:
 - treat `state-step-00001236` as the evaluated baseline checkpoint
 - treat `state-step-00001238` as the canonical no-projection RCA checkpoint
   for the preserved Task 101 lane
+- treat `state-step-00001406` from the bounded no-projection replay as the
+  current bounded pilot-continuation checkpoint
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
 - do not count the projection-enabled diagnostic experiments and the preserved
@@ -80,6 +82,9 @@ Why this is now the clean plan:
 - the original legacy launch snapshot still carries stale checkpoint cadence
   settings (`2/100/2`), so the next strict resume must pass explicit control
   overrides rather than inheriting those stale values
+- the clean `1401 -> 1406` replay crossed the old failure boundary without a
+  new non-finite event, so the next operator move is a bounded continuation
+  from `1406` rather than another blind RCA replay
 
 ## Active Artifact Roots
 
@@ -93,6 +98,10 @@ Why this is now the clean plan:
   `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1/manifests/swedish_checkpoint_dev.prepared.jsonl`
 - Current strict resume checkpoint:
   `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
+- Exact diagnostic capture checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-capture1401-a3/diagnostic-state/checkpoints/state-step-00001401`
+- Current bounded pilot continuation checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
 - Latest checkpoint pointer:
   `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/latest_checkpoint.json`
 
@@ -478,6 +487,115 @@ Post-cleanup Hemma check:
 - `/srv/scratch` free space:
   about `99GB`
 
+### 2026-03-16: Exact `1401` Capture Succeeded
+
+- Capture launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-capture1401-a3`
+- Captured checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-capture1401-a3/diagnostic-state/checkpoints/state-step-00001401`
+- Result:
+  - in-trainer exact capture completed at optimizer step `1401`
+  - the run exited cleanly without overshooting into the old `1405` failure
+    window
+  - `diagnostic_state_capture.json` was written successfully
+
+Operator conclusion:
+
+- trainer-native exact capture is now the canonical way to mint a
+  near-boundary checkpoint
+- external polling/stop control is no longer the approved method for a
+  narrow optimizer-step boundary
+
+### 2026-03-16: Bounded `1401 -> 1406` Replay Crossed The Old Failure Window Cleanly
+
+- Replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1`
+- Source checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-capture1401-a3/diagnostic-state/checkpoints/state-step-00001401`
+- Diagnostic-window artifact:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/diagnostic-window/optimizer-step-00001405.json`
+- Result:
+  - the replay completed successfully through optimizer step `1406`
+  - `optimizer-step-00001405.json` reported:
+    - `first_non_finite_stage = null`
+    - `first_non_finite_tensor = null`
+  - the old `801-804` microbatch window stayed finite in this replay
+  - a new durable checkpoint was minted at:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
+
+Operator conclusion:
+
+- the exact `1401` checkpoint cleared the old `1405` boundary
+- `state-step-00001406` is now the right checkpoint for the next bounded pilot
+  continuation
+- the next operator action is no longer another RCA replay by default; it is a
+  bounded continuation from `1406` with the standard `500/100/3` control
+  posture
+
+### 2026-03-16: Bounded Pilot Continuation Policy From `1406`
+
+The bounded continuation policy is now:
+
+- resume from `state-step-00001406`
+- keep the standard live control posture:
+  - `checkpoint_interval_steps=500`
+  - `eval_interval_steps=100`
+  - `durable_checkpoint_retention=3`
+- define the pilot in full dataset passes from the current cursor, not by
+  vague long-run sentinel values
+
+Current pilot math from the live bundle:
+
+- `train_row_count=128`
+- `batch_size=1`
+- `gradient_accumulation_steps=4`
+- one full pass over all pilot rows = `32` optimizer steps
+- the next scheduled review point is optimizer step `1500`
+- the bounded pilot budget is `5` full passes from `1406`
+- that means:
+  - `160` additional optimizer steps
+  - target optimizer step `1566`
+  - absolute `num_epochs=12` for the resumed launch
+
+Persisted operator metadata:
+
+```yaml
+pilot_profile_label: pilot-5pass-continuation-v1
+pilot_boundary_kind: bounded_resume
+resume_checkpoint_path: state-step-00001406
+resume_optimizer_step: 1406
+resume_epoch_index: 6
+resume_step_in_epoch: 40
+pilot_rows_per_full_pass: 128
+pilot_train_iterations_per_full_pass: 128
+pilot_optimizer_steps_per_full_pass: 32
+pilot_full_passes_from_resume: 5
+pilot_additional_optimizer_steps: 160
+pilot_target_optimizer_step: 1566
+pilot_review_step: 1500
+pilot_checkpoint_interval_steps: 500
+pilot_eval_interval_steps: 100
+pilot_absolute_num_epochs_cap: 12
+pilot_success_condition: reached_step_1566_without_non_finite_guard
+```
+
+Canonical Hemma launch command for that bounded continuation:
+
+```bash
+pdm run run-hemma -- pdm run qwen-train resume \
+  --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training \
+  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1 \
+  --checkpoint-path /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406 \
+  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
+  --num-epochs 12 \
+  --max-steps 1566 \
+  --checkpoint-interval-steps 500 \
+  --eval-interval-steps 100 \
+  --durable-checkpoint-retention 3 \
+  --launch-id task101-20260316t-5pass-pilot-a1 \
+  --skip-build
+```
+
 ## Superseded Operator Plan
 
 The abandoned plan is:
@@ -506,17 +624,13 @@ That plan is now superseded because:
 
 Do not relaunch the projection-enabled training experiment.
 
-The next canonical action is a bounded no-projection RCA proof using the same
-truthful bundle and runtime posture as the preserved lane:
+The next canonical action is a bounded no-projection continuation from
+`state-step-00001406`:
 
-1. Record the failed `1401` checkpoint-mint attempt as an operator control
-   error and do not treat it as acceptable run handling.
-1. If a fresh near-boundary checkpoint is still required, mint it with an
-   automated stop threshold keyed to `current_optimizer_step`, not manual
-   sleep-based monitoring.
-1. Continue RCA from the now-proven `pre_clip` boundary at optimizer step
-   `1405`, using the captured microbatches and targeted `text_embedding`
-   gradient surface as the active debugging focus.
+1. review the live lane again at optimizer step `1500`
+1. keep the bounded target at optimizer step `1566`
+1. only reopen `T194` RCA-by-replay as the primary operator move if the new
+   continuation reintroduces a non-finite boundary
 
 ## Historical Reference Boundary
 
