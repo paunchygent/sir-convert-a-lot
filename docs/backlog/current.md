@@ -201,6 +201,14 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   `text_span_only` plus accumulation `4` did not clear the old `1417` window.
 - Use `T198` as the next active task for accumulation ablations from the same
   `1406` RCA checkpoint.
+- The committed `T198` wrapper now prepares the detached accumulation-`2`
+  proof lane:
+  `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`,
+  then `launch-window`, `status-window`, `launch-gate1500`, and
+  `status-gate1500`.
+- The first prepared accumulation-`2` package is
+  `task198-20260316t185616z-accum2-a1` under
+  `build/verification/qwen-t198-proof/task198-20260316t185616z-accum2-a1/`.
 - Once Story 29 proves the winning mitigation, remove `legacy_codec_span`
   before `T199` launches the next clean restart.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before

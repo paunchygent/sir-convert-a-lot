@@ -31,6 +31,14 @@
 - `T197` then ran on Hemma under `task197-20260316t183555z-a1` and failed
   again at optimizer step `1417`, so the preferred `1500` continuation did
   not launch
+- `T198` now has a committed detached accumulation-`2` wrapper:
+  - `pdm run qwen-t198-proof`
+  - prepares deterministic local proof artifacts under
+    `build/verification/qwen-t198-proof/<proof-id>/`
+  - keeps the same canonical `1406 -> 1418 -> 1500` proof shape while changing
+    the default accumulation to `2`
+  - the first prepared package is
+    `task198-20260316t185616z-accum2-a1`
 - `qwen-train diagnose-non-finite` now exists as the canonical detached
   diagnostic surface.
 - Fast ML quality gates now exist for the Qwen lane:
@@ -163,7 +171,16 @@ Implement Story 29 before any new restart attempt:
 1. run `T198` as the next active lane:
    - keep `text_embedding_mask_policy=text_span_only`
    - start from the same canonical RCA checkpoint `state-step-00001406`
-   - test `gradient_accumulation_steps=2`, then `1` if needed
+   - prepare one accumulation-`2` proof package:
+     `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
+   - launch/status the bounded replay:
+     `pdm run qwen-t198-proof launch-window --proof-id <proof-id>`
+     `pdm run qwen-t198-proof status-window --proof-id <proof-id>`
+   - only after the replay passes, launch/status the `1500` gate:
+     `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
+     `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
+   - test `gradient_accumulation_steps=1` only if the accumulation-`2` lane
+     still does not clear the preferred gate
    - only use the fallback `1470 + standalone eval` gate if the preferred
      lane still cannot be cleared
 1. only if `1500` still fails, run `T198`:
@@ -200,6 +217,9 @@ Implement Story 29 before any new restart attempt:
 - `PASS` `pdm run validate-tasks`
 - `PASS` `pdm run validate-docs`
 - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_t197_proof.py -q`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_t197_proof.py tests/sir_convert_a_lot/ml/qwen/training/test_t198_proof.py -q`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training -q` (`180 passed`)
+- `PASS` `pdm run typecheck-all`
 - `PASS` focused `T196` tests covering launch defaults, detached commands,
   replay/capture parser defaults, standalone eval artifacts, schedule control
   math, and accumulation-aware train-loop/runtime reporting

@@ -144,6 +144,8 @@ numerical stability.
   failed again at optimizer step `1417`, so `text_span_only` plus
   accumulation `4` did not satisfy the preferred gate.
 - `T198` is now the next active task.
+- `T198` now has a committed local wrapper for the detached accumulation-`2`
+  proof lane: `pdm run qwen-t198-proof`.
 
 ## Checklist
 

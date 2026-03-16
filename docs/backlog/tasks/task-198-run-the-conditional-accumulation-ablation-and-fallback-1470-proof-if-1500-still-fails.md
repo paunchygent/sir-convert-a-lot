@@ -46,8 +46,47 @@ the preferred or fallback stability proof.
   - structural only
   - structural plus reduced accumulation
 
+## Prepared Proof Surface
+
+- Local deterministic artifact root:
+  `build/verification/qwen-t198-proof/<proof-id>/`
+- Canonical wrapper:
+  `pdm run qwen-t198-proof`
+- The first prepared lane in this task is the accumulation-`2` proof from the
+  same canonical `1406` checkpoint used by `T197`.
+- Wrapper-generated artifacts:
+  - `proof-config.json`
+  - `plan.md`
+  - `checklist.md`
+  - `window-launch.json`
+  - `window-status.json`
+  - `window-status.md`
+  - `gate1500-launch.json`
+  - `gate1500-status.json`
+  - `gate1500-status.md`
+- First prepared accumulation-`2` package:
+  - proof id: `task198-20260316t185616z-accum2-a1`
+  - local root:
+    `build/verification/qwen-t198-proof/task198-20260316t185616z-accum2-a1/`
+
+## Exact Command Sequence
+
+1. Prepare the accumulation-`2` proof package locally:
+   `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
+1. Launch the detached bounded replay:
+   `pdm run qwen-t198-proof launch-window --proof-id <proof-id>`
+1. Inspect the bounded replay:
+   `pdm run qwen-t198-proof status-window --proof-id <proof-id>`
+1. Launch the detached `1500` continuation only after the replay passes:
+   `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
+1. Inspect the detached `1500` continuation:
+   `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
+
 ## Deliverables
 
+- [ ] One committed `qwen-t198-proof` wrapper prepares deterministic local
+  proof artifacts and renders the exact detached Hemma commands/checklist for
+  the accumulation-`2` lane.
 - [ ] One side-by-side proof record exists for accumulation values `4`, `2`,
   and `1` as needed.
 - [ ] If the preferred `1500` gate still fails, one fallback proof record
@@ -70,6 +109,7 @@ the preferred or fallback stability proof.
 
 ## Checklist
 
+- [x] Prepare surface complete
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated

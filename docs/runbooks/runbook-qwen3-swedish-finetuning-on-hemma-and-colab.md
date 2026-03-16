@@ -357,6 +357,32 @@ Operator notes:
   packages the exact `diagnose-non-finite`, `status`, and `resume` calls so
   the proof can be handed off cleanly without ad hoc shell assembly.
 
+## Task 198 Detached Accumulation-2 Proof Surface
+
+Use the committed local wrapper to prepare the next Story 29 accumulation-`2`
+lane from the same canonical `1406` checkpoint:
+
+1. Prepare the proof package locally:
+   `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
+1. Launch the detached bounded replay:
+   `pdm run qwen-t198-proof launch-window --proof-id <proof-id>`
+1. Inspect the bounded replay:
+   `pdm run qwen-t198-proof status-window --proof-id <proof-id>`
+1. Launch the detached `1500` continuation only after the replay passes:
+   `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
+1. Inspect the detached `1500` continuation:
+   `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
+
+Operator notes:
+
+- The local artifact root is:
+  `build/verification/qwen-t198-proof/<proof-id>/`
+- The prepared default uses:
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=2`
+- The generated `plan.md` and `checklist.md` serve the same role as the `T197`
+  package, but for the accumulation-ablation lane.
+
 ## Legacy Checkpoint Recovery Rule
 
 When recovering an older Task 101 checkpoint that predates the current
