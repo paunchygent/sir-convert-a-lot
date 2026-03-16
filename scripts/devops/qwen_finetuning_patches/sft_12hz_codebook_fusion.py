@@ -37,24 +37,9 @@ def _stack_codebook_weights(codebook_embeddings: Sequence[torch.nn.Module]) -> t
     return torch.stack(weights, dim=0)
 
 
-def _accumulation_dtype(input_dtype: torch.dtype) -> torch.dtype:
-    """Return a numerically stable accumulation dtype for codebook summation."""
-    if input_dtype in {torch.float16, torch.bfloat16}:
-        return torch.float32
-    return input_dtype
-
-
 def _reduce_masked_embeddings(masked_embeddings: torch.Tensor) -> torch.Tensor:
-    """Return one vectorized reduction over the codebook axis.
-
-    Low-precision inputs accumulate in `float32` so the reduction contract is
-    explicit without introducing a Python-loop hot path into training/eval.
-    """
-    accumulation_dtype = _accumulation_dtype(masked_embeddings.dtype)
-    reduced = torch.sum(masked_embeddings, dim=2, dtype=accumulation_dtype)
-    if reduced.dtype == masked_embeddings.dtype:
-        return reduced
-    return reduced.to(dtype=masked_embeddings.dtype)
+    """Return one vectorized reduction over the codebook axis."""
+    return torch.sum(masked_embeddings, dim=2)
 
 
 def fuse_auxiliary_codebook_embeddings(

@@ -156,12 +156,12 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
     - `T196` landed runtime-configurable accumulation across launch, resume,
       capture, diagnose, eval, and schedule
     - `T202` closed a local auxiliary-codebook fusion test failure but did not
-      yet prove that the new hot-path reducer belongs in the Story 29 proof
-      lane
-    - `T203` now owns the keep/replace/revert decision for that helper change
-      before `T197` evidence can rely on it, and that decision must come from
-      Hemma ROCm evidence rather than local Mac CPU probes
-    - `T197` owns the preferred `1500` gate after the `T203` contract audit
+      approve the candidate reducer as Story 29 proof-lane behavior
+    - `T203` is now complete and reverted that helper change from the Story 29
+      proof lane after Hemma ROCm evidence showed identical oracle error and
+      about `1.26x` hot-path slowdown for both `bf16` and `fp16`
+    - `T197` now owns the preferred `1500` gate after the closed `T203`
+      contract audit
       - `T198` owns the conditional fallback `1470 + standalone eval` gate
       - `T199` stays blocked until one of those gates passes
 
@@ -184,18 +184,16 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
   - `gradient_accumulation_steps` is now explicit and runtime-configurable
   - launch, resume, capture, diagnose, eval, and schedule artifacts all record
     the effective value
-- Run `T203` before treating the auxiliary codebook fusion reducer as part of
-  the canonical Story 29 proof lane.
-- Make the `T203` decision from Hemma GPU-stack evidence only; local Mac CPU
-  probes are not acceptance evidence for this lane.
-- Use the committed `T203` proof surfaces instead of ad hoc remote commands:
-  - attached short proof:
-    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof --skip-build`
-  - detached long proof launch:
-    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch -- --skip-build`
+- Keep the auxiliary codebook fusion helper on the plain vectorized reduction;
+  do not revive the explicit `float32` reducer without new Hemma evidence.
+- Keep the committed `T203` proof surfaces for future hot-path audits:
+  - attached proof:
+    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof`
+  - detached proof launch:
+    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch`
   - detached proof status:
     `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status`
-- Use `T197` as the preferred bounded proof after `T203` closes:
+- Use `T197` as the preferred bounded proof now that `T203` is closed:
   - clear `1406 -> 1418`
   - then reach `1500`
   - then complete the scheduled eval there

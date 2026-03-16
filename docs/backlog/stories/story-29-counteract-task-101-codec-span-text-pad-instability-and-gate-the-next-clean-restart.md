@@ -128,14 +128,15 @@ numerical stability.
 - `T196` is complete and made `gradient_accumulation_steps` explicit and
   runtime-configurable across launch, resume, capture, diagnose, eval, and
   schedule flows.
-- `T203` is now the next contract-audit step because the current local
-  auxiliary codebook fusion change is not yet accepted as canonical Story 29
-  proof-lane behavior.
-- `T203` now has committed attached and detached Hemma proof surfaces:
+- `T203` is complete and reverted the auxiliary codebook fusion helper from
+  the Story 29 proof lane after Hemma ROCm evidence showed unchanged oracle
+  error and about `1.26x` hot-path slowdown for both `bf16` and `fp16`.
+- `T203` left committed attached and detached Hemma proof surfaces for future
+  hot-path audits:
   `qwen-codebook-fusion-proof` and
   `qwen-codebook-fusion-proof-detached`.
-- `T197` remains the first bounded proof step after `T203` decides whether the
-  fusion helper change stays, is replaced, or is removed from the proof lane.
+- `T197` is now the first bounded proof step after the closed `T203` contract
+  audit removed that helper change from the proof lane.
 
 ## Checklist
 

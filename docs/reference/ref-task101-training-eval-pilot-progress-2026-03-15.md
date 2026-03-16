@@ -800,6 +800,32 @@ Operator conclusion:
   `legacy_codec_span` must be removed before `T199` launches the next clean
   restart
 
+### 2026-03-16: `T203` Closed By Reverting The Auxiliary Codebook Fusion Helper
+
+- Delivered task:
+  `docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md`
+- Hemma proof surfaces used:
+  - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch`
+  - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status`
+- Proof artifact root:
+  - `build/verification/qwen-codebook-fusion-proof/`
+- Hemma runtime truth:
+  - repo `HEAD` on Hemma was `5f421072e89bb5517210dd46b237f70900f2eab7`
+  - the detached proof completed with ROCm available and the governed Qwen
+    image rebuilt successfully
+- Numeric/runtime result:
+  - `bf16`: worst max error stayed `0.0625`, while runtime rose from about
+    `0.492ms` to about `0.620ms`
+  - `fp16`: worst max error stayed `0.0078125`, while runtime rose from about
+    `0.492ms` to about `0.619ms`
+- Decision:
+  - revert the explicit `float32` auxiliary-codebook reducer from the Story 29
+    proof lane and keep the plain vectorized reduction
+- Operator conclusion:
+  - the auxiliary codebook helper is not the winning Task 101 mitigation and
+    must not be treated as part of the restart-gating proof lane
+  - `T197` is now the next canonical step from `state-step-00001406`
+
 ## Historical Reference Boundary
 
 `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`

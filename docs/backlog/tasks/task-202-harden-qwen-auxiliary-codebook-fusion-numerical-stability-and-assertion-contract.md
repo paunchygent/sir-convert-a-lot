@@ -22,22 +22,20 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Fix the remaining flaky/full-suite failure in
-`test_fuse_auxiliary_codebook_embeddings_matches_manual_sum` with a numerical
-algorithm hardening approach, not a shim or test bypass.
+Close the remaining flaky/full-suite failure in
+`test_fuse_auxiliary_codebook_embeddings_matches_manual_sum` without a shim or
+test bypass, while handing the runtime hot-path decision to `T203`.
 
 ## PR Scope
 
-- Harden auxiliary codebook fusion accumulation in
-  `sft_12hz_codebook_fusion.py` to reduce floating-point cancellation drift.
-- Keep the vectorized codebook lookup path and update only the reduction step.
-- Align test assertion tolerances with floating-point contract expectations for
-  equivalent but non-bit-identical reductions.
+- Restore green local tests around the auxiliary codebook fusion helper.
+- Isolate one candidate reducer and test contract for later Hemma-side audit.
+- Keep the decision about the hot-path runtime contract delegated to `T203`.
 
 ## Deliverables
 
-- [x] Fusion helper uses compensated summation with stable accumulation dtype.
-- [x] Fusion tests assert close with explicit numeric tolerances.
+- [x] The local repo failure was closed without shims or skips.
+- [x] The helper/test contract was isolated for later Hemma-side audit.
 - [x] Full repo test suite passes after the change.
 
 ## Acceptance Criteria
@@ -54,6 +52,8 @@ algorithm hardening approach, not a shim or test bypass.
   29 proof lane.
 - `T203` owns the keep/replace/revert decision based on mixed-precision oracle
   evidence and hot-path cost.
+- `T203` later completed that audit on Hemma and reverted the candidate
+  reducer after it showed no numeric win and about `1.26x` slowdown.
 
 ## Validation
 

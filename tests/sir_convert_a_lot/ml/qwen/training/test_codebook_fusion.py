@@ -21,7 +21,7 @@ from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import _Fake
 
 
 def test_fuse_auxiliary_codebook_embeddings_matches_float32_accumulation_contract() -> None:
-    """The fusion helper should match the explicit float32-accumulation contract."""
+    """The fusion helper should match the native vectorized reduction contract."""
     embeddings = [_FakeEmbedding(4) for _ in range(15)]
     codec_ids = torch.randint(0, 16, (2, 5, 16), dtype=torch.long)
     codec_mask = torch.tensor(
@@ -43,7 +43,7 @@ def test_fuse_auxiliary_codebook_embeddings_matches_float32_accumulation_contrac
         dim=2,
     )
     mask = codec_mask.unsqueeze(-1).unsqueeze(-1).to(dtype=stacked.dtype)
-    manual = torch.sum(stacked * mask, dim=2, dtype=torch.float32).to(dtype=fused.dtype)
+    manual = torch.sum(stacked * mask, dim=2)
 
     torch.testing.assert_close(fused, manual)
 
@@ -65,19 +65,19 @@ def test_fuse_auxiliary_codebook_embeddings_accepts_plain_embedding_modules() ->
         dim=2,
     )
     mask = codec_mask.unsqueeze(-1).unsqueeze(-1).to(dtype=stacked.dtype)
-    manual = torch.sum(stacked * mask, dim=2, dtype=torch.float32).to(dtype=fused.dtype)
+    manual = torch.sum(stacked * mask, dim=2)
 
     torch.testing.assert_close(fused, manual)
 
 
 @pytest.mark.parametrize("dtype", [torch.float16, torch.bfloat16])
-def test_reduce_masked_embeddings_uses_explicit_float32_accumulation(
+def test_reduce_masked_embeddings_matches_native_vectorized_sum(
     dtype: torch.dtype,
 ) -> None:
-    """Low-precision reductions should follow the explicit float32 contract."""
+    """Low-precision reductions should match the native vectorized sum."""
     masked_embeddings = torch.randn((2, 3, 15, 8), dtype=torch.float32).to(dtype=dtype)
 
     reduced = _reduce_masked_embeddings(masked_embeddings)
-    expected = torch.sum(masked_embeddings, dim=2, dtype=torch.float32).to(dtype=dtype)
+    expected = torch.sum(masked_embeddings, dim=2)
 
     torch.testing.assert_close(reduced, expected)

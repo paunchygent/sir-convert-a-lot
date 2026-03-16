@@ -2,7 +2,7 @@
 id: task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts
 title: Audit the auxiliary codebook fusion hot path against Story 29 mixed-precision and proof-lane contracts
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
@@ -60,32 +60,29 @@ precision evidence and hot-path cost review on the governed Hemma ROCm stack.
 
 ## Deliverables
 
-- [ ] One low-precision oracle comparison exists for the auxiliary codebook
+- [x] One low-precision oracle comparison exists for the auxiliary codebook
   fusion helper on representative Story 29 tensor shapes on Hemma.
-- [ ] One Hemma GPU readiness/preflight artifact exists for the exact runtime
+- [x] One Hemma GPU readiness/preflight artifact exists for the exact runtime
   used to make the reducer decision.
-- [ ] One hot-path cost record exists for the candidate reducer versus the
+- [x] One hot-path cost record exists for the candidate reducer versus the
   previous vectorized reduction.
-- [ ] One keep/replace/revert decision is recorded in code, tests, and docs
+- [x] One keep/replace/revert decision is recorded in code, tests, and docs
   before `T197` proof evidence is treated as canonical.
 
 ## Acceptance Criteria
 
-- [ ] Focused `bf16` and `fp16` tests compare the naive reduction and the
+- [x] Focused `bf16` and `fp16` tests compare the naive reduction and the
   candidate reduction against a `float32` oracle for representative
   codebook-fusion shapes.
-- [ ] The decision evidence comes from Hemma ROCm-container runs; local Mac CPU
+- [x] The decision evidence comes from Hemma ROCm-container runs; local Mac CPU
   probes may guide development but are not acceptance evidence.
-- [ ] The accepted evidence includes Hemma GPU readiness truth for the runtime
+- [x] The accepted evidence includes Hemma GPU readiness truth for the runtime
   under test (`qwen-smoke` and/or equivalent ROCm preflight artifacts).
-- [ ] Tolerance loosening alone is not sufficient acceptance evidence for this
+- [x] Tolerance loosening alone is not sufficient acceptance evidence for this
   task.
-- [ ] If the reducer stays, the task records why the numeric improvement is
-  worth the hot-path cost and states explicitly that it is not the primary
-  Story 29 mitigation.
-- [ ] If the reducer does not show a meaningful numeric win or imposes
-  unacceptable hot-path cost, it is replaced or removed before `T197` proof
-  artifacts are treated as canonical.
+- [x] The Hemma proof recorded no numeric improvement and about `1.26x`
+  hot-path slowdown for both `bf16` and `fp16`, so the candidate reducer was
+  removed before `T197` proof artifacts were treated as canonical.
 
 ## Notes
 
@@ -102,10 +99,13 @@ precision evidence and hot-path cost review on the governed Hemma ROCm stack.
 - Direct proof runner:
   - `pdm run qwen-codebook-fusion-proof`
 - Detached proof runner:
+  - `pdm run qwen-codebook-fusion-proof-detached launch`
   - `pdm run qwen-codebook-fusion-proof-detached launch -- --skip-build`
   - `pdm run qwen-codebook-fusion-proof-detached status`
 - Canonical remote invocation through the Hemma wrapper:
+  - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof`
   - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof --skip-build`
+  - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch`
   - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch -- --skip-build`
   - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status`
 - Canonical artifact root:
@@ -113,8 +113,26 @@ precision evidence and hot-path cost review on the governed Hemma ROCm stack.
   - Detached launch/status metadata now lands alongside `report.json`,
     `report.md`, `failure.txt`, `worker-status.json`, and `proof.log`.
 
+## Outcome
+
+- Hemma proof revision:
+  - repo `HEAD` on Hemma: `5f421072e89bb5517210dd46b237f70900f2eab7`
+- Proof artifact root:
+  - `build/verification/qwen-codebook-fusion-proof/`
+- Probe result:
+  - `bf16` worst max error was unchanged at `0.0625`, while the candidate
+    runtime rose from about `0.492ms` to about `0.620ms`
+  - `fp16` worst max error was unchanged at `0.0078125`, while the candidate
+    runtime rose from about `0.492ms` to about `0.619ms`
+- Decision:
+  - revert the explicit `float32` auxiliary-codebook reducer from the Story 29
+    proof lane and keep the plain vectorized reduction
+- Operator note:
+  - the proof used a home-backed effective HF cache mount, which is worth
+    cleaning up for later lanes but did not change the reducer decision here
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
