@@ -95,11 +95,28 @@ def utc_now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def _du_output(path: Path) -> str:
+    """Return `du -sB1` output, retrying with sudo for protected roots."""
+    commands = [
+        (["du", "-s", "-B1", path.as_posix()], f"du {path.as_posix()}"),
+        (["sudo", "-n", "du", "-s", "-B1", path.as_posix()], f"sudo du {path.as_posix()}"),
+    ]
+    last_error: SystemExit | None = None
+    for command, label in commands:
+        try:
+            return run_checked(command, label=label)
+        except SystemExit as exc:
+            last_error = exc
+    if last_error is None:
+        raise SystemExit(f"No du command could be executed for `{path.as_posix()}`.")
+    raise last_error
+
+
 def directory_size_bytes(path: Path) -> int:
     """Return the on-disk size for one directory tree using `du -sB1`."""
     if not path.exists():
         return 0
-    output = run_checked(["du", "-s", "-B1", path.as_posix()], label=f"du {path.as_posix()}")
+    output = _du_output(path)
     line = output.strip().splitlines()[0]
     size_field = line.split()[0]
     return int(size_field)

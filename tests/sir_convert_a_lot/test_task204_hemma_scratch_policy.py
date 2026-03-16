@@ -25,6 +25,7 @@ from scripts.sir_convert_a_lot.devops.task204_hemma_scratch_policy_runtime impor
     ScratchRemediationReport,
     archive_scratch_paths,
     build_scratch_audit_report,
+    directory_size_bytes,
 )
 
 
@@ -90,6 +91,35 @@ def test_build_scratch_audit_report_ranks_large_consumers(
     assert report.top_level_consumers[0].path == (repo_root).as_posix()
     assert report.run_consumers[0].path == top_run.as_posix()
     assert report.verification_consumers[0].path == top_verification.as_posix()
+
+
+def test_directory_size_bytes_falls_back_to_sudo_for_permission_protected_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Task 204 audit should retry `du` with sudo when plain access is denied."""
+    protected_root = tmp_path / "docker"
+    protected_root.mkdir()
+    calls: list[list[str]] = []
+
+    def fake_run_checked(command: list[str], *, label: str) -> str:
+        calls.append(command)
+        if command[:4] == ["du", "-s", "-B1", protected_root.as_posix()]:
+            raise SystemExit("permission denied")
+        return f"4096\t{protected_root.as_posix()}"
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task204_hemma_scratch_policy_runtime.run_checked",
+        fake_run_checked,
+    )
+
+    size_bytes = directory_size_bytes(protected_root)
+
+    assert size_bytes == 4096
+    assert calls == [
+        ["du", "-s", "-B1", protected_root.as_posix()],
+        ["sudo", "-n", "du", "-s", "-B1", protected_root.as_posix()],
+    ]
 
 
 def test_task204_runner_writes_audit_and_remediation_reports(
