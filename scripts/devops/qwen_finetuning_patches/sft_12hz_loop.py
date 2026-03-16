@@ -23,6 +23,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import (
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_cli import tracker_config_payload
 from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import TrainingSummary
+from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_capture import (
+    diagnostic_capture_config_from_args,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_phase_runtime import (
     emit_progress_phase,
     set_dataloader_epoch_if_supported,
@@ -115,6 +118,7 @@ def execute_training_loop(
     stop_requested_during_training = False
     emitted_train_progress = False
     optimizer_step_microbatches: list[dict[str, object]] = []
+    diagnostic_capture_config = diagnostic_capture_config_from_args(args)
     epoch = starting_epoch
     step = 0
 
@@ -234,23 +238,24 @@ def execute_training_loop(
                     reached_max_steps = True
                     break
                 torch_profiler_session.step()
-            checkpoint_paths = save_epoch_export_checkpoint(
-                accelerator=accelerator,
-                prepared=prepared,
-                checkpoint_paths=checkpoint_paths,
-                output_model_path=output_model_path,
-                current_epoch=epoch,
-                current_optimizer_step=optimizer_steps_completed,
-                current_train_iteration=train_iterations_completed,
-                last_loss=last_loss,
-                smoothed_loss=smoothed_loss,
-                latest_eval_loss=latest_eval_loss,
-                best_eval_loss=best_eval_loss,
-                best_eval_step=best_eval_step,
-                eval_runs_completed=eval_runs_completed,
-                latest_durable_checkpoint=latest_durable_checkpoint,
-                progress_callback=progress_callback,
-            )
+            if not diagnostic_capture_config.enabled:
+                checkpoint_paths = save_epoch_export_checkpoint(
+                    accelerator=accelerator,
+                    prepared=prepared,
+                    checkpoint_paths=checkpoint_paths,
+                    output_model_path=output_model_path,
+                    current_epoch=epoch,
+                    current_optimizer_step=optimizer_steps_completed,
+                    current_train_iteration=train_iterations_completed,
+                    last_loss=last_loss,
+                    smoothed_loss=smoothed_loss,
+                    latest_eval_loss=latest_eval_loss,
+                    best_eval_loss=best_eval_loss,
+                    best_eval_step=best_eval_step,
+                    eval_runs_completed=eval_runs_completed,
+                    latest_durable_checkpoint=latest_durable_checkpoint,
+                    progress_callback=progress_callback,
+                )
             if (
                 accelerator.is_main_process
                 and not reached_max_steps
@@ -283,6 +288,7 @@ def execute_training_loop(
             durable_checkpoint_paths=durable_checkpoint_paths,
             checkpoint_paths=checkpoint_paths,
             stop_requested_during_training=stop_requested_during_training,
+            capture_mode_enabled=diagnostic_capture_config.enabled,
             progress_callback=progress_callback,
         )
         last_loss = terminal_result.last_loss

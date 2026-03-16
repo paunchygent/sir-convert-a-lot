@@ -249,6 +249,7 @@ def finalize_training_runtime(
     durable_checkpoint_paths: list[str],
     checkpoint_paths: list[str],
     stop_requested_during_training: bool,
+    capture_mode_enabled: bool,
     progress_callback: Callable | None,
 ) -> TerminalTransitionResult:
     """Run terminal loss drain, final saves, trailing eval, and final export."""
@@ -300,6 +301,29 @@ def finalize_training_runtime(
                 durable_checkpoint_min_free_bytes=durable_checkpoint_min_free_bytes,
             )
         durable_checkpoint_paths = _current_durable_checkpoint_paths(output_model_path)
+    if capture_mode_enabled:
+        peak_memory_allocated_bytes = (
+            int(torch.cuda.max_memory_allocated()) if torch.cuda.is_available() else None
+        )
+        peak_memory_reserved_bytes = (
+            int(torch.cuda.max_memory_reserved()) if torch.cuda.is_available() else None
+        )
+        return TerminalTransitionResult(
+            last_loss=last_loss,
+            smoothed_loss=smoothed_loss,
+            emitted_train_progress=emitted_train_progress,
+            latest_eval_loss=latest_eval_loss,
+            latest_eval_step=latest_eval_step,
+            best_eval_loss=best_eval_loss,
+            best_eval_step=best_eval_step,
+            eval_runs_completed=eval_runs_completed,
+            eval_batches_completed=eval_batches_completed,
+            latest_durable_checkpoint=latest_durable_checkpoint,
+            durable_checkpoint_paths=durable_checkpoint_paths,
+            checkpoint_paths=checkpoint_paths,
+            peak_memory_allocated_bytes=peak_memory_allocated_bytes,
+            peak_memory_reserved_bytes=peak_memory_reserved_bytes,
+        )
     if current_optimizer_step > 0 and latest_eval_step != current_optimizer_step:
         eval_result = run_eval_pass(
             prepared=prepared,

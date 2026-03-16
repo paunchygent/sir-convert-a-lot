@@ -74,6 +74,25 @@ class _FakeTrainingReport:
     status: str
 
 
+class _ArtifactWritingStatusReporter(_FakeStatusReporter):
+    """Persist one minimal completed status payload for capture-artifact tests."""
+
+    def write_completed(self, training_summary: object) -> None:
+        latest_checkpoint_step = getattr(training_summary, "latest_durable_checkpoint_step", None)
+        self.config.status_path.parent.mkdir(parents=True, exist_ok=True)
+        self.config.status_path.write_text(
+            json.dumps(
+                {
+                    "status": "completed",
+                    "current_optimizer_step": latest_checkpoint_step,
+                    "latest_durable_checkpoint_step": latest_checkpoint_step,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+
 def test_main_accepts_legacy_bundle_without_training_report(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -254,6 +273,117 @@ def test_main_forwards_eval_jsonl_into_inner_training_args(
 
     assert trainer.main() == 0
     assert captured_training_args["value"].eval_jsonl == eval_jsonl.as_posix()
+
+
+def test_main_writes_diagnostic_capture_artifact_on_exact_capture_completion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Trainer should emit the capture artifact once the exact target checkpoint exists."""
+    train_jsonl = tmp_path / "manifests/train.jsonl"
+    eval_jsonl = tmp_path / "manifests/eval.jsonl"
+    output_dir = tmp_path / "run"
+    capture_artifact_path = tmp_path / "launch" / "diagnostic_state_capture.json"
+    captured_checkpoint_path = output_dir / "checkpoints" / "state-step-00001401"
+    train_jsonl.parent.mkdir(parents=True, exist_ok=True)
+    train_jsonl.write_text("{}\n", encoding="utf-8")
+    eval_jsonl.write_text("{}\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        trainer,
+        "_parse_args",
+        lambda: argparse.Namespace(
+            launch_id="capture-launch",
+            launch_metadata_path=None,
+            model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+            train_jsonl=train_jsonl,
+            eval_jsonl=eval_jsonl,
+            pilot_bundle_root=None,
+            train_manifest_family="swedish_pilot_train",
+            eval_manifest_family="swedish_checkpoint_dev",
+            output_dir=output_dir,
+            tracker_project_name="qwen-training",
+            mlflow_experiment_name="qwen-training",
+            mlflow_tracking_uri=None,
+            mlflow_artifact_root=None,
+            tensorboard_logging_dir=None,
+            tracker_run_name=None,
+            batch_size=8,
+            throughput_profile_label="hemma-throughput-aggressive-v1",
+            lr=2e-5,
+            num_epochs=1,
+            max_steps=1401,
+            checkpoint_interval_steps=1402,
+            eval_interval_steps=1402,
+            durable_checkpoint_retention=3,
+            durable_checkpoint_min_free_bytes=16 * 1024**3,
+            dataloader_num_workers=4,
+            dataloader_pin_memory=True,
+            dataloader_persistent_workers=True,
+            dataloader_prefetch_factor=4,
+            non_blocking_transfer=True,
+            data_path_proof_mode=False,
+            heartbeat_interval_optimizer_steps=20,
+            finite_loss_max_consecutive_steps=3,
+            ref_mel_cache_enabled=True,
+            ref_mel_cache_max_items=2048,
+            torch_profiler_enabled=False,
+            torch_profiler_wait_steps=1,
+            torch_profiler_warmup_steps=1,
+            torch_profiler_active_steps=4,
+            torch_profiler_repeat=1,
+            torch_profiler_record_shapes=True,
+            torch_profiler_profile_memory=True,
+            torch_profiler_with_stack=False,
+            torch_profiler_trace_dir=None,
+            resume_from_checkpoint=None,
+            diagnostic_kind="capture-diagnostic-state",
+            diagnostic_source_launch_root=Path("/srv/scratch/source-launch"),
+            diagnostic_source_checkpoint_path=Path("/srv/scratch/source-checkpoint"),
+            diagnostic_target_optimizer_step=1401,
+            diagnostic_capture_artifact_path=capture_artifact_path,
+            diagnostic_capture_launch_root_host_path=Path("/srv/scratch/capture-launch"),
+            diagnostic_capture_checkpoint_path=Path(captured_checkpoint_path),
+            diagnostic_start_optimizer_step=None,
+            diagnostic_end_optimizer_step=None,
+        ),
+    )
+    monkeypatch.setattr(trainer.torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(trainer.torch.cuda, "device_count", lambda: 1)
+    monkeypatch.setattr(trainer.torch.version, "hip", "6.4.0")
+    monkeypatch.setattr(trainer, "StatusReporter", _ArtifactWritingStatusReporter)
+    monkeypatch.setattr(
+        trainer.sft_12hz,
+        "train_with_args",
+        lambda *args, **kwargs: argparse.Namespace(
+            tracking=None,
+            latest_eval_loss=None,
+            best_eval_loss=None,
+            best_eval_step=None,
+            eval_runs_completed=0,
+            latest_durable_checkpoint_step=1401,
+            latest_durable_checkpoint_path=captured_checkpoint_path.as_posix(),
+        ),
+    )
+    monkeypatch.setattr(
+        trainer,
+        "build_training_report",
+        lambda **kwargs: _FakeTrainingReport(status="completed"),
+    )
+    monkeypatch.setattr(
+        trainer,
+        "write_json",
+        lambda path, payload: (
+            path.parent.mkdir(parents=True, exist_ok=True)
+            or path.write_text(json.dumps(payload) + "\n", encoding="utf-8")
+        ),
+    )
+
+    assert trainer.main() == 0
+    capture_payload = json.loads(capture_artifact_path.read_text(encoding="utf-8"))
+    assert capture_payload["target_optimizer_step"] == 1401
+    assert capture_payload["captured_checkpoint_step"] == 1401
+    assert capture_payload["captured_checkpoint_path"] == captured_checkpoint_path.as_posix()
 
 
 def test_main_writes_failed_report_artifacts_for_non_finite_loss(

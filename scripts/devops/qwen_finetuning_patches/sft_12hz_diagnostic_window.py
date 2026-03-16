@@ -37,6 +37,8 @@ def build_diagnostic_window_config(
     diagnostic_kind = getattr(args, "diagnostic_kind", None)
     if diagnostic_kind is None:
         return None
+    if diagnostic_kind == "capture-diagnostic-state":
+        return None
     start_optimizer_step = _required_positive_int(
         getattr(args, "diagnostic_start_optimizer_step", None),
         name="diagnostic_start_optimizer_step",

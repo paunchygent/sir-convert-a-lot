@@ -115,7 +115,7 @@ def test_capture_diagnostic_state_parser_exposes_canonical_defaults() -> None:
     args = parser.parse_args(["capture-diagnostic-state"])
 
     assert args.target_optimizer_step == DEFAULT_CAPTURE_DIAGNOSTIC_STATE_TARGET_OPTIMIZER_STEP
-    assert args.checkpoint_interval_steps == 1
+    assert args.checkpoint_interval_steps is None
     assert args.disable_resource_monitor is False
     assert args.skip_build is False
 
@@ -144,7 +144,8 @@ def test_capture_diagnostic_state_cli_mints_reusable_checkpoint(
         json.dumps(asdict(launch_payload)) + "\n",
         encoding="utf-8",
     )
-    captured: dict[str, object] = {}
+    captured_settings: list[TrainingSettings] = []
+    captured_extra_probe_args: list[str] = []
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.capture_diagnostic_state_use_case.prepare_runtime_dependencies",
@@ -185,9 +186,10 @@ def test_capture_diagnostic_state_cli_mints_reusable_checkpoint(
         extra_probe_args: list[str] | None = None,
         diagnostic: dict[str, object] | None = None,
     ) -> DetachedLaunch:
-        del hf_mount, scratch_mount, dockerfile_path, trainer_module, extra_probe_args
+        del hf_mount, scratch_mount, dockerfile_path, trainer_module
         assert run_root is not None
-        captured["run_root"] = run_root
+        captured_settings.append(settings)
+        captured_extra_probe_args.extend([] if extra_probe_args is None else list(extra_probe_args))
         return DetachedLaunch(
             generated_at="2026-03-16T10:00:00Z",
             launch_kind=launch_kind,
@@ -239,27 +241,6 @@ def test_capture_diagnostic_state_cli_mints_reusable_checkpoint(
                 resource_monitor=None,
             ),
             DetachedStatus(
-                checked_at="2026-03-16T10:02:00Z",
-                launch_kind="capture-diagnostic-state",
-                launch_id="capture-a",
-                container_name="qwen-capture-capture-a",
-                container_id="capture-container-id",
-                status="running",
-                running=True,
-                exit_code=0,
-                oom_killed=False,
-                started_at="2026-03-16T10:00:00Z",
-                finished_at="",
-                pilot_status_found=True,
-                pilot_status={"current_optimizer_step": 1401},
-                pilot_report_found=False,
-                pilot_report=None,
-                latest_checkpoint_found=False,
-                latest_checkpoint=None,
-                logs_tail="",
-                resource_monitor=None,
-            ),
-            DetachedStatus(
                 checked_at="2026-03-16T10:03:00Z",
                 launch_kind="capture-diagnostic-state",
                 launch_id="capture-a",
@@ -290,11 +271,14 @@ def test_capture_diagnostic_state_cli_mints_reusable_checkpoint(
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.capture_diagnostic_state_use_case.inspect_detached_training",
-        lambda launch: next(status_sequence),
-    )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.capture_diagnostic_state_use_case.stop_detached_training",
-        lambda launch: captured.setdefault("stop_called", True),
+        lambda launch: _status_with_capture_artifact(
+            next(status_sequence),
+            output_root / "capture-a/diagnostic_state_capture.json",
+            checkpoint_path=(
+                output_root / "capture-a/diagnostic-state/checkpoints/state-step-00001401"
+            ),
+            source_checkpoint_path=source_checkpoint_path,
+        ),
     )
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.training.control_plane.capture_diagnostic_state_use_case.sleep",
@@ -338,10 +322,49 @@ def test_capture_diagnostic_state_cli_mints_reusable_checkpoint(
     )
 
     assert result == 0
-    assert captured["stop_called"] is True
+    settings = captured_settings[0]
+    assert settings.max_steps == 1401
+    assert settings.checkpoint_interval_steps == 1402
+    assert settings.eval_interval_steps == 1402
+    assert "--diagnostic-kind" in captured_extra_probe_args
+    assert "capture-diagnostic-state" in captured_extra_probe_args
+    assert "--diagnostic-target-optimizer-step" in captured_extra_probe_args
+    assert "1401" in captured_extra_probe_args
     capture_payload = json.loads(
         (output_root / "capture-a/diagnostic_state_capture.json").read_text(encoding="utf-8")
     )
     assert capture_payload["target_optimizer_step"] == 1401
     assert capture_payload["captured_checkpoint_step"] == 1401
     assert capture_payload["source_checkpoint_path"] == source_checkpoint_path.as_posix()
+
+
+def _status_with_capture_artifact(
+    status: DetachedStatus,
+    artifact_path: Path,
+    *,
+    checkpoint_path: Path,
+    source_checkpoint_path: Path,
+) -> DetachedStatus:
+    """Persist one trainer-native capture artifact when the fake run exits."""
+    if status.running:
+        return status
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    checkpoint_path.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_text(
+        json.dumps(
+            {
+                "kind": "capture-diagnostic-state",
+                "source_launch_root": "/tmp/source-launch",
+                "source_checkpoint_path": source_checkpoint_path.as_posix(),
+                "target_optimizer_step": 1401,
+                "launch_root": artifact_path.parent.as_posix(),
+                "run_root": checkpoint_path.parent.parent.as_posix(),
+                "captured_checkpoint_path": checkpoint_path.as_posix(),
+                "captured_checkpoint_step": 1401,
+                "final_status": {"status": status.status, "exit_code": status.exit_code},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return status

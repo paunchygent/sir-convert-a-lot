@@ -218,7 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_CAPTURE_DIAGNOSTIC_STATE_TARGET_OPTIMIZER_STEP,
     )
-    capture.add_argument("--checkpoint-interval-steps", type=int, default=1)
+    capture.add_argument("--checkpoint-interval-steps", type=int, default=None)
     capture.add_argument("--eval-interval-steps", type=int, default=None)
     capture.add_argument(
         "--poll-interval-seconds",

@@ -1,4 +1,4 @@
-"""Reusable near-boundary diagnostic-state capture use case for Qwen training.
+"""Reusable trainer-native diagnostic-state capture use case for Qwen training.
 
 Purpose:
     Mint one deterministic checkpoint on the clean side of a known failure
@@ -7,8 +7,8 @@ Purpose:
 
 Relationships:
     - Uses launch loading, path policy, and runtime preparation helpers.
-    - Reuses detached launch/inspect/stop services to automate step-threshold
-      capture without manual sleep-based operator timing.
+    - Reuses detached launch/inspect services while delegating the exact
+      save-and-exit boundary to the in-container trainer.
 """
 
 from __future__ import annotations
@@ -21,11 +21,12 @@ from time import sleep
 from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime import (
     inspect_detached_training,
     launch_detached_training,
-    stop_detached_training,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.ids import default_launch_id
+from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.paths import (
+    containerize_scratch_path,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.diagnostic_artifacts import (
-    build_diagnostic_state_capture,
     diagnostic_state_capture_path,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
@@ -44,7 +45,6 @@ from .launch_loader import load_training_launch
 from .path_policy import require_existing_path, require_under_scratch_root
 from .shared_runtime import prepare_runtime_dependencies
 
-DEFAULT_CAPTURE_CHECKPOINT_INTERVAL_STEPS = 1
 DEFAULT_CAPTURE_POLL_INTERVAL_SECONDS = 15.0
 
 
@@ -65,18 +65,32 @@ def handle_capture_diagnostic_state(args) -> int:
     target_optimizer_step = int(args.target_optimizer_step)
     if target_optimizer_step <= 0:
         raise SystemExit("`--target-optimizer-step` must be positive.")
+    effective_checkpoint_interval_steps = (
+        target_optimizer_step + 1
+        if args.checkpoint_interval_steps is None
+        else int(args.checkpoint_interval_steps)
+    )
+    if effective_checkpoint_interval_steps <= target_optimizer_step:
+        raise SystemExit(
+            "Trainer-native capture requires `checkpoint_interval_steps` to be greater "
+            f"than the target optimizer step `{target_optimizer_step}`."
+        )
+    effective_eval_interval_steps = (
+        target_optimizer_step + 1
+        if args.eval_interval_steps is None
+        else int(args.eval_interval_steps)
+    )
+    if effective_eval_interval_steps <= target_optimizer_step:
+        raise SystemExit(
+            "Trainer-native capture requires `eval_interval_steps` to be greater than "
+            f"the target optimizer step `{target_optimizer_step}`."
+        )
     settings = replace(
         settings,
         pilot_bundle_root=effective_bundle_root,
-        checkpoint_interval_steps=int(
-            args.checkpoint_interval_steps or DEFAULT_CAPTURE_CHECKPOINT_INTERVAL_STEPS
-        ),
-        eval_interval_steps=int(
-            args.eval_interval_steps
-            if args.eval_interval_steps is not None
-            else target_optimizer_step + 1
-        ),
-        max_steps=max(int(settings.max_steps), target_optimizer_step + 1),
+        checkpoint_interval_steps=effective_checkpoint_interval_steps,
+        eval_interval_steps=effective_eval_interval_steps,
+        max_steps=target_optimizer_step,
     )
     ensure_training_bundle_exists(
         settings.pilot_bundle_root,
@@ -115,6 +129,10 @@ def handle_capture_diagnostic_state(args) -> int:
     current_launch_root.mkdir(parents=True, exist_ok=True)
     current_run_root = current_launch_root / "diagnostic-state"
     current_run_root.mkdir(parents=True, exist_ok=True)
+    expected_checkpoint_path = (
+        current_run_root / "checkpoints" / f"state-step-{target_optimizer_step:08d}"
+    )
+    capture_artifact_path = diagnostic_state_capture_path(current_launch_root)
     launch = launch_detached_training(
         settings,
         repo_root=source_repo_root,
@@ -127,6 +145,25 @@ def handle_capture_diagnostic_state(args) -> int:
         run_root=current_run_root,
         resume_from_checkpoint=resume_checkpoint_path,
         launch_kind="capture-diagnostic-state",
+        extra_probe_args=[
+            "--diagnostic-kind",
+            "capture-diagnostic-state",
+            "--diagnostic-source-launch-root",
+            source_launch_root.as_posix(),
+            "--diagnostic-source-checkpoint-path",
+            resume_checkpoint_path.as_posix(),
+            "--diagnostic-target-optimizer-step",
+            str(target_optimizer_step),
+            "--diagnostic-capture-artifact-path",
+            containerize_scratch_path(
+                capture_artifact_path,
+                scratch_root=settings.scratch_build_root,
+            ),
+            "--diagnostic-capture-launch-root-host-path",
+            current_launch_root.as_posix(),
+            "--diagnostic-capture-checkpoint-path",
+            expected_checkpoint_path.as_posix(),
+        ],
         diagnostic={
             "kind": "capture-diagnostic-state",
             "source_launch_root": source_launch_root.as_posix(),
@@ -154,60 +191,40 @@ def handle_capture_diagnostic_state(args) -> int:
         "source_launch_root": source_launch_root.as_posix(),
     }
     write_json(launch_metadata_path(current_launch_root), launch_payload)
-    final_status = _monitor_to_target_and_stop(
+    final_status = _monitor_to_capture_completion(
         launch_root=current_launch_root,
-        target_optimizer_step=target_optimizer_step,
         poll_interval_seconds=float(args.poll_interval_seconds),
     )
-    latest_checkpoint_path = load_latest_checkpoint(current_run_root)
-    latest_checkpoint_step = _checkpoint_step_from_path(latest_checkpoint_path)
-    if latest_checkpoint_step < target_optimizer_step:
+    if not capture_artifact_path.is_file():
+        final_optimizer_step = _current_optimizer_step(final_status)
         raise SystemExit(
-            "Capture run stopped before minting the requested optimizer-step checkpoint "
-            f"(`{target_optimizer_step}` -> `{latest_checkpoint_step}`)."
+            "Trainer-native capture run exited without writing the capture artifact "
+            f"(target={target_optimizer_step}, final_optimizer_step={final_optimizer_step}, "
+            f"exit_code={final_status.get('exit_code')})."
         )
-    capture_payload = build_diagnostic_state_capture(
-        source_launch_root=source_launch_root,
-        source_checkpoint_path=resume_checkpoint_path,
-        target_optimizer_step=target_optimizer_step,
-        launch_root=current_launch_root,
-        run_root=current_run_root,
-        checkpoint_path=latest_checkpoint_path,
-        checkpoint_step=latest_checkpoint_step,
-        final_status=final_status,
-    )
-    write_json(diagnostic_state_capture_path(current_launch_root), capture_payload)
+    capture_payload = json.loads(capture_artifact_path.read_text(encoding="utf-8"))
+    captured_checkpoint_step = capture_payload.get("captured_checkpoint_step")
+    if captured_checkpoint_step != target_optimizer_step:
+        raise SystemExit(
+            "Trainer-native capture artifact did not record the requested target step "
+            f"(target={target_optimizer_step}, captured={captured_checkpoint_step})."
+        )
     print(json.dumps(capture_payload, indent=2, ensure_ascii=False))
     return 0
 
 
-def _monitor_to_target_and_stop(
+def _monitor_to_capture_completion(
     *,
     launch_root: Path,
-    target_optimizer_step: int,
     poll_interval_seconds: float,
 ) -> dict[str, object]:
-    """Poll the detached launch until the target step is reached, then stop it."""
+    """Poll the detached launch until the trainer-native capture run exits."""
     launch = load_training_launch(launch_root)
-    stop_issued = False
     while True:
         status = inspect_detached_training(launch)
         status_payload = asdict(status)
-        current_optimizer_step = _current_optimizer_step(status_payload)
-        if (
-            not stop_issued
-            and current_optimizer_step is not None
-            and current_optimizer_step >= target_optimizer_step
-        ):
-            stop_detached_training(launch)
-            stop_issued = True
-        if stop_issued and not status.running:
+        if not status.running:
             return status_payload
-        if not status.running and not stop_issued:
-            raise SystemExit(
-                "Diagnostic-state capture stopped before reaching the target optimizer step "
-                f"`{target_optimizer_step}`."
-            )
         sleep(poll_interval_seconds)
 
 
@@ -218,21 +235,3 @@ def _current_optimizer_step(status_payload: dict[str, object]) -> int | None:
         return None
     value = pilot_status.get("current_optimizer_step")
     return value if isinstance(value, int) else None
-
-
-def _checkpoint_step_from_path(checkpoint_path: Path) -> int:
-    """Extract the durable optimizer step from one checkpoint path."""
-    checkpoint_name = checkpoint_path.name
-    prefix = "state-step-"
-    if not checkpoint_name.startswith(prefix):
-        raise SystemExit(
-            "Latest checkpoint path did not follow the durable checkpoint naming contract: "
-            f"`{checkpoint_path.as_posix()}`."
-        )
-    try:
-        return int(checkpoint_name.removeprefix(prefix))
-    except ValueError as exc:
-        raise SystemExit(
-            "Latest checkpoint path did not expose an integer optimizer step: "
-            f"`{checkpoint_path.as_posix()}`."
-        ) from exc

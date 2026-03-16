@@ -165,6 +165,81 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
     assert latest_checkpoint["reason"] == "signal-stop"
 
 
+def test_train_with_args_exact_capture_skips_epoch_export_checkpoints(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Exact capture runs should stop at the target step without epoch-export saves."""
+    train_manifest = tmp_path / "manifests" / "swedish_pilot_train.prepared.jsonl"
+    _write_train_manifest(train_manifest)
+    output_model_path = tmp_path / "run" / "checkpoints"
+    model = _FakeQwenWrapper(processor=object(), model=_FakeQwenModel(4))
+    export_checkpoint_calls: list[str] = []
+
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.Accelerator",
+        _FakeAccelerator,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.Qwen3TTSModel.from_pretrained",
+        lambda *args, **kwargs: model,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.AutoConfig.from_pretrained",
+        lambda *args, **kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.TTSDataset",
+        _FakeDataset,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.DataLoader",
+        lambda *args, **kwargs: [fake_training_batch()],
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_setup.AdamW",
+        _FakeOptimizer,
+    )
+
+    def fake_export_checkpoint_save(**kwargs: object) -> str:
+        output_dir = kwargs["output_dir"]
+        assert isinstance(output_dir, Path)
+        export_checkpoint_calls.append(str(output_dir))
+        return fake_save_checkpoint(**kwargs)
+
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_transition_runtime.save_checkpoint",
+        fake_export_checkpoint_save,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.install_training_stop_handlers",
+        lambda stop_state: None,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_loop.torch.cuda.is_available",
+        lambda: False,
+    )
+
+    args = base_training_args(
+        output_model_path=output_model_path,
+        train_manifest=train_manifest,
+        max_steps=1,
+    )
+    args.diagnostic_kind = "capture-diagnostic-state"
+    args.diagnostic_source_launch_root = (tmp_path / "source-launch").as_posix()
+    args.diagnostic_source_checkpoint_path = (output_model_path / "state-step-00000000").as_posix()
+    args.diagnostic_target_optimizer_step = 1
+    args.diagnostic_capture_artifact_path = (tmp_path / "capture.json").as_posix()
+    args.diagnostic_capture_launch_root_host_path = (tmp_path / "launch-root").as_posix()
+    args.diagnostic_capture_checkpoint_path = (output_model_path / "state-step-00000001").as_posix()
+
+    summary = train_with_args(args)
+
+    assert summary.latest_durable_checkpoint_step == 1
+    assert summary.checkpoint_paths == []
+    assert export_checkpoint_calls == []
+
+
 def test_train_with_args_only_logs_on_configured_heartbeat_interval(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

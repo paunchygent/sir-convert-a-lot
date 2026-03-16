@@ -23,6 +23,10 @@ from pathlib import Path
 import sft_12hz
 import torch
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_capture import (
+    diagnostic_capture_config_from_args,
+    write_diagnostic_capture_artifact,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import (
     DEFAULT_EVAL_INTERVAL_STEPS,
 )
@@ -110,9 +114,35 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--diagnostic-kind", default=None)
     parser.add_argument("--diagnostic-source-launch-root", type=Path, default=None)
     parser.add_argument("--diagnostic-source-checkpoint-path", type=Path, default=None)
+    parser.add_argument("--diagnostic-target-optimizer-step", type=int, default=None)
+    parser.add_argument("--diagnostic-capture-artifact-path", type=Path, default=None)
+    parser.add_argument("--diagnostic-capture-launch-root-host-path", type=Path, default=None)
+    parser.add_argument("--diagnostic-capture-checkpoint-path", type=Path, default=None)
     parser.add_argument("--diagnostic-start-optimizer-step", type=int, default=None)
     parser.add_argument("--diagnostic-end-optimizer-step", type=int, default=None)
     return parser.parse_args()
+
+
+def _load_completed_status_payload(
+    *,
+    status_path: Path,
+    training_summary: object,
+) -> dict[str, object]:
+    """Return one completed status payload, falling back when tests stub writes."""
+    if status_path.is_file():
+        payload = json.loads(status_path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            return {str(key): value for key, value in payload.items()}
+        raise ValueError("Completed status payload must be a JSON object.")
+    latest_checkpoint_step = getattr(training_summary, "latest_durable_checkpoint_step", None)
+    current_optimizer_step = getattr(training_summary, "optimizer_steps_completed", None)
+    stopped_early = bool(getattr(training_summary, "stopped_early", False))
+    return {
+        "status": "completed",
+        "current_phase": "signal-stop" if stopped_early else "completed",
+        "current_optimizer_step": current_optimizer_step,
+        "latest_durable_checkpoint_step": latest_checkpoint_step,
+    }
 
 
 def main() -> int:
@@ -171,6 +201,11 @@ def main() -> int:
                 None
                 if getattr(args, "diagnostic_source_checkpoint_path", None) is None
                 else getattr(args, "diagnostic_source_checkpoint_path").as_posix()
+            ),
+            "target_optimizer_step": (
+                None
+                if getattr(args, "diagnostic_target_optimizer_step", None) is None
+                else int(getattr(args, "diagnostic_target_optimizer_step"))
             ),
             "start_optimizer_step": (
                 None
@@ -293,9 +328,37 @@ def main() -> int:
             ),
             train_manifest_family=args.train_manifest_family,
             eval_manifest_family=args.eval_manifest_family,
-            diagnostic_kind=args.diagnostic_kind,
-            diagnostic_start_optimizer_step=args.diagnostic_start_optimizer_step,
-            diagnostic_end_optimizer_step=args.diagnostic_end_optimizer_step,
+            diagnostic_kind=getattr(args, "diagnostic_kind", None),
+            diagnostic_source_launch_root=(
+                None
+                if getattr(args, "diagnostic_source_launch_root", None) is None
+                else getattr(args, "diagnostic_source_launch_root").as_posix()
+            ),
+            diagnostic_source_checkpoint_path=(
+                None
+                if getattr(args, "diagnostic_source_checkpoint_path", None) is None
+                else getattr(args, "diagnostic_source_checkpoint_path").as_posix()
+            ),
+            diagnostic_target_optimizer_step=getattr(
+                args, "diagnostic_target_optimizer_step", None
+            ),
+            diagnostic_capture_artifact_path=(
+                None
+                if getattr(args, "diagnostic_capture_artifact_path", None) is None
+                else getattr(args, "diagnostic_capture_artifact_path").as_posix()
+            ),
+            diagnostic_capture_launch_root_host_path=(
+                None
+                if getattr(args, "diagnostic_capture_launch_root_host_path", None) is None
+                else getattr(args, "diagnostic_capture_launch_root_host_path").as_posix()
+            ),
+            diagnostic_capture_checkpoint_path=(
+                None
+                if getattr(args, "diagnostic_capture_checkpoint_path", None) is None
+                else getattr(args, "diagnostic_capture_checkpoint_path").as_posix()
+            ),
+            diagnostic_start_optimizer_step=getattr(args, "diagnostic_start_optimizer_step", None),
+            diagnostic_end_optimizer_step=getattr(args, "diagnostic_end_optimizer_step", None),
         )
 
         training_summary = sft_12hz.train_with_args(
@@ -308,6 +371,26 @@ def main() -> int:
                 dict(talker_runtime)
             ),
         )
+        capture_config = diagnostic_capture_config_from_args(training_args)
+        status_reporter.write_completed(training_summary)
+        completed_status = _load_completed_status_payload(
+            status_path=status_path,
+            training_summary=training_summary,
+        )
+        if capture_config.enabled:
+            if (
+                training_summary.latest_durable_checkpoint_step
+                != capture_config.target_optimizer_step
+            ):
+                raise SystemExit(
+                    "Capture run completed without minting the exact requested durable checkpoint "
+                    f"(target={capture_config.target_optimizer_step}, "
+                    f"actual={training_summary.latest_durable_checkpoint_step})."
+                )
+            write_diagnostic_capture_artifact(
+                capture_config,
+                final_status=completed_status,
+            )
 
         report = build_training_report(
             model_id=str(args.model_id),
@@ -322,14 +405,13 @@ def main() -> int:
             training_summary=training_summary,
         )
         write_json(report_path, asdict(report))
-        status_reporter.write_completed(training_summary)
         if diagnostic is not None:
             write_json(
                 diagnostic_replay_bundle_path(output_dir),
                 build_diagnostic_replay_bundle(
                     diagnostic=diagnostic,
                     report=asdict(report),
-                    status=json.loads(status_path.read_text(encoding="utf-8")),
+                    status=completed_status,
                 ),
             )
         print(json.dumps(asdict(report), indent=2, sort_keys=True))
