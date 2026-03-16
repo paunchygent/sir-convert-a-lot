@@ -17,6 +17,7 @@ related:
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/tasks/task-192-add-ml-specific-quality-gates-and-importlib-safe-qwen-test-collection.md
+  - docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md
   - docs/backlog/tasks/task-202-harden-qwen-auxiliary-codebook-fusion-numerical-stability-and-assertion-contract.md
   - docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
@@ -187,16 +188,23 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
 - Keep the auxiliary codebook fusion helper on the plain vectorized reduction;
   do not revive the explicit `float32` reducer without new Hemma evidence.
 - Keep the committed `T203` proof surfaces for future hot-path audits:
-  - attached proof:
-    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof`
-  - detached proof launch:
-    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch`
-  - detached proof status:
-    `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status`
+  `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof`,
+  `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached launch`,
+  and `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof-detached status`.
 - Use `T197` as the preferred bounded proof now that `T203` is closed:
-  - clear `1406 -> 1418`
-  - then reach `1500`
-  - then complete the scheduled eval there
+  clear `1406 -> 1418`, then reach `1500`, then complete the scheduled eval
+  there.
+- The committed `T197` wrapper now prepares the exact detached proof surface:
+  - local prepare:
+    `pdm run qwen-t197-proof prepare --proof-id <proof-id> --skip-build`
+  - detached replay launch/status:
+    `pdm run qwen-t197-proof launch-window --proof-id <proof-id>`
+    `pdm run qwen-t197-proof status-window --proof-id <proof-id>`
+  - detached `1500` launch/status:
+    `pdm run qwen-t197-proof launch-gate1500 --proof-id <proof-id>`
+    `pdm run qwen-t197-proof status-gate1500 --proof-id <proof-id>`
+  - deterministic local artifacts land in:
+    `build/verification/qwen-t197-proof/<proof-id>/`
 - Use `T198` only if `T197` clears the old window but still fails before
   `1500`.
 - Once Story 29 proves the winning mitigation, remove `legacy_codec_span`

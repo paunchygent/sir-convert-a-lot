@@ -153,6 +153,7 @@ distribution = false
 "qwen-preprocess" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_preprocess"
 "qwen-ref-mel-cache-comparison" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_ref_mel_cache_comparison"
 "qwen-resume-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_resume_proof"
+"qwen-t197-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t197_proof"
 "qwen-rixvox-train-staging" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_rixvox_train_staging"
 "qwen-smoke" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_smoke"
 "qwen-train" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_train"

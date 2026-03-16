@@ -19,6 +19,15 @@
 
 ## What Landed
 
+- `T197` now has a committed local proof wrapper:
+  - `pdm run qwen-t197-proof`
+  - prepares deterministic local proof artifacts under
+    `build/verification/qwen-t197-proof/<proof-id>/`
+  - renders `plan.md` with the exact raw detached
+    `run-hemma -- pdm run qwen-train ...` commands for the replay and the
+    `1500` continuation
+  - renders `checklist.md` with the canonical Story 29 preflight/pass/fail
+    checks for the `1406 -> 1418 -> 1500` gate
 - `qwen-train diagnose-non-finite` now exists as the canonical detached
   diagnostic surface.
 - Fast ML quality gates now exist for the Qwen lane:
@@ -149,9 +158,14 @@ Implement Story 29 before any new restart attempt:
    - launch, resume, capture, diagnose, eval, and schedule artifacts all
      record the effective value
 1. run `T197` as the preferred gate:
-   - clear `1406 -> 1418`
-   - then reach `1500`
-   - then complete the scheduled eval at `1500`
+   - prepare one proof package:
+     `pdm run qwen-t197-proof prepare --proof-id <proof-id> --skip-build`
+   - launch/status the bounded replay:
+     `pdm run qwen-t197-proof launch-window --proof-id <proof-id>`
+     `pdm run qwen-t197-proof status-window --proof-id <proof-id>`
+   - only after the replay passes, launch/status the `1500` gate:
+     `pdm run qwen-t197-proof launch-gate1500 --proof-id <proof-id>`
+     `pdm run qwen-t197-proof status-gate1500 --proof-id <proof-id>`
 1. only if `1500` still fails, run `T198`:
    - try accumulation `2`, then `1`
    - if no new design gap remains, use the fallback gate
@@ -185,6 +199,7 @@ Implement Story 29 before any new restart attempt:
 - `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_launch_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_diagnose_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_command_builder.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_inspect_service.py tests/sir_convert_a_lot/ml/qwen/training/test_diagnostic_replay.py tests/sir_convert_a_lot/ml/qwen/training/test_optimizer_guard.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_status_payloads.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_failure_projection.py tests/sir_convert_a_lot/ml/qwen/training/test_train_step_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py -q`
 - `PASS` `pdm run validate-tasks`
 - `PASS` `pdm run validate-docs`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_t197_proof.py -q`
 - `PASS` focused `T196` tests covering launch defaults, detached commands,
   replay/capture parser defaults, standalone eval artifacts, schedule control
   math, and accumulation-aware train-loop/runtime reporting

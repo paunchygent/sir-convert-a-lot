@@ -137,6 +137,9 @@ numerical stability.
   `qwen-codebook-fusion-proof-detached`.
 - `T197` is now the first bounded proof step after the closed `T203` contract
   audit removed that helper change from the proof lane.
+- `T197` now has a committed local wrapper that prepares deterministic proof
+  artifacts plus the exact detached Hemma launch/status commands:
+  `pdm run qwen-t197-proof`.
 
 ## Checklist
 
