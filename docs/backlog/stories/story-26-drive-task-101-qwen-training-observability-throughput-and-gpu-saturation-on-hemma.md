@@ -248,6 +248,9 @@ Root-cause conclusion from this evidence:
   `control_plane/`, `detached_runtime/`, `reporting/`, and bounded
   `sft_12hz_*` runtime modules now block future god-file regression while the
   numerical-stability work continues.
+- Story 29 with `T195-T199` now owns the bounded mitigation proof, fallback
+  gate, and restart decision required before the next clean Task 101 base
+  restart is allowed.
 - Follow-on task `T181` now tracks the real held-out eval loop required before
   the team commits multi-hour Task 101 pilot time without in-run validation
   loss truth.

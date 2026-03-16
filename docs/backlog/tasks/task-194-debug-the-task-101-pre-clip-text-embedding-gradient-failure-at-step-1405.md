@@ -8,6 +8,7 @@ created: '2026-03-15'
 last_updated: '2026-03-16'
 related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
+  - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
@@ -36,6 +37,28 @@ unstable, including:
 - the new continuation failure at optimizer step `1417`
 - the text-embedding rows and upstream backward surfaces that first become
   non-finite when the lane re-enters instability
+
+Current narrowed RCA after the bounded `1406 -> 1418` replay:
+
+- the `1417` failure is reproducible from the exact `1406` checkpoint
+- the first bad backward surface is `input_text_embedding.grad` on train
+  iteration `851`, before the sync-boundary `grad_norm` failure at `852`
+- the failing `851` sample goes non-finite across `507` of `508` token
+  positions; the only finite token position is the last one, which matches the
+  train-step `inputs_embeds[:, :-1, :]` slice dropping the terminal token from
+  the active forward path
+- the resulting parameter-gradient corruption is not row-arbitrary: the `93`
+  poisoned `text_embedding.weight` rows match the `93` unique token ids present
+  in the failing `851` sample
+- the strongest structural amplifier is the active codec-span text pad surface:
+  the failing sample contains `375` repeats of token id `151671`, which is the
+  repeated text-channel pad token written across the codec span by the current
+  Qwen batch contract
+- that codec-span text-pad surface is not a repo-local projection mistake; the
+  public upstream Qwen `finetuning/dataset.py` uses the same
+  `text_embedding_mask[: 8 + text_ids_len + codec_ids_len] = True` pattern, so
+  the current risk surface is upstream-compatible and must be counteracted
+  deliberately rather than dismissed as local drift
 
 ## PR Scope
 
@@ -103,6 +126,10 @@ Hypotheses to test with that workflow:
 - token-context hypothesis:
   the failing rows correspond to a small token/context family that can be
   identified from decoded text and replayed cheaply
+- codec-span pad amplification hypothesis:
+  keeping the text-channel pad token active across the codec span amplifies the
+  text-embedding backward path enough that long accumulated windows eventually
+  push the whole active sequence non-finite
 
 ## Non-Goals
 
@@ -129,6 +156,8 @@ Hypotheses to test with that workflow:
   micro-window or its prefixes from the reusable near-boundary state.
 - [ ] Operator docs record the narrowed root-cause conclusion and the next
   remediation direction without demoting the preserved Task 101 lane.
+- [ ] One remediation order is recorded for the next bounded proof before any
+  fresh training restart is attempted.
 
 ## Acceptance Criteria
 
@@ -150,6 +179,56 @@ Hypotheses to test with that workflow:
   - whether the first bad backward surface is pre-parameter or parameter-level
 - [ ] The resulting operator conclusion is specific enough to choose the next
   remediation without another blind training retry.
+- [ ] The resulting remediation order explicitly distinguishes:
+  - the primary structural countermeasure to test first on the `1406` replay
+    window
+  - the secondary accumulation/optimization ablations to test only if the
+    primary countermeasure does not resolve the instability
+
+## Current RCA Conclusion
+
+What is now proven:
+
+- the instability is not caused first by `clip_grad_norm_` or `optimizer.step()`
+- the first bad backward event in the reproducible `1417` replay is on
+  `input_text_embedding.grad` for microbatch `851`
+- that bad microbatch poisons the accumulated `text_embedding.weight.grad`
+  rows, and the following microbatch `852` inherits that poisoned parameter
+  gradient even though its own `input_text_embedding.grad` remains finite
+- the failure is sequence-level, not one-token local: nearly the entire active
+  `851` token sequence goes non-finite in backward
+
+What is now the leading structural cause:
+
+- the training contract keeps the text embedding active across the codec span,
+  where the text channel is filled with the repeated pad token
+- on the failing `851` sample that means `375` repeated pad-token positions are
+  still part of the active text-embedding path
+- that repeated pad surface appears to be the dominant multiplier that turns a
+  long accumulated window into a sequence-level backward blow-up
+
+What should be tested before the next restart:
+
+1. Primary countermeasure:
+   narrow the active `text_embedding_mask` to the true text span only, or
+   equivalently zero/detach the codec-span text-pad positions, then replay the
+   bounded `1406 -> 1418` window again.
+1. Secondary ablation:
+   if the mask-only proof is not enough, reduce
+   `gradient_accumulation_steps` for the same bounded replay window to
+   determine how much of the remaining instability is accumulation pressure
+   rather than structural pad amplification.
+1. Tertiary mitigation:
+   only after the first two proofs, consider narrower numeric mitigations such
+   as a smaller text-embedding learning rate or row-specific sanitization for
+   diagnostic purposes.
+
+Story handoff:
+
+- `T194` remains the canonical RCA source task for the reproducible
+  `state-step-00001406 -> 1417` instability.
+- Story 29 / `T195-T199` now owns the mitigation proof, fallback gate, and
+  clean-restart decision built on this RCA.
 
 ## Validation
 

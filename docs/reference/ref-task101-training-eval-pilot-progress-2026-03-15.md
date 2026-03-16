@@ -19,6 +19,12 @@ links:
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
+  - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
+  - docs/backlog/tasks/task-195-land-an-explicit-task-101-text-embedding-mask-policy-and-text-span-only-mitigation.md
+  - docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md
+  - docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md
+  - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
+  - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
@@ -49,6 +55,8 @@ For the preserved Task 101 legacy lane:
   for the preserved Task 101 lane
 - treat `state-step-00001406` from the bounded no-projection replay as the
   current canonical RCA checkpoint
+- treat Story 29 / `T195-T199` as the explicit mitigation-and-restart gate for
+  the preserved Task 101 lane
 - do not resume from `1236` again unless a deliberate compatibility experiment
   requires it
 - do not count the projection-enabled diagnostic experiments and the preserved
@@ -86,6 +94,22 @@ Why this is now the clean plan:
   new non-finite event, but the later bounded continuation still failed at
   `1417`, so `1406` is now treated as a reusable RCA checkpoint rather than a
   newly trusted continuation baseline
+- the later bounded `1406 -> 1418` replay reproduced the `1417` failure and
+  proved the first bad backward surface is `input_text_embedding.grad`, not
+  clipping or `optimizer.step()`
+- the same replay narrowed the leading structural cause to the active
+  codec-span text-pad surface on the no-projection training graph, so the next
+  accepted operator move is a bounded mitigation proof rather than another
+  fresh training restart
+- the next restart gate is now explicit:
+  - preferred:
+    - clear `1406 -> 1418`
+    - then reach `1500`
+    - then complete the scheduled eval at `1500`
+  - fallback:
+    - only after the structural mitigation and planned accumulation ablations
+    - clear `1406 -> 1470`
+    - then run standalone held-out eval from the `1470` checkpoint
 
 ## Active Artifact Roots
 
@@ -574,6 +598,62 @@ Operator conclusion:
 - the next accepted operator move is a bounded RCA replay from `1406` over the
   `1417` window, not another continuation attempt
 
+### 2026-03-16: Bounded `1406 -> 1418` Replay Reproduced `1417` And Narrowed The Cause
+
+- Replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1417-rca-a1`
+- Source checkpoint:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
+- Replay result checked at:
+  `2026-03-16T10:36:50Z`
+- Terminal truth:
+  - `status=failed`
+  - `current_optimizer_step=1417`
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+- New bounded-replay RCA truth:
+  - `step_forensics.first_non_finite_gradient_surface=input_text_embedding.grad`
+  - `step_forensics.first_non_finite_gradient_train_iteration=851`
+  - `step_forensics.first_non_finite_train_iteration=852`
+  - microbatches `849` and `850` stayed clean
+  - microbatch `851` was the first poisoned sample
+  - microbatch `852` inherited the already-poisoned accumulated parameter
+    gradient at the sync boundary
+- Per-sample RCA truth for microbatch `851`:
+  - `507` of `508` token positions were non-finite in
+    `input_text_embedding.grad`
+  - the single finite token position was the final position, which aligns with
+    the train-step `inputs_embeds[:, :-1, :]` slice excluding the terminal
+    token from the active forward path
+  - the failing sample had `93` unique token ids
+  - the poisoned `text_embedding.weight.grad` had `93` non-finite rows
+  - those `93` rows matched the sample's `93` unique token ids exactly
+  - token id `151671` appeared `375` times in the failing sample
+- Structural interpretation:
+  - the replay proves a sequence-level backward blow-up on the active
+    text-embedding path, not an isolated one-token failure
+  - the repeated token `151671` is the dominant repeated text-channel filler in
+    the failing sample; that aligns with the Qwen batch contract writing
+    `tts_pad_token_id` across the codec span while keeping
+    `text_embedding_mask` active through `8 + text_ids_len + codec_ids_len`
+  - the public upstream Qwen `finetuning/dataset.py` uses the same active
+    codec-span text-pad pattern, so this is an upstream-compatible instability
+    surface rather than a repo-local projection mismatch
+
+Operator conclusion:
+
+- `1406` remains the canonical reusable RCA checkpoint
+- the instability is now narrowed to a sequence-level backward blow-up on the
+  active text-embedding path, with codec-span text-pad amplification as the
+  leading structural cause
+- the next accepted operator move is not another continuation or restart
+- the next accepted operator move is one bounded mitigation proof from `1406`
+  that removes or detaches the codec-span text-pad surface and replays the
+  `1417` window
+
 ## Superseded Operator Plan
 
 The abandoned plan is:
@@ -601,15 +681,50 @@ That plan is now superseded because:
 ## Canonical Next Step
 
 Do not relaunch the projection-enabled training experiment.
+Do not launch another fresh Task 101 training continuation or restart yet.
 
-The next canonical action is a bounded no-projection RCA replay from
+The next canonical action is a bounded no-projection mitigation proof from
 `state-step-00001406`:
 
 1. reuse `state-step-00001406` as the canonical RCA checkpoint
-1. run `diagnose-non-finite` only across the `1417` window
-1. compare the `1417` window against the earlier clean `1405` replay to decide
-   whether the instability is sample-window specific, accumulation specific, or
-   genuinely non-deterministic
+1. narrow the active `text_embedding_mask` to the true text span only, or
+   equivalently zero/detach the codec-span text-pad positions
+1. rerun only the bounded `1406 -> 1418` replay window
+1. treat reduced `gradient_accumulation_steps` as the secondary ablation if the
+   mask-only mitigation does not remove the instability
+1. prefer proving the mitigated lane all the way to step `1500` and completing
+   the scheduled eval there before allowing the next clean restart
+1. if `1500` still fails after the structural fix and planned accumulation
+   ablations, use the fallback gate:
+   - clear `1406 -> 1470`
+   - mint the `1470` checkpoint
+   - run standalone held-out eval from that checkpoint
+
+### 2026-03-16: Story 29 Created To Gate The Next Clean Restart
+
+- New story:
+  `docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`
+- New tasks:
+  - `T195` explicit `text_embedding_mask_policy` with `legacy_codec_span` and
+    `text_span_only`
+  - `T196` runtime-configurable `gradient_accumulation_steps`
+  - `T197` preferred bounded proof through `1406 -> 1418` and then to `1500`
+    with scheduled eval
+  - `T198` conditional accumulation ablation and fallback
+    `1470 + standalone eval` gate
+  - `T199` first clean base restart after a proof gate passes
+
+Why this matters:
+
+- the repo now has a single canonical RCA checkpoint for cheap bounded proofs:
+  `state-step-00001406`
+- the RCA already identifies the leading structural amplifier:
+  codec-span text-pad activation on the no-projection training graph
+- the story makes the restart gate explicit instead of leaving it implied by
+  ad hoc operator judgment
+- the training reference ledger is now the mandatory place to record whether
+  the preferred `1500` gate or the fallback `1470 + standalone eval` gate
+  justified the next clean restart
 
 ## Historical Reference Boundary
 

@@ -10,6 +10,7 @@ related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
+  - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md
@@ -29,6 +30,17 @@ Epic 08 is the active lane. The current repo focus is no longer broad Task 101
 bring-up; it is bounded closure on Story 26 after the completed `T186` proof,
 with live operator truth tracked in
 `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
+
+Story 29 is now the explicit stability gate before any fresh clean restart:
+
+- preferred gate:
+  - clear the mitigated `1406 -> 1418` replay
+  - then reach `1500`
+  - then complete the scheduled eval at `1500`
+- fallback gate:
+  - only after the structural fix and planned accumulation ablations
+  - clear `1406 -> 1470`
+  - then run standalone held-out eval from the `1470` checkpoint
 
 Story 28 / `T187-T191` is delivered and now part of core operating policy:
 
@@ -121,23 +133,48 @@ Story 28 / `T187-T191` is delivered and now part of core operating policy:
     - `trigger_reason=pre_clip_non_finite_gradients`
     - `first_non_finite_surface=text_embedding.weight.grad`
     - parameters and optimizer state still finite
+  - the bounded `1406 -> 1418` replay then reproduced `1417` exactly
+  - the new RCA narrowing is now:
+    - the first bad backward surface is `input_text_embedding.grad` on
+      microbatch `851`
+    - `507` of `508` token positions in that sample went non-finite
+    - the poisoned `93` text-embedding rows match the failing sample's
+      `93` unique token ids exactly
+    - token id `151671` appeared `375` times in the failing sample, which
+      aligns with the active codec-span text-pad surface in the current Qwen
+      batch contract
   - the active operator conclusion is now:
     - `1406` is a reusable RCA checkpoint, not a trusted continuation
       baseline
-    - the next step is a bounded `1406 -> 1418` diagnostic replay, not
-      another continuation
+    - the next step is a bounded mitigation proof from `1406`, not another
+      continuation or restart
+  - Story 29 / `T195-T199` is now the explicit execution lane for that proof:
+    - `T195` lands the explicit mask policy
+    - `T196` lands runtime-configurable accumulation
+    - `T197` owns the preferred `1500` gate
+    - `T198` owns the conditional fallback `1470 + standalone eval` gate
+    - `T199` stays blocked until one of those gates passes
 
 ## Next Actions
 
 - Keep the preserved Task 101 lane on the restored no-projection fine-tuning
   graph; do not relaunch the projection-enabled experiment.
-- Keep `T194` open as the RCA lane and restore `state-step-00001406` as the
+- Keep `T194` open as the RCA lane and keep `state-step-00001406` as the
   canonical RCA checkpoint.
-- Run one bounded `diagnose-non-finite` replay from `1406` across the new
-  `1417` boundary.
-- Compare the new `1417` replay artifact with the earlier clean `1405` replay
-  artifact to decide whether the instability is data-window specific,
-  accumulation specific, or genuinely non-deterministic.
+- Treat Story 29 as the required mitigation-and-restart gate:
+  - no fresh clean restart before the preferred `1500` proof or the fallback
+    `1470 + standalone eval` gate passes
+- Treat the `1417` replay as proving a sequence-level backward blow-up on the
+  active text-embedding path rather than a clip or optimizer-step issue.
+- Land `T195` and `T196` before the next Hemma proof so the mask policy and
+  accumulation setting are explicit, runtime-configurable, and visible in
+  artifacts.
+- Use `T197` as the preferred bounded proof:
+  - clear `1406 -> 1418`
+  - then reach `1500`
+  - then complete the scheduled eval there
+- Use `T198` only if `T197` clears the old window but still fails before
+  `1500`.
 - Use `pdm run test-ml` / `pdm run typecheck-ml` as the fast local gate before
   broad repo-wide validation when iterating on Qwen ML code.
 - Keep Task 101 live progress and operator truth in

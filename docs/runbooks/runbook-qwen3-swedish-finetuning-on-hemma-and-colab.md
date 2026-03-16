@@ -20,6 +20,7 @@ links:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-27-transition-to-domain-centric-ml-pipeline-structure.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
+  - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
 ---
 
@@ -240,49 +241,51 @@ Canonical repo surface for the preprocessing lane:
   paths escape the mounted scratch root or are missing from disk.
 - Resume with: `pdm run qwen-train resume`.
 
-## Bounded Pilot Continuation From `1406`
+## Bounded RCA Mitigation Gate From `1406`
 
-After the exact `1401` capture and the clean bounded replay through `1406`, the
-current bounded pilot policy is no longer "resume with sentinel values and
-watch for trouble." It is:
+After the exact `1401` capture, the clean bounded replay through `1406`, the
+failed bounded continuation at `1417`, and the later bounded replay that
+reproduced `1417`, the current operator rule is no longer "resume the pilot
+again and hope the instability moved away." It is:
 
-- resume from
+- treat
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
-- keep the standard scheduled control posture:
-  - durable checkpoint every `500` optimizer steps
-  - held-out eval every `100` optimizer steps
-  - retain newest `3` durable checkpoints
-- define the continuation in full dataset passes from the current cursor
+  as the canonical RCA checkpoint
+- do not launch another fresh continuation or restart yet
+- use `1406` only for bounded mitigation proofs
 
-Current live pilot math:
+Current narrowed RCA:
 
-- `train_row_count=128`
-- `batch_size=1`
-- `gradient_accumulation_steps=4`
-- one full pass over all pilot rows = `32` optimizer steps
-- the next review point is optimizer step `1500`
-- the bounded continuation target is `5` full passes from `1406`
-- that means:
-  - `160` additional optimizer steps
-  - target optimizer step `1566`
-  - absolute resume cap `num_epochs=12`
+- the `1417` failure is reproducible from the exact `1406` checkpoint
+- the first bad backward surface is `input_text_embedding.grad` on microbatch
+  `851`
+- `507` of `508` token positions in that sample went non-finite
+- the poisoned `93` `text_embedding.weight` rows match the sample's `93`
+  unique token ids exactly
+- token id `151671` appeared `375` times in the failing sample, which aligns
+  with the active codec-span text-pad surface in the current Qwen batch
+  contract
 
-Canonical Hemma command:
+Operational consequence:
 
-```bash
-pdm run run-hemma -- pdm run qwen-train resume \
-  --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training \
-  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1 \
-  --checkpoint-path /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406 \
-  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
-  --num-epochs 12 \
-  --max-steps 1566 \
-  --checkpoint-interval-steps 500 \
-  --eval-interval-steps 100 \
-  --durable-checkpoint-retention 3 \
-  --launch-id task101-20260316t-5pass-pilot-a1 \
-  --skip-build
-```
+- the next proof must be a bounded mitigation replay, not a long pilot resume
+- the first mitigation to test is narrowing `text_embedding_mask` to the true
+  text span only, or equivalently zeroing/detaching the codec-span text-pad
+  positions
+- only if that mask-only mitigation does not clear the `1417` failure should
+  operators test lower `gradient_accumulation_steps` as the secondary bounded
+  ablation
+- the preferred proof target before any clean restart is:
+  - clear `1406 -> 1418`
+  - then reach step `1500`
+  - then complete the scheduled eval at `1500`
+- if `1500` still fails after the structural fix and planned accumulation
+  ablations, the fallback gate is:
+  - clear `1406 -> 1470`
+  - mint the `1470` checkpoint
+  - run standalone held-out eval from that checkpoint
+- Story 29 / `T195-T199` is the canonical backlog owner for this mitigation,
+  proof, fallback, and restart gate
 
 ## Legacy Checkpoint Recovery Rule
 

@@ -3,12 +3,17 @@
 ## Current State
 
 - Active epic: Epic 08 Qwen Swedish language expansion on Hemma.
-- Active story: Story 26 remains in progress for Task 101 throughput and
-  numerical-stability closure.
+- Active stories:
+  - Story 26 remains in progress for Task 101 throughput and
+    numerical-stability closure.
+  - Story 29 now owns the bounded mitigation gate that must pass before any
+    fresh clean restart.
 - Completed remediation task: `T186`
   (`docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`).
 - Active remediation task: `T193`
   (`docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md`).
+- Active mitigation-gate story:
+  `docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`.
 - Delivered architecture lane: Story 28 / `T187-T191` is complete and now
   governs all future Qwen control-plane/runtime changes.
 
@@ -112,34 +117,43 @@
   - parameters and optimizer state remained finite
   - `text_embedding.weight.grad` contained `190464` `NaN` elements
     (`93` full rows at width `2048`)
+- The bounded `1406 -> 1418` replay then reproduced `1417` from the exact
+  `1406` checkpoint and narrowed the cause:
+  - the first bad backward surface is `input_text_embedding.grad`
+  - the first bad microbatch is `851`
+  - `507` of `508` token positions in that sample went non-finite
+  - the poisoned `93` text-embedding rows match the sample's `93` unique token
+    ids exactly
+  - token id `151671` appeared `375` times in the failing sample, which aligns
+    with the active codec-span text-pad surface in the current Qwen batch
+    contract
 - Active operator posture:
   - `state-step-00001406` is now the canonical RCA checkpoint again
   - do not treat the failed `1406` continuation as the new mainline
-  - the next move is a bounded `1406 -> 1418` replay, not another continuation
+  - do not launch another fresh continuation or restart yet
+  - the next move is one bounded mitigation proof from `1406` that removes or
+    detaches the codec-span text-pad surface, then replays the `1417` window
+  - Story 29 / `T195-T199` now owns the mitigation proof, fallback gate, and
+    restart decision built on this RCA
 
 ## Immediate Next Step
 
-Launch one bounded RCA replay from `state-step-00001406` over the new `1417`
-window.
+Implement Story 29 before any new restart attempt:
 
-Canonical Hemma command:
-
-```bash
-pdm run run-hemma -- pdm run qwen-train diagnose-non-finite \
-  --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training \
-  --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1 \
-  --checkpoint-path /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406 \
-  --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 \
-  --start-optimizer-step 1417 \
-  --end-optimizer-step 1418 \
-  --launch-id task194-20260316t-1417-rca-a1 \
-  --skip-build
-```
-
-Then compare the resulting `1417` diagnostic-window artifact with the earlier
-clean `1405` replay artifact to decide whether the instability is tied to the
-new microbatch window, accumulation across that window, or a broader
-non-deterministic numerical cliff.
+1. land `T195` so `text_embedding_mask_policy` becomes an explicit runtime
+   contract with `legacy_codec_span` and `text_span_only`
+1. land `T196` so `gradient_accumulation_steps` becomes runtime-configurable
+   for bounded proofs
+1. run `T197` as the preferred gate:
+   - clear `1406 -> 1418`
+   - then reach `1500`
+   - then complete the scheduled eval at `1500`
+1. only if `1500` still fails, run `T198`:
+   - try accumulation `2`, then `1`
+   - if no new design gap remains, use the fallback gate
+     `1470 + standalone eval`
+1. keep `T199` blocked until either the preferred or fallback proof gate is
+   satisfied and recorded in the training reference ledger
 
 ## Open Risks
 
@@ -170,6 +184,7 @@ non-deterministic numerical cliff.
 - `docs/backlog/current.md`
 - `docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
 - `docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md`
+- `docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`
 - `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
 - `docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md`
 - `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
