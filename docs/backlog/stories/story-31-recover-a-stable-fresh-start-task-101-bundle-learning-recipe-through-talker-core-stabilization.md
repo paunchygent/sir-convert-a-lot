@@ -12,6 +12,7 @@ related:
   - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
+  - docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -142,6 +143,7 @@ the governing success criterion for future restart work.
 
 1. `docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md`
 1. `docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md`
+1. `docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
 ## Checklist
@@ -173,6 +175,12 @@ the governing success criterion for future restart work.
   - baseline `off` reproduced the exact `T214` pair-family seams
   - `layer16_gated_fp32` did not earn promotion
   - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
+- `T218` is now the active next exploration slice:
+  - shape one bounded late-middle attenuation family
+  - reuse the existing Story 31 lab and gate unchanged
+  - target both surviving seams together:
+    - `layer_16.mlp.gated_product`
+    - `layer_15.output`
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

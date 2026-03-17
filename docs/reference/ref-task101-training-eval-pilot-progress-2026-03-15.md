@@ -196,6 +196,12 @@ Why this is now the clean plan:
       - baseline `off` reproduced the exact `T214` pair-family seams
       - candidate `layer16_gated_fp32` failed the promotion gate unchanged
       - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
+    - `T218` is now the active next exploration slice:
+      - shape one bounded late-middle attenuation family
+      - keep the same Story 31 lab and gate
+      - target both surviving seams together:
+        - `layer_16.mlp.gated_product`
+        - `layer_15.output`
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active
