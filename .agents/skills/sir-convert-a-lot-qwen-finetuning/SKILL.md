@@ -156,6 +156,12 @@ explicitly narrow the scope.
     `off`, `layer16_gated_fp32`, `layer16_gated_fp32_clamp_1e4`
   - the lab writes one compact matrix run under a single output root:
     `results.json`, `results.md`, and `variant-reports/<variant>.json`
+  - the mandatory local promotion command is:
+    `qwen-story31-stability-lab gate --output-root <lab-output-root>`
+  - the gate consumes `results.json`, writes `gate.json` / `gate.md`, and only
+    promotes the first bounded candidate when baseline `off` reproduces the
+    exact `T214` pair-family seams while the candidate keeps those surfaces
+    finite
   - do not create a proof package per micro-experiment; only the first local
     winner gets promoted to the governed Hemma proof lane
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for

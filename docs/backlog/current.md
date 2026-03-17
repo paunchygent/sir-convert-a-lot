@@ -188,29 +188,29 @@ Story 28 is now operating policy:
     instrumented corruption first appears; that edge is `input_embeddings`
 - `T213` is now closed positive discovery evidence:
   - the earliest non-finite backward hook is inside the talker core, not just
-    at `input_embeddings`
-  - the freshest localized boundary is late-middle talker layers around
+    at `input_embeddings`, with the freshest localized boundary around
     `layer_16.post_attention_layernorm` and `layer_15.output`
   - do not open Candidate `3` while a smaller talker-core split is still
     available
 - Treat `T214` as closed discovery evidence:
-  - pair `main_loss` / `combined_loss` first break at
-    `talker_core.layer_16.mlp.gated_product`
+  - pair `main_loss` / `combined_loss` first break at `talker_core.layer_16.mlp.gated_product`
   - pair `sub_talker_loss` first breaks at `talker_core.layer_15.output`
   - replay framing is no longer the productive center of gravity
 - Story 31 is now active:
   - `T216` is now complete:
-    - the first bounded variants are:
-      `off`, `layer16_gated_fp32`, `layer16_gated_fp32_clamp_1e4`
+    - the first bounded variants are `off`, `layer16_gated_fp32`, and
+      `layer16_gated_fp32_clamp_1e4`
     - the exploration surface is `pdm run qwen-story31-stability-lab run`
     - the lab writes one compact matrix run under a single output root:
       `results.json`, `results.md`, and `variant-reports/<variant>.json`
     - it reuses the exact failing-row backward-lineage probe instead of
       minting a proof package per hypothesis
-  - `T215` is now the active next slice:
-    add the smallest-signal local promotion gate on the exact fresh-start
-    failure family
-  - `T217`: run one governed Hemma proof only for the first promoted winner
+  - `T215` is now complete:
+    - the promotion surface is `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+    - it consumes `results.json`, writes `gate.json` / `gate.md`, and requires
+      exact `T214` pair-family failure on baseline `off` plus finiteness on candidate `layer16_gated_fp32`
+  - `T217` is now the next governed slice:
+    run one Hemma proof only for the first gate-passing candidate
 - `T199` remains blocked until Story 31 records a positive fresh-start
   stabilization proof that justifies a larger clean-start proof lane.
 - Do not spend the next story on Candidate 2.

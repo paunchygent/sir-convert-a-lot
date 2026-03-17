@@ -2,7 +2,7 @@
 id: task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane
 title: Add the smallest-signal local finiteness gate for the first talker-core stabilization lane
 type: task
-status: proposed
+status: done
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -60,35 +60,61 @@ the governed proof lane.
 
 ## Deliverables
 
-- [ ] One committed local finiteness gate exists for the first talker-core
+- [x] One committed local finiteness gate exists for the first talker-core
   stabilization lane.
-- [ ] One focused test/probe artifact states whether the stabilization surface
+- [x] One focused test/probe artifact states whether the stabilization surface
   keeps the previously failing branches finite.
-- [ ] One compact promotion rule is documented for moving from exploration to
+- [x] One compact promotion rule is documented for moving from exploration to
   governed proof.
-- [ ] One doc update records the gate as mandatory before the next Hemma proof.
+- [x] One doc update records the gate as mandatory before the next Hemma proof.
 
 ## Acceptance Criteria
 
-- [ ] The gate fails on the pre-stabilization behavior and passes only on the
+- [x] The gate fails on the pre-stabilization behavior and passes only on the
   new stabilization surface.
-- [ ] The gate checks the exact fresh-start failure family rather than a looser
+- [x] The gate checks the exact fresh-start failure family rather than a looser
   synthetic proxy only.
-- [ ] The gate is fast enough to become the first required local acceptance
+- [x] The gate is fast enough to become the first required local acceptance
   step before `T217`.
-- [ ] The gate and result table make it unnecessary to create a new backlog
+- [x] The gate and result table make it unnecessary to create a new backlog
   task for each micro-experiment.
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training -q`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training -q`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Outcome
+
+- Added a committed Story 31 promotion gate on top of the compact lab results:
+  `pdm run qwen-story31-stability-lab gate`
+- The gate consumes one existing `results.json` artifact and writes:
+  - `gate.json`
+  - `gate.md`
+- Default promotion posture:
+  - baseline variant: `off`
+  - candidate variant: `layer16_gated_fp32`
+- The gate now requires the exact fresh-start pair family from `T214`:
+  - `pair-main-loss` reproduces
+    `talker_core.layer_16.mlp.gated_product`
+  - `pair-sub-talker-loss` reproduces `talker_core.layer_15.output`
+  - `pair-combined-loss` reproduces
+    `talker_core.layer_16.mlp.gated_product`
+  - baseline rows must also preserve:
+    - `input_text_embedding.grad`
+    - `text_embedding.weight.grad`
+- Promotion passes only when:
+  - the baseline exact family is reproduced
+  - the candidate rows keep those exact surfaces finite
+  - the lab ran with:
+    - `hook_profile=talker_core_boundary`
+    - `text_embedding_mask_policy=text_span_only`

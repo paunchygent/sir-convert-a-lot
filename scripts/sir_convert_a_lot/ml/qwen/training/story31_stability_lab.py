@@ -28,6 +28,13 @@ from scripts.sir_convert_a_lot.ml.qwen.training.smoke import (
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_contracts import (
     Story31StabilityLabSettings,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_gate import (
+    DEFAULT_BASELINE_VARIANT,
+    DEFAULT_CANDIDATE_VARIANT,
+    evaluate_promotion_gate,
+    load_results_payload,
+    persist_promotion_gate,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_runner import (
     DEFAULT_HOOK_PROFILE,
     DEFAULT_MANIFEST_FAMILY,
@@ -75,6 +82,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=",".join(DEFAULT_STABILIZATION_VARIANTS),
     )
     run.add_argument("--skip-build", action="store_true")
+
+    gate = subparsers.add_parser(
+        "gate",
+        help="Evaluate whether one Story 31 candidate variant earns promotion.",
+    )
+    gate.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    gate.add_argument("--results-path", type=Path, default=None)
+    gate.add_argument("--baseline-variant", default=DEFAULT_BASELINE_VARIANT)
+    gate.add_argument("--candidate-variant", default=DEFAULT_CANDIDATE_VARIANT)
     return parser
 
 
@@ -82,6 +98,20 @@ def main(argv: list[str] | None = None) -> int:
     """Run one Story 31 stability-lab matrix and persist compact artifacts."""
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command == "gate":
+        output_root = Path(args.output_root)
+        results_path = (
+            output_root / "results.json" if args.results_path is None else Path(args.results_path)
+        )
+        gate_report = evaluate_promotion_gate(
+            results_payload=load_results_payload(results_path),
+            results_path=results_path,
+            baseline_variant=str(args.baseline_variant),
+            candidate_variant=str(args.candidate_variant),
+        )
+        persist_promotion_gate(output_root, gate_report)
+        print(json.dumps(asdict(gate_report), indent=2, ensure_ascii=False))
+        return 0
     if args.command != "run":
         raise SystemExit(f"Unsupported Story 31 stability-lab command: {args.command}")
     settings = Story31StabilityLabSettings(

@@ -356,6 +356,14 @@ Operational consequence:
     - `results.json`
     - `results.md`
     - `variant-reports/<variant>.json`
+  - the mandatory local promotion step before any governed Hemma proof is:
+    - `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+  - the gate consumes the existing `results.json` and writes:
+    - `gate.json`
+    - `gate.md`
+  - the first promotion target is:
+    - baseline: `off`
+    - candidate: `layer16_gated_fp32`
   - do not create a detached proof package per micro-experiment; promote only
     the first local winner to the governed Hemma proof lane
 

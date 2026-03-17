@@ -80,3 +80,36 @@ class Story31StabilityLabReport:
     variant_report_paths: dict[str, str]
     probe_commands: dict[str, list[str]]
     matrix_rows: tuple[StabilityLabMatrixRow, ...]
+
+
+@dataclass(frozen=True)
+class PromotionGateCaseAssessment:
+    """One exact-case comparison between baseline failure and candidate behavior."""
+
+    case_id: str
+    loss_kind: str
+    expected_talker_core_hook: str
+    baseline_case_has_non_finite: bool
+    baseline_exact_family_match: bool
+    candidate_case_has_non_finite: bool
+    candidate_exact_surfaces_finite: bool
+    passes: bool
+
+
+@dataclass(frozen=True)
+class Story31PromotionGateReport:
+    """Compact promotion decision for one Story 31 candidate variant."""
+
+    generated_at: str
+    results_path: str
+    required_hook_profile: str
+    actual_hook_profile: str
+    required_text_embedding_mask_policy: str
+    actual_text_embedding_mask_policy: str
+    baseline_variant: str
+    candidate_variant: str
+    required_case_ids: tuple[str, ...]
+    exact_family_reproduced_by_baseline: bool
+    candidate_exact_surfaces_finite: bool
+    promotion_passed: bool
+    case_assessments: tuple[PromotionGateCaseAssessment, ...]

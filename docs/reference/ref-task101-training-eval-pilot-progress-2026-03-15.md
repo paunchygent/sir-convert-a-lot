@@ -184,7 +184,12 @@ Why this is now the clean plan:
         `pdm run qwen-story31-stability-lab run`
       - it writes one compact matrix run under a single output root:
         `results.json`, `results.md`, and `variant-reports/<variant>.json`
-    - `T215` adds the local promotion gate
+    - `T215` is now complete:
+      - the committed promotion surface is:
+        `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+      - it consumes `results.json` and writes `gate.json` plus `gate.md`
+      - baseline `off` must reproduce the exact pair-family seams from `T214`
+      - candidate `layer16_gated_fp32` must keep those exact surfaces finite
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active

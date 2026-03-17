@@ -112,7 +112,7 @@ Avoid reusing the heavy parts for exploration:
 - [x] One bounded talker-core stabilization surface exists that targets the
   late-middle seam exposed by `T214` without reopening replay framing or
   altering the clean text-token semantics.
-- [ ] One smallest-signal local promotion gate exists that tests the exact
+- [x] One smallest-signal local promotion gate exists that tests the exact
   fresh-start failure family before any governed Hemma run.
 - [ ] Only the first promoted candidate gets a short governed fresh-start
   Hemma proof.
@@ -159,9 +159,19 @@ the governing success criterion for future restart work.
   - `layer16_gated_fp32_clamp_1e4`
 - The reusable exploration surface is:
   - `pdm run qwen-story31-stability-lab run`
+- `T215` is now complete.
+- The mandatory local promotion command is:
+  - `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+- The gate consumes the existing `results.json` artifact and writes:
+  - `gate.json`
+  - `gate.md`
+- Promotion currently targets the first bounded candidate:
+  - baseline variant: `off`
+  - candidate variant: `layer16_gated_fp32`
+- `T217` remains blocked until that gate passes on the exact fresh-start pair
+  family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.
-- `T215` is now the active next slice: promote or reject the first bounded
-  stabilization lane with the smallest-signal local finiteness gate before any
-  new governed Hemma proof.
+- `T217` is now the active next slice after the first gate-passing candidate is
+  recorded.
