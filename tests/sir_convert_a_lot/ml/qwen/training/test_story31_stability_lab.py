@@ -19,6 +19,9 @@ from pathlib import Path
 import pytest
 
 from scripts.sir_convert_a_lot.ml.qwen.training import story31_stability_lab_runner
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
+    DEFAULT_PILOT_BUNDLE_ROOT,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_bundle import (
     BackwardLineageMiniBundle,
 )
@@ -32,6 +35,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_runner imp
     DEFAULT_HOOK_PROFILE,
     DEFAULT_MANIFEST_FAMILY,
     DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE,
+    DEFAULT_SOURCE_BUNDLE_ROOT,
     DEFAULT_SOURCE_LINES,
     DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
     _build_matrix_rows,
@@ -47,6 +51,11 @@ def test_parse_stabilization_variants_preserves_requested_order() -> None:
         "off",
         "layer16_gated_fp32",
     )
+
+
+def test_default_source_bundle_root_reuses_canonical_training_bundle_default() -> None:
+    """Story 31 should inherit the canonical Task 101 pilot bundle default."""
+    assert DEFAULT_SOURCE_BUNDLE_ROOT == DEFAULT_PILOT_BUNDLE_ROOT
 
 
 def test_build_matrix_rows_captures_case_signal_and_anomaly_operator() -> None:

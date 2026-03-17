@@ -31,6 +31,9 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     resolve_effective_bind_root,
     resolve_effective_hf_cache_dir,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
+    DEFAULT_PILOT_BUNDLE_ROOT,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting.artifact_io import utc_now_iso
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_bundle import (
     materialize_backward_lineage_bundle,
@@ -58,9 +61,7 @@ DEFAULT_STABILIZATION_VARIANTS = (
 DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE = Path(
     "/home/paunchygent/.data/sir-convert-a-lot/qwen-story31-stability-lab-output-roots"
 )
-DEFAULT_SOURCE_BUNDLE_ROOT = Path(
-    "/srv/storage/sir-convert-a-lot/build/preprocessing/qwen3-tts-swedish-task101-pilot-bundle"
-)
+DEFAULT_SOURCE_BUNDLE_ROOT = DEFAULT_PILOT_BUNDLE_ROOT
 _ANOMALY_OPERATOR_PATTERN = re.compile(r"([A-Za-z0-9_]+Backward0)")
 
 
