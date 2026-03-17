@@ -217,21 +217,19 @@ Why this is now the clean plan:
         `layer_16.input_layernorm` handoff neighborhood
       - keep explicit visibility on the surviving
         `sub_talker_loss` `layer_16.mlp.gated_product` fallback
-    - `T220` is now the active exact-control slice:
-      - run the original restored no-projection Task 101 recipe on the
-        canonical full pilot bundle
-      - keep only the `T206` token-span correction
-      - explicitly exclude the later semantic-only assembly path from
-        `T207-T209`
-      - the exact-control runtime surface is now implemented through the
-        explicit `--text-embedding-assembly-mode full_channel_masked`
-        contract on `qwen-train`, detached launch/resume/diagnose surfaces,
-        and standalone eval
-      - this keeps the original full collated text-channel lookup while still
-        applying the corrected `T206` `text_embedding_mask`
-      - the remaining `T220` work is the bounded fresh-start Hemma control run
-      - use that exact-control result to answer whether the original recipe is
-        still viable once the audited token leakage is fixed
+    - `T220` is now closed as control-surface delivery, not as valid exact
+      historical-control evidence:
+      - the explicit `--text-embedding-assembly-mode full_channel_masked`
+        surface is now implemented on `qwen-train`
+      - the bounded Hemma attempt drifted to the later `task-152` benchmark
+        bundle and `batch_size=8`
+      - that run therefore cannot answer the documented historical Task 101
+        original-recipe question
+    - `T221` is now the active exact-control slice:
+      - recreate the documented historical Task 101 launch contract before
+        judging the original recipe plus only the `T206` token-span fix
+      - keep the docs-as-code historical launch metadata as the normative
+        source of truth, not the later RCA/recovery lane
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active

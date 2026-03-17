@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md
   - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
   - docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md
+  - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -150,6 +151,7 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md`
 1. `docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md`
 1. `docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md`
+1. `docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md`
 1. `docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
@@ -189,22 +191,23 @@ the governing success criterion for future restart work.
     neighborhood
   - neither candidate kept the exact target seams finite, so both failed the
     existing promotion gate
-- `T219` is now the active next exploration slice:
+- `T220` is now complete as control-surface delivery but invalid as exact
+  historical-control evidence:
+  - the explicit `full_channel_masked` runtime surface is now implemented
+  - the bounded Hemma attempt used the later `task-152` benchmark bundle,
+    `batch_size=8`, and the current `qwen-train` launch posture
+  - it therefore does not answer the documented historical Task 101 question
+- `T221` is now the active exact-control slice:
+  - recreate the documented historical Task 101 launch contract before drawing
+    any conclusion about the original recipe plus only the `T206` fix
+  - keep docs-as-code as the normative source of truth for that contract
+  - do not let the later RCA/recovery lane silently replace it
+- `T219` remains the next bounded exploration slice after `T221` resolves:
   - keep the moderate `T218` posture as the preferred base ingredient
   - target the shifted `layer_16.output` / `layer_16.input_layernorm`
     handoff neighborhood
   - keep visibility on the surviving `sub_talker_loss`
     `layer_16.mlp.gated_product` fallback
-- `T220` is now the active exact-control slice ahead of more approximation:
-  - run the original restored no-projection Task 101 recipe
-  - keep only the `T206` token-span correction
-  - use the canonical full pilot bundle from `T142`
-  - explicitly exclude the later semantic-only assembly path from `T207-T209`
-  - the exact-control runtime surface is now implemented through the explicit
-    `--text-embedding-assembly-mode full_channel_masked` contract on
-    `qwen-train`, detached launch/resume/diagnose surfaces, and standalone eval
-  - the next work inside `T220` is the bounded fresh-start Hemma control run,
-    not more runtime approximation work
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

@@ -122,9 +122,14 @@ Story 28 is now operating policy:
     `task215-20260317t160500z-a2` is already negative evidence:
     `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4`
     all reproduced the same `T214` pair-family seams
-  - `T220` now has a committed exact-control runtime surface:
+  - `T220` now has a committed explicit control runtime surface:
     `--text-embedding-assembly-mode full_channel_masked` runs the original
-    restored no-projection recipe with the `T206` token-span correction only.
+    restored no-projection recipe with the `T206` token-span correction only
+  - but the bounded `T220` Hemma attempt is not credible exact-control
+    evidence, because it drifted to the later `task-152` benchmark bundle and
+    `batch_size=8` instead of the documented historical Task 101 contract
+  - `T221` is now open to recreate that historical contract before this branch
+    is used in the Story 31 decision tree
 
 ## Next Actions
 
@@ -174,16 +179,15 @@ Story 28 is now operating policy:
     the second Story 31 matrix at `task218-20260317t173122z-a1` changed the
     pair-family neighborhood, but both new variants still failed the local
     promotion gate
-  - `T220` is now the active exact-control slice:
-    run the original restored no-projection Task 101 recipe on the canonical
-    full pilot bundle with only the `T206` token-span correction; explicitly
-    exclude the later semantic-only assembly path from `T207-T209`
-  - the exact-control runtime surface is now implemented and validated:
+  - `T220` is now closed as control-surface delivery, not as a valid exact
+    historical-control answer
+  - the explicit control runtime surface is implemented and validated:
     focused runtime/payload tests `19 passed`, full ML suite `308 passed`,
     `typecheck-ml` and `typecheck-all` both succeeded
-  - the next work inside `T220` is the bounded fresh-start Hemma control run
-  - `T219` remains the next bounded exploration slice after that control
-    answer lands:
+  - `T221` is now the active exact-control slice:
+    recreate the documented historical Task 101 launch contract before judging
+    the original recipe + `T206` branch
+  - `T219` remains the next bounded exploration slice after `T221` resolves:
     target the shifted `layer_16.output` / `layer_16.input_layernorm`
     handoff neighborhood while keeping visibility on the surviving
     `sub_talker_loss` `layer_16.mlp.gated_product` fallback; `T217` stays

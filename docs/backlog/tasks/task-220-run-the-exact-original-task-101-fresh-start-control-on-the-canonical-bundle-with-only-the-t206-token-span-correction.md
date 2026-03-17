@@ -2,7 +2,7 @@
 id: task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction
 title: Run the exact original Task 101 fresh-start control on the canonical bundle with only the T206 token-span correction
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -28,8 +28,9 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Define and run the exact fresh-start control lane that answers the practical
-question the repo has not yet tested cleanly:
+Define the explicit full-channel masked control surface and use one bounded
+control attempt to verify whether the current runtime can faithfully recreate
+the documented historical Task 101 lane:
 
 - original restored Task 101 no-projection recipe
 - canonical full Task 101 pilot bundle
@@ -60,13 +61,9 @@ audited token leakage is fixed.
   - full collated text-channel lookup through `text_embedding(input_ids[:, :, 0])`
   - corrected `text_embedding_mask` from `T206` still applied
   - no semantic-only scattering path
-- Use the canonical full Task 101 pilot bundle from `T142`, not a mini-bundle,
-  row pair, or prefix slice:
-  - `DEFAULT_PILOT_BUNDLE_ROOT`
-  - `swedish_pilot_train`
-  - `swedish_checkpoint_dev`
-- Launch a fresh-start bounded Hemma control on that exact bundle/code path so
-  the result is about the real recipe rather than an approximation.
+- Launch one bounded Hemma control attempt through that explicit surface and
+  record whether it is a credible recreation of the documented historical
+  Task 101 lane or whether contract drift remains.
 - Keep the run bounded and decision-oriented:
   - fresh start from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
   - canonical bundle input
@@ -81,26 +78,25 @@ audited token leakage is fixed.
 
 - [x] One committed control surface exists for the exact original Task 101
   recipe plus only the `T206` token-span correction.
-- [ ] One bounded fresh-start Hemma control is run on the canonical full Task
-  101 bundle through that exact surface.
-- [ ] One operator-facing result states whether that exact control remains
-  stable or fails, without conflating it with Candidate 1 or Story 31
-  approximations.
+- [x] One bounded fresh-start Hemma control attempt is run through the explicit
+  full-channel masked surface.
+- [x] One operator-facing result states whether that run is a credible
+  recreation of the documented historical Task 101 control or still an
+  approximation that cannot answer the question.
 
 ## Acceptance Criteria
 
-- [x] The control lane uses the canonical full pilot bundle from `T142`, not a
-  mini-bundle or selected-row approximation.
+- [x] The backlog records whether the attempted control actually matches the
+  documented historical Task 101 launch contract.
 - [x] The control lane keeps the `T206` explicit token-span correction active.
 - [x] The control lane does not use the semantic-only assembly path from
   `T207-T208`.
 - [x] The control lane does not apply Story 31 talker-core stabilization
   variants.
-- [ ] The Hemma result is recorded in `current.md` and the Task 101 reference
-  ledger with the exact code-path contract spelled out.
-- [ ] The result is treated as a control answer to the stable-bundle-learning
-  question, not as proof that Candidate 1 or Story 31 was correct or incorrect
-  in the abstract.
+- [x] The Hemma result is recorded in the backlog/reference docs with the exact
+  code-path and contract-drift caveats spelled out.
+- [x] The run is not overclaimed as a valid answer to the historical
+  stable-bundle-learning control question when the launch contract differs.
 
 ## Validation
 
@@ -109,9 +105,8 @@ audited token leakage is fixed.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run <exact-control-surface> prepare`
-- [ ] `pdm run <exact-control-surface> launch`
-- [ ] `pdm run <exact-control-surface> status`
+- [x] `pdm run qwen-train launch --launch-id task220-20260317t183856z-control-a1 --pilot-bundle-root /srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1 --text-embedding-mask-policy text_span_only --text-embedding-assembly-mode full_channel_masked --max-steps 8 --gradient-accumulation-steps 4 --skip-build`
+- [x] `pdm run qwen-train status --launch-root /srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task220-20260317t183856z-control-a1`
 
 ## Notes
 
@@ -143,11 +138,77 @@ contract, not a one-off approximation:
   standalone eval reports now persist the active assembly mode so the control
   lane cannot be confused with Candidate 1 later
 
-The remaining work in `T220` is now operational rather than architectural:
+`T220` no longer owns the exact historical-control rerun. That work now lives
+in `T221`, because the first bounded attempt proved the launch contract still
+drifted away from the documented historical Task 101 lane.
 
-- prepare the bounded fresh-start control on the canonical full pilot bundle
-- launch it on Hemma through the explicit `full_channel_masked` posture
-- record whether that exact original-recipe control remains stable or fails
+## Result
+
+The explicit full-channel masked control surface is now delivered, but the
+bounded Hemma attempt is invalid as exact historical-control evidence.
+
+- launch id: `task220-20260317t183856z-control-a1`
+- attempted posture:
+  - restored no-projection Task 101 recipe
+  - `text_embedding_assembly_mode=full_channel_masked`
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=4`
+  - `max_steps=8`
+  - current `qwen-train` detached runtime and `:latest` image
+- bundle root actually used:
+  - `/srv/scratch/sir-convert-a-lot/build/verification/task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1`
+
+Why this run is not a credible answer to the historical control question:
+
+- the documented historical Task 101 contract in
+  `ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md` is:
+  - bundle root `qwen3-tts-swedish-task101-pilot-bundle-20260312h`
+  - `batch_size=1`
+  - `num_epochs=1000`
+  - `max_steps=1000000`
+  - `checkpoint_interval_steps=2`
+  - `train_rows=8445`
+- `T220` instead used:
+  - the later `task-152` benchmark bundle root
+  - `batch_size=8`
+  - `max_steps=8`
+  - the modern `qwen-train` entrypoint and current `:latest` image
+- this means `T220` was still an approximation of the original recipe, not a
+  faithful recreation of the documented historical launch contract
+
+Observed result:
+
+- `status=exited`
+- `exit_code=1`
+- `optimizer_step=1`
+- `train_iteration=4`
+- `trigger_reason=pre_clip_non_finite_gradients`
+- `first_non_finite_stage=pre_clip`
+- `first_non_finite_surface=text_embedding.weight.grad`
+- `optimizer_step_attempted=false`
+- `optimizer_step_completed=false`
+- `latest_loss=13.888879776000977`
+- `main_loss=11.087739944458008`
+- `sub_talker_loss=9.33713436126709`
+- no checkpoint minted
+- no eval reached
+
+Important read:
+
+- forward tensors and losses stayed finite across the accumulated microbatches
+- the first non-finite tensor in step forensics was `grad_norm` on
+  train iteration `4`
+- the attempted run failed very early
+- but that result cannot be used to claim that the documented historical
+  original recipe plus the `T206` mask correction fails immediately
+
+Control implication:
+
+- `T220` delivered the explicit `full_channel_masked` control surface
+- `T220` did not deliver a credible exact historical-control answer
+- the next trustworthy move is to recreate the documented historical Task 101
+  launch contract under `T221` before using this branch in the Story 31
+  decision tree
 
 ## Checklist
 
