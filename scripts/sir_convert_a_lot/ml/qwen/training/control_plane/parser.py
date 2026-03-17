@@ -18,9 +18,6 @@ from scripts.sir_convert_a_lot.ml.qwen.training.cli_flags import add_boolean_arg
 from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
     GRADIENT_ACCUMULATION_STEP_CHOICES,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
-    TEXT_EMBEDDING_MASK_POLICY_CHOICES,
-)
 
 from .defaults import (
     DEFAULT_BATCH_SIZE,
@@ -58,6 +55,7 @@ from .defaults import (
     DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS,
     DEFAULT_SCRATCH_BUILD_HOME_MOUNT,
     DEFAULT_SCRATCH_BUILD_ROOT,
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
     DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     DEFAULT_TORCH_PROFILER_ACTIVE_STEPS,
@@ -71,6 +69,11 @@ from .defaults import (
     DEFAULT_TRAIN_MANIFEST_FAMILY,
     default_hf_cache_dir,
     default_hf_cache_home_mount,
+)
+from .parser_argument_groups import (
+    add_resource_monitor_arguments,
+    add_skip_build_argument,
+    add_text_embedding_contract_arguments,
 )
 
 
@@ -94,10 +97,10 @@ def build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--model-id", default=DEFAULT_MODEL_ID)
     launch.add_argument("--train-manifest-family", default=DEFAULT_TRAIN_MANIFEST_FAMILY)
     launch.add_argument("--eval-manifest-family", default=DEFAULT_EVAL_MANIFEST_FAMILY)
-    launch.add_argument(
-        "--text-embedding-mask-policy",
-        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
-        default=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+    add_text_embedding_contract_arguments(
+        launch,
+        mask_policy_default=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+        assembly_mode_default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
     )
     launch.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     launch.add_argument("--throughput-profile-label", default=DEFAULT_THROUGHPUT_PROFILE_LABEL)
@@ -169,28 +172,13 @@ def build_parser() -> argparse.ArgumentParser:
         launch, "--torch-profiler-with-stack", default=DEFAULT_TORCH_PROFILER_WITH_STACK
     )
     add_boolean_argument(launch, "--rocm-profiler-enabled", default=DEFAULT_ROCM_PROFILER_ENABLED)
-    launch.add_argument(
-        "--resource-monitor-interval-seconds",
-        type=float,
-        default=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
-    )
-    launch.add_argument(
-        "--resource-monitor-runtime-kind",
-        choices=("rocm", "cuda", "none"),
-        default=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
-    )
-    launch.add_argument("--resource-monitor-duration-seconds", type=float, default=None)
-    launch.add_argument(
-        "--disable-resource-monitor",
-        action="store_true",
-        help="Disable the detached resource-monitor companion launch.",
+    add_resource_monitor_arguments(
+        launch,
+        default_interval_seconds=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+        default_runtime_kind=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
     )
     launch.add_argument("--launch-id", default=None)
-    launch.add_argument(
-        "--skip-build",
-        action="store_true",
-        help="Skip `docker buildx build` if the image already exists.",
-    )
+    add_skip_build_argument(launch)
 
     resume = subparsers.add_parser("resume", help="Resume from the latest durable checkpoint.")
     resume.add_argument("resume_mode", nargs="?", choices=["latest"], default="latest")
@@ -198,10 +186,10 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--launch-root", type=Path, default=None)
     resume.add_argument("--checkpoint-path", type=Path, default=None)
     resume.add_argument("--pilot-bundle-root", type=Path, default=None)
-    resume.add_argument(
-        "--text-embedding-mask-policy",
-        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
-        default=None,
+    add_text_embedding_contract_arguments(
+        resume,
+        mask_policy_default=None,
+        assembly_mode_default=None,
     )
     resume.add_argument(
         "--gradient-accumulation-steps",
@@ -215,27 +203,12 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--eval-interval-steps", type=int, default=None)
     resume.add_argument("--durable-checkpoint-retention", type=int, default=None)
     resume.add_argument("--launch-id", default=None)
-    resume.add_argument(
-        "--resource-monitor-interval-seconds",
-        type=float,
-        default=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    add_resource_monitor_arguments(
+        resume,
+        default_interval_seconds=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+        default_runtime_kind=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
     )
-    resume.add_argument(
-        "--resource-monitor-runtime-kind",
-        choices=("rocm", "cuda", "none"),
-        default=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
-    )
-    resume.add_argument("--resource-monitor-duration-seconds", type=float, default=None)
-    resume.add_argument(
-        "--disable-resource-monitor",
-        action="store_true",
-        help="Disable the detached resource-monitor companion launch.",
-    )
-    resume.add_argument(
-        "--skip-build",
-        action="store_true",
-        help="Skip `docker buildx build` if the image already exists.",
-    )
+    add_skip_build_argument(resume)
 
     capture = subparsers.add_parser(
         "capture-diagnostic-state",
@@ -245,10 +218,10 @@ def build_parser() -> argparse.ArgumentParser:
     capture.add_argument("--launch-root", type=Path, default=None)
     capture.add_argument("--checkpoint-path", type=Path, default=None)
     capture.add_argument("--pilot-bundle-root", type=Path, default=None)
-    capture.add_argument(
-        "--text-embedding-mask-policy",
-        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
-        default=None,
+    add_text_embedding_contract_arguments(
+        capture,
+        mask_policy_default=None,
+        assembly_mode_default=None,
     )
     capture.add_argument(
         "--gradient-accumulation-steps",
@@ -269,27 +242,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS,
     )
     capture.add_argument("--launch-id", default=None)
-    capture.add_argument(
-        "--resource-monitor-interval-seconds",
-        type=float,
-        default=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    add_resource_monitor_arguments(
+        capture,
+        default_interval_seconds=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+        default_runtime_kind=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
     )
-    capture.add_argument(
-        "--resource-monitor-runtime-kind",
-        choices=("rocm", "cuda", "none"),
-        default=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
-    )
-    capture.add_argument("--resource-monitor-duration-seconds", type=float, default=None)
-    capture.add_argument(
-        "--disable-resource-monitor",
-        action="store_true",
-        help="Disable the detached resource-monitor companion launch.",
-    )
-    capture.add_argument(
-        "--skip-build",
-        action="store_true",
-        help="Skip `docker buildx build` if the image already exists.",
-    )
+    add_skip_build_argument(capture)
 
     diagnose = subparsers.add_parser(
         "diagnose-non-finite",
@@ -299,10 +257,10 @@ def build_parser() -> argparse.ArgumentParser:
     diagnose.add_argument("--launch-root", type=Path, default=None)
     diagnose.add_argument("--checkpoint-path", type=Path, default=None)
     diagnose.add_argument("--pilot-bundle-root", type=Path, default=None)
-    diagnose.add_argument(
-        "--text-embedding-mask-policy",
-        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
-        default=None,
+    add_text_embedding_contract_arguments(
+        diagnose,
+        mask_policy_default=None,
+        assembly_mode_default=None,
     )
     diagnose.add_argument(
         "--gradient-accumulation-steps",
@@ -317,27 +275,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--end-optimizer-step", type=int, default=DEFAULT_DIAGNOSTIC_END_OPTIMIZER_STEP
     )
     diagnose.add_argument("--launch-id", default=None)
-    diagnose.add_argument(
-        "--resource-monitor-interval-seconds",
-        type=float,
-        default=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    add_resource_monitor_arguments(
+        diagnose,
+        default_interval_seconds=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+        default_runtime_kind=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
     )
-    diagnose.add_argument(
-        "--resource-monitor-runtime-kind",
-        choices=("rocm", "cuda", "none"),
-        default=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
-    )
-    diagnose.add_argument("--resource-monitor-duration-seconds", type=float, default=None)
-    diagnose.add_argument(
-        "--disable-resource-monitor",
-        action="store_true",
-        help="Disable the detached resource-monitor companion launch.",
-    )
-    diagnose.add_argument(
-        "--skip-build",
-        action="store_true",
-        help="Skip `docker buildx build` if the image already exists.",
-    )
+    add_skip_build_argument(diagnose)
 
     standalone_eval = subparsers.add_parser(
         "eval", help="Run standalone held-out eval against a durable checkpoint."
@@ -347,10 +290,10 @@ def build_parser() -> argparse.ArgumentParser:
     standalone_eval.add_argument("--checkpoint-path", type=Path, default=None)
     standalone_eval.add_argument("--eval-jsonl", type=Path, default=None)
     standalone_eval.add_argument("--pilot-bundle-root", type=Path, default=None)
-    standalone_eval.add_argument(
-        "--text-embedding-mask-policy",
-        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
-        default=None,
+    add_text_embedding_contract_arguments(
+        standalone_eval,
+        mask_policy_default=None,
+        assembly_mode_default=None,
     )
     standalone_eval.add_argument(
         "--gradient-accumulation-steps",
@@ -360,11 +303,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     standalone_eval.add_argument("--eval-output-dir", type=Path, default=None)
     standalone_eval.add_argument("--eval-id", default=None)
-    standalone_eval.add_argument(
-        "--skip-build",
-        action="store_true",
-        help="Skip `docker buildx build` if the image already exists.",
-    )
+    add_skip_build_argument(standalone_eval)
 
     schedule = subparsers.add_parser(
         "schedule", help="Run one epoch-aware train-stop-eval-resume control cycle."
@@ -374,10 +313,10 @@ def build_parser() -> argparse.ArgumentParser:
     schedule.add_argument("--checkpoint-path", type=Path, default=None)
     schedule.add_argument("--eval-jsonl", type=Path, default=None)
     schedule.add_argument("--pilot-bundle-root", type=Path, default=None)
-    schedule.add_argument(
-        "--text-embedding-mask-policy",
-        choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
-        default=None,
+    add_text_embedding_contract_arguments(
+        schedule,
+        mask_policy_default=None,
+        assembly_mode_default=None,
     )
     schedule.add_argument(
         "--gradient-accumulation-steps",
@@ -389,27 +328,12 @@ def build_parser() -> argparse.ArgumentParser:
     schedule.add_argument(
         "--poll-interval-seconds", type=float, default=DEFAULT_SCHEDULE_POLL_INTERVAL_SECONDS
     )
-    schedule.add_argument(
-        "--resource-monitor-interval-seconds",
-        type=float,
-        default=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+    add_resource_monitor_arguments(
+        schedule,
+        default_interval_seconds=DEFAULT_RESOURCE_MONITOR_INTERVAL_SECONDS,
+        default_runtime_kind=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
     )
-    schedule.add_argument(
-        "--resource-monitor-runtime-kind",
-        choices=("rocm", "cuda", "none"),
-        default=DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND,
-    )
-    schedule.add_argument("--resource-monitor-duration-seconds", type=float, default=None)
-    schedule.add_argument(
-        "--disable-resource-monitor",
-        action="store_true",
-        help="Disable the detached resource-monitor companion launch.",
-    )
-    schedule.add_argument(
-        "--skip-build",
-        action="store_true",
-        help="Skip `docker buildx build` if the image already exists.",
-    )
+    add_skip_build_argument(schedule)
 
     status = subparsers.add_parser("status", help="Inspect one detached training launch.")
     status.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)

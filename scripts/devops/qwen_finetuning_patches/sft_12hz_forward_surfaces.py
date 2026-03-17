@@ -24,9 +24,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
     to_device_with_optional_non_blocking,
 )
-from scripts.devops.qwen_finetuning_patches.sft_12hz_semantic_text_embeddings import (
-    build_semantic_text_embedding_assembly,
-)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization import (
     TALKER_CORE_STABILIZATION_OFF,
     apply_talker_core_stabilization,
@@ -34,6 +31,13 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
     resolve_talker_codec_embedding,
     resolve_talker_text_embedding,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_text_embedding_assembly import (
+    build_text_embedding_assembly,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    TextEmbeddingAssemblyMode,
 )
 
 
@@ -77,6 +81,7 @@ class ForwardBatchInputs:
     semantic_text_ids: torch.Tensor
     semantic_text_positions: torch.Tensor
     semantic_text_mask: torch.Tensor
+    text_embedding_mask: torch.Tensor
     ref_mels: torch.Tensor
     codec_embedding_mask: torch.Tensor
     attention_mask: torch.Tensor
@@ -89,6 +94,7 @@ def execute_talker_forward_pass(
     model,
     batch: ForwardBatchInputs,
     non_blocking_transfer: bool,
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode = DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
     talker_core_stabilization_variant: str = TALKER_CORE_STABILIZATION_OFF,
 ) -> TalkerForwardSurfaces:
     """Execute the shared no-projection talker forward pass for one batch."""
@@ -102,12 +108,15 @@ def execute_talker_forward_pass(
     text_embedding = resolve_talker_text_embedding(model)
     codec_embedding = resolve_talker_codec_embedding(model)
     input_codec_ids = batch.input_ids[:, :, 1]
-    semantic_assembly = build_semantic_text_embedding_assembly(
+    text_assembly = build_text_embedding_assembly(
         text_embedding=text_embedding,
+        input_text_ids=batch.input_ids[:, :, 0],
+        text_embedding_mask=batch.text_embedding_mask,
         semantic_text_ids=batch.semantic_text_ids,
         semantic_text_positions=batch.semantic_text_positions,
         semantic_text_mask=batch.semantic_text_mask,
         sequence_length=batch.input_ids.shape[1],
+        assembly_mode=text_embedding_assembly_mode,
     )
     input_codec_embedding = codec_embedding(input_codec_ids) * batch.codec_embedding_mask
     input_codec_embedding[:, 6, :] = speaker_embedding
@@ -117,9 +126,7 @@ def execute_talker_forward_pass(
         codec_mask=batch.codec_mask,
     )
     input_embeddings = (
-        semantic_assembly.full_sequence_embedding
-        + input_codec_embedding
-        + fused_auxiliary_embedding
+        text_assembly.full_sequence_embedding + input_codec_embedding + fused_auxiliary_embedding
     )
     with apply_talker_core_stabilization(
         model,
@@ -143,8 +150,8 @@ def execute_talker_forward_pass(
     return TalkerForwardSurfaces(
         ref_mels_on_device=ref_mels_on_device,
         speaker_embedding=speaker_embedding,
-        semantic_text_embeddings=semantic_assembly.semantic_embeddings,
-        input_text_embedding=semantic_assembly.full_sequence_embedding,
+        semantic_text_embeddings=text_assembly.lookup_embeddings,
+        input_text_embedding=text_assembly.full_sequence_embedding,
         input_codec_embedding=input_codec_embedding,
         fused_auxiliary_embedding=fused_auxiliary_embedding,
         input_embeddings=input_embeddings,

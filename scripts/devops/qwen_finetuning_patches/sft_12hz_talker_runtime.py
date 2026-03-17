@@ -20,6 +20,10 @@ from typing import Protocol, runtime_checkable
 
 import torch
 
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    resolve_text_embedding_assembly_mode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     resolve_text_embedding_mask_policy,
@@ -91,6 +95,7 @@ def resolve_talker_text_projection_module(model: object) -> torch.nn.Module | No
 def talker_runtime_fingerprint(
     model: object,
     *,
+    text_embedding_assembly_mode: str = DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
     text_embedding_mask_policy: str = LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
 ) -> dict[str, object]:
     """Return a machine-readable fingerprint for the resolved talker surfaces."""
@@ -110,6 +115,10 @@ def talker_runtime_fingerprint(
     )
     text_projection = _resolve_talker_text_projection_surface(model)
     return {
+        "text_embedding_assembly_mode": resolve_text_embedding_assembly_mode(
+            text_embedding_assembly_mode,
+            default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+        ),
         "text_embedding_mask_policy": resolve_text_embedding_mask_policy(
             text_embedding_mask_policy,
             default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,

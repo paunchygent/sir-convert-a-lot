@@ -168,3 +168,74 @@ def test_run_eval_pass_does_not_apply_text_projection(
         expected_semantic_text_ids,
     )
     assert result.latest_eval_loss == pytest.approx(1.3)
+
+
+def test_run_eval_pass_can_use_the_masked_full_channel_lookup_path(
+    monkeypatch,
+) -> None:
+    """Held-out eval should support the exact masked full-channel control path."""
+    model = _FakeModel()
+    full_text_ids = torch.tensor([[61, 62, 63, 64, 65, 66, 67, 68, 69, 70]], dtype=torch.long)
+    prepared = SimpleNamespace(
+        model=model,
+        accelerator=SimpleNamespace(),
+        eval_dataloader=[
+            {
+                "input_ids": torch.stack(
+                    (full_text_ids, torch.zeros_like(full_text_ids)),
+                    dim=-1,
+                ),
+                "codec_ids": torch.zeros((1, 10), dtype=torch.long),
+                "semantic_text_ids": torch.tensor([[69, 70]], dtype=torch.long),
+                "semantic_text_positions": torch.tensor([[8, 9]], dtype=torch.long),
+                "semantic_text_mask": torch.ones((1, 2), dtype=torch.bool),
+                "ref_mels": torch.zeros((1, 4, 4), dtype=torch.float32),
+                "text_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+                "codec_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+                "attention_mask": torch.ones((1, 10), dtype=torch.long),
+                "codec_0_labels": torch.zeros((1, 10), dtype=torch.long),
+                "codec_mask": torch.ones((1, 10), dtype=torch.bool),
+            }
+        ],
+        eval_dataloader_length=1,
+        torch_profiler_session=SimpleNamespace(phase=lambda name: nullcontext()),
+        effective_dataloader_tuning=SimpleNamespace(non_blocking_transfer=False),
+        text_embedding_assembly_mode="full_channel_masked",
+    )
+
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_eval.require_batch_tensors",
+        lambda payload: payload,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.to_device_with_optional_non_blocking",
+        lambda tensor, **kwargs: tensor,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.fuse_auxiliary_codebook_embeddings",
+        lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_eval.log_eval_metrics",
+        lambda *args, **kwargs: None,
+    )
+
+    result = run_eval_pass(
+        prepared=prepared,
+        current_epoch=5,
+        current_optimizer_step=1401,
+        current_train_iteration=788,
+        latest_loss=3.9,
+        smoothed_loss=3.7,
+        latest_durable_checkpoint=None,
+        latest_eval_loss=None,
+        best_eval_loss=None,
+        best_eval_step=None,
+        eval_runs_completed=0,
+        eval_batches_completed=0,
+        progress_callback=None,
+    )
+
+    assert model.talker.model.last_text_embedding_input_ids is not None
+    assert torch.equal(model.talker.model.last_text_embedding_input_ids, full_text_ids)
+    assert result.latest_eval_loss == pytest.approx(1.3)

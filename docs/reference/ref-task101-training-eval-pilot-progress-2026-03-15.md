@@ -223,6 +223,13 @@ Why this is now the clean plan:
       - keep only the `T206` token-span correction
       - explicitly exclude the later semantic-only assembly path from
         `T207-T209`
+      - the exact-control runtime surface is now implemented through the
+        explicit `--text-embedding-assembly-mode full_channel_masked`
+        contract on `qwen-train`, detached launch/resume/diagnose surfaces,
+        and standalone eval
+      - this keeps the original full collated text-channel lookup while still
+        applying the corrected `T206` `text_embedding_mask`
+      - the remaining `T220` work is the bounded fresh-start Hemma control run
       - use that exact-control result to answer whether the original recipe is
         still viable once the audited token leakage is fixed
     - `T217` runs the first short fresh-start Hemma proof only for the first

@@ -20,6 +20,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
     DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     GradientAccumulationSteps,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    TextEmbeddingAssemblyMode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     TextEmbeddingMaskPolicy,
@@ -70,6 +74,7 @@ class TrainingSettings:
     torch_profiler_profile_memory: bool = True
     torch_profiler_with_stack: bool = False
     rocm_profiler_enabled: bool = False
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode = DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE
     text_embedding_mask_policy: TextEmbeddingMaskPolicy = LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT
 
 
@@ -117,6 +122,7 @@ class TrainingSettingsSnapshot:
     torch_profiler_profile_memory: bool = True
     torch_profiler_with_stack: bool = False
     rocm_profiler_enabled: bool = False
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode = DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE
     text_embedding_mask_policy: TextEmbeddingMaskPolicy = LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT
 
 
@@ -249,6 +255,7 @@ class StandaloneEvalReport:
     output_dir: str
     eval_row_count: int
     gradient_accumulation_steps: GradientAccumulationSteps
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode
     text_embedding_mask_policy: TextEmbeddingMaskPolicy
     bundle_precomputed_reference_input: dict[str, object] | None
     throughput_profile: dict[str, object] | None
@@ -300,6 +307,7 @@ def settings_from_snapshot(snapshot: TrainingSettingsSnapshot) -> TrainingSettin
         train_manifest_family=snapshot.train_manifest_family,
         eval_manifest_family=snapshot.eval_manifest_family,
         gradient_accumulation_steps=snapshot.gradient_accumulation_steps,
+        text_embedding_assembly_mode=snapshot.text_embedding_assembly_mode,
         text_embedding_mask_policy=snapshot.text_embedding_mask_policy,
         batch_size=snapshot.batch_size,
         throughput_profile_label=snapshot.throughput_profile_label,

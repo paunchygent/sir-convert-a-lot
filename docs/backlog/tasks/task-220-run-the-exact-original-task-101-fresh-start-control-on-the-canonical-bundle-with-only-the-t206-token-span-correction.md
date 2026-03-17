@@ -1,9 +1,9 @@
 ---
-id: 'task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction'
-title: 'Run the exact original Task 101 fresh-start control on the canonical bundle with only the T206 token-span correction'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction
+title: Run the exact original Task 101 fresh-start control on the canonical bundle with only the T206 token-span correction
+type: task
+status: in_progress
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -23,6 +23,7 @@ labels:
   - canonical-bundle
   - fresh-start
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -78,7 +79,7 @@ audited token leakage is fixed.
 
 ## Deliverables
 
-- [ ] One committed control surface exists for the exact original Task 101
+- [x] One committed control surface exists for the exact original Task 101
   recipe plus only the `T206` token-span correction.
 - [ ] One bounded fresh-start Hemma control is run on the canonical full Task
   101 bundle through that exact surface.
@@ -88,12 +89,12 @@ audited token leakage is fixed.
 
 ## Acceptance Criteria
 
-- [ ] The control lane uses the canonical full pilot bundle from `T142`, not a
+- [x] The control lane uses the canonical full pilot bundle from `T142`, not a
   mini-bundle or selected-row approximation.
-- [ ] The control lane keeps the `T206` explicit token-span correction active.
-- [ ] The control lane does not use the semantic-only assembly path from
+- [x] The control lane keeps the `T206` explicit token-span correction active.
+- [x] The control lane does not use the semantic-only assembly path from
   `T207-T208`.
-- [ ] The control lane does not apply Story 31 talker-core stabilization
+- [x] The control lane does not apply Story 31 talker-core stabilization
   variants.
 - [ ] The Hemma result is recorded in `current.md` and the Task 101 reference
   ledger with the exact code-path contract spelled out.
@@ -103,11 +104,11 @@ audited token leakage is fixed.
 
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] `pdm run <exact-control-surface> prepare`
 - [ ] `pdm run <exact-control-surface> launch`
 - [ ] `pdm run <exact-control-surface> status`
@@ -125,8 +126,31 @@ This control is specifically:
 - yes to `T206`
 - no to `T207-T208`
 
+## Implementation Status
+
+The exact control surface is now implemented through the canonical runtime
+contract, not a one-off approximation:
+
+- `qwen-train`, detached launch/status, resume, diagnose, capture, schedule,
+  and standalone eval all now accept
+  `--text-embedding-assembly-mode`
+- `semantic_only` remains the default Story 30 / Candidate 1 posture
+- `full_channel_masked` is the explicit T220 control posture:
+  - full collated lookup through `text_embedding(input_ids[:, :, 0])`
+  - corrected `text_embedding_mask` from `T206` still applied
+  - no semantic-only scatter/lookup path from `T207-T209`
+- runtime metadata, detached command lines, talker-runtime fingerprints, and
+  standalone eval reports now persist the active assembly mode so the control
+  lane cannot be confused with Candidate 1 later
+
+The remaining work in `T220` is now operational rather than architectural:
+
+- prepare the bounded fresh-start control on the canonical full pilot bundle
+- launch it on Hemma through the explicit `full_channel_masked` posture
+- record whether that exact original-recipe control remains stable or fails
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

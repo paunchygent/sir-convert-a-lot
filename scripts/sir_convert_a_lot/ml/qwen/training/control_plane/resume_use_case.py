@@ -34,6 +34,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.metadata import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.models import settings_from_snapshot
 from scripts.sir_convert_a_lot.ml.qwen.training.monitoring import launch_resource_monitor
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    resolve_text_embedding_assembly_mode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     resolve_text_embedding_mask_policy,
 )
@@ -62,6 +65,10 @@ def handle_resume(args) -> int:
         gradient_accumulation_steps=resolve_gradient_accumulation_steps(
             getattr(args, "gradient_accumulation_steps", None),
             default=settings.gradient_accumulation_steps,
+        ),
+        text_embedding_assembly_mode=resolve_text_embedding_assembly_mode(
+            getattr(args, "text_embedding_assembly_mode", None),
+            default=settings.text_embedding_assembly_mode,
         ),
         text_embedding_mask_policy=resolve_text_embedding_mask_policy(
             getattr(args, "text_embedding_mask_policy", None),

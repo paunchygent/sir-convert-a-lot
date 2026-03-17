@@ -31,6 +31,7 @@ def snapshot_settings(settings: TrainingSettings) -> TrainingSettingsSnapshot:
         model_id=settings.model_id,
         train_manifest_family=settings.train_manifest_family,
         eval_manifest_family=settings.eval_manifest_family,
+        text_embedding_assembly_mode=settings.text_embedding_assembly_mode,
         text_embedding_mask_policy=settings.text_embedding_mask_policy,
         batch_size=settings.batch_size,
         throughput_profile_label=settings.throughput_profile_label,

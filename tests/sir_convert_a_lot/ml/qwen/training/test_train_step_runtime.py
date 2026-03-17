@@ -319,3 +319,112 @@ def test_execute_train_iteration_does_not_apply_text_projection_in_finetune_forw
         model.talker.model.last_text_embedding_input_ids,
         expected_semantic_text_ids,
     )
+
+
+def test_execute_train_iteration_can_use_the_masked_full_channel_lookup_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Train-step runtime should support the exact masked full-channel control path."""
+    optimizer = _FakeOptimizer()
+    accelerator = _FakeAccelerator()
+    prepared = SimpleNamespace(
+        torch_profiler_session=SimpleNamespace(phase=lambda name: nullcontext()),
+        effective_dataloader_tuning=SimpleNamespace(non_blocking_transfer=False),
+        loss_observer=SimpleNamespace(submit=lambda **kwargs: None, drain_ready=lambda force: []),
+        heartbeat_policy=SimpleNamespace(should_emit_train_update=lambda step: False),
+        finite_loss_guard=SimpleNamespace(observe=lambda observation: None),
+        ref_mel_cache=SimpleNamespace(payload=lambda: {"enabled": True}),
+        dataloader_length=128,
+        eval_dataloader_length=8,
+        text_embedding_assembly_mode="full_channel_masked",
+    )
+    full_text_ids = torch.tensor([[41, 42, 43, 44, 45, 46, 47, 48, 49, 50]], dtype=torch.long)
+    batch = {
+        "input_ids": torch.stack(
+            (full_text_ids, torch.zeros_like(full_text_ids)),
+            dim=-1,
+        ),
+        "codec_ids": torch.zeros((1, 10), dtype=torch.long),
+        "semantic_text_ids": torch.tensor([[49, 50]], dtype=torch.long),
+        "semantic_text_positions": torch.tensor([[8, 9]], dtype=torch.long),
+        "semantic_text_mask": torch.ones((1, 2), dtype=torch.bool),
+        "ref_mels": torch.zeros((1, 4, 4), dtype=torch.float32),
+        "batch_provenance": [{"row_id": "L99"}],
+        "text_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+        "codec_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+        "attention_mask": torch.ones((1, 10), dtype=torch.long),
+        "codec_0_labels": torch.zeros((1, 10), dtype=torch.long),
+        "codec_mask": torch.ones((1, 10), dtype=torch.bool),
+    }
+
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.require_batch_tensors",
+        lambda payload: payload,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.to_device_with_optional_non_blocking",
+        lambda tensor, **kwargs: tensor,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.fuse_auxiliary_codebook_embeddings",
+        lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_microbatch_forensics",
+        lambda **kwargs: {"row_id": "L99"},
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_optimizer_step_forensics_window",
+        lambda microbatches: {"microbatches": list(microbatches)},
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.capture_pre_step_optimizer_boundary_probes",
+        lambda **kwargs: SimpleNamespace(
+            targeted_parameter_names=["text_embedding.embedding.weight"],
+            parameter_probes={},
+            pre_clip_gradient_probes={},
+            optimizer_state_probes={},
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_pre_step_optimizer_boundary_failure",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_clip_boundary_optimizer_failure",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_post_step_optimizer_boundary_failure",
+        lambda **kwargs: None,
+    )
+
+    model = _FakeModel()
+    result = execute_train_iteration(
+        accelerator=accelerator,
+        prepared=prepared,
+        model=model,
+        optimizer=optimizer,
+        epoch=5,
+        batch=batch,
+        train_iterations_completed=803,
+        optimizer_steps_completed=1404,
+        last_loss=3.9,
+        smoothed_loss=3.7,
+        latest_eval_loss=6.57,
+        best_eval_loss=6.57,
+        best_eval_step=1300,
+        eval_runs_completed=1,
+        latest_durable_checkpoint=None,
+        emitted_train_progress=True,
+        optimizer_step_microbatches=[],
+        checkpoint_interval_steps=500,
+        progress_callback=None,
+    )
+
+    assert result.completed_optimizer_step is True
+    assert model.talker.model.last_text_embedding_input_ids is not None
+    assert torch.equal(
+        model.talker.model.last_text_embedding_input_ids,
+        full_text_ids,
+    )

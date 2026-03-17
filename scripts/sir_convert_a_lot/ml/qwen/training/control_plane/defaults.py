@@ -32,6 +32,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.monitoring import (
 from scripts.sir_convert_a_lot.ml.qwen.training.monitoring import (
     DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND as DEFAULT_RESOURCE_MONITOR_RUNTIME_KIND_RUNTIME,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE as DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE_RUNTIME,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     DEFAULT_TEXT_EMBEDDING_MASK_POLICY as DEFAULT_TEXT_EMBEDDING_MASK_POLICY_RUNTIME,
 )
@@ -51,6 +54,7 @@ DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface")
 DEFAULT_TRAIN_MANIFEST_FAMILY = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY = "swedish_checkpoint_dev"
+DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE = DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE_RUNTIME
 DEFAULT_TEXT_EMBEDDING_MASK_POLICY = DEFAULT_TEXT_EMBEDDING_MASK_POLICY_RUNTIME
 DEFAULT_BATCH_SIZE = 8
 DEFAULT_LR = 2e-5

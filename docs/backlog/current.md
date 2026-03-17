@@ -106,53 +106,25 @@ Story 28 is now operating policy:
     `task211-20260317t130740z-freshstart-a4` failed at optimizer step `1`
     with `pre_clip_non_finite_gradients` on `text_embedding.weight.grad`
     while forward tensors and losses stayed finite
-  - `T212` then completed with truthful fresh-start backward-lineage evidence:
-    - first truthful proof:
-      `task212-20260317t141500z-lineage-a3`
-    - all three loss branches failed on the row pair:
-      `main_loss`, `sub_talker_loss`, `combined_loss`
-    - both isolated rows failed independently:
-      line `13` alone and line `4` alone
-    - `hidden_states` and `talker_hidden_states` gradients stayed finite
-      first
-    - the earliest instrumented non-finite hook then appeared at
-      `input_embeddings`
-    - the additive branches inherited non-finite gradients only after that:
-      `fused_auxiliary_embedding`, `input_codec_embedding`,
-      `input_text_embedding`, `semantic_text_embeddings`
-    - the targeted RCA still reported
-      `input_text_embedding.grad` first and
-      `text_embedding.weight.grad` as the first poisoned parameter surface
-  - `T213` then completed with stronger talker-core localization:
-    - truthful proof:
-      `task213-20260317t143810z-talkercore-a1`
-    - pair `main_loss` and `combined_loss` first localized at
-      `talker_core.layer_16.post_attention_layernorm`
-    - pair `sub_talker_loss` first localized at
-      `talker_core.layer_15.output`
-    - isolated rows localized to `talker_core.layer_16.output` for
-      `main_loss` / `combined_loss` and to `talker_core.layer_15.output` for
-      `sub_talker_loss`
-    - pair-main finite gradient magnitudes exploded from `1.07e-4` at
-      `layer_27.output` to `3.19e38` at `layer_16.output` before
-      `layer_16.post_attention_layernorm` turned non-finite
-    - Candidate `3` is not the next truthful move yet, because a smaller
-      talker-core causal split is still available
-  - `T214` then closed the last smaller causal split:
-    - truthful proof:
-      `task214-20260317t151800z-boundary-a1`
-    - pair `main_loss` / `combined_loss` first broke at
-      `talker_core.layer_16.mlp.gated_product` with `MulBackward0`
-    - pair `sub_talker_loss` first broke at `talker_core.layer_15.output`
-      with `MmBackward0`
-    - pair main/combined gradients were still finite at
-      `layer_16.output` / `layer_16.mlp.down_proj` around `3.19e38` /
-      `3.26e38` before the first non-finite hook
+  - `T212` (`task212-20260317t141500z-lineage-a3`) proved all three loss
+    branches failed on the row pair, both isolated rows failed independently,
+    `hidden_states` stayed finite first, and the earliest instrumented
+    non-finite hook was `input_embeddings`.
+  - `T213` (`task213-20260317t143810z-talkercore-a1`) pushed the earliest
+    localized break into the talker core:
+    `layer_16.post_attention_layernorm` for pair `main_loss` /
+    `combined_loss`, `layer_15.output` for `sub_talker_loss`.
+  - `T214` (`task214-20260317t151800z-boundary-a1`) then narrowed the main
+    pair seam to `talker_core.layer_16.mlp.gated_product` and kept
+    `sub_talker_loss` at `talker_core.layer_15.output`.
   - Story 31 is now the active solution lane: stable fresh-start bundle
     learning is the target, and the first Hemma matrix under
     `task215-20260317t160500z-a2` is already negative evidence:
     `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4`
     all reproduced the same `T214` pair-family seams
+  - `T220` now has a committed exact-control runtime surface:
+    `--text-embedding-assembly-mode full_channel_masked` runs the original
+    restored no-projection recipe with the `T206` token-span correction only.
 
 ## Next Actions
 
@@ -206,7 +178,12 @@ Story 28 is now operating policy:
     run the original restored no-projection Task 101 recipe on the canonical
     full pilot bundle with only the `T206` token-span correction; explicitly
     exclude the later semantic-only assembly path from `T207-T209`
-  - `T219` is now the active next slice:
+  - the exact-control runtime surface is now implemented and validated:
+    focused runtime/payload tests `19 passed`, full ML suite `308 passed`,
+    `typecheck-ml` and `typecheck-all` both succeeded
+  - the next work inside `T220` is the bounded fresh-start Hemma control run
+  - `T219` remains the next bounded exploration slice after that control
+    answer lands:
     target the shifted `layer_16.output` / `layer_16.input_layernorm`
     handoff neighborhood while keeping visibility on the surviving
     `sub_talker_loss` `layer_16.mlp.gated_product` fallback; `T217` stays

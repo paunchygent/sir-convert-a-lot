@@ -37,6 +37,12 @@ from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.models import StandaloneEvalReport
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting import write_json
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    TEXT_EMBEDDING_ASSEMBLY_MODE_CHOICES,
+    TextEmbeddingAssemblyMode,
+    resolve_text_embedding_assembly_mode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     TEXT_EMBEDDING_MASK_POLICY_CHOICES,
@@ -81,6 +87,11 @@ def _parse_args() -> argparse.Namespace:
         choices=TEXT_EMBEDDING_MASK_POLICY_CHOICES,
         default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     )
+    parser.add_argument(
+        "--text-embedding-assembly-mode",
+        choices=TEXT_EMBEDDING_ASSEMBLY_MODE_CHOICES,
+        default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    )
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument(
         "--throughput-profile-label",
@@ -112,6 +123,7 @@ def _running_status_payload(
     output_dir: Path,
     eval_row_count: int,
     gradient_accumulation_steps: int,
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode,
     text_embedding_mask_policy: TextEmbeddingMaskPolicy,
     bundle_precomputed_reference_input: dict[str, object] | None,
     throughput_profile: dict[str, object],
@@ -126,6 +138,7 @@ def _running_status_payload(
         "output_dir": output_dir.as_posix(),
         "eval_row_count": eval_row_count,
         "gradient_accumulation_steps": gradient_accumulation_steps,
+        "text_embedding_assembly_mode": text_embedding_assembly_mode,
         "text_embedding_mask_policy": text_embedding_mask_policy,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
@@ -139,6 +152,7 @@ def _completed_status_payload(
     output_dir: Path,
     eval_row_count: int,
     gradient_accumulation_steps: int,
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode,
     text_embedding_mask_policy: TextEmbeddingMaskPolicy,
     bundle_precomputed_reference_input: dict[str, object] | None,
     throughput_profile: dict[str, object],
@@ -154,6 +168,7 @@ def _completed_status_payload(
         "output_dir": output_dir.as_posix(),
         "eval_row_count": eval_row_count,
         "gradient_accumulation_steps": gradient_accumulation_steps,
+        "text_embedding_assembly_mode": text_embedding_assembly_mode,
         "text_embedding_mask_policy": text_embedding_mask_policy,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
@@ -168,6 +183,7 @@ def _failed_status_payload(
     output_dir: Path,
     eval_row_count: int,
     gradient_accumulation_steps: int,
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode,
     text_embedding_mask_policy: TextEmbeddingMaskPolicy,
     bundle_precomputed_reference_input: dict[str, object] | None,
     throughput_profile: dict[str, object],
@@ -183,6 +199,7 @@ def _failed_status_payload(
         "output_dir": output_dir.as_posix(),
         "eval_row_count": eval_row_count,
         "gradient_accumulation_steps": gradient_accumulation_steps,
+        "text_embedding_assembly_mode": text_embedding_assembly_mode,
         "text_embedding_mask_policy": text_embedding_mask_policy,
         "bundle_precomputed_reference_input": bundle_precomputed_reference_input,
         "throughput_profile": throughput_profile,
@@ -225,6 +242,10 @@ def main() -> int:
         getattr(args, "gradient_accumulation_steps", None),
         default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     )
+    text_embedding_assembly_mode = resolve_text_embedding_assembly_mode(
+        getattr(args, "text_embedding_assembly_mode", None),
+        default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    )
     text_embedding_mask_policy = resolve_text_embedding_mask_policy(
         getattr(args, "text_embedding_mask_policy", None),
         default=LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
@@ -237,6 +258,7 @@ def main() -> int:
             output_dir=output_dir,
             eval_row_count=eval_row_count,
             gradient_accumulation_steps=gradient_accumulation_steps,
+            text_embedding_assembly_mode=text_embedding_assembly_mode,
             text_embedding_mask_policy=text_embedding_mask_policy,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_profile,
@@ -261,6 +283,7 @@ def main() -> int:
             non_blocking_transfer=bool(args.non_blocking_transfer),
             ref_mel_cache_enabled=bool(args.ref_mel_cache_enabled),
             ref_mel_cache_max_items=int(args.ref_mel_cache_max_items),
+            text_embedding_assembly_mode=text_embedding_assembly_mode,
             text_embedding_mask_policy=text_embedding_mask_policy,
             torch_profiler_enabled=bool(args.torch_profiler_enabled),
             torch_profiler_wait_steps=int(args.torch_profiler_wait_steps),
@@ -286,6 +309,7 @@ def main() -> int:
                 output_dir=output_dir,
                 eval_row_count=eval_row_count,
                 gradient_accumulation_steps=gradient_accumulation_steps,
+                text_embedding_assembly_mode=text_embedding_assembly_mode,
                 text_embedding_mask_policy=text_embedding_mask_policy,
                 bundle_precomputed_reference_input=bundle_precomputed_reference_input,
                 throughput_profile=throughput_profile,
@@ -301,6 +325,7 @@ def main() -> int:
             output_dir=output_dir.as_posix(),
             eval_row_count=eval_row_count,
             gradient_accumulation_steps=gradient_accumulation_steps,
+            text_embedding_assembly_mode=text_embedding_assembly_mode,
             text_embedding_mask_policy=text_embedding_mask_policy,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_profile,
@@ -320,6 +345,7 @@ def main() -> int:
                 output_dir=output_dir,
                 eval_row_count=eval_row_count,
                 gradient_accumulation_steps=gradient_accumulation_steps,
+                text_embedding_assembly_mode=text_embedding_assembly_mode,
                 text_embedding_mask_policy=text_embedding_mask_policy,
                 bundle_precomputed_reference_input=bundle_precomputed_reference_input,
                 throughput_profile=throughput_profile,
@@ -335,6 +361,7 @@ def main() -> int:
             output_dir=output_dir.as_posix(),
             eval_row_count=eval_row_count,
             gradient_accumulation_steps=gradient_accumulation_steps,
+            text_embedding_assembly_mode=text_embedding_assembly_mode,
             text_embedding_mask_policy=text_embedding_mask_policy,
             bundle_precomputed_reference_input=bundle_precomputed_reference_input,
             throughput_profile=throughput_profile,

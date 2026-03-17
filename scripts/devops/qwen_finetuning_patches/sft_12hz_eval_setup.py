@@ -69,6 +69,11 @@ from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
     DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     resolve_gradient_accumulation_steps,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    TextEmbeddingAssemblyMode,
+    resolve_text_embedding_assembly_mode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     resolve_text_embedding_mask_policy,
@@ -91,6 +96,7 @@ class PreparedStandaloneEvalRun:
     eval_dataloader: DataLoader[object] | Sequence[dict[str, torch.Tensor]]
     eval_dataloader_length: int
     gradient_accumulation_steps: int
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode
     effective_dataloader_tuning: DataloaderTuning
     throughput_batch_policy: ThroughputBatchPolicy
     throughput_profile_payload: dict[str, object]
@@ -187,6 +193,10 @@ def prepare_standalone_eval_run(args: argparse.Namespace) -> PreparedStandaloneE
         getattr(args, "gradient_accumulation_steps", None),
         default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     )
+    text_embedding_assembly_mode = resolve_text_embedding_assembly_mode(
+        getattr(args, "text_embedding_assembly_mode", None),
+        default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    )
     accelerator = Accelerator(mixed_precision="bf16")
     checkpoint_metadata = load_durable_checkpoint_metadata(checkpoint_path)
     bundle_summary = (
@@ -237,6 +247,7 @@ def prepare_standalone_eval_run(args: argparse.Namespace) -> PreparedStandaloneE
         eval_dataloader=eval_dataloader,
         eval_dataloader_length=len(eval_dataloader),
         gradient_accumulation_steps=gradient_accumulation_steps,
+        text_embedding_assembly_mode=text_embedding_assembly_mode,
         effective_dataloader_tuning=effective_dataloader_tuning,
         throughput_batch_policy=throughput_batch_policy,
         throughput_profile_payload=throughput_policy_payload(throughput_batch_policy),

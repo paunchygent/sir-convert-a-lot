@@ -50,6 +50,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard_probes impo
     capture_targeted_gradient_probes,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    TextEmbeddingAssemblyMode,
+)
 
 from .sft_12hz_loss_runtime import consume_loss_observations
 
@@ -140,6 +144,9 @@ class TrainStepPreparedRuntime(Protocol):
     @property
     def diagnostic_window(self) -> DiagnosticWindowConfig | None: ...
 
+    @property
+    def text_embedding_assembly_mode(self) -> TextEmbeddingAssemblyMode: ...
+
 
 @dataclass(frozen=True)
 class TrainStepResult:
@@ -190,6 +197,7 @@ def execute_train_iteration(
             semantic_text_ids = resolved_batch["semantic_text_ids"]
             semantic_text_positions = resolved_batch["semantic_text_positions"]
             semantic_text_mask = resolved_batch["semantic_text_mask"]
+            text_embedding_mask = resolved_batch["text_embedding_mask"]
             ref_mels = resolved_batch["ref_mels"]
             batch_provenance = resolved_batch["batch_provenance"]
             codec_embedding_mask = resolved_batch["codec_embedding_mask"]
@@ -211,6 +219,7 @@ def execute_train_iteration(
                     semantic_text_ids=semantic_text_ids,
                     semantic_text_positions=semantic_text_positions,
                     semantic_text_mask=semantic_text_mask,
+                    text_embedding_mask=text_embedding_mask,
                     ref_mels=ref_mels,
                     codec_embedding_mask=codec_embedding_mask,
                     attention_mask=attention_mask,
@@ -218,6 +227,11 @@ def execute_train_iteration(
                     codec_mask=codec_mask,
                 ),
                 non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
+                text_embedding_assembly_mode=getattr(
+                    prepared,
+                    "text_embedding_assembly_mode",
+                    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+                ),
             )
             input_text_embedding = forward_surfaces.input_text_embedding
             if diagnostic_step_active:

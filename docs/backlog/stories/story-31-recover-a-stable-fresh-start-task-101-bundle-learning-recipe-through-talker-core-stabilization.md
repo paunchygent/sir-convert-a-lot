@@ -117,6 +117,9 @@ Avoid reusing the heavy parts for exploration:
   altering the clean text-token semantics.
 - [x] One smallest-signal local promotion gate exists that tests the exact
   fresh-start failure family before any governed Hemma run.
+- [x] One exact-control runtime surface exists for the original restored
+  Task 101 recipe with only the `T206` token-span correction, so the repo can
+  answer the practical full-bundle control question without approximation.
 - [ ] Only the first promoted candidate gets a short governed fresh-start
   Hemma proof.
 - [ ] The restart target remains blocked until the stabilization lane records a
@@ -189,7 +192,7 @@ the governing success criterion for future restart work.
 - `T219` is now the active next exploration slice:
   - keep the moderate `T218` posture as the preferred base ingredient
   - target the shifted `layer_16.output` / `layer_16.input_layernorm`
-  handoff neighborhood
+    handoff neighborhood
   - keep visibility on the surviving `sub_talker_loss`
     `layer_16.mlp.gated_product` fallback
 - `T220` is now the active exact-control slice ahead of more approximation:
@@ -197,11 +200,16 @@ the governing success criterion for future restart work.
   - keep only the `T206` token-span correction
   - use the canonical full pilot bundle from `T142`
   - explicitly exclude the later semantic-only assembly path from `T207-T209`
+  - the exact-control runtime surface is now implemented through the explicit
+    `--text-embedding-assembly-mode full_channel_masked` contract on
+    `qwen-train`, detached launch/resume/diagnose surfaces, and standalone eval
+  - the next work inside `T220` is the bounded fresh-start Hemma control run,
+    not more runtime approximation work
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.
-- The next active slice inside Story 31 is another bounded exploration
-  candidate around the shifted layer-16 handoff neighborhood, not a governed
-  Hemma proof yet.
+- `T219` remains shaped as the next bounded exploration candidate around the
+  shifted layer-16 handoff neighborhood, but it is no longer the default next
+  execution slice while the exact `T220` control answer is ready to run.

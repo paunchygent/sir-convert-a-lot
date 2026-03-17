@@ -98,6 +98,11 @@ from scripts.sir_convert_a_lot.ml.qwen.training.gradient_accumulation import (
     DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     resolve_gradient_accumulation_steps,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    TextEmbeddingAssemblyMode,
+    resolve_text_embedding_assembly_mode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     resolve_text_embedding_mask_policy,
@@ -221,6 +226,7 @@ class PreparedTrainingRun:
     dataloader_length: int
     eval_dataloader_length: int
     gradient_accumulation_steps: int
+    text_embedding_assembly_mode: TextEmbeddingAssemblyMode
     effective_dataloader_tuning: DataloaderTuning
     throughput_batch_policy: ThroughputBatchPolicy
     throughput_profile_payload: dict[str, object]
@@ -387,6 +393,10 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         getattr(args, "gradient_accumulation_steps", None),
         default=DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     )
+    text_embedding_assembly_mode = resolve_text_embedding_assembly_mode(
+        getattr(args, "text_embedding_assembly_mode", None),
+        default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    )
     accelerator = Accelerator(
         gradient_accumulation_steps=gradient_accumulation_steps,
         mixed_precision="bf16",
@@ -405,6 +415,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
     )
     talker_runtime = talker_runtime_fingerprint(
         qwen3tts.model,
+        text_embedding_assembly_mode=text_embedding_assembly_mode,
         text_embedding_mask_policy=text_embedding_mask_policy,
     )
     diagnostic_window = build_diagnostic_window_config(args)
@@ -489,6 +500,7 @@ def prepare_training_run(args: argparse.Namespace) -> PreparedTrainingRun:
         dataloader_length=len(train_dataloader),
         eval_dataloader_length=len(eval_dataloader),
         gradient_accumulation_steps=gradient_accumulation_steps,
+        text_embedding_assembly_mode=text_embedding_assembly_mode,
         effective_dataloader_tuning=effective_dataloader_tuning,
         throughput_batch_policy=throughput_batch_policy,
         throughput_profile_payload=throughput_policy_payload(

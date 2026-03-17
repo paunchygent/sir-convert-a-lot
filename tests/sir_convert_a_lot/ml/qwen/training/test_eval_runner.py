@@ -56,6 +56,7 @@ def _settings(*, scratch_root: Path) -> TrainingSettings:
         eval_interval_steps=100,
         durable_checkpoint_retention=3,
         durable_checkpoint_min_free_bytes=16 * 1024**3,
+        text_embedding_assembly_mode="semantic_only",
         text_embedding_mask_policy="text_span_only",
     )
 
@@ -154,6 +155,8 @@ def test_build_standalone_eval_command_containerizes_checkpoint_and_eval_paths()
     assert "/app/build/reference/qwen-bundle" in command
     assert "--gradient-accumulation-steps" in command
     assert "4" in command
+    assert "--text-embedding-assembly-mode" in command
+    assert "semantic_only" in command
     assert "--text-embedding-mask-policy" in command
     assert "text_span_only" in command
 
@@ -237,6 +240,7 @@ def test_eval_command_uses_recorded_launch_repo_root(
             output_dir=output_dir.as_posix(),
             eval_row_count=1,
             gradient_accumulation_steps=settings.gradient_accumulation_steps,
+            text_embedding_assembly_mode=settings.text_embedding_assembly_mode,
             text_embedding_mask_policy=settings.text_embedding_mask_policy,
             bundle_precomputed_reference_input=None,
             throughput_profile=None,

@@ -157,6 +157,10 @@ def _build_forward_batch(
                 device=device,
             ),
             semantic_text_mask=_move_tensor(resolved_batch["semantic_text_mask"], device=device),
+            text_embedding_mask=_move_tensor(
+                resolved_batch["text_embedding_mask"],
+                device=device,
+            ),
             ref_mels=resolved_batch["ref_mels"],
             codec_embedding_mask=_move_tensor(
                 resolved_batch["codec_embedding_mask"],

@@ -113,6 +113,8 @@ def build_detached_training_command(
         settings.train_manifest_family,
         "--eval-manifest-family",
         settings.eval_manifest_family,
+        "--text-embedding-assembly-mode",
+        settings.text_embedding_assembly_mode,
         "--text-embedding-mask-policy",
         settings.text_embedding_mask_policy,
         "--output-dir",

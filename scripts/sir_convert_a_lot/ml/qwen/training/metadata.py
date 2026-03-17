@@ -24,6 +24,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     DetachedStatus,
     TrainingSettingsSnapshot,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    resolve_text_embedding_assembly_mode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     resolve_text_embedding_mask_policy,
@@ -409,6 +413,14 @@ def load_launch(
         model_id=_required_str(settings_payload, "model_id"),
         train_manifest_family=_required_str(settings_payload, "train_manifest_family"),
         eval_manifest_family=_required_str(settings_payload, "eval_manifest_family"),
+        text_embedding_assembly_mode=resolve_text_embedding_assembly_mode(
+            (
+                None
+                if "text_embedding_assembly_mode" not in settings_payload
+                else _required_str(settings_payload, "text_embedding_assembly_mode")
+            ),
+            default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+        ),
         text_embedding_mask_policy=resolve_text_embedding_mask_policy(
             (
                 None

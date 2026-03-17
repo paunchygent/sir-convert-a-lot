@@ -32,6 +32,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     build_training_progress_heartbeat,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import log_eval_metrics
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    TextEmbeddingAssemblyMode,
+)
 
 if TYPE_CHECKING:
     from torch.utils.data import DataLoader
@@ -76,6 +80,9 @@ class EvalPreparedRuntime(Protocol):
 
     @property
     def effective_dataloader_tuning(self) -> "DataloaderTuning": ...
+
+    @property
+    def text_embedding_assembly_mode(self) -> TextEmbeddingAssemblyMode: ...
 
 
 @dataclass(frozen=True)
@@ -238,6 +245,7 @@ def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
             semantic_text_ids = resolved_batch["semantic_text_ids"]
             semantic_text_positions = resolved_batch["semantic_text_positions"]
             semantic_text_mask = resolved_batch["semantic_text_mask"]
+            text_embedding_mask = resolved_batch["text_embedding_mask"]
             ref_mels = resolved_batch["ref_mels"]
             codec_embedding_mask = resolved_batch["codec_embedding_mask"]
             attention_mask = resolved_batch["attention_mask"]
@@ -251,6 +259,7 @@ def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
                     semantic_text_ids=semantic_text_ids,
                     semantic_text_positions=semantic_text_positions,
                     semantic_text_mask=semantic_text_mask,
+                    text_embedding_mask=text_embedding_mask,
                     ref_mels=ref_mels,
                     codec_embedding_mask=codec_embedding_mask,
                     attention_mask=attention_mask,
@@ -258,6 +267,11 @@ def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
                     codec_mask=codec_mask,
                 ),
                 non_blocking_transfer=(prepared.effective_dataloader_tuning.non_blocking_transfer),
+                text_embedding_assembly_mode=getattr(
+                    prepared,
+                    "text_embedding_assembly_mode",
+                    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+                ),
             )
             loss = forward_surfaces.combined_loss
             total_eval_loss += float(loss.detach().float().item())

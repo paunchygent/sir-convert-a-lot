@@ -30,6 +30,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import (
     StandaloneEvalReport,
     TrainingSettings,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_assembly_mode import (
+    DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
+    resolve_text_embedding_assembly_mode,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     resolve_text_embedding_mask_policy,
@@ -124,6 +128,8 @@ def build_standalone_eval_command(
         container_checkpoint_path,
         "--gradient-accumulation-steps",
         str(settings.gradient_accumulation_steps),
+        "--text-embedding-assembly-mode",
+        settings.text_embedding_assembly_mode,
         "--text-embedding-mask-policy",
         settings.text_embedding_mask_policy,
         "--batch-size",
@@ -217,6 +223,14 @@ def run_standalone_eval(
                 else int(payload["gradient_accumulation_steps"])
             ),
             default=settings.gradient_accumulation_steps,
+        ),
+        text_embedding_assembly_mode=resolve_text_embedding_assembly_mode(
+            (
+                None
+                if "text_embedding_assembly_mode" not in payload
+                else str(payload["text_embedding_assembly_mode"])
+            ),
+            default=DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE,
         ),
         text_embedding_mask_policy=resolve_text_embedding_mask_policy(
             (
