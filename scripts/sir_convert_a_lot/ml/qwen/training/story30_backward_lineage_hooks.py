@@ -1,0 +1,194 @@
+"""Gradient-hook profiles for Story 30 lineage probes.
+
+Purpose:
+    Centralize hook-profile choices and the actual tensor/module hook plumbing
+    so the in-container probe can switch from baseline surface tracing to the
+    deeper talker-core trace without becoming a single oversized module.
+
+Relationships:
+    - Imported by `backward_lineage_probe.py`.
+    - Reuses `sft_12hz_talker_core_trace.py` to resolve talker-core module
+      boundaries from the live patched Qwen runtime.
+"""
+
+from __future__ import annotations
+
+from contextlib import suppress
+from dataclasses import dataclass
+from typing import Callable
+
+import torch
+
+from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
+    summarize_tensor_finiteness,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces import (
+    TalkerForwardSurfaces,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
+    iter_talker_core_trace_targets,
+    talker_core_trace_prefix,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contracts import (
+    FirstNonFiniteHookObservation,
+    TensorGradientObservation,
+)
+
+BASELINE_HOOK_PROFILE = "baseline"
+TALKER_CORE_HOOK_PROFILE = "talker_core"
+HOOK_PROFILE_CHOICES = (BASELINE_HOOK_PROFILE, TALKER_CORE_HOOK_PROFILE)
+_BASELINE_FORWARD_SURFACE_NAMES = (
+    "semantic_text_embeddings",
+    "input_text_embedding",
+    "input_codec_embedding",
+    "fused_auxiliary_embedding",
+    "input_embeddings",
+    "hidden_states",
+    "talker_hidden_states",
+)
+
+
+@dataclass
+class _FirstNonFiniteHookState:
+    """Mutable state holder for the earliest matching non-finite hook."""
+
+    tensor_name: str | None = None
+    hook_order: int | None = None
+
+
+class GradientHookSession:
+    """One lifecycle-scoped hook session for a lineage probe backward pass."""
+
+    def __init__(self, *, hook_profile: str) -> None:
+        self._hook_profile = _validate_hook_profile(hook_profile)
+        self._handles: list[torch.utils.hooks.RemovableHandle] = []
+        self._observations: dict[str, TensorGradientObservation] = {}
+        self._first_non_finite = _FirstNonFiniteHookState()
+        self._hook_counter = 0
+
+    def install_pre_forward_hooks(self, *, model: object) -> None:
+        """Install any module forward hooks required before the shared forward pass."""
+        if self._hook_profile != TALKER_CORE_HOOK_PROFILE:
+            return
+        for target in iter_talker_core_trace_targets(model):
+            handle = target.module.register_forward_hook(
+                self._build_forward_hook(target.name, target.output_selector)
+            )
+            self._handles.append(handle)
+
+    def attach_forward_surfaces(self, forward_surfaces: TalkerForwardSurfaces) -> None:
+        """Attach baseline post-forward tensor hooks from the shared surfaces."""
+        for surface_name in _BASELINE_FORWARD_SURFACE_NAMES:
+            self._attach_tensor(surface_name, getattr(forward_surfaces, surface_name))
+
+    def ordered_observations(self) -> tuple[TensorGradientObservation, ...]:
+        """Return instrumented tensor observations in actual backward hook order."""
+        return tuple(
+            sorted(self._observations.values(), key=lambda observation: observation.hook_order)
+        )
+
+    def first_non_finite_observation(self) -> FirstNonFiniteHookObservation:
+        """Return the earliest non-finite hook across the full instrumented session."""
+        return FirstNonFiniteHookObservation(
+            tensor_name=self._first_non_finite.tensor_name,
+            hook_order=self._first_non_finite.hook_order,
+        )
+
+    def first_non_finite_matching_prefix(self, prefix: str) -> FirstNonFiniteHookObservation:
+        """Return the earliest non-finite hook whose tensor name starts with one prefix."""
+        for observation in self.ordered_observations():
+            if observation.tensor_name.startswith(prefix) and not observation.is_finite:
+                return FirstNonFiniteHookObservation(
+                    tensor_name=observation.tensor_name,
+                    hook_order=observation.hook_order,
+                )
+        return FirstNonFiniteHookObservation(tensor_name=None, hook_order=None)
+
+    def close(self) -> None:
+        """Remove all forward and gradient hooks owned by this session."""
+        for handle in self._handles:
+            with suppress(RuntimeError):
+                handle.remove()
+        self._handles.clear()
+
+    def _build_forward_hook(
+        self,
+        name: str,
+        output_selector,
+    ) -> Callable[[torch.nn.Module, tuple[object, ...], object], None]:
+        """Return one module forward hook that retains the selected output gradient."""
+
+        def on_forward(
+            _module: torch.nn.Module, _inputs: tuple[object, ...], output: object
+        ) -> None:
+            tensor = output_selector(output)
+            if tensor is None:
+                return
+            self._attach_tensor(name, tensor)
+
+        return on_forward
+
+    def _attach_tensor(self, name: str, tensor: torch.Tensor) -> None:
+        if name in self._observations or not tensor.requires_grad:
+            return
+        tensor.retain_grad()
+
+        def on_grad(gradient: torch.Tensor) -> torch.Tensor:
+            self._hook_counter += 1
+            summary = summarize_tensor_finiteness(gradient)
+            observation = TensorGradientObservation(
+                tensor_name=name,
+                hook_order=self._hook_counter,
+                is_finite=_required_summary_bool(summary, "is_finite"),
+                nan_count=_required_summary_int(summary, "nan_count"),
+                inf_count=_required_summary_int(summary, "inf_count"),
+                max_abs=_optional_summary_float(summary, "max_abs"),
+            )
+            self._observations[name] = observation
+            if (not observation.is_finite) and self._first_non_finite.tensor_name is None:
+                self._first_non_finite.tensor_name = name
+                self._first_non_finite.hook_order = self._hook_counter
+            return gradient
+
+        self._handles.append(tensor.register_hook(on_grad))
+
+
+def build_gradient_hook_session(*, hook_profile: str) -> GradientHookSession:
+    """Build one lifecycle-scoped gradient hook session for a probe case."""
+    return GradientHookSession(hook_profile=hook_profile)
+
+
+def talker_core_prefix() -> str:
+    """Return the canonical talker-core trace prefix for hook filtering."""
+    return talker_core_trace_prefix()
+
+
+def _validate_hook_profile(hook_profile: str) -> str:
+    if hook_profile not in HOOK_PROFILE_CHOICES:
+        raise SystemExit(
+            f"Backward-lineage probe received unsupported hook profile `{hook_profile}`."
+        )
+    return hook_profile
+
+
+def _required_summary_bool(summary: dict[str, object], key: str) -> bool:
+    value = summary.get(key)
+    if not isinstance(value, bool):
+        raise SystemExit(f"Backward-lineage tensor summary returned malformed `{key}`.")
+    return value
+
+
+def _required_summary_int(summary: dict[str, object], key: str) -> int:
+    value = summary.get(key)
+    if not isinstance(value, int):
+        raise SystemExit(f"Backward-lineage tensor summary returned malformed `{key}`.")
+    return value
+
+
+def _optional_summary_float(summary: dict[str, object], key: str) -> float | None:
+    value = summary.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, (int, float)):
+        raise SystemExit(f"Backward-lineage tensor summary returned malformed `{key}`.")
+    return float(value)

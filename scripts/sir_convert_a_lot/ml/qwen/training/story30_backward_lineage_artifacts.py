@@ -29,6 +29,7 @@ DEFAULT_REMOTE_PROOF_OUTPUT_ROOT = Path(
 DEFAULT_SOURCE_BUNDLE_ROOT = DEFAULT_PILOT_BUNDLE_ROOT
 DEFAULT_MANIFEST_FAMILY = "swedish_pilot_train"
 DEFAULT_TEXT_EMBEDDING_MASK_POLICY = "text_span_only"
+DEFAULT_HOOK_PROFILE = "baseline"
 DEFAULT_REQUIRED_SCRATCH_FREE_BYTES = 16 * 1024**3
 DEFAULT_TASK_LABEL = "Task 212"
 DEFAULT_COMMAND_NAME = "qwen-story30-backward-lineage"
@@ -50,6 +51,7 @@ class Story30BackwardLineageProofConfig:
     manifest_family: str
     source_lines: tuple[int, int]
     text_embedding_mask_policy: str
+    hook_profile: str
     required_scratch_free_bytes: int
     skip_build: bool
     launch_id: str
@@ -133,6 +135,7 @@ def build_prepare_config(args: argparse.Namespace) -> Story30BackwardLineageProo
         manifest_family=str(args.manifest_family),
         source_lines=_parse_source_lines(str(args.source_lines)),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
+        hook_profile=str(args.hook_profile),
         required_scratch_free_bytes=int(args.required_scratch_free_bytes),
         skip_build=bool(args.skip_build),
         launch_id=f"{proof_id}-backward-lineage",
@@ -165,6 +168,7 @@ def load_config(local_proof_root: Path) -> Story30BackwardLineageProofConfig:
         manifest_family=_required_str(payload, "manifest_family"),
         source_lines=(int(source_lines_value[0]), int(source_lines_value[1])),
         text_embedding_mask_policy=_required_str(payload, "text_embedding_mask_policy"),
+        hook_profile=_required_str(payload, "hook_profile"),
         required_scratch_free_bytes=_required_int(payload, "required_scratch_free_bytes"),
         skip_build=_required_bool(payload, "skip_build"),
         launch_id=_required_str(payload, "launch_id"),

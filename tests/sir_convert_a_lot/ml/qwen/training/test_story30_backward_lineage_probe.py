@@ -97,6 +97,8 @@ def _case_result(
         sub_talker_loss_value=1.0,
         first_non_finite_hook_tensor=("input_embeddings" if non_finite else None),
         first_non_finite_hook_order=(1 if non_finite else None),
+        first_non_finite_talker_core_hook_tensor=None,
+        first_non_finite_talker_core_hook_order=None,
         hooked_tensor_gradients=(
             ()
             if not non_finite

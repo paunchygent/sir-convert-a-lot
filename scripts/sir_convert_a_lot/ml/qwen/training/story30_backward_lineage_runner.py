@@ -67,6 +67,7 @@ class BackwardLineageProofSettings:
     manifest_family: str
     source_lines: tuple[int, int]
     text_embedding_mask_policy: str
+    hook_profile: str
     build_image: bool
 
 
@@ -80,6 +81,7 @@ class BackwardLineageProofReport:
     build_performed: bool
     model_id: str
     source_bundle_root: str
+    hook_profile: str
     mini_bundle: dict[str, object]
     hf_cache_dir: str
     effective_hf_cache_dir: str
@@ -128,6 +130,7 @@ def parse_args(argv: list[str] | None) -> BackwardLineageProofSettings:
         "--source-lines", default=",".join(str(value) for value in DEFAULT_SOURCE_LINES)
     )
     parser.add_argument("--text-embedding-mask-policy", default="text_span_only")
+    parser.add_argument("--hook-profile", default="baseline")
     parser.add_argument("--skip-build", action="store_true")
     args = parser.parse_args(argv)
     return BackwardLineageProofSettings(
@@ -142,6 +145,7 @@ def parse_args(argv: list[str] | None) -> BackwardLineageProofSettings:
         manifest_family=str(args.manifest_family),
         source_lines=_parse_source_lines(str(args.source_lines)),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
+        hook_profile=str(args.hook_profile),
         build_image=not bool(args.skip_build),
     )
 
@@ -270,6 +274,8 @@ def build_probe_command(
         ),
         "--text-embedding-mask-policy",
         settings.text_embedding_mask_policy,
+        "--hook-profile",
+        settings.hook_profile,
         "--source-lines",
         ",".join(str(line) for line in settings.source_lines),
     ]
@@ -305,6 +311,7 @@ def build_report_markdown(report: BackwardLineageProofReport) -> str:
         f"- Build performed: `{report.build_performed}`",
         f"- Model id: `{report.model_id}`",
         f"- Source bundle root: `{report.source_bundle_root}`",
+        f"- Hook profile: `{report.hook_profile}`",
         f"- Canonical HF cache: `{report.hf_cache_dir}`",
         f"- Effective HF cache mount: `{report.effective_hf_cache_dir}`",
         f"- Used home-backed bind mount: `{report.used_home_mount}`",
@@ -358,6 +365,7 @@ def run_proof(settings: BackwardLineageProofSettings) -> BackwardLineageProofRep
         build_performed=build_performed,
         model_id=settings.model_id,
         source_bundle_root=settings.source_bundle_root.as_posix(),
+        hook_profile=settings.hook_profile,
         mini_bundle=asdict(mini_bundle),
         hf_cache_dir=settings.hf_cache_dir.as_posix(),
         effective_hf_cache_dir=hf_mount.effective_root.as_posix(),

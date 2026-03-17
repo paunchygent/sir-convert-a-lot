@@ -20,6 +20,7 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_artifacts import (
     DEFAULT_COMMAND_NAME,
+    DEFAULT_HOOK_PROFILE,
     DEFAULT_LOCAL_PROOF_ROOT,
     DEFAULT_MANIFEST_FAMILY,
     DEFAULT_REMOTE_PROOF_OUTPUT_ROOT,
@@ -77,6 +78,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=",".join(str(value) for value in DEFAULT_SOURCE_LINES),
     )
     prepare.add_argument("--text-embedding-mask-policy", default=DEFAULT_TEXT_EMBEDDING_MASK_POLICY)
+    prepare.add_argument("--hook-profile", default=DEFAULT_HOOK_PROFILE)
     prepare.add_argument(
         "--required-scratch-free-bytes",
         type=int,
@@ -100,6 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
     remote_launch.add_argument("--manifest-family", required=True)
     remote_launch.add_argument("--source-lines", required=True)
     remote_launch.add_argument("--text-embedding-mask-policy", required=True)
+    remote_launch.add_argument("--hook-profile", required=True)
     remote_launch.add_argument("--launch-id", required=True)
     remote_launch.add_argument("--skip-build", action="store_true")
 
@@ -191,6 +194,7 @@ def _config_from_remote_launch_args(args: argparse.Namespace) -> Story30Backward
         manifest_family=str(args.manifest_family),
         source_lines=_parse_source_lines_pair(str(args.source_lines)),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
+        hook_profile=str(args.hook_profile),
         required_scratch_free_bytes=DEFAULT_REQUIRED_SCRATCH_FREE_BYTES,
         skip_build=bool(args.skip_build),
         launch_id=str(args.launch_id),
@@ -209,6 +213,7 @@ def _config_for_remote_status(args: argparse.Namespace) -> Story30BackwardLineag
         manifest_family=DEFAULT_MANIFEST_FAMILY,
         source_lines=DEFAULT_SOURCE_LINES,
         text_embedding_mask_policy=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+        hook_profile=DEFAULT_HOOK_PROFILE,
         required_scratch_free_bytes=DEFAULT_REQUIRED_SCRATCH_FREE_BYTES,
         skip_build=True,
         launch_id=str(args.launch_id),
@@ -244,6 +249,8 @@ def _runner_args(config: Story30BackwardLineageProofConfig) -> list[str]:
         ",".join(str(value) for value in config.source_lines),
         "--text-embedding-mask-policy",
         config.text_embedding_mask_policy,
+        "--hook-profile",
+        config.hook_profile,
     ]
     if config.skip_build:
         command.append("--skip-build")
@@ -282,6 +289,7 @@ def _render_plan_markdown(config: Story30BackwardLineageProofConfig) -> str:
             f"- Manifest family: `{config.manifest_family}`",
             f"- Source lines: `{source_lines}`",
             f"- Mask policy: `{config.text_embedding_mask_policy}`",
+            f"- Hook profile: `{config.hook_profile}`",
             f"- Launch: `pdm run {config.command_name} launch --proof-id {config.proof_id}`",
             f"- Status: `pdm run {config.command_name} status --proof-id {config.proof_id}`",
             "- Branch order: `main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation.",

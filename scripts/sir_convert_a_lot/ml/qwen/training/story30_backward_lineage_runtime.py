@@ -99,6 +99,8 @@ def remote_launch_proof_args(config: Story30BackwardLineageProofConfig) -> list[
         ",".join(str(value) for value in config.source_lines),
         "--text-embedding-mask-policy",
         config.text_embedding_mask_policy,
+        "--hook-profile",
+        config.hook_profile,
         "--launch-id",
         config.launch_id,
     ]

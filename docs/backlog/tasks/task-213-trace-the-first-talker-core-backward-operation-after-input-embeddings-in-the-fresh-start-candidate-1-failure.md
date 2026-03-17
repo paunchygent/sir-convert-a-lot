@@ -1,9 +1,9 @@
 ---
-id: 'task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure'
-title: 'Trace the first talker-core backward operation after input embeddings in the fresh-start Candidate 1 failure'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure
+title: Trace the first talker-core backward operation after input embeddings in the fresh-start Candidate 1 failure
+type: task
+status: in_progress
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -18,6 +18,7 @@ labels:
   - rca
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

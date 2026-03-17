@@ -36,6 +36,7 @@ def test_prepare_writes_backward_lineage_package(
 
     assert config_payload["command_name"] == "qwen-story30-backward-lineage"
     assert config_payload["source_lines"] == [13, 4]
+    assert config_payload["hook_profile"] == "baseline"
     assert "qwen-story30-backward-lineage launch --proof-id t212-proof" in plan_markdown
     assert "main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation" in plan_markdown
     assert "Detached Hemma worker launched" in checklist_markdown
@@ -101,6 +102,8 @@ def test_launch_uses_remote_story30_backward_lineage_surface(
     assert "remote-launch" in calls[1]
     assert "--source-lines" in calls[1]
     assert "13,4" in calls[1]
+    assert "--hook-profile" in calls[1]
+    assert "baseline" in calls[1]
     assert (tmp_path / "t212-proof" / "launch.json").exists() is True
 
 
@@ -158,6 +161,8 @@ def test_remote_launch_starts_detached_worker(
             "13,4",
             "--text-embedding-mask-policy",
             "text_span_only",
+            "--hook-profile",
+            "talker_core",
             "--launch-id",
             "t212-proof-backward-lineage",
             "--skip-build",
@@ -176,5 +181,7 @@ def test_remote_launch_starts_detached_worker(
         "13,4",
         "--text-embedding-mask-policy",
         "text_span_only",
+        "--hook-profile",
+        "talker_core",
         "--skip-build",
     ]
