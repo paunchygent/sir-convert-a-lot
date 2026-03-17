@@ -155,6 +155,7 @@ distribution = false
 "qwen-resume-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_resume_proof"
 "qwen-scratch-policy" = "python -m scripts.sir_convert_a_lot.devops.run_task204_hemma_scratch_policy"
 "qwen-story29-eval-detached" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story29_eval_detached"
+"qwen-story30-freshstart-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story30_freshstart_proof"
 "qwen-t197-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t197_proof"
 "qwen-t198-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t198_proof"
 "qwen-token-span-audit" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_token_span_audit"

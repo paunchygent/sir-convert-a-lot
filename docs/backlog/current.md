@@ -25,6 +25,7 @@ related:
   - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
   - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
   - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
+  - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
   - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -78,85 +79,20 @@ Story 28 is now operating policy:
   - `T194` became the RCA narrowing slice for the first pre-clip text-embedding
     gradient failure.
 - 2026-03-16:
-  - trainer-native exact capture succeeded at step `1401`, and the bounded
-    replay under `task194-20260316t-1405-rca-a1` crossed the old `1405`
-    failure window cleanly and minted `state-step-00001406`.
-  - the bounded continuation from `1406` failed again at optimizer step `1417`
-    with the same shape:
-    - `trigger_reason=pre_clip_non_finite_gradients`
-    - parameters and optimizer state remained finite
-    - `text_embedding.weight.grad` was the first poisoned parameter surface
-  - the bounded `1406 -> 1418` replay reproduced the failure exactly and
-    narrowed the root cause further:
-    - the first bad backward surface is `input_text_embedding.grad`
-    - the first bad microbatch is `851`
-    - `507/508` token positions in that sample went non-finite
-    - the poisoned `93` text-embedding rows match the sample's `93` unique
-      token ids exactly
-    - token id `151671` appeared `375` times, which matches the active
-      codec-span text-pad surface
-  - Story 29 became the explicit mitigation lane built on that RCA:
-    - `T195` made `text_span_only` the fresh-launch default and kept
-      `legacy_codec_span` only for bounded RCA reproduction
-    - `T196` made `gradient_accumulation_steps` explicit across launch,
-      resume, capture, diagnose, eval, and schedule
-    - `T203` reverted the auxiliary codebook fusion helper from the proof lane
-      after Hemma ROCm evidence showed unchanged oracle error and about `1.26x`
-      slowdown in both `bf16` and `fp16`
-    - `T197` then ran on Hemma under `task197-20260316t183555z-a1` and failed
-      again at optimizer step `1417`, so `text_span_only` plus accumulation `4`
-      did not satisfy the preferred gate
-    - `T198` then ran its first accumulation-`2` replay under
-      `task198-20260316t185616z-accum2-a1`
-    - that replay cleared the old `1417` numerical window and reached `1418`
-      without a non-finite gradient, but it failed during durable checkpoint
-      save because Hemma scratch free space fell to about `9 GB`
-  - `T204` added the manual scratch audit/remediation lane and the proof
-    launch headroom preflight so detached Story 29 work now fails early on
-    insufficient scratch headroom
-    - `T205` then restored healthy recurring scratch governance on Hemma:
-      - idle-safe `qwen-scratch-policy maintain`
-      - a user-level maintenance timer
-      - enough reclaimed SSD headroom for the clean accumulation-`2` rerun
-    - the clean `T198` rerun under
-      `task198-20260316t202541z-accum2-a2`
-      then exited the bounded `1406 -> 1418` replay cleanly, minted
-      `state-step-00001418`, and completed the scheduled eval at that replay
-      boundary
-    - the preferred `1500` continuation from that clean `1418` checkpoint then
-      failed at optimizer step `1428` with the same optimizer-boundary class:
-      - `trigger_reason=pre_clip_non_finite_gradients`
-      - `first_non_finite_stage=pre_clip`
-      - `first_non_finite_surface=text_embedding.weight.grad`
-      - `current_train_iteration=852`
-    - no newer durable checkpoint beyond `1418` was minted during that failed
-      continuation, so `1418` remains the latest truthful accumulation-`2`
-      recovery anchor for this rerun
-    - the focused accumulation-`1` replay under
-      `task198-20260316t213409z-accum1-a1`
-      then exited the bounded `1406 -> 1418` replay cleanly, minted its own
-      `state-step-00001418`, completed the scheduled eval there, and pushed
-      the preferred `1500` continuation farther before failing
-    - that accumulation-`1` preferred-gate attempt then failed at optimizer
-      step `1449` with the same optimizer-boundary class:
-      - `trigger_reason=pre_clip_non_finite_gradients`
-      - `first_non_finite_stage=pre_clip`
-      - `first_non_finite_surface=text_embedding.weight.grad`
-      - `current_train_iteration=851`
-      - `first_non_finite_tensor=grad_norm`
-    - the direct fallback replay under
-      `task198-20260317t062816z-fallback1470-a1`
-      then also failed at optimizer step `1449`
-    - the fallback replay preserved the same optimizer-boundary class:
-      - `trigger_reason=pre_clip_non_finite_gradients`
-      - `first_non_finite_stage=pre_clip`
-      - `first_non_finite_surface=text_embedding.weight.grad`
-    - no truthful `1470` checkpoint was minted, so detached standalone eval
-      was correctly not launched
-    - `T198` is now terminal negative evidence for the current replay family
-    - `T206` is now the next active task:
-      prove the true text-token span contract and define the final post-fix
-      restart/stop rule
+  - exact capture at `1401` and bounded replay through `1406` succeeded, but
+    the later continuation and replay family still failed on the same
+    optimizer-boundary class centered on `input_text_embedding.grad` /
+    `text_embedding.weight.grad`
+  - Story 29 then exhausted the bounded mitigation ladder:
+    - `T195-T196` landed `text_span_only` plus explicit accumulation control
+    - `T203` removed the slower codebook-fusion experiment from the proof lane
+    - `T197` failed at `1417` with accumulation `4`
+    - `T198` accumulation `2` and `1` cleared `1418` but still failed the
+      preferred/fallback gates later at `1428` and `1449`
+  - `T204-T205` restored Hemma scratch governance and recurring idle-safe
+    cleanup so proof launches stop failing on SSD exhaustion
+  - `T198` closed as terminal negative replay-family evidence and handed off
+    to `T206`
 - 2026-03-17:
   - `T206` landed the explicit position-mask correction in dataset collation,
     and the post-fix offline audit proved active span `8..135` with zero
@@ -173,13 +109,12 @@ Story 28 is now operating policy:
     `semantic_text_ids`, and the new local proof shows only semantic ids can
     enter `text_embedding.weight.grad` even under poisoned scaffold upstream
     gradients.
-  - `T210` is now the next governed Hemma-proof task:
-    rerun the bounded `1406 -> 1470` gate on the Candidate 1 code path with
-    accumulation `1`, then launch detached standalone eval only if `1470` is
-    truthful.
-  - the exact prepared `T210` package is now local:
-    `task210-20260317t104600z-candidate1-a1` under
-    `build/verification/qwen-t198-proof/task210-20260317t104600z-candidate1-a1/`
+  - `T210` then failed immediately at optimizer step `1407`, so Candidate 1 is
+    negative rescue evidence on inherited `1406` state and does not authorize
+    restart
+  - `T211` is now the next discriminant task and already has a prepared proof
+    package:
+    `task211-20260317t121557z-freshstart-a1`
 
 ## Next Actions
 
@@ -204,13 +139,15 @@ Story 28 is now operating policy:
   `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
   as the first required local gate before any new Hemma long proof attempt for
   Candidate 1.
-- `T210` is now the next governed Candidate 1 Hemma-proof task before any new
-  long replay or restart attempt; `T199` remains blocked until it records a
-  truthful `1470 + detached eval` success, and Candidate 3 opens directly if
-  `T210` still fails before `1470`.
-- Use the prepared proof id
-  `task210-20260317t104600z-candidate1-a1` when the bounded Hemma replay is
-  launched.
+- `T211` is now the next governed short proof lane before any new larger clean
+  restart or Candidate 3 opening:
+  - run a fresh-start Candidate 1 probe from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+  - use a tiny truthful mini-bundle rooted in the canonical pilot bundle
+  - keep the probe detached and operator-governed on Hemma
+  - use the prepared proof id
+    `task211-20260317t121557z-freshstart-a1`
+- `T199` remains blocked until a later explicit clean-start proof authorizes
+  restart.
 - Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.

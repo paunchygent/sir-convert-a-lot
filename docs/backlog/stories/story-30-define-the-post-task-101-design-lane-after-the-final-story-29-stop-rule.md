@@ -13,6 +13,8 @@ related:
   - docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md
   - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
   - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
+  - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
+  - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
   - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
 labels:
@@ -161,6 +163,12 @@ immediate contingency.
   the local gradient-membership proof now demonstrates that only semantic ids
   can appear in `text_embedding.weight.grad`, including the poisoned-scaffold
   upstream case.
+- `T210` is terminal negative rescue evidence:
+  Candidate 1 still failed when resumed from the inherited `1406` state, so
+  it does not authorize restart as an in-place rescue lane.
+- `T211` is the new short discriminant lane:
+  run one fresh-start Candidate 1 proof from base state on a bounded
+  mini-bundle before opening Candidate 3.
 
 ## Checklist
 

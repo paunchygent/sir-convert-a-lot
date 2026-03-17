@@ -16,6 +16,7 @@ related:
   - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
   - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
   - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
+  - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -31,18 +32,24 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 Launch the first clean base restart only after the selected Story 30
 Candidate 1 lane proves bounded numerical stability through the governed
-`1470 + standalone eval` gate now owned by `T210`.
+`1470 + standalone eval` gate only after the fresh-start Candidate 1
+discriminant lane clarifies whether a true clean-start proof remains justified.
 
 ## PR Scope
 
 - Block this task until the selected Story 30 Candidate 1 lane lands through
-  `T207-T209`, then satisfies the governed Hemma proof from `T210`.
-- Current truth after `T209`:
+  `T207-T209`, records the negative inherited-state rescue result from `T210`,
+  and then either:
+  - records a positive fresh-start discriminant result from `T211` that
+    justifies a larger clean-start proof, or
+  - hands off explicitly to Candidate 3 instead of Candidate 1.
+- Current truth after `T210`:
   - the semantic-only batch contract landed
   - train/eval now embed only `semantic_text_ids`
   - the local gradient-membership proof is green
-  - this task still remains blocked until `T210` records a successful
-    `1470 + detached standalone eval` result
+  - `T210` still failed as an inherited-state rescue from `1406`
+  - this task remains blocked until a later explicit clean-start proof
+    authorizes restart
 - Current Story 30 decision:
   - Candidate 1 is selected as the next lane
   - Candidate 3 is the ordered contingency

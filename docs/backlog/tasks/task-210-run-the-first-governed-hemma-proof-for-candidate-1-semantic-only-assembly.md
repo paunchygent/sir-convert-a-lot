@@ -2,7 +2,7 @@
 id: task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly
 title: Run the first governed Hemma proof for Candidate 1 semantic-only assembly
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -29,8 +29,7 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 Run the first governed Hemma proof for Story 30 Candidate 1 after the local
 semantic-only assembly gate from `T209`, and decide whether Candidate 1
-authorizes the first clean restart or fails and triggers the ordered
-Candidate 3 contingency.
+authorizes the first clean restart or fails as an inherited-state rescue lane.
 
 ## PR Scope
 
@@ -54,34 +53,33 @@ Candidate 3 contingency.
 - Do not launch a new clean restart in this task.
 - Do not reopen the old accumulation ladder, the preferred `1500` gate, or
   any replay-only variant on the pre-Candidate-1 code path.
-- If the proof still fails numerically before `1470`, stop Candidate 1 proof
-  churn and open the ordered Candidate 3 contingency instead of retrying the
-  same lane.
+- If the proof still fails numerically before `1470`, stop Candidate 1 rescue
+  churn on the inherited `1406` checkpoint state instead of retrying the same
+  replay lane.
 
 ## Deliverables
 
-- [ ] One prepared Candidate 1 proof package exists for the detached Hemma
+- [x] One prepared Candidate 1 proof package exists for the detached Hemma
   run.
-- [ ] One bounded `1406 -> 1470` detached proof record exists for the
+- [x] One bounded `1406 -> 1470` detached proof record exists for the
   semantic-only assembly lane.
-- [ ] One detached standalone eval record exists only if a truthful `1470`
+- [x] No detached standalone eval record exists because no truthful `1470`
   checkpoint was minted.
-- [ ] One operator-facing decision record states whether Candidate 1
-  authorized `T199` or failed and triggered Candidate 3.
+- [x] One operator-facing decision record states that Candidate 1 failed as an
+  inherited-state rescue lane and does not authorize `T199`.
 
 ## Acceptance Criteria
 
-- [ ] `T209` is treated as the required local gate before the Hemma proof is
+- [x] `T209` is treated as the required local gate before the Hemma proof is
   launched.
-- [ ] The bounded proof uses the canonical `1406` checkpoint, the
+- [x] The bounded proof uses the canonical `1406` checkpoint, the
   semantic-only assembly code path, and accumulation `1`.
-- [ ] Detached standalone eval is launched only after a truthful `1470`
+- [x] Detached standalone eval is launched only after a truthful `1470`
   checkpoint exists.
-- [ ] If the proof fails numerically before `1470`, the task records Candidate
-  1 as failed for restart authorization and does not authorize a clean
-  restart.
-- [ ] `T199` remains blocked unless this task records a successful `1470 +
-  detached eval` result in the training reference ledger.
+- [x] If the proof fails numerically before `1470`, the task records Candidate
+  1 as failed for restart authorization on the inherited-state rescue lane and
+  does not authorize a clean restart.
+- [x] `T199` remains blocked unless this task records a successful `1470 + detached eval` result in the training reference ledger.
 
 ## Validation
 
@@ -116,8 +114,25 @@ Candidate 3 contingency.
   - detached fallback eval status:
     `pdm run qwen-t198-proof status-fallback-eval --proof-id task210-20260317t104600z-candidate1-a1`
 
+## Outcome
+
+- Hemma replay launched from the canonical inherited-state checkpoint:
+  `state-step-00001406`
+- The bounded proof failed immediately at optimizer step `1407`
+- Failure family stayed the same:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - first bad backward surface: `input_text_embedding.grad`
+  - first poisoned parameter surface: `text_embedding.weight.grad`
+- Parameters and optimizer state remained finite before the attempted step
+- No truthful new checkpoint was minted
+- Detached standalone eval was correctly not launched
+- Decision:
+  - Candidate 1 failed as an inherited-state rescue lane
+  - the next honest discriminant is a fresh-start Candidate 1 proof, not a
+    relaunch of the same `1406` rescue replay
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

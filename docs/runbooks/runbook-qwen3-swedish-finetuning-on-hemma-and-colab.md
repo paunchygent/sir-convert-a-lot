@@ -338,7 +338,21 @@ Operational consequence:
     bounded RCA on the preserved Task 101 lane stops and any further work must
     be a new design/architecture story
 - Story 29 / `T195-T206` is the canonical backlog owner for this mitigation,
-  proof, stop rule, and restart gate
+  but the bounded replay family is now closed on the inherited checkpoint lane
+  after the negative `T210` rescue proof
+- Story 30 now has one additional short discriminant proof lane before
+  Candidate 3 opens:
+  - `T211` starts from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+  - it uses the Candidate 1 semantic-only assembly code path
+  - it runs against a truthful mini-bundle with:
+    - `swedish_pilot_train` lines `1..16`
+    - `swedish_checkpoint_dev` line `1`
+  - use the committed surface:
+    - `pdm run qwen-story30-freshstart-proof prepare --proof-id task211-20260317t121557z-freshstart-a1 --skip-build`
+    - `pdm run qwen-story30-freshstart-proof launch --proof-id task211-20260317t121557z-freshstart-a1`
+    - `pdm run qwen-story30-freshstart-proof status --proof-id task211-20260317t121557z-freshstart-a1`
+  - if this fresh-start probe fails in the same family, open Candidate 3
+    directly instead of retrying another Candidate 1 replay
 
 ## Task 197 Detached Proof Surface
 

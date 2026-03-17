@@ -118,7 +118,16 @@ Why this is now the clean plan:
     - use accumulation `1`
     - then run detached standalone eval only if `1470` is truthful
     - if that governed proof still fails before `1470`, do not relaunch the
-      same lane; open Candidate 3 instead
+      same lane; do one short fresh-start discriminant proof first
+  - `T210` then failed immediately at optimizer step `1407`, so Candidate 1 is
+    now negative evidence as an inherited-state rescue lane from
+    `state-step-00001406`
+  - `T211` is now the next governed short proof owner:
+    - start from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+    - use the Candidate 1 semantic-only assembly code path
+    - use a truthful mini-bundle with `swedish_pilot_train` lines `1..16` and
+      `swedish_checkpoint_dev` line `1`
+    - run the short fresh-start discriminant probe before opening Candidate 3
 
 ## Active Artifact Roots
 

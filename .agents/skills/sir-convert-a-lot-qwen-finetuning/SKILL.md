@@ -140,12 +140,21 @@ explicitly narrow the scope.
   through `T209`:
   - treat `test_semantic_text_embeddings.py` as the required first local gate
     before any new Hemma long proof
-  - the next governed long-run owner is `T210`
-  - rerun the bounded `1406 -> 1470` gate on the semantic-only assembly code
-    path with `gradient_accumulation_steps=1`
-  - launch detached standalone eval only if the `1470` checkpoint is truthful
-  - if that governed proof still fails before `1470`, do not relaunch the
-    same lane; open Candidate 3 instead
+  - `T210` is now closed negative as an inherited-state rescue proof:
+    the semantic-only assembly code path still failed from the canonical
+    `1406` checkpoint
+  - the next governed owner is `T211`
+  - run one short fresh-start Candidate 1 discriminant proof from
+    `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+  - use a truthful mini-bundle with:
+    - `swedish_pilot_train` lines `1..16`
+    - `swedish_checkpoint_dev` line `1`
+  - use the committed surface:
+    `qwen-story30-freshstart-proof prepare|launch|status`
+  - if the fresh-start probe still fails in the same family, open Candidate 3
+    directly
+  - if the fresh-start probe stays finite, define the next larger clean-start
+    Candidate 1 proof before any restart authorization
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in
