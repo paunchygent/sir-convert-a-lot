@@ -2,7 +2,7 @@
 id: task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly
 title: Run the first governed Hemma proof for Candidate 1 semantic-only assembly
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -97,6 +97,24 @@ Candidate 3 contingency.
   after a truthful `1470` checkpoint exists
 - [ ] `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>` only
   when fallback eval was launched
+
+## Current Prepared Package
+
+- Prepared proof id:
+  `task210-20260317t104600z-candidate1-a1`
+- Local proof root:
+  `build/verification/qwen-t198-proof/task210-20260317t104600z-candidate1-a1`
+- Prepared command:
+  `pdm run qwen-t198-proof prepare --proof-id task210-20260317t104600z-candidate1-a1 --gradient-accumulation-steps 1 --skip-build`
+- Exact detached launch surface now ready:
+  - bounded replay:
+    `pdm run qwen-t198-proof launch-fallback1470 --proof-id task210-20260317t104600z-candidate1-a1`
+  - bounded replay status:
+    `pdm run qwen-t198-proof status-fallback1470 --proof-id task210-20260317t104600z-candidate1-a1`
+  - detached fallback eval launch, only after truthful `1470`:
+    `pdm run qwen-t198-proof launch-fallback-eval --proof-id task210-20260317t104600z-candidate1-a1`
+  - detached fallback eval status:
+    `pdm run qwen-t198-proof status-fallback-eval --proof-id task210-20260317t104600z-candidate1-a1`
 
 ## Checklist
 

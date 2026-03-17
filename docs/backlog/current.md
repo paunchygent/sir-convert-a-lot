@@ -177,6 +177,9 @@ Story 28 is now operating policy:
     rerun the bounded `1406 -> 1470` gate on the Candidate 1 code path with
     accumulation `1`, then launch detached standalone eval only if `1470` is
     truthful.
+  - the exact prepared `T210` package is now local:
+    `task210-20260317t104600z-candidate1-a1` under
+    `build/verification/qwen-t198-proof/task210-20260317t104600z-candidate1-a1/`
 
 ## Next Actions
 
@@ -205,6 +208,9 @@ Story 28 is now operating policy:
   long replay or restart attempt; `T199` remains blocked until it records a
   truthful `1470 + detached eval` success, and Candidate 3 opens directly if
   `T210` still fails before `1470`.
+- Use the prepared proof id
+  `task210-20260317t104600z-candidate1-a1` when the bounded Hemma replay is
+  launched.
 - Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
