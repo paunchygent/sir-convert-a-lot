@@ -412,7 +412,16 @@ Operator notes:
   - `T198` is terminal negative evidence
   - do not relaunch the accumulation or fallback replay family on the current
     code path
-  - move to `T206` instead
+  - `T206` and Story 30 Candidate 1 are now complete through `T209`
+  - treat
+    `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
+    as the required local gate before any new Hemma long proof
+  - the next governed long-run owner is `T210`:
+    rerun the bounded `1406 -> 1470` gate on the semantic-only assembly code
+    path with accumulation `1`, then launch detached standalone eval only if
+    the `1470` checkpoint is truthful
+  - if that governed proof still fails before `1470`, do not relaunch the
+    same lane; open Candidate 3 instead
 
 ## Story 29 Scratch Governance
 

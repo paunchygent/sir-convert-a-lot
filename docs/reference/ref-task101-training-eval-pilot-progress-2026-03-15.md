@@ -111,6 +111,14 @@ Why this is now the clean plan:
     - only after the structural mitigation and planned accumulation ablations
     - clear `1406 -> 1470`
     - then run standalone held-out eval from the `1470` checkpoint
+  - after Story 30 Candidate 1 landed through `T207-T209`, the next governed
+    proof owner is `T210`:
+    - rerun the bounded `1406 -> 1470` gate on the semantic-only assembly
+      code path
+    - use accumulation `1`
+    - then run detached standalone eval only if `1470` is truthful
+    - if that governed proof still fails before `1470`, do not relaunch the
+      same lane; open Candidate 3 instead
 
 ## Active Artifact Roots
 

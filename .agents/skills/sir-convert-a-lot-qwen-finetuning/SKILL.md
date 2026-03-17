@@ -136,6 +136,16 @@ explicitly narrow the scope.
     `1470 + detached standalone eval`
   - if that final post-fix proof still fails numerically before `1470`, stop
     bounded RCA on this preserved lane and escalate to a new design story
+- Current post-Story-29 operator rule after Story 30 Candidate 1 landed
+  through `T209`:
+  - treat `test_semantic_text_embeddings.py` as the required first local gate
+    before any new Hemma long proof
+  - the next governed long-run owner is `T210`
+  - rerun the bounded `1406 -> 1470` gate on the semantic-only assembly code
+    path with `gradient_accumulation_steps=1`
+  - launch detached standalone eval only if the `1470` checkpoint is truthful
+  - if that governed proof still fails before `1470`, do not relaunch the
+    same lane; open Candidate 3 instead
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in

@@ -24,6 +24,7 @@ related:
   - docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md
   - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
   - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
+  - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
   - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -167,17 +168,15 @@ Story 28 is now operating policy:
     Story 29 bounded RCA is closed for the preserved lane.
   - Story 30 is now active with the closed architect verdict:
     Candidate 1 selected, contingency `1 -> 3`, Candidate 2 rejected.
-  - `T207` completed the semantic-only batch contract by making
-    `semantic_text_ids`, `semantic_text_positions`, and `semantic_text_mask`
-    first-class typed batch fields.
-  - `T208` completed the semantic-only train/eval assembly:
-    only `semantic_text_ids` now traverse `text_embedding(...)`, and the
-    semantic embeddings are scattered back into the full-sequence runtime
-    positions.
-  - `T209` completed the local Candidate 1 gate:
-    the new semantic-only gradient-membership proof shows that only semantic
-    ids can enter `text_embedding.weight.grad`, and even poisoned scaffold
-    upstream gradients stay outside the parameter-row set.
+  - `T207-T209` completed the local Candidate 1 lane:
+    semantic-only batch fields landed, train/eval now embed only
+    `semantic_text_ids`, and the new local proof shows only semantic ids can
+    enter `text_embedding.weight.grad` even under poisoned scaffold upstream
+    gradients.
+  - `T210` is now the next governed Hemma-proof task:
+    rerun the bounded `1406 -> 1470` gate on the Candidate 1 code path with
+    accumulation `1`, then launch detached standalone eval only if `1470` is
+    truthful.
 
 ## Next Actions
 
@@ -198,17 +197,14 @@ Story 28 is now operating policy:
   - `T199` therefore remains blocked
   - the next step is Story 30 Candidate 1, not another replay or post-fix
     proof variant
-- Execute Story 30 in this order:
-  - `T207` semantic-only batch contract is complete
-  - `T208` semantic-only train-step assembly is complete
-  - `T209` local gradient-membership proof is complete
-  - if Candidate 1 fails, open Candidate 3 directly as the next contingency
-- Treat
+- Treat `T207-T209` as complete and
   `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
   as the first required local gate before any new Hemma long proof attempt for
   Candidate 1.
-- Define the next governed Candidate 1 Hemma-proof task before any new long
-  replay or restart attempt; `T199` remains blocked.
+- `T210` is now the next governed Candidate 1 Hemma-proof task before any new
+  long replay or restart attempt; `T199` remains blocked until it records a
+  truthful `1470 + detached eval` success, and Candidate 3 opens directly if
+  `T210` still fails before `1470`.
 - Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
