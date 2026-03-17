@@ -131,11 +131,11 @@ def test_run_eval_pass_does_not_apply_text_projection(
         lambda payload: payload,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_eval.to_device_with_optional_non_blocking",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.to_device_with_optional_non_blocking",
         lambda tensor, **kwargs: tensor,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_eval.fuse_auxiliary_codebook_embeddings",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.fuse_auxiliary_codebook_embeddings",
         lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
     )
     monkeypatch.setattr(

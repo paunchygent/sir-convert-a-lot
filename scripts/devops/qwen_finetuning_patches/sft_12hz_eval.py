@@ -22,23 +22,14 @@ import torch
 from accelerate import Accelerator
 
 from scripts.devops.qwen_finetuning_patches.dataset import require_batch_tensors
-from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
-    fuse_auxiliary_codebook_embeddings,
-)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_contracts import StandaloneEvalSummary
-from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
-    to_device_with_optional_non_blocking,
+from scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces import (
+    ForwardBatchInputs,
+    execute_talker_forward_pass,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
-)
-from scripts.devops.qwen_finetuning_patches.sft_12hz_semantic_text_embeddings import (
-    assemble_semantic_text_embedding,
-)
-from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
-    resolve_talker_codec_embedding,
-    resolve_talker_text_embedding,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_tracking import log_eval_metrics
 
@@ -252,51 +243,23 @@ def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
             attention_mask = resolved_batch["attention_mask"]
             codec_0_labels = resolved_batch["codec_0_labels"]
             codec_mask = resolved_batch["codec_mask"]
-            speaker_embedding = model.speaker_encoder(
-                to_device_with_optional_non_blocking(
-                    ref_mels,
-                    device=model.device,
-                    dtype=model.dtype,
-                    non_blocking_transfer=(
-                        prepared.effective_dataloader_tuning.non_blocking_transfer
-                    ),
-                )
-            ).detach()
-            text_embedding = resolve_talker_text_embedding(model)
-            codec_embedding = resolve_talker_codec_embedding(model)
-            input_codec_ids = input_ids[:, :, 1]
-            input_text_embedding = assemble_semantic_text_embedding(
-                text_embedding=text_embedding,
-                semantic_text_ids=semantic_text_ids,
-                semantic_text_positions=semantic_text_positions,
-                semantic_text_mask=semantic_text_mask,
-                sequence_length=input_ids.shape[1],
-            )
-            input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
-            input_codec_embedding[:, 6, :] = speaker_embedding
-            input_embeddings = (
-                input_text_embedding
-                + input_codec_embedding
-                + fuse_auxiliary_codebook_embeddings(
-                    codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
+            forward_surfaces = execute_talker_forward_pass(
+                model=model,
+                batch=ForwardBatchInputs(
+                    input_ids=input_ids,
                     codec_ids=codec_ids,
+                    semantic_text_ids=semantic_text_ids,
+                    semantic_text_positions=semantic_text_positions,
+                    semantic_text_mask=semantic_text_mask,
+                    ref_mels=ref_mels,
+                    codec_embedding_mask=codec_embedding_mask,
+                    attention_mask=attention_mask,
+                    codec_0_labels=codec_0_labels,
                     codec_mask=codec_mask,
-                )
+                ),
+                non_blocking_transfer=(prepared.effective_dataloader_tuning.non_blocking_transfer),
             )
-            outputs = model.talker(
-                inputs_embeds=input_embeddings[:, :-1, :],
-                attention_mask=attention_mask[:, :-1],
-                labels=codec_0_labels[:, 1:],
-                output_hidden_states=True,
-            )
-            hidden_states = outputs.hidden_states[0][-1]
-            talker_hidden_states = hidden_states[codec_mask[:, 1:]]
-            talker_codec_ids = codec_ids[codec_mask]
-            _, sub_talker_loss = model.talker.forward_sub_talker_finetune(
-                talker_codec_ids,
-                talker_hidden_states,
-            )
-            loss = outputs.loss + 0.3 * sub_talker_loss
+            loss = forward_surfaces.combined_loss
             total_eval_loss += float(loss.detach().float().item())
             completed_batches += 1
     if completed_batches <= 0:

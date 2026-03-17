@@ -15,8 +15,17 @@ Relationships:
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 
 import torch
+
+
+@dataclass(frozen=True)
+class SemanticTextEmbeddingAssembly:
+    """Semantic lookup plus full-sequence assembly for one collated batch."""
+
+    semantic_embeddings: torch.Tensor
+    full_sequence_embedding: torch.Tensor
 
 
 def assemble_semantic_text_embedding(
@@ -28,6 +37,24 @@ def assemble_semantic_text_embedding(
     sequence_length: int,
 ) -> torch.Tensor:
     """Return one full-sequence text-embedding tensor from semantic-only ids."""
+    return build_semantic_text_embedding_assembly(
+        text_embedding=text_embedding,
+        semantic_text_ids=semantic_text_ids,
+        semantic_text_positions=semantic_text_positions,
+        semantic_text_mask=semantic_text_mask,
+        sequence_length=sequence_length,
+    ).full_sequence_embedding
+
+
+def build_semantic_text_embedding_assembly(
+    *,
+    text_embedding: Callable[[torch.Tensor], torch.Tensor],
+    semantic_text_ids: torch.Tensor,
+    semantic_text_positions: torch.Tensor,
+    semantic_text_mask: torch.Tensor,
+    sequence_length: int,
+) -> SemanticTextEmbeddingAssembly:
+    """Return semantic lookup embeddings plus the assembled full-sequence tensor."""
     _validate_semantic_text_inputs(
         semantic_text_ids=semantic_text_ids,
         semantic_text_positions=semantic_text_positions,
@@ -42,7 +69,10 @@ def assemble_semantic_text_embedding(
         (batch_size, sequence_length, hidden_size)
     )
     if semantic_text_ids.shape[1] == 0:
-        return full_sequence_embedding
+        return SemanticTextEmbeddingAssembly(
+            semantic_embeddings=semantic_embeddings,
+            full_sequence_embedding=full_sequence_embedding,
+        )
     semantic_mask = semantic_text_mask.unsqueeze(-1).to(dtype=semantic_embeddings.dtype)
     safe_positions = semantic_text_positions.to(device=semantic_embeddings.device).unsqueeze(-1)
     safe_positions = safe_positions.expand_as(semantic_embeddings)
@@ -52,7 +82,10 @@ def assemble_semantic_text_embedding(
         safe_positions,
         semantic_embeddings * semantic_mask,
     )
-    return full_sequence_embedding
+    return SemanticTextEmbeddingAssembly(
+        semantic_embeddings=semantic_embeddings,
+        full_sequence_embedding=full_sequence_embedding,
+    )
 
 
 def _validate_semantic_text_inputs(

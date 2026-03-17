@@ -2,7 +2,7 @@
 id: task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3
 title: Run a fresh-start Candidate 1 discriminant proof before opening Candidate 3
 type: task
-status: in_progress
+status: done
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -60,65 +60,85 @@ opens the ordered Candidate 3 contingency.
   - no governed eval claim from this task
   - no clean-restart authorization from this task
 - If the fresh-start proof fails in the same numerical family, close Candidate
-  1 as a fresh-start discriminant and open Candidate 3 directly.
+  1 as a fresh-start discriminant and stop attributing the failure primarily
+  to replay-amassed state.
 - If the fresh-start proof stays finite across the bounded short slice, record
   that inherited training history remains a live suspect and define the next
   clean-start Candidate 1 Hemma proof task.
 
 ## Deliverables
 
-- [ ] One committed fresh-start proof surface exists with deterministic
+- [x] One committed fresh-start proof surface exists with deterministic
   `prepare`, `launch`, and `status` commands.
-- [ ] One committed mini-bundle materialization helper exists for the bounded
+- [x] One committed mini-bundle materialization helper exists for the bounded
   discriminant slice.
-- [ ] One prepared proof package exists with the exact proof id and detached
+- [x] One prepared proof package exists with the exact proof id and detached
   commands.
-- [ ] One operator-facing decision record states whether the result points to
-  Candidate 3 directly or to a larger clean-start Candidate 1 proof.
+- [x] One operator-facing decision record states whether the result points to
+  deeper architectural discovery rather than another replay-only explanation.
 
 ## Acceptance Criteria
 
-- [ ] The fresh-start proof does not resume from `state-step-00001406` or any
+- [x] The fresh-start proof does not resume from `state-step-00001406` or any
   other legacy checkpoint.
-- [ ] The bounded train slice is a truthful mini-bundle rooted in the canonical
+- [x] The bounded train slice is a truthful mini-bundle rooted in the canonical
   frozen train bundle, the launch placeholder eval row is explicitly marked as
   non-evidentiary for held-out eval, and the train slice includes the known
   problematic line-14 family.
-- [ ] The runtime surface uses detached Hemma execution and a committed repo
+- [x] The runtime surface uses detached Hemma execution and a committed repo
   command, not inline remote shell logic.
-- [ ] The proof records whether Candidate 1 still fails from a fresh start or
+- [x] The proof records whether Candidate 1 still fails from a fresh start or
   only failed as an in-place rescue from inherited state.
-- [ ] `T199` remains blocked after this task unless a later explicit clean-start
+- [x] `T199` remains blocked after this task unless a later explicit clean-start
   proof authorizes restart.
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_freshstart_proof.py -q`
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_freshstart_bundle.py -q`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run qwen-story30-freshstart-proof prepare --proof-id <proof-id> --skip-build`
-- [ ] `pdm run qwen-story30-freshstart-proof launch --proof-id <proof-id>`
-- [ ] `pdm run qwen-story30-freshstart-proof status --proof-id <proof-id>`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_freshstart_proof.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_freshstart_bundle.py -q`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run qwen-story30-freshstart-proof prepare --proof-id <proof-id> --skip-build`
+- [x] `pdm run qwen-story30-freshstart-proof launch --proof-id <proof-id>`
+- [x] `pdm run qwen-story30-freshstart-proof status --proof-id <proof-id>`
 
-## Current Prepared Package
+## Outcome
 
-- Prepared proof id:
-  `task211-20260317t121557z-freshstart-a1`
+- Final proof id:
+  `task211-20260317t130740z-freshstart-a4`
 - Local proof root:
-  `build/verification/qwen-story30-freshstart-proof/task211-20260317t121557z-freshstart-a1`
-- Prepared command:
-  `pdm run qwen-story30-freshstart-proof prepare --proof-id task211-20260317t121557z-freshstart-a1 --skip-build`
-- Exact detached surface now ready:
-  - launch:
-    `pdm run qwen-story30-freshstart-proof launch --proof-id task211-20260317t121557z-freshstart-a1`
-  - status:
-    `pdm run qwen-story30-freshstart-proof status --proof-id task211-20260317t121557z-freshstart-a1`
+  `build/verification/qwen-story30-freshstart-proof/task211-20260317t130740z-freshstart-a4`
+- Terminal artifact:
+  `build/verification/qwen-story30-freshstart-proof/task211-20260317t130740z-freshstart-a4/status.json`
+- Terminal Hemma result:
+  - `status=exited`
+  - `exit_code=1`
+  - `current_optimizer_step=1`
+  - `current_train_iteration=1`
+  - `latest_checkpoint_found=false`
+  - `eval_runs_completed=0`
+- Exact failure family:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+  - `pre_step_parameter_probes.first_non_finite_surface=null`
+  - `pre_step_optimizer_state_probes.first_non_finite_surface=null`
+  - `pre_clip_gradient_probes.probes.text_embedding.weight.nan_count=92160`
+- First failing microbatch provenance:
+  - manifest line `13`
+  - manifest line `4`
+  - both from the fresh-start mini-bundle
+- Strongest interpretation:
+  - Candidate 1 failed on a fresh start, not only as an inherited-state rescue
+  - replay-amassed state is no longer the primary explanation
+  - the next discovery lane must isolate the first non-finite backward edge
+    inside the graph rather than repeating replay proofs
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

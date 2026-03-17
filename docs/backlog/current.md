@@ -112,9 +112,14 @@ Story 28 is now operating policy:
   - `T210` then failed immediately at optimizer step `1407`, so Candidate 1 is
     negative rescue evidence on inherited `1406` state and does not authorize
     restart
-  - `T211` is now the next discriminant task and already has a prepared proof
-    package:
-    `task211-20260317t121557z-freshstart-a1`
+  - `T211` is now closed terminal negative evidence for Candidate 1 as a
+    fresh-start lane:
+    `task211-20260317t130740z-freshstart-a4` failed at optimizer step `1`
+    with `pre_clip_non_finite_gradients` on `text_embedding.weight.grad`
+    while forward tensors and losses stayed finite
+  - the next clean move is `T212`: one single-step backward-lineage probe on
+    Hemma against the exact failing rows `13` and `4`, with probe order:
+    `main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation
 
 ## Next Actions
 
@@ -139,20 +144,22 @@ Story 28 is now operating policy:
   `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
   as the first required local gate before any new Hemma long proof attempt for
   Candidate 1.
-- `T211` is now the next governed short proof lane before any new larger clean
-  restart or Candidate 3 opening:
-  - run a fresh-start Candidate 1 probe from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
-  - use a tiny truthful mini-bundle with train rows from the canonical frozen
-    Task 101 bundle
-  - keep the `swedish_checkpoint_dev` row as a non-executed launch placeholder
-    sourced from the same frozen train bundle, because `T211` makes no eval
-    claim and the available held-out eval manifests lack
-    `precomputed_ref_input_path`
-  - resolve the canonical dated Task 101 frozen train bundle automatically on
-    Hemma if the legacy undated placeholder path is absent
-  - keep the probe detached and operator-governed on Hemma
-  - use the prepared proof id
-    `task211-20260317t121557z-freshstart-a1`
+- Treat `T211` as closed negative fresh-start evidence:
+  - the semantic-only Candidate 1 lane failed immediately at optimizer step
+    `1`
+  - this removes replay-amassed inherited state as the leading explanation
+    for the current failure family
+  - do not spend more time on replay framing before the backward-lineage lane
+- `T212` is now the active discovery owner before any Candidate 3 opening:
+  - use the exact fresh-start failing row pair from `T211`:
+    manifest lines `13` and `4`
+  - run one single-step backward-lineage probe on Hemma
+  - use the probe order:
+    `main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation
+  - make the goal the first non-finite backward edge/tensor inside the graph,
+    not the first failed parameter surface
+  - keep the work on a committed repo-owned probe surface, not inline shell
+    debugging
 - `T199` remains blocked until a later explicit clean-start proof authorizes
   restart.
 - Do not spend the next story on Candidate 2.

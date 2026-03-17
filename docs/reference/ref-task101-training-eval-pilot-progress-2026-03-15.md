@@ -122,15 +122,21 @@ Why this is now the clean plan:
   - `T210` then failed immediately at optimizer step `1407`, so Candidate 1 is
     now negative evidence as an inherited-state rescue lane from
     `state-step-00001406`
-  - `T211` is now the next governed short proof owner:
-    - start from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
-    - use the Candidate 1 semantic-only assembly code path
-    - use a truthful mini-bundle with `swedish_pilot_train` lines `1..16` from
-      the canonical frozen Task 101 train bundle and one non-executed
-      `swedish_checkpoint_dev` launch placeholder row from that same train
-      bundle because the held-out eval manifests lack
-      `precomputed_ref_input_path`
-    - run the short fresh-start discriminant probe before opening Candidate 3
+  - `T211` is now closed negative fresh-start evidence:
+    - `task211-20260317t130740z-freshstart-a4` failed at optimizer step `1`
+    - the first poisoned parameter surface was still
+      `text_embedding.weight.grad`
+    - pre-step parameters and optimizer state were finite
+    - no checkpoint was minted and no eval claim was produced
+    - replay-amassed inherited state is therefore no longer the leading
+      explanation for the current failure family
+  - `T212` is now the next governed discovery owner:
+    - run one single-step backward-lineage probe on Hemma against the exact
+      failing row pair from `T211`
+    - probe order:
+      `main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation
+    - the goal is the first non-finite backward edge/tensor inside the graph,
+      not another replay symptom
 
 ## Active Artifact Roots
 
@@ -1127,6 +1133,64 @@ Operator conclusion:
   - the Story 29 bounded-RCA stop rule is now triggered
   - `T199` remains blocked until a new design/architecture story defines the
     next lane
+
+## 2026-03-17: `T210` Candidate 1 Rescue Proof Stayed Negative On The Inherited Lane
+
+- Proof package:
+  - `task210-20260317t104600z-candidate1-a1`
+- Command:
+  - `pdm run qwen-t198-proof launch-fallback1470 --proof-id task210-20260317t104600z-candidate1-a1`
+- Result:
+  - replay exited with `exit_code=1`
+  - `current_optimizer_step=1407`
+  - `current_train_iteration=809`
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - no truthful `1470` checkpoint was minted
+- Operator conclusion:
+  - Candidate 1 did not rescue the inherited `state-step-00001406` lane
+  - that result alone still left open whether Candidate 1 might survive a
+    fresh start
+
+## 2026-03-17: `T211` Fresh-Start Candidate 1 Probe Failed At Step `1`
+
+- Proof package:
+  - `task211-20260317t130740z-freshstart-a4`
+- Command:
+  - `pdm run qwen-story30-freshstart-proof launch --proof-id task211-20260317t130740z-freshstart-a4`
+- Artifacts:
+  - `build/verification/qwen-story30-freshstart-proof/task211-20260317t130740z-freshstart-a4/proof-config.json`
+  - `build/verification/qwen-story30-freshstart-proof/task211-20260317t130740z-freshstart-a4/launch.json`
+  - `build/verification/qwen-story30-freshstart-proof/task211-20260317t130740z-freshstart-a4/status.json`
+- Fresh-start posture:
+  - base model `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
+  - Candidate 1 semantic-only assembly path from `T207-T209`
+  - mini-bundle train slice `swedish_pilot_train` lines `1..16`
+  - launch placeholder eval row only; no held-out eval claim
+- Result:
+  - `status=exited`
+  - `exit_code=1`
+  - `current_optimizer_step=1`
+  - `current_train_iteration=1`
+  - `latest_checkpoint_found=false`
+  - `eval_runs_completed=0`
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+  - `pre_step_parameter_probes.first_non_finite_surface=null`
+  - `pre_step_optimizer_state_probes.first_non_finite_surface=null`
+  - `pre_clip_gradient_probes.probes.text_embedding.weight.nan_count=92160`
+- First failing microbatch provenance:
+  - manifest line `13`
+  - manifest line `4`
+- Operator conclusion:
+  - Candidate 1 now has negative evidence on both the inherited-state rescue
+    lane and the fresh-start short probe
+  - replay-amassed inherited state is no longer the leading explanation for
+    the current failure family
+  - the next truthful discovery move is a single-step backward-lineage probe
+    on the exact failing row pair, not another replay-family proof
 
 ## Historical Reference Boundary
 

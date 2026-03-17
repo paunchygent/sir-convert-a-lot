@@ -22,12 +22,6 @@ from accelerate import Accelerator
 
 from scripts.devops.qwen_finetuning_patches.dataset import require_batch_tensors
 from scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing import DurableCheckpointMetadata
-from scripts.devops.qwen_finetuning_patches.sft_12hz_codebook_fusion import (
-    fuse_auxiliary_codebook_embeddings,
-)
-from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
-    to_device_with_optional_non_blocking,
-)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_window import (
     DiagnosticWindowConfig,
 )
@@ -37,6 +31,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_diagnostic_window_artifacts
 from scripts.devops.qwen_finetuning_patches.sft_12hz_forensics import (
     build_microbatch_forensics,
     build_optimizer_step_forensics_window,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces import (
+    ForwardBatchInputs,
+    execute_talker_forward_pass,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_gradient_rca import (
     build_gradient_rca_forensics,
@@ -52,13 +50,6 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard_probes impo
     capture_targeted_gradient_probes,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import TrainingProgressHeartbeat
-from scripts.devops.qwen_finetuning_patches.sft_12hz_semantic_text_embeddings import (
-    assemble_semantic_text_embedding,
-)
-from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
-    resolve_talker_codec_embedding,
-    resolve_talker_text_embedding,
-)
 
 from .sft_12hz_loss_runtime import consume_loss_observations
 
@@ -205,56 +196,38 @@ def execute_train_iteration(
             attention_mask = resolved_batch["attention_mask"]
             codec_0_labels = resolved_batch["codec_0_labels"]
             codec_mask = resolved_batch["codec_mask"]
-            ref_mels_on_device = to_device_with_optional_non_blocking(
-                ref_mels,
-                device=model.device,
-                dtype=model.dtype,
-                non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
-            )
-            speaker_embedding = model.speaker_encoder(ref_mels_on_device).detach()
         with prepared.torch_profiler_session.phase("task101.forward-backward"):
-            text_embedding = resolve_talker_text_embedding(model)
-            codec_embedding = resolve_talker_codec_embedding(model)
             input_text_ids = input_ids[:, :, 0]
-            input_codec_ids = input_ids[:, :, 1]
-            input_text_embedding = assemble_semantic_text_embedding(
-                text_embedding=text_embedding,
-                semantic_text_ids=semantic_text_ids,
-                semantic_text_positions=semantic_text_positions,
-                semantic_text_mask=semantic_text_mask,
-                sequence_length=input_ids.shape[1],
-            )
             diagnostic_window = getattr(prepared, "diagnostic_window", None)
             diagnostic_step_active = (
                 diagnostic_window is not None
                 and diagnostic_window.includes_optimizer_step(current_optimizer_step)
             )
+            forward_surfaces = execute_talker_forward_pass(
+                model=model,
+                batch=ForwardBatchInputs(
+                    input_ids=input_ids,
+                    codec_ids=codec_ids,
+                    semantic_text_ids=semantic_text_ids,
+                    semantic_text_positions=semantic_text_positions,
+                    semantic_text_mask=semantic_text_mask,
+                    ref_mels=ref_mels,
+                    codec_embedding_mask=codec_embedding_mask,
+                    attention_mask=attention_mask,
+                    codec_0_labels=codec_0_labels,
+                    codec_mask=codec_mask,
+                ),
+                non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
+            )
+            input_text_embedding = forward_surfaces.input_text_embedding
             if diagnostic_step_active:
                 input_text_embedding.retain_grad()
-            input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
-            input_codec_embedding[:, 6, :] = speaker_embedding
-            fused_auxiliary_embedding = fuse_auxiliary_codebook_embeddings(
-                codebook_embeddings=model.talker.code_predictor.get_input_embeddings(),
-                codec_ids=codec_ids,
-                codec_mask=codec_mask,
-            )
-            input_embeddings = (
-                input_text_embedding + input_codec_embedding + fused_auxiliary_embedding
-            )
-            outputs = model.talker(
-                inputs_embeds=input_embeddings[:, :-1, :],
-                attention_mask=attention_mask[:, :-1],
-                labels=codec_0_labels[:, 1:],
-                output_hidden_states=True,
-            )
-            hidden_states = outputs.hidden_states[0][-1]
-            talker_hidden_states = hidden_states[codec_mask[:, 1:]]
-            talker_codec_ids = codec_ids[codec_mask]
-            _, sub_talker_loss = model.talker.forward_sub_talker_finetune(
-                talker_codec_ids,
-                talker_hidden_states,
-            )
-            loss = outputs.loss + 0.3 * sub_talker_loss
+            talker_hidden_states = forward_surfaces.talker_hidden_states
+            input_codec_embedding = forward_surfaces.input_codec_embedding
+            fused_auxiliary_embedding = forward_surfaces.fused_auxiliary_embedding
+            input_embeddings = forward_surfaces.input_embeddings
+            sub_talker_loss = forward_surfaces.sub_talker_loss
+            loss = forward_surfaces.combined_loss
             accelerator.backward(loss)
             completed_optimizer_step = accelerator.sync_gradients
             gradient_forensics = (
@@ -288,14 +261,15 @@ def execute_train_iteration(
                     batch_provenance=batch_provenance,
                     gradient_forensics=gradient_forensics,
                     probes=[
-                        ("ref_mels", ref_mels_on_device),
-                        ("speaker_embedding", speaker_embedding),
+                        ("ref_mels", forward_surfaces.ref_mels_on_device),
+                        ("speaker_embedding", forward_surfaces.speaker_embedding),
+                        ("semantic_text_embeddings", forward_surfaces.semantic_text_embeddings),
                         ("input_text_embedding", input_text_embedding),
                         ("input_codec_embedding", input_codec_embedding),
                         ("fused_auxiliary_embedding", fused_auxiliary_embedding),
                         ("input_embeddings", input_embeddings),
                         ("talker_hidden_states", talker_hidden_states),
-                        ("main_loss", outputs.loss),
+                        ("main_loss", forward_surfaces.main_loss),
                         ("sub_talker_loss", sub_talker_loss),
                         ("combined_loss", loss),
                         ("grad_norm", grad_norm_tensor),
@@ -333,7 +307,7 @@ def execute_train_iteration(
                 current_epoch=epoch,
                 current_train_iteration=current_train_iteration,
                 loss=loss,
-                main_loss=outputs.loss,
+                main_loss=forward_surfaces.main_loss,
                 sub_talker_loss=sub_talker_loss,
                 step_forensics=step_forensics,
                 pre_step_probes=pre_step_probes,
@@ -346,7 +320,7 @@ def execute_train_iteration(
                 current_epoch=epoch,
                 current_train_iteration=current_train_iteration,
                 loss=loss,
-                main_loss=outputs.loss,
+                main_loss=forward_surfaces.main_loss,
                 sub_talker_loss=sub_talker_loss,
                 grad_norm=grad_norm,
                 step_forensics=step_forensics,
@@ -378,7 +352,7 @@ def execute_train_iteration(
             current_epoch=epoch,
             current_train_iteration=current_train_iteration,
             loss=loss,
-            main_loss=outputs.loss,
+            main_loss=forward_surfaces.main_loss,
             sub_talker_loss=sub_talker_loss,
             grad_norm=grad_norm,
             step_forensics=step_forensics,
@@ -399,7 +373,7 @@ def execute_train_iteration(
         next_optimizer_steps_completed = optimizer_steps_completed + 1
         prepared.loss_observer.submit(
             loss=loss,
-            main_loss=outputs.loss,
+            main_loss=forward_surfaces.main_loss,
             sub_talker_loss=sub_talker_loss,
             grad_norm=grad_norm,
             step_forensics=step_forensics,

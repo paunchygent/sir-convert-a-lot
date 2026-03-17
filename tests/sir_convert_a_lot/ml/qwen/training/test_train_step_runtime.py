@@ -157,11 +157,11 @@ def test_execute_train_iteration_skips_optimizer_step_on_pre_step_failure(
         lambda payload: payload,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.to_device_with_optional_non_blocking",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.to_device_with_optional_non_blocking",
         lambda tensor, **kwargs: tensor,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.fuse_auxiliary_codebook_embeddings",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.fuse_auxiliary_codebook_embeddings",
         lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
     )
     monkeypatch.setattr(
@@ -251,11 +251,11 @@ def test_execute_train_iteration_does_not_apply_text_projection_in_finetune_forw
         lambda payload: payload,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.to_device_with_optional_non_blocking",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.to_device_with_optional_non_blocking",
         lambda tensor, **kwargs: tensor,
     )
     monkeypatch.setattr(
-        "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.fuse_auxiliary_codebook_embeddings",
+        "scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces.fuse_auxiliary_codebook_embeddings",
         lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
     )
     monkeypatch.setattr(

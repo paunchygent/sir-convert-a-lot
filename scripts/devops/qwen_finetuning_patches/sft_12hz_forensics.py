@@ -97,7 +97,7 @@ def build_tensor_finiteness_payload(
         if tensor is None:
             continue
         probe_order.append(name)
-        summary = _tensor_finiteness_summary(tensor)
+        summary = summarize_tensor_finiteness(tensor)
         summaries[name] = summary
         if first_non_finite_tensor is None and summary["is_finite"] is False:
             first_non_finite_tensor = name
@@ -108,7 +108,7 @@ def build_tensor_finiteness_payload(
     }
 
 
-def _tensor_finiteness_summary(tensor: torch.Tensor) -> dict[str, object]:
+def summarize_tensor_finiteness(tensor: torch.Tensor) -> dict[str, object]:
     """Return one compact JSON-safe finiteness summary for a tensor."""
     detached = tensor.detach()
     element_count = int(detached.numel())

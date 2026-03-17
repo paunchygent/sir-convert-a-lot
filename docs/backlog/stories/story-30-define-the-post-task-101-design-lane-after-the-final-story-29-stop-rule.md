@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
   - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
   - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
+  - docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md
   - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
 labels:
@@ -166,9 +167,13 @@ immediate contingency.
 - `T210` is terminal negative rescue evidence:
   Candidate 1 still failed when resumed from the inherited `1406` state, so
   it does not authorize restart as an in-place rescue lane.
-- `T211` is the new short discriminant lane:
-  run one fresh-start Candidate 1 proof from base state on a bounded
-  mini-bundle before opening Candidate 3.
+- `T211` is complete as terminal negative fresh-start evidence:
+  Candidate 1 failed at optimizer step `1`, so replay-amassed inherited state
+  is no longer the leading explanation for the current failure family.
+- `T212` is now the active discovery lane:
+  run one single-step backward-lineage probe on the exact failing fresh-start
+  row pair and identify the first non-finite backward edge/tensor before
+  deciding whether Candidate 3 should open immediately.
 
 ## Checklist
 
