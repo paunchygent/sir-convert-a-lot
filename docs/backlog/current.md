@@ -14,6 +14,9 @@ related:
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
   - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
+  - docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md
+  - docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md
+  - docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -34,7 +37,11 @@ The current experiment posture is:
   - active surface: `qwen-t221-historical-control`
 - `mechanism`
   - active lane: Story 31 through `qwen-story31-stability-lab`
-  - next slice: `T219`
+  - `T225` complete: exact parity contract defined
+  - `T226` complete: committed local parity-probe surface delivered
+  - next mechanism action: run that surface on the real historical bundle,
+    then route the first-divergence result through `T227`
+  - next contingent stabilizer slice after parity closes: `T219`
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -145,6 +152,15 @@ Story 28 is now operating policy:
   - Story 32 / `T222-T224` then landed the consolidation package:
     one experiment taxonomy, one active surface matrix, one canonical
     experiment spec, and one live ledger contract for future Qwen work
+  - `T225` then completed the exact parity contract before more stabilizer
+    iteration:
+    it fixed the recreated step-`1` / iteration-`4` failure-family input, the
+    checkpoint comparison table, and the stop rules for `T226-T227`
+  - `T226` then landed the committed local parity-probe surface:
+    `pdm run qwen-story31-parity-probe run` now compares the real
+    `execute_train_iteration` window against the reconstructed shared-forward
+    optimizer-boundary window on the exact `T225` microbatch family and writes
+    `current-path.json`, `intended-path.json`, `results.json`, and `results.md`
 
 ## Next Actions
 
@@ -155,7 +171,15 @@ Story 28 is now operating policy:
 - Keep `T221` classified as provenance evidence:
   it is stronger than `T220`, but it is not a mechanism or recovery result.
 - Continue through Story 31 as the mechanism lane:
-  - `T219` is the next bounded exploration slice
+  - `T225` is complete as the exact parity contract for the recreated early
+    failure family
+  - `T226` is now complete as the committed deterministic parity-probe surface
+  - the immediate mechanism action is to execute that surface on the real
+    historical bundle and use its first-divergence result inside `T227`
+  - `T227` then either fixes the smallest verified trainer/runtime divergence or
+    explicitly clears the lane back to `T219`
+  - `T219` is now a contingent bounded stabilizer slice, not the immediate
+    next run
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal
     claims

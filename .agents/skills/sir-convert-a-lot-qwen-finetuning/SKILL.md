@@ -140,7 +140,13 @@ explicitly narrow the scope.
   - treat that as provenance evidence only, not as a mechanism or recovery
     answer
   - Story 31 remains the active mechanism lane
-  - `T219` is the next bounded mechanism slice
+  - `T225` is complete as the exact parity contract
+  - `T226` is now complete as the committed local parity-probe surface:
+    `pdm run qwen-story31-parity-probe run`
+  - the next mechanism action is to execute that surface on the real
+    historical bundle, then use the first-divergence result inside `T227`
+  - `T219` is now a contingent bounded stabilizer slice, not the immediate
+    next run
   - `T217` remains the blocked recovery lane until a mechanism candidate
     passes the local promotion gate
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for

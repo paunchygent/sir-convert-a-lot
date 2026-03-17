@@ -19,7 +19,11 @@ Story 32 is now the operator-facing mental model:
   - latest resolved result: `T221` negative recreated-control evidence
 - `mechanism`
   - active surface: `qwen-story31-stability-lab`
-  - next bounded slice: `T219`
+  - `T225` complete: exact parity contract defined
+  - `T226` complete: committed parity-probe surface delivered
+  - next mechanism action: execute that surface on the real historical bundle
+    and route the first-divergence result through `T227`
+  - next contingent stabilizer slice after parity closes: `T219`
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -58,6 +62,13 @@ Story 28 remains operating policy:
   - one reusable per-run ledger entry template
 - Existing CLI surfaces remain callable in this slice; the change is
   governance and docs alignment, not command removal.
+- `T226` now lands the committed local parity-probe surface:
+  - `pdm run qwen-story31-parity-probe run`
+  - writes `current-path.json`, `intended-path.json`, `results.json`, and
+    `results.md` under `build/verification/qwen-story31-parity-probe/`
+  - compares the real `execute_train_iteration` window against the
+    reconstructed shared-forward optimizer-boundary window on the exact `T225`
+    microbatch family
 
 ## Latest Task 101 Truth
 
@@ -82,7 +93,11 @@ Story 28 remains operating policy:
   - `T215`: local gate and first matrix surface
   - `T216`: first bounded stabilization surface
   - `T218`: negative exploration evidence
-  - `T219`: next mechanism-owned slice, not yet executed
+  - `T225`: completed parity contract after `T221`
+  - `T226`: committed local parity-probe surface now implemented
+  - `T227`: next mechanism remediation / decision task after the live parity
+    result is captured
+  - `T219`: contingent bounded stabilizer follow-up, not yet executed
 - `T220` delivered the exact-control runtime surface but did not answer the
   historical-control question because the run drifted from the documented
   March 13 contract.
@@ -132,7 +147,10 @@ Story 28 remains operating policy:
 ## Immediate Next Step
 
 1. Keep `T221` classified as provenance evidence only.
-1. Resume Story 31 through `T219` as the next mechanism-owned bounded slice.
+1. Execute `pdm run qwen-story31-parity-probe run` on the real historical
+   bundle after the completed `T225` parity contract and before any further
+   bounded stabilizer iteration.
+1. Use that first-divergence output inside `T227` before considering `T219`.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion
    gate.
 1. Keep Story 29 and Story 30 surfaces available as historical references, not
@@ -143,9 +161,13 @@ Story 28 remains operating policy:
 
 ## Validation State
 
+- `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story31_parity_probe.py -q`: passed
+- `pdm run test-ml`: passed
+- `pdm run typecheck-ml`: passed
 - `pdm run validate-tasks`: passed
 - `pdm run validate-docs`: passed
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`: passed
+- `pdm run qwen-story31-parity-probe --help`: passed
 
-All three validations should be rerun after any further docs change touching
-Story 31, Story 32, the live ledger, or the operator runbook.
+The docs/index validations should be rerun after any further docs change
+touching Story 31, Story 32, the live ledger, or the operator runbook.

@@ -12,6 +12,9 @@ related:
   - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
   - docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md
+  - docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md
+  - docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md
+  - docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
 labels:
@@ -30,6 +33,12 @@ Implement the third bounded Story 31 exploration candidate after `T218` proved
 that the second family could move the fresh-start failure neighborhood away
 from the original `T214` seams, but still could not keep the exact target
 surfaces finite.
+
+This task is now contingent on the `T225-T227` parity package. With `T225`
+complete and `T226` now delivered as the committed local parity-probe surface,
+it should not be treated as the immediate next run while the repo is still
+testing whether a current trainer/runtime divergence is the higher-priority
+mechanism answer.
 
 This candidate should now target the shifted pair-family neighborhood exposed
 by the stronger `T218` evidence:
@@ -63,6 +72,8 @@ The family should:
 - Reuse the existing Story 31 exploration vehicle:
   - `pdm run qwen-story31-stability-lab run`
   - `pdm run qwen-story31-stability-lab gate`
+- Do not run this task until the executed `T226` parity result and `T227`
+  close without a higher-priority trainer/runtime remediation replacing it.
 - Reuse the exact failing-row pair, hook profile, and promotion rule from
   `T215`.
 - Extend the existing stabilization module rather than introducing a new
@@ -80,7 +91,8 @@ The family should:
   layer-16 handoff neighborhood.
 - [ ] The existing lab can run that family without a new proof wrapper.
 - [ ] The existing gate can judge whether the family earns promotion.
-- [ ] Operator docs record `T219` as the active next exploration slice.
+- [ ] Operator docs record `T219` as the next contingent exploration slice
+  after the executed `T226` parity result and `T227` close cleanly.
 
 ## Acceptance Criteria
 

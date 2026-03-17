@@ -17,6 +17,9 @@ related:
   - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
   - docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md
   - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
+  - docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md
+  - docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md
+  - docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -80,6 +83,9 @@ This story is intentionally split into two lanes:
     - pair `sub_talker_loss` first breaks at `talker_core.layer_15.output`
 - Open a solution-oriented lane that targets the late-middle talker-core seam
   directly instead of adding more proof-only discovery work.
+- Before another bounded stabilizer family is treated as the default next move,
+  rule out current trainer/runtime divergence as the confounder behind the
+  recreated-control and immediate fresh-start failure family.
 - Keep the preserved no-projection fine-tune graph and clean text semantics
   fixed while we test the first bounded talker-core stabilization surface.
 - Keep Candidate `3` available only as a later contingency if the first
@@ -87,8 +93,11 @@ This story is intentionally split into two lanes:
   first short fresh-start Hemma proof.
 - Use the Story 32 matrix when interpreting the related surfaces:
   - `T221` is the provenance surface
-  - `T219` is the next mechanism slice
+  - `T225-T227` are the next mechanism slice package
+  - `T219` is the next contingent bounded stabilizer candidate after the
+    parity slice closes cleanly
   - `T217` is the blocked recovery surface
+
 ## Reuse Plan
 
 Build the exploration vehicle by reusing the pieces that are already good:
@@ -160,6 +169,9 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md`
 1. `docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md`
 1. `docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md`
+1. `docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md`
+1. `docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md`
+1. `docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md`
 1. `docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
@@ -173,7 +185,12 @@ the governing success criterion for future restart work.
 
 - Story 32 now governs how the related surfaces are interpreted:
   - `T221` is provenance evidence for Story 31 decisions
-  - `T219` is the next mechanism slice
+  - `T225` is complete as the exact parity contract
+  - `T226` is now complete as the committed local parity-probe surface
+  - the next mechanism action is to execute that surface on the real
+    historical bundle and use its first-divergence output inside `T227`
+  - `T219` remains the contingent bounded stabilizer slice after the parity
+    slice and any required `T227` remediation close cleanly
   - `T217` is the blocked recovery proof lane
 - `T216` is now complete.
 - The first bounded Story 31 stabilization posture is available through:
@@ -240,13 +257,29 @@ the governing success criterion for future restart work.
     - this is stronger evidence than `T220`, but it is still not byte-for-byte
       March 13 attribution because the run uses the current trainer module and
       current sampler/runtime posture
-- `T219` remains the next bounded exploration slice after `T221` resolves:
-  - this is the next mechanism-owned slice under Story 32
-  - keep the moderate `T218` posture as the preferred base ingredient
-  - target the shifted `layer_16.output` / `layer_16.input_layernorm`
-    handoff neighborhood
-  - keep visibility on the surviving `sub_talker_loss`
-    `layer_16.mlp.gated_product` fallback
+- `T225` is now complete as the exact parity contract:
+  - the recreated step-`1` / iteration-`4` failure family is now fixed as the
+    canonical comparison window
+  - the exact checkpoint list and state-vector invariants are now documented
+    before more bounded stabilizer claims are made
+- `T226` is now complete as the committed local parity-probe surface:
+  - the public command is `pdm run qwen-story31-parity-probe run`
+  - it writes one compact comparison artifact set under
+    `build/verification/qwen-story31-parity-probe/`
+  - it compares the real `execute_train_iteration` window against a
+    reconstructed shared-forward optimizer-boundary window on the exact
+    `T225` microbatch family
+- the immediate mechanism action is now to execute that surface on the real
+  historical bundle and feed the first-divergence result into `T227`
+- `T227` now becomes the mechanism decision task:
+  - patch the smallest verified trainer/runtime divergence if one exists
+  - otherwise explicitly clear the lane back to `T219`
+- `T219` is now contingent rather than the default next execution slice:
+  - only resume it if the executed `T226` parity result and `T227` do not surface a higher-priority
+    trainer/runtime remediation
+  - if it resumes, keep the moderate `T218` posture as the preferred base
+    ingredient and keep the shifted
+    `layer_16.output` / `layer_16.input_layernorm` neighborhood as the target
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - `T217` remains the blocked recovery lane:
@@ -256,4 +289,5 @@ the governing success criterion for future restart work.
   experiment.
 - `T219` remains shaped as the next bounded exploration candidate around the
   shifted layer-16 handoff neighborhood, but it is no longer the default next
-  execution slice while the exact `T220` control answer is ready to run.
+  execution slice now that the post-`T221` parity package has higher
+  mechanism priority.

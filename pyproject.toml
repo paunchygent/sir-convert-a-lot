@@ -158,6 +158,7 @@ distribution = false
 "qwen-story30-freshstart-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story30_freshstart_proof"
 "qwen-story30-backward-lineage" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story30_backward_lineage"
 "qwen-story31-stability-lab" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story31_stability_lab"
+"qwen-story31-parity-probe" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story31_parity_probe"
 "qwen-t221-historical-control" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t221_historical_control"
 "qwen-t197-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t197_proof"
 "qwen-t198-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t198_proof"

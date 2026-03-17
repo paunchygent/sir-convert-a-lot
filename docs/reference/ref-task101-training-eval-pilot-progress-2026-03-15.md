@@ -145,7 +145,12 @@ work.
 - `qwen-t221-historical-control` remains the active provenance surface for
   future historical-contract or control questions
 - Story 31 is the active mechanism lane:
-  - `T219` is the next bounded mechanism slice
+  - `T225` is complete as the exact parity contract
+  - `T226` is complete as the committed local parity-probe surface
+  - the next mechanism action is to execute that surface on the real
+    historical bundle and route the first-divergence result through `T227`
+  - `T219` remains the next contingent bounded stabilizer slice after the
+    parity slice and any required `T227` remediation close cleanly
   - do not infer recovery readiness directly from a mechanism run
 - the governed `qwen-train` fresh-start proof lane is the active recovery
   surface, but it remains blocked until a mechanism candidate passes the local

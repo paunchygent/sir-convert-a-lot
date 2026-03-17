@@ -378,7 +378,7 @@ For provenance questions:
 For mechanism questions:
 
 - Story 31 owns the active mechanism lane
-- use the committed exploration surface:
+- for bounded stabilizer exploration, use the committed exploration surface:
   - local or attached short run:
     `pdm run qwen-story31-stability-lab run --skip-build`
   - attached Hemma short run through the canonical wrapper:
@@ -389,8 +389,18 @@ For mechanism questions:
   - `variant-reports/<variant>.json`
 - the mandatory local promotion step before any recovery proof is:
   `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
-- `T219` is the next mechanism slice after the negative `T221` provenance
-  result
+- for the recreated `T221` step-`1` / iteration-`4` failure family, run the
+  committed parity surface before any further stabilizer claim:
+  - `pdm run qwen-story31-parity-probe run`
+- the parity probe writes:
+  - `current-path.json`
+  - `intended-path.json`
+  - `results.json`
+  - `results.md`
+- use the parity probe result to decide whether `T227` remediates a verified
+  trainer/runtime divergence or Story 31 returns to `T219`
+- `T219` is now the contingent bounded stabilizer slice, not the immediate
+  next mechanism action
 
 For recovery questions:
 
