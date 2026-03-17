@@ -43,6 +43,7 @@ def test_prepare_writes_freshstart_package(
     assert config_payload["train_line_start"] == 1
     assert config_payload["train_line_end"] == 16
     assert config_payload["max_steps"] == 2
+    assert config_payload["eval_source_manifest_family"] == "swedish_pilot_train"
     assert "qwen-story30-freshstart-proof launch --proof-id t211-proof" in plan_markdown
     assert "swedish_pilot_train lines 1..16" in plan_markdown
     assert "Mini-bundle materialized" in checklist_markdown
@@ -118,14 +119,9 @@ def test_remote_launch_materializes_bundle_and_calls_qwen_train(
 ) -> None:
     """Remote launch should build the mini-bundle and then call detached training."""
     train_source_bundle = tmp_path / "train-source-bundle"
-    eval_source_bundle = tmp_path / "eval-source-bundle"
     _write_manifest(
         train_source_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
         [_row_payload(index) for index in range(1, 5)],
-    )
-    _write_manifest(
-        eval_source_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
-        [_row_payload(101)],
     )
     calls: list[list[str]] = []
 
@@ -151,11 +147,13 @@ def test_remote_launch_materializes_bundle_and_calls_qwen_train(
             "--train-source-bundle-root",
             train_source_bundle.as_posix(),
             "--eval-source-bundle-root",
-            eval_source_bundle.as_posix(),
+            train_source_bundle.as_posix(),
             "--train-manifest-family",
             "swedish_pilot_train",
             "--eval-manifest-family",
             "swedish_checkpoint_dev",
+            "--eval-source-manifest-family",
+            "swedish_pilot_train",
             "--text-embedding-mask-policy",
             "text_span_only",
             "--throughput-profile-label",

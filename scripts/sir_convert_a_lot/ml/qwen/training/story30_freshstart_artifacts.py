@@ -30,12 +30,10 @@ DEFAULT_REMOTE_TRAINING_OUTPUT_ROOT = Path(
     "/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training"
 )
 DEFAULT_TRAIN_SOURCE_BUNDLE_ROOT = DEFAULT_PILOT_BUNDLE_ROOT
-DEFAULT_EVAL_SOURCE_BUNDLE_ROOT = Path(
-    "/srv/scratch/sir-convert-a-lot/build/verification/"
-    "task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1"
-)
+DEFAULT_EVAL_SOURCE_BUNDLE_ROOT = DEFAULT_TRAIN_SOURCE_BUNDLE_ROOT
 DEFAULT_TRAIN_MANIFEST_FAMILY = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY = "swedish_checkpoint_dev"
+DEFAULT_EVAL_SOURCE_MANIFEST_FAMILY = DEFAULT_TRAIN_MANIFEST_FAMILY
 DEFAULT_TEXT_EMBEDDING_MASK_POLICY = "text_span_only"
 DEFAULT_THROUGHPUT_PROFILE_LABEL = "hemma-throughput-balanced-v1"
 DEFAULT_TRAIN_LINE_START = 1
@@ -68,6 +66,7 @@ class Story30FreshstartProofConfig:
     eval_source_bundle_root: str
     train_manifest_family: str
     eval_manifest_family: str
+    eval_source_manifest_family: str
     text_embedding_mask_policy: str
     throughput_profile_label: str
     train_line_start: int
@@ -180,6 +179,7 @@ def build_prepare_config(args: argparse.Namespace) -> Story30FreshstartProofConf
         eval_source_bundle_root=Path(args.eval_source_bundle_root).as_posix(),
         train_manifest_family=str(args.train_manifest_family),
         eval_manifest_family=str(args.eval_manifest_family),
+        eval_source_manifest_family=str(args.eval_source_manifest_family),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
         throughput_profile_label=str(args.throughput_profile_label),
         train_line_start=int(args.train_line_start),
@@ -214,6 +214,7 @@ def load_config(local_proof_root: Path) -> Story30FreshstartProofConfig:
         eval_source_bundle_root=_required_str(payload, "eval_source_bundle_root"),
         train_manifest_family=_required_str(payload, "train_manifest_family"),
         eval_manifest_family=_required_str(payload, "eval_manifest_family"),
+        eval_source_manifest_family=_required_str(payload, "eval_source_manifest_family"),
         text_embedding_mask_policy=_required_str(payload, "text_embedding_mask_policy"),
         throughput_profile_label=_required_str(payload, "throughput_profile_label"),
         train_line_start=_required_int(payload, "train_line_start"),

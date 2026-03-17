@@ -126,9 +126,10 @@ Why this is now the clean plan:
     - start from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
     - use the Candidate 1 semantic-only assembly code path
     - use a truthful mini-bundle with `swedish_pilot_train` lines `1..16` from
-      the canonical frozen Task 101 train bundle and
-      `swedish_checkpoint_dev` line `1` from the canonical Task 152 held-out
-      eval bundle
+      the canonical frozen Task 101 train bundle and one non-executed
+      `swedish_checkpoint_dev` launch placeholder row from that same train
+      bundle because the held-out eval manifests lack
+      `precomputed_ref_input_path`
     - run the short fresh-start discriminant probe before opening Candidate 3
 
 ## Active Artifact Roots

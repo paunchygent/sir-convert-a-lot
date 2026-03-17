@@ -149,8 +149,9 @@ explicitly narrow the scope.
   - use a truthful mini-bundle with:
     - `swedish_pilot_train` lines `1..16` from the canonical frozen Task 101
       train bundle
-    - `swedish_checkpoint_dev` line `1` from the canonical Task 152 held-out
-      eval bundle
+    - one `swedish_checkpoint_dev` launch placeholder row from the same frozen
+      train bundle because `T211` makes no eval claim and the available
+      held-out eval manifests do not carry `precomputed_ref_input_path`
   - use the committed surface:
     `qwen-story30-freshstart-proof prepare|launch|status`
   - if the fresh-start probe still fails in the same family, open Candidate 3

@@ -143,8 +143,11 @@ Story 28 is now operating policy:
   restart or Candidate 3 opening:
   - run a fresh-start Candidate 1 probe from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
   - use a tiny truthful mini-bundle with train rows from the canonical frozen
-    Task 101 bundle and the held-out eval row from the canonical Task 152 eval
-    bundle
+    Task 101 bundle
+  - keep the `swedish_checkpoint_dev` row as a non-executed launch placeholder
+    sourced from the same frozen train bundle, because `T211` makes no eval
+    claim and the available held-out eval manifests lack
+    `precomputed_ref_input_path`
   - resolve the canonical dated Task 101 frozen train bundle automatically on
     Hemma if the legacy undated placeholder path is absent
   - keep the probe detached and operator-governed on Hemma

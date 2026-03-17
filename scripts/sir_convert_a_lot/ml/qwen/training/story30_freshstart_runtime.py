@@ -125,6 +125,8 @@ def remote_launch_proof_args(config: Story30FreshstartProofConfig) -> list[str]:
         config.train_manifest_family,
         "--eval-manifest-family",
         config.eval_manifest_family,
+        "--eval-source-manifest-family",
+        config.eval_source_manifest_family,
         "--text-embedding-mask-policy",
         config.text_embedding_mask_policy,
         "--throughput-profile-label",

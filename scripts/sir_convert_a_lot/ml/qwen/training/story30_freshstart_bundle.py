@@ -44,6 +44,7 @@ def materialize_mini_bundle(
     target_bundle_root: Path,
     train_manifest_family: str,
     eval_manifest_family: str,
+    eval_source_manifest_family: str,
     train_line_start: int,
     train_line_end: int,
     eval_line_start: int,
@@ -56,10 +57,13 @@ def materialize_mini_bundle(
     )
     resolved_eval_source_bundle_root = _resolve_source_bundle_root(
         source_bundle_root=eval_source_bundle_root,
-        manifest_family=eval_manifest_family,
+        manifest_family=eval_source_manifest_family,
     )
     train_manifest_path = _manifest_path(resolved_train_source_bundle_root, train_manifest_family)
-    eval_manifest_path = _manifest_path(resolved_eval_source_bundle_root, eval_manifest_family)
+    eval_manifest_path = _manifest_path(
+        resolved_eval_source_bundle_root,
+        eval_source_manifest_family,
+    )
     train_rows = _selected_rows(train_manifest_path, train_line_start, train_line_end)
     eval_rows = _selected_rows(eval_manifest_path, eval_line_start, eval_line_end)
     if not train_rows:

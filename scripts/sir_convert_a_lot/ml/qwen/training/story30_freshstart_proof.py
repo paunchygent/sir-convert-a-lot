@@ -27,6 +27,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_freshstart_artifacts imp
     DEFAULT_EVAL_LINE_START,
     DEFAULT_EVAL_MANIFEST_FAMILY,
     DEFAULT_EVAL_SOURCE_BUNDLE_ROOT,
+    DEFAULT_EVAL_SOURCE_MANIFEST_FAMILY,
     DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     DEFAULT_LOCAL_PROOF_ROOT,
     DEFAULT_MAX_STEPS,
@@ -98,6 +99,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     prepare.add_argument("--train-manifest-family", default=DEFAULT_TRAIN_MANIFEST_FAMILY)
     prepare.add_argument("--eval-manifest-family", default=DEFAULT_EVAL_MANIFEST_FAMILY)
+    prepare.add_argument(
+        "--eval-source-manifest-family",
+        default=DEFAULT_EVAL_SOURCE_MANIFEST_FAMILY,
+    )
     prepare.add_argument("--text-embedding-mask-policy", default=DEFAULT_TEXT_EMBEDDING_MASK_POLICY)
     prepare.add_argument("--throughput-profile-label", default=DEFAULT_THROUGHPUT_PROFILE_LABEL)
     prepare.add_argument("--train-line-start", type=int, default=DEFAULT_TRAIN_LINE_START)
@@ -202,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
             target_bundle_root=remote_bundle_root(config),
             train_manifest_family=config.train_manifest_family,
             eval_manifest_family=config.eval_manifest_family,
+            eval_source_manifest_family=config.eval_source_manifest_family,
             train_line_start=config.train_line_start,
             train_line_end=config.train_line_end,
             eval_line_start=config.eval_line_start,
@@ -250,6 +256,7 @@ def _add_remote_launch_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--eval-source-bundle-root", type=Path, required=True)
     parser.add_argument("--train-manifest-family", required=True)
     parser.add_argument("--eval-manifest-family", required=True)
+    parser.add_argument("--eval-source-manifest-family", required=True)
     parser.add_argument("--text-embedding-mask-policy", required=True)
     parser.add_argument("--throughput-profile-label", required=True)
     parser.add_argument("--train-line-start", type=int, required=True)
@@ -278,6 +285,7 @@ def _config_from_remote_launch_args(args: argparse.Namespace) -> Story30Freshsta
         eval_source_bundle_root=Path(args.eval_source_bundle_root).as_posix(),
         train_manifest_family=str(args.train_manifest_family),
         eval_manifest_family=str(args.eval_manifest_family),
+        eval_source_manifest_family=str(args.eval_source_manifest_family),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
         throughput_profile_label=str(args.throughput_profile_label),
         train_line_start=int(args.train_line_start),
@@ -308,6 +316,7 @@ def _config_for_remote_status(args: argparse.Namespace) -> Story30FreshstartProo
         eval_source_bundle_root="",
         train_manifest_family=DEFAULT_TRAIN_MANIFEST_FAMILY,
         eval_manifest_family=DEFAULT_EVAL_MANIFEST_FAMILY,
+        eval_source_manifest_family=DEFAULT_EVAL_SOURCE_MANIFEST_FAMILY,
         text_embedding_mask_policy=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
         throughput_profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
         train_line_start=DEFAULT_TRAIN_LINE_START,
@@ -346,6 +355,7 @@ def _render_plan_markdown(config: Story30FreshstartProofConfig) -> str:
             f"- eval_source_bundle_root: `{config.eval_source_bundle_root}`",
             f"- train_slice: `{train_slice}`",
             f"- eval_slice: `{eval_slice}`",
+            f"- eval_source_manifest_family: `{config.eval_source_manifest_family}`",
             f"- batch_size: `{config.batch_size}`",
             f"- max_steps: `{config.max_steps}`",
             f"- gradient_accumulation_steps: `{config.gradient_accumulation_steps}`",
@@ -385,6 +395,7 @@ def _render_checklist_markdown(config: Story30FreshstartProofConfig) -> str:
             f"- eval slice: `{eval_slice}`",
             f"- train source bundle root: `{config.train_source_bundle_root}`",
             f"- eval source bundle root: `{config.eval_source_bundle_root}`",
+            f"- eval source manifest family: `{config.eval_source_manifest_family}`",
             f"- launch_id: `{config.launch_id}`",
             f"- remote training output root: `{config.remote_training_output_root}`",
             f"- remote proof output root: `{config.remote_proof_output_root}`",

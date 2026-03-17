@@ -347,8 +347,9 @@ Operational consequence:
   - it runs against a truthful mini-bundle with:
     - `swedish_pilot_train` lines `1..16` copied from the canonical frozen
       Task 101 train bundle
-    - `swedish_checkpoint_dev` line `1` copied from the canonical Task 152
-      held-out eval bundle
+    - one `swedish_checkpoint_dev` launch placeholder row copied from the same
+      frozen train bundle because `T211` makes no eval claim and the available
+      held-out eval manifests do not carry `precomputed_ref_input_path`
   - use the committed surface:
     - `pdm run qwen-story30-freshstart-proof prepare --proof-id task211-20260317t121557z-freshstart-a1 --skip-build`
     - `pdm run qwen-story30-freshstart-proof launch --proof-id task211-20260317t121557z-freshstart-a1`
