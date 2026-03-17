@@ -39,8 +39,11 @@ The current experiment posture is:
   - active lane: Story 31 through `qwen-story31-stability-lab`
   - `T225` complete: exact parity contract defined
   - `T226` complete: committed local parity-probe surface delivered
-  - next mechanism action: run that surface on the real historical bundle,
-    then route the first-divergence result through `T227`
+  - live parity result under `task226-20260317t224307Z`:
+    `no_meaningful_divergence_found`
+  - next mechanism action: resume `T219` as the bounded stabilizer slice
+  - `T227` is now contingent only if a later parity/runtime divergence is
+    actually verified
   - next contingent stabilizer slice after parity closes: `T219`
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
@@ -161,6 +164,11 @@ Story 28 is now operating policy:
     `execute_train_iteration` window against the reconstructed shared-forward
     optimizer-boundary window on the exact `T225` microbatch family and writes
     `current-path.json`, `intended-path.json`, `results.json`, and `results.md`
+  - the live in-image `T226` Hemma execution under
+    `task226-20260317t224307Z` then matched the current and intended paths at
+    every compared checkpoint and closed with
+    `first_divergence_classification = no_meaningful_divergence_found`, so
+    Story 31 returns to `T219` rather than escalating to `T227`
 
 ## Next Actions
 
@@ -174,12 +182,12 @@ Story 28 is now operating policy:
   - `T225` is complete as the exact parity contract for the recreated early
     failure family
   - `T226` is now complete as the committed deterministic parity-probe surface
-  - the immediate mechanism action is to execute that surface on the real
-    historical bundle and use its first-divergence result inside `T227`
-  - `T227` then either fixes the smallest verified trainer/runtime divergence or
-    explicitly clears the lane back to `T219`
-  - `T219` is now a contingent bounded stabilizer slice, not the immediate
-    next run
+    and as a live in-image historical-bundle run:
+    `task226-20260317t224307Z` closed with
+    `no_meaningful_divergence_found`
+  - `T219` is now the immediate next bounded stabilizer slice again
+  - `T227` stays contingent only if a later verified trainer/runtime
+    divergence appears
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal
     claims

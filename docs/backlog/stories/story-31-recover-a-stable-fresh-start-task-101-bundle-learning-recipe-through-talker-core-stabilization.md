@@ -187,10 +187,12 @@ the governing success criterion for future restart work.
   - `T221` is provenance evidence for Story 31 decisions
   - `T225` is complete as the exact parity contract
   - `T226` is now complete as the committed local parity-probe surface
-  - the next mechanism action is to execute that surface on the real
-    historical bundle and use its first-divergence output inside `T227`
-  - `T219` remains the contingent bounded stabilizer slice after the parity
-    slice and any required `T227` remediation close cleanly
+  - the live in-image historical-bundle run under
+    `task226-20260317t224307Z` found no meaningful checkpoint divergence
+    between the current and intended paths
+  - `T219` is therefore re-promoted as the immediate bounded stabilizer slice
+  - `T227` is now contingent only if a later verified trainer/runtime
+    divergence appears
   - `T217` is the blocked recovery proof lane
 - `T216` is now complete.
 - The first bounded Story 31 stabilization posture is available through:
@@ -269,17 +271,18 @@ the governing success criterion for future restart work.
   - it compares the real `execute_train_iteration` window against a
     reconstructed shared-forward optimizer-boundary window on the exact
     `T225` microbatch family
-- the immediate mechanism action is now to execute that surface on the real
-  historical bundle and feed the first-divergence result into `T227`
-- `T227` now becomes the mechanism decision task:
-  - patch the smallest verified trainer/runtime divergence if one exists
-  - otherwise explicitly clear the lane back to `T219`
-- `T219` is now contingent rather than the default next execution slice:
-  - only resume it if the executed `T226` parity result and `T227` do not surface a higher-priority
-    trainer/runtime remediation
-  - if it resumes, keep the moderate `T218` posture as the preferred base
-    ingredient and keep the shifted
-    `layer_16.output` / `layer_16.input_layernorm` neighborhood as the target
+- the live in-image historical-bundle run under
+  `task226-20260317t224307Z` then matched the current and intended paths at
+  every compared checkpoint and closed with:
+  - `first_divergence_checkpoint = null`
+  - `first_divergence_classification = no_meaningful_divergence_found`
+  - `recommended_next_step = return_to_t219_if_no_higher_priority_runtime_bug_is_found`
+- `T227` therefore remains contingent rather than becoming the active
+  remediation slice
+- `T219` is now restored as the default next execution slice:
+  - keep the moderate `T218` posture as the preferred base ingredient
+  - keep the shifted `layer_16.output` /
+    `layer_16.input_layernorm` neighborhood as the target
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - `T217` remains the blocked recovery lane:

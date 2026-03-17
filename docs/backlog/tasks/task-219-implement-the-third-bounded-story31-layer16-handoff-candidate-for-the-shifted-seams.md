@@ -34,11 +34,11 @@ that the second family could move the fresh-start failure neighborhood away
 from the original `T214` seams, but still could not keep the exact target
 surfaces finite.
 
-This task is now contingent on the `T225-T227` parity package. With `T225`
-complete and `T226` now delivered as the committed local parity-probe surface,
-it should not be treated as the immediate next run while the repo is still
-testing whether a current trainer/runtime divergence is the higher-priority
-mechanism answer.
+This task was temporarily gated by the `T225-T227` parity package. That gate
+is now closed cleanly: the live in-image `T226` historical-bundle run under
+`task226-20260317t224307Z` found no meaningful checkpoint divergence between
+the current and intended paths, so `T219` is restored as the immediate next
+bounded Story 31 mechanism slice.
 
 This candidate should now target the shifted pair-family neighborhood exposed
 by the stronger `T218` evidence:
@@ -72,8 +72,8 @@ The family should:
 - Reuse the existing Story 31 exploration vehicle:
   - `pdm run qwen-story31-stability-lab run`
   - `pdm run qwen-story31-stability-lab gate`
-- Do not run this task until the executed `T226` parity result and `T227`
-  close without a higher-priority trainer/runtime remediation replacing it.
+- Reuse the now-closed `T225-T226` parity result as the mechanism evidence
+  that no higher-priority trainer/runtime remediation displaced this slice.
 - Reuse the exact failing-row pair, hook profile, and promotion rule from
   `T215`.
 - Extend the existing stabilization module rather than introducing a new
@@ -91,8 +91,9 @@ The family should:
   layer-16 handoff neighborhood.
 - [ ] The existing lab can run that family without a new proof wrapper.
 - [ ] The existing gate can judge whether the family earns promotion.
-- [ ] Operator docs record `T219` as the next contingent exploration slice
-  after the executed `T226` parity result and `T227` close cleanly.
+- [ ] Operator docs record `T219` as the next active bounded exploration slice
+  after the executed `T226` live parity result closed without a verified
+  trainer/runtime divergence.
 
 ## Acceptance Criteria
 

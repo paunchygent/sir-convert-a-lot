@@ -143,10 +143,12 @@ explicitly narrow the scope.
   - `T225` is complete as the exact parity contract
   - `T226` is now complete as the committed local parity-probe surface:
     `pdm run qwen-story31-parity-probe run`
-  - the next mechanism action is to execute that surface on the real
-    historical bundle, then use the first-divergence result inside `T227`
-  - `T219` is now a contingent bounded stabilizer slice, not the immediate
-    next run
+  - the live in-image historical-bundle run under
+    `task226-20260317t224307Z` found no meaningful checkpoint divergence
+    between the current and intended paths
+  - `T219` is now the immediate next bounded stabilizer slice again
+  - `T227` is contingent only if a later verified trainer/runtime divergence
+    appears
   - `T217` remains the blocked recovery lane until a mechanism candidate
     passes the local promotion gate
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for

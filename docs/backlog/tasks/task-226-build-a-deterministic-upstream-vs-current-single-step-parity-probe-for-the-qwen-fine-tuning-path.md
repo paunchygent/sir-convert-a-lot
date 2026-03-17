@@ -66,9 +66,19 @@ proof.
 - The current path reuses the real `execute_train_iteration` window.
 - The intended path is a repo-owned reconstructed shared-forward /
   optimizer-boundary window for the same exact `T225` microbatch family.
-- Live operator execution against the real historical bundle remains the next
-  mechanism action after this build slice; this task closes the committed
-  reusable surface and its local gates.
+- Live operator execution on Hemma is now also complete:
+  - host-venv execution first failed as an invalid parity setup because
+    `flash_attn` was unavailable outside the canonical image
+  - the committed device-transfer fix in `555624e` then reran the probe inside
+    the `sir-convert-a-lot-qwen-finetune-hemma:task100` image against the real
+    historical bundle under
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-parity-probe/task226-20260317t224307Z`
+  - that live run resolved with:
+    - `first_divergence_checkpoint = null`
+    - `first_divergence_classification = no_meaningful_divergence_found`
+    - `recommended_next_step = return_to_t219_if_no_higher_priority_runtime_bug_is_found`
+- This task therefore closes both the committed reusable surface and the live
+  historical-bundle parity decision that returns Story 31 to `T219`.
 
 ## Deliverables
 

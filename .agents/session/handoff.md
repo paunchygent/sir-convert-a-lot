@@ -147,10 +147,12 @@ Story 28 remains operating policy:
 ## Immediate Next Step
 
 1. Keep `T221` classified as provenance evidence only.
-1. Execute `pdm run qwen-story31-parity-probe run` on the real historical
-   bundle after the completed `T225` parity contract and before any further
-   bounded stabilizer iteration.
-1. Use that first-divergence output inside `T227` before considering `T219`.
+1. Treat the live in-image `T226` result under
+   `task226-20260317t224307Z` as the current mechanism truth:
+   `first_divergence_classification = no_meaningful_divergence_found`.
+1. Resume `T219` as the next bounded Story 31 stabilizer slice.
+1. Keep `T227` contingent only if a later verified trainer/runtime divergence
+   appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion
    gate.
 1. Keep Story 29 and Story 30 surfaces available as historical references, not

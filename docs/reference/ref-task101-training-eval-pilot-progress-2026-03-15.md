@@ -147,10 +147,12 @@ work.
 - Story 31 is the active mechanism lane:
   - `T225` is complete as the exact parity contract
   - `T226` is complete as the committed local parity-probe surface
-  - the next mechanism action is to execute that surface on the real
-    historical bundle and route the first-divergence result through `T227`
-  - `T219` remains the next contingent bounded stabilizer slice after the
-    parity slice and any required `T227` remediation close cleanly
+  - the live in-image historical-bundle run
+    `task226-20260317t224307Z` resolved with
+    `first_divergence_classification = no_meaningful_divergence_found`
+  - `T219` is now the next bounded stabilizer slice again
+  - `T227` remains contingent only if a later verified trainer/runtime
+    divergence appears
   - do not infer recovery readiness directly from a mechanism run
 - the governed `qwen-train` fresh-start proof lane is the active recovery
   surface, but it remains blocked until a mechanism candidate passes the local
