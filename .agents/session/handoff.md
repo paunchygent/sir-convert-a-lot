@@ -19,7 +19,68 @@
 
 ## What Landed
 
+- `T204/T205` now provide the recurring scratch-governance lane for Story 29:
+
+  - `pdm run qwen-scratch-policy audit`
+  - `pdm run qwen-scratch-policy remediate`
+  - `pdm run qwen-scratch-policy maintain`
+  - `pdm run qwen-scratch-policy install-timer`
+  - `pdm run qwen-scratch-policy status-timer`
+
+- The scratch-governance implementation was refactored to restore SRP/SOLID
+  boundaries:
+
+  - contracts live in
+    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_maintenance_contracts.py`
+  - candidate policy lives in
+    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_maintenance_selection.py`
+  - timer logic lives in
+    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_timer_runtime.py`
+  - runtime orchestration lives in
+    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_maintenance_runtime.py`
+  - CLI rendering/settings live in
+    `scripts/sir_convert_a_lot/devops/task204_hemma_scratch_policy_reporting.py`
+
+- Two real Hemma permission gaps were fixed after live execution:
+
+  - Task 204 audit now retries `du -s -B1` with `sudo -n` for protected roots
+    like `/srv/scratch/docker`
+  - shared storage symlink replacement now retries with `sudo -n ln -s` when
+    scratch-backed path creation is permission-protected
+
+- Hemma recurring maintenance is now installed as a user-level timer:
+
+  - service:
+    `sir-convert-a-lot-qwen-scratch-maintenance.service`
+  - timer:
+    `sir-convert-a-lot-qwen-scratch-maintenance.timer`
+  - linger is enabled for `paunchygent`
+
+- Live Hemma storage outcome:
+
+  - scratch free space recovered from about `9.0 GiB` to about `98.0 GiB`
+    (`105240276992` bytes after the successful second maintenance pass)
+  - the first maintenance attempt moved
+    `task161-20260313t212725z-cache-on` to storage but failed on the old
+    symlink-back permission boundary; that orphaned path was repaired manually
+    on Hemma and the shared fallback was then committed
+  - the successful second maintenance pass archived:
+    - `task161-20260313t212725z-cache-off`
+    - `task-175-throughput-proof-20260314d-balanced`
+  - the full candidate list and archived-path truth are in
+    `build/verification/task-205-hemma-scratch-maintenance/maintain.json`
+
+- `T198` clean rerun is now live with a fresh evidence id:
+
+  - proof id: `task198-20260316t202541z-accum2-a2`
+  - bounded replay launch id:
+    `task198-20260316t202541z-accum2-a2-window`
+  - mask policy: `text_span_only`
+  - accumulation: `2`
+  - the old `a1` proof remains preserved as the storage-failure evidence
+
 - `T197` now has a committed local proof wrapper:
+
   - `pdm run qwen-t197-proof`
   - prepares deterministic local proof artifacts under
     `build/verification/qwen-t197-proof/<proof-id>/`
@@ -28,10 +89,13 @@
     `1500` continuation
   - renders `checklist.md` with the canonical Story 29 preflight/pass/fail
     checks for the `1406 -> 1418 -> 1500` gate
+
 - `T197` then ran on Hemma under `task197-20260316t183555z-a1` and failed
   again at optimizer step `1417`, so the preferred `1500` continuation did
   not launch
+
 - `T198` now has a committed detached accumulation-`2` wrapper:
+
   - `pdm run qwen-t198-proof`
   - prepares deterministic local proof artifacts under
     `build/verification/qwen-t198-proof/<proof-id>/`
@@ -39,15 +103,20 @@
     the default accumulation to `2`
   - the first prepared package is
     `task198-20260316t185616z-accum2-a1`
+
 - `qwen-train diagnose-non-finite` now exists as the canonical detached
   diagnostic surface.
+
 - Fast ML quality gates now exist for the Qwen lane:
+
   - `pdm run test-ml`
   - `pdm run typecheck-ml`
   - `test-ml` uses `pytest --import-mode=importlib` so duplicate test
     basenames under `tests/sir_convert_a_lot/ml/qwen/` collect safely from the
     repo root
+
 - Optimizer-boundary diagnostics now probe:
+
   - pre-step parameter and optimizer-state finiteness for the active
     no-projection text-embedding surface
   - pre-clip and post-clip gradient finiteness for that same surface
@@ -55,7 +124,9 @@
   - whether the first bad stage was `pre_clip`, `clip_grad_norm`,
     `post_clip`, or `post_step`
   - whether `optimizer.step()` was attempted, skipped, or completed
+
 - Story 28 refactor is delivered:
+
   - `scripts/sir_convert_a_lot/cli/ml/qwen_train.py` is now a composition root
   - host control-plane logic lives under
     `scripts/sir_convert_a_lot/ml/qwen/training/control_plane/`
@@ -65,6 +136,7 @@
     `scripts/sir_convert_a_lot/ml/qwen/training/reporting/`
   - patched runtime logic is split across focused `sft_12hz_*` modules
   - `orchestrator.py` and `reporting.py` are deleted and must not return
+
 - Docs were synchronized so Story 28 is marked completed and `T186` is now
   closed out with the finished Hemma proof.
 
@@ -168,21 +240,21 @@ Implement Story 29 before any new restart attempt:
    - `gradient_accumulation_steps` is now runtime-configurable
    - launch, resume, capture, diagnose, eval, and schedule artifacts all
      record the effective value
-1. run `T198` as the next active lane:
-   - keep `text_embedding_mask_policy=text_span_only`
-   - start from the same canonical RCA checkpoint `state-step-00001406`
-   - prepare one accumulation-`2` proof package:
-     `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
-   - launch/status the bounded replay:
-     `pdm run qwen-t198-proof launch-window --proof-id <proof-id>`
-     `pdm run qwen-t198-proof status-window --proof-id <proof-id>`
-   - only after the replay passes, launch/status the `1500` gate:
-     `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
-     `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
-   - test `gradient_accumulation_steps=1` only if the accumulation-`2` lane
-     still does not clear the preferred gate
-   - only use the fallback `1470 + standalone eval` gate if the preferred
-     lane still cannot be cleared
+1. keep `T204/T205` as the landed storage-governance baseline:
+   - use `qwen-scratch-policy audit|maintain|install-timer|status-timer`
+     instead of ad hoc cleanup
+   - keep the recurring timer enabled on Hemma
+   - keep active RCA roots on scratch and archive only cold completed roots
+1. continue `T198` from the live fresh rerun:
+   - proof id:
+     `task198-20260316t202541z-accum2-a2`
+   - inspect the bounded replay:
+     `pdm run qwen-t198-proof status-window --proof-id task198-20260316t202541z-accum2-a2`
+   - only if the replay exits cleanly, launch/status the `1500` gate:
+     `pdm run qwen-t198-proof launch-gate1500 --proof-id task198-20260316t202541z-accum2-a2`
+     `pdm run qwen-t198-proof status-gate1500 --proof-id task198-20260316t202541z-accum2-a2`
+   - test `gradient_accumulation_steps=1` only if the fresh accumulation-`2`
+     rerun still does not clear the preferred gate
 1. only if `1500` still fails, run `T198`:
    - try accumulation `2`, then `1`
    - if no new design gap remains, use the fallback gate
@@ -207,6 +279,21 @@ Implement Story 29 before any new restart attempt:
 
 ## Validation
 
+- `PASS` `pdm run format-all`
+- `PASS` `pdm run lint-fix`
+- `PASS` `pdm run typecheck-all`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task204_hemma_scratch_policy.py tests/sir_convert_a_lot/test_task205_hemma_scratch_maintenance.py tests/sir_convert_a_lot/ml/qwen/common/test_storage.py -q`
+- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task204_hemma_scratch_policy.py tests/sir_convert_a_lot/test_task205_hemma_scratch_maintenance.py tests/sir_convert_a_lot/ml/qwen/training -q`
+- `PASS` `pdm run validate-tasks`
+- `PASS` `pdm run validate-docs`
+- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- `PASS` Hemma `qwen-scratch-policy audit` after the `sudo du` fallback fix
+- `PASS` Hemma `qwen-scratch-policy maintain --prune-docker-state` after the
+  `sudo ln -s` fallback fix; scratch free space rose to about `98.0 GiB`
+- `PASS` Hemma `qwen-scratch-policy install-timer --enable-linger --prune-docker-state`
+- `PASS` Hemma `qwen-scratch-policy status-timer`
+- `PASS` Fresh `T198` bounded replay launched:
+  `task198-20260316t202541z-accum2-a2-window`
 - `PASS` `pdm run typecheck-ml`
 - `PASS` `pdm run test-ml -q` (`225 passed`)
 - `PASS` `pdm run format-all`
