@@ -58,6 +58,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy impor
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     TextEmbeddingMaskPolicy,
     resolve_active_text_embedding_span,
+    resolve_semantic_text_embedding_span,
     resolve_text_embedding_mask_policy,
 )
 
@@ -124,6 +125,9 @@ class BatchTensors(TypedDict):
     """One collated training batch consumed by `sft_12hz.py`."""
 
     input_ids: torch.Tensor
+    semantic_text_ids: torch.Tensor
+    semantic_text_positions: torch.Tensor
+    semantic_text_mask: torch.Tensor
     ref_mels: torch.Tensor
     attention_mask: torch.Tensor
     text_embedding_mask: torch.Tensor
@@ -140,6 +144,9 @@ def require_batch_tensors(batch: object) -> BatchTensors:
     if not isinstance(batch, Mapping):
         raise TypeError("Expected the collated Qwen batch to be a mapping.")
     input_ids = _required_tensor(batch, "input_ids")
+    semantic_text_ids = _required_tensor(batch, "semantic_text_ids")
+    semantic_text_positions = _required_tensor(batch, "semantic_text_positions")
+    semantic_text_mask = _required_tensor(batch, "semantic_text_mask")
     ref_mels = _required_tensor(batch, "ref_mels")
     attention_mask = _required_tensor(batch, "attention_mask")
     text_embedding_mask = _required_tensor(batch, "text_embedding_mask")
@@ -169,6 +176,9 @@ def require_batch_tensors(batch: object) -> BatchTensors:
         )
     return {
         "input_ids": input_ids,
+        "semantic_text_ids": semantic_text_ids,
+        "semantic_text_positions": semantic_text_positions,
+        "semantic_text_mask": semantic_text_mask,
         "ref_mels": ref_mels,
         "attention_mask": attention_mask,
         "text_embedding_mask": text_embedding_mask,
@@ -268,6 +278,20 @@ def _collate_ref_mels(batch: Sequence[DatasetItem]) -> torch.Tensor:
         frame_count = int(ref_mel.shape[1])
         padded_ref_mels[batch_index, :frame_count, :] = ref_mel[0]
     return padded_ref_mels
+
+
+def _semantic_text_ids_from_text_ids(text_ids: torch.Tensor) -> torch.Tensor:
+    """Return the semantic-only text token ids from one trimmed row tensor."""
+    if text_ids.ndim != 2 or text_ids.shape[0] != 1:
+        raise ValueError("Expected one row of text ids with shape `[1, token_count]`.")
+    if int(text_ids.shape[1]) <= 3:
+        return text_ids.new_zeros((0,))
+    semantic_span = resolve_semantic_text_embedding_span(text_ids_len=int(text_ids.shape[1]))
+    semantic_length = semantic_span.length
+    semantic_ids = text_ids[0, 3:]
+    if int(semantic_ids.shape[0]) != semantic_length:
+        raise ValueError("Semantic text ids did not match the resolved semantic span length.")
+    return semantic_ids
 
 
 class TTSDataset(Dataset[DatasetItem]):
@@ -476,6 +500,15 @@ class TTSDataset(Dataset[DatasetItem]):
 
         input_ids = torch.zeros((batch_size, max_length, 2), dtype=torch.long)
         codec_ids = torch.zeros((batch_size, max_length, 16), dtype=torch.long)
+        semantic_text_lengths = [
+            int(_semantic_text_ids_from_text_ids(item["text_ids"]).shape[0]) for item in batch
+        ]
+        max_semantic_text_length = max(semantic_text_lengths)
+        semantic_text_ids = torch.zeros((batch_size, max_semantic_text_length), dtype=torch.long)
+        semantic_text_positions = torch.zeros(
+            (batch_size, max_semantic_text_length), dtype=torch.long
+        )
+        semantic_text_mask = torch.zeros((batch_size, max_semantic_text_length), dtype=torch.bool)
         text_embedding_mask = torch.zeros((batch_size, max_length), dtype=torch.bool)
         codec_embedding_mask = torch.zeros((batch_size, max_length), dtype=torch.bool)
         codec_mask = torch.zeros((batch_size, max_length), dtype=torch.bool)
@@ -491,6 +524,8 @@ class TTSDataset(Dataset[DatasetItem]):
 
             text_ids_len = text_ids.shape[1]
             codec_ids_len = audio_codec_0.shape[0]
+            semantic_ids = _semantic_text_ids_from_text_ids(text_ids)
+            semantic_length = int(semantic_ids.shape[0])
 
             input_ids[batch_index, :3, 0] = text_ids[0, :3]
             input_ids[batch_index, 3:7, 0] = self.config.tts_pad_token_id
@@ -511,6 +546,15 @@ class TTSDataset(Dataset[DatasetItem]):
                 batch_index,
                 text_embedding_span.start_index : text_embedding_span.end_index_exclusive,
             ] = True
+            semantic_text_ids[batch_index, :semantic_length] = semantic_ids
+            if semantic_length > 0:
+                semantic_text_span = resolve_semantic_text_embedding_span(text_ids_len=text_ids_len)
+                semantic_text_positions[batch_index, :semantic_length] = torch.arange(
+                    semantic_text_span.start_index,
+                    semantic_text_span.end_index_exclusive,
+                    dtype=torch.long,
+                )
+                semantic_text_mask[batch_index, :semantic_length] = True
 
             input_ids[batch_index, 3:8, 1] = torch.tensor(
                 [
@@ -576,6 +620,9 @@ class TTSDataset(Dataset[DatasetItem]):
 
         collated_batch: BatchTensors = {
             "input_ids": input_ids,
+            "semantic_text_ids": semantic_text_ids,
+            "semantic_text_positions": semantic_text_positions,
+            "semantic_text_mask": semantic_text_mask,
             "ref_mels": ref_mels,
             "attention_mask": attention_mask,
             "text_embedding_mask": text_embedding_mask.unsqueeze(-1),

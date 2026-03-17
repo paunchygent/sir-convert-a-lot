@@ -451,8 +451,12 @@ def fake_training_batch() -> dict[str, object]:
     """Return one minimal batch compatible with the patched Qwen loop."""
     embedding_dim = 4
     sequence_length = 8
+    semantic_text_length = 2
     input_ids = torch.zeros((1, sequence_length, 2), dtype=torch.long)
     codec_ids = torch.zeros((1, sequence_length, 16), dtype=torch.long)
+    semantic_text_ids = torch.zeros((1, semantic_text_length), dtype=torch.long)
+    semantic_text_positions = torch.tensor([[8, 9]], dtype=torch.long)
+    semantic_text_mask = torch.ones((1, semantic_text_length), dtype=torch.bool)
     ref_mels = torch.ones((1, 2, embedding_dim), dtype=torch.float32)
     text_embedding_mask = torch.ones((1, sequence_length, embedding_dim), dtype=torch.float32)
     codec_embedding_mask = torch.ones((1, sequence_length, embedding_dim), dtype=torch.float32)
@@ -463,6 +467,9 @@ def fake_training_batch() -> dict[str, object]:
     return {
         "input_ids": input_ids,
         "codec_ids": codec_ids,
+        "semantic_text_ids": semantic_text_ids,
+        "semantic_text_positions": semantic_text_positions,
+        "semantic_text_mask": semantic_text_mask,
         "ref_mels": ref_mels,
         "text_embedding_mask": text_embedding_mask,
         "codec_embedding_mask": codec_embedding_mask,

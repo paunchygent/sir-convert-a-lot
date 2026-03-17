@@ -37,6 +37,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy impor
     TextEmbeddingMaskPolicy,
     TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY,
     resolve_active_text_embedding_span,
+    resolve_semantic_text_embedding_span,
 )
 from tests.sir_convert_a_lot.ml.qwen.preprocessing.test_support import write_test_wav
 
@@ -462,3 +463,56 @@ def test_collate_fn_text_span_only_masks_only_semantic_text_positions(
     assert torch.equal(mask[:8], torch.zeros(8, dtype=torch.bool))
     assert torch.equal(mask[8:10], torch.ones(2, dtype=torch.bool))
     assert mask[10].item() is False
+    assert torch.equal(collated["semantic_text_ids"][0], torch.tensor([4, 5], dtype=torch.long))
+    assert torch.equal(
+        collated["semantic_text_positions"][0],
+        torch.tensor([8, 9], dtype=torch.long),
+    )
+    assert torch.equal(
+        collated["semantic_text_mask"][0],
+        torch.ones(2, dtype=torch.bool),
+    )
+
+
+def test_collate_fn_emits_semantic_text_contract_as_first_class_batch_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Collation should expose semantic ids and positions without inference."""
+    ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
+    ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
+    write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    dataset = TTSDataset(
+        data_list=[
+            {
+                "text": "hej världen igen",
+                "audio_codes": [list(range(16)), list(range(16, 32)), list(range(32, 48))],
+                "ref_audio": ref_audio_path.as_posix(),
+                "speaker_id": "speaker-a",
+            }
+        ],
+        processor=_LongTokenProcessor(),
+        config=_FakeConfig(),
+        text_embedding_mask_policy=TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY,
+    )
+    monkeypatch.setattr(
+        TTSDataset,
+        "extract_mels",
+        lambda self, audio, sample_rate: torch.ones((1, 4, 8), dtype=torch.float32),
+    )
+
+    batch_item = dataset[0]
+    collated = dataset.collate_fn([batch_item])
+    semantic_span = resolve_semantic_text_embedding_span(
+        text_ids_len=batch_item["text_ids"].shape[1]
+    )
+
+    assert torch.equal(collated["semantic_text_ids"], torch.tensor([[4, 5]], dtype=torch.long))
+    assert torch.equal(
+        collated["semantic_text_positions"],
+        torch.tensor(
+            [[semantic_span.start_index, semantic_span.end_index_exclusive - 1]],
+            dtype=torch.long,
+        ),
+    )
+    assert torch.equal(collated["semantic_text_mask"], torch.tensor([[True, True]]))

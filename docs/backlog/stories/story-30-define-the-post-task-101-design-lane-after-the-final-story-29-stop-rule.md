@@ -149,6 +149,12 @@ immediate contingency.
 1. If Candidate 1 fails its smallest-signal validation or the subsequent
    governed proof, open the immediate Candidate 3 contingency lane.
 
+## Current Status
+
+- `T207` is complete:
+  semantic text ids and semantic positions are now first-class batch fields.
+- `T208` is the next active implementation slice.
+
 ## Checklist
 
 - [ ] Implementation complete

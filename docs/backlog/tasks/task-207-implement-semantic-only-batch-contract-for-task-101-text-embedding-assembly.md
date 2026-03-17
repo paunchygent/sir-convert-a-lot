@@ -2,7 +2,7 @@
 id: 'task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly'
 title: 'Implement semantic-only batch contract for Task 101 text embedding assembly'
 type: 'task'
-status: 'proposed'
+status: 'completed'
 priority: 'high'
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -39,32 +39,46 @@ mask over scaffold positions.
 
 ## Deliverables
 
-- [ ] One committed semantic-only batch contract exists for Task 101 collation.
-- [ ] Dataset/collation tests prove scaffold positions are not part of the
+- [x] One committed semantic-only batch contract exists for Task 101 collation.
+- [x] Dataset/collation tests prove scaffold positions are not part of the
   trainable text-embedding input contract.
-- [ ] Downstream runtime consumers receive the new typed fields without
+- [x] Downstream runtime consumers receive the new typed fields without
   fallback shims.
 
 ## Acceptance Criteria
 
-- [ ] The batch contract exposes semantic text ids and semantic positions as
+- [x] The batch contract exposes semantic text ids and semantic positions as
   first-class fields.
-- [ ] The batch contract no longer requires downstream code to infer semantic
+- [x] The batch contract no longer requires downstream code to infer semantic
   membership from the full collated text channel plus a late mask.
-- [ ] Focused local tests prove semantic positions are structurally isolated in
+- [x] Focused local tests prove semantic positions are structurally isolated in
   the batch output.
-- [ ] Docs validation and task indexing stay green.
+- [x] Docs validation and task indexing stay green.
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_training_rows.py -q`
-- [ ] `pdm run typecheck-all`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_training_rows.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_train_step_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_eval_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_training_rows.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training -q`
+- [x] `pdm run typecheck-all`
 - [ ] `pdm run validate-tasks`
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
+## Outcome
+
+`T207` now emits semantic-only text fields directly from dataset collation:
+
+- `semantic_text_ids`
+- `semantic_text_positions`
+- `semantic_text_mask`
+
+These fields are now part of the enforced `BatchTensors` contract and are
+produced natively in the collate step rather than inferred later from
+`input_ids` plus `text_embedding_mask`.
+
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated

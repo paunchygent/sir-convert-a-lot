@@ -183,6 +183,10 @@ Story 28 is now operating policy:
     - Candidate 1 selected
     - ordered contingency `1 -> 3`
     - Candidate 2 rejected as the primary next story
+  - `T207` then completed as the first Story 30 execution slice:
+    dataset collation now emits `semantic_text_ids`,
+    `semantic_text_positions`, and `semantic_text_mask`, and those fields are
+    now enforced in the typed `BatchTensors` contract
 
 ## Next Actions
 
@@ -204,14 +208,13 @@ Story 28 is now operating policy:
   - the next step is Story 30 Candidate 1, not another replay or post-fix
     proof variant
 - Execute Story 30 in this order:
-  - `T207` semantic-only batch contract
-  - `T208` semantic-only train-step assembly
+  - `T207` semantic-only batch contract is complete
+  - `T208` semantic-only train-step assembly is next
   - `T209` local gradient-membership proof
   - if Candidate 1 fails, open Candidate 3 directly as the next contingency
 - Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
-- Keep Task 101 operator truth in
-  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
+- Keep Task 101 operator truth in `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
 - Keep all new Qwen control-plane/runtime work inside the Story 28 package
   boundaries enforced by `RULE-095`.
