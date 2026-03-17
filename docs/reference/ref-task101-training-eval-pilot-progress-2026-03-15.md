@@ -31,6 +31,7 @@ links:
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
+  - docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
@@ -216,6 +217,14 @@ Why this is now the clean plan:
         `layer_16.input_layernorm` handoff neighborhood
       - keep explicit visibility on the surviving
         `sub_talker_loss` `layer_16.mlp.gated_product` fallback
+    - `T220` is now the active exact-control slice:
+      - run the original restored no-projection Task 101 recipe on the
+        canonical full pilot bundle
+      - keep only the `T206` token-span correction
+      - explicitly exclude the later semantic-only assembly path from
+        `T207-T209`
+      - use that exact-control result to answer whether the original recipe is
+        still viable once the audited token leakage is fixed
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active

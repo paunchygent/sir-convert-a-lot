@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
   - docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md
   - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
+  - docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -145,6 +146,7 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md`
 1. `docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md`
 1. `docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md`
+1. `docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md`
 1. `docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
@@ -187,9 +189,14 @@ the governing success criterion for future restart work.
 - `T219` is now the active next exploration slice:
   - keep the moderate `T218` posture as the preferred base ingredient
   - target the shifted `layer_16.output` / `layer_16.input_layernorm`
-    handoff neighborhood
+  handoff neighborhood
   - keep visibility on the surviving `sub_talker_loss`
     `layer_16.mlp.gated_product` fallback
+- `T220` is now the active exact-control slice ahead of more approximation:
+  - run the original restored no-projection Task 101 recipe
+  - keep only the `T206` token-span correction
+  - use the canonical full pilot bundle from `T142`
+  - explicitly exclude the later semantic-only assembly path from `T207-T209`
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

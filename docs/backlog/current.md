@@ -194,15 +194,18 @@ Story 28 is now operating policy:
   - pair `sub_talker_loss` first breaks at `talker_core.layer_15.output`
   - replay framing is no longer the productive center of gravity
 - Story 31 is now active:
-  - `T216` is complete: the bounded variants are `off`,
-    `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4` under
-    `pdm run qwen-story31-stability-lab run`, which writes one compact matrix
-    output root and reuses the exact failing-row backward-lineage probe
+  - `T216` is complete: the bounded variants are `off`, `layer16_gated_fp32`,
+    and `layer16_gated_fp32_clamp_1e4` under
+    `pdm run qwen-story31-stability-lab run`, which writes one compact matrix output root and reuses the exact failing-row backward-lineage probe
   - `T215` is complete: `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>` is the promotion surface, and the first real gate run under `task215-20260317t160500z-a2` was negative
   - `T218` is now closed negative exploration evidence:
     the second Story 31 matrix at `task218-20260317t173122z-a1` changed the
     pair-family neighborhood, but both new variants still failed the local
     promotion gate
+  - `T220` is now the active exact-control slice:
+    run the original restored no-projection Task 101 recipe on the canonical
+    full pilot bundle with only the `T206` token-span correction; explicitly
+    exclude the later semantic-only assembly path from `T207-T209`
   - `T219` is now the active next slice:
     target the shifted `layer_16.output` / `layer_16.input_layernorm`
     handoff neighborhood while keeping visibility on the surviving
