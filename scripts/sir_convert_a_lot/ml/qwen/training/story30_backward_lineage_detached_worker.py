@@ -47,6 +47,11 @@ def main(argv: list[str] | None = None) -> int:
         exit_code = int(run_backward_lineage_main(proof_args))
     except SystemExit as exc:
         exit_code = exc.code if isinstance(exc.code, int) else 1
+        if exit_code != 0:
+            failure_path(output_root).write_text(
+                f"Detached Story 30 backward-lineage worker exited via SystemExit: {exc}\n",
+                encoding="utf-8",
+            )
     except Exception as exc:
         traceback.print_exc()
         failure_path(output_root).write_text(

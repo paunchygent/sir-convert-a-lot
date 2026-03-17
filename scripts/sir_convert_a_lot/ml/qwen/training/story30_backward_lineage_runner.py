@@ -28,6 +28,7 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     docker_checked,
     parse_json_object_from_mixed_stdout,
     prepare_qwen_image,
+    resolve_effective_bind_root,
     resolve_effective_hf_cache_dir,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.reporting.artifact_io import utc_now_iso, write_json
@@ -46,6 +47,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_bundle 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/qwen-story30-backward-lineage-proof")
 DEFAULT_MANIFEST_FAMILY = "swedish_pilot_train"
 DEFAULT_SOURCE_LINES = (13, 4)
+DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE = Path(
+    "/home/paunchygent/.data/sir-convert-a-lot/qwen-story30-backward-lineage-output-roots"
+)
 
 
 @dataclass(frozen=True)
@@ -58,6 +62,7 @@ class BackwardLineageProofSettings:
     model_id: str
     hf_cache_dir: Path
     hf_cache_home_mount: Path
+    output_root_home_mount_base: Path
     source_bundle_root: Path
     manifest_family: str
     source_lines: tuple[int, int]
@@ -79,6 +84,8 @@ class BackwardLineageProofReport:
     hf_cache_dir: str
     effective_hf_cache_dir: str
     used_home_mount: bool
+    effective_output_root: str
+    used_output_root_home_mount: bool
     probe_command: list[str]
     probe_result: dict[str, object]
 
@@ -110,6 +117,11 @@ def parse_args(argv: list[str] | None) -> BackwardLineageProofSettings:
     parser.add_argument("--model-id", default=DEFAULT_MODEL_ID)
     parser.add_argument("--hf-cache-dir", type=Path, default=default_hf_cache_dir())
     parser.add_argument("--hf-cache-home-mount", type=Path, default=default_hf_cache_home_mount())
+    parser.add_argument(
+        "--output-root-home-mount-base",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE,
+    )
     parser.add_argument("--source-bundle-root", type=Path, required=True)
     parser.add_argument("--manifest-family", default=DEFAULT_MANIFEST_FAMILY)
     parser.add_argument(
@@ -125,6 +137,7 @@ def parse_args(argv: list[str] | None) -> BackwardLineageProofSettings:
         model_id=str(args.model_id),
         hf_cache_dir=Path(args.hf_cache_dir),
         hf_cache_home_mount=Path(args.hf_cache_home_mount),
+        output_root_home_mount_base=Path(args.output_root_home_mount_base),
         source_bundle_root=Path(args.source_bundle_root),
         manifest_family=str(args.manifest_family),
         source_lines=_parse_source_lines(str(args.source_lines)),
@@ -186,13 +199,35 @@ def _mini_bundle_root(output_root: Path) -> Path:
     return output_root / "mini-bundle"
 
 
+def _output_root_home_mount(output_root: Path, *, home_mount_base: Path) -> Path:
+    """Map one canonical output root onto its deterministic home-backed bind path."""
+    if not output_root.is_absolute():
+        raise SystemExit("Backward-lineage proof output roots must be absolute on Hemma.")
+    return home_mount_base / output_root.relative_to("/")
+
+
+def _resolve_effective_output_root(settings: BackwardLineageProofSettings) -> MountResolution:
+    """Return the Docker-mountable host path for one proof output root."""
+    return resolve_effective_bind_root(
+        settings.output_root,
+        _output_root_home_mount(
+            settings.output_root,
+            home_mount_base=settings.output_root_home_mount_base,
+        ),
+        image=settings.image,
+        sync_home_into_canonical=False,
+    )
+
+
 def build_probe_command(
     settings: BackwardLineageProofSettings,
     *,
     hf_mount: MountResolution,
+    output_mount: MountResolution,
     mini_bundle: BackwardLineageMiniBundle,
 ) -> list[str]:
     """Build the Docker command that runs the in-container backward-lineage probe."""
+    effective_mini_bundle_root = (output_mount.effective_root / "mini-bundle").as_posix()
     return [
         "run",
         "--rm",
@@ -217,7 +252,7 @@ def build_probe_command(
         "-v",
         f"{hf_mount.effective_root.as_posix()}:{CONTAINER_HF_HOME}",
         "-v",
-        f"{mini_bundle.bundle_root}:/probe/bundle:ro",
+        f"{effective_mini_bundle_root}:/probe/bundle:ro",
         "--entrypoint",
         "python",
         settings.image,
@@ -240,10 +275,16 @@ def run_backward_lineage_probe(
     settings: BackwardLineageProofSettings,
     *,
     hf_mount: MountResolution,
+    output_mount: MountResolution,
     mini_bundle: BackwardLineageMiniBundle,
 ) -> tuple[dict[str, object], list[str]]:
     """Run the in-container backward-lineage probe and parse its JSON payload."""
-    command = build_probe_command(settings, hf_mount=hf_mount, mini_bundle=mini_bundle)
+    command = build_probe_command(
+        settings,
+        hf_mount=hf_mount,
+        output_mount=output_mount,
+        mini_bundle=mini_bundle,
+    )
     output = docker_checked(command, label="docker run qwen backward-lineage probe")
     payload = parse_json_object_from_mixed_stdout(output)
     return payload, ["sudo", "-n", "docker", *command]
@@ -263,6 +304,8 @@ def build_report_markdown(report: BackwardLineageProofReport) -> str:
         f"- Canonical HF cache: `{report.hf_cache_dir}`",
         f"- Effective HF cache mount: `{report.effective_hf_cache_dir}`",
         f"- Used home-backed bind mount: `{report.used_home_mount}`",
+        f"- Effective output root: `{report.effective_output_root}`",
+        f"- Used output-root home mount: `{report.used_output_root_home_mount}`",
         f"- Probe command: `{' '.join(report.probe_command)}`",
         "",
         "## Mini Bundle",
@@ -291,6 +334,7 @@ def run_proof(settings: BackwardLineageProofSettings) -> BackwardLineageProofRep
     prepare_output_root(settings.output_root)
     build_performed, image_id = prepare_qwen_image(_image_settings(settings))
     hf_mount = _hf_mount(settings)
+    output_mount = _resolve_effective_output_root(settings)
     mini_bundle = materialize_backward_lineage_bundle(
         source_bundle_root=settings.source_bundle_root,
         target_bundle_root=_mini_bundle_root(settings.output_root),
@@ -300,6 +344,7 @@ def run_proof(settings: BackwardLineageProofSettings) -> BackwardLineageProofRep
     probe_result, probe_command = run_backward_lineage_probe(
         settings,
         hf_mount=hf_mount,
+        output_mount=output_mount,
         mini_bundle=mini_bundle,
     )
     return BackwardLineageProofReport(
@@ -313,6 +358,8 @@ def run_proof(settings: BackwardLineageProofSettings) -> BackwardLineageProofRep
         hf_cache_dir=settings.hf_cache_dir.as_posix(),
         effective_hf_cache_dir=hf_mount.effective_root.as_posix(),
         used_home_mount=hf_mount.used_home_mount,
+        effective_output_root=output_mount.effective_root.as_posix(),
+        used_output_root_home_mount=output_mount.used_home_mount,
         probe_command=probe_command,
         probe_result=probe_result,
     )
