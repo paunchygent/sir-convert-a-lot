@@ -8,14 +8,12 @@ created: '2026-02-11'
 last_updated: '2026-03-17'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
-  - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
-  - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
-  - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
-  - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
-  - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
+  - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
+  - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
+  - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -25,26 +23,30 @@ labels:
 
 ## Context
 
-Epic 08 remains the active lane. The repo focus is bounded closure for the
-preserved no-projection Task 101 training series, with Story 29 acting as the
-mandatory mitigation gate before any new clean restart.
+Epic 08 remains the active lane. Story 32 now governs how active Qwen Task
+101 work is classified and compared, using the Task 101 progress reference as
+the single live ledger.
 
-The current proof posture is:
+The current experiment posture is:
 
-- exhausted replay-family evidence:
-  - preferred gate attempts with accumulation `4`, `2`, and `1` all failed
-  - the fallback `1406 -> 1470` replay also failed on the current code path
-- final post-fix rule:
-  - land one code-bearing text-token span correction
-  - then run exactly one decisive Hemma proof:
-    - clear `1406 -> 1470`
-    - then complete detached standalone eval from that checkpoint
-  - if that final post-fix proof still fails numerically before `1470`, stop
-    bounded RCA on this preserved lane
+- `provenance`
+  - latest resolved result: `T221` negative recreated-control evidence
+  - active surface: `qwen-t221-historical-control`
+- `mechanism`
+  - active lane: Story 31 through `qwen-story31-stability-lab`
+  - next slice: `T219`
+- `recovery`
+  - active surface: governed `qwen-train` fresh-start proof
+  - current status: blocked at `T217` until a mechanism candidate is promoted
+- historical-only surfaces:
+  - `qwen-story30-freshstart-proof`, `qwen-story30-backward-lineage`
+  - `qwen-t197-proof`, `qwen-t198-proof`
 
 Story 28 is now operating policy:
 
 - `RULE-095` enforces the Qwen package split and `400` LoC hot-path cap
+- `RULE-096` enforces experiment taxonomy, one-question-per-run discipline,
+  one-factor-at-a-time causal comparisons, and the promotion ladder
 - `qwen_train.py` is a composition root only
 - host control-plane logic lives under `ml/qwen/training/control_plane/`
 - detached runtime logic lives under `ml/qwen/training/detached_runtime/`
@@ -133,75 +135,42 @@ Story 28 is now operating policy:
     documented historical contract, validates the surviving `8445/8` bundle
     under `/srv/storage/...qwen3-tts-swedish-task101-pilot-bundle-20260312h`,
     and writes an explicit `contract-diff` artifact before launch
-  - the first bounded T221 Hemma run is still pending, so this branch remains
-    unresolved in the Story 31 decision tree
+  - `T221` then closed as negative recreated-control evidence:
+    `task221-20260317t193125z-a1` failed at optimizer step `1` /
+    train iteration `4` with `pre_clip_non_finite_gradients` on
+    `text_embedding.weight.grad`, no checkpoint, and no eval
+  - this is materially stronger than `T220` because it used the recreated
+    historical bundle contract, but it still does not prove that `T206` alone
+    broke the byte-for-byte March 13 lane
+  - Story 32 / `T222-T224` then landed the consolidation package:
+    one experiment taxonomy, one active surface matrix, one canonical
+    experiment spec, and one live ledger contract for future Qwen work
 
 ## Next Actions
 
 - Keep the preserved Task 101 lane on the restored no-projection fine-tuning
   graph; do not reopen the projection-enabled experiment.
-- Keep `state-step-00001406` as the canonical RCA checkpoint.
-- Keep the auxiliary codebook fusion helper on the plain vectorized reduction;
-  do not revive the explicit `float32` reducer without new Hemma evidence.
+- Keep `state-step-00001406` as the canonical RCA checkpoint for preserved-lane
+  history.
+- Keep `T221` classified as provenance evidence:
+  it is stronger than `T220`, but it is not a mechanism or recovery result.
+- Continue through Story 31 as the mechanism lane:
+  - `T219` is the next bounded exploration slice
+  - record the full Story 32 experiment spec for any new active run
+  - keep one-factor-at-a-time deltas inside the same lane before making causal
+    claims
+- Keep `T217` blocked as the recovery lane until a mechanism candidate passes
+  the local promotion gate.
+- Keep Story 29 and Story 30 proof surfaces as historical-only references, not
+  as next-step operational surfaces.
 - Keep the Hemma scratch-governance surfaces active and available:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-- Treat Story 29 / `T197-T206` as closed bounded-RCA evidence on the preserved
-  lane: the explicit position-mask correction removed the audited leakage, but
-  the single final post-fix Hemma proof still failed at optimizer step `1407`
-  without a truthful `1470` checkpoint or detached eval.
-- Treat `T207-T209` as complete and
-  `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
-  as the first required local gate before any new Hemma long proof attempt for
-  Candidate 1.
-- Treat `T211` as closed negative fresh-start evidence:
-  - the semantic-only Candidate 1 lane failed immediately at optimizer step `1`
-  - replay-amassed inherited state is no longer the leading explanation for
-    the current failure family
-  - do not spend more time on replay framing before the backward-lineage lane
-- `T212` is now closed positive discovery evidence:
-  - both rows fail independently and the truthful fresh-start single-step
-    probe reproduced the family directly
-  - Candidate 1 semantic-only assembly is not where the earliest
-    instrumented corruption first appears; that edge is `input_embeddings`
-- `T213` is now closed positive discovery evidence:
-  - the earliest non-finite backward hook is inside the talker core, not just
-    at `input_embeddings`, with the freshest localized boundary around
-    `layer_16.post_attention_layernorm` and `layer_15.output`
-  - do not open Candidate `3` while a smaller talker-core split is still
-    available
-- Treat `T214` as closed discovery evidence:
-  - pair `main_loss` / `combined_loss` first break at `talker_core.layer_16.mlp.gated_product`
-  - pair `sub_talker_loss` first breaks at `talker_core.layer_15.output`
-  - replay framing is no longer the productive center of gravity
-- Story 31 is now active:
-  - `T216` is complete: the bounded variants are `off`, `layer16_gated_fp32`,
-    and `layer16_gated_fp32_clamp_1e4` under
-    `pdm run qwen-story31-stability-lab run`, which writes one compact matrix output root and reuses the exact failing-row backward-lineage probe
-  - `T215` is complete: `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>` is the promotion surface, and the first real gate run under `task215-20260317t160500z-a2` was negative
-  - `T218` is now closed negative exploration evidence:
-    the second Story 31 matrix at `task218-20260317t173122z-a1` changed the
-    pair-family neighborhood, but both new variants still failed the local
-    promotion gate
-  - `T220` is now closed as control-surface delivery, not as a valid exact
-    historical-control answer
-  - the explicit control runtime surface is implemented and validated:
-    focused runtime/payload tests `19 passed`, full ML suite `308 passed`,
-    `typecheck-ml` and `typecheck-all` both succeeded
-  - `T221` is now the active exact-control slice:
-    the corrected historical-control launcher is implemented and validated;
-    the next step is the first bounded Hemma run against that recreated
-    contract before judging the original recipe + `T206` branch
-  - `T219` remains the next bounded exploration slice after `T221` resolves:
-    target the shifted `layer_16.output` / `layer_16.input_layernorm`
-    handoff neighborhood while keeping visibility on the surviving
-    `sub_talker_loss` `layer_16.mlp.gated_product` fallback; `T217` stays
-    blocked until a candidate passes the local promotion gate
-- `T199` remains blocked until Story 31 records a positive fresh-start
-  stabilization proof that justifies a larger clean-start proof lane.
-- Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate for
   Qwen ML iteration before broader repo validation.
-- Keep Task 101 operator truth in `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
-- Keep new Qwen control-plane/runtime work inside Story 28 boundaries (`RULE-095`).
+- Keep Task 101 operator truth in
+  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
+- Keep new Qwen control-plane/runtime work inside Story 28 boundaries
+  (`RULE-095`) and new experiment interpretation inside Story 32 governance
+  (`RULE-096`).

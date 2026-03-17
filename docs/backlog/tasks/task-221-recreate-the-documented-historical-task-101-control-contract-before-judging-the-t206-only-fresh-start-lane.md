@@ -2,7 +2,7 @@
 id: task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane
 title: Recreate the documented historical Task 101 control contract before judging the T206-only fresh-start lane
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -68,7 +68,7 @@ original recipe still learns once the token-span bug is fixed.
   - the corrected `T221` recreation
 - [x] One committed launch surface can target the historical bundle/layout
   without silently falling back to the later `task-152` benchmark lane.
-- [ ] One bounded Hemma control run exists whose result is credible evidence
+- [x] One bounded Hemma control run exists whose result is credible evidence
   about the historical original-recipe + `T206` question.
 
 ## Acceptance Criteria
@@ -84,10 +84,11 @@ original recipe still learns once the token-span bug is fixed.
   - Story 31 stabilization variants
   - the `task-152` 128-row benchmark bundle as a silent substitute for the
     historical full-bundle contract
-- [ ] The backlog/reference docs explicitly state whether the recreated run is
+- [x] The backlog/reference docs explicitly state whether the recreated run is
   now credible exact-control evidence.
-- [ ] Only after that recreation succeeds should the run result be used to
-  support or reject the “original recipe + token fix” branch in Story 31.
+- [x] Only after that recreation is explicit and its known diffs are recorded
+  should the run result be used to support or reject the “original recipe +
+  token fix” branch in Story 31.
 
 ## Current Implementation State
 
@@ -113,6 +114,36 @@ original recipe still learns once the token-span bug is fixed.
   - the surviving historical bundle now lives under `/srv/storage` backup rather than the original `/srv/scratch` reference root
   - the recreation uses the current trainer module with the original recipe shape plus the `T206` token fix
   - the first launch will be a bounded probe, not the original million-step run
+- First live launch:
+  - launch id: `task221-20260317t193125z-a1`
+  - synced revision: `0f9d130`
+  - launch root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-t221-historical-control/task221-20260317t193125z-a1`
+  - run root:
+    `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task221-20260317t193125z-a1`
+  - final status at `2026-03-17T20:36:27Z`:
+    - `status=exited`
+    - `exit_code=1`
+    - `current_optimizer_step=1`
+    - `current_train_iteration=4`
+    - `latest_durable_checkpoint_path=null`
+    - `eval_runs_completed=0`
+  - failure family:
+    - `trigger_reason=pre_clip_non_finite_gradients`
+    - `first_non_finite_surface=text_embedding.weight.grad`
+    - `first_non_finite_tensor=grad_norm`
+    - `optimizer_step_attempted=false`
+    - `optimizer_step_completed=false`
+  - the first accumulated optimizer step used four microbatches from the historical bundle:
+    - manifest lines `6367`, `6966`, `4958`, and `623`
+  - all recorded forward tensors and losses stayed finite through the failing microbatch:
+    - `main_loss=11.069219589233398`
+    - `sub_talker_loss=8.946168899536133`
+    - `combined_loss=13.753070831298828`
+  - interpretation:
+    - this is credible recreated-control evidence within the explicitly documented T221 diffs
+    - it shows that the original restored recipe shape plus only the `T206` token-span correction still fails immediately under the current trainer/runtime
+    - it does **not** by itself prove that `T206` alone broke the byte-for-byte March 13 historical lane, because T221 still runs through the current trainer module, sampler, and bounded-probe posture
 
 ## Validation
 

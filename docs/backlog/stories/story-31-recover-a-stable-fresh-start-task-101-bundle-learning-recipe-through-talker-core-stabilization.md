@@ -7,6 +7,7 @@ priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
+  - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
   - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
   - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
@@ -34,6 +35,10 @@ Implementation slice with acceptance-driven scope.
 Recover a working fresh-start Task 101 bundle-learning recipe on the canonical
 bundle after the replay-family and text-span-family RCA ladders have both been
 exhausted.
+
+Under Story 32 experiment governance, this story is the `mechanism` lane. It
+does not answer the provenance question on its own, and it does not authorize
+the governed recovery proof until one mechanism candidate is promoted.
 
 The new primary target is no longer "save the `1406` replay lane." It is:
 
@@ -80,7 +85,10 @@ This story is intentionally split into two lanes:
 - Keep Candidate `3` available only as a later contingency if the first
   talker-core stabilization lane fails its smallest-signal local gate or its
   first short fresh-start Hemma proof.
-
+- Use the Story 32 matrix when interpreting the related surfaces:
+  - `T221` is the provenance surface
+  - `T219` is the next mechanism slice
+  - `T217` is the blocked recovery surface
 ## Reuse Plan
 
 Build the exploration vehicle by reusing the pieces that are already good:
@@ -163,6 +171,10 @@ the governing success criterion for future restart work.
 
 ## Current State
 
+- Story 32 now governs how the related surfaces are interpreted:
+  - `T221` is provenance evidence for Story 31 decisions
+  - `T219` is the next mechanism slice
+  - `T217` is the blocked recovery proof lane
 - `T216` is now complete.
 - The first bounded Story 31 stabilization posture is available through:
   - `off`
@@ -197,19 +209,39 @@ the governing success criterion for future restart work.
   - the bounded Hemma attempt used the later `task-152` benchmark bundle,
     `batch_size=8`, and the current `qwen-train` launch posture
   - it therefore does not answer the documented historical Task 101 question
-- `T221` is now the active exact-control slice:
-  - recreate the documented historical Task 101 launch contract before drawing
-    any conclusion about the original recipe plus only the `T206` fix
-  - keep docs-as-code as the normative source of truth for that contract
-  - do not let the later RCA/recovery lane silently replace it
-  - the dedicated committed control surface is now implemented:
+- `T221` is now complete as negative recreated-control evidence:
+  - this remains provenance evidence for Story 31 decisions, not a Story 31
+    mechanism or recovery proof
+  - the dedicated committed control surface is:
     `pdm run qwen-t221-historical-control <launch|status|stop>`
-  - it validates the surviving historical bundle under
+  - it validated the surviving historical bundle under
     `/srv/storage/sir-convert-a-lot/backups/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h`
-    and writes a `contract-diff` artifact before launch
-  - the next step is the first bounded Hemma run under that recreated
-    historical contract
+    with documented counts `8445` train / `8` eval and wrote an explicit
+    `contract-diff` artifact before launch
+  - live run:
+    `task221-20260317t193125z-a1`
+  - recreated posture:
+    - `batch_size=1`
+    - `gradient_accumulation_steps=4`
+    - `text_embedding_assembly_mode=full_channel_masked`
+    - `text_embedding_mask_policy=text_span_only`
+    - historical `task100` image
+  - result:
+    - failed at `current_optimizer_step=1`
+    - failed at `current_train_iteration=4`
+    - `trigger_reason=pre_clip_non_finite_gradients`
+    - `first_non_finite_surface=text_embedding.weight.grad`
+    - no checkpoint minted
+    - no eval executed
+  - interpretation:
+    - immediate instability is not unique to Candidate 1 semantic-only assembly
+    - the recreated original-recipe shape plus only the `T206` token fix still
+      fails immediately under the current trainer/runtime
+    - this is stronger evidence than `T220`, but it is still not byte-for-byte
+      March 13 attribution because the run uses the current trainer module and
+      current sampler/runtime posture
 - `T219` remains the next bounded exploration slice after `T221` resolves:
+  - this is the next mechanism-owned slice under Story 32
   - keep the moderate `T218` posture as the preferred base ingredient
   - target the shifted `layer_16.output` / `layer_16.input_layernorm`
     handoff neighborhood
@@ -217,6 +249,8 @@ the governing success criterion for future restart work.
     `layer_16.mlp.gated_product` fallback
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
+- `T217` remains the blocked recovery lane:
+  it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.

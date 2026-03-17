@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-03-08'
-last_updated: '2026-03-16'
+last_updated: '2026-03-17'
 related:
   - docs/backlog/epics/epic-07-hemma-sidecar-tts-audio-artifact-delivery.md
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
@@ -14,6 +14,9 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
+  - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
+  - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
+  - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
   - docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md
   - docs/backlog/tasks/task-98-add-qwen-english-reference-clone-lane-to-hemma-benchmark.md
   - docs/backlog/tasks/task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md
@@ -130,12 +133,37 @@ Epic-level interpretation:
 - persistent `NaN` loss must be treated as a quality blocker before saturation
   evidence is considered trustworthy
 
+## Current Experiment Governance (2026-03-17)
+
+Story 32 now governs how active Qwen experiment work is classified and
+interpreted:
+
+- `provenance`
+  - active owner: `qwen-t221-historical-control`
+- `mechanism`
+  - active owner: Story 31 through `qwen-story31-stability-lab`
+- `recovery`
+  - active owner: the governed `qwen-train launch/status` proof lane, still
+    blocked until a mechanism candidate is promoted
+- `legacy-readonly`
+  - `qwen-story30-freshstart-proof`
+  - `qwen-story30-backward-lineage`
+- `deprecated`
+  - `qwen-t197-proof`
+  - `qwen-t198-proof`
+
+Future Epic 08 Qwen work must use the Task 101 progress reference as the
+single live result ledger and must not mix answers across these classes.
+
 ## Stories
 
 1. `docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
 1. `docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
 1. `docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md`
 1. `docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`
+1. `docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md`
+1. `docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md`
+1. `docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md`
 1. `docs/backlog/stories/story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
 
 ## Tasks (Ordered Planning and Execution Checklist)
@@ -200,6 +228,9 @@ Epic-level interpretation:
 - [ ] Epic 08 now includes one explicit follow-on story that treats truthful
   monitoring and `>= 90%` steady-state GPU-busy saturation evidence as a
   first-class acceptance target for the Hemma training lane.
+- [x] Epic 08 operator docs now distinguish provenance, mechanism, and
+  recovery experiment classes and route active Qwen work through one live
+  ledger instead of through overlapping proof wrappers.
 - [ ] The epic defines general Swedish language support as a multi-speaker
   outcome rather than a single-voice adaptation shortcut.
 - [ ] All future delivery candidates from this epic remain downstream of

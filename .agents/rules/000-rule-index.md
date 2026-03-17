@@ -4,7 +4,7 @@ rule_id: RULE-000
 title: Rule Index
 status: active
 created: '2026-02-11'
-updated: '2026-02-11'
+updated: '2026-03-17'
 owners:
   - platform
 tags:
@@ -21,6 +21,7 @@ scope: repo
 - `085-postgresql-and-migrations.md`: PostgreSQL and migration invariants.
 - `090-documentation-standards.md`: Documentation-as-code requirements and update cadence.
 - `095-qwen-training-architecture-boundaries.md`: Hard SRP/DDD boundaries for the Qwen control-plane and training-runtime lane.
+- `096-qwen-experiment-governance.md`: Experiment taxonomy, single-ledger, promotion-ladder, and surface-status rules for Qwen Task 101 work.
 
 Session context (non-rule):
 

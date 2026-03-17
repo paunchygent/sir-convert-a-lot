@@ -52,6 +52,10 @@ Use this skill together with the broader local skill:
 
 - `docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md`
 
+- `docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md`
+
+- `.agents/rules/096-qwen-experiment-governance.md`
+
 - `docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md`
 
 - `docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md`
@@ -113,57 +117,32 @@ explicitly narrow the scope.
 - If a resumed Task 101 lane fails with repeated non-finite behavior, do not
   keep retrying blind full training runs. The canonical next step is:
   `status -> diagnose-non-finite -> fix -> bounded retry`.
-- Story 29 now has explicit committed proof commands for both the preferred
-  and fallback gates:
-  - preferred gate:
-    `qwen-t197-proof launch-window|status-window|launch-gate1500|status-gate1500`
-    and
-    `qwen-t198-proof launch-window|status-window|launch-gate1500|status-gate1500`
-  - fallback gate:
-    `qwen-t198-proof launch-fallback1470|status-fallback1470|launch-fallback-eval|status-fallback-eval`
-  - the fallback standalone eval is detached through
-    `qwen-story29-eval-detached`
-- Current Story 29 operator rule after the failed fallback replay:
-  - treat the accumulation/fallback replay family as exhausted negative
-    evidence on the current code path
-  - do not keep launching replay-only RCA variants
-  - move to `T206`: prove the true trainable text-token span contract and land
-    one canonical code-bearing correction
-  - choose that correction by semantic span correctness and minimal blast
-    radius first; use performance only as a secondary tiebreaker if multiple
-    variants satisfy the same contract
-  - after that correction, allow exactly one decisive post-fix proof to
-    `1470 + detached standalone eval`
-  - if that final post-fix proof still fails numerically before `1470`, stop
-    bounded RCA on this preserved lane and escalate to a new design story
-- Current post-Story-29 operator rule after Story 30 Candidate 1 discovery
-  closed:
-  - treat `test_semantic_text_embeddings.py` as the required first local gate
-    before any new Hemma long proof
-  - `T210` is now closed negative as an inherited-state rescue proof:
-    the semantic-only assembly code path still failed from the canonical
-    `1406` checkpoint
-  - `T211-T214` are now closed discovery evidence:
-    - fresh-start failure reproduced at optimizer step `1`
-    - the latest truthful split first localizes
-      `main_loss` / `combined_loss` at
-      `talker_core.layer_16.mlp.gated_product`
-    - `sub_talker_loss` first localizes at `talker_core.layer_15.output`
-  - Story 31 is now the active operator lane
-  - use the committed lightweight exploration surface:
-    `qwen-story31-stability-lab run`
-  - the initial bounded stabilization variants are:
-    `off`, `layer16_gated_fp32`, `layer16_gated_fp32_clamp_1e4`
-  - the lab writes one compact matrix run under a single output root:
-    `results.json`, `results.md`, and `variant-reports/<variant>.json`
-  - the mandatory local promotion command is:
-    `qwen-story31-stability-lab gate --output-root <lab-output-root>`
-  - the gate consumes `results.json`, writes `gate.json` / `gate.md`, and only
-    promotes the first bounded candidate when baseline `off` reproduces the
-    exact `T214` pair-family seams while the candidate keeps those surfaces
-    finite
-  - do not create a proof package per micro-experiment; only the first local
-    winner gets promoted to the governed Hemma proof lane
+- Story 32 is now the governing protocol for active Qwen Task 101 experiment
+  work:
+  - classify every active run as `provenance`, `mechanism`, or `recovery`
+  - keep one question per run
+  - record the full state vector in the Task 101 progress ledger before making
+    causal claims
+  - use the promotion ladder:
+    local gate -> short bounded fresh-start run -> longer governed proof
+- Current active surface matrix:
+  - `qwen-t221-historical-control`: `provenance`
+  - `qwen-story31-stability-lab`: `mechanism`
+  - governed `qwen-train launch/status` fresh-start proof lane:
+    `recovery`, blocked until promotion
+  - `qwen-story30-freshstart-proof` and
+    `qwen-story30-backward-lineage`: `legacy-readonly`
+  - `qwen-t197-proof` and `qwen-t198-proof`: `deprecated` for new work
+- Current operator truth:
+  - `T221` is now resolved as negative recreated-control evidence:
+    the recreated original-recipe shape plus only the `T206` token-span fix
+    still fails immediately under the current trainer/runtime
+  - treat that as provenance evidence only, not as a mechanism or recovery
+    answer
+  - Story 31 remains the active mechanism lane
+  - `T219` is the next bounded mechanism slice
+  - `T217` remains the blocked recovery lane until a mechanism candidate
+    passes the local promotion gate
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in

@@ -3,321 +3,149 @@
 ## Current State
 
 - Active epic: Epic 08 Qwen Swedish language expansion on Hemma.
-- Active stories:
-  - Story 26 remains in progress for Task 101 throughput and
-    numerical-stability closure.
-  - Story 29 now owns the bounded mitigation gate that must pass before any
-    fresh clean restart.
-- Completed remediation task: `T186`
-  (`docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`).
-- Active remediation task: `T193`
-  (`docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md`).
-- Active mitigation-gate story:
-  `docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`.
-- Delivered architecture lane: Story 28 / `T187-T191` is complete and now
-  governs all future Qwen control-plane/runtime changes.
+- Active governance story:
+  `docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md`.
+- Active mechanism story:
+  `docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md`.
+- New governing rule:
+  `.agents/rules/096-qwen-experiment-governance.md`.
+- Single live result ledger for active Qwen Task 101 work:
+  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
+
+Story 32 is now the operator-facing mental model:
+
+- `provenance`
+  - active surface: `qwen-t221-historical-control`
+  - latest resolved result: `T221` negative recreated-control evidence
+- `mechanism`
+  - active surface: `qwen-story31-stability-lab`
+  - next bounded slice: `T219`
+- `recovery`
+  - active surface: governed `qwen-train launch/status` fresh-start proof
+  - current status: blocked at `T217` until a mechanism candidate is promoted
+
+Historical surfaces are intentionally preserved because they tell the causal
+story of how the lane evolved, but they are no longer the active next-step
+workflow:
+
+- `qwen-story30-freshstart-proof`: `legacy-readonly`
+- `qwen-story30-backward-lineage`: `legacy-readonly`
+- `qwen-t197-proof`: `deprecated` for new work, preserved as Story 29
+  evidence
+- `qwen-t198-proof`: `deprecated` for new work, preserved as Story 29
+  evidence
+
+Story 28 remains operating policy:
+
+- `RULE-095` keeps the Qwen package split and `400` LoC hot-path cap.
+- `RULE-096` now governs experiment taxonomy, one-question-per-run discipline,
+  one-factor-at-a-time causal interpretation, the promotion ladder, and the
+  single-ledger contract.
 
 ## What Landed
 
-- `T204/T205` now provide the recurring scratch-governance lane for Story 29:
-
-  - `pdm run qwen-scratch-policy audit`
-  - `pdm run qwen-scratch-policy remediate`
-  - `pdm run qwen-scratch-policy maintain`
-  - `pdm run qwen-scratch-policy install-timer`
-  - `pdm run qwen-scratch-policy status-timer`
-
-- The scratch-governance implementation was refactored to restore SRP/SOLID
-  boundaries:
-
-  - contracts live in
-    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_maintenance_contracts.py`
-  - candidate policy lives in
-    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_maintenance_selection.py`
-  - timer logic lives in
-    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_timer_runtime.py`
-  - runtime orchestration lives in
-    `scripts/sir_convert_a_lot/devops/task205_hemma_scratch_maintenance_runtime.py`
-  - CLI rendering/settings live in
-    `scripts/sir_convert_a_lot/devops/task204_hemma_scratch_policy_reporting.py`
-
-- Two real Hemma permission gaps were fixed after live execution:
-
-  - Task 204 audit now retries `du -s -B1` with `sudo -n` for protected roots
-    like `/srv/scratch/docker`
-  - shared storage symlink replacement now retries with `sudo -n ln -s` when
-    scratch-backed path creation is permission-protected
-
-- Hemma recurring maintenance is now installed as a user-level timer:
-
-  - service:
-    `sir-convert-a-lot-qwen-scratch-maintenance.service`
-  - timer:
-    `sir-convert-a-lot-qwen-scratch-maintenance.timer`
-  - linger is enabled for `paunchygent`
-
-- Live Hemma storage outcome:
-
-  - scratch free space recovered from about `9.0 GiB` to about `98.0 GiB`
-    (`105240276992` bytes after the successful second maintenance pass)
-  - the first maintenance attempt moved
-    `task161-20260313t212725z-cache-on` to storage but failed on the old
-    symlink-back permission boundary; that orphaned path was repaired manually
-    on Hemma and the shared fallback was then committed
-  - the successful second maintenance pass archived:
-    - `task161-20260313t212725z-cache-off`
-    - `task-175-throughput-proof-20260314d-balanced`
-  - the full candidate list and archived-path truth are in
-    `build/verification/task-205-hemma-scratch-maintenance/maintain.json`
-
-- `T198` clean rerun is now live with a fresh evidence id:
-
-  - proof id: `task198-20260316t202541z-accum2-a2`
-  - bounded replay launch id:
-    `task198-20260316t202541z-accum2-a2-window`
-  - mask policy: `text_span_only`
-  - accumulation: `2`
-  - the old `a1` proof remains preserved as the storage-failure evidence
-
-- `T197` now has a committed local proof wrapper:
-
-  - `pdm run qwen-t197-proof`
-  - prepares deterministic local proof artifacts under
-    `build/verification/qwen-t197-proof/<proof-id>/`
-  - renders `plan.md` with the exact raw detached
-    `run-hemma -- pdm run qwen-train ...` commands for the replay and the
-    `1500` continuation
-  - renders `checklist.md` with the canonical Story 29 preflight/pass/fail
-    checks for the `1406 -> 1418 -> 1500` gate
-
-- `T197` then ran on Hemma under `task197-20260316t183555z-a1` and failed
-  again at optimizer step `1417`, so the preferred `1500` continuation did
-  not launch
-
-- `T198` now has a committed detached accumulation-`2` wrapper:
-
-  - `pdm run qwen-t198-proof`
-  - prepares deterministic local proof artifacts under
-    `build/verification/qwen-t198-proof/<proof-id>/`
-  - keeps the same canonical `1406 -> 1418 -> 1500` proof shape while changing
-    the default accumulation to `2`
-  - the first prepared package is
-    `task198-20260316t185616z-accum2-a1`
-
-- `qwen-train diagnose-non-finite` now exists as the canonical detached
-  diagnostic surface.
-
-- Fast ML quality gates now exist for the Qwen lane:
-
-  - `pdm run test-ml`
-  - `pdm run typecheck-ml`
-  - `test-ml` uses `pytest --import-mode=importlib` so duplicate test
-    basenames under `tests/sir_convert_a_lot/ml/qwen/` collect safely from the
-    repo root
-
-- Optimizer-boundary diagnostics now probe:
-
-  - pre-step parameter and optimizer-state finiteness for the active
-    no-projection text-embedding surface
-  - pre-clip and post-clip gradient finiteness for that same surface
-  - targeted optimizer-state tensors
-  - whether the first bad stage was `pre_clip`, `clip_grad_norm`,
-    `post_clip`, or `post_step`
-  - whether `optimizer.step()` was attempted, skipped, or completed
-
-- Story 28 refactor is delivered:
-
-  - `scripts/sir_convert_a_lot/cli/ml/qwen_train.py` is now a composition root
-  - host control-plane logic lives under
-    `scripts/sir_convert_a_lot/ml/qwen/training/control_plane/`
-  - detached runtime logic lives under
-    `scripts/sir_convert_a_lot/ml/qwen/training/detached_runtime/`
-  - reporting lives under
-    `scripts/sir_convert_a_lot/ml/qwen/training/reporting/`
-  - patched runtime logic is split across focused `sft_12hz_*` modules
-  - `orchestrator.py` and `reporting.py` are deleted and must not return
-
-- Docs were synchronized so Story 28 is marked completed and `T186` is now
-  closed out with the finished Hemma proof.
+- Story 32 landed as a short docs/control-plane consolidation slice.
+- New backlog package landed:
+  - `docs/backlog/tasks/task-222-define-the-qwen-experiment-taxonomy-surface-status-matrix-and-short-freeze-rule.md`
+  - `docs/backlog/tasks/task-223-publish-the-canonical-qwen-experiment-spec-and-single-ledger-update-contract.md`
+  - `docs/backlog/tasks/task-224-reroute-qwen-operator-docs-through-the-active-surface-matrix-and-demote-legacy-proof-workflows.md`
+- Epic 08, Story 31, `current.md`, the Qwen runbook, the Qwen skill, and the
+  Task 101 ledger were all rerouted through the same provenance /
+  mechanism / recovery matrix.
+- The live ledger now contains:
+  - one active surface matrix
+  - one canonical Qwen Experiment Spec contract
+  - one reusable per-run ledger entry template
+- Existing CLI surfaces remain callable in this slice; the change is
+  governance and docs alignment, not command removal.
 
 ## Latest Task 101 Truth
 
-- Baseline held-out eval exists for `state-step-00001236`:
-  - `eval_loss=6.440637648105621`
-- Canonical strict-resume checkpoint is:
-  - `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task101-20260313t102144z/checkpoints/state-step-00001238`
-- The later instrumented replay proved:
-  - step `1405` still had finite forward losses but non-finite `grad_norm`
-  - the loop then applied `optimizer.step()`
-  - step `1406` entered with `input_text_embedding` already poisoned
-  - this is an optimizer-boundary corruption bug, not just a reporting bug
-- The guarded detached proof now exists at:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/20260315T180643Z`
-- The completed proof showed:
-  - `trigger_reason=pre_step_non_finite_grad_norm`
-  - `optimizer_step=1405`
-  - `optimizer_step_attempted=false`
-  - `optimizer_step_completed=false`
-  - `text_embedding.weight` and optimizer state were still finite pre-step
-  - `text_embedding.weight.grad` was already non-finite pre-step
-- Acceptance conclusion:
-  - the guarded lane stopped before the corrupt optimizer update was applied
-  - `T186` is complete as the prerequisite proof slice for the next `T179`
-    decision
-- The first projection-enabled `T179` replay then ran at:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task179-20260315t-textpath-replay-a1`
-- That replay proved:
-  - the talker-runtime fix was active because the targeted parameter family now
-    included `text_projection.linear_fc1/2.*`
-  - the resumed lane failed earlier at optimizer step `1239`, not the old
-    guarded boundary at `1405`
-  - forward losses stayed finite and probed parameters/optimizer state stayed
-    finite pre-step, but `text_embedding.weight.grad` and all probed
-    `text_projection.*` gradients were already `NaN`
-- Updated operator conclusion:
-  - this replay is now treated as a diagnostic experiment, not as the
-    canonical Task 101 graph
+- Preserved-lane historical truth still matters:
+  - `state-step-00001236` remains the canonical held-out eval baseline
   - `state-step-00001238` remains the canonical no-projection RCA checkpoint
-    for the preserved Task 101 lane
-- Runtime hardening landed after that replay:
-  - `talker_runtime.json`, `status.json`, and terminal training artifacts now
-    record the resolved text/codec/projection paths plus whether each surface
-    is probeable as an `nn.Module`
-  - focused resolver tests now cover talker-level projection, nested fallback,
-    missing projection, and callable-but-non-module projection
-- The later clean projection-enabled base restart also failed immediately at
-  optimizer step `1`, which is now treated as evidence against injecting
-  `text_projection` into the fine-tuning graph rather than evidence that the
-  preserved lane is worthless.
-- `T193` now restores the upstream no-projection fine-tuning contract and adds
-  stage-resolved clip-boundary forensics.
-- `T194` now owns the next RCA narrowing slice: use the captured no-projection
-  `1405` artifact to identify the exact text-embedding rows, token ids, and
-  backward surface that first go non-finite.
-- Trainer-native exact capture now exists and succeeded at optimizer step
-  `1401` under
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-capture1401-a3`.
-- The bounded replay from that checkpoint then crossed the old `1405` failure
-  window cleanly and minted a new durable checkpoint at
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`.
-- The later bounded continuation from `1406` failed again at optimizer step
-  `1417`.
-- The `1417` failure preserved the same root-cause shape:
+  - `state-step-00001406` remains the canonical later RCA checkpoint for the
+    preserved lane
+  - Story 29 and Story 30 remain important historical evidence and design
+    selection context
+- `T206` landed the explicit token-span position-mask correction and the
+  offline audit proved zero leaked positions, zero leaked token ids, and zero
+  leaked non-finite rows in the audited prepared bundle.
+- `T206` still failed as a final preserved-lane proof at optimizer step `1407`,
+  which closed Story 29 as bounded negative evidence for that lane.
+- Story 30 selected Candidate 1 as the preferred fresh-start design lane, with
+  Candidate 3 retained as contingency.
+- `T211-T214` localized the fresh-start failure family into the talker core,
+  with the dominant pair seam narrowed to
+  `talker_core.layer_16.mlp.gated_product`.
+- Story 31 exploration then produced:
+  - `T215`: local gate and first matrix surface
+  - `T216`: first bounded stabilization surface
+  - `T218`: negative exploration evidence
+  - `T219`: next mechanism-owned slice, not yet executed
+- `T220` delivered the exact-control runtime surface but did not answer the
+  historical-control question because the run drifted from the documented
+  March 13 contract.
+- `T221` then recreated the documented historical contract and closed as the
+  strongest current provenance result:
+  - run id: `task221-20260317t193125z-a1`
+  - failed at optimizer step `1` / train iteration `4`
   - `trigger_reason=pre_clip_non_finite_gradients`
-  - `first_non_finite_stage=pre_clip`
   - `first_non_finite_surface=text_embedding.weight.grad`
-  - parameters and optimizer state remained finite
-  - `text_embedding.weight.grad` contained `190464` `NaN` elements
-    (`93` full rows at width `2048`)
-- The bounded `1406 -> 1418` replay then reproduced `1417` from the exact
-  `1406` checkpoint and narrowed the cause:
-  - the first bad backward surface is `input_text_embedding.grad`
-  - the first bad microbatch is `851`
-  - `507` of `508` token positions in that sample went non-finite
-  - the poisoned `93` text-embedding rows match the sample's `93` unique token
-    ids exactly
-  - token id `151671` appeared `375` times in the failing sample, which aligns
-    with the active codec-span text-pad surface in the current Qwen batch
-    contract
-- Active operator posture:
-  - `state-step-00001406` is now the canonical RCA checkpoint again
-  - do not treat the failed `1406` continuation as the new mainline
-  - do not launch another fresh continuation or restart yet
-  - the next move is one bounded mitigation proof from `1406` that removes or
-    detaches the codec-span text-pad surface, then replays the `1417` window
-  - Story 29 / `T195-T199` now owns the mitigation proof, fallback gate, and
-    restart decision built on this RCA
+  - no checkpoint minted
+  - no eval executed
+  - interpretation: stronger than `T220`, but still not byte-for-byte March 13
+    attribution because the run uses the current trainer/runtime posture
+
+## Operator Rules
+
+- Use the Task 101 reference ledger as the only live ledger for active Qwen
+  experiment work.
+- Every future active run must declare the full Story 32 experiment spec before
+  it is treated as comparable evidence:
+  - `experiment_class`
+  - `question_answered`
+  - `surface_name`
+  - `code_revision`
+  - `image`
+  - `bundle_root`
+  - `sampler_or_batching_policy`
+  - `seed_or_shuffle_policy`
+  - `batch_size`
+  - `gradient_accumulation_steps`
+  - `text_embedding_assembly_mode`
+  - `text_embedding_mask_policy`
+  - `stabilizer_variant`
+  - `max_steps`
+  - `eval_policy`
+  - `input_artifact_roots`
+  - `expected_promotion_target`
+  - `status`
+  - `result_interpretation`
+- Do not make causal claims across runs that changed code, bundle root,
+  sampler, seed/shuffle, assembly mode, mask policy, or stabilizer together.
+- Use the promotion ladder:
+  local gate -> short bounded fresh-start run -> longer governed proof.
+- If a lane stops answering its designated question cleanly, keep it as
+  historical evidence only and stop using it as the active next-step surface.
 
 ## Immediate Next Step
 
-Implement Story 29 before any new restart attempt:
+1. Keep `T221` classified as provenance evidence only.
+1. Resume Story 31 through `T219` as the next mechanism-owned bounded slice.
+1. Keep `T217` blocked until a mechanism candidate passes the local promotion
+   gate.
+1. Keep Story 29 and Story 30 surfaces available as historical references, not
+   as the primary operator flow.
+1. Record future active runs in
+   `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+   using the canonical experiment-spec template.
 
-1. keep `T195` as the new structural baseline:
-   - `text_embedding_mask_policy` is now explicit
-   - fresh launches default to `text_span_only`
-   - older launch metadata remains reproducible as `legacy_codec_span`
-1. keep `T196` as the landed bounded-proof control surface:
-   - `gradient_accumulation_steps` is now runtime-configurable
-   - launch, resume, capture, diagnose, eval, and schedule artifacts all
-     record the effective value
-1. keep `T204/T205` as the landed storage-governance baseline:
-   - use `qwen-scratch-policy audit|maintain|install-timer|status-timer`
-     instead of ad hoc cleanup
-   - keep the recurring timer enabled on Hemma
-   - keep active RCA roots on scratch and archive only cold completed roots
-1. continue `T198` from the live fresh rerun:
-   - proof id:
-     `task198-20260316t202541z-accum2-a2`
-   - inspect the bounded replay:
-     `pdm run qwen-t198-proof status-window --proof-id task198-20260316t202541z-accum2-a2`
-   - only if the replay exits cleanly, launch/status the `1500` gate:
-     `pdm run qwen-t198-proof launch-gate1500 --proof-id task198-20260316t202541z-accum2-a2`
-     `pdm run qwen-t198-proof status-gate1500 --proof-id task198-20260316t202541z-accum2-a2`
-   - test `gradient_accumulation_steps=1` only if the fresh accumulation-`2`
-     rerun still does not clear the preferred gate
-1. only if `1500` still fails, run `T198`:
-   - try accumulation `2`, then `1`
-   - if no new design gap remains, use the fallback gate
-     `1470 + standalone eval`
-1. keep `T199` blocked until either the preferred or fallback proof gate is
-   satisfied and recorded in the training reference ledger
-1. once Story 29 proves the winning mitigation, remove `legacy_codec_span`
-   before `T199` launches the next clean restart
+## Validation State
 
-## Open Risks
+- `pdm run validate-tasks`: passed
+- `pdm run validate-docs`: passed
+- `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`: passed
 
-- Do not ignore the stale legacy-source diagnostic lesson: future detached
-  proofs must reuse a truthful source launch root rather than inheriting stale
-  `2/100/2` checkpoint cadence settings.
-- Do not ignore the March 15 operator-control failure: manual sleep-based
-  monitoring was too coarse to stop the resumed lane near `1401`, and it let
-  the run continue into the known `1405` failure boundary.
-- Do not count the projection-enabled diagnostic experiments and the preserved
-  no-projection Task 101 lane as one continuous training series.
-- Do not add new Qwen feature logic to central files; use the Story 28 package
-  owners enforced by `RULE-095`.
-
-## Validation
-
-- `PASS` `pdm run format-all`
-- `PASS` `pdm run lint-fix`
-- `PASS` `pdm run typecheck-all`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task204_hemma_scratch_policy.py tests/sir_convert_a_lot/test_task205_hemma_scratch_maintenance.py tests/sir_convert_a_lot/ml/qwen/common/test_storage.py -q`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/test_task204_hemma_scratch_policy.py tests/sir_convert_a_lot/test_task205_hemma_scratch_maintenance.py tests/sir_convert_a_lot/ml/qwen/training -q`
-- `PASS` `pdm run validate-tasks`
-- `PASS` `pdm run validate-docs`
-- `PASS` `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- `PASS` Hemma `qwen-scratch-policy audit` after the `sudo du` fallback fix
-- `PASS` Hemma `qwen-scratch-policy maintain --prune-docker-state` after the
-  `sudo ln -s` fallback fix; scratch free space rose to about `98.0 GiB`
-- `PASS` Hemma `qwen-scratch-policy install-timer --enable-linger --prune-docker-state`
-- `PASS` Hemma `qwen-scratch-policy status-timer`
-- `PASS` Fresh `T198` bounded replay launched:
-  `task198-20260316t202541z-accum2-a2-window`
-- `PASS` `pdm run typecheck-ml`
-- `PASS` `pdm run test-ml -q` (`225 passed`)
-- `PASS` `pdm run format-all`
-- `PASS` `pdm run lint-fix`
-- `PASS` `pdm run typecheck-all`
-- `PASS` `pdm run test-ml -q` (`244 passed`)
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_launch_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_control_plane_diagnose_use_case.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_command_builder.py tests/sir_convert_a_lot/ml/qwen/training/test_detached_runtime_inspect_service.py tests/sir_convert_a_lot/ml/qwen/training/test_diagnostic_replay.py tests/sir_convert_a_lot/ml/qwen/training/test_optimizer_guard.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_status_payloads.py tests/sir_convert_a_lot/ml/qwen/training/test_reporting_failure_projection.py tests/sir_convert_a_lot/ml/qwen/training/test_train_step_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_train_loop.py tests/sir_convert_a_lot/ml/qwen/training/test_trainer.py tests/sir_convert_a_lot/ml/qwen/training/test_eval_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_schedule_runner.py tests/sir_convert_a_lot/ml/qwen/training/test_orchestrator.py -q`
-- `PASS` `pdm run validate-tasks`
-- `PASS` `pdm run validate-docs`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_t197_proof.py -q`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_t197_proof.py tests/sir_convert_a_lot/ml/qwen/training/test_t198_proof.py -q`
-- `PASS` `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training -q` (`180 passed`)
-- `PASS` `pdm run typecheck-all`
-- `PASS` focused `T196` tests covering launch defaults, detached commands,
-  replay/capture parser defaults, standalone eval artifacts, schedule control
-  math, and accumulation-aware train-loop/runtime reporting
-
-## Key References
-
-- `docs/backlog/current.md`
-- `docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
-- `docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md`
-- `docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`
-- `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
-- `docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md`
-- `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
-- `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
+All three validations should be rerun after any further docs change touching
+Story 31, Story 32, the live ledger, or the operator runbook.

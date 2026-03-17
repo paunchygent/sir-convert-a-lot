@@ -4,7 +4,7 @@ id: RUN-qwen3-swedish-finetuning-on-hemma-and-colab
 title: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 status: active
 created: 2026-03-08
-updated: 2026-03-16
+updated: 2026-03-17
 owners:
   - platform
 system: hemma.hule.education
@@ -21,6 +21,8 @@ links:
   - docs/backlog/stories/story-27-transition-to-domain-centric-ml-pipeline-structure.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
+  - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
+  - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
 ---
 
@@ -337,118 +339,76 @@ Operational consequence:
   - if that single post-fix proof still fails numerically before `1470`,
     bounded RCA on the preserved Task 101 lane stops and any further work must
     be a new design/architecture story
-- Story 29 / `T195-T206` is the canonical backlog owner for this mitigation,
-  but the bounded replay family is now closed on the inherited checkpoint lane
-  after the negative `T210` rescue proof
-- Story 31 now owns the fresh-start stabilization lane:
-  - `T216` delivers the lightweight exploration vehicle plus the first bounded
-    talker-core stabilization surface
-  - use the committed exploration surface:
-    - local or attached short run:
-      `pdm run qwen-story31-stability-lab run --skip-build`
-    - attached Hemma short run through the canonical wrapper:
-      `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab --skip-build`
-  - the initial bounded variants are:
-    - `off`
-    - `layer16_gated_fp32`
-    - `layer16_gated_fp32_clamp_1e4`
-  - the lab writes one compact matrix run under a single output root:
-    - `results.json`
-    - `results.md`
-    - `variant-reports/<variant>.json`
-  - the mandatory local promotion step before any governed Hemma proof is:
-    - `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
-  - the gate consumes the existing `results.json` and writes:
-    - `gate.json`
-    - `gate.md`
-  - the first promotion target is:
-    - baseline: `off`
-    - candidate: `layer16_gated_fp32`
-  - do not create a detached proof package per micro-experiment; promote only
-    the first local winner to the governed Hemma proof lane
+- Story 29 / `T195-T206` is now historical bounded-RCA evidence:
+  the replay-family wrappers stay callable for reference and reproduction, but
+  they are no longer part of the active operator flow
 
-## Task 197 Detached Proof Surface
+## Story 32 Experiment Governance
 
-Use the committed local wrapper to prepare one deterministic proof package
-before launching any detached Hemma run:
+Use one active question at a time:
 
-1. Prepare the proof package locally:
-   `pdm run qwen-t197-proof prepare --proof-id <proof-id> --skip-build`
-1. Launch the detached bounded replay:
-   `pdm run qwen-t197-proof launch-window --proof-id <proof-id>`
-1. Inspect the bounded replay:
-   `pdm run qwen-t197-proof status-window --proof-id <proof-id>`
-1. Launch the detached `1500` continuation only after the replay passes:
-   `pdm run qwen-t197-proof launch-gate1500 --proof-id <proof-id>`
-1. Inspect the detached `1500` continuation:
-   `pdm run qwen-t197-proof status-gate1500 --proof-id <proof-id>`
+| Experiment class | Current active surface | Operator purpose |
+| --- | --- | --- |
+| `provenance` | `pdm run qwen-t221-historical-control <launch|status|stop>` | Historical-contract recreation and control evidence |
+| `mechanism` | `pdm run qwen-story31-stability-lab run` and `gate` | Bounded stabilization exploration and promotion gating |
+| `recovery` | governed `qwen-train launch/status` proof lane | Short fresh-start governed proof only after promotion |
 
-Operator notes:
+Operator rules:
 
-- The local artifact root is:
-  `build/verification/qwen-t197-proof/<proof-id>/`
-- The generated `plan.md` contains the exact raw detached
-  `pdm run run-hemma -- pdm run qwen-train ...` commands for both phases.
-- The generated `checklist.md` is the canonical preflight/proof checklist for
-  the `1406 -> 1418 -> 1500` gate.
-- This wrapper does not replace the canonical remote control plane; it
-  packages the exact `diagnose-non-finite`, `status`, and `resume` calls so
-  the proof can be handed off cleanly without ad hoc shell assembly.
+- record active run truth in
+  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+  and do not create a second live ledger
+- keep one question per run
+- do not make causal claims when code, bundle root, sampler/batching policy,
+  seed/shuffle, assembly mode, mask policy, or stabilizer variant changed
+  together
+- use the promotion ladder:
+  local gate -> short bounded fresh-start run -> longer governed proof
 
-## Task 198 Detached Accumulation And Fallback Proof Surface
+## Active Operator Flow
 
-Use the committed local wrapper to prepare and operate the Story 29
-accumulation and fallback lanes from the same canonical `1406` checkpoint:
+For provenance questions:
 
-1. Prepare the proof package locally:
-   `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
-1. Launch the detached bounded replay:
-   `pdm run qwen-t198-proof launch-window --proof-id <proof-id>`
-1. Inspect the bounded replay:
-   `pdm run qwen-t198-proof status-window --proof-id <proof-id>`
-1. Launch the detached `1500` continuation only after the replay passes:
-   `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
-1. Inspect the detached `1500` continuation:
-   `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
-1. If the preferred gate still fails after the planned accumulation ladder,
-   launch the fallback replay directly from `1406`:
-   `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
-1. Inspect the fallback replay:
-   `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
-1. Launch the detached fallback standalone eval only after the fallback replay
-   exits cleanly with a truthful `1470` checkpoint:
-   `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
-1. Inspect the detached fallback standalone eval:
-   `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
+- use `qwen-t221-historical-control`
+- latest resolved result:
+  `task221-20260317t193125z-a1` is negative recreated-control evidence
+- treat that result as provenance only:
+  it is stronger than `T220`, but it is not a mechanism or recovery result
 
-Operator notes:
+For mechanism questions:
 
-- The local artifact root is:
-  `build/verification/qwen-t198-proof/<proof-id>/`
-- The prepared default uses:
-  - `text_embedding_mask_policy=text_span_only`
-  - `gradient_accumulation_steps=2`
-- The generated `plan.md` and `checklist.md` serve the same role as the `T197`
-  package, but for the accumulation-ablation lane.
-- The fallback standalone eval is detached by contract and uses the committed
-  remote helper:
-  `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
-- Both Story 29 proof wrappers now fail early when Hemma scratch free space is
-  below the required headroom threshold.
-- Current operator truth:
-  - `T198` is terminal negative evidence
-  - do not relaunch the accumulation or fallback replay family on the current
-    code path
-  - `T206` and Story 30 Candidate 1 are now complete through `T209`
-  - treat
-    `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
-    as the required local gate before any new Hemma long proof
-  - the next governed long-run owner is `T210`:
-    rerun the bounded `1406 -> 1470` gate on the semantic-only assembly code
-    path with accumulation `1`, then launch detached standalone eval only if
-    the `1470` checkpoint is truthful
-  - if that governed proof still fails before `1470`, do not relaunch the
-    same lane; open Candidate 3 instead
+- Story 31 owns the active mechanism lane
+- use the committed exploration surface:
+  - local or attached short run:
+    `pdm run qwen-story31-stability-lab run --skip-build`
+  - attached Hemma short run through the canonical wrapper:
+    `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab --skip-build`
+- the lab writes one compact matrix run under a single output root:
+  - `results.json`
+  - `results.md`
+  - `variant-reports/<variant>.json`
+- the mandatory local promotion step before any recovery proof is:
+  `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+- `T219` is the next mechanism slice after the negative `T221` provenance
+  result
+
+For recovery questions:
+
+- do not launch the governed fresh-start proof until a mechanism candidate
+  passes the local promotion gate
+- `T217` is the blocked recovery owner
+- when recovery is authorized, use the existing governed `qwen-train`
+  fresh-start proof lane rather than inventing a new proof wrapper
+
+## Historical Story 29/30 Surfaces
+
+These surfaces remain callable, but they are not part of the active operator
+flow:
+
+- `qwen-story30-freshstart-proof`: `legacy-readonly`
+- `qwen-story30-backward-lineage`: `legacy-readonly`
+- `qwen-t197-proof`: `deprecated` for new work
+- `qwen-t198-proof`: `deprecated` for new work
 
 ## Story 29 Scratch Governance
 

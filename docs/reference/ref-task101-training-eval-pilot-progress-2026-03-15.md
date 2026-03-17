@@ -32,6 +32,11 @@ links:
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
   - docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md
+  - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
+  - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
+  - docs/backlog/tasks/task-222-define-the-qwen-experiment-taxonomy-surface-status-matrix-and-short-freeze-rule.md
+  - docs/backlog/tasks/task-223-publish-the-canonical-qwen-experiment-spec-and-single-ledger-update-contract.md
+  - docs/backlog/tasks/task-224-reroute-qwen-operator-docs-through-the-active-surface-matrix-and-demote-legacy-proof-workflows.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
@@ -42,205 +47,133 @@ links:
 
 ## Purpose
 
-Provide one canonical operator-facing ledger for the live Task 101
-training/eval recovery lane after the scheduled-control posture shipped.
+Provide one canonical operator-facing ledger for the active Task 101 Qwen
+experiment program after Story 32 consolidated the surface taxonomy.
 
-This document exists so operators do not have to reconstruct the current plan
-from task notes, skill policy, or ad hoc Hemma terminal history. It records:
+This document is the single live ledger for active Qwen Task 101 experiment
+work. Operators should not create a second live ledger for provenance,
+mechanism, or recovery runs.
 
-- the historical `1236` checkpoint baseline eval result
-- the short diagnostic `1236 -> 1238` recovery probe and what it proved
-- the currently approved strict resume target
-- the exact artifact roots and commands that matter for the next live relaunch
+It records:
+
+- the active experiment classes and surface-status matrix
+- the canonical experiment-spec contract for future active runs
+- the per-run ledger entry template for future active runs
+- the historical `1236` checkpoint baseline eval result and later RCA trail
+- the current active provenance, mechanism, and blocked recovery posture
+
+## Story 32 Experiment Governance
+
+Every active Qwen Task 101 run must belong to exactly one experiment class.
+
+| Experiment class | Question it may answer | Current active surface |
+| --- | --- | --- |
+| `provenance` | Why did the historical lane behave the way it did? | `qwen-t221-historical-control` |
+| `mechanism` | Where does the current failure originate and which bounded stabilizer changes that mechanism? | `qwen-story31-stability-lab` |
+| `recovery` | Which recipe now trains stably enough to justify a governed proof? | governed `qwen-train launch/status` proof lane after promotion |
+
+## Active Surface Matrix
+
+| Surface | Experiment class | Status | Operator meaning |
+| --- | --- | --- | --- |
+| `qwen-t221-historical-control` | `provenance` | `active` | Historical-contract recreation and control evidence only |
+| `qwen-story31-stability-lab` | `mechanism` | `active` | Bounded stabilization exploration and promotion gating |
+| governed `qwen-train launch/status` fresh-start proof | `recovery` | `active but blocked until promotion` | Short governed proof only after a mechanism candidate passes |
+| `qwen-story30-freshstart-proof` | `mechanism` | `legacy-readonly` | Historical fresh-start proof surface; not a current operator default |
+| `qwen-story30-backward-lineage` | `mechanism` | `legacy-readonly` | Historical causal-localization surface; not a current operator default |
+| `qwen-t197-proof` | `mechanism` | `deprecated` | Historical Story 29 replay evidence; not for new work |
+| `qwen-t198-proof` | `mechanism` | `deprecated` | Historical Story 29 accumulation/fallback evidence; not for new work |
+
+## Canonical Qwen Experiment Spec
+
+Every future active run recorded in this ledger must declare the full state
+vector below before the repo treats the run as comparable evidence:
+
+- `experiment_class`
+- `question_answered`
+- `surface_name`
+- `code_revision`
+- `image`
+- `bundle_root`
+- `sampler_or_batching_policy`
+- `seed_or_shuffle_policy`
+- `batch_size`
+- `gradient_accumulation_steps`
+- `text_embedding_assembly_mode`
+- `text_embedding_mask_policy`
+- `stabilizer_variant`
+- `max_steps`
+- `eval_policy`
+- `input_artifact_roots`
+- `expected_promotion_target`
+- `status`
+- `result_interpretation`
+
+## Ledger Entry Template
+
+Use the following field order for every future active run entry, including
+future `T221`, Story 31 mechanism, and governed recovery entries:
+
+- `experiment_class:`
+- `question_answered:`
+- `surface_name:`
+- `code_revision:`
+- `image:`
+- `bundle_root:`
+- `sampler_or_batching_policy:`
+- `seed_or_shuffle_policy:`
+- `batch_size:`
+- `gradient_accumulation_steps:`
+- `text_embedding_assembly_mode:`
+- `text_embedding_mask_policy:`
+- `stabilizer_variant:`
+- `max_steps:`
+- `eval_policy:`
+- `input_artifact_roots:`
+- `expected_promotion_target:`
+- `status:`
+- `result_interpretation:`
 
 ## Current Operator Rule
 
-For the preserved Task 101 legacy lane:
+Use this ledger as the single live operator truth for active Qwen Task 101
+work.
+
+- the latest resolved provenance result is `T221`: the recreated
+  historical-control run failed immediately at optimizer step `1` / train
+  iteration `4` on the same pre-clip text-embedding family
+- `qwen-t221-historical-control` remains the active provenance surface for
+  future historical-contract or control questions
+- Story 31 is the active mechanism lane:
+  - `T219` is the next bounded mechanism slice
+  - do not infer recovery readiness directly from a mechanism run
+- the governed `qwen-train` fresh-start proof lane is the active recovery
+  surface, but it remains blocked until a mechanism candidate passes the local
+  promotion gate
+- record future live progress here, not in the skill doc
+- do not count projection-enabled diagnostics, preserved-lane RCA, historical
+  control, and Story 31 mechanism runs as one continuous training series
+- do not make causal claims across runs that changed code, bundle root,
+  sampler/batching policy, seed/shuffle policy, mask policy, assembly mode, or
+  stabilizer variant together
+- treat Story 28 / `T187-T191` as the delivered architecture-hardening lane;
+  new control-plane or runtime logic must stay in the bounded
+  `control_plane/`, `detached_runtime/`, `reporting/`, and focused
+  `sft_12hz_*` runtime modules
+
+Historical preserved-lane truth that still matters:
 
 - treat `state-step-00001236` as the evaluated baseline checkpoint
 - treat `state-step-00001238` as the canonical no-projection RCA checkpoint
   for the preserved Task 101 lane
 - treat `state-step-00001406` from the bounded no-projection replay as the
   current canonical RCA checkpoint
-- treat Story 29 / `T195-T199` as the explicit mitigation-and-restart gate for
-  the preserved Task 101 lane
-- do not resume from `1236` again unless a deliberate compatibility experiment
-  requires it
-- do not count the projection-enabled diagnostic experiments and the preserved
-  no-projection lane as one continuous training series
-- record future live training/eval progress here, not in the skill doc
-- treat `T186` as the delivered optimizer-boundary remediation and proof slice
-  that now informs `T193` and the next `T179` bounded-retry decision
-- treat `T193` as the active numerical-stability slice that restores the
-  upstream no-projection fine-tuning contract and adds clip-boundary stage
-  forensics
-- treat `T180` as the delivered first-pass truth/forensics slice
-- treat Story 28 / `T187-T191` as the delivered permanent
-  architecture-hardening lane; new control-plane or runtime logic must stay in
-  the bounded `control_plane/`, `detached_runtime/`, `reporting/`, and
-  focused `sft_12hz_*` runtime modules
-
-Why this is now the clean plan:
-
-- `1236` is the original high-water mark from the old launch and now has a
-  real held-out eval baseline
-- the short recovery probe already restored trainer state and wrote a newer
-  durable checkpoint at `1238`
-- that newer checkpoint carries a compatible saved cursor
-  (`next_step_in_epoch=8`) for the current replacement bundle contract, so it
-  avoids the confusing legacy cursor mismatch that existed at `1236`
-- the projection-enabled replay and base restart both failed, which is
-  evidence against injecting `text_projection` into the fine-tuning graph
-  rather than evidence that the preserved no-projection lane is worthless
-- the runtime now writes a `talker_runtime` fingerprint so future shape drift
-  cannot hide behind silent fallback resolution
-- the original legacy launch snapshot still carries stale checkpoint cadence
-  settings (`2/100/2`), so the next strict resume must pass explicit control
-  overrides rather than inheriting those stale values
-- the clean `1401 -> 1406` replay crossed the old failure boundary without a
-  new non-finite event, but the later bounded continuation still failed at
-  `1417`, so `1406` is now treated as a reusable RCA checkpoint rather than a
-  newly trusted continuation baseline
-- the later bounded `1406 -> 1418` replay reproduced the `1417` failure and
-  proved the first bad backward surface is `input_text_embedding.grad`, not
-  clipping or `optimizer.step()`
-- the same replay narrowed the leading structural cause to the active
-  codec-span text-pad surface on the no-projection training graph, so the next
-  accepted operator move is a bounded mitigation proof rather than another
-  fresh training restart
-- the next restart gate is now explicit:
-  - preferred:
-    - clear `1406 -> 1418`
-    - then reach `1500`
-    - then complete the scheduled eval at `1500`
-  - fallback:
-    - only after the structural mitigation and planned accumulation ablations
-    - clear `1406 -> 1470`
-    - then run standalone held-out eval from the `1470` checkpoint
-  - after Story 30 Candidate 1 landed through `T207-T209`, the next governed
-    proof owner is `T210`:
-    - rerun the bounded `1406 -> 1470` gate on the semantic-only assembly
-      code path
-    - use accumulation `1`
-    - then run detached standalone eval only if `1470` is truthful
-    - if that governed proof still fails before `1470`, do not relaunch the
-      same lane; do one short fresh-start discriminant proof first
-  - `T210` then failed immediately at optimizer step `1407`, so Candidate 1 is
-    now negative evidence as an inherited-state rescue lane from
-    `state-step-00001406`
-  - `T211` is now closed negative fresh-start evidence:
-    - `task211-20260317t130740z-freshstart-a4` failed at optimizer step `1`
-    - the first poisoned parameter surface was still
-      `text_embedding.weight.grad`
-    - pre-step parameters and optimizer state were finite
-    - no checkpoint was minted and no eval claim was produced
-    - replay-amassed inherited state is therefore no longer the leading
-      explanation for the current failure family
-  - `T212` is now closed positive discovery evidence:
-    - the truthful probe run was
-      `task212-20260317t141500z-lineage-a3`
-    - all three branch orders failed on the row pair
-    - both rows failed independently in isolation
-    - the earliest instrumented non-finite backward hook appeared at
-      `input_embeddings` after still-finite `hidden_states` and
-      `talker_hidden_states` gradients
-    - the targeted RCA still reported `input_text_embedding.grad` first and
-      `text_embedding.weight.grad` as the first poisoned parameter surface
-  - `T213` is now the next governed discovery owner:
-    - truthful probe:
-      `task213-20260317t143810z-talkercore-a1`
-    - pair `main_loss` and `combined_loss` first localized at
-      `talker_core.layer_16.post_attention_layernorm`
-    - pair `sub_talker_loss` first localized at
-      `talker_core.layer_15.output`
-    - isolated row probes localized to `talker_core.layer_16.output` for
-      `main_loss` / `combined_loss` and `talker_core.layer_15.output` for
-      `sub_talker_loss`
-    - pair-main finite gradient magnitudes exploded from `1.07e-4` at
-      `layer_27.output` to `3.19e38` at `layer_16.output` before
-      `layer_16.post_attention_layernorm` turned non-finite
-    - Candidate `3` should not open yet because a smaller talker-core split is
-      still yielding new signal
-  - `T214` is now closed positive discovery evidence:
-    - truthful proof:
-      `task214-20260317t151800z-boundary-a1`
-    - pair `main_loss` / `combined_loss` first localized at
-      `talker_core.layer_16.mlp.gated_product`
-    - those pair branches still had finite gradients at
-      `layer_16.output` / `layer_16.mlp.down_proj`
-      (`3.19e38` / `3.26e38`) before the first non-finite hook
-    - pair `sub_talker_loss` first localized at `talker_core.layer_15.output`
-    - isolated rows still failed independently at `layer_16.output` or
-      `layer_15.output`
-    - replay and text-span leakage are no longer the leading explanations for
-      the current fresh-start failure family
-  - Story 31 is now the active governed owner:
-    - recover a stable fresh-start bundle-learning recipe through bounded
-      talker-core stabilization
-    - use an exploration-first lane:
-      fast matrix iteration, compact result table, no proof package per cell
-    - `T216` is now complete:
-      - the first bounded stabilization variants are:
-        `off`, `layer16_gated_fp32`, `layer16_gated_fp32_clamp_1e4`
-      - the committed exploration surface is:
-        `pdm run qwen-story31-stability-lab run`
-      - it writes one compact matrix run under a single output root:
-        `results.json`, `results.md`, and `variant-reports/<variant>.json`
-    - `T215` is now complete:
-      - the committed promotion surface is:
-        `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
-      - it consumes `results.json` and writes `gate.json` plus `gate.md`
-      - baseline `off` must reproduce the exact pair-family seams from `T214`
-      - candidate `layer16_gated_fp32` must keep those exact surfaces finite
-    - the first real Story 31 Hemma matrix now records negative evidence:
-      - output root:
-        `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task215-20260317t160500z-a2`
-      - baseline `off` reproduced the exact `T214` pair-family seams
-      - candidate `layer16_gated_fp32` failed the promotion gate unchanged
-      - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
-    - `T218` is now complete as negative exploration evidence:
-      - output root:
-        `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1`
-      - implemented variants:
-        - `layer16_gated_fp32_rescale_1e3_layer15_out_0p5`
-        - `layer16_gated_fp32_rescale_1e2_layer15_out_0p25`
-      - baseline `off` still reproduced the exact `T214` pair-family seams
-      - both new variants changed the pair-family neighborhood, but neither
-        candidate kept the exact target seams finite
-      - both promotion gate runs recorded:
-        - `exact_family_reproduced_by_baseline=true`
-        - `candidate_exact_surfaces_finite=false`
-        - `promotion_passed=false`
-    - `T219` is now the active next exploration slice:
-      - keep the moderate T218 posture as the preferred base ingredient
-      - target the shifted `layer_16.output` /
-        `layer_16.input_layernorm` handoff neighborhood
-      - keep explicit visibility on the surviving
-        `sub_talker_loss` `layer_16.mlp.gated_product` fallback
-    - `T220` is now closed as control-surface delivery, not as valid exact
-      historical-control evidence:
-      - the explicit `--text-embedding-assembly-mode full_channel_masked`
-        surface is now implemented on `qwen-train`
-      - the bounded Hemma attempt drifted to the later `task-152` benchmark
-        bundle and `batch_size=8`
-      - that run therefore cannot answer the documented historical Task 101
-        original-recipe question
-    - `T221` is now the active exact-control slice:
-      - recreate the documented historical Task 101 launch contract before
-        judging the original recipe plus only the `T206` token-span fix
-      - keep the docs-as-code historical launch metadata as the normative
-        source of truth, not the later RCA/recovery lane
-      - the committed surface is now:
-        `pdm run qwen-t221-historical-control <launch|status|stop>`
-      - it validates the surviving historical bundle under
-        `/srv/storage/sir-convert-a-lot/backups/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h`
-        with documented counts `8445` train / `8` eval
-      - it writes a contract diff between the historical launch, the invalid
-        T220 approximation, and the recreated T221 launch before starting the
-        bounded Hemma control
-    - `T217` runs the first short fresh-start Hemma proof only for the first
-      promoted winner
-    - do not reopen replay framing while this solution lane is active
+- Story 29 / `T195-T206` is closed bounded-RCA evidence on the preserved lane
+- Story 30 is closed design-selection evidence
+- Story 31 is the active mechanism owner under the new taxonomy
+- the detailed chronology for `T210-T221` remains below in the dated sections
+  of this ledger; those sections are the authoritative historical narrative
+  for the latest mechanism and provenance evidence
 
 ## Active Artifact Roots
 
