@@ -123,6 +123,19 @@ explicitly narrow the scope.
     `qwen-t198-proof launch-fallback1470|status-fallback1470|launch-fallback-eval|status-fallback-eval`
   - the fallback standalone eval is detached through
     `qwen-story29-eval-detached`
+- Current Story 29 operator rule after the failed fallback replay:
+  - treat the accumulation/fallback replay family as exhausted negative
+    evidence on the current code path
+  - do not keep launching replay-only RCA variants
+  - move to `T206`: prove the true trainable text-token span contract and land
+    one canonical code-bearing correction
+  - choose that correction by semantic span correctness and minimal blast
+    radius first; use performance only as a secondary tiebreaker if multiple
+    variants satisfy the same contract
+  - after that correction, allow exactly one decisive post-fix proof to
+    `1470 + detached standalone eval`
+  - if that final post-fix proof still fails numerically before `1470`, stop
+    bounded RCA on this preserved lane and escalate to a new design story
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in

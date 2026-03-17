@@ -4,7 +4,7 @@ id: REF-task101-training-eval-pilot-progress-2026-03-15
 title: Task 101 Training/Eval Pilot Progress Ledger (2026-03-15)
 status: active
 created: 2026-03-15
-updated: 2026-03-16
+updated: 2026-03-17
 owners:
   - platform
 tags:
@@ -24,6 +24,7 @@ links:
   - docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md
   - docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md
   - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
+  - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
   - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
@@ -983,6 +984,45 @@ Operator conclusion:
   - the next clean restart remains blocked
   - the documented fallback `1406 -> 1470` plus standalone eval gate is now
     the strongest next governed lane
+
+## 2026-03-17: T198 Fallback Replay Also Failed At 1449, So Replay-Only RCA Is Exhausted
+
+- Delivered tasks:
+  - `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
+  - `docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md`
+- Proof id:
+  `task198-20260317t062816z-fallback1470-a1`
+- Local proof artifact root:
+  `build/verification/qwen-t198-proof/task198-20260317t062816z-fallback1470-a1/`
+- Remote replay launch root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task198-20260317t062816z-fallback1470-a1-fallback1470`
+- Runtime truth:
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=1`
+  - the replay reused the canonical RCA checkpoint `state-step-00001406`
+- Fallback replay result:
+  - the detached fallback replay exited with `exit_code=1`
+  - `current_optimizer_step=1449`
+  - `current_train_iteration=851`
+  - no truthful `1470` checkpoint was minted
+- Failure truth:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `optimizer_step_attempted=false`
+  - `optimizer_step_completed=false`
+- Operator conclusion:
+  - the preferred and fallback Story 29 proof gates are both negative on the
+    current code path
+  - replay-only RCA is now exhausted for this preserved Task 101 lane
+  - the next active lane is `T206`:
+    prove the true text-token span contract and land one code-bearing
+    correction
+  - after that correction lands, allow exactly one decisive Hemma proof:
+    `1406 -> 1470` plus detached standalone eval
+  - if that final post-fix proof still fails numerically before `1470`, stop
+    bounded RCA on this lane and keep restart blocked until a new
+    design/architecture story exists
 
 ## Historical Reference Boundary
 

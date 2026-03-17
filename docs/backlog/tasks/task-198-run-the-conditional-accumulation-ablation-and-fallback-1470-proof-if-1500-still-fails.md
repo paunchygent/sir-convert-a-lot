@@ -2,10 +2,10 @@
 id: task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails
 title: Run the conditional accumulation ablation and fallback 1470 proof if 1500 still fails
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-16'
-last_updated: '2026-03-16'
+last_updated: '2026-03-17'
 related:
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md
@@ -142,17 +142,35 @@ the preferred or fallback stability proof.
     - accumulation `1` still did not satisfy the preferred `1500` gate
     - the documented fallback `1470 + standalone eval` gate is now the
       strongest next governed lane unless a new design reason argues otherwise
-  - committed fallback surface:
-    - `qwen-t198-proof` now exposes the fallback commands directly:
-      - `launch-fallback1470`
-      - `status-fallback1470`
-      - `launch-fallback-eval`
-      - `status-fallback-eval`
-    - the fallback replay is a direct bounded `1406 -> 1470`
-      `diagnose-non-finite` run from the canonical RCA checkpoint
-    - the fallback standalone eval launches through the detached Hemma helper
-      `qwen-story29-eval-detached` so the eval result no longer depends on an
-      attached local session
+- committed fallback surface:
+  - `qwen-t198-proof` now exposes the fallback commands directly:
+    - `launch-fallback1470`
+    - `status-fallback1470`
+    - `launch-fallback-eval`
+    - `status-fallback-eval`
+  - the fallback replay is a direct bounded `1406 -> 1470`
+    `diagnose-non-finite` run from the canonical RCA checkpoint
+  - the fallback standalone eval launches through the detached Hemma helper
+    `qwen-story29-eval-detached` so the eval result no longer depends on an
+    attached local session
+  - live fallback outcome:
+    - proof id:
+      `task198-20260317t062816z-fallback1470-a1`
+    - the direct bounded fallback replay exited with `exit_code=1`
+    - `current_optimizer_step=1449`
+    - `current_train_iteration=851`
+    - the same optimizer-boundary class remained:
+      - `trigger_reason=pre_clip_non_finite_gradients`
+      - `first_non_finite_stage=pre_clip`
+      - `first_non_finite_surface=text_embedding.weight.grad`
+    - no truthful `1470` checkpoint was minted
+    - detached fallback standalone eval was therefore not launched
+  - operator conclusion:
+    - the planned Story 29 replay family is exhausted on the current code path
+    - `T198` is terminal negative evidence, not the next active lane
+    - `T206` is now the next active task:
+      prove the true text-token span contract and define the final post-fix
+      restart rule
 
 ## Exact Command Sequence
 
@@ -181,12 +199,12 @@ the preferred or fallback stability proof.
 
 ## Deliverables
 
-- [ ] One committed `qwen-t198-proof` wrapper prepares deterministic local
+- [x] One committed `qwen-t198-proof` wrapper prepares deterministic local
   proof artifacts and renders the exact detached Hemma commands/checklist for
   the accumulation-`2` lane.
-- [ ] One side-by-side proof record exists for accumulation values `4`, `2`,
+- [x] One side-by-side proof record exists for accumulation values `4`, `2`,
   and `1` as needed.
-- [ ] If the preferred `1500` gate still fails, one fallback proof record
+- [x] If the preferred `1500` gate still fails, one fallback proof record
   exists for `1470 + standalone eval`.
 - [ ] The training reference ledger states whether restart is allowed through
   the preferred gate or only through the fallback gate.

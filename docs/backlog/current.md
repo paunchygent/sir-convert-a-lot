@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-16'
+last_updated: '2026-03-17'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
@@ -19,6 +19,7 @@ related:
   - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
   - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
   - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
+  - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -34,14 +35,16 @@ mandatory mitigation gate before any new clean restart.
 
 The current proof posture is:
 
-- preferred gate:
-  - clear the mitigated `1406 -> 1418` replay
-  - then reach `1500`
-  - then complete scheduled eval at `1500`
-- fallback gate:
-  - only after the planned structural and accumulation proofs fail
-  - clear `1406 -> 1470`
-  - then run standalone held-out eval from `1470`
+- exhausted replay-family evidence:
+  - preferred gate attempts with accumulation `4`, `2`, and `1` all failed
+  - the fallback `1406 -> 1470` replay also failed on the current code path
+- final post-fix rule:
+  - land one code-bearing text-token span correction
+  - then run exactly one decisive Hemma proof:
+    - clear `1406 -> 1470`
+    - then complete detached standalone eval from that checkpoint
+  - if that final post-fix proof still fails numerically before `1470`, stop
+    bounded RCA on this preserved lane
 
 Story 28 is now operating policy:
 
@@ -135,6 +138,19 @@ Story 28 is now operating policy:
       - `first_non_finite_surface=text_embedding.weight.grad`
       - `current_train_iteration=851`
       - `first_non_finite_tensor=grad_norm`
+    - the direct fallback replay under
+      `task198-20260317t062816z-fallback1470-a1`
+      then also failed at optimizer step `1449`
+    - the fallback replay preserved the same optimizer-boundary class:
+      - `trigger_reason=pre_clip_non_finite_gradients`
+      - `first_non_finite_stage=pre_clip`
+      - `first_non_finite_surface=text_embedding.weight.grad`
+    - no truthful `1470` checkpoint was minted, so detached standalone eval
+      was correctly not launched
+    - `T198` is now terminal negative evidence for the current replay family
+    - `T206` is now the next active task:
+      prove the true text-token span contract and define the final post-fix
+      restart/stop rule
 
 ## Next Actions
 
@@ -142,8 +158,8 @@ Story 28 is now operating policy:
   graph; do not reopen the projection-enabled experiment.
 - Keep `state-step-00001406` as the canonical RCA checkpoint.
 - Treat Story 29 as the required mitigation-and-restart gate:
-  - no fresh clean restart before the preferred `1500` proof or the fallback
-    `1470 + standalone eval` gate passes
+  - no fresh clean restart before the single final post-fix
+    `1470 + standalone eval` proof passes
 - Keep the auxiliary codebook fusion helper on the plain vectorized reduction;
   do not revive the explicit `float32` reducer without new Hemma evidence.
 - Keep the committed proof wrappers and hot-path audit surfaces available:
@@ -162,35 +178,26 @@ Story 28 is now operating policy:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-- Use the failed `1500` outcome to drive one focused next Story 29 lane:
-  - run the next accumulation ablation with
-    `gradient_accumulation_steps=1`
-  - prepared proof package:
-    `task198-20260316t213409z-accum1-a1`
-  - keep the same preferred-gate posture:
-    - clear `1406 -> 1418`
-    - then continue toward `1500`
-  - only activate the documented fallback
-    `1406 -> 1470` plus standalone eval gate if accumulation `1` still does
-    not clear the preferred lane
-- Treat the completed accumulation-`1` proof as the strongest negative
-  preferred-gate evidence so far:
-  - the bounded replay exited cleanly at `1418`
-  - the preferred `1500` continuation then failed at `1449`
-  - the failure class still remained
-    `pre_clip_non_finite_gradients` on
-    `text_embedding.weight.grad`
-  - no newer durable checkpoint beyond `1418` was minted
-  - therefore accumulation `1` still did not satisfy the preferred gate
-- The documented fallback `1406 -> 1470` plus standalone eval gate is now the
-  strongest next governed lane unless Story 29 is deliberately widened again
-- The fallback gate is now prepared in the shared Story 29 proof surface:
-  - `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
-  - `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
-  - `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
-  - `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
-  - the standalone eval phase is detached through
-    `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
+- Treat `T198` as exhausted negative evidence:
+  - accumulation `2` and `1` both failed the preferred gate
+  - the fallback replay also failed at `1449`
+  - therefore no more replay-only ablations are allowed on the current code
+    path
+- Use `T206` as the next and final Story 29 RCA/design lane:
+  - prove the true trainable text-token span for the canonical failing sample
+  - land one canonical code-bearing correction for that contract
+  - choose that correction by semantic correctness and minimal blast radius
+    first; use small performance differences only as a secondary tiebreaker
+  - then run exactly one decisive post-fix Hemma proof
+- Use this explicit stop rule:
+  - if the single post-fix proof still fails numerically before `1470` with
+    the same failure family, bounded RCA on the preserved Task 101 lane stops
+    and any further work must be a new design/architecture story
+- Use this explicit restart rule:
+  - if the single post-fix proof clears `1406 -> 1470` and the detached
+    standalone eval completes, `T199` may start
+  - no new preferred `1500` proof is required before that first clean restart
+    decision
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
 - Keep Task 101 operator truth in

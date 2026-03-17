@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: high
 created: '2026-03-16'
-last_updated: '2026-03-16'
+last_updated: '2026-03-17'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md
   - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
   - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
+  - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -121,6 +122,7 @@ numerical stability.
 1. `docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md`
 1. `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
 1. `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
+1. `docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md`
 1. `docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md`
 1. `docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md`
 1. `docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md`
@@ -147,7 +149,8 @@ numerical stability.
 - `T197` then completed on Hemma under `task197-20260316t183555z-a1` and
   failed again at optimizer step `1417`, so `text_span_only` plus
   accumulation `4` did not satisfy the preferred gate.
-- `T198` is now the next active task.
+- `T198` was the next active task and is now complete as terminal negative
+  evidence.
 - `T198` now has a committed local wrapper for the detached accumulation-`2`
   proof lane: `pdm run qwen-t198-proof`.
 - The first `T198` accumulation-`2` replay then reached optimizer step `1418`
@@ -200,6 +203,35 @@ numerical stability.
     `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
   - detached eval worker:
     `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
+- The live fallback replay under
+  `task198-20260317t062816z-fallback1470-a1`
+  then exited with `exit_code=1` at optimizer step `1449`.
+- The fallback replay preserved the same optimizer-boundary class:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+- No truthful `1470` checkpoint was minted, so detached standalone eval was
+  correctly not launched.
+- Story 29 therefore does not have a preferred-gate win or a fallback-gate
+  win on the current code path.
+- `T206` is now the next active task:
+  - prove the true trainable text-token span contract
+  - land one canonical code-bearing correction for that contract
+  - choose that correction by semantic span correctness and minimal blast
+    radius first, not by marginal performance differences between nearby
+    variants
+  - then run exactly one final post-fix Hemma proof
+- Story 29 now has an explicit stop rule:
+  - no more replay-only ablations or restart attempts on the current code path
+  - allow exactly one post-fix proof after the token-span correction lands
+  - if that post-fix proof still fails numerically before `1470` with the
+    same failure family, bounded RCA on the preserved Task 101 lane stops and
+    any further work must be a new design/architecture story
+- Story 29 now has an explicit restart rule for that final post-fix proof:
+  - the restart-authorizing gate is `1406 -> 1470` plus detached standalone
+    eval
+  - a new preferred `1500` proof is not required before the first clean
+    restart decision once the code-bearing token-span correction lands
 
 ## Checklist
 

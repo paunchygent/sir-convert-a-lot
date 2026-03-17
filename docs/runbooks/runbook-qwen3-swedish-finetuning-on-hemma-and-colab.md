@@ -317,17 +317,28 @@ Operational consequence:
 - once Story 29 proves the winning mitigation, remove `legacy_codec_span`
   before launching the next clean restart; keep the legacy mode only for
   bounded RCA reproduction until that point
-- the preferred proof target before any clean restart is:
-  - clear `1406 -> 1418`
-  - then reach step `1500`
-  - then complete the scheduled eval at `1500`
-- if `1500` still fails after the structural fix and planned accumulation
-  ablations, the fallback gate is:
+- the preferred and fallback replay gates are both now negative on the current
+  code path:
+  - accumulation `4`, `2`, and `1` all failed the preferred gate
+  - the direct fallback replay also failed at optimizer step `1449`
+- Story 29 therefore now moves to `T206` as the final code-bearing RCA/design
+  lane:
+  - prove the true trainable text-token span contract
+  - land one canonical correction for that contract
+  - if several nearby fixes perform similarly, choose the variant that is most
+    semantically correct and least invasive before using performance as a
+    tiebreaker
+  - then run exactly one decisive post-fix proof
+- the final post-fix restart rule is:
   - clear `1406 -> 1470`
-  - mint the `1470` checkpoint
-  - run standalone held-out eval from that checkpoint
-- Story 29 / `T195-T199` is the canonical backlog owner for this mitigation,
-  proof, fallback, and restart gate
+  - then complete detached standalone eval from that checkpoint
+  - if that post-fix proof passes, restart may proceed
+- the stop rule is:
+  - if that single post-fix proof still fails numerically before `1470`,
+    bounded RCA on the preserved Task 101 lane stops and any further work must
+    be a new design/architecture story
+- Story 29 / `T195-T206` is the canonical backlog owner for this mitigation,
+  proof, stop rule, and restart gate
 
 ## Task 197 Detached Proof Surface
 
@@ -397,6 +408,11 @@ Operator notes:
   `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
 - Both Story 29 proof wrappers now fail early when Hemma scratch free space is
   below the required headroom threshold.
+- Current operator truth:
+  - `T198` is terminal negative evidence
+  - do not relaunch the accumulation or fallback replay family on the current
+    code path
+  - move to `T206` instead
 
 ## Story 29 Scratch Governance
 
