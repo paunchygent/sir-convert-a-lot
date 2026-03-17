@@ -2,7 +2,8 @@
 
 Purpose:
     Own deterministic proof configuration, artifact paths, and config loading
-    for the T212 backward-lineage Hemma proof lane.
+    for the shared Story 30 backward-lineage Hemma proof lane across `T212`,
+    `T213`, and `T214`.
 
 Relationships:
     - Used by `story30_backward_lineage_proof.py` for local proof packages.
@@ -31,10 +32,13 @@ DEFAULT_MANIFEST_FAMILY = "swedish_pilot_train"
 DEFAULT_TEXT_EMBEDDING_MASK_POLICY = "text_span_only"
 DEFAULT_HOOK_PROFILE = "baseline"
 DEFAULT_REQUIRED_SCRATCH_FREE_BYTES = 16 * 1024**3
-DEFAULT_TASK_LABEL = "Task 212"
 DEFAULT_COMMAND_NAME = "qwen-story30-backward-lineage"
-DEFAULT_PROOF_ID_PREFIX = "task212"
 DEFAULT_SOURCE_LINES = (13, 4)
+_HOOK_PROFILE_TASK_METADATA = {
+    "baseline": ("Task 212", "task212"),
+    "talker_core": ("Task 213", "task213"),
+    "talker_core_boundary": ("Task 214", "task214"),
+}
 
 
 @dataclass(frozen=True)
@@ -65,7 +69,29 @@ def utc_now_iso() -> str:
 def default_proof_id() -> str:
     """Return one deterministic backward-lineage proof identifier."""
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ").lower()
-    return f"{DEFAULT_PROOF_ID_PREFIX}-{timestamp}"
+    return f"{proof_id_prefix_for_hook_profile(DEFAULT_HOOK_PROFILE)}-{timestamp}"
+
+
+def task_label_for_hook_profile(hook_profile: str) -> str:
+    """Return the owning task label for one backward-lineage hook profile."""
+    task_metadata = _HOOK_PROFILE_TASK_METADATA.get(hook_profile)
+    if task_metadata is None:
+        raise SystemExit(
+            "Backward-lineage proof received unsupported hook profile "
+            f"`{hook_profile}` while resolving task label."
+        )
+    return task_metadata[0]
+
+
+def proof_id_prefix_for_hook_profile(hook_profile: str) -> str:
+    """Return the proof-id prefix for one backward-lineage hook profile."""
+    task_metadata = _HOOK_PROFILE_TASK_METADATA.get(hook_profile)
+    if task_metadata is None:
+        raise SystemExit(
+            "Backward-lineage proof received unsupported hook profile "
+            f"`{hook_profile}` while resolving proof prefix."
+        )
+    return task_metadata[1]
 
 
 def proof_root(base_output_root: Path, proof_id: str) -> Path:
@@ -122,10 +148,16 @@ def write_markdown(path: Path, markdown: str) -> None:
 
 def build_prepare_config(args: argparse.Namespace) -> Story30BackwardLineageProofConfig:
     """Build one normalized backward-lineage proof config from parsed args."""
-    proof_id = default_proof_id() if args.proof_id is None else str(args.proof_id)
+    hook_profile = str(args.hook_profile)
+    proof_id = (
+        f"{proof_id_prefix_for_hook_profile(hook_profile)}-"
+        f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ').lower()}"
+        if args.proof_id is None
+        else str(args.proof_id)
+    )
     local_root = proof_root(Path(args.output_root), proof_id)
     return Story30BackwardLineageProofConfig(
-        task_label=DEFAULT_TASK_LABEL,
+        task_label=task_label_for_hook_profile(hook_profile),
         command_name=DEFAULT_COMMAND_NAME,
         prepared_at=utc_now_iso(),
         proof_id=proof_id,
@@ -135,7 +167,7 @@ def build_prepare_config(args: argparse.Namespace) -> Story30BackwardLineageProo
         manifest_family=str(args.manifest_family),
         source_lines=_parse_source_lines(str(args.source_lines)),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
-        hook_profile=str(args.hook_profile),
+        hook_profile=hook_profile,
         required_scratch_free_bytes=int(args.required_scratch_free_bytes),
         skip_build=bool(args.skip_build),
         launch_id=f"{proof_id}-backward-lineage",

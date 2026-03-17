@@ -149,8 +149,12 @@ Story 28 is now operating policy:
       `layer_16.post_attention_layernorm` turned non-finite
     - Candidate `3` is not the next truthful move yet, because a smaller
       talker-core causal split is still available
-  - the next clean move is `T214`: split the layer `16` / layer `15`
-    talker-core MLP and residual boundary
+  - `T214` is now implemented locally as the next smaller causal split:
+    the new `talker_core_boundary` hook profile narrows the trace to the
+    `layer_16` / `layer_15` residual seam, gated MLP multiplication seam,
+    down-projection seam, and downstream output seam; the next truthful move
+    is a detached Hemma proof on that finer profile before any Candidate `3`
+    opening
 
 ## Next Actions
 
@@ -201,12 +205,16 @@ Story 28 is now operating policy:
   - split the layer `16` / layer `15` talker-core MLP and residual boundary
   - keep the exact row pair and branch order from `T212/T213` unless a
     smaller decisive probe emerges
+  - the committed local hook profile is now ready: `talker_core_boundary`
+  - it traces the residual seam, gated MLP multiplication seam,
+    down-projection seam, and downstream output seam for layers `16` and `15`
+  - the next move is one detached Hemma proof on that profile, not a new
+    design candidate
   - do not reopen replay framing while `T214` is active
 - `T199` remains blocked until a later explicit clean-start proof authorizes
   restart.
 - Do not spend the next story on Candidate 2.
-- Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
-  before broader repo validation while iterating on Qwen ML code.
+- Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate for
+  Qwen ML iteration before broader repo validation.
 - Keep Task 101 operator truth in `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
-- Keep all new Qwen control-plane/runtime work inside the Story 28 package
-  boundaries enforced by `RULE-095`.
+- Keep new Qwen control-plane/runtime work inside Story 28 boundaries (`RULE-095`).

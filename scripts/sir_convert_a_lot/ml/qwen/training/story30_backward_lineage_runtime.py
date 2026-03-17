@@ -1,8 +1,9 @@
 """Runtime helpers for the Story 30 backward-lineage proof surface.
 
 Purpose:
-    Build and execute the canonical local and remote commands for the T212
-    backward-lineage Hemma proof lane.
+    Build and execute the canonical local and remote commands for the shared
+    Story 30 backward-lineage Hemma proof lane across `T212`, `T213`, and
+    `T214`.
 
 Relationships:
     - Used by `story30_backward_lineage_proof.py`.
@@ -69,7 +70,7 @@ def ensure_remote_scratch_headroom(config: Story30BackwardLineageProofConfig) ->
     result = subprocess.run(command, check=False, capture_output=True, text=True)
     if result.returncode != 0 and result.stdout.strip() == "":
         raise SystemExit(
-            "Task 212 scratch audit failed.\n"
+            f"{config.task_label} scratch audit failed.\n"
             f"stdout:\n{result.stdout.strip()}\n"
             f"stderr:\n{result.stderr.strip()}"
         )
@@ -77,7 +78,8 @@ def ensure_remote_scratch_headroom(config: Story30BackwardLineageProofConfig) ->
     if payload.get("meets_required_headroom") is True:
         return payload
     raise SystemExit(
-        "Task 212 launch blocked because Hemma scratch headroom is below the required threshold. "
+        f"{config.task_label} launch blocked because Hemma scratch headroom "
+        "is below the required threshold. "
         f"free_bytes={payload.get('scratch_free_bytes')} "
         f"required_free_bytes={config.required_scratch_free_bytes}."
     )

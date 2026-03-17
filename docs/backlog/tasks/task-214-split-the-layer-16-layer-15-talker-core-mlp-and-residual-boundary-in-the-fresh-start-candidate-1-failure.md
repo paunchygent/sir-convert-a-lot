@@ -62,7 +62,7 @@ talker-core defect before making any Candidate `3` implementation move.
 
 ## Deliverables
 
-- [ ] One committed finer-grained talker-core probe exists for the exact
+- [x] One committed finer-grained talker-core probe exists for the exact
   `T212/T213` row pair and branch order.
 - [ ] One truthful Hemma probe result localizes the first non-finite boundary
   beyond:
@@ -73,27 +73,58 @@ talker-core defect before making any Candidate `3` implementation move.
 
 ## Acceptance Criteria
 
-- [ ] The probe remains fresh-start only; it does not resume from any legacy
+- [x] The probe remains fresh-start only; it does not resume from any legacy
   Task 101 checkpoint.
-- [ ] The probe retains the exact row pair and branch order unless a smaller
+- [x] The probe retains the exact row pair and branch order unless a smaller
   decisive split is explicitly documented.
 - [ ] The result localizes corruption more precisely than the `T213`
   talker-core boundary.
-- [ ] The runtime surface uses committed repo commands and detached Hemma
+- [x] The runtime surface uses committed repo commands and detached Hemma
   execution.
 - [ ] The result is recorded in the active task, `current.md`, and the Task
   101 reference ledger before any Candidate `3` implementation slice starts.
 
+## Implementation Status
+
+- Local implementation is complete but the truthful Hemma result is still
+  pending.
+- The probe surface now adds one committed finer-grained hook profile:
+  `talker_core_boundary`.
+- That profile keeps the exact fresh-start row pair and branch order from
+  `T212/T213` while narrowing the hook family to the late-middle talker-core
+  seam:
+  - `talker_core.layer_16.input`
+  - `talker_core.layer_16.input_layernorm`
+  - `talker_core.layer_16.self_attn`
+  - `talker_core.layer_16.attention_residual_output`
+  - `talker_core.layer_16.post_attention_layernorm`
+  - `talker_core.layer_16.mlp.gate_proj`
+  - `talker_core.layer_16.mlp.up_proj`
+  - `talker_core.layer_16.mlp.gated_product`
+  - `talker_core.layer_16.mlp.down_proj`
+  - `talker_core.layer_16.output`
+  - the same ordered family for `talker_core.layer_15.*`
+- The new hook family is intentionally split across:
+  - the residual seam entering post-attention normalization
+  - the gated MLP multiplication seam
+  - the down-projection seam
+  - the downstream residual/output seam
+- The smallest new local signal is now covered by focused tests in:
+  - `tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py`
+  - `tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_proof.py`
+- The next truthful move is one detached Hemma proof prepared with:
+  `--hook-profile talker_core_boundary`.
+
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

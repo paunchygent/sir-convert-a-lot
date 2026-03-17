@@ -1,34 +1,39 @@
-"""Talker-core tracing targets for Story 30 backward-lineage probes.
+"""Talker-core trace targets for Story 30 backward-lineage probes.
 
 Purpose:
-    Expose a deterministic, architecture-grounded list of talker-core modules
-    whose forward outputs should be retained for backward finiteness tracing
-    between final hidden states and input embeddings.
+    Expose deterministic talker-core hook targets for both the broad
+    per-layer trace used by `T213` and the narrower layer `16` / layer `15`
+    boundary split used by `T214`, without duplicating upstream Qwen talker
+    path assumptions in probe code.
 
 Relationships:
-    - Imported by `story30_backward_lineage_hooks.py` to install module output
-      hooks before the shared Qwen talker forward pass executes.
-    - Reuses the live patched talker runtime layout instead of duplicating
-      model-path assumptions in probe code.
+    - Imported by `story30_backward_lineage_hooks.py` to install module hooks
+      before the shared Qwen talker forward pass executes.
+    - Reuses the live patched talker runtime layout from the actual model
+      object rather than restating architecture paths in the probe layer.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Literal
 
 import torch
 
+TalkerTraceHookKind = Literal["forward", "forward_pre"]
+
 _TALKER_CORE_PREFIX = "talker_core."
+_BOUNDARY_TARGET_LAYER_INDICES = (16, 15)
 
 
 @dataclass(frozen=True)
 class TalkerCoreTraceTarget:
-    """One named talker-core module output target for backward tracing."""
+    """One named talker-core module target for backward tracing."""
 
     name: str
     module: torch.nn.Module
-    output_selector: Callable[[object], torch.Tensor | None]
+    hook_kind: TalkerTraceHookKind
+    tensor_selector: Callable[[object], torch.Tensor | None]
 
 
 def talker_core_trace_prefix() -> str:
@@ -37,7 +42,7 @@ def talker_core_trace_prefix() -> str:
 
 
 def iter_talker_core_trace_targets(model: object) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the deterministic talker-core targets for one Qwen talker model."""
+    """Return the broad per-layer talker-core targets used by `T213`."""
     talker_model = _resolve_talker_model(model)
     layers = _resolve_decoder_layers(talker_model)
     targets: list[TalkerCoreTraceTarget] = []
@@ -45,41 +50,104 @@ def iter_talker_core_trace_targets(model: object) -> tuple[TalkerCoreTraceTarget
         layer_prefix = f"{_TALKER_CORE_PREFIX}layer_{layer_index}"
         targets.extend(
             (
-                TalkerCoreTraceTarget(
+                _forward_target(
                     name=f"{layer_prefix}.input_layernorm",
                     module=_required_module(layer, "input_layernorm"),
-                    output_selector=_select_primary_tensor,
                 ),
-                TalkerCoreTraceTarget(
+                _forward_target(
                     name=f"{layer_prefix}.self_attn",
                     module=_required_module(layer, "self_attn"),
-                    output_selector=_select_primary_tensor,
                 ),
-                TalkerCoreTraceTarget(
+                _forward_target(
                     name=f"{layer_prefix}.post_attention_layernorm",
                     module=_required_module(layer, "post_attention_layernorm"),
-                    output_selector=_select_primary_tensor,
                 ),
-                TalkerCoreTraceTarget(
+                _forward_target(
                     name=f"{layer_prefix}.mlp",
                     module=_required_module(layer, "mlp"),
-                    output_selector=_select_primary_tensor,
                 ),
-                TalkerCoreTraceTarget(
-                    name=f"{layer_prefix}.output",
-                    module=layer,
-                    output_selector=_select_primary_tensor,
-                ),
+                _forward_target(name=f"{layer_prefix}.output", module=layer),
             )
         )
     targets.append(
-        TalkerCoreTraceTarget(
+        _forward_target(
             name=f"{_TALKER_CORE_PREFIX}final_norm",
             module=_required_module(talker_model, "norm"),
-            output_selector=_select_primary_tensor,
         )
     )
     return tuple(targets)
+
+
+def iter_talker_core_boundary_trace_targets(
+    model: object,
+) -> tuple[TalkerCoreTraceTarget, ...]:
+    """Return the finer layer `16` / layer `15` boundary targets used by `T214`."""
+    talker_model = _resolve_talker_model(model)
+    layers = _resolve_decoder_layers(talker_model)
+    targets: list[TalkerCoreTraceTarget] = []
+    for layer_index in _BOUNDARY_TARGET_LAYER_INDICES:
+        layer = _required_layer(layers, layer_index)
+        layer_prefix = f"{_TALKER_CORE_PREFIX}layer_{layer_index}"
+        mlp = _required_module(layer, "mlp")
+        targets.extend(
+            (
+                _forward_pre_target(name=f"{layer_prefix}.input", module=layer),
+                _forward_target(
+                    name=f"{layer_prefix}.input_layernorm",
+                    module=_required_module(layer, "input_layernorm"),
+                ),
+                _forward_target(
+                    name=f"{layer_prefix}.self_attn",
+                    module=_required_module(layer, "self_attn"),
+                ),
+                _forward_pre_target(
+                    name=f"{layer_prefix}.attention_residual_output",
+                    module=_required_module(layer, "post_attention_layernorm"),
+                ),
+                _forward_target(
+                    name=f"{layer_prefix}.post_attention_layernorm",
+                    module=_required_module(layer, "post_attention_layernorm"),
+                ),
+                _forward_target(
+                    name=f"{layer_prefix}.mlp.gate_proj",
+                    module=_required_module(mlp, "gate_proj"),
+                ),
+                _forward_target(
+                    name=f"{layer_prefix}.mlp.up_proj",
+                    module=_required_module(mlp, "up_proj"),
+                ),
+                _forward_pre_target(
+                    name=f"{layer_prefix}.mlp.gated_product",
+                    module=_required_module(mlp, "down_proj"),
+                ),
+                _forward_target(
+                    name=f"{layer_prefix}.mlp.down_proj",
+                    module=_required_module(mlp, "down_proj"),
+                ),
+                _forward_target(name=f"{layer_prefix}.output", module=layer),
+            )
+        )
+    return tuple(targets)
+
+
+def _forward_target(name: str, module: torch.nn.Module) -> TalkerCoreTraceTarget:
+    """Build one forward-output trace target."""
+    return TalkerCoreTraceTarget(
+        name=name,
+        module=module,
+        hook_kind="forward",
+        tensor_selector=_select_primary_tensor,
+    )
+
+
+def _forward_pre_target(name: str, module: torch.nn.Module) -> TalkerCoreTraceTarget:
+    """Build one forward-pre-hook trace target that selects the first tensor input."""
+    return TalkerCoreTraceTarget(
+        name=name,
+        module=module,
+        hook_kind="forward_pre",
+        tensor_selector=_select_first_input_tensor,
+    )
 
 
 def _resolve_talker_model(model: object) -> torch.nn.Module:
@@ -97,6 +165,14 @@ def _resolve_decoder_layers(talker_model: torch.nn.Module) -> tuple[torch.nn.Mod
     if not isinstance(layers, torch.nn.ModuleList):
         raise SystemExit("Backward-lineage probe could not resolve `model.talker.model.layers`.")
     return tuple(layer for layer in layers)
+
+
+def _required_layer(layers: tuple[torch.nn.Module, ...], layer_index: int) -> torch.nn.Module:
+    if layer_index < 0 or layer_index >= len(layers):
+        raise SystemExit(
+            f"Backward-lineage probe could not resolve `model.talker.model.layers[{layer_index}]`."
+        )
+    return layers[layer_index]
 
 
 def _required_module(parent: object, attribute_name: str) -> torch.nn.Module:
@@ -117,6 +193,14 @@ def _select_primary_tensor(value: object) -> torch.Tensor | None:
         if isinstance(first_value, torch.Tensor):
             return first_value
     if isinstance(value, list) and len(value) > 0:
+        first_value = value[0]
+        if isinstance(first_value, torch.Tensor):
+            return first_value
+    return None
+
+
+def _select_first_input_tensor(value: object) -> torch.Tensor | None:
+    if isinstance(value, tuple) and len(value) > 0:
         first_value = value[0]
         if isinstance(first_value, torch.Tensor):
             return first_value

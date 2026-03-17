@@ -40,6 +40,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_artifac
     resolve_proof_root,
     status_markdown_path,
     status_path,
+    task_label_for_hook_profile,
     write_json,
     write_markdown,
 )
@@ -183,8 +184,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _config_from_remote_launch_args(args: argparse.Namespace) -> Story30BackwardLineageProofConfig:
+    hook_profile = str(args.hook_profile)
     return Story30BackwardLineageProofConfig(
-        task_label="Task 212",
+        task_label=task_label_for_hook_profile(hook_profile),
         command_name=DEFAULT_COMMAND_NAME,
         prepared_at="remote-launch",
         proof_id=str(args.proof_id),
@@ -194,7 +196,7 @@ def _config_from_remote_launch_args(args: argparse.Namespace) -> Story30Backward
         manifest_family=str(args.manifest_family),
         source_lines=_parse_source_lines_pair(str(args.source_lines)),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
-        hook_profile=str(args.hook_profile),
+        hook_profile=hook_profile,
         required_scratch_free_bytes=DEFAULT_REQUIRED_SCRATCH_FREE_BYTES,
         skip_build=bool(args.skip_build),
         launch_id=str(args.launch_id),
@@ -203,7 +205,7 @@ def _config_from_remote_launch_args(args: argparse.Namespace) -> Story30Backward
 
 def _config_for_remote_status(args: argparse.Namespace) -> Story30BackwardLineageProofConfig:
     return Story30BackwardLineageProofConfig(
-        task_label="Task 212",
+        task_label=task_label_for_hook_profile(DEFAULT_HOOK_PROFILE),
         command_name=DEFAULT_COMMAND_NAME,
         prepared_at="remote-status",
         proof_id=str(args.proof_id),

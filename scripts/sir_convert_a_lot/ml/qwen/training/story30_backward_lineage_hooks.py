@@ -26,6 +26,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces import (
     TalkerForwardSurfaces,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
+    iter_talker_core_boundary_trace_targets,
     iter_talker_core_trace_targets,
     talker_core_trace_prefix,
 )
@@ -36,7 +37,12 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contrac
 
 BASELINE_HOOK_PROFILE = "baseline"
 TALKER_CORE_HOOK_PROFILE = "talker_core"
-HOOK_PROFILE_CHOICES = (BASELINE_HOOK_PROFILE, TALKER_CORE_HOOK_PROFILE)
+TALKER_CORE_BOUNDARY_HOOK_PROFILE = "talker_core_boundary"
+HOOK_PROFILE_CHOICES = (
+    BASELINE_HOOK_PROFILE,
+    TALKER_CORE_HOOK_PROFILE,
+    TALKER_CORE_BOUNDARY_HOOK_PROFILE,
+)
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
     "input_text_embedding",
@@ -68,11 +74,22 @@ class GradientHookSession:
 
     def install_pre_forward_hooks(self, *, model: object) -> None:
         """Install any module forward hooks required before the shared forward pass."""
-        if self._hook_profile != TALKER_CORE_HOOK_PROFILE:
+        if self._hook_profile == BASELINE_HOOK_PROFILE:
             return
-        for target in iter_talker_core_trace_targets(model):
-            handle = target.module.register_forward_hook(
-                self._build_forward_hook(target.name, target.output_selector)
+        trace_targets = (
+            iter_talker_core_trace_targets(model)
+            if self._hook_profile == TALKER_CORE_HOOK_PROFILE
+            else iter_talker_core_boundary_trace_targets(model)
+        )
+        for target in trace_targets:
+            handle = (
+                target.module.register_forward_hook(
+                    self._build_forward_hook(target.name, target.tensor_selector)
+                )
+                if target.hook_kind == "forward"
+                else target.module.register_forward_pre_hook(
+                    self._build_forward_pre_hook(target.name, target.tensor_selector)
+                )
             )
             self._handles.append(handle)
 
@@ -114,19 +131,34 @@ class GradientHookSession:
     def _build_forward_hook(
         self,
         name: str,
-        output_selector,
+        tensor_selector,
     ) -> Callable[[torch.nn.Module, tuple[object, ...], object], None]:
         """Return one module forward hook that retains the selected output gradient."""
 
         def on_forward(
             _module: torch.nn.Module, _inputs: tuple[object, ...], output: object
         ) -> None:
-            tensor = output_selector(output)
+            tensor = tensor_selector(output)
             if tensor is None:
                 return
             self._attach_tensor(name, tensor)
 
         return on_forward
+
+    def _build_forward_pre_hook(
+        self,
+        name: str,
+        tensor_selector,
+    ) -> Callable[[torch.nn.Module, tuple[object, ...]], None]:
+        """Return one module forward-pre-hook that retains the selected input gradient."""
+
+        def on_forward_pre(_module: torch.nn.Module, inputs: tuple[object, ...]) -> None:
+            tensor = tensor_selector(inputs)
+            if tensor is None:
+                return
+            self._attach_tensor(name, tensor)
+
+        return on_forward_pre
 
     def _attach_tensor(self, name: str, tensor: torch.Tensor) -> None:
         if name in self._observations or not tensor.requires_grad:

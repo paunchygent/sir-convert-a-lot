@@ -197,6 +197,10 @@ immediate contingency.
 - `T214` is now the active discovery lane:
   split the layer `16` / layer `15` talker-core MLP and residual boundary
   before deciding whether Candidate `3` remains a truthful next move.
+  The committed local `talker_core_boundary` profile is now ready and narrows
+  the next truthful Hemma probe to the residual seam, gated MLP multiplication
+  seam, down-projection seam, and downstream output seam for layers `16`
+  and `15`.
 
 ## Checklist
 

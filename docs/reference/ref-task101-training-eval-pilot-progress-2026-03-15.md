@@ -159,6 +159,10 @@ Why this is now the clean plan:
     - split the layer `16` / layer `15` talker-core MLP and residual boundary
     - keep the exact `T212/T213` row pair and branch order unless a smaller
       decisive probe emerges
+    - the committed local hook profile is now `talker_core_boundary`
+    - that finer profile traces the layer `16` / layer `15` residual seam,
+      gated MLP multiplication seam, down-projection seam, and downstream
+      output seam
     - do not reopen replay framing while this finer talker-core split is open
 
 ## Active Artifact Roots

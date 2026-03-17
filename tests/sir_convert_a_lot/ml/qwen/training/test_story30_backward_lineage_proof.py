@@ -42,6 +42,32 @@ def test_prepare_writes_backward_lineage_package(
     assert "Detached Hemma worker launched" in checklist_markdown
 
 
+def test_prepare_persists_custom_boundary_hook_profile(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Preparing T214 should persist the finer talker-core boundary profile."""
+    result = main(
+        [
+            "prepare",
+            "--output-root",
+            tmp_path.as_posix(),
+            "--proof-id",
+            "t214-proof",
+            "--hook-profile",
+            "talker_core_boundary",
+        ]
+    )
+    capsys.readouterr()
+
+    assert result == 0
+    config_payload = json.loads(
+        (tmp_path / "t214-proof" / "proof-config.json").read_text(encoding="utf-8")
+    )
+
+    assert config_payload["hook_profile"] == "talker_core_boundary"
+    assert config_payload["task_label"] == "Task 214"
+
+
 def test_launch_uses_remote_story30_backward_lineage_surface(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
