@@ -125,6 +125,31 @@ restart rule so Story 29 does not keep consuming replay-only RCAs forever.
   - keep this explicit position-mask correction as the canonical fix if the
     focused gates and operator reporting remain clean
   - then run the single final post-fix Hemma proof package
+- The single final post-fix Hemma proof has now been run under
+  `task206-20260317t074600z-postfix1470-a1`:
+  - proof surface:
+    `pdm run qwen-t198-proof launch-fallback1470 --proof-id task206-20260317t074600z-postfix1470-a1`
+  - settings:
+    - `text_embedding_mask_policy=text_span_only`
+    - explicit position-mask correction committed
+    - `gradient_accumulation_steps=1`
+  - outcome:
+    - replay exited with `exit_code=1`
+    - `current_optimizer_step=1407`
+    - `current_train_iteration=809`
+    - `trigger_reason=pre_clip_non_finite_gradients`
+    - `first_non_finite_stage=pre_clip`
+    - `first_non_finite_surface=text_embedding.weight.grad`
+  - no truthful `1470` checkpoint was minted
+  - detached standalone eval was therefore correctly not launched
+- `T206` has therefore answered the final bounded-RCA question for the
+  preserved Task 101 lane:
+  - the explicit position-mask correction removed the audited leakage
+  - but the single final post-fix Hemma proof still failed numerically before
+    `1470`
+  - the Story 29 stop rule is now triggered
+  - any further work must be a new design/architecture story, not another
+    bounded replay variant on this preserved lane
 
 ## Deliverables
 

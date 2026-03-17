@@ -1076,6 +1076,38 @@ Operator conclusion:
     remaining focused gates cleanly enough to become the single canonical fix
     before the final Hemma `1470 + standalone eval` proof
 
+## 2026-03-17: `T206` Final Post-Fix Hemma Proof Failed At `1407`
+
+- Proof package:
+  - `task206-20260317t074600z-postfix1470-a1`
+- Commands:
+  - `pdm run qwen-t198-proof prepare --proof-id task206-20260317t074600z-postfix1470-a1 --gradient-accumulation-steps 1 --skip-build`
+  - `pdm run qwen-t198-proof launch-fallback1470 --proof-id task206-20260317t074600z-postfix1470-a1`
+- Artifacts:
+  - `build/verification/qwen-t198-proof/task206-20260317t074600z-postfix1470-a1/proof-config.json`
+  - `build/verification/qwen-t198-proof/task206-20260317t074600z-postfix1470-a1/fallback1470-launch.json`
+  - `build/verification/qwen-t198-proof/task206-20260317t074600z-postfix1470-a1/fallback1470-status.json`
+- Settings:
+  - explicit position-mask correction committed
+  - `text_embedding_mask_policy=text_span_only`
+  - `gradient_accumulation_steps=1`
+- Result:
+  - replay exited with `exit_code=1`
+  - `current_optimizer_step=1407`
+  - `current_train_iteration=809`
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - no truthful `1470` checkpoint was minted
+- Operator conclusion:
+  - the explicit position-mask correction removed the audited leakage, but it
+    did not authorize restart on the preserved Task 101 lane
+  - the single final post-fix proof still failed numerically before `1470`
+  - detached standalone eval was correctly not launched
+  - the Story 29 bounded-RCA stop rule is now triggered
+  - `T199` remains blocked until a new design/architecture story defines the
+    next lane
+
 ## Historical Reference Boundary
 
 `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`

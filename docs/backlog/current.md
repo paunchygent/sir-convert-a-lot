@@ -151,66 +151,51 @@ Story 28 is now operating policy:
     - `T206` is now the next active task:
       prove the true text-token span contract and define the final post-fix
       restart/stop rule
+- 2026-03-17:
+  - `T206` landed the explicit position-mask correction in dataset collation:
+    `text_span_only` now activates only the semantic text positions instead of
+    the old prefix-length surface
+  - the smallest direct regression passed and the post-fix offline audit under
+    `build/verification/qwen-token-span-audit/task206-postfix-line101/`
+    proved:
+    - active span `8..135`
+    - no leaked positions
+    - no leaked token ids
+    - leaked non-finite count `0`
+  - the single final post-fix Hemma proof then ran under
+    `task206-20260317t074600z-postfix1470-a1`
+  - that proof still failed numerically before `1470`:
+    - `trigger_reason=pre_clip_non_finite_gradients`
+    - `first_non_finite_stage=pre_clip`
+    - `first_non_finite_surface=text_embedding.weight.grad`
+    - `current_optimizer_step=1407`
+    - `current_train_iteration=809`
+  - no truthful `1470` checkpoint was minted, so detached standalone eval was
+    correctly not launched
+  - the Story 29 stop rule is now triggered for the preserved Task 101 lane
+  - bounded RCA on this preserved lane is therefore closed
+  - any further work must move to a new design/architecture story, not another
+    replay variation on the same lane
 
 ## Next Actions
 
 - Keep the preserved Task 101 lane on the restored no-projection fine-tuning
   graph; do not reopen the projection-enabled experiment.
 - Keep `state-step-00001406` as the canonical RCA checkpoint.
-- Treat Story 29 as the required mitigation-and-restart gate:
-  - no fresh clean restart before the single final post-fix
-    `1470 + standalone eval` proof passes
 - Keep the auxiliary codebook fusion helper on the plain vectorized reduction;
   do not revive the explicit `float32` reducer without new Hemma evidence.
-- Keep the committed proof wrappers and hot-path audit surfaces available:
-  - `pdm run qwen-t197-proof ...`
-  - `pdm run qwen-t198-proof ...`
-  - `pdm run run-hemma -- pdm run qwen-codebook-fusion-proof ...`
-- Treat the completed `T197` Hemma proof as negative evidence.
-- Treat the first `T198` replay as positive numerical evidence but storage
-  blocked.
-- Treat the clean `T198` rerun as stronger negative preferred-gate evidence:
-  - accumulation `2` cleared `1418`
-  - the preferred `1500` gate still failed at `1428`
-  - therefore accumulation `2` is not yet sufficient to justify a clean
-    restart through the preferred gate
 - Keep the Hemma scratch-governance surfaces active and available:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-- Treat `T198` as exhausted negative evidence:
-  - accumulation `2` and `1` both failed the preferred gate
-  - the fallback replay also failed at `1449`
-  - therefore no more replay-only ablations are allowed on the current code
-    path
-- Use `T206` as the next and final Story 29 RCA/design lane:
-  - the pre-fix offline audit proved the current `text_span_only` helper was
-    still prefix-shaped and leaked `9` non-semantic positions on the canonical
-    failing sample
-  - the repo now has the explicit position-mask correction in dataset
-    collation instead of the old prefix-length shortcut
-  - the first post-fix signal is the smallest direct regression:
-    `test_collate_fn_text_span_only_masks_only_semantic_text_positions`
-  - the post-fix audit under
-    `build/verification/qwen-token-span-audit/task206-postfix-line101/`
-    now shows:
-    - active span `8..135`
-    - no leaked positions
-    - no leaked token ids
-    - leaked non-finite count `0`
-  - choose this correction canonically by semantic correctness and minimal
-    blast radius first; use small performance differences only as a secondary
-    tiebreaker
-  - then run exactly one decisive post-fix Hemma proof
-- Use this explicit stop rule:
-  - if the single post-fix proof still fails numerically before `1470` with
-    the same failure family, bounded RCA on the preserved Task 101 lane stops
-    and any further work must be a new design/architecture story
-- Use this explicit restart rule:
-  - if the single post-fix proof clears `1406 -> 1470` and the detached
-    standalone eval completes, `T199` may start
-  - no new preferred `1500` proof is required before that first clean restart
-    decision
+- Treat Story 29 / `T197-T206` as closed bounded-RCA evidence on the preserved
+  lane:
+  - the explicit position-mask correction removed the audited leakage
+  - the single final post-fix Hemma proof still failed at optimizer step `1407`
+  - no truthful `1470` checkpoint was minted and detached eval was not launched
+  - `T199` therefore remains blocked
+  - the next step is a new design/architecture story, not another replay or
+    post-fix proof variant
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
 - Keep Task 101 operator truth in

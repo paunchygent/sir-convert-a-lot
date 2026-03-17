@@ -232,6 +232,15 @@ numerical stability.
   - the post-fix audit artifact under
     `build/verification/qwen-token-span-audit/task206-postfix-line101/`
     shows active span `8..135` with no leaked positions or leaked token ids
+- The single final post-fix Hemma proof then ran under
+  `task206-20260317t074600z-postfix1470-a1` and failed before `1470`:
+  - `trigger_reason=pre_clip_non_finite_gradients`
+  - `first_non_finite_stage=pre_clip`
+  - `first_non_finite_surface=text_embedding.weight.grad`
+  - `current_optimizer_step=1407`
+  - `current_train_iteration=809`
+  - no truthful `1470` checkpoint was minted
+  - detached standalone eval was correctly not launched
 - Story 29 now has an explicit stop rule:
   - no more replay-only ablations or restart attempts on the current code path
   - allow exactly one post-fix proof after the token-span correction lands
@@ -243,6 +252,12 @@ numerical stability.
     eval
   - a new preferred `1500` proof is not required before the first clean
     restart decision once the code-bearing token-span correction lands
+- Story 29 has now reached that stop boundary on the preserved Task 101 lane:
+  - the explicit position-mask correction removed the audited leakage
+  - but the final post-fix Hemma proof still failed numerically before `1470`
+  - restart therefore remains blocked
+  - any further work must move into a new design/architecture story rather
+    than another bounded replay variant on this preserved lane
 
 ## Checklist
 

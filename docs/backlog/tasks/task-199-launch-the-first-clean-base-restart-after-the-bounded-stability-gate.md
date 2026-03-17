@@ -33,6 +33,13 @@ numerical stability through the single final post-fix
 - Block this task until `T206` lands the code-bearing text-token span
   correction and the single final post-fix proof satisfies
   `1406 -> 1470` plus detached standalone eval.
+- Current truth after the final `T206` post-fix proof:
+  - the explicit position-mask correction landed
+  - the single final post-fix proof failed at optimizer step `1407`
+  - no truthful `1470` checkpoint was minted
+  - detached standalone eval was not launched
+  - this task therefore remains blocked until a new design/architecture story
+    defines a new restart-authorizing lane
 - Launch from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`, not from a legacy checkpoint.
 - Use the winning mitigation contract from the proof phase.
 - If the winning mitigation confirms `text_span_only` as the right fix, remove
