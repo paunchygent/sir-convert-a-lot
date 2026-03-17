@@ -26,6 +26,10 @@ links:
   - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
   - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
   - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
+  - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
+  - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
+  - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
+  - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
@@ -155,15 +159,30 @@ Why this is now the clean plan:
       `layer_16.post_attention_layernorm` turned non-finite
     - Candidate `3` should not open yet because a smaller talker-core split is
       still yielding new signal
-  - `T214` is now the next governed discovery owner:
-    - split the layer `16` / layer `15` talker-core MLP and residual boundary
-    - keep the exact `T212/T213` row pair and branch order unless a smaller
-      decisive probe emerges
-    - the committed local hook profile is now `talker_core_boundary`
-    - that finer profile traces the layer `16` / layer `15` residual seam,
-      gated MLP multiplication seam, down-projection seam, and downstream
-      output seam
-    - do not reopen replay framing while this finer talker-core split is open
+  - `T214` is now closed positive discovery evidence:
+    - truthful proof:
+      `task214-20260317t151800z-boundary-a1`
+    - pair `main_loss` / `combined_loss` first localized at
+      `talker_core.layer_16.mlp.gated_product`
+    - those pair branches still had finite gradients at
+      `layer_16.output` / `layer_16.mlp.down_proj`
+      (`3.19e38` / `3.26e38`) before the first non-finite hook
+    - pair `sub_talker_loss` first localized at `talker_core.layer_15.output`
+    - isolated rows still failed independently at `layer_16.output` or
+      `layer_15.output`
+    - replay and text-span leakage are no longer the leading explanations for
+      the current fresh-start failure family
+  - Story 31 is now the active governed owner:
+    - recover a stable fresh-start bundle-learning recipe through bounded
+      talker-core stabilization
+    - use an exploration-first lane:
+      fast matrix iteration, compact result table, no proof package per cell
+    - `T216` builds the lightweight exploration vehicle plus the first bounded
+      stabilization surface
+    - `T215` adds the local promotion gate
+    - `T217` runs the first short fresh-start Hemma proof only for the first
+      promoted winner
+    - do not reopen replay framing while this solution lane is active
 
 ## Active Artifact Roots
 

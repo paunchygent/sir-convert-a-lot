@@ -2,7 +2,7 @@
 id: task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure
 title: Split the layer 16/layer 15 talker-core MLP and residual boundary in the fresh-start Candidate 1 failure
 type: task
-status: in_progress
+status: done
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -64,10 +64,10 @@ talker-core defect before making any Candidate `3` implementation move.
 
 - [x] One committed finer-grained talker-core probe exists for the exact
   `T212/T213` row pair and branch order.
-- [ ] One truthful Hemma probe result localizes the first non-finite boundary
+- [x] One truthful Hemma probe result localizes the first non-finite boundary
   beyond:
   `layer_16.post_attention_layernorm` / `layer_16.output` / `layer_15.output`.
-- [ ] One operator-facing decision record states whether Candidate `3` should
+- [x] One operator-facing decision record states whether Candidate `3` should
   now open or whether a talker-core design lane should replace it as the
   truthful next move.
 
@@ -77,43 +77,46 @@ talker-core defect before making any Candidate `3` implementation move.
   Task 101 checkpoint.
 - [x] The probe retains the exact row pair and branch order unless a smaller
   decisive split is explicitly documented.
-- [ ] The result localizes corruption more precisely than the `T213`
+- [x] The result localizes corruption more precisely than the `T213`
   talker-core boundary.
 - [x] The runtime surface uses committed repo commands and detached Hemma
   execution.
-- [ ] The result is recorded in the active task, `current.md`, and the Task
+- [x] The result is recorded in the active task, `current.md`, and the Task
   101 reference ledger before any Candidate `3` implementation slice starts.
 
-## Implementation Status
+## Result
 
-- Local implementation is complete but the truthful Hemma result is still
-  pending.
-- The probe surface now adds one committed finer-grained hook profile:
-  `talker_core_boundary`.
-- That profile keeps the exact fresh-start row pair and branch order from
-  `T212/T213` while narrowing the hook family to the late-middle talker-core
-  seam:
-  - `talker_core.layer_16.input`
-  - `talker_core.layer_16.input_layernorm`
-  - `talker_core.layer_16.self_attn`
-  - `talker_core.layer_16.attention_residual_output`
-  - `talker_core.layer_16.post_attention_layernorm`
-  - `talker_core.layer_16.mlp.gate_proj`
-  - `talker_core.layer_16.mlp.up_proj`
-  - `talker_core.layer_16.mlp.gated_product`
-  - `talker_core.layer_16.mlp.down_proj`
+- Truthful probe:
+  `task214-20260317t151800z-boundary-a1`
+- Artifact:
+  `build/verification/qwen-story30-backward-lineage/task214-20260317t151800z-boundary-a1/status.json`
+- Pair `main_loss` and `combined_loss` first non-finite hook:
+  `talker_core.layer_16.mlp.gated_product`
+- Pair `sub_talker_loss` first non-finite hook:
+  `talker_core.layer_15.output`
+- Pair-main / pair-combined retained still-finite gradients at:
   - `talker_core.layer_16.output`
-  - the same ordered family for `talker_core.layer_15.*`
-- The new hook family is intentionally split across:
-  - the residual seam entering post-attention normalization
-  - the gated MLP multiplication seam
-  - the down-projection seam
-  - the downstream residual/output seam
-- The smallest new local signal is now covered by focused tests in:
-  - `tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py`
-  - `tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_proof.py`
-- The next truthful move is one detached Hemma proof prepared with:
-  `--hook-profile talker_core_boundary`.
+  - `talker_core.layer_16.mlp.down_proj`
+  with max abs about `3.19e38` and `3.26e38` before the first non-finite hook
+  at `gated_product`
+- Pair-main / pair-combined anomaly trace:
+  `MulBackward0`
+- Pair-sub anomaly trace:
+  `MmBackward0`
+- Isolated rows still failed independently:
+  - isolated `main_loss` / `combined_loss` first localized at
+    `talker_core.layer_16.output`
+  - isolated `sub_talker_loss` first localized at
+    `talker_core.layer_15.output`
+
+## Decision
+
+Do not open Candidate `3` as the immediate next move.
+
+`T214` yielded a smaller causal split that changes the solution posture: the
+next truthful lane is a solution-oriented talker-core stabilization story aimed
+at stable fresh-start bundle learning, not another replay proof and not an
+immediate text-embedding fallback.
 
 ## Validation
 

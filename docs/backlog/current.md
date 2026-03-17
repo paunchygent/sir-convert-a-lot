@@ -8,25 +8,14 @@ created: '2026-02-11'
 last_updated: '2026-03-17'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
-  - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
-  - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
-  - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
-  - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
-  - docs/backlog/tasks/task-192-add-ml-specific-quality-gates-and-importlib-safe-qwen-test-collection.md
-  - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
-  - docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md
-  - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
-  - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
-  - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
-  - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
-  - docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md
-  - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
-  - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
-  - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
-  - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
-  - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
+  - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
+  - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
+  - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
+  - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
+  - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
+  - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -149,12 +138,20 @@ Story 28 is now operating policy:
       `layer_16.post_attention_layernorm` turned non-finite
     - Candidate `3` is not the next truthful move yet, because a smaller
       talker-core causal split is still available
-  - `T214` is now implemented locally as the next smaller causal split:
-    the new `talker_core_boundary` hook profile narrows the trace to the
-    `layer_16` / `layer_15` residual seam, gated MLP multiplication seam,
-    down-projection seam, and downstream output seam; the next truthful move
-    is a detached Hemma proof on that finer profile before any Candidate `3`
-    opening
+  - `T214` then closed the last smaller causal split:
+    - truthful proof:
+      `task214-20260317t151800z-boundary-a1`
+    - pair `main_loss` / `combined_loss` first broke at
+      `talker_core.layer_16.mlp.gated_product` with `MulBackward0`
+    - pair `sub_talker_loss` first broke at `talker_core.layer_15.output`
+      with `MmBackward0`
+    - pair main/combined gradients were still finite at
+      `layer_16.output` / `layer_16.mlp.down_proj` around `3.19e38` /
+      `3.26e38` before the first non-finite hook
+  - Story 31 is now the active solution lane:
+    stable fresh-start bundle learning is the acceptance target, and the next
+    move is an exploration-first talker-core stabilization recipe rather than
+    more replay-centered proof hunting or an immediate Candidate `3` jump
 
 ## Next Actions
 
@@ -201,18 +198,18 @@ Story 28 is now operating policy:
     `layer_16.post_attention_layernorm` and `layer_15.output`
   - do not open Candidate `3` while a smaller talker-core split is still
     available
-- `T214` is now the active discovery owner before any Candidate 3 opening:
-  - split the layer `16` / layer `15` talker-core MLP and residual boundary
-  - keep the exact row pair and branch order from `T212/T213` unless a
-    smaller decisive probe emerges
-  - the committed local hook profile is now ready: `talker_core_boundary`
-  - it traces the residual seam, gated MLP multiplication seam,
-    down-projection seam, and downstream output seam for layers `16` and `15`
-  - the next move is one detached Hemma proof on that profile, not a new
-    design candidate
-  - do not reopen replay framing while `T214` is active
-- `T199` remains blocked until a later explicit clean-start proof authorizes
-  restart.
+- Treat `T214` as closed discovery evidence:
+  - pair `main_loss` / `combined_loss` first break at
+    `talker_core.layer_16.mlp.gated_product`
+  - pair `sub_talker_loss` first breaks at `talker_core.layer_15.output`
+  - replay framing is no longer the productive center of gravity
+- Story 31 is now active:
+  - `T216`: build the lightweight exploration vehicle plus the first bounded
+    talker-core stabilization surface
+  - `T215`: add the local promotion gate and compact result table
+  - `T217`: run one governed Hemma proof only for the first promoted winner
+- `T199` remains blocked until Story 31 records a positive fresh-start
+  stabilization proof that justifies a larger clean-start proof lane.
 - Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate for
   Qwen ML iteration before broader repo validation.

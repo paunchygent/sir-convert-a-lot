@@ -157,9 +157,9 @@ immediate contingency.
 1. `docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md`
 1. `docs/backlog/tasks/task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure.md`
 1. `docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md`
-1. If `T214` yields no smaller causal split, re-evaluate whether Candidate 3
-   should open or whether a talker-core design lane is now the more truthful
-   successor.
+1. `T214` yielded the smaller causal split; the truthful successor is now the
+   talker-core stabilization lane in Story 31 rather than an immediate
+   Candidate `3` opening.
 
 ## Current Status
 
@@ -194,13 +194,12 @@ immediate contingency.
     `sub_talker_loss`
   - Candidate `3` should not open yet because a smaller talker-core split is
     still yielding new causal signal
-- `T214` is now the active discovery lane:
-  split the layer `16` / layer `15` talker-core MLP and residual boundary
-  before deciding whether Candidate `3` remains a truthful next move.
-  The committed local `talker_core_boundary` profile is now ready and narrows
-  the next truthful Hemma probe to the residual seam, gated MLP multiplication
-  seam, down-projection seam, and downstream output seam for layers `16`
-  and `15`.
+- `T214` is complete with the last smaller causal split:
+  - pair `main_loss` / `combined_loss` first broke at
+    `talker_core.layer_16.mlp.gated_product`
+  - pair `sub_talker_loss` first broke at `talker_core.layer_15.output`
+  - the next truthful owner is Story 31, which shifts from proof hunting to a
+    talker-core stabilization recipe for fresh-start bundle learning.
 
 ## Checklist
 
