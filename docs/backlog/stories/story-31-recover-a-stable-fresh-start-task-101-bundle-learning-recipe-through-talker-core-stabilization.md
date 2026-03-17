@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
   - docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md
+  - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -144,6 +145,7 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md`
 1. `docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md`
 1. `docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md`
+1. `docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
 ## Checklist
@@ -182,11 +184,17 @@ the governing success criterion for future restart work.
     neighborhood
   - neither candidate kept the exact target seams finite, so both failed the
     existing promotion gate
+- `T219` is now the active next exploration slice:
+  - keep the moderate `T218` posture as the preferred base ingredient
+  - target the shifted `layer_16.output` / `layer_16.input_layernorm`
+    handoff neighborhood
+  - keep visibility on the surviving `sub_talker_loss`
+    `layer_16.mlp.gated_product` fallback
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.
 - The next active slice inside Story 31 is another bounded exploration
-  candidate around the shifted layer-16 / layer-15 neighborhood, not a
-  governed Hemma proof yet.
+  candidate around the shifted layer-16 handoff neighborhood, not a governed
+  Hemma proof yet.

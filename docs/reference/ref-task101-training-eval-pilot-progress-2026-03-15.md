@@ -30,6 +30,7 @@ links:
   - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
+  - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
@@ -209,6 +210,12 @@ Why this is now the clean plan:
         - `exact_family_reproduced_by_baseline=true`
         - `candidate_exact_surfaces_finite=false`
         - `promotion_passed=false`
+    - `T219` is now the active next exploration slice:
+      - keep the moderate T218 posture as the preferred base ingredient
+      - target the shifted `layer_16.output` /
+        `layer_16.input_layernorm` handoff neighborhood
+      - keep explicit visibility on the surviving
+        `sub_talker_loss` `layer_16.mlp.gated_product` fallback
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active

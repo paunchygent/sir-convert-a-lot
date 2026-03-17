@@ -194,22 +194,20 @@ Story 28 is now operating policy:
   - pair `sub_talker_loss` first breaks at `talker_core.layer_15.output`
   - replay framing is no longer the productive center of gravity
 - Story 31 is now active:
-  - `T216` is now complete:
-    - the first bounded variants are `off`, `layer16_gated_fp32`, and
-      `layer16_gated_fp32_clamp_1e4`
-    - the exploration surface is `pdm run qwen-story31-stability-lab run`
-    - the lab writes one compact matrix run under a single output root:
-      `results.json`, `results.md`, and `variant-reports/<variant>.json`
-    - it reuses the exact failing-row backward-lineage probe instead of
-      minting a proof package per hypothesis
-  - `T215` is now complete:
-    - the promotion surface is `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>` and it requires exact `T214` pair-family failure on baseline `off` plus finiteness on candidate `layer16_gated_fp32`
-  - the first real gate run under `task215-20260317t160500z-a2` is negative:
-    `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4` all preserved the same pair-family failures
+  - `T216` is complete: the bounded variants are `off`,
+    `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4` under
+    `pdm run qwen-story31-stability-lab run`, which writes one compact matrix
+    output root and reuses the exact failing-row backward-lineage probe
+  - `T215` is complete: `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>` is the promotion surface, and the first real gate run under `task215-20260317t160500z-a2` was negative
   - `T218` is now closed negative exploration evidence:
     the second Story 31 matrix at `task218-20260317t173122z-a1` changed the
     pair-family neighborhood, but both new variants still failed the local
-    promotion gate, so `T217` remains blocked
+    promotion gate
+  - `T219` is now the active next slice:
+    target the shifted `layer_16.output` / `layer_16.input_layernorm`
+    handoff neighborhood while keeping visibility on the surviving
+    `sub_talker_loss` `layer_16.mlp.gated_product` fallback; `T217` stays
+    blocked until a candidate passes the local promotion gate
 - `T199` remains blocked until Story 31 records a positive fresh-start
   stabilization proof that justifies a larger clean-start proof lane.
 - Do not spend the next story on Candidate 2.

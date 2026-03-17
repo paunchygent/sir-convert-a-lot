@@ -1,0 +1,111 @@
+---
+id: task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams
+title: Implement the third bounded Story 31 layer16 handoff candidate for the shifted seams
+type: task
+status: proposed
+priority: high
+created: '2026-03-17'
+last_updated: '2026-03-17'
+related:
+  - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
+  - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
+  - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
+  - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
+  - docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md
+  - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
+  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+labels:
+  - qwen
+  - finetuning
+  - stabilization
+  - talker-core
+  - exploration
+---
+
+PR-sized execution unit; may be linked to a story or standalone.
+
+## Objective
+
+Implement the third bounded Story 31 exploration candidate after `T218` proved
+that the second family could move the fresh-start failure neighborhood away
+from the original `T214` seams, but still could not keep the exact target
+surfaces finite.
+
+This candidate should now target the shifted pair-family neighborhood exposed
+by the stronger `T218` evidence:
+
+- `talker_core.layer_16.output` for pair `main_loss` / `combined_loss`
+- `talker_core.layer_16.input_layernorm` for the most improved
+  `sub_talker_loss` pair posture
+- the still-surviving `talker_core.layer_16.mlp.gated_product` path on
+  `sub_talker_loss`
+
+## Candidate Shape
+
+Treat the next candidate as one bounded layer-16 handoff family, not a new
+proof stack.
+
+The family should:
+
+- keep the moderate `T218` posture as the preferred base ingredient:
+  - `layer16_gated_fp32_rescale_1e3_layer15_out_0p5`
+- add one small stabilization at the layer-16 output handoff before the next
+  layer consumes that stream
+- bias toward output/residual-handoff attenuation or bounded rescaling rather
+  than another clamp-only retry
+- preserve direct visibility into whether `sub_talker_loss` falls back to the
+  old `layer_16.mlp.gated_product` seam
+- expose at most `2-3` variants so the existing Story 31 lab still compares
+  one bounded family under a single output root
+
+## PR Scope
+
+- Reuse the existing Story 31 exploration vehicle:
+  - `pdm run qwen-story31-stability-lab run`
+  - `pdm run qwen-story31-stability-lab gate`
+- Reuse the exact failing-row pair, hook profile, and promotion rule from
+  `T215`.
+- Extend the existing stabilization module rather than introducing a new
+  harness.
+- Keep the intervention bounded and local:
+  - do not reopen replay framing
+  - do not change text semantics
+  - do not widen into optimizer-regime changes
+  - do not open Candidate `3`
+- Record the result as one compact Story 31 matrix plus promotion-gate outcome.
+
+## Deliverables
+
+- [ ] One third bounded Story 31 stabilization family exists for the shifted
+  layer-16 handoff neighborhood.
+- [ ] The existing lab can run that family without a new proof wrapper.
+- [ ] The existing gate can judge whether the family earns promotion.
+- [ ] Operator docs record `T219` as the active next exploration slice.
+
+## Acceptance Criteria
+
+- [ ] The new family is explicitly shaped by the negative-but-shifted evidence
+  from `task218-20260317t173122z-a1`.
+- [ ] The intervention targets the shifted `layer_16.output` /
+  `layer_16.input_layernorm` handoff while still watching the surviving
+  `sub_talker_loss` gated-product fallback.
+- [ ] The implementation reuses the current Story 31 lab and gate unchanged
+  aside from variant registration.
+- [ ] `T217` remains blocked unless one of the new variants actually passes the
+  existing promotion gate.
+
+## Validation
+
+- [ ] `pdm run test-ml`
+- [ ] `pdm run typecheck-ml`
+- [ ] `pdm run validate-tasks`
+- [ ] `pdm run validate-docs`
+- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [ ] `pdm run qwen-story31-stability-lab run --skip-build`
+- [ ] `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+
+## Checklist
+
+- [ ] Implementation complete
+- [ ] Validation complete
+- [ ] Docs updated
