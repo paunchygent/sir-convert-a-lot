@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
+  - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/backlog/tasks/task-192-add-ml-specific-quality-gates-and-importlib-safe-qwen-test-collection.md
@@ -20,6 +21,10 @@ related:
   - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
   - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
   - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
+  - docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md
+  - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
+  - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
+  - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -174,8 +179,10 @@ Story 28 is now operating policy:
     correctly not launched
   - the Story 29 stop rule is now triggered for the preserved Task 101 lane
   - bounded RCA on this preserved lane is therefore closed
-  - any further work must move to a new design/architecture story, not another
-    replay variation on the same lane
+  - Story 30 is now active with the closed architect verdict:
+    - Candidate 1 selected
+    - ordered contingency `1 -> 3`
+    - Candidate 2 rejected as the primary next story
 
 ## Next Actions
 
@@ -194,8 +201,14 @@ Story 28 is now operating policy:
   - the single final post-fix Hemma proof still failed at optimizer step `1407`
   - no truthful `1470` checkpoint was minted and detached eval was not launched
   - `T199` therefore remains blocked
-  - the next step is a new design/architecture story, not another replay or
-    post-fix proof variant
+  - the next step is Story 30 Candidate 1, not another replay or post-fix
+    proof variant
+- Execute Story 30 in this order:
+  - `T207` semantic-only batch contract
+  - `T208` semantic-only train-step assembly
+  - `T209` local gradient-membership proof
+  - if Candidate 1 fails, open Candidate 3 directly as the next contingency
+- Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.
 - Keep Task 101 operator truth in
