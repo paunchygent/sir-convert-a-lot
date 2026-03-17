@@ -28,6 +28,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.bundle_contract im
 class MiniBundleMaterialization:
     """Deterministic summary of one mini-bundle materialization."""
 
+    source_bundle_root: str
     bundle_root: str
     train_manifest_path: str
     eval_manifest_path: str
@@ -47,8 +48,13 @@ def materialize_mini_bundle(
     eval_line_end: int,
 ) -> MiniBundleMaterialization:
     """Copy one bounded truthful subset of the canonical pilot bundle."""
-    train_manifest_path = _manifest_path(source_bundle_root, train_manifest_family)
-    eval_manifest_path = _manifest_path(source_bundle_root, eval_manifest_family)
+    resolved_source_bundle_root = _resolve_source_bundle_root(
+        source_bundle_root=source_bundle_root,
+        train_manifest_family=train_manifest_family,
+        eval_manifest_family=eval_manifest_family,
+    )
+    train_manifest_path = _manifest_path(resolved_source_bundle_root, train_manifest_family)
+    eval_manifest_path = _manifest_path(resolved_source_bundle_root, eval_manifest_family)
     train_rows = _selected_rows(train_manifest_path, train_line_start, train_line_end)
     eval_rows = _selected_rows(eval_manifest_path, eval_line_start, eval_line_end)
     if not train_rows:
@@ -62,7 +68,7 @@ def materialize_mini_bundle(
     (target_bundle_root / "manifests").mkdir(parents=True, exist_ok=False)
     for row in [*train_rows, *eval_rows]:
         _copy_row_assets(
-            source_bundle_root=source_bundle_root,
+            source_bundle_root=resolved_source_bundle_root,
             target_bundle_root=target_bundle_root,
             row=row,
         )
@@ -76,6 +82,7 @@ def materialize_mini_bundle(
         require_precomputed_ref_inputs=True,
     )
     return MiniBundleMaterialization(
+        source_bundle_root=resolved_source_bundle_root.as_posix(),
         bundle_root=target_bundle_root.as_posix(),
         train_manifest_path=target_train_manifest.as_posix(),
         eval_manifest_path=target_eval_manifest.as_posix(),
@@ -84,8 +91,53 @@ def materialize_mini_bundle(
     )
 
 
+def _resolve_source_bundle_root(
+    *,
+    source_bundle_root: Path,
+    train_manifest_family: str,
+    eval_manifest_family: str,
+) -> Path:
+    """Resolve the canonical source bundle root, including dated Task 101 roots."""
+    if _has_required_manifests(
+        bundle_root=source_bundle_root,
+        train_manifest_family=train_manifest_family,
+        eval_manifest_family=eval_manifest_family,
+    ):
+        return source_bundle_root
+    parent = source_bundle_root.parent
+    prefix = f"{source_bundle_root.name}-"
+    dated_candidates = sorted(
+        candidate
+        for candidate in parent.glob(f"{prefix}*")
+        if candidate.is_dir()
+        and _has_required_manifests(
+            bundle_root=candidate,
+            train_manifest_family=train_manifest_family,
+            eval_manifest_family=eval_manifest_family,
+        )
+    )
+    if dated_candidates:
+        return dated_candidates[-1]
+    raise SystemExit(
+        "Fresh-start mini-bundle source bundle root did not exist and no canonical "
+        "dated Task 101 bundle matched the required manifests. "
+        f"Tried `{source_bundle_root.as_posix()}`."
+    )
+
+
 def _manifest_path(bundle_root: Path, manifest_family: str) -> Path:
     return bundle_root / "manifests" / f"{manifest_family}.prepared.jsonl"
+
+
+def _has_required_manifests(
+    *,
+    bundle_root: Path,
+    train_manifest_family: str,
+    eval_manifest_family: str,
+) -> bool:
+    return _manifest_path(bundle_root, train_manifest_family).exists() and _manifest_path(
+        bundle_root, eval_manifest_family
+    ).exists()
 
 
 def _selected_rows(manifest_path: Path, start_line: int, end_line: int) -> list[dict[str, object]]:

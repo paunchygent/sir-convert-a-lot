@@ -48,6 +48,7 @@ def test_materialize_mini_bundle_copies_selected_rows_and_assets(tmp_path: Path)
         eval_line_end=1,
     )
 
+    assert payload.source_bundle_root == source_bundle.as_posix()
     assert payload.train_row_count == 2
     assert payload.eval_row_count == 1
     train_lines = (
@@ -67,6 +68,37 @@ def test_materialize_mini_bundle_copies_selected_rows_and_assets(tmp_path: Path)
     assert (target_bundle / copied_row["audio"]).exists() is True
     assert (target_bundle / copied_row["ref_audio"]).exists() is True
     assert (target_bundle / copied_row["precomputed_ref_input_path"]).exists() is True
+
+
+def test_materialize_mini_bundle_resolves_dated_source_bundle_root(tmp_path: Path) -> None:
+    """The mini-bundle copier should fall back to the canonical dated Task 101 bundle."""
+    placeholder_bundle = tmp_path / "qwen3-tts-swedish-task101-pilot-bundle"
+    dated_bundle = tmp_path / "qwen3-tts-swedish-task101-pilot-bundle-20260314T111615Z-refmel"
+    _write_manifest(
+        dated_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
+        [_row_payload(index) for index in range(1, 3)],
+    )
+    _write_manifest(
+        dated_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
+        [_row_payload(101)],
+    )
+    target_bundle = tmp_path / "target-bundle"
+
+    payload = materialize_mini_bundle(
+        source_bundle_root=placeholder_bundle,
+        target_bundle_root=target_bundle,
+        train_manifest_family="swedish_pilot_train",
+        eval_manifest_family="swedish_checkpoint_dev",
+        train_line_start=1,
+        train_line_end=1,
+        eval_line_start=1,
+        eval_line_end=1,
+    )
+
+    assert payload.source_bundle_root == dated_bundle.as_posix()
+    assert (
+        target_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl"
+    ).exists() is True
 
 
 def _row_payload(index: int) -> dict[str, object]:

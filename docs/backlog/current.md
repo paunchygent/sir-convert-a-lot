@@ -143,6 +143,8 @@ Story 28 is now operating policy:
   restart or Candidate 3 opening:
   - run a fresh-start Candidate 1 probe from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
   - use a tiny truthful mini-bundle rooted in the canonical pilot bundle
+  - resolve the canonical dated Task 101 frozen bundle automatically on Hemma
+    if the legacy undated placeholder path is absent
   - keep the probe detached and operator-governed on Hemma
   - use the prepared proof id
     `task211-20260317t121557z-freshstart-a1`

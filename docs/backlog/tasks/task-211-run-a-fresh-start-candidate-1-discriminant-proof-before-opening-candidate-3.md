@@ -45,6 +45,8 @@ opens the ordered Candidate 3 contingency.
   bundle:
   - train slice: manifest lines `1..16` from `swedish_pilot_train`
   - eval slice: manifest line `1` from `swedish_checkpoint_dev`
+  - resolve the canonical dated Task 101 frozen bundle root automatically if
+    the legacy undated placeholder path is absent on Hemma
 - Use the standard detached `qwen-train launch/status` runtime, not an ad hoc
   shell workflow.
 - Keep the probe intentionally short:
