@@ -2,7 +2,7 @@
 id: task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams
 title: Implement the second bounded Story 31 late-middle attenuation candidate for the layer16 layer15 seams
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -81,35 +81,70 @@ The intended first implementation posture is:
 
 ## Deliverables
 
-- [ ] One second bounded Story 31 stabilization family exists for the
+- [x] One second bounded Story 31 stabilization family exists for the
   layer-16 gated-product / layer-15 output neighborhood.
-- [ ] The existing lab can run that family without any new proof wrapper.
-- [ ] The existing gate can judge whether the new family earns promotion.
-- [ ] Operator docs record that this is the active next exploration slice.
+- [x] The existing lab can run that family without any new proof wrapper.
+- [x] The existing gate can judge whether the new family earns promotion.
+- [x] Operator docs record that this is the active next exploration slice.
 
 ## Acceptance Criteria
 
-- [ ] The new family is explicitly shaped by the negative evidence from
+- [x] The new family is explicitly shaped by the negative evidence from
   `task215-20260317t160500z-a2`.
-- [ ] The intervention addresses both surviving seams together rather than
+- [x] The intervention addresses both surviving seams together rather than
   retesting only the layer-16 gated-product clamp idea.
-- [ ] The implementation reuses the current Story 31 lab and gate unchanged
+- [x] The implementation reuses the current Story 31 lab and gate unchanged
   aside from variant registration.
-- [ ] `T217` remains blocked unless one of the new variants actually passes the
+- [x] `T217` remains blocked unless one of the new variants actually passes the
   existing promotion gate.
+
+## Outcome
+
+The second bounded Story 31 family is now implemented and recorded as negative
+exploration evidence under:
+
+- `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1/results.json`
+- `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1/results.md`
+
+Implemented variants:
+
+- `layer16_gated_fp32_rescale_1e3_layer15_out_0p5`
+- `layer16_gated_fp32_rescale_1e2_layer15_out_0p25`
+
+Truthful result:
+
+- baseline `off` reproduced the exact `T214` pair-family seams
+- the moderate candidate changed the pair-family neighborhood:
+  - pair `main_loss` / `combined_loss` first broke at
+    `talker_core.layer_16.output` with `MmBackward0`
+  - pair `sub_talker_loss` first broke at
+    `talker_core.layer_16.input_layernorm`
+- the stronger candidate also changed the pair-family neighborhood:
+  - pair `main_loss` / `combined_loss` first broke at
+    `talker_core.layer_16.output` with `MmBackward0`
+  - pair `sub_talker_loss` still first broke at
+    `talker_core.layer_16.mlp.gated_product` with `MulBackward0`
+- both candidates failed the existing Story 31 promotion gate:
+  - `exact_family_reproduced_by_baseline=true`
+  - `candidate_exact_surfaces_finite=false`
+  - `promotion_passed=false`
+
+So `T218` changed the causal neighborhood but did not yet produce a promoted
+winner. `T217` remains blocked.
 
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run qwen-story31-stability-lab run --skip-build`
-- [ ] `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run qwen-story31-stability-lab run --skip-build`
+- [x] `pdm run qwen-story31-stability-lab gate --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1 --candidate-variant layer16_gated_fp32_rescale_1e3_layer15_out_0p5`
+- [x] `pdm run qwen-story31-stability-lab gate --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1 --candidate-variant layer16_gated_fp32_rescale_1e2_layer15_out_0p25`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

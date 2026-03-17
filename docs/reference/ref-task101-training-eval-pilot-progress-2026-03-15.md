@@ -196,12 +196,19 @@ Why this is now the clean plan:
       - baseline `off` reproduced the exact `T214` pair-family seams
       - candidate `layer16_gated_fp32` failed the promotion gate unchanged
       - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
-    - `T218` is now the active next exploration slice:
-      - shape one bounded late-middle attenuation family
-      - keep the same Story 31 lab and gate
-      - target both surviving seams together:
-        - `layer_16.mlp.gated_product`
-        - `layer_15.output`
+    - `T218` is now complete as negative exploration evidence:
+      - output root:
+        `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1`
+      - implemented variants:
+        - `layer16_gated_fp32_rescale_1e3_layer15_out_0p5`
+        - `layer16_gated_fp32_rescale_1e2_layer15_out_0p25`
+      - baseline `off` still reproduced the exact `T214` pair-family seams
+      - both new variants changed the pair-family neighborhood, but neither
+        candidate kept the exact target seams finite
+      - both promotion gate runs recorded:
+        - `exact_family_reproduced_by_baseline=true`
+        - `candidate_exact_surfaces_finite=false`
+        - `promotion_passed=false`
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active

@@ -206,10 +206,10 @@ Story 28 is now operating policy:
     - the promotion surface is `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>` and it requires exact `T214` pair-family failure on baseline `off` plus finiteness on candidate `layer16_gated_fp32`
   - the first real gate run under `task215-20260317t160500z-a2` is negative:
     `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4` all preserved the same pair-family failures
-  - `T218` is now the active next slice:
-    one bounded late-middle attenuation family for
-    `layer_16.mlp.gated_product` and `layer_15.output` using the same lab and gate
-  - `T217` stays blocked until a later exploration candidate actually passes the local promotion gate
+  - `T218` is now closed negative exploration evidence:
+    the second Story 31 matrix at `task218-20260317t173122z-a1` changed the
+    pair-family neighborhood, but both new variants still failed the local
+    promotion gate, so `T217` remains blocked
 - `T199` remains blocked until Story 31 records a positive fresh-start
   stabilization proof that justifies a larger clean-start proof lane.
 - Do not spend the next story on Candidate 2.

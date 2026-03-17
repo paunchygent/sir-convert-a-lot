@@ -175,17 +175,18 @@ the governing success criterion for future restart work.
   - baseline `off` reproduced the exact `T214` pair-family seams
   - `layer16_gated_fp32` did not earn promotion
   - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
-- `T218` is now the active next exploration slice:
-  - shape one bounded late-middle attenuation family
-  - reuse the existing Story 31 lab and gate unchanged
-  - target both surviving seams together:
-    - `layer_16.mlp.gated_product`
-    - `layer_15.output`
+- `T218` is now complete as negative exploration evidence:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1`
+  - both bounded late-middle attenuation variants changed the pair-family
+    neighborhood
+  - neither candidate kept the exact target seams finite, so both failed the
+    existing promotion gate
 - `T217` remains blocked until a later exploration candidate passes on the
   exact fresh-start pair family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.
 - The next active slice inside Story 31 is another bounded exploration
-  candidate around the layer-16 gated-product / layer-15 output family, not a
+  candidate around the shifted layer-16 / layer-15 neighborhood, not a
   governed Hemma proof yet.
