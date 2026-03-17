@@ -2,7 +2,7 @@
 
 Purpose:
     Provide small, explicit forward-path interventions around the late-middle
-    talker-core MLP seam so Story 31 can test stability ideas quickly without
+    talker-core seams so Story 31 can test stabilization ideas quickly without
     rebuilding the entire training/runtime stack for each hypothesis.
 
 Relationships:
@@ -28,11 +28,23 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
 TALKER_CORE_STABILIZATION_OFF = "off"
 LAYER16_GATED_FP32 = "layer16_gated_fp32"
 LAYER16_GATED_FP32_CLAMP_1E4 = "layer16_gated_fp32_clamp_1e4"
+LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5 = "layer16_gated_fp32_rescale_1e3_layer15_out_0p5"
+LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25 = "layer16_gated_fp32_rescale_1e2_layer15_out_0p25"
 TALKER_CORE_STABILIZATION_CHOICES = (
     TALKER_CORE_STABILIZATION_OFF,
     LAYER16_GATED_FP32,
     LAYER16_GATED_FP32_CLAMP_1E4,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25,
 )
+
+
+@dataclass(frozen=True)
+class LayerOutputAttenuation:
+    """Resolved output attenuation contract for one decoder-layer boundary."""
+
+    layer_index: int
+    scale: float
 
 
 @dataclass(frozen=True)
@@ -43,6 +55,8 @@ class TalkerCoreStabilizationSpec:
     target_layers: tuple[int, ...]
     force_fp32_gated_product: bool
     gated_product_clamp_abs: float | None
+    gated_product_rescale_absmax: float | None
+    layer_output_attenuations: tuple[LayerOutputAttenuation, ...]
 
 
 def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizationSpec:
@@ -53,6 +67,8 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             target_layers=(),
             force_fp32_gated_product=False,
             gated_product_clamp_abs=None,
+            gated_product_rescale_absmax=None,
+            layer_output_attenuations=(),
         )
     if variant == LAYER16_GATED_FP32:
         return TalkerCoreStabilizationSpec(
@@ -60,6 +76,8 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             target_layers=(16,),
             force_fp32_gated_product=True,
             gated_product_clamp_abs=None,
+            gated_product_rescale_absmax=None,
+            layer_output_attenuations=(),
         )
     if variant == LAYER16_GATED_FP32_CLAMP_1E4:
         return TalkerCoreStabilizationSpec(
@@ -67,6 +85,26 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             target_layers=(16,),
             force_fp32_gated_product=True,
             gated_product_clamp_abs=1.0e4,
+            gated_product_rescale_absmax=None,
+            layer_output_attenuations=(),
+        )
+    if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5:
+        return TalkerCoreStabilizationSpec(
+            variant=variant,
+            target_layers=(16,),
+            force_fp32_gated_product=True,
+            gated_product_clamp_abs=None,
+            gated_product_rescale_absmax=1.0e3,
+            layer_output_attenuations=(LayerOutputAttenuation(layer_index=15, scale=0.5),),
+        )
+    if variant == LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25:
+        return TalkerCoreStabilizationSpec(
+            variant=variant,
+            target_layers=(16,),
+            force_fp32_gated_product=True,
+            gated_product_clamp_abs=None,
+            gated_product_rescale_absmax=1.0e2,
+            layer_output_attenuations=(LayerOutputAttenuation(layer_index=15, scale=0.25),),
         )
     raise SystemExit(f"Unsupported talker-core stabilization variant `{variant}`.")
 
@@ -79,6 +117,7 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
         yield
         return
     original_forwards: list[tuple[torch.nn.Module, Callable[..., torch.Tensor], bool]] = []
+    original_layer_forwards: list[tuple[torch.nn.Module, Callable[..., object], bool]] = []
     try:
         for layer_index in spec.target_layers:
             layer = resolve_talker_decoder_layer(model, layer_index)
@@ -90,8 +129,24 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
                 )
             original_forwards.append((mlp, mlp.forward, "forward" in mlp.__dict__))
             mlp.forward = MethodType(_patched_mlp_forward_factory(spec), mlp)
+        for attenuation in spec.layer_output_attenuations:
+            layer = resolve_talker_decoder_layer(model, attenuation.layer_index)
+            original_layer_forwards.append((layer, layer.forward, "forward" in layer.__dict__))
+            layer.forward = MethodType(
+                _patched_layer_forward_factory(
+                    original_forward=layer.forward,
+                    output_scale=attenuation.scale,
+                    layer_index=attenuation.layer_index,
+                ),
+                layer,
+            )
         yield
     finally:
+        for module, original_forward, had_instance_forward in reversed(original_layer_forwards):
+            if had_instance_forward:
+                module.forward = original_forward
+                continue
+            delattr(module, "forward")
         for module, original_forward, had_instance_forward in reversed(original_forwards):
             if had_instance_forward:
                 module.forward = original_forward
@@ -111,18 +166,61 @@ def _patched_mlp_forward_factory(
         down_proj = _required_tensor_module(self, "down_proj")
         gate = act_fn(gate_proj(x))
         up = up_proj(x)
+        output_dtype = up.dtype
         gated_product = gate.float() * up.float() if spec.force_fp32_gated_product else gate * up
         if spec.gated_product_clamp_abs is not None:
             gated_product = gated_product.clamp(
                 min=-spec.gated_product_clamp_abs,
                 max=spec.gated_product_clamp_abs,
             )
-        output = down_proj(gated_product.to(dtype=up.dtype))
+        if spec.gated_product_rescale_absmax is not None:
+            gated_product = _rescale_tensor_absmax(
+                gated_product,
+                absmax_cap=spec.gated_product_rescale_absmax,
+            )
+        output = down_proj(gated_product.to(dtype=output_dtype))
         if not isinstance(output, torch.Tensor):
             raise SystemExit("Talker-core stabilization down projection did not return a tensor.")
         return output
 
     return patched_forward
+
+
+def _patched_layer_forward_factory(
+    *,
+    original_forward: Callable[..., object],
+    output_scale: float,
+    layer_index: int,
+) -> Callable[[torch.nn.Module, object], object]:
+    """Build one wrapper that attenuates the decoder-layer output seam."""
+
+    def patched_forward(self: torch.nn.Module, *args: object, **kwargs: object) -> object:
+        outputs = original_forward(*args, **kwargs)
+        if not isinstance(outputs, tuple) or len(outputs) == 0:
+            raise SystemExit(
+                "Talker-core stabilization expected decoder layer "
+                f"{layer_index} to return a non-empty tuple."
+            )
+        hidden_states = outputs[0]
+        if not isinstance(hidden_states, torch.Tensor):
+            raise SystemExit(
+                "Talker-core stabilization expected decoder layer "
+                f"{layer_index} output[0] to be a tensor."
+            )
+        return (hidden_states * output_scale, *outputs[1:])
+
+    return patched_forward
+
+
+def _rescale_tensor_absmax(tensor: torch.Tensor, *, absmax_cap: float) -> torch.Tensor:
+    """Rescale one tensor only when its current abs-max exceeds the requested cap."""
+    current_absmax = torch.amax(tensor.abs())
+    if not bool(torch.isfinite(current_absmax).item()):
+        return tensor
+    current_value = float(current_absmax.detach().item())
+    if current_value == 0.0 or current_value <= absmax_cap:
+        return tensor
+    return tensor * (absmax_cap / current_value)
 
 
 def _required_tensor_module(parent: torch.nn.Module, attribute_name: str) -> torch.nn.Module:
