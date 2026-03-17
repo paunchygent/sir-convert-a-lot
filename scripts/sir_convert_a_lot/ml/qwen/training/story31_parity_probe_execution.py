@@ -18,6 +18,7 @@ import numpy as np
 import torch
 
 from scripts.devops.qwen_finetuning_patches.dataset import (
+    BatchRowProvenance,
     BatchTensors,
     TTSDataset,
     require_batch_tensors,
@@ -69,10 +70,14 @@ def build_runtime_args(
 ) -> argparse.Namespace:
     """Return the CLI-style runtime args for one prepared parity path."""
     train_jsonl = (
-        settings.source_bundle_root / "manifests" / f"{settings.train_manifest_family}.prepared.jsonl"
+        settings.source_bundle_root
+        / "manifests"
+        / f"{settings.train_manifest_family}.prepared.jsonl"
     )
     eval_jsonl = (
-        settings.source_bundle_root / "manifests" / f"{settings.eval_manifest_family}.prepared.jsonl"
+        settings.source_bundle_root
+        / "manifests"
+        / f"{settings.eval_manifest_family}.prepared.jsonl"
     )
     return argparse.Namespace(
         init_model_path=settings.model_id,
@@ -183,6 +188,11 @@ def run_current_train_step_window(
     emitted_train_progress = False
     optimizer_step_microbatches: list[dict[str, object]] = []
     for batch in batches:
+        device_batch = move_batch_tensors_to_model_device(
+            batch,
+            device=prepared.model.device,
+            non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
+        )
         try:
             result = execute_train_iteration(
                 accelerator=prepared.accelerator,
@@ -190,7 +200,7 @@ def run_current_train_step_window(
                 model=prepared.model,
                 optimizer=prepared.optimizer,
                 epoch=0,
-                batch=batch,
+                batch=device_batch,
                 train_iterations_completed=train_iterations_completed,
                 optimizer_steps_completed=optimizer_steps_completed,
                 last_loss=last_loss,
@@ -265,7 +275,11 @@ def run_reconstructed_shared_window(
     optimizer_step_microbatches: list[dict[str, object]] = []
     prepared.optimizer.zero_grad()
     for batch in batches:
-        resolved_batch = require_batch_tensors(batch)
+        resolved_batch = move_batch_tensors_to_model_device(
+            batch,
+            device=prepared.model.device,
+            non_blocking_transfer=prepared.effective_dataloader_tuning.non_blocking_transfer,
+        )
         train_iterations_completed += 1
         current_optimizer_step = optimizer_steps_completed + 1
         with prepared.accelerator.accumulate(prepared.model):
@@ -335,7 +349,9 @@ def run_reconstructed_shared_window(
                         ("combined_loss", forward_surfaces.combined_loss),
                         (
                             "grad_norm",
-                            grad_norm_tensor(grad_norm, device=forward_surfaces.combined_loss.device),
+                            grad_norm_tensor(
+                                grad_norm, device=forward_surfaces.combined_loss.device
+                            ),
                         ),
                     ],
                 ),
@@ -443,6 +459,66 @@ def run_reconstructed_shared_window(
     )
 
 
+def move_batch_tensors_to_model_device(
+    batch: BatchTensors,
+    *,
+    device: torch.device,
+    non_blocking_transfer: bool,
+) -> BatchTensors:
+    """Move one collated batch onto the model device without changing dtypes."""
+    resolved_batch = require_batch_tensors(batch)
+    return {
+        "input_ids": resolved_batch["input_ids"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "semantic_text_ids": resolved_batch["semantic_text_ids"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "semantic_text_positions": resolved_batch["semantic_text_positions"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "semantic_text_mask": resolved_batch["semantic_text_mask"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "ref_mels": resolved_batch["ref_mels"],
+        "attention_mask": resolved_batch["attention_mask"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "text_embedding_mask": resolved_batch["text_embedding_mask"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "codec_embedding_mask": resolved_batch["codec_embedding_mask"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "codec_0_labels": resolved_batch["codec_0_labels"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "codec_ids": resolved_batch["codec_ids"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "codec_mask": resolved_batch["codec_mask"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "speaker_ids": resolved_batch["speaker_ids"].to(
+            device=device,
+            non_blocking=non_blocking_transfer,
+        ),
+        "batch_provenance": [
+            copy_batch_row_provenance(entry) for entry in resolved_batch["batch_provenance"]
+        ],
+    }
+
+
 def latest_loss_observation(prepared: PreparedTrainingRun) -> Mapping[str, object] | None:
     """Return the latest recorded loss observation when one exists."""
     observations = prepared.finite_loss_guard.recent_observations
@@ -450,6 +526,8 @@ def latest_loss_observation(prepared: PreparedTrainingRun) -> Mapping[str, objec
         return None
     observation = observations[-1]
     return observation if isinstance(observation, Mapping) else None
+
+
 def optional_scalar(value: torch.Tensor | float | None) -> float | None:
     """Return one scalar-like value as a float when available."""
     if value is None:
@@ -490,3 +568,17 @@ def cleanup_prepared_run(prepared: PreparedTrainingRun) -> None:
     if torch.cuda.is_available():
         with suppress(Exception):
             torch.cuda.empty_cache()
+
+
+def copy_batch_row_provenance(entry: BatchRowProvenance) -> BatchRowProvenance:
+    """Return one explicit typed copy of batch provenance metadata."""
+    return {
+        "row_id": entry["row_id"],
+        "manifest_path": entry["manifest_path"],
+        "manifest_line_number": entry["manifest_line_number"],
+        "dataset_index": entry["dataset_index"],
+        "speaker_id": entry["speaker_id"],
+        "text_preview": entry["text_preview"],
+        "codec_frame_count": entry["codec_frame_count"],
+        "ref_audio": entry["ref_audio"],
+    }

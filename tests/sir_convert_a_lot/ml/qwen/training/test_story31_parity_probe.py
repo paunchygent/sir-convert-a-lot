@@ -16,7 +16,9 @@ import json
 from pathlib import Path
 
 import pytest
+import torch
 
+from scripts.devops.qwen_finetuning_patches.dataset import BatchTensors
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_parity_probe import (
     _parse_manifest_lines,
     main,
@@ -29,6 +31,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story31_parity_probe_contracts i
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_parity_probe_runner import (
     persist_report,
     run_story31_parity_probe,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_parity_probe_execution import (
+    move_batch_tensors_to_model_device,
 )
 
 
@@ -139,6 +144,50 @@ def test_run_story31_parity_probe_classifies_boundary_only_divergence(
     assert (
         report.recommended_next_step == "record_boundary_only_divergence_then_decide_t227_vs_t219"
     )
+
+
+def test_move_batch_tensors_to_model_device_keeps_ref_mels_on_host() -> None:
+    """The parity probe should mirror the training device posture for batch tensors."""
+
+    device = torch.device("cpu")
+    ref_mels = torch.tensor([[1.0]], dtype=torch.float32)
+    batch: BatchTensors = {
+        "input_ids": torch.tensor([[[1, 2]]], dtype=torch.int64),
+        "codec_ids": torch.tensor([[[3, 4]]], dtype=torch.int64),
+        "semantic_text_ids": torch.tensor([[5]], dtype=torch.int64),
+        "semantic_text_positions": torch.tensor([[0]], dtype=torch.int64),
+        "semantic_text_mask": torch.tensor([[True]], dtype=torch.bool),
+        "text_embedding_mask": torch.tensor([[True]], dtype=torch.bool),
+        "ref_mels": ref_mels,
+        "codec_embedding_mask": torch.tensor([[[1.0]]], dtype=torch.float32),
+        "attention_mask": torch.tensor([[1]], dtype=torch.int64),
+        "codec_0_labels": torch.tensor([[6]], dtype=torch.int64),
+        "codec_mask": torch.tensor([[[True]]], dtype=torch.bool),
+        "speaker_ids": torch.tensor([7], dtype=torch.int64),
+        "batch_provenance": [
+            {
+                "row_id": "row-1",
+                "manifest_path": "/bundle/manifests/train.jsonl",
+                "manifest_line_number": 1,
+                "dataset_index": 0,
+                "speaker_id": "speaker-1",
+                "text_preview": "preview",
+                "codec_frame_count": 1,
+                "ref_audio": "/bundle/refs/speaker-1/ref.wav",
+            }
+        ],
+    }
+
+    device_batch = move_batch_tensors_to_model_device(
+        batch,
+        device=device,
+        non_blocking_transfer=False,
+    )
+
+    assert device_batch["input_ids"].device == device
+    assert device_batch["codec_ids"].device == device
+    assert device_batch["batch_provenance"][0]["row_id"] == "row-1"
+    assert device_batch["ref_mels"] is ref_mels
 
 
 def _make_report(
