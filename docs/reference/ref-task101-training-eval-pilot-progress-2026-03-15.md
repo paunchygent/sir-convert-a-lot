@@ -1024,6 +1024,58 @@ Operator conclusion:
     bounded RCA on this lane and keep restart blocked until a new
     design/architecture story exists
 
+## 2026-03-17: `T206` Offline Audit Proved `text_span_only` Is Still Prefix-Shaped
+
+- Audit command:
+  - `pdm run qwen-token-span-audit`
+- Audit artifacts:
+  - `build/verification/qwen-token-span-audit/task206-canonical-line101/report.json`
+  - `build/verification/qwen-token-span-audit/task206-canonical-line101/report.md`
+- Canonical sample source:
+  - status artifact:
+    `build/verification/qwen-t198-proof/task198-20260317t062816z-fallback1470-a1/fallback1470-status.json`
+  - manifest line: `101`
+  - train iteration: `851`
+- Audit result:
+  - current `text_span_only` still trains positions `0..136`
+  - intended semantic text-only positions are `8..135`
+  - current `text_span_only` therefore still leaks `9` non-semantic
+    positions into the trainable span:
+    `0..7` plus `136`
+  - leaked ids are the prefix special/pad/BOS/EOS ids:
+    `151644`, `77091`, `198`, `151671`, `151672`, `151673`
+  - the current helper is still prefix-shaped, while the intended semantic
+    span starts at `8`
+- Operator conclusion:
+  - the correction family cannot be another prefix-length tweak
+  - `T206` now has concrete offline evidence that the canonical correction
+    must move to an explicit position mask builder before the single final
+    post-fix `1470 + standalone eval` proof is allowed
+
+## 2026-03-17: `T206` Explicit Position-Mask Correction Removed The Offline Leakage
+
+- Smallest post-fix regression:
+  - `tests/sir_convert_a_lot/ml/qwen/training/test_training_rows.py::test_collate_fn_text_span_only_masks_only_semantic_text_positions`
+- Post-fix audit command:
+  - `pdm run qwen-token-span-audit --output-root build/verification/qwen-token-span-audit/task206-postfix-line101`
+- Post-fix audit artifacts:
+  - `build/verification/qwen-token-span-audit/task206-postfix-line101/report.json`
+  - `build/verification/qwen-token-span-audit/task206-postfix-line101/report.md`
+- Post-fix audit result:
+  - current `text_span_only` now resolves to positions `8..135`
+  - leaked positions are empty
+  - leaked token ids are empty
+  - leaked non-finite count is `0`
+  - current trainable non-finite count equals intended semantic non-finite
+    count: `128`
+- Operator conclusion:
+  - the explicit position-mask correction cleanly removes the previously
+    audited prefix/pad/BOS/EOS leakage on the canonical failing sample
+  - the next `T206` decision point is no longer whether leakage exists
+  - the next `T206` decision point is whether this correction survives the
+    remaining focused gates cleanly enough to become the single canonical fix
+    before the final Hemma `1470 + standalone eval` proof
+
 ## Historical Reference Boundary
 
 `docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md`

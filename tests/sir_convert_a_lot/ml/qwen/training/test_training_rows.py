@@ -34,7 +34,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_CODEC_SPAN_TEXT_EMBEDDING_MASK_POLICY,
+    TextEmbeddingMaskPolicy,
     TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY,
+    resolve_active_text_embedding_span,
 )
 from tests.sir_convert_a_lot.ml.qwen.preprocessing.test_support import write_test_wav
 
@@ -371,13 +373,13 @@ def test_collate_fn_preserves_batch_row_provenance(
     ("policy", "expected_active_length"),
     [
         (LEGACY_CODEC_SPAN_TEXT_EMBEDDING_MASK_POLICY, 16),
-        (TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY, 11),
+        (TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY, 2),
     ],
 )
 def test_collate_fn_applies_the_configured_text_embedding_mask_policy(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    policy: str,
+    policy: TextEmbeddingMaskPolicy,
     expected_active_length: int,
 ) -> None:
     """Collation should respect the explicit text-embedding mask policy."""
@@ -403,14 +405,60 @@ def test_collate_fn_applies_the_configured_text_embedding_mask_policy(
         lambda self, audio, sample_rate: torch.ones((1, 4, 8), dtype=torch.float32),
     )
 
+    batch_item = dataset[0]
+    collated = dataset.collate_fn([batch_item])
+
+    mask = collated["text_embedding_mask"][0, :, 0]
+    resolved_span = resolve_active_text_embedding_span(
+        policy=policy,
+        text_ids_len=batch_item["text_ids"].shape[1],
+        codec_ids_len=batch_item["audio_codes"].shape[0],
+    )
+    assert int(mask.sum().item()) == expected_active_length
+    assert torch.equal(
+        mask[resolved_span.start_index : resolved_span.end_index_exclusive],
+        torch.ones(expected_active_length, dtype=torch.bool),
+    )
+    assert torch.equal(
+        mask[: resolved_span.start_index],
+        torch.zeros(resolved_span.start_index, dtype=torch.bool),
+    )
+    assert torch.equal(
+        mask[resolved_span.end_index_exclusive :],
+        torch.zeros(mask.shape[0] - resolved_span.end_index_exclusive, dtype=torch.bool),
+    )
+
+
+def test_collate_fn_text_span_only_masks_only_semantic_text_positions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`text_span_only` should exclude prefix controls, pads, BOS, and EOS."""
+    ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
+    ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
+    write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
+    dataset = TTSDataset(
+        data_list=[
+            {
+                "text": "hej världen igen",
+                "audio_codes": [list(range(16)), list(range(16, 32)), list(range(32, 48))],
+                "ref_audio": ref_audio_path.as_posix(),
+                "speaker_id": "speaker-a",
+            }
+        ],
+        processor=_LongTokenProcessor(),
+        config=_FakeConfig(),
+        text_embedding_mask_policy=TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY,
+    )
+    monkeypatch.setattr(
+        TTSDataset,
+        "extract_mels",
+        lambda self, audio, sample_rate: torch.ones((1, 4, 8), dtype=torch.float32),
+    )
+
     collated = dataset.collate_fn([dataset[0]])
 
     mask = collated["text_embedding_mask"][0, :, 0]
-    assert int(mask.sum().item()) == expected_active_length
-    assert torch.equal(
-        mask[:expected_active_length], torch.ones(expected_active_length, dtype=torch.bool)
-    )
-    assert torch.equal(
-        mask[expected_active_length:],
-        torch.zeros(mask.shape[0] - expected_active_length, dtype=torch.bool),
-    )
+    assert torch.equal(mask[:8], torch.zeros(8, dtype=torch.bool))
+    assert torch.equal(mask[8:10], torch.ones(2, dtype=torch.bool))
+    assert mask[10].item() is False

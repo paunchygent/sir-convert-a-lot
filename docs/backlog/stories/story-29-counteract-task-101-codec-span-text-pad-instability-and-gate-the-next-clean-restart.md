@@ -221,6 +221,17 @@ numerical stability.
     radius first, not by marginal performance differences between nearby
     variants
   - then run exactly one final post-fix Hemma proof
+- The first `T206` offline audit proved why the correction could not be
+  another prefix-length tweak:
+  - pre-fix `text_span_only` still trained positions `0..136`
+  - intended semantic positions were `8..135`
+  - `9` non-semantic positions leaked into the trainable span
+- The explicit position-mask correction now exists locally in dataset
+  collation, and the strongest immediate post-fix signal is clean:
+  - the direct semantic-mask regression passed
+  - the post-fix audit artifact under
+    `build/verification/qwen-token-span-audit/task206-postfix-line101/`
+    shows active span `8..135` with no leaked positions or leaked token ids
 - Story 29 now has an explicit stop rule:
   - no more replay-only ablations or restart attempts on the current code path
   - allow exactly one post-fix proof after the token-span correction lands

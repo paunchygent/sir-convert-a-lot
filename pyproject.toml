@@ -157,6 +157,7 @@ distribution = false
 "qwen-story29-eval-detached" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_story29_eval_detached"
 "qwen-t197-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t197_proof"
 "qwen-t198-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_t198_proof"
+"qwen-token-span-audit" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_token_span_audit"
 "qwen-rixvox-train-staging" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_rixvox_train_staging"
 "qwen-smoke" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_smoke"
 "qwen-train" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_train"

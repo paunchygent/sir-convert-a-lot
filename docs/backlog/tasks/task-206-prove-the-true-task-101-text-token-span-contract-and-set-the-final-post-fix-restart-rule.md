@@ -89,6 +89,43 @@ restart rule so Story 29 does not keep consuming replay-only RCAs forever.
   - detached-launch metadata corruption
   - other host/container execution faults that prevent truthful evidence
 
+## Current Audit Result
+
+- The offline audit surface now exists at:
+  - `pdm run qwen-token-span-audit`
+  - pre-fix artifact root:
+    `build/verification/qwen-token-span-audit/task206-canonical-line101/`
+- The canonical failing sample audit from manifest line `101` and train
+  iteration `851` proved:
+  - current `text_span_only` still trains positions `0..136`
+  - intended semantic text-only positions are `8..135`
+  - `9` non-semantic positions still leak into the trainable span:
+    `0..7` plus `136`
+  - leaked ids are the prefix special/pad/BOS/EOS ids:
+    `151644`, `77091`, `198`, `151671`, `151672`, `151673`
+- The audit therefore proves the correction cannot be another prefix-length
+  tweak:
+  - the intended semantic span does not start at `0`
+  - the correction family must move to an explicit position mask builder
+- The explicit position-mask correction now exists in dataset collation and the
+  first post-fix signal is green:
+  - smallest direct regression:
+    `tests/sir_convert_a_lot/ml/qwen/training/test_training_rows.py::test_collate_fn_text_span_only_masks_only_semantic_text_positions`
+  - post-fix artifact root:
+    `build/verification/qwen-token-span-audit/task206-postfix-line101/`
+- The post-fix audit now proves the leakage is gone on the canonical failing
+  sample:
+  - current `text_span_only` now resolves to positions `8..135`
+  - leaked positions are empty
+  - leaked token ids are empty
+  - leaked non-finite count is `0`
+  - current trainable non-finite count now equals the intended semantic
+    non-finite count: `128`
+- The remaining `T206` decision work is now narrower:
+  - keep this explicit position-mask correction as the canonical fix if the
+    focused gates and operator reporting remain clean
+  - then run the single final post-fix Hemma proof package
+
 ## Deliverables
 
 - [ ] One committed RCA artifact proves the intended versus actual trainable

@@ -184,10 +184,23 @@ Story 28 is now operating policy:
   - therefore no more replay-only ablations are allowed on the current code
     path
 - Use `T206` as the next and final Story 29 RCA/design lane:
-  - prove the true trainable text-token span for the canonical failing sample
-  - land one canonical code-bearing correction for that contract
-  - choose that correction by semantic correctness and minimal blast radius
-    first; use small performance differences only as a secondary tiebreaker
+  - the pre-fix offline audit proved the current `text_span_only` helper was
+    still prefix-shaped and leaked `9` non-semantic positions on the canonical
+    failing sample
+  - the repo now has the explicit position-mask correction in dataset
+    collation instead of the old prefix-length shortcut
+  - the first post-fix signal is the smallest direct regression:
+    `test_collate_fn_text_span_only_masks_only_semantic_text_positions`
+  - the post-fix audit under
+    `build/verification/qwen-token-span-audit/task206-postfix-line101/`
+    now shows:
+    - active span `8..135`
+    - no leaked positions
+    - no leaked token ids
+    - leaked non-finite count `0`
+  - choose this correction canonically by semantic correctness and minimal
+    blast radius first; use small performance differences only as a secondary
+    tiebreaker
   - then run exactly one decisive post-fix Hemma proof
 - Use this explicit stop rule:
   - if the single post-fix proof still fails numerically before `1470` with

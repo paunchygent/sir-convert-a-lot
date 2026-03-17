@@ -57,7 +57,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import (
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_TEXT_EMBEDDING_MASK_POLICY_DEFAULT,
     TextEmbeddingMaskPolicy,
-    active_text_embedding_length,
+    resolve_active_text_embedding_span,
     resolve_text_embedding_mask_policy,
 )
 
@@ -502,13 +502,14 @@ class TTSDataset(Dataset[DatasetItem]):
                 8 + text_ids_len - 2 : 8 + text_ids_len + codec_ids_len,
                 0,
             ] = self.config.tts_pad_token_id
+            text_embedding_span = resolve_active_text_embedding_span(
+                policy=self.text_embedding_mask_policy,
+                text_ids_len=text_ids_len,
+                codec_ids_len=codec_ids_len,
+            )
             text_embedding_mask[
                 batch_index,
-                : active_text_embedding_length(
-                    policy=self.text_embedding_mask_policy,
-                    text_ids_len=text_ids_len,
-                    codec_ids_len=codec_ids_len,
-                ),
+                text_embedding_span.start_index : text_embedding_span.end_index_exclusive,
             ] = True
 
             input_ids[batch_index, 3:8, 1] = torch.tensor(
