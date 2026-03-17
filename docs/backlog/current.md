@@ -157,36 +157,23 @@ Story 28 is now operating policy:
       prove the true text-token span contract and define the final post-fix
       restart/stop rule
 - 2026-03-17:
-  - `T206` landed the explicit position-mask correction in dataset collation:
-    `text_span_only` now activates only the semantic text positions instead of
-    the old prefix-length surface
-  - the smallest direct regression passed and the post-fix offline audit under
-    `build/verification/qwen-token-span-audit/task206-postfix-line101/`
-    proved:
-    - active span `8..135`
-    - no leaked positions
-    - no leaked token ids
-    - leaked non-finite count `0`
-  - the single final post-fix Hemma proof then ran under
-    `task206-20260317t074600z-postfix1470-a1`
-  - that proof still failed numerically before `1470`:
-    - `trigger_reason=pre_clip_non_finite_gradients`
-    - `first_non_finite_stage=pre_clip`
-    - `first_non_finite_surface=text_embedding.weight.grad`
-    - `current_optimizer_step=1407`
-    - `current_train_iteration=809`
-  - no truthful `1470` checkpoint was minted, so detached standalone eval was
-    correctly not launched
-  - the Story 29 stop rule is now triggered for the preserved Task 101 lane
-  - bounded RCA on this preserved lane is therefore closed
+  - `T206` landed the explicit position-mask correction in dataset collation,
+    and the post-fix offline audit proved active span `8..135` with zero
+    leaked positions, zero leaked token ids, and zero leaked non-finite rows.
+  - the single final post-fix Hemma proof under
+    `task206-20260317t074600z-postfix1470-a1` still failed before `1470` with
+    `pre_clip_non_finite_gradients` on `text_embedding.weight.grad` at step
+    `1407`, so no truthful `1470` checkpoint or detached eval was produced and
+    Story 29 bounded RCA is closed for the preserved lane.
   - Story 30 is now active with the closed architect verdict:
-    - Candidate 1 selected
-    - ordered contingency `1 -> 3`
-    - Candidate 2 rejected as the primary next story
-  - `T207` then completed as the first Story 30 execution slice:
-    dataset collation now emits `semantic_text_ids`,
-    `semantic_text_positions`, and `semantic_text_mask`, and those fields are
-    now enforced in the typed `BatchTensors` contract
+    Candidate 1 selected, contingency `1 -> 3`, Candidate 2 rejected.
+  - `T207` completed the semantic-only batch contract by making
+    `semantic_text_ids`, `semantic_text_positions`, and `semantic_text_mask`
+    first-class typed batch fields.
+  - `T208` completed the semantic-only train/eval assembly:
+    only `semantic_text_ids` now traverse `text_embedding(...)`, and the
+    semantic embeddings are scattered back into the full-sequence runtime
+    positions.
 
 ## Next Actions
 
@@ -209,8 +196,8 @@ Story 28 is now operating policy:
     proof variant
 - Execute Story 30 in this order:
   - `T207` semantic-only batch contract is complete
-  - `T208` semantic-only train-step assembly is next
-  - `T209` local gradient-membership proof
+  - `T208` semantic-only train-step assembly is complete
+  - `T209` local gradient-membership proof is next
   - if Candidate 1 fails, open Candidate 3 directly as the next contingency
 - Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate

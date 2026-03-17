@@ -34,8 +34,8 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_inputs import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
 from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy import (
     LEGACY_CODEC_SPAN_TEXT_EMBEDDING_MASK_POLICY,
-    TextEmbeddingMaskPolicy,
     TEXT_SPAN_ONLY_TEXT_EMBEDDING_MASK_POLICY,
+    TextEmbeddingMaskPolicy,
     resolve_active_text_embedding_span,
     resolve_semantic_text_embedding_span,
 )

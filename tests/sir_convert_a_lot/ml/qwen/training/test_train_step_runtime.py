@@ -56,7 +56,11 @@ class _FakeAccelerator:
 class _FakeTalkerModel:
     """Minimal talker-model surface used by the train-step runtime."""
 
+    def __init__(self) -> None:
+        self.last_text_embedding_input_ids: torch.Tensor | None = None
+
     def text_embedding(self, input_ids: torch.Tensor) -> torch.Tensor:
+        self.last_text_embedding_input_ids = input_ids.detach().clone()
         return torch.zeros((*input_ids.shape, 4), dtype=torch.float32)
 
     def codec_embedding(self, input_ids: torch.Tensor) -> torch.Tensor:
@@ -134,15 +138,18 @@ def test_execute_train_iteration_skips_optimizer_step_on_pre_step_failure(
         eval_dataloader_length=8,
     )
     batch = {
-        "input_ids": torch.zeros((1, 8, 2), dtype=torch.long),
-        "codec_ids": torch.zeros((1, 8), dtype=torch.long),
+        "input_ids": torch.zeros((1, 10, 2), dtype=torch.long),
+        "codec_ids": torch.zeros((1, 10), dtype=torch.long),
+        "semantic_text_ids": torch.zeros((1, 2), dtype=torch.long),
+        "semantic_text_positions": torch.tensor([[8, 9]], dtype=torch.long),
+        "semantic_text_mask": torch.ones((1, 2), dtype=torch.bool),
         "ref_mels": torch.zeros((1, 4, 4), dtype=torch.float32),
         "batch_provenance": [{"row_id": "L99"}],
-        "text_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
-        "codec_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
-        "attention_mask": torch.ones((1, 8), dtype=torch.long),
-        "codec_0_labels": torch.zeros((1, 8), dtype=torch.long),
-        "codec_mask": torch.ones((1, 8), dtype=torch.bool),
+        "text_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+        "codec_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+        "attention_mask": torch.ones((1, 10), dtype=torch.long),
+        "codec_0_labels": torch.zeros((1, 10), dtype=torch.long),
+        "codec_mask": torch.ones((1, 10), dtype=torch.bool),
     }
 
     monkeypatch.setattr(
@@ -155,7 +162,7 @@ def test_execute_train_iteration_skips_optimizer_step_on_pre_step_failure(
     )
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.fuse_auxiliary_codebook_embeddings",
-        lambda **kwargs: torch.zeros((1, 8, 4), dtype=torch.float32),
+        lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
     )
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_microbatch_forensics",
@@ -222,15 +229,18 @@ def test_execute_train_iteration_does_not_apply_text_projection_in_finetune_forw
         eval_dataloader_length=8,
     )
     batch = {
-        "input_ids": torch.zeros((1, 8, 2), dtype=torch.long),
-        "codec_ids": torch.zeros((1, 8), dtype=torch.long),
+        "input_ids": torch.zeros((1, 10, 2), dtype=torch.long),
+        "codec_ids": torch.zeros((1, 10), dtype=torch.long),
+        "semantic_text_ids": torch.zeros((1, 2), dtype=torch.long),
+        "semantic_text_positions": torch.tensor([[8, 9]], dtype=torch.long),
+        "semantic_text_mask": torch.ones((1, 2), dtype=torch.bool),
         "ref_mels": torch.zeros((1, 4, 4), dtype=torch.float32),
         "batch_provenance": [{"row_id": "L99"}],
-        "text_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
-        "codec_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
-        "attention_mask": torch.ones((1, 8), dtype=torch.long),
-        "codec_0_labels": torch.zeros((1, 8), dtype=torch.long),
-        "codec_mask": torch.ones((1, 8), dtype=torch.bool),
+        "text_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+        "codec_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+        "attention_mask": torch.ones((1, 10), dtype=torch.long),
+        "codec_0_labels": torch.zeros((1, 10), dtype=torch.long),
+        "codec_mask": torch.ones((1, 10), dtype=torch.bool),
     }
     model = _FakeModel()
     projection = _ProjectionRecorder()
@@ -246,7 +256,7 @@ def test_execute_train_iteration_does_not_apply_text_projection_in_finetune_forw
     )
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.fuse_auxiliary_codebook_embeddings",
-        lambda **kwargs: torch.zeros((1, 8, 4), dtype=torch.float32),
+        lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
     )
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_train_step.build_microbatch_forensics",
@@ -302,3 +312,10 @@ def test_execute_train_iteration_does_not_apply_text_projection_in_finetune_forw
 
     assert projection.called is False
     assert result.completed_optimizer_step is True
+    assert model.talker.model.last_text_embedding_input_ids is not None
+    expected_semantic_text_ids = batch["semantic_text_ids"]
+    assert isinstance(expected_semantic_text_ids, torch.Tensor)
+    assert torch.equal(
+        model.talker.model.last_text_embedding_input_ids,
+        expected_semantic_text_ids,
+    )

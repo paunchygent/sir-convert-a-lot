@@ -1,9 +1,9 @@
 ---
-id: 'task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly'
-title: 'Add local gradient-membership proof for semantic-only text embedding assembly'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly
+title: Add local gradient-membership proof for semantic-only text embedding assembly
+type: task
+status: proposed
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -19,6 +19,7 @@ labels:
   - proof
   - gradient
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

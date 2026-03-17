@@ -1,9 +1,9 @@
 ---
-id: 'task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly'
-title: 'Implement semantic-only batch contract for Task 101 text embedding assembly'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly
+title: Implement semantic-only batch contract for Task 101 text embedding assembly
+type: task
+status: completed
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -18,6 +18,7 @@ labels:
   - semantic-only
   - batch-contract
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

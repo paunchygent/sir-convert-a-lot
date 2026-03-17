@@ -21,6 +21,7 @@ labels:
   - stabilization
   - story-30
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

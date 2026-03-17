@@ -86,9 +86,7 @@ def resolve_active_text_embedding_span(
 def resolve_semantic_text_embedding_span(*, text_ids_len: int) -> TextEmbeddingSpan:
     """Return the canonical semantic-text span inside one collated row."""
     if text_ids_len <= 3:
-        raise ValueError(
-            "`text_ids_len` must be greater than 3 to isolate the semantic text span."
-        )
+        raise ValueError("`text_ids_len` must be greater than 3 to isolate the semantic text span.")
     return TextEmbeddingSpan(
         start_index=SEMANTIC_TEXT_START_INDEX,
         end_index_exclusive=SEMANTIC_TEXT_START_INDEX + text_ids_len - 3,

@@ -450,7 +450,7 @@ def fake_save_checkpoint(**kwargs: object) -> str:
 def fake_training_batch() -> dict[str, object]:
     """Return one minimal batch compatible with the patched Qwen loop."""
     embedding_dim = 4
-    sequence_length = 8
+    sequence_length = 10
     semantic_text_length = 2
     input_ids = torch.zeros((1, sequence_length, 2), dtype=torch.long)
     codec_ids = torch.zeros((1, sequence_length, 16), dtype=torch.long)

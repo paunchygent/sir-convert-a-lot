@@ -33,6 +33,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_progress import (
     TrainingProgressHeartbeat,
     build_training_progress_heartbeat,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_semantic_text_embeddings import (
+    assemble_semantic_text_embedding,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
     resolve_talker_codec_embedding,
     resolve_talker_text_embedding,
@@ -241,8 +244,10 @@ def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
             resolved_batch = require_batch_tensors(batch)
             input_ids = resolved_batch["input_ids"]
             codec_ids = resolved_batch["codec_ids"]
+            semantic_text_ids = resolved_batch["semantic_text_ids"]
+            semantic_text_positions = resolved_batch["semantic_text_positions"]
+            semantic_text_mask = resolved_batch["semantic_text_mask"]
             ref_mels = resolved_batch["ref_mels"]
-            text_embedding_mask = resolved_batch["text_embedding_mask"]
             codec_embedding_mask = resolved_batch["codec_embedding_mask"]
             attention_mask = resolved_batch["attention_mask"]
             codec_0_labels = resolved_batch["codec_0_labels"]
@@ -259,9 +264,14 @@ def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
             ).detach()
             text_embedding = resolve_talker_text_embedding(model)
             codec_embedding = resolve_talker_codec_embedding(model)
-            input_text_ids = input_ids[:, :, 0]
             input_codec_ids = input_ids[:, :, 1]
-            input_text_embedding = text_embedding(input_text_ids) * text_embedding_mask
+            input_text_embedding = assemble_semantic_text_embedding(
+                text_embedding=text_embedding,
+                semantic_text_ids=semantic_text_ids,
+                semantic_text_positions=semantic_text_positions,
+                semantic_text_mask=semantic_text_mask,
+                sequence_length=input_ids.shape[1],
+            )
             input_codec_embedding = codec_embedding(input_codec_ids) * codec_embedding_mask
             input_codec_embedding[:, 6, :] = speaker_embedding
             input_embeddings = (

@@ -22,6 +22,7 @@ labels:
   - stabilization
   - design-selection
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -117,11 +118,11 @@ be the most truthful next answer.
   the most powerful truthful fix wins even if it is harder.
 - [x] The next implementation lane is not chosen by runtime convenience,
   minimal diff size, or another blind bounded replay.
-- [ ] The story is split into task-sized execution units for:
+- [x] The story is split into task-sized execution units for:
   - semantic-only batch contract
   - semantic-only train-step assembly
   - local gradient-membership proof
-- [ ] Candidate 2 remains excluded as the primary next implementation lane.
+- [x] Candidate 2 remains excluded as the primary next implementation lane.
 
 ## Test Requirements
 
@@ -153,7 +154,10 @@ immediate contingency.
 
 - `T207` is complete:
   semantic text ids and semantic positions are now first-class batch fields.
-- `T208` is the next active implementation slice.
+- `T208` is complete:
+  train and eval now embed only `semantic_text_ids` and scatter those
+  embeddings back into full-sequence runtime positions.
+- `T209` is the next active implementation slice.
 
 ## Checklist
 

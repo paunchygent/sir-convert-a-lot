@@ -23,7 +23,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_eval import run_eval_pass
 class _FakeTalkerModel:
     """Minimal talker-model surface used by the eval runtime test."""
 
+    def __init__(self) -> None:
+        self.last_text_embedding_input_ids: torch.Tensor | None = None
+
     def text_embedding(self, input_ids: torch.Tensor) -> torch.Tensor:
+        self.last_text_embedding_input_ids = input_ids.detach().clone()
         return torch.zeros((*input_ids.shape, 4), dtype=torch.float32)
 
     def codec_embedding(self, input_ids: torch.Tensor) -> torch.Tensor:
@@ -104,14 +108,17 @@ def test_run_eval_pass_does_not_apply_text_projection(
         accelerator=SimpleNamespace(),
         eval_dataloader=[
             {
-                "input_ids": torch.zeros((1, 8, 2), dtype=torch.long),
-                "codec_ids": torch.zeros((1, 8), dtype=torch.long),
+                "input_ids": torch.zeros((1, 10, 2), dtype=torch.long),
+                "codec_ids": torch.zeros((1, 10), dtype=torch.long),
+                "semantic_text_ids": torch.zeros((1, 2), dtype=torch.long),
+                "semantic_text_positions": torch.tensor([[8, 9]], dtype=torch.long),
+                "semantic_text_mask": torch.ones((1, 2), dtype=torch.bool),
                 "ref_mels": torch.zeros((1, 4, 4), dtype=torch.float32),
-                "text_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
-                "codec_embedding_mask": torch.ones((1, 8, 1), dtype=torch.float32),
-                "attention_mask": torch.ones((1, 8), dtype=torch.long),
-                "codec_0_labels": torch.zeros((1, 8), dtype=torch.long),
-                "codec_mask": torch.ones((1, 8), dtype=torch.bool),
+                "text_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+                "codec_embedding_mask": torch.ones((1, 10, 1), dtype=torch.float32),
+                "attention_mask": torch.ones((1, 10), dtype=torch.long),
+                "codec_0_labels": torch.zeros((1, 10), dtype=torch.long),
+                "codec_mask": torch.ones((1, 10), dtype=torch.bool),
             }
         ],
         eval_dataloader_length=1,
@@ -129,7 +136,7 @@ def test_run_eval_pass_does_not_apply_text_projection(
     )
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_eval.fuse_auxiliary_codebook_embeddings",
-        lambda **kwargs: torch.zeros((1, 8, 4), dtype=torch.float32),
+        lambda **kwargs: torch.zeros((1, 10, 4), dtype=torch.float32),
     )
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_eval.log_eval_metrics",
@@ -153,4 +160,11 @@ def test_run_eval_pass_does_not_apply_text_projection(
     )
 
     assert projection.called is False
+    assert model.talker.model.last_text_embedding_input_ids is not None
+    expected_semantic_text_ids = prepared.eval_dataloader[0]["semantic_text_ids"]
+    assert isinstance(expected_semantic_text_ids, torch.Tensor)
+    assert torch.equal(
+        model.talker.model.last_text_embedding_input_ids,
+        expected_semantic_text_ids,
+    )
     assert result.latest_eval_loss == pytest.approx(1.3)

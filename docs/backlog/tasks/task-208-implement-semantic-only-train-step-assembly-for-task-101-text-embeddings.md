@@ -1,9 +1,9 @@
 ---
-id: 'task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings'
-title: 'Implement semantic-only train-step assembly for Task 101 text embeddings'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings
+title: Implement semantic-only train-step assembly for Task 101 text embeddings
+type: task
+status: completed
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -18,6 +18,7 @@ labels:
   - semantic-only
   - train-step
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -40,29 +41,29 @@ surfaces.
 
 ## Deliverables
 
-- [ ] Semantic-only train-step embedding assembly lands in the active Task 101
+- [x] Semantic-only train-step embedding assembly lands in the active Task 101
   lane.
-- [ ] The old full-channel text-embedding lookup is removed from the live path.
-- [ ] Focused local tests cover the new assembly shape.
+- [x] The old full-channel text-embedding lookup is removed from the live path.
+- [x] Focused local tests cover the new assembly shape.
 
 ## Acceptance Criteria
 
-- [ ] Non-semantic scaffold positions no longer traverse the trainable
+- [x] Non-semantic scaffold positions no longer traverse the trainable
   `text_embedding(...)` lookup in the active lane.
-- [ ] Train and eval code consume the semantic-only contract consistently.
-- [ ] No legacy shim preserves the old full-channel lookup behavior.
-- [ ] Docs validation and task indexing stay green.
+- [x] Train and eval code consume the semantic-only contract consistently.
+- [x] No legacy shim preserves the old full-channel lookup behavior.
+- [x] Docs validation and task indexing stay green.
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training -q`
-- [ ] `pdm run typecheck-all`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training -q`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
