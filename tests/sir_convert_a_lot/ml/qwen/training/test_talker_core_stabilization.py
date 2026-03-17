@@ -21,7 +21,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
     LAYER16_GATED_FP32_CLAMP_1E4,
     LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
     TALKER_CORE_STABILIZATION_OFF,
+    LayerOutputAttenuation,
     apply_talker_core_stabilization,
     resolve_talker_core_stabilization_spec,
 )
@@ -38,6 +41,12 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     stronger_attenuate_spec = resolve_talker_core_stabilization_spec(
         LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25
     )
+    handoff_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5
+    )
+    stronger_handoff_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5
+    )
 
     assert off_spec.target_layers == ()
     assert off_spec.force_fp32_gated_product is False
@@ -51,6 +60,14 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     assert attenuate_spec.layer_output_attenuations[0].scale == 0.5
     assert stronger_attenuate_spec.gated_product_rescale_absmax == 1.0e2
     assert stronger_attenuate_spec.layer_output_attenuations[0].scale == 0.25
+    assert handoff_spec.layer_output_attenuations == (
+        LayerOutputAttenuation(layer_index=16, scale=0.5),
+        LayerOutputAttenuation(layer_index=15, scale=0.5),
+    )
+    assert stronger_handoff_spec.layer_output_attenuations == (
+        LayerOutputAttenuation(layer_index=16, scale=0.25),
+        LayerOutputAttenuation(layer_index=15, scale=0.5),
+    )
 
 
 def test_apply_talker_core_stabilization_patches_only_layer_16_and_restores_forward() -> None:
@@ -79,6 +96,25 @@ def test_apply_talker_core_stabilization_patches_layer15_output_and_restores_for
     ):
         assert "forward" in _layer(model, 15).__dict__
         assert "forward" not in _layer(model, 16).__dict__
+
+    assert "forward" not in _layer(model, 15).__dict__
+    assert "forward" not in _layer(model, 16).__dict__
+
+
+def test_apply_talker_core_stabilization_patches_layer16_and_layer15_output_for_handoff_family() -> (
+    None
+):
+    """The third family should patch both sides of the shifted layer-16 handoff seam."""
+    model = _fake_model(layer_count=18)
+    assert "forward" not in _layer(model, 15).__dict__
+    assert "forward" not in _layer(model, 16).__dict__
+
+    with apply_talker_core_stabilization(
+        model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    ):
+        assert "forward" in _layer(model, 15).__dict__
+        assert "forward" in _layer(model, 16).__dict__
 
     assert "forward" not in _layer(model, 15).__dict__
     assert "forward" not in _layer(model, 16).__dict__
@@ -114,6 +150,29 @@ def test_apply_talker_core_stabilization_rescales_gated_product_and_attenuates_l
     assert layer16_output.dtype == torch.bfloat16
     assert float(layer16_output.abs().max().item()) <= 128.0
     assert torch.equal(layer15_output, baseline_layer15_output * 0.25)
+
+
+def test_apply_talker_core_stabilization_attenuates_layer16_handoff_and_layer15_output() -> None:
+    """The third candidate family should scale both layer-16 and layer-15 seams."""
+    base_model = _fake_model(layer_count=18)
+    handoff_model = _fake_model(layer_count=18)
+    sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
+    with apply_talker_core_stabilization(
+        base_model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
+    ):
+        base_layer16_output = _layer(base_model, 16)(sample)[0]
+        base_layer15_output = _layer(base_model, 15)(sample)[0]
+
+    with apply_talker_core_stabilization(
+        handoff_model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
+    ):
+        layer16_output = _layer(handoff_model, 16)(sample)[0]
+        layer15_output = _layer(handoff_model, 15)(sample)[0]
+
+    assert torch.equal(layer16_output, base_layer16_output * 0.25)
+    assert torch.equal(layer15_output, base_layer15_output)
 
 
 class _FakeIdentityModule(torch.nn.Module):

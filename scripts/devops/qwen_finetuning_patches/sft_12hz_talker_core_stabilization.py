@@ -30,12 +30,20 @@ LAYER16_GATED_FP32 = "layer16_gated_fp32"
 LAYER16_GATED_FP32_CLAMP_1E4 = "layer16_gated_fp32_clamp_1e4"
 LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5 = "layer16_gated_fp32_rescale_1e3_layer15_out_0p5"
 LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25 = "layer16_gated_fp32_rescale_1e2_layer15_out_0p25"
+LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5 = (
+    "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5"
+)
+LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5 = (
+    "layer16_gated_fp32_rescale_1e3_layer16_out_0p25_layer15_out_0p5"
+)
 TALKER_CORE_STABILIZATION_CHOICES = (
     TALKER_CORE_STABILIZATION_OFF,
     LAYER16_GATED_FP32,
     LAYER16_GATED_FP32_CLAMP_1E4,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
     LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
 )
 
 
@@ -105,6 +113,30 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             gated_product_clamp_abs=None,
             gated_product_rescale_absmax=1.0e2,
             layer_output_attenuations=(LayerOutputAttenuation(layer_index=15, scale=0.25),),
+        )
+    if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5:
+        return TalkerCoreStabilizationSpec(
+            variant=variant,
+            target_layers=(16,),
+            force_fp32_gated_product=True,
+            gated_product_clamp_abs=None,
+            gated_product_rescale_absmax=1.0e3,
+            layer_output_attenuations=(
+                LayerOutputAttenuation(layer_index=16, scale=0.5),
+                LayerOutputAttenuation(layer_index=15, scale=0.5),
+            ),
+        )
+    if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5:
+        return TalkerCoreStabilizationSpec(
+            variant=variant,
+            target_layers=(16,),
+            force_fp32_gated_product=True,
+            gated_product_clamp_abs=None,
+            gated_product_rescale_absmax=1.0e3,
+            layer_output_attenuations=(
+                LayerOutputAttenuation(layer_index=16, scale=0.25),
+                LayerOutputAttenuation(layer_index=15, scale=0.5),
+            ),
         )
     raise SystemExit(f"Unsupported talker-core stabilization variant `{variant}`.")
 
