@@ -2,7 +2,7 @@
 id: task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure
 title: Trace the first talker-core backward operation after input embeddings in the fresh-start Candidate 1 failure
 type: task
-status: in_progress
+status: done
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -56,38 +56,82 @@ talker-core puzzle piece before making any Candidate `3` implementation move.
 
 ## Deliverables
 
-- [ ] One committed talker-core backward probe surface exists for the exact
+- [x] One committed talker-core backward probe surface exists for the exact
   fresh-start row pair from `T212`.
-- [ ] One truthful Hemma probe result identifies the earliest non-finite
+- [x] One truthful Hemma probe result identifies the earliest non-finite
   talker-core backward op or tensor family between `hidden_states` and
   `input_embeddings`.
-- [ ] One operator-facing decision record states whether Candidate `3` should
+- [x] One operator-facing decision record states whether Candidate `3` should
   now open immediately or whether another smaller causal split is still more
   truthful.
 
 ## Acceptance Criteria
 
-- [ ] The probe does not resume from any legacy Task 101 checkpoint.
-- [ ] The probe keeps the exact `T212` row pair and branch order unless a
+- [x] The probe does not resume from any legacy Task 101 checkpoint.
+- [x] The probe keeps the exact `T212` row pair and branch order unless a
   smaller probe is explicitly documented as more decisive.
-- [ ] The result localizes corruption more precisely than:
+- [x] The result localizes corruption more precisely than:
   `input_embeddings` non-finite / `input_text_embedding.grad` first RCA
   surface / `text_embedding.weight.grad` first parameter surface.
-- [ ] The runtime surface uses committed repo commands and detached Hemma
+- [x] The runtime surface uses committed repo commands and detached Hemma
   execution rather than inline remote shell logic.
-- [ ] The result is recorded in the active task, `current.md`, and the Task
+- [x] The result is recorded in the active task, `current.md`, and the Task
   101 reference ledger before any Candidate `3` implementation slice starts.
+
+## Result
+
+- Truthful probe:
+  `task213-20260317t143810z-talkercore-a1`
+- Artifact:
+  `build/verification/qwen-story30-backward-lineage/task213-20260317t143810z-talkercore-a1/status.json`
+- Pair `main_loss` and pair `combined_loss` first non-finite talker-core hook:
+  `talker_core.layer_16.post_attention_layernorm`
+- Pair `sub_talker_loss` first non-finite talker-core hook:
+  `talker_core.layer_15.output`
+- Isolated row `13` and isolated row `4`:
+  - `main_loss` and `combined_loss` first localized at
+    `talker_core.layer_16.output`
+  - `sub_talker_loss` first localized at `talker_core.layer_15.output`
+- Pair-main anomaly trace:
+  `MulBackward0`
+- Pair-sub anomaly trace:
+  `MmBackward0`
+- Pair-combined anomaly trace:
+  `MulBackward0`
+- Pair-main gradient magnitudes stayed finite while exploding across late
+  talker layers:
+  - `layer_27.output`: `1.07e-4`
+  - `layer_26.output`: `2.34e3`
+  - `layer_25.output`: `1.77e7`
+  - `layer_24.output`: `1.04e11`
+  - `layer_23.output`: `6.16e14`
+  - `layer_22.output`: `1.73e18`
+  - `layer_21.output`: `4.35e21`
+  - `layer_20.output`: `1.22e25`
+  - `layer_19.output`: `2.35e28`
+  - `layer_18.output`: `6.75e31`
+  - `layer_17.output`: `3.09e35`
+  - `layer_16.output`: `3.19e38`
+  - `layer_16.post_attention_layernorm`: first non-finite (`2048` NaNs)
+
+## Decision
+
+Do not open Candidate `3` immediately.
+
+`T213` yielded materially stronger causal signal inside the talker core, so the
+next truthful move is one smaller split around the localized layer
+`16` / layer `15` MLP-residual boundary. That next owner is `T214`.
 
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

@@ -134,8 +134,23 @@ Story 28 is now operating policy:
     - the targeted RCA still reported
       `input_text_embedding.grad` first and
       `text_embedding.weight.grad` as the first poisoned parameter surface
-  - the next clean move is `T213`: trace the first talker-core backward
-    operation between `hidden_states` and `input_embeddings`
+  - `T213` then completed with stronger talker-core localization:
+    - truthful proof:
+      `task213-20260317t143810z-talkercore-a1`
+    - pair `main_loss` and `combined_loss` first localized at
+      `talker_core.layer_16.post_attention_layernorm`
+    - pair `sub_talker_loss` first localized at
+      `talker_core.layer_15.output`
+    - isolated rows localized to `talker_core.layer_16.output` for
+      `main_loss` / `combined_loss` and to `talker_core.layer_15.output` for
+      `sub_talker_loss`
+    - pair-main finite gradient magnitudes exploded from `1.07e-4` at
+      `layer_27.output` to `3.19e38` at `layer_16.output` before
+      `layer_16.post_attention_layernorm` turned non-finite
+    - Candidate `3` is not the next truthful move yet, because a smaller
+      talker-core causal split is still available
+  - the next clean move is `T214`: split the layer `16` / layer `15`
+    talker-core MLP and residual boundary
 
 ## Next Actions
 
@@ -175,12 +190,18 @@ Story 28 is now operating policy:
     corruption first appears
   - the earliest current instrumented non-finite backward edge is at
     `input_embeddings`
-- `T213` is now the active discovery owner before any Candidate 3 opening:
-  - trace the first talker-core backward operation between finite
-    `hidden_states` gradients and non-finite `input_embeddings` gradients
-  - keep the exact row pair and branch order from `T212` unless a smaller
-    decisive probe emerges
-  - do not reopen replay framing while `T213` is active
+- `T213` is now closed positive discovery evidence:
+  - the earliest non-finite backward hook is inside the talker core, not just
+    at `input_embeddings`
+  - the freshest localized boundary is now late-middle talker layers around
+    `layer_16.post_attention_layernorm` and `layer_15.output`
+  - do not open Candidate `3` while a smaller talker-core split is still
+    available
+- `T214` is now the active discovery owner before any Candidate 3 opening:
+  - split the layer `16` / layer `15` talker-core MLP and residual boundary
+  - keep the exact row pair and branch order from `T212/T213` unless a
+    smaller decisive probe emerges
+  - do not reopen replay framing while `T214` is active
 - `T199` remains blocked until a later explicit clean-start proof authorizes
   restart.
 - Do not spend the next story on Candidate 2.

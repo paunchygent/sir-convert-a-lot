@@ -141,11 +141,25 @@ Why this is now the clean plan:
     - the targeted RCA still reported `input_text_embedding.grad` first and
       `text_embedding.weight.grad` as the first poisoned parameter surface
   - `T213` is now the next governed discovery owner:
-    - trace the first talker-core backward operation between finite
-      `hidden_states` gradients and non-finite `input_embeddings` gradients
-    - keep the exact `T212` row pair and branch order unless a smaller
+    - truthful probe:
+      `task213-20260317t143810z-talkercore-a1`
+    - pair `main_loss` and `combined_loss` first localized at
+      `talker_core.layer_16.post_attention_layernorm`
+    - pair `sub_talker_loss` first localized at
+      `talker_core.layer_15.output`
+    - isolated row probes localized to `talker_core.layer_16.output` for
+      `main_loss` / `combined_loss` and `talker_core.layer_15.output` for
+      `sub_talker_loss`
+    - pair-main finite gradient magnitudes exploded from `1.07e-4` at
+      `layer_27.output` to `3.19e38` at `layer_16.output` before
+      `layer_16.post_attention_layernorm` turned non-finite
+    - Candidate `3` should not open yet because a smaller talker-core split is
+      still yielding new signal
+  - `T214` is now the next governed discovery owner:
+    - split the layer `16` / layer `15` talker-core MLP and residual boundary
+    - keep the exact `T212/T213` row pair and branch order unless a smaller
       decisive probe emerges
-    - do not reopen replay framing while this talker-core trace is still open
+    - do not reopen replay framing while this finer talker-core split is open
 
 ## Active Artifact Roots
 
@@ -1249,6 +1263,69 @@ Operator conclusion:
   - the next truthful discovery move is a talker-core backward trace between
     finite `hidden_states` gradients and non-finite `input_embeddings`
     gradients before any Candidate 3 implementation decision
+
+## 2026-03-17: `T213` Localized The Earliest Non-Finite Hook To The Late-Middle Talker Core
+
+- Truthful proof package:
+  - `task213-20260317t143810z-talkercore-a1`
+- Truthful artifacts:
+  - `build/verification/qwen-story30-backward-lineage/task213-20260317t143810z-talkercore-a1/proof-config.json`
+  - `build/verification/qwen-story30-backward-lineage/task213-20260317t143810z-talkercore-a1/status.json`
+- Result:
+  - detached worker `exit_code=0`
+  - branch summaries:
+    - `main_loss`: `both_rows`
+    - `sub_talker_loss`: `both_rows`
+    - `combined_loss`: `both_rows`
+  - pair branch earliest talker-core hooks:
+    - `main_loss`:
+      `talker_core.layer_16.post_attention_layernorm`
+    - `sub_talker_loss`:
+      `talker_core.layer_15.output`
+    - `combined_loss`:
+      `talker_core.layer_16.post_attention_layernorm`
+  - isolated rows:
+    - line `13`:
+      `main_loss` / `combined_loss` first localized at
+      `talker_core.layer_16.output`
+    - line `4`:
+      `main_loss` / `combined_loss` first localized at
+      `talker_core.layer_16.output`
+    - both isolated `sub_talker_loss` runs first localized at
+      `talker_core.layer_15.output`
+  - anomaly traces:
+    - pair `main_loss`: `MulBackward0`
+    - pair `sub_talker_loss`: `MmBackward0`
+    - pair `combined_loss`: `MulBackward0`
+  - pair-main finite gradient magnitudes escalated sharply before the first
+    non-finite hook:
+    - `layer_27.output`: `1.07e-4`
+    - `layer_26.output`: `2.34e3`
+    - `layer_25.output`: `1.77e7`
+    - `layer_24.output`: `1.04e11`
+    - `layer_23.output`: `6.16e14`
+    - `layer_22.output`: `1.73e18`
+    - `layer_21.output`: `4.35e21`
+    - `layer_20.output`: `1.22e25`
+    - `layer_19.output`: `2.35e28`
+    - `layer_18.output`: `6.75e31`
+    - `layer_17.output`: `3.09e35`
+    - `layer_16.output`: `3.19e38`
+    - `layer_16.post_attention_layernorm`: first non-finite (`2048` NaNs)
+  - pair-sub finite gradients stayed finite through:
+    - `layer_17.output`: `8.68e33`
+    - `layer_16.output`: `1.13e37`
+    - `layer_15.output`: first non-finite (`3715` `Inf`s)
+    - `layer_15.post_attention_layernorm`: then `4096` NaNs
+- Operator conclusion:
+  - the earliest non-finite hook is now localized inside the talker core, not
+    just at `input_embeddings`
+  - the late-middle talker stack around layer `16` / layer `15` is now the
+    most truthful causal seam
+  - Candidate `3` should not open yet because a smaller talker-core split is
+    still yielding new causal signal
+  - the next truthful move is a finer-grained layer `16` / layer `15`
+    MLP-residual probe, not a replay and not a blind Candidate `3` jump
 
 ## Historical Reference Boundary
 

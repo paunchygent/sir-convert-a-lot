@@ -17,6 +17,7 @@ related:
   - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
   - docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md
   - docs/backlog/tasks/task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure.md
+  - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
 labels:
@@ -155,8 +156,10 @@ immediate contingency.
 1. `docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md`
 1. `docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md`
 1. `docs/backlog/tasks/task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure.md`
-1. If Candidate 1 fails its smallest-signal validation or the subsequent
-   governed proof, open the immediate Candidate 3 contingency lane.
+1. `docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md`
+1. If `T214` yields no smaller causal split, re-evaluate whether Candidate 3
+   should open or whether a talker-core design lane is now the more truthful
+   successor.
 
 ## Current Status
 
@@ -180,10 +183,20 @@ immediate contingency.
   order, both rows failed independently, and the earliest instrumented
   non-finite backward hook appeared at `input_embeddings` after still-finite
   `hidden_states` and `talker_hidden_states` gradients.
-- `T213` is now the active discovery lane:
-  trace the first talker-core backward operation between finite
-  `hidden_states` gradients and non-finite `input_embeddings` gradients before
-  deciding whether Candidate 3 should open immediately.
+- `T213` is complete with stronger causal localization:
+  - truthful probe:
+    `task213-20260317t143810z-talkercore-a1`
+  - pair `main_loss` and `combined_loss` first localized at
+    `talker_core.layer_16.post_attention_layernorm`
+  - pair `sub_talker_loss` first localized at `talker_core.layer_15.output`
+  - isolated rows localized to `talker_core.layer_16.output` for
+    `main_loss`/`combined_loss` and `talker_core.layer_15.output` for
+    `sub_talker_loss`
+  - Candidate `3` should not open yet because a smaller talker-core split is
+    still yielding new causal signal
+- `T214` is now the active discovery lane:
+  split the layer `16` / layer `15` talker-core MLP and residual boundary
+  before deciding whether Candidate `3` remains a truthful next move.
 
 ## Checklist
 
