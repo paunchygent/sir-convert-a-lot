@@ -174,6 +174,10 @@ Story 28 is now operating policy:
     only `semantic_text_ids` now traverse `text_embedding(...)`, and the
     semantic embeddings are scattered back into the full-sequence runtime
     positions.
+  - `T209` completed the local Candidate 1 gate:
+    the new semantic-only gradient-membership proof shows that only semantic
+    ids can enter `text_embedding.weight.grad`, and even poisoned scaffold
+    upstream gradients stay outside the parameter-row set.
 
 ## Next Actions
 
@@ -197,8 +201,14 @@ Story 28 is now operating policy:
 - Execute Story 30 in this order:
   - `T207` semantic-only batch contract is complete
   - `T208` semantic-only train-step assembly is complete
-  - `T209` local gradient-membership proof is next
+  - `T209` local gradient-membership proof is complete
   - if Candidate 1 fails, open Candidate 3 directly as the next contingency
+- Treat
+  `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
+  as the first required local gate before any new Hemma long proof attempt for
+  Candidate 1.
+- Define the next governed Candidate 1 Hemma-proof task before any new long
+  replay or restart attempt; `T199` remains blocked.
 - Do not spend the next story on Candidate 2.
 - Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate
   before broader repo validation while iterating on Qwen ML code.

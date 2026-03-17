@@ -2,7 +2,7 @@
 id: story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule
 title: Define the post-Task-101 design lane after the final Story 29 stop rule
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
@@ -157,10 +157,13 @@ immediate contingency.
 - `T208` is complete:
   train and eval now embed only `semantic_text_ids` and scatter those
   embeddings back into full-sequence runtime positions.
-- `T209` is the next active implementation slice.
+- `T209` is complete:
+  the local gradient-membership proof now demonstrates that only semantic ids
+  can appear in `text_embedding.weight.grad`, including the poisoned-scaffold
+  upstream case.
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [x] Tests and validations complete
 - [x] Docs synchronized
