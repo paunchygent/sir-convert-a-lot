@@ -230,6 +230,14 @@ Why this is now the clean plan:
         judging the original recipe plus only the `T206` token-span fix
       - keep the docs-as-code historical launch metadata as the normative
         source of truth, not the later RCA/recovery lane
+      - the committed surface is now:
+        `pdm run qwen-t221-historical-control <launch|status|stop>`
+      - it validates the surviving historical bundle under
+        `/srv/storage/sir-convert-a-lot/backups/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h`
+        with documented counts `8445` train / `8` eval
+      - it writes a contract diff between the historical launch, the invalid
+        T220 approximation, and the recreated T221 launch before starting the
+        bounded Hemma control
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active

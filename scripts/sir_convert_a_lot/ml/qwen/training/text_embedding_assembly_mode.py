@@ -16,13 +16,13 @@ from __future__ import annotations
 
 from typing import Literal, cast, get_args
 
-SEMANTIC_ONLY_TEXT_EMBEDDING_ASSEMBLY_MODE = "semantic_only"
-FULL_CHANNEL_MASKED_TEXT_EMBEDDING_ASSEMBLY_MODE = "full_channel_masked"
-
 TextEmbeddingAssemblyMode = Literal[
     "semantic_only",
     "full_channel_masked",
 ]
+
+SEMANTIC_ONLY_TEXT_EMBEDDING_ASSEMBLY_MODE: TextEmbeddingAssemblyMode = "semantic_only"
+FULL_CHANNEL_MASKED_TEXT_EMBEDDING_ASSEMBLY_MODE: TextEmbeddingAssemblyMode = "full_channel_masked"
 
 DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE: TextEmbeddingAssemblyMode = cast(
     TextEmbeddingAssemblyMode,

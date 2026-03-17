@@ -1,9 +1,9 @@
 ---
-id: 'task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane'
-title: 'Recreate the documented historical Task 101 control contract before judging the T206-only fresh-start lane'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane
+title: Recreate the documented historical Task 101 control contract before judging the T206-only fresh-start lane
+type: task
+status: in_progress
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -22,6 +22,7 @@ labels:
   - historical-contract
   - fresh-start
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -61,24 +62,24 @@ original recipe still learns once the token-span bug is fixed.
 
 ## Deliverables
 
-- [ ] One written contract diff exists between:
+- [x] One written contract diff exists between:
   - the documented historical Task 101 launch
   - the invalid `T220` approximation
   - the corrected `T221` recreation
-- [ ] One committed launch surface can target the historical bundle/layout
+- [x] One committed launch surface can target the historical bundle/layout
   without silently falling back to the later `task-152` benchmark lane.
 - [ ] One bounded Hemma control run exists whose result is credible evidence
   about the historical original-recipe + `T206` question.
 
 ## Acceptance Criteria
 
-- [ ] The recreated control uses the documented historical Task 101 launch
+- [x] The recreated control uses the documented historical Task 101 launch
   contract as its source of truth, not the later RCA/recovery lane.
-- [ ] The recreated control keeps:
+- [x] The recreated control keeps:
   - restored no-projection graph from `T193`
   - `text_embedding_assembly_mode=full_channel_masked`
   - `text_embedding_mask_policy=text_span_only`
-- [ ] The recreated control does not use:
+- [x] The recreated control does not use:
   - `T207-T209` semantic-only assembly
   - Story 31 stabilization variants
   - the `task-152` 128-row benchmark bundle as a silent substitute for the
@@ -88,14 +89,44 @@ original recipe still learns once the token-span bug is fixed.
 - [ ] Only after that recreation succeeds should the run result be used to
   support or reject the “original recipe + token fix” branch in Story 31.
 
+## Current Implementation State
+
+- Implemented committed surface:
+  - `pdm run qwen-t221-historical-control launch`
+  - `pdm run qwen-t221-historical-control status`
+  - `pdm run qwen-t221-historical-control stop`
+- The new surface writes:
+  - `contract-diff.json`
+  - `contract-diff.md`
+  - `launch.json`
+  - `status.json`
+  - `status.md`
+  - `stop.json`
+- The recreated control now binds the surviving historical bundle directly from:
+  - `/srv/storage/sir-convert-a-lot/backups/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h`
+- It validates the documented manifest counts before launch:
+  - `8445` train rows
+  - `8` eval rows
+- It launches against image:
+  - `sir-convert-a-lot-qwen-finetune-hemma:task100`
+- The current bounded recreation is intentionally explicit about remaining diffs:
+  - the surviving historical bundle now lives under `/srv/storage` backup rather than the original `/srv/scratch` reference root
+  - the recreation uses the current trainer module with the original recipe shape plus the `T206` token fix
+  - the first launch will be a bounded probe, not the original million-step run
+
 ## Validation
 
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_t221_historical_control_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_t221_historical_control.py -q`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

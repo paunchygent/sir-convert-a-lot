@@ -128,8 +128,13 @@ Story 28 is now operating policy:
   - but the bounded `T220` Hemma attempt is not credible exact-control
     evidence, because it drifted to the later `task-152` benchmark bundle and
     `batch_size=8` instead of the documented historical Task 101 contract
-  - `T221` is now open to recreate that historical contract before this branch
-    is used in the Story 31 decision tree
+  - `T221` is now implemented as the corrected exact-control surface:
+    `pdm run qwen-t221-historical-control <launch|status|stop>` recreates the
+    documented historical contract, validates the surviving `8445/8` bundle
+    under `/srv/storage/...qwen3-tts-swedish-task101-pilot-bundle-20260312h`,
+    and writes an explicit `contract-diff` artifact before launch
+  - the first bounded T221 Hemma run is still pending, so this branch remains
+    unresolved in the Story 31 decision tree
 
 ## Next Actions
 
@@ -185,8 +190,9 @@ Story 28 is now operating policy:
     focused runtime/payload tests `19 passed`, full ML suite `308 passed`,
     `typecheck-ml` and `typecheck-all` both succeeded
   - `T221` is now the active exact-control slice:
-    recreate the documented historical Task 101 launch contract before judging
-    the original recipe + `T206` branch
+    the corrected historical-control launcher is implemented and validated;
+    the next step is the first bounded Hemma run against that recreated
+    contract before judging the original recipe + `T206` branch
   - `T219` remains the next bounded exploration slice after `T221` resolves:
     target the shifted `layer_16.output` / `layer_16.input_layernorm`
     handoff neighborhood while keeping visibility on the surviving

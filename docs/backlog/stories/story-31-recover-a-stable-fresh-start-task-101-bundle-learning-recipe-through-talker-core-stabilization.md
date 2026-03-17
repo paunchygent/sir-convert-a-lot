@@ -202,6 +202,13 @@ the governing success criterion for future restart work.
     any conclusion about the original recipe plus only the `T206` fix
   - keep docs-as-code as the normative source of truth for that contract
   - do not let the later RCA/recovery lane silently replace it
+  - the dedicated committed control surface is now implemented:
+    `pdm run qwen-t221-historical-control <launch|status|stop>`
+  - it validates the surviving historical bundle under
+    `/srv/storage/sir-convert-a-lot/backups/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h`
+    and writes a `contract-diff` artifact before launch
+  - the next step is the first bounded Hemma run under that recreated
+    historical contract
 - `T219` remains the next bounded exploration slice after `T221` resolves:
   - keep the moderate `T218` posture as the preferred base ingredient
   - target the shifted `layer_16.output` / `layer_16.input_layernorm`
