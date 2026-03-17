@@ -117,9 +117,25 @@ Story 28 is now operating policy:
     `task211-20260317t130740z-freshstart-a4` failed at optimizer step `1`
     with `pre_clip_non_finite_gradients` on `text_embedding.weight.grad`
     while forward tensors and losses stayed finite
-  - the next clean move is `T212`: one single-step backward-lineage probe on
-    Hemma against the exact failing rows `13` and `4`, with probe order:
-    `main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation
+  - `T212` then completed with truthful fresh-start backward-lineage evidence:
+    - first truthful proof:
+      `task212-20260317t141500z-lineage-a3`
+    - all three loss branches failed on the row pair:
+      `main_loss`, `sub_talker_loss`, `combined_loss`
+    - both isolated rows failed independently:
+      line `13` alone and line `4` alone
+    - `hidden_states` and `talker_hidden_states` gradients stayed finite
+      first
+    - the earliest instrumented non-finite hook then appeared at
+      `input_embeddings`
+    - the additive branches inherited non-finite gradients only after that:
+      `fused_auxiliary_embedding`, `input_codec_embedding`,
+      `input_text_embedding`, `semantic_text_embeddings`
+    - the targeted RCA still reported
+      `input_text_embedding.grad` first and
+      `text_embedding.weight.grad` as the first poisoned parameter surface
+  - the next clean move is `T213`: trace the first talker-core backward
+    operation between `hidden_states` and `input_embeddings`
 
 ## Next Actions
 
@@ -150,16 +166,21 @@ Story 28 is now operating policy:
   - this removes replay-amassed inherited state as the leading explanation
     for the current failure family
   - do not spend more time on replay framing before the backward-lineage lane
-- `T212` is now the active discovery owner before any Candidate 3 opening:
-  - use the exact fresh-start failing row pair from `T211`:
-    manifest lines `13` and `4`
-  - run one single-step backward-lineage probe on Hemma
-  - use the probe order:
-    `main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation
-  - make the goal the first non-finite backward edge/tensor inside the graph,
-    not the first failed parameter surface
-  - keep the work on a committed repo-owned probe surface, not inline shell
-    debugging
+- `T212` is now closed positive discovery evidence:
+  - the row pair is not the decisive issue:
+    both rows fail independently
+  - replay-amassed inherited state is not the decisive issue:
+    the truthful fresh-start single-step probe reproduced the family directly
+  - Candidate 1 semantic-only assembly is not where the earliest instrumented
+    corruption first appears
+  - the earliest current instrumented non-finite backward edge is at
+    `input_embeddings`
+- `T213` is now the active discovery owner before any Candidate 3 opening:
+  - trace the first talker-core backward operation between finite
+    `hidden_states` gradients and non-finite `input_embeddings` gradients
+  - keep the exact row pair and branch order from `T212` unless a smaller
+    decisive probe emerges
+  - do not reopen replay framing while `T213` is active
 - `T199` remains blocked until a later explicit clean-start proof authorizes
   restart.
 - Do not spend the next story on Candidate 2.

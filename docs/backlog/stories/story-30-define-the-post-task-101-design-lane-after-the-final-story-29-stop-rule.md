@@ -16,6 +16,7 @@ related:
   - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
   - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
   - docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md
+  - docs/backlog/tasks/task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
 labels:
@@ -150,6 +151,10 @@ immediate contingency.
 1. `docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md`
 1. `docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md`
 1. `docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md`
+1. `docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md`
+1. `docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md`
+1. `docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md`
+1. `docs/backlog/tasks/task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure.md`
 1. If Candidate 1 fails its smallest-signal validation or the subsequent
    governed proof, open the immediate Candidate 3 contingency lane.
 
@@ -170,9 +175,14 @@ immediate contingency.
 - `T211` is complete as terminal negative fresh-start evidence:
   Candidate 1 failed at optimizer step `1`, so replay-amassed inherited state
   is no longer the leading explanation for the current failure family.
-- `T212` is now the active discovery lane:
-  run one single-step backward-lineage probe on the exact failing fresh-start
-  row pair and identify the first non-finite backward edge/tensor before
+- `T212` is complete with truthful discovery evidence:
+  the exact fresh-start failing row pair was probed in the requested branch
+  order, both rows failed independently, and the earliest instrumented
+  non-finite backward hook appeared at `input_embeddings` after still-finite
+  `hidden_states` and `talker_hidden_states` gradients.
+- `T213` is now the active discovery lane:
+  trace the first talker-core backward operation between finite
+  `hidden_states` gradients and non-finite `input_embeddings` gradients before
   deciding whether Candidate 3 should open immediately.
 
 ## Checklist

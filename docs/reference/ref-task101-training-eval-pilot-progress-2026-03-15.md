@@ -130,13 +130,22 @@ Why this is now the clean plan:
     - no checkpoint was minted and no eval claim was produced
     - replay-amassed inherited state is therefore no longer the leading
       explanation for the current failure family
-  - `T212` is now the next governed discovery owner:
-    - run one single-step backward-lineage probe on Hemma against the exact
-      failing row pair from `T211`
-    - probe order:
-      `main_loss`, `sub_talker_loss`, `combined_loss`, then row isolation
-    - the goal is the first non-finite backward edge/tensor inside the graph,
-      not another replay symptom
+  - `T212` is now closed positive discovery evidence:
+    - the truthful probe run was
+      `task212-20260317t141500z-lineage-a3`
+    - all three branch orders failed on the row pair
+    - both rows failed independently in isolation
+    - the earliest instrumented non-finite backward hook appeared at
+      `input_embeddings` after still-finite `hidden_states` and
+      `talker_hidden_states` gradients
+    - the targeted RCA still reported `input_text_embedding.grad` first and
+      `text_embedding.weight.grad` as the first poisoned parameter surface
+  - `T213` is now the next governed discovery owner:
+    - trace the first talker-core backward operation between finite
+      `hidden_states` gradients and non-finite `input_embeddings` gradients
+    - keep the exact `T212` row pair and branch order unless a smaller
+      decisive probe emerges
+    - do not reopen replay framing while this talker-core trace is still open
 
 ## Active Artifact Roots
 
@@ -1191,6 +1200,55 @@ Operator conclusion:
     the current failure family
   - the next truthful discovery move is a single-step backward-lineage probe
     on the exact failing row pair, not another replay-family proof
+
+## 2026-03-17: `T212` Backward-Lineage Probe Localized The Earliest Instrumented Non-Finite To `input_embeddings`
+
+- Truthful proof package:
+  - `task212-20260317t141500z-lineage-a3`
+- Operational launch repairs preserved as evidence:
+  - `task212-20260317t140500z-lineage-a1`
+    - failed before probe execution because Docker could not bind-mount the
+      canonical `/srv/scratch/.../mini-bundle` path directly
+  - `task212-20260317t141000z-lineage-a2`
+    - failed before probe execution because the container launch did not mount
+      the repo, so the in-container probe module could not be imported
+- Truthful artifacts:
+  - `build/verification/qwen-story30-backward-lineage/task212-20260317t141500z-lineage-a3/proof-config.json`
+  - `build/verification/qwen-story30-backward-lineage/task212-20260317t141500z-lineage-a3/status.json`
+- Result:
+  - detached worker `exit_code=0`
+  - branch summaries:
+    - `main_loss`: `both_rows`
+    - `sub_talker_loss`: `both_rows`
+    - `combined_loss`: `both_rows`
+  - isolated rows:
+    - line `13` failed independently
+    - line `4` failed independently
+  - pair branch RCA:
+    - `gradient_rca.first_non_finite_surface=input_text_embedding.grad`
+    - `parameter_gradient_probes.first_non_finite_surface=text_embedding.weight.grad`
+  - earliest instrumented hook ordering:
+    - `hidden_states` gradient stayed finite first
+    - `talker_hidden_states` gradient stayed finite where present
+    - `input_embeddings` was then the earliest hooked tensor with non-finite
+      gradients
+    - after that, non-finite gradients propagated to:
+      `fused_auxiliary_embedding`,
+      `input_codec_embedding`,
+      `input_text_embedding`,
+      `semantic_text_embeddings`
+  - anomaly traces:
+    - `main_loss` and `combined_loss` raised `MulBackward0`
+    - `sub_talker_loss` raised `MmBackward0`
+- Operator conclusion:
+  - the row pair is not the decisive issue because both rows fail alone
+  - replay-amassed inherited state is not the decisive issue because the
+    truthful fresh-start probe reproduces the family directly
+  - the current Candidate 1 assembly change is not where the earliest
+    instrumented non-finite first appears
+  - the next truthful discovery move is a talker-core backward trace between
+    finite `hidden_states` gradients and non-finite `input_embeddings`
+    gradients before any Candidate 3 implementation decision
 
 ## Historical Reference Boundary
 
