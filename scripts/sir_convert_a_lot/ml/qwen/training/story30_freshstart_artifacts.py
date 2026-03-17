@@ -29,7 +29,11 @@ DEFAULT_REMOTE_PROOF_OUTPUT_ROOT = Path(
 DEFAULT_REMOTE_TRAINING_OUTPUT_ROOT = Path(
     "/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training"
 )
-DEFAULT_SOURCE_BUNDLE_ROOT = DEFAULT_PILOT_BUNDLE_ROOT
+DEFAULT_TRAIN_SOURCE_BUNDLE_ROOT = DEFAULT_PILOT_BUNDLE_ROOT
+DEFAULT_EVAL_SOURCE_BUNDLE_ROOT = Path(
+    "/srv/scratch/sir-convert-a-lot/build/verification/"
+    "task-152-task101-finalization-benchmark-20260312j/direct-encode-chunk64-span1"
+)
 DEFAULT_TRAIN_MANIFEST_FAMILY = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY = "swedish_checkpoint_dev"
 DEFAULT_TEXT_EMBEDDING_MASK_POLICY = "text_span_only"
@@ -60,7 +64,8 @@ class Story30FreshstartProofConfig:
     local_proof_root: str
     remote_proof_output_root: str
     remote_training_output_root: str
-    source_bundle_root: str
+    train_source_bundle_root: str
+    eval_source_bundle_root: str
     train_manifest_family: str
     eval_manifest_family: str
     text_embedding_mask_policy: str
@@ -171,7 +176,8 @@ def build_prepare_config(args: argparse.Namespace) -> Story30FreshstartProofConf
         local_proof_root=local_root.as_posix(),
         remote_proof_output_root=Path(args.remote_proof_output_root).as_posix(),
         remote_training_output_root=Path(args.remote_training_output_root).as_posix(),
-        source_bundle_root=Path(args.source_bundle_root).as_posix(),
+        train_source_bundle_root=Path(args.train_source_bundle_root).as_posix(),
+        eval_source_bundle_root=Path(args.eval_source_bundle_root).as_posix(),
         train_manifest_family=str(args.train_manifest_family),
         eval_manifest_family=str(args.eval_manifest_family),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
@@ -204,7 +210,8 @@ def load_config(local_proof_root: Path) -> Story30FreshstartProofConfig:
         local_proof_root=_required_str(payload, "local_proof_root"),
         remote_proof_output_root=_required_str(payload, "remote_proof_output_root"),
         remote_training_output_root=_required_str(payload, "remote_training_output_root"),
-        source_bundle_root=_required_str(payload, "source_bundle_root"),
+        train_source_bundle_root=_required_str(payload, "train_source_bundle_root"),
+        eval_source_bundle_root=_required_str(payload, "eval_source_bundle_root"),
         train_manifest_family=_required_str(payload, "train_manifest_family"),
         eval_manifest_family=_required_str(payload, "eval_manifest_family"),
         text_embedding_mask_policy=_required_str(payload, "text_embedding_mask_policy"),

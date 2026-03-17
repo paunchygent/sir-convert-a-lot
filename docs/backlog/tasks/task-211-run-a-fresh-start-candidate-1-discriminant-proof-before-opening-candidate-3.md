@@ -41,12 +41,14 @@ opens the ordered Candidate 3 contingency.
   - semantic-only batch contract from `T207`
   - semantic-only train/eval assembly from `T208`
   - local gradient-membership proof from `T209`
-- Materialize one real mini-bundle under Hemma scratch from the canonical pilot
-  bundle:
+- Materialize one real mini-bundle under Hemma scratch from truthful source
+  roots:
   - train slice: manifest lines `1..16` from `swedish_pilot_train`
   - eval slice: manifest line `1` from `swedish_checkpoint_dev`
-  - resolve the canonical dated Task 101 frozen bundle root automatically if
-    the legacy undated placeholder path is absent on Hemma
+  - resolve the canonical dated Task 101 frozen bundle root automatically for
+    train rows if the legacy undated placeholder path is absent on Hemma
+  - keep the held-out eval row rooted in the canonical Task 152 replacement
+    bundle that already owns `swedish_checkpoint_dev`
 - Use the standard detached `qwen-train launch/status` runtime, not an ad hoc
   shell workflow.
 - Keep the probe intentionally short:
@@ -77,7 +79,9 @@ opens the ordered Candidate 3 contingency.
 - [ ] The fresh-start proof does not resume from `state-step-00001406` or any
   other legacy checkpoint.
 - [ ] The bounded train slice is a truthful mini-bundle rooted in the canonical
-  pilot bundle and includes the known problematic line-14 family.
+  frozen train bundle while the eval slice stays rooted in the canonical
+  held-out eval bundle, and the train slice includes the known problematic
+  line-14 family.
 - [ ] The runtime surface uses detached Hemma execution and a committed repo
   command, not inline remote shell logic.
 - [ ] The proof records whether Candidate 1 still fails from a fresh start or

@@ -26,19 +26,21 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_freshstart_bundle import
 
 def test_materialize_mini_bundle_copies_selected_rows_and_assets(tmp_path: Path) -> None:
     """The mini-bundle copier should preserve selected rows and bundle-local assets."""
-    source_bundle = tmp_path / "source-bundle"
+    train_source_bundle = tmp_path / "train-source-bundle"
+    eval_source_bundle = tmp_path / "eval-source-bundle"
     _write_manifest(
-        source_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
+        train_source_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
         [_row_payload(index) for index in range(1, 5)],
     )
     _write_manifest(
-        source_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
+        eval_source_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
         [_row_payload(101), _row_payload(102)],
     )
     target_bundle = tmp_path / "target-bundle"
 
     payload = materialize_mini_bundle(
-        source_bundle_root=source_bundle,
+        train_source_bundle_root=train_source_bundle,
+        eval_source_bundle_root=eval_source_bundle,
         target_bundle_root=target_bundle,
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
@@ -48,7 +50,8 @@ def test_materialize_mini_bundle_copies_selected_rows_and_assets(tmp_path: Path)
         eval_line_end=1,
     )
 
-    assert payload.source_bundle_root == source_bundle.as_posix()
+    assert payload.train_source_bundle_root == train_source_bundle.as_posix()
+    assert payload.eval_source_bundle_root == eval_source_bundle.as_posix()
     assert payload.train_row_count == 2
     assert payload.eval_row_count == 1
     train_lines = (
@@ -70,22 +73,24 @@ def test_materialize_mini_bundle_copies_selected_rows_and_assets(tmp_path: Path)
     assert (target_bundle / copied_row["precomputed_ref_input_path"]).exists() is True
 
 
-def test_materialize_mini_bundle_resolves_dated_source_bundle_root(tmp_path: Path) -> None:
-    """The mini-bundle copier should fall back to the canonical dated Task 101 bundle."""
-    placeholder_bundle = tmp_path / "qwen3-tts-swedish-task101-pilot-bundle"
-    dated_bundle = tmp_path / "qwen3-tts-swedish-task101-pilot-bundle-20260314T111615Z-refmel"
+def test_materialize_mini_bundle_resolves_dated_train_source_bundle_root(tmp_path: Path) -> None:
+    """The mini-bundle copier should fall back to the canonical dated Task 101 train bundle."""
+    placeholder_train_bundle = tmp_path / "qwen3-tts-swedish-task101-pilot-bundle"
+    dated_train_bundle = tmp_path / "qwen3-tts-swedish-task101-pilot-bundle-20260314T111615Z-refmel"
+    eval_source_bundle = tmp_path / "eval-source-bundle"
     _write_manifest(
-        dated_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
+        dated_train_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
         [_row_payload(index) for index in range(1, 3)],
     )
     _write_manifest(
-        dated_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
+        eval_source_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
         [_row_payload(101)],
     )
     target_bundle = tmp_path / "target-bundle"
 
     payload = materialize_mini_bundle(
-        source_bundle_root=placeholder_bundle,
+        train_source_bundle_root=placeholder_train_bundle,
+        eval_source_bundle_root=eval_source_bundle,
         target_bundle_root=target_bundle,
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
@@ -95,10 +100,9 @@ def test_materialize_mini_bundle_resolves_dated_source_bundle_root(tmp_path: Pat
         eval_line_end=1,
     )
 
-    assert payload.source_bundle_root == dated_bundle.as_posix()
-    assert (
-        target_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl"
-    ).exists() is True
+    assert payload.train_source_bundle_root == dated_train_bundle.as_posix()
+    assert payload.eval_source_bundle_root == eval_source_bundle.as_posix()
+    assert (target_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl").exists() is True
 
 
 def _row_payload(index: int) -> dict[str, object]:

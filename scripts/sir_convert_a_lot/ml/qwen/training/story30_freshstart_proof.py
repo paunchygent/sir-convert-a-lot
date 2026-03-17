@@ -26,18 +26,19 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_freshstart_artifacts imp
     DEFAULT_EVAL_LINE_END,
     DEFAULT_EVAL_LINE_START,
     DEFAULT_EVAL_MANIFEST_FAMILY,
+    DEFAULT_EVAL_SOURCE_BUNDLE_ROOT,
     DEFAULT_GRADIENT_ACCUMULATION_STEPS,
     DEFAULT_LOCAL_PROOF_ROOT,
     DEFAULT_MAX_STEPS,
     DEFAULT_REMOTE_PROOF_OUTPUT_ROOT,
     DEFAULT_REMOTE_TRAINING_OUTPUT_ROOT,
     DEFAULT_REQUIRED_SCRATCH_FREE_BYTES,
-    DEFAULT_SOURCE_BUNDLE_ROOT,
     DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
     DEFAULT_THROUGHPUT_PROFILE_LABEL,
     DEFAULT_TRAIN_LINE_END,
     DEFAULT_TRAIN_LINE_START,
     DEFAULT_TRAIN_MANIFEST_FAMILY,
+    DEFAULT_TRAIN_SOURCE_BUNDLE_ROOT,
     Story30FreshstartProofConfig,
     build_prepare_config,
     checklist_path,
@@ -89,7 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_REMOTE_TRAINING_OUTPUT_ROOT,
     )
-    prepare.add_argument("--source-bundle-root", type=Path, default=DEFAULT_SOURCE_BUNDLE_ROOT)
+    prepare.add_argument(
+        "--train-source-bundle-root", type=Path, default=DEFAULT_TRAIN_SOURCE_BUNDLE_ROOT
+    )
+    prepare.add_argument(
+        "--eval-source-bundle-root", type=Path, default=DEFAULT_EVAL_SOURCE_BUNDLE_ROOT
+    )
     prepare.add_argument("--train-manifest-family", default=DEFAULT_TRAIN_MANIFEST_FAMILY)
     prepare.add_argument("--eval-manifest-family", default=DEFAULT_EVAL_MANIFEST_FAMILY)
     prepare.add_argument("--text-embedding-mask-policy", default=DEFAULT_TEXT_EMBEDDING_MASK_POLICY)
@@ -191,7 +197,8 @@ def main(argv: list[str] | None = None) -> int:
         proof_root_path = remote_proof_root(config)
         proof_root_path.mkdir(parents=True, exist_ok=False)
         bundle_payload = materialize_mini_bundle(
-            source_bundle_root=Path(config.source_bundle_root),
+            train_source_bundle_root=Path(config.train_source_bundle_root),
+            eval_source_bundle_root=Path(config.eval_source_bundle_root),
             target_bundle_root=remote_bundle_root(config),
             train_manifest_family=config.train_manifest_family,
             eval_manifest_family=config.eval_manifest_family,
@@ -239,7 +246,8 @@ def _add_remote_launch_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--proof-id", required=True)
     parser.add_argument("--remote-proof-output-root", type=Path, required=True)
     parser.add_argument("--remote-training-output-root", type=Path, required=True)
-    parser.add_argument("--source-bundle-root", type=Path, required=True)
+    parser.add_argument("--train-source-bundle-root", type=Path, required=True)
+    parser.add_argument("--eval-source-bundle-root", type=Path, required=True)
     parser.add_argument("--train-manifest-family", required=True)
     parser.add_argument("--eval-manifest-family", required=True)
     parser.add_argument("--text-embedding-mask-policy", required=True)
@@ -266,7 +274,8 @@ def _config_from_remote_launch_args(args: argparse.Namespace) -> Story30Freshsta
         local_proof_root="remote-only",
         remote_proof_output_root=Path(args.remote_proof_output_root).as_posix(),
         remote_training_output_root=Path(args.remote_training_output_root).as_posix(),
-        source_bundle_root=Path(args.source_bundle_root).as_posix(),
+        train_source_bundle_root=Path(args.train_source_bundle_root).as_posix(),
+        eval_source_bundle_root=Path(args.eval_source_bundle_root).as_posix(),
         train_manifest_family=str(args.train_manifest_family),
         eval_manifest_family=str(args.eval_manifest_family),
         text_embedding_mask_policy=str(args.text_embedding_mask_policy),
@@ -295,7 +304,8 @@ def _config_for_remote_status(args: argparse.Namespace) -> Story30FreshstartProo
         local_proof_root="remote-only",
         remote_proof_output_root=Path(args.remote_proof_output_root).as_posix(),
         remote_training_output_root=Path(args.remote_training_output_root).as_posix(),
-        source_bundle_root="",
+        train_source_bundle_root="",
+        eval_source_bundle_root="",
         train_manifest_family=DEFAULT_TRAIN_MANIFEST_FAMILY,
         eval_manifest_family=DEFAULT_EVAL_MANIFEST_FAMILY,
         text_embedding_mask_policy=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
@@ -332,7 +342,8 @@ def _render_plan_markdown(config: Story30FreshstartProofConfig) -> str:
             "",
             f"- command_name: `{config.command_name}`",
             f"- proof_id: `{config.proof_id}`",
-            f"- source_bundle_root: `{config.source_bundle_root}`",
+            f"- train_source_bundle_root: `{config.train_source_bundle_root}`",
+            f"- eval_source_bundle_root: `{config.eval_source_bundle_root}`",
             f"- train_slice: `{train_slice}`",
             f"- eval_slice: `{eval_slice}`",
             f"- batch_size: `{config.batch_size}`",
@@ -364,7 +375,7 @@ def _render_checklist_markdown(config: Story30FreshstartProofConfig) -> str:
             "",
             "- [ ] Local proof package prepared",
             "- [ ] Hemma scratch headroom audited",
-            "- [ ] Mini-bundle materialized from the canonical pilot bundle",
+            "- [ ] Mini-bundle materialized from the canonical train and eval source roots",
             "- [ ] Detached fresh-start training launch recorded",
             "- [ ] Status captured and decision written back into docs/reference",
             "",
@@ -372,6 +383,8 @@ def _render_checklist_markdown(config: Story30FreshstartProofConfig) -> str:
             "",
             f"- train slice: `{train_slice}`",
             f"- eval slice: `{eval_slice}`",
+            f"- train source bundle root: `{config.train_source_bundle_root}`",
+            f"- eval source bundle root: `{config.eval_source_bundle_root}`",
             f"- launch_id: `{config.launch_id}`",
             f"- remote training output root: `{config.remote_training_output_root}`",
             f"- remote proof output root: `{config.remote_proof_output_root}`",

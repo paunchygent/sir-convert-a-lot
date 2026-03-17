@@ -125,8 +125,10 @@ Why this is now the clean plan:
   - `T211` is now the next governed short proof owner:
     - start from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
     - use the Candidate 1 semantic-only assembly code path
-    - use a truthful mini-bundle with `swedish_pilot_train` lines `1..16` and
-      `swedish_checkpoint_dev` line `1`
+    - use a truthful mini-bundle with `swedish_pilot_train` lines `1..16` from
+      the canonical frozen Task 101 train bundle and
+      `swedish_checkpoint_dev` line `1` from the canonical Task 152 held-out
+      eval bundle
     - run the short fresh-start discriminant probe before opening Candidate 3
 
 ## Active Artifact Roots

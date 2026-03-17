@@ -142,9 +142,11 @@ Story 28 is now operating policy:
 - `T211` is now the next governed short proof lane before any new larger clean
   restart or Candidate 3 opening:
   - run a fresh-start Candidate 1 probe from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
-  - use a tiny truthful mini-bundle rooted in the canonical pilot bundle
-  - resolve the canonical dated Task 101 frozen bundle automatically on Hemma
-    if the legacy undated placeholder path is absent
+  - use a tiny truthful mini-bundle with train rows from the canonical frozen
+    Task 101 bundle and the held-out eval row from the canonical Task 152 eval
+    bundle
+  - resolve the canonical dated Task 101 frozen train bundle automatically on
+    Hemma if the legacy undated placeholder path is absent
   - keep the probe detached and operator-governed on Hemma
   - use the prepared proof id
     `task211-20260317t121557z-freshstart-a1`

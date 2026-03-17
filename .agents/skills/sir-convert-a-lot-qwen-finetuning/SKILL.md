@@ -147,8 +147,10 @@ explicitly narrow the scope.
   - run one short fresh-start Candidate 1 discriminant proof from
     `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
   - use a truthful mini-bundle with:
-    - `swedish_pilot_train` lines `1..16`
-    - `swedish_checkpoint_dev` line `1`
+    - `swedish_pilot_train` lines `1..16` from the canonical frozen Task 101
+      train bundle
+    - `swedish_checkpoint_dev` line `1` from the canonical Task 152 held-out
+      eval bundle
   - use the committed surface:
     `qwen-story30-freshstart-proof prepare|launch|status`
   - if the fresh-start probe still fails in the same family, open Candidate 3

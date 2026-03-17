@@ -117,13 +117,14 @@ def test_remote_launch_materializes_bundle_and_calls_qwen_train(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Remote launch should build the mini-bundle and then call detached training."""
-    source_bundle = tmp_path / "source-bundle"
+    train_source_bundle = tmp_path / "train-source-bundle"
+    eval_source_bundle = tmp_path / "eval-source-bundle"
     _write_manifest(
-        source_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
+        train_source_bundle / "manifests" / "swedish_pilot_train.prepared.jsonl",
         [_row_payload(index) for index in range(1, 5)],
     )
     _write_manifest(
-        source_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
+        eval_source_bundle / "manifests" / "swedish_checkpoint_dev.prepared.jsonl",
         [_row_payload(101)],
     )
     calls: list[list[str]] = []
@@ -147,8 +148,10 @@ def test_remote_launch_materializes_bundle_and_calls_qwen_train(
             (tmp_path / "remote-proof").as_posix(),
             "--remote-training-output-root",
             (tmp_path / "remote-training").as_posix(),
-            "--source-bundle-root",
-            source_bundle.as_posix(),
+            "--train-source-bundle-root",
+            train_source_bundle.as_posix(),
+            "--eval-source-bundle-root",
+            eval_source_bundle.as_posix(),
             "--train-manifest-family",
             "swedish_pilot_train",
             "--eval-manifest-family",

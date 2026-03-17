@@ -345,8 +345,10 @@ Operational consequence:
   - `T211` starts from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
   - it uses the Candidate 1 semantic-only assembly code path
   - it runs against a truthful mini-bundle with:
-    - `swedish_pilot_train` lines `1..16`
-    - `swedish_checkpoint_dev` line `1`
+    - `swedish_pilot_train` lines `1..16` copied from the canonical frozen
+      Task 101 train bundle
+    - `swedish_checkpoint_dev` line `1` copied from the canonical Task 152
+      held-out eval bundle
   - use the committed surface:
     - `pdm run qwen-story30-freshstart-proof prepare --proof-id task211-20260317t121557z-freshstart-a1 --skip-build`
     - `pdm run qwen-story30-freshstart-proof launch --proof-id task211-20260317t121557z-freshstart-a1`

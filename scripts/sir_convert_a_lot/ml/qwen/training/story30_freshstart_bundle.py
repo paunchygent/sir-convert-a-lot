@@ -28,7 +28,8 @@ from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.bundle_contract im
 class MiniBundleMaterialization:
     """Deterministic summary of one mini-bundle materialization."""
 
-    source_bundle_root: str
+    train_source_bundle_root: str
+    eval_source_bundle_root: str
     bundle_root: str
     train_manifest_path: str
     eval_manifest_path: str
@@ -38,7 +39,8 @@ class MiniBundleMaterialization:
 
 def materialize_mini_bundle(
     *,
-    source_bundle_root: Path,
+    train_source_bundle_root: Path,
+    eval_source_bundle_root: Path,
     target_bundle_root: Path,
     train_manifest_family: str,
     eval_manifest_family: str,
@@ -48,13 +50,16 @@ def materialize_mini_bundle(
     eval_line_end: int,
 ) -> MiniBundleMaterialization:
     """Copy one bounded truthful subset of the canonical pilot bundle."""
-    resolved_source_bundle_root = _resolve_source_bundle_root(
-        source_bundle_root=source_bundle_root,
-        train_manifest_family=train_manifest_family,
-        eval_manifest_family=eval_manifest_family,
+    resolved_train_source_bundle_root = _resolve_source_bundle_root(
+        source_bundle_root=train_source_bundle_root,
+        manifest_family=train_manifest_family,
     )
-    train_manifest_path = _manifest_path(resolved_source_bundle_root, train_manifest_family)
-    eval_manifest_path = _manifest_path(resolved_source_bundle_root, eval_manifest_family)
+    resolved_eval_source_bundle_root = _resolve_source_bundle_root(
+        source_bundle_root=eval_source_bundle_root,
+        manifest_family=eval_manifest_family,
+    )
+    train_manifest_path = _manifest_path(resolved_train_source_bundle_root, train_manifest_family)
+    eval_manifest_path = _manifest_path(resolved_eval_source_bundle_root, eval_manifest_family)
     train_rows = _selected_rows(train_manifest_path, train_line_start, train_line_end)
     eval_rows = _selected_rows(eval_manifest_path, eval_line_start, eval_line_end)
     if not train_rows:
@@ -66,12 +71,16 @@ def materialize_mini_bundle(
             f"Fresh-start mini-bundle target already exists: `{target_bundle_root.as_posix()}`."
         )
     (target_bundle_root / "manifests").mkdir(parents=True, exist_ok=False)
-    for row in [*train_rows, *eval_rows]:
-        _copy_row_assets(
-            source_bundle_root=resolved_source_bundle_root,
-            target_bundle_root=target_bundle_root,
-            row=row,
-        )
+    _copy_rows_assets(
+        source_bundle_root=resolved_train_source_bundle_root,
+        target_bundle_root=target_bundle_root,
+        rows=train_rows,
+    )
+    _copy_rows_assets(
+        source_bundle_root=resolved_eval_source_bundle_root,
+        target_bundle_root=target_bundle_root,
+        rows=eval_rows,
+    )
     target_train_manifest = _manifest_path(target_bundle_root, train_manifest_family)
     target_eval_manifest = _manifest_path(target_bundle_root, eval_manifest_family)
     _write_manifest(target_train_manifest, train_rows)
@@ -82,7 +91,8 @@ def materialize_mini_bundle(
         require_precomputed_ref_inputs=True,
     )
     return MiniBundleMaterialization(
-        source_bundle_root=resolved_source_bundle_root.as_posix(),
+        train_source_bundle_root=resolved_train_source_bundle_root.as_posix(),
+        eval_source_bundle_root=resolved_eval_source_bundle_root.as_posix(),
         bundle_root=target_bundle_root.as_posix(),
         train_manifest_path=target_train_manifest.as_posix(),
         eval_manifest_path=target_eval_manifest.as_posix(),
@@ -94,15 +104,10 @@ def materialize_mini_bundle(
 def _resolve_source_bundle_root(
     *,
     source_bundle_root: Path,
-    train_manifest_family: str,
-    eval_manifest_family: str,
+    manifest_family: str,
 ) -> Path:
-    """Resolve the canonical source bundle root, including dated Task 101 roots."""
-    if _has_required_manifests(
-        bundle_root=source_bundle_root,
-        train_manifest_family=train_manifest_family,
-        eval_manifest_family=eval_manifest_family,
-    ):
+    """Resolve one manifest source root, including dated Task 101 bundle roots."""
+    if _has_required_manifest(bundle_root=source_bundle_root, manifest_family=manifest_family):
         return source_bundle_root
     parent = source_bundle_root.parent
     prefix = f"{source_bundle_root.name}-"
@@ -110,17 +115,13 @@ def _resolve_source_bundle_root(
         candidate
         for candidate in parent.glob(f"{prefix}*")
         if candidate.is_dir()
-        and _has_required_manifests(
-            bundle_root=candidate,
-            train_manifest_family=train_manifest_family,
-            eval_manifest_family=eval_manifest_family,
-        )
+        and _has_required_manifest(bundle_root=candidate, manifest_family=manifest_family)
     )
     if dated_candidates:
         return dated_candidates[-1]
     raise SystemExit(
         "Fresh-start mini-bundle source bundle root did not exist and no canonical "
-        "dated Task 101 bundle matched the required manifests. "
+        f"bundle matched manifest `{manifest_family}`. "
         f"Tried `{source_bundle_root.as_posix()}`."
     )
 
@@ -129,15 +130,8 @@ def _manifest_path(bundle_root: Path, manifest_family: str) -> Path:
     return bundle_root / "manifests" / f"{manifest_family}.prepared.jsonl"
 
 
-def _has_required_manifests(
-    *,
-    bundle_root: Path,
-    train_manifest_family: str,
-    eval_manifest_family: str,
-) -> bool:
-    return _manifest_path(bundle_root, train_manifest_family).exists() and _manifest_path(
-        bundle_root, eval_manifest_family
-    ).exists()
+def _has_required_manifest(*, bundle_root: Path, manifest_family: str) -> bool:
+    return _manifest_path(bundle_root, manifest_family).exists()
 
 
 def _selected_rows(manifest_path: Path, start_line: int, end_line: int) -> list[dict[str, object]]:
@@ -162,6 +156,20 @@ def _selected_rows(manifest_path: Path, start_line: int, end_line: int) -> list[
                 )
             rows.append(payload)
     return rows
+
+
+def _copy_rows_assets(
+    *,
+    source_bundle_root: Path,
+    target_bundle_root: Path,
+    rows: Iterable[dict[str, object]],
+) -> None:
+    for row in rows:
+        _copy_row_assets(
+            source_bundle_root=source_bundle_root,
+            target_bundle_root=target_bundle_root,
+            row=row,
+        )
 
 
 def _copy_row_assets(
