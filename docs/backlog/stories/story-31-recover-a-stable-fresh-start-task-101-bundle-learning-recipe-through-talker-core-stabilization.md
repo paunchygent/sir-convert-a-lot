@@ -168,10 +168,16 @@ the governing success criterion for future restart work.
 - Promotion currently targets the first bounded candidate:
   - baseline variant: `off`
   - candidate variant: `layer16_gated_fp32`
-- `T217` remains blocked until that gate passes on the exact fresh-start pair
-  family.
+- The first real Hemma matrix and gate run under
+  `task215-20260317t160500z-a2` is now recorded:
+  - baseline `off` reproduced the exact `T214` pair-family seams
+  - `layer16_gated_fp32` did not earn promotion
+  - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
+- `T217` remains blocked until a later exploration candidate passes on the
+  exact fresh-start pair family.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.
-- `T217` is now the active next slice after the first gate-passing candidate is
-  recorded.
+- The next active slice inside Story 31 is another bounded exploration
+  candidate around the layer-16 gated-product / layer-15 output family, not a
+  governed Hemma proof yet.

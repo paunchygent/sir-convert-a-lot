@@ -148,10 +148,11 @@ Story 28 is now operating policy:
     - pair main/combined gradients were still finite at
       `layer_16.output` / `layer_16.mlp.down_proj` around `3.19e38` /
       `3.26e38` before the first non-finite hook
-  - Story 31 is now the active solution lane:
-    stable fresh-start bundle learning is the acceptance target, and the next
-    move is an exploration-first talker-core stabilization recipe rather than
-    more replay-centered proof hunting or an immediate Candidate `3` jump
+  - Story 31 is now the active solution lane: stable fresh-start bundle
+    learning is the target, and the first Hemma matrix under
+    `task215-20260317t160500z-a2` is already negative evidence:
+    `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4`
+    all reproduced the same `T214` pair-family seams
 
 ## Next Actions
 
@@ -165,13 +166,9 @@ Story 28 is now operating policy:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
 - Treat Story 29 / `T197-T206` as closed bounded-RCA evidence on the preserved
-  lane:
-  - the explicit position-mask correction removed the audited leakage
-  - the single final post-fix Hemma proof still failed at optimizer step `1407`
-  - no truthful `1470` checkpoint was minted and detached eval was not launched
-  - `T199` therefore remains blocked
-  - the next step is Story 30 Candidate 1, not another replay or post-fix
-    proof variant
+  lane: the explicit position-mask correction removed the audited leakage, but
+  the single final post-fix Hemma proof still failed at optimizer step `1407`
+  without a truthful `1470` checkpoint or detached eval.
 - Treat `T207-T209` as complete and
   `tests/sir_convert_a_lot/ml/qwen/training/test_semantic_text_embeddings.py`
   as the first required local gate before any new Hemma long proof attempt for
@@ -209,8 +206,11 @@ Story 28 is now operating policy:
     - the promotion surface is `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
     - it consumes `results.json`, writes `gate.json` / `gate.md`, and requires
       exact `T214` pair-family failure on baseline `off` plus finiteness on candidate `layer16_gated_fp32`
-  - `T217` is now the next governed slice:
-    run one Hemma proof only for the first gate-passing candidate
+  - the first real gate run under `task215-20260317t160500z-a2` is negative:
+    `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4` all preserved the same pair-family failures
+  - `T217` stays blocked until a later exploration candidate actually passes
+    the local promotion gate
+  - the next clean move is another bounded exploration candidate around the layer-16 gated-product / layer-15 output family
 - `T199` remains blocked until Story 31 records a positive fresh-start
   stabilization proof that justifies a larger clean-start proof lane.
 - Do not spend the next story on Candidate 2.

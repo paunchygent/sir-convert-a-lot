@@ -118,3 +118,9 @@ the governed proof lane.
   - the lab ran with:
     - `hook_profile=talker_core_boundary`
     - `text_embedding_mask_policy=text_span_only`
+- The first real gate run against
+  `task215-20260317t160500z-a2/results.json` failed honestly:
+  baseline `off` reproduced the exact `T214` pair seams, but candidate
+  `layer16_gated_fp32` still failed at
+  `talker_core.layer_16.mlp.gated_product` for `main_loss` /
+  `combined_loss` and `talker_core.layer_15.output` for `sub_talker_loss`.

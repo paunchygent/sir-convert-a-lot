@@ -190,6 +190,12 @@ Why this is now the clean plan:
       - it consumes `results.json` and writes `gate.json` plus `gate.md`
       - baseline `off` must reproduce the exact pair-family seams from `T214`
       - candidate `layer16_gated_fp32` must keep those exact surfaces finite
+    - the first real Story 31 Hemma matrix now records negative evidence:
+      - output root:
+        `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task215-20260317t160500z-a2`
+      - baseline `off` reproduced the exact `T214` pair-family seams
+      - candidate `layer16_gated_fp32` failed the promotion gate unchanged
+      - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
     - do not reopen replay framing while this solution lane is active

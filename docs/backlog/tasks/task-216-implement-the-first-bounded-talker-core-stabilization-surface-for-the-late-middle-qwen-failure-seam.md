@@ -117,3 +117,7 @@ exploration vehicle, not a one-off proof wrapper.
 - Operator guidance for the new exploration surface now lives in the Qwen
   runbook and repo finetuning skill so short Hemma-shared experiments do not
   need ad hoc shell packaging.
+- The first real Hemma matrix run under
+  `task215-20260317t160500z-a2` proved that the initial three variants:
+  `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4`
+  all reproduced the same fresh-start failure family on the exact row pair.
