@@ -27,6 +27,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_dataloader import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_semantic_text_embeddings import (
     build_semantic_text_embedding_assembly,
 )
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization import (
+    TALKER_CORE_STABILIZATION_OFF,
+    apply_talker_core_stabilization,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_runtime import (
     resolve_talker_codec_embedding,
     resolve_talker_text_embedding,
@@ -85,6 +89,7 @@ def execute_talker_forward_pass(
     model,
     batch: ForwardBatchInputs,
     non_blocking_transfer: bool,
+    talker_core_stabilization_variant: str = TALKER_CORE_STABILIZATION_OFF,
 ) -> TalkerForwardSurfaces:
     """Execute the shared no-projection talker forward pass for one batch."""
     ref_mels_on_device = to_device_with_optional_non_blocking(
@@ -116,12 +121,16 @@ def execute_talker_forward_pass(
         + input_codec_embedding
         + fused_auxiliary_embedding
     )
-    outputs = model.talker(
-        inputs_embeds=input_embeddings[:, :-1, :],
-        attention_mask=batch.attention_mask[:, :-1],
-        labels=batch.codec_0_labels[:, 1:],
-        output_hidden_states=True,
-    )
+    with apply_talker_core_stabilization(
+        model,
+        variant=talker_core_stabilization_variant,
+    ):
+        outputs = model.talker(
+            inputs_embeds=input_embeddings[:, :-1, :],
+            attention_mask=batch.attention_mask[:, :-1],
+            labels=batch.codec_0_labels[:, 1:],
+            output_hidden_states=True,
+        )
     hidden_states = outputs.hidden_states[0][-1]
     talker_hidden_states = hidden_states[batch.codec_mask[:, 1:]]
     talker_codec_ids = batch.codec_ids[batch.codec_mask]

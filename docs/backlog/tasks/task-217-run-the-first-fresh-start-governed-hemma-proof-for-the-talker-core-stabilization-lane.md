@@ -1,9 +1,9 @@
 ---
-id: 'task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane'
-title: 'Run the first fresh-start governed Hemma proof for the talker-core stabilization lane'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane
+title: Run the first fresh-start governed Hemma proof for the talker-core stabilization lane
+type: task
+status: proposed
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -20,6 +20,7 @@ labels:
   - hemma
   - proof
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -49,7 +50,7 @@ from the exploration lane.
   - short bounded run
 - Keep this proof purposefully narrow:
   - establish whether early fresh-start learning stays finite on the stabilized
-  lane
+    lane
   - do not authorize a full restart from this task alone
 - Do not run this task for a candidate that has not crossed the local
   promotion gate.

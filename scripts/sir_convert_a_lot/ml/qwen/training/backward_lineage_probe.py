@@ -44,6 +44,10 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_optimizer_guard_probes impo
     capture_targeted_gradient_probes,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_ref_mel_cache import RefMelCache
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization import (
+    TALKER_CORE_STABILIZATION_CHOICES,
+    TALKER_CORE_STABILIZATION_OFF,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_cases import (
     build_branch_summaries as _branch_summaries,
@@ -112,6 +116,11 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=HOOK_PROFILE_CHOICES,
         default=BASELINE_HOOK_PROFILE,
     )
+    parser.add_argument(
+        "--talker-core-stabilization-variant",
+        choices=TALKER_CORE_STABILIZATION_CHOICES,
+        default=TALKER_CORE_STABILIZATION_OFF,
+    )
     return parser
 
 
@@ -169,6 +178,7 @@ def _run_case(
     dataset: TTSDataset,
     case: ProbeCaseSpec,
     hook_profile: str,
+    talker_core_stabilization_variant: str,
 ) -> ProbeCaseResult:
     """Execute one backward-lineage case without attempting an optimizer step."""
     model.zero_grad(set_to_none=True)
@@ -183,6 +193,7 @@ def _run_case(
         model=model,
         batch=forward_batch,
         non_blocking_transfer=False,
+        talker_core_stabilization_variant=talker_core_stabilization_variant,
     )
     hook_session.attach_forward_surfaces(forward_surfaces)
     loss = _loss_tensor(forward_surfaces, loss_kind=case.loss_kind)
@@ -199,6 +210,7 @@ def _run_case(
         accelerator=accelerator,
         dataset=dataset,
         case=case,
+        talker_core_stabilization_variant=talker_core_stabilization_variant,
     )
     first_non_finite = hook_session.first_non_finite_observation()
     first_non_finite_talker_core = hook_session.first_non_finite_matching_prefix(
@@ -232,6 +244,7 @@ def _run_case_with_detect_anomaly(
     accelerator: Accelerator,
     dataset: TTSDataset,
     case: ProbeCaseSpec,
+    talker_core_stabilization_variant: str,
 ) -> str | None:
     """Rerun one case with anomaly detection and return the first raised trace."""
     model.zero_grad(set_to_none=True)
@@ -243,6 +256,7 @@ def _run_case_with_detect_anomaly(
                 model=model,
                 batch=forward_batch,
                 non_blocking_transfer=False,
+                talker_core_stabilization_variant=talker_core_stabilization_variant,
             )
             loss = _loss_tensor(forward_surfaces, loss_kind=case.loss_kind)
             accelerator.backward(loss)
@@ -297,6 +311,7 @@ def main(argv: list[str] | None = None) -> int:
             dataset=dataset,
             case=case,
             hook_profile=str(args.hook_profile),
+            talker_core_stabilization_variant=str(args.talker_core_stabilization_variant),
         )
         for case in _case_specs(source_line_numbers)
     ]

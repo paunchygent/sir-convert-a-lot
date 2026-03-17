@@ -340,22 +340,24 @@ Operational consequence:
 - Story 29 / `T195-T206` is the canonical backlog owner for this mitigation,
   but the bounded replay family is now closed on the inherited checkpoint lane
   after the negative `T210` rescue proof
-- Story 30 now has one additional short discriminant proof lane before
-  Candidate 3 opens:
-  - `T211` starts from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
-  - it uses the Candidate 1 semantic-only assembly code path
-  - it runs against a truthful mini-bundle with:
-    - `swedish_pilot_train` lines `1..16` copied from the canonical frozen
-      Task 101 train bundle
-    - one `swedish_checkpoint_dev` launch placeholder row copied from the same
-      frozen train bundle because `T211` makes no eval claim and the available
-      held-out eval manifests do not carry `precomputed_ref_input_path`
-  - use the committed surface:
-    - `pdm run qwen-story30-freshstart-proof prepare --proof-id task211-20260317t121557z-freshstart-a1 --skip-build`
-    - `pdm run qwen-story30-freshstart-proof launch --proof-id task211-20260317t121557z-freshstart-a1`
-    - `pdm run qwen-story30-freshstart-proof status --proof-id task211-20260317t121557z-freshstart-a1`
-  - if this fresh-start probe fails in the same family, open Candidate 3
-    directly instead of retrying another Candidate 1 replay
+- Story 31 now owns the fresh-start stabilization lane:
+  - `T216` delivers the lightweight exploration vehicle plus the first bounded
+    talker-core stabilization surface
+  - use the committed exploration surface:
+    - local or attached short run:
+      `pdm run qwen-story31-stability-lab run --skip-build`
+    - attached Hemma short run through the canonical wrapper:
+      `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab --skip-build`
+  - the initial bounded variants are:
+    - `off`
+    - `layer16_gated_fp32`
+    - `layer16_gated_fp32_clamp_1e4`
+  - the lab writes one compact matrix run under a single output root:
+    - `results.json`
+    - `results.md`
+    - `variant-reports/<variant>.json`
+  - do not create a detached proof package per micro-experiment; promote only
+    the first local winner to the governed Hemma proof lane
 
 ## Task 197 Detached Proof Surface
 

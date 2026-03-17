@@ -19,6 +19,9 @@ from contextlib import suppress
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization import (
+    TALKER_CORE_STABILIZATION_OFF,
+)
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
 from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
@@ -229,6 +232,7 @@ def build_probe_command(
     hf_mount: MountResolution,
     output_mount: MountResolution,
     mini_bundle: BackwardLineageMiniBundle,
+    talker_core_stabilization_variant: str = TALKER_CORE_STABILIZATION_OFF,
 ) -> list[str]:
     """Build the Docker command that runs the in-container backward-lineage probe."""
     effective_mini_bundle_root = (output_mount.effective_root / "mini-bundle").as_posix()
@@ -276,6 +280,8 @@ def build_probe_command(
         settings.text_embedding_mask_policy,
         "--hook-profile",
         settings.hook_profile,
+        "--talker-core-stabilization-variant",
+        talker_core_stabilization_variant,
         "--source-lines",
         ",".join(str(line) for line in settings.source_lines),
     ]
@@ -287,6 +293,7 @@ def run_backward_lineage_probe(
     hf_mount: MountResolution,
     output_mount: MountResolution,
     mini_bundle: BackwardLineageMiniBundle,
+    talker_core_stabilization_variant: str = TALKER_CORE_STABILIZATION_OFF,
 ) -> tuple[dict[str, object], list[str]]:
     """Run the in-container backward-lineage probe and parse its JSON payload."""
     command = build_probe_command(
@@ -294,6 +301,7 @@ def run_backward_lineage_probe(
         hf_mount=hf_mount,
         output_mount=output_mount,
         mini_bundle=mini_bundle,
+        talker_core_stabilization_variant=talker_core_stabilization_variant,
     )
     output = docker_checked(command, label="docker run qwen backward-lineage probe")
     payload = parse_json_object_from_mixed_stdout(output)

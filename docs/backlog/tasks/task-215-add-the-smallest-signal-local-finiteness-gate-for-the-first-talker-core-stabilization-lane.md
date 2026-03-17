@@ -1,9 +1,9 @@
 ---
-id: 'task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane'
-title: 'Add the smallest-signal local finiteness gate for the first talker-core stabilization lane'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane
+title: Add the smallest-signal local finiteness gate for the first talker-core stabilization lane
+type: task
+status: proposed
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -17,6 +17,7 @@ labels:
   - stabilization
   - local-gate
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

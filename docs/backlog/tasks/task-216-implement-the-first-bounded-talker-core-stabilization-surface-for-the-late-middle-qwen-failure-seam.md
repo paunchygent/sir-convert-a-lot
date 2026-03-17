@@ -1,9 +1,9 @@
 ---
-id: 'task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam'
-title: 'Implement the first bounded talker-core stabilization surface for the late-middle Qwen failure seam'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam
+title: Implement the first bounded talker-core stabilization surface for the late-middle Qwen failure seam
+type: task
+status: done
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -18,6 +18,7 @@ labels:
   - stabilization
   - talker-core
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -63,36 +64,56 @@ exploration vehicle, not a one-off proof wrapper.
 
 ## Deliverables
 
-- [ ] One committed Story 31 exploration surface exists for rapid local or
+- [x] One committed Story 31 exploration surface exists for rapid local or
   short Hemma-shared experiments.
-- [ ] One committed first bounded talker-core stabilization surface exists for
+- [x] One committed first bounded talker-core stabilization surface exists for
   the late-middle seam highlighted by `T214`.
-- [ ] One compact results artifact format exists for the experiment matrix.
-- [ ] One operator-facing doc update explains the exact first stabilization
+- [x] One compact results artifact format exists for the experiment matrix.
+- [x] One operator-facing doc update explains the exact first stabilization
   posture and why the new surface is faster than proof-per-slice iteration.
 
 ## Acceptance Criteria
 
-- [ ] The change preserves semantic-only text assembly and the no-projection
+- [x] The change preserves semantic-only text assembly and the no-projection
   training contract.
-- [ ] The intervention is bounded to the late-middle talker-core seam rather
+- [x] The intervention is bounded to the late-middle talker-core seam rather
   than broad optimizer or dataset churn.
-- [ ] The exploration surface can vary branch, row selection, and one bounded
+- [x] The exploration surface can vary branch, row selection, and one bounded
   stabilization variant without minting a new proof wrapper for each cell.
-- [ ] The resulting surface is usable by a local finiteness gate and a later
+- [x] The resulting surface is usable by a local finiteness gate and a later
   short fresh-start Hemma proof without ad hoc shell logic.
-- [ ] The task does not claim restart readiness on its own.
+- [x] The task does not claim restart readiness on its own.
 
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Outcome
+
+- Added the first bounded talker-core stabilization surface in
+  `sft_12hz_talker_core_stabilization.py` with the initial Story 31 variants:
+  `off`, `layer16_gated_fp32`, and `layer16_gated_fp32_clamp_1e4`.
+- Wired the shared forward path to apply the stabilization patch during the
+  talker forward pass without changing the semantic-only text contract or the
+  no-projection graph.
+- Added the lightweight Story 31 exploration surface:
+  `pdm run qwen-story31-stability-lab run`
+- The lab reuses the exact failing-row mini-bundle plus the existing
+  backward-lineage probe and writes one compact matrix artifact set under a
+  single output root:
+  - `results.json`
+  - `results.md`
+  - `variant-reports/<variant>.json`
+- Operator guidance for the new exploration surface now lives in the Qwen
+  runbook and repo finetuning skill so short Hemma-shared experiments do not
+  need ad hoc shell packaging.

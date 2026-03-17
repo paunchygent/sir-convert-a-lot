@@ -41,10 +41,20 @@ def talker_core_trace_prefix() -> str:
     return _TALKER_CORE_PREFIX
 
 
+def resolve_talker_decoder_layers(model: object) -> tuple[torch.nn.Module, ...]:
+    """Return the live talker decoder layers from one patched Qwen model."""
+    return _resolve_decoder_layers(_resolve_talker_model(model))
+
+
+def resolve_talker_decoder_layer(model: object, layer_index: int) -> torch.nn.Module:
+    """Return one indexed live talker decoder layer from one patched Qwen model."""
+    return _required_layer(resolve_talker_decoder_layers(model), layer_index)
+
+
 def iter_talker_core_trace_targets(model: object) -> tuple[TalkerCoreTraceTarget, ...]:
     """Return the broad per-layer talker-core targets used by `T213`."""
     talker_model = _resolve_talker_model(model)
-    layers = _resolve_decoder_layers(talker_model)
+    layers = resolve_talker_decoder_layers(model)
     targets: list[TalkerCoreTraceTarget] = []
     for layer_index, layer in enumerate(layers):
         layer_prefix = f"{_TALKER_CORE_PREFIX}layer_{layer_index}"
@@ -82,8 +92,7 @@ def iter_talker_core_boundary_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
     """Return the finer layer `16` / layer `15` boundary targets used by `T214`."""
-    talker_model = _resolve_talker_model(model)
-    layers = _resolve_decoder_layers(talker_model)
+    layers = resolve_talker_decoder_layers(model)
     targets: list[TalkerCoreTraceTarget] = []
     for layer_index in _BOUNDARY_TARGET_LAYER_INDICES:
         layer = _required_layer(layers, layer_index)

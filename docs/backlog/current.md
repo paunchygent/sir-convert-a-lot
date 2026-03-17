@@ -177,24 +177,19 @@ Story 28 is now operating policy:
   as the first required local gate before any new Hemma long proof attempt for
   Candidate 1.
 - Treat `T211` as closed negative fresh-start evidence:
-  - the semantic-only Candidate 1 lane failed immediately at optimizer step
-    `1`
-  - this removes replay-amassed inherited state as the leading explanation
-    for the current failure family
+  - the semantic-only Candidate 1 lane failed immediately at optimizer step `1`
+  - replay-amassed inherited state is no longer the leading explanation for
+    the current failure family
   - do not spend more time on replay framing before the backward-lineage lane
 - `T212` is now closed positive discovery evidence:
-  - the row pair is not the decisive issue:
-    both rows fail independently
-  - replay-amassed inherited state is not the decisive issue:
-    the truthful fresh-start single-step probe reproduced the family directly
-  - Candidate 1 semantic-only assembly is not where the earliest instrumented
-    corruption first appears
-  - the earliest current instrumented non-finite backward edge is at
-    `input_embeddings`
+  - both rows fail independently and the truthful fresh-start single-step
+    probe reproduced the family directly
+  - Candidate 1 semantic-only assembly is not where the earliest
+    instrumented corruption first appears; that edge is `input_embeddings`
 - `T213` is now closed positive discovery evidence:
   - the earliest non-finite backward hook is inside the talker core, not just
     at `input_embeddings`
-  - the freshest localized boundary is now late-middle talker layers around
+  - the freshest localized boundary is late-middle talker layers around
     `layer_16.post_attention_layernorm` and `layer_15.output`
   - do not open Candidate `3` while a smaller talker-core split is still
     available
@@ -204,9 +199,17 @@ Story 28 is now operating policy:
   - pair `sub_talker_loss` first breaks at `talker_core.layer_15.output`
   - replay framing is no longer the productive center of gravity
 - Story 31 is now active:
-  - `T216`: build the lightweight exploration vehicle plus the first bounded
-    talker-core stabilization surface
-  - `T215`: add the local promotion gate and compact result table
+  - `T216` is now complete:
+    - the first bounded variants are:
+      `off`, `layer16_gated_fp32`, `layer16_gated_fp32_clamp_1e4`
+    - the exploration surface is `pdm run qwen-story31-stability-lab run`
+    - the lab writes one compact matrix run under a single output root:
+      `results.json`, `results.md`, and `variant-reports/<variant>.json`
+    - it reuses the exact failing-row backward-lineage probe instead of
+      minting a proof package per hypothesis
+  - `T215` is now the active next slice:
+    add the smallest-signal local promotion gate on the exact fresh-start
+    failure family
   - `T217`: run one governed Hemma proof only for the first promoted winner
 - `T199` remains blocked until Story 31 records a positive fresh-start
   stabilization proof that justifies a larger clean-start proof lane.

@@ -1,0 +1,82 @@
+"""Contracts for the Story 31 talker-core stability lab.
+
+Purpose:
+    Keep the lightweight exploration-lane settings and compact result-table
+    payloads in one small shared module so the Story 31 runner and CLI stay
+    focused on orchestration rather than bookkeeping.
+
+Relationships:
+    - Imported by `story31_stability_lab_runner.py` for execution and artifact
+      rendering.
+    - Imported by tests that lock the compact matrix table and variant parsing
+      behavior before any Hemma probe is launched.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class Story31StabilityLabSettings:
+    """Configuration for one attached Story 31 stability-lab matrix run."""
+
+    output_root: Path
+    dockerfile_path: Path
+    image: str
+    model_id: str
+    hf_cache_dir: Path
+    hf_cache_home_mount: Path
+    output_root_home_mount_base: Path
+    source_bundle_root: Path
+    manifest_family: str
+    source_lines: tuple[int, int]
+    text_embedding_mask_policy: str
+    hook_profile: str
+    stabilization_variants: tuple[str, ...]
+    build_image: bool
+
+
+@dataclass(frozen=True)
+class StabilityLabMatrixRow:
+    """Compact comparable result row for one variant/case combination."""
+
+    stabilization_variant: str
+    case_id: str
+    loss_kind: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    interaction_mode: str
+    case_has_non_finite: bool
+    first_non_finite_hook_tensor: str | None
+    first_non_finite_talker_core_hook_tensor: str | None
+    gradient_rca_first_non_finite_surface: str | None
+    parameter_first_non_finite_surface: str | None
+    anomaly_operator: str | None
+
+
+@dataclass(frozen=True)
+class Story31StabilityLabReport:
+    """Machine-readable report for one Story 31 matrix run."""
+
+    generated_at: str
+    image: str
+    image_id: str
+    build_performed: bool
+    model_id: str
+    source_bundle_root: str
+    manifest_family: str
+    source_line_numbers: tuple[int, int]
+    text_embedding_mask_policy: str
+    hook_profile: str
+    stabilization_variants: tuple[str, ...]
+    mini_bundle: dict[str, object]
+    hf_cache_dir: str
+    effective_hf_cache_dir: str
+    used_home_mount: bool
+    effective_output_root: str
+    used_output_root_home_mount: bool
+    variant_report_paths: dict[str, str]
+    probe_commands: dict[str, list[str]]
+    matrix_rows: tuple[StabilityLabMatrixRow, ...]

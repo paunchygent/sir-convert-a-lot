@@ -1,9 +1,9 @@
 ---
-id: 'story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization'
-title: 'Recover a stable fresh-start Task 101 bundle-learning recipe through talker-core stabilization'
-type: 'story'
-status: 'in_progress'
-priority: 'high'
+id: story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization
+title: Recover a stable fresh-start Task 101 bundle-learning recipe through talker-core stabilization
+type: story
+status: in_progress
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -22,6 +22,7 @@ labels:
   - talker-core
   - fresh-start
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -43,7 +44,7 @@ This story is intentionally split into two lanes:
    - fast, cheap, repeatable
    - no proof package per hypothesis
    - compact result ledger and promotion criteria
-2. `Governed proof lane`
+1. `Governed proof lane`
    - only for the first candidate that earns promotion from the exploration
      lane
    - reuses the existing detached Hemma surfaces instead of inventing a new
@@ -105,10 +106,10 @@ Avoid reusing the heavy parts for exploration:
 
 - [ ] `T214` is recorded as closed discovery evidence rather than left as the
   active explanation lane.
-- [ ] One lightweight Story 31 exploration surface exists for rapid matrix
+- [x] One lightweight Story 31 exploration surface exists for rapid matrix
   iteration on the late-middle talker-core seam without a proof package per
   hypothesis.
-- [ ] One bounded talker-core stabilization surface exists that targets the
+- [x] One bounded talker-core stabilization surface exists that targets the
   late-middle seam exposed by `T214` without reopening replay framing or
   altering the clean text-token semantics.
 - [ ] One smallest-signal local promotion gate exists that tests the exact
@@ -148,3 +149,19 @@ the governing success criterion for future restart work.
 - [ ] Implementation complete
 - [ ] Tests and validations complete
 - [ ] Docs synchronized
+
+## Current State
+
+- `T216` is now complete.
+- The first bounded Story 31 stabilization posture is available through:
+  - `off`
+  - `layer16_gated_fp32`
+  - `layer16_gated_fp32_clamp_1e4`
+- The reusable exploration surface is:
+  - `pdm run qwen-story31-stability-lab run`
+- The lab reuses the exact failing-row backward-lineage kernel and writes one
+  compact matrix run under a single output root instead of a proof package per
+  experiment.
+- `T215` is now the active next slice: promote or reject the first bounded
+  stabilization lane with the smallest-signal local finiteness gate before any
+  new governed Hemma proof.

@@ -97,8 +97,8 @@ talker-core defect before making any Candidate `3` implementation move.
 - Pair-main / pair-combined retained still-finite gradients at:
   - `talker_core.layer_16.output`
   - `talker_core.layer_16.mlp.down_proj`
-  with max abs about `3.19e38` and `3.26e38` before the first non-finite hook
-  at `gated_product`
+    with max abs about `3.19e38` and `3.26e38` before the first non-finite hook
+    at `gated_product`
 - Pair-main / pair-combined anomaly trace:
   `MulBackward0`
 - Pair-sub anomaly trace:

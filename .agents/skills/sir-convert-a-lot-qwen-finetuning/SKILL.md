@@ -136,28 +136,28 @@ explicitly narrow the scope.
     `1470 + detached standalone eval`
   - if that final post-fix proof still fails numerically before `1470`, stop
     bounded RCA on this preserved lane and escalate to a new design story
-- Current post-Story-29 operator rule after Story 30 Candidate 1 landed
-  through `T209`:
+- Current post-Story-29 operator rule after Story 30 Candidate 1 discovery
+  closed:
   - treat `test_semantic_text_embeddings.py` as the required first local gate
     before any new Hemma long proof
   - `T210` is now closed negative as an inherited-state rescue proof:
     the semantic-only assembly code path still failed from the canonical
     `1406` checkpoint
-  - the next governed owner is `T211`
-  - run one short fresh-start Candidate 1 discriminant proof from
-    `Qwen/Qwen3-TTS-12Hz-1.7B-Base`
-  - use a truthful mini-bundle with:
-    - `swedish_pilot_train` lines `1..16` from the canonical frozen Task 101
-      train bundle
-    - one `swedish_checkpoint_dev` launch placeholder row from the same frozen
-      train bundle because `T211` makes no eval claim and the available
-      held-out eval manifests do not carry `precomputed_ref_input_path`
-  - use the committed surface:
-    `qwen-story30-freshstart-proof prepare|launch|status`
-  - if the fresh-start probe still fails in the same family, open Candidate 3
-    directly
-  - if the fresh-start probe stays finite, define the next larger clean-start
-    Candidate 1 proof before any restart authorization
+  - `T211-T214` are now closed discovery evidence:
+    - fresh-start failure reproduced at optimizer step `1`
+    - the latest truthful split first localizes
+      `main_loss` / `combined_loss` at
+      `talker_core.layer_16.mlp.gated_product`
+    - `sub_talker_loss` first localizes at `talker_core.layer_15.output`
+  - Story 31 is now the active operator lane
+  - use the committed lightweight exploration surface:
+    `qwen-story31-stability-lab run`
+  - the initial bounded stabilization variants are:
+    `off`, `layer16_gated_fp32`, `layer16_gated_fp32_clamp_1e4`
+  - the lab writes one compact matrix run under a single output root:
+    `results.json`, `results.md`, and `variant-reports/<variant>.json`
+  - do not create a proof package per micro-experiment; only the first local
+    winner gets promoted to the governed Hemma proof lane
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in

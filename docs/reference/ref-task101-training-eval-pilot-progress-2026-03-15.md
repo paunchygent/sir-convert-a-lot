@@ -177,8 +177,13 @@ Why this is now the clean plan:
       talker-core stabilization
     - use an exploration-first lane:
       fast matrix iteration, compact result table, no proof package per cell
-    - `T216` builds the lightweight exploration vehicle plus the first bounded
-      stabilization surface
+    - `T216` is now complete:
+      - the first bounded stabilization variants are:
+        `off`, `layer16_gated_fp32`, `layer16_gated_fp32_clamp_1e4`
+      - the committed exploration surface is:
+        `pdm run qwen-story31-stability-lab run`
+      - it writes one compact matrix run under a single output root:
+        `results.json`, `results.md`, and `variant-reports/<variant>.json`
     - `T215` adds the local promotion gate
     - `T217` runs the first short fresh-start Hemma proof only for the first
       promoted winner
