@@ -225,6 +225,34 @@ class Story31PostT237DownstreamConvergenceAssessment:
 
 
 @dataclass(frozen=True)
+class PostT240Layer15OutputSplitComparisonRow:
+    """Comparable pair-versus-single row outcome for the T241 layer-15 split."""
+
+    case_id: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    role: str
+    case_has_non_finite: bool
+    first_non_finite_talker_core_hook_tensor: str | None
+    matched_corridor_surface: str | None
+
+
+@dataclass(frozen=True)
+class Story31PostT240Layer15OutputSplitAssessment:
+    """Focused T241 assessment for the converged layer-15 residual/output seam."""
+
+    stabilization_variant: str
+    target_loss_kind: str
+    target_corridor_surfaces: tuple[str, ...]
+    comparison_rows: tuple[PostT240Layer15OutputSplitComparisonRow, ...]
+    convergence_classification: str | None
+    dominant_surface: str | None
+    evidence_is_ambiguous: bool
+    ambiguity_reason: str | None
+    next_task_rule: str
+
+
+@dataclass(frozen=True)
 class Story31StabilityLabReport:
     """Machine-readable report for one Story 31 matrix run."""
 
@@ -257,6 +285,9 @@ class Story31StabilityLabReport:
     ) = None
     post_t237_downstream_convergence_assessment: (
         Story31PostT237DownstreamConvergenceAssessment | None
+    ) = None
+    post_t240_layer15_output_split_assessment: (
+        Story31PostT240Layer15OutputSplitAssessment | None
     ) = None
 
 

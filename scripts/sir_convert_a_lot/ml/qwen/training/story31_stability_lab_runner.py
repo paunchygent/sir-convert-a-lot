@@ -44,6 +44,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_bundle 
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_hooks import (
     TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_hooks import (
+    TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_runner import (
     BackwardLineageProofSettings,
     run_backward_lineage_probe,
@@ -56,6 +59,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story31_post_t236_micro_family_a
     T237_REQUIRED_VARIANTS,
     build_post_t236_row_local_micro_family_assessment,
     validate_post_t236_row_local_micro_family_contract,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_post_t240_layer15_output_split_assessment import (
+    build_post_t240_layer15_output_split_assessment,
+    validate_post_t240_layer15_output_split_contract,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_row_local_outlier_assessment import (
     build_post_t235_row_local_outlier_assessment,
@@ -167,6 +174,7 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
     t240_downstream_convergence_assessment.validate_post_t237_downstream_convergence_contract(
         settings
     )
+    validate_post_t240_layer15_output_split_contract(settings)
     build_performed, image_id = prepare_qwen_image(
         _RunnerImageSettings(
             dockerfile_path=settings.dockerfile_path,
@@ -264,11 +272,21 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
                 matrix_rows=compact_matrix_rows,
             )
         ),
+        post_t240_layer15_output_split_assessment=(
+            build_post_t240_layer15_output_split_assessment(
+                settings=settings,
+                matrix_rows=compact_matrix_rows,
+            )
+        ),
     )
 
 
 def _validate_row_local_hook_contract(settings: Story31StabilityLabSettings) -> None:
     """Dispatch the shared T236/T237 hook profile to the correct validator."""
+    if settings.hook_profile == TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE:
+        validate_post_t235_row_local_outlier_contract(settings)
+        validate_post_t236_row_local_micro_family_contract(settings)
+        return
     if settings.hook_profile != TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE:
         validate_post_t235_row_local_outlier_contract(settings)
         validate_post_t236_row_local_micro_family_contract(settings)

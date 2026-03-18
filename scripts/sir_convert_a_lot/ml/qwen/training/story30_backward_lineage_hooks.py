@@ -33,6 +33,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_post_t234_disagreement_trace_targets,
     iter_talker_core_post_t235_row_local_outlier_trace_targets,
     iter_talker_core_post_t237_downstream_convergence_trace_targets,
+    iter_talker_core_post_t240_layer15_output_split_trace_targets,
     iter_talker_core_trace_targets,
     resolve_talker_input_layernorm,
     talker_core_input_layernorm_internal_trace_names,
@@ -55,6 +56,9 @@ TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE = "talker_core_post_t235_ro
 TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE = (
     "talker_core_post_t237_downstream_convergence"
 )
+TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE = (
+    "talker_core_post_t240_layer15_output_split"
+)
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
@@ -64,6 +68,7 @@ HOOK_PROFILE_CHOICES = (
     TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE,
     TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE,
     TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE,
+    TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -116,6 +121,9 @@ class GradientHookSession:
             return
         if self._hook_profile == TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE:
             self._install_post_t237_downstream_convergence_trace(model=model)
+            return
+        if self._hook_profile == TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE:
+            self._install_post_t240_layer15_output_split_trace(model=model)
             return
         if self._hook_profile == TALKER_CORE_HOOK_PROFILE:
             trace_targets = iter_talker_core_trace_targets(model)
@@ -308,6 +316,20 @@ class GradientHookSession:
             output_name=talker_core_post_t237_downstream_convergence_trace_names()[-1],
             profile_label="T240",
         )
+
+    def _install_post_t240_layer15_output_split_trace(self, *, model: object) -> None:
+        """Install the T241 layer-15 residual/output split without changing the winner."""
+        for target in iter_talker_core_post_t240_layer15_output_split_trace_targets(model):
+            handle = (
+                target.module.register_forward_hook(
+                    self._build_forward_hook(target.name, target.tensor_selector)
+                )
+                if target.hook_kind == "forward"
+                else target.module.register_forward_pre_hook(
+                    self._build_forward_pre_hook(target.name, target.tensor_selector)
+                )
+            )
+            self._handles.append(handle)
 
     def _install_layer16_input_layernorm_output_trace(
         self,

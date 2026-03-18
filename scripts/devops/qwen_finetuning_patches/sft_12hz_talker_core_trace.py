@@ -29,6 +29,7 @@ _INPUT_LAYERNORM_INTERNAL_LAYER_INDEX = 16
 _POST_T234_DISAGREEMENT_LAYER_INDICES = (16, 15)
 _POST_T235_ROW_LOCAL_OUTLIER_LAYER_INDICES = (16, 15)
 _POST_T237_DOWNSTREAM_CONVERGENCE_LAYER_INDICES = (15, 16)
+_POST_T240_LAYER15_OUTPUT_SPLIT_LAYER_INDICES = (15, 16)
 
 
 @dataclass(frozen=True)
@@ -91,6 +92,16 @@ def talker_core_post_t237_downstream_convergence_trace_names() -> tuple[str, ...
         f"{_TALKER_CORE_PREFIX}layer_15.output",
         f"{_TALKER_CORE_PREFIX}layer_16.input",
         f"{_TALKER_CORE_PREFIX}layer_16.input_layernorm.output",
+    )
+
+
+def talker_core_post_t240_layer15_output_split_trace_names() -> tuple[str, ...]:
+    """Return the fixed T241 seam split beneath the converged `layer_15.output` surface."""
+    return (
+        f"{_TALKER_CORE_PREFIX}layer_15.mlp.gated_product",
+        f"{_TALKER_CORE_PREFIX}layer_15.mlp.down_proj",
+        f"{_TALKER_CORE_PREFIX}layer_15.output",
+        f"{_TALKER_CORE_PREFIX}layer_16.input",
     )
 
 
@@ -249,6 +260,29 @@ def iter_talker_core_post_t237_downstream_convergence_trace_targets(
     )
     layer_15_mlp = _required_module(layer_15, "mlp")
     return (
+        _forward_target(
+            name=f"{_TALKER_CORE_PREFIX}layer_15.mlp.down_proj",
+            module=_required_module(layer_15_mlp, "down_proj"),
+        ),
+        _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
+        _forward_pre_target(name=f"{_TALKER_CORE_PREFIX}layer_16.input", module=layer_16),
+    )
+
+
+def iter_talker_core_post_t240_layer15_output_split_trace_targets(
+    model: object,
+) -> tuple[TalkerCoreTraceTarget, ...]:
+    """Return the narrowed T241 split beneath the converged `layer_15.output` seam."""
+    layer_15, layer_16 = (
+        resolve_talker_decoder_layer(model, layer_index)
+        for layer_index in _POST_T240_LAYER15_OUTPUT_SPLIT_LAYER_INDICES
+    )
+    layer_15_mlp = _required_module(layer_15, "mlp")
+    return (
+        _forward_pre_target(
+            name=f"{_TALKER_CORE_PREFIX}layer_15.mlp.gated_product",
+            module=_required_module(layer_15_mlp, "down_proj"),
+        ),
         _forward_target(
             name=f"{_TALKER_CORE_PREFIX}layer_15.mlp.down_proj",
             module=_required_module(layer_15_mlp, "down_proj"),
