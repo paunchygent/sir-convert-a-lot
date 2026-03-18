@@ -24,13 +24,14 @@ PR-sized execution unit; may be linked to a story or standalone.
 ## Objective
 
 Split the post-`T243` converged `talker_core.layer_15.output` seam into the
-smallest meaningful return-path sub-boundaries so Story 31 can determine
-whether the first reproducible `sub_talker_loss` break under the fixed
-`T237/T243` winner is born:
+smallest meaningful winner-specific return-path sub-boundaries so Story 31 can
+determine whether the first reproducible `sub_talker_loss` break under the
+fixed `T237/T243` winner is born:
 
-- in the raw post-sum tensor handed off from the upstream talker decoder path,
-- in the winner-specific layer-15 output attenuation wrapper,
-- or only in the final emitted `talker_core.layer_15.output` tensor
+- in the raw post-sum tensor handed off into the `layer15_out_0p5` winner
+  wrapper, or
+- only after that winner-specific output attenuation emits the returned
+  `talker_core.layer_15.output` tensor
 
 before any new stabilizer family is considered.
 
@@ -54,12 +55,20 @@ before any new stabilizer family is considered.
   - no optimizer, sampler, recovery, or bundle changes
 - Add one diagnosis-only hook profile that traces the post-sum return path
   beneath `talker_core.layer_15.output`.
-- Constrain the trace corridor to the smallest meaningful return-path surfaces:
-  - the raw post-sum tensor before any winner-specific output attenuation
-  - the winner-wrapper output after the `layer15_out_0p5` attenuation is
-    applied
-  - the final emitted `talker_core.layer_15.output`
-  - `talker_core.layer_16.input` as the downstream guard
+- Treat the real winner-specific return path truthfully:
+  - under the fixed `layer15_out_0p5` winner, the post-attenuation wrapper
+    output and the final emitted `talker_core.layer_15.output` are the same
+    tensor
+  - `T244` must therefore split the smallest meaningful return corridor rather
+    than inventing two distinct post-scale surfaces that do not exist
+- Constrain the trace corridor to:
+  - `talker_core.layer_15.output.pre_output_scale_return`
+    - the raw post-sum tensor before the winner-specific attenuation multiply
+  - `talker_core.layer_15.output`
+    - the emitted post-scale tensor returned from layer 15
+  - `talker_core.layer_16.input`
+    - downstream guard surface if the seam has already moved beyond the
+      winner-specific return wrapper
 - Interpret only the three normative `sub_talker_loss` rows:
   - `pair-sub-talker-loss`
   - `line-13-sub-talker-loss`
@@ -69,8 +78,12 @@ before any new stabilizer family is considered.
 
 ## Interpretation Contract
 
-- Classify a single converged return-path surface if all three normative rows
-  first break at the same sub-boundary inside the committed return corridor.
+- Classify `converged_pre_output_scale_return` if all three normative rows
+  first break at `talker_core.layer_15.output.pre_output_scale_return`.
+- Classify `converged_output_return` if all three normative rows first break
+  at `talker_core.layer_15.output`.
+- Classify `converged_layer16_input_handoff` if all three normative rows
+  first break at `talker_core.layer_16.input`.
 - Classify `downstream_disagreement` if all three rows stay inside the return
   corridor but do not agree on one earliest surface.
 - Classify `nonlocal_regression` if any required row skips outside the

@@ -65,6 +65,9 @@ TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE = (
 TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE = (
     "talker_core_post_t241_layer15_residual_output"
 )
+TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE = (
+    "talker_core_post_t243_layer15_output_return"
+)
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
@@ -76,6 +79,7 @@ HOOK_PROFILE_CHOICES = (
     TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE,
     TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE,
     TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE,
+    TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -134,6 +138,9 @@ class GradientHookSession:
             return
         if self._hook_profile == TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE:
             self._install_post_t241_layer15_residual_output_trace(model=model)
+            return
+        if self._hook_profile == TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE:
+            self._install_post_t243_layer15_output_return_trace(model=model)
             return
         if self._hook_profile == TALKER_CORE_HOOK_PROFILE:
             trace_targets = iter_talker_core_trace_targets(model)
@@ -344,6 +351,17 @@ class GradientHookSession:
     def _install_post_t241_layer15_residual_output_trace(self, *, model: object) -> None:
         """Install the T243 residual-input / residual-sum / output-return split."""
         t243_residual_output_hooking.install_post_t241_layer15_residual_output_trace(
+            model=model,
+            attach_tensor=self._attach_tensor,
+            build_forward_hook=self._build_forward_hook,
+            build_forward_pre_hook=self._build_forward_pre_hook,
+            register_handle=self._handles.append,
+            patch_module_forward=self._patch_module_forward,
+        )
+
+    def _install_post_t243_layer15_output_return_trace(self, *, model: object) -> None:
+        """Install the T244 pre-scale / post-scale layer-15 return split."""
+        t243_residual_output_hooking.install_post_t243_layer15_output_return_trace(
             model=model,
             attach_tensor=self._attach_tensor,
             build_forward_hook=self._build_forward_hook,

@@ -12,16 +12,20 @@ Relationships:
 
 from __future__ import annotations
 
+from types import MethodType
+
 import torch
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     resolve_talker_input_layernorm,
     talker_core_input_layernorm_internal_trace_names,
     talker_core_post_t241_layer15_residual_output_trace_names,
+    talker_core_post_t243_layer15_output_return_trace_names,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_hooks import (
     TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE,
     TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE,
+    TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE,
     build_gradient_hook_session,
 )
 
@@ -185,6 +189,42 @@ def test_t243_hook_session_wraps_layer15_mlp_and_captures_residual_path() -> Non
 
     assert {item.tensor_name for item in session.ordered_observations()} == set(
         talker_core_post_t241_layer15_residual_output_trace_names()
+    )
+    assert session.first_non_finite_observation().tensor_name is None
+
+    session.close()
+    assert "forward" not in layer_15.__dict__
+
+
+def test_t244_hook_session_captures_pre_scale_and_emitted_output() -> None:
+    """The T244 session should isolate the winner-specific layer-15 return split."""
+    model = _FakeResidualRootModel()
+    layer_15 = model.talker.model.layers[15]
+    layer_16 = model.talker.model.layers[16]
+    session = build_gradient_hook_session(
+        hook_profile=TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE
+    )
+
+    session.install_pre_forward_hooks(model=model)
+    original_forward = layer_15.forward
+
+    def scaled_forward(
+        self: torch.nn.Module,
+        hidden_states: torch.Tensor,
+    ) -> tuple[torch.Tensor]:
+        del self
+        outputs = original_forward(hidden_states)
+        return (outputs[0] * 0.5,)
+
+    layer_15.forward = MethodType(scaled_forward, layer_15)
+
+    hidden_states = torch.randn(2, 4, requires_grad=True)
+    layer_15_output = layer_15(hidden_states)[0]
+    layer_16_output = layer_16(layer_15_output)[0]
+    layer_16_output.sum().backward()
+
+    assert {item.tensor_name for item in session.ordered_observations()} == set(
+        talker_core_post_t243_layer15_output_return_trace_names()
     )
     assert session.first_non_finite_observation().tensor_name is None
 

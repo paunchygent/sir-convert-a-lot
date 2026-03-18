@@ -23,12 +23,14 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_post_t237_downstream_convergence_trace_targets,
     iter_talker_core_post_t240_layer15_output_split_trace_targets,
     iter_talker_core_post_t241_layer15_residual_output_trace_targets,
+    iter_talker_core_post_t243_layer15_output_return_trace_targets,
     iter_talker_core_trace_targets,
     talker_core_input_layernorm_internal_trace_names,
     talker_core_post_t235_row_local_outlier_trace_names,
     talker_core_post_t237_downstream_convergence_trace_names,
     talker_core_post_t240_layer15_output_split_trace_names,
     talker_core_post_t241_layer15_residual_output_trace_names,
+    talker_core_post_t243_layer15_output_return_trace_names,
     talker_core_trace_prefix,
 )
 
@@ -229,6 +231,25 @@ def test_iter_talker_core_post_t241_layer15_residual_output_targets_focus_t243_c
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.output.residual_input",
+        "talker_core.layer_15.output",
+        "talker_core.layer_16.input",
+    ]
+
+
+def test_talker_core_post_t243_layer15_output_return_trace_names_lock_t244_order() -> None:
+    """The T244 trace should expose the fixed pre-scale versus emitted return corridor."""
+    assert talker_core_post_t243_layer15_output_return_trace_names() == (
+        "talker_core.layer_15.output.pre_output_scale_return",
+        "talker_core.layer_15.output",
+        "talker_core.layer_16.input",
+    )
+
+
+def test_iter_talker_core_post_t243_layer15_output_return_targets_focus_t244_corridor() -> None:
+    """The T244 trace should isolate the post-sum return-path split beneath layer 15 output."""
+    targets = iter_talker_core_post_t243_layer15_output_return_trace_targets(_FakeRootModel())
+
+    assert [target.name for target in targets] == [
         "talker_core.layer_15.output",
         "talker_core.layer_16.input",
     ]

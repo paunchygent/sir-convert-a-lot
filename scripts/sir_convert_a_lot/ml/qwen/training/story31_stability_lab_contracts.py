@@ -281,6 +281,34 @@ class Story31PostT241Layer15ResidualOutputAssessment:
 
 
 @dataclass(frozen=True)
+class PostT243Layer15OutputReturnComparisonRow:
+    """Comparable pair-versus-single row outcome for the T244 return-path split."""
+
+    case_id: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    role: str
+    case_has_non_finite: bool
+    first_non_finite_talker_core_hook_tensor: str | None
+    matched_corridor_surface: str | None
+
+
+@dataclass(frozen=True)
+class Story31PostT243Layer15OutputReturnAssessment:
+    """Focused T244 assessment for the winner-specific layer-15 return path."""
+
+    stabilization_variant: str
+    target_loss_kind: str
+    target_corridor_surfaces: tuple[str, ...]
+    comparison_rows: tuple[PostT243Layer15OutputReturnComparisonRow, ...]
+    convergence_classification: str | None
+    dominant_surface: str | None
+    evidence_is_ambiguous: bool
+    ambiguity_reason: str | None
+    next_task_rule: str
+
+
+@dataclass(frozen=True)
 class Story31StabilityLabReport:
     """Machine-readable report for one Story 31 matrix run."""
 
@@ -319,6 +347,9 @@ class Story31StabilityLabReport:
     ) = None
     post_t241_layer15_residual_output_assessment: (
         Story31PostT241Layer15ResidualOutputAssessment | None
+    ) = None
+    post_t243_layer15_output_return_assessment: (
+        Story31PostT243Layer15OutputReturnAssessment | None
     ) = None
 
 

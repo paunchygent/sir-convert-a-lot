@@ -40,6 +40,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training import (
 from scripts.sir_convert_a_lot.ml.qwen.training import (
     story31_post_t241_layer15_residual_output_assessment as t243_layer15_residual_output_assessment,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training import (
+    story31_post_t243_layer15_output_return_assessment as t244_layer15_output_return_assessment,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
     DEFAULT_PILOT_BUNDLE_ROOT,
 )
@@ -178,6 +181,9 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
     t243_layer15_residual_output_assessment.validate_post_t241_layer15_residual_output_contract(
         settings
     )
+    t244_layer15_output_return_assessment.validate_post_t243_layer15_output_return_contract(
+        settings
+    )
     build_performed, image_id = prepare_qwen_image(
         _RunnerImageSettings(
             dockerfile_path=settings.dockerfile_path,
@@ -283,6 +289,12 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
         ),
         post_t241_layer15_residual_output_assessment=(
             t243_layer15_residual_output_assessment.build_post_t241_layer15_residual_output_assessment(
+                settings=settings,
+                matrix_rows=compact_matrix_rows,
+            )
+        ),
+        post_t243_layer15_output_return_assessment=(
+            t244_layer15_output_return_assessment.build_post_t243_layer15_output_return_assessment(
                 settings=settings,
                 matrix_rows=compact_matrix_rows,
             )

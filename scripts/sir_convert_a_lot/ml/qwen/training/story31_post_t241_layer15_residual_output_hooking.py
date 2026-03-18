@@ -1,10 +1,10 @@
-"""Hook helpers for the T243 layer-15 residual/output split.
+"""Hook helpers for the T243/T244 layer-15 output-path splits.
 
 Purpose:
-    Keep the T243 residual-input capture and residual-sum wrapper logic out of
-    the central hook-session module so the Story 31 backward-lineage plumbing
-    stays under the hot-path size cap while still exposing the exact
-    upstream-anchored talker-decoder seam.
+    Keep the T243 residual-path capture and the T244 pre-output-scale return
+    capture out of the central hook-session module so the Story 31
+    backward-lineage plumbing stays under the hot-path size cap while still
+    exposing the exact upstream-anchored talker-decoder seam.
 
 Relationships:
     - Imported by `story30_backward_lineage_hooks.py`.
@@ -22,8 +22,10 @@ import torch
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_post_t241_layer15_residual_output_trace_targets,
+    iter_talker_core_post_t243_layer15_output_return_trace_targets,
     resolve_talker_decoder_layer,
     talker_core_post_t241_layer15_residual_output_trace_names,
+    talker_core_post_t243_layer15_output_return_trace_names,
 )
 
 
@@ -63,9 +65,9 @@ class _TalkerDecoderLayer(Protocol):
 def build_post_t241_layer15_forward(
     *,
     attach_tensor: Callable[[str, torch.Tensor], None],
-    residual_sum_name: str,
+    attached_output_name: str,
 ) -> Callable[..., object]:
-    """Build one reversible layer-15 wrapper that exposes the raw residual sum."""
+    """Build one reversible layer-15 wrapper that exposes one live output seam."""
 
     def on_forward(
         self_module: _TalkerDecoderLayer,
@@ -97,7 +99,7 @@ def build_post_t241_layer15_forward(
         hidden_states = self_module.post_attention_layernorm(hidden_states)
         hidden_states = self_module.mlp(hidden_states)
         hidden_states = residual + hidden_states
-        attach_tensor(residual_sum_name, hidden_states)
+        attach_tensor(attached_output_name, hidden_states)
         outputs: tuple[object, ...] = (hidden_states,)
         if output_attentions:
             outputs += (self_attn_weights,)
@@ -139,6 +141,44 @@ def install_post_t241_layer15_residual_output_trace(
         layer_15,
         build_post_t241_layer15_forward(
             attach_tensor=attach_tensor,
-            residual_sum_name=residual_sum_name,
+            attached_output_name=residual_sum_name,
+        ),
+    )
+
+
+def install_post_t243_layer15_output_return_trace(
+    *,
+    model: object,
+    attach_tensor: Callable[[str, torch.Tensor], None],
+    build_forward_hook: Callable[
+        [str, Callable[[object], torch.Tensor | None]], Callable[..., None]
+    ],
+    build_forward_pre_hook: Callable[
+        [str, Callable[[object], torch.Tensor | None]], Callable[..., None]
+    ],
+    register_handle: Callable[[torch.utils.hooks.RemovableHandle], None],
+    patch_module_forward: Callable[[torch.nn.Module, Callable[..., object]], None],
+) -> None:
+    """Install the T244 return-path hooks and raw pre-scale output capture."""
+    pre_output_scale_return_name, _output_name, _ = (
+        talker_core_post_t243_layer15_output_return_trace_names()
+    )
+    for target in iter_talker_core_post_t243_layer15_output_return_trace_targets(model):
+        handle = (
+            target.module.register_forward_hook(
+                build_forward_hook(target.name, target.tensor_selector)
+            )
+            if target.hook_kind == "forward"
+            else target.module.register_forward_pre_hook(
+                build_forward_pre_hook(target.name, target.tensor_selector)
+            )
+        )
+        register_handle(handle)
+    layer_15 = resolve_talker_decoder_layer(model, 15)
+    patch_module_forward(
+        layer_15,
+        build_post_t241_layer15_forward(
+            attach_tensor=attach_tensor,
+            attached_output_name=pre_output_scale_return_name,
         ),
     )
