@@ -149,7 +149,12 @@ explicitly narrow the scope.
   - `T219` is now recorded as negative bounded evidence under
     `task219-20260317t180700z-a1`
   - `T228` is now complete as the ranked closure of that family
-  - `T229` is now the immediate next mechanism slice, followed by `T230-T232`
+  - `T229` is now complete as the narrowed rerun under
+    `task229-20260318t064712z-a1`
+  - the target `sub_talker_loss` family localizes to
+    `talker_core.layer_16.input_layernorm`
+  - `T230` is now the immediate bounded normalization-entry micro-family
+    slice, followed by `T231-T232`
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate

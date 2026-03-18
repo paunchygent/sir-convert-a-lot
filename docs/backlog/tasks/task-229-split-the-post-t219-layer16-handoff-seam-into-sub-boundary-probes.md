@@ -1,9 +1,9 @@
 ---
-id: 'task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes'
-title: 'Split the post-T219 layer16 handoff seam into sub-boundary probes'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes
+title: Split the post-T219 layer16 handoff seam into sub-boundary probes
+type: task
+status: completed
+priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
 related:
@@ -19,6 +19,7 @@ labels:
   - diagnostics
   - follow-on
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -51,10 +52,10 @@ micro-boundary instead of another coarse family.
 
 - [x] One post-`T219` sub-boundary probe profile exists for the shifted
   layer-16 handoff seam.
-- [ ] One comparison table identifies the earliest failing sub-boundary across
+- [x] One comparison table identifies the earliest failing sub-boundary across
   the pair and single-row checks, or records that the evidence is still
   ambiguous.
-- [ ] One explicit shaping rule states which micro-family `T230` is allowed to
+- [x] One explicit shaping rule states which micro-family `T230` is allowed to
   test next.
 
 ## Implementation Status
@@ -77,25 +78,38 @@ micro-boundary instead of another coarse family.
   - `layer_16.input_layernorm` -> pre-`input_layernorm`
     normalization-entry family only
 
-## Current Blocker
+## Result
 
-- The live Hemma rerun was attempted under:
+- Truthful narrowed rerun:
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1`
-- That attached run failed before producing `results.json` because the remote
-  Hemma checkout still exposes the older `backward_lineage_probe.py` parser and
-  therefore rejected:
-  `--hook-profile talker_core_handoff_sub_boundary`
-- `T229` remains in progress until the updated local checkout is synced to
-  Hemma and the narrowed probe is rerun truthfully on the ranked `T219` winner.
+- Surface:
+  `pdm run qwen-story31-stability-lab run --hook-profile talker_core_handoff_sub_boundary`
+- Fixed state vector:
+  - bundle root:
+    `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle`
+  - source lines: `13,4`
+  - text embedding mask policy: `text_span_only`
+  - stabilization variant:
+    `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
+- Unambiguous first sub-boundary for the target `sub_talker_loss` family:
+  - pair case: `talker_core.layer_16.input_layernorm`
+  - line `13`: `talker_core.layer_16.input_layernorm`
+  - line `4`: `talker_core.layer_16.input_layernorm`
+- The narrowed chain did not localize any earlier break at:
+  - `talker_core.layer_16.mlp.down_proj`
+  - `talker_core.layer_16.output`
+  - `talker_core.layer_16.residual_handoff`
+- `T230` is therefore constrained to one pre-`input_layernorm`
+  normalization-entry micro-family only.
 
 ## Acceptance Criteria
 
 - [x] The task does not mix diagnosis with new stabilization search.
-- [ ] The probe holds the same bundle, batching, seed, mask, and assembly
+- [x] The probe holds the same bundle, batching, seed, mask, and assembly
   posture fixed while the seam is being split.
-- [ ] The output identifies one earliest sub-boundary or explicitly documents
+- [x] The output identifies one earliest sub-boundary or explicitly documents
   why the evidence is ambiguous.
-- [ ] `T230` is constrained by this result to one diagnosed micro-family only.
+- [x] `T230` is constrained by this result to one diagnosed micro-family only.
 
 ## Validation
 
@@ -105,10 +119,10 @@ micro-boundary instead of another coarse family.
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [x] `pdm run qwen-story31-stability-lab --help`
-- [ ] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
+- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
 
 ## Checklist
 
 - [x] Implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated

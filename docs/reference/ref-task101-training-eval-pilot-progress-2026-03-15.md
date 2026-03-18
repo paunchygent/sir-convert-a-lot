@@ -4,7 +4,7 @@ id: REF-task101-training-eval-pilot-progress-2026-03-15
 title: Task 101 Training/Eval Pilot Progress Ledger (2026-03-15)
 status: active
 created: 2026-03-15
-updated: 2026-03-17
+updated: 2026-03-18
 owners:
   - platform
 tags:
@@ -153,8 +153,12 @@ work.
   - `T219` is now recorded as negative bounded evidence under
     `task219-20260317t180700z-a1`
   - `T228` is now complete as the ranked closure of that family
-  - `T229` is now the immediate next bounded mechanism slice
-  - `T230-T232` are the ordered contingent follow-on ladder after `T229`
+  - `T229` is now complete as the narrowed sub-boundary rerun under
+    `task229-20260318t064712z-a1`
+  - the target `sub_talker_loss` family localizes to
+    `talker_core.layer_16.input_layernorm`
+  - `T230` is now the immediate bounded normalization-entry micro-family slice
+  - `T231-T232` remain the ordered follow-on ladder after `T230`
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

@@ -257,10 +257,12 @@ def build_report_markdown(report: Story31StabilityLabReport) -> str:
                 "",
                 f"- Assessed variant: `{report.sub_boundary_assessment.stabilization_variant}`",
                 f"- Target loss kind: `{report.sub_boundary_assessment.target_loss_kind}`",
-                f"- Earliest sub-boundary: `{report.sub_boundary_assessment.earliest_sub_boundary or '-'}`",
+                "- Earliest sub-boundary: "
+                f"`{report.sub_boundary_assessment.earliest_sub_boundary or '-'}`",
                 f"- Evidence ambiguous: `{report.sub_boundary_assessment.evidence_is_ambiguous}`",
                 f"- Ambiguity reason: `{report.sub_boundary_assessment.ambiguity_reason or '-'}`",
-                f"- Next micro-family rule: `{report.sub_boundary_assessment.next_micro_family_rule}`",
+                "- Next micro-family rule: "
+                f"`{report.sub_boundary_assessment.next_micro_family_rule}`",
                 "",
                 "| Case | Role | Non-finite | Talker Hook | Matched Sub-boundary |",
                 "| --- | --- | --- | --- | --- |",

@@ -1,9 +1,9 @@
 ---
-id: 'task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result'
-title: 'Make the Story 31 lane decision after the post-T219 bounded promotion result'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result
+title: Make the Story 31 lane decision after the post-T219 bounded promotion result
+type: task
+status: proposed
+priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
 related:
@@ -19,6 +19,7 @@ labels:
   - governance
   - decision
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

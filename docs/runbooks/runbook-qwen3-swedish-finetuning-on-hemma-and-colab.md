@@ -4,7 +4,7 @@ id: RUN-qwen3-swedish-finetuning-on-hemma-and-colab
 title: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 status: active
 created: 2026-03-08
-updated: 2026-03-17
+updated: 2026-03-18
 owners:
   - platform
 system: hemma.hule.education
@@ -403,7 +403,12 @@ For mechanism questions:
 - `T219` is now recorded as negative bounded evidence under
   `task219-20260317t180700z-a1`
 - `T228` is now complete as the ranked closure of that family
-- `T229` is now the immediate next mechanism action, followed by `T230-T232`
+- `T229` is now complete as the narrowed rerun under
+  `task229-20260318t064712z-a1`
+- the target `sub_talker_loss` family localizes to
+  `talker_core.layer_16.input_layernorm`
+- `T230` is now the immediate bounded normalization-entry micro-family action,
+  followed by `T231-T232`
 
 For recovery questions:
 

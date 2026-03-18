@@ -1,9 +1,9 @@
 ---
-id: 'task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family'
-title: 'Define the exact step-1 instability parity contract for the recreated historical-control failure family'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family
+title: Define the exact step-1 instability parity contract for the recreated historical-control failure family
+type: task
+status: completed
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -21,6 +21,7 @@ labels:
   - parity
   - trainer-runtime
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

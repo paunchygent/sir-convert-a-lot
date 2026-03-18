@@ -28,13 +28,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_bundle 
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab import main
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_contracts import (
     StabilityLabMatrixRow,
-    Story31SubBoundaryAssessment,
     Story31StabilityLabReport,
     Story31StabilityLabSettings,
+    Story31SubBoundaryAssessment,
     SubBoundaryComparisonRow,
-)
-from scripts.sir_convert_a_lot.ml.qwen.training.story31_sub_boundary_assessment import (
-    build_sub_boundary_assessment,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_runner import (
     DEFAULT_HOOK_PROFILE,
@@ -47,6 +44,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_runner imp
     parse_stabilization_variants,
     persist_report,
     run_stability_lab,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_sub_boundary_assessment import (
+    build_sub_boundary_assessment,
+    validate_hook_profile_variant_contract,
 )
 
 
@@ -141,10 +142,10 @@ def test_story31_stability_lab_cli_runs_and_persists_compact_artifacts(
             effective_output_root=tmp_path.as_posix(),
             used_output_root_home_mount=False,
             variant_report_paths={"off": (tmp_path / "variant-reports" / "off.json").as_posix()},
-        probe_commands={"off": ["sudo", "-n", "docker", "run"]},
-        matrix_rows=(),
-        sub_boundary_assessment=None,
-    )
+            probe_commands={"off": ["sudo", "-n", "docker", "run"]},
+            matrix_rows=(),
+            sub_boundary_assessment=None,
+        )
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab.run_stability_lab",
@@ -374,3 +375,29 @@ def test_build_sub_boundary_assessment_constrains_t230_to_one_micro_family() -> 
             "T230 may test one pre-input-layernorm normalization-entry micro-family only."
         ),
     )
+
+
+def test_validate_hook_profile_variant_contract_allows_t230_micro_family() -> None:
+    """The narrowed handoff profile should admit the exact diagnosed T230 family."""
+    settings = Story31StabilityLabSettings(
+        output_root=Path("/tmp/story31"),
+        dockerfile_path=Path("Dockerfile"),
+        image="test-image",
+        model_id="test-model",
+        hf_cache_dir=Path("/tmp/hf"),
+        hf_cache_home_mount=Path("/tmp/hf-home"),
+        output_root_home_mount_base=DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE,
+        source_bundle_root=Path("/tmp/bundle"),
+        manifest_family=DEFAULT_MANIFEST_FAMILY,
+        source_lines=(13, 4),
+        text_embedding_mask_policy=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+        hook_profile="talker_core_handoff_sub_boundary",
+        stabilization_variants=(
+            "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5",
+            "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e3",
+            "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e2",
+        ),
+        build_image=False,
+    )
+
+    validate_hook_profile_variant_contract(settings)

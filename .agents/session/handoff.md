@@ -23,8 +23,11 @@ Story 32 is now the operator-facing mental model:
   - `T226` complete: committed parity-probe surface delivered
   - `T219` is now recorded as completed negative evidence without promotion
   - `T228` is now complete as the ranked closure of `task219-20260317t180700z-a1`
-  - `T229` now has a local narrowed probe surface, but the live Hemma rerun is
-    blocked until the remote checkout pulls `talker_core_handoff_sub_boundary`
+  - `T229` is now complete as the narrowed rerun under
+    `task229-20260318t064712z-a1`
+  - the target `sub_talker_loss` family localizes to
+    `talker_core.layer_16.input_layernorm`
+  - `T230` is now the active bounded normalization-entry micro-family slice
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -73,8 +76,8 @@ Story 28 remains operating policy:
 - New contingent follow-on package now exists for the case where `T219` closes
   negative, and `T219` is now backfilled as already failed:
   - `T228`: complete; close the failed handoff family with one ranked matrix
-  - `T229`: split the shifted layer-16 seam into sub-boundary probes
-  - `T230`: test one diagnosed micro-family only
+  - `T229`: complete; localize the shifted seam to one earliest sub-boundary
+  - `T230`: test the diagnosed normalization-entry micro-family only
   - `T231`: freeze the bounded promotion contract before any governed proof
   - `T232`: make one Story 31 lane decision from the bounded promotion result
 
@@ -160,8 +163,11 @@ Story 28 remains operating policy:
    `first_divergence_classification = no_meaningful_divergence_found`.
 1. Keep `T219` recorded as negative bounded evidence without promotion.
 1. Keep `T228` complete as the ranked closure of `task219-20260317t180700z-a1`.
-1. Sync the current checkout to Hemma, then rerun `T229` under
+1. Keep `T229` recorded as the truthful narrowed rerun under
    `task229-20260318t064712z-a1`.
+1. Run `T230` next as the bounded pre-`input_layernorm`
+   normalization-entry micro-family:
+   ranked `T219` baseline plus the `1e3` and `1e2` entry-rescale variants.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion

@@ -22,8 +22,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
     LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
     TALKER_CORE_STABILIZATION_OFF,
+    LayerInputLayernormEntryRescale,
     LayerOutputAttenuation,
     apply_talker_core_stabilization,
     resolve_talker_core_stabilization_spec,
@@ -47,6 +50,12 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     stronger_handoff_spec = resolve_talker_core_stabilization_spec(
         LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5
     )
+    mild_norm_entry_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3
+    )
+    strong_norm_entry_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2
+    )
 
     assert off_spec.target_layers == ()
     assert off_spec.force_fp32_gated_product is False
@@ -67,6 +76,12 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     assert stronger_handoff_spec.layer_output_attenuations == (
         LayerOutputAttenuation(layer_index=16, scale=0.25),
         LayerOutputAttenuation(layer_index=15, scale=0.5),
+    )
+    assert mild_norm_entry_spec.input_layernorm_entry_rescales == (
+        LayerInputLayernormEntryRescale(layer_index=16, absmax_cap=1.0e3),
+    )
+    assert strong_norm_entry_spec.input_layernorm_entry_rescales == (
+        LayerInputLayernormEntryRescale(layer_index=16, absmax_cap=1.0e2),
     )
 
 
@@ -101,9 +116,7 @@ def test_apply_talker_core_stabilization_patches_layer15_output_and_restores_for
     assert "forward" not in _layer(model, 16).__dict__
 
 
-def test_apply_talker_core_stabilization_patches_layer16_and_layer15_output_for_handoff_family() -> (
-    None
-):
+def test_apply_talker_core_stabilization_patches_shifted_handoff_family() -> None:
     """The third family should patch both sides of the shifted layer-16 handoff seam."""
     model = _fake_model(layer_count=18)
     assert "forward" not in _layer(model, 15).__dict__
@@ -175,6 +188,38 @@ def test_apply_talker_core_stabilization_attenuates_layer16_handoff_and_layer15_
     assert torch.equal(layer15_output, base_layer15_output)
 
 
+def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_entry() -> None:
+    """The T230 family should patch only the targeted layer-16 input-layernorm entry."""
+    model = _fake_model(layer_count=18)
+    assert "forward" not in _layer(model, 16).input_layernorm.__dict__
+    assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+    with apply_talker_core_stabilization(
+        model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
+    ):
+        assert "forward" in _layer(model, 16).input_layernorm.__dict__
+        assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+    assert "forward" not in _layer(model, 16).input_layernorm.__dict__
+    assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+
+def test_apply_talker_core_stabilization_rescales_layer16_input_layernorm_entry() -> None:
+    """The T230 family should bound only the residual stream entering layer-16 input-layernorm."""
+    model = _fake_model(layer_count=18)
+    sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
+
+    with apply_talker_core_stabilization(
+        model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
+    ):
+        layer16_input_layernorm_output = _layer(model, 16).input_layernorm(sample)
+
+    assert layer16_input_layernorm_output.dtype == torch.bfloat16
+    assert float(layer16_input_layernorm_output.abs().max().item()) <= 128.0
+
+
 class _FakeIdentityModule(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x
@@ -198,6 +243,7 @@ class _FakeTalkerMlp(torch.nn.Module):
 class _FakeTalkerLayer(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
+        self.input_layernorm = _FakeIdentityModule()
         self.mlp = _FakeTalkerMlp()
 
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor]:

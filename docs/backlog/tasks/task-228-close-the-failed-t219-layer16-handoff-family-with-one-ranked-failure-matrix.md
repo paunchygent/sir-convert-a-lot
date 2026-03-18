@@ -1,9 +1,9 @@
 ---
-id: 'task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix'
-title: 'Close the failed T219 layer16 handoff family with one ranked failure matrix'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix
+title: Close the failed T219 layer16 handoff family with one ranked failure matrix
+type: task
+status: completed
+priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
 related:
@@ -20,6 +20,7 @@ labels:
   - stabilization
   - follow-on
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -83,7 +84,7 @@ Truthful ranked closure of the family:
      `talker_core.layer_16.input_layernorm`
    - pair `main_loss` / `combined_loss` still failed at
      `talker_core.layer_16.output`
-2. `layer16_gated_fp32_rescale_1e3_layer16_out_0p25_layer15_out_0p5`
+1. `layer16_gated_fp32_rescale_1e3_layer16_out_0p25_layer15_out_0p5`
    - second-best negative result
    - pair `main_loss` / `combined_loss` also failed at
      `talker_core.layer_16.output`
@@ -91,7 +92,7 @@ Truthful ranked closure of the family:
      `talker_core.layer_16.input_layernorm`
    - but the pair `sub_talker_loss` seam regressed to
      `talker_core.layer_15.output`
-3. `off`
+1. `off`
    - baseline negative family
    - pair `main_loss` / `combined_loss` first broke at
      `talker_core.layer_16.mlp.gated_product`

@@ -1,9 +1,9 @@
 ---
-id: 'task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates'
-title: 'Trace and remediate the first verified finite-to-non-finite divergence before resuming Story 31 stabilizer candidates'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates
+title: Trace and remediate the first verified finite-to-non-finite divergence before resuming Story 31 stabilizer candidates
+type: task
+status: proposed
+priority: high
 created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
@@ -20,6 +20,7 @@ labels:
   - remediation
   - trainer-runtime
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

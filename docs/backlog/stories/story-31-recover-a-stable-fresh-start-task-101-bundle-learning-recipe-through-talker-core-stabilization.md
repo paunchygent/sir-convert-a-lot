@@ -301,9 +301,15 @@ the governing success criterion for future restart work.
   - `layer16_gated_fp32_rescale_1e3_layer16_out_0p25_layer15_out_0p5` is the
     second-best negative signal
   - `off` remains the baseline negative family
+- `T229` is now complete as the narrowed sub-boundary rerun:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1`
+  - the target `sub_talker_loss` family localizes consistently to
+    `talker_core.layer_16.input_layernorm`
+  - Story 31 is therefore constrained to one pre-`input_layernorm`
+    normalization-entry micro-family only
 - the active follow-on ladder is now:
-  - `T229`: split the shifted layer-16 seam into sub-boundary probes
-  - `T230`: test one diagnosed micro-family only
+  - `T230`: test the diagnosed normalization-entry micro-family only
   - `T231`: pin the bounded promotion contract before any governed proof
   - `T232`: make one lane decision from the bounded promotion result
 - `T217` remains the blocked recovery lane:

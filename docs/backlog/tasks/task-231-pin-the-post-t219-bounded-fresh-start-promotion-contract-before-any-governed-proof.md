@@ -1,9 +1,9 @@
 ---
-id: 'task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof'
-title: 'Pin the post-T219 bounded fresh-start promotion contract before any governed proof'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof
+title: Pin the post-T219 bounded fresh-start promotion contract before any governed proof
+type: task
+status: proposed
+priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
 related:
@@ -19,6 +19,7 @@ labels:
   - promotion
   - governance
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

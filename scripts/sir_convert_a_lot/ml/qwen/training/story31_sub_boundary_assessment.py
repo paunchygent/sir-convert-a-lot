@@ -15,14 +15,16 @@ from __future__ import annotations
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization import (
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_hooks import (
     TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_contracts import (
     StabilityLabMatrixRow,
-    Story31SubBoundaryAssessment,
     Story31StabilityLabSettings,
+    Story31SubBoundaryAssessment,
     SubBoundaryComparisonRow,
 )
 
@@ -34,21 +36,35 @@ T229_SUB_BOUNDARY_TARGETS = (
     "talker_core.layer_16.residual_handoff",
     "talker_core.layer_16.input_layernorm",
 )
+T230_ALLOWED_VARIANTS = (
+    T229_REQUIRED_VARIANT,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
+)
 
 
 def validate_hook_profile_variant_contract(settings: Story31StabilityLabSettings) -> None:
-    """Reject mixed-variant T229 runs before the Hemma probe starts."""
+    """Reject unsupported narrowed-profile variant families before the Hemma probe starts."""
     if settings.hook_profile != TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE:
         return
-    if len(settings.stabilization_variants) != 1:
-        raise SystemExit(
-            "Story 31 handoff sub-boundary probing requires exactly one stabilization variant."
-        )
-    if settings.stabilization_variants[0] != T229_REQUIRED_VARIANT:
+    if settings.stabilization_variants == (T229_REQUIRED_VARIANT,):
+        return
+    if (
+        2 <= len(settings.stabilization_variants) <= len(T230_ALLOWED_VARIANTS)
+        and settings.stabilization_variants[0] == T229_REQUIRED_VARIANT
+        and len(set(settings.stabilization_variants)) == len(settings.stabilization_variants)
+        and all(variant in T230_ALLOWED_VARIANTS for variant in settings.stabilization_variants)
+    ):
+        return
+    if len(settings.stabilization_variants) == 1:
         raise SystemExit(
             "Story 31 handoff sub-boundary probing requires the ranked T219 winner "
             f"`{T229_REQUIRED_VARIANT}`."
         )
+    raise SystemExit(
+        "Story 31 handoff sub-boundary probing supports only the ranked T219 winner "
+        "plus the bounded T230 normalization-entry micro-family."
+    )
 
 
 def build_sub_boundary_assessment(
@@ -58,6 +74,8 @@ def build_sub_boundary_assessment(
 ) -> Story31SubBoundaryAssessment | None:
     """Build the focused T229 assessment when the narrowed hook profile is active."""
     if settings.hook_profile != TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE:
+        return None
+    if settings.stabilization_variants != (T229_REQUIRED_VARIANT,):
         return None
     variant = settings.stabilization_variants[0]
     comparison_rows = _comparison_rows_for_sub_boundary_assessment(
@@ -79,7 +97,9 @@ def build_sub_boundary_assessment(
             "One or more required T229 cases failed outside the committed sub-boundary chain."
         )
     else:
-        ambiguity_reason = "Pair and single-row sub-talker cases disagreed on the earliest sub-boundary."
+        ambiguity_reason = (
+            "Pair and single-row sub-talker cases disagreed on the earliest sub-boundary."
+        )
     return Story31SubBoundaryAssessment(
         stabilization_variant=variant,
         target_loss_kind=T229_TARGET_LOSS_KIND,

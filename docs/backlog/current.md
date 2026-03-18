@@ -47,10 +47,10 @@ The current experiment posture is:
   - live parity result under `task226-20260317t224307Z`: `no_meaningful_divergence_found`
   - `T219` now stands as recorded negative unpromoted evidence
   - `T228` complete: ranked closure recorded from `task219-20260317t180700z-a1`
-  - `T229` local surface is now implemented and validated; the live Hemma
-    rerun is blocked until the remote checkout pulls the new hook profile
-  - `T227` is now contingent only if a later parity/runtime divergence is
-    actually verified
+  - `T229` complete: `task229-20260318t064712z-a1` localized `sub_talker_loss`
+    to `talker_core.layer_16.input_layernorm`
+  - `T230` is now the active bounded normalization-entry micro-family slice
+  - `T227` is now contingent only if a later parity/runtime divergence is verified
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -178,16 +178,17 @@ Story 28 is now operating policy:
 - 2026-03-18:
   - `T219` was backfilled as already-failed bounded Story 31 evidence with no
     promoted variant; `T228` closed that family from `task219-20260317t180700z-a1`,
-    and `T229-T232` now define the active post-`T219` mechanism ladder.
+    `T229` then closed with an unambiguous earliest sub-boundary at
+    `talker_core.layer_16.input_layernorm`, and `T230-T232` now define the
+    active post-`T229` mechanism ladder.
 
 ## Next Actions
 
 - Keep the preserved Task 101 lane on the restored no-projection fine-tuning
   graph; do not reopen the projection-enabled experiment.
-- Keep `state-step-00001406` as the canonical RCA checkpoint for preserved-lane
-  history.
-- Keep `T221` classified as provenance evidence:
-  it is stronger than `T220`, but it is not a mechanism or recovery result.
+- Keep `state-step-00001406` as the canonical RCA checkpoint for preserved-lane history.
+- Keep `T221` classified as provenance evidence: it is stronger than `T220`,
+  but it is not a mechanism or recovery result.
 - Continue through Story 31 as the mechanism lane:
   - `T225` is complete as the exact parity contract for the recreated early
     failure family
@@ -197,23 +198,22 @@ Story 28 is now operating policy:
     `no_meaningful_divergence_found`
   - `T219` is now recorded as negative bounded evidence without promotion
   - `T228` is now complete as the ranked closure of that failed family
-  - `T229` now has a local narrowed probe surface, but its live Hemma rerun is blocked until the remote checkout pulls `talker_core_handoff_sub_boundary`
-  - `T230-T232` remain the ordered contingent ladder after the truthful `T229`
-    rerun closes
+  - `T229` is now complete as the truthful narrowed rerun under `task229-20260318t064712z-a1` and
+    constrains Story 31 to the pre-`input_layernorm` normalization-entry family only
+  - `T230` is now the immediate bounded mechanism slice, followed by `T231` and `T232`
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal
     claims
-- Keep `T217` blocked as the recovery lane until a mechanism candidate passes
-  the local promotion gate and `T231` freezes the bounded promotion contract.
+- Keep `T217` blocked as the recovery lane until a mechanism candidate passes the
+  local promotion gate and `T231` freezes the bounded promotion contract.
 - Keep Story 29 and Story 30 proof surfaces as historical-only references, not
   as next-step operational surfaces.
 - Keep the Hemma scratch-governance surfaces active and available:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-- Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate for
-  Qwen ML iteration before broader repo validation.
-- Keep Task 101 operator truth in
+- Use `pdm run test-ml` and `pdm run typecheck-ml` as the fast local gate for Qwen ML iteration
+  before broader repo validation, and keep Task 101 operator truth in
   `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
 - Keep new Qwen control-plane/runtime work inside Story 28 boundaries
   (`RULE-095`) and new experiment interpretation inside Story 32 governance
