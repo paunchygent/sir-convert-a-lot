@@ -65,11 +65,13 @@ Story 32 is now the operator-facing mental model:
     `probe` confirms Docker must use
     `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the
     effective bind roots
-  - `T243` is now the active diagnosis-only mechanism slice
-  - `T243` must split the official `Qwen3TTSTalkerDecoderLayer.forward`
-    residual path itself before any new stabilizer family is considered:
-    saved residual addend -> residual sum -> returned `layer_15.output`,
-    with the MLP return path already excluded by `T241`
+  - `T243` is now complete under `task243-20260318t190832z-a1`
+  - all three normative `sub_talker_loss` rows first broke at
+    `talker_core.layer_15.output`, so the classification is
+    `converged_layer15_output_return`
+  - `T244` is now the active diagnosis-only mechanism slice
+  - `T244` must split the post-sum `layer_15.output` return path itself
+    before any new stabilizer family is considered
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -133,8 +135,9 @@ Story 28 remains operating policy:
   - `T240`: complete; confirmed `talker_core.layer_15.output` as the first
     converged downstream seam
   - `T241`: complete; the converged seam stayed at `talker_core.layer_15.output`
-  - `T243`: split the post-`T241` layer-15 residual/output-formation seam in
-    the real upstream `qwen_tts` talker decoder path
+  - `T243`: complete; `task243-20260318t190832z-a1` kept all three normative
+    `sub_talker_loss` rows at the returned `layer_15.output`
+  - `T244`: split the post-sum `layer_15.output` return path itself
 
 ## Latest Task 101 Truth
 
@@ -232,9 +235,10 @@ Story 28 remains operating policy:
    `task235-20260318t140352z-a1`.
 1. Keep `T236` recorded as the truthful row-local classification rerun under
    `task236-20260318t145434z-a1`.
-1. Run `T243` next as one diagnosis-only split of the post-`T241`
-   `talker_core.layer_15.output` seam into the exact upstream talker-decoder
-   residual path: saved residual addend, residual sum, and returned output.
+1. Keep `T243` recorded as the truthful residual/output split under
+   `task243-20260318t190832z-a1`.
+1. Run `T244` next as one diagnosis-only split of the post-sum
+   `talker_core.layer_15.output` return path under the fixed winner.
 1. Before new Hemma Qwen runs, use:
    `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
    and

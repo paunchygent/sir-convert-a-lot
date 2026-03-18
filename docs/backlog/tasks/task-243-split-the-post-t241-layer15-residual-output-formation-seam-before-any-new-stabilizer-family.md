@@ -2,7 +2,7 @@
 id: task-243-split-the-post-t241-layer15-residual-output-formation-seam-before-any-new-stabilizer-family
 title: Split the post-T241 layer15 residual-output formation seam before any new stabilizer family
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -99,37 +99,62 @@ before any new stabilizer family is considered.
   committed corridor, reverts upstream, or stays finite.
 - Keep `T217` blocked in every branch.
 
+## Result
+
+- Live Hemma rerun:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task243-20260318t190832z-a1`
+- Fixed variant:
+  `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
+- Resolved classification:
+  `converged_layer15_output_return`
+- Dominant surface:
+  `talker_core.layer_15.output`
+- Normative `sub_talker_loss` cases:
+  - `pair-sub-talker-loss` first broke at `talker_core.layer_15.output`
+  - `line-13-sub-talker-loss` first broke at `talker_core.layer_15.output`
+  - `line-4-sub-talker-loss` first broke at `talker_core.layer_15.output`
+- Interpretation:
+  - the converged seam does not first break at the saved residual addend
+  - the converged seam does not first break at the raw residual sum
+  - the next truthful diagnosis-only slice is therefore `T244`, which must
+    split the post-sum return path itself before any new stabilizer family
+    is considered
+
 ## Deliverables
 
-- [ ] One diagnosis-only layer-15 residual/output-formation hook profile
+- [x] One diagnosis-only layer-15 residual/output-formation hook profile
   exists for the fixed T241 winner.
-- [ ] One machine-readable assessment payload classifies the narrowed
+- [x] One machine-readable assessment payload classifies the narrowed
   layer-15 output-formation seam using the upstream-anchored residual-input /
   residual-sum / output-return semantics.
-- [ ] One truthful Hemma rerun records the converged residual/output split
+- [x] One truthful Hemma rerun records the converged residual/output split
   and the next diagnosis-only rule.
 
 ## Acceptance Criteria
 
-- [ ] The task uses only the winning T237/T241 member and does not compare
+- [x] The task uses only the winning T237/T241 member and does not compare
   baseline or alternate caps.
-- [ ] The task keeps the full Story 32 state vector fixed apart from the
+- [x] The task keeps the full Story 32 state vector fixed apart from the
   narrowed layer-15 residual/output hook profile.
-- [ ] The result ends with exactly one diagnosis classification and one next
+- [x] The result ends with exactly one diagnosis classification and one next
   diagnosis rule.
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task243-<timestamp>-a1 --skip-build --hook-profile <post-t241-layer15-residual-output-split-profile> --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_hooks.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t241_layer15_residual_output_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run qwen-story31-stability-lab --help`
+- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task243-20260318t190832z-a1 --skip-build --hook-profile talker_core_post_t241_layer15_residual_output --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

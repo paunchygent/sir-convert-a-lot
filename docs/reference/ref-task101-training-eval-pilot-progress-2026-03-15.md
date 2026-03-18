@@ -200,11 +200,14 @@ work.
     `/srv/scratch/...` stayed canonical storage truth while Docker used the
     effective home-backed cache/output roots under
     `/home/paunchygent/.data/sir-convert-a-lot/`
-  - `T243` is now the immediate diagnosis-only next step and must split the
-    official `Qwen3TTSTalkerDecoderLayer.forward` residual path before any
-    new stabilizer family is considered:
-    saved residual addend -> residual sum -> returned `layer_15.output`,
-    with the MLP return path already excluded by `T241`
+  - `T243` is now complete as the residual/output-formation split under
+    `task243-20260318t190832z-a1`
+  - all three normative `sub_talker_loss` rows first broke at
+    `talker_core.layer_15.output`, so the classification is
+    `converged_layer15_output_return`
+  - `T244` is now the immediate diagnosis-only next step and must split the
+    post-sum `layer_15.output` return path itself before any new stabilizer
+    family is considered
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

@@ -191,11 +191,13 @@ explicitly narrow the scope.
     `probe` confirms Docker must use
     `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the
     effective bind roots
-  - `T243` is now the immediate diagnosis-only mechanism slice
-  - `T243` must split the official `Qwen3TTSTalkerDecoderLayer.forward`
-    residual path itself before any new stabilizer family is considered:
-    saved residual addend -> residual sum -> returned `layer_15.output`,
-    with the MLP return path already excluded by `T241`
+  - `T243` is now complete under `task243-20260318t190832z-a1`
+  - all three normative `sub_talker_loss` rows first broke at
+    `talker_core.layer_15.output`, so the classification is
+    `converged_layer15_output_return`
+  - `T244` is now the immediate diagnosis-only mechanism slice
+  - `T244` must split the post-sum `layer_15.output` return path itself
+    before any new stabilizer family is considered
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate

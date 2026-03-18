@@ -100,7 +100,7 @@ This story is intentionally split into two lanes:
   - `T221` is the provenance surface
   - `T225-T227` are the next mechanism slice package
   - `T219` is now recorded as completed negative bounded stabilizer evidence
-  - `T228-T243` now define the active next mechanism ladder
+  - `T228-T244` now define the active next mechanism ladder
   - `T217` is the blocked recovery surface
 
 ## Reuse Plan
@@ -188,6 +188,10 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-235-resolve-the-post-t234-sub-talker-loss-disagreement-between-layer16-input-layernorm-and-layer15-output.md`
 1. `docs/backlog/tasks/task-236-resolve-the-post-t235-line4-row-local-outlier-before-claiming-a-generic-layer15-output-seam.md`
 1. `docs/backlog/tasks/task-237-test-one-post-t236-micro-family-against-the-first-verified-dominant-sub-talker-outlier-seam.md`
+1. `docs/backlog/tasks/task-240-split-the-post-t237-downstream-convergence-seam-beneath-layer15-output-before-any-promotion-discussion.md`
+1. `docs/backlog/tasks/task-241-split-the-post-t240-layer15-output-seam-into-residual-output-formation-sub-boundaries-before-any-new-stabilizer-family.md`
+1. `docs/backlog/tasks/task-243-split-the-post-t241-layer15-residual-output-formation-seam-before-any-new-stabilizer-family.md`
+1. `docs/backlog/tasks/task-244-split-the-post-t243-layer15-output-return-path-before-any-new-stabilizer-family.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
 ## Checklist
@@ -366,8 +370,10 @@ the governing success criterion for future restart work.
     at `talker_core.layer_15.output`
   - `T241`: complete; `task241-20260318t175714z-a1` kept all three normative
     `sub_talker_loss` rows at `talker_core.layer_15.output`
-  - `T243`: split the post-`T241` layer-15 residual/output-formation seam in
-    the official `Qwen3TTSTalkerDecoderLayer.forward` residual path
+  - `T243`: complete; `task243-20260318t190832z-a1` proved the converged seam
+    is the returned `layer_15.output`
+  - `T244`: split the post-sum `layer_15.output` return path itself before
+    any new stabilizer family
 - `T217` remains the blocked recovery lane:
   it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
