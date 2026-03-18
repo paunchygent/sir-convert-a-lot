@@ -308,13 +308,25 @@ the governing success criterion for future restart work.
     `talker_core.layer_16.input_layernorm`
   - Story 31 is therefore constrained to one pre-`input_layernorm`
     normalization-entry micro-family only
-- the active follow-on ladder is now:
-  - `T230`: test the diagnosed normalization-entry micro-family only
-  - `T231`: pin the bounded promotion contract before any governed proof
-  - `T232`: make one lane decision from the bounded promotion result
+- `T230` is now complete as a negative bounded rerun:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1`
+  - both entry-rescale variants reproduced the same failure matrix as the
+    ranked baseline
+  - no local winner earned promotion consideration
+- `T231` is now complete as the explicit no-winner promotion decision:
+  - no bounded fresh-start promotion contract is minted
+  - `T217` remains blocked
+- `T232` is now complete as the lane decision:
+  - Story 31 stays in `mechanism`
+  - the failed normalization-entry family becomes historical mechanism
+    evidence only
+  - `T233` opens the next localized question
+- the active follow-on slice is now:
+  - `T233`: split the post-`T230` `layer16.input_layernorm` seam into
+    normalization-internal probes
 - `T217` remains the blocked recovery lane:
-  it should not launch until the mechanism lane produces a promoted candidate
-  and `T231` freezes the bounded promotion contract.
+  it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.

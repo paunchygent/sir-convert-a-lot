@@ -2,7 +2,7 @@
 id: task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary
 title: Test one diagnosed post-T219 micro-family against the first verified layer16 sub-boundary
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -70,37 +70,61 @@ launching another mixed stabilizer sweep.
 - Promotion into a bounded fresh-start proof is still governed by `T231`;
   `T230` only decides whether a local winner exists.
 
+## Result
+
+- Truthful bounded rerun:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1`
+- Compared family:
+  - baseline:
+    `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
+  - mild entry rescale:
+    `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e3`
+  - strong entry rescale:
+    `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e2`
+- Outcome: no local winner.
+- All three variants reproduced the same failure matrix:
+  - pair and both single-row `sub_talker_loss` cases still first broke at
+    `talker_core.layer_16.input_layernorm`
+  - pair and both single-row `main_loss` / `combined_loss` cases still first
+    broke at `talker_core.layer_16.output`
+  - gradient RCA remained `input_text_embedding.grad`
+  - parameter RCA remained `text_embedding.weight.grad`
+- Interpretation:
+  bounded entry-rescaling at `1e3` and `1e2` does not extend the finite window,
+  does not move the earliest verified `sub_talker_loss` seam, and does not earn
+  bounded promotion consideration.
+
 ## Deliverables
 
-- [ ] One diagnosed micro-family is registered in the Story 31 lab.
-- [ ] One compact result matrix compares the fixed ranked-`T219` baseline
+- [x] One diagnosed micro-family is registered in the Story 31 lab.
+- [x] One compact result matrix compares the fixed ranked-`T219` baseline
   against at most two normalization-entry micro-family variants.
-- [ ] One explicit outcome states whether a local winner exists for promotion
+- [x] One explicit outcome states whether a local winner exists for promotion
   work or whether the lane remains negative.
 
 ## Acceptance Criteria
 
-- [ ] The task tests one diagnosed causal idea only; it does not mix residual,
+- [x] The task tests one diagnosed causal idea only; it does not mix residual,
   normalization, optimizer, and bundle changes in the same family.
-- [ ] The task compares no more than the fixed baseline plus two
+- [x] The task compares no more than the fixed baseline plus two
   normalization-entry variants.
-- [ ] The result explicitly distinguishes:
+- [x] The result explicitly distinguishes:
   - no winner
   - one local winner with a longer finite window
   - one local winner that earns bounded promotion consideration
-- [ ] `T217` remains blocked unless this task produces a clear local winner.
+- [x] `T217` remains blocked unless this task produces a clear local winner.
 
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run qwen-story31-stability-lab run --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e3,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e2`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e3,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e2`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

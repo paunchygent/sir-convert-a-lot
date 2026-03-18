@@ -42,14 +42,15 @@ The current experiment posture is:
   - active surface: `qwen-t221-historical-control`
 - `mechanism`
   - active lane: Story 31 through `qwen-story31-stability-lab`
-  - `T225` complete: exact parity contract defined
-  - `T226` complete: committed local parity-probe surface delivered
-  - live parity result under `task226-20260317t224307Z`: `no_meaningful_divergence_found`
+  - `T225-T226` complete: exact parity contract plus committed parity-probe;
+    live result under `task226-20260317t224307Z` was `no_meaningful_divergence_found`
   - `T219` now stands as recorded negative unpromoted evidence
   - `T228` complete: ranked closure recorded from `task219-20260317t180700z-a1`
   - `T229` complete: `task229-20260318t064712z-a1` localized `sub_talker_loss`
     to `talker_core.layer_16.input_layernorm`
-  - `T230` is now the active bounded normalization-entry micro-family slice
+  - `T230-T232` complete: the normalization-entry family closed negative, `T217` stayed
+    blocked, and Story 31 remained in `mechanism`
+  - `T233` is now the active normalization-internal slice
   - `T227` is now contingent only if a later parity/runtime divergence is verified
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
@@ -179,8 +180,9 @@ Story 28 is now operating policy:
   - `T219` was backfilled as already-failed bounded Story 31 evidence with no
     promoted variant; `T228` closed that family from `task219-20260317t180700z-a1`,
     `T229` then closed with an unambiguous earliest sub-boundary at
-    `talker_core.layer_16.input_layernorm`, and `T230-T232` now define the
-    active post-`T229` mechanism ladder.
+    `talker_core.layer_16.input_layernorm`; `T230` then closed the bounded
+    normalization-entry family negative, `T231-T232` kept the lane in
+    mechanism, and `T233` is now the next localized question.
 
 ## Next Actions
 
@@ -190,22 +192,20 @@ Story 28 is now operating policy:
 - Keep `T221` classified as provenance evidence: it is stronger than `T220`,
   but it is not a mechanism or recovery result.
 - Continue through Story 31 as the mechanism lane:
-  - `T225` is complete as the exact parity contract for the recreated early
-    failure family
-  - `T226` is now complete as the committed deterministic parity-probe surface
-    and as a live in-image historical-bundle run:
-    `task226-20260317t224307Z` closed with
+  - `T225-T226` are complete as the exact parity contract plus the committed
+    deterministic parity-probe surface; `task226-20260317t224307Z` closed with
     `no_meaningful_divergence_found`
   - `T219` is now recorded as negative bounded evidence without promotion
   - `T228` is now complete as the ranked closure of that failed family
   - `T229` is now complete as the truthful narrowed rerun under `task229-20260318t064712z-a1` and
     constrains Story 31 to the pre-`input_layernorm` normalization-entry family only
-  - `T230` is now the immediate bounded mechanism slice, followed by `T231` and `T232`
+  - `T230-T232` are now complete: the truthful bounded rerun under `task230-20260318t082049z-a1`
+    found no local winner and kept the lane in `mechanism`
+  - `T233` is now the immediate localized mechanism slice
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal
     claims
-- Keep `T217` blocked as the recovery lane until a mechanism candidate passes the
-  local promotion gate and `T231` freezes the bounded promotion contract.
+- Keep `T217` blocked as the recovery lane until a mechanism candidate passes the local promotion gate.
 - Keep Story 29 and Story 30 proof surfaces as historical-only references, not
   as next-step operational surfaces.
 - Keep the Hemma scratch-governance surfaces active and available:

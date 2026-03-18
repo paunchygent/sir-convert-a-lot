@@ -2,7 +2,7 @@
 id: task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result
 title: Make the Story 31 lane decision after the post-T219 bounded promotion result
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -49,34 +49,52 @@ Story 31 lane decision:
 - Do not launch new experiments from this task; this is an interpretation and
   routing task.
 
+## Result
+
+- Consumed bounded result:
+  explicit "no winner" conclusion from `T231`, grounded in the negative
+  `T230` run under
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1`
+- Story 31 lane decision:
+  - keep the lane in `mechanism`
+  - keep `T217` blocked
+  - classify the failed normalization-entry family as historical mechanism
+    evidence only
+  - open one new localized question through `T233`
+- Next localized question:
+  does `talker_core.layer_16.input_layernorm` fail before normalization
+  arithmetic, inside normalization arithmetic, or only after the normalized
+  activation is rescaled by the module output path?
+
 ## Deliverables
 
-- [ ] One explicit lane decision is recorded after the bounded post-`T219`
+- [x] One explicit lane decision is recorded after the bounded post-`T219`
   promotion result.
-- [ ] One updated operator-facing statement explains whether the next move is a
+- [x] One updated operator-facing statement explains whether the next move is a
   new mechanism slice, a governed recovery proof, or historical-only
   classification.
-- [ ] Story 31, `current.md`, and the Task 101 ledger agree on the same next
+- [x] Story 31, `current.md`, and the Task 101 ledger agree on the same next
   step.
 
 ## Acceptance Criteria
 
-- [ ] The decision cites one exact bounded promotion result instead of a mixed
+- [x] The decision cites one exact bounded promotion result instead of a mixed
   run family.
-- [ ] The task does not make recovery claims from a local lab result alone.
-- [ ] If the bounded result is negative, the task keeps the lane in mechanism
+- [x] The task does not make recovery claims from a local lab result alone.
+- [x] If the bounded result is negative, the task keeps the lane in mechanism
   and defines the next localized question.
-- [ ] If the bounded result is positive, the task states exactly what broader
-  recovery step is now justified.
+- [x] If the bounded result is positive, the task states exactly what broader
+  recovery step is now justified; otherwise it explicitly leaves the lane in
+  mechanism.
 
 ## Validation
 
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

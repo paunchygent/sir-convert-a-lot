@@ -407,8 +407,11 @@ For mechanism questions:
   `task229-20260318t064712z-a1`
 - the target `sub_talker_loss` family localizes to
   `talker_core.layer_16.input_layernorm`
-- `T230` is now the immediate bounded normalization-entry micro-family action,
-  followed by `T231-T232`
+- `T230` is now complete as the negative bounded normalization-entry rerun
+  under `task230-20260318t082049z-a1`
+- `T231` is now complete as the explicit no-winner promotion decision
+- `T232` is now complete as the lane decision to stay in mechanism
+- `T233` is now the immediate normalization-internal mechanism action
 
 For recovery questions:
 

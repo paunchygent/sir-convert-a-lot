@@ -27,7 +27,11 @@ Story 32 is now the operator-facing mental model:
     `task229-20260318t064712z-a1`
   - the target `sub_talker_loss` family localizes to
     `talker_core.layer_16.input_layernorm`
-  - `T230` is now the active bounded normalization-entry micro-family slice
+  - `T230` is now complete as the negative bounded normalization-entry rerun
+    under `task230-20260318t082049z-a1`
+  - `T231` is now complete as the explicit no-winner promotion decision
+  - `T232` is now complete as the lane decision to stay in mechanism
+  - `T233` is now the active normalization-internal mechanism slice
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -77,9 +81,10 @@ Story 28 remains operating policy:
   negative, and `T219` is now backfilled as already failed:
   - `T228`: complete; close the failed handoff family with one ranked matrix
   - `T229`: complete; localize the shifted seam to one earliest sub-boundary
-  - `T230`: test the diagnosed normalization-entry micro-family only
-  - `T231`: freeze the bounded promotion contract before any governed proof
-  - `T232`: make one Story 31 lane decision from the bounded promotion result
+  - `T230`: complete; close the diagnosed normalization-entry family negative
+  - `T231`: complete; record the explicit no-winner promotion decision
+  - `T232`: complete; keep Story 31 in mechanism and open `T233`
+  - `T233`: split `layer16.input_layernorm` into normalization-internal probes
 
 ## Latest Task 101 Truth
 
@@ -165,13 +170,16 @@ Story 28 remains operating policy:
 1. Keep `T228` complete as the ranked closure of `task219-20260317t180700z-a1`.
 1. Keep `T229` recorded as the truthful narrowed rerun under
    `task229-20260318t064712z-a1`.
-1. Run `T230` next as the bounded pre-`input_layernorm`
-   normalization-entry micro-family:
-   ranked `T219` baseline plus the `1e3` and `1e2` entry-rescale variants.
+1. Keep `T230` recorded as the negative bounded normalization-entry rerun
+   under `task230-20260318t082049z-a1`.
+1. Keep `T231` recorded as the explicit no-winner promotion decision.
+1. Keep `T232` recorded as the lane decision to stay in mechanism.
+1. Run `T233` next as the normalization-internal probe slice for
+   `talker_core.layer_16.input_layernorm`.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion
-   gate and `T231` freezes the bounded promotion contract.
+   gate.
 1. Keep Story 29 and Story 30 surfaces available as historical references, not
    as the primary operator flow.
 1. Record future active runs in

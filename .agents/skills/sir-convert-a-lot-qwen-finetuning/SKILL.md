@@ -153,13 +153,15 @@ explicitly narrow the scope.
     `task229-20260318t064712z-a1`
   - the target `sub_talker_loss` family localizes to
     `talker_core.layer_16.input_layernorm`
-  - `T230` is now the immediate bounded normalization-entry micro-family
-    slice, followed by `T231-T232`
+  - `T230` is now complete as the negative bounded normalization-entry rerun
+    under `task230-20260318t082049z-a1`
+  - `T231` is now complete as the explicit no-winner promotion decision
+  - `T232` is now complete as the lane decision to stay in mechanism
+  - `T233` is now the immediate normalization-internal mechanism slice
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate
-    passes the local promotion gate and `T231` freezes the bounded promotion
-    contract
+    passes the local promotion gate
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in
