@@ -18,6 +18,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 DOCKERFILE = REPO_ROOT / "Dockerfile"
+DOCKERIGNORE = REPO_ROOT / ".dockerignore"
 
 
 def _load_compose() -> dict[str, object]:
@@ -26,6 +27,15 @@ def _load_compose() -> dict[str, object]:
     if not isinstance(loaded, dict):
         raise AssertionError("compose.yaml did not parse into a mapping")
     return loaded
+
+
+def _load_dockerignore_rules() -> set[str]:
+    raw_rules = DOCKERIGNORE.read_text(encoding="utf-8").splitlines()
+    return {
+        line.strip()
+        for line in raw_rules
+        if line.strip() != "" and not line.lstrip().startswith("#")
+    }
 
 
 def _service_env_map(service: dict[str, object]) -> dict[str, str]:
@@ -121,27 +131,50 @@ def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:
 
     build_obj = service.get("build")
     assert isinstance(build_obj, dict)
-    args_obj = build_obj.get("args")
-    assert isinstance(args_obj, list)
-    assert (
-        "SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL=${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL:-https://download.pytorch.org/whl/rocm7.1}"
-        in args_obj
-    )
-    assert (
-        "SIR_CONVERT_A_LOT_TORCH_VERSION=${SIR_CONVERT_A_LOT_TORCH_VERSION:-2.10.0+rocm7.1}"
-        in args_obj
-    )
-    assert (
-        "SIR_CONVERT_A_LOT_TORCHVISION_VERSION=${SIR_CONVERT_A_LOT_TORCHVISION_VERSION:-0.25.0+rocm7.1}"
-        in args_obj
-    )
-    assert (
-        "SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION=${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION:-2.10.0+rocm7.1}"
-        in args_obj
-    )
+    assert build_obj.get("context") == "."
+    assert build_obj.get("dockerfile") == "Dockerfile"
+    assert "args" not in build_obj
 
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
     assert service.get("group_add") == ["video", "render"]
+
+
+def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None:
+    dockerignore_rules = _load_dockerignore_rules()
+
+    assert "*" in dockerignore_rules
+    assert "scripts/*" in dockerignore_rules
+    assert "scripts/sir_convert_a_lot/*" in dockerignore_rules
+    assert "scripts/sir_convert_a_lot/devops/*" in dockerignore_rules
+
+    required_file_paths = {
+        "pyproject.toml",
+        "pdm.lock",
+        "scripts/__init__.py",
+        "scripts/sir_convert_a_lot/__init__.py",
+        "scripts/sir_convert_a_lot/service.py",
+        "scripts/sir_convert_a_lot/devops/__init__.py",
+        "scripts/sir_convert_a_lot/devops/export_service_requirements.py",
+        "scripts/sir_convert_a_lot/devops/service_image_build_contract.py",
+    }
+    for path in required_file_paths:
+        assert f"!{path}" in dockerignore_rules
+
+    required_directory_paths = {
+        "scripts/sir_convert_a_lot/application",
+        "scripts/sir_convert_a_lot/domain",
+        "scripts/sir_convert_a_lot/infrastructure",
+        "scripts/sir_convert_a_lot/integrations",
+        "scripts/sir_convert_a_lot/interfaces",
+        "scripts/sir_convert_a_lot/templates",
+    }
+    for path in required_directory_paths:
+        assert f"!{path}" in dockerignore_rules
+        assert f"!{path}/**" in dockerignore_rules
+
+    assert "!docs" not in dockerignore_rules
+    assert "!tests" not in dockerignore_rules
+    assert "!build" not in dockerignore_rules
 
 
 def test_compose_declares_only_prod_named_volume() -> None:
@@ -158,14 +191,43 @@ def test_dockerfile_uses_supported_runtime_settings_for_single_service() -> None
     assert "FROM runtime-base AS dependency-builder" in dockerfile_text
     assert "COPY --from=dependency-builder /app/.venv /app/.venv" in dockerfile_text
     assert "export_service_requirements.py" in dockerfile_text
+    assert "service_image_build_contract.py" in dockerfile_text
     assert (
         "python -m pip install --no-cache-dir --no-deps -r /tmp/service-requirements.txt"
         in dockerfile_text
     )
-    assert "SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL" in dockerfile_text
+    assert (
+        "python -m scripts.sir_convert_a_lot.devops.export_service_requirements" in dockerfile_text
+    )
+    assert 'load_rocm_runtime_contract(Path("/app")).as_shell_exports()' in dockerfile_text
     assert "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}" in dockerfile_text
     assert "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}" in dockerfile_text
     assert "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}" in dockerfile_text
+    assert "COPY scripts ./scripts" not in dockerfile_text
+    assert (
+        "COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application"
+        in dockerfile_text
+    )
+    assert (
+        "COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain"
+        in dockerfile_text
+    )
+    assert (
+        "COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure"
+        in dockerfile_text
+    )
+    assert (
+        "COPY scripts/sir_convert_a_lot/interfaces ./scripts/sir_convert_a_lot/interfaces"
+        in dockerfile_text
+    )
+    assert (
+        "COPY scripts/sir_convert_a_lot/integrations ./scripts/sir_convert_a_lot/integrations"
+        in dockerfile_text
+    )
+    assert (
+        "COPY scripts/sir_convert_a_lot/templates ./scripts/sir_convert_a_lot/templates"
+        in dockerfile_text
+    )
     assert 'CMD ["uvicorn", "scripts.sir_convert_a_lot.service:app"' in dockerfile_text
     assert "EXPOSE 8085" in dockerfile_text
     assert "EXPOSE 8086" not in dockerfile_text

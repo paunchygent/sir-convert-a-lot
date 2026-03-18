@@ -2,7 +2,7 @@
 id: task-239-split-sir-convert-a-lot-service-dependency-and-app-layers-to-avoid-full-rebuilds-on-code-only-changes
 title: Split Sir Convert-a-Lot service dependency and app layers to avoid full rebuilds on code-only changes
 type: task
-status: proposed
+status: active
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -29,10 +29,26 @@ every deploy.
 
 ## Deliverables
 
-- [ ] Layered root service `Dockerfile`
-- [ ] Filtered service requirements export helper for the dependency build
-- [ ] Contract tests that lock the new layering behavior
-- [ ] Verification notes for the aborted Hemma rebuild and cache cleanup
+- [x] Layered root service `Dockerfile`
+- [x] Filtered service requirements export helper for the dependency build
+- [x] Contract tests that lock the new layering behavior
+- [x] Verification notes for the aborted Hemma rebuild and cache cleanup
+
+## Progress Notes
+
+- 2026-03-18:
+  - The dependency-builder now reads the canonical ROCm torch pins from
+    `pyproject.toml` through a dedicated service-image build-contract helper,
+    instead of duplicating those pins in `compose.yaml` and `Dockerfile`.
+  - The final runtime layer no longer copies the whole `scripts/` tree; it now
+    copies the minimal service runtime package surface plus `templates/`, which
+    keeps unrelated ML/devops changes from invalidating the thin app layer.
+  - The Hemma GPU runtime verifier no longer assumes `pdm` exists inside the
+    service image and now probes the container with `python` directly.
+  - The root `.dockerignore` now whitelists only the files and package
+    subtrees that the service image actually copies, which keeps BuildKit from
+    receiving large irrelevant repo sections such as `build/`, `docs/`,
+    `tests/`, and unrelated script packages during code-only deploys.
 
 ## Acceptance Criteria
 
@@ -47,6 +63,6 @@ every deploy.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

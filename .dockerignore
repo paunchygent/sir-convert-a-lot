@@ -1,12 +1,33 @@
-.env
-.git
-.venv
-.mypy_cache
-.pytest_cache
-.ruff_cache
-__pycache__
-build
-docs
-tests
-.agents
-*.pyc
+# Ignore the entire repo by default and explicitly whitelist the service-image
+# build context so code-only deploys send the smallest possible payload to
+# BuildKit.
+*
+
+!pyproject.toml
+!pdm.lock
+!scripts
+scripts/*
+
+!scripts/__init__.py
+!scripts/sir_convert_a_lot
+scripts/sir_convert_a_lot/*
+
+!scripts/sir_convert_a_lot/__init__.py
+!scripts/sir_convert_a_lot/service.py
+!scripts/sir_convert_a_lot/application
+!scripts/sir_convert_a_lot/application/**
+!scripts/sir_convert_a_lot/domain
+!scripts/sir_convert_a_lot/domain/**
+!scripts/sir_convert_a_lot/infrastructure
+!scripts/sir_convert_a_lot/infrastructure/**
+!scripts/sir_convert_a_lot/integrations
+!scripts/sir_convert_a_lot/integrations/**
+!scripts/sir_convert_a_lot/interfaces
+!scripts/sir_convert_a_lot/interfaces/**
+!scripts/sir_convert_a_lot/templates
+!scripts/sir_convert_a_lot/templates/**
+!scripts/sir_convert_a_lot/devops
+scripts/sir_convert_a_lot/devops/*
+!scripts/sir_convert_a_lot/devops/__init__.py
+!scripts/sir_convert_a_lot/devops/export_service_requirements.py
+!scripts/sir_convert_a_lot/devops/service_image_build_contract.py

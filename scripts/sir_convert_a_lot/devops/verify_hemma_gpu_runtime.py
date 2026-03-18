@@ -21,7 +21,6 @@ import re
 import subprocess
 import sys
 import time
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,6 +31,9 @@ from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import
     port_for_lane,
     resolve_api_key,
     service_url_for_lane,
+)
+from scripts.sir_convert_a_lot.devops.service_image_build_contract import (
+    load_rocm_runtime_contract,
 )
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
 
@@ -98,14 +100,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def _read_pinned_torch_version() -> str:
-    """Read pinned ROCm torch version from pyproject configuration."""
-    pyproject_path = Path("pyproject.toml")
-    config = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-    runtime_obj = config["tool"]["sir_convert_a_lot"]["rocm_runtime"]
-    torch_version_obj = runtime_obj["torch_version"]
-    if not isinstance(torch_version_obj, str) or torch_version_obj.strip() == "":
-        raise SystemExit("pyproject torch_version pin is missing.")
-    return torch_version_obj
+    """Read pinned ROCm torch version from the canonical service-image contract."""
+    try:
+        return load_rocm_runtime_contract(Path(".")).torch_version
+    except (KeyError, ValueError, OSError) as exc:
+        raise SystemExit("pyproject torch_version pin is missing.") from exc
 
 
 def _run_checked(command: list[str], *, label: str) -> str:
@@ -183,8 +182,6 @@ def _probe_torch_runtime_in_docker(
             "docker",
             "exec",
             container,
-            "pdm",
-            "run",
             "python",
             "-c",
             python_snippet,
