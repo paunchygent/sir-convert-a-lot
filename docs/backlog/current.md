@@ -51,8 +51,8 @@ The current experiment posture is:
   - `T233` complete: `task233-20260318t112544z-a1` fixed the first internal surface at `talker_core.layer_16.input_layernorm.output`
   - `T234` complete: `task234-20260318t123644z-a1` closed the output-scale family without promotion
   - `T235` complete: `task235-20260318t140352z-a1` confirmed the line-4 outlier is repeatable
-  - `T236` is now the active row-local outlier-resolution slice
-  - `T237` is contingent on the `T236` dominant-seam classification
+  - `T236` complete: `task236-20260318t145434z-a1` classified the outlier as a genuine row-local seam difference
+  - `T237` is now the active upstream row-local micro-family slice
   - `T227` is now contingent only if a later parity/runtime divergence is verified
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
@@ -177,7 +177,7 @@ Story 28 is now operating policy:
     `first_divergence_classification = no_meaningful_divergence_found`, so
     Story 31 returns to `T219` rather than escalating to `T227`
 - 2026-03-18:
-  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, `T234` closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`, and `T235` then confirmed the mixed `sub_talker_loss` result is repeatable under `task235-20260318t140352z-a1`: pair and `line-13` stayed at `talker_core.layer_15.output`, but `line-4` stayed at `talker_core.layer_16.input_layernorm`, which opens the row-local outlier branch in `T236`.
+  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, `T234` closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`, `T235` confirmed the mixed `sub_talker_loss` result is repeatable under `task235-20260318t140352z-a1`, and `T236` then classified that disagreement as a genuine row-local seam difference under `task236-20260318t145434z-a1`: pair and `line-13` stayed at `talker_core.layer_15.output`, while `line-4` stayed at `talker_core.layer_16.input_layernorm.output`, which opens `T237` as an upstream row-local micro-family only.
 
 ## Next Actions
 
@@ -198,8 +198,8 @@ Story 28 is now operating policy:
   - `T234` is now complete under `task234-20260318t123644z-a1` with no
     promotable winner
   - `T235` is now complete under `task235-20260318t140352z-a1`
-  - `T236` is now the immediate row-local outlier-resolution mechanism slice
-  - `T237` remains contingent on the `T236` dominant-seam classification
+  - `T236` is now complete under `task236-20260318t145434z-a1`
+  - `T237` is now the immediate upstream row-local micro-family mechanism slice
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal claims
 - Keep `T217` blocked as the recovery lane until a mechanism candidate passes the local promotion gate.

@@ -330,8 +330,10 @@ class GradientHookSession:
             input_dtype = residual_input.dtype
             hidden_states = residual_input.to(torch.float32)
             variance = hidden_states.pow(2).mean(-1, keepdim=True)
-            hidden_states = hidden_states * torch.rsqrt(variance + self_module.variance_epsilon)
-            output = self_module.weight * hidden_states.to(input_dtype)
+            variance_epsilon = _required_variance_epsilon(self_module)
+            hidden_states = hidden_states * torch.rsqrt(variance + variance_epsilon)
+            weight = _required_layernorm_weight(self_module)
+            output = weight * hidden_states.to(input_dtype)
             self._attach_tensor(output_name, output)
             return output
 

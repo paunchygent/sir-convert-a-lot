@@ -170,8 +170,12 @@ explicitly narrow the scope.
   - the mixed `sub_talker_loss` result is repeatable: pair and `line-13`
     stay at `talker_core.layer_15.output`, while `line-4` stays at
     `talker_core.layer_16.input_layernorm`
-  - `T236` is now the immediate row-local outlier-resolution mechanism slice
-  - `T237` is contingent on the `T236` dominant-seam classification
+  - `T236` is now complete under `task236-20260318t145434z-a1`
+  - the outlier is a genuine row-local seam difference: pair and `line-13`
+    stay at `talker_core.layer_15.output`, while `line-4` stays at
+    `talker_core.layer_16.input_layernorm.output`
+  - `T237` is now the immediate upstream row-local micro-family mechanism slice
+  - `T237` is constrained to `talker_core.layer_16.input_layernorm.output`
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate

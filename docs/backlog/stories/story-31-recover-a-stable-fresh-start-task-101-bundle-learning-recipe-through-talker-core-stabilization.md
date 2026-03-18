@@ -353,10 +353,15 @@ the governing success criterion for future restart work.
     `talker_core.layer_15.output`
   - `line-4-sub-talker-loss` still first broke at
     `talker_core.layer_16.input_layernorm`
+- `T236` is now complete under `task236-20260318t145434z-a1`:
+  - the repeatable outlier is a genuine row-local seam difference
+  - `pair-sub-talker-loss` and `line-13-sub-talker-loss` stayed at
+    `talker_core.layer_15.output`
+  - `line-4-sub-talker-loss` stayed at
+    `talker_core.layer_16.input_layernorm.output`
 - the active follow-on slice is now:
-  - `T236`: resolve the repeatable post-`T235` `line-4` row-local outlier
-    before claiming a generic `layer_15.output` seam
-  - `T237`: remain contingent until `T236` verifies one dominant seam cleanly
+  - `T237`: test one upstream row-local micro-family only against
+    `talker_core.layer_16.input_layernorm.output`
 - `T217` remains the blocked recovery lane:
   it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

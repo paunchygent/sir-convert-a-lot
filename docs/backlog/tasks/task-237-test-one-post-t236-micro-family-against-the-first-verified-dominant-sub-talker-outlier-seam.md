@@ -2,7 +2,7 @@
 id: task-237-test-one-post-t236-micro-family-against-the-first-verified-dominant-sub-talker-outlier-seam
 title: Test one post-T236 micro-family against the first verified dominant sub-talker outlier seam
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -23,24 +23,31 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Test one micro-family only at the first verified dominant seam produced by
-`T236`, so Story 31 can keep drilling toward a real fix without widening back
-into another multi-cause stabilizer sweep.
+Test one micro-family only against the first verified dominant seam produced
+by `T236`, now fixed to the row-local upstream surface
+`talker_core.layer_16.input_layernorm.output`, so Story 31 can keep drilling
+toward a real fix without widening back into another multi-cause stabilizer
+sweep.
 
 ## PR Scope
 
 - Treat `T236` as the gating diagnosis:
-  - do not start this task until `T236` resolves one dominant seam cleanly
-  - the exact intervention family must be chosen by the `T236` result
+  - truthful row-local resolution:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task236-20260318t145434z-a1`
+  - resolved classification:
+    `genuine_row_local_seam_difference`
+  - verified dominant seam for the next task:
+    `talker_core.layer_16.input_layernorm.output`
 - Keep the Story 32 state vector fixed:
   - same canonical bundle root
   - same selected rows `13,4`
   - same `text_span_only` mask policy
   - same Story 31 lab surface
-  - same strongest T234 member unless `T236` truthfully proves a different
-    fixed baseline is required
+  - same strongest T234 member:
+    `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
 - Compare baseline plus at most two strength levels in one micro-family only.
-- Target only the exact dominant seam verified by `T236`.
+- Target only the exact verified row-local seam:
+  `talker_core.layer_16.input_layernorm.output`
 - Do not mix in optimizer, bundle, sampler, or recovery changes.
 - Stop if the family only relocates failure without extending the finite
   window.

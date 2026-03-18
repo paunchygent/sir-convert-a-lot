@@ -44,8 +44,12 @@ Story 32 is now the operator-facing mental model:
   - the mixed `sub_talker_loss` result is repeatable: pair and `line-13`
     stay at `talker_core.layer_15.output`, while `line-4` stays at
     `talker_core.layer_16.input_layernorm`
-  - `T236` is now the active row-local outlier-resolution mechanism slice
-  - `T237` is contingent on the `T236` dominant-seam classification
+  - `T236` is now complete under `task236-20260318t145434z-a1`
+  - the outlier is a genuine row-local seam difference: pair and `line-13`
+    stay at `talker_core.layer_15.output`, while `line-4` stays at
+    `talker_core.layer_16.input_layernorm.output`
+  - `T237` is now the active upstream row-local micro-family mechanism slice
+  - `T237` is constrained to `talker_core.layer_16.input_layernorm.output`
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -103,9 +107,10 @@ Story 28 remains operating policy:
   - `T234`: complete; close the diagnosed post-normalization output-scale
     family without promotion
   - `T235`: complete; confirm the post-`T234` disagreement is repeatable
-  - `T236`: resolve the post-`T235` line-`4` row-local outlier before
-    claiming a generic `layer_15.output` seam
-  - `T237`: test one micro-family only after `T236` verifies one dominant seam
+  - `T236`: complete; classify the `line-4` disagreement as a genuine
+    row-local seam difference
+  - `T237`: test one upstream row-local micro-family only against
+    `talker_core.layer_16.input_layernorm.output`
 
 ## Latest Task 101 Truth
 
@@ -201,9 +206,10 @@ Story 28 remains operating policy:
    `task234-20260318t123644z-a1`.
 1. Keep `T235` recorded as the truthful disagreement-resolution rerun under
    `task235-20260318t140352z-a1`.
-1. Run `T236` next as the bounded row-local outlier-resolution slice for the
-   repeatable `line-4` disagreement.
-1. Keep `T237` contingent on the `T236` dominant-seam classification.
+1. Keep `T236` recorded as the truthful row-local classification rerun under
+   `task236-20260318t145434z-a1`.
+1. Run `T237` next as one upstream row-local micro-family only against
+   `talker_core.layer_16.input_layernorm.output`.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion

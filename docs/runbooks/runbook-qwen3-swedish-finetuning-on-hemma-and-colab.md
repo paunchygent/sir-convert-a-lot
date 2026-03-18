@@ -424,8 +424,12 @@ For mechanism questions:
 - the disagreement is repeatable: pair and `line-13` stay at
   `talker_core.layer_15.output`, while `line-4` stays at
   `talker_core.layer_16.input_layernorm`
-- `T236` is now the immediate row-local outlier-resolution mechanism action
-- `T237` stays contingent on the `T236` dominant-seam classification
+- `T236` is now complete under `task236-20260318t145434z-a1`
+- the outlier is a genuine row-local seam difference: pair and `line-13`
+  stay at `talker_core.layer_15.output`, while `line-4` stays at
+  `talker_core.layer_16.input_layernorm.output`
+- `T237` is now the immediate upstream row-local micro-family mechanism action
+- `T237` must stay fixed on `talker_core.layer_16.input_layernorm.output`
 
 For recovery questions:
 

@@ -2,7 +2,7 @@
 id: task-236-resolve-the-post-t235-line4-row-local-outlier-before-claiming-a-generic-layer15-output-seam
 title: Resolve the post-T235 line4 row-local outlier before claiming a generic layer15 output seam
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -65,6 +65,40 @@ Resolve the repeatable `line-4` row-local outlier exposed by `T235` so Story
 - Do not add a new stabilizer family in this task.
 - Do not reopen recovery, optimizer, bundle, batching, or mask-policy changes.
 
+## Implementation Status
+
+- Implemented as one diagnosis-only Story 31 row-local outlier probe:
+  - hook profile:
+    `talker_core_post_t235_row_local_outlier`
+  - allowed stabilizer:
+    `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
+- Landed code surfaces:
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_trace.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/story30_backward_lineage_hooks.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_row_local_outlier_assessment.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_contracts.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_runner.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_markdown.py`
+
+## Result
+
+- Truthful bounded rerun:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task236-20260318t145434z-a1`
+- The pair and `line-13` `sub_talker_loss` cases stayed at:
+  `talker_core.layer_15.output`
+- `line-4-sub-talker-loss` stayed at:
+  `talker_core.layer_16.input_layernorm.output`
+- No required case first broke at `talker_core.layer_16.input`.
+- The resolved classification is:
+  `genuine_row_local_seam_difference`
+- Interpretation:
+  - the `line-4` outlier is real and repeatable under the strongest `T234`
+    member
+  - the next task must stay in mechanism and target the exact upstream
+    row-local seam only:
+    `talker_core.layer_16.input_layernorm.output`
+  - `T217` remains blocked
+
 ## Interpretation Contract
 
 - If `line-4` still fails upstream while pair and `line-13` stay downstream,
@@ -81,30 +115,34 @@ Resolve the repeatable `line-4` row-local outlier exposed by `T235` so Story
 
 ## Deliverables
 
-- [ ] One bounded row-local outlier probe exists for the strongest T234 member.
-- [ ] One explicit classification identifies the `line-4` disagreement as
+- [x] One bounded row-local outlier probe exists for the strongest T234 member.
+- [x] One explicit classification identifies the `line-4` disagreement as
   row-local, pair-masked, or non-repeatable.
-- [ ] One next-step rule constrains `T237` to a single verified dominant seam.
+- [x] One next-step rule constrains `T237` to a single verified dominant seam.
 
 ## Acceptance Criteria
 
-- [ ] The task tests diagnosis only; it does not add or compare new
+- [x] The task tests diagnosis only; it does not add or compare new
   stabilizer variants.
-- [ ] The task keeps the Story 32 experiment spec fixed apart from the narrow
+- [x] The task keeps the Story 32 experiment spec fixed apart from the narrow
   hook profile needed to classify the outlier.
-- [ ] The task ends with exactly one outlier classification and one next-step
+- [x] The task ends with exactly one outlier classification and one next-step
   rule, not a mixed interpretation.
 
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_row_local_outlier_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task236-20260318t145434z-a1 --skip-build --hook-profile talker_core_post_t235_row_local_outlier --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
