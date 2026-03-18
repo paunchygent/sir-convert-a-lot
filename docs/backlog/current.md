@@ -53,7 +53,8 @@ The current experiment posture is:
   - `T236` complete: `task236-20260318t145434z-a1` classified the outlier as a genuine row-local seam difference
   - `T237` complete: `task237-20260318t154708z-a1` converged downstream to `talker_core.layer_15.output`
   - `T240` complete: `task240-20260318t165458z-a1` confirmed all three normative `sub_talker_loss` rows first break at `talker_core.layer_15.output`
-  - `T241` is now the active diagnosis-only layer-15 residual/output split
+  - `T241` complete: `task241-20260318t175714z-a1` kept all three normative `sub_talker_loss` rows at `talker_core.layer_15.output`
+  - `T243` is now the active diagnosis-only layer-15 residual/output-formation split
   - `T227` is now contingent only if a later parity/runtime divergence is verified
 - parallel Hemma infra: `T242` is now complete and makes the home-backed Docker-visible bind roots the explicit permanent host contract on Hemma
 - `recovery`: governed `qwen-train` fresh-start proof, blocked at `T217` until a mechanism candidate is promoted
@@ -173,7 +174,7 @@ Story 28 is now operating policy:
     `first_divergence_classification = no_meaningful_divergence_found`, so
     Story 31 returns to `T219` rather than escalating to `T227`
 - 2026-03-18:
-  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, `T234` closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`, `T235` confirmed the mixed `sub_talker_loss` result is repeatable under `task235-20260318t140352z-a1`, `T236` then classified that disagreement as a genuine row-local seam difference under `task236-20260318t145434z-a1`, `T237` converged all three normative `sub_talker_loss` rows downstream under `task237-20260318t154708z-a1`, and `T240` then confirmed the converged seam itself under `task240-20260318t165458z-a1`: pair, `line-13`, and `line-4` all first broke at `talker_core.layer_15.output`, which opens `T241` as the diagnosis-only layer-15 residual/output split.
+  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, `T234` closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`, `T235` confirmed the mixed `sub_talker_loss` result is repeatable under `task235-20260318t140352z-a1`, `T236` then classified that disagreement as a genuine row-local seam difference under `task236-20260318t145434z-a1`, `T237` converged all three normative `sub_talker_loss` rows downstream under `task237-20260318t154708z-a1`, `T240` then confirmed the converged seam itself under `task240-20260318t165458z-a1`, and `T241` then proved under `task241-20260318t175714z-a1` that the converged seam still sits at `talker_core.layer_15.output` rather than moving into `layer_15.mlp.gated_product` or `layer_15.mlp.down_proj`, which opens `T243` as the diagnosis-only layer-15 residual/output-formation split.
   - `T242` then closed the recurring Hemma bind-root workaround as a permanent platform contract: the repo-rendered `sir-convert-a-lot-qwen-docker-bind-roots.service` is installed and active, `status` now proves the home roots are mounted onto the canonical `/srv/scratch` trees by round-trip verification, and `probe` confirms Docker must use `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the effective bind roots while `/srv/scratch/...` remains the canonical storage truth.
 
 ## Next Actions
@@ -196,7 +197,8 @@ Story 28 is now operating policy:
   - `T236` is now complete under `task236-20260318t145434z-a1`
   - `T237` is now complete under `task237-20260318t154708z-a1`
   - `T240` is now complete under `task240-20260318t165458z-a1`
-  - `T241` is now the immediate diagnosis-only layer-15 residual/output split
+  - `T241` is now complete under `task241-20260318t175714z-a1`
+  - `T243` is now the immediate diagnosis-only layer-15 residual/output-formation split
   - `T242` is now complete; use `pdm run run-hemma -- pdm run qwen-docker-bind-roots status` and `probe` as the normal Qwen Docker preflight on Hemma
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal claims

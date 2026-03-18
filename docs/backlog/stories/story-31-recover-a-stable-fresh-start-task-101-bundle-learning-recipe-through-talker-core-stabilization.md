@@ -100,7 +100,7 @@ This story is intentionally split into two lanes:
   - `T221` is the provenance surface
   - `T225-T227` are the next mechanism slice package
   - `T219` is now recorded as completed negative bounded stabilizer evidence
-  - `T228-T241` now define the active next mechanism ladder
+  - `T228-T243` now define the active next mechanism ladder
   - `T217` is the blocked recovery surface
 
 ## Reuse Plan
@@ -364,7 +364,9 @@ the governing success criterion for future restart work.
     `sub_talker_loss` rows downstream
   - `T240`: complete; `task240-20260318t165458z-a1` fixed the converged seam
     at `talker_core.layer_15.output`
-  - `T241`: split the post-`T240` layer-15 residual/output formation seam
+  - `T241`: complete; `task241-20260318t175714z-a1` kept all three normative
+    `sub_talker_loss` rows at `talker_core.layer_15.output`
+  - `T243`: split the post-`T241` layer-15 residual/output-formation seam
 - `T217` remains the blocked recovery lane:
   it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

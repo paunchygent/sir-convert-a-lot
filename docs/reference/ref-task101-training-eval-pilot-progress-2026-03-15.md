@@ -191,11 +191,17 @@ work.
   - all three normative `sub_talker_loss` rows first broke at
     `talker_core.layer_15.output`, so the convergence class is
     `converged_layer15_output`
-  - the rerun used the automatic home-backed bind fallback for cache and
-    output roots after Hemma Docker resumed rejecting fresh `/srv/scratch`
-    bind mounts
-  - `T241` is now the immediate diagnosis-only next step and must split the
-    layer-15 residual/output formation seam before any new stabilizer family
+  - `T241` is now complete as the layer-15 split under
+    `task241-20260318t175714z-a1`
+  - all three normative `sub_talker_loss` rows still first broke at
+    `talker_core.layer_15.output`, so the classification is
+    `converged_layer15_output_residual`
+  - the rerun used the installed Task 242 bind-root contract:
+    `/srv/scratch/...` stayed canonical storage truth while Docker used the
+    effective home-backed cache/output roots under
+    `/home/paunchygent/.data/sir-convert-a-lot/`
+  - `T243` is now the immediate diagnosis-only next step and must split the
+    layer-15 residual/output-formation seam before any new stabilizer family
     is considered
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears

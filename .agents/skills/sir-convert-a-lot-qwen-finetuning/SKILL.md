@@ -181,14 +181,18 @@ explicitly narrow the scope.
   - all three normative `sub_talker_loss` rows first broke at
     `talker_core.layer_15.output`, so the convergence class is
     `converged_layer15_output`
+  - `T241` is now complete under `task241-20260318t175714z-a1`
+  - all three normative `sub_talker_loss` rows still first broke at
+    `talker_core.layer_15.output`, so the classification is
+    `converged_layer15_output_residual`
   - `T242` is now complete as the permanent Hemma bind-root contract:
     the repo-rendered service is installed and active, `status` now proves the
     home roots are mounted onto the canonical `/srv/scratch` trees, and
     `probe` confirms Docker must use
     `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the
     effective bind roots
-  - `T241` is now the immediate diagnosis-only mechanism slice
-  - `T241` must split layer-15 residual/output formation before any new
+  - `T243` is now the immediate diagnosis-only mechanism slice
+  - `T243` must split layer-15 residual/output formation itself before any new
     stabilizer family is considered
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears

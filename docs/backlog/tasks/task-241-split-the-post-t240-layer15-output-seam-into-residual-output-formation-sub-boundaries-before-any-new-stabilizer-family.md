@@ -2,7 +2,7 @@
 id: task-241-split-the-post-t240-layer15-output-seam-into-residual-output-formation-sub-boundaries-before-any-new-stabilizer-family
 title: Split the post-T240 layer15 output seam into residual-output formation sub-boundaries before any new stabilizer family
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -99,16 +99,51 @@ before any new stabilizer family is considered.
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task241-<timestamp>-a1 --skip-build --hook-profile <post-t240-layer15-output-split-profile> --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t240_layer15_output_split_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task241-20260318t175714z-a1 --skip-build --hook-profile talker_core_post_t240_layer15_output_split --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
+
+## Result
+
+`T241` is now closed as truthful mechanism evidence under:
+
+- run root:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task241-20260318t175714z-a1`
+- fixed winner:
+  `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
+- hook profile:
+  `talker_core_post_t240_layer15_output_split`
+- assessment payload:
+  `post_t240_layer15_output_split_assessment`
+
+Resolved classification:
+
+- `converged_layer15_output_residual`
+
+Observed normative `sub_talker_loss` rows:
+
+- `pair-sub-talker-loss`: first broke at `talker_core.layer_15.output`
+- `line-13-sub-talker-loss`: first broke at `talker_core.layer_15.output`
+- `line-4-sub-talker-loss`: first broke at `talker_core.layer_15.output`
+
+Interpretation:
+
+- The converged seam did not move into `talker_core.layer_15.mlp.gated_product`.
+- The converged seam did not move into `talker_core.layer_15.mlp.down_proj`.
+- The next truthful slice is therefore a diagnosis-only split of
+  `layer_15.output` residual/output formation itself before any new
+  stabilizer family is considered.
+- The Hemma rerun used the installed Task 242 bind-root contract:
+  `/srv/scratch/...` remained canonical storage truth while the effective
+  Docker-visible cache/output roots resolved under
+  `/home/paunchygent/.data/sir-convert-a-lot/`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

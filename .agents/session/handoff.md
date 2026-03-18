@@ -55,14 +55,18 @@ Story 32 is now the operator-facing mental model:
   - all three normative `sub_talker_loss` rows first broke at
     `talker_core.layer_15.output`, so the convergence class is
     `converged_layer15_output`
+  - `T241` is now complete under `task241-20260318t175714z-a1`
+  - all three normative `sub_talker_loss` rows still first broke at
+    `talker_core.layer_15.output`, so the classification is
+    `converged_layer15_output_residual`
   - `T242` is now complete as the permanent Hemma bind-root contract:
     the repo-rendered service is installed and active, `status` now proves the
     home roots are mounted onto the canonical `/srv/scratch` trees, and
     `probe` confirms Docker must use
     `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the
     effective bind roots
-  - `T241` is now the active diagnosis-only mechanism slice
-  - `T241` must split layer-15 residual/output formation before any new
+  - `T243` is now the active diagnosis-only mechanism slice
+  - `T243` must split layer-15 residual/output formation itself before any new
     stabilizer family is considered
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
@@ -126,7 +130,8 @@ Story 28 remains operating policy:
   - `T237`: complete; fp32-output-cap `1e3` winner converged downstream
   - `T240`: complete; confirmed `talker_core.layer_15.output` as the first
     converged downstream seam
-  - `T241`: split the post-`T240` layer-15 residual/output formation seam
+  - `T241`: complete; the converged seam stayed at `talker_core.layer_15.output`
+  - `T243`: split the post-`T241` layer-15 residual/output-formation seam
 
 ## Latest Task 101 Truth
 
@@ -224,7 +229,7 @@ Story 28 remains operating policy:
    `task235-20260318t140352z-a1`.
 1. Keep `T236` recorded as the truthful row-local classification rerun under
    `task236-20260318t145434z-a1`.
-1. Run `T241` next as one diagnosis-only split of the post-`T240`
+1. Run `T243` next as one diagnosis-only split of the post-`T241`
    `talker_core.layer_15.output` seam into residual/output-formation
    sub-boundaries.
 1. Before new Hemma Qwen runs, use:
