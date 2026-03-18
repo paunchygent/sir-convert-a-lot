@@ -20,9 +20,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_handoff_sub_boundary_trace_targets,
     iter_talker_core_post_t234_disagreement_trace_targets,
     iter_talker_core_post_t235_row_local_outlier_trace_targets,
+    iter_talker_core_post_t237_downstream_convergence_trace_targets,
     iter_talker_core_trace_targets,
     talker_core_input_layernorm_internal_trace_names,
     talker_core_post_t235_row_local_outlier_trace_names,
+    talker_core_post_t237_downstream_convergence_trace_names,
     talker_core_trace_prefix,
 )
 
@@ -159,6 +161,27 @@ def test_iter_talker_core_post_t235_row_local_outlier_trace_targets_focuses_t236
     targets = iter_talker_core_post_t235_row_local_outlier_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
+        "talker_core.layer_15.output",
+        "talker_core.layer_16.input",
+    ]
+
+
+def test_talker_core_post_t237_downstream_convergence_trace_names_lock_t240_order() -> None:
+    """The T240 trace should expose the fixed downstream convergence corridor."""
+    assert talker_core_post_t237_downstream_convergence_trace_names() == (
+        "talker_core.layer_15.mlp.down_proj",
+        "talker_core.layer_15.output",
+        "talker_core.layer_16.input",
+        "talker_core.layer_16.input_layernorm.output",
+    )
+
+
+def test_iter_talker_core_post_t237_downstream_convergence_targets_focus_t240_corridor() -> None:
+    """The T240 trace should isolate the downstream split beneath layer 15 output."""
+    targets = iter_talker_core_post_t237_downstream_convergence_trace_targets(_FakeRootModel())
+
+    assert [target.name for target in targets] == [
+        "talker_core.layer_15.mlp.down_proj",
         "talker_core.layer_15.output",
         "talker_core.layer_16.input",
     ]

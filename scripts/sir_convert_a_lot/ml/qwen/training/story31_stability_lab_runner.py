@@ -31,6 +31,9 @@ from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     resolve_effective_bind_root,
     resolve_effective_hf_cache_dir,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training import (
+    story31_post_t237_downstream_convergence_assessment as t240_downstream_convergence_assessment,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
     DEFAULT_PILOT_BUNDLE_ROOT,
 )
@@ -161,6 +164,9 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
     validate_input_layernorm_internal_contract(settings)
     validate_post_t234_disagreement_contract(settings)
     _validate_row_local_hook_contract(settings)
+    t240_downstream_convergence_assessment.validate_post_t237_downstream_convergence_contract(
+        settings
+    )
     build_performed, image_id = prepare_qwen_image(
         _RunnerImageSettings(
             dockerfile_path=settings.dockerfile_path,
@@ -248,6 +254,12 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
         ),
         post_t236_row_local_micro_family_assessment=(
             build_post_t236_row_local_micro_family_assessment(
+                settings=settings,
+                matrix_rows=compact_matrix_rows,
+            )
+        ),
+        post_t237_downstream_convergence_assessment=(
+            t240_downstream_convergence_assessment.build_post_t237_downstream_convergence_assessment(
                 settings=settings,
                 matrix_rows=compact_matrix_rows,
             )

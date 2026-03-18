@@ -28,6 +28,7 @@ _HANDOFF_SUB_BOUNDARY_LAYER_INDEX = 16
 _INPUT_LAYERNORM_INTERNAL_LAYER_INDEX = 16
 _POST_T234_DISAGREEMENT_LAYER_INDICES = (16, 15)
 _POST_T235_ROW_LOCAL_OUTLIER_LAYER_INDICES = (16, 15)
+_POST_T237_DOWNSTREAM_CONVERGENCE_LAYER_INDICES = (15, 16)
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,16 @@ def talker_core_input_layernorm_internal_trace_names() -> tuple[str, ...]:
 def talker_core_post_t235_row_local_outlier_trace_names() -> tuple[str, ...]:
     """Return the fixed T236 row-local outlier corridor for `sub_talker_loss`."""
     return (
+        f"{_TALKER_CORE_PREFIX}layer_15.output",
+        f"{_TALKER_CORE_PREFIX}layer_16.input",
+        f"{_TALKER_CORE_PREFIX}layer_16.input_layernorm.output",
+    )
+
+
+def talker_core_post_t237_downstream_convergence_trace_names() -> tuple[str, ...]:
+    """Return the fixed T240 downstream convergence corridor beneath `layer_15.output`."""
+    return (
+        f"{_TALKER_CORE_PREFIX}layer_15.mlp.down_proj",
         f"{_TALKER_CORE_PREFIX}layer_15.output",
         f"{_TALKER_CORE_PREFIX}layer_16.input",
         f"{_TALKER_CORE_PREFIX}layer_16.input_layernorm.output",
@@ -223,6 +234,25 @@ def iter_talker_core_post_t235_row_local_outlier_trace_targets(
         for layer_index in _POST_T235_ROW_LOCAL_OUTLIER_LAYER_INDICES
     )
     return (
+        _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
+        _forward_pre_target(name=f"{_TALKER_CORE_PREFIX}layer_16.input", module=layer_16),
+    )
+
+
+def iter_talker_core_post_t237_downstream_convergence_trace_targets(
+    model: object,
+) -> tuple[TalkerCoreTraceTarget, ...]:
+    """Return the narrowed T240 corridor beneath the converged `layer_15.output` seam."""
+    layer_15, layer_16 = (
+        resolve_talker_decoder_layer(model, layer_index)
+        for layer_index in _POST_T237_DOWNSTREAM_CONVERGENCE_LAYER_INDICES
+    )
+    layer_15_mlp = _required_module(layer_15, "mlp")
+    return (
+        _forward_target(
+            name=f"{_TALKER_CORE_PREFIX}layer_15.mlp.down_proj",
+            module=_required_module(layer_15_mlp, "down_proj"),
+        ),
         _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
         _forward_pre_target(name=f"{_TALKER_CORE_PREFIX}layer_16.input", module=layer_16),
     )

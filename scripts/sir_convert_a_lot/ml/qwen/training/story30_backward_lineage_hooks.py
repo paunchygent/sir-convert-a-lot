@@ -27,14 +27,17 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces import (
     TalkerForwardSurfaces,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
+    TalkerCoreTraceTarget,
     iter_talker_core_boundary_trace_targets,
     iter_talker_core_handoff_sub_boundary_trace_targets,
     iter_talker_core_post_t234_disagreement_trace_targets,
     iter_talker_core_post_t235_row_local_outlier_trace_targets,
+    iter_talker_core_post_t237_downstream_convergence_trace_targets,
     iter_talker_core_trace_targets,
     resolve_talker_input_layernorm,
     talker_core_input_layernorm_internal_trace_names,
     talker_core_post_t235_row_local_outlier_trace_names,
+    talker_core_post_t237_downstream_convergence_trace_names,
     talker_core_trace_prefix,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contracts import (
@@ -49,6 +52,9 @@ TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE = "talker_core_handoff_sub_boundar
 TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE = "talker_core_input_layernorm_internal"
 TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE = "talker_core_post_t234_disagreement"
 TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE = "talker_core_post_t235_row_local_outlier"
+TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE = (
+    "talker_core_post_t237_downstream_convergence"
+)
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
@@ -57,6 +63,7 @@ HOOK_PROFILE_CHOICES = (
     TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE,
     TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE,
     TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE,
+    TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -106,6 +113,9 @@ class GradientHookSession:
             return
         if self._hook_profile == TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE:
             self._install_post_t235_row_local_outlier_trace(model=model)
+            return
+        if self._hook_profile == TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE:
+            self._install_post_t237_downstream_convergence_trace(model=model)
             return
         if self._hook_profile == TALKER_CORE_HOOK_PROFILE:
             trace_targets = iter_talker_core_trace_targets(model)
@@ -283,7 +293,32 @@ class GradientHookSession:
 
     def _install_post_t235_row_local_outlier_trace(self, *, model: object) -> None:
         """Patch the T236 line-4 outlier corridor while keeping the state vector fixed."""
-        for target in iter_talker_core_post_t235_row_local_outlier_trace_targets(model):
+        self._install_layer16_input_layernorm_output_trace(
+            model=model,
+            trace_targets=iter_talker_core_post_t235_row_local_outlier_trace_targets(model),
+            output_name=talker_core_post_t235_row_local_outlier_trace_names()[-1],
+            profile_label="T236",
+        )
+
+    def _install_post_t237_downstream_convergence_trace(self, *, model: object) -> None:
+        """Patch the T240 downstream corridor while keeping the winner fixed."""
+        self._install_layer16_input_layernorm_output_trace(
+            model=model,
+            trace_targets=iter_talker_core_post_t237_downstream_convergence_trace_targets(model),
+            output_name=talker_core_post_t237_downstream_convergence_trace_names()[-1],
+            profile_label="T240",
+        )
+
+    def _install_layer16_input_layernorm_output_trace(
+        self,
+        *,
+        model: object,
+        trace_targets: tuple[TalkerCoreTraceTarget, ...],
+        output_name: str,
+        profile_label: str,
+    ) -> None:
+        """Install one narrowed corridor plus a reversible layer-16 output wrapper."""
+        for target in trace_targets:
             handle = (
                 target.module.register_forward_hook(
                     self._build_forward_hook(target.name, target.tensor_selector)
@@ -303,15 +338,20 @@ class GradientHookSession:
             )
         )
         input_layernorm.forward = MethodType(
-            self._build_post_t235_row_local_outlier_forward(),
+            self._build_layer16_input_layernorm_output_forward(
+                output_name=output_name,
+                profile_label=profile_label,
+            ),
             input_layernorm,
         )
 
-    def _build_post_t235_row_local_outlier_forward(
+    def _build_layer16_input_layernorm_output_forward(
         self,
+        *,
+        output_name: str,
+        profile_label: str,
     ) -> Callable[[torch.nn.Module, object], torch.Tensor]:
-        """Build one reversible wrapper that exposes the T236 output outlier seam."""
-        output_name = talker_core_post_t235_row_local_outlier_trace_names()[-1]
+        """Build one reversible wrapper that exposes the layer-16 output seam."""
 
         def on_forward(
             self_module: torch.nn.Module, *args: object, **kwargs: object
@@ -319,12 +359,12 @@ class GradientHookSession:
             if kwargs:
                 raise SystemExit(
                     "Backward-lineage probe expected `layer_16.input_layernorm` "
-                    "to receive no keyword arguments under the T236 profile."
+                    f"to receive no keyword arguments under the {profile_label} profile."
                 )
             if len(args) != 1 or not isinstance(args[0], torch.Tensor):
                 raise SystemExit(
                     "Backward-lineage probe expected `layer_16.input_layernorm` "
-                    "to receive exactly one tensor input under the T236 profile."
+                    f"to receive exactly one tensor input under the {profile_label} profile."
                 )
             residual_input = args[0]
             input_dtype = residual_input.dtype
