@@ -192,8 +192,10 @@ explicitly narrow the scope.
     `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the
     effective bind roots
   - `T243` is now the immediate diagnosis-only mechanism slice
-  - `T243` must split layer-15 residual/output formation itself before any new
-    stabilizer family is considered
+  - `T243` must split the official `Qwen3TTSTalkerDecoderLayer.forward`
+    residual path itself before any new stabilizer family is considered:
+    saved residual addend -> residual sum -> returned `layer_15.output`,
+    with the MLP return path already excluded by `T241`
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate

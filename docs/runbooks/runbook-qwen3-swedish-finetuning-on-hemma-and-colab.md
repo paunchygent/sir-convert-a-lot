@@ -451,8 +451,11 @@ For mechanism questions:
     `/home/paunchygent/.data/sir-convert-a-lot/`
 - ad hoc runtime bind fallback is compatibility-only after `T242`
 - `T243` is now the immediate diagnosis-only mechanism action
-- `T243` must split layer-15 residual/output formation itself before any new
-  stabilizer family or promotion discussion
+- `T243` must split the official `Qwen3TTSTalkerDecoderLayer.forward`
+  residual path itself before any new stabilizer family or promotion
+  discussion:
+  saved residual addend -> residual sum -> returned `layer_15.output`, with
+  the MLP return path already excluded by `T241`
 
 For recovery questions:
 

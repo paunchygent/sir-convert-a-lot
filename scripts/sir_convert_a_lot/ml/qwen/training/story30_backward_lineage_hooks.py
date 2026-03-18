@@ -41,6 +41,9 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     talker_core_post_t237_downstream_convergence_trace_names,
     talker_core_trace_prefix,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training import (
+    story31_post_t241_layer15_residual_output_hooking as t243_residual_output_hooking,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contracts import (
     FirstNonFiniteHookObservation,
     TensorGradientObservation,
@@ -59,6 +62,9 @@ TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE = (
 TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE = (
     "talker_core_post_t240_layer15_output_split"
 )
+TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE = (
+    "talker_core_post_t241_layer15_residual_output"
+)
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
@@ -69,6 +75,7 @@ HOOK_PROFILE_CHOICES = (
     TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE,
     TALKER_CORE_POST_T237_DOWNSTREAM_CONVERGENCE_HOOK_PROFILE,
     TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE,
+    TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -124,6 +131,9 @@ class GradientHookSession:
             return
         if self._hook_profile == TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE:
             self._install_post_t240_layer15_output_split_trace(model=model)
+            return
+        if self._hook_profile == TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE:
+            self._install_post_t241_layer15_residual_output_trace(model=model)
             return
         if self._hook_profile == TALKER_CORE_HOOK_PROFILE:
             trace_targets = iter_talker_core_trace_targets(model)
@@ -331,6 +341,17 @@ class GradientHookSession:
             )
             self._handles.append(handle)
 
+    def _install_post_t241_layer15_residual_output_trace(self, *, model: object) -> None:
+        """Install the T243 residual-input / residual-sum / output-return split."""
+        t243_residual_output_hooking.install_post_t241_layer15_residual_output_trace(
+            model=model,
+            attach_tensor=self._attach_tensor,
+            build_forward_hook=self._build_forward_hook,
+            build_forward_pre_hook=self._build_forward_pre_hook,
+            register_handle=self._handles.append,
+            patch_module_forward=self._patch_module_forward,
+        )
+
     def _install_layer16_input_layernorm_output_trace(
         self,
         *,
@@ -400,6 +421,21 @@ class GradientHookSession:
             return output
 
         return on_forward
+
+    def _patch_module_forward(
+        self,
+        module: torch.nn.Module,
+        patched_forward: Callable[..., object],
+    ) -> None:
+        """Patch one module forward and register it for automatic restoration."""
+        self._patched_module_forwards.append(
+            _PatchedModuleForward(
+                module=module,
+                original_forward=module.forward,
+                had_instance_forward="forward" in module.__dict__,
+            )
+        )
+        module.forward = MethodType(patched_forward, module)
 
 
 def build_gradient_hook_session(*, hook_profile: str) -> GradientHookSession:

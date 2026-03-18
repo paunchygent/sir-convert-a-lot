@@ -64,6 +64,7 @@ def build_report_markdown(report: Story31StabilityLabReport) -> str:
     _append_t237_post_t236_micro_family_section(lines, report)
     _append_t240_post_t237_downstream_convergence_section(lines, report)
     _append_t241_post_t240_layer15_output_split_section(lines, report)
+    _append_t243_post_t241_layer15_residual_output_section(lines, report)
     return "\n".join(lines)
 
 
@@ -288,6 +289,41 @@ def _append_t241_post_t240_layer15_output_split_section(
         [
             "",
             "## T241 Post-T240 Layer-15 Output Split Assessment",
+            "",
+            f"- Assessed variant: `{assessment.stabilization_variant}`",
+            f"- Target loss kind: `{assessment.target_loss_kind}`",
+            f"- Convergence classification: `{assessment.convergence_classification or '-'}`",
+            f"- Dominant surface: `{assessment.dominant_surface or '-'}`",
+            f"- Evidence ambiguous: `{assessment.evidence_is_ambiguous}`",
+            f"- Ambiguity reason: `{assessment.ambiguity_reason or '-'}`",
+            f"- Next task rule: `{assessment.next_task_rule}`",
+            "",
+            "| Case | Role | Non-finite | Talker Hook | Matched Corridor Surface |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+    )
+    for assessment_row in assessment.comparison_rows:
+        lines.append(
+            "| "
+            f"{assessment_row.case_id} | "
+            f"{assessment_row.role} | "
+            f"{assessment_row.case_has_non_finite} | "
+            f"{assessment_row.first_non_finite_talker_core_hook_tensor or '-'} | "
+            f"{assessment_row.matched_corridor_surface or '-'} |"
+        )
+
+
+def _append_t243_post_t241_layer15_residual_output_section(
+    lines: list[str],
+    report: Story31StabilityLabReport,
+) -> None:
+    assessment = report.post_t241_layer15_residual_output_assessment
+    if assessment is None:
+        return
+    lines.extend(
+        [
+            "",
+            "## T243 Post-T241 Layer-15 Residual/Output Assessment",
             "",
             f"- Assessed variant: `{assessment.stabilization_variant}`",
             f"- Target loss kind: `{assessment.target_loss_kind}`",

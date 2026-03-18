@@ -366,7 +366,8 @@ the governing success criterion for future restart work.
     at `talker_core.layer_15.output`
   - `T241`: complete; `task241-20260318t175714z-a1` kept all three normative
     `sub_talker_loss` rows at `talker_core.layer_15.output`
-  - `T243`: split the post-`T241` layer-15 residual/output-formation seam
+  - `T243`: split the post-`T241` layer-15 residual/output-formation seam in
+    the official `Qwen3TTSTalkerDecoderLayer.forward` residual path
 - `T217` remains the blocked recovery lane:
   it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

@@ -17,9 +17,11 @@ import torch
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     resolve_talker_input_layernorm,
     talker_core_input_layernorm_internal_trace_names,
+    talker_core_post_t241_layer15_residual_output_trace_names,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_hooks import (
     TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE,
+    TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE,
     build_gradient_hook_session,
 )
 
@@ -62,6 +64,84 @@ class _FakeRootModel(torch.nn.Module):
         self.talker = _FakeTalker()
 
 
+class _FakeTalkerMlp(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.linear = torch.nn.Linear(4, 4, bias=False)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.linear(hidden_states, self.linear.weight)
+
+
+class _FakeTalkerAttention(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.linear = torch.nn.Linear(4, 4, bias=False)
+
+    def forward(
+        self,
+        *,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        position_ids: torch.LongTensor | None = None,
+        past_key_values: tuple[torch.Tensor, ...] | None = None,
+        output_attentions: bool | None = False,
+        use_cache: bool | None = False,
+        cache_position: torch.LongTensor | None = None,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None,
+        **kwargs: object,
+    ) -> tuple[torch.Tensor, None]:
+        del (
+            attention_mask,
+            position_ids,
+            past_key_values,
+            output_attentions,
+            use_cache,
+            cache_position,
+            position_embeddings,
+            kwargs,
+        )
+        return torch.nn.functional.linear(hidden_states, self.linear.weight), None
+
+
+class _FakeTalkerDecoderLayer(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.input_layernorm = _FakeRmsNorm()
+        self.self_attn = _FakeTalkerAttention()
+        self.post_attention_layernorm = _FakeRmsNorm()
+        self.mlp = _FakeTalkerMlp()
+
+    def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor]:
+        residual = hidden_states
+        hidden_states = self.input_layernorm(hidden_states)
+        hidden_states, _ = self.self_attn(hidden_states=hidden_states)
+        hidden_states = residual + hidden_states
+        residual = hidden_states
+        hidden_states = self.post_attention_layernorm(hidden_states)
+        hidden_states = self.mlp(hidden_states)
+        hidden_states = residual + hidden_states
+        return (hidden_states,)
+
+
+class _FakeResidualTalkerModel(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.layers = torch.nn.ModuleList([_FakeTalkerDecoderLayer() for _ in range(17)])
+
+
+class _FakeResidualTalker(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.model = _FakeResidualTalkerModel()
+
+
+class _FakeResidualRootModel(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.talker = _FakeResidualTalker()
+
+
 def test_t233_hook_session_wraps_input_layernorm_and_restores_forward() -> None:
     """The T233 session should capture the full internal chain and restore the module."""
     model = _FakeRootModel()
@@ -84,3 +164,29 @@ def test_t233_hook_session_wraps_input_layernorm_and_restores_forward() -> None:
 
     session.close()
     assert "forward" not in input_layernorm.__dict__
+
+
+def test_t243_hook_session_wraps_layer15_mlp_and_captures_residual_path() -> None:
+    """The T243 session should capture residual input, sum, output, and layer-16 handoff."""
+    model = _FakeResidualRootModel()
+    layer_15 = model.talker.model.layers[15]
+    layer_16 = model.talker.model.layers[16]
+    session = build_gradient_hook_session(
+        hook_profile=TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE
+    )
+
+    session.install_pre_forward_hooks(model=model)
+    assert "forward" in layer_15.__dict__
+
+    hidden_states = torch.randn(2, 4, requires_grad=True)
+    layer_15_output = layer_15(hidden_states)[0]
+    layer_16_output = layer_16(layer_15_output)[0]
+    layer_16_output.sum().backward()
+
+    assert {item.tensor_name for item in session.ordered_observations()} == set(
+        talker_core_post_t241_layer15_residual_output_trace_names()
+    )
+    assert session.first_non_finite_observation().tensor_name is None
+
+    session.close()
+    assert "forward" not in layer_15.__dict__

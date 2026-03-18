@@ -253,6 +253,34 @@ class Story31PostT240Layer15OutputSplitAssessment:
 
 
 @dataclass(frozen=True)
+class PostT241Layer15ResidualOutputComparisonRow:
+    """Comparable pair-versus-single row outcome for the T243 residual-path split."""
+
+    case_id: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    role: str
+    case_has_non_finite: bool
+    first_non_finite_talker_core_hook_tensor: str | None
+    matched_corridor_surface: str | None
+
+
+@dataclass(frozen=True)
+class Story31PostT241Layer15ResidualOutputAssessment:
+    """Focused T243 assessment for the upstream talker residual/output path."""
+
+    stabilization_variant: str
+    target_loss_kind: str
+    target_corridor_surfaces: tuple[str, ...]
+    comparison_rows: tuple[PostT241Layer15ResidualOutputComparisonRow, ...]
+    convergence_classification: str | None
+    dominant_surface: str | None
+    evidence_is_ambiguous: bool
+    ambiguity_reason: str | None
+    next_task_rule: str
+
+
+@dataclass(frozen=True)
 class Story31StabilityLabReport:
     """Machine-readable report for one Story 31 matrix run."""
 
@@ -288,6 +316,9 @@ class Story31StabilityLabReport:
     ) = None
     post_t240_layer15_output_split_assessment: (
         Story31PostT240Layer15OutputSplitAssessment | None
+    ) = None
+    post_t241_layer15_residual_output_assessment: (
+        Story31PostT241Layer15ResidualOutputAssessment | None
     ) = None
 
 

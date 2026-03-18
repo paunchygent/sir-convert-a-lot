@@ -54,7 +54,7 @@ The current experiment posture is:
   - `T237` complete: `task237-20260318t154708z-a1` converged downstream to `talker_core.layer_15.output`
   - `T240` complete: `task240-20260318t165458z-a1` confirmed all three normative `sub_talker_loss` rows first break at `talker_core.layer_15.output`
   - `T241` complete: `task241-20260318t175714z-a1` kept all three normative `sub_talker_loss` rows at `talker_core.layer_15.output`
-  - `T243` is now the active diagnosis-only layer-15 residual/output-formation split
+  - `T243` is now the active diagnosis-only layer-15 residual/output-formation split anchored to the official `Qwen3TTSTalkerDecoderLayer.forward` path: saved residual addend -> residual sum -> returned `layer_15.output`, with the MLP return path already excluded by `T241`
   - `T227` is now contingent only if a later parity/runtime divergence is verified
 - parallel Hemma infra: `T242` is now complete and makes the home-backed Docker-visible bind roots the explicit permanent host contract on Hemma
 - `recovery`: governed `qwen-train` fresh-start proof, blocked at `T217` until a mechanism candidate is promoted
@@ -198,7 +198,8 @@ Story 28 is now operating policy:
   - `T237` is now complete under `task237-20260318t154708z-a1`
   - `T240` is now complete under `task240-20260318t165458z-a1`
   - `T241` is now complete under `task241-20260318t175714z-a1`
-  - `T243` is now the immediate diagnosis-only layer-15 residual/output-formation split
+  - `T243` is now the immediate diagnosis-only layer-15 residual/output-formation split of the upstream talker decoder residual path: `residual = hidden_states` -> `residual + hidden_states` -> returned
+    `layer_15.output`
   - `T242` is now complete; use `pdm run run-hemma -- pdm run qwen-docker-bind-roots status` and `probe` as the normal Qwen Docker preflight on Hemma
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal claims

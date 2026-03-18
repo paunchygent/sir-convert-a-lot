@@ -201,8 +201,10 @@ work.
     effective home-backed cache/output roots under
     `/home/paunchygent/.data/sir-convert-a-lot/`
   - `T243` is now the immediate diagnosis-only next step and must split the
-    layer-15 residual/output-formation seam before any new stabilizer family
-    is considered
+    official `Qwen3TTSTalkerDecoderLayer.forward` residual path before any
+    new stabilizer family is considered:
+    saved residual addend -> residual sum -> returned `layer_15.output`,
+    with the MLP return path already excluded by `T241`
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run
