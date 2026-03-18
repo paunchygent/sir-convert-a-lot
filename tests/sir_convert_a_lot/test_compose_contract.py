@@ -101,7 +101,14 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["SIR_CONVERT_A_LOT_DATA_DIR"] == "/var/lib/sir-convert-a-lot/prod"
     assert "SIR_CONVERT_A_LOT_EVAL_DATA_DIR" not in env_map
 
-    assert service.get("command") == ["pdm", "run", "serve:sir-convert-a-lot"]
+    assert service.get("command") == [
+        "uvicorn",
+        "scripts.sir_convert_a_lot.service:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8085",
+    ]
     volumes = service.get("volumes")
     assert volumes == ["sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod"]
 
@@ -147,12 +154,19 @@ def test_compose_declares_only_prod_named_volume() -> None:
 
 def test_dockerfile_uses_supported_runtime_settings_for_single_service() -> None:
     dockerfile_text = DOCKERFILE.read_text(encoding="utf-8")
-    assert "pdm sync --prod --no-editable --no-self" in dockerfile_text
-    assert "--frozen-lockfile" not in dockerfile_text
+    assert "FROM python:3.11-slim AS runtime-base" in dockerfile_text
+    assert "FROM runtime-base AS dependency-builder" in dockerfile_text
+    assert "COPY --from=dependency-builder /app/.venv /app/.venv" in dockerfile_text
+    assert "export_service_requirements.py" in dockerfile_text
+    assert (
+        "python -m pip install --no-cache-dir --no-deps -r /tmp/service-requirements.txt"
+        in dockerfile_text
+    )
     assert "SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL" in dockerfile_text
     assert "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}" in dockerfile_text
     assert "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}" in dockerfile_text
     assert "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}" in dockerfile_text
+    assert 'CMD ["uvicorn", "scripts.sir_convert_a_lot.service:app"' in dockerfile_text
     assert "EXPOSE 8085" in dockerfile_text
     assert "EXPOSE 8086" not in dockerfile_text
     assert "/var/lib/sir-convert-a-lot/eval" not in dockerfile_text

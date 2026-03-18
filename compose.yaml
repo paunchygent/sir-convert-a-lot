@@ -25,9 +25,12 @@ services:
       - VIRTUAL_PORT=8085
       - LETSENCRYPT_HOST=${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}
     command:
-      - pdm
-      - run
-      - serve:sir-convert-a-lot
+      - uvicorn
+      - scripts.sir_convert_a_lot.service:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8085"
     ports:
       - "${SIR_CONVERT_A_LOT_PROD_PORT:-8085}:8085"
     devices:

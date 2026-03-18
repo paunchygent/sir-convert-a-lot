@@ -14,6 +14,7 @@
   - `docs/converters/sir_convert_a_lot.md`
   - `docs/decisions/0002-multi-format-service-api-v2.md`
   - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+  - `docs/backlog/tasks/task-239-split-sir-convert-a-lot-service-dependency-and-app-layers-to-avoid-full-rebuilds-on-code-only-changes.md`
 
 - Confirm active context in `docs/backlog/current.md`.
 

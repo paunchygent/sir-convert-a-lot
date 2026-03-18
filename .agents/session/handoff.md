@@ -218,7 +218,27 @@ Story 28 remains operating policy:
    as the primary operator flow.
 1. Record future active runs in
    `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
-   using the canonical experiment-spec template.
+
+## Service Image Layering Note (2026-03-18)
+
+- A Hemma deploy attempt for the Exam.net DOCX paragraph-repair service patch
+  was intentionally aborted after the root service image spent an excessive
+  amount of time rebuilding the full dependency stack.
+- The remote `dev-recreate` / BuildKit / `pdm sync` process chain was stopped,
+  BuildKit cache was pruned, and the old live service was left healthy in
+  place:
+  - `sir_convert_a_lot_prod` still healthy on `470e44af...`
+  - remote repo `HEAD` had already moved to `6d89e273...`
+- `task-239` is now the canonical next slice for the service image redesign:
+  split stable system/dependency layers from the thin app layer and stop
+  installing CUDA-flavoured torch packages during the service dependency build
+  only to replace them with ROCm wheels later.
+- Current implementation direction for `task-239`:
+  - layered root `Dockerfile`
+  - filtered prod requirements export for the service image
+  - thin final runtime layer that copies `scripts/`
+  - unchanged single-service `/readyz` / revision contract
+    using the canonical experiment-spec template.
 
 ## Validation State
 
