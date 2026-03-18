@@ -161,7 +161,12 @@ work.
     under `task230-20260318t082049z-a1`
   - `T231` is now complete as the explicit no-winner promotion decision
   - `T232` is now complete as the lane decision to stay in mechanism
-  - `T233` is now the immediate next localized mechanism slice
+  - `T233` is now complete as the normalization-internal rerun under
+    `task233-20260318t112544z-a1`
+  - the pair and both single-row `sub_talker_loss` cases, plus the wider
+    nine-row matrix, all first broke at
+    `talker_core.layer_16.input_layernorm.output`
+  - `T234` is now the immediate next localized mechanism slice
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

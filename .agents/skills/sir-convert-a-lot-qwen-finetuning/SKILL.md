@@ -157,7 +157,11 @@ explicitly narrow the scope.
     under `task230-20260318t082049z-a1`
   - `T231` is now complete as the explicit no-winner promotion decision
   - `T232` is now complete as the lane decision to stay in mechanism
-  - `T233` is now the immediate normalization-internal mechanism slice
+  - `T233` is now complete as the normalization-internal rerun under
+    `task233-20260318t112544z-a1`
+  - the first verified internal surface is now
+    `talker_core.layer_16.input_layernorm.output`
+  - `T234` is now the immediate post-normalization output-scale mechanism slice
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate

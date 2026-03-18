@@ -43,14 +43,14 @@ The current experiment posture is:
 - `mechanism`
   - active lane: Story 31 through `qwen-story31-stability-lab`
   - `T225-T226` complete: exact parity contract plus committed parity-probe;
-    live result under `task226-20260317t224307Z` was `no_meaningful_divergence_found`
+    `task226-20260317t224307Z` closed `no_meaningful_divergence_found`
   - `T219` now stands as recorded negative unpromoted evidence
   - `T228` complete: ranked closure recorded from `task219-20260317t180700z-a1`
-  - `T229` complete: `task229-20260318t064712z-a1` localized `sub_talker_loss`
-    to `talker_core.layer_16.input_layernorm`
-  - `T230-T232` complete: the normalization-entry family closed negative, `T217` stayed
-    blocked, and Story 31 remained in `mechanism`
-  - `T233` is now the active normalization-internal slice
+  - `T229` complete: `task229-20260318t064712z-a1` localized to `talker_core.layer_16.input_layernorm`
+  - `T230-T232` complete: the normalization-entry family closed negative,
+    `T217` stayed blocked, and Story 31 stayed in `mechanism`
+  - `T233` complete: `task233-20260318t112544z-a1` fixed the first internal surface at `talker_core.layer_16.input_layernorm.output`
+  - `T234` is now the active post-normalization output-scale slice
   - `T227` is now contingent only if a later parity/runtime divergence is verified
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
@@ -177,12 +177,11 @@ Story 28 is now operating policy:
     `first_divergence_classification = no_meaningful_divergence_found`, so
     Story 31 returns to `T219` rather than escalating to `T227`
 - 2026-03-18:
-  - `T219` was backfilled as already-failed bounded Story 31 evidence with no
-    promoted variant; `T228` closed that family from `task219-20260317t180700z-a1`,
-    `T229` then closed with an unambiguous earliest sub-boundary at
-    `talker_core.layer_16.input_layernorm`; `T230` then closed the bounded
-    normalization-entry family negative, `T231-T232` kept the lane in
-    mechanism, and `T233` is now the next localized question.
+  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228`
+    closed that family, `T229` localized the next seam to
+    `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in
+    mechanism, and `T233` then resolved the internal seam to
+    `talker_core.layer_16.input_layernorm.output`, which opens `T234`.
 
 ## Next Actions
 
@@ -192,16 +191,17 @@ Story 28 is now operating policy:
 - Keep `T221` classified as provenance evidence: it is stronger than `T220`,
   but it is not a mechanism or recovery result.
 - Continue through Story 31 as the mechanism lane:
-  - `T225-T226` are complete as the exact parity contract plus the committed
-    deterministic parity-probe surface; `task226-20260317t224307Z` closed with
-    `no_meaningful_divergence_found`
+  - `T225-T226` are complete as the exact parity contract plus committed
+    parity-probe; `task226-20260317t224307Z` closed `no_meaningful_divergence_found`
   - `T219` is now recorded as negative bounded evidence without promotion
   - `T228` is now complete as the ranked closure of that failed family
-  - `T229` is now complete as the truthful narrowed rerun under `task229-20260318t064712z-a1` and
-    constrains Story 31 to the pre-`input_layernorm` normalization-entry family only
-  - `T230-T232` are now complete: the truthful bounded rerun under `task230-20260318t082049z-a1`
-    found no local winner and kept the lane in `mechanism`
-  - `T233` is now the immediate localized mechanism slice
+  - `T229` is now complete under `task229-20260318t064712z-a1` and constrains
+    Story 31 to the pre-`input_layernorm` normalization-entry family only
+  - `T230-T232` are now complete under `task230-20260318t082049z-a1` with no
+    local winner and the lane still in `mechanism`
+  - `T233` is now complete under `task233-20260318t112544z-a1`; the next
+    mechanism family is post-normalization output-scale only
+  - `T234` is now the immediate localized mechanism slice
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal
     claims

@@ -31,7 +31,11 @@ Story 32 is now the operator-facing mental model:
     under `task230-20260318t082049z-a1`
   - `T231` is now complete as the explicit no-winner promotion decision
   - `T232` is now complete as the lane decision to stay in mechanism
-  - `T233` is now the active normalization-internal mechanism slice
+  - `T233` is now complete as the normalization-internal rerun under
+    `task233-20260318t112544z-a1`
+  - the first verified internal surface is now
+    `talker_core.layer_16.input_layernorm.output`
+  - `T234` is now the active post-normalization output-scale mechanism slice
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -84,7 +88,9 @@ Story 28 remains operating policy:
   - `T230`: complete; close the diagnosed normalization-entry family negative
   - `T231`: complete; record the explicit no-winner promotion decision
   - `T232`: complete; keep Story 31 in mechanism and open `T233`
-  - `T233`: split `layer16.input_layernorm` into normalization-internal probes
+  - `T233`: complete; resolve the earliest internal surface to
+    `talker_core.layer_16.input_layernorm.output`
+  - `T234`: test one diagnosed post-normalization output-scale micro-family
 
 ## Latest Task 101 Truth
 
@@ -174,8 +180,10 @@ Story 28 remains operating policy:
    under `task230-20260318t082049z-a1`.
 1. Keep `T231` recorded as the explicit no-winner promotion decision.
 1. Keep `T232` recorded as the lane decision to stay in mechanism.
-1. Run `T233` next as the normalization-internal probe slice for
-   `talker_core.layer_16.input_layernorm`.
+1. Keep `T233` recorded as the truthful normalization-internal rerun under
+   `task233-20260318t112544z-a1`.
+1. Run `T234` next as the bounded post-normalization output-scale slice for
+   `talker_core.layer_16.input_layernorm.output`.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion
@@ -190,14 +198,18 @@ Story 28 remains operating policy:
 
 - `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story31_parity_probe.py -q`: passed
 - `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`: passed
+- `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_hooks.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_input_layernorm_internal_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`: passed
 - `pdm run test-ml`: passed
 - `pdm run typecheck-ml`: passed
+- `pdm run typecheck-all`: passed
+- `pdm run format-all`: passed
+- `pdm run lint-fix`: passed
 - `pdm run validate-tasks`: passed
 - `pdm run validate-docs`: passed
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`: passed
 - `pdm run qwen-story31-parity-probe --help`: passed
 - `pdm run qwen-story31-stability-lab --help`: passed
-- `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`: blocked because the remote Hemma checkout still exposes the older `backward_lineage_probe.py` parser
+- `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1 --skip-build --hook-profile talker_core_input_layernorm_internal --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`: passed
 
 The docs/index validations should be rerun after any further docs change
 touching Story 31, Story 32, the live ledger, or the operator runbook.

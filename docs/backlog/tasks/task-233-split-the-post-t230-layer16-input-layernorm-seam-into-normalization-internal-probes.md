@@ -2,7 +2,7 @@
 id: task-233-split-the-post-t230-layer16-input-layernorm-seam-into-normalization-internal-probes
 title: Split the post-T230 layer16 input-layernorm seam into normalization-internal probes
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -10,6 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md
   - docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md
+  - docs/backlog/tasks/task-234-test-one-diagnosed-post-t233-output-scale-micro-family-against-the-first-verified-layer16-input-layernorm-output-surface.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
@@ -74,11 +75,11 @@ question:
 ## Implementation Status
 
 - This task is diagnosis only.
-- The planned instrumentation should follow the existing reversible wrapper
+- The implemented instrumentation follows the existing reversible wrapper
   pattern already used by the talker-core stabilization surface:
   install the internal trace wrapper only for the active probe session and
   restore the original `input_layernorm.forward` afterward.
-- The planned interpretation contract is:
+- The resolved interpretation contract is:
   - if the earliest internal surface is `residual_input` or `fp32_input`,
     the next task may test one upstream residual-amplitude family only
   - if the earliest internal surface is `variance` or
@@ -89,42 +90,69 @@ question:
   - if the three required cases disagree, the next task remains blocked until
     the ambiguity is resolved
 
+## Result
+
+- Truthful bounded rerun:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1`
+- The new `talker_core_input_layernorm_internal` profile landed and traced the
+  committed internal RMSNorm chain:
+  - `talker_core.layer_16.input_layernorm.residual_input`
+  - `talker_core.layer_16.input_layernorm.fp32_input`
+  - `talker_core.layer_16.input_layernorm.variance`
+  - `talker_core.layer_16.input_layernorm.normalized_hidden_states`
+  - `talker_core.layer_16.input_layernorm.output`
+- All three required `sub_talker_loss` cases agreed on the same earliest
+  internal normalization surface:
+  - pair: `talker_core.layer_16.input_layernorm.output`
+  - line `13`: `talker_core.layer_16.input_layernorm.output`
+  - line `4`: `talker_core.layer_16.input_layernorm.output`
+- The broader nine-row matrix also matched that same earliest talker-core
+  surface across `main_loss`, `sub_talker_loss`, and `combined_loss`.
+- Interpretation:
+  the first verified failure now sits after the internal RMSNorm arithmetic and
+  at the module output seam itself, so the next mechanism task may test one
+  post-normalization output-scale micro-family only.
+
 ## Deliverables
 
-- [ ] One normalization-internal hook profile exists for the
+- [x] One normalization-internal hook profile exists for the
   `layer_16.input_layernorm` seam.
-- [ ] One comparison table identifies the earliest internal normalization
+- [x] One comparison table identifies the earliest internal normalization
   sub-surface across pair and single-row `sub_talker_loss` cases, or records
   that the evidence is still ambiguous.
-- [ ] One explicit shaping rule states which follow-on mechanism family may be
+- [x] One explicit shaping rule states which follow-on mechanism family may be
   tested next.
 
 ## Acceptance Criteria
 
-- [ ] The task tests diagnosis only; it does not add a new stabilization
+- [x] The task tests diagnosis only; it does not add a new stabilization
   family.
-- [ ] The probe holds bundle, rows, batching, mask policy, and ranked baseline
+- [x] The probe holds bundle, rows, batching, mask policy, and ranked baseline
   stabilizer fixed while the normalization seam is being split.
-- [ ] The probe compares only the pair and single-row `sub_talker_loss` cases;
+- [x] The probe compares only the pair and single-row `sub_talker_loss` cases;
   it does not widen back into `main_loss`, `combined_loss`, or a multi-variant
   family.
-- [ ] The output identifies one earliest internal normalization sub-surface or
+- [x] The output identifies one earliest internal normalization sub-surface or
   explicitly documents why the evidence is ambiguous.
-- [ ] The next follow-on family is constrained by this result to one diagnosed
+- [x] The next follow-on family is constrained by this result to one diagnosed
   causal idea only.
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run qwen-story31-stability-lab run --skip-build --hook-profile talker_core_input_layernorm_internal --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_hooks.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_input_layernorm_internal_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run qwen-story31-stability-lab --help`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1 --skip-build --hook-profile talker_core_input_layernorm_internal --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

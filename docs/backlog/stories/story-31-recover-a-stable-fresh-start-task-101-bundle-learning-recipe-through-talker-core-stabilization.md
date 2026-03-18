@@ -322,9 +322,18 @@ the governing success criterion for future restart work.
   - the failed normalization-entry family becomes historical mechanism
     evidence only
   - `T233` opens the next localized question
+- `T233` is now complete as the normalization-internal rerun:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1`
+  - pair and both single-row `sub_talker_loss` cases all first broke at
+    `talker_core.layer_16.input_layernorm.output`
+  - the broader nine-row matrix also first broke at
+    `talker_core.layer_16.input_layernorm.output`
+  - the next mechanism family is therefore constrained to one
+    post-normalization output-scale family only
 - the active follow-on slice is now:
-  - `T233`: split the post-`T230` `layer16.input_layernorm` seam into
-    normalization-internal probes
+  - `T234`: test one diagnosed post-`T233` output-scale micro-family against
+    the first verified `layer16.input_layernorm.output` surface
 - `T217` remains the blocked recovery lane:
   it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
