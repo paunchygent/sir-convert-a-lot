@@ -48,8 +48,22 @@ Story 32 is now the operator-facing mental model:
   - the outlier is a genuine row-local seam difference: pair and `line-13`
     stay at `talker_core.layer_15.output`, while `line-4` stays at
     `talker_core.layer_16.input_layernorm.output`
-  - `T237` is now the active upstream row-local micro-family mechanism slice
-  - `T237` is constrained to `talker_core.layer_16.input_layernorm.output`
+  - `T237` is now complete under `task237-20260318t154708z-a1`
+  - the `1e3` fp32-output-cap winner converged pair, `line-13`, and `line-4`
+    `sub_talker_loss` to `talker_core.layer_15.output`
+  - `T240` is now complete under `task240-20260318t165458z-a1`
+  - all three normative `sub_talker_loss` rows first broke at
+    `talker_core.layer_15.output`, so the convergence class is
+    `converged_layer15_output`
+  - the Hemma rerun stayed truthful by using the automatic home-backed bind
+    fallback after Docker resumed rejecting fresh `/srv/scratch` bind mounts
+  - `T242` is now the parallel Hemma infrastructure slice:
+    install the persistent bind-root service with
+    `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`, then use
+    `status` and `probe` as the normal preflight before new Qwen runs
+  - `T241` is now the active diagnosis-only mechanism slice
+  - `T241` must split layer-15 residual/output formation before any new
+    stabilizer family is considered
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -109,8 +123,10 @@ Story 28 remains operating policy:
   - `T235`: complete; confirm the post-`T234` disagreement is repeatable
   - `T236`: complete; classify the `line-4` disagreement as a genuine
     row-local seam difference
-  - `T237`: test one upstream row-local micro-family only against
-    `talker_core.layer_16.input_layernorm.output`
+  - `T237`: complete; fp32-output-cap `1e3` winner converged downstream
+  - `T240`: complete; confirmed `talker_core.layer_15.output` as the first
+    converged downstream seam
+  - `T241`: split the post-`T240` layer-15 residual/output formation seam
 
 ## Latest Task 101 Truth
 
@@ -208,8 +224,9 @@ Story 28 remains operating policy:
    `task235-20260318t140352z-a1`.
 1. Keep `T236` recorded as the truthful row-local classification rerun under
    `task236-20260318t145434z-a1`.
-1. Run `T237` next as one upstream row-local micro-family only against
-   `talker_core.layer_16.input_layernorm.output`.
+1. Run `T241` next as one diagnosis-only split of the post-`T240`
+   `talker_core.layer_15.output` seam into residual/output-formation
+   sub-boundaries.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion
@@ -236,7 +253,15 @@ Story 28 remains operating policy:
 - Current implementation direction for `task-239`:
   - layered root `Dockerfile`
   - filtered prod requirements export for the service image
-  - thin final runtime layer that copies `scripts/`
+  - canonical service-image build-contract helper that reads ROCm pins from
+    `pyproject.toml`
+  - thin final runtime layer that copies only the service runtime package
+    surface plus `templates/`
+  - root `.dockerignore` that whitelists only the service-image copy surface
+    so BuildKit does not ingest large unrelated repo directories on code-only
+    deploys
+  - Hemma GPU runtime verification that probes the container with `python`
+    directly instead of assuming `pdm` exists inside the image
   - unchanged single-service `/readyz` / revision contract
     using the canonical experiment-spec template.
 
@@ -253,8 +278,12 @@ Story 28 remains operating policy:
 - `pdm run validate-tasks`: passed
 - `pdm run validate-docs`: passed
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`: passed
+- `pdm run coverage-gate`: passed
+- `pdm run pytest-root tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_service_image_build_contract.py tests/sir_convert_a_lot/test_verify_hemma_gpu_runtime.py -q`: passed
 - `pdm run qwen-story31-parity-probe --help`: passed
 - `pdm run qwen-story31-stability-lab --help`: passed
+- `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t237_downstream_convergence_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`: passed
+- `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task240-20260318t165458z-a1 --skip-build --hook-profile talker_core_post_t237_downstream_convergence --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`: passed
 - `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1 --skip-build --hook-profile talker_core_input_layernorm_internal --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`: passed
 - `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1 --skip-build --hook-profile talker_core_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p75,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`: passed
 

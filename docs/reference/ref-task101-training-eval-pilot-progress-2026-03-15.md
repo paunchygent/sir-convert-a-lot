@@ -182,8 +182,21 @@ work.
   - the outlier is now classified as a genuine row-local seam difference:
     pair and `line-13` stayed at `talker_core.layer_15.output`, while `line-4`
     stayed at `talker_core.layer_16.input_layernorm.output`
-  - `T237` is now the immediate upstream row-local micro-family slice, and it
-    is constrained to `talker_core.layer_16.input_layernorm.output` only
+  - `T237` is now complete as the post-`T236` row-local micro-family rerun
+    under `task237-20260318t154708z-a1`
+  - the `1e3` fp32-output-cap winner converged pair, `line-13`, and `line-4`
+    `sub_talker_loss` downstream to `talker_core.layer_15.output`
+  - `T240` is now complete as the downstream convergence split under
+    `task240-20260318t165458z-a1`
+  - all three normative `sub_talker_loss` rows first broke at
+    `talker_core.layer_15.output`, so the convergence class is
+    `converged_layer15_output`
+  - the rerun used the automatic home-backed bind fallback for cache and
+    output roots after Hemma Docker resumed rejecting fresh `/srv/scratch`
+    bind mounts
+  - `T241` is now the immediate diagnosis-only next step and must split the
+    layer-15 residual/output formation seam before any new stabilizer family
+    is considered
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

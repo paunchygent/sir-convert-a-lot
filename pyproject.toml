@@ -148,6 +148,7 @@ distribution = false
 "qwen-detached-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_detached_proof"
 "qwen-codebook-fusion-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_codebook_fusion_proof"
 "qwen-codebook-fusion-proof-detached" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_codebook_fusion_proof_detached"
+"qwen-docker-bind-roots" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_docker_bind_roots"
 "qwen-finalization-benchmark" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_finalization_benchmark"
 "qwen-isolated-stages" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_isolated_stages"
 "qwen-preprocess" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_preprocess"

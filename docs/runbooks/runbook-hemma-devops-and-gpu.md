@@ -163,6 +163,22 @@ Recurring scratch-governance rule for high-churn Qwen lanes:
   - cold roots are archived onto `/srv/storage`, not written there directly by
     active training jobs
 
+Persistent Docker-visible bind-root rule for scratch-backed Qwen runtimes:
+
+- keep `/srv/scratch/sir-convert-a-lot/build` and
+  `/srv/scratch/sir-convert-a-lot/cache` as the canonical SSD-backed storage
+  roots
+- expose those roots to snap-Docker through the persistent home-visible bind
+  roots under `/home/paunchygent/.data/sir-convert-a-lot/`
+- install the committed service once per host:
+  `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`
+- verify service state before new Qwen training/proof work:
+  `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
+- verify Docker can bind-mount the effective home roots:
+  `pdm run run-hemma -- pdm run qwen-docker-bind-roots probe`
+- after Task 242, ad hoc runtime bind fallback is compatibility-only; the
+  normal Hemma contract is the installed persistent home-backed bind roots
+
 ## SSH and Service Health
 
 ```bash

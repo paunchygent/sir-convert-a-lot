@@ -428,8 +428,22 @@ For mechanism questions:
 - the outlier is a genuine row-local seam difference: pair and `line-13`
   stay at `talker_core.layer_15.output`, while `line-4` stays at
   `talker_core.layer_16.input_layernorm.output`
-- `T237` is now the immediate upstream row-local micro-family mechanism action
-- `T237` must stay fixed on `talker_core.layer_16.input_layernorm.output`
+- `T237` is now complete under `task237-20260318t154708z-a1`
+- the `1e3` fp32-output-cap winner converged pair, `line-13`, and `line-4`
+  `sub_talker_loss` to `talker_core.layer_15.output`
+- `T240` is now complete under `task240-20260318t165458z-a1`
+- all three normative `sub_talker_loss` rows first broke at
+  `talker_core.layer_15.output`, so the convergence class is
+  `converged_layer15_output`
+- the Hemma rerun stayed truthful by using the automatic home-backed bind
+  fallback after Docker resumed rejecting fresh `/srv/scratch` bind mounts
+- `T242` is now the parallel Hemma infrastructure repair slice:
+  install the persistent bind-root service with
+  `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`, then use
+  `status` and `probe` as the normal preflight before new Qwen runs
+- `T241` is now the immediate diagnosis-only mechanism action
+- `T241` must split layer-15 residual/output formation before any new
+  stabilizer family or promotion discussion
 
 For recovery questions:
 

@@ -22,6 +22,7 @@ related:
   - docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md
   - docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md
   - docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md
+  - docs/backlog/tasks/task-242-establish-permanent-docker-visible-hemma-bind-roots-for-scratch-backed-qwen-runtimes.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -31,10 +32,9 @@ labels:
 
 ## Context
 
-Epic 08 remains the active lane. Story 32 now governs how active Qwen Task
-101 work is classified and compared, using the Task 101 progress reference as
-the single live ledger.
-
+Epic 08 remains the active lane. Story 32 now governs how active Qwen Task 101
+work is classified and compared, using the Task 101 progress reference as the
+single live ledger.
 The current experiment posture is:
 
 - `provenance`
@@ -42,8 +42,7 @@ The current experiment posture is:
   - active surface: `qwen-t221-historical-control`
 - `mechanism`
   - active lane: Story 31 through `qwen-story31-stability-lab`
-  - `T225-T226` complete: exact parity contract plus committed parity-probe;
-    `task226-20260317t224307Z` closed `no_meaningful_divergence_found`
+  - `T225-T226` complete: exact parity contract plus committed parity-probe; `task226-20260317t224307Z` closed `no_meaningful_divergence_found`
   - `T219` now stands as recorded negative unpromoted evidence
   - `T228` complete: ranked closure recorded from `task219-20260317t180700z-a1`
   - `T229` complete: `task229-20260318t064712z-a1` localized to `talker_core.layer_16.input_layernorm`
@@ -52,8 +51,11 @@ The current experiment posture is:
   - `T234` complete: `task234-20260318t123644z-a1` closed the output-scale family without promotion
   - `T235` complete: `task235-20260318t140352z-a1` confirmed the line-4 outlier is repeatable
   - `T236` complete: `task236-20260318t145434z-a1` classified the outlier as a genuine row-local seam difference
-  - `T237` is now the active upstream row-local micro-family slice
+  - `T237` complete: `task237-20260318t154708z-a1` converged downstream to `talker_core.layer_15.output`
+  - `T240` complete: `task240-20260318t165458z-a1` confirmed all three normative `sub_talker_loss` rows first break at `talker_core.layer_15.output`
+  - `T241` is now the active diagnosis-only layer-15 residual/output split
   - `T227` is now contingent only if a later parity/runtime divergence is verified
+- parallel Hemma infra: `T242` is now the active bind-root repair slice that turns the recurring home-backed Docker fallback into the explicit permanent host contract
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -177,7 +179,7 @@ Story 28 is now operating policy:
     `first_divergence_classification = no_meaningful_divergence_found`, so
     Story 31 returns to `T219` rather than escalating to `T227`
 - 2026-03-18:
-  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, `T234` closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`, `T235` confirmed the mixed `sub_talker_loss` result is repeatable under `task235-20260318t140352z-a1`, and `T236` then classified that disagreement as a genuine row-local seam difference under `task236-20260318t145434z-a1`: pair and `line-13` stayed at `talker_core.layer_15.output`, while `line-4` stayed at `talker_core.layer_16.input_layernorm.output`, which opens `T237` as an upstream row-local micro-family only.
+  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, `T234` closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`, `T235` confirmed the mixed `sub_talker_loss` result is repeatable under `task235-20260318t140352z-a1`, `T236` then classified that disagreement as a genuine row-local seam difference under `task236-20260318t145434z-a1`, `T237` converged all three normative `sub_talker_loss` rows downstream under `task237-20260318t154708z-a1`, and `T240` then confirmed the converged seam itself under `task240-20260318t165458z-a1`: pair, `line-13`, and `line-4` all first broke at `talker_core.layer_15.output`, which opens `T241` as the diagnosis-only layer-15 residual/output split.
 
 ## Next Actions
 
@@ -191,15 +193,17 @@ Story 28 is now operating policy:
     parity-probe; `task226-20260317t224307Z` closed `no_meaningful_divergence_found`
   - `T219` is now recorded as negative bounded evidence without promotion
   - `T228` is now complete as the ranked closure of that failed family
-  - `T229` is now complete under `task229-20260318t064712z-a1` and constrains
-    Story 31 to the pre-`input_layernorm` normalization-entry family only
+  - `T229` is now complete under `task229-20260318t064712z-a1` and constrains Story 31 to the pre-`input_layernorm` normalization-entry family only
   - `T230-T232` are now complete under `task230-20260318t082049z-a1` with no local winner and the lane still in `mechanism`
   - `T233` is now complete under `task233-20260318t112544z-a1`
-  - `T234` is now complete under `task234-20260318t123644z-a1` with no
-    promotable winner
+  - `T234` is now complete under `task234-20260318t123644z-a1` with no promotable winner
   - `T235` is now complete under `task235-20260318t140352z-a1`
   - `T236` is now complete under `task236-20260318t145434z-a1`
-  - `T237` is now the immediate upstream row-local micro-family mechanism slice
+  - `T237` is now complete under `task237-20260318t154708z-a1`
+  - `T240` is now complete under `task240-20260318t165458z-a1`
+  - the Hemma rerun stayed truthful by using the automatic home-backed bind fallback after Docker resumed rejecting fresh `/srv/scratch` bind mounts
+  - `T241` is now the immediate diagnosis-only layer-15 residual/output split
+  - `T242` is now the parallel Hemma infrastructure slice for permanent Docker-visible scratch bind roots
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal claims
 - Keep `T217` blocked as the recovery lane until a mechanism candidate passes the local promotion gate.

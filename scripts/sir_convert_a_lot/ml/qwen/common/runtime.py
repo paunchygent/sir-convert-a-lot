@@ -18,6 +18,12 @@ from json import JSONDecodeError, JSONDecoder
 from pathlib import Path
 from typing import Callable
 
+from scripts.sir_convert_a_lot.devops.host_mounts import find_mount_source
+from scripts.sir_convert_a_lot.devops.qwen_docker_bind_roots_contracts import (
+    default_bind_roots,
+    match_bind_root,
+    resolve_persistent_home_path,
+)
 from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     MountResolution,
     QwenCacheSettings,
@@ -150,6 +156,22 @@ def _probe_docker_bind_mount(cache_dir: Path, *, image: str) -> bool:
     return True
 
 
+def _resolve_installed_persistent_home_path(canonical_root: Path) -> Path | None:
+    """Return one installed persistent home-bind path when the host contract exists."""
+    bind_roots = default_bind_roots()
+    match = match_bind_root(canonical_root, bind_roots=bind_roots)
+    if match is None:
+        return None
+    bind_root, _ = match
+    if find_mount_source(bind_root.home_root) != bind_root.canonical_root.as_posix():
+        return None
+    resolved_home_path = resolve_persistent_home_path(canonical_root, bind_roots=bind_roots)
+    if resolved_home_path is None:
+        return None
+    resolved_home_path.mkdir(parents=True, exist_ok=True)
+    return resolved_home_path
+
+
 def _best_effort_unmount(path: Path) -> None:
     """Unmount one previous home-backed bind mount when it exists."""
     subprocess.run(
@@ -218,6 +240,16 @@ def resolve_effective_bind_root(
 ) -> MountResolution:
     """Return one Docker-mountable host path with optional home-bind fallback."""
     canonical_root.mkdir(parents=True, exist_ok=True)
+    persistent_home_path = _resolve_installed_persistent_home_path(canonical_root)
+    if persistent_home_path is not None and _probe_docker_bind_mount(
+        persistent_home_path,
+        image=image,
+    ):
+        return MountResolution(
+            canonical_root=canonical_root,
+            effective_root=persistent_home_path,
+            used_home_mount=True,
+        )
     if _probe_docker_bind_mount(canonical_root, image=image):
         return MountResolution(
             canonical_root=canonical_root,

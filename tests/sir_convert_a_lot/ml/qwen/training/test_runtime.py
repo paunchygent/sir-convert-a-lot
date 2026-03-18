@@ -9,9 +9,11 @@ import pytest
 from scripts.sir_convert_a_lot.ml.qwen.common.models import QwenImageBuildPlan
 from scripts.sir_convert_a_lot.ml.qwen.common.runtime import (
     SmokeSettings,
+    _resolve_installed_persistent_home_path,
     _sync_home_cache_into_data_disk,
     inspect_image_build_plan,
     prepare_qwen_image,
+    resolve_effective_bind_root,
 )
 
 
@@ -111,3 +113,74 @@ def test_prepare_qwen_image_emits_warning_before_build(monkeypatch: pytest.Monke
     assert "BuildKit image build" in emitted[0]
     assert settings.image in emitted[0]
     assert settings.dockerfile_path.resolve().as_posix() in emitted[0]
+
+
+def test_resolve_installed_persistent_home_path_maps_build_subpaths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Installed persistent build mounts should resolve arbitrary build subpaths."""
+    canonical_root = Path("/srv/scratch/sir-convert-a-lot/build/verification/story31/task240")
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.common.runtime.find_mount_source",
+        lambda path: (
+            "/srv/scratch/sir-convert-a-lot/build"
+            if path == Path("/home/paunchygent/.data/sir-convert-a-lot/build")
+            else None
+        ),
+    )
+    monkeypatch.setattr(Path, "mkdir", lambda self, parents=False, exist_ok=False: None)
+
+    resolved = _resolve_installed_persistent_home_path(canonical_root)
+
+    assert resolved == Path(
+        "/home/paunchygent/.data/sir-convert-a-lot/build/verification/story31/task240"
+    )
+
+
+def test_resolve_effective_bind_root_prefers_installed_persistent_home_mount(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Installed persistent home mounts should be preferred over the failing scratch root."""
+    canonical_root = Path("/srv/scratch/sir-convert-a-lot/build/verification/story31/task240")
+    home_mount = Path(
+        "/home/paunchygent/.data/sir-convert-a-lot/qwen-story31-stability-lab-output-roots/"
+        "srv/scratch/sir-convert-a-lot/build/verification/story31/task240"
+    )
+    probe_calls: list[Path] = []
+
+    monkeypatch.setattr(Path, "mkdir", lambda self, parents=False, exist_ok=False: None)
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.common.runtime.find_mount_source",
+        lambda path: (
+            "/srv/scratch/sir-convert-a-lot/build"
+            if path == Path("/home/paunchygent/.data/sir-convert-a-lot/build")
+            else None
+        ),
+    )
+
+    def fake_probe(path: Path, *, image: str) -> bool:
+        del image
+        probe_calls.append(path)
+        return path == Path(
+            "/home/paunchygent/.data/sir-convert-a-lot/build/verification/story31/task240"
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.common.runtime._probe_docker_bind_mount",
+        fake_probe,
+    )
+
+    resolved = resolve_effective_bind_root(
+        canonical_root,
+        home_mount,
+        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        sync_home_into_canonical=False,
+    )
+
+    assert resolved.canonical_root == canonical_root
+    assert resolved.effective_root == Path(
+        "/home/paunchygent/.data/sir-convert-a-lot/build/verification/story31/task240"
+    )
+    assert resolved.used_home_mount is True
+    assert probe_calls == [resolved.effective_root]
