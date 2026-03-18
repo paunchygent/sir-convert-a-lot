@@ -84,6 +84,33 @@ class Story31SubBoundaryAssessment:
 
 
 @dataclass(frozen=True)
+class InputLayernormInternalComparisonRow:
+    """Comparable pair-versus-single row outcome for one T233 internal case."""
+
+    case_id: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    role: str
+    case_has_non_finite: bool
+    first_non_finite_talker_core_hook_tensor: str | None
+    matched_internal_surface: str | None
+
+
+@dataclass(frozen=True)
+class Story31InputLayernormInternalAssessment:
+    """Focused T233 assessment for the internal layer-16 input-layernorm seam."""
+
+    stabilization_variant: str
+    target_loss_kind: str
+    target_internal_surfaces: tuple[str, ...]
+    comparison_rows: tuple[InputLayernormInternalComparisonRow, ...]
+    earliest_internal_surface: str | None
+    evidence_is_ambiguous: bool
+    ambiguity_reason: str | None
+    next_micro_family_rule: str
+
+
+@dataclass(frozen=True)
 class Story31StabilityLabReport:
     """Machine-readable report for one Story 31 matrix run."""
 
@@ -108,6 +135,7 @@ class Story31StabilityLabReport:
     probe_commands: dict[str, list[str]]
     matrix_rows: tuple[StabilityLabMatrixRow, ...]
     sub_boundary_assessment: Story31SubBoundaryAssessment | None
+    input_layernorm_internal_assessment: Story31InputLayernormInternalAssessment | None
 
 
 @dataclass(frozen=True)

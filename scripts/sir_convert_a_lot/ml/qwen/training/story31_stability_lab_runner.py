@@ -42,10 +42,17 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_runner 
     BackwardLineageProofSettings,
     run_backward_lineage_probe,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_input_layernorm_internal_assessment import (
+    build_input_layernorm_internal_assessment,
+    validate_input_layernorm_internal_contract,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_contracts import (
     StabilityLabMatrixRow,
     Story31StabilityLabReport,
     Story31StabilityLabSettings,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_markdown import (
+    build_report_markdown,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_sub_boundary_assessment import (
     build_sub_boundary_assessment,
@@ -135,6 +142,7 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
     """Run the Story 31 stability-lab matrix and return its compact report."""
     prepare_output_root(settings.output_root)
     validate_hook_profile_variant_contract(settings)
+    validate_input_layernorm_internal_contract(settings)
     build_performed, image_id = prepare_qwen_image(
         _RunnerImageSettings(
             dockerfile_path=settings.dockerfile_path,
@@ -208,76 +216,11 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
             settings=settings,
             matrix_rows=compact_matrix_rows,
         ),
-    )
-
-
-def build_report_markdown(report: Story31StabilityLabReport) -> str:
-    """Render one concise markdown summary for the Story 31 matrix run."""
-    lines = [
-        "# Story 31 Stability Lab",
-        "",
-        f"- Generated at: `{report.generated_at}`",
-        f"- Image: `{report.image}`",
-        f"- Image id: `{report.image_id}`",
-        f"- Build performed: `{report.build_performed}`",
-        f"- Model id: `{report.model_id}`",
-        f"- Source bundle root: `{report.source_bundle_root}`",
-        f"- Manifest family: `{report.manifest_family}`",
-        f"- Source lines: `{report.source_line_numbers}`",
-        f"- Text embedding mask policy: `{report.text_embedding_mask_policy}`",
-        f"- Hook profile: `{report.hook_profile}`",
-        f"- Stabilization variants: `{report.stabilization_variants}`",
-        "",
-        "## Matrix Rows",
-        "",
-        (
-            "| Variant | Case | Loss | Non-finite | First Hook | Talker Hook | "
-            "Gradient RCA | Parameter RCA | Anomaly |"
+        input_layernorm_internal_assessment=build_input_layernorm_internal_assessment(
+            settings=settings,
+            matrix_rows=compact_matrix_rows,
         ),
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    for row in report.matrix_rows:
-        lines.append(
-            "| "
-            f"{row.stabilization_variant} | "
-            f"{row.case_id} | "
-            f"{row.loss_kind} | "
-            f"{row.case_has_non_finite} | "
-            f"{row.first_non_finite_hook_tensor or '-'} | "
-            f"{row.first_non_finite_talker_core_hook_tensor or '-'} | "
-            f"{row.gradient_rca_first_non_finite_surface or '-'} | "
-            f"{row.parameter_first_non_finite_surface or '-'} | "
-            f"{row.anomaly_operator or '-'} |"
-        )
-    if report.sub_boundary_assessment is not None:
-        lines.extend(
-            [
-                "",
-                "## T229 Sub-Boundary Assessment",
-                "",
-                f"- Assessed variant: `{report.sub_boundary_assessment.stabilization_variant}`",
-                f"- Target loss kind: `{report.sub_boundary_assessment.target_loss_kind}`",
-                "- Earliest sub-boundary: "
-                f"`{report.sub_boundary_assessment.earliest_sub_boundary or '-'}`",
-                f"- Evidence ambiguous: `{report.sub_boundary_assessment.evidence_is_ambiguous}`",
-                f"- Ambiguity reason: `{report.sub_boundary_assessment.ambiguity_reason or '-'}`",
-                "- Next micro-family rule: "
-                f"`{report.sub_boundary_assessment.next_micro_family_rule}`",
-                "",
-                "| Case | Role | Non-finite | Talker Hook | Matched Sub-boundary |",
-                "| --- | --- | --- | --- | --- |",
-            ]
-        )
-        for assessment_row in report.sub_boundary_assessment.comparison_rows:
-            lines.append(
-                "| "
-                f"{assessment_row.case_id} | "
-                f"{assessment_row.role} | "
-                f"{assessment_row.case_has_non_finite} | "
-                f"{assessment_row.first_non_finite_talker_core_hook_tensor or '-'} | "
-                f"{assessment_row.matched_sub_boundary or '-'} |"
-            )
-    return "\n".join(lines)
+    )
 
 
 def persist_report(output_root: Path, report: Story31StabilityLabReport) -> tuple[Path, Path]:

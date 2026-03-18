@@ -19,6 +19,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_boundary_trace_targets,
     iter_talker_core_handoff_sub_boundary_trace_targets,
     iter_talker_core_trace_targets,
+    talker_core_input_layernorm_internal_trace_names,
     talker_core_trace_prefix,
 )
 
@@ -117,3 +118,14 @@ def test_iter_talker_core_handoff_sub_boundary_trace_targets_focuses_t229_chain(
         "talker_core.layer_16.residual_handoff",
         "talker_core.layer_16.input_layernorm",
     ]
+
+
+def test_talker_core_input_layernorm_internal_trace_names_lock_t233_chain_order() -> None:
+    """The T233 trace should expose the fixed internal RMSNorm arithmetic chain."""
+    assert talker_core_input_layernorm_internal_trace_names() == (
+        "talker_core.layer_16.input_layernorm.residual_input",
+        "talker_core.layer_16.input_layernorm.fp32_input",
+        "talker_core.layer_16.input_layernorm.variance",
+        "talker_core.layer_16.input_layernorm.normalized_hidden_states",
+        "talker_core.layer_16.input_layernorm.output",
+    )

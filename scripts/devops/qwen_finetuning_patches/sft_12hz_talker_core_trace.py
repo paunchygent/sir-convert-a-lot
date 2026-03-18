@@ -25,6 +25,7 @@ TalkerTraceHookKind = Literal["forward", "forward_pre"]
 _TALKER_CORE_PREFIX = "talker_core."
 _BOUNDARY_TARGET_LAYER_INDICES = (16, 15)
 _HANDOFF_SUB_BOUNDARY_LAYER_INDEX = 16
+_INPUT_LAYERNORM_INTERNAL_LAYER_INDEX = 16
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,25 @@ def resolve_talker_decoder_layers(model: object) -> tuple[torch.nn.Module, ...]:
 def resolve_talker_decoder_layer(model: object, layer_index: int) -> torch.nn.Module:
     """Return one indexed live talker decoder layer from one patched Qwen model."""
     return _required_layer(resolve_talker_decoder_layers(model), layer_index)
+
+
+def resolve_talker_input_layernorm(model: object, layer_index: int) -> torch.nn.Module:
+    """Return one indexed live decoder-layer input layernorm from one patched model."""
+    return _required_module(resolve_talker_decoder_layer(model, layer_index), "input_layernorm")
+
+
+def talker_core_input_layernorm_internal_trace_names() -> tuple[str, ...]:
+    """Return the fixed T233 internal trace chain for `layer_16.input_layernorm`."""
+    layer_prefix = (
+        f"{_TALKER_CORE_PREFIX}layer_{_INPUT_LAYERNORM_INTERNAL_LAYER_INDEX}.input_layernorm"
+    )
+    return (
+        f"{layer_prefix}.residual_input",
+        f"{layer_prefix}.fp32_input",
+        f"{layer_prefix}.variance",
+        f"{layer_prefix}.normalized_hidden_states",
+        f"{layer_prefix}.output",
+    )
 
 
 def iter_talker_core_trace_targets(model: object) -> tuple[TalkerCoreTraceTarget, ...]:

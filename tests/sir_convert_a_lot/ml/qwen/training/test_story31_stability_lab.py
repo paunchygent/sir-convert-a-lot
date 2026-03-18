@@ -145,6 +145,7 @@ def test_story31_stability_lab_cli_runs_and_persists_compact_artifacts(
             probe_commands={"off": ["sudo", "-n", "docker", "run"]},
             matrix_rows=(),
             sub_boundary_assessment=None,
+            input_layernorm_internal_assessment=None,
         )
 
     monkeypatch.setattr(
@@ -259,6 +260,7 @@ def test_run_stability_lab_reuses_one_bundle_and_writes_variant_reports(
     assert payload["stabilization_variants"] == ["off", "layer16_gated_fp32"]
     assert len(payload["matrix_rows"]) == 2
     assert payload["sub_boundary_assessment"] is None
+    assert payload["input_layernorm_internal_assessment"] is None
     assert (tmp_path / "variant-reports" / "off.json").exists() is True
     assert (tmp_path / "variant-reports" / "layer16_gated_fp32.json").exists() is True
 
