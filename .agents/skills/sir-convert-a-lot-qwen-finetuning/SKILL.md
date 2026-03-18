@@ -146,11 +146,15 @@ explicitly narrow the scope.
   - the live in-image historical-bundle run under
     `task226-20260317t224307Z` found no meaningful checkpoint divergence
     between the current and intended paths
-  - `T219` is now the immediate next bounded stabilizer slice again
+  - `T219` is now recorded as negative bounded evidence under
+    `task219-20260317t180700z-a1`
+  - `T228` is now complete as the ranked closure of that family
+  - `T229` is now the immediate next mechanism slice, followed by `T230-T232`
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate
-    passes the local promotion gate
+    passes the local promotion gate and `T231` freezes the bounded promotion
+    contract
 - Story 28 / `T187-T191` is the permanent anti-god-file architecture lane for
   the Qwen training control plane and is now delivered. Keep new host-side
   logic in `ml/qwen/training/control_plane/`, detached launch logic in

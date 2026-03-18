@@ -17,6 +17,7 @@ import torch
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_boundary_trace_targets,
+    iter_talker_core_handoff_sub_boundary_trace_targets,
     iter_talker_core_trace_targets,
     talker_core_trace_prefix,
 )
@@ -103,4 +104,16 @@ def test_iter_talker_core_boundary_trace_targets_focuses_layer_16_and_15_mlp_bou
         "talker_core.layer_15.mlp.gated_product",
         "talker_core.layer_15.mlp.down_proj",
         "talker_core.layer_15.output",
+    ]
+
+
+def test_iter_talker_core_handoff_sub_boundary_trace_targets_focuses_t229_chain() -> None:
+    """The T229 trace should isolate the narrowed post-T219 layer-16 handoff seam."""
+    targets = iter_talker_core_handoff_sub_boundary_trace_targets(_FakeRootModel())
+
+    assert [target.name for target in targets] == [
+        "talker_core.layer_16.mlp.down_proj",
+        "talker_core.layer_16.output",
+        "talker_core.layer_16.residual_handoff",
+        "talker_core.layer_16.input_layernorm",
     ]

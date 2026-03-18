@@ -398,9 +398,12 @@ For mechanism questions:
   - `results.json`
   - `results.md`
 - use the parity probe result to decide whether `T227` remediates a verified
-  trainer/runtime divergence or Story 31 returns to `T219`
-- `T219` is now the contingent bounded stabilizer slice, not the immediate
-  next mechanism action
+  trainer/runtime divergence or Story 31 continues through bounded stabilizer
+  work
+- `T219` is now recorded as negative bounded evidence under
+  `task219-20260317t180700z-a1`
+- `T228` is now complete as the ranked closure of that family
+- `T229` is now the immediate next mechanism action, followed by `T230-T232`
 
 For recovery questions:
 

@@ -114,8 +114,9 @@ through overlapping proof wrappers.
 - `T221` remains the active provenance control surface and is explicitly
   separated from the Story 31 mechanism lane.
 - Story 31 now reads as a mechanism story:
-  `T219` is the next bounded mechanism slice and `T217` remains the blocked
-  recovery lane until promotion.
+  `T219` is now recorded as negative bounded evidence, `T228` is the next
+  bounded mechanism slice, and `T217` remains the blocked recovery lane until
+  promotion.
 - The Task 101 progress reference is now the single live ledger for future
   active runs, with an explicit experiment-spec contract and per-run entry
   template.

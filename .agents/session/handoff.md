@@ -21,9 +21,10 @@ Story 32 is now the operator-facing mental model:
   - active surface: `qwen-story31-stability-lab`
   - `T225` complete: exact parity contract defined
   - `T226` complete: committed parity-probe surface delivered
-  - next mechanism action: execute that surface on the real historical bundle
-    and route the first-divergence result through `T227`
-  - next contingent stabilizer slice after parity closes: `T219`
+  - `T219` is now recorded as completed negative evidence without promotion
+  - `T228` is now complete as the ranked closure of `task219-20260317t180700z-a1`
+  - `T229` now has a local narrowed probe surface, but the live Hemma rerun is
+    blocked until the remote checkout pulls `talker_core_handoff_sub_boundary`
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -69,6 +70,13 @@ Story 28 remains operating policy:
   - compares the real `execute_train_iteration` window against the
     reconstructed shared-forward optimizer-boundary window on the exact `T225`
     microbatch family
+- New contingent follow-on package now exists for the case where `T219` closes
+  negative, and `T219` is now backfilled as already failed:
+  - `T228`: complete; close the failed handoff family with one ranked matrix
+  - `T229`: split the shifted layer-16 seam into sub-boundary probes
+  - `T230`: test one diagnosed micro-family only
+  - `T231`: freeze the bounded promotion contract before any governed proof
+  - `T232`: make one Story 31 lane decision from the bounded promotion result
 
 ## Latest Task 101 Truth
 
@@ -97,7 +105,7 @@ Story 28 remains operating policy:
   - `T226`: committed local parity-probe surface now implemented
   - `T227`: next mechanism remediation / decision task after the live parity
     result is captured
-  - `T219`: contingent bounded stabilizer follow-up, not yet executed
+  - `T219`: now backfilled as negative bounded stabilizer evidence
 - `T220` delivered the exact-control runtime surface but did not answer the
   historical-control question because the run drifted from the documented
   March 13 contract.
@@ -150,11 +158,14 @@ Story 28 remains operating policy:
 1. Treat the live in-image `T226` result under
    `task226-20260317t224307Z` as the current mechanism truth:
    `first_divergence_classification = no_meaningful_divergence_found`.
-1. Resume `T219` as the next bounded Story 31 stabilizer slice.
+1. Keep `T219` recorded as negative bounded evidence without promotion.
+1. Keep `T228` complete as the ranked closure of `task219-20260317t180700z-a1`.
+1. Sync the current checkout to Hemma, then rerun `T229` under
+   `task229-20260318t064712z-a1`.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion
-   gate.
+   gate and `T231` freezes the bounded promotion contract.
 1. Keep Story 29 and Story 30 surfaces available as historical references, not
    as the primary operator flow.
 1. Record future active runs in
@@ -164,12 +175,15 @@ Story 28 remains operating policy:
 ## Validation State
 
 - `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story31_parity_probe.py -q`: passed
+- `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`: passed
 - `pdm run test-ml`: passed
 - `pdm run typecheck-ml`: passed
 - `pdm run validate-tasks`: passed
 - `pdm run validate-docs`: passed
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`: passed
 - `pdm run qwen-story31-parity-probe --help`: passed
+- `pdm run qwen-story31-stability-lab --help`: passed
+- `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`: blocked because the remote Hemma checkout still exposes the older `backward_lineage_probe.py` parser
 
 The docs/index validations should be rerun after any further docs change
 touching Story 31, Story 32, the live ledger, or the operator runbook.

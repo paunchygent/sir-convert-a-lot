@@ -57,6 +57,33 @@ class StabilityLabMatrixRow:
 
 
 @dataclass(frozen=True)
+class SubBoundaryComparisonRow:
+    """Comparable pair-versus-single row outcome for one T229 sub-boundary case."""
+
+    case_id: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    role: str
+    case_has_non_finite: bool
+    first_non_finite_talker_core_hook_tensor: str | None
+    matched_sub_boundary: str | None
+
+
+@dataclass(frozen=True)
+class Story31SubBoundaryAssessment:
+    """Focused T229 assessment for the shifted post-T219 handoff seam."""
+
+    stabilization_variant: str
+    target_loss_kind: str
+    target_sub_boundaries: tuple[str, ...]
+    comparison_rows: tuple[SubBoundaryComparisonRow, ...]
+    earliest_sub_boundary: str | None
+    evidence_is_ambiguous: bool
+    ambiguity_reason: str | None
+    next_micro_family_rule: str
+
+
+@dataclass(frozen=True)
 class Story31StabilityLabReport:
     """Machine-readable report for one Story 31 matrix run."""
 
@@ -80,6 +107,7 @@ class Story31StabilityLabReport:
     variant_report_paths: dict[str, str]
     probe_commands: dict[str, list[str]]
     matrix_rows: tuple[StabilityLabMatrixRow, ...]
+    sub_boundary_assessment: Story31SubBoundaryAssessment | None
 
 
 @dataclass(frozen=True)

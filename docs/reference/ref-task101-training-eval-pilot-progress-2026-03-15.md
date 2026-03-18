@@ -150,7 +150,11 @@ work.
   - the live in-image historical-bundle run
     `task226-20260317t224307Z` resolved with
     `first_divergence_classification = no_meaningful_divergence_found`
-  - `T219` is now the next bounded stabilizer slice again
+  - `T219` is now recorded as negative bounded evidence under
+    `task219-20260317t180700z-a1`
+  - `T228` is now complete as the ranked closure of that family
+  - `T229` is now the immediate next bounded mechanism slice
+  - `T230-T232` are the ordered contingent follow-on ladder after `T229`
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

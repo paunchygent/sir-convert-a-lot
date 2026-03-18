@@ -24,6 +24,7 @@ TalkerTraceHookKind = Literal["forward", "forward_pre"]
 
 _TALKER_CORE_PREFIX = "talker_core."
 _BOUNDARY_TARGET_LAYER_INDICES = (16, 15)
+_HANDOFF_SUB_BOUNDARY_LAYER_INDEX = 16
 
 
 @dataclass(frozen=True)
@@ -137,6 +138,31 @@ def iter_talker_core_boundary_trace_targets(
             )
         )
     return tuple(targets)
+
+
+def iter_talker_core_handoff_sub_boundary_trace_targets(
+    model: object,
+) -> tuple[TalkerCoreTraceTarget, ...]:
+    """Return the narrowed post-T219 layer-16 handoff targets used by `T229`."""
+    layer = resolve_talker_decoder_layer(model, _HANDOFF_SUB_BOUNDARY_LAYER_INDEX)
+    mlp = _required_module(layer, "mlp")
+    input_layernorm = _required_module(layer, "input_layernorm")
+    layer_prefix = f"{_TALKER_CORE_PREFIX}layer_{_HANDOFF_SUB_BOUNDARY_LAYER_INDEX}"
+    return (
+        _forward_target(
+            name=f"{layer_prefix}.mlp.down_proj",
+            module=_required_module(mlp, "down_proj"),
+        ),
+        _forward_target(name=f"{layer_prefix}.output", module=layer),
+        _forward_pre_target(
+            name=f"{layer_prefix}.residual_handoff",
+            module=input_layernorm,
+        ),
+        _forward_target(
+            name=f"{layer_prefix}.input_layernorm",
+            module=input_layernorm,
+        ),
+    )
 
 
 def _forward_target(name: str, module: torch.nn.Module) -> TalkerCoreTraceTarget:

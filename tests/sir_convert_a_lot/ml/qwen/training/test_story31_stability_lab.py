@@ -28,8 +28,13 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_bundle 
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab import main
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_contracts import (
     StabilityLabMatrixRow,
+    Story31SubBoundaryAssessment,
     Story31StabilityLabReport,
     Story31StabilityLabSettings,
+    SubBoundaryComparisonRow,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_sub_boundary_assessment import (
+    build_sub_boundary_assessment,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_runner import (
     DEFAULT_HOOK_PROFILE,
@@ -136,9 +141,10 @@ def test_story31_stability_lab_cli_runs_and_persists_compact_artifacts(
             effective_output_root=tmp_path.as_posix(),
             used_output_root_home_mount=False,
             variant_report_paths={"off": (tmp_path / "variant-reports" / "off.json").as_posix()},
-            probe_commands={"off": ["sudo", "-n", "docker", "run"]},
-            matrix_rows=(),
-        )
+        probe_commands={"off": ["sudo", "-n", "docker", "run"]},
+        matrix_rows=(),
+        sub_boundary_assessment=None,
+    )
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab.run_stability_lab",
@@ -251,5 +257,120 @@ def test_run_stability_lab_reuses_one_bundle_and_writes_variant_reports(
 
     assert payload["stabilization_variants"] == ["off", "layer16_gated_fp32"]
     assert len(payload["matrix_rows"]) == 2
+    assert payload["sub_boundary_assessment"] is None
     assert (tmp_path / "variant-reports" / "off.json").exists() is True
     assert (tmp_path / "variant-reports" / "layer16_gated_fp32.json").exists() is True
+
+
+def test_build_sub_boundary_assessment_constrains_t230_to_one_micro_family() -> None:
+    """T229 should shape T230 from the narrowed pair-vs-single sub-boundary evidence."""
+    assessment = build_sub_boundary_assessment(
+        settings=Story31StabilityLabSettings(
+            output_root=Path("/tmp/story31"),
+            dockerfile_path=Path("Dockerfile"),
+            image="test-image",
+            model_id="test-model",
+            hf_cache_dir=Path("/tmp/hf"),
+            hf_cache_home_mount=Path("/tmp/hf-home"),
+            output_root_home_mount_base=DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE,
+            source_bundle_root=Path("/tmp/bundle"),
+            manifest_family=DEFAULT_MANIFEST_FAMILY,
+            source_lines=(13, 4),
+            text_embedding_mask_policy=DEFAULT_TEXT_EMBEDDING_MASK_POLICY,
+            hook_profile="talker_core_handoff_sub_boundary",
+            stabilization_variants=(
+                "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5",
+            ),
+            build_image=False,
+        ),
+        matrix_rows=(
+            StabilityLabMatrixRow(
+                stabilization_variant="layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5",
+                case_id="pair-sub-talker-loss",
+                loss_kind="sub_talker_loss",
+                source_line_numbers=(13, 4),
+                batch_size=2,
+                interaction_mode="both_rows",
+                case_has_non_finite=True,
+                first_non_finite_hook_tensor="talker_core.layer_16.input_layernorm",
+                first_non_finite_talker_core_hook_tensor="talker_core.layer_16.input_layernorm",
+                gradient_rca_first_non_finite_surface="input_text_embedding.grad",
+                parameter_first_non_finite_surface="text_embedding.weight.grad",
+                anomaly_operator=None,
+            ),
+            StabilityLabMatrixRow(
+                stabilization_variant="layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5",
+                case_id="line-13-sub-talker-loss",
+                loss_kind="sub_talker_loss",
+                source_line_numbers=(13,),
+                batch_size=1,
+                interaction_mode="both_rows",
+                case_has_non_finite=True,
+                first_non_finite_hook_tensor="talker_core.layer_16.input_layernorm",
+                first_non_finite_talker_core_hook_tensor="talker_core.layer_16.input_layernorm",
+                gradient_rca_first_non_finite_surface="input_text_embedding.grad",
+                parameter_first_non_finite_surface="text_embedding.weight.grad",
+                anomaly_operator=None,
+            ),
+            StabilityLabMatrixRow(
+                stabilization_variant="layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5",
+                case_id="line-4-sub-talker-loss",
+                loss_kind="sub_talker_loss",
+                source_line_numbers=(4,),
+                batch_size=1,
+                interaction_mode="both_rows",
+                case_has_non_finite=True,
+                first_non_finite_hook_tensor="talker_core.layer_16.input_layernorm",
+                first_non_finite_talker_core_hook_tensor="talker_core.layer_16.input_layernorm",
+                gradient_rca_first_non_finite_surface="input_text_embedding.grad",
+                parameter_first_non_finite_surface="text_embedding.weight.grad",
+                anomaly_operator=None,
+            ),
+        ),
+    )
+
+    assert assessment == Story31SubBoundaryAssessment(
+        stabilization_variant="layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5",
+        target_loss_kind="sub_talker_loss",
+        target_sub_boundaries=(
+            "talker_core.layer_16.mlp.down_proj",
+            "talker_core.layer_16.output",
+            "talker_core.layer_16.residual_handoff",
+            "talker_core.layer_16.input_layernorm",
+        ),
+        comparison_rows=(
+            SubBoundaryComparisonRow(
+                case_id="pair-sub-talker-loss",
+                source_line_numbers=(13, 4),
+                batch_size=2,
+                role="pair",
+                case_has_non_finite=True,
+                first_non_finite_talker_core_hook_tensor="talker_core.layer_16.input_layernorm",
+                matched_sub_boundary="talker_core.layer_16.input_layernorm",
+            ),
+            SubBoundaryComparisonRow(
+                case_id="line-13-sub-talker-loss",
+                source_line_numbers=(13,),
+                batch_size=1,
+                role="first_row",
+                case_has_non_finite=True,
+                first_non_finite_talker_core_hook_tensor="talker_core.layer_16.input_layernorm",
+                matched_sub_boundary="talker_core.layer_16.input_layernorm",
+            ),
+            SubBoundaryComparisonRow(
+                case_id="line-4-sub-talker-loss",
+                source_line_numbers=(4,),
+                batch_size=1,
+                role="second_row",
+                case_has_non_finite=True,
+                first_non_finite_talker_core_hook_tensor="talker_core.layer_16.input_layernorm",
+                matched_sub_boundary="talker_core.layer_16.input_layernorm",
+            ),
+        ),
+        earliest_sub_boundary="talker_core.layer_16.input_layernorm",
+        evidence_is_ambiguous=False,
+        ambiguity_reason=None,
+        next_micro_family_rule=(
+            "T230 may test one pre-input-layernorm normalization-entry micro-family only."
+        ),
+    )

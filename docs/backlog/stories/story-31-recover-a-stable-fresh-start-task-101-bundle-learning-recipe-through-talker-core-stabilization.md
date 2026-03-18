@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: high
 created: '2026-03-17'
-last_updated: '2026-03-17'
+last_updated: '2026-03-18'
 related:
   - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
@@ -20,6 +20,11 @@ related:
   - docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md
   - docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md
   - docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md
+  - docs/backlog/tasks/task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix.md
+  - docs/backlog/tasks/task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes.md
+  - docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md
+  - docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md
+  - docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -94,8 +99,8 @@ This story is intentionally split into two lanes:
 - Use the Story 32 matrix when interpreting the related surfaces:
   - `T221` is the provenance surface
   - `T225-T227` are the next mechanism slice package
-  - `T219` is the next contingent bounded stabilizer candidate after the
-    parity slice closes cleanly
+  - `T219` is now recorded as completed negative bounded stabilizer evidence
+  - `T228-T232` now define the active next mechanism ladder
   - `T217` is the blocked recovery surface
 
 ## Reuse Plan
@@ -173,7 +178,12 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md`
 1. `docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md`
 1. `docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md`
+1. `docs/backlog/tasks/task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix.md`
+1. `docs/backlog/tasks/task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes.md`
+1. `docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md`
+1. `docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
+1. `docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md`
 
 ## Checklist
 
@@ -186,11 +196,13 @@ the governing success criterion for future restart work.
 - Story 32 now governs how the related surfaces are interpreted:
   - `T221` is provenance evidence for Story 31 decisions
   - `T225` is complete as the exact parity contract
-  - `T226` is now complete as the committed local parity-probe surface
-  - the live in-image historical-bundle run under
-    `task226-20260317t224307Z` found no meaningful checkpoint divergence
-    between the current and intended paths
-  - `T219` is therefore re-promoted as the immediate bounded stabilizer slice
+- `T226` is now complete as the committed local parity-probe surface
+- the live in-image historical-bundle run under
+  `task226-20260317t224307Z` found no meaningful checkpoint divergence
+  between the current and intended paths
+  - `T219` then closed as negative bounded evidence under
+    `task219-20260317t180700z-a1`
+  - `T228` is now complete as the truthful ranked closure of that family
   - `T227` is now contingent only if a later verified trainer/runtime
     divergence appears
   - `T217` is the blocked recovery proof lane
@@ -279,18 +291,24 @@ the governing success criterion for future restart work.
   - `recommended_next_step = return_to_t219_if_no_higher_priority_runtime_bug_is_found`
 - `T227` therefore remains contingent rather than becoming the active
   remediation slice
-- `T219` is now restored as the default next execution slice:
-  - keep the moderate `T218` posture as the preferred base ingredient
-  - keep the shifted `layer_16.output` /
-    `layer_16.input_layernorm` neighborhood as the target
-- `T217` remains blocked until a later exploration candidate passes on the
-  exact fresh-start pair family.
+- `T219` is now recorded as completed negative evidence:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1`
+  - the layer-16 handoff family did not earn promotion
+- `T228` is now complete as the ranked closure of that family:
+  - `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5` is the
+    strongest negative signal
+  - `layer16_gated_fp32_rescale_1e3_layer16_out_0p25_layer15_out_0p5` is the
+    second-best negative signal
+  - `off` remains the baseline negative family
+- the active follow-on ladder is now:
+  - `T229`: split the shifted layer-16 seam into sub-boundary probes
+  - `T230`: test one diagnosed micro-family only
+  - `T231`: pin the bounded promotion contract before any governed proof
+  - `T232`: make one lane decision from the bounded promotion result
 - `T217` remains the blocked recovery lane:
-  it should not launch until the mechanism lane produces a promoted candidate.
+  it should not launch until the mechanism lane produces a promoted candidate
+  and `T231` freezes the bounded promotion contract.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one
   compact matrix run under a single output root instead of a proof package per
   experiment.
-- `T219` remains shaped as the next bounded exploration candidate around the
-  shifted layer-16 handoff neighborhood, but it is no longer the default next
-  execution slice now that the post-`T221` parity package has higher
-  mechanism priority.

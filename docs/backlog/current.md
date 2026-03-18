@@ -5,7 +5,7 @@ type: task-log
 status: active
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-03-17'
+last_updated: '2026-03-18'
 related:
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
@@ -17,6 +17,11 @@ related:
   - docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md
   - docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md
   - docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md
+  - docs/backlog/tasks/task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix.md
+  - docs/backlog/tasks/task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes.md
+  - docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md
+  - docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md
+  - docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -39,12 +44,13 @@ The current experiment posture is:
   - active lane: Story 31 through `qwen-story31-stability-lab`
   - `T225` complete: exact parity contract defined
   - `T226` complete: committed local parity-probe surface delivered
-  - live parity result under `task226-20260317t224307Z`:
-    `no_meaningful_divergence_found`
-  - next mechanism action: resume `T219` as the bounded stabilizer slice
+  - live parity result under `task226-20260317t224307Z`: `no_meaningful_divergence_found`
+  - `T219` now stands as recorded negative unpromoted evidence
+  - `T228` complete: ranked closure recorded from `task219-20260317t180700z-a1`
+  - `T229` local surface is now implemented and validated; the live Hemma
+    rerun is blocked until the remote checkout pulls the new hook profile
   - `T227` is now contingent only if a later parity/runtime divergence is
     actually verified
-  - next contingent stabilizer slice after parity closes: `T219`
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -169,6 +175,10 @@ Story 28 is now operating policy:
     every compared checkpoint and closed with
     `first_divergence_classification = no_meaningful_divergence_found`, so
     Story 31 returns to `T219` rather than escalating to `T227`
+- 2026-03-18:
+  - `T219` was backfilled as already-failed bounded Story 31 evidence with no
+    promoted variant; `T228` closed that family from `task219-20260317t180700z-a1`,
+    and `T229-T232` now define the active post-`T219` mechanism ladder.
 
 ## Next Actions
 
@@ -185,14 +195,16 @@ Story 28 is now operating policy:
     and as a live in-image historical-bundle run:
     `task226-20260317t224307Z` closed with
     `no_meaningful_divergence_found`
-  - `T219` is now the immediate next bounded stabilizer slice again
-  - `T227` stays contingent only if a later verified trainer/runtime
-    divergence appears
+  - `T219` is now recorded as negative bounded evidence without promotion
+  - `T228` is now complete as the ranked closure of that failed family
+  - `T229` now has a local narrowed probe surface, but its live Hemma rerun is blocked until the remote checkout pulls `talker_core_handoff_sub_boundary`
+  - `T230-T232` remain the ordered contingent ladder after the truthful `T229`
+    rerun closes
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal
     claims
 - Keep `T217` blocked as the recovery lane until a mechanism candidate passes
-  the local promotion gate.
+  the local promotion gate and `T231` freezes the bounded promotion contract.
 - Keep Story 29 and Story 30 proof surfaces as historical-only references, not
   as next-step operational surfaces.
 - Keep the Hemma scratch-governance surfaces active and available:

@@ -27,6 +27,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces import (
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_boundary_trace_targets,
+    iter_talker_core_handoff_sub_boundary_trace_targets,
     iter_talker_core_trace_targets,
     talker_core_trace_prefix,
 )
@@ -38,10 +39,12 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contrac
 BASELINE_HOOK_PROFILE = "baseline"
 TALKER_CORE_HOOK_PROFILE = "talker_core"
 TALKER_CORE_BOUNDARY_HOOK_PROFILE = "talker_core_boundary"
+TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE = "talker_core_handoff_sub_boundary"
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
     TALKER_CORE_BOUNDARY_HOOK_PROFILE,
+    TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -76,11 +79,12 @@ class GradientHookSession:
         """Install any module forward hooks required before the shared forward pass."""
         if self._hook_profile == BASELINE_HOOK_PROFILE:
             return
-        trace_targets = (
-            iter_talker_core_trace_targets(model)
-            if self._hook_profile == TALKER_CORE_HOOK_PROFILE
-            else iter_talker_core_boundary_trace_targets(model)
-        )
+        if self._hook_profile == TALKER_CORE_HOOK_PROFILE:
+            trace_targets = iter_talker_core_trace_targets(model)
+        elif self._hook_profile == TALKER_CORE_BOUNDARY_HOOK_PROFILE:
+            trace_targets = iter_talker_core_boundary_trace_targets(model)
+        else:
+            trace_targets = iter_talker_core_handoff_sub_boundary_trace_targets(model)
         for target in trace_targets:
             handle = (
                 target.module.register_forward_hook(
