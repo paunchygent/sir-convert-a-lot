@@ -58,6 +58,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story31_sub_boundary_assessment 
     build_sub_boundary_assessment,
     validate_hook_profile_variant_contract,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_sub_talker_disagreement_assessment import (
+    build_post_t234_disagreement_assessment,
+    validate_post_t234_disagreement_contract,
+)
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/qwen-story31-stability-lab")
 DEFAULT_MANIFEST_FAMILY = "swedish_pilot_train"
@@ -143,6 +147,7 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
     prepare_output_root(settings.output_root)
     validate_hook_profile_variant_contract(settings)
     validate_input_layernorm_internal_contract(settings)
+    validate_post_t234_disagreement_contract(settings)
     build_performed, image_id = prepare_qwen_image(
         _RunnerImageSettings(
             dockerfile_path=settings.dockerfile_path,
@@ -217,6 +222,10 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
             matrix_rows=compact_matrix_rows,
         ),
         input_layernorm_internal_assessment=build_input_layernorm_internal_assessment(
+            settings=settings,
+            matrix_rows=compact_matrix_rows,
+        ),
+        post_t234_disagreement_assessment=build_post_t234_disagreement_assessment(
             settings=settings,
             matrix_rows=compact_matrix_rows,
         ),

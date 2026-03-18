@@ -29,6 +29,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_forward_surfaces import (
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_boundary_trace_targets,
     iter_talker_core_handoff_sub_boundary_trace_targets,
+    iter_talker_core_post_t234_disagreement_trace_targets,
     iter_talker_core_trace_targets,
     resolve_talker_input_layernorm,
     talker_core_input_layernorm_internal_trace_names,
@@ -44,12 +45,14 @@ TALKER_CORE_HOOK_PROFILE = "talker_core"
 TALKER_CORE_BOUNDARY_HOOK_PROFILE = "talker_core_boundary"
 TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE = "talker_core_handoff_sub_boundary"
 TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE = "talker_core_input_layernorm_internal"
+TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE = "talker_core_post_t234_disagreement"
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
     TALKER_CORE_BOUNDARY_HOOK_PROFILE,
     TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE,
     TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE,
+    TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -101,6 +104,8 @@ class GradientHookSession:
             trace_targets = iter_talker_core_trace_targets(model)
         elif self._hook_profile == TALKER_CORE_BOUNDARY_HOOK_PROFILE:
             trace_targets = iter_talker_core_boundary_trace_targets(model)
+        elif self._hook_profile == TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE:
+            trace_targets = iter_talker_core_post_t234_disagreement_trace_targets(model)
         else:
             trace_targets = iter_talker_core_handoff_sub_boundary_trace_targets(model)
         for target in trace_targets:

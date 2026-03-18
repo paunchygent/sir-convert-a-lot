@@ -26,6 +26,7 @@ _TALKER_CORE_PREFIX = "talker_core."
 _BOUNDARY_TARGET_LAYER_INDICES = (16, 15)
 _HANDOFF_SUB_BOUNDARY_LAYER_INDEX = 16
 _INPUT_LAYERNORM_INTERNAL_LAYER_INDEX = 16
+_POST_T234_DISAGREEMENT_LAYER_INDICES = (16, 15)
 
 
 @dataclass(frozen=True)
@@ -181,6 +182,24 @@ def iter_talker_core_handoff_sub_boundary_trace_targets(
         _forward_target(
             name=f"{layer_prefix}.input_layernorm",
             module=input_layernorm,
+        ),
+    )
+
+
+def iter_talker_core_post_t234_disagreement_trace_targets(
+    model: object,
+) -> tuple[TalkerCoreTraceTarget, ...]:
+    """Return the narrowed T235 corridor between the T234 disagreement seams."""
+    layer_16, layer_15 = (
+        resolve_talker_decoder_layer(model, layer_index)
+        for layer_index in _POST_T234_DISAGREEMENT_LAYER_INDICES
+    )
+    return (
+        _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
+        _forward_pre_target(name=f"{_TALKER_CORE_PREFIX}layer_16.input", module=layer_16),
+        _forward_target(
+            name=f"{_TALKER_CORE_PREFIX}layer_16.input_layernorm",
+            module=_required_module(layer_16, "input_layernorm"),
         ),
     )
 

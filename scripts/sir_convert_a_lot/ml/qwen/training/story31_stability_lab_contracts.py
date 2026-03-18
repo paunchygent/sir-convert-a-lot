@@ -111,6 +111,33 @@ class Story31InputLayernormInternalAssessment:
 
 
 @dataclass(frozen=True)
+class PostT234DisagreementComparisonRow:
+    """Comparable pair-versus-single row outcome for one T235 disagreement case."""
+
+    case_id: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    role: str
+    case_has_non_finite: bool
+    first_non_finite_talker_core_hook_tensor: str | None
+    matched_corridor_surface: str | None
+
+
+@dataclass(frozen=True)
+class Story31PostT234DisagreementAssessment:
+    """Focused T235 assessment for the mixed post-T234 sub-talker corridor."""
+
+    stabilization_variant: str
+    target_loss_kind: str
+    target_corridor_surfaces: tuple[str, ...]
+    comparison_rows: tuple[PostT234DisagreementComparisonRow, ...]
+    earliest_corridor_surface: str | None
+    evidence_is_ambiguous: bool
+    ambiguity_reason: str | None
+    next_micro_family_rule: str
+
+
+@dataclass(frozen=True)
 class Story31StabilityLabReport:
     """Machine-readable report for one Story 31 matrix run."""
 
@@ -136,6 +163,7 @@ class Story31StabilityLabReport:
     matrix_rows: tuple[StabilityLabMatrixRow, ...]
     sub_boundary_assessment: Story31SubBoundaryAssessment | None
     input_layernorm_internal_assessment: Story31InputLayernormInternalAssessment | None
+    post_t234_disagreement_assessment: Story31PostT234DisagreementAssessment | None = None
 
 
 @dataclass(frozen=True)

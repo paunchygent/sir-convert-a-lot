@@ -18,6 +18,7 @@ import torch
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_boundary_trace_targets,
     iter_talker_core_handoff_sub_boundary_trace_targets,
+    iter_talker_core_post_t234_disagreement_trace_targets,
     iter_talker_core_trace_targets,
     talker_core_input_layernorm_internal_trace_names,
     talker_core_trace_prefix,
@@ -129,3 +130,14 @@ def test_talker_core_input_layernorm_internal_trace_names_lock_t233_chain_order(
         "talker_core.layer_16.input_layernorm.normalized_hidden_states",
         "talker_core.layer_16.input_layernorm.output",
     )
+
+
+def test_iter_talker_core_post_t234_disagreement_trace_targets_focuses_t235_corridor() -> None:
+    """The T235 trace should isolate the mixed post-T234 disagreement corridor."""
+    targets = iter_talker_core_post_t234_disagreement_trace_targets(_FakeRootModel())
+
+    assert [target.name for target in targets] == [
+        "talker_core.layer_15.output",
+        "talker_core.layer_16.input",
+        "talker_core.layer_16.input_layernorm",
+    ]
