@@ -40,7 +40,12 @@ Story 32 is now the operator-facing mental model:
     shifted the pair and `line-13` `sub_talker_loss` cases to
     `talker_core.layer_15.output`, while `line-4` still first broke at
     `talker_core.layer_16.input_layernorm`
-  - `T235` is now the active disagreement-resolution mechanism slice
+  - `T235` is now complete under `task235-20260318t140352z-a1`
+  - the mixed `sub_talker_loss` result is repeatable: pair and `line-13`
+    stay at `talker_core.layer_15.output`, while `line-4` stays at
+    `talker_core.layer_16.input_layernorm`
+  - `T236` is now the active row-local outlier-resolution mechanism slice
+  - `T237` is contingent on the `T236` dominant-seam classification
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -97,9 +102,10 @@ Story 28 remains operating policy:
     `talker_core.layer_16.input_layernorm.output`
   - `T234`: complete; close the diagnosed post-normalization output-scale
     family without promotion
-  - `T235`: resolve the post-`T234` disagreement between
-    `layer16.input_layernorm` and `layer15.output` under the strongest
-    output-scale member
+  - `T235`: complete; confirm the post-`T234` disagreement is repeatable
+  - `T236`: resolve the post-`T235` line-`4` row-local outlier before
+    claiming a generic `layer_15.output` seam
+  - `T237`: test one micro-family only after `T236` verifies one dominant seam
 
 ## Latest Task 101 Truth
 
@@ -193,8 +199,11 @@ Story 28 remains operating policy:
    `task233-20260318t112544z-a1`.
 1. Keep `T234` recorded as the no-promotion output-scale rerun under
    `task234-20260318t123644z-a1`.
-1. Run `T235` next as the bounded disagreement-resolution slice for the mixed
-   post-`T234` `sub_talker_loss` result.
+1. Keep `T235` recorded as the truthful disagreement-resolution rerun under
+   `task235-20260318t140352z-a1`.
+1. Run `T236` next as the bounded row-local outlier-resolution slice for the
+   repeatable `line-4` disagreement.
+1. Keep `T237` contingent on the `T236` dominant-seam classification.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion

@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Imported by `story31_stability_lab_runner.py` for report persistence.
     - Reuses `story31_stability_lab_contracts.py` as the single typed report
-      contract for the T229/T230, T233, and T235 sections.
+      contract for the T229/T230, T233, T235, and T236 sections.
 """
 
 from __future__ import annotations
@@ -59,6 +59,7 @@ def build_report_markdown(report: Story31StabilityLabReport) -> str:
     _append_t229_sub_boundary_section(lines, report)
     _append_t233_input_layernorm_internal_section(lines, report)
     _append_t235_post_t234_disagreement_section(lines, report)
+    _append_t236_post_t235_row_local_outlier_section(lines, report)
     return "\n".join(lines)
 
 
@@ -161,4 +162,39 @@ def _append_t235_post_t234_disagreement_section(
             f"{assessment_row.case_has_non_finite} | "
             f"{assessment_row.first_non_finite_talker_core_hook_tensor or '-'} | "
             f"{assessment_row.matched_corridor_surface or '-'} |"
+        )
+
+
+def _append_t236_post_t235_row_local_outlier_section(
+    lines: list[str],
+    report: Story31StabilityLabReport,
+) -> None:
+    assessment = report.post_t235_row_local_outlier_assessment
+    if assessment is None:
+        return
+    lines.extend(
+        [
+            "",
+            "## T236 Post-T235 Row-Local Outlier Assessment",
+            "",
+            f"- Assessed variant: `{assessment.stabilization_variant}`",
+            f"- Target loss kind: `{assessment.target_loss_kind}`",
+            f"- Outlier classification: `{assessment.outlier_classification or '-'}`",
+            f"- Dominant surface: `{assessment.dominant_surface or '-'}`",
+            f"- Evidence ambiguous: `{assessment.evidence_is_ambiguous}`",
+            f"- Ambiguity reason: `{assessment.ambiguity_reason or '-'}`",
+            f"- Next micro-family rule: `{assessment.next_micro_family_rule}`",
+            "",
+            "| Case | Role | Non-finite | Talker Hook | Matched Outlier Surface |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+    )
+    for assessment_row in assessment.comparison_rows:
+        lines.append(
+            "| "
+            f"{assessment_row.case_id} | "
+            f"{assessment_row.role} | "
+            f"{assessment_row.case_has_non_finite} | "
+            f"{assessment_row.first_non_finite_talker_core_hook_tensor or '-'} | "
+            f"{assessment_row.matched_outlier_surface or '-'} |"
         )

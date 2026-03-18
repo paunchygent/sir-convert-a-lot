@@ -100,7 +100,7 @@ This story is intentionally split into two lanes:
   - `T221` is the provenance surface
   - `T225-T227` are the next mechanism slice package
   - `T219` is now recorded as completed negative bounded stabilizer evidence
-  - `T228-T235` now define the active next mechanism ladder
+  - `T228-T237` now define the active next mechanism ladder
   - `T217` is the blocked recovery surface
 
 ## Reuse Plan
@@ -186,6 +186,8 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-233-split-the-post-t230-layer16-input-layernorm-seam-into-normalization-internal-probes.md`
 1. `docs/backlog/tasks/task-234-test-one-diagnosed-post-t233-output-scale-micro-family-against-the-first-verified-layer16-input-layernorm-output-surface.md`
 1. `docs/backlog/tasks/task-235-resolve-the-post-t234-sub-talker-loss-disagreement-between-layer16-input-layernorm-and-layer15-output.md`
+1. `docs/backlog/tasks/task-236-resolve-the-post-t235-line4-row-local-outlier-before-claiming-a-generic-layer15-output-seam.md`
+1. `docs/backlog/tasks/task-237-test-one-post-t236-micro-family-against-the-first-verified-dominant-sub-talker-outlier-seam.md`
 1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
 ## Checklist
@@ -344,10 +346,17 @@ the governing success criterion for future restart work.
     `talker_core.layer_16.input_layernorm`
   - all `main_loss` and `combined_loss` cases still first broke at
     `talker_core.layer_16.output`
+- `T235` is now complete under `task235-20260318t140352z-a1`:
+  - the mixed `sub_talker_loss` result is repeatable under the strongest
+    `T234` member
+  - `pair-sub-talker-loss` and `line-13-sub-talker-loss` still first broke at
+    `talker_core.layer_15.output`
+  - `line-4-sub-talker-loss` still first broke at
+    `talker_core.layer_16.input_layernorm`
 - the active follow-on slice is now:
-  - `T235`: resolve the post-`T234` sub-`talker_loss` disagreement between
-    `layer16.input_layernorm` and `layer15.output` under the strongest
-    output-scale member only
+  - `T236`: resolve the repeatable post-`T235` `line-4` row-local outlier
+    before claiming a generic `layer_15.output` seam
+  - `T237`: remain contingent until `T236` verifies one dominant seam cleanly
 - `T217` remains the blocked recovery lane:
   it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

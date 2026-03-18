@@ -420,7 +420,12 @@ For mechanism questions:
   shifted the pair and `line-13` `sub_talker_loss` cases to
   `talker_core.layer_15.output`, while `line-4` still first broke at
   `talker_core.layer_16.input_layernorm`
-- `T235` is now the immediate disagreement-resolution mechanism action
+- `T235` is now complete under `task235-20260318t140352z-a1`
+- the disagreement is repeatable: pair and `line-13` stay at
+  `talker_core.layer_15.output`, while `line-4` stays at
+  `talker_core.layer_16.input_layernorm`
+- `T236` is now the immediate row-local outlier-resolution mechanism action
+- `T237` stays contingent on the `T236` dominant-seam classification
 
 For recovery questions:
 

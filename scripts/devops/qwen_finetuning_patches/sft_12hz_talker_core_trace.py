@@ -27,6 +27,7 @@ _BOUNDARY_TARGET_LAYER_INDICES = (16, 15)
 _HANDOFF_SUB_BOUNDARY_LAYER_INDEX = 16
 _INPUT_LAYERNORM_INTERNAL_LAYER_INDEX = 16
 _POST_T234_DISAGREEMENT_LAYER_INDICES = (16, 15)
+_POST_T235_ROW_LOCAL_OUTLIER_LAYER_INDICES = (16, 15)
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,15 @@ def talker_core_input_layernorm_internal_trace_names() -> tuple[str, ...]:
         f"{layer_prefix}.variance",
         f"{layer_prefix}.normalized_hidden_states",
         f"{layer_prefix}.output",
+    )
+
+
+def talker_core_post_t235_row_local_outlier_trace_names() -> tuple[str, ...]:
+    """Return the fixed T236 row-local outlier corridor for `sub_talker_loss`."""
+    return (
+        f"{_TALKER_CORE_PREFIX}layer_15.output",
+        f"{_TALKER_CORE_PREFIX}layer_16.input",
+        f"{_TALKER_CORE_PREFIX}layer_16.input_layernorm.output",
     )
 
 
@@ -201,6 +211,20 @@ def iter_talker_core_post_t234_disagreement_trace_targets(
             name=f"{_TALKER_CORE_PREFIX}layer_16.input_layernorm",
             module=_required_module(layer_16, "input_layernorm"),
         ),
+    )
+
+
+def iter_talker_core_post_t235_row_local_outlier_trace_targets(
+    model: object,
+) -> tuple[TalkerCoreTraceTarget, ...]:
+    """Return the narrowed T236 row-local corridor around the line-4 outlier."""
+    layer_16, layer_15 = (
+        resolve_talker_decoder_layer(model, layer_index)
+        for layer_index in _POST_T235_ROW_LOCAL_OUTLIER_LAYER_INDICES
+    )
+    return (
+        _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
+        _forward_pre_target(name=f"{_TALKER_CORE_PREFIX}layer_16.input", module=layer_16),
     )
 
 

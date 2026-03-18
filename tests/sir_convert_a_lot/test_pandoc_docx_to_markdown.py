@@ -16,6 +16,9 @@ from pathlib import Path
 import pytest
 
 from scripts.sir_convert_a_lot.infrastructure import pandoc_docx_to_markdown
+from scripts.sir_convert_a_lot.infrastructure.markdown_normalization_v2 import (
+    normalize_markdown_for_v2_md_output,
+)
 from scripts.sir_convert_a_lot.infrastructure.pandoc_docx_to_markdown import (
     DOCX_TO_MARKDOWN_EMPTY,
     DOCX_TO_MARKDOWN_FAILED,
@@ -23,6 +26,7 @@ from scripts.sir_convert_a_lot.infrastructure.pandoc_docx_to_markdown import (
     DOCX_TO_MARKDOWN_UNREADABLE,
     DocxToMarkdownConversionError,
     convert_docx_to_markdown,
+    repair_exam_net_docx_markdown,
 )
 from scripts.sir_convert_a_lot.infrastructure.pandoc_markdown_to_html import PANDOC_NOT_INSTALLED
 
@@ -194,3 +198,68 @@ def test_convert_docx_to_markdown_success(
     assert output_md.exists()
     assert output_md.read_text(encoding="utf-8").startswith("# Converted")
     assert "--sandbox" in seen_commands[0]
+    assert "--wrap=none" in seen_commands[0]
+
+
+def test_repair_exam_net_docx_markdown_restores_paragraphs() -> None:
+    raw = (
+        "# Student\n\n"
+        "### Antal ord: 449\n\n"
+        "The power of curiosity\\\n"
+        "\\\n"
+        "What is curiosity? Why does it matter?\\\n"
+        "\\\n"
+        "\\\n"
+        "Studies show that children ask more questions.\\\n"
+        "Curiosity helps them learn faster.\\\n"
+        "\\\n"
+        "\\\n"
+        "However, curiosity can also bring risk.\\\n"
+    )
+
+    repaired = repair_exam_net_docx_markdown(raw)
+
+    assert "The power of curiosity\n\nWhat is curiosity? Why does it matter?\n\n" in repaired
+    assert (
+        "Studies show that children ask more questions. Curiosity helps them learn faster."
+        in repaired
+    )
+    assert "However, curiosity can also bring risk." in repaired
+    assert "\\\n" not in repaired
+
+
+def test_repair_exam_net_docx_markdown_survives_strict_normalization() -> None:
+    raw = (
+        "# Student\n\n"
+        "### Antal ord: 449\n\n"
+        "The power of curiosity\\\n"
+        "\\\n"
+        "What is curiosity? Why does it matter?\\\n"
+        "\\\n"
+        "\\\n"
+        "Studies show that children ask more questions.\\\n"
+        "Curiosity helps them learn faster.\\\n"
+        "\\\n"
+        "\\\n"
+        "However, curiosity can also bring risk.\\\n"
+    )
+
+    repaired = repair_exam_net_docx_markdown(raw)
+    normalized, warnings = normalize_markdown_for_v2_md_output(markdown_content=repaired)
+
+    assert "The power of curiosity\n\nWhat is curiosity? Why does it matter?" in normalized
+    assert (
+        "\n\nStudies show that children ask more questions. Curiosity helps them learn faster.\n\n"
+        in normalized
+    )
+    assert "However, curiosity can also bring risk." in normalized
+    assert "\\ \\" not in normalized
+    assert warnings == []
+
+
+def test_repair_exam_net_docx_markdown_leaves_normal_markdown_unchanged() -> None:
+    raw = "# Student\n\nRegular paragraph one.\n\nRegular paragraph two.\n\n- list item\n"
+
+    repaired = repair_exam_net_docx_markdown(raw)
+
+    assert repaired == raw

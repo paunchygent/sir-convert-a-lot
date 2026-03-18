@@ -172,7 +172,13 @@ work.
     shifted the pair and `line-13` `sub_talker_loss` cases to
     `talker_core.layer_15.output`, while `line-4` remained at
     `talker_core.layer_16.input_layernorm`
-  - `T235` is now the immediate next localized mechanism slice
+  - `T235` is now complete as the disagreement-resolution rerun under
+    `task235-20260318t140352z-a1`
+  - the mixed `sub_talker_loss` result is repeatable: pair and `line-13`
+    stayed at `talker_core.layer_15.output`, while `line-4` stayed at
+    `talker_core.layer_16.input_layernorm`
+  - `T236` is now the immediate row-local outlier-resolution mechanism slice
+  - `T237` is contingent on the `T236` dominant-seam classification
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

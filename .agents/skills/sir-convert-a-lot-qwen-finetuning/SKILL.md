@@ -166,7 +166,12 @@ explicitly narrow the scope.
     shifted the pair and `line-13` `sub_talker_loss` cases to
     `talker_core.layer_15.output`, while `line-4` still first broke at
     `talker_core.layer_16.input_layernorm`
-  - `T235` is now the immediate disagreement-resolution mechanism slice
+  - `T235` is now complete under `task235-20260318t140352z-a1`
+  - the mixed `sub_talker_loss` result is repeatable: pair and `line-13`
+    stay at `talker_core.layer_15.output`, while `line-4` stays at
+    `talker_core.layer_16.input_layernorm`
+  - `T236` is now the immediate row-local outlier-resolution mechanism slice
+  - `T237` is contingent on the `T236` dominant-seam classification
   - `T227` is contingent only if a later verified trainer/runtime divergence
     appears
   - `T217` remains the blocked recovery lane until a mechanism candidate

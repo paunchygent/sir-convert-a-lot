@@ -30,9 +30,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_boundary_trace_targets,
     iter_talker_core_handoff_sub_boundary_trace_targets,
     iter_talker_core_post_t234_disagreement_trace_targets,
+    iter_talker_core_post_t235_row_local_outlier_trace_targets,
     iter_talker_core_trace_targets,
     resolve_talker_input_layernorm,
     talker_core_input_layernorm_internal_trace_names,
+    talker_core_post_t235_row_local_outlier_trace_names,
     talker_core_trace_prefix,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contracts import (
@@ -46,6 +48,7 @@ TALKER_CORE_BOUNDARY_HOOK_PROFILE = "talker_core_boundary"
 TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE = "talker_core_handoff_sub_boundary"
 TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE = "talker_core_input_layernorm_internal"
 TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE = "talker_core_post_t234_disagreement"
+TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE = "talker_core_post_t235_row_local_outlier"
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
@@ -53,6 +56,7 @@ HOOK_PROFILE_CHOICES = (
     TALKER_CORE_HANDOFF_SUB_BOUNDARY_HOOK_PROFILE,
     TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE,
     TALKER_CORE_POST_T234_DISAGREEMENT_HOOK_PROFILE,
+    TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -99,6 +103,9 @@ class GradientHookSession:
             return
         if self._hook_profile == TALKER_CORE_INPUT_LAYERNORM_INTERNAL_HOOK_PROFILE:
             self._install_input_layernorm_internal_trace(model=model)
+            return
+        if self._hook_profile == TALKER_CORE_POST_T235_ROW_LOCAL_OUTLIER_HOOK_PROFILE:
+            self._install_post_t235_row_local_outlier_trace(model=model)
             return
         if self._hook_profile == TALKER_CORE_HOOK_PROFILE:
             trace_targets = iter_talker_core_trace_targets(model)
@@ -269,6 +276,62 @@ class GradientHookSession:
             self._attach_tensor(normalized_hidden_states_name, normalized_hidden_states)
             weight = _required_layernorm_weight(self_module)
             output = weight * normalized_hidden_states.to(input_dtype)
+            self._attach_tensor(output_name, output)
+            return output
+
+        return on_forward
+
+    def _install_post_t235_row_local_outlier_trace(self, *, model: object) -> None:
+        """Patch the T236 line-4 outlier corridor while keeping the state vector fixed."""
+        for target in iter_talker_core_post_t235_row_local_outlier_trace_targets(model):
+            handle = (
+                target.module.register_forward_hook(
+                    self._build_forward_hook(target.name, target.tensor_selector)
+                )
+                if target.hook_kind == "forward"
+                else target.module.register_forward_pre_hook(
+                    self._build_forward_pre_hook(target.name, target.tensor_selector)
+                )
+            )
+            self._handles.append(handle)
+        input_layernorm = resolve_talker_input_layernorm(model, layer_index=16)
+        self._patched_module_forwards.append(
+            _PatchedModuleForward(
+                module=input_layernorm,
+                original_forward=input_layernorm.forward,
+                had_instance_forward="forward" in input_layernorm.__dict__,
+            )
+        )
+        input_layernorm.forward = MethodType(
+            self._build_post_t235_row_local_outlier_forward(),
+            input_layernorm,
+        )
+
+    def _build_post_t235_row_local_outlier_forward(
+        self,
+    ) -> Callable[[torch.nn.Module, object], torch.Tensor]:
+        """Build one reversible wrapper that exposes the T236 output outlier seam."""
+        output_name = talker_core_post_t235_row_local_outlier_trace_names()[-1]
+
+        def on_forward(
+            self_module: torch.nn.Module, *args: object, **kwargs: object
+        ) -> torch.Tensor:
+            if kwargs:
+                raise SystemExit(
+                    "Backward-lineage probe expected `layer_16.input_layernorm` "
+                    "to receive no keyword arguments under the T236 profile."
+                )
+            if len(args) != 1 or not isinstance(args[0], torch.Tensor):
+                raise SystemExit(
+                    "Backward-lineage probe expected `layer_16.input_layernorm` "
+                    "to receive exactly one tensor input under the T236 profile."
+                )
+            residual_input = args[0]
+            input_dtype = residual_input.dtype
+            hidden_states = residual_input.to(torch.float32)
+            variance = hidden_states.pow(2).mean(-1, keepdim=True)
+            hidden_states = hidden_states * torch.rsqrt(variance + self_module.variance_epsilon)
+            output = self_module.weight * hidden_states.to(input_dtype)
             self._attach_tensor(output_name, output)
             return output
 
