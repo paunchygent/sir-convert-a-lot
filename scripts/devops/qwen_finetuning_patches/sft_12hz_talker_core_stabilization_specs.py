@@ -20,6 +20,7 @@ from scripts.devops.qwen_finetuning_patches import (
 )
 
 LayerInputLayernormEntryRescale = input_layernorm_patch.LayerInputLayernormEntryRescale
+LayerInputLayernormFp32OutputCap = input_layernorm_patch.LayerInputLayernormFp32OutputCap
 LayerInputLayernormOutputAttenuation = input_layernorm_patch.LayerInputLayernormOutputAttenuation
 
 TALKER_CORE_STABILIZATION_OFF = "off"
@@ -47,6 +48,14 @@ LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_
 LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5 = (
     "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5"
 )
+LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3 = (
+    "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_"
+    "layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3"
+)
+LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2 = (
+    "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_"
+    "layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e2"
+)
 TALKER_CORE_STABILIZATION_CHOICES = (
     TALKER_CORE_STABILIZATION_OFF,
     LAYER16_GATED_FP32,
@@ -59,6 +68,8 @@ TALKER_CORE_STABILIZATION_CHOICES = (
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2,
 )
 
 
@@ -82,6 +93,7 @@ class TalkerCoreStabilizationSpec:
     layer_output_attenuations: tuple[LayerOutputAttenuation, ...]
     input_layernorm_entry_rescales: tuple[LayerInputLayernormEntryRescale, ...]
     input_layernorm_output_attenuations: tuple[LayerInputLayernormOutputAttenuation, ...]
+    input_layernorm_fp32_output_caps: tuple[LayerInputLayernormFp32OutputCap, ...]
 
 
 def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizationSpec:
@@ -96,6 +108,7 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             layer_output_attenuations=(),
             input_layernorm_entry_rescales=(),
             input_layernorm_output_attenuations=(),
+            input_layernorm_fp32_output_caps=(),
         )
     if variant == LAYER16_GATED_FP32:
         return TalkerCoreStabilizationSpec(
@@ -107,6 +120,7 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             layer_output_attenuations=(),
             input_layernorm_entry_rescales=(),
             input_layernorm_output_attenuations=(),
+            input_layernorm_fp32_output_caps=(),
         )
     if variant == LAYER16_GATED_FP32_CLAMP_1E4:
         return TalkerCoreStabilizationSpec(
@@ -118,6 +132,7 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             layer_output_attenuations=(),
             input_layernorm_entry_rescales=(),
             input_layernorm_output_attenuations=(),
+            input_layernorm_fp32_output_caps=(),
         )
     if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5:
         return TalkerCoreStabilizationSpec(
@@ -129,6 +144,7 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             layer_output_attenuations=(LayerOutputAttenuation(layer_index=15, scale=0.5),),
             input_layernorm_entry_rescales=(),
             input_layernorm_output_attenuations=(),
+            input_layernorm_fp32_output_caps=(),
         )
     if variant == LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25:
         return TalkerCoreStabilizationSpec(
@@ -140,6 +156,7 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             layer_output_attenuations=(LayerOutputAttenuation(layer_index=15, scale=0.25),),
             input_layernorm_entry_rescales=(),
             input_layernorm_output_attenuations=(),
+            input_layernorm_fp32_output_caps=(),
         )
     if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5:
         return _layer16_handoff_spec(variant=variant)
@@ -156,6 +173,7 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
             ),
             input_layernorm_entry_rescales=(),
             input_layernorm_output_attenuations=(),
+            input_layernorm_fp32_output_caps=(),
         )
     if variant == (
         LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3
@@ -193,6 +211,26 @@ def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizat
                 LayerInputLayernormOutputAttenuation(layer_index=16, scale=0.5),
             ),
         )
+    if variant == (LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3):
+        return _layer16_handoff_spec(
+            variant=variant,
+            input_layernorm_output_attenuations=(
+                LayerInputLayernormOutputAttenuation(layer_index=16, scale=0.5),
+            ),
+            input_layernorm_fp32_output_caps=(
+                LayerInputLayernormFp32OutputCap(layer_index=16, absmax_cap=1.0e3),
+            ),
+        )
+    if variant == (LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2):
+        return _layer16_handoff_spec(
+            variant=variant,
+            input_layernorm_output_attenuations=(
+                LayerInputLayernormOutputAttenuation(layer_index=16, scale=0.5),
+            ),
+            input_layernorm_fp32_output_caps=(
+                LayerInputLayernormFp32OutputCap(layer_index=16, absmax_cap=1.0e2),
+            ),
+        )
     raise SystemExit(f"Unsupported talker-core stabilization variant `{variant}`.")
 
 
@@ -201,6 +239,7 @@ def _layer16_handoff_spec(
     variant: str,
     input_layernorm_entry_rescales: tuple[LayerInputLayernormEntryRescale, ...] = (),
     input_layernorm_output_attenuations: tuple[LayerInputLayernormOutputAttenuation, ...] = (),
+    input_layernorm_fp32_output_caps: tuple[LayerInputLayernormFp32OutputCap, ...] = (),
 ) -> TalkerCoreStabilizationSpec:
     return TalkerCoreStabilizationSpec(
         variant=variant,
@@ -214,4 +253,5 @@ def _layer16_handoff_spec(
         ),
         input_layernorm_entry_rescales=input_layernorm_entry_rescales,
         input_layernorm_output_attenuations=input_layernorm_output_attenuations,
+        input_layernorm_fp32_output_caps=input_layernorm_fp32_output_caps,
     )

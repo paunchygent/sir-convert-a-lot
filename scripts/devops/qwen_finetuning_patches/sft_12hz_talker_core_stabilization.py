@@ -36,6 +36,8 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization_s
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3,
     TALKER_CORE_STABILIZATION_CHOICES,
     TALKER_CORE_STABILIZATION_OFF,
     LayerOutputAttenuation,
@@ -54,12 +56,15 @@ __all__ = [
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5",
+    "LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2",
+    "LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3",
     "TALKER_CORE_STABILIZATION_CHOICES",
     "TALKER_CORE_STABILIZATION_OFF",
     "LayerInputLayernormEntryRescale",
+    "LayerInputLayernormFp32OutputCap",
     "LayerInputLayernormOutputAttenuation",
     "LayerOutputAttenuation",
     "TalkerCoreStabilizationSpec",
@@ -68,6 +73,7 @@ __all__ = [
 ]
 
 LayerInputLayernormEntryRescale = input_layernorm_patch.LayerInputLayernormEntryRescale
+LayerInputLayernormFp32OutputCap = input_layernorm_patch.LayerInputLayernormFp32OutputCap
 LayerInputLayernormOutputAttenuation = input_layernorm_patch.LayerInputLayernormOutputAttenuation
 
 
@@ -125,6 +131,7 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
                     original_forward=input_layernorm.forward,
                     absmax_cap=patch.absmax_cap,
                     output_scale=patch.output_scale,
+                    fp32_output_absmax_cap=patch.fp32_output_absmax_cap,
                     layer_index=patch.layer_index,
                 ),
                 input_layernorm,
@@ -226,11 +233,17 @@ def _restore_instance_forwards(
 
 class _InputLayernormPatchSpec:
     def __init__(
-        self, *, layer_index: int, absmax_cap: float | None, output_scale: float | None
+        self,
+        *,
+        layer_index: int,
+        absmax_cap: float | None,
+        output_scale: float | None,
+        fp32_output_absmax_cap: float | None,
     ) -> None:
         self.layer_index = layer_index
         self.absmax_cap = absmax_cap
         self.output_scale = output_scale
+        self.fp32_output_absmax_cap = fp32_output_absmax_cap
 
 
 def _input_layernorm_patch_specs(
@@ -243,13 +256,16 @@ def _input_layernorm_patch_specs(
     entry_rescales = {
         rescale.layer_index: rescale.absmax_cap for rescale in spec.input_layernorm_entry_rescales
     }
-    for layer_index in entry_rescales:
-        output_scales.setdefault(layer_index, None)
+    fp32_output_caps = {
+        cap.layer_index: cap.absmax_cap for cap in spec.input_layernorm_fp32_output_caps
+    }
+    layer_indices = sorted(set(output_scales) | set(entry_rescales) | set(fp32_output_caps))
     return tuple(
         _InputLayernormPatchSpec(
             layer_index=layer_index,
             absmax_cap=entry_rescales.get(layer_index),
-            output_scale=output_scale,
+            output_scale=output_scales.get(layer_index),
+            fp32_output_absmax_cap=fp32_output_caps.get(layer_index),
         )
-        for layer_index, output_scale in output_scales.items()
+        for layer_index in layer_indices
     )

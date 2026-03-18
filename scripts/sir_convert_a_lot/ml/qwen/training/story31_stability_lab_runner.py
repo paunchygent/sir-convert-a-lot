@@ -46,6 +46,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story31_input_layernorm_internal
     build_input_layernorm_internal_assessment,
     validate_input_layernorm_internal_contract,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training.story31_post_t236_micro_family_assessment import (
+    build_post_t236_row_local_micro_family_assessment,
+    validate_post_t236_row_local_micro_family_contract,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.story31_row_local_outlier_assessment import (
     build_post_t235_row_local_outlier_assessment,
     validate_post_t235_row_local_outlier_contract,
@@ -87,6 +91,7 @@ _ANOMALY_OPERATOR_PATTERN = re.compile(r"([A-Za-z0-9_]+Backward0)")
 @dataclass(frozen=True)
 class _RunnerImageSettings:
     """Concrete image settings payload for Story 31 host-side execution."""
+
     dockerfile_path: Path
     image: str
     build_image: bool
@@ -95,6 +100,7 @@ class _RunnerImageSettings:
 @dataclass(frozen=True)
 class _RunnerCacheSettings:
     """Concrete HF cache settings payload for Story 31 host-side execution."""
+
     image: str
     hf_cache_dir: Path
     hf_cache_home_mount: Path
@@ -151,6 +157,7 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
     validate_input_layernorm_internal_contract(settings)
     validate_post_t234_disagreement_contract(settings)
     validate_post_t235_row_local_outlier_contract(settings)
+    validate_post_t236_row_local_micro_family_contract(settings)
     build_performed, image_id = prepare_qwen_image(
         _RunnerImageSettings(
             dockerfile_path=settings.dockerfile_path,
@@ -235,6 +242,12 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
         post_t235_row_local_outlier_assessment=build_post_t235_row_local_outlier_assessment(
             settings=settings,
             matrix_rows=compact_matrix_rows,
+        ),
+        post_t236_row_local_micro_family_assessment=(
+            build_post_t236_row_local_micro_family_assessment(
+                settings=settings,
+                matrix_rows=compact_matrix_rows,
+            )
         ),
     )
 

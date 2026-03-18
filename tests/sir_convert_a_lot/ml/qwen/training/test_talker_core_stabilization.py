@@ -27,8 +27,11 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3,
     TALKER_CORE_STABILIZATION_OFF,
     LayerInputLayernormEntryRescale,
+    LayerInputLayernormFp32OutputCap,
     LayerInputLayernormOutputAttenuation,
     LayerOutputAttenuation,
     apply_talker_core_stabilization,
@@ -65,6 +68,12 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     strong_output_scale_spec = resolve_talker_core_stabilization_spec(
         LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5
     )
+    mild_fp32_output_cap_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3
+    )
+    strong_fp32_output_cap_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2
+    )
 
     assert off_spec.target_layers == ()
     assert off_spec.force_fp32_gated_product is False
@@ -97,6 +106,15 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     )
     assert strong_output_scale_spec.input_layernorm_output_attenuations == (
         LayerInputLayernormOutputAttenuation(layer_index=16, scale=0.5),
+    )
+    assert mild_fp32_output_cap_spec.input_layernorm_output_attenuations == (
+        LayerInputLayernormOutputAttenuation(layer_index=16, scale=0.5),
+    )
+    assert mild_fp32_output_cap_spec.input_layernorm_fp32_output_caps == (
+        LayerInputLayernormFp32OutputCap(layer_index=16, absmax_cap=1.0e3),
+    )
+    assert strong_fp32_output_cap_spec.input_layernorm_fp32_output_caps == (
+        LayerInputLayernormFp32OutputCap(layer_index=16, absmax_cap=1.0e2),
     )
 
 
@@ -273,9 +291,63 @@ def test_apply_talker_core_stabilization_attenuates_layer16_input_layernorm_outp
     assert torch.equal(attenuated_input_layernorm_output, base_input_layernorm_output * 0.5)
 
 
+def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_fp32_output_cap() -> None:
+    """The T237 family should patch only the targeted layer-16 input-layernorm output seam."""
+    model = _fake_model(layer_count=18)
+    assert "forward" not in _layer(model, 16).input_layernorm.__dict__
+    assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+    with apply_talker_core_stabilization(
+        model,
+        variant=(LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3),
+    ):
+        assert "forward" in _layer(model, 16).input_layernorm.__dict__
+        assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+    assert "forward" not in _layer(model, 16).input_layernorm.__dict__
+    assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+
+def test_apply_talker_core_stabilization_caps_layer16_input_layernorm_fp32_output() -> None:
+    """The T237 family should cap the weighted fp32 output before cast-back and scaling."""
+    base_model = _fake_model(layer_count=18)
+    capped_model = _fake_model(layer_count=18)
+    sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
+    _layer(base_model, 16).input_layernorm.weight.data.fill_(400.0)
+    _layer(capped_model, 16).input_layernorm.weight.data.fill_(400.0)
+
+    with apply_talker_core_stabilization(
+        base_model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5,
+    ):
+        base_output = _layer(base_model, 16).input_layernorm(sample)
+
+    with apply_talker_core_stabilization(
+        capped_model,
+        variant=(LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2),
+    ):
+        capped_output = _layer(capped_model, 16).input_layernorm(sample)
+
+    assert float(capped_output.abs().max().item()) <= 50.5
+    assert float(capped_output.abs().max().item()) < float(base_output.abs().max().item())
+
+
 class _FakeIdentityModule(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x
+
+
+class _FakeRmsNorm(torch.nn.Module):
+    def __init__(self, *, width: int) -> None:
+        super().__init__()
+        self.weight = torch.nn.Parameter(torch.ones(width, dtype=torch.bfloat16))
+        self.variance_epsilon = 1.0e-6
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        hidden_states = x.to(torch.float32)
+        variance = hidden_states.pow(2).mean(-1, keepdim=True)
+        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+        return self.weight * hidden_states.to(x.dtype)
 
 
 class _FakeTalkerMlp(torch.nn.Module):
@@ -296,7 +368,7 @@ class _FakeTalkerMlp(torch.nn.Module):
 class _FakeTalkerLayer(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.input_layernorm = _FakeIdentityModule()
+        self.input_layernorm = _FakeRmsNorm(width=3)
         self.mlp = _FakeTalkerMlp()
 
     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor]:
