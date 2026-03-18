@@ -22,11 +22,14 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
     LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
     TALKER_CORE_STABILIZATION_OFF,
     LayerInputLayernormEntryRescale,
+    LayerInputLayernormOutputAttenuation,
     LayerOutputAttenuation,
     apply_talker_core_stabilization,
     resolve_talker_core_stabilization_spec,
@@ -56,6 +59,12 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     strong_norm_entry_spec = resolve_talker_core_stabilization_spec(
         LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2
     )
+    mild_output_scale_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75
+    )
+    strong_output_scale_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5
+    )
 
     assert off_spec.target_layers == ()
     assert off_spec.force_fp32_gated_product is False
@@ -82,6 +91,12 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     )
     assert strong_norm_entry_spec.input_layernorm_entry_rescales == (
         LayerInputLayernormEntryRescale(layer_index=16, absmax_cap=1.0e2),
+    )
+    assert mild_output_scale_spec.input_layernorm_output_attenuations == (
+        LayerInputLayernormOutputAttenuation(layer_index=16, scale=0.75),
+    )
+    assert strong_output_scale_spec.input_layernorm_output_attenuations == (
+        LayerInputLayernormOutputAttenuation(layer_index=16, scale=0.5),
     )
 
 
@@ -218,6 +233,44 @@ def test_apply_talker_core_stabilization_rescales_layer16_input_layernorm_entry(
 
     assert layer16_input_layernorm_output.dtype == torch.bfloat16
     assert float(layer16_input_layernorm_output.abs().max().item()) <= 128.0
+
+
+def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_output() -> None:
+    """The T234 family should patch only the targeted layer-16 input-layernorm output seam."""
+    model = _fake_model(layer_count=18)
+    assert "forward" not in _layer(model, 16).input_layernorm.__dict__
+    assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+    with apply_talker_core_stabilization(
+        model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75,
+    ):
+        assert "forward" in _layer(model, 16).input_layernorm.__dict__
+        assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+    assert "forward" not in _layer(model, 16).input_layernorm.__dict__
+    assert "forward" not in _layer(model, 15).input_layernorm.__dict__
+
+
+def test_apply_talker_core_stabilization_attenuates_layer16_input_layernorm_output() -> None:
+    """The T234 family should attenuate only the layer-16 input-layernorm output seam."""
+    base_model = _fake_model(layer_count=18)
+    attenuated_model = _fake_model(layer_count=18)
+    sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
+
+    with apply_talker_core_stabilization(
+        base_model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    ):
+        base_input_layernorm_output = _layer(base_model, 16).input_layernorm(sample)
+
+    with apply_talker_core_stabilization(
+        attenuated_model,
+        variant=LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5,
+    ):
+        attenuated_input_layernorm_output = _layer(attenuated_model, 16).input_layernorm(sample)
+
+    assert torch.equal(attenuated_input_layernorm_output, base_input_layernorm_output * 0.5)
 
 
 class _FakeIdentityModule(torch.nn.Module):

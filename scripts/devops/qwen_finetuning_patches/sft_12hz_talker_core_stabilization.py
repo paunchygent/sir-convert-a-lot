@@ -1,204 +1,74 @@
-"""Bounded talker-core stabilization policies for Story 31 exploration.
+"""Bounded talker-core stabilization policy application for Story 31.
 
 Purpose:
-    Provide small, explicit forward-path interventions around the late-middle
-    talker-core seams so Story 31 can test stabilization ideas quickly without
-    rebuilding the entire training/runtime stack for each hypothesis.
+    Apply one resolved Story 31 stabilization spec to the live patched Qwen
+    talker runtime for a single forward pass, while restoring every patched
+    module afterward so experiments remain reversible and composable.
 
 Relationships:
     - Used by `sft_12hz_forward_surfaces.py` to apply an optional bounded
       stabilization policy during the shared talker forward pass.
-    - Reuses `sft_12hz_talker_core_trace.py` to resolve live decoder layers
-      from the patched Qwen runtime instead of restating layer paths.
+    - Reuses `sft_12hz_talker_core_stabilization_specs.py` for the variant
+      taxonomy and concrete spec resolution.
+    - Reuses `sft_12hz_talker_core_stabilization_input_layernorm.py` for the
+      reversible layer-16 input-layernorm entry/output wrapper families.
 """
 
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass
 from types import MethodType
-from typing import Callable, Iterator
+from typing import Callable, Iterator, Sequence
 
 import torch
 
+from scripts.devops.qwen_finetuning_patches import (
+    sft_12hz_talker_core_stabilization_input_layernorm as input_layernorm_patch,
+)
+from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization_specs import (
+    LAYER16_GATED_FP32,
+    LAYER16_GATED_FP32_CLAMP_1E4,
+    LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
+    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
+    TALKER_CORE_STABILIZATION_CHOICES,
+    TALKER_CORE_STABILIZATION_OFF,
+    LayerOutputAttenuation,
+    TalkerCoreStabilizationSpec,
+    resolve_talker_core_stabilization_spec,
+)
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     resolve_talker_decoder_layer,
 )
 
-TALKER_CORE_STABILIZATION_OFF = "off"
-LAYER16_GATED_FP32 = "layer16_gated_fp32"
-LAYER16_GATED_FP32_CLAMP_1E4 = "layer16_gated_fp32_clamp_1e4"
-LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5 = "layer16_gated_fp32_rescale_1e3_layer15_out_0p5"
-LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25 = "layer16_gated_fp32_rescale_1e2_layer15_out_0p25"
-LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5 = (
-    "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5"
-)
-LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5 = (
-    "layer16_gated_fp32_rescale_1e3_layer16_out_0p25_layer15_out_0p5"
-)
-LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3 = (
-    "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_"
-    "layer16_pre_input_ln_rescale_1e3"
-)
-LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2 = (
-    "layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_"
-    "layer16_pre_input_ln_rescale_1e2"
-)
-TALKER_CORE_STABILIZATION_CHOICES = (
-    TALKER_CORE_STABILIZATION_OFF,
-    LAYER16_GATED_FP32,
-    LAYER16_GATED_FP32_CLAMP_1E4,
-    LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5,
-    LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25,
-    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5,
-    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
-    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3,
-    LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2,
-)
+__all__ = [
+    "LAYER16_GATED_FP32",
+    "LAYER16_GATED_FP32_CLAMP_1E4",
+    "LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25",
+    "LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5",
+    "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5",
+    "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5",
+    "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5",
+    "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75",
+    "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2",
+    "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3",
+    "TALKER_CORE_STABILIZATION_CHOICES",
+    "TALKER_CORE_STABILIZATION_OFF",
+    "LayerInputLayernormEntryRescale",
+    "LayerInputLayernormOutputAttenuation",
+    "LayerOutputAttenuation",
+    "TalkerCoreStabilizationSpec",
+    "apply_talker_core_stabilization",
+    "resolve_talker_core_stabilization_spec",
+]
 
-
-@dataclass(frozen=True)
-class LayerOutputAttenuation:
-    """Resolved output attenuation contract for one decoder-layer boundary."""
-
-    layer_index: int
-    scale: float
-
-
-@dataclass(frozen=True)
-class LayerInputLayernormEntryRescale:
-    """Resolved rescale contract for one decoder-layer input-layernorm entry."""
-
-    layer_index: int
-    absmax_cap: float
-
-
-@dataclass(frozen=True)
-class TalkerCoreStabilizationSpec:
-    """Resolved bounded stabilization contract for one exploration variant."""
-
-    variant: str
-    target_layers: tuple[int, ...]
-    force_fp32_gated_product: bool
-    gated_product_clamp_abs: float | None
-    gated_product_rescale_absmax: float | None
-    layer_output_attenuations: tuple[LayerOutputAttenuation, ...]
-    input_layernorm_entry_rescales: tuple[LayerInputLayernormEntryRescale, ...]
-
-
-def resolve_talker_core_stabilization_spec(variant: str) -> TalkerCoreStabilizationSpec:
-    """Resolve one bounded stabilization variant into its concrete contract."""
-    if variant == TALKER_CORE_STABILIZATION_OFF:
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(),
-            force_fp32_gated_product=False,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=None,
-            layer_output_attenuations=(),
-            input_layernorm_entry_rescales=(),
-        )
-    if variant == LAYER16_GATED_FP32:
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=None,
-            layer_output_attenuations=(),
-            input_layernorm_entry_rescales=(),
-        )
-    if variant == LAYER16_GATED_FP32_CLAMP_1E4:
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=1.0e4,
-            gated_product_rescale_absmax=None,
-            layer_output_attenuations=(),
-            input_layernorm_entry_rescales=(),
-        )
-    if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER15_OUT_0P5:
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=1.0e3,
-            layer_output_attenuations=(LayerOutputAttenuation(layer_index=15, scale=0.5),),
-            input_layernorm_entry_rescales=(),
-        )
-    if variant == LAYER16_GATED_FP32_RESCALE_1E2_LAYER15_OUT_0P25:
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=1.0e2,
-            layer_output_attenuations=(LayerOutputAttenuation(layer_index=15, scale=0.25),),
-            input_layernorm_entry_rescales=(),
-        )
-    if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5:
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=1.0e3,
-            layer_output_attenuations=(
-                LayerOutputAttenuation(layer_index=16, scale=0.5),
-                LayerOutputAttenuation(layer_index=15, scale=0.5),
-            ),
-            input_layernorm_entry_rescales=(),
-        )
-    if variant == LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5:
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=1.0e3,
-            layer_output_attenuations=(
-                LayerOutputAttenuation(layer_index=16, scale=0.25),
-                LayerOutputAttenuation(layer_index=15, scale=0.5),
-            ),
-            input_layernorm_entry_rescales=(),
-        )
-    if variant == (
-        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3
-    ):
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=1.0e3,
-            layer_output_attenuations=(
-                LayerOutputAttenuation(layer_index=16, scale=0.5),
-                LayerOutputAttenuation(layer_index=15, scale=0.5),
-            ),
-            input_layernorm_entry_rescales=(
-                LayerInputLayernormEntryRescale(layer_index=16, absmax_cap=1.0e3),
-            ),
-        )
-    if variant == (
-        LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2
-    ):
-        return TalkerCoreStabilizationSpec(
-            variant=variant,
-            target_layers=(16,),
-            force_fp32_gated_product=True,
-            gated_product_clamp_abs=None,
-            gated_product_rescale_absmax=1.0e3,
-            layer_output_attenuations=(
-                LayerOutputAttenuation(layer_index=16, scale=0.5),
-                LayerOutputAttenuation(layer_index=15, scale=0.5),
-            ),
-            input_layernorm_entry_rescales=(
-                LayerInputLayernormEntryRescale(layer_index=16, absmax_cap=1.0e2),
-            ),
-        )
-    raise SystemExit(f"Unsupported talker-core stabilization variant `{variant}`.")
+LayerInputLayernormEntryRescale = input_layernorm_patch.LayerInputLayernormEntryRescale
+LayerInputLayernormOutputAttenuation = input_layernorm_patch.LayerInputLayernormOutputAttenuation
 
 
 @contextmanager
@@ -208,7 +78,7 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
     if spec.variant == TALKER_CORE_STABILIZATION_OFF:
         yield
         return
-    original_forwards: list[tuple[torch.nn.Module, Callable[..., torch.Tensor], bool]] = []
+    original_mlp_forwards: list[tuple[torch.nn.Module, Callable[..., torch.Tensor], bool]] = []
     original_layer_forwards: list[tuple[torch.nn.Module, Callable[..., object], bool]] = []
     original_input_layernorm_forwards: list[
         tuple[torch.nn.Module, Callable[..., object], bool]
@@ -222,7 +92,7 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
                     "Talker-core stabilization could not resolve "
                     f"`layer_{layer_index}.mlp` as a torch module."
                 )
-            original_forwards.append((mlp, mlp.forward, "forward" in mlp.__dict__))
+            original_mlp_forwards.append((mlp, mlp.forward, "forward" in mlp.__dict__))
             mlp.forward = MethodType(_patched_mlp_forward_factory(spec), mlp)
         for attenuation in spec.layer_output_attenuations:
             layer = resolve_talker_decoder_layer(model, attenuation.layer_index)
@@ -235,13 +105,13 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
                 ),
                 layer,
             )
-        for rescale in spec.input_layernorm_entry_rescales:
-            layer = resolve_talker_decoder_layer(model, rescale.layer_index)
+        for patch in _input_layernorm_patch_specs(spec):
+            layer = resolve_talker_decoder_layer(model, patch.layer_index)
             input_layernorm = getattr(layer, "input_layernorm", None)
             if not isinstance(input_layernorm, torch.nn.Module):
                 raise SystemExit(
                     "Talker-core stabilization could not resolve "
-                    f"`layer_{rescale.layer_index}.input_layernorm` as a torch module."
+                    f"`layer_{patch.layer_index}.input_layernorm` as a torch module."
                 )
             original_input_layernorm_forwards.append(
                 (
@@ -251,32 +121,19 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
                 )
             )
             input_layernorm.forward = MethodType(
-                _patched_input_layernorm_forward_factory(
+                input_layernorm_patch.patched_input_layernorm_forward_factory(
                     original_forward=input_layernorm.forward,
-                    absmax_cap=rescale.absmax_cap,
-                    layer_index=rescale.layer_index,
+                    absmax_cap=patch.absmax_cap,
+                    output_scale=patch.output_scale,
+                    layer_index=patch.layer_index,
                 ),
                 input_layernorm,
             )
         yield
     finally:
-        for module, original_forward, had_instance_forward in reversed(
-            original_input_layernorm_forwards
-        ):
-            if had_instance_forward:
-                module.forward = original_forward
-                continue
-            delattr(module, "forward")
-        for module, original_forward, had_instance_forward in reversed(original_layer_forwards):
-            if had_instance_forward:
-                module.forward = original_forward
-                continue
-            delattr(module, "forward")
-        for module, original_forward, had_instance_forward in reversed(original_forwards):
-            if had_instance_forward:
-                module.forward = original_forward
-                continue
-            delattr(module, "forward")
+        _restore_instance_forwards(original_input_layernorm_forwards)
+        _restore_instance_forwards(original_layer_forwards)
+        _restore_instance_forwards(original_mlp_forwards)
 
 
 def _patched_mlp_forward_factory(
@@ -337,28 +194,17 @@ def _patched_layer_forward_factory(
     return patched_forward
 
 
-def _patched_input_layernorm_forward_factory(
-    *,
-    original_forward: Callable[..., object],
-    absmax_cap: float,
-    layer_index: int,
-) -> Callable[[torch.nn.Module, object], object]:
-    """Build one wrapper that rescales the residual stream before input layernorm."""
-
-    def patched_forward(self: torch.nn.Module, *args: object, **kwargs: object) -> object:
-        if len(args) == 0 or not isinstance(args[0], torch.Tensor):
-            raise SystemExit(
-                "Talker-core stabilization expected input_layernorm "
-                f"{layer_index} to receive a tensor as its first argument."
-            )
-        rescaled_hidden_states = _rescale_tensor_absmax(args[0], absmax_cap=absmax_cap)
-        return original_forward(rescaled_hidden_states, *args[1:], **kwargs)
-
-    return patched_forward
+def _required_tensor_module(parent: torch.nn.Module, attribute_name: str) -> torch.nn.Module:
+    candidate = getattr(parent, attribute_name, None)
+    if not isinstance(candidate, torch.nn.Module):
+        raise SystemExit(
+            "Talker-core stabilization could not resolve "
+            f"`{type(parent).__name__}.{attribute_name}` as a torch module."
+        )
+    return candidate
 
 
 def _rescale_tensor_absmax(tensor: torch.Tensor, *, absmax_cap: float) -> torch.Tensor:
-    """Rescale one tensor only when its current abs-max exceeds the requested cap."""
     current_absmax = torch.amax(tensor.abs())
     if not bool(torch.isfinite(current_absmax).item()):
         return tensor
@@ -368,11 +214,42 @@ def _rescale_tensor_absmax(tensor: torch.Tensor, *, absmax_cap: float) -> torch.
     return tensor * (absmax_cap / current_value)
 
 
-def _required_tensor_module(parent: torch.nn.Module, attribute_name: str) -> torch.nn.Module:
-    candidate = getattr(parent, attribute_name, None)
-    if not isinstance(candidate, torch.nn.Module):
-        raise SystemExit(
-            "Talker-core stabilization could not resolve "
-            f"`{type(parent).__name__}.{attribute_name}` as a torch module."
+def _restore_instance_forwards(
+    original_forwards: Sequence[tuple[torch.nn.Module, Callable[..., object], bool]],
+) -> None:
+    for module, original_forward, had_instance_forward in reversed(original_forwards):
+        if had_instance_forward:
+            module.forward = original_forward
+            continue
+        delattr(module, "forward")
+
+
+class _InputLayernormPatchSpec:
+    def __init__(
+        self, *, layer_index: int, absmax_cap: float | None, output_scale: float | None
+    ) -> None:
+        self.layer_index = layer_index
+        self.absmax_cap = absmax_cap
+        self.output_scale = output_scale
+
+
+def _input_layernorm_patch_specs(
+    spec: TalkerCoreStabilizationSpec,
+) -> tuple[_InputLayernormPatchSpec, ...]:
+    output_scales: dict[int, float | None] = {
+        attenuation.layer_index: attenuation.scale
+        for attenuation in spec.input_layernorm_output_attenuations
+    }
+    entry_rescales = {
+        rescale.layer_index: rescale.absmax_cap for rescale in spec.input_layernorm_entry_rescales
+    }
+    for layer_index in entry_rescales:
+        output_scales.setdefault(layer_index, None)
+    return tuple(
+        _InputLayernormPatchSpec(
+            layer_index=layer_index,
+            absmax_cap=entry_rescales.get(layer_index),
+            output_scale=output_scale,
         )
-    return candidate
+        for layer_index, output_scale in output_scales.items()
+    )
