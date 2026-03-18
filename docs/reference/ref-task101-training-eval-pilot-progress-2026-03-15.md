@@ -166,7 +166,13 @@ work.
   - the pair and both single-row `sub_talker_loss` cases, plus the wider
     nine-row matrix, all first broke at
     `talker_core.layer_16.input_layernorm.output`
-  - `T234` is now the immediate next localized mechanism slice
+  - `T234` is now complete as the bounded output-scale rerun under
+    `task234-20260318t123644z-a1`
+  - no variant stayed finite or earned promotion; the strongest `0p5` member
+    shifted the pair and `line-13` `sub_talker_loss` cases to
+    `talker_core.layer_15.output`, while `line-4` remained at
+    `talker_core.layer_16.input_layernorm`
+  - `T235` is now the immediate next localized mechanism slice
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

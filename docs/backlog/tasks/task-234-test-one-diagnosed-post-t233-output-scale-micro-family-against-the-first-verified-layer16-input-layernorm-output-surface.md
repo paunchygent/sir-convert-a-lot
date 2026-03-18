@@ -2,7 +2,7 @@
 id: task-234-test-one-diagnosed-post-t233-output-scale-micro-family-against-the-first-verified-layer16-input-layernorm-output-surface
 title: Test one diagnosed post-T233 output-scale micro-family against the first verified layer16 input-layernorm output surface
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -63,47 +63,63 @@ instead of widening back into another mixed stabilizer sweep.
 
 ## Implementation Status
 
-- This task is not implemented yet.
-- It must test one causal idea only:
-  bounded attenuation of `talker_core.layer_16.input_layernorm.output`.
-- No normalization-internal, residual-side, MLP-side, optimizer-side, or
-  bundle-side changes are allowed in this task.
-- Promotion into a bounded fresh-start proof remains governed by `T217`;
-  `T234` only decides whether a local output-scale winner exists.
+- Implemented in the bounded Story 31 stabilization surface by adding one
+  output-scale family on top of the fixed ranked baseline:
+  - `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p75`
+  - `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
+- Landed code surfaces:
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization.py`
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization_specs.py`
+  - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization_input_layernorm.py`
+- Result is now closed truth under:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1`
+- Outcome:
+  - no variant stayed finite
+  - no variant earned promotion
+  - the stronger `0p5` output-scale member was the strongest diagnostic member
+    because it shifted `pair-sub-talker-loss` and `line-13-sub-talker-loss`
+    downstream to `talker_core.layer_15.output`
+  - `line-4-sub-talker-loss` still first broke at
+    `talker_core.layer_16.input_layernorm`
+  - every `main_loss` and `combined_loss` case still first broke at
+    `talker_core.layer_16.output`
+- Interpretation:
+  `T234` closes as no-promotion mechanism evidence and opens one next
+  disagreement-resolution slice instead of authorizing recovery.
 
 ## Deliverables
 
-- [ ] One diagnosed post-normalization output-scale micro-family is registered
+- [x] One diagnosed post-normalization output-scale micro-family is registered
   in the Story 31 lab.
-- [ ] One compact result matrix compares the fixed baseline against at most two
+- [x] One compact result matrix compares the fixed baseline against at most two
   output-scale variants.
-- [ ] One explicit outcome states whether a local winner exists for promotion
+- [x] One explicit outcome states whether a local winner exists for promotion
   work or whether the lane remains negative.
 
 ## Acceptance Criteria
 
-- [ ] The task tests one diagnosed causal idea only; it does not mix output
+- [x] The task tests one diagnosed causal idea only; it does not mix output
   attenuation with normalization-internal, residual, optimizer, and bundle
   changes in the same family.
-- [ ] The task compares no more than the fixed baseline plus two output-scale
+- [x] The task compares no more than the fixed baseline plus two output-scale
   variants.
-- [ ] The result explicitly distinguishes:
+- [x] The result explicitly distinguishes:
   - no winner
   - one local winner with a longer finite window
   - one local winner that earns bounded promotion consideration
-- [ ] `T217` remains blocked unless this task produces a clear local winner.
+- [x] `T217` remains blocked unless this task produces a clear local winner.
 
 ## Validation
 
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-<timestamp>-a1 --skip-build --hook-profile talker_core_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p75,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1 --skip-build --hook-profile talker_core_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p75,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

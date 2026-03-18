@@ -100,7 +100,7 @@ This story is intentionally split into two lanes:
   - `T221` is the provenance surface
   - `T225-T227` are the next mechanism slice package
   - `T219` is now recorded as completed negative bounded stabilizer evidence
-  - `T228-T232` now define the active next mechanism ladder
+  - `T228-T235` now define the active next mechanism ladder
   - `T217` is the blocked recovery surface
 
 ## Reuse Plan
@@ -182,8 +182,11 @@ the governing success criterion for future restart work.
 1. `docs/backlog/tasks/task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes.md`
 1. `docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md`
 1. `docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md`
-1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 1. `docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md`
+1. `docs/backlog/tasks/task-233-split-the-post-t230-layer16-input-layernorm-seam-into-normalization-internal-probes.md`
+1. `docs/backlog/tasks/task-234-test-one-diagnosed-post-t233-output-scale-micro-family-against-the-first-verified-layer16-input-layernorm-output-surface.md`
+1. `docs/backlog/tasks/task-235-resolve-the-post-t234-sub-talker-loss-disagreement-between-layer16-input-layernorm-and-layer15-output.md`
+1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
 ## Checklist
 
@@ -331,9 +334,20 @@ the governing success criterion for future restart work.
     `talker_core.layer_16.input_layernorm.output`
   - the next mechanism family is therefore constrained to one
     post-normalization output-scale family only
+- `T234` is now complete as the bounded post-normalization output-scale rerun:
+  - output root:
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1`
+  - no variant stayed finite and no variant earned promotion
+  - the strongest `0p5` member shifted `pair-sub-talker-loss` and
+    `line-13-sub-talker-loss` downstream to `talker_core.layer_15.output`
+  - `line-4-sub-talker-loss` still first broke at
+    `talker_core.layer_16.input_layernorm`
+  - all `main_loss` and `combined_loss` cases still first broke at
+    `talker_core.layer_16.output`
 - the active follow-on slice is now:
-  - `T234`: test one diagnosed post-`T233` output-scale micro-family against
-    the first verified `layer16.input_layernorm.output` surface
+  - `T235`: resolve the post-`T234` sub-`talker_loss` disagreement between
+    `layer16.input_layernorm` and `layer15.output` under the strongest
+    output-scale member only
 - `T217` remains the blocked recovery lane:
   it should not launch until the mechanism lane produces a promoted candidate.
 - The lab reuses the exact failing-row backward-lineage kernel and writes one

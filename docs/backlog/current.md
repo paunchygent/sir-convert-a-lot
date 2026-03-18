@@ -47,10 +47,10 @@ The current experiment posture is:
   - `T219` now stands as recorded negative unpromoted evidence
   - `T228` complete: ranked closure recorded from `task219-20260317t180700z-a1`
   - `T229` complete: `task229-20260318t064712z-a1` localized to `talker_core.layer_16.input_layernorm`
-  - `T230-T232` complete: the normalization-entry family closed negative,
-    `T217` stayed blocked, and Story 31 stayed in `mechanism`
+  - `T230-T232` complete: the normalization-entry family closed negative, `T217` stayed blocked, and Story 31 stayed in `mechanism`
   - `T233` complete: `task233-20260318t112544z-a1` fixed the first internal surface at `talker_core.layer_16.input_layernorm.output`
-  - `T234` is now the active post-normalization output-scale slice
+  - `T234` complete: `task234-20260318t123644z-a1` closed the output-scale family without promotion
+  - `T235` is now the active disagreement-resolution slice
   - `T227` is now contingent only if a later parity/runtime divergence is verified
 - `recovery`
   - active surface: governed `qwen-train` fresh-start proof
@@ -62,8 +62,7 @@ The current experiment posture is:
 Story 28 is now operating policy:
 
 - `RULE-095` enforces the Qwen package split and `400` LoC hot-path cap
-- `RULE-096` enforces experiment taxonomy, one-question-per-run discipline,
-  one-factor-at-a-time causal comparisons, and the promotion ladder
+- `RULE-096` enforces experiment taxonomy, one-question-per-run discipline, one-factor-at-a-time causal comparisons, and the promotion ladder
 - `qwen_train.py` is a composition root only
 - host control-plane logic lives under `ml/qwen/training/control_plane/`
 - detached runtime logic lives under `ml/qwen/training/detached_runtime/`
@@ -80,8 +79,7 @@ Story 28 is now operating policy:
     eval baseline, strict-resume `1238`, and fail-closed optimizer-boundary
     proof at step `1405`.
   - Story 28 / `T187-T191` landed the permanent SRP/DDD split.
-  - `T192` added the fast ML gate lane with `test-ml`, `typecheck-ml`, and
-    importlib-safe pytest collection.
+  - `T192` added the fast ML gate lane with `test-ml`, `typecheck-ml`, and importlib-safe pytest collection.
   - `T193` restored the upstream no-projection fine-tuning contract and added
     stage-resolved clip-boundary forensics.
   - `T194` became the RCA narrowing slice for the first pre-clip text-embedding
@@ -177,11 +175,7 @@ Story 28 is now operating policy:
     `first_divergence_classification = no_meaningful_divergence_found`, so
     Story 31 returns to `T219` rather than escalating to `T227`
 - 2026-03-18:
-  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228`
-    closed that family, `T229` localized the next seam to
-    `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in
-    mechanism, and `T233` then resolved the internal seam to
-    `talker_core.layer_16.input_layernorm.output`, which opens `T234`.
+  - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, and `T234` then closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`: the stronger `0p5` member moved the pair and `line-13` `sub_talker_loss` cases to `talker_core.layer_15.output`, but `line-4` stayed at `talker_core.layer_16.input_layernorm` and all `main_loss` / `combined_loss` cases still first broke at `talker_core.layer_16.output`, which opens `T235`.
 
 ## Next Actions
 
@@ -197,17 +191,15 @@ Story 28 is now operating policy:
   - `T228` is now complete as the ranked closure of that failed family
   - `T229` is now complete under `task229-20260318t064712z-a1` and constrains
     Story 31 to the pre-`input_layernorm` normalization-entry family only
-  - `T230-T232` are now complete under `task230-20260318t082049z-a1` with no
-    local winner and the lane still in `mechanism`
-  - `T233` is now complete under `task233-20260318t112544z-a1`; the next
-    mechanism family is post-normalization output-scale only
-  - `T234` is now the immediate localized mechanism slice
+  - `T230-T232` are now complete under `task230-20260318t082049z-a1` with no local winner and the lane still in `mechanism`
+  - `T233` is now complete under `task233-20260318t112544z-a1`
+  - `T234` is now complete under `task234-20260318t123644z-a1` with no
+    promotable winner
+  - `T235` is now the immediate localized mechanism slice
   - record the full Story 32 experiment spec for any new active run
-  - keep one-factor-at-a-time deltas inside the same lane before making causal
-    claims
+  - keep one-factor-at-a-time deltas inside the same lane before making causal claims
 - Keep `T217` blocked as the recovery lane until a mechanism candidate passes the local promotion gate.
-- Keep Story 29 and Story 30 proof surfaces as historical-only references, not
-  as next-step operational surfaces.
+- Keep Story 29 and Story 30 proof surfaces as historical-only references, not as next-step operational surfaces.
 - Keep the Hemma scratch-governance surfaces active and available:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`

@@ -415,7 +415,12 @@ For mechanism questions:
   `task233-20260318t112544z-a1`
 - the first verified internal surface is now
   `talker_core.layer_16.input_layernorm.output`
-- `T234` is now the immediate post-normalization output-scale mechanism action
+- `T234` is now complete under `task234-20260318t123644z-a1`
+- no variant stayed finite or earned promotion; the strongest `0p5` member
+  shifted the pair and `line-13` `sub_talker_loss` cases to
+  `talker_core.layer_15.output`, while `line-4` still first broke at
+  `talker_core.layer_16.input_layernorm`
+- `T235` is now the immediate disagreement-resolution mechanism action
 
 For recovery questions:
 

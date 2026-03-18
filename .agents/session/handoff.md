@@ -35,7 +35,12 @@ Story 32 is now the operator-facing mental model:
     `task233-20260318t112544z-a1`
   - the first verified internal surface is now
     `talker_core.layer_16.input_layernorm.output`
-  - `T234` is now the active post-normalization output-scale mechanism slice
+  - `T234` is now complete under `task234-20260318t123644z-a1`
+  - no variant stayed finite or earned promotion; the strongest `0p5` member
+    shifted the pair and `line-13` `sub_talker_loss` cases to
+    `talker_core.layer_15.output`, while `line-4` still first broke at
+    `talker_core.layer_16.input_layernorm`
+  - `T235` is now the active disagreement-resolution mechanism slice
 - `recovery`
   - active surface: governed `qwen-train launch/status` fresh-start proof
   - current status: blocked at `T217` until a mechanism candidate is promoted
@@ -90,7 +95,11 @@ Story 28 remains operating policy:
   - `T232`: complete; keep Story 31 in mechanism and open `T233`
   - `T233`: complete; resolve the earliest internal surface to
     `talker_core.layer_16.input_layernorm.output`
-  - `T234`: test one diagnosed post-normalization output-scale micro-family
+  - `T234`: complete; close the diagnosed post-normalization output-scale
+    family without promotion
+  - `T235`: resolve the post-`T234` disagreement between
+    `layer16.input_layernorm` and `layer15.output` under the strongest
+    output-scale member
 
 ## Latest Task 101 Truth
 
@@ -182,8 +191,10 @@ Story 28 remains operating policy:
 1. Keep `T232` recorded as the lane decision to stay in mechanism.
 1. Keep `T233` recorded as the truthful normalization-internal rerun under
    `task233-20260318t112544z-a1`.
-1. Run `T234` next as the bounded post-normalization output-scale slice for
-   `talker_core.layer_16.input_layernorm.output`.
+1. Keep `T234` recorded as the no-promotion output-scale rerun under
+   `task234-20260318t123644z-a1`.
+1. Run `T235` next as the bounded disagreement-resolution slice for the mixed
+   post-`T234` `sub_talker_loss` result.
 1. Keep `T227` contingent only if a later verified trainer/runtime divergence
    appears.
 1. Keep `T217` blocked until a mechanism candidate passes the local promotion
@@ -210,6 +221,7 @@ Story 28 remains operating policy:
 - `pdm run qwen-story31-parity-probe --help`: passed
 - `pdm run qwen-story31-stability-lab --help`: passed
 - `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1 --skip-build --hook-profile talker_core_input_layernorm_internal --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`: passed
+- `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1 --skip-build --hook-profile talker_core_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p75,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`: passed
 
 The docs/index validations should be rerun after any further docs change
 touching Story 31, Story 32, the live ledger, or the operator runbook.
