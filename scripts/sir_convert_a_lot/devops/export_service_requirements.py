@@ -14,11 +14,9 @@ Relationships:
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 from pathlib import Path
-
-from packaging.requirements import InvalidRequirement, Requirement
-from packaging.utils import canonicalize_name
 
 DEFAULT_EXCLUDED_PACKAGES = frozenset(
     {
@@ -30,6 +28,12 @@ DEFAULT_EXCLUDED_PACKAGES = frozenset(
     }
 )
 DEFAULT_EXCLUDED_PREFIXES = ("nvidia-",)
+_REQUIREMENT_NAME_PATTERN = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9_.-]*)")
+
+
+def _canonicalize_package_name(package_name: str) -> str:
+    """Normalize a package name using the canonical PEP 503-compatible form."""
+    return re.sub(r"[-_.]+", "-", package_name).lower()
 
 
 def _canonical_requirement_name(requirement_line: str) -> str | None:
@@ -37,11 +41,10 @@ def _canonical_requirement_name(requirement_line: str) -> str | None:
     stripped_line = requirement_line.strip()
     if stripped_line == "" or stripped_line.startswith(("#", "-")):
         return None
-    try:
-        parsed_requirement = Requirement(stripped_line)
-    except InvalidRequirement:
+    requirement_match = _REQUIREMENT_NAME_PATTERN.match(stripped_line)
+    if requirement_match is None:
         return None
-    return canonicalize_name(parsed_requirement.name)
+    return _canonicalize_package_name(requirement_match.group(1))
 
 
 def _should_exclude_requirement(
