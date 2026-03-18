@@ -210,9 +210,14 @@ work.
   - all three normative `sub_talker_loss` rows still first broke at
     `talker_core.layer_15.output`, so the classification is
     `converged_output_return`
-  - `T245` is now the immediate diagnosis-only next step and must confirm or
-    split the fixed winner-specific `layer15_out_0p5` attenuation multiply
-    before any new stabilizer family is considered
+  - `T245` is now complete as the winner-specific multiply confirmation under
+    `task245-20260318t202916z-a1`
+  - all three normative `sub_talker_loss` rows still first broke at
+    `talker_core.layer_15.output`, so the classification is
+    `multiply_not_causal`
+  - `T246` is now the immediate diagnosis-only next step and must split the
+    fp32-scaled layer-15 output result from the final emitted tensor before
+    any new stabilizer family is considered
   - `T227` remains contingent only if a later verified trainer/runtime
     divergence appears
   - do not infer recovery readiness directly from a mechanism run

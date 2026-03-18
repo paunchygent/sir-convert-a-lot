@@ -2,7 +2,7 @@
 id: task-245-confirm-the-post-t244-winner-specific-layer15-output-attenuation-multiply-before-any-new-stabilizer-family
 title: Confirm the post-T244 winner-specific layer15 output attenuation multiply before any new stabilizer family
 type: task
-status: pending
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -72,30 +72,62 @@ rather than in a broader layer-15 seam.
 
 ## Deliverables
 
-- [ ] One diagnosis-only T245 confirmation contract exists for the fixed T244
+- [x] One diagnosis-only T245 confirmation contract exists for the fixed T244
   winner.
-- [ ] One machine-readable assessment payload classifies the confirmation
+- [x] One machine-readable assessment payload classifies the confirmation
   outcome at the winner-specific layer-15 attenuation multiply.
-- [ ] One truthful Hemma rerun records whether the localized T244 seam is a
+- [x] One truthful Hemma rerun records whether the localized T244 seam is a
   confirmed causal candidate.
 
 ## Acceptance Criteria
 
-- [ ] The task uses only the fixed T244 winner and one minimal causal
+- [x] The task uses only the fixed T244 winner and one minimal causal
   confirmation idea.
-- [ ] The task keeps the full Story 32 state vector fixed apart from the exact
+- [x] The task keeps the full Story 32 state vector fixed apart from the exact
   multiply-site confirmation probe.
-- [ ] The result ends with exactly one confirmation classification and one next
+- [x] The result ends with exactly one confirmation classification and one next
   diagnosis rule.
+
+## Result
+
+- Live Hemma rerun:
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task245-20260318t202916z-a1`
+- Fixed confirmation variant:
+  `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3_layer15_output_scale_fp32`
+- Resolved classification:
+  `multiply_not_causal`
+- Dominant surface:
+  `talker_core.layer_15.output`
+- Normative `sub_talker_loss` cases:
+  - `pair-sub-talker-loss` first broke at `talker_core.layer_15.output`
+  - `line-13-sub-talker-loss` first broke at `talker_core.layer_15.output`
+  - `line-4-sub-talker-loss` first broke at `talker_core.layer_15.output`
+- Interpretation:
+  - performing the winner-specific `layer15_out_0p5` multiply in fp32 did not
+    neutralize or relocate the first reproducible seam
+  - the attenuation multiply itself is therefore not a confirmed causal
+    candidate
+  - the next truthful diagnosis-only branch is `T246`, which must split the
+    fp32-scaled layer-15 output result from the final emitted tensor under the
+    fixed T245 confirmation variant before any new stabilizer family is
+    considered
 
 ## Validation
 
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_stabilization.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t243_layer15_output_return_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t244_layer15_output_multiply_confirmation_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run format-all`
+- [x] `pdm run lint-fix`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run qwen-story31-stability-lab --help`
+- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task245-20260318t202916z-a1 --skip-build --hook-profile talker_core_post_t243_layer15_output_return --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3_layer15_output_scale_fp32`
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
