@@ -181,12 +181,12 @@ explicitly narrow the scope.
   - all three normative `sub_talker_loss` rows first broke at
     `talker_core.layer_15.output`, so the convergence class is
     `converged_layer15_output`
-  - the Hemma rerun stayed truthful by using the automatic home-backed bind
-    fallback after Docker resumed rejecting fresh `/srv/scratch` bind mounts
-  - `T242` is now the parallel Hemma infrastructure slice:
-    install the persistent bind-root service with
-    `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`, then use
-    `status` and `probe` as the normal preflight before new Qwen runs
+  - `T242` is now complete as the permanent Hemma bind-root contract:
+    the repo-rendered service is installed and active, `status` now proves the
+    home roots are mounted onto the canonical `/srv/scratch` trees, and
+    `probe` confirms Docker must use
+    `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the
+    effective bind roots
   - `T241` is now the immediate diagnosis-only mechanism slice
   - `T241` must split layer-15 residual/output formation before any new
     stabilizer family is considered
@@ -221,6 +221,15 @@ explicitly narrow the scope.
   - `/srv/scratch` for Docker root, HF/model caches, and hot generated
     preprocessing/training artifacts
   - `/srv/storage` for raw Swedish corpora and colder retained datasets
+- For Qwen Docker workloads on Hemma, treat the storage and bind contracts as
+  separate truths:
+  - `/srv/scratch/sir-convert-a-lot/{build,cache}` remains the canonical SSD
+    storage truth
+  - `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` is the normal
+    Docker-visible bind source under snap Docker
+  - run `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
+  - run `pdm run run-hemma -- pdm run qwen-docker-bind-roots probe`
+  - dynamic runtime bind fallback is compatibility-only after `T242`
 
 ## Qwen-Specific Decisions
 

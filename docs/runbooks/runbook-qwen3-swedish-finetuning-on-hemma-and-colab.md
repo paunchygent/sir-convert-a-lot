@@ -435,12 +435,17 @@ For mechanism questions:
 - all three normative `sub_talker_loss` rows first broke at
   `talker_core.layer_15.output`, so the convergence class is
   `converged_layer15_output`
-- the Hemma rerun stayed truthful by using the automatic home-backed bind
-  fallback after Docker resumed rejecting fresh `/srv/scratch` bind mounts
-- `T242` is now the parallel Hemma infrastructure repair slice:
+- `T242` is now complete as the permanent Hemma bind-root contract:
   install the persistent bind-root service with
   `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`, then use
   `status` and `probe` as the normal preflight before new Qwen runs
+- expected host truth after install:
+  - `/srv/scratch/sir-convert-a-lot/{build,cache}` remains canonical storage
+  - Docker still cannot use fresh `/srv/scratch/...` bind mounts directly
+  - `probe` should therefore report `canonical_probe_ok=false`,
+    `home_probe_ok=true`, and the preferred effective roots under
+    `/home/paunchygent/.data/sir-convert-a-lot/`
+- ad hoc runtime bind fallback is compatibility-only after `T242`
 - `T241` is now the immediate diagnosis-only mechanism action
 - `T241` must split layer-15 residual/output formation before any new
   stabilizer family or promotion discussion

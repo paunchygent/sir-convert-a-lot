@@ -178,6 +178,14 @@ Persistent Docker-visible bind-root rule for scratch-backed Qwen runtimes:
   `pdm run run-hemma -- pdm run qwen-docker-bind-roots probe`
 - after Task 242, ad hoc runtime bind fallback is compatibility-only; the
   normal Hemma contract is the installed persistent home-backed bind roots
+- expected live truth on Hemma after install:
+  - `status` should show `service_enabled=true`, `service_active=true`, and
+    `mounted_expected_source=true` for both build and cache
+  - `probe` should show `canonical_probe_ok=false`,
+    `home_probe_ok=true`, and the preferred effective roots under
+    `/home/paunchygent/.data/sir-convert-a-lot/`
+  - interpret that as: `/srv/scratch/...` remains canonical storage, while the
+    home-backed mirrors are the Docker-visible bind roots
 
 ## SSH and Service Health
 

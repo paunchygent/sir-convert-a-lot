@@ -2,7 +2,7 @@
 id: task-242-establish-permanent-docker-visible-hemma-bind-roots-for-scratch-backed-qwen-runtimes
 title: Establish permanent Docker-visible Hemma bind roots for scratch-backed Qwen runtimes
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-03-18'
 last_updated: '2026-03-18'
@@ -142,18 +142,61 @@ operational tax:
 
 ## Validation
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_runtime.py tests/sir_convert_a_lot/test_task242_hemma_qwen_docker_bind_roots.py -q`
-- [ ] `pdm run test-ml`
-- [ ] `pdm run typecheck-ml`
-- [ ] `pdm run validate-tasks`
-- [ ] `pdm run validate-docs`
-- [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`
-- [ ] `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
-- [ ] `pdm run run-hemma -- pdm run qwen-docker-bind-roots probe`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_runtime.py tests/sir_convert_a_lot/test_task242_hemma_qwen_docker_bind_roots.py -q`
+- [x] `pdm run test-ml`
+- [x] `pdm run typecheck-ml`
+- [x] `pdm run typecheck-all`
+- [x] `pdm run validate-tasks`
+- [x] `pdm run validate-docs`
+- [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+- [x] `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`
+- [x] `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
+- [x] `pdm run run-hemma -- pdm run qwen-docker-bind-roots probe`
+
+## Result
+
+`T242` is now closed as completed Hemma infrastructure truth.
+
+- The committed `qwen-docker-bind-roots` surface now owns the permanent host
+  contract for scratch-backed Qwen build/cache roots.
+- Hemma now keeps these persistent Docker-visible home roots installed through
+  the repo-rendered systemd unit
+  `sir-convert-a-lot-qwen-docker-bind-roots.service`:
+  - `/srv/scratch/sir-convert-a-lot/build`
+    -> `/home/paunchygent/.data/sir-convert-a-lot/build`
+  - `/srv/scratch/sir-convert-a-lot/cache`
+    -> `/home/paunchygent/.data/sir-convert-a-lot/cache`
+- The shared Qwen runtime now prefers the installed home-backed roots for the
+  effective Docker bind source while preserving `/srv/scratch/...` as the
+  canonical storage truth in runtime metadata.
+- The status contract was hardened after live host verification: instead of
+  assuming Docker exposes the literal source path string, it now proves the
+  bind root by round-tripping a sentinel between the home root and the
+  canonical root.
+
+Live Hemma verification on `2026-03-18`:
+
+- `status` at `2026-03-18T17:38:10Z` reported:
+  - service installed, enabled, and active
+  - build/cache roots present
+  - `mounted_expected_source = true` for both roots
+- `probe` at `2026-03-18T17:38:21Z` reported:
+  - `canonical_probe_ok = false`
+  - `home_probe_ok = true`
+  - `preferred_effective_root = /home/paunchygent/.data/sir-convert-a-lot/{build,cache}`
+
+Interpretation:
+
+- Docker on Hemma still cannot use fresh `/srv/scratch/...` bind mounts
+  directly under the snap confinement model.
+- That behavior is now an explicit, verified platform contract instead of a
+  rediscovered fallback.
+- The normal operator preflight is therefore `status` plus `probe`, and the
+  effective Docker-visible roots are the installed home-backed mirrors.
+- The old ad hoc bind fallback remains only as a compatibility escape hatch.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

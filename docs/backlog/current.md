@@ -55,22 +55,16 @@ The current experiment posture is:
   - `T240` complete: `task240-20260318t165458z-a1` confirmed all three normative `sub_talker_loss` rows first break at `talker_core.layer_15.output`
   - `T241` is now the active diagnosis-only layer-15 residual/output split
   - `T227` is now contingent only if a later parity/runtime divergence is verified
-- parallel Hemma infra: `T242` is now the active bind-root repair slice that turns the recurring home-backed Docker fallback into the explicit permanent host contract
-- `recovery`
-  - active surface: governed `qwen-train` fresh-start proof
-  - current status: blocked at `T217` until a mechanism candidate is promoted
-- historical-only surfaces:
-  - `qwen-story30-freshstart-proof`, `qwen-story30-backward-lineage`
-  - `qwen-t197-proof`, `qwen-t198-proof`
+- parallel Hemma infra: `T242` is now complete and makes the home-backed Docker-visible bind roots the explicit permanent host contract on Hemma
+- `recovery`: governed `qwen-train` fresh-start proof, blocked at `T217` until a mechanism candidate is promoted
+- historical-only surfaces: `qwen-story30-freshstart-proof`, `qwen-story30-backward-lineage`, `qwen-t197-proof`, `qwen-t198-proof`
 
 Story 28 is now operating policy:
 
 - `RULE-095` enforces the Qwen package split and `400` LoC hot-path cap
 - `RULE-096` enforces experiment taxonomy, one-question-per-run discipline, one-factor-at-a-time causal comparisons, and the promotion ladder
 - `qwen_train.py` is a composition root only
-- host control-plane logic lives under `ml/qwen/training/control_plane/`
-- detached runtime logic lives under `ml/qwen/training/detached_runtime/`
-- reporting lives under `ml/qwen/training/reporting/`
+- host control-plane logic lives under `ml/qwen/training/control_plane/`, detached runtime logic under `ml/qwen/training/detached_runtime/`, and reporting under `ml/qwen/training/reporting/`
 - deleted legacy god files must not return
 
 ## Worklog
@@ -180,6 +174,7 @@ Story 28 is now operating policy:
     Story 31 returns to `T219` rather than escalating to `T227`
 - 2026-03-18:
   - `T219` was backfilled as already-failed bounded Story 31 evidence; `T228` closed that family, `T229` localized the next seam to `talker_core.layer_16.input_layernorm`, `T230-T232` kept the lane in mechanism, `T233` resolved the internal seam to `talker_core.layer_16.input_layernorm.output`, `T234` closed the output-scale family as no-promotion mechanism evidence under `task234-20260318t123644z-a1`, `T235` confirmed the mixed `sub_talker_loss` result is repeatable under `task235-20260318t140352z-a1`, `T236` then classified that disagreement as a genuine row-local seam difference under `task236-20260318t145434z-a1`, `T237` converged all three normative `sub_talker_loss` rows downstream under `task237-20260318t154708z-a1`, and `T240` then confirmed the converged seam itself under `task240-20260318t165458z-a1`: pair, `line-13`, and `line-4` all first broke at `talker_core.layer_15.output`, which opens `T241` as the diagnosis-only layer-15 residual/output split.
+  - `T242` then closed the recurring Hemma bind-root workaround as a permanent platform contract: the repo-rendered `sir-convert-a-lot-qwen-docker-bind-roots.service` is installed and active, `status` now proves the home roots are mounted onto the canonical `/srv/scratch` trees by round-trip verification, and `probe` confirms Docker must use `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` as the effective bind roots while `/srv/scratch/...` remains the canonical storage truth.
 
 ## Next Actions
 
@@ -201,13 +196,13 @@ Story 28 is now operating policy:
   - `T236` is now complete under `task236-20260318t145434z-a1`
   - `T237` is now complete under `task237-20260318t154708z-a1`
   - `T240` is now complete under `task240-20260318t165458z-a1`
-  - the Hemma rerun stayed truthful by using the automatic home-backed bind fallback after Docker resumed rejecting fresh `/srv/scratch` bind mounts
   - `T241` is now the immediate diagnosis-only layer-15 residual/output split
-  - `T242` is now the parallel Hemma infrastructure slice for permanent Docker-visible scratch bind roots
+  - `T242` is now complete; use `pdm run run-hemma -- pdm run qwen-docker-bind-roots status` and `probe` as the normal Qwen Docker preflight on Hemma
   - record the full Story 32 experiment spec for any new active run
   - keep one-factor-at-a-time deltas inside the same lane before making causal claims
 - Keep `T217` blocked as the recovery lane until a mechanism candidate passes the local promotion gate.
 - Keep Story 29 and Story 30 proof surfaces as historical-only references, not as next-step operational surfaces.
+- Keep the Task 242 Hemma bind-root contract active: `/srv/scratch/...` remains canonical SSD-backed storage truth, `/home/paunchygent/.data/sir-convert-a-lot/{build,cache}` is the effective Docker-visible bind source, use `status` and `probe`, and treat dynamic runtime bind fallback as compatibility-only.
 - Keep the Hemma scratch-governance surfaces active and available:
   - `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
   - `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
