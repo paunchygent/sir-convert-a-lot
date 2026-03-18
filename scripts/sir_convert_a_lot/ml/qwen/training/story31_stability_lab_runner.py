@@ -43,6 +43,9 @@ from scripts.sir_convert_a_lot.ml.qwen.training import (
 from scripts.sir_convert_a_lot.ml.qwen.training import (
     story31_post_t243_layer15_output_return_assessment as t244_layer15_output_return_assessment,
 )
+from scripts.sir_convert_a_lot.ml.qwen.training import (
+    story31_post_t244_layer15_output_multiply_confirmation_assessment as t245_confirm_assessment,
+)
 from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
     DEFAULT_PILOT_BUNDLE_ROOT,
 )
@@ -184,6 +187,9 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
     t244_layer15_output_return_assessment.validate_post_t243_layer15_output_return_contract(
         settings
     )
+    t245_confirm_assessment.validate_post_t244_layer15_output_multiply_confirmation_contract(
+        settings
+    )
     build_performed, image_id = prepare_qwen_image(
         _RunnerImageSettings(
             dockerfile_path=settings.dockerfile_path,
@@ -295,6 +301,12 @@ def run_stability_lab(settings: Story31StabilityLabSettings) -> Story31Stability
         ),
         post_t243_layer15_output_return_assessment=(
             t244_layer15_output_return_assessment.build_post_t243_layer15_output_return_assessment(
+                settings=settings,
+                matrix_rows=compact_matrix_rows,
+            )
+        ),
+        post_t244_layer15_output_multiply_confirmation_assessment=(
+            t245_confirm_assessment.build_post_t244_layer15_output_multiply_confirmation_assessment(
                 settings=settings,
                 matrix_rows=compact_matrix_rows,
             )

@@ -29,6 +29,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
     LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2,
     LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3_LAYER15_OUTPUT_SCALE_FP32,
     TALKER_CORE_STABILIZATION_OFF,
     LayerInputLayernormEntryRescale,
     LayerInputLayernormFp32OutputCap,
@@ -74,6 +75,9 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     strong_fp32_output_cap_spec = resolve_talker_core_stabilization_spec(
         LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2
     )
+    fp32_layer15_output_scale_confirmation_spec = resolve_talker_core_stabilization_spec(
+        LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3_LAYER15_OUTPUT_SCALE_FP32
+    )
 
     assert off_spec.target_layers == ()
     assert off_spec.force_fp32_gated_product is False
@@ -116,6 +120,10 @@ def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants(
     assert strong_fp32_output_cap_spec.input_layernorm_fp32_output_caps == (
         LayerInputLayernormFp32OutputCap(layer_index=16, absmax_cap=1.0e2),
     )
+    assert fp32_layer15_output_scale_confirmation_spec.layer_output_attenuations == (
+        LayerOutputAttenuation(layer_index=16, scale=0.5),
+        LayerOutputAttenuation(layer_index=15, scale=0.5, use_fp32_multiply=True),
+    )
 
 
 def test_apply_talker_core_stabilization_patches_only_layer_16_and_restores_forward() -> None:
@@ -147,6 +155,20 @@ def test_apply_talker_core_stabilization_patches_layer15_output_and_restores_for
 
     assert "forward" not in _layer(model, 15).__dict__
     assert "forward" not in _layer(model, 16).__dict__
+
+
+def test_apply_talker_core_stabilization_accepts_fp32_layer15_output_scale_confirmation() -> None:
+    """The T245 confirmation variant should patch the same layer-15 seam and preserve dtype."""
+    model = _fake_model(layer_count=18)
+    sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
+
+    with apply_talker_core_stabilization(
+        model,
+        variant=LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3_LAYER15_OUTPUT_SCALE_FP32,
+    ):
+        layer15_output = _layer(model, 15)(sample)[0]
+
+    assert layer15_output.dtype == torch.bfloat16
 
 
 def test_apply_talker_core_stabilization_patches_shifted_handoff_family() -> None:

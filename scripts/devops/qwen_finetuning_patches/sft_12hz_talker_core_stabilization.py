@@ -38,6 +38,7 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization_s
     LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P25_LAYER15_OUT_0P5,
     LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2,
     LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3_LAYER15_OUTPUT_SCALE_FP32,
     TALKER_CORE_STABILIZATION_CHOICES,
     TALKER_CORE_STABILIZATION_OFF,
     LayerOutputAttenuation,
@@ -58,6 +59,7 @@ __all__ = [
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P5",
     "LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E2",
     "LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3",
+    "LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3_LAYER15_OUTPUT_SCALE_FP32",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_INPUT_LN_OUTPUT_0P75",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E2",
     "LAYER16_GATED_FP32_RESCALE_1E3_LAYER16_OUT_0P5_LAYER15_OUT_0P5_LAYER16_PRE_INPUT_LN_RESCALE_1E3",
@@ -108,6 +110,7 @@ def apply_talker_core_stabilization(model: object, *, variant: str) -> Iterator[
                     original_forward=layer.forward,
                     output_scale=attenuation.scale,
                     layer_index=attenuation.layer_index,
+                    use_fp32_multiply=attenuation.use_fp32_multiply,
                 ),
                 layer,
             )
@@ -180,6 +183,7 @@ def _patched_layer_forward_factory(
     original_forward: Callable[..., object],
     output_scale: float,
     layer_index: int,
+    use_fp32_multiply: bool,
 ) -> Callable[[torch.nn.Module, object], object]:
     """Build one wrapper that attenuates the decoder-layer output seam."""
 
@@ -196,6 +200,10 @@ def _patched_layer_forward_factory(
                 "Talker-core stabilization expected decoder layer "
                 f"{layer_index} output[0] to be a tensor."
             )
+        if use_fp32_multiply:
+            output_dtype = hidden_states.dtype
+            scaled_hidden_states = hidden_states.to(torch.float32) * output_scale
+            return (scaled_hidden_states.to(dtype=output_dtype), *outputs[1:])
         return (hidden_states * output_scale, *outputs[1:])
 
     return patched_forward

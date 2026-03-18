@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization import (
     LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3,
+    LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3_LAYER15_OUTPUT_SCALE_FP32,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     talker_core_post_t243_layer15_output_return_trace_names,
@@ -33,6 +34,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story31_stability_lab_contracts 
 
 T244_TARGET_LOSS_KIND = "sub_talker_loss"
 T244_REQUIRED_VARIANT = LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3
+T245_ALLOWED_VARIANT = LAYER16_INPUT_LN_OUTPUT_0P5_FP32_OUTPUT_CAP_1E3_LAYER15_OUTPUT_SCALE_FP32
 T244_TARGET_CORRIDOR_SURFACES = talker_core_post_t243_layer15_output_return_trace_names()
 _PRE_OUTPUT_SCALE_RETURN_SURFACE = "talker_core.layer_15.output.pre_output_scale_return"
 _OUTPUT_RETURN_SURFACE = "talker_core.layer_15.output"
@@ -50,10 +52,14 @@ def validate_post_t243_layer15_output_return_contract(
     """Reject unsupported T244 settings before the Hemma probe starts."""
     if settings.hook_profile != TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE:
         return
-    if settings.stabilization_variants == (T244_REQUIRED_VARIANT,):
+    if settings.stabilization_variants in (
+        (T244_REQUIRED_VARIANT,),
+        (T245_ALLOWED_VARIANT,),
+    ):
         return
     raise SystemExit(
-        f"Story 31 T244 supports only the fixed T237/T243 winner `{T244_REQUIRED_VARIANT}`."
+        "Story 31 T244/T245 supports only the fixed T237/T243 winner "
+        f"`{T244_REQUIRED_VARIANT}` or its exact T245 fp32-multiply confirmation."
     )
 
 
