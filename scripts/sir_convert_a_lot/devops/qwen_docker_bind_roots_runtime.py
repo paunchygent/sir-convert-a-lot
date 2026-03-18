@@ -17,6 +17,7 @@ import shutil
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 from scripts.sir_convert_a_lot.devops.host_mounts import (
     ensure_directory,
@@ -55,7 +56,6 @@ def _root_label_prefix(path: Path) -> str:
 def build_root_state(bind_root: QwenDockerBindRoot) -> QwenDockerBindRootState:
     """Build the observed mount state for one canonical/home bind-root pair."""
     mount_source = find_mount_source(bind_root.home_root)
-    expected_source = bind_root.canonical_root.as_posix()
     return QwenDockerBindRootState(
         label=bind_root.label,
         canonical_root=bind_root.canonical_root.as_posix(),
@@ -63,8 +63,25 @@ def build_root_state(bind_root: QwenDockerBindRoot) -> QwenDockerBindRootState:
         canonical_exists=bind_root.canonical_root.exists(),
         home_exists=bind_root.home_root.exists(),
         mount_source=mount_source,
-        mounted_expected_source=mount_source == expected_source,
+        mounted_expected_source=_bind_root_roundtrip_matches(bind_root),
     )
+
+
+def _bind_root_roundtrip_matches(bind_root: QwenDockerBindRoot) -> bool:
+    """Return whether writes through the home root appear at the canonical root."""
+    if not bind_root.home_root.exists() or not bind_root.canonical_root.exists():
+        return False
+    sentinel_name = f".qwen_bind_status_probe_{uuid4().hex}"
+    home_probe = bind_root.home_root / sentinel_name
+    canonical_probe = bind_root.canonical_root / sentinel_name
+    try:
+        home_probe.write_text("ok", encoding="utf-8")
+        return canonical_probe.exists()
+    except OSError:
+        return False
+    finally:
+        home_probe.unlink(missing_ok=True)
+        canonical_probe.unlink(missing_ok=True)
 
 
 def render_service_unit(settings: QwenDockerBindRootsSettings) -> str:

@@ -56,6 +56,10 @@ def test_build_root_state_marks_expected_mount_source(
             bind_root.canonical_root.as_posix() if target == bind_root.home_root else None
         ),
     )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.qwen_docker_bind_roots_runtime._bind_root_roundtrip_matches",
+        lambda observed_bind_root: observed_bind_root == bind_root,
+    )
 
     state = build_root_state(bind_root)
 
