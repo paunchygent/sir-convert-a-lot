@@ -2,7 +2,7 @@
 id: 'task-248-fix-hemma-live-verifier-weasyprint-probe-to-match-container-runtime'
 title: 'Correct Hemma live verifier WeasyPrint probe to match container runtime'
 type: 'task'
-status: 'in_progress'
+status: 'completed'
 priority: 'high'
 created: '2026-03-24'
 last_updated: '2026-03-24'
@@ -42,20 +42,20 @@ Out of scope:
 
 ## Deliverables
 
-- [ ] The WeasyPrint runtime probe matches the actual container contract and no
+- [x] The WeasyPrint runtime probe matches the actual container contract and no
   longer shells through `pdm`.
-- [ ] Regression tests cover the exact in-container command shape for the
+- [x] Regression tests cover the exact in-container command shape for the
   WeasyPrint probe.
-- [ ] `pdm run hemma-deploy-and-verify ...` passes end-to-end on the pushed
+- [x] `pdm run hemma-deploy-and-verify ...` passes end-to-end on the pushed
   revision.
 
 ## Acceptance Criteria
 
-- [ ] The Hemma v2 smoke helper reads the WeasyPrint version using direct
+- [x] The Hemma v2 smoke helper reads the WeasyPrint version using direct
   `python` execution inside `sir_convert_a_lot_prod`.
-- [ ] The helper test suite fails if `pdm` reappears in the in-container
+- [x] The helper test suite fails if `pdm` reappears in the in-container
   WeasyPrint probe command.
-- [ ] The canonical deploy report for the fixed revision records a successful
+- [x] The canonical deploy report for the fixed revision records a successful
   verification run instead of the previous false-negative failure.
 
 ## Validation Commands
@@ -67,6 +67,6 @@ Out of scope:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
