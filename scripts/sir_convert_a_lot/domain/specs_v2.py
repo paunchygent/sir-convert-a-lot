@@ -65,6 +65,13 @@ class PdfOrientationV2(StrEnum):
     LANDSCAPE = "landscape"
 
 
+class PdfPageCssModeV2(StrEnum):
+    """Control whether PDF routes append service page CSS or trust author CSS."""
+
+    PRESET_APPEND = "preset_append"
+    AUTHOR_OWNED = "author_owned"
+
+
 class OcrEngineV2(StrEnum):
     """Supported OCR engines for PDF OCR stages."""
 
@@ -109,6 +116,7 @@ class ConversionSpecV2(BaseModel):
 
     output_format: OutputFormatV2
     css_filenames: list[str] = Field(default_factory=list)
+    page_css_mode: PdfPageCssModeV2 | None = None
     pdf_layout: PdfLayoutV2 | None = None
     template: TemplateSelectorV2 | None = None
     reference_docx_filename: str | None = None
@@ -241,6 +249,17 @@ class JobSpecV2(BaseModel):
             and self.conversion.pdf_layout is not None
         ):
             raise ValueError("pdf_layout is only supported for PDF outputs")
+        if (
+            self.conversion.output_format != OutputFormatV2.PDF
+            and self.conversion.page_css_mode is not None
+        ):
+            raise ValueError("page_css_mode is only supported for PDF outputs")
+        if (
+            self.conversion.output_format == OutputFormatV2.PDF
+            and self.conversion.page_css_mode == PdfPageCssModeV2.AUTHOR_OWNED
+            and self.conversion.pdf_layout is not None
+        ):
+            raise ValueError("page_css_mode='author_owned' cannot be combined with pdf_layout")
 
         if self.conversion.output_format != OutputFormatV2.DOCX:
             if self.conversion.reference_docx_filename is not None:

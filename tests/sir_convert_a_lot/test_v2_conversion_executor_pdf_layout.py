@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -119,3 +120,51 @@ def test_execute_v2_job_conversion_html_to_pdf_applies_pdf_layout_preset(
     css = css_seen[0].read_text(encoding="utf-8")
     assert "size: A5;" in css
     assert "margin: 0mm;" in css
+
+
+def test_execute_v2_job_conversion_html_to_pdf_skips_preset_for_author_owned_mode(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    css_seen: tuple[Path, ...] | None = None
+    resources_zip_path = tmp_path / "raw" / "resources.zip"
+    resources_zip_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(resources_zip_path, mode="w") as archive:
+        archive.writestr("print.css", "@page { size: A3 landscape; margin: 0; }\n")
+
+    def _fake_convert_html_to_pdf(
+        *,
+        html_path: Path,
+        output_pdf_path: Path,
+        css_paths: tuple[Path, ...] = (),
+        base_url: str | None = None,
+        allowed_resource_root: Path | None = None,
+    ) -> None:
+        nonlocal css_seen
+        del html_path, base_url, allowed_resource_root
+        css_seen = css_paths
+        output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
+
+    monkeypatch.setattr(v2_non_pdf_routes_html, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+
+    job = _build_job(
+        tmp_path,
+        source_filename="page.html",
+        source_bytes=b"<html><body>Hello</body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.PDF,
+        css_filenames=["print.css"],
+        page_css_mode="author_owned",
+    )
+    job.resources_zip_path = resources_zip_path
+
+    result = execute_v2_job_conversion(
+        job=job,
+        config=_service_config(tmp_path),
+        docling_backend=_UnusedBackend(),
+        pymupdf_backend=_UnusedBackend(),
+    )
+
+    assert result.pipeline_used == "html_to_pdf_v2"
+    assert css_seen is not None
+    assert [path.name for path in css_seen] == ["print.css"]

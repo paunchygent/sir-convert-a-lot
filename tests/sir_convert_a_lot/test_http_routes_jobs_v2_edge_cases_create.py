@@ -58,6 +58,14 @@ def _html_to_md_spec(filename: str) -> dict[str, object]:
     )
 
 
+def _html_to_pdf_spec(filename: str) -> dict[str, object]:
+    return job_spec_v2(
+        filename=filename,
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.PDF,
+    )
+
+
 def test_infer_format_from_filename_returns_none_for_unsupported_suffix() -> None:
     assert http_routes_jobs_v2._infer_format_from_filename("archive.txt") is None
     assert http_routes_jobs_v2._infer_format_from_filename("README") is None
@@ -236,6 +244,65 @@ def test_create_job_allows_resources_upload_for_html_to_md(tmp_path: Path) -> No
     assert payload["api_version"] == "v2"
     assert payload["job"]["source_format"] == "html"
     assert payload["job"]["output_format"] == "md"
+
+
+def test_create_job_accepts_author_owned_page_css_mode_for_html_to_pdf(
+    tmp_path: Path,
+) -> None:
+    client, _ = build_client(tmp_path)
+    spec = _html_to_pdf_spec("index.html")
+    conversion = spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["css_filenames"] = ["print.css"]
+    conversion["page_css_mode"] = "author_owned"
+
+    response = post_create(
+        client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=spec,
+        resources_file=("resources.zip", b"PK\x03\x04small-zip", "application/zip"),
+    )
+
+    assert response.status_code in {200, 202}
+    payload = response.json()
+    assert payload["api_version"] == "v2"
+    assert payload["job"]["source_format"] == "html"
+    assert payload["job"]["output_format"] == "pdf"
+
+
+def test_create_job_rejects_author_owned_page_css_mode_with_pdf_layout(
+    tmp_path: Path,
+) -> None:
+    client, _ = build_client(tmp_path)
+    spec = _html_to_pdf_spec("index.html")
+    conversion = spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["page_css_mode"] = "author_owned"
+    conversion["pdf_layout"] = {
+        "paper_size": "a4",
+        "orientation": "portrait",
+        "margins_mm": 12,
+    }
+
+    response = post_create(
+        client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=spec,
+    )
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["api_version"] == "v2"
+    assert payload["error"]["code"] == "validation_error"
+    errors = payload["error"]["details"]["errors"]
+    assert isinstance(errors, list)
+    assert any(
+        error.get("msg")
+        == "Value error, page_css_mode='author_owned' cannot be combined with pdf_layout"
+        for error in errors
+    )
 
 
 def test_create_job_rejects_reference_docx_upload_for_md_output(tmp_path: Path) -> None:

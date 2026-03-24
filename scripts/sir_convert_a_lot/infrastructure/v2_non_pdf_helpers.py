@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2
+from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, PdfPageCssModeV2
 from scripts.sir_convert_a_lot.infrastructure.docx_template_catalog_v2 import (
     DocxTemplateCatalogLoadError,
     DocxTemplateNotFoundError,
@@ -129,6 +129,10 @@ def resolve_pdf_stylesheets(*, job: StoredJobV2, workdir: Path) -> tuple[Path, .
                 retryable=False,
                 details={"css_filename": css_path.name},
             )
+
+    page_css_mode = job.spec.conversion.page_css_mode or PdfPageCssModeV2.PRESET_APPEND
+    if page_css_mode is PdfPageCssModeV2.AUTHOR_OWNED:
+        return css_paths
 
     layout = job.spec.conversion.pdf_layout
     if layout is None:

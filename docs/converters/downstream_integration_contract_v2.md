@@ -82,18 +82,28 @@ Deterministic route constraints:
 | `pdf` | `docx` | `pdf -> docx` | Service pipeline |
 | `docx` | `pdf` | `docx -> pdf` | Service pipeline |
 
-## PDF Layout Presets
+## PDF Page CSS Modes
 
-ADR-0004 defines a typed PDF layout surface intended for downstream GUIs: `conversion.pdf_layout`.
+ADR-0004 defines the typed PDF layout preset surface `conversion.pdf_layout`.
+Task 247 adds one explicit CSS-precedence selector for PDF outputs:
+`conversion.page_css_mode`.
 
-Downstream UIs must prefer `conversion.pdf_layout` for:
+Use the modes as follows:
 
-- paper size (A5/A4/A3),
-- orientation (portrait/landscape),
-- standard margins.
+- `preset_append`
+  - default when omitted for PDF outputs;
+  - use for quick one-off callers that want typed paper size, orientation, and
+    standard margins through `conversion.pdf_layout`;
+  - the service appends the generated preset stylesheet after caller CSS.
+- `author_owned`
+  - use for full downstream applications that provide their own page contract in
+    author CSS;
+  - `conversion.pdf_layout` must be omitted;
+  - the service does not append any preset page stylesheet.
 
-`conversion.css_filenames` remains supported for additional styling (content styling, headers/footers),
-but page setup should be driven by `conversion.pdf_layout`.
+For internal application integrations such as Skriptoteket-owned renderers,
+prefer `author_owned` so page size, margins, and label-placement CSS stay under
+one renderer-owned contract.
 
 ## Preview Rendition (Contract Rule)
 

@@ -105,6 +105,16 @@ def test_job_spec_rejects_pdf_layout_for_non_pdf_output() -> None:
         JobSpecV2.model_validate(payload)
 
 
+def test_job_spec_rejects_page_css_mode_for_non_pdf_output() -> None:
+    payload = _base_payload(source_format="md", output_format="docx")
+    conversion = payload["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["page_css_mode"] = "preset_append"
+
+    with pytest.raises(ValidationError, match="page_css_mode is only supported for PDF outputs"):
+        JobSpecV2.model_validate(payload)
+
+
 def test_job_spec_accepts_pdf_layout_for_pdf_output() -> None:
     payload = _base_payload(source_format="md", output_format="pdf")
     conversion = payload["conversion"]
@@ -117,6 +127,33 @@ def test_job_spec_accepts_pdf_layout_for_pdf_output() -> None:
     assert spec.conversion.pdf_layout.paper_size.value == "a4"
     assert spec.conversion.pdf_layout.orientation.value == "landscape"
     assert spec.conversion.pdf_layout.margins_mm == 8
+
+
+def test_job_spec_accepts_author_owned_page_css_mode_for_pdf_output() -> None:
+    payload = _base_payload(source_format="md", output_format="pdf")
+    conversion = payload["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["page_css_mode"] = "author_owned"
+
+    spec = JobSpecV2.model_validate(payload)
+    assert spec.conversion.output_format.value == "pdf"
+    assert spec.conversion.page_css_mode is not None
+    assert spec.conversion.page_css_mode.value == "author_owned"
+    assert spec.conversion.pdf_layout is None
+
+
+def test_job_spec_rejects_author_owned_page_css_mode_with_pdf_layout() -> None:
+    payload = _base_payload(source_format="md", output_format="pdf")
+    conversion = payload["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["page_css_mode"] = "author_owned"
+    conversion["pdf_layout"] = {"paper_size": "a4", "orientation": "portrait", "margins_mm": 12}
+
+    with pytest.raises(
+        ValidationError,
+        match="page_css_mode='author_owned' cannot be combined with pdf_layout",
+    ):
+        JobSpecV2.model_validate(payload)
 
 
 def test_job_spec_rejects_reference_docx_for_non_docx_output() -> None:

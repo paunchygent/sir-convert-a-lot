@@ -239,6 +239,17 @@ Field rules:
 - `conversion.css_filenames`:
   - only meaningful for `html -> pdf` and `md -> pdf`
   - filenames must exist within the extracted resources root when provided
+- `conversion.page_css_mode`:
+  - optional PDF-only page-CSS precedence selector
+  - `preset_append`:
+    - default behavior when omitted for PDF outputs
+    - intended for quick one-off callers using typed `conversion.pdf_layout`
+    - appends the generated preset stylesheet after caller CSS
+  - `author_owned`:
+    - intended for full downstream applications that own page setup in author CSS
+    - forbids `conversion.pdf_layout`
+    - does not append any service-owned preset page stylesheet
+  - rejected for non-PDF outputs
 - `conversion.pdf_layout`:
   - typed PDF-only page layout preset surface intended for downstream GUIs (paper size, orientation,
     and standard margins)
@@ -314,6 +325,7 @@ Route-specific JobSpec example (`docx -> pdf`):
   "conversion": {
     "output_format": "pdf",
     "css_filenames": [],
+    "page_css_mode": "preset_append",
     "pdf_layout": {
       "paper_size": "a4",
       "orientation": "portrait",
@@ -348,7 +360,7 @@ Route-specific JobSpec example (`html -> md`):
 }
 ```
 
-Route-specific JobSpec example (`html -> pdf` with layout preset):
+Route-specific JobSpec example (`html -> pdf` with author-owned page CSS):
 
 ```json
 {
@@ -361,11 +373,7 @@ Route-specific JobSpec example (`html -> pdf` with layout preset):
   "conversion": {
     "output_format": "pdf",
     "css_filenames": ["print.css"],
-    "pdf_layout": {
-      "paper_size": "a4",
-      "orientation": "portrait",
-      "margins_mm": 12
-    },
+    "page_css_mode": "author_owned",
     "reference_docx_filename": null
   },
   "retention": {
@@ -373,6 +381,9 @@ Route-specific JobSpec example (`html -> pdf` with layout preset):
   }
 }
 ```
+
+In the `author_owned` example above, the caller's uploaded CSS is authoritative
+for `@page` size/orientation/margins. `conversion.pdf_layout` must be omitted.
 
 Approved next-route JobSpec draft (`md -> wav`; not yet implemented):
 
