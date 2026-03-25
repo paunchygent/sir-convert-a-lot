@@ -5,14 +5,15 @@
 #
 # Relationships:
 #   - Referenced by PDM scripts in pyproject.toml (dev-start/dev-stop/etc).
-#   - Operates on compose.yaml at repository root.
+#   - Operates on compose.local.yaml at repository root for the CPU-only local
+#     Docker debug lane.
 #
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-COMPOSE_FILE="${REPO_ROOT}/compose.yaml"
+COMPOSE_FILE="${REPO_ROOT}/compose.local.yaml"
 
 usage() {
   cat >&2 <<'EOF'
@@ -35,7 +36,7 @@ if [[ "$#" -lt 1 ]]; then
 fi
 
 if [[ ! -f "${COMPOSE_FILE}" ]]; then
-  echo "dev-compose: compose file not found: ${COMPOSE_FILE}" >&2
+  echo "dev-compose: local compose file not found: ${COMPOSE_FILE}" >&2
   exit 66
 fi
 

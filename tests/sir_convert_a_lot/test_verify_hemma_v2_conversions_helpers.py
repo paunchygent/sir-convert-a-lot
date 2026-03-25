@@ -56,3 +56,9 @@ def test_probe_docker_runtime_executes_weasyprint_with_python_directly(
     assert "python" in weasyprint_command
     assert (tmp_path / "pandoc_version.txt").read_text(encoding="utf-8") == "pandoc 3.6.1\n"
     assert (tmp_path / "weasyprint_version.txt").read_text(encoding="utf-8") == "68.1\n"
+
+
+def test_count_pdf_image_objects_counts_embedded_image_markers() -> None:
+    pdf_bytes = b"%PDF-1.7\n/Subtype /Image\nq\n/Subtype /Image\n"
+
+    assert verify_hemma_v2_conversions_helpers.count_pdf_image_objects(pdf_bytes) == 2

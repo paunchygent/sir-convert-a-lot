@@ -48,6 +48,21 @@ The CLI exposes a typed route registry for supported/planned conversions. Routes
 
 Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
 
+## Local Runtime Rule
+
+For local app integration and local verification that depends on the `:8085`
+service lane:
+
+- start Sir Convert-a-Lot with `pdm run dev-start`
+- inspect it with `pdm run dev-logs`
+- never use `pdm run serve:sir-convert-a-lot`
+- never start `uvicorn scripts.sir_convert_a_lot.service:app` directly
+
+Rationale: the supported local `:8085` lane is an explicit CPU-only Docker dev
+service, not a host-run Python process and not the Hemma ROCm production image.
+That keeps laptop debugging deterministic while the real integration path stays
+on Hemma or the public service domain for downstream apps such as Skriptoteket.
+
 TTS planning note:
 
 - TTS is planned as a sidecar-backed Hemma service route, not a laptop-local auxiliary command.
@@ -188,7 +203,7 @@ pdm run convert-a-lot convert ./template.docx \
   --to md \
   --output-dir ./out \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 Convert HTML to Markdown via the service (v2), with optional resources:
@@ -199,7 +214,7 @@ pdm run convert-a-lot convert ./index.html \
   --resources ./assets \
   --output-dir ./out \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 Convert HTML (+ optional CSS) to PDF via the service (v2):
@@ -211,7 +226,7 @@ pdm run convert-a-lot convert ./handout.html \
   --css ./styles/handout.css \
   --resources ./styles \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 Resources note:
@@ -228,7 +243,7 @@ pdm run convert-a-lot convert ./notes.md \
   --output-dir ./out \
   --resources ./assets \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 Title handling (deterministic):
@@ -245,7 +260,7 @@ pdm run convert-a-lot convert ./notes.md \
   --output-dir ./out \
   --resources ./assets \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 Title handling uses the same deterministic rules as MD→PDF (frontmatter `title`, first H1, stem).
@@ -258,7 +273,7 @@ pdm run convert-a-lot convert ./notes.md \
   --output-dir ./out \
   --reference-docx ./reference.docx \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 Convert PDF to DOCX via the service v2 pipeline:
@@ -268,7 +283,7 @@ pdm run convert-a-lot convert ./paper.pdf \
   --to docx \
   --output-dir ./out \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 `pdf -> docx` is delivered by the explicit service API v2 surface.
@@ -280,7 +295,7 @@ pdm run convert-a-lot convert ./paper.pdf \
   --to docx \
   --output-dir ./out \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY" \
   --reference-docx ./reference.docx
 ```
 
@@ -342,7 +357,7 @@ pdm run sir-convert-a-lot convert ./pdfs --output-dir ./research
 pdm run convert-a-lot convert ./folder_with_pdfs \
   --output-dir ./research \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY" \
   --backend-strategy auto \
   --ocr-mode auto \
   --ocr-engine auto \
@@ -357,7 +372,7 @@ Force Swedish OCR with explicit engine/languages:
 pdm run convert-a-lot convert ./folder_with_pdfs \
   --output-dir ./research \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY" \
   --ocr-mode force \
   --ocr-engine easyocr \
   --ocr-language sv \
@@ -370,7 +385,7 @@ Internet lane equivalent:
 pdm run convert-a-lot convert ./folder_with_pdfs \
   --output-dir ./research \
   --service-url https://convert.hule.education \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 ## Deterministic Manifest

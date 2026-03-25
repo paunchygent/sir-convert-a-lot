@@ -224,3 +224,302 @@ def test_cancel_with_save_and_resume_from_checkpoint_produces_deterministic_fina
     )
     assert resumed_artifact.status_code == 200
     assert resumed_artifact.content == baseline_bytes
+
+
+def test_resume_idempotency_replay_survives_public_key_rotation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
+
+    def _stub_execute_job_conversion(
+        *,
+        spec,
+        source_filename: str,
+        source_bytes: bytes,
+        gpu_available: bool,
+        gpu_runtime_probe,
+        docling_backend,
+        pymupdf_backend,
+        ocr_engine=None,
+        ocr_languages=(),
+        ocr_use_gpu=None,
+    ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
+        del (
+            spec,
+            source_filename,
+            gpu_available,
+            gpu_runtime_probe,
+            docling_backend,
+            pymupdf_backend,
+            ocr_engine,
+            ocr_languages,
+            ocr_use_gpu,
+        )
+        time.sleep(0.2)
+        return (
+            "# chunk\n",
+            ConversionMetadata(
+                backend_used="stubbed",
+                acceleration_used="cpu",
+                ocr_enabled=False,
+                table_mode=TableMode.FAST,
+                options_fingerprint="sha256:stubbed",
+            ),
+            [],
+            {},
+        )
+
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor, "execute_job_conversion", _stub_execute_job_conversion
+    )
+
+    base_config = ServiceConfig(
+        api_key="secret-key",
+        data_root=tmp_path / "service_data_rotation_resume",
+        gpu_available=False,
+        allow_cpu_only=True,
+        allow_cpu_fallback=False,
+        enable_supervisor=False,
+        processing_delay_seconds=0.0,
+    )
+    client = TestClient(create_app(base_config))
+
+    pdf_bytes = _build_pdf_bytes(pages=11)
+    spec = _job_spec_v2(
+        filename="paper.pdf",
+        source_format=SourceFormatV2.PDF,
+        output_format=OutputFormatV2.MD,
+    )
+    spec["pdf_options"] = {
+        "backend_strategy": "auto",
+        "ocr_mode": "off",
+        "table_mode": "fast",
+        "normalize": "standard",
+    }
+    spec["execution"] = {
+        "acceleration_policy": "cpu_only",
+        "priority": "normal",
+        "document_timeout_seconds": 1800,
+    }
+
+    create = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem_resume_rotation_source",
+        file_name="paper.pdf",
+        file_bytes=pdf_bytes,
+        spec=spec,
+    )
+    job_id = create.json()["job"]["job_id"]
+
+    for _ in range(100):
+        status = client.get(
+            f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "secret-key"}
+        ).json()["job"]["status"]
+        if status == JobStatus.RUNNING.value:
+            break
+        time.sleep(0.01)
+    else:
+        raise AssertionError("Job never reached running status.")
+
+    for _ in range(200):
+        response = client.get(
+            f"/v2/convert/jobs/{job_id}/checkpoint", headers={"X-API-Key": "secret-key"}
+        )
+        if response.status_code == 200 and int(response.json().get("processed_pages", 0)) > 0:
+            break
+        time.sleep(0.01)
+    else:
+        raise AssertionError("Checkpoint never became available before cancel.")
+
+    cancel = client.post(
+        f"/v2/convert/jobs/{job_id}/cancel",
+        headers={"X-API-Key": "secret-key"},
+    )
+    assert cancel.status_code in {200, 202}
+
+    first_resume = client.post(
+        f"/v2/convert/jobs/{job_id}/resume",
+        headers={"X-API-Key": "secret-key", "Idempotency-Key": "idem_resume_rotation"},
+    )
+    assert first_resume.status_code in {200, 202}
+    resumed_job_id = first_resume.json()["job"]["job_id"]
+
+    rotated_client = TestClient(
+        create_app(
+            ServiceConfig(
+                api_key="rotated-public-key",
+                data_root=base_config.data_root,
+                gpu_available=False,
+                allow_cpu_only=True,
+                allow_cpu_fallback=False,
+                enable_supervisor=False,
+                processing_delay_seconds=0.0,
+            )
+        )
+    )
+    replay_resume = rotated_client.post(
+        f"/v2/convert/jobs/{job_id}/resume",
+        headers={
+            "X-API-Key": "rotated-public-key",
+            "Idempotency-Key": "idem_resume_rotation",
+        },
+    )
+
+    assert replay_resume.status_code in {200, 202}
+    assert replay_resume.headers["X-Idempotent-Replay"] == "true"
+    assert replay_resume.json()["job"]["job_id"] == resumed_job_id
+
+
+def test_resume_idempotency_replay_survives_internal_key_rotation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
+
+    def _stub_execute_job_conversion(
+        *,
+        spec,
+        source_filename: str,
+        source_bytes: bytes,
+        gpu_available: bool,
+        gpu_runtime_probe,
+        docling_backend,
+        pymupdf_backend,
+        ocr_engine=None,
+        ocr_languages=(),
+        ocr_use_gpu=None,
+    ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
+        del (
+            spec,
+            source_filename,
+            source_bytes,
+            gpu_available,
+            gpu_runtime_probe,
+            docling_backend,
+            pymupdf_backend,
+            ocr_engine,
+            ocr_languages,
+            ocr_use_gpu,
+        )
+        time.sleep(0.2)
+        return (
+            "# chunk\n",
+            ConversionMetadata(
+                backend_used="stubbed",
+                acceleration_used="cpu",
+                ocr_enabled=False,
+                table_mode=TableMode.FAST,
+                options_fingerprint="sha256:stubbed",
+            ),
+            [],
+            {},
+        )
+
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor, "execute_job_conversion", _stub_execute_job_conversion
+    )
+
+    base_config = ServiceConfig(
+        api_key="secret-key",
+        internal_api_key="internal-secret-key",
+        data_root=tmp_path / "service_data_internal_rotation_resume",
+        gpu_available=False,
+        allow_cpu_only=True,
+        allow_cpu_fallback=False,
+        enable_supervisor=False,
+        processing_delay_seconds=0.0,
+    )
+    client = TestClient(create_app(base_config))
+
+    pdf_bytes = _build_pdf_bytes(pages=11)
+    spec = _job_spec_v2(
+        filename="paper.pdf",
+        source_format=SourceFormatV2.PDF,
+        output_format=OutputFormatV2.MD,
+    )
+    spec["pdf_options"] = {
+        "backend_strategy": "auto",
+        "ocr_mode": "off",
+        "table_mode": "fast",
+        "normalize": "standard",
+    }
+    spec["execution"] = {
+        "acceleration_policy": "cpu_only",
+        "priority": "normal",
+        "document_timeout_seconds": 1800,
+    }
+
+    create = _post_create(
+        client,
+        api_key="internal-secret-key",
+        idempotency_key="idem_internal_resume_rotation_source",
+        file_name="paper.pdf",
+        file_bytes=pdf_bytes,
+        spec=spec,
+    )
+    job_id = create.json()["job"]["job_id"]
+
+    for _ in range(100):
+        status = client.get(
+            f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "internal-secret-key"}
+        ).json()["job"]["status"]
+        if status == JobStatus.RUNNING.value:
+            break
+        time.sleep(0.01)
+    else:
+        raise AssertionError("Job never reached running status.")
+
+    for _ in range(200):
+        response = client.get(
+            f"/v2/convert/jobs/{job_id}/checkpoint",
+            headers={"X-API-Key": "internal-secret-key"},
+        )
+        if response.status_code == 200 and int(response.json().get("processed_pages", 0)) > 0:
+            break
+        time.sleep(0.01)
+    else:
+        raise AssertionError("Checkpoint never became available before cancel.")
+
+    cancel = client.post(
+        f"/v2/convert/jobs/{job_id}/cancel",
+        headers={"X-API-Key": "internal-secret-key"},
+    )
+    assert cancel.status_code in {200, 202}
+
+    first_resume = client.post(
+        f"/v2/convert/jobs/{job_id}/resume",
+        headers={
+            "X-API-Key": "internal-secret-key",
+            "Idempotency-Key": "idem_internal_resume_rotation",
+        },
+    )
+    assert first_resume.status_code in {200, 202}
+    resumed_job_id = first_resume.json()["job"]["job_id"]
+
+    rotated_client = TestClient(
+        create_app(
+            ServiceConfig(
+                api_key="secret-key",
+                internal_api_key="rotated-internal-key",
+                data_root=base_config.data_root,
+                gpu_available=False,
+                allow_cpu_only=True,
+                allow_cpu_fallback=False,
+                enable_supervisor=False,
+                processing_delay_seconds=0.0,
+            )
+        )
+    )
+    replay_resume = rotated_client.post(
+        f"/v2/convert/jobs/{job_id}/resume",
+        headers={
+            "X-API-Key": "rotated-internal-key",
+            "Idempotency-Key": "idem_internal_resume_rotation",
+        },
+    )
+
+    assert replay_resume.status_code in {200, 202}
+    assert replay_resume.headers["X-Idempotent-Replay"] == "true"
+    assert replay_resume.json()["job"]["job_id"] == resumed_job_id

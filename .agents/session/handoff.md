@@ -2,6 +2,58 @@
 
 ## Current State
 
+### Additional local dev runtime slice (2026-03-25)
+
+- `task-250-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging`
+  is now locally implemented.
+- Landed surfaces:
+  - `compose.local.yaml` adds the explicit CPU-only local Docker dev service
+  - `Dockerfile.local` installs standard CPU torch wheels instead of ROCm
+    wheels
+  - `scripts/devops/dev-compose.sh` now targets the local CPU compose surface
+  - `scripts/sir_convert_a_lot/service_local.py` exposes a distinct
+    `local_cpu_dev` service profile
+  - docs/skills now describe Hemma/public as the default integration lane and
+    local `:8085` as debug-only Docker infrastructure
+- Focused verification for the local slice:
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_service_image_build_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py`
+  - `pdm run ruff check scripts/sir_convert_a_lot/service_local.py scripts/sir_convert_a_lot/devops/service_image_build_contract.py tests/sir_convert_a_lot/test_service_image_build_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py`
+  - `pdm run mypy scripts/sir_convert_a_lot/service_local.py scripts/sir_convert_a_lot/devops/service_image_build_contract.py`
+  - `pdm run validate-tasks`
+  - `pdm run validate-docs`
+  - `docker compose -f compose.local.yaml config`
+  - `docker compose -f compose.local.yaml build sir_convert_a_lot_dev`
+  - `docker image inspect sir-convert-a-lot-runtime-local:local-cpu --format '{{.Id}} {{.Size}}'`
+
+### Additional active service slice (2026-03-25)
+
+- `task-249-add-trusted-app-bundle-mode-for-internal-html-to-pdf-exports` is
+  locally implemented and post-review hardened.
+- Closed review findings:
+  - persisted `owner_auth_lane` + `owner_api_key_scope` on v2 jobs
+  - enforced cross-lane ownership checks on job read/result/artifact/partial/
+    checkpoint/cancel/resume/SSE routes
+  - narrowed the internal API key back to job-lifecycle surfaces only
+  - made create/resume idempotency replay stable across public and internal key
+    rotation by keying replay scope off the persisted lane scope instead of the
+    raw secret value
+  - made `verify_hemma_v2_conversions.py` fail closed when
+    `--internal-api-key` is missing
+- Local verification for the service slice:
+  - `pdm run pytest -q tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_read_cancel.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_cross_lane_access.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_api_contract_v2_webhook_onboarding.py tests/sir_convert_a_lot/test_http_routes_templates_v2.py tests/sir_convert_a_lot/test_http_jobs_v2_request_validation.py tests/sir_convert_a_lot/test_specs_v2.py tests/sir_convert_a_lot/test_weasyprint_html_to_pdf.py tests/sir_convert_a_lot/test_v2_conversion_executor_pdf_layout.py tests/sir_convert_a_lot/test_verify_hemma_v2_conversions.py tests/sir_convert_a_lot/test_verify_hemma_v2_conversions_helpers.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_cancel_and_resume.py` (`128 passed`)
+  - `pdm run ruff check scripts/sir_convert_a_lot/interfaces/http_auth_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_job_artifacts_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_job_resume_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_job_events_v2.py scripts/sir_convert_a_lot/infrastructure/job_store_models_v2.py scripts/sir_convert_a_lot/infrastructure/runtime_models_v2.py scripts/sir_convert_a_lot/infrastructure/job_store_manifest_v2.py scripts/sir_convert_a_lot/infrastructure/job_store_v2_core.py scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py scripts/sir_convert_a_lot/devops/verify_hemma_v2_conversions.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_cross_lane_access.py tests/sir_convert_a_lot/test_api_contract_v2_sse.py tests/sir_convert_a_lot/test_http_routes_templates_v2.py tests/sir_convert_a_lot/test_api_contract_v2_webhook_onboarding.py tests/sir_convert_a_lot/test_verify_hemma_v2_conversions.py`
+  - `pdm run mypy scripts/sir_convert_a_lot/interfaces/http_auth_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_job_artifacts_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_job_resume_v2.py scripts/sir_convert_a_lot/interfaces/http_routes_job_events_v2.py scripts/sir_convert_a_lot/infrastructure/job_store_models_v2.py scripts/sir_convert_a_lot/infrastructure/runtime_models_v2.py scripts/sir_convert_a_lot/infrastructure/job_store_manifest_v2.py scripts/sir_convert_a_lot/infrastructure/job_store_v2_core.py scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py scripts/sir_convert_a_lot/devops/verify_hemma_v2_conversions.py`
+  - `pdm run validate-tasks`
+  - `pdm run validate-docs`
+- Ruthless review status:
+  - final pass reported no concrete remaining findings in the
+    auth/ownership/idempotency slice
+- Remaining work before closing Task 249:
+  - deploy the updated service to Hemma
+  - run the trusted-bundle verifier with both public and internal keys
+  - capture the Hemma proof that bundled local images render in trusted mode
+    while public-lane trusted requests are rejected
+
 - Active epic: Epic 08 Qwen Swedish language expansion on Hemma.
 - Active governance story:
   `docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md`.

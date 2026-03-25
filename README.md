@@ -26,12 +26,18 @@ Future approved routes include `md -> wav` (sidecar-backed TTS).
 
 ## Quickstart
 
-Start the local v2 API service:
+Start the explicit CPU-only local debug service as a Docker container:
 
 ```bash
 pdm install
-pdm run serve:sir-convert-a-lot
+pdm run dev-start
+pdm run dev-logs
 ```
+
+This local `:8085` lane is for laptop debugging only. Default downstream app
+integration should still target Hemma through the tunnel lane
+(`127.0.0.1:28085`) or the public lane
+([convert.hule.education](https://convert.hule.education)).
 
 In another terminal, convert documents via the CLI:
 
@@ -46,9 +52,18 @@ pdm run convert-a-lot routes
 
 **Service & Conversion:**
 
-- `pdm run serve:sir-convert-a-lot`
+- `docker compose up -d sir_convert_a_lot_prod`
+- `docker compose logs -f sir_convert_a_lot_prod`
 - `pdm run convert-a-lot convert <path> --output-dir <dir>`
 - `pdm run convert-a-lot jobs [cancel|resume|partial|checkpoint]`
+
+Local-runtime rule:
+
+- Do not run `pdm run serve:sir-convert-a-lot` for local app integration.
+- Do not start `uvicorn scripts.sir_convert_a_lot.service:app` directly on `:8085`.
+- The supported local service lane is the CPU-only Docker dev service driven by
+  `pdm run dev-start` / `compose.local.yaml`.
+- The Hemma GPU/prod lane remains the canonical real integration surface.
 
 **Hemma (Remote) Execution:**
 

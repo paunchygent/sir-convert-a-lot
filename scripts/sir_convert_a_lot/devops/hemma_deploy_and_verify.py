@@ -85,7 +85,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--api-key",
         default=None,
-        help="X-API-Key value. Precedence: --api-key > SIR_CONVERT_A_LOT_API_KEY.",
+        help="X-API-Key value. Precedence: --api-key > SIR_CONVERT_A_LOT_V2_API_KEY.",
     )
     parser.add_argument(
         "--allow-dev-key",

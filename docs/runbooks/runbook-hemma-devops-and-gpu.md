@@ -307,7 +307,7 @@ Arguments and policy:
 
 - `--expected-revision` is required and must match remote `HEAD` after pull.
 - `--lane` defaults to `host`; `docker` is internal-only validation.
-- API key precedence is strict: `--api-key` > `SIR_CONVERT_A_LOT_API_KEY` > error.
+- API key precedence is strict: `--api-key` > `SIR_CONVERT_A_LOT_V2_API_KEY` > error.
 - `dev-only-key` is forbidden unless explicitly passed via `--api-key dev-only-key` or
   `--allow-dev-key` is set.
 - API keys must never be persisted in logs/artifacts.
@@ -328,7 +328,7 @@ Decision tree (fail-closed):
 1. `service_revision != remote_revision`:
    - recreate service (`pdm run dev-recreate` on Hemma), verify `/readyz`, rerun gate.
 1. key resolution fails:
-   - provide `--api-key` or set `SIR_CONVERT_A_LOT_API_KEY`; avoid implicit `dev-only-key`.
+   - provide `--api-key` or set `SIR_CONVERT_A_LOT_V2_API_KEY`; avoid implicit `dev-only-key`.
 1. metrics safety scan fails (`job_id=`, `jobv2_`):
    - remove forbidden high-cardinality labels and rerun verification.
 
@@ -810,7 +810,7 @@ Then run conversion from any repository:
 pdm run convert-a-lot convert ./pdfs \
   --output-dir ./research \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 Internet lane equivalent:
@@ -819,7 +819,7 @@ Internet lane equivalent:
 pdm run convert-a-lot convert ./pdfs \
   --output-dir ./research \
   --service-url https://convert.hule.education \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 ## Production Env Mirroring Policy (Cross-Repo)
@@ -837,8 +837,8 @@ Required project symlink pattern:
 
 Key synchronization invariant:
 
-- `SIR_CONVERT_A_LOT_API_KEY` must be present and synchronized in Sir/HuleEdu/Skriptoteket env files.
-- `PVP_SIR_CONVERT_A_LOT_API_KEY` in Projektveckor must use the same secret value.
+- `SIR_CONVERT_A_LOT_V2_API_KEY` must be present and synchronized in Sir/HuleEdu/Skriptoteket env files.
+- `PVP_SIR_CONVERT_A_LOT_V2_API_KEY` in Projektveckor must use the same secret value.
 
 Canonical execution command from laptop:
 
@@ -853,7 +853,7 @@ Run the committed live-runner surface (argv mode, no inline shell payloads):
 ```bash
 pdm run run-hemma -- pdm run validate:docling-gpu-live \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY" \
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY" \
   --output-root build/manual-validation-quality-control
 ```
 

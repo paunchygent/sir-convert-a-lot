@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping
 
-API_KEY_ENV_VAR = "SIR_CONVERT_A_LOT_API_KEY"
+API_KEY_ENV_VAR = "SIR_CONVERT_A_LOT_V2_API_KEY"
 DEFAULT_DEV_API_KEY = "dev-only-key"
 LANE_PORTS: dict[str, int] = {
     "host": 28085,
@@ -52,7 +52,7 @@ def resolve_api_key(
         env_value = environ.get(API_KEY_ENV_VAR, "").strip()
         if env_value == "":
             raise VerificationContractError(
-                "Missing API key. Provide --api-key or set SIR_CONVERT_A_LOT_API_KEY."
+                "Missing API key. Provide --api-key or set SIR_CONVERT_A_LOT_V2_API_KEY."
             )
         resolved = ResolvedApiKey(value=env_value, source="env")
 

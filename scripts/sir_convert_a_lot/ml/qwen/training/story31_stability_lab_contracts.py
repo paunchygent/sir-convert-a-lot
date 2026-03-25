@@ -337,6 +337,34 @@ class Story31PostT244Layer15OutputMultiplyConfirmationAssessment:
 
 
 @dataclass(frozen=True)
+class PostT245Fp32ScaledLayer15OutputComparisonRow:
+    """Comparable pair-versus-single row outcome for the T246 seam split."""
+
+    case_id: str
+    source_line_numbers: tuple[int, ...]
+    batch_size: int
+    role: str
+    case_has_non_finite: bool
+    first_non_finite_talker_core_hook_tensor: str | None
+    matched_corridor_surface: str | None
+
+
+@dataclass(frozen=True)
+class Story31PostT245Fp32ScaledLayer15OutputAssessment:
+    """Focused T246 assessment for the post-multiply layer-15 output seam."""
+
+    stabilization_variant: str
+    target_loss_kind: str
+    target_corridor_surfaces: tuple[str, ...]
+    comparison_rows: tuple[PostT245Fp32ScaledLayer15OutputComparisonRow, ...]
+    convergence_classification: str | None
+    dominant_surface: str | None
+    evidence_is_ambiguous: bool
+    ambiguity_reason: str | None
+    next_task_rule: str
+
+
+@dataclass(frozen=True)
 class Story31StabilityLabReport:
     """Machine-readable report for one Story 31 matrix run."""
 
@@ -381,6 +409,9 @@ class Story31StabilityLabReport:
     ) = None
     post_t244_layer15_output_multiply_confirmation_assessment: (
         Story31PostT244Layer15OutputMultiplyConfirmationAssessment | None
+    ) = None
+    post_t245_fp32_scaled_layer15_output_assessment: (
+        Story31PostT245Fp32ScaledLayer15OutputAssessment | None
     ) = None
 
 

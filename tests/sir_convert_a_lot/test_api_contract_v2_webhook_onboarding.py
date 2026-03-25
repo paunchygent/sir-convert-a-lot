@@ -19,11 +19,17 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfi
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 
-def _build_client(tmp_path: Path, *, enable_webhook_onboarding: bool) -> TestClient:
+def _build_client(
+    tmp_path: Path,
+    *,
+    enable_webhook_onboarding: bool,
+    internal_api_key: str | None = None,
+) -> TestClient:
     default_capabilities = frozenset({"jobs:read", "push:read", "push:write"})
     app = create_app(
         ServiceConfig(
             api_key="secret-key",
+            internal_api_key=internal_api_key,
             data_root=tmp_path / "service_data_webhook_onboarding",
             enable_supervisor=False,
             processing_delay_seconds=0.0,
@@ -227,6 +233,25 @@ def test_webhook_routes_reject_invalid_api_key(tmp_path: Path) -> None:
     response = client.get(
         "/v2/push/webhooks/subscriptions",
         headers={"X-API-Key": "wrong-key", "X-Correlation-ID": "corr_invalid_api_key"},
+    )
+    assert response.status_code == 401
+    payload = response.json()
+    assert payload["api_version"] == "v2"
+    assert payload["error"]["code"] == "auth_invalid_api_key"
+
+
+def test_webhook_routes_reject_internal_api_key(tmp_path: Path) -> None:
+    client = _build_client(
+        tmp_path,
+        enable_webhook_onboarding=True,
+        internal_api_key="internal-secret-key",
+    )
+    response = client.get(
+        "/v2/push/webhooks/subscriptions",
+        headers={
+            "X-API-Key": "internal-secret-key",
+            "X-Correlation-ID": "corr_internal_api_key",
+        },
     )
     assert response.status_code == 401
     payload = response.json()

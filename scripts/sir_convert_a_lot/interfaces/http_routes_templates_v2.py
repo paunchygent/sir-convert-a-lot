@@ -31,19 +31,7 @@ from scripts.sir_convert_a_lot.infrastructure.docx_template_catalog_v2 import (
     load_default_docx_template_catalog,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
-from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
-
-
-def _require_api_key(request: Request, *, service_started_at: str) -> None:
-    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-    api_key = request.headers.get("X-API-Key")
-    if api_key != runtime.config.api_key:
-        raise ServiceError(
-            status_code=401,
-            code="auth_invalid_api_key",
-            message="Missing or invalid X-API-Key.",
-            retryable=False,
-        )
+from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import require_api_key_v2
 
 
 def _as_version_data(resolved: ResolvedDocxTemplateV2) -> DocxTemplateVersionDataV2:
@@ -82,7 +70,7 @@ def build_templates_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.get("/v2/templates/docx")
     async def list_docx_templates(request: Request) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        require_api_key_v2(request, service_started_at=service_started_at)
         catalog = _load_catalog_or_raise()
         summaries = [
             DocxTemplateSummaryV2(
@@ -101,7 +89,7 @@ def build_templates_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.get("/v2/templates/docx/{template_id}")
     async def get_docx_template(template_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        require_api_key_v2(request, service_started_at=service_started_at)
         catalog = _load_catalog_or_raise()
         try:
             versions = catalog.list_versions(template_id=template_id)
@@ -126,7 +114,7 @@ def build_templates_router_v2(*, service_started_at: str) -> APIRouter:
         version: str,
         request: Request,
     ) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        require_api_key_v2(request, service_started_at=service_started_at)
         catalog = _load_catalog_or_raise()
         try:
             resolved = catalog.resolve(template_id=template_id, version=version)

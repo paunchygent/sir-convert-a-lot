@@ -45,8 +45,8 @@ Hemma production `.env` mirroring across:
 - Mirror full project-specific prod `.env` payloads into canonical files under that root.
 - Replace repo-local prod `.env` files with symlinks to canonical env files.
 - Ensure Sir Convert-a-Lot key is mirrored into all prod env bundles:
-  - `SIR_CONVERT_A_LOT_API_KEY` in Sir/HuleEdu/Skriptoteket envs
-  - `PVP_SIR_CONVERT_A_LOT_API_KEY` in Projektveckor env (same secret value)
+  - `SIR_CONVERT_A_LOT_V2_API_KEY` in Sir/HuleEdu/Skriptoteket envs
+  - `PVP_SIR_CONVERT_A_LOT_V2_API_KEY` in Projektveckor env (same secret value)
 
 3. Docs and skills governance cleanup
 
@@ -88,8 +88,8 @@ Hemma production `.env` mirroring across:
   - `~/apps/skriptoteket/.env -> ~/infrastructure/env/prod/skriptoteket.env`
   - `~/apps/projektveckor-portal/.env -> ~/infrastructure/env/prod/projektveckor-portal.env`
 - Canonical env file permissions verified as `600` and required key presence checks passed:
-  - `SIR_CONVERT_A_LOT_API_KEY` present in Sir/HuleEdu/Skriptoteket env files.
-  - `PVP_SIR_CONVERT_A_LOT_API_KEY` present in Projektveckor env file.
+  - `SIR_CONVERT_A_LOT_V2_API_KEY` present in Sir/HuleEdu/Skriptoteket env files.
+  - `PVP_SIR_CONVERT_A_LOT_V2_API_KEY` present in Projektveckor env file.
 
 ## Checklist
 

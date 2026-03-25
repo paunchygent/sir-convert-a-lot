@@ -22,6 +22,13 @@ description: >-
   - after `ssh hemma -L 28085:127.0.0.1:28085 -N`
 - Internet lane: `https://convert.hule.education`
 
+Local-runtime guardrail:
+
+- If a local `:8085` service lane is needed for sibling-app integration, it must be the Docker
+  CPU-only local Docker dev service started via `pdm run dev-start`.
+- Never recommend or start `pdm run serve:sir-convert-a-lot`.
+- Never start `uvicorn scripts.sir_convert_a_lot.service:app` directly on `:8085`.
+
 ## Preflight (always)
 
 - `curl -fsS "$SERVICE_URL/readyz"`

@@ -37,6 +37,8 @@ class StoredJobV2:
     updated_at: datetime
     expires_at: datetime | None
     progress_stage: str
+    owner_auth_lane: str = "public"
+    owner_api_key_scope: str | None = None
     last_heartbeat_at: datetime | None = None
     current_phase_started_at: datetime | None = None
     phase_timings_ms: dict[str, int] = field(default_factory=dict)

@@ -35,11 +35,13 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_post_t237_downstream_convergence_trace_targets,
     iter_talker_core_post_t240_layer15_output_split_trace_targets,
     iter_talker_core_trace_targets,
-    resolve_talker_input_layernorm,
     talker_core_input_layernorm_internal_trace_names,
     talker_core_post_t235_row_local_outlier_trace_names,
     talker_core_post_t237_downstream_convergence_trace_names,
     talker_core_trace_prefix,
+)
+from scripts.sir_convert_a_lot.ml.qwen.training import (
+    story30_backward_lineage_layernorm_hooking as layernorm_hooking,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training import (
     story31_post_t241_layer15_residual_output_hooking as t243_residual_output_hooking,
@@ -68,6 +70,7 @@ TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE = (
 TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE = (
     "talker_core_post_t243_layer15_output_return"
 )
+TALKER_CORE_POST_T245_FP32_SCALED_OUTPUT_HOOK_PROFILE = "talker_core_post_t245_fp32_scaled_output"
 HOOK_PROFILE_CHOICES = (
     BASELINE_HOOK_PROFILE,
     TALKER_CORE_HOOK_PROFILE,
@@ -80,6 +83,7 @@ HOOK_PROFILE_CHOICES = (
     TALKER_CORE_POST_T240_LAYER15_OUTPUT_SPLIT_HOOK_PROFILE,
     TALKER_CORE_POST_T241_LAYER15_RESIDUAL_OUTPUT_HOOK_PROFILE,
     TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE,
+    TALKER_CORE_POST_T245_FP32_SCALED_OUTPUT_HOOK_PROFILE,
 )
 _BASELINE_FORWARD_SURFACE_NAMES = (
     "semantic_text_embeddings",
@@ -109,6 +113,16 @@ class _PatchedModuleForward:
     had_instance_forward: bool
 
 
+@dataclass(frozen=True)
+class _PatchedModuleAttribute:
+    """One reversible module attribute override owned by a hook session."""
+
+    module: torch.nn.Module
+    attribute_name: str
+    original_value: object
+    had_attribute: bool
+
+
 class GradientHookSession:
     """One lifecycle-scoped hook session for a lineage probe backward pass."""
 
@@ -117,6 +131,7 @@ class GradientHookSession:
         self._handles: list[torch.utils.hooks.RemovableHandle] = []
         self._observations: dict[str, TensorGradientObservation] = {}
         self._patched_module_forwards: list[_PatchedModuleForward] = []
+        self._patched_module_attributes: list[_PatchedModuleAttribute] = []
         self._first_non_finite = _FirstNonFiniteHookState()
         self._hook_counter = 0
 
@@ -141,6 +156,9 @@ class GradientHookSession:
             return
         if self._hook_profile == TALKER_CORE_POST_T243_LAYER15_OUTPUT_RETURN_HOOK_PROFILE:
             self._install_post_t243_layer15_output_return_trace(model=model)
+            return
+        if self._hook_profile == TALKER_CORE_POST_T245_FP32_SCALED_OUTPUT_HOOK_PROFILE:
+            self._install_post_t245_fp32_scaled_output_trace(model=model)
             return
         if self._hook_profile == TALKER_CORE_HOOK_PROFILE:
             trace_targets = iter_talker_core_trace_targets(model)
@@ -192,6 +210,16 @@ class GradientHookSession:
 
     def close(self) -> None:
         """Remove all forward and gradient hooks owned by this session."""
+        for patched_attribute in reversed(self._patched_module_attributes):
+            if patched_attribute.had_attribute:
+                setattr(
+                    patched_attribute.module,
+                    patched_attribute.attribute_name,
+                    patched_attribute.original_value,
+                )
+                continue
+            delattr(patched_attribute.module, patched_attribute.attribute_name)
+        self._patched_module_attributes.clear()
         for patched_forward in reversed(self._patched_module_forwards):
             if patched_forward.had_instance_forward:
                 patched_forward.module.forward = patched_forward.original_forward
@@ -261,60 +289,12 @@ class GradientHookSession:
 
     def _install_input_layernorm_internal_trace(self, *, model: object) -> None:
         """Patch the T233 layer-16 input-layernorm forward for internal tracing."""
-        input_layernorm = resolve_talker_input_layernorm(model, layer_index=16)
-        self._patched_module_forwards.append(
-            _PatchedModuleForward(
-                module=input_layernorm,
-                original_forward=input_layernorm.forward,
-                had_instance_forward="forward" in input_layernorm.__dict__,
-            )
+        layernorm_hooking.install_input_layernorm_internal_trace(
+            model=model,
+            attach_tensor=self._attach_tensor,
+            patch_module_forward=self._patch_module_forward,
+            trace_names=talker_core_input_layernorm_internal_trace_names(),
         )
-        input_layernorm.forward = MethodType(
-            self._build_input_layernorm_internal_forward(),
-            input_layernorm,
-        )
-
-    def _build_input_layernorm_internal_forward(
-        self,
-    ) -> Callable[[torch.nn.Module, object], torch.Tensor]:
-        """Build one reversible RMSNorm wrapper for the T233 internal chain."""
-        (
-            residual_input_name,
-            fp32_input_name,
-            variance_name,
-            normalized_hidden_states_name,
-            output_name,
-        ) = talker_core_input_layernorm_internal_trace_names()
-
-        def on_forward(
-            self_module: torch.nn.Module, *args: object, **kwargs: object
-        ) -> torch.Tensor:
-            if kwargs:
-                raise SystemExit(
-                    "Backward-lineage probe expected `layer_16.input_layernorm` "
-                    "to receive no keyword arguments under the T233 profile."
-                )
-            if len(args) != 1 or not isinstance(args[0], torch.Tensor):
-                raise SystemExit(
-                    "Backward-lineage probe expected `layer_16.input_layernorm` "
-                    "to receive exactly one tensor input under the T233 profile."
-                )
-            residual_input = args[0]
-            self._attach_tensor(residual_input_name, residual_input)
-            input_dtype = residual_input.dtype
-            fp32_input = residual_input.to(torch.float32)
-            self._attach_tensor(fp32_input_name, fp32_input)
-            variance = fp32_input.pow(2).mean(-1, keepdim=True)
-            self._attach_tensor(variance_name, variance)
-            variance_epsilon = _required_variance_epsilon(self_module)
-            normalized_hidden_states = fp32_input * torch.rsqrt(variance + variance_epsilon)
-            self._attach_tensor(normalized_hidden_states_name, normalized_hidden_states)
-            weight = _required_layernorm_weight(self_module)
-            output = weight * normalized_hidden_states.to(input_dtype)
-            self._attach_tensor(output_name, output)
-            return output
-
-        return on_forward
 
     def _install_post_t235_row_local_outlier_trace(self, *, model: object) -> None:
         """Patch the T236 line-4 outlier corridor while keeping the state vector fixed."""
@@ -370,6 +350,17 @@ class GradientHookSession:
             patch_module_forward=self._patch_module_forward,
         )
 
+    def _install_post_t245_fp32_scaled_output_trace(self, *, model: object) -> None:
+        """Install the T246 fp32-scaled-output split beneath the fixed T245 seam."""
+        t243_residual_output_hooking.install_post_t245_fp32_scaled_output_trace(
+            model=model,
+            attach_tensor=self._attach_tensor,
+            build_forward_hook=self._build_forward_hook,
+            build_forward_pre_hook=self._build_forward_pre_hook,
+            register_handle=self._handles.append,
+            patch_module_attribute=self._patch_module_attribute,
+        )
+
     def _install_layer16_input_layernorm_output_trace(
         self,
         *,
@@ -379,66 +370,17 @@ class GradientHookSession:
         profile_label: str,
     ) -> None:
         """Install one narrowed corridor plus a reversible layer-16 output wrapper."""
-        for target in trace_targets:
-            handle = (
-                target.module.register_forward_hook(
-                    self._build_forward_hook(target.name, target.tensor_selector)
-                )
-                if target.hook_kind == "forward"
-                else target.module.register_forward_pre_hook(
-                    self._build_forward_pre_hook(target.name, target.tensor_selector)
-                )
-            )
-            self._handles.append(handle)
-        input_layernorm = resolve_talker_input_layernorm(model, layer_index=16)
-        self._patched_module_forwards.append(
-            _PatchedModuleForward(
-                module=input_layernorm,
-                original_forward=input_layernorm.forward,
-                had_instance_forward="forward" in input_layernorm.__dict__,
-            )
+        layernorm_hooking.install_layer16_input_layernorm_output_trace(
+            model=model,
+            trace_targets=trace_targets,
+            output_name=output_name,
+            profile_label=profile_label,
+            attach_tensor=self._attach_tensor,
+            build_forward_hook=self._build_forward_hook,
+            build_forward_pre_hook=self._build_forward_pre_hook,
+            register_handle=self._handles.append,
+            patch_module_forward=self._patch_module_forward,
         )
-        input_layernorm.forward = MethodType(
-            self._build_layer16_input_layernorm_output_forward(
-                output_name=output_name,
-                profile_label=profile_label,
-            ),
-            input_layernorm,
-        )
-
-    def _build_layer16_input_layernorm_output_forward(
-        self,
-        *,
-        output_name: str,
-        profile_label: str,
-    ) -> Callable[[torch.nn.Module, object], torch.Tensor]:
-        """Build one reversible wrapper that exposes the layer-16 output seam."""
-
-        def on_forward(
-            self_module: torch.nn.Module, *args: object, **kwargs: object
-        ) -> torch.Tensor:
-            if kwargs:
-                raise SystemExit(
-                    "Backward-lineage probe expected `layer_16.input_layernorm` "
-                    f"to receive no keyword arguments under the {profile_label} profile."
-                )
-            if len(args) != 1 or not isinstance(args[0], torch.Tensor):
-                raise SystemExit(
-                    "Backward-lineage probe expected `layer_16.input_layernorm` "
-                    f"to receive exactly one tensor input under the {profile_label} profile."
-                )
-            residual_input = args[0]
-            input_dtype = residual_input.dtype
-            hidden_states = residual_input.to(torch.float32)
-            variance = hidden_states.pow(2).mean(-1, keepdim=True)
-            variance_epsilon = _required_variance_epsilon(self_module)
-            hidden_states = hidden_states * torch.rsqrt(variance + variance_epsilon)
-            weight = _required_layernorm_weight(self_module)
-            output = weight * hidden_states.to(input_dtype)
-            self._attach_tensor(output_name, output)
-            return output
-
-        return on_forward
 
     def _patch_module_forward(
         self,
@@ -454,6 +396,23 @@ class GradientHookSession:
             )
         )
         module.forward = MethodType(patched_forward, module)
+
+    def _patch_module_attribute(
+        self,
+        module: torch.nn.Module,
+        attribute_name: str,
+        attribute_value: object,
+    ) -> None:
+        """Patch one module attribute and register it for automatic restoration."""
+        self._patched_module_attributes.append(
+            _PatchedModuleAttribute(
+                module=module,
+                attribute_name=attribute_name,
+                original_value=getattr(module, attribute_name, None),
+                had_attribute=hasattr(module, attribute_name),
+            )
+        )
+        setattr(module, attribute_name, attribute_value)
 
 
 def build_gradient_hook_session(*, hook_profile: str) -> GradientHookSession:
@@ -494,24 +453,4 @@ def _optional_summary_float(summary: dict[str, object], key: str) -> float | Non
         return None
     if not isinstance(value, (int, float)):
         raise SystemExit(f"Backward-lineage tensor summary returned malformed `{key}`.")
-    return float(value)
-
-
-def _required_layernorm_weight(module: torch.nn.Module) -> torch.Tensor:
-    weight = getattr(module, "weight", None)
-    if not isinstance(weight, torch.Tensor):
-        raise SystemExit(
-            "Backward-lineage probe could not resolve `layer_16.input_layernorm.weight` "
-            "as a tensor under the T233 profile."
-        )
-    return weight
-
-
-def _required_variance_epsilon(module: torch.nn.Module) -> float:
-    value = getattr(module, "variance_epsilon", None)
-    if not isinstance(value, (int, float)):
-        raise SystemExit(
-            "Backward-lineage probe could not resolve "
-            "`layer_16.input_layernorm.variance_epsilon` as a scalar under the T233 profile."
-        )
     return float(value)

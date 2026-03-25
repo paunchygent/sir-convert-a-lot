@@ -41,6 +41,7 @@ def build_client(
     tmp_path: Path,
     *,
     max_upload_bytes: int = 50 * 1024 * 1024,
+    internal_api_key: str | None = None,
 ) -> tuple[TestClient, FastAPI]:
     """Build a test client and FastAPI app for v2 route edge-case tests."""
 
@@ -48,6 +49,7 @@ def build_client(
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
+            internal_api_key=internal_api_key,
             max_upload_bytes=max_upload_bytes,
             enable_supervisor=False,
             processing_delay_seconds=0.0,
@@ -96,11 +98,12 @@ def post_create(
     idempotency_key: str | None = "idem-edge-default",
     resources_file: tuple[str, bytes, str] | None = None,
     reference_docx_file: tuple[str, bytes, str] | None = None,
+    api_key: str = "secret-key",
 ) -> httpx.Response:
     """Submit a typed multipart request to `POST /v2/convert/jobs`."""
 
     headers = {
-        "X-API-Key": "secret-key",
+        "X-API-Key": api_key,
         "X-Correlation-ID": "corr_v2_edge_cases",
     }
     if idempotency_key is not None:

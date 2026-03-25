@@ -237,6 +237,11 @@ torch_version = "2.10.0+rocm7.1"
 torchvision_version = "0.25.0+rocm7.1"
 torchaudio_version = "2.10.0+rocm7.1"
 
+[tool.sir_convert_a_lot.cpu_runtime]
+torch_version = "2.10.0"
+torchvision_version = "0.25.0"
+torchaudio_version = "2.10.0"
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

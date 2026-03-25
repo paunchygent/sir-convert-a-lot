@@ -43,7 +43,7 @@ Explicit remote submission:
 pdm run convert-a-lot convert ./inputs \
   --output-dir ./output \
   --service-url http://127.0.0.1:28085 \
-  --api-key "$SIR_CONVERT_A_LOT_API_KEY"
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
 ## CLI Options
@@ -54,7 +54,7 @@ pdm run convert-a-lot convert ./inputs \
 | `--from` | auto | Source format override (`pdf`, `docx`, `md`, `html`) |
 | `--dry-run` | `false` | Print selected route and discovered files |
 | `--service-url` | `http://127.0.0.1:28085` | Service base URL |
-| `--api-key` | `$SIR_CONVERT_A_LOT_API_KEY` | API key |
+| `--api-key` | `$SIR_CONVERT_A_LOT_V2_API_KEY` | API key |
 | `--wait-seconds` | `5` | Bounded wait on create-job (`0..20`) |
 | `--max-poll-seconds` | `120` | Poll timeout per job |
 | `--stall-timeout-seconds` | `120` | Seconds without heartbeat/progress considered stalled |

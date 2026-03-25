@@ -56,7 +56,7 @@ def test_dev_only_key_refused_without_allow_flag() -> None:
     with pytest.raises(VerificationContractError, match="Refusing implicit dev-only-key"):
         resolve_api_key(
             api_key_arg=None,
-            environ={"SIR_CONVERT_A_LOT_API_KEY": "dev-only-key"},
+            environ={"SIR_CONVERT_A_LOT_V2_API_KEY": "dev-only-key"},
             allow_dev_key=False,
         )
 

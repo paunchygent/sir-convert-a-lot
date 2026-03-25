@@ -14,6 +14,7 @@ scripts/sir_convert_a_lot/*
 
 !scripts/sir_convert_a_lot/__init__.py
 !scripts/sir_convert_a_lot/service.py
+!scripts/sir_convert_a_lot/service_local.py
 !scripts/sir_convert_a_lot/application
 !scripts/sir_convert_a_lot/application/**
 !scripts/sir_convert_a_lot/domain

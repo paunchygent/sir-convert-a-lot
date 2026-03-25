@@ -35,6 +35,10 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerpri
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
+from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
+    require_api_key_v2,
+    require_job_access_v2,
+)
 from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import (
     validate_create_job_route_constraints,
 )
@@ -83,18 +87,6 @@ def _job_record_response(job: StoredJobV2) -> JobRecordResponseV2:
     )
 
 
-def _require_api_key(request: Request, *, service_started_at: str) -> None:
-    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-    api_key = request.headers.get("X-API-Key")
-    if api_key != runtime.config.api_key:
-        raise ServiceError(
-            status_code=401,
-            code="auth_invalid_api_key",
-            message="Missing or invalid X-API-Key.",
-            retryable=False,
-        )
-
-
 def _infer_format_from_filename(filename: str) -> SourceFormatV2 | None:
     suffix = Path(filename).suffix.lower()
     if suffix == ".pdf":
@@ -123,7 +115,11 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         reference_docx: UploadFile | None = File(None),
         wait_seconds: int = Query(default=0, ge=0, le=20),
     ) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -267,10 +263,12 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             spec=spec,
             resources_uploaded=resources_bytes is not None,
             reference_docx_uploaded=reference_docx_bytes is not None,
+            trusted_app_bundle_allowed=auth_context.allows_trusted_app_bundle,
         )
 
-        api_key = request.headers.get("X-API-Key", "")
-        scope_key = f"{api_key}:POST:/v2/convert/jobs:{idempotency_key}"
+        scope_key = (
+            f"{auth_context.owner_api_key_scope}:POST:/v2/convert/jobs:{idempotency_key}"
+        )
         file_sha256 = hashlib.sha256(payload_bytes).hexdigest()
         request_fingerprint = fingerprint_for_request_v2(
             spec_payload=raw_spec,
@@ -307,6 +305,8 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
         job = runtime.create_job(
             spec=spec,
+            owner_auth_lane=auth_context.lane.value,
+            owner_api_key_scope=auth_context.owner_api_key_scope,
             upload_bytes=payload_bytes,
             resources_zip_bytes=resources_bytes,
             reference_docx_bytes=reference_docx_bytes,
@@ -338,23 +338,26 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.get("/v2/convert/jobs/{job_id}")
     async def get_job(job_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
+        job = require_job_access_v2(auth_context=auth_context, job=job)
         payload = _job_record_response(job).model_dump(mode="json")
         return JSONResponse(status_code=200, content=payload)
 
     @router.post("/v2/convert/jobs/{job_id}/cancel")
     async def cancel_job(job_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
+        require_job_access_v2(auth_context=auth_context, job=runtime.get_job(job_id))
         result = runtime.cancel_job(job_id)
         if result == "missing":
             raise ServiceError(

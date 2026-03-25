@@ -26,7 +26,7 @@ def test_verify_env_contract_accepts_canonical_symlink(
     canonical_env.write_text(
         "\n".join(
             [
-                "SIR_CONVERT_A_LOT_API_KEY=secret-key",
+                "SIR_CONVERT_A_LOT_V2_API_KEY=secret-key",
                 "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE=easyocr",
                 "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en",
                 "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models",
@@ -60,7 +60,7 @@ def test_verify_env_contract_rejects_missing_required_keys(
     tmp_path: Path,
 ) -> None:
     canonical_env = tmp_path / "sir-convert-a-lot.env"
-    canonical_env.write_text("SIR_CONVERT_A_LOT_API_KEY=secret-key\n", encoding="utf-8")
+    canonical_env.write_text("SIR_CONVERT_A_LOT_V2_API_KEY=secret-key\n", encoding="utf-8")
     repo_env_link = tmp_path / ".env"
     repo_env_link.symlink_to(canonical_env)
 

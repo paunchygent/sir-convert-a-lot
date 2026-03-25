@@ -44,7 +44,7 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
 - Required arguments:
   - `--expected-revision` (required, explicit deploy target SHA),
   - `--lane` (`host` default/canonical, `docker` internal-only),
-  - `--api-key` (or `SIR_CONVERT_A_LOT_API_KEY` via precedence policy below),
+  - `--api-key` (or `SIR_CONVERT_A_LOT_V2_API_KEY` via precedence policy below),
   - `--allow-dev-key` (explicit opt-in only for local/dev scenarios).
 - Required evidence path:
   - `build/verification/task-76-hemma-deploy-verify/`
@@ -70,7 +70,7 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
   - host lane (`28085`) is canonical for verification; docker lane (`8085`) is allowed only for
     internal container validation and must not be advertised as a client lane.
 - Normalize verification auth/key resolution for Hemma:
-  - precedence: `--api-key` > `SIR_CONVERT_A_LOT_API_KEY` > error,
+  - precedence: `--api-key` > `SIR_CONVERT_A_LOT_V2_API_KEY` > error,
   - `dev-only-key` is forbidden unless explicitly passed or `--allow-dev-key` is set,
   - API keys must never be written to artifacts or logs.
 - Add canonical one-command deploy+verify workflow:
@@ -106,7 +106,7 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
 - [x] Host lane (`28085`) is canonical for verification; docker lane (`8085`) is internal-only and
   never documented as a client lane.
 - [x] Key resolution policy is enforced exactly:
-  - `--api-key` > `SIR_CONVERT_A_LOT_API_KEY` > error,
+  - `--api-key` > `SIR_CONVERT_A_LOT_V2_API_KEY` > error,
   - implicit `dev-only-key` is rejected unless explicitly allowed with `--allow-dev-key`,
   - API keys are not persisted in artifacts/logs.
 - [x] Metrics safety scan rejects forbidden substrings such as `job_id=` and `jobv2_`.

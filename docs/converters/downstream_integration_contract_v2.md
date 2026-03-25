@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-03-01
+updated: 2026-03-25
 owners:
   - platform
 tags:
@@ -140,11 +140,21 @@ Terminal-state behavior:
 
 ## Required API Examples
 
+### Trusted HTML bundle lane
+
+- Default callers use `X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}` and stay on
+  `conversion.input_trust_mode="untrusted_upload"` (or omit the field).
+- Internal app-owned HTML bundles such as Klassrumskartan must use the separate internal adapter
+  key (`SIR_CONVERT_A_LOT_INTERNAL_API_KEY`) and set
+  `conversion.input_trust_mode="trusted_app_bundle"`.
+- Public-lane submissions that request `trusted_app_bundle` are rejected with `403`
+  `insufficient_scope`.
+
 ### 1) `pdf -> md` create job
 
 ```bash
 curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "Idempotency-Key: idem_pdf_md_001" \
   -H "X-Correlation-ID: corr_pdf_md_001" \
   -F 'file=@./paper.pdf;type=application/pdf' \
@@ -162,7 +172,7 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
 
 ```bash
 curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "Idempotency-Key: idem_docx_md_001" \
   -H "X-Correlation-ID: corr_docx_md_001" \
   -F 'file=@./input.docx;type=application/vnd.openxmlformats-officedocument.wordprocessingml.document' \
@@ -178,7 +188,7 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
 
 ```bash
 curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "Idempotency-Key: idem_html_md_001" \
   -H "X-Correlation-ID: corr_html_md_001" \
   -F 'file=@./index.html;type=text/html' \
@@ -195,7 +205,7 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
 
 ```bash
 curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "Idempotency-Key: idem_docx_pdf_001" \
   -H "X-Correlation-ID: corr_docx_pdf_001" \
   -F 'file=@./input.docx;type=application/vnd.openxmlformats-officedocument.wordprocessingml.document' \
@@ -206,6 +216,28 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
       "output_format":"pdf",
       "css_filenames":[],
       "pdf_layout":{"paper_size":"a4","orientation":"portrait","margins_mm":12},
+      "reference_docx_filename":null
+    },
+    "retention":{"pin":false}
+  }'
+```
+
+### 5) Internal `html -> pdf` create job with trusted app bundle
+
+```bash
+curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_INTERNAL_API_KEY}" \
+  -H "Idempotency-Key: idem_html_pdf_trusted_001" \
+  -H "X-Correlation-ID: corr_html_pdf_trusted_001" \
+  -F 'file=@./poster.html;type=text/html' \
+  -F 'resources=@./resources.zip;type=application/zip' \
+  -F 'job_spec={
+    "api_version":"v2",
+    "source":{"kind":"upload","filename":"poster.html","format":"html"},
+    "conversion":{
+      "output_format":"pdf",
+      "input_trust_mode":"trusted_app_bundle",
+      "css_filenames":["poster.css"],
       "reference_docx_filename":null
     },
     "retention":{"pin":false}
@@ -224,7 +256,7 @@ Example list call:
 
 ```bash
 curl -sS "${SIR_BASE_URL}/v2/templates/docx" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "X-Correlation-ID: corr_templates_list_001"
 ```
 
@@ -232,7 +264,7 @@ Example template-selected `md -> docx` submission:
 
 ```bash
 curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "Idempotency-Key: idem_md_docx_template_001" \
   -H "X-Correlation-ID: corr_md_docx_template_001" \
   -F 'file=@./lesson.md;type=text/markdown' \
@@ -263,7 +295,7 @@ Pending retrieval example:
 
 ```bash
 curl -sS "${SIR_BASE_URL}/v2/convert/jobs/${JOB_ID}/result" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "X-Correlation-ID: corr_result_pending_001"
 ```
 
@@ -346,7 +378,7 @@ Projektveckor should call the same v2 endpoints directly with the same invariant
 - route set and lifecycle semantics are identical to Skriptoteket/HuleEdu
 - send canonical headers (`X-API-Key`, `Idempotency-Key`, `X-Correlation-ID`)
 - use mirrored secret policy from ops runbook:
-  - `PVP_SIR_CONVERT_A_LOT_API_KEY` must equal `SIR_CONVERT_A_LOT_API_KEY`
+  - `PVP_SIR_CONVERT_A_LOT_V2_API_KEY` must equal `SIR_CONVERT_A_LOT_V2_API_KEY`
 
 Minimal request pattern (Python/httpx):
 
@@ -358,7 +390,7 @@ from pathlib import Path
 import httpx
 
 base_url = os.environ["SIR_BASE_URL"].rstrip("/")
-api_key = os.environ["PVP_SIR_CONVERT_A_LOT_API_KEY"]
+api_key = os.environ["PVP_SIR_CONVERT_A_LOT_V2_API_KEY"]
 source = Path("paper.pdf")
 
 spec = {

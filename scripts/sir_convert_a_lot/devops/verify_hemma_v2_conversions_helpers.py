@@ -55,6 +55,12 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def count_pdf_image_objects(pdf_bytes: bytes) -> int:
+    """Return the number of embedded image objects in a PDF byte stream."""
+
+    return pdf_bytes.count(b"/Subtype /Image")
+
+
 def write_json(path: Path, payload: object) -> None:
     """Write payload as stable JSON file."""
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")

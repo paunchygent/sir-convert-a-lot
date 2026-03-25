@@ -56,12 +56,12 @@ if [[ ! -f "${sir_source_env}" ]]; then
   exit 1
 fi
 
-sir_key_line="$(grep -m1 '^SIR_CONVERT_A_LOT_API_KEY=' "${sir_source_env}" || true)"
+sir_key_line="$(grep -m1 '^SIR_CONVERT_A_LOT_V2_API_KEY=' "${sir_source_env}" || true)"
 if [[ -z "${sir_key_line}" ]]; then
-  echo "[sync-prod-env] missing SIR_CONVERT_A_LOT_API_KEY in ${sir_source_env}" >&2
+  echo "[sync-prod-env] missing SIR_CONVERT_A_LOT_V2_API_KEY in ${sir_source_env}" >&2
   exit 1
 fi
-sir_key_value="${sir_key_line#SIR_CONVERT_A_LOT_API_KEY=}"
+sir_key_value="${sir_key_line#SIR_CONVERT_A_LOT_V2_API_KEY=}"
 
 for repo in "${repos[@]}"; do
   repo_env="${APPS_ROOT}/${repo}/.env"
@@ -78,14 +78,14 @@ for repo in "${repos[@]}"; do
     cp "${repo_env}" "${canonical_env}"
   fi
 
-  ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_API_KEY" "${sir_key_value}"
+  ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_V2_API_KEY" "${sir_key_value}"
   if [[ "${repo}" == "sir-convert-a-lot" ]]; then
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE" "easyocr"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES" "sv,en"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR" "/opt/easyocr-models"
   fi
   if [[ "${repo}" == "projektveckor-portal" ]]; then
-    ensure_key "${canonical_env}" "PVP_SIR_CONVERT_A_LOT_API_KEY" "${sir_key_value}"
+    ensure_key "${canonical_env}" "PVP_SIR_CONVERT_A_LOT_V2_API_KEY" "${sir_key_value}"
   fi
 
   chmod 600 "${canonical_env}"

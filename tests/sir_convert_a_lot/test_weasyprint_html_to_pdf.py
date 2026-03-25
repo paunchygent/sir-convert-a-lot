@@ -20,6 +20,7 @@ from scripts.sir_convert_a_lot.infrastructure import weasyprint_html_to_pdf
 from scripts.sir_convert_a_lot.infrastructure.weasyprint_html_to_pdf import (
     HTML_TO_PDF_RESOURCE_BLOCKED,
     HtmlToPdfConversionError,
+    HtmlToPdfInputTrustMode,
     convert_html_to_pdf,
 )
 
@@ -39,6 +40,7 @@ def _install_fake_loader(
     *,
     resource_url_to_fetch: str,
     fetched_urls: list[str],
+    html_factory_calls: list[dict[str, object]] | None = None,
 ) -> None:
     class _FakeHtmlDocument:
         def __init__(self, *, url_fetcher: _Fetcher) -> None:
@@ -56,12 +58,12 @@ def _install_fake_loader(
             return None
 
     def _fake_html_factory(
-        *,
-        filename: str,
-        base_url: str,
-        url_fetcher: _Fetcher,
+        **kwargs: object,
     ) -> _FakeHtmlDocument:
-        del filename, base_url
+        if html_factory_calls is not None:
+            html_factory_calls.append(dict(kwargs))
+        url_fetcher = kwargs["url_fetcher"]
+        assert callable(url_fetcher)
         return _FakeHtmlDocument(url_fetcher=url_fetcher)
 
     def _fake_css_factory(*, filename: str) -> object:
@@ -113,6 +115,40 @@ def test_convert_html_to_pdf_allows_local_resource_within_workdir(
     assert fetched_urls == [local_image.resolve().as_uri()]
 
 
+def test_convert_html_to_pdf_trusted_bundle_uses_string_loading(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    html_path = tmp_path / "page.html"
+    html_path.write_text("<html><body>Hello</body></html>", encoding="utf-8")
+    local_image = tmp_path / "assets" / "logo.png"
+    local_image.parent.mkdir(parents=True)
+    local_image.write_bytes(b"\x89PNG")
+    output_pdf = tmp_path / "out.pdf"
+    fetched_urls: list[str] = []
+    html_factory_calls: list[dict[str, object]] = []
+
+    _install_fake_loader(
+        monkeypatch,
+        resource_url_to_fetch=local_image.resolve().as_uri(),
+        fetched_urls=fetched_urls,
+        html_factory_calls=html_factory_calls,
+    )
+
+    convert_html_to_pdf(
+        html_path=html_path,
+        output_pdf_path=output_pdf,
+        allowed_resource_root=tmp_path,
+        input_trust_mode=HtmlToPdfInputTrustMode.TRUSTED_APP_BUNDLE,
+    )
+
+    assert output_pdf.exists()
+    assert fetched_urls == [local_image.resolve().as_uri()]
+    assert len(html_factory_calls) == 1
+    assert "string" in html_factory_calls[0]
+    assert "filename" not in html_factory_calls[0]
+
+
 def test_convert_html_to_pdf_blocks_external_http_resource(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -133,6 +169,34 @@ def test_convert_html_to_pdf_blocks_external_http_resource(
             html_path=html_path,
             output_pdf_path=output_pdf,
             allowed_resource_root=tmp_path,
+        )
+
+    error = exc_info.value
+    assert error.code == HTML_TO_PDF_RESOURCE_BLOCKED
+    assert fetched_urls == []
+
+
+def test_convert_html_to_pdf_trusted_bundle_blocks_external_http_resource(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    html_path = tmp_path / "page.html"
+    html_path.write_text("<html><body>Hello</body></html>", encoding="utf-8")
+    output_pdf = tmp_path / "out.pdf"
+    fetched_urls: list[str] = []
+
+    _install_fake_loader(
+        monkeypatch,
+        resource_url_to_fetch="https://example.invalid/logo.png",
+        fetched_urls=fetched_urls,
+    )
+
+    with pytest.raises(HtmlToPdfConversionError) as exc_info:
+        convert_html_to_pdf(
+            html_path=html_path,
+            output_pdf_path=output_pdf,
+            allowed_resource_root=tmp_path,
+            input_trust_mode=HtmlToPdfInputTrustMode.TRUSTED_APP_BUNDLE,
         )
 
     error = exc_info.value

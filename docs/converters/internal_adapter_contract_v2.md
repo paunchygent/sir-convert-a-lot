@@ -4,7 +4,7 @@ id: CONV-internal-adapter-contract-v2
 title: Internal Adapter Contract v2
 status: active
 created: 2026-03-04
-updated: 2026-03-04
+updated: 2026-03-25
 owners:
   - platform
 tags:
@@ -99,6 +99,16 @@ Canonical reference implementation:
   - `prepare_submission(...)`
   - `submit_pdf_for_profile(...)`
 
+### 7. Trusted HTML bundle policy
+
+- Internal adapters may opt into `conversion.input_trust_mode="trusted_app_bundle"` only for
+  app-owned `html -> pdf` bundles that the consumer renderer generates itself.
+- Trusted HTML bundle submissions must use the internal adapter API key lane
+  (`SIR_CONVERT_A_LOT_INTERNAL_API_KEY`), not the public service key.
+- Adapters must not silently elevate ordinary HTML uploads into trusted mode.
+- Bundled assets must still remain job-local resources; adapters must not rely on external
+  network URLs or arbitrary host filesystem reads.
+
 ## Conformance Gate (Primary)
 
 The acceptance gate for this contract is automated conformance tests in:
@@ -116,6 +126,7 @@ Required scenario coverage includes:
 ## Tunnel and Operational Expectations
 
 - Local/internal consumers use the internal HTTP endpoint plus `X-API-Key`.
+- Consumers that use `trusted_app_bundle` must authenticate with the internal adapter key lane.
 - Tunnel-first local development follows:
   - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 

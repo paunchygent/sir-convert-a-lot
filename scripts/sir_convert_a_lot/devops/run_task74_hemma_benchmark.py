@@ -205,7 +205,7 @@ def _verify_env_contract() -> VerifiedEnvContract:
 
     env_values = _parse_env_file(CANONICAL_ENV_PATH)
     required_keys = (
-        "SIR_CONVERT_A_LOT_API_KEY",
+        "SIR_CONVERT_A_LOT_V2_API_KEY",
         "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE",
         "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES",
         "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR",
@@ -227,7 +227,7 @@ def _verify_env_contract() -> VerifiedEnvContract:
         raise SystemExit("SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES must not be empty.")
 
     return VerifiedEnvContract(
-        api_key=env_values["SIR_CONVERT_A_LOT_API_KEY"],
+        api_key=env_values["SIR_CONVERT_A_LOT_V2_API_KEY"],
         default_ocr_engine=env_values["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"],
         default_ocr_languages=default_languages,
         canonical_env_path=CANONICAL_ENV_PATH,

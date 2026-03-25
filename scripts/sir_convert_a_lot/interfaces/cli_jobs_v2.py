@@ -32,9 +32,9 @@ jobs_app = typer.Typer(help="Manage v2 conversion jobs (cancel/partial/checkpoin
 
 
 def _resolve_api_key(value: str | None) -> str:
-    api_key = value or os.getenv("SIR_CONVERT_A_LOT_API_KEY")
+    api_key = value or os.getenv("SIR_CONVERT_A_LOT_V2_API_KEY")
     if api_key is None or api_key.strip() == "":
-        raise typer.BadParameter("Missing --api-key and SIR_CONVERT_A_LOT_API_KEY env var.")
+        raise typer.BadParameter("Missing --api-key and SIR_CONVERT_A_LOT_V2_API_KEY env var.")
     return api_key
 
 

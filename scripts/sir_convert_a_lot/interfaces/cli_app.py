@@ -110,7 +110,7 @@ def convert_command(
     api_key: str | None = typer.Option(
         None,
         "--api-key",
-        help="X-API-Key value. Defaults to SIR_CONVERT_A_LOT_API_KEY env var.",
+        help="X-API-Key value. Defaults to SIR_CONVERT_A_LOT_V2_API_KEY env var.",
     ),
     wait_seconds: int = typer.Option(5, "--wait-seconds", min=0, max=20),
     max_poll_seconds: int = typer.Option(120, "--max-poll-seconds", min=5),
@@ -253,10 +253,10 @@ def convert_command(
         )
 
     if route.requires_service:
-        resolved_api_key = api_key or os.getenv("SIR_CONVERT_A_LOT_API_KEY")
+        resolved_api_key = api_key or os.getenv("SIR_CONVERT_A_LOT_V2_API_KEY")
         if resolved_api_key is None or resolved_api_key.strip() == "":
             raise typer.BadParameter(
-                "Missing API key. Provide --api-key or set SIR_CONVERT_A_LOT_API_KEY."
+                "Missing API key. Provide --api-key or set SIR_CONVERT_A_LOT_V2_API_KEY."
             )
     else:
         resolved_api_key = ""

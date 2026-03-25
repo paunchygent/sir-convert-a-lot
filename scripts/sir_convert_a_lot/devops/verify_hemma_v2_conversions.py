@@ -16,6 +16,8 @@ Relationships:
 from __future__ import annotations
 
 import argparse
+import base64
+import json
 import os
 import subprocess
 import sys
@@ -27,6 +29,7 @@ from scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions_helpers import
     ArtifactEvidence,
     assert_readyz_contract,
     build_resources_zip,
+    count_pdf_image_objects,
     fetch_json,
     probe_docker_runtime,
     run_v2_conversion,
@@ -34,6 +37,11 @@ from scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions_helpers import
     write_json,
 )
 from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import ClientErrorV2
+
+_TRUSTED_PROBE_LOGO_PNG_BASE64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+nZ1cA"
+    "AAAASUVORK5CYII="
+)
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -51,8 +59,13 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--api-key",
-        default=os.environ.get("SIR_CONVERT_A_LOT_API_KEY", "dev-only-key"),
+        default=os.environ.get("SIR_CONVERT_A_LOT_V2_API_KEY", "dev-only-key"),
         help="X-API-Key value used for service requests.",
+    )
+    parser.add_argument(
+        "--internal-api-key",
+        default=os.environ.get("SIR_CONVERT_A_LOT_INTERNAL_API_KEY", ""),
+        help="Internal adapter X-API-Key used for trusted app-bundle probes.",
     )
     parser.add_argument(
         "--output-root",
@@ -116,6 +129,17 @@ def _assert_contains_swedish_diacritics(text: str, *, label: str) -> None:
     if missing:
         joined = "".join(missing)
         raise SystemExit(f"{label} OCR output is missing Swedish diacritics: missing={joined!r}")
+
+
+def _require_internal_api_key(value: str) -> str:
+    """Return the trusted-bundle verifier key or fail closed when missing."""
+
+    internal_api_key = value.strip()
+    if internal_api_key == "":
+        raise SystemExit(
+            "Missing --internal-api-key; trusted_app_bundle verification cannot run."
+        )
+    return internal_api_key
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -201,6 +225,7 @@ def main(argv: list[str] | None = None) -> int:
 
     resources_zip_bytes = build_resources_zip(files={css_path.name: css_path.read_bytes()})
     (fixtures_dir / "resources.zip").write_bytes(resources_zip_bytes)
+    logo_bytes = base64.b64decode(_TRUSTED_PROBE_LOGO_PNG_BASE64)
 
     pdf_fixture = Path(args.pdf_fixture)
     if not pdf_fixture.exists():
@@ -208,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
 
     v2_results: dict[str, ArtifactEvidence] = {}
     evidence_payloads: dict[str, dict[str, object]] = {}
+    trusted_probe_results: dict[str, object] = {}
 
     swedish_pdf_fixture = fixtures_dir / "task77_swedish_ocr_fixture.pdf"
     _write_swedish_ocr_fixture_pdf(swedish_pdf_fixture)
@@ -391,6 +417,100 @@ def main(argv: list[str] | None = None) -> int:
                 "swedish_ocr_pdf_to_md must report ocr_languages_used including sv,en "
                 f"(got {sorted(swedish_langs)!r})."
             )
+
+        internal_api_key = _require_internal_api_key(args.internal_api_key)
+        trusted_html_path = fixtures_dir / "task249_trusted_bundle.html"
+        trusted_css_path = fixtures_dir / "task249_trusted_bundle.css"
+        trusted_html_path.write_text(
+            (
+                "<!doctype html>\n"
+                "<html><head><meta charset='utf-8'><title>Trusted Bundle</title></head>\n"
+                "<body><h1>Trusted bundle probe</h1>"
+                "<img src='logo.png' alt='logo'></body></html>\n"
+            ),
+            encoding="utf-8",
+        )
+        trusted_css_path.write_text("img { width: 24px; height: 24px; }\n", encoding="utf-8")
+        trusted_resources_zip = build_resources_zip(
+            files={
+                "logo.png": logo_bytes,
+                trusted_css_path.name: trusted_css_path.read_bytes(),
+            }
+        )
+        trusted_spec = _spec_v2(
+            source=trusted_html_path,
+            source_format="html",
+            output_format="pdf",
+            css=False,
+        )
+        trusted_conversion = trusted_spec.get("conversion")
+        if not isinstance(trusted_conversion, dict):
+            raise SystemExit("trusted bundle probe requires dict conversion payload.")
+        trusted_conversion["input_trust_mode"] = "trusted_app_bundle"
+        trusted_conversion["css_filenames"] = [trusted_css_path.name]
+
+        trusted_ev, trusted_payload = run_v2_conversion(
+            http_base_url=service_url,
+            api_key=internal_api_key,
+            output_dir=artifacts_dir,
+            label="html_to_pdf_trusted_bundle",
+            source_path=trusted_html_path,
+            job_spec=trusted_spec,
+            artifact_suffix=".pdf",
+            wait_seconds=args.wait_seconds,
+            max_poll_seconds=args.max_poll_seconds,
+            resources_zip_bytes=trusted_resources_zip,
+        )
+        trusted_image_count = count_pdf_image_objects(trusted_ev.artifact_path.read_bytes())
+        if trusted_image_count <= 0:
+            raise SystemExit(
+                "Trusted html->pdf bundle probe did not embed any PDF image objects."
+            )
+        v2_results["html_to_pdf_trusted_bundle"] = trusted_ev
+        evidence_payloads["html_to_pdf_trusted_bundle_result"] = trusted_payload
+        trusted_probe_results["trusted_bundle"] = {
+            "job_id": trusted_ev.job_id,
+            "pdf_image_objects": trusted_image_count,
+        }
+
+        public_probe_response = httpx.post(
+            f"{service_url}/v2/convert/jobs",
+            params={"wait_seconds": 0},
+            headers={
+                "X-API-Key": args.api_key,
+                "Idempotency-Key": "idem_task249_public_reject",
+                "X-Correlation-ID": "corr_task249_public_reject",
+            },
+            data={"job_spec": json.dumps(trusted_spec, separators=(",", ":"), sort_keys=True)},
+            files={
+                "file": (
+                    trusted_html_path.name,
+                    trusted_html_path.read_bytes(),
+                    "text/html",
+                ),
+                "resources": ("resources.zip", trusted_resources_zip, "application/zip"),
+            },
+            timeout=30.0,
+        )
+        if public_probe_response.status_code != 403:
+            raise SystemExit(
+                "Public key trusted bundle probe must fail with HTTP 403 "
+                f"(got {public_probe_response.status_code})."
+            )
+        public_probe_payload = public_probe_response.json()
+        write_json(
+            responses_dir / "trusted_bundle_public_lane_rejection.json",
+            public_probe_payload,
+        )
+        error_obj = public_probe_payload.get("error")
+        if not isinstance(error_obj, dict) or error_obj.get("code") != "insufficient_scope":
+            raise SystemExit(
+                "Public key trusted bundle probe must return error.code='insufficient_scope'."
+            )
+        trusted_probe_results["public_lane_rejection"] = {
+            "status_code": public_probe_response.status_code,
+            "error_code": error_obj.get("code"),
+        }
     except ClientErrorV2 as exc:
         raise SystemExit(f"Verification failed: {exc.code} ({exc.message})") from exc
 
@@ -426,6 +546,7 @@ def main(argv: list[str] | None = None) -> int:
             }
             for name, ev in v2_results.items()
         },
+        "trusted_probes": trusted_probe_results,
     }
     write_json(output_root / "report.json", report)
 
@@ -467,6 +588,23 @@ def main(argv: list[str] | None = None) -> int:
         if ev.ocr_languages_used is not None:
             langs = ",".join(ev.ocr_languages_used)
             md_lines.append(f"- ocr_languages_used: `{langs}`")
+        md_lines.append("")
+
+    if trusted_probe_results:
+        md_lines.append("## Trusted bundle probes")
+        md_lines.append("")
+        trusted_bundle = trusted_probe_results.get("trusted_bundle")
+        if isinstance(trusted_bundle, dict):
+            md_lines.append(
+                f"- trusted_bundle pdf_image_objects: `{trusted_bundle.get('pdf_image_objects')}`"
+            )
+            md_lines.append(f"- trusted_bundle job_id: `{trusted_bundle.get('job_id')}`")
+        public_lane = trusted_probe_results.get("public_lane_rejection")
+        if isinstance(public_lane, dict):
+            md_lines.append(
+                "- public_lane_rejection: "
+                f"`{public_lane.get('status_code')} / {public_lane.get('error_code')}`"
+            )
         md_lines.append("")
 
     md_lines.append("## Files")

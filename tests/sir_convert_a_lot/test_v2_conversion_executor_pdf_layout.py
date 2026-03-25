@@ -42,9 +42,10 @@ def test_execute_v2_job_conversion_md_to_pdf_applies_pdf_layout_preset(
         css_paths: tuple[Path, ...] = (),
         base_url: str | None = None,
         allowed_resource_root: Path | None = None,
+        input_trust_mode: object | None = None,
     ) -> None:
         nonlocal css_seen
-        del html_path, base_url, allowed_resource_root
+        del html_path, base_url, allowed_resource_root, input_trust_mode
         css_seen = css_paths
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
@@ -89,9 +90,10 @@ def test_execute_v2_job_conversion_html_to_pdf_applies_pdf_layout_preset(
         css_paths: tuple[Path, ...] = (),
         base_url: str | None = None,
         allowed_resource_root: Path | None = None,
+        input_trust_mode: object | None = None,
     ) -> None:
         nonlocal css_seen
-        del html_path, base_url, allowed_resource_root
+        del html_path, base_url, allowed_resource_root, input_trust_mode
         css_seen = css_paths
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
@@ -139,9 +141,10 @@ def test_execute_v2_job_conversion_html_to_pdf_skips_preset_for_author_owned_mod
         css_paths: tuple[Path, ...] = (),
         base_url: str | None = None,
         allowed_resource_root: Path | None = None,
+        input_trust_mode: object | None = None,
     ) -> None:
         nonlocal css_seen
-        del html_path, base_url, allowed_resource_root
+        del html_path, base_url, allowed_resource_root, input_trust_mode
         css_seen = css_paths
         output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
 
@@ -168,3 +171,45 @@ def test_execute_v2_job_conversion_html_to_pdf_skips_preset_for_author_owned_mod
     assert result.pipeline_used == "html_to_pdf_v2"
     assert css_seen is not None
     assert [path.name for path in css_seen] == ["print.css"]
+
+
+def test_execute_v2_job_conversion_html_to_pdf_threads_trusted_bundle_mode(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seen_trust_mode: object | None = None
+
+    def _fake_convert_html_to_pdf(
+        *,
+        html_path: Path,
+        output_pdf_path: Path,
+        css_paths: tuple[Path, ...] = (),
+        base_url: str | None = None,
+        allowed_resource_root: Path | None = None,
+        input_trust_mode: object | None = None,
+    ) -> None:
+        nonlocal seen_trust_mode
+        del html_path, css_paths, base_url, allowed_resource_root
+        seen_trust_mode = input_trust_mode
+        output_pdf_path.write_bytes(b"%PDF-1.7\nstub-pdf\n")
+
+    monkeypatch.setattr(v2_non_pdf_routes_html, "convert_html_to_pdf", _fake_convert_html_to_pdf)
+
+    job = _build_job(
+        tmp_path,
+        source_filename="page.html",
+        source_bytes=b"<html><body>Hello</body></html>",
+        source_format=SourceFormatV2.HTML,
+        output_format=OutputFormatV2.PDF,
+        input_trust_mode="trusted_app_bundle",
+    )
+
+    execute_v2_job_conversion(
+        job=job,
+        config=_service_config(tmp_path),
+        docling_backend=_UnusedBackend(),
+        pymupdf_backend=_UnusedBackend(),
+    )
+
+    assert seen_trust_mode is not None
+    assert getattr(seen_trust_mode, "value", None) == "trusted_app_bundle"

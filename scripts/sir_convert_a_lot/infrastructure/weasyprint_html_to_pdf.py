@@ -14,6 +14,7 @@ Relationships:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Protocol
 from urllib.parse import unquote, urlparse
@@ -52,17 +53,18 @@ class _UrlFetcher(Protocol):
 
 
 class _HtmlFactory(Protocol):
-    def __call__(
-        self,
-        *,
-        filename: str,
-        base_url: str,
-        url_fetcher: _UrlFetcher,
-    ) -> _HtmlDocument: ...
+    def __call__(self, **kwargs: object) -> _HtmlDocument: ...
 
 
 class _CssFactory(Protocol):
     def __call__(self, *, filename: str) -> object: ...
+
+
+class HtmlToPdfInputTrustMode(StrEnum):
+    """Execution modes for HTML-to-PDF rendering resource trust."""
+
+    UNTRUSTED_UPLOAD = "untrusted_upload"
+    TRUSTED_APP_BUNDLE = "trusted_app_bundle"
 
 
 def _load_weasyprint() -> tuple[_HtmlFactory, _CssFactory, _UrlFetcher]:
@@ -144,6 +146,28 @@ def _build_restricted_url_fetcher(
     return _restricted_url_fetcher
 
 
+def _build_html_document(
+    *,
+    html_factory: _HtmlFactory,
+    html_path: Path,
+    base_url: str,
+    url_fetcher: _UrlFetcher,
+    input_trust_mode: HtmlToPdfInputTrustMode,
+) -> _HtmlDocument:
+    if input_trust_mode is HtmlToPdfInputTrustMode.TRUSTED_APP_BUNDLE:
+        return html_factory(
+            string=html_path.read_text(encoding="utf-8", errors="replace"),
+            base_url=base_url,
+            url_fetcher=url_fetcher,
+        )
+
+    return html_factory(
+        filename=html_path.as_posix(),
+        base_url=base_url,
+        url_fetcher=url_fetcher,
+    )
+
+
 def convert_html_to_pdf(
     *,
     html_path: Path,
@@ -151,6 +175,7 @@ def convert_html_to_pdf(
     css_paths: tuple[Path, ...] = (),
     base_url: str | None = None,
     allowed_resource_root: Path | None = None,
+    input_trust_mode: HtmlToPdfInputTrustMode = HtmlToPdfInputTrustMode.UNTRUSTED_UPLOAD,
 ) -> None:
     """Convert a local HTML file (+ optional CSS files) into a PDF."""
 
@@ -169,10 +194,12 @@ def convert_html_to_pdf(
     )
 
     try:
-        HTML(
-            filename=html_path.as_posix(),
+        _build_html_document(
+            html_factory=HTML,
+            html_path=html_path,
             base_url=resolved_base_url,
             url_fetcher=restricted_url_fetcher,
+            input_trust_mode=input_trust_mode,
         ).write_pdf(
             output_pdf_path.as_posix(),
             stylesheets=stylesheets,

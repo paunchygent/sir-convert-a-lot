@@ -32,6 +32,10 @@ from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
+from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
+    require_api_key_v2,
+    require_job_access_v2,
+)
 
 
 def _content_type_for_output(output_format: OutputFormatV2) -> str:
@@ -44,31 +48,17 @@ def _content_type_for_output(output_format: OutputFormatV2) -> str:
     raise AssertionError(f"Unsupported output_format: {output_format}")
 
 
-def _require_api_key(request: Request, *, service_started_at: str) -> None:
-    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-    api_key = request.headers.get("X-API-Key")
-    if api_key != runtime.config.api_key:
-        raise ServiceError(
-            status_code=401,
-            code="auth_invalid_api_key",
-            message="Missing or invalid X-API-Key.",
-            retryable=False,
-        )
-
-
 def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
     @router.get("/v2/convert/jobs/{job_id}/result")
     async def get_result(job_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
+        job = require_job_access_v2(auth_context=auth_context, job=job)
 
         if job.status not in TERMINAL_JOB_STATUSES:
             pending = JobPendingResultResponseV2(job_id=job.job_id, status=job.status)
@@ -138,16 +128,14 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
 
     @router.get("/v2/convert/jobs/{job_id}/artifact")
     async def get_artifact(job_id: str, request: Request) -> Response:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
+        job = require_job_access_v2(auth_context=auth_context, job=job)
 
         if job.status not in TERMINAL_JOB_STATUSES:
             pending = JobPendingResultResponseV2(job_id=job.job_id, status=job.status)
@@ -171,16 +159,14 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
 
     @router.get("/v2/convert/jobs/{job_id}/artifact/partial")
     async def get_partial_artifact(job_id: str, request: Request) -> Response:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
+        job = require_job_access_v2(auth_context=auth_context, job=job)
 
         if job.source_format != SourceFormatV2.PDF:
             raise ServiceError(
@@ -220,16 +206,14 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
 
     @router.get("/v2/convert/jobs/{job_id}/checkpoint")
     async def get_checkpoint(job_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        if job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
+        job = require_job_access_v2(auth_context=auth_context, job=job)
 
         if job.source_format != SourceFormatV2.PDF:
             raise ServiceError(

@@ -36,6 +36,32 @@ def _client(tmp_path: Path) -> TestClient:
     return TestClient(app)
 
 
+def test_list_docx_templates_rejects_internal_api_key(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            internal_api_key="internal-secret-key",
+            data_root=tmp_path / "service_data_internal_templates",
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+        )
+    )
+    client = TestClient(app)
+
+    response = client.get(
+        "/v2/templates/docx",
+        headers={
+            "X-API-Key": "internal-secret-key",
+            "X-Correlation-ID": "corr_templates_internal_rejected",
+        },
+    )
+
+    assert response.status_code == 401
+    payload = response.json()
+    assert payload["api_version"] == "v2"
+    assert payload["error"]["code"] == "auth_invalid_api_key"
+
+
 def test_list_docx_templates_requires_api_key(tmp_path: Path) -> None:
     client = _client(tmp_path)
 

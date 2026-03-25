@@ -9,7 +9,7 @@ Relationships:
     - Imported by `story31_stability_lab_runner.py` for report persistence.
     - Reuses `story31_stability_lab_contracts.py` as the single typed report
       contract for the T229/T230, T233, T235, T236, T237, T240, T241, T243,
-      T244, and T245
+      T244, T245, and T246
       sections.
 """
 
@@ -68,6 +68,7 @@ def build_report_markdown(report: Story31StabilityLabReport) -> str:
     _append_t243_post_t241_layer15_residual_output_section(lines, report)
     _append_t244_post_t243_layer15_output_return_section(lines, report)
     _append_t245_post_t244_layer15_output_multiply_confirmation_section(lines, report)
+    _append_t246_post_t245_fp32_scaled_output_section(lines, report)
     return "\n".join(lines)
 
 
@@ -401,6 +402,41 @@ def _append_t245_post_t244_layer15_output_multiply_confirmation_section(
             f"- Assessed variant: `{assessment.stabilization_variant}`",
             f"- Target loss kind: `{assessment.target_loss_kind}`",
             f"- Confirmation classification: `{assessment.confirmation_classification or '-'}`",
+            f"- Dominant surface: `{assessment.dominant_surface or '-'}`",
+            f"- Evidence ambiguous: `{assessment.evidence_is_ambiguous}`",
+            f"- Ambiguity reason: `{assessment.ambiguity_reason or '-'}`",
+            f"- Next task rule: `{assessment.next_task_rule}`",
+            "",
+            "| Case | Role | Non-finite | Talker Hook | Matched Corridor Surface |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+    )
+    for assessment_row in assessment.comparison_rows:
+        lines.append(
+            "| "
+            f"{assessment_row.case_id} | "
+            f"{assessment_row.role} | "
+            f"{assessment_row.case_has_non_finite} | "
+            f"{assessment_row.first_non_finite_talker_core_hook_tensor or '-'} | "
+            f"{assessment_row.matched_corridor_surface or '-'} |"
+        )
+
+
+def _append_t246_post_t245_fp32_scaled_output_section(
+    lines: list[str],
+    report: Story31StabilityLabReport,
+) -> None:
+    assessment = report.post_t245_fp32_scaled_layer15_output_assessment
+    if assessment is None:
+        return
+    lines.extend(
+        [
+            "",
+            "## T246 Post-T245 FP32-Scaled Layer-15 Output Assessment",
+            "",
+            f"- Assessed variant: `{assessment.stabilization_variant}`",
+            f"- Target loss kind: `{assessment.target_loss_kind}`",
+            f"- Convergence classification: `{assessment.convergence_classification or '-'}`",
             f"- Dominant surface: `{assessment.dominant_surface or '-'}`",
             f"- Evidence ambiguous: `{assessment.evidence_is_ambiguous}`",
             f"- Ambiguity reason: `{assessment.ambiguity_reason or '-'}`",

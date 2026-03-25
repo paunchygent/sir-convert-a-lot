@@ -38,6 +38,10 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import (
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
+from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
+    require_api_key_v2,
+    require_job_access_v2,
+)
 
 
 def _make_job_links(job_id: str) -> JobLinksV2:
@@ -77,22 +81,14 @@ def _job_record_response(job: StoredJobV2) -> JobRecordResponseV2:
     )
 
 
-def _require_api_key(request: Request, *, service_started_at: str) -> None:
-    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-    api_key = request.headers.get("X-API-Key")
-    if api_key != runtime.config.api_key:
-        raise ServiceError(
-            status_code=401,
-            code="auth_invalid_api_key",
-            message="Missing or invalid X-API-Key.",
-            retryable=False,
-        )
-
-
 def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
     @router.post("/v2/convert/jobs/{job_id}/resume")
     async def resume_job(job_id: str, request: Request) -> JSONResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -102,16 +98,10 @@ def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str)
                 code="idempotency_key_missing",
                 message="Missing required Idempotency-Key header.",
                 retryable=False,
-            )
+        )
 
         source_job = runtime.get_job(job_id)
-        if source_job is None:
-            raise ServiceError(
-                status_code=404,
-                code="job_not_found",
-                message="Job not found or expired.",
-                retryable=False,
-            )
+        source_job = require_job_access_v2(auth_context=auth_context, job=source_job)
 
         if source_job.source_format != SourceFormatV2.PDF or source_job.output_format not in {
             OutputFormatV2.MD,
@@ -143,8 +133,10 @@ def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str)
             )
         checkpoint_sha256 = f"sha256:{hashlib.sha256(checkpoint_path.read_bytes()).hexdigest()}"
 
-        api_key = request.headers.get("X-API-Key", "")
-        scope_key = f"{api_key}:POST:/v2/convert/jobs/{job_id}/resume:{idempotency_key}"
+        scope_key = (
+            f"{auth_context.owner_api_key_scope}:POST:/v2/convert/jobs/{job_id}/resume:"
+            f"{idempotency_key}"
+        )
         request_fingerprint = fingerprint_for_resume_request_v2(
             source_job_id=job_id,
             source_spec_payload=source_job.spec.model_dump(mode="json"),
@@ -189,6 +181,8 @@ def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str)
         )
         resumed_job = runtime.create_job(
             spec=source_job.spec,
+            owner_auth_lane=auth_context.lane.value,
+            owner_api_key_scope=auth_context.owner_api_key_scope,
             upload_bytes=source_job.upload_path.read_bytes(),
             resources_zip_bytes=resources_zip_bytes,
             reference_docx_bytes=reference_docx_bytes,

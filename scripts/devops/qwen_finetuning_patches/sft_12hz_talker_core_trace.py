@@ -32,6 +32,7 @@ _POST_T237_DOWNSTREAM_CONVERGENCE_LAYER_INDICES = (15, 16)
 _POST_T240_LAYER15_OUTPUT_SPLIT_LAYER_INDICES = (15, 16)
 _POST_T241_LAYER15_RESIDUAL_OUTPUT_LAYER_INDICES = (15, 16)
 _POST_T243_LAYER15_OUTPUT_RETURN_LAYER_INDICES = (15, 16)
+_POST_T245_FP32_SCALED_OUTPUT_LAYER_INDICES = (15, 16)
 
 
 @dataclass(frozen=True)
@@ -121,6 +122,15 @@ def talker_core_post_t243_layer15_output_return_trace_names() -> tuple[str, ...]
     """Return the fixed T244 split of the winner-specific layer-15 return path."""
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.output.pre_output_scale_return",
+        f"{_TALKER_CORE_PREFIX}layer_15.output",
+        f"{_TALKER_CORE_PREFIX}layer_16.input",
+    )
+
+
+def talker_core_post_t245_fp32_scaled_output_trace_names() -> tuple[str, ...]:
+    """Return the fixed T246 split of the fp32-scaled layer-15 output path."""
+    return (
+        f"{_TALKER_CORE_PREFIX}layer_15.output.fp32_scaled_output",
         f"{_TALKER_CORE_PREFIX}layer_15.output",
         f"{_TALKER_CORE_PREFIX}layer_16.input",
     )
@@ -338,6 +348,20 @@ def iter_talker_core_post_t243_layer15_output_return_trace_targets(
     layer_15, layer_16 = (
         resolve_talker_decoder_layer(model, layer_index)
         for layer_index in _POST_T243_LAYER15_OUTPUT_RETURN_LAYER_INDICES
+    )
+    return (
+        _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
+        _forward_pre_target(name=f"{_TALKER_CORE_PREFIX}layer_16.input", module=layer_16),
+    )
+
+
+def iter_talker_core_post_t245_fp32_scaled_output_trace_targets(
+    model: object,
+) -> tuple[TalkerCoreTraceTarget, ...]:
+    """Return the narrowed T246 corridor beneath the fixed T245 confirmation seam."""
+    layer_15, layer_16 = (
+        resolve_talker_decoder_layer(model, layer_index)
+        for layer_index in _POST_T245_FP32_SCALED_OUTPUT_LAYER_INDICES
     )
     return (
         _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),

@@ -303,6 +303,8 @@ class ServiceRuntimeV2:
         return StoredJobV2(
             job_id=record.job_id,
             spec=record.spec,
+            owner_auth_lane=record.owner_auth_lane,
+            owner_api_key_scope=record.owner_api_key_scope,
             source_filename=record.source_filename,
             source_format=record.source_format,
             output_format=record.output_format,
@@ -433,6 +435,8 @@ class ServiceRuntimeV2:
         self,
         *,
         spec: JobSpecV2,
+        owner_auth_lane: str = "public",
+        owner_api_key_scope: str | None = None,
         upload_bytes: bytes,
         resources_zip_bytes: bytes | None,
         reference_docx_bytes: bytes | None,
@@ -442,6 +446,8 @@ class ServiceRuntimeV2:
         record = self.job_store.create_job(
             job_id=job_id,
             spec=spec,
+            owner_auth_lane=owner_auth_lane,
+            owner_api_key_scope=owner_api_key_scope,
             upload_bytes=upload_bytes,
             resources_zip_bytes=resources_zip_bytes,
             reference_docx_bytes=reference_docx_bytes,

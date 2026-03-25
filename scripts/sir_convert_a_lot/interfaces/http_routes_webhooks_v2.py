@@ -33,19 +33,7 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
-
-
-def _require_api_key(request: Request, *, service_started_at: str) -> str:
-    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-    api_key = request.headers.get("X-API-Key")
-    if api_key != runtime.config.api_key:
-        raise ServiceError(
-            status_code=401,
-            code="auth_invalid_api_key",
-            message="Missing or invalid X-API-Key.",
-            retryable=False,
-        )
-    return api_key
+from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import require_api_key_v2
 
 
 def _require_onboarding_enabled(runtime: ServiceRuntimeV2) -> None:
@@ -107,7 +95,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         request: Request,
         body: WebhookSubscriptionCreateRequestV2,
     ) -> JSONResponse:
-        api_key = _require_api_key(request, service_started_at=service_started_at)
+        api_key = require_api_key_v2(request, service_started_at=service_started_at).api_key
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
@@ -126,7 +114,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.get("/v2/push/webhooks/subscriptions")
     async def list_subscriptions(request: Request) -> JSONResponse:
-        api_key = _require_api_key(request, service_started_at=service_started_at)
+        api_key = require_api_key_v2(request, service_started_at=service_started_at).api_key
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:read")
@@ -139,7 +127,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.get("/v2/push/webhooks/subscriptions/{subscription_id}")
     async def get_subscription(subscription_id: str, request: Request) -> JSONResponse:
-        api_key = _require_api_key(request, service_started_at=service_started_at)
+        api_key = require_api_key_v2(request, service_started_at=service_started_at).api_key
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:read")
@@ -157,7 +145,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         request: Request,
         body: WebhookSubscriptionUpdateRequestV2,
     ) -> JSONResponse:
-        api_key = _require_api_key(request, service_started_at=service_started_at)
+        api_key = require_api_key_v2(request, service_started_at=service_started_at).api_key
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
@@ -179,7 +167,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         body: WebhookSecretRotateRequestV2 | None = None,
     ) -> JSONResponse:
         del body
-        api_key = _require_api_key(request, service_started_at=service_started_at)
+        api_key = require_api_key_v2(request, service_started_at=service_started_at).api_key
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
@@ -201,7 +189,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
         request: Request,
         body: WebhookSecretRevokeRequestV2 | None = None,
     ) -> JSONResponse:
-        api_key = _require_api_key(request, service_started_at=service_started_at)
+        api_key = require_api_key_v2(request, service_started_at=service_started_at).api_key
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")
@@ -221,7 +209,7 @@ def build_webhook_onboarding_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.delete("/v2/push/webhooks/subscriptions/{subscription_id}")
     async def delete_subscription(subscription_id: str, request: Request) -> Response:
-        api_key = _require_api_key(request, service_started_at=service_started_at)
+        api_key = require_api_key_v2(request, service_started_at=service_started_at).api_key
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         _require_onboarding_enabled(runtime)
         _require_capability(runtime, required="push:write")

@@ -16,11 +16,14 @@ import json
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces import http_routes_job_artifacts_v2, http_routes_jobs_v2
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 from tests.sir_convert_a_lot.http_routes_jobs_v2_edge_cases_test_support import (
     build_client,
     disable_run_job_async,
@@ -269,6 +272,164 @@ def test_create_job_accepts_author_owned_page_css_mode_for_html_to_pdf(
     assert payload["api_version"] == "v2"
     assert payload["job"]["source_format"] == "html"
     assert payload["job"]["output_format"] == "pdf"
+
+
+def test_create_job_rejects_trusted_app_bundle_on_public_key(tmp_path: Path) -> None:
+    client, _ = build_client(tmp_path, internal_api_key="internal-secret-key")
+    spec = _html_to_pdf_spec("index.html")
+    conversion = spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["input_trust_mode"] = "trusted_app_bundle"
+
+    response = post_create(
+        client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=spec,
+        api_key="secret-key",
+    )
+
+    assert response.status_code == 403
+    payload = response.json()
+    assert payload["error"]["code"] == "insufficient_scope"
+    assert payload["error"]["details"] == {
+        "required_trust_mode": "trusted_app_bundle",
+        "surface": "v2_html_to_pdf",
+    }
+
+
+def test_create_job_accepts_trusted_app_bundle_on_internal_key(tmp_path: Path) -> None:
+    client, _ = build_client(tmp_path, internal_api_key="internal-secret-key")
+    spec = _html_to_pdf_spec("index.html")
+    conversion = spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["input_trust_mode"] = "trusted_app_bundle"
+
+    response = post_create(
+        client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=spec,
+        api_key="internal-secret-key",
+    )
+
+    assert response.status_code in {200, 202}
+    payload = response.json()
+    assert payload["job"]["source_format"] == "html"
+    assert payload["job"]["output_format"] == "pdf"
+
+
+def test_create_job_idempotency_rejects_trust_mode_payload_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, _ = build_client(tmp_path, internal_api_key="internal-secret-key")
+    disable_run_job_async(monkeypatch)
+    trusted_spec = _html_to_pdf_spec("index.html")
+    trusted_conversion = trusted_spec["conversion"]
+    assert isinstance(trusted_conversion, dict)
+    trusted_conversion["input_trust_mode"] = "trusted_app_bundle"
+
+    first_response = post_create(
+        client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=trusted_spec,
+        api_key="internal-secret-key",
+        idempotency_key="idem-trusted-drift",
+    )
+    assert first_response.status_code in {200, 202}
+
+    untrusted_spec = _html_to_pdf_spec("index.html")
+    second_response = post_create(
+        client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=untrusted_spec,
+        api_key="internal-secret-key",
+        idempotency_key="idem-trusted-drift",
+    )
+
+    assert second_response.status_code == 409
+    payload = second_response.json()
+    assert payload["error"]["code"] == "idempotency_key_reused_with_different_payload"
+
+
+def test_create_job_idempotency_replay_survives_public_key_rotation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    disable_run_job_async(monkeypatch)
+    client, app = build_client(tmp_path)
+
+    first_response = post_create(
+        client,
+        idempotency_key="idem-rotation-replay",
+    )
+    assert first_response.status_code in {200, 202}
+    first_job_id = first_response.json()["job"]["job_id"]
+
+    rotated_app = create_app(
+        ServiceConfig(
+            api_key="rotated-public-key",
+            data_root=app.state.runtime_v2.config.data_root,
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+        )
+    )
+    rotated_client = TestClient(rotated_app)
+    replay_response = post_create(
+        rotated_client,
+        idempotency_key="idem-rotation-replay",
+        api_key="rotated-public-key",
+    )
+
+    assert replay_response.status_code in {200, 202}
+    assert replay_response.headers["X-Idempotent-Replay"] == "true"
+    assert replay_response.json()["job"]["job_id"] == first_job_id
+
+
+def test_create_job_idempotency_replay_survives_internal_key_rotation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    disable_run_job_async(monkeypatch)
+    client, app = build_client(tmp_path, internal_api_key="internal-secret-key")
+    spec = _html_to_pdf_spec("index.html")
+    conversion = spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["input_trust_mode"] = "trusted_app_bundle"
+
+    first_response = post_create(
+        client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=spec,
+        api_key="internal-secret-key",
+        idempotency_key="idem-internal-rotation-replay",
+    )
+    assert first_response.status_code in {200, 202}
+    first_job_id = first_response.json()["job"]["job_id"]
+
+    rotated_app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            internal_api_key="rotated-internal-key",
+            data_root=app.state.runtime_v2.config.data_root,
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+        )
+    )
+    rotated_client = TestClient(rotated_app)
+    replay_response = post_create(
+        rotated_client,
+        file_name="index.html",
+        file_bytes=b"<html><body>Hello</body></html>",
+        spec=spec,
+        api_key="rotated-internal-key",
+        idempotency_key="idem-internal-rotation-replay",
+    )
+
+    assert replay_response.status_code in {200, 202}
+    assert replay_response.headers["X-Idempotent-Replay"] == "true"
+    assert replay_response.json()["job"]["job_id"] == first_job_id
 
 
 def test_create_job_rejects_author_owned_page_css_mode_with_pdf_layout(

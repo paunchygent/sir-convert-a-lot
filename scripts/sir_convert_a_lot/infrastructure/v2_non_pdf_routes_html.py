@@ -39,6 +39,7 @@ from scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_helpers import (
 from scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_models import NonPdfExecutionOutcomeV2
 from scripts.sir_convert_a_lot.infrastructure.weasyprint_html_to_pdf import (
     HtmlToPdfConversionError,
+    HtmlToPdfInputTrustMode,
     convert_html_to_pdf,
 )
 
@@ -96,6 +97,9 @@ def execute_html_source_route_v2(
                 css_paths=css_paths,
                 base_url=workdir.resolve().as_uri(),
                 allowed_resource_root=workdir,
+                input_trust_mode=HtmlToPdfInputTrustMode(
+                    job.spec.conversion.input_trust_mode.value
+                ),
             )
         except HtmlToPdfConversionError as exc:
             raise map_converter_error(exc) from exc

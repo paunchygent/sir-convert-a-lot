@@ -46,6 +46,7 @@ def _post_create(
     file_name: str,
     file_bytes: bytes,
     idempotency_key: str,
+    api_key: str = "secret-key",
 ) -> str:
     spec = _job_spec_v2(
         filename=file_name,
@@ -55,7 +56,7 @@ def _post_create(
     response = client.post(
         "/v2/convert/jobs",
         headers={
-            "X-API-Key": "secret-key",
+            "X-API-Key": api_key,
             "Idempotency-Key": idempotency_key,
             "X-Correlation-ID": "corr_test_contract_v2_sse",
         },
@@ -302,3 +303,81 @@ def test_sse_stream_returns_503_when_feature_flag_disabled(tmp_path: Path) -> No
     payload = response.json()
     assert payload["api_version"] == "v2"
     assert payload["error"]["code"] == "push_disabled"
+
+
+def test_sse_stream_hides_internal_lane_jobs_from_public_key(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _stub_executor)
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            internal_api_key="internal-secret-key",
+            data_root=tmp_path / "service_data_sse_internal_scope",
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+            enable_sse_stream=True,
+            sse_poll_interval_seconds=0.01,
+            sse_stream_max_seconds=3.0,
+        )
+    )
+    client = TestClient(app)
+    job_id = _post_create(
+        client,
+        file_name="internal.md",
+        file_bytes=b"# Internal\n",
+        idempotency_key="idem-sse-internal-owner",
+        api_key="internal-secret-key",
+    )
+
+    response = client.get(
+        f"/v2/convert/jobs/{job_id}/events/stream",
+        headers={
+            "X-API-Key": "secret-key",
+            "X-Correlation-ID": "corr_stream_cross_lane_public",
+        },
+    )
+
+    assert response.status_code == 404
+    payload = response.json()
+    assert payload["api_version"] == "v2"
+    assert payload["error"]["code"] == "job_not_found"
+
+
+def test_sse_stream_hides_public_lane_jobs_from_internal_key(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _stub_executor)
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            internal_api_key="internal-secret-key",
+            data_root=tmp_path / "service_data_sse_public_scope",
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+            enable_sse_stream=True,
+            sse_poll_interval_seconds=0.01,
+            sse_stream_max_seconds=3.0,
+        )
+    )
+    client = TestClient(app)
+    job_id = _post_create(
+        client,
+        file_name="public.md",
+        file_bytes=b"# Public\n",
+        idempotency_key="idem-sse-public-owner",
+        api_key="secret-key",
+    )
+
+    response = client.get(
+        f"/v2/convert/jobs/{job_id}/events/stream",
+        headers={
+            "X-API-Key": "internal-secret-key",
+            "X-Correlation-ID": "corr_stream_cross_lane_internal",
+        },
+    )
+
+    assert response.status_code == 404
+    payload = response.json()
+    assert payload["api_version"] == "v2"
+    assert payload["error"]["code"] == "job_not_found"

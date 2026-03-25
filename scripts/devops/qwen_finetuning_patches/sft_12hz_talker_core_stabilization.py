@@ -77,6 +77,7 @@ __all__ = [
 LayerInputLayernormEntryRescale = input_layernorm_patch.LayerInputLayernormEntryRescale
 LayerInputLayernormFp32OutputCap = input_layernorm_patch.LayerInputLayernormFp32OutputCap
 LayerInputLayernormOutputAttenuation = input_layernorm_patch.LayerInputLayernormOutputAttenuation
+LAYER_OUTPUT_FP32_TRACE_CALLBACK_ATTRIBUTE = "_story31_layer_output_fp32_trace_callback"
 
 
 @contextmanager
@@ -203,6 +204,9 @@ def _patched_layer_forward_factory(
         if use_fp32_multiply:
             output_dtype = hidden_states.dtype
             scaled_hidden_states = hidden_states.to(torch.float32) * output_scale
+            trace_callback = getattr(self, LAYER_OUTPUT_FP32_TRACE_CALLBACK_ATTRIBUTE, None)
+            if callable(trace_callback):
+                trace_callback(scaled_hidden_states)
             return (scaled_hidden_states.to(dtype=output_dtype), *outputs[1:])
         return (hidden_states * output_scale, *outputs[1:])
 

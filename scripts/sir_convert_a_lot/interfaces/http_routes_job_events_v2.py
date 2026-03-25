@@ -36,18 +36,10 @@ from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
-
-
-def _require_api_key(request: Request, *, service_started_at: str) -> None:
-    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-    api_key = request.headers.get("X-API-Key")
-    if api_key != runtime.config.api_key:
-        raise ServiceError(
-            status_code=401,
-            code="auth_invalid_api_key",
-            message="Missing or invalid X-API-Key.",
-            retryable=False,
-        )
+from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
+    require_api_key_v2,
+    require_job_access_v2,
+)
 
 
 def _event_payload(
@@ -97,7 +89,11 @@ def build_job_events_router_v2(*, service_started_at: str) -> APIRouter:
         cursor: str | None = Query(default=None),
         last_event_id: str | None = Query(default=None),
     ) -> StreamingResponse:
-        _require_api_key(request, service_started_at=service_started_at)
+        auth_context = require_api_key_v2(
+            request,
+            service_started_at=service_started_at,
+            allow_internal_api_key=True,
+        )
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         if not runtime.config.enable_sse_stream:
             raise ServiceError(
@@ -107,6 +103,7 @@ def build_job_events_router_v2(*, service_started_at: str) -> APIRouter:
                 retryable=False,
                 details={"surface": "sse_stream"},
             )
+        require_job_access_v2(auth_context=auth_context, job=runtime.get_job(job_id))
 
         try:
             after_sequence = runtime.resolve_sse_resume_sequence(
