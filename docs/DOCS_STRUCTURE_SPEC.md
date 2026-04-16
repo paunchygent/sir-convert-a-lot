@@ -31,4 +31,5 @@ links:
 - Contract docs and code must match.
 - ADR updates are required for policy changes (auth, fallback, retention, contract semantics).
 - Task lifecycle updates are required when state changes (`proposed -> in_progress -> completed`).
-- `pdm run validate-docs` enforces frontmatter rules for `docs/` and `.codex/rules/`.
+- `pdm run docs-validate` enforces backlog, docs, and `.codex/rules/` contracts.
+- `pdm run skills-validate` enforces repo-local `.codex/skills/` metadata.

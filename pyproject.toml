@@ -201,8 +201,9 @@ distribution = false
 "new-rule" = "python -m scripts.docs_as_code.new_rule"
 "validate-tasks" = "python -m scripts.docs_as_code.validate_tasks"
 "validate-docs" = "python -m scripts.docs_as_code.validate_docs"
-"docs-validate" = "python -m scripts.docs_as_code.validate_docs"
+"docs-validate" = { composite = ["validate-tasks", "validate-docs"] }
 "index-tasks" = "python -m scripts.docs_as_code.index_tasks"
+"skills-validate" = "python -m scripts.docs_as_code.validate_skills"
 "format" = "ruff format ."
 "format-md" = "mdformat --extensions frontmatter README.md AGENTS.md docs .agents"
 "format-all" = { composite = [

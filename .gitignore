@@ -11,6 +11,7 @@ coverage.xml
 build/
 .DS_Store
 data/conversion-inputs/
+**/repomix_packages/
 
 # Generated benchmark/evaluation output (policy: never track under docs/reference)
 docs/reference/artifacts/

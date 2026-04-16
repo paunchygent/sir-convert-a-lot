@@ -21,8 +21,7 @@ reliable, LLM-friendly document conversion workflows with Hemma offloading and G
 1. Read task-relevant rules from the index.
 1. Confirm active planning context in `docs/backlog/current.md`.
 1. Validate docs-as-code state before implementation:
-   - `pdm run validate-tasks`
-   - `pdm run validate-docs`
+   - `pdm run docs-validate`
 
 ## Planning and Docs Taxonomy (Invariant)
 
@@ -105,9 +104,13 @@ pdm run pytest-root <path-or-nodeid>
 Docs gates:
 
 ```bash
-pdm run validate-tasks
-pdm run validate-docs
-pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing
+pdm run docs-validate
+```
+
+Skill-surface gate:
+
+```bash
+pdm run skills-validate
 ```
 
 ## Docker v2 Standards (Greatest Hits)
