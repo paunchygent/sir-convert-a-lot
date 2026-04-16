@@ -54,7 +54,6 @@ def _build_job_spec(
     pdf_layout: dict[str, object] | None = None,
     template: dict[str, str | None] | None = None,
     reference_docx_filename: str | None = None,
-    input_trust_mode: str | None = None,
     execution_timeout_seconds: int | None = None,
 ) -> JobSpecV2:
     payload: dict[str, object] = {
@@ -73,10 +72,6 @@ def _build_job_spec(
         },
         "retention": {"pin": False},
     }
-    if input_trust_mode is not None:
-        conversion = payload["conversion"]
-        assert isinstance(conversion, dict)
-        conversion["input_trust_mode"] = input_trust_mode
     if pdf_layout is not None:
         conversion = payload["conversion"]
         assert isinstance(conversion, dict)
@@ -111,7 +106,6 @@ def _build_job(
     pdf_layout: dict[str, object] | None = None,
     template: dict[str, str | None] | None = None,
     reference_docx_filename: str | None = None,
-    input_trust_mode: str | None = None,
     reference_docx_path: Path | None = None,
     spec_source_format: SourceFormatV2 | None = None,
     spec_output_format: OutputFormatV2 | None = None,
@@ -139,7 +133,6 @@ def _build_job(
         pdf_layout=pdf_layout,
         template=template,
         reference_docx_filename=reference_docx_filename,
-        input_trust_mode=input_trust_mode,
         execution_timeout_seconds=execution_timeout_seconds,
     )
     now = datetime.now(UTC)

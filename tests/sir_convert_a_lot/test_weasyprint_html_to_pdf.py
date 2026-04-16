@@ -20,7 +20,6 @@ from scripts.sir_convert_a_lot.infrastructure import weasyprint_html_to_pdf
 from scripts.sir_convert_a_lot.infrastructure.weasyprint_html_to_pdf import (
     HTML_TO_PDF_RESOURCE_BLOCKED,
     HtmlToPdfConversionError,
-    HtmlToPdfInputTrustMode,
     convert_html_to_pdf,
 )
 
@@ -115,7 +114,7 @@ def test_convert_html_to_pdf_allows_local_resource_within_workdir(
     assert fetched_urls == [local_image.resolve().as_uri()]
 
 
-def test_convert_html_to_pdf_trusted_bundle_uses_string_loading(
+def test_convert_html_to_pdf_uses_filename_loading(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -139,14 +138,13 @@ def test_convert_html_to_pdf_trusted_bundle_uses_string_loading(
         html_path=html_path,
         output_pdf_path=output_pdf,
         allowed_resource_root=tmp_path,
-        input_trust_mode=HtmlToPdfInputTrustMode.TRUSTED_APP_BUNDLE,
     )
 
     assert output_pdf.exists()
     assert fetched_urls == [local_image.resolve().as_uri()]
     assert len(html_factory_calls) == 1
-    assert "string" in html_factory_calls[0]
-    assert "filename" not in html_factory_calls[0]
+    assert html_factory_calls[0]["filename"] == html_path.as_posix()
+    assert "string" not in html_factory_calls[0]
 
 
 def test_convert_html_to_pdf_blocks_external_http_resource(
@@ -169,34 +167,6 @@ def test_convert_html_to_pdf_blocks_external_http_resource(
             html_path=html_path,
             output_pdf_path=output_pdf,
             allowed_resource_root=tmp_path,
-        )
-
-    error = exc_info.value
-    assert error.code == HTML_TO_PDF_RESOURCE_BLOCKED
-    assert fetched_urls == []
-
-
-def test_convert_html_to_pdf_trusted_bundle_blocks_external_http_resource(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    html_path = tmp_path / "page.html"
-    html_path.write_text("<html><body>Hello</body></html>", encoding="utf-8")
-    output_pdf = tmp_path / "out.pdf"
-    fetched_urls: list[str] = []
-
-    _install_fake_loader(
-        monkeypatch,
-        resource_url_to_fetch="https://example.invalid/logo.png",
-        fetched_urls=fetched_urls,
-    )
-
-    with pytest.raises(HtmlToPdfConversionError) as exc_info:
-        convert_html_to_pdf(
-            html_path=html_path,
-            output_pdf_path=output_pdf,
-            allowed_resource_root=tmp_path,
-            input_trust_mode=HtmlToPdfInputTrustMode.TRUSTED_APP_BUNDLE,
         )
 
     error = exc_info.value

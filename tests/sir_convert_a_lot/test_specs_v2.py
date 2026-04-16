@@ -142,25 +142,15 @@ def test_job_spec_accepts_author_owned_page_css_mode_for_pdf_output() -> None:
     assert spec.conversion.pdf_layout is None
 
 
-def test_job_spec_accepts_trusted_app_bundle_for_html_to_pdf() -> None:
+def test_job_spec_rejects_removed_input_trust_mode_field() -> None:
     payload = _base_payload(source_format="html", output_format="pdf")
-    conversion = payload["conversion"]
-    assert isinstance(conversion, dict)
-    conversion["input_trust_mode"] = "trusted_app_bundle"
-
-    spec = JobSpecV2.model_validate(payload)
-    assert spec.conversion.input_trust_mode.value == "trusted_app_bundle"
-
-
-def test_job_spec_rejects_trusted_app_bundle_for_non_html_pdf_route() -> None:
-    payload = _base_payload(source_format="md", output_format="pdf")
     conversion = payload["conversion"]
     assert isinstance(conversion, dict)
     conversion["input_trust_mode"] = "trusted_app_bundle"
 
     with pytest.raises(
         ValidationError,
-        match="input_trust_mode is only supported for html -> pdf routes",
+        match="Extra inputs are not permitted",
     ):
         JobSpecV2.model_validate(payload)
 

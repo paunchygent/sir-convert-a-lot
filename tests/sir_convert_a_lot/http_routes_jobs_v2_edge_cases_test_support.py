@@ -41,7 +41,6 @@ def build_client(
     tmp_path: Path,
     *,
     max_upload_bytes: int = 50 * 1024 * 1024,
-    internal_api_key: str | None = None,
 ) -> tuple[TestClient, FastAPI]:
     """Build a test client and FastAPI app for v2 route edge-case tests."""
 
@@ -49,7 +48,6 @@ def build_client(
         ServiceConfig(
             api_key="secret-key",
             data_root=tmp_path / "service_data",
-            internal_api_key=internal_api_key,
             max_upload_bytes=max_upload_bytes,
             enable_supervisor=False,
             processing_delay_seconds=0.0,

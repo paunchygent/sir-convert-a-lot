@@ -81,6 +81,12 @@ pdm run run-local-pdm convert-a-lot convert /abs/path/to/handout.html \
 - Use `--resources` when the HTML references local files (images, fonts, linked CSS). Pass the
   directory root that contains the referenced files.
 - Use `--css` to apply/force PDF styling (HTML->PDF and MD->PDF). Can be passed multiple times.
+- Curated app-owned PDF exports such as Klassrumskartan should render locally in
+  the owning app rather than relying on this Sir Convert HTML->PDF lane.
+- Keep image/font references as relative filenames inside the uploaded resources bundle.
+- Do not switch resource-backed HTML bundles to `data:` URLs. During seating export debugging on
+  `2026-03-26`, the service WeasyPrint adapter was confirmed to block `data:` resources in its
+  restricted fetcher.
 
 ### HTML -> DOCX
 

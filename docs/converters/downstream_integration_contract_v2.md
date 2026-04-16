@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-03-25
+updated: 2026-03-26
 owners:
   - platform
 tags:
@@ -50,6 +50,11 @@ Required headers:
 
 - `X-API-Key`: service secret
 - `Idempotency-Key`: required for `POST /v2/convert/jobs`
+
+Auth rule:
+
+- v2 uses one service API key only.
+- There is no supported internal-key or trusted-bundle submission lane.
 
 Optional header:
 
@@ -140,15 +145,13 @@ Terminal-state behavior:
 
 ## Required API Examples
 
-### Trusted HTML bundle lane
+### Curated app-owned PDF boundary
 
-- Default callers use `X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}` and stay on
-  `conversion.input_trust_mode="untrusted_upload"` (or omit the field).
-- Internal app-owned HTML bundles such as Klassrumskartan must use the separate internal adapter
-  key (`SIR_CONVERT_A_LOT_INTERNAL_API_KEY`) and set
-  `conversion.input_trust_mode="trusted_app_bundle"`.
-- Public-lane submissions that request `trusted_app_bundle` are rejected with `403`
-  `insufficient_scope`.
+- App-owned downstream PDF artifacts such as Klassrumskartan seating/grouping
+  exports are not the preferred Sir Convert integration target.
+- Those artifacts should render locally in the owning product.
+- Sir Convert remains the downstream contract for public/general-purpose
+  conversion workloads.
 
 ### 1) `pdf -> md` create job
 
@@ -222,11 +225,11 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
   }'
 ```
 
-### 5) Internal `html -> pdf` create job with trusted app bundle
+### 5) `html -> pdf` create job
 
 ```bash
 curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
-  -H "X-API-Key: ${SIR_CONVERT_A_LOT_INTERNAL_API_KEY}" \
+  -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "Idempotency-Key: idem_html_pdf_trusted_001" \
   -H "X-Correlation-ID: corr_html_pdf_trusted_001" \
   -F 'file=@./poster.html;type=text/html' \
@@ -236,7 +239,6 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
     "source":{"kind":"upload","filename":"poster.html","format":"html"},
     "conversion":{
       "output_format":"pdf",
-      "input_trust_mode":"trusted_app_bundle",
       "css_filenames":["poster.css"],
       "reference_docx_filename":null
     },

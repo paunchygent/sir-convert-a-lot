@@ -115,11 +115,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         reference_docx: UploadFile | None = File(None),
         wait_seconds: int = Query(default=0, ge=0, le=20),
     ) -> JSONResponse:
-        auth_context = require_api_key_v2(
-            request,
-            service_started_at=service_started_at,
-            allow_internal_api_key=True,
-        )
+        auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -263,7 +259,6 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             spec=spec,
             resources_uploaded=resources_bytes is not None,
             reference_docx_uploaded=reference_docx_bytes is not None,
-            trusted_app_bundle_allowed=auth_context.allows_trusted_app_bundle,
         )
 
         scope_key = (
@@ -305,7 +300,6 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
         job = runtime.create_job(
             spec=spec,
-            owner_auth_lane=auth_context.lane.value,
             owner_api_key_scope=auth_context.owner_api_key_scope,
             upload_bytes=payload_bytes,
             resources_zip_bytes=resources_bytes,
@@ -338,11 +332,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.get("/v2/convert/jobs/{job_id}")
     async def get_job(job_id: str, request: Request) -> JSONResponse:
-        auth_context = require_api_key_v2(
-            request,
-            service_started_at=service_started_at,
-            allow_internal_api_key=True,
-        )
+        auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
         job = require_job_access_v2(auth_context=auth_context, job=job)
@@ -351,11 +341,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.post("/v2/convert/jobs/{job_id}/cancel")
     async def cancel_job(job_id: str, request: Request) -> JSONResponse:
-        auth_context = require_api_key_v2(
-            request,
-            service_started_at=service_started_at,
-            allow_internal_api_key=True,
-        )
+        auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         require_job_access_v2(auth_context=auth_context, job=runtime.get_job(job_id))
         result = runtime.cancel_job(job_id)

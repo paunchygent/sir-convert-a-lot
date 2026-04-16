@@ -78,8 +78,7 @@ def build_initial_manifest(
     *,
     job_id: str,
     spec: JobSpecV2,
-    owner_auth_lane: str,
-    owner_api_key_scope: str | None,
+    owner_api_key_scope: str,
     now: datetime,
     pinned: bool,
     raw_expires_at: datetime,
@@ -90,10 +89,7 @@ def build_initial_manifest(
         "job_id": job_id,
         "job_spec": spec.model_dump(mode="json"),
         "status": JobStatus.QUEUED.value,
-        "owner": {
-            "auth_lane": owner_auth_lane,
-            "api_key_scope": owner_api_key_scope,
-        },
+        "owner": {"api_key_scope": owner_api_key_scope},
         "source_filename": spec.source.filename,
         "source_format": spec.source.format.value,
         "output_format": spec.conversion.output_format.value,
@@ -147,13 +143,9 @@ def parse_stored_job_record(
     spec = JobSpecV2.model_validate(spec_payload)
 
     owner_payload = payload.get("owner")
-    owner_auth_lane = "public"
-    owner_api_key_scope: str | None = None
+    owner_api_key_scope = "service-api-key"
     if isinstance(owner_payload, dict):
-        auth_lane_obj = owner_payload.get("auth_lane")
         api_key_scope_obj = owner_payload.get("api_key_scope")
-        if isinstance(auth_lane_obj, str) and auth_lane_obj.strip() != "":
-            owner_auth_lane = auth_lane_obj
         if isinstance(api_key_scope_obj, str) and api_key_scope_obj.strip() != "":
             owner_api_key_scope = api_key_scope_obj
 
@@ -332,7 +324,6 @@ def parse_stored_job_record(
     return StoredJobRecordV2(
         job_id=expected_job_id,
         spec=spec,
-        owner_auth_lane=owner_auth_lane,
         owner_api_key_scope=owner_api_key_scope,
         source_filename=spec.source.filename,
         source_format=spec.source.format,

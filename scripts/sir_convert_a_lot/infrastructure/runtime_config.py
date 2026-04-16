@@ -72,14 +72,6 @@ def fingerprint_for_request(spec_payload: dict[str, object], file_sha256: str) -
 def service_config_from_env() -> ServiceConfig:
     """Load runtime configuration from environment variables."""
     api_key = os.getenv("SIR_CONVERT_A_LOT_V2_API_KEY", "dev-only-key")
-    internal_api_key_raw = os.getenv("SIR_CONVERT_A_LOT_INTERNAL_API_KEY")
-    internal_api_key = None
-    if internal_api_key_raw is not None and internal_api_key_raw.strip() != "":
-        internal_api_key = internal_api_key_raw.strip()
-    if internal_api_key is not None and internal_api_key == api_key:
-        raise ValueError(
-            "SIR_CONVERT_A_LOT_INTERNAL_API_KEY must differ from SIR_CONVERT_A_LOT_V2_API_KEY."
-        )
     data_root = Path(
         os.getenv("CONVERTER_STORAGE_ROOT")
         or os.getenv("SIR_CONVERT_A_LOT_DATA_DIR")
@@ -174,7 +166,6 @@ def service_config_from_env() -> ServiceConfig:
     return ServiceConfig(
         api_key=api_key,
         data_root=data_root,
-        internal_api_key=internal_api_key,
         max_workers=max_workers,
         enable_parallel_pdf_chunks=enable_parallel_pdf_chunks,
         max_chunk_workers=max_chunk_workers,

@@ -84,11 +84,7 @@ def _job_record_response(job: StoredJobV2) -> JobRecordResponseV2:
 def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
     @router.post("/v2/convert/jobs/{job_id}/resume")
     async def resume_job(job_id: str, request: Request) -> JSONResponse:
-        auth_context = require_api_key_v2(
-            request,
-            service_started_at=service_started_at,
-            allow_internal_api_key=True,
-        )
+        auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -181,7 +177,6 @@ def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str)
         )
         resumed_job = runtime.create_job(
             spec=source_job.spec,
-            owner_auth_lane=auth_context.lane.value,
             owner_api_key_scope=auth_context.owner_api_key_scope,
             upload_bytes=source_job.upload_path.read_bytes(),
             resources_zip_bytes=resources_zip_bytes,

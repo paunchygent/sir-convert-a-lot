@@ -89,11 +89,7 @@ def build_job_events_router_v2(*, service_started_at: str) -> APIRouter:
         cursor: str | None = Query(default=None),
         last_event_id: str | None = Query(default=None),
     ) -> StreamingResponse:
-        auth_context = require_api_key_v2(
-            request,
-            service_started_at=service_started_at,
-            allow_internal_api_key=True,
-        )
+        auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         if not runtime.config.enable_sse_stream:
             raise ServiceError(

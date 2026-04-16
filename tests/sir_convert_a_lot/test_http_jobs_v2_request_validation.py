@@ -26,7 +26,6 @@ def test_rejects_reference_docx_upload_for_pdf_output() -> None:
             spec=spec,
             resources_uploaded=False,
             reference_docx_uploaded=True,
-            trusted_app_bundle_allowed=False,
         )
 
     error = exc_info.value
@@ -56,58 +55,4 @@ def test_allows_reference_docx_upload_for_docx_output() -> None:
         spec=spec,
         resources_uploaded=False,
         reference_docx_uploaded=True,
-        trusted_app_bundle_allowed=False,
-    )
-
-
-def test_rejects_trusted_app_bundle_for_public_lane() -> None:
-    spec = JobSpecV2.model_validate(
-        {
-            "api_version": "v2",
-            "source": {"kind": "upload", "filename": "page.html", "format": "html"},
-            "conversion": {
-                "output_format": "pdf",
-                "css_filenames": [],
-                "input_trust_mode": "trusted_app_bundle",
-            },
-            "retention": {"pin": False},
-        }
-    )
-
-    with pytest.raises(ServiceError) as exc_info:
-        validate_create_job_route_constraints(
-            spec=spec,
-            resources_uploaded=False,
-            reference_docx_uploaded=False,
-            trusted_app_bundle_allowed=False,
-        )
-
-    error = exc_info.value
-    assert error.status_code == 403
-    assert error.code == "insufficient_scope"
-    assert error.details == {
-        "required_trust_mode": "trusted_app_bundle",
-        "surface": "v2_html_to_pdf",
-    }
-
-
-def test_allows_trusted_app_bundle_for_internal_lane() -> None:
-    spec = JobSpecV2.model_validate(
-        {
-            "api_version": "v2",
-            "source": {"kind": "upload", "filename": "page.html", "format": "html"},
-            "conversion": {
-                "output_format": "pdf",
-                "css_filenames": [],
-                "input_trust_mode": "trusted_app_bundle",
-            },
-            "retention": {"pin": False},
-        }
-    )
-
-    validate_create_job_route_constraints(
-        spec=spec,
-        resources_uploaded=False,
-        reference_docx_uploaded=False,
-        trusted_app_bundle_allowed=True,
     )

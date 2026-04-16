@@ -12,7 +12,6 @@ Relationships:
 from __future__ import annotations
 
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
-    InputTrustModeV2,
     JobSpecV2,
     OutputFormatV2,
     SourceFormatV2,
@@ -32,24 +31,8 @@ def validate_create_job_route_constraints(
     spec: JobSpecV2,
     resources_uploaded: bool,
     reference_docx_uploaded: bool,
-    trusted_app_bundle_allowed: bool,
 ) -> None:
     """Validate route-level upload constraints and template selectors for create-job."""
-
-    if (
-        spec.conversion.input_trust_mode is InputTrustModeV2.TRUSTED_APP_BUNDLE
-        and not trusted_app_bundle_allowed
-    ):
-        raise ServiceError(
-            status_code=403,
-            code="insufficient_scope",
-            message="API key lacks access to trusted HTML bundle rendering.",
-            retryable=False,
-            details={
-                "required_trust_mode": InputTrustModeV2.TRUSTED_APP_BUNDLE.value,
-                "surface": "v2_html_to_pdf",
-            },
-        )
 
     if reference_docx_uploaded and spec.conversion.output_format != OutputFormatV2.DOCX:
         raise ServiceError(

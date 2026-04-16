@@ -25,8 +25,7 @@ class StoredJobRecordV2:
 
     job_id: str
     spec: JobSpecV2
-    owner_auth_lane: str
-    owner_api_key_scope: str | None
+    owner_api_key_scope: str
     source_filename: str
     source_format: SourceFormatV2
     output_format: OutputFormatV2

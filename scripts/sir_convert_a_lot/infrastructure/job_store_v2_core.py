@@ -147,8 +147,7 @@ class JobStoreV2Core:
         *,
         job_id: str,
         spec: JobSpecV2,
-        owner_auth_lane: str = "public",
-        owner_api_key_scope: str | None = None,
+        owner_api_key_scope: str = "service-api-key",
         upload_bytes: bytes,
         resources_zip_bytes: bytes | None,
         reference_docx_bytes: bytes | None,
@@ -182,7 +181,6 @@ class JobStoreV2Core:
         manifest = build_initial_manifest(
             job_id=job_id,
             spec=spec,
-            owner_auth_lane=owner_auth_lane,
             owner_api_key_scope=owner_api_key_scope,
             now=now,
             pinned=pinned,

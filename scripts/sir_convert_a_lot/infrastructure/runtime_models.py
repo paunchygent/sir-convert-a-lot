@@ -30,7 +30,6 @@ class ServiceConfig:
 
     api_key: str
     data_root: Path
-    internal_api_key: str | None = None
     max_upload_bytes: int = 50 * 1024 * 1024
     inline_max_bytes: int = 2 * 1024 * 1024
     idempotency_ttl_seconds: int = 24 * 3600

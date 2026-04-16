@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-03-25
+updated: 2026-03-26
 owners:
   - platform
 tags:
@@ -19,6 +19,7 @@ links:
   - docs/decisions/0005-v2-long-job-progress-checkpoints-partials-cancel-resume-and-retention.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
+  - docs/decisions/0008-curated-app-owned-pdf-exports-stay-out-of-sir-convert-v2.md
   - docs/reference/ref-hemma-sidecar-tts-md-to-wav-contract-outline.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
@@ -75,13 +76,17 @@ Required header on all endpoints:
 X-API-Key: <service_api_key>
 ```
 
+Authentication model:
+
+- One service API key is the only supported v2 auth secret.
+- No internal-key lane or curated-app trusted-bundle lane is part of the
+  active runtime contract.
+
 Error semantics:
 
 - Missing or invalid key: `401 Unauthorized`, `error.code = "auth_invalid_api_key"`
-- Internal `trusted_app_bundle` requests use the same header name but must authenticate with the
-  separately configured internal adapter key (`SIR_CONVERT_A_LOT_INTERNAL_API_KEY`).
-- Requests that set `conversion.input_trust_mode="trusted_app_bundle"` on the public key lane fail
-  with `403 Forbidden`, `error.code = "insufficient_scope"`.
+- This contract does not treat curated app-owned downstream PDF artifacts as a
+  Sir Convert integration target; see ADR-0008 for that boundary.
 
 ### Idempotency (Create Job)
 
@@ -93,7 +98,7 @@ Idempotency-Key: <opaque-client-key>
 
 Semantics:
 
-- Scope: `(api_key, method, path, idempotency_key)`
+- Scope: `(owner_scope, method, path, idempotency_key)`
 - Request fingerprint: normalized request JSON + uploaded file SHA256 (+ optional resources SHA256
   and reference-docx SHA256 when present)
 - TTL: 24h
@@ -201,7 +206,6 @@ Prometheus metric labels must remain bounded-cardinality:
   },
   "conversion": {
     "output_format": "docx",
-    "input_trust_mode": "untrusted_upload",
     "template": {
       "template_id": "academic-report",
       "version": "1.0.0"
@@ -244,10 +248,6 @@ Field rules:
 - `conversion.css_filenames`:
   - only meaningful for `html -> pdf` and `md -> pdf`
   - filenames must exist within the extracted resources root when provided
-- `conversion.input_trust_mode`:
-  - defaults to `untrusted_upload`
-  - `trusted_app_bundle` is only legal for `html -> pdf`
-  - `trusted_app_bundle` requires the internal adapter API key lane
 - `conversion.page_css_mode`:
   - optional PDF-only page-CSS precedence selector
   - `preset_append`:
@@ -381,7 +381,6 @@ Route-specific JobSpec example (`html -> pdf` with author-owned page CSS):
   },
   "conversion": {
     "output_format": "pdf",
-    "input_trust_mode": "untrusted_upload",
     "css_filenames": ["print.css"],
     "page_css_mode": "author_owned",
     "reference_docx_filename": null
@@ -395,7 +394,7 @@ Route-specific JobSpec example (`html -> pdf` with author-owned page CSS):
 In the `author_owned` example above, the caller's uploaded CSS is authoritative
 for `@page` size/orientation/margins. `conversion.pdf_layout` must be omitted.
 
-Route-specific JobSpec example (`html -> pdf` with trusted internal app bundle):
+Route-specific JobSpec example (`html -> pdf`):
 
 ```json
 {
@@ -407,7 +406,6 @@ Route-specific JobSpec example (`html -> pdf` with trusted internal app bundle):
   },
   "conversion": {
     "output_format": "pdf",
-    "input_trust_mode": "trusted_app_bundle",
     "css_filenames": ["poster.css"],
     "reference_docx_filename": null
   },

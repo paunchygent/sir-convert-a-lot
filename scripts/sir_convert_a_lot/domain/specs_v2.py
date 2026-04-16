@@ -72,13 +72,6 @@ class PdfPageCssModeV2(StrEnum):
     AUTHOR_OWNED = "author_owned"
 
 
-class InputTrustModeV2(StrEnum):
-    """Control how HTML input bundles are trusted for PDF rendering."""
-
-    UNTRUSTED_UPLOAD = "untrusted_upload"
-    TRUSTED_APP_BUNDLE = "trusted_app_bundle"
-
-
 class OcrEngineV2(StrEnum):
     """Supported OCR engines for PDF OCR stages."""
 
@@ -122,7 +115,6 @@ class ConversionSpecV2(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     output_format: OutputFormatV2
-    input_trust_mode: InputTrustModeV2 = InputTrustModeV2.UNTRUSTED_UPLOAD
     css_filenames: list[str] = Field(default_factory=list)
     page_css_mode: PdfPageCssModeV2 | None = None
     pdf_layout: PdfLayoutV2 | None = None
@@ -262,11 +254,6 @@ class JobSpecV2(BaseModel):
             and self.conversion.page_css_mode is not None
         ):
             raise ValueError("page_css_mode is only supported for PDF outputs")
-        if (
-            self.conversion.input_trust_mode != InputTrustModeV2.UNTRUSTED_UPLOAD
-            and route != (SourceFormatV2.HTML, OutputFormatV2.PDF)
-        ):
-            raise ValueError("input_trust_mode is only supported for html -> pdf routes")
         if (
             self.conversion.output_format == OutputFormatV2.PDF
             and self.conversion.page_css_mode == PdfPageCssModeV2.AUTHOR_OWNED

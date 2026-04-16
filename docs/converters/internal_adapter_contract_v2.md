@@ -4,7 +4,7 @@ id: CONV-internal-adapter-contract-v2
 title: Internal Adapter Contract v2
 status: active
 created: 2026-03-04
-updated: 2026-03-25
+updated: 2026-03-26
 owners:
   - platform
 tags:
@@ -32,6 +32,8 @@ headers, and error propagation), not service runtime policy internals.
 - Applies to internal integration layers only.
 - All submissions must target `/v2/convert/jobs*` endpoints (no legacy version lanes).
 - Adapter helpers must remain transport-only; conversion policy and orchestration live in this repo.
+- Internal adapters use the same single v2 service API key as other supported
+  consumers; there is no separate internal-key lane.
 
 ## Mandatory Adapter Requirements
 
@@ -99,15 +101,14 @@ Canonical reference implementation:
   - `prepare_submission(...)`
   - `submit_pdf_for_profile(...)`
 
-### 7. Trusted HTML bundle policy
+### 7. Curated app-owned PDF boundary
 
-- Internal adapters may opt into `conversion.input_trust_mode="trusted_app_bundle"` only for
-  app-owned `html -> pdf` bundles that the consumer renderer generates itself.
-- Trusted HTML bundle submissions must use the internal adapter API key lane
-  (`SIR_CONVERT_A_LOT_INTERNAL_API_KEY`), not the public service key.
-- Adapters must not silently elevate ordinary HTML uploads into trusted mode.
-- Bundled assets must still remain job-local resources; adapters must not rely on external
-  network URLs or arbitrary host filesystem reads.
+- Internal adapters should not route app-owned curated-app PDF artifacts through
+  Sir Convert when the owning product already has the renderer and artifact
+  model locally.
+- Klassrumskartan is the current explicit example of that rule.
+- Adapters must keep using Sir Convert for general conversion and parsing
+  workloads rather than for renderer-owned teacher artifacts.
 
 ## Conformance Gate (Primary)
 
@@ -126,7 +127,6 @@ Required scenario coverage includes:
 ## Tunnel and Operational Expectations
 
 - Local/internal consumers use the internal HTTP endpoint plus `X-API-Key`.
-- Consumers that use `trusted_app_bundle` must authenticate with the internal adapter key lane.
 - Tunnel-first local development follows:
   - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
