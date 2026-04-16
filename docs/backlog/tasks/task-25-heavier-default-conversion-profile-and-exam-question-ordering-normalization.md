@@ -22,7 +22,7 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 Harden default conversion quality toward a heavier Docling profile and fix
 question/alternative ordering defects observed for:
-`.agents/input/Prövning i litteraturhistoria 2024.pdf`.
+`data/conversion-inputs/Prövning i litteraturhistoria 2024.pdf`.
 
 ## PR Scope
 

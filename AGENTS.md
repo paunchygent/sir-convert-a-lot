@@ -15,9 +15,10 @@ reliable, LLM-friendly document conversion workflows with Hemma offloading and G
 
 ## Session Start (Mandatory)
 
-1. Read `.agents/rules/000-rule-index.md`.
+1. Read this file.
+1. Check `.codex/handoff.md` only for volatile current-state pointers.
+1. Read `.codex/rules/000-rule-index.md` when repo rules are needed.
 1. Read task-relevant rules from the index.
-1. Read `.agents/session/readme-first.md` and `.agents/session/handoff.md`.
 1. Confirm active planning context in `docs/backlog/current.md`.
 1. Validate docs-as-code state before implementation:
    - `pdm run validate-tasks`
@@ -137,9 +138,9 @@ Canonical runbook:
 
 Repo-specific DevOps skill:
 
-- `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
-- `.agents/skills/sir-convert-a-lot-docs-governance/SKILL.md`
-- `.agents/skills/sir-convert-a-lot-session-handoff/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-docs-governance/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-session-handoff/SKILL.md`
 
 Cross-repo topology awareness on Hemma:
 
@@ -172,9 +173,10 @@ Policy:
 
 ## Key Paths
 
-- Rules: `.agents/rules/`
-- Session context: `.agents/session/`
-- Skills: `.agents/skills/`
+- Rules: `.codex/rules/`
+- Session handoff: `.codex/handoff.md`
+- Long-term memory: `.codex/long-term-memory/index.md`
+- Skills: `.codex/skills/`
 - Global skills registry: `~/.codex/skills/` (repo skills must be symlinked there)
 - Planning: `docs/backlog/`
 - Product/ops docs: `docs/`

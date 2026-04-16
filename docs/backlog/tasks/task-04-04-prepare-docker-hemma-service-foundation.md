@@ -9,7 +9,7 @@ last_updated: '2026-02-11'
 related:
   - docs/backlog/stories/story-04-01-standalone-repo-bootstrap-and-governance-setup.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - .agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md
+  - .codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md
 labels:
   - docker
   - hemma
@@ -29,7 +29,7 @@ local tunnel-based development.
 ## Deliverables
 
 - Repo-specific Hemma/GPU runbook.
-- Repo-specific DevOps skill under `.agents/skills/`.
+- Repo-specific DevOps skill under `.codex/skills/`.
 - Command wrappers for local and remote execution context.
 
 ## Acceptance Criteria

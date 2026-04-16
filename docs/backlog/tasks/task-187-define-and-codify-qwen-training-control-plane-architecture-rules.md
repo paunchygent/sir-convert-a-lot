@@ -8,9 +8,9 @@ created: '2026-03-15'
 last_updated: '2026-03-15'
 related:
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
-  - .agents/rules/095-qwen-training-architecture-boundaries.md
+  - .codex/rules/095-qwen-training-architecture-boundaries.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
-  - .agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
+  - .codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
 labels:
   - qwen
   - architecture

@@ -14,8 +14,8 @@ tags:
   - gpu
   - sir-convert-a-lot
 links:
-  - .agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md
-  - .agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
+  - .codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md
+  - .codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
   - docs/runbooks/runbook-v2-async-push-delivery.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md

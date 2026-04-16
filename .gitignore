@@ -10,10 +10,7 @@ __pycache__/
 coverage.xml
 build/
 .DS_Store
-.agents/input/
-.agents/repomix_packages/
-.agents/session/handoff.md
-.agents/session/readme-first.md
+data/conversion-inputs/
 
 # Generated benchmark/evaluation output (policy: never track under docs/reference)
 docs/reference/artifacts/

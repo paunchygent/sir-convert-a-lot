@@ -32,9 +32,9 @@ description: >-
 
 Use this skill together with the broader local skill:
 
-- `.agents/skills/speech-model-finetuning-on-hemma/SKILL.md`
+- `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md`
 
-- `.agents/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
 
 - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
 
@@ -54,7 +54,7 @@ Use this skill together with the broader local skill:
 
 - `docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md`
 
-- `.agents/rules/096-qwen-experiment-governance.md`
+- `.codex/rules/096-qwen-experiment-governance.md`
 
 - `docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md`
 

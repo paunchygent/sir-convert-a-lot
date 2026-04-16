@@ -51,8 +51,8 @@ lane.
 ## Deliverables
 
 - [x] Reference research map under `docs/reference/`.
-- [x] Research-team prompt under `.agents/repomix_packages/`.
-- [x] Generated repomix XML package under `.agents/repomix_packages/`.
+- [x] Research-team prompt under `.codex/repomix_packages/`.
+- [x] Generated repomix XML package under `.codex/repomix_packages/`.
 - [x] Epic 08 / Story 24 / runbook cross-links updated to point at the new
   package.
 

@@ -76,7 +76,7 @@ GPU-first governance compatibility rules at request-validation time (no falsifie
    - `docs/converters/pdf_to_md_service_api_v1.md`
    - `docs/converters/sir_convert_a_lot.md`
    - `scripts/sir_convert_a_lot/README.md`
-   - `.agents/session/handoff.md`
+   - `.codex/handoff.md`
    - `docs/backlog/current.md`
 
 ### Test implementation plan

@@ -12,8 +12,8 @@ related:
   - docs/converters/internal_adapter_contract_v1.md
   - docs/reference/ref-story-003c-consumer-integration-handoff.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - .agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md
-  - .agents/rules/030-conversion-workflows.md
+  - .codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md
+  - .codex/rules/030-conversion-workflows.md
 labels:
   - ops
   - hemma

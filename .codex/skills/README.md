@@ -1,0 +1,41 @@
+______________________________________________________________________
+
+type: meta
+id: META-agents-skills-readme
+title: Agent Skills Index
+status: active
+created: 2026-02-11
+updated: 2026-02-14
+owners:
+
+- platform
+  tags: [skills, codex]
+  links: []
+
+______________________________________________________________________
+
+## Purpose
+
+Index repo-local skills for Sir Convert-a-Lot and document global visibility via symlink.
+
+## Local Skills
+
+- `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-docs-governance/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-session-handoff/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-pdf-to-md/SKILL.md`
+
+## Global Visibility
+
+Create symlinks in `~/.codex/skills` pointing to repo-local skills:
+
+```bash
+ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-colab-hemma" ~/.codex/skills/sir-convert-a-lot-colab-hemma
+ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-devops-hemma" ~/.codex/skills/sir-convert-a-lot-devops-hemma
+ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-docs-governance" ~/.codex/skills/sir-convert-a-lot-docs-governance
+ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-session-handoff" ~/.codex/skills/sir-convert-a-lot-session-handoff
+ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-pdf-to-md" ~/.codex/skills/sir-convert-a-lot-pdf-to-md
+```
+
+General cross-repo skills (for example `docs-as-code`) live directly in `~/.codex/skills` and should not be duplicated under `.codex/skills/` in this repo.

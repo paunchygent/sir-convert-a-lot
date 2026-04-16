@@ -15,8 +15,8 @@ description: >-
 
 ## Canonical Files To Update
 
-- `.agents/session/readme-first.md`
-- `.agents/session/handoff.md`
+- `AGENTS.md`
+- `.codex/handoff.md`
 - `docs/backlog/current.md`
 
 ## Handoff Requirements

@@ -16,7 +16,7 @@ tags:
   - hemma
   - colab
 links:
-  - .agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
+  - .codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-27-transition-to-domain-centric-ml-pipeline-structure.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md

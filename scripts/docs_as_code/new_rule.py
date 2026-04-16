@@ -1,7 +1,7 @@
 """Create a new rule file with contract-compliant frontmatter.
 
 Purpose:
-    Generate a numbered rule in `.agents/rules/` with required metadata keys.
+    Generate a numbered rule in `.codex/rules/` with required metadata keys.
 
 Relationships:
     - Uses `scripts.docs_as_code.common` utilities.
@@ -23,7 +23,7 @@ from scripts.docs_as_code.common import (
 
 def main() -> None:
     """Parse args and write the new rule file."""
-    parser = argparse.ArgumentParser(description="Create a new rule file in .agents/rules/.")
+    parser = argparse.ArgumentParser(description="Create a new rule file in .codex/rules/.")
     parser.add_argument("name", help="Rule name")
     parser.add_argument("--trigger", default="model_decision", help="Rule trigger value")
     parser.add_argument("--status", default="active", help="Rule status")

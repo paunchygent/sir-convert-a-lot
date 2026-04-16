@@ -143,7 +143,7 @@ always include verification evidence.
 - [ ] Only after task status is terminal:
   - check the corresponding `T##` checkbox in this epic and any story trackers.
 - [ ] For major slices (after `T69`, `T71`, `T74`):
-  - update `.agents/session/handoff.md`,
+  - update `.codex/handoff.md`,
   - archive into `docs/backlog/current.md` (keep within RULE-090 limits).
 
 ## Acceptance Criteria

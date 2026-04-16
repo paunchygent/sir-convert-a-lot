@@ -9,7 +9,7 @@ last_updated: '2026-02-14'
 related:
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
   - docs/converters/pdf_to_md_service_api_v1.md
-  - .agents/rules/035-docling-pdf-conversion.md
+  - .codex/rules/035-docling-pdf-conversion.md
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine.py
 labels:
   - docling

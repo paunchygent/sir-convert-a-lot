@@ -19,8 +19,8 @@ runtime that will actually execute the work.
 
 Use this skill together with:
 
-- `.agents/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
-- `.agents/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
 - `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
 
 ## Core Rule

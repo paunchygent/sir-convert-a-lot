@@ -12,7 +12,7 @@ related:
   - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
-  - .agents/rules/096-qwen-experiment-governance.md
+  - .codex/rules/096-qwen-experiment-governance.md
 labels:
   - qwen
   - finetuning

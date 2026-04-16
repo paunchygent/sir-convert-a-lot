@@ -25,5 +25,5 @@ scope: repo
 
 Session context (non-rule):
 
-- `../session/readme-first.md`: Session onboarding pointers.
-- `../session/handoff.md`: Session handoff notes and validation evidence.
+- `../handoff.md`: Volatile current-state handoff and validation evidence.
+- `../long-term-memory/index.md`: Durable session-history doorway.

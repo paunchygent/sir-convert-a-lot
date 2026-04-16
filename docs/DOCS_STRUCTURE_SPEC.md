@@ -12,7 +12,7 @@ tags:
   - structure
 links:
   - docs/\_meta/docs-contract.yaml
-  - .agents/rules/090-documentation-standards.md
+  - .codex/rules/090-documentation-standards.md
 ---
 
 ## Layout
@@ -22,12 +22,13 @@ links:
 - `docs/runbooks/`: Operational procedures and troubleshooting.
 - `docs/backlog/`: planning and execution artifacts.
 - `docs/_meta/`: docs-as-code contract metadata.
-- `.agents/rules/`: operational rules and conventions.
-- `.agents/session/`: session handoff + readme-first context.
+- `.codex/rules/`: operational rules and conventions.
+- `.codex/handoff.md`: volatile session handoff.
+- `.codex/long-term-memory/`: durable session-history entries.
 
 ## Invariants
 
 - Contract docs and code must match.
 - ADR updates are required for policy changes (auth, fallback, retention, contract semantics).
 - Task lifecycle updates are required when state changes (`proposed -> in_progress -> completed`).
-- `pdm run validate-docs` enforces frontmatter rules for `docs/` and `.agents/rules/`.
+- `pdm run validate-docs` enforces frontmatter rules for `docs/` and `.codex/rules/`.

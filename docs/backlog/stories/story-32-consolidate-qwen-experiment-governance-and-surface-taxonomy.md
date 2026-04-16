@@ -15,7 +15,7 @@ related:
   - docs/backlog/tasks/task-224-reroute-qwen-operator-docs-through-the-active-surface-matrix-and-demote-legacy-proof-workflows.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
-  - .agents/rules/096-qwen-experiment-governance.md
+  - .codex/rules/096-qwen-experiment-governance.md
 labels:
   - qwen
   - finetuning

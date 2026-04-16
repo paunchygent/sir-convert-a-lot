@@ -24,7 +24,8 @@ scope: repo
   - keep dated `Worklog` entries at or below 12,
   - compress older detail into task/reference docs while keeping key outcomes.
 - Session handoff cadence is mandatory:
-  - each session must update `.agents/session/handoff.md` with current-session work, validation evidence, and next-session goals,
+  - each session must update `.codex/handoff.md` with current-session work, validation evidence, and next-session goals,
+  - durable session history belongs under `.codex/long-term-memory/` rather than a separate session folder,
   - before clearing/pruning `handoff.md`, archive the completed session summary into `docs/backlog/current.md`,
   - archived session entries in `current.md` must include concrete date markers and links to changed story/task/epic docs.
 - Status/checkbox synchronization invariants are mandatory:

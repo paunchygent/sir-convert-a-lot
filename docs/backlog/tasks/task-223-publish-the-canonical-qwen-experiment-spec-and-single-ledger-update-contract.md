@@ -11,7 +11,7 @@ related:
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
-  - .agents/rules/096-qwen-experiment-governance.md
+  - .codex/rules/096-qwen-experiment-governance.md
 labels:
   - qwen
   - finetuning

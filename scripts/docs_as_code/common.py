@@ -23,7 +23,7 @@ EPICS_DIR = BACKLOG_DIR / "epics"
 STORIES_DIR = BACKLOG_DIR / "stories"
 TASKS_DIR = BACKLOG_DIR / "tasks"
 REVIEWS_DIR = BACKLOG_DIR / "reviews"
-RULES_DIR = ROOT / ".agents" / "rules"
+RULES_DIR = ROOT / ".codex" / "rules"
 
 
 def now_utc_iso() -> str:

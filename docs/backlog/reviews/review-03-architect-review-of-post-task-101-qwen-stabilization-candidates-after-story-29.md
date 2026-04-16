@@ -47,7 +47,7 @@ Selection rule:
 Offline architect package:
 
 - repomix XML:
-  `.agents/repomix_packages/repomix-qwen-post-task101-architecture-review.xml`
+  `.codex/repomix_packages/repomix-qwen-post-task101-architecture-review.xml`
 - package size: `406,391` bytes
 - file count: `36`
 - total token estimate: `92,805`

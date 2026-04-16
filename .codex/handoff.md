@@ -2,6 +2,16 @@
 
 ## Current State
 
+### TASK-0043 agent-governance cutover (2026-04-16)
+
+- Unambiguous governance surfaces moved from `.agents/` to `.codex/`:
+  rules, skills, handoff, long-term memory, and repomix packages.
+- Ignored local PDF source inputs moved from `.agents/input/` to
+  `data/conversion-inputs/`.
+- `.agents/` is removed; do not recreate compatibility shims.
+- Cutover validation passed: `pdm run validate-tasks`, `pdm run validate-docs`,
+  and `git diff --check`.
+
 ### Additional local dev runtime slice (2026-03-25)
 
 - `task-250-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging`
@@ -60,7 +70,7 @@
 - Active mechanism story:
   `docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md`.
 - New governing rule:
-  `.agents/rules/096-qwen-experiment-governance.md`.
+  `.codex/rules/096-qwen-experiment-governance.md`.
 - Single live result ledger for active Qwen Task 101 work:
   `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
 

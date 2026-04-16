@@ -2,7 +2,7 @@
 
 Purpose:
     Enforce YAML frontmatter and metadata conventions for `docs/` and
-    `.agents/rules/` using a contract file.
+    `.codex/rules/` using a contract file.
 
 Relationships:
     - Source contract: `docs/_meta/docs-contract.yaml`
@@ -350,7 +350,7 @@ def filter_user_paths(paths: list[str]) -> tuple[list[Path], list[Path]]:
         norm = normalize_path(candidate)
         if norm.startswith("docs/") and candidate.suffix == ".md":
             docs_targets.append(candidate)
-        if norm.startswith(".agents/rules/") and candidate.suffix == ".md":
+        if norm.startswith(".codex/rules/") and candidate.suffix == ".md":
             rule_targets.append(candidate)
 
     return docs_targets, rule_targets

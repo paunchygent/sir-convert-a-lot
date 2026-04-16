@@ -8,8 +8,8 @@ created: '2026-02-11'
 last_updated: '2026-02-14'
 related:
   - docs/backlog/epics/epic-03-unified-conversion-service.md
-  - .agents/rules/030-conversion-workflows.md
-  - .agents/rules/035-docling-pdf-conversion.md
+  - .codex/rules/030-conversion-workflows.md
+  - .codex/rules/035-docling-pdf-conversion.md
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine.py
   - scripts/sir_convert_a_lot/interfaces/http_api.py
   - scripts/sir_convert_a_lot/interfaces/http_client_v2.py
@@ -275,8 +275,8 @@ This story is being executed through these PR-sized tasks:
 
 ## Related
 
-- `.agents/rules/030-conversion-workflows.md`
-- `.agents/rules/035-docling-pdf-conversion.md`
+- `.codex/rules/030-conversion-workflows.md`
+- `.codex/rules/035-docling-pdf-conversion.md`
 - `scripts/converters/convert_pdf_to_md.py`
 - `scripts/converters/convert_pdf_to_md_advanced.py`
 

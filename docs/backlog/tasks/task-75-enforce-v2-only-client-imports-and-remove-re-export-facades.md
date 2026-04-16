@@ -9,7 +9,7 @@ last_updated: '2026-03-04'
 related:
   - docs/backlog/stories/story-14-v2-only-clean-break-and-api-surface-unification.md
   - docs/backlog/stories/story-12-legacy-path-removal-docs-cleanup-and-runtime-simplification.md
-  - .agents/rules/030-conversion-workflows.md
+  - .codex/rules/030-conversion-workflows.md
   - scripts/sir_convert_a_lot/interfaces/http_client_v2.py
   - scripts/sir_convert_a_lot/interfaces/cli_app.py
   - pyproject.toml

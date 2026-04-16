@@ -27,7 +27,7 @@ hierarchy and frontmatter constraints.
 ## Deliverables
 
 - `docs/_meta/docs-contract.yaml` with strict validation rules.
-- Contract-driven validator for `docs/` and `.agents/rules/`.
+- Contract-driven validator for `docs/` and `.codex/rules/`.
 - Frontmatter normalization for existing docs and rules.
 
 ## Acceptance Criteria

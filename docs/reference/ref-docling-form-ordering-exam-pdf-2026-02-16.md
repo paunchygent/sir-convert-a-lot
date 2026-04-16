@@ -24,7 +24,7 @@ not strict markdown normalization side effects.
 
 ## Target Input
 
-- `.agents/input/Prövning i litteraturhistoria 2024.pdf`
+- `data/conversion-inputs/Prövning i litteraturhistoria 2024.pdf`
 
 ## Environment Snapshot
 
