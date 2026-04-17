@@ -204,23 +204,24 @@ distribution = false
 "docs-validate" = { composite = ["validate-tasks", "validate-docs"] }
 "index-tasks" = "python -m scripts.docs_as_code.index_tasks"
 "skills-validate" = "python -m scripts.docs_as_code.validate_skills"
+"handoff-validate" = "python -m scripts.docs_as_code.validate_handoff"
 "format" = "ruff format ."
-"format-md" = "mdformat --extensions frontmatter README.md AGENTS.md docs .agents"
+"format-md" = "mdformat --extensions frontmatter README.md AGENTS.md docs .codex"
 "format-all" = { composite = [
     "ruff format .",
-    "mdformat --extensions frontmatter README.md AGENTS.md docs .agents",
+    "mdformat --extensions frontmatter README.md AGENTS.md docs .codex",
 ] }
 "lint" = { composite = [
     "ruff format --check --diff .",
     "ruff check .",
-    "mdformat --check --extensions frontmatter README.md AGENTS.md docs .agents",
+    "mdformat --check --extensions frontmatter README.md AGENTS.md docs .codex",
     "python -m scripts.docs_as_code.validate_docs",
     "python -m scripts.docs_as_code.validate_tasks",
 ] }
 "lint-fix" = { composite = [
     "ruff check --fix --unsafe-fixes .",
     "ruff format .",
-    "mdformat --extensions frontmatter README.md AGENTS.md docs .agents",
+    "mdformat --extensions frontmatter README.md AGENTS.md docs .codex",
     "python -m scripts.docs_as_code.validate_docs",
     "python -m scripts.docs_as_code.validate_tasks",
 ] }

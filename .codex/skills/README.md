@@ -16,26 +16,18 @@ ______________________________________________________________________
 
 ## Purpose
 
-Index repo-local skills for Sir Convert-a-Lot and document global visibility via symlink.
+Index repo-local skills for Sir Convert-a-Lot.
 
-## Local Skills
+## Retained Repo-Local Skills
 
 - `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
 - `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
-- `.codex/skills/sir-convert-a-lot-docs-governance/SKILL.md`
-- `.codex/skills/sir-convert-a-lot-session-handoff/SKILL.md`
-- `.codex/skills/sir-convert-a-lot-pdf-to-md/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
+- `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md`
 
-## Global Visibility
+## Policy
 
-Create symlinks in `~/.codex/skills` pointing to repo-local skills:
-
-```bash
-ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-colab-hemma" ~/.codex/skills/sir-convert-a-lot-colab-hemma
-ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-devops-hemma" ~/.codex/skills/sir-convert-a-lot-devops-hemma
-ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-docs-governance" ~/.codex/skills/sir-convert-a-lot-docs-governance
-ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-session-handoff" ~/.codex/skills/sir-convert-a-lot-session-handoff
-ln -s "$(pwd)/.codex/skills/sir-convert-a-lot-pdf-to-md" ~/.codex/skills/sir-convert-a-lot-pdf-to-md
-```
-
-General cross-repo skills (for example `docs-as-code`) live directly in `~/.codex/skills` and should not be duplicated under `.codex/skills/` in this repo.
+Do not create global symlinks that point directly to
+`sir-convert-a-lot/.codex/skills`. If a local skill becomes cross-repo guidance,
+promote it into `skill-repository` first and expose only that canonical target
+through `~/.codex/skills`.

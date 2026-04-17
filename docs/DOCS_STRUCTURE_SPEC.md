@@ -33,3 +33,4 @@ links:
 - Task lifecycle updates are required when state changes (`proposed -> in_progress -> completed`).
 - `pdm run docs-validate` enforces backlog, docs, and `.codex/rules/` contracts.
 - `pdm run skills-validate` enforces repo-local `.codex/skills/` metadata.
+- `pdm run handoff-validate` enforces `.codex/handoff.md` and `.codex/long-term-memory/` topology.

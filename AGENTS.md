@@ -113,6 +113,12 @@ Skill-surface gate:
 pdm run skills-validate
 ```
 
+Handoff gate:
+
+```bash
+pdm run handoff-validate
+```
+
 ## Docker v2 Standards (Greatest Hits)
 
 - Use `docker compose` (v2), never `docker-compose`.
@@ -139,11 +145,19 @@ Canonical runbook:
 
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
-Repo-specific DevOps skill:
+Repo-local skills retained for Sir Convert-specific operations:
 
 - `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
-- `.codex/skills/sir-convert-a-lot-docs-governance/SKILL.md`
-- `.codex/skills/sir-convert-a-lot-session-handoff/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
+- `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
+- `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md`
+
+Shared/global skills used from `~/.codex/skills`, not duplicated locally:
+
+- `sir-convert-a-lot-client`
+- `agent-docs-governance`
+- `agent-planning`
+- `agent-session-handoff`
 
 Cross-repo topology awareness on Hemma:
 
@@ -180,6 +194,6 @@ Policy:
 - Session handoff: `.codex/handoff.md`
 - Long-term memory: `.codex/long-term-memory/index.md`
 - Skills: `.codex/skills/`
-- Global skills registry: `~/.codex/skills/` (repo skills must be symlinked there)
+- Global skills registry: `~/.codex/skills/` for canonical shared skills
 - Planning: `docs/backlog/`
 - Product/ops docs: `docs/`
