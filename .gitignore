@@ -9,6 +9,7 @@ __pycache__/
 .coverage
 coverage.xml
 build/
+.artifacts/
 .DS_Store
 data/conversion-inputs/
 **/repomix_packages/
