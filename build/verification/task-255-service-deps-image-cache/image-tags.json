@@ -1,13 +1,16 @@
 {
   "dependency_hash_cpu": "bfaccf69f62f3a1666928ddcf0e1cf6e3867c6b8ec4c0b91b5c67bd93ecc9897",
   "dependency_hash_rocm": "958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
-  "dependency_image_cpu": "sir-convert-a-lot-deps-cpu:bfaccf69f62f3a1666928ddcf0e1cf6e3867c6b8ec4c0b91b5c67bd93ecc9897",
-  "dependency_image_rocm": "sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
-  "dependency_image_rocm_id": "sha256:dc08aff03796977388560d550da2f04b5c3e3310088fa3b39cdfb782e6d1d4c2",
+  "recipe_hash": "b73103f7eb1258eb7be902b74b10675cbd92c6c14db4e0c0c5c29d72ebc6f81f",
+  "dependency_image_hash_cpu": "e012fe9dd168bd4c4f163026be4840e7b244956c9c8c0d891a08f226941790ff",
+  "dependency_image_hash_rocm": "b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89",
+  "dependency_image_cpu": "sir-convert-a-lot-deps-cpu:e012fe9dd168bd4c4f163026be4840e7b244956c9c8c0d891a08f226941790ff",
+  "dependency_image_rocm": "sir-convert-a-lot-deps-rocm:b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89",
+  "dependency_image_rocm_id": "sha256:4c0c7e11fcacbecacb2b5428ebc38722f5903f8c6dfc71e5f9a9d64bcde88893",
   "runtime_image_local": "sir-convert-a-lot-runtime:local",
-  "runtime_image_local_id": "sha256:41804019dfd0e0608ebd1e1faeca8faec0df0b9d8e1718383828f8672df37f78",
+  "runtime_image_local_id": "sha256:644ba8f648d639ae15738c32673cf67e5700ce5ca4146cb47b6464844dc0c518",
   "runtime_image_local_cpu": "sir-convert-a-lot-runtime-local:local-cpu",
-  "remote_revision": "7173c03f8b414caa7fa1e9c84a0c6b33b5b357b8",
-  "worktree_base_revision": "7173c03f8b414caa7fa1e9c84a0c6b33b5b357b8",
+  "remote_revision": "d23855375ec848a8c45ae40d43e23c4f8b23d319",
+  "worktree_base_revision": "d23855375ec848a8c45ae40d43e23c4f8b23d319",
   "worktree_contains_uncommitted_task255_changes": false
 }

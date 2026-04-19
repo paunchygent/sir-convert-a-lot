@@ -1,0 +1,2 @@
+NAME                     IMAGE                             COMMAND                  SERVICE                  CREATED          STATUS                    PORTS
+sir_convert_a_lot_prod   sir-convert-a-lot-runtime:local   "uvicorn scripts.sir…"   sir_convert_a_lot_prod   33 seconds ago   Up 30 seconds (healthy)   127.0.0.1:28085->8085/tcp

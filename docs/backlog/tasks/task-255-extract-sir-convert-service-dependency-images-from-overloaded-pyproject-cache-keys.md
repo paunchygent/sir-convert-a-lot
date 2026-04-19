@@ -134,6 +134,14 @@ Out of scope:
     build-recipe hash and combined dependency-image hash, labels images with
     all three freshness values, and makes normal `ensure` reject existing tags
     whose labels do not match the current contract.
+  - Review 05 follow-up was committed and pushed as
+    `d23855375ec848a8c45ae40d43e23c4f8b23d319`, then pulled into the
+    canonical Hemma repo. Detached Hemma proof rebuilt the ROCm dependency
+    image once under combined image hash
+    `b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89`,
+    verified dependency/recipe/image labels, reran an app-only `prod-build`
+    with all app layers cached and no ROCm torch or EasyOCR work, and reran
+    `prod-recreate sir_convert_a_lot_prod` healthy.
 
 ## Acceptance Criteria
 

@@ -1,0 +1,6282 @@
+ID:		046zjuhlxmeogl9xds7jq4ow0
+Parent:		dckchj2ohrhto4m57os27t6st
+Created at:	2026-04-15 22:30:48.869117902 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		09r7gkzwldlwexu1pf96um8xr
+Parent:		oyhczpyvyj9fxyjq58fx12mve
+Created at:	2026-04-16 20:11:36.410689076 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		0kmga9ylakz6pk23d57cprlzb
+Parent:		fy6nsb8dcv5tg43np3zw1xv46
+Created at:	2026-04-16 20:11:53.394185037 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		139oygl4485ybc5x30tn00c1n
+Parent:		jkwgd160t86o436buulh54gwq
+Created at:	2026-04-15 22:25:08.038111253 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[frontend-builder  6/10] WORKDIR /app/frontend
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		26vm85583egfh8xmv7x1ktc49
+Parent:		w7vr8u164tx4ja4dk1o7io0s5
+Created at:	2026-04-16 20:11:52.73898539 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		28rfieiiuyps5y4p1dnb5lwhz
+Parent:		tei33dmverh1jr292qxc8iyto
+Created at:	2026-04-15 22:30:48.696442941 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		2a469gki5b96wkdaf48vcbzff
+Parent:		fnt08tbzt64d51utwl5k0mkd6
+Created at:	2026-04-15 22:30:49.60049676 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		2i6505yxjq1e3p7pa7kvkzytv
+Parent:		i4ngpqd0s21kdrcxfd1v0zksc
+Created at:	2026-04-19 15:04:34.600272443 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		2kc7wt2vx59ial3uiss0ndhcg
+Parent:		kvqvtg9xqvyeyu9icygvvm5q6
+Created at:	2026-04-16 20:11:36.229665453 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		2o7x13ctebwxkry7tonsakx7d
+Parent:		qjnjp5xfj66illg9turejk2ok
+Created at:	2026-04-15 22:30:44.360772223 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		2vsu0t8atmihhi08wy1k4f4su
+Parent:		yxd9djbw227uhvaqtdhhy3vtc
+Created at:	2026-04-16 20:12:03.404089657 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[base 3/3] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		32zsor67wuqm8rkaznca6mxjx
+Parent:		2a469gki5b96wkdaf48vcbzff
+Created at:	2026-04-15 22:30:49.697561063 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		49g6chvad0aeiqtkvm4kgka2v
+Parent:		f5xtm0kmyiqn8utsva20k3l1l
+Created at:	2026-04-19 13:03:02.245359691 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		4g01ofspampm36hfh1fgj5nvq
+Parent:		oihli25svveft4xt58k5q2ffp
+Created at:	2026-04-19 13:02:57.925329251 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		4hazf7daexle8uvt8zjpndw4j
+Parent:		xelkmrkahydweyzkx14tmfzg2
+Created at:	2026-04-19 13:02:58.965748714 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		4iouzoscy4lhxpw10ms6uirh8
+Parent:		4v4faj8a7c9h4nl7ttnlhcq4u
+Created at:	2026-04-19 13:03:09.775741621 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		4n8q9u01fwl89v9o9n4foa0l7
+Parent:		28rfieiiuyps5y4p1dnb5lwhz
+Created at:	2026-04-15 22:30:48.764888158 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		5ewac9k5pki9911fgjbpgeam3
+Parent:		ldfu2g1hx58j5mzgm1fep9wku
+Created at:	2026-04-19 13:02:58.702411492 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		5lcphnidjl75wk9reeqt3f87t
+Parent:		xkmmfmubl31uxhuaxgd5bo54l
+Created at:	2026-04-19 13:02:59.160252513 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		5wvdx6t5woyk15rq6ithrnk92
+Parent:		w84kac358ao07x84smuvvtped
+Created at:	2026-04-15 22:30:48.600553583 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		5xe5h684d6ud54sxkw6xwhb98
+Parent:		09r7gkzwldlwexu1pf96um8xr
+Created at:	2026-04-16 20:11:36.465281491 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		6e5pp6198nggujif2x0pidwe8
+Parent:		a6xtxbc1x8k5ijhpifaprqgaa
+Created at:	2026-04-16 20:12:07.353021142 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 3/3] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		6p4h8ltdl8dmgjtaw1usfl5ap
+Parent:		f4ud5llgrv2gu9bh1xyxm911g
+Created at:	2026-04-15 22:30:48.442423153 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		7sh5c2sz6yy32k00bypsvm7bq
+Parent:		nglh8qwhc6t1ec11wq0dkpw2d
+Created at:	2026-04-16 20:11:52.761578556 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		96gto1zjh9hackhh1tddcujey
+Parent:		5xe5h684d6ud54sxkw6xwhb98
+Created at:	2026-04-16 20:11:36.527930873 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		9dns1byezdfxj9n2qfpbpmz0k
+Parent:		pdprkyjyowq2s5itawxmfky84
+Created at:	2026-04-16 20:11:53.021369269 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		9ggo0iif2kdl6w2zuozv8343m
+Parent:		2i6505yxjq1e3p7pa7kvkzytv
+Created at:	2026-04-19 15:04:34.665158304 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		9ydzxkbisnwy65fy8t007st6i
+Parent:		t6kevblhl1mockqohtzie8lov
+Created at:	2026-04-15 22:31:31.22865979 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[base 4/4] WORKDIR /app
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		abipmjcfp77cvxbs5z0jrlnpl
+Created at:	2026-04-15 22:24:59.584154429 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/docker/dockerfile:1.6@sha256:ac85f380a63b13dfcefa89046420e1781752bab202122f8f50032edf31be0021
+Usage count:	6
+Last used:	2 days ago
+Type:		frontend
+
+ID:		akcwi3ehxok0cjjvaysn821yg
+Created at:	2026-04-15 22:22:52.705843145 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/docker/dockerfile:1@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
+Usage count:	8
+Last used:	2 minutes ago
+Type:		frontend
+
+ID:		as4c6kpiesniy52x05iyzxwkv
+Parent:		tgcwtfk8yt3g3qg8ihxslbecu
+Created at:	2026-04-19 13:02:59.517355604 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		aw81654i0n3r654byysfpmsmh
+Parent:		046zjuhlxmeogl9xds7jq4ow0
+Created at:	2026-04-15 22:30:48.91738326 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		b6085wpbh6x6um0dn1d9z56yi
+Parent:		fffk6554mg8b560b6x671vg21
+Created at:	2026-04-19 13:03:02.882813643 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		bf50y3uhzq3s9qf3ojqx0vv8d
+Parent:		jgto066aq2vz2ujzo7740ozw9
+Created at:	2026-04-16 20:11:35.689795458 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		brcvtba3ghqxuholm2m7icdjy
+Parent:		qqtz37t4ec4tqn5f2pn1veqsy
+Created at:	2026-04-15 22:25:03.673165581 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[deps_base  5/29] WORKDIR /app
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		bsphb765lgqyswwxeewfbqzd6
+Parent:		f8lpfbszrylvn1ktvvfji528s
+Created at:	2026-04-15 22:30:51.613094834 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		bwv4pkztqnbbv59vzjqvoyrx0
+Parent:		wcbn59ww8qm4cdeb7l4adfaeb
+Created at:	2026-04-19 12:24:11.504606456 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		c3w9x93xqvgdnbnmhxxeeqkru
+Parent:		l3j138zqol9qa0p2pdvlvkgu9
+Created at:	2026-04-15 22:30:44.88902508 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		c8hadvlzrw66n05iayzwsoj8w
+Parent:		m2rmpuzss8zmikmcv1a61sz5o
+Created at:	2026-04-19 12:15:58.876673535 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	mount / from exec /bin/sh -c mkdir -p /var/lib/sir-convert-a-lot/prod /var/lib/sir-convert-a-lot/local
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		cvmr1b9jg3acz9ikodwburpbr
+Parent:		ul291rk1x1f2xwo5q3gbfnhgx
+Created at:	2026-04-15 22:31:14.491353459 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[base 3/3] WORKDIR /app
+Usage count:	3
+Last used:	3 days ago
+Type:		regular
+
+ID:		cwny3y5nvsm0wu5alg18qpmgi
+Parent:		x2bkoe95iu5upzplkzp7uq2jp
+Created at:	2026-04-16 20:12:20.902762859 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		d94xvynxrbic5itfp0rz5idkw
+Parent:		ng66jpxungtgqxh1i9fzozs88
+Created at:	2026-04-19 09:40:09.862500349 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	mount / from exec /bin/sh -c mkdir -p /var/lib/sir-convert-a-lot/prod
+Usage count:	4
+Last used:	5 hours ago
+Type:		regular
+
+ID:		dckchj2ohrhto4m57os27t6st
+Parent:		4n8q9u01fwl89v9o9n4foa0l7
+Created at:	2026-04-15 22:30:48.816845421 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		do9vt7qdw21bcjpv8m5e3uiag
+Parent:		4g01ofspampm36hfh1fgj5nvq
+Created at:	2026-04-19 13:02:58.017952895 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		dyt8ibihouodnvi5as5zjwgt6
+Parent:		5lcphnidjl75wk9reeqt3f87t
+Created at:	2026-04-19 13:02:59.273084573 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		dz6o78mjwarrho5n9q354lnv1
+Parent:		i9srjw66o5jb655ehkjihhfmv
+Created at:	2026-04-16 20:11:40.367774941 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[base 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ei8m50qjolpuubitpr0whjujk
+Parent:		ndhyl5evj8fvudeykferzv81a
+Created at:	2026-04-15 22:22:54.644686916 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[pandoc-base 2/3] WORKDIR /app
+Usage count:	2
+Last used:	3 days ago
+Type:		regular
+
+ID:		equnogtfqrxzjgdyiq6x6zixk
+Parent:		dyt8ibihouodnvi5as5zjwgt6
+Created at:	2026-04-19 13:02:59.366927732 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		f4ud5llgrv2gu9bh1xyxm911g
+Parent:		vrp6meal10sjcg7gvq06b9bol
+Created at:	2026-04-15 22:30:48.32536763 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		f5xtm0kmyiqn8utsva20k3l1l
+Parent:		zv9ambwhb1egfkszo8pkdcv1c
+Created at:	2026-04-19 13:03:02.14732872 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		f8lpfbszrylvn1ktvvfji528s
+Parent:		uqxnz3l985ebgn7fwilhp2v9g
+Created at:	2026-04-15 22:30:51.471970645 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		f8sfdjag6ro6wq50ye7patspt
+Parent:		tcfbjz6dwpxm63vn9nmlwf8uv
+Created at:	2026-04-19 12:24:11.001057422 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		fffk6554mg8b560b6x671vg21
+Parent:		rp9n046pa7jk0d79z0anve6bv
+Created at:	2026-04-19 13:03:02.770099724 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		fnt08tbzt64d51utwl5k0mkd6
+Parent:		tkm0kxx4tpit7l25qu9mu3qr6
+Created at:	2026-04-15 22:30:49.481263304 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		fokkraccuumwhrhea15sde7oh
+Parent:		uylvf099ly2xjvxs2gg3isacp
+Created at:	2026-04-15 22:25:25.770049485 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[builder 1/5] WORKDIR /app
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ggvjhmttkn3nay2inpdq3rwtc
+Parent:		my8lv01w6njfd7s32egg3ujng
+Created at:	2026-04-15 22:24:34.158405247 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.12-slim@sha256:804ddf3251a60bbf9c92e73b7566c40428d54d0e79d3428194edf40da6521286
+Usage count:	2
+Last used:	3 days ago
+Type:		regular
+
+ID:		gq5pu17k03ehvfjcvwtso3ble
+Parent:		ic5rdkn1px6vxepaabgj0l4zt
+Created at:	2026-04-19 12:24:10.852041714 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		hoh9cvb9vtbwh1zdevbm2eub3
+Parent:		tc18ruvtelnd56yxr1rcwo7p4
+Created at:	2026-04-19 12:24:11.360932633 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		hwzeh1r6cdvks5qsqbrxlvaxd
+Parent:		dbpycaw9eesxg66tchx2bs3we
+Created at:	2026-04-16 20:11:52.791460541 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		i3rfk2j2zpq2bsuj5sxfupkfm
+Parent:		oztgbw0tft9mkzydwhekkg57y
+Created at:	2026-04-16 20:11:49.532189234 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		i4ngpqd0s21kdrcxfd1v0zksc
+Parent:		mph85q2418495jcqbrp75tnjc
+Created at:	2026-04-19 15:04:34.496914287 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		i829vdu54vdktln6wx8tdt6p3
+Parent:		rj221brbmt27kczrlz8m0ojqv
+Created at:	2026-04-19 13:03:10.230576544 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		i869r13104od1s88a5l3ekpk7
+Parent:		x4eqse8lcrsuvn7zgnib15svk
+Created at:	2026-04-15 22:30:50.546244756 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		i9srjw66o5jb655ehkjihhfmv
+Parent:		qktziuk1n1q1wojjne6kgkfb3
+Created at:	2026-04-16 20:11:39.98377827 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ias371k4sizwind7svm6rtcpg
+Parent:		k3tgoj53sbgfo5ns9vz27b559
+Created at:	2026-04-19 13:03:10.014617685 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ic2kaqlsoxq6w0z78ui7mb0kb
+Parent:		96gto1zjh9hackhh1tddcujey
+Created at:	2026-04-16 20:11:36.765429413 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ic5rdkn1px6vxepaabgj0l4zt
+Parent:		z2sgp73gpogitnj2jrylr6ax0
+Created at:	2026-04-19 09:39:26.597849163 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.11-slim@sha256:233de06753d30d120b1a3ce359d8d3be8bda78524cd8f520c99883bfe33964cf
+Usage count:	3
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		imdaqx65d1l6ywe550d2f5g4v
+Created at:	2026-04-15 22:22:54.5393297 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.13-slim@sha256:d168b8d9eb761f4d3fe305ebd04aeb7e7f2de0297cec5fb2f8f6403244621664
+Usage count:	3
+Last used:	3 days ago
+Type:		regular
+
+ID:		imurfxg4bqm9uksseywrf3afh
+Parent:		wo8frxdy5g5w162upsq36plnv
+Created at:	2026-04-15 22:25:06.002923897 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:22-slim@sha256:f3a68cf41a855d227d1b0ab832bed9749469ef38cf4f58182fb8c893bc462383
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ioow383542lcil9ypwbnl9lgy
+Parent:		rsimgkswey7if1revot18jqvv
+Created at:	2026-04-16 20:11:53.534494279 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		iuzkcheetij314il7bs0quobx
+Parent:		ic2kaqlsoxq6w0z78ui7mb0kb
+Created at:	2026-04-16 20:11:38.077637448 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		j86vnyhee1tt9opg1bmibko0j
+Parent:		as4c6kpiesniy52x05iyzxwkv
+Created at:	2026-04-19 13:02:59.614572099 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		jgto066aq2vz2ujzo7740ozw9
+Parent:		xwranzcy3txcql9i4i4tk9ctc
+Created at:	2026-04-16 20:11:35.636672226 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		jiy8n4t0og38w91sb44k3kewa
+Parent:		qf8x3jl10z6rpj8ewfparakou
+Created at:	2026-04-16 20:11:53.335952391 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		jn2gwun27nuxo2nei7708dl7z
+Parent:		j3vovecgycpshgryevbhoajg3
+Created at:	2026-04-16 20:11:49.476976894 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		jqhzjt1f8bgw6ea9rptihk572
+Parent:		9ggo0iif2kdl6w2zuozv8343m
+Created at:	2026-04-19 15:04:34.718327071 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		jrxez0ppuujjhm5hbqpok3no1
+Parent:		6f5uv8mvyvdezsphh3gtnd4bi
+Created at:	2026-04-19 13:03:09.548703698 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		kfc6w46tdnq9krsrqrtgaxlq9
+Parent:		v9isb1us35rjnni2o0rkbekrs
+Created at:	2026-04-19 12:24:11.262815893 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		kikl1857yp7k6cpdgbi27of9e
+Parent:		spnedgn5vo8f2a94gcswj31tr
+Created at:	2026-04-15 22:31:32.078868537 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[production 3/3] WORKDIR /app
+Usage count:	13
+Last used:	2 days ago
+Type:		regular
+
+ID:		kklz3vqudrzmpa5xeued4yw1g
+Parent:		llemzfp70ok4avrykgttt39es
+Created at:	2026-04-15 22:30:48.149930779 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		knfq4uj9q2n221wiqbbqrzi2s
+Parent:		hoh9cvb9vtbwh1zdevbm2eub3
+Created at:	2026-04-19 12:24:11.409941794 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		kvqvtg9xqvyeyu9icygvvm5q6
+Parent:		vymyh5fwkzhrl7s5onnocc1xo
+Created at:	2026-04-16 20:11:36.159259543 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		l3j138zqol9qa0p2pdvlvkgu9
+Parent:		2o7x13ctebwxkry7tonsakx7d
+Created at:	2026-04-15 22:30:44.434441789 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		l85inbb2kszflsdervrut3co9
+Parent:		qnmqlvwv6p4kiluwup8vfx23v
+Created at:	2026-04-16 20:11:39.061723523 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		l8li8wd1tfg5kc1vwccds3ce2
+Parent:		ydqumcinugp1624zfufmqwgmg
+Created at:	2026-04-16 20:11:35.870278454 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		lcip855gzqsknhyawddlnz9sf
+Parent:		r25d9m2icv0wedx2obmf1bnmk
+Created at:	2026-04-19 13:03:10.124486737 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ldfu2g1hx58j5mzgm1fep9wku
+Parent:		do9vt7qdw21bcjpv8m5e3uiag
+Created at:	2026-04-19 13:02:58.226295367 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		lek2yoiqukl2qs4qu2cri26wx
+Parent:		ml88qt6hox0d33shllbnioecn
+Created at:	2026-04-15 22:30:54.01153239 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:20-slim@sha256:f93745c153377ee2fbbdd6e24efcd03cd2e86d6ab1d8aa9916a3790c40313a55
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		lja4tls63qlx6gjujtfdrbj2n
+Parent:		bsphb765lgqyswwxeewfbqzd6
+Created at:	2026-04-15 22:30:51.744051443 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		llemzfp70ok4avrykgttt39es
+Parent:		z6igeo77hikdbme64g8qhc0el
+Created at:	2026-04-15 22:30:48.051198413 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		lnkzewqwmo0eumr5pjgho2b34
+Parent:		utfsftzh31ljs1y7gb9563kx9
+Created at:	2026-04-19 13:03:02.554699082 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		lo6y9lrdzxdokx0mq7t2sbt5d
+Parent:		c3w9x93xqvgdnbnmhxxeeqkru
+Created at:	2026-04-15 22:30:47.865046485 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		lo9qrgpwzbrcpa3f8dt1meyrx
+Parent:		w73ebejas0mrxfv8h02fz0mpk
+Created at:	2026-04-15 22:25:06.184598247 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[frontend-builder  2/10] WORKDIR /app
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		lrbgfojgpq4fyj9291qcbwyxx
+Parent:		6p4h8ltdl8dmgjtaw1usfl5ap
+Created at:	2026-04-15 22:30:48.488659699 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		lsce4x2s5v4d5710dg9szuiwj
+Parent:		zhbed1pj8ariv6ovzch1p8imo
+Created at:	2026-04-16 20:11:39.606631439 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		m05kicyzkqj9y08pq303up65j
+Parent:		rf6qvym4mttddmqo8wuwqff39
+Created at:	2026-04-19 13:02:59.777172501 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		mc99f0y2wdf5391mmvh7celd6
+Parent:		q7n562bk63u649yt9alx4lrvq
+Created at:	2026-04-19 13:03:09.70405754 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		mftcbiwplcf7edj6pzjo0y5j4
+Parent:		s59v91cbav6qj1jfawranqygw
+Created at:	2026-04-19 09:40:08.944509613 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	mount / from exec /bin/sh -c getent group video >/dev/null || groupadd --system video
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		ml34kh5ywf44m0ozshbseh4ij
+Parent:		v0uswehxl7u654l7mmpxo8awt
+Created at:	2026-04-16 20:11:35.08727469 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ml88qt6hox0d33shllbnioecn
+Parent:		oy74lzk4sxaf1ake8dkv8zrhp
+Created at:	2026-04-15 22:30:52.359596548 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:20-slim@sha256:f93745c153377ee2fbbdd6e24efcd03cd2e86d6ab1d8aa9916a3790c40313a55
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		mph85q2418495jcqbrp75tnjc
+Parent:		vzo57eiy2eka9etux5sf7jrjz
+Created at:	2026-04-19 15:04:34.23253937 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		mv1i7nmp3fesd74358cn85d9n
+Parent:		bf50y3uhzq3s9qf3ojqx0vv8d
+Created at:	2026-04-16 20:11:35.74250539 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		my8lv01w6njfd7s32egg3ujng
+Parent:		imdaqx65d1l6ywe550d2f5g4v
+Created at:	2026-04-15 22:24:34.142367412 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.12-slim@sha256:804ddf3251a60bbf9c92e73b7566c40428d54d0e79d3428194edf40da6521286
+Usage count:	2
+Last used:	3 days ago
+Type:		regular
+
+ID:		n9ibjwg02shr22ttwyh0ljmsu
+Parent:		qjnjp5xfj66illg9turejk2ok
+Created at:	2026-04-15 22:30:47.267450449 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[2/6] WORKDIR /app
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ndhyl5evj8fvudeykferzv81a
+Parent:		nql6s5lgles1hltppfwgqg3yo
+Created at:	2026-04-15 22:22:54.587823211 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.13-slim@sha256:d168b8d9eb761f4d3fe305ebd04aeb7e7f2de0297cec5fb2f8f6403244621664
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		niwwo8al4vz6fq60x033jsp4u
+Parent:		ykoi8inqx7p0q5yvkw32ypnkz
+Created at:	2026-04-16 20:11:36.051051169 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		nql6s5lgles1hltppfwgqg3yo
+Parent:		tyj5ng9xj6g9j0o7yr59wtq3x
+Created at:	2026-04-15 22:22:54.567808647 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.13-slim@sha256:d168b8d9eb761f4d3fe305ebd04aeb7e7f2de0297cec5fb2f8f6403244621664
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		oihli25svveft4xt58k5q2ffp
+Parent:		zg1ambhlynscp10uzivax6j1n
+Created at:	2026-04-16 20:11:35.393439788 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ojnx541av4a40vwd1j01m9rvo
+Parent:		wo8frxdy5g5w162upsq36plnv
+Created at:	2026-04-15 22:30:51.90344032 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:20-slim@sha256:f93745c153377ee2fbbdd6e24efcd03cd2e86d6ab1d8aa9916a3790c40313a55
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ol5332gd2kkcqrwnk3dii6i2u
+Parent:		4hazf7daexle8uvt8zjpndw4j
+Created at:	2026-04-19 13:02:59.020295877 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ondebrlsz1vvg1k93fjpl01f1
+Parent:		r73xbncxhp8imkwafvrwthguh
+Created at:	2026-04-16 20:05:54.957132911 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[deps_base  5/29] WORKDIR /app
+Usage count:	2
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ow5c7h59859v8rq9gr857k6cw
+Parent:		qpux527w6gdrp5hft27xespux
+Created at:	2026-04-19 13:03:10.204097295 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		oy74lzk4sxaf1ake8dkv8zrhp
+Parent:		ojnx541av4a40vwd1j01m9rvo
+Created at:	2026-04-15 22:30:52.082502129 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:20-slim@sha256:f93745c153377ee2fbbdd6e24efcd03cd2e86d6ab1d8aa9916a3790c40313a55
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		oyhczpyvyj9fxyjq58fx12mve
+Parent:		zf602t5yg2e46jf2ndf4v8vz9
+Created at:	2026-04-16 20:11:36.336617212 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ozmc33g7l2yumqchhefcmjn8z
+Parent:		lxcew7jteicm4a1mnu4iasz6z
+Created at:	2026-04-19 13:03:39.128478746 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		p6ql0djxitqv9oz7btcqrm8qi
+Parent:		jm4o8v36vz1qmhphy7jyq32s4
+Created at:	2026-04-16 20:11:53.167889285 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		pyjhe88wa7tik6v1ydurjqp23
+Parent:		uz81xdvqeettj4ie5ety9joe8
+Created at:	2026-04-19 13:03:07.236779929 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		q9t5fbza4vfwg4psw0hdwvsiu
+Parent:		imurfxg4bqm9uksseywrf3afh
+Created at:	2026-04-15 22:25:06.022261236 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:22-slim@sha256:f3a68cf41a855d227d1b0ab832bed9749469ef38cf4f58182fb8c893bc462383
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		qiif9y6b8kbhtfkya3igavd8m
+Parent:		mo4exu7qc7u382vhho4b0evih
+Created at:	2026-04-19 13:03:23.758207937 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		qjnjp5xfj66illg9turejk2ok
+Parent:		ggvjhmttkn3nay2inpdq3rwtc
+Created at:	2026-04-15 22:24:34.172529053 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.12-slim@sha256:804ddf3251a60bbf9c92e73b7566c40428d54d0e79d3428194edf40da6521286
+Usage count:	3
+Last used:	3 days ago
+Type:		regular
+
+ID:		qktziuk1n1q1wojjne6kgkfb3
+Parent:		lsce4x2s5v4d5710dg9szuiwj
+Created at:	2026-04-16 20:11:39.758468442 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		qnmqlvwv6p4kiluwup8vfx23v
+Parent:		iuzkcheetij314il7bs0quobx
+Created at:	2026-04-16 20:11:38.900602229 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		rf6qvym4mttddmqo8wuwqff39
+Parent:		j86vnyhee1tt9opg1bmibko0j
+Created at:	2026-04-19 13:02:59.683038564 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		rp9n046pa7jk0d79z0anve6bv
+Parent:		lnkzewqwmo0eumr5pjgho2b34
+Created at:	2026-04-19 13:03:02.664136845 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		rqaubmdz4l43xwm147glv0126
+Parent:		imdaqx65d1l6ywe550d2f5g4v
+Created at:	2026-04-19 09:39:26.474171187 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.11-slim@sha256:233de06753d30d120b1a3ce359d8d3be8bda78524cd8f520c99883bfe33964cf
+Usage count:	3
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		rt8k6opz6xqz620cticgrx4mb
+Parent:		equnogtfqrxzjgdyiq6x6zixk
+Created at:	2026-04-19 13:02:59.413054309 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		s0icehy7gh1m90e7j8a1a5nox
+Parent:		6ijorqt6aop8z9cup72s4p6z7
+Created at:	2026-04-19 13:03:09.882326897 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		s2ijlaoloywd6i8c1wk54peg2
+Parent:		ic5rdkn1px6vxepaabgj0l4zt
+Created at:	2026-04-19 09:39:27.248400172 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[runtime-base 2/6] WORKDIR /app
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		se361nf5skkvpm42xkn5j7ss6
+Parent:		i4rnqssrvbf3k0qbvf1yit1ip
+Created at:	2026-04-16 20:11:53.4890292 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		shj1fzxlkq8ybx1i1pjicldm3
+Parent:		xgy4z7xk96kpsjmcvn1px404n
+Created at:	2026-04-16 20:11:52.834496051 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		spwoeihesjtpijldq59b3hzxr
+Parent:		vczbmbmocpa8dglq8311mijrx
+Created at:	2026-04-19 13:03:31.404184333 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 3/3] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		swglxvg32zxr7dpqf2cr3zhyy
+Parent:		dtxo31oisnkbigh8qgqhme99y
+Created at:	2026-04-15 22:24:54.443895378 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[runner 4/4] WORKDIR /app
+Usage count:	6
+Last used:	2 days ago
+Type:		regular
+
+ID:		t82vfdz9v7zs3egxq277u1y60
+Parent:		z4rgd1l2yg1sk22dy77f5av5p
+Created at:	2026-04-19 13:03:09.609680224 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		tc18ruvtelnd56yxr1rcwo7p4
+Parent:		kfc6w46tdnq9krsrqrtgaxlq9
+Created at:	2026-04-19 12:24:11.311783303 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		tcfbjz6dwpxm63vn9nmlwf8uv
+Parent:		gq5pu17k03ehvfjcvwtso3ble
+Created at:	2026-04-19 12:24:10.913791427 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		tei33dmverh1jr292qxc8iyto
+Parent:		5wvdx6t5woyk15rq6ithrnk92
+Created at:	2026-04-15 22:30:48.648678031 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		tgcwtfk8yt3g3qg8ihxslbecu
+Parent:		rt8k6opz6xqz620cticgrx4mb
+Created at:	2026-04-19 13:02:59.463952117 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		thql8av0sztqwefdkymhm5j2l
+Parent:		q9t5fbza4vfwg4psw0hdwvsiu
+Created at:	2026-04-15 22:25:06.035900828 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:22-slim@sha256:f3a68cf41a855d227d1b0ab832bed9749469ef38cf4f58182fb8c893bc462383
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		tkm0kxx4tpit7l25qu9mu3qr6
+Parent:		aw81654i0n3r654byysfpmsmh
+Created at:	2026-04-15 22:30:48.985828927 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		to0wh1u60klj4yug3i64bgcw1
+Parent:		zzr3k5o80d5o55d2a7g9wh00k
+Created at:	2026-04-16 20:12:20.513538197 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[base 4/4] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		todmnmxcdvt6s4a7a0vozx29c
+Parent:		49g6chvad0aeiqtkvm4kgka2v
+Created at:	2026-04-19 13:03:02.304811163 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		tyj5ng9xj6g9j0o7yr59wtq3x
+Parent:		imdaqx65d1l6ywe550d2f5g4v
+Created at:	2026-04-15 22:22:54.55259626 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.13-slim@sha256:d168b8d9eb761f4d3fe305ebd04aeb7e7f2de0297cec5fb2f8f6403244621664
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		u81wt94n95n63fq81rts4jsid
+Parent:		pki2julzltz6t2gi6c3iutsif
+Created at:	2026-04-19 13:03:10.071215739 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		uqhwn0djmjulkpmao7526f70a
+Parent:		yaae058wwdp580z5pmx9bc2og
+Created at:	2026-04-19 13:03:09.655948061 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		uqxnz3l985ebgn7fwilhp2v9g
+Parent:		vsprkem8mqk41p8q5d5c1kmri
+Created at:	2026-04-15 22:30:51.373591646 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		urswsevf7rufz03u1xbnh2zut
+Parent:		l8li8wd1tfg5kc1vwccds3ce2
+Created at:	2026-04-16 20:11:35.928435535 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		utfsftzh31ljs1y7gb9563kx9
+Parent:		todmnmxcdvt6s4a7a0vozx29c
+Created at:	2026-04-19 13:03:02.436189836 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		v0uswehxl7u654l7mmpxo8awt
+Parent:		qjnjp5xfj66illg9turejk2ok
+Created at:	2026-04-16 20:11:34.88790739 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 hours ago
+Type:		regular
+
+ID:		v9isb1us35rjnni2o0rkbekrs
+Parent:		xjq46n1tqg0xmxpr98c9njcci
+Created at:	2026-04-19 12:24:11.213525682 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		vaw4vtlvnpc2ow27sec9sgar5
+Parent:		q8pr9f6a5i4q9apz3i1ckx5u7
+Created at:	2026-04-19 13:03:22.667033569 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[base 3/3] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		vkikuro4hs1y6bo9f5hemla8l
+Parent:		lrago7sddozpivgho28r6o2v7
+Created at:	2026-04-19 13:03:09.8168279 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		vmvejc7i0q4faeruqz74w9thi
+Parent:		ebxmsty3x1fvk1mbvfkamm87z
+Created at:	2026-04-16 20:11:53.073891749 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		vrp6meal10sjcg7gvq06b9bol
+Parent:		kklz3vqudrzmpa5xeued4yw1g
+Created at:	2026-04-15 22:30:48.260763747 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		vsprkem8mqk41p8q5d5c1kmri
+Parent:		i869r13104od1s88a5l3ekpk7
+Created at:	2026-04-15 22:30:50.789228889 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		vymyh5fwkzhrl7s5onnocc1xo
+Parent:		niwwo8al4vz6fq60x033jsp4u
+Created at:	2026-04-16 20:11:36.106226352 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		vzo57eiy2eka9etux5sf7jrjz
+Parent:		v9isb1us35rjnni2o0rkbekrs
+Created at:	2026-04-19 15:04:34.154426998 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		w73ebejas0mrxfv8h02fz0mpk
+Parent:		thql8av0sztqwefdkymhm5j2l
+Created at:	2026-04-15 22:25:06.050114587 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:22-slim@sha256:f3a68cf41a855d227d1b0ab832bed9749469ef38cf4f58182fb8c893bc462383
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		w84kac358ao07x84smuvvtped
+Parent:		lrbgfojgpq4fyj9291qcbwyxx
+Created at:	2026-04-15 22:30:48.550591102 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		w968r9dixtnvtyztr1yrxfmbx
+Parent:		e2hmzfu5a252vg26qkphnwhkl
+Created at:	2026-04-19 13:03:09.901988795 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		wcbn59ww8qm4cdeb7l4adfaeb
+Parent:		knfq4uj9q2n221wiqbbqrzi2s
+Created at:	2026-04-19 12:24:11.459345525 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		wo8frxdy5g5w162upsq36plnv
+Created at:	2026-04-15 22:25:05.988020742 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	pulled from docker.io/library/node:22-slim@sha256:f3a68cf41a855d227d1b0ab832bed9749469ef38cf4f58182fb8c893bc462383
+Usage count:	2
+Last used:	3 days ago
+Type:		regular
+
+ID:		wpipa47spfipse0ve44pldgs5
+Parent:		8arhegyg14x2crqys2r4hwxwg
+Created at:	2026-04-19 12:15:58.28535058 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	mount / from exec /bin/sh -c getent group video >/dev/null || groupadd --system video
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		x4eqse8lcrsuvn7zgnib15svk
+Parent:		32zsor67wuqm8rkaznca6mxjx
+Created at:	2026-04-15 22:30:49.841709339 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		xekbl8gl2os08mnimuzqf82jj
+Parent:		b6085wpbh6x6um0dn1d9z56yi
+Created at:	2026-04-19 13:03:03.235048215 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[base 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		xelkmrkahydweyzkx14tmfzg2
+Parent:		5ewac9k5pki9911fgjbpgeam3
+Created at:	2026-04-19 13:02:58.900616485 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		xjq46n1tqg0xmxpr98c9njcci
+Parent:		zewnis9x3o769a7luqa815ff0
+Created at:	2026-04-19 12:24:11.129448656 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		xkmmfmubl31uxhuaxgd5bo54l
+Parent:		ol5332gd2kkcqrwnk3dii6i2u
+Created at:	2026-04-19 13:02:59.092399916 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		xwranzcy3txcql9i4i4tk9ctc
+Parent:		oihli25svveft4xt58k5q2ffp
+Created at:	2026-04-16 20:11:35.541952917 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		yapp9ccd76eu5yci0nkswq0q6
+Parent:		lja4tls63qlx6gjujtfdrbj2n
+Created at:	2026-04-15 22:30:52.26599416 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[base 2/2] WORKDIR /app
+Usage count:	7
+Last used:	2 days ago
+Type:		regular
+
+ID:		ydqumcinugp1624zfufmqwgmg
+Parent:		mv1i7nmp3fesd74358cn85d9n
+Created at:	2026-04-16 20:11:35.817009274 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		yhs4nyhx1y4kcj6ax0evnh768
+Parent:		l85inbb2kszflsdervrut3co9
+Created at:	2026-04-16 20:11:39.24857512 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ykoi8inqx7p0q5yvkw32ypnkz
+Parent:		urswsevf7rufz03u1xbnh2zut
+Created at:	2026-04-16 20:11:35.998264967 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		z067yvede2f5l3s5hupjlhlp1
+Parent:		dc5n0nvqndgvg74lkwxsbii34
+Created at:	2026-04-16 20:11:52.895633995 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		z2sgp73gpogitnj2jrylr6ax0
+Parent:		rqaubmdz4l43xwm147glv0126
+Created at:	2026-04-19 09:39:26.51581578 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	pulled from docker.io/library/python:3.11-slim@sha256:233de06753d30d120b1a3ce359d8d3be8bda78524cd8f520c99883bfe33964cf
+Usage count:	3
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		z6igeo77hikdbme64g8qhc0el
+Parent:		lo6y9lrdzxdokx0mq7t2sbt5d
+Created at:	2026-04-15 22:30:47.9941339 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		zb1ygj5yjbrjyuo9shkbaux5m
+Parent:		s835lvxcpblynmbspg6m2s86v
+Created at:	2026-04-15 22:31:00.572984092 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		0B
+Description:	[frontend-builder 3/7] WORKDIR /frontend
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		zewnis9x3o769a7luqa815ff0
+Parent:		f8sfdjag6ro6wq50ye7patspt
+Created at:	2026-04-19 12:24:11.076685126 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		zf602t5yg2e46jf2ndf4v8vz9
+Parent:		2kc7wt2vx59ial3uiss0ndhcg
+Created at:	2026-04-16 20:11:36.284348407 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		zg1ambhlynscp10uzivax6j1n
+Parent:		ml34kh5ywf44m0ozshbseh4ij
+Created at:	2026-04-16 20:11:35.185779144 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	2
+Last used:	2 hours ago
+Type:		regular
+
+ID:		zhbed1pj8ariv6ovzch1p8imo
+Parent:		yhs4nyhx1y4kcj6ax0evnh768
+Created at:	2026-04-16 20:11:39.493416068 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		zmsf56i954vof3u8i3nyva3wc
+Parent:		93iszkvmmvrctkpju37ciu5n6
+Created at:	2026-04-19 13:03:38.745195345 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[base 4/4] WORKDIR /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		zrev8ueuwmgp6z6arlhlvmnzf
+Parent:		ryc4qqmyvp3idjnvws5ju2n5s
+Created at:	2026-04-16 20:12:04.546160959 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	[production 2/2] WORKDIR /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		zv9ambwhb1egfkszo8pkdcv1c
+Parent:		m05kicyzkqj9y08pq303up65j
+Created at:	2026-04-19 13:03:00.637482135 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		0B
+Description:	from local
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		0eh28soniahf38fuyfm4xdtuh
+Parent:		bwv4pkztqnbbv59vzjqvoyrx0
+Created at:	2026-04-19 12:24:11.658339953 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		31B
+Description:	[ 2/10] COPY scripts/__init__.py ./scripts/__init__.py
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		ctzdyrivt5crho0u0o0mv33l0
+Parent:		oogncitgnro90ptot61qorz8j
+Created at:	2026-04-19 10:20:01.967349899 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		31B
+Description:	[runtime  3/11] COPY scripts/__init__.py ./scripts/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		e4ekpzcmy2atnvp4ernz7v36h
+Parent:		x0wmrnvcx219wcexf3h03wln1
+Created at:	2026-04-19 09:40:20.994962652 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		31B
+Description:	[dependency-builder  3/14] COPY scripts/__init__.py /tmp/service-build-support/scripts/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		fm5ltoehnc4kdq2fh55hqfjz6
+Parent:		iy3rqpcm9fbdznya55el8udep
+Created at:	2026-04-19 10:10:17.730267698 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		31B
+Description:	[dependency-builder  3/14] COPY scripts/__init__.py /tmp/service-build-support/scripts/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		hzjxw4kb2zv03mhci1w1azfsc
+Parent:		jqhzjt1f8bgw6ea9rptihk572
+Created at:	2026-04-19 15:04:34.908692834 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		31B
+Description:	[ 2/10] COPY scripts/__init__.py ./scripts/__init__.py
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		s835lvxcpblynmbspg6m2s86v
+Parent:		lek2yoiqukl2qs4qu2cri26wx
+Created at:	2026-04-15 22:30:59.005370648 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		82B
+Description:	mount / from exec /bin/sh -c corepack enable pnpm
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		3feuxlmkdo6c78o78tfcefub2
+Parent:		e4ekpzcmy2atnvp4ernz7v36h
+Created at:	2026-04-19 09:40:21.204543116 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		254B
+Description:	[dependency-builder  4/14] COPY scripts/sir_convert_a_lot/__init__.py /tmp/service-build-support/scripts/sir_convert_a_lot/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		c48yeg682asmekna23rnfqd1f
+Parent:		fm5ltoehnc4kdq2fh55hqfjz6
+Created at:	2026-04-19 10:10:17.917061486 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		254B
+Description:	[dependency-builder  4/14] COPY scripts/sir_convert_a_lot/__init__.py /tmp/service-build-support/scripts/sir_convert_a_lot/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		ci84uf5queqzcyzpomuldwt0n
+Parent:		0eh28soniahf38fuyfm4xdtuh
+Created at:	2026-04-19 12:24:11.863029374 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		254B
+Description:	[ 3/10] COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		j2xpktf1gexxz8vrv9muc57bi
+Parent:		hzjxw4kb2zv03mhci1w1azfsc
+Created at:	2026-04-19 15:04:35.28404725 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		254B
+Description:	[ 3/10] COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		u3hkdd9bshkdxckt3x21squ49
+Parent:		ctzdyrivt5crho0u0o0mv33l0
+Created at:	2026-04-19 10:20:02.147205977 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		254B
+Description:	[runtime  4/11] COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		0t0bku7yeswvprjy8fvikz9rq
+Parent:		6sq6n2mukf3mpnpk2rdrrdlpj
+Created at:	2026-04-19 09:40:33.817388226 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		260B
+Description:	mount / from exec /bin/sh -c PYTHONPATH=/tmp/service-build-support python -c 'from pathlib import Path; from scripts.sir_convert_a_lot.devops.service_image_build_contract import load_rocm_runtime_contract; Path("/tmp/rocm-runtime.env").write_text(load_rocm_runtime_contract(Path("/app")).as_shell_exports(), encoding="utf-8")'
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		851tvsxwhwravvl43n7sr05pc
+Parent:		mk41teqzrrzjitnlba495a0dm
+Created at:	2026-04-19 10:10:30.377805226 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		260B
+Description:	mount / from exec /bin/sh -c PYTHONPATH=/tmp/service-build-support python -c 'from pathlib import Path; from scripts.sir_convert_a_lot.devops.service_image_build_contract import load_rocm_runtime_contract; Path("/tmp/rocm-runtime.env").write_text(load_rocm_runtime_contract(Path("/app")).as_shell_exports(), encoding="utf-8")'
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		kim54mhx8p2zcwoobscucl75a
+Parent:		eryf4g2zs2jm7jdpxunnmfjt7
+Created at:	2026-04-19 12:17:21.375034212 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		260B
+Description:	[rocm-deps 1/3] COPY docker/service-deps/rocm-runtime.env /tmp/rocm-runtime.env
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		nym1jiwmnokmip21cwyva11ni
+Parent:		wfz28yrmmabds49pxz0mw9fqf
+Created at:	2026-04-19 15:00:06.244198431 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		260B
+Description:	[rocm-deps 1/3] COPY docker/service-deps/rocm-runtime.env /tmp/rocm-runtime.env
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		1um1g97ul4kewp7mwtjdfsxdy
+Parent:		j2xpktf1gexxz8vrv9muc57bi
+Created at:	2026-04-19 15:04:35.443488362 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		392B
+Description:	[ 4/10] COPY scripts/sir_convert_a_lot/service.py ./scripts/sir_convert_a_lot/service.py
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		3en9d3ug90cdqc2roipxon5ab
+Parent:		ci84uf5queqzcyzpomuldwt0n
+Created at:	2026-04-19 12:24:12.025677022 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		392B
+Description:	[ 4/10] COPY scripts/sir_convert_a_lot/service.py ./scripts/sir_convert_a_lot/service.py
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		3trkh3zmwbcgkmar75s13pw5d
+Parent:		u3hkdd9bshkdxckt3x21squ49
+Created at:	2026-04-19 10:20:02.32034383 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		392B
+Description:	[runtime  5/11] COPY scripts/sir_convert_a_lot/service.py ./scripts/sir_convert_a_lot/service.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		x1tp34z5u81s6q4sy21aa8jmo
+Created at:	2026-04-19 13:02:57.01391833 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		397B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		7u4k5st13nkhi379m0n82j9f2
+Parent:		3feuxlmkdo6c78o78tfcefub2
+Created at:	2026-04-19 09:40:21.379910656 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		433B
+Description:	[dependency-builder  5/14] COPY scripts/sir_convert_a_lot/devops/__init__.py /tmp/service-build-support/scripts/sir_convert_a_lot/devops/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		u5gpnrh5cdte80rdkymaaaguu
+Parent:		c48yeg682asmekna23rnfqd1f
+Created at:	2026-04-19 10:10:18.094680755 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		433B
+Description:	[dependency-builder  5/14] COPY scripts/sir_convert_a_lot/devops/__init__.py /tmp/service-build-support/scripts/sir_convert_a_lot/devops/__init__.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		0tvil0zz6hcg7hgwdcm76eofn
+Parent:		gsei16wevrnp1hq5q8bevdoxo
+Created at:	2026-04-15 22:25:04.194805876 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		511B
+Description:	[deps_base 11/29] COPY libs/huleedu_nlp_shared/pyproject.toml libs/huleedu_nlp_shared/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		pst98lmj571gxka04hns6ykgx
+Parent:		nnx0rfemepgp0ez25nh9n6sws
+Created at:	2026-04-16 20:05:56.16452879 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		511B
+Description:	[deps_base 11/29] COPY libs/huleedu_nlp_shared/pyproject.toml libs/huleedu_nlp_shared/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		t3seqq1e44wspw6wi73ruycfz
+Parent:		sm5kyvaxbc4ln8i9ws808ij4f
+Created at:	2026-04-19 12:57:17.802065854 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		511B
+Description:	[deps_base 11/29] COPY libs/huleedu_nlp_shared/pyproject.toml libs/huleedu_nlp_shared/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		x7t9kjzl0mnq8n8sy0ibn545o
+Created at:	2026-04-19 13:02:56.652031919 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		518B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		0zu86y7hfpshg4016qlh0u0eg
+Created at:	2026-04-19 13:02:56.934480492 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		546B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		c09gt53aw5ph1476ntr1vo1ii
+Created at:	2026-04-19 13:02:56.895081476 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		546B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		nykminzilgmuld5gm6qmlpo33
+Created at:	2026-04-15 22:30:42.875238161 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		546B
+Description:	local source for dockerfile
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		ozg5hhvzfs78kpijn7bxtpihg
+Created at:	2026-04-15 22:30:43.636816051 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		550B
+Description:	local source for dockerfile
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		ppn8i31uul57u5gytea6i3c6b
+Created at:	2026-04-19 13:02:57.072071588 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		550B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		thfb2xbb8nsjk0q91jg2xm9un
+Created at:	2026-04-15 22:30:43.54977996 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		558B
+Description:	local source for dockerfile
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		yku56tci8454mhkim6kjb4eru
+Created at:	2026-04-19 13:02:57.116943231 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		562B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		ozh5e9jkt5oo1nu2xv31izbvt
+Created at:	2026-04-15 22:30:43.249211033 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		570B
+Description:	local source for dockerfile
+Usage count:	14
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		bvl4jeye4pjszp4huvgp95wxm
+Created at:	2026-04-15 22:30:43.348866394 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		592B
+Description:	local source for dockerfile
+Usage count:	17
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		dd1op0cuech1rg0i9va9h280l
+Created at:	2026-04-15 22:30:43.597356019 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		604B
+Description:	local source for dockerfile
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		jpcnoxzdl6l5q3yuckq9ilbnm
+Created at:	2026-04-19 13:02:56.83410372 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		604B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		gic7mtqo319vl7zbaw8q5puos
+Created at:	2026-04-15 22:30:43.292908748 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		633B
+Description:	local source for dockerfile
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		lsb8y6sqm7l01exau0xn9odhj
+Created at:	2026-04-19 13:02:56.441189478 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		633B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		wburk9xts0mr8bfgmkwpjzdfd
+Created at:	2026-04-19 13:02:57.178984822 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		651B
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		58h8qziaspwxdy163g9snk81d
+Parent:		n9ibjwg02shr22ttwyh0ljmsu
+Created at:	2026-04-16 20:11:39.135535508 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		696B
+Description:	[3/6] COPY libs/common_core/pyproject.toml libs/common_core/pdm.lock* ./libs/common_core/
+Usage count:	2
+Last used:	2 hours ago
+Type:		regular
+
+ID:		hza6ykfks55kh3mdrxz7v86cg
+Parent:		62d5d2rwufyo5xqymturcwfx1
+Created at:	2026-04-15 22:25:03.847903298 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		696B
+Description:	[deps_base  7/29] COPY libs/common_core/pyproject.toml libs/common_core/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ilxhosfjk9kkt1g06zmto89ju
+Parent:		y1yqy0mvshxec3n2pijafa3w0
+Created at:	2026-04-16 20:05:55.334168378 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		696B
+Description:	[deps_base  7/29] COPY libs/common_core/pyproject.toml libs/common_core/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		pkyvxspe4kbumd4gdt6804zjq
+Parent:		ppfnqi2xp9hihw2m3iocmmulz
+Created at:	2026-04-19 12:57:16.962753538 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		696B
+Description:	[deps_base  7/29] COPY libs/common_core/pyproject.toml libs/common_core/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		sm1465yf6rs6lj364zwqs4h15
+Parent:		n9ibjwg02shr22ttwyh0ljmsu
+Created at:	2026-04-15 22:30:51.41549304 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		696B
+Description:	[3/6] COPY libs/common_core/pyproject.toml libs/common_core/pdm.lock* ./libs/common_core/
+Usage count:	2
+Last used:	3 days ago
+Type:		regular
+
+ID:		npdluy3enbovts76c2eima4hx
+Parent:		qcmg65qtja7j4op3zr09tksdp
+Created at:	2026-04-15 22:27:27.87247384 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		715B
+Description:	[production  7/12] COPY alembic.ini ./
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		gtqy86wf0lqf8juwhxs4bidg0
+Parent:		7awkr8gygy5f2n85vc4cftscu
+Created at:	2026-04-19 12:57:18.810120298 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		976B
+Description:	[deps_base 17/29] COPY services/class_management_service/pyproject.toml services/class_management_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		gwo851g142yrfgae1mkpf5nvh
+Parent:		7zbp0e25q9o0ecxivznyxt357
+Created at:	2026-04-16 20:05:57.227742902 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		976B
+Description:	[deps_base 17/29] COPY services/class_management_service/pyproject.toml services/class_management_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		vf22v2d5lx8oup4cvz97mu8v2
+Created at:	2026-04-19 13:02:57.234840789 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		1.065kB
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		zkv5tk6epqqrtturdcxs1zbxg
+Created at:	2026-04-19 12:57:16.368704974 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		1.087kB
+Description:	local source for context
+Usage count:	2
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		8kygwdv9cpkw5yl53w9fq3q42
+Parent:		tb7djwjln9vijudxot78jtghm
+Created at:	2026-04-16 20:05:59.063883491 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.101kB
+Description:	[deps_base 27/29] COPY services/result_aggregator_service/pyproject.toml services/result_aggregator_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		oaf7fpinj4a59k8dudldnd804
+Parent:		zidrgx6pg8cgfeye57yslsr2d
+Created at:	2026-04-19 12:57:20.556237614 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.101kB
+Description:	[deps_base 27/29] COPY services/result_aggregator_service/pyproject.toml services/result_aggregator_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		63z09xwbzkbkxoc250hssymvi
+Parent:		sapzvxz3afwxc4wc2m29qpm3a
+Created at:	2026-04-19 12:57:19.166609226 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.111kB
+Description:	[deps_base 19/29] COPY services/email_service/pyproject.toml services/email_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		r25csf5ihnra8pvzb4dj81aau
+Parent:		m5srxmqitgz75j2mqoex3yi4w
+Created at:	2026-04-16 20:05:57.585430548 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.111kB
+Description:	[deps_base 19/29] COPY services/email_service/pyproject.toml services/email_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		nmv8hsdgfdy8j6d1ih8een3e9
+Created at:	2026-04-19 09:39:24.055287824 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		1.137kB
+Description:	local source for context
+Usage count:	10
+Last used:	55 seconds ago
+Type:		source.local
+
+ID:		m5srxmqitgz75j2mqoex3yi4w
+Parent:		gwo851g142yrfgae1mkpf5nvh
+Created at:	2026-04-16 20:05:57.395993034 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.15kB
+Description:	[deps_base 18/29] COPY services/content_service/pyproject.toml services/content_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		qcmnyapoz9dzkggenl0mh1jks
+Parent:		lbqtr56ld7pt7kb7cwkmfbyd3
+Created at:	2026-04-15 22:25:04.719895163 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.15kB
+Description:	[deps_base 18/29] COPY services/content_service/pyproject.toml services/content_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		sapzvxz3afwxc4wc2m29qpm3a
+Parent:		gtqy86wf0lqf8juwhxs4bidg0
+Created at:	2026-04-19 12:57:18.984428753 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.15kB
+Description:	[deps_base 18/29] COPY services/content_service/pyproject.toml services/content_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		oamji3xizf2zpsu89ehnxcc1x
+Parent:		p0oaeerczpcdw08t3qcue7oqb
+Created at:	2026-04-16 20:05:55.742711244 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.181kB
+Description:	[deps_base  9/29] COPY libs/huleedu_service_libs/pyproject.toml libs/huleedu_service_libs/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		po42wd2uhflsxsun4lieru3o7
+Parent:		nqdozs2o1dfb72wa54zqcold8
+Created at:	2026-04-15 22:25:04.020016759 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.181kB
+Description:	[deps_base  9/29] COPY libs/huleedu_service_libs/pyproject.toml libs/huleedu_service_libs/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ucxekgd1t6d5trwkxuzrb7xxc
+Parent:		vbpoxtftqpu5qmw9adrgdkhep
+Created at:	2026-04-19 12:57:17.342054292 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.181kB
+Description:	[deps_base  9/29] COPY libs/huleedu_service_libs/pyproject.toml libs/huleedu_service_libs/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		f78tro7fub16xiytzanctzlua
+Parent:		et1v7wfw3xqarp510s8jndmnt
+Created at:	2026-04-19 12:57:19.877683009 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.188kB
+Description:	[deps_base 23/29] COPY services/identity_service/pyproject.toml services/identity_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		usx098vz7huy89xrob02lvnag
+Parent:		238v915n1ucebjfm6q2ou6d98
+Created at:	2026-04-16 20:05:58.295717127 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.188kB
+Description:	[deps_base 23/29] COPY services/identity_service/pyproject.toml services/identity_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		12qhynwmwimi4l3pqqpbaqi8x
+Parent:		2n6mautmfvfa6hyk3njhglacv
+Created at:	2026-04-19 12:57:18.504441452 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.278kB
+Description:	[deps_base 15/29] COPY services/batch_orchestrator_service/pyproject.toml services/batch_orchestrator_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		uhxf6bf17xmx549hk8t6h35sk
+Parent:		uil1s444lqs391te8ua0d8wof
+Created at:	2026-04-16 20:05:56.889941792 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.278kB
+Description:	[deps_base 15/29] COPY services/batch_orchestrator_service/pyproject.toml services/batch_orchestrator_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		udv59j73q34azc89rdeqssqme
+Parent:		kgwnn1lwcgwqcjq47d10zcuar
+Created at:	2026-04-15 22:25:05.489821198 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.386kB
+Description:	[deps_base 27/29] COPY services/result_aggregator_service/pyproject.toml services/result_aggregator_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		lbqtr56ld7pt7kb7cwkmfbyd3
+Parent:		n4buw8nwbumujvo5b1mnefvye
+Created at:	2026-04-15 22:25:04.62963565 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.391kB
+Description:	[deps_base 17/29] COPY services/class_management_service/pyproject.toml services/class_management_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		hn746m1ilasaiz5b8i7qi5sq7
+Parent:		63z09xwbzkbkxoc250hssymvi
+Created at:	2026-04-19 12:57:19.364173865 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.395kB
+Description:	[deps_base 20/29] COPY services/entitlements_service/pyproject.toml services/entitlements_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		qyvaz7rktd5kbaxfxbnp7wp61
+Parent:		r25csf5ihnra8pvzb4dj81aau
+Created at:	2026-04-16 20:05:57.758927537 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.395kB
+Description:	[deps_base 20/29] COPY services/entitlements_service/pyproject.toml services/entitlements_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		vxx65h6vtt5hb69zmszf43v58
+Parent:		qcmnyapoz9dzkggenl0mh1jks
+Created at:	2026-04-15 22:25:04.816940556 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.549kB
+Description:	[deps_base 19/29] COPY services/email_service/pyproject.toml services/email_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		p4efmfpve6tav2jbi81dp1egl
+Parent:		gk58po489ude9b4zrufo8iklh
+Created at:	2026-04-15 22:25:04.461456946 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.563kB
+Description:	[deps_base 15/29] COPY services/batch_orchestrator_service/pyproject.toml services/batch_orchestrator_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		m2rmpuzss8zmikmcv1a61sz5o
+Parent:		wpipa47spfipse0ve44pldgs5
+Created at:	2026-04-19 12:15:58.538236699 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.621kB
+Description:	mount / from exec /bin/sh -c getent group render >/dev/null || groupadd --system render
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		ng66jpxungtgqxh1i9fzozs88
+Parent:		mftcbiwplcf7edj6pzjo0y5j4
+Created at:	2026-04-19 09:40:09.420709417 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.621kB
+Description:	mount / from exec /bin/sh -c getent group render >/dev/null || groupadd --system render
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		ufm9y8uhhbib2v93dvkw5yewt
+Parent:		hdma7730sdv8pe5mg7nksbbdo
+Created at:	2026-04-15 22:25:05.218257214 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.625kB
+Description:	[deps_base 23/29] COPY services/identity_service/pyproject.toml services/identity_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		jdtx0njscd2og9emdkv1nmu70
+Parent:		9pcagnz3si4u6ozi67t59on3f
+Created at:	2026-04-15 22:25:05.639801488 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.658kB
+Description:	[deps_base 29/29] COPY services/websocket_service/pyproject.toml services/websocket_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		rb8jxg3ecxb8mq53in2e4o0dc
+Parent:		o87w8ugbokoddplp6wme4c8bp
+Created at:	2026-04-19 12:57:20.909536345 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.658kB
+Description:	[deps_base 29/29] COPY services/websocket_service/pyproject.toml services/websocket_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		u92ks685pgq6qu0pb0jug2c1c
+Parent:		t1gn4mqm4v4fn02pbsb2i5p2y
+Created at:	2026-04-16 20:05:59.383992546 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.658kB
+Description:	[deps_base 29/29] COPY services/websocket_service/pyproject.toml services/websocket_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		av11vpzua3juytg3fjz74egw3
+Parent:		2r1o54c2y9l77cjx6kjpp52gl
+Created at:	2026-04-15 22:25:05.360872157 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.663kB
+Description:	[deps_base 25/29] COPY services/llm_provider_service/pyproject.toml services/llm_provider_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		tixyc1una740xwdwrrytjd0r2
+Parent:		mok2gsfj801mibo72sby8k0ch
+Created at:	2026-04-19 12:57:20.235508251 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.663kB
+Description:	[deps_base 25/29] COPY services/llm_provider_service/pyproject.toml services/llm_provider_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		uwr1wxuoy5cvf971qx4cr8u3l
+Parent:		u99tyklsbbbq4pxczudnnra9d
+Created at:	2026-04-16 20:05:58.699508814 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.663kB
+Description:	[deps_base 25/29] COPY services/llm_provider_service/pyproject.toml services/llm_provider_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		o87w8ugbokoddplp6wme4c8bp
+Parent:		oaf7fpinj4a59k8dudldnd804
+Created at:	2026-04-19 12:57:20.736523695 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.788kB
+Description:	[deps_base 28/29] COPY services/spellchecker_service/pyproject.toml services/spellchecker_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		t1gn4mqm4v4fn02pbsb2i5p2y
+Parent:		8kygwdv9cpkw5yl53w9fq3q42
+Created at:	2026-04-16 20:05:59.228716097 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.788kB
+Description:	[deps_base 28/29] COPY services/spellchecker_service/pyproject.toml services/spellchecker_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		wbe4lhielg3fkrh1iccuo2hjv
+Parent:		vxx65h6vtt5hb69zmszf43v58
+Created at:	2026-04-15 22:25:04.935554535 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.832kB
+Description:	[deps_base 20/29] COPY services/entitlements_service/pyproject.toml services/entitlements_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		7awkr8gygy5f2n85vc4cftscu
+Parent:		12qhynwmwimi4l3pqqpbaqi8x
+Created at:	2026-04-19 12:57:18.661620017 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.01kB
+Description:	[deps_base 16/29] COPY services/cj_assessment_service/pyproject.toml services/cj_assessment_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		7zbp0e25q9o0ecxivznyxt357
+Parent:		uhxf6bf17xmx549hk8t6h35sk
+Created at:	2026-04-16 20:05:57.051988468 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.01kB
+Description:	[deps_base 16/29] COPY services/cj_assessment_service/pyproject.toml services/cj_assessment_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ldtx92x9w07nkbscajmpsrtn5
+Created at:	2026-04-19 13:02:56.729998104 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		2.05kB
+Description:	local source for dockerfile
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		jkwgd160t86o436buulh54gwq
+Parent:		za3r53v8wstw1kxxn7ici91c2
+Created at:	2026-04-15 22:25:07.974137809 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.065kB
+Description:	[frontend-builder  5/10] COPY frontend/apps/skriptoteket/package.json ./frontend/apps/skriptoteket/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		9pcagnz3si4u6ozi67t59on3f
+Parent:		udv59j73q34azc89rdeqssqme
+Created at:	2026-04-15 22:25:05.559870946 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.073kB
+Description:	[deps_base 28/29] COPY services/spellchecker_service/pyproject.toml services/spellchecker_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		2n6mautmfvfa6hyk3njhglacv
+Parent:		4nsn2yvudix9dtu0iac7avl9f
+Created at:	2026-04-19 12:57:18.314339882 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.084kB
+Description:	[deps_base 14/29] COPY services/batch_conductor_service/pyproject.toml services/batch_conductor_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		gk58po489ude9b4zrufo8iklh
+Parent:		ryiu5kztn9bxwfjtlgqw3f7tn
+Created at:	2026-04-15 22:25:04.399091424 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.084kB
+Description:	[deps_base 14/29] COPY services/batch_conductor_service/pyproject.toml services/batch_conductor_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		uil1s444lqs391te8ua0d8wof
+Parent:		liyn4zdv21a3h9xefutbrnl4u
+Created at:	2026-04-16 20:05:56.700930216 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.084kB
+Description:	[deps_base 14/29] COPY services/batch_conductor_service/pyproject.toml services/batch_conductor_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		2r1o54c2y9l77cjx6kjpp52gl
+Parent:		ufm9y8uhhbib2v93dvkw5yewt
+Created at:	2026-04-15 22:25:05.286519883 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.116kB
+Description:	[deps_base 24/29] COPY services/language_tool_service/pyproject.toml services/language_tool_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		mok2gsfj801mibo72sby8k0ch
+Parent:		f78tro7fub16xiytzanctzlua
+Created at:	2026-04-19 12:57:20.053708686 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.116kB
+Description:	[deps_base 24/29] COPY services/language_tool_service/pyproject.toml services/language_tool_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		u99tyklsbbbq4pxczudnnra9d
+Parent:		usx098vz7huy89xrob02lvnag
+Created at:	2026-04-16 20:05:58.492508082 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.116kB
+Description:	[deps_base 24/29] COPY services/language_tool_service/pyproject.toml services/language_tool_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		tb7djwjln9vijudxot78jtghm
+Parent:		uwr1wxuoy5cvf971qx4cr8u3l
+Created at:	2026-04-16 20:05:58.872988703 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.118kB
+Description:	[deps_base 26/29] COPY services/nlp_service/pyproject.toml services/nlp_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		zidrgx6pg8cgfeye57yslsr2d
+Parent:		tixyc1una740xwdwrrytjd0r2
+Created at:	2026-04-19 12:57:20.380714854 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.118kB
+Description:	[deps_base 26/29] COPY services/nlp_service/pyproject.toml services/nlp_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		238v915n1ucebjfm6q2ou6d98
+Parent:		bqoqq3mm28lu2he172xvluudd
+Created at:	2026-04-16 20:05:58.124065055 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.232kB
+Description:	[deps_base 22/29] COPY services/file_service/pyproject.toml services/file_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		et1v7wfw3xqarp510s8jndmnt
+Parent:		g9mh3a4eijy8r8vpxylpueg16
+Created at:	2026-04-19 12:57:19.691735372 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.232kB
+Description:	[deps_base 22/29] COPY services/file_service/pyproject.toml services/file_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		4nsn2yvudix9dtu0iac7avl9f
+Parent:		aob64ltxo83hpir28ys5r686n
+Created at:	2026-04-19 12:57:18.153816291 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.244kB
+Description:	[deps_base 13/29] COPY services/api_gateway_service/pyproject.toml services/api_gateway_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		liyn4zdv21a3h9xefutbrnl4u
+Parent:		8amt5p6gzdir14m0aqst9pd2a
+Created at:	2026-04-16 20:05:56.515841871 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.244kB
+Description:	[deps_base 13/29] COPY services/api_gateway_service/pyproject.toml services/api_gateway_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ryiu5kztn9bxwfjtlgqw3f7tn
+Parent:		tmadb7kngg1sihp0o5l6p78i6
+Created at:	2026-04-15 22:25:04.329781531 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.244kB
+Description:	[deps_base 13/29] COPY services/api_gateway_service/pyproject.toml services/api_gateway_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		hdma7730sdv8pe5mg7nksbbdo
+Parent:		h2udf4dwi7kk43ugoqedlo3wt
+Created at:	2026-04-15 22:25:05.134121796 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.312kB
+Description:	[deps_base 22/29] COPY services/file_service/pyproject.toml services/file_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		n4buw8nwbumujvo5b1mnefvye
+Parent:		p4efmfpve6tav2jbi81dp1egl
+Created at:	2026-04-15 22:25:04.542862288 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.372kB
+Description:	[deps_base 16/29] COPY services/cj_assessment_service/pyproject.toml services/cj_assessment_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		kgwnn1lwcgwqcjq47d10zcuar
+Parent:		av11vpzua3juytg3fjz74egw3
+Created at:	2026-04-15 22:25:05.421425609 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.403kB
+Description:	[deps_base 26/29] COPY services/nlp_service/pyproject.toml services/nlp_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		bqoqq3mm28lu2he172xvluudd
+Parent:		qyvaz7rktd5kbaxfxbnp7wp61
+Created at:	2026-04-16 20:05:57.945004518 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.522kB
+Description:	[deps_base 21/29] COPY services/essay_lifecycle_service/pyproject.toml services/essay_lifecycle_service/pyproject.toml
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		g9mh3a4eijy8r8vpxylpueg16
+Parent:		hn746m1ilasaiz5b8i7qi5sq7
+Created at:	2026-04-19 12:57:19.529378948 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		2.522kB
+Description:	[deps_base 21/29] COPY services/essay_lifecycle_service/pyproject.toml services/essay_lifecycle_service/pyproject.toml
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		h2udf4dwi7kk43ugoqedlo3wt
+Parent:		wbe4lhielg3fkrh1iccuo2hjv
+Created at:	2026-04-15 22:25:05.045311515 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		2.887kB
+Description:	[deps_base 21/29] COPY services/essay_lifecycle_service/pyproject.toml services/essay_lifecycle_service/pyproject.toml
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		pdw5ske62usru40bu751doybp
+Parent:		c8hadvlzrw66n05iayzwsoj8w
+Created at:	2026-04-19 12:15:58.927234017 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		3.221kB
+Description:	[deps-base 1/4] COPY docker/service-deps/service-requirements.txt /tmp/service-requirements.txt
+Usage count:	2
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		7qcqsgirayuuxejeaqapgtut8
+Parent:		7u4k5st13nkhi379m0n82j9f2
+Created at:	2026-04-19 09:40:21.587673623 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		3.918kB
+Description:	[dependency-builder  6/14] COPY scripts/sir_convert_a_lot/devops/export_service_requirements.py /tmp/service-build-support/scripts/sir_convert_a_lot/devops/export_service_requirements.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		ut9t57yopnhi0d02y7k41szic
+Parent:		u5gpnrh5cdte80rdkymaaaguu
+Created at:	2026-04-19 10:10:18.280377122 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		3.918kB
+Description:	[dependency-builder  6/14] COPY scripts/sir_convert_a_lot/devops/export_service_requirements.py /tmp/service-build-support/scripts/sir_convert_a_lot/devops/export_service_requirements.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		zf6x4m9i93larc8auursl1tkw
+Created at:	2026-04-19 09:39:22.173380505 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		4.237kB
+Description:	local source for dockerfile
+Usage count:	10
+Last used:	55 seconds ago
+Type:		source.local
+
+ID:		qqtz37t4ec4tqn5f2pn1veqsy
+Parent:		xs0if3akzuw383shbxu7x2kef
+Created at:	2026-04-15 22:25:03.564370077 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		4.312kB
+Description:	mount / from exec /bin/sh -c groupadd -r appuser && useradd --no-log-init -r -g appuser appuser
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		r73xbncxhp8imkwafvrwthguh
+Parent:		kj0pubvjcc99dlf3hggqn9vj4
+Created at:	2026-04-16 20:05:54.793541625 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		4.312kB
+Description:	mount / from exec /bin/sh -c groupadd -r appuser && useradd --no-log-init -r -g appuser appuser
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		4wfbtkhe3sddvp9nxt4kfklos
+Parent:		ut9t57yopnhi0d02y7k41szic
+Created at:	2026-04-19 10:10:18.475658355 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		4.662kB
+Description:	[dependency-builder  7/14] COPY scripts/sir_convert_a_lot/devops/service_image_build_contract.py /tmp/service-build-support/scripts/sir_convert_a_lot/devops/service_image_build_contract.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		s08xzm1kaz181ybhvhu36jpi2
+Parent:		7qcqsgirayuuxejeaqapgtut8
+Created at:	2026-04-19 09:40:21.781043149 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		4.662kB
+Description:	[dependency-builder  7/14] COPY scripts/sir_convert_a_lot/devops/service_image_build_contract.py /tmp/service-build-support/scripts/sir_convert_a_lot/devops/service_image_build_contract.py
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		i2mmy4j6q4qrqfx1ibjib36lp
+Parent:		zqsbwoifnpgf9wn38cicur68b
+Created at:	2026-04-19 15:04:36.271195284 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		6.028kB
+Description:	[ 8/10] COPY scripts/sir_convert_a_lot/integrations ./scripts/sir_convert_a_lot/integrations
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		o4a3d0nuo6y4iunvzxm3qgbf8
+Parent:		y92ufjaemy0symhb626r96vht
+Created at:	2026-04-19 12:24:12.847818407 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		6.028kB
+Description:	[ 8/10] COPY scripts/sir_convert_a_lot/integrations ./scripts/sir_convert_a_lot/integrations
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		x7suerc3e5uh3mlw4ix24r7yg
+Parent:		khjqt95rw9kj1z7sbqm454pr4
+Created at:	2026-04-19 10:20:03.130146538 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		6.028kB
+Description:	[runtime  9/11] COPY scripts/sir_convert_a_lot/integrations ./scripts/sir_convert_a_lot/integrations
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		dtxo31oisnkbigh8qgqhme99y
+Parent:		v4c8iwynsm0hedyjgeb65uqj1
+Created at:	2026-04-15 22:24:54.388671899 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		8.923kB
+Description:	mount / from exec /bin/sh -c useradd --create-home --uid 10001 --shell /usr/sbin/nologin runner     && mkdir -p /work /tmp     && chmod 1777 /work /tmp
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		2g910c0dk2er2er2thl09c3zp
+Parent:		1qq5yxm862md5gfjerykhnjqn
+Created at:	2026-04-19 13:03:03.009727454 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		8.95kB
+Description:	[5/6] COPY scripts/ops/kafka_topic_bootstrap.py ./scripts/ops/kafka_topic_bootstrap.py
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ezp0po0lbadhwp8mpk5ga1wa2
+Parent:		zqxxvzwibfgqb0awkn2smikbt
+Created at:	2026-04-15 22:30:52.387571617 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		8.95kB
+Description:	[5/6] COPY scripts/ops/kafka_topic_bootstrap.py ./scripts/ops/kafka_topic_bootstrap.py
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		n39h57uiuj5oy5ruacf4q2y45
+Parent:		u2m6klriicv9jk7207jmxz2g5
+Created at:	2026-04-16 20:11:40.015830218 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		8.95kB
+Description:	[5/6] COPY scripts/ops/kafka_topic_bootstrap.py ./scripts/ops/kafka_topic_bootstrap.py
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		nmasdkscpkqyiww5gma9nwnt1
+Parent:		niggzor7h8xpuj0hludoqfa4x
+Created at:	2026-04-15 23:14:01.8281758 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		8.95kB
+Description:	[5/6] COPY scripts/ops/kafka_topic_bootstrap.py ./scripts/ops/kafka_topic_bootstrap.py
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		gvikezjz1erhbb4yff8lmre2t
+Parent:		smy5d2hldrntorgvdpui5eigi
+Created at:	2026-04-15 22:25:15.381370722 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		10.19kB
+Description:	[frontend-builder  9/10] COPY src/skriptoteket/web/static/css/huleedu-design-tokens.css /app/src/skriptoteket/web/static/css/huleedu-design-tokens.css
+Usage count:	2
+Last used:	5 hours ago
+Type:		regular
+
+ID:		tnvdqsjifrk3wiwqxwcs85yal
+Parent:		wm2j8wt0vt25gssxpdedp79j4
+Created at:	2026-04-16 14:04:06.628970384 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		10.19kB
+Description:	[frontend-builder  9/10] COPY src/skriptoteket/web/static/css/huleedu-design-tokens.css /app/src/skriptoteket/web/static/css/huleedu-design-tokens.css
+Usage count:	2
+Last used:	5 hours ago
+Type:		regular
+
+ID:		v4c8iwynsm0hedyjgeb65uqj1
+Parent:		uxo5oft7hz4k4ba2lexs3hs3b
+Created at:	2026-04-15 22:24:54.058866415 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		21.85kB
+Description:	[runner 2/4] COPY runner/ /runner/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		e2bnkw83o4yeucn8kc7xn4x96
+Parent:		wmua7mtr3iejhvauy6ubd11f3
+Created at:	2026-04-19 12:24:12.383627366 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		30.22kB
+Description:	[ 6/10] COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		hbqqwqyeoru5osiubhvadx2xr
+Parent:		8iou5picf3769gk0u89b6zrv4
+Created at:	2026-04-19 15:04:35.814009323 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		30.22kB
+Description:	[ 6/10] COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		ibbvb76hzsrqtt7dw2a9f14b9
+Parent:		un6ixb3fjcu5lu0cn8gngcukw
+Created at:	2026-04-19 10:20:02.719801531 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		30.22kB
+Description:	[runtime  7/11] COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		nh6tr6rwlhks6438lfiye7bqs
+Parent:		swvo1ulevlegkgf0rww0dgz28
+Created at:	2026-04-19 12:24:13.227322159 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		33.97kB
+Description:	[10/10] COPY scripts/sir_convert_a_lot/templates ./scripts/sir_convert_a_lot/templates
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		vfh5y14gon2m6vml3b6aexyg2
+Parent:		rcn80d52zug9gg7tdu2bh96zs
+Created at:	2026-04-19 15:04:36.679137889 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		33.97kB
+Description:	[10/10] COPY scripts/sir_convert_a_lot/templates ./scripts/sir_convert_a_lot/templates
+Usage count:	2
+Last used:	55 seconds ago
+Type:		regular
+
+ID:		vucmx2noq35pao300p4951ph5
+Parent:		j3qw2cy94m4a21m79vxekwufe
+Created at:	2026-04-19 10:20:03.516773605 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		33.97kB
+Description:	[runtime 11/11] COPY scripts/sir_convert_a_lot/templates ./scripts/sir_convert_a_lot/templates
+Usage count:	2
+Last used:	5 hours ago
+Type:		regular
+
+ID:		8iou5picf3769gk0u89b6zrv4
+Parent:		1um1g97ul4kewp7mwtjdfsxdy
+Created at:	2026-04-19 15:04:35.623938788 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		42.11kB
+Description:	[ 5/10] COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		un6ixb3fjcu5lu0cn8gngcukw
+Parent:		3trkh3zmwbcgkmar75s13pw5d
+Created at:	2026-04-19 10:20:02.509438406 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		42.11kB
+Description:	[runtime  6/11] COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		wmua7mtr3iejhvauy6ubd11f3
+Parent:		3en9d3ug90cdqc2roipxon5ab
+Created at:	2026-04-19 12:24:12.18866787 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		42.11kB
+Description:	[ 5/10] COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		8amt5p6gzdir14m0aqst9pd2a
+Parent:		pst98lmj571gxka04hns6ykgx
+Created at:	2026-04-16 20:05:56.360012311 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		43.02kB
+Description:	[deps_base 12/29] COPY libs/huleedu_nlp_shared/src/ libs/huleedu_nlp_shared/src/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		aob64ltxo83hpir28ys5r686n
+Parent:		t3seqq1e44wspw6wi73ruycfz
+Created at:	2026-04-19 12:57:17.982909312 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		43.02kB
+Description:	[deps_base 12/29] COPY libs/huleedu_nlp_shared/src/ libs/huleedu_nlp_shared/src/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		tmadb7kngg1sihp0o5l6p78i6
+Parent:		0tvil0zz6hcg7hgwdcm76eofn
+Created at:	2026-04-15 22:25:04.263563691 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		43.02kB
+Description:	[deps_base 12/29] COPY libs/huleedu_nlp_shared/src/ libs/huleedu_nlp_shared/src/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		eziqm2fgenemycp0qqzch3be3
+Parent:		rynb3zjv743v99o3t9y2nxfsd
+Created at:	2026-04-16 14:04:23.611496253 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		46.37kB
+Description:	[production 11/12] COPY data/reagent_prep_chef/sds/index.json ./data/reagent_prep_chef/sds/index.json
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		m4c2pnaohofruqamkdq6b2tk2
+Parent:		ofmnmcomr7rxtq4b2aglaqcfu
+Created at:	2026-04-15 22:27:29.520290503 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		46.37kB
+Description:	[production 11/12] COPY data/reagent_prep_chef/sds/index.json ./data/reagent_prep_chef/sds/index.json
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		wvlvabz0hje6cop61x3z3d969
+Parent:		ud8f44mm5ehft9go8vlobb6pv
+Created at:	2026-04-16 17:27:13.895629467 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		46.37kB
+Description:	[production 11/12] COPY data/reagent_prep_chef/sds/index.json ./data/reagent_prep_chef/sds/index.json
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		8gjdpo2irerppbcsk99ugw95e
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:04.53857712 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		69.13kB
+Description:	[production 1/3] COPY --chown=appuser:appuser services/bff_teacher_service/ /app/services/bff_teacher_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		da4x698behelpfyh34bber9ha
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:42.53091659 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		69.13kB
+Description:	[production 1/3] COPY --chown=appuser:appuser services/bff_teacher_service/ /app/services/bff_teacher_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		gghzv4f2viv2tz7hdrpa93vqj
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:54.406471195 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		69.13kB
+Description:	[production 1/3] COPY --chown=appuser:appuser services/bff_teacher_service/ /app/services/bff_teacher_service/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		6ijorqt6aop8z9cup72s4p6z7
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.597517675 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		72kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/websocket_service/ /app/services/websocket_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		htfm5g4ajmrprlewe83ehcld2
+Created at:	2026-04-15 22:30:47.062385107 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		72kB
+Description:	local source for context
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		jm4o8v36vz1qmhphy7jyq32s4
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.924511037 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		72kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/websocket_service/ /app/services/websocket_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ocw66upouasxk8ox01o2pn1c9
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.428328297 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		72kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/websocket_service/ /app/services/websocket_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		etez9muo20y1zxj1i8qz17yit
+Parent:		9ydzxkbisnwy65fy8t007st6i
+Created at:	2026-04-15 22:31:31.552865935 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		87.68kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/language_tool_service/ /app/services/language_tool_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		x2bkoe95iu5upzplkzp7uq2jp
+Parent:		to0wh1u60klj4yug3i64bgcw1
+Created at:	2026-04-16 20:12:20.728873734 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		87.68kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/language_tool_service/ /app/services/language_tool_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		5fax2y9s059f5rcr2zgoss56f
+Created at:	2026-04-19 13:02:58.460819779 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		87.68kB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		lxcew7jteicm4a1mnu4iasz6z
+Parent:		zmsf56i954vof3u8i3nyva3wc
+Created at:	2026-04-19 13:03:38.9452748 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		87.68kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/language_tool_service/ /app/services/language_tool_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		mcdjsezo189tkwlvhmz88xuj6
+Parent:		zb1ygj5yjbrjyuo9shkbaux5m
+Created at:	2026-04-15 22:31:01.068967817 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		112.1kB
+Description:	[frontend-builder 4/7] COPY frontend/package.json frontend/pnpm-lock.yaml ./
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		za3r53v8wstw1kxxn7ici91c2
+Parent:		tswn04hfifw8c82ctsnof2o3m
+Created at:	2026-04-15 22:25:07.923081331 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		129.5kB
+Description:	[frontend-builder  4/10] COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./frontend/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		v3pboad019kg0vlzp360ajzmv
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:54.435671479 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		133.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/email_service/ /app/services/email_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		wmmnybivesqxc8s6czyqushc7
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.481795864 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		156kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/email_service/ /app/services/email_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		a2yjakg88uj3nysnunqx0d9ti
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:59.083602084 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		156.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/email_service/ /app/services/email_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		dbpycaw9eesxg66tchx2bs3we
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.347231176 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		156.5kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/email_service/ /app/services/email_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ipeifwymg49dp424qtosvwdg3
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 16:36:53.706997382 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		156.5kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/email_service/ /app/services/email_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		6f5uv8mvyvdezsphh3gtnd4bi
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.264419774 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		160.2kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/email_service/ /app/services/email_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		qcmg65qtja7j4op3zr09tksdp
+Parent:		4fp3y3mrrt7e99wgwbfbw760d
+Created at:	2026-04-15 22:27:27.615512 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		196.7kB
+Description:	[production  6/12] COPY pyproject.toml pdm.lock ./
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ryoljj6w5qa66bsv0t4jqdfuu
+Parent:		3ls3fidju00e9y9yjb95gfgza
+Created at:	2026-04-15 22:26:04.442860032 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		196.7kB
+Description:	[builder 4/5] COPY pyproject.toml pdm.lock ./
+Usage count:	2
+Last used:	5 hours ago
+Type:		regular
+
+ID:		waph8i8uf3xk40xbu4hwce2iv
+Parent:		mmjwdizyjjudsq4i9qc5papzr
+Created at:	2026-04-15 22:23:43.106386429 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		196.7kB
+Description:	[builder 3/4] COPY pyproject.toml pdm.lock ./
+Usage count:	2
+Last used:	5 hours ago
+Type:		regular
+
+ID:		u0qb3cgmrop2uywoyiwro1vy5
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:54.338609304 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		201.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_conductor_service/ /app/services/batch_conductor_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		0ct06zz7p5tjaszbeybq5dq5x
+Created at:	2026-04-15 22:30:46.98155334 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		212.1kB
+Description:	local source for context
+Usage count:	21
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		svcdi5bnwgj8c8mvyinryrcvi
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:55.909195082 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		212.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/entitlements_service/ /app/services/entitlements_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		77j0py7mm7u4g5nj8uht6yrfi
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:55.43612225 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		217.5kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_conductor_service/ /app/services/batch_conductor_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		j3vovecgycpshgryevbhoajg3
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:43.19642707 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		218.3kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_conductor_service/ /app/services/batch_conductor_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		oojidjnwa9ktsjmiu2r1ayle5
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.366586396 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		218.3kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_conductor_service/ /app/services/batch_conductor_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		uz81xdvqeettj4ie5ety9joe8
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:05.072407474 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		218.3kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_conductor_service/ /app/services/batch_conductor_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		0o6xobwjo9kx8xvoxq7e9fpxk
+Parent:		npdluy3enbovts76c2eima4hx
+Created at:	2026-04-15 22:27:28.159818923 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		231.8kB
+Description:	[production  8/12] COPY migrations ./migrations
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		fy6nsb8dcv5tg43np3zw1xv46
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:50.095724391 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		242.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/entitlements_service/ /app/services/entitlements_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		tw5xjzmj16wuk8zyjw5irz88x
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.12829597 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		242.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/entitlements_service/ /app/services/entitlements_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		jyazucc9u0819twdo783pqs32
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:55.611260235 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		242.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/entitlements_service/ /app/services/entitlements_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		q7n562bk63u649yt9alx4lrvq
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.345703655 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		246.2kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/entitlements_service/ /app/services/entitlements_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		qjtphr0o6mhnc7cd17j7ahsi0
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:55.988856026 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		262.9kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/api_gateway_service/ /app/services/api_gateway_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		qzi6kb5jqvc2oe7tq5wzhzg53
+Created at:	2026-04-15 22:30:47.151333143 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		262.9kB
+Description:	local source for context
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		x9n6p2tvs3slbi4i3ztfw1f9i
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 14:02:27.067168862 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		267kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/api_gateway_service/ /app/services/api_gateway_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		lm8h46mqh3zh3yfey4yaapnm7
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.601150213 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		267.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/class_management_service/ /app/services/class_management_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		qqbhjbvefwyvayqqzlcmvf0e4
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 14:36:43.437640101 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		268.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/api_gateway_service/ /app/services/api_gateway_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		e2hmzfu5a252vg26qkphnwhkl
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.530954832 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		268.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/api_gateway_service/ /app/services/api_gateway_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ebxmsty3x1fvk1mbvfkamm87z
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.685914362 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		268.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/api_gateway_service/ /app/services/api_gateway_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		joo3b5u54og7ek7rjen49nb9c
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 15:00:29.009291066 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		268.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/api_gateway_service/ /app/services/api_gateway_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		nv67d4o4fejsdsl24nnlu0kz1
+Created at:	2026-04-19 13:02:58.305995414 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		268.8kB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		hzd5k3c1agtvhmq2fj3mgnmuh
+Parent:		cvmr1b9jg3acz9ikodwburpbr
+Created at:	2026-04-15 22:31:15.433261691 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		297.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/file_service/ /app/services/file_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		d45xhv4hpq8oy64kzuiau2uqu
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.03844684 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		298kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/nlp_service/ /app/services/nlp_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		rcn80d52zug9gg7tdu2bh96zs
+Parent:		i2mmy4j6q4qrqfx1ibjib36lp
+Created at:	2026-04-19 15:04:36.497072785 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		311.9kB
+Description:	[ 9/10] COPY scripts/sir_convert_a_lot/interfaces ./scripts/sir_convert_a_lot/interfaces
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		swvo1ulevlegkgf0rww0dgz28
+Parent:		o4a3d0nuo6y4iunvzxm3qgbf8
+Created at:	2026-04-19 12:24:13.035835575 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		311.9kB
+Description:	[ 9/10] COPY scripts/sir_convert_a_lot/interfaces ./scripts/sir_convert_a_lot/interfaces
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		j3qw2cy94m4a21m79vxekwufe
+Parent:		x7suerc3e5uh3mlw4ix24r7yg
+Created at:	2026-04-19 10:20:03.346009466 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		311.9kB
+Description:	[runtime 10/11] COPY scripts/sir_convert_a_lot/interfaces ./scripts/sir_convert_a_lot/interfaces
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		h5s9zq32m8t5rdqz0tb63nswf
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:59.103908656 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		325.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/nlp_service/ /app/services/nlp_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		kqldzy5ecytaxyt1kd0svhuxg
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.655837728 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		325.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/nlp_service/ /app/services/nlp_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		nglh8qwhc6t1ec11wq0dkpw2d
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.300064512 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		325.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/nlp_service/ /app/services/nlp_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		nhxwml26h15t69rt96k2vzyg8
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 16:36:51.573024531 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		325.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/nlp_service/ /app/services/nlp_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		rj221brbmt27kczrlz8m0ojqv
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.887859954 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		329.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/nlp_service/ /app/services/nlp_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		esyq2xdvmnbbei54q1xbaeyjv
+Parent:		cvmr1b9jg3acz9ikodwburpbr
+Created at:	2026-04-15 23:13:56.064235022 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		339.3kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/file_service/ /app/services/file_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		1yonwna8mcl0ca63eccel3zwe
+Parent:		cvmr1b9jg3acz9ikodwburpbr
+Created at:	2026-04-16 05:05:27.69805102 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		339.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/file_service/ /app/services/file_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		ryc4qqmyvp3idjnvws5ju2n5s
+Parent:		2vsu0t8atmihhi08wy1k4f4su
+Created at:	2026-04-16 20:12:04.114567624 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		339.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/file_service/ /app/services/file_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		mo4exu7qc7u382vhho4b0evih
+Parent:		vaw4vtlvnpc2ow27sec9sgar5
+Created at:	2026-04-19 13:03:23.241714002 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		343.3kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/file_service/ /app/services/file_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		rylfpw85in33s0ww5a9ynfmj7
+Created at:	2026-04-19 13:02:58.488550283 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		343.3kB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		62d5d2rwufyo5xqymturcwfx1
+Parent:		brcvtba3ghqxuholm2m7icdjy
+Created at:	2026-04-15 22:25:03.742654562 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		351.7kB
+Description:	[deps_base  6/29] COPY pyproject.toml pdm.lock ./
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		y1yqy0mvshxec3n2pijafa3w0
+Parent:		ondebrlsz1vvg1k93fjpl01f1
+Created at:	2026-04-16 20:05:55.152164845 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		352.9kB
+Description:	[deps_base  6/29] COPY pyproject.toml pdm.lock ./
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		ppfnqi2xp9hihw2m3iocmmulz
+Parent:		ondebrlsz1vvg1k93fjpl01f1
+Created at:	2026-04-19 12:57:16.79638288 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		353.2kB
+Description:	[deps_base  6/29] COPY pyproject.toml pdm.lock ./
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		r768ewj0lpfoejsjrwvcpwaw5
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.460879838 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		413.4kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_orchestrator_service/ /app/services/batch_orchestrator_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		x0wmrnvcx219wcexf3h03wln1
+Parent:		xax5x5oidhtfhpbu9su2gdmar
+Created at:	2026-04-19 09:40:20.835906189 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		464.3kB
+Description:	[dependency-builder  2/14] COPY pyproject.toml pdm.lock ./
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		z8hu28gfsbihqdbdycjsieke3
+Parent:		xax5x5oidhtfhpbu9su2gdmar
+Created at:	2026-04-19 09:52:12.164942406 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		464.4kB
+Description:	[dependency-builder  2/14] COPY pyproject.toml pdm.lock ./
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		iy3rqpcm9fbdznya55el8udep
+Parent:		xax5x5oidhtfhpbu9su2gdmar
+Created at:	2026-04-19 10:10:17.577400337 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		464.5kB
+Description:	[dependency-builder  2/14] COPY pyproject.toml pdm.lock ./
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		snsz4i6x64ceo0lkcqyn1u0iw
+Created at:	2026-04-15 22:30:44.475684634 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		473kB
+Description:	local source for context
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		z82nay5sd1avfoa1qn87xirxh
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.797409096 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		473kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/identity_service/ /app/services/identity_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		jfpm76gec9p1mysw171jyn13g
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.583360809 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		491.5kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_orchestrator_service/ /app/services/batch_orchestrator_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		rsimgkswey7if1revot18jqvv
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:50.161071198 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		491.5kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_orchestrator_service/ /app/services/batch_orchestrator_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		q8ho7j7qjqnh4mk4lf3x587xb
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:55.47258845 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		491.5kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_orchestrator_service/ /app/services/batch_orchestrator_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		r25d9m2icv0wedx2obmf1bnmk
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.770711893 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		495.4kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/batch_orchestrator_service/ /app/services/batch_orchestrator_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		nqdozs2o1dfb72wa54zqcold8
+Parent:		hza6ykfks55kh3mdrxz7v86cg
+Created at:	2026-04-15 22:25:03.946790909 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		498kB
+Description:	[deps_base  8/29] COPY libs/common_core/src/ libs/common_core/src/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		zqxxvzwibfgqb0awkn2smikbt
+Parent:		sm1465yf6rs6lj364zwqs4h15
+Created at:	2026-04-15 22:30:51.959627906 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		498kB
+Description:	[4/6] COPY libs/common_core/src ./libs/common_core/src/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		niggzor7h8xpuj0hludoqfa4x
+Parent:		sm1465yf6rs6lj364zwqs4h15
+Created at:	2026-04-15 23:14:01.191870524 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		499.3kB
+Description:	[4/6] COPY libs/common_core/src ./libs/common_core/src/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		p0oaeerczpcdw08t3qcue7oqb
+Parent:		ilxhosfjk9kkt1g06zmto89ju
+Created at:	2026-04-16 20:05:55.549661096 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		499.3kB
+Description:	[deps_base  8/29] COPY libs/common_core/src/ libs/common_core/src/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		u2m6klriicv9jk7207jmxz2g5
+Parent:		58h8qziaspwxdy163g9snk81d
+Created at:	2026-04-16 20:11:39.624544845 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		499.3kB
+Description:	[4/6] COPY libs/common_core/src ./libs/common_core/src/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		1qq5yxm862md5gfjerykhnjqn
+Parent:		58h8qziaspwxdy163g9snk81d
+Created at:	2026-04-19 13:03:02.701630359 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		500kB
+Description:	[4/6] COPY libs/common_core/src ./libs/common_core/src/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		vbpoxtftqpu5qmw9adrgdkhep
+Parent:		pkyvxspe4kbumd4gdt6804zjq
+Created at:	2026-04-19 12:57:17.176095233 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		500kB
+Description:	[deps_base  8/29] COPY libs/common_core/src/ libs/common_core/src/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ki6t13dkdgw462w3fkekw9ll6
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.028765242 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		503.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/identity_service/ /app/services/identity_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		pdprkyjyowq2s5itawxmfky84
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.606911332 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		503.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/identity_service/ /app/services/identity_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		vw42lp4xghhie5hscp62nhe6o
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:55.633852748 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		503.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/identity_service/ /app/services/identity_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		qpux527w6gdrp5hft27xespux
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.848819507 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		507.5kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/identity_service/ /app/services/identity_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		qzxddd2qnmqqg7rdzn9ffwf4e
+Created at:	2026-04-19 13:02:59.307125111 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		509.7kB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		djun3gmvrvxvnpevpmyg84x4n
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:31.491084432 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		571.2kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/class_management_service/ /app/services/class_management_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		xgy4z7xk96kpsjmcvn1px404n
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.39653895 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		571.2kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/class_management_service/ /app/services/class_management_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		k3x5i368xptwmegr5j0gf0pap
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:57.169012835 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		571.2kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/class_management_service/ /app/services/class_management_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		08z0d93gq87h4go30btf1ke9z
+Created at:	2026-04-19 13:02:58.279654684 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		574.9kB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		yaae058wwdp580z5pmx9bc2og
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.31102901 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		574.9kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/class_management_service/ /app/services/class_management_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		mjat25uk4z50qxmo03msxz5z7
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.356230792 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		626.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/result_aggregator_service/ /app/services/result_aggregator_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		n9baazegtxhc412jllpccmgjk
+Created at:	2026-04-15 22:30:46.821797848 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		626.1kB
+Description:	local source for context
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		p35bven8c4h7mczickvj3mi31
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.508175806 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		626.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/result_aggregator_service/ /app/services/result_aggregator_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		dc5n0nvqndgvg74lkwxsbii34
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.369911111 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		626.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/result_aggregator_service/ /app/services/result_aggregator_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		z43zib45klpkln4ztfse4u8me
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 16:36:52.791886959 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		626.6kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/result_aggregator_service/ /app/services/result_aggregator_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		lrago7sddozpivgho28r6o2v7
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.485501412 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		628.3kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/result_aggregator_service/ /app/services/result_aggregator_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		5eb8x7b3fl049hdqvyege3k86
+Created at:	2026-04-15 22:30:45.005898833 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		632.7kB
+Description:	local source for context
+Usage count:	16
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		dn957l21ktvqd6gb3wcpftk71
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.538944939 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		632.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/essay_lifecycle_service/ /app/services/essay_lifecycle_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		r5lk3g8asesx5elpfpkjnaion
+Created at:	2026-04-15 22:30:46.766504409 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		639.7kB
+Description:	local source for context
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		srfabuvbf4depr68tcwmfpp2e
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:55.765617331 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		639.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/llm_provider_service/ /app/services/llm_provider_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		w7vr8u164tx4ja4dk1o7io0s5
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:48.663209379 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		639.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/llm_provider_service/ /app/services/llm_provider_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		k3tgoj53sbgfo5ns9vz27b559
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.691660012 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		644.9kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/llm_provider_service/ /app/services/llm_provider_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		vrw2p23a6le9lqua1i6zz1c74
+Created at:	2026-04-19 13:02:58.333079601 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		644.9kB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		pi5oorzar41x7bvqd2fr1d75s
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.401880681 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		715.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/essay_lifecycle_service/ /app/services/essay_lifecycle_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		oztgbw0tft9mkzydwhekkg57y
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:43.158583747 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		715.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/essay_lifecycle_service/ /app/services/essay_lifecycle_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		yv3et7pz8i1wnqwan1nj7t42t
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 16:36:51.546695954 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		715.1kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/essay_lifecycle_service/ /app/services/essay_lifecycle_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		dh59r768wdv5q7xzhkeuafti6
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:54.694725639 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		715.2kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/essay_lifecycle_service/ /app/services/essay_lifecycle_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		pki2julzltz6t2gi6c3iutsif
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.721439378 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		718.8kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/essay_lifecycle_service/ /app/services/essay_lifecycle_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		q19d1yt4augtowvkp07qf27zj
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:54.540002265 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		934.7kB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/cj_assessment_service/ /app/services/cj_assessment_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		vsdgoc9nyiydbov6cgay7ixie
+Created at:	2026-04-15 22:30:47.245790366 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		934.7kB
+Description:	local source for context
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		i4rnqssrvbf3k0qbvf1yit1ip
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:50.025901973 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.062MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/cj_assessment_service/ /app/services/cj_assessment_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		m58tfu5s8n1jvn5sjd3pw3ml3
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:27.730475384 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.062MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/cj_assessment_service/ /app/services/cj_assessment_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		9lpfbz6u8lc6pxvmkwnczmfel
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:14:01.157723234 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.063MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/cj_assessment_service/ /app/services/cj_assessment_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		4v4faj8a7c9h4nl7ttnlhcq4u
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.442457991 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.067MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/cj_assessment_service/ /app/services/cj_assessment_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		bp7urnuzv7t8dbequn58sak07
+Created at:	2026-04-19 13:02:58.395984489 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		1.067MB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		gsei16wevrnp1hq5q8bevdoxo
+Parent:		po42wd2uhflsxsun4lieru3o7
+Created at:	2026-04-15 22:25:04.134291043 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.073MB
+Description:	[deps_base 10/29] COPY libs/huleedu_service_libs/src/ libs/huleedu_service_libs/src/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		nnx0rfemepgp0ez25nh9n6sws
+Parent:		oamji3xizf2zpsu89ehnxcc1x
+Created at:	2026-04-16 20:05:55.979315055 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.11MB
+Description:	[deps_base 10/29] COPY libs/huleedu_service_libs/src/ libs/huleedu_service_libs/src/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		khjqt95rw9kj1z7sbqm454pr4
+Parent:		ibbvb76hzsrqtt7dw2a9f14b9
+Created at:	2026-04-19 10:20:02.932708898 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.12MB
+Description:	[runtime  8/11] COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		y92ufjaemy0symhb626r96vht
+Parent:		e2bnkw83o4yeucn8kc7xn4x96
+Created at:	2026-04-19 12:24:12.671700168 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.12MB
+Description:	[ 7/10] COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		zqsbwoifnpgf9wn38cicur68b
+Parent:		hbqqwqyeoru5osiubhvadx2xr
+Created at:	2026-04-19 15:04:36.074960825 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.12MB
+Description:	[ 7/10] COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		sm5kyvaxbc4ln8i9ws808ij4f
+Parent:		ucxekgd1t6d5trwkxuzrb7xxc
+Created at:	2026-04-19 12:57:17.603405799 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.176MB
+Description:	[deps_base 10/29] COPY libs/huleedu_service_libs/src/ libs/huleedu_service_libs/src/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		a6xtxbc1x8k5ijhpifaprqgaa
+Parent:		da4x698behelpfyh34bber9ha
+Created at:	2026-04-16 20:12:06.762025948 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.657MB
+Description:	[production 2/3] COPY --from=frontend-builder --chown=appuser:appuser /frontend/dist /app/static
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		spnedgn5vo8f2a94gcswj31tr
+Parent:		gghzv4f2viv2tz7hdrpa93vqj
+Created at:	2026-04-15 22:31:31.765061911 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.657MB
+Description:	[production 2/3] COPY --from=frontend-builder --chown=appuser:appuser /frontend/dist /app/static
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		vczbmbmocpa8dglq8311mijrx
+Parent:		8gjdpo2irerppbcsk99ugw95e
+Created at:	2026-04-19 13:03:30.623984099 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.658MB
+Description:	[production 2/3] COPY --from=frontend-builder --chown=appuser:appuser /frontend/dist /app/static
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		6sq6n2mukf3mpnpk2rdrrdlpj
+Parent:		rirxgw8st41k3dad0u9d1yy65
+Created at:	2026-04-19 09:40:33.29775774 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.7MB
+Description:	mount / from exec /bin/sh -c PYTHONPATH=/tmp/service-build-support python -m scripts.sir_convert_a_lot.devops.export_service_requirements --project-root /app --output /tmp/service-requirements.txt
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		mk41teqzrrzjitnlba495a0dm
+Parent:		xsiy6vmw0jwfe3n68vb5ss1gx
+Created at:	2026-04-19 10:10:29.880140311 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.7MB
+Description:	mount / from exec /bin/sh -c PYTHONPATH=/tmp/service-build-support python -m scripts.sir_convert_a_lot.devops.export_service_requirements --project-root /app --output /tmp/service-requirements.txt
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		dglkxt28q2bl9ties9ln9qelz
+Created at:	2026-04-15 22:24:34.103129336 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		2.001MB
+Description:	local source for context
+Usage count:	17
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		squ73sisa86txma8hbm6xiufi
+Created at:	2026-04-19 09:39:24.202707366 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		2.018MB
+Description:	local source for context
+Usage count:	10
+Last used:	55 seconds ago
+Type:		source.local
+
+ID:		ulqatc2eartz1g84869mt6oks
+Parent:		rwpcae4i7r9p9h4i0p3re7302
+Created at:	2026-04-19 13:03:02.467030717 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		2.566MB
+Description:	mount / from exec /bin/sh -c pnpm build
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ofmnmcomr7rxtq4b2aglaqcfu
+Parent:		5ct3luvuq978wmwzjf3yciayr
+Created at:	2026-04-15 22:27:29.254260615 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		4.941MB
+Description:	[production 10/12] COPY --from=frontend-builder /app/src/skriptoteket/web/static/spa ./src/skriptoteket/web/static/spa
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		rynb3zjv743v99o3t9y2nxfsd
+Parent:		5ct3luvuq978wmwzjf3yciayr
+Created at:	2026-04-16 14:04:23.391991195 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		4.941MB
+Description:	[production 10/12] COPY --from=frontend-builder /app/src/skriptoteket/web/static/spa ./src/skriptoteket/web/static/spa
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ud8f44mm5ehft9go8vlobb6pv
+Parent:		5ct3luvuq978wmwzjf3yciayr
+Created at:	2026-04-16 17:27:13.837310021 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		4.942MB
+Description:	[production 10/12] COPY --from=frontend-builder /app/src/skriptoteket/web/static/spa ./src/skriptoteket/web/static/spa
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		l3myrsv8oufwp47wisla4zenq
+Parent:		wvlvabz0hje6cop61x3z3d969
+Created at:	2026-04-16 17:27:14.010822537 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		5.583MB
+Description:	[production 12/12] COPY data/reagent_prep_chef/sds/markdown ./data/reagent_prep_chef/sds/markdown
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		smy5d2hldrntorgvdpui5eigi
+Parent:		jhu2eax1cbpbl8z3ihnfd8sny
+Created at:	2026-04-15 22:25:15.317384074 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		5.863MB
+Description:	[frontend-builder  8/10] COPY frontend/apps/skriptoteket/ ./apps/skriptoteket/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		wm2j8wt0vt25gssxpdedp79j4
+Parent:		jhu2eax1cbpbl8z3ihnfd8sny
+Created at:	2026-04-16 14:04:06.414689536 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		5.872MB
+Description:	[frontend-builder  8/10] COPY frontend/apps/skriptoteket/ ./apps/skriptoteket/
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		5ct3luvuq978wmwzjf3yciayr
+Parent:		0o6xobwjo9kx8xvoxq7e9fpxk
+Created at:	2026-04-15 22:27:28.800832497 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		6.363MB
+Description:	[production  9/12] COPY src ./src
+Usage count:	2
+Last used:	3 days ago
+Type:		regular
+
+ID:		zrxwhv8evlq9f8rq08wkr7qcx
+Parent:		h0bqcg7hcjnhagz90v0xuslpx
+Created at:	2026-04-15 22:31:14.560173031 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		7.795MB
+Description:	[frontend-builder 6/7] COPY frontend/ ./
+Usage count:	2
+Last used:	5 hours ago
+Type:		regular
+
+ID:		rwpcae4i7r9p9h4i0p3re7302
+Parent:		h0bqcg7hcjnhagz90v0xuslpx
+Created at:	2026-04-19 13:03:02.193967426 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		7.798MB
+Description:	[frontend-builder 6/7] COPY frontend/ ./
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		nb54g9sfwezxnp7e9d31ihedn
+Created at:	2026-04-19 13:02:59.113464318 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		7.867MB
+Description:	local source for context
+Usage count:	1
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		og2991zkmu1bulkstawe60tdw
+Parent:		qpimwi2dc7p1lmpgygj2m71hs
+Created at:	2026-04-19 14:58:56.603374193 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		10.8MB
+Description:	mount / from exec /bin/sh -c python -m pip install --upgrade pip
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		rirxgw8st41k3dad0u9d1yy65
+Parent:		wjht6r6i3djmr97fa7hw0q15h
+Created at:	2026-04-19 09:40:31.398875808 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		10.8MB
+Description:	mount / from exec /bin/sh -c python -m pip install --upgrade --no-cache-dir pip
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		xsiy6vmw0jwfe3n68vb5ss1gx
+Parent:		ihpcllhy5r166csl4ss2zq98y
+Created at:	2026-04-19 10:10:27.886081534 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		10.8MB
+Description:	mount / from exec /bin/sh -c python -m pip install --upgrade --no-cache-dir pip
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		z46cmm2g3nzlkgwdsyllt3crs
+Parent:		z82kc1ofvb17yxhfjrwip8g06
+Created at:	2026-04-19 12:16:07.168703941 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		10.8MB
+Description:	mount / from exec /bin/sh -c python -m pip install --upgrade pip
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		68tnc6cow5tbfy4zca75kji1l
+Parent:		4sba6nt5sc67rodqw7o345pjq
+Created at:	2026-04-15 22:26:05.920352324 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		13.63MB
+Description:	mount / from exec /bin/sh -c ln -sf /usr/bin/fdfind /usr/local/bin/fd     && ln -sf /usr/bin/batcat /usr/local/bin/bat     && YQ_ARCH="amd64"     && if [ "$TARGETARCH" = "arm64" ]; then YQ_ARCH="arm64"; fi     && curl -fsSL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${YQ_ARCH}" -o /usr/local/bin/yq     && chmod +x /usr/local/bin/yq
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		tswn04hfifw8c82ctsnof2o3m
+Parent:		lo9qrgpwzbrcpa3f8dt1meyrx
+Created at:	2026-04-15 22:25:07.858946008 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		19.05MB
+Description:	mount / from exec /bin/sh -c corepack enable && corepack prepare pnpm@latest --activate
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		qpimwi2dc7p1lmpgygj2m71hs
+Parent:		pdw5ske62usru40bu751doybp
+Created at:	2026-04-19 14:58:52.570109753 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		23.99MB
+Description:	mount / from exec /bin/sh -c python -m venv "${VIRTUAL_ENV}"
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		z82kc1ofvb17yxhfjrwip8g06
+Parent:		pdw5ske62usru40bu751doybp
+Created at:	2026-04-19 12:16:03.785200094 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		23.99MB
+Description:	mount / from exec /bin/sh -c python -m venv "${VIRTUAL_ENV}"
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		ihpcllhy5r166csl4ss2zq98y
+Parent:		4wfbtkhe3sddvp9nxt4kfklos
+Created at:	2026-04-19 10:10:23.538788914 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		23.99MB
+Description:	mount / from exec /bin/sh -c python -m venv "${VIRTUAL_ENV}"
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		wjht6r6i3djmr97fa7hw0q15h
+Parent:		s08xzm1kaz181ybhvhu36jpi2
+Created at:	2026-04-19 09:40:26.972998695 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		23.99MB
+Description:	mount / from exec /bin/sh -c python -m venv "${VIRTUAL_ENV}"
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		4sba6nt5sc67rodqw7o345pjq
+Parent:		fokkraccuumwhrhea15sde7oh
+Created at:	2026-04-15 22:26:04.106944276 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		24.03MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y --no-install-recommends     jq     ripgrep     fd-find     bat     fzf     tree     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		dp602lcm54ixyrnxb8x9nq53q
+Parent:		n39h57uiuj5oy5ruacf4q2y45
+Created at:	2026-04-16 20:12:06.177311995 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		31.69MB
+Description:	mount / from exec /bin/sh -c pip install --no-cache-dir aiokafka>=0.10.0 &&     pip install -e ./libs/common_core/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		z9kjjp636egm3ip7h4j3rpjo3
+Parent:		2g910c0dk2er2er2thl09c3zp
+Created at:	2026-04-19 13:03:25.707889082 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		31.69MB
+Description:	mount / from exec /bin/sh -c pip install --no-cache-dir aiokafka>=0.10.0 &&     pip install -e ./libs/common_core/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		kj0pubvjcc99dlf3hggqn9vj4
+Parent:		tuxmtx3ebko6o3eh4z2a6u4wm
+Created at:	2026-04-16 20:05:54.219186905 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		33.76MB
+Description:	mount / from exec /bin/sh -c pip install --no-cache-dir pdm
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		xs0if3akzuw383shbxu7x2kef
+Parent:		kmtnhe5o0qmygy2b7pl12i0hk
+Created at:	2026-04-15 22:25:03.098402034 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		33.79MB
+Description:	mount / from exec /bin/sh -c pip install --no-cache-dir pdm
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		3ls3fidju00e9y9yjb95gfgza
+Parent:		6p01nbj0yxkjun5l04yv8mt6j
+Created at:	2026-04-15 22:26:04.075850892 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		34.12MB
+Description:	mount / from exec /bin/sh -c pip install --no-cache-dir pdm==2.26.2
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		kip17rsjsmdn6o1gfc9gudx5m
+Parent:		68tnc6cow5tbfy4zca75kji1l
+Created at:	2026-04-15 22:26:18.54900691 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		34.12MB
+Description:	mount / from exec /bin/sh -c pip install --no-cache-dir pdm==2.26.2
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		mmjwdizyjjudsq4i9qc5papzr
+Parent:		neh284ezvajetwf1ln7jgdn5x
+Created at:	2026-04-15 22:23:43.025404753 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		34.12MB
+Description:	mount / from exec /bin/sh -c pip install --no-cache-dir pdm==2.26.2
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		xax5x5oidhtfhpbu9su2gdmar
+Parent:		d94xvynxrbic5itfp0rz5idkw
+Created at:	2026-04-19 09:40:20.626506954 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		34.65MB
+Description:	mount / from exec /bin/sh -c python -m pip install --no-cache-dir "pdm==2.26.4"
+Usage count:	3
+Last used:	5 hours ago
+Type:		regular
+
+ID:		bq7i94fv5965eavmefcpvfnlr
+Parent:		sbltl3zzazwqgfis8cb1iwra8
+Created at:	2026-04-19 15:03:52.794197773 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		98.56MB
+Description:	mount / from exec /bin/sh -c mkdir -p /opt/easyocr-models     && python -c 'import easyocr; easyocr.Reader(["sv", "en"], gpu=False, model_storage_directory="/opt/easyocr-models", download_enabled=True, verbose=False)'
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		oogncitgnro90ptot61qorz8j
+Parent:		n0v781kjpy7adu6q8c69aultt
+Created at:	2026-04-19 10:20:01.800027657 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		98.56MB
+Description:	[runtime  2/11] COPY --from=dependency-builder /opt/easyocr-models /opt/easyocr-models
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		p8m5kd3b7xlkepmd4007xyis1
+Parent:		bkrt47nnxrhzj9rs0cg9x21mz
+Created at:	2026-04-19 09:46:17.41848074 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		98.56MB
+Description:	mount / from exec /bin/sh -c mkdir -p /opt/easyocr-models     && python -c 'import easyocr; easyocr.Reader(["sv", "en"], gpu=False, model_storage_directory="/opt/easyocr-models", download_enabled=True, verbose=False)'
+Usage count:	2
+Last used:	5 hours ago
+Type:		regular
+
+ID:		qllwiwypugqfjywi9y16vnc28
+Parent:		apako1508dxylsxh7yi1lur55
+Created at:	2026-04-19 10:16:20.632834725 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		98.56MB
+Description:	mount / from exec /bin/sh -c mkdir -p /opt/easyocr-models     && python -c 'import easyocr; easyocr.Reader(["sv", "en"], gpu=False, model_storage_directory="/opt/easyocr-models", download_enabled=True, verbose=False)'
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		txpx3xuq6hu28w4n9n7zplqf7
+Parent:		mrnk4631kr951fghd3pz1imfw
+Created at:	2026-04-19 12:23:00.97849727 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		98.56MB
+Description:	mount / from exec /bin/sh -c mkdir -p /opt/easyocr-models     && python -c 'import easyocr; easyocr.Reader(["sv", "en"], gpu=False, model_storage_directory="/opt/easyocr-models", download_enabled=True, verbose=False)'
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		j8yo65lypbl5md3w5xelx48ht
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 22:30:56.28606135 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		141.5MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/spellchecker_service/ /app/services/spellchecker_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		wsdn66gpxievsqoo2v1jsqsos
+Created at:	2026-04-15 22:30:44.451500091 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		141.5MB
+Description:	local source for context
+Usage count:	15
+Last used:	2 hours ago
+Type:		source.local
+
+ID:		qf8x3jl10z6rpj8ewfparakou
+Parent:		dz6o78mjwarrho5n9q354lnv1
+Created at:	2026-04-16 20:11:49.968808441 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		141.6MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/spellchecker_service/ /app/services/spellchecker_service/
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		t7re1k1qy8vsxfpvxvvja9xx9
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-16 05:05:31.657274745 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		141.6MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/spellchecker_service/ /app/services/spellchecker_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		ubwhly252yi0133g5wa1qnquu
+Parent:		yapp9ccd76eu5yci0nkswq0q6
+Created at:	2026-04-15 23:13:59.06865143 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		141.6MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/spellchecker_service/ /app/services/spellchecker_service/
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		z4rgd1l2yg1sk22dy77f5av5p
+Parent:		xekbl8gl2os08mnimuzqf82jj
+Created at:	2026-04-19 13:03:07.279469291 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		141.6MB
+Description:	[production 1/2] COPY --chown=appuser:appuser services/spellchecker_service/ /app/services/spellchecker_service/
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		h0bqcg7hcjnhagz90v0xuslpx
+Parent:		mcdjsezo189tkwlvhmz88xuj6
+Created at:	2026-04-15 22:31:13.303525548 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		169.5MB
+Description:	mount / from exec /bin/sh -c pnpm install --frozen-lockfile
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		jdn0ml95f2oj32uf559xr4hyk
+Parent:		b6085wpbh6x6um0dn1d9z56yi
+Created at:	2026-04-19 13:03:25.744939738 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		211.3MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     wget     unzip     openjdk-21-jre-headless     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		o4j6jl0kbapvos9awrif2wtmw
+Parent:		lja4tls63qlx6gjujtfdrbj2n
+Created at:	2026-04-15 22:31:17.788324924 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		211.3MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     wget     unzip     openjdk-21-jre-headless     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		oursqj87evtvxy25hokr1fl95
+Parent:		i9srjw66o5jb655ehkjihhfmv
+Created at:	2026-04-16 20:12:07.72621828 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		211.3MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     wget     unzip     openjdk-21-jre-headless     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		q8pr9f6a5i4q9apz3i1ckx5u7
+Parent:		b6085wpbh6x6um0dn1d9z56yi
+Created at:	2026-04-19 13:03:21.979282658 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		211.3MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     libmagic1     pandoc     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		ul291rk1x1f2xwo5q3gbfnhgx
+Parent:		lja4tls63qlx6gjujtfdrbj2n
+Created at:	2026-04-15 22:31:13.259264461 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		211.3MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     libmagic1     pandoc     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		yxd9djbw227uhvaqtdhhy3vtc
+Parent:		i9srjw66o5jb655ehkjihhfmv
+Created at:	2026-04-16 20:11:58.324831211 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		211.3MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     libmagic1     pandoc     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		uylvf099ly2xjvxs2gg3isacp
+Parent:		ei8m50qjolpuubitpr0whjujk
+Created at:	2026-04-15 22:25:25.703359048 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		271.2MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y --no-install-recommends     curl     ca-certificates     patch     libcairo2     libgdk-pixbuf-2.0-0     libpango-1.0-0     libpangocairo-1.0-0     libpangoft2-1.0-0     shared-mime-info     fontconfig     fonts-liberation2     fonts-dejavu-core     fonts-freefont-ttf     fonts-noto-core     && case "$TARGETARCH" in         amd64|"") PANDOC_ARCH="amd64"; PANDOC_SHA="$PANDOC_SHA256" ;;         arm64) PANDOC_ARCH="arm64"; PANDOC_SHA="$PANDOC_SHA256_ARM64" ;;         *) echo "Unsupported TARGETARCH=$TARGETARCH" >&2; exit 1 ;;     esac     && PANDOC_DEB="pandoc-${PANDOC_VERSION}-1-${PANDOC_ARCH}.deb"     && curl -fsSL -o "/tmp/${PANDOC_DEB}" "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/${PANDOC_DEB}"     && echo "${PANDOC_SHA}  /tmp/${PANDOC_DEB}" | sha256sum -c -     && dpkg -i "/tmp/${PANDOC_DEB}"     && apt-get -y -f install     && rm -f "/tmp/${PANDOC_DEB}"     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		ofah1uvearwevxkv56gngl610
+Parent:		ei8m50qjolpuubitpr0whjujk
+Created at:	2026-04-15 22:23:18.342678842 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		286.4MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y --no-install-recommends     curl     ca-certificates     patch     librsvg2-bin     libcairo2     libgdk-pixbuf-2.0-0     libpango-1.0-0     libpangocairo-1.0-0     libpangoft2-1.0-0     shared-mime-info     fontconfig     fonts-liberation2     fonts-dejavu-core     fonts-freefont-ttf     fonts-noto-core     && case "$TARGETARCH" in         amd64|"") PANDOC_ARCH="amd64"; PANDOC_SHA="$PANDOC_SHA256" ;;         arm64) PANDOC_ARCH="arm64"; PANDOC_SHA="$PANDOC_SHA256_ARM64" ;;         *) echo "Unsupported TARGETARCH=$TARGETARCH" >&2; exit 1 ;;     esac     && PANDOC_DEB="pandoc-${PANDOC_VERSION}-1-${PANDOC_ARCH}.deb"     && curl -fsSL -o "/tmp/${PANDOC_DEB}" "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/${PANDOC_DEB}"     && echo "${PANDOC_SHA}  /tmp/${PANDOC_DEB}" | sha256sum -c -     && dpkg -i "/tmp/${PANDOC_DEB}"     && apt-get -y -f install     && rm -f "/tmp/${PANDOC_DEB}"     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		jhu2eax1cbpbl8z3ihnfd8sny
+Parent:		139oygl4485ybc5x30tn00c1n
+Created at:	2026-04-15 22:25:15.050606585 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		305.9MB
+Description:	mount / from exec /bin/sh -c pnpm install --frozen-lockfile --store-dir /pnpm/store
+Usage count:	2
+Last used:	3 days ago
+Type:		regular
+
+ID:		6p01nbj0yxkjun5l04yv8mt6j
+Parent:		fokkraccuumwhrhea15sde7oh
+Created at:	2026-04-15 22:25:52.841983514 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		307.5MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y --no-install-recommends     build-essential     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		neh284ezvajetwf1ln7jgdn5x
+Parent:		ofah1uvearwevxkv56gngl610
+Created at:	2026-04-15 22:23:33.651239441 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		307.5MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y --no-install-recommends     build-essential     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		tuxmtx3ebko6o3eh4z2a6u4wm
+Parent:		qjnjp5xfj66illg9turejk2ok
+Created at:	2026-04-16 20:05:43.498847963 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		319.9MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     curl     build-essential     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		kmtnhe5o0qmygy2b7pl12i0hk
+Parent:		qjnjp5xfj66illg9turejk2ok
+Created at:	2026-04-15 22:24:53.619819329 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		320MB
+Description:	mount / from exec /bin/sh -c apt-get update && apt-get install -y     --no-install-recommends     curl     build-essential     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		p0z8p7qtqkr6oov2zhwf2mw0a
+Created at:	2026-04-19 12:16:03.825039457 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		363.4MB
+Description:	cached mount /root/.cache/pip from exec /bin/sh -c python -m pip install --upgrade pip with id "/sir-convert-a-lot-pip"
+Usage count:	6
+Last used:	2 minutes ago
+Type:		exec.cachemount
+
+ID:		uxo5oft7hz4k4ba2lexs3hs3b
+Parent:		ofah1uvearwevxkv56gngl610
+Created at:	2026-04-15 22:24:54.010248318 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		372.3MB
+Description:	[runner 1/4] COPY --from=builder /app/.venv /app/.venv
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		4fp3y3mrrt7e99wgwbfbw760d
+Parent:		kip17rsjsmdn6o1gfc9gudx5m
+Created at:	2026-04-15 22:27:27.333591682 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		378MB
+Description:	[production  5/12] COPY --from=builder /app/__pypackages__ /app/__pypackages__
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		93iszkvmmvrctkpju37ciu5n6
+Parent:		jdn0ml95f2oj32uf559xr4hyk
+Created at:	2026-04-19 13:03:38.584162907 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		405.1MB
+Description:	mount / from exec /bin/sh -c mkdir -p /app/languagetool &&     cd /app/languagetool &&     wget -q https://languagetool.org/download/LanguageTool-stable.zip &&     unzip -q LanguageTool-stable.zip &&     mv LanguageTool-*/* . &&     rm -rf LanguageTool-* LanguageTool-stable.zip
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		t6kevblhl1mockqohtzie8lov
+Parent:		o4j6jl0kbapvos9awrif2wtmw
+Created at:	2026-04-15 22:31:31.063950682 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		405.1MB
+Description:	mount / from exec /bin/sh -c mkdir -p /app/languagetool &&     cd /app/languagetool &&     wget -q https://languagetool.org/download/LanguageTool-stable.zip &&     unzip -q LanguageTool-stable.zip &&     mv LanguageTool-*/* . &&     rm -rf LanguageTool-* LanguageTool-stable.zip
+Usage count:	1
+Last used:	3 days ago
+Type:		regular
+
+ID:		zzr3k5o80d5o55d2a7g9wh00k
+Parent:		oursqj87evtvxy25hokr1fl95
+Created at:	2026-04-16 20:12:20.326721408 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		405.1MB
+Description:	mount / from exec /bin/sh -c mkdir -p /app/languagetool &&     cd /app/languagetool &&     wget -q https://languagetool.org/download/LanguageTool-stable.zip &&     unzip -q LanguageTool-stable.zip &&     mv LanguageTool-*/* . &&     rm -rf LanguageTool-* LanguageTool-stable.zip
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		8arhegyg14x2crqys2r4hwxwg
+Parent:		s2ijlaoloywd6i8c1wk54peg2
+Created at:	2026-04-19 12:15:58.076482157 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		510.7MB
+Description:	mount / from exec /bin/sh -c apt-get update     && apt-get install -y --no-install-recommends         libgl1         libglib2.0-0         libharfbuzz-subset0         libpango-1.0-0         libpangoft2-1.0-0         libsm6         libx11-6         libxext6         libxcb1         libxrender1         pandoc         tesseract-ocr         tesseract-ocr-eng         tesseract-ocr-swe     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		s59v91cbav6qj1jfawranqygw
+Parent:		s2ijlaoloywd6i8c1wk54peg2
+Created at:	2026-04-19 09:40:08.532520895 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		510.7MB
+Description:	mount / from exec /bin/sh -c apt-get update     && apt-get install -y --no-install-recommends         libgl1         libglib2.0-0         libharfbuzz-subset0         libpango-1.0-0         libpangoft2-1.0-0         libsm6         libx11-6         libxext6         libxcb1         libxrender1         pandoc         tesseract-ocr         tesseract-ocr-eng         tesseract-ocr-swe     && rm -rf /var/lib/apt/lists/*
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		8o1jihq1cmhchg2q9j9wi4jzv
+Parent:		jdtx0njscd2og9emdkv1nmu70
+Created at:	2026-04-15 22:26:51.958981339 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		633.3MB
+Description:	mount / from exec /bin/sh -c pdm install --frozen-lockfile -G docker-dev-core &&     chown -R appuser:appuser /app
+Usage count:	2
+Last used:	3 hours ago
+Type:		regular
+
+ID:		i7o085fqv265s4vuk5ol1mq23
+Parent:		u92ks685pgq6qu0pb0jug2c1c
+Created at:	2026-04-16 20:07:41.402529738 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		633.4MB
+Description:	mount / from exec /bin/sh -c pdm install --frozen-lockfile -G docker-dev-core &&     chown -R appuser:appuser /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		nrv6qfqeyyesri3v8viga1iuq
+Parent:		rb8jxg3ecxb8mq53in2e4o0dc
+Created at:	2026-04-19 12:59:06.988475595 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		633.6MB
+Description:	mount / from exec /bin/sh -c pdm install --frozen-lockfile -G docker-dev-core &&     chown -R appuser:appuser /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		eryf4g2zs2jm7jdpxunnmfjt7
+Parent:		z46cmm2g3nzlkgwdsyllt3crs
+Created at:	2026-04-19 12:17:21.302589027 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.204GB
+Description:	mount / from exec /bin/sh -c python -m pip install --no-deps -r /tmp/service-requirements.txt
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		wfz28yrmmabds49pxz0mw9fqf
+Parent:		og2991zkmu1bulkstawe60tdw
+Created at:	2026-04-19 15:00:06.038986812 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.204GB
+Description:	mount / from exec /bin/sh -c python -m pip install --no-deps -r /tmp/service-requirements.txt
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		id3r2mmyq9xzduw695fv3c0sh
+Parent:		851tvsxwhwravvl43n7sr05pc
+Created at:	2026-04-19 10:11:48.857673459 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.205GB
+Description:	mount / from exec /bin/sh -c python -m pip install --no-cache-dir --no-deps -r /tmp/service-requirements.txt
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		r7ouzdfhnonuyc2i5532g3ljz
+Parent:		0t0bku7yeswvprjy8fvikz9rq
+Created at:	2026-04-19 09:42:00.08972937 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		1.205GB
+Description:	mount / from exec /bin/sh -c python -m pip install --no-cache-dir --no-deps -r /tmp/service-requirements.txt
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		6nq87j7zldt04ixnxebkxr990
+Parent:		i7o085fqv265s4vuk5ol1mq23
+Created at:	2026-04-16 20:11:24.806870485 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.407GB
+Description:	mount / from exec /bin/sh -c pdm install --frozen-lockfile -G docker-dev-ml-extra &&     chown -R appuser:appuser /app
+Usage count:	1
+Last used:	2 days ago
+Type:		regular
+
+ID:		aunajmotn41qu9zov3i9pjlyv
+Parent:		nrv6qfqeyyesri3v8viga1iuq
+Created at:	2026-04-19 13:02:47.362812194 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		1.407GB
+Description:	mount / from exec /bin/sh -c pdm install --frozen-lockfile -G docker-dev-ml-extra &&     chown -R appuser:appuser /app
+Usage count:	1
+Last used:	2 hours ago
+Type:		regular
+
+ID:		k9t7iqpji9mkd00hlteunx3cv
+Created at:	2026-04-19 12:17:21.422423365 +0000 UTC
+Mutable:	true
+Reclaimable:	true
+Shared:		false
+Size:		5.69GB
+Description:	cached mount /root/.cache/pip from exec /bin/sh -c . /tmp/rocm-runtime.env     && python -m pip install --upgrade         --index-url "${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL}"         "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}"         "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}"         "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}" with id "/sir-convert-a-lot-pip-rocm"
+Usage count:	4
+Last used:	2 minutes ago
+Type:		exec.cachemount
+
+ID:		apako1508dxylsxh7yi1lur55
+Parent:		id3r2mmyq9xzduw695fv3c0sh
+Created at:	2026-04-19 10:16:20.51165725 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		13.42GB
+Description:	mount / from exec /bin/sh -c . /tmp/rocm-runtime.env     && python -m pip install --upgrade --no-cache-dir         --index-url "${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL}"         "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}"         "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}"         "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}"
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		bkrt47nnxrhzj9rs0cg9x21mz
+Parent:		r7ouzdfhnonuyc2i5532g3ljz
+Created at:	2026-04-19 09:46:17.294640712 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		false
+Size:		13.42GB
+Description:	mount / from exec /bin/sh -c . /tmp/rocm-runtime.env     && python -m pip install --upgrade --no-cache-dir         --index-url "${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL}"         "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}"         "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}"         "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}"
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+ID:		mrnk4631kr951fghd3pz1imfw
+Parent:		kim54mhx8p2zcwoobscucl75a
+Created at:	2026-04-19 12:22:48.146930666 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		13.42GB
+Description:	mount / from exec /bin/sh -c . /tmp/rocm-runtime.env     && python -m pip install --upgrade         --index-url "${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL}"         "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}"         "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}"         "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}"
+Usage count:	1
+Last used:	3 hours ago
+Type:		regular
+
+ID:		sbltl3zzazwqgfis8cb1iwra8
+Parent:		nym1jiwmnokmip21cwyva11ni
+Created at:	2026-04-19 15:03:41.087906223 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		13.42GB
+Description:	mount / from exec /bin/sh -c . /tmp/rocm-runtime.env     && python -m pip install --upgrade         --index-url "${SIR_CONVERT_A_LOT_TORCH_ROCM_INDEX_URL}"         "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}"         "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}"         "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}"
+Usage count:	1
+Last used:	2 minutes ago
+Type:		regular
+
+ID:		n0v781kjpy7adu6q8c69aultt
+Parent:		d94xvynxrbic5itfp0rz5idkw
+Created at:	2026-04-19 10:20:00.314676872 +0000 UTC
+Mutable:	false
+Reclaimable:	true
+Shared:		true
+Size:		14.64GB
+Description:	[runtime  1/11] COPY --from=dependency-builder /app/.venv /app/.venv
+Usage count:	1
+Last used:	5 hours ago
+Type:		regular
+
+Shared:		53.13GB
+Private:	39.25GB
+Reclaimable:	92.38GB
+Total:		92.38GB

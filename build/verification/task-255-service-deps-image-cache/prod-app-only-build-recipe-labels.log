@@ -1,0 +1,59 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 750B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.38kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/sir-convert-a-lot-deps-rocm:b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 1.22kB done
+#4 DONE 0.0s
+
+#5 [ 1/10] FROM docker.io/library/sir-convert-a-lot-deps-rocm:b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 21.00kB 0.0s done
+#6 DONE 0.1s
+
+#7 [ 5/10] COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application
+#7 CACHED
+
+#8 [ 8/10] COPY scripts/sir_convert_a_lot/integrations ./scripts/sir_convert_a_lot/integrations
+#8 CACHED
+
+#9 [ 2/10] COPY scripts/__init__.py ./scripts/__init__.py
+#9 CACHED
+
+#10 [ 4/10] COPY scripts/sir_convert_a_lot/service.py ./scripts/sir_convert_a_lot/service.py
+#10 CACHED
+
+#11 [ 7/10] COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure
+#11 CACHED
+
+#12 [ 9/10] COPY scripts/sir_convert_a_lot/interfaces ./scripts/sir_convert_a_lot/interfaces
+#12 CACHED
+
+#13 [ 6/10] COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain
+#13 CACHED
+
+#14 [ 3/10] COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
+#14 CACHED
+
+#15 [10/10] COPY scripts/sir_convert_a_lot/templates ./scripts/sir_convert_a_lot/templates
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 writing image sha256:820dbbfe2d85ac3443258e40106fccab5d81e5ee558b6c23e258e7913a9c856d
+#16 writing image sha256:820dbbfe2d85ac3443258e40106fccab5d81e5ee558b6c23e258e7913a9c856d done
+#16 naming to docker.io/library/sir-convert-a-lot-runtime:local 0.0s done
+#16 DONE 0.1s
+
+#17 resolving provenance for metadata file
+#17 DONE 0.0s
+ sir-convert-a-lot-runtime:local  Built

@@ -37,6 +37,7 @@ Structured review artifact for implementation or readiness checks.
 - Reviewed commits:
   - `7173c03f8b414caa7fa1e9c84a0c6b33b5b357b8` - Task 255 implementation.
   - `194cfb0` - final Hemma proof artifacts and docs closeout.
+  - `d23855375ec848a8c45ae40d43e23c4f8b23d319` - recipe-hash freshness fix.
 - Governing authority:
   `docs/backlog/tasks/task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys.md`.
 - Public surfaces under review:
@@ -58,6 +59,15 @@ Structured review artifact for implementation or readiness checks.
 - Validation evidence gathered:
   - `pdm run pytest-root tests/sir_convert_a_lot/test_service_dependency_inputs.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py -q`:
     pass, `28 passed`.
+  - Follow-up local gates passed after the fix: docs, skills, handoff, format,
+    lint, typecheck, compose contract tests, service-image/compose/dockerfile
+    slice, coverage gate, task index, and whitespace diff check.
+  - Follow-up detached Hemma proof passed from commit
+    `d23855375ec848a8c45ae40d43e23c4f8b23d319`: recipe-aware dependency image
+    `sir-convert-a-lot-deps-rocm:b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89`
+    was labeled with matching dependency, recipe, and dependency-image hashes;
+    the subsequent app-only build reused it without rerunning ROCm torch or
+    EasyOCR work; production recreate finished healthy.
 
 ## Findings
 
@@ -113,7 +123,7 @@ by normal deploys is narrower than the actual dependency-image build contract.
 
 ## Resolution
 
-In progress on 2026-04-19. The follow-up keeps the runtime package
+Resolved on 2026-04-19. The follow-up keeps the runtime package
 `dependency_hash` narrow, adds a separate build-recipe hash from
 `Dockerfile.deps`, `scripts/devops/service-deps-image.sh`, the dependency input
 generator, explicit `PYTHON_IMAGE`, system packages, pip policy, BuildKit cache
@@ -124,14 +134,15 @@ existing image tag.
 
 ## Follow-up Actions
 
-1. Re-run the focused local tests and repeat a Hemma app-only proof after the
+1. Completed: re-run the focused local tests and repeat a Hemma app-only proof after the
    recipe-hash fix to show unchanged app code still stays cache-hot.
-1. Update the Task 255 proof packet with recipe hash, combined image identity,
+1. Completed: update the Task 255 proof packet with recipe hash, combined image identity,
    and detached Hemma proof evidence.
 
 ## Completion
 
-Initial review completed on 2026-04-19 with changes requested.
+Initial review completed on 2026-04-19 with changes requested. Follow-up
+completed on 2026-04-19 and the finding is resolved.
 
 ## Checklist
 

@@ -23,10 +23,10 @@ runbooks, or skills.
   under `docker/service-deps/`, `Dockerfile.deps` owns ROCm/CPU dependency
   images, and production/local runtime Dockerfiles consume explicit
   `DEPS_IMAGE` app layers.
-- Review 05 requested a Task 255 follow-up: dependency image freshness must
-  include build-recipe truth. Current local work adds recipe hashing, combined
-  dependency-image identity, and label verification before accepting existing
-  dependency image tags.
+- Review 05 Task 255 follow-up is completed and pushed to `main`. Dependency
+  image freshness now includes build-recipe truth through a separate recipe
+  hash, a combined dependency-image hash, and Docker label verification before
+  accepting existing dependency image tags.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -65,9 +65,6 @@ runbooks, or skills.
 1. Finish Task 254 by making `hemma-deploy-and-verify` deploy-detached-aware
    and by emitting durable public-edge/default-host artifacts in the canonical
    report.
-1. Finish the Review 05 Task 255 follow-up by rerunning focused local gates,
-   pushing the fix, and repeating detached Hemma app-only proof with the new
-   recipe-hash image identity.
 1. Before any future Hemma Qwen run, use:
    `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
    and
@@ -94,6 +91,13 @@ runbooks, or skills.
   dependency image without rerunning heavy dependency work, and
   `prod-recreate sir_convert_a_lot_prod` started healthy. Final artifacts are
   under `build/verification/task-255-service-deps-image-cache/`.
+- 2026-04-19 Review 05 follow-up proof passed from commit
+  `d23855375ec848a8c45ae40d43e23c4f8b23d319`: ROCm dependency image
+  `sir-convert-a-lot-deps-rocm:b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89`
+  carries matching dependency, recipe, and dependency-image labels. Detached
+  app-only `prod-build` reused that image without rerunning ROCm torch or
+  EasyOCR, and detached `prod-recreate sir_convert_a_lot_prod` started
+  healthy on `127.0.0.1:28085->8085/tcp`.
 - 2026-04-19 docs-governance slice:
   `pdm run docs-validate`, `pdm run handoff-validate`, and `git diff --check`
   are required before closeout.

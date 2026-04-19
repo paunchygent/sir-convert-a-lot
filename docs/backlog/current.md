@@ -99,6 +99,10 @@ DevOps task authority.
     include build-recipe truth. The follow-up adds recipe hashing, combined
     dependency-image identity, and Docker label verification before accepting
     existing dependency image tags.
+  - The Review 05 Task 255 follow-up was committed, pushed, pulled on Hemma,
+    and verified through detached recipe-aware dependency warm-up, app-only
+    build, and production recreate proof from commit
+    `d23855375ec848a8c45ae40d43e23c4f8b23d319`.
 
 ## Next Actions
 
@@ -109,8 +113,6 @@ DevOps task authority.
     artifacts in the canonical report;
   - run the live Hemma deploy/public curl gate only through detached deploy
     surfaces.
-- Finish the Review 05 Task 255 follow-up by rerunning focused local gates and
-  repeating the detached Hemma app-only proof with recipe-hash image freshness.
 - Keep Task 239 closed as historical partial layering context. Do not reopen it
   for the dependency-image work unless Task 255 explicitly supersedes or amends
   a documented Task 239 acceptance boundary.
