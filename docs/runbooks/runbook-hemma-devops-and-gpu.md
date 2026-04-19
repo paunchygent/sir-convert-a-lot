@@ -244,6 +244,17 @@ pdm run run-hemma -- pdm run prod-logs sir_convert_a_lot_prod
 pdm run run-hemma -- pdm run prod-stop
 ```
 
+Long-running Hemma deploy commands must be launched detached and monitored
+separately:
+
+```bash
+pdm run run-local-pdm hemma-command-start sir-prod-recreate -- sudo -n /home/paunchygent/.local/bin/pdm run prod-recreate sir_convert_a_lot_prod
+pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
+```
+
+The detached launcher writes authoritative remote logs and PID breadcrumbs under
+`/home/paunchygent/apps/sir-convert-a-lot/.artifacts/`.
+
 ## GPU Verification (ROCm/HIP)
 
 ```bash
@@ -359,9 +370,9 @@ Public-edge proof contract:
 Decision tree (fail-closed):
 
 1. `expected_revision != remote_revision`:
-   - push the intended commit, rerun with the pushed SHA.
+    - push the intended commit, rerun with the pushed SHA.
 1. `service_revision != remote_revision`:
-   - recreate service (`pdm run prod-recreate sir_convert_a_lot_prod` on Hemma), verify
+   - recreate service through the detached Hemma command launcher, verify
      `/readyz`, rerun gate.
 1. key resolution fails:
    - provide `--api-key` or set `SIR_CONVERT_A_LOT_V2_API_KEY`; avoid implicit `dev-only-key`.
