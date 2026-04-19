@@ -102,9 +102,12 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
 
     assert service.get("restart") == "unless-stopped"
     assert service.get("container_name") == "sir_convert_a_lot_prod"
-    assert service.get("env_file") == [{"path": ".env", "required": False}]
+    assert service.get("env_file") is None
 
     env_map = _service_env_map(service)
+    assert (
+        env_map["SIR_CONVERT_A_LOT_V2_API_KEY"] == "${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}"
+    )
     assert (
         env_map["SIR_CONVERT_A_LOT_SERVICE_REVISION"]
         == "${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}"
@@ -118,6 +121,18 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert "VIRTUAL_HOST" not in env_map
     assert "VIRTUAL_PORT" not in env_map
     assert "LETSENCRYPT_HOST" not in env_map
+    assert env_map["SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM"] == (
+        "${SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM:-0}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_ONBOARDING"] == (
+        "${SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_ONBOARDING:-0}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY"] == (
+        "${SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY:-0}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL"] == (
+        "${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL:-docling_layout_egret_large}"
+    )
 
     assert service.get("command") == [
         "uvicorn",
