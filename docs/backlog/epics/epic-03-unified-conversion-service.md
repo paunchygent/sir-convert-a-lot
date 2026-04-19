@@ -5,10 +5,11 @@ type: epic
 status: in_progress
 priority: critical
 created: '2026-02-11'
-last_updated: '2026-02-11'
+last_updated: '2026-04-19'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md
+  - docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
   - docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md
@@ -56,7 +57,10 @@ retries, and failure reasons, without selecting backends manually or rewriting i
 
 ## Out of Scope (for this epic)
 
-- Public internet exposure of conversion endpoints.
+- New public internet exposure of conversion endpoints. Existing Hemma
+  public-edge operational recovery is in scope only for health/readiness,
+  certificate, vhost ownership, and fail-closed default-host behavior; it does
+  not authorize exposing conversion job endpoints publicly.
 - Immediate queue-worker migration (must remain queue-compatible, but not required in first cut).
 - New format classes outside listed scope.
 
@@ -67,6 +71,7 @@ retries, and failure reasons, without selecting backends manually or rewriting i
 1. `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
 1. `docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md`
 1. `docs/backlog/stories/story-03-05-quality-performance-reliability-validation-gates.md`
+1. `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`
 
 ## Acceptance Criteria
 

@@ -94,7 +94,7 @@ def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str)
                 code="idempotency_key_missing",
                 message="Missing required Idempotency-Key header.",
                 retryable=False,
-        )
+            )
 
         source_job = runtime.get_job(job_id)
         source_job = require_job_access_v2(auth_context=auth_context, job=source_job)

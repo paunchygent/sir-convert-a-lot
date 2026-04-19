@@ -1,9 +1,9 @@
 ---
-id: 'task-249-add-trusted-app-bundle-mode-for-internal-html-to-pdf-exports'
-title: 'Supersede trusted app bundle mode for Klassrumskartan-owned HTML-to-PDF exports'
-type: 'task'
-status: 'canceled'
-priority: 'high'
+id: task-249-add-trusted-app-bundle-mode-for-internal-html-to-pdf-exports
+title: Supersede trusted app bundle mode for Klassrumskartan-owned HTML-to-PDF exports
+type: task
+status: canceled
+priority: high
 created: '2026-03-25'
 last_updated: '2026-03-26'
 related:
@@ -23,6 +23,7 @@ labels:
   - weasyprint
   - trust-boundary
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

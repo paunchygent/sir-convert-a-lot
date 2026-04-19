@@ -370,7 +370,7 @@ Public-edge proof contract:
 Decision tree (fail-closed):
 
 1. `expected_revision != remote_revision`:
-    - push the intended commit, rerun with the pushed SHA.
+   - push the intended commit, rerun with the pushed SHA.
 1. `service_revision != remote_revision`:
    - recreate service through the detached Hemma command launcher, verify
      `/readyz`, rerun gate.

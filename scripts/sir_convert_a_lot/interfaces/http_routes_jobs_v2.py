@@ -261,9 +261,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             reference_docx_uploaded=reference_docx_bytes is not None,
         )
 
-        scope_key = (
-            f"{auth_context.owner_api_key_scope}:POST:/v2/convert/jobs:{idempotency_key}"
-        )
+        scope_key = f"{auth_context.owner_api_key_scope}:POST:/v2/convert/jobs:{idempotency_key}"
         file_sha256 = hashlib.sha256(payload_bytes).hexdigest()
         request_fingerprint = fingerprint_for_request_v2(
             spec_payload=raw_spec,

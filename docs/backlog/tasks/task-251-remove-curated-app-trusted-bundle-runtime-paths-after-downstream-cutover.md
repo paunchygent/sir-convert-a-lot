@@ -1,9 +1,9 @@
 ---
-id: 'task-251-remove-curated-app-trusted-bundle-runtime-paths-after-downstream-cutover'
-title: 'Remove curated-app trusted-bundle runtime paths after downstream local cutover'
-type: 'task'
-status: 'done'
-priority: 'high'
+id: task-251-remove-curated-app-trusted-bundle-runtime-paths-after-downstream-cutover
+title: Remove curated-app trusted-bundle runtime paths after downstream local cutover
+type: task
+status: done
+priority: high
 created: '2026-03-26'
 last_updated: '2026-03-26'
 related:
@@ -19,6 +19,7 @@ labels:
   - cleanup
   - boundary
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

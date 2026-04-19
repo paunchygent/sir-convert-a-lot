@@ -116,6 +116,8 @@ def _assert_contains_swedish_diacritics(text: str, *, label: str) -> None:
     if missing:
         joined = "".join(missing)
         raise SystemExit(f"{label} OCR output is missing Swedish diacritics: missing={joined!r}")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(sys.argv[1:] if argv is None else argv)
 

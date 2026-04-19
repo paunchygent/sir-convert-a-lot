@@ -1,9 +1,9 @@
 ---
-id: 'task-248-fix-hemma-live-verifier-weasyprint-probe-to-match-container-runtime'
-title: 'Correct Hemma live verifier WeasyPrint probe to match container runtime'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-248-fix-hemma-live-verifier-weasyprint-probe-to-match-container-runtime
+title: Correct Hemma live verifier WeasyPrint probe to match container runtime
+type: task
+status: completed
+priority: high
 created: '2026-03-24'
 last_updated: '2026-03-24'
 related:
@@ -16,6 +16,7 @@ labels:
   - devops
   - verification
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

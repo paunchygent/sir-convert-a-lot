@@ -7,8 +7,11 @@ priority: high
 created: '2026-04-19'
 last_updated: '2026-04-19'
 related:
+  - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md
   - docs/backlog/tasks/task-43-publish-convert-domain-and-centralize-prod-env-mirroring-across-internal-repos.md
   - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
+  - docs/backlog/tasks/task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - compose.yaml
   - pyproject.toml
@@ -16,6 +19,7 @@ related:
   - scripts/devops/dev-compose.sh
   - scripts/devops/compose-actions.sh
   - scripts/sir_convert_a_lot/devops/hemma_deploy_and_verify.py
+  - docs/backlog/reviews/review-04-ruthless-review-of-task-254-production-public-edge-recovery.md
   - ~/infrastructure/docker-compose.yml
   - /etc/nginx/conf.d/default.conf
 labels:
@@ -170,6 +174,16 @@ Canonical deploy-and-verify evidence files:
 - `nginx_proxy_env.txt`: nginx-proxy environment containing
   `DEFAULT_HOST=hemma-reserved-default-host`.
 - `unknown_host_response.txt`: unowned-host reserved placeholder response.
+
+## Review Acceptance
+
+The ruthless review for the Task 254 implementation slice was accepted on
+2026-04-19 in
+`docs/backlog/reviews/review-04-ruthless-review-of-task-254-production-public-edge-recovery.md`.
+The acceptance covers the docs/code contract for the production compose split,
+public-edge durable evidence, default-host ownership, and unknown-host probe
+policy. Live Hemma acceptance criteria remain unchecked until the recorded
+remote/public verification artifacts are captured.
 
 ## Checklist
 

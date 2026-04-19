@@ -12,9 +12,17 @@ related:
   - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - scripts/devops/dev-compose.sh
+  - scripts/devops/prod-compose.sh
+  - scripts/devops/compose-actions.sh
+  - scripts/devops/hemma-public-edge-default-host-remediate.sh
   - scripts/sir_convert_a_lot/devops/hemma_deploy_and_verify.py
+  - scripts/sir_convert_a_lot/devops/hemma_deploy_report.py
+  - scripts/sir_convert_a_lot/devops/public_edge_verification.py
   - tests/sir_convert_a_lot/test_dev_compose_wrapper.py
   - tests/sir_convert_a_lot/test_local_compose_contract.py
+  - tests/sir_convert_a_lot/test_hemma_deploy_and_verify.py
+  - tests/sir_convert_a_lot/test_public_edge_verification.py
+  - tests/sir_convert_a_lot/test_hemma_detached_command_surface.py
 labels:
   - review
   - hemma
@@ -152,25 +160,50 @@ Structured review artifact for implementation or readiness checks.
 
 ## Decision
 
-changes_requested
+approved
 
 ## Response
 
-Awaiting Task 254 remediation. The task is directionally correct but is not yet
-review-ready as production recovery authority because it leaves the shared edge
-owner, command-surface test split, and public evidence contract too loose.
+Task 254 remediation addressed the review findings. The governing task now owns
+the infrastructure default-host surface, separates `dev-*` from `prod-*`,
+defines the unknown-host probe policy, and requires durable public-edge evidence
+inside the canonical deploy-and-verify report.
 
 ## Follow-up Actions
 
-1. Update Task 254 before implementation so it explicitly owns or links the
-   shared nginx-proxy default-host hardening work.
-1. Amend Task 254 validation to include the compose command-surface tests that
-   are currently contradictory.
-1. Define the durable public-edge report/evidence shape before closing the task.
+1. Completed in the addressed Task 254 slice: shared nginx-proxy default-host
+   ownership is explicit, compose command-surface tests cover `dev-*` and
+   `prod-*`, and the deploy report now includes durable public-edge evidence.
+1. No additional review follow-up is required before live Hemma acceptance
+   evidence is captured.
 
 ## Completion
 
-Review completed with changes requested. No implementation changes were made.
+Initial review completed with changes requested. Re-review approved the
+addressed slice on 2026-04-19.
+
+## Re-review Addendum (2026-04-19)
+
+- Finding 1 / default-host owner: addressed. Task 254 now names
+  `~/infrastructure/docker-compose.yml`, `nginx-proxy`, the detached
+  remediation command, and `hemma-reserved-default-host`.
+- Finding 2 / compose split: addressed. `dev-*` stays on `compose.local.yaml`,
+  `prod-*` uses `compose.yaml`, and `hemma-deploy-and-verify` calls
+  `prod-recreate`.
+- Finding 3 / durable public-edge proof: addressed. `hemma-deploy-and-verify`
+  now emits public-edge checks and the evidence files
+  `public_edge.json`, `public_readyz.json`, `public_tls.json`,
+  `nginx_proxy_default.conf`, `nginx_proxy_env.txt`, and
+  `unknown_host_response.txt`.
+- Finding 4 / unknown-host probe: addressed. Task 254 permits `--insecure`
+  only for the deliberately unowned host probe and keeps strict TLS for
+  `convert.hule.education`.
+- Re-review validation:
+  - `pdm run docs-validate`: pass.
+  - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_hemma_deploy_and_verify.py tests/sir_convert_a_lot/test_public_edge_verification.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_local_compose_contract.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_hemma_detached_command_surface.py -q`: pass, `32 passed`.
+  - `pdm run typecheck-all`: pass.
+  - `git diff --check`: pass.
+  - `pdm run lint`: pass after formatting the pre-existing drift.
 
 ## Checklist
 

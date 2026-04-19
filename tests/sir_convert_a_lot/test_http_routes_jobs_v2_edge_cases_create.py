@@ -306,6 +306,7 @@ def test_create_job_idempotency_replay_survives_public_key_rotation(
     assert replay_response.headers["X-Idempotent-Replay"] == "true"
     assert replay_response.json()["job"]["job_id"] == first_job_id
 
+
 def test_create_job_rejects_author_owned_page_css_mode_with_pdf_layout(
     tmp_path: Path,
 ) -> None:

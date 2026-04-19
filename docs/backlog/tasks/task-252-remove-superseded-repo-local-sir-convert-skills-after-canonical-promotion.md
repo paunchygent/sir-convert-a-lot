@@ -1,9 +1,9 @@
 ---
-id: 'task-252-remove-superseded-repo-local-sir-convert-skills-after-canonical-promotion'
-title: 'Remove superseded repo-local Sir Convert skills after canonical promotion'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-252-remove-superseded-repo-local-sir-convert-skills-after-canonical-promotion
+title: Remove superseded repo-local Sir Convert skills after canonical promotion
+type: task
+status: completed
+priority: high
 created: '2026-04-18'
 last_updated: '2026-04-18'
 related:
@@ -15,6 +15,7 @@ labels:
   - codex
   - governance
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Context
@@ -44,19 +45,19 @@ Hemma, or speech-training guidance that remains local.
 
 - [x] Superseded local skill folders removed.
 - [x] `AGENTS.md` distinguishes retained local skills from canonical global
-      shared skills.
+  shared skills.
 - [x] `.codex/skills/README.md` records local-only skill ownership and the
-      no-global-symlink policy for repo-local skills.
+  no-global-symlink policy for repo-local skills.
 
 ## Acceptance Criteria
 
 - [x] `.codex/skills/sir-convert-a-lot-client` is absent locally because the
-      canonical global skill lives in `skill-repository`.
+  canonical global skill lives in `skill-repository`.
 - [x] `.codex/skills/sir-convert-a-lot-pdf-to-md` is absent locally because it
-      is folded into the canonical client skill.
+  is folded into the canonical client skill.
 - [x] `.codex/skills/sir-convert-a-lot-docs-governance` and
-      `.codex/skills/sir-convert-a-lot-session-handoff` are absent locally
-      because shared action skills carry Sir Convert references.
+  `.codex/skills/sir-convert-a-lot-session-handoff` are absent locally
+  because shared action skills carry Sir Convert references.
 - [x] Remaining local skills pass `pdm run skills-validate`.
 - [x] No global symlink points to `sir-convert-a-lot/.codex/skills`.
 

@@ -1,9 +1,9 @@
 ---
-id: 'task-250-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging'
-title: 'Add a CPU-only local Docker dev profile for MacBook service debugging'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-250-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging
+title: Add a CPU-only local Docker dev profile for MacBook service debugging
+type: task
+status: proposed
+priority: high
 created: '2026-03-25'
 last_updated: '2026-03-25'
 related:
@@ -18,6 +18,7 @@ labels:
   - runtime
   - service
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
