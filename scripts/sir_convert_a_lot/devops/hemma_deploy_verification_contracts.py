@@ -95,7 +95,7 @@ def service_revision_mismatch_message(*, service_revision: str, remote_revision:
     return (
         "Service revision reported by /readyz does not match remote repository HEAD. "
         f"service_revision={service_revision!r} remote_revision={remote_revision!r}. "
-        "Remediation: 1) run remote rebuild/recreate (pdm run dev-recreate); "
+        "Remediation: 1) run remote rebuild/recreate (pdm run prod-recreate); "
         "2) verify compose uses current revision env; 3) rerun verification once "
         "service is ready."
     )

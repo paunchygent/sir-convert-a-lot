@@ -129,7 +129,7 @@ def test_dockerfile_local_uses_cpu_runtime_contract_and_local_entrypoint() -> No
 
 def test_dev_compose_helper_targets_local_compose_surface() -> None:
     script_text = DEV_COMPOSE_SCRIPT.read_text(encoding="utf-8")
-    assert 'COMPOSE_FILE="${REPO_ROOT}/compose.local.yaml"' in script_text
+    assert 'SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.local.yaml"' in script_text
 
 
 def test_dockerignore_whitelists_local_service_entrypoint() -> None:

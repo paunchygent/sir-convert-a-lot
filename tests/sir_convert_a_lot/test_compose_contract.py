@@ -19,6 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 DOCKERFILE = REPO_ROOT / "Dockerfile"
 DOCKERIGNORE = REPO_ROOT / ".dockerignore"
+PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
 
 
 def _load_compose() -> dict[str, object]:
@@ -183,6 +184,11 @@ def test_compose_declares_only_prod_named_volume() -> None:
     assert isinstance(volumes_obj, dict)
     assert "sir-convert-a-lot-prod-data" in volumes_obj
     assert "sir-convert-a-lot-eval-data" not in volumes_obj
+
+
+def test_prod_compose_helper_targets_production_compose_surface() -> None:
+    script_text = PROD_COMPOSE_SCRIPT.read_text(encoding="utf-8")
+    assert 'SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.yaml"' in script_text
 
 
 def test_dockerfile_uses_supported_runtime_settings_for_single_service() -> None:

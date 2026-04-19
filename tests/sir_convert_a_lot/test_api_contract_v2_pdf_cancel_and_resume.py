@@ -47,7 +47,12 @@ def _wait_for_terminal_no_sleep(client: TestClient, api_key: str, job_id: str) -
     for _ in range(2000):
         response = client.get(f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": api_key})
         payload = response.json()
-        status = payload["job"]["status"]
+        job_payload = payload["job"]
+        if not isinstance(job_payload, dict):
+            raise AssertionError("Job payload is not an object.")
+        status = job_payload["status"]
+        if not isinstance(status, str):
+            raise AssertionError("Job status is not a string.")
         if status in {
             JobStatus.SUCCEEDED.value,
             JobStatus.FAILED.value,

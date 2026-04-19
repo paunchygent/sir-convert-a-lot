@@ -11,9 +11,12 @@ Relationships:
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
-from scripts.sir_convert_a_lot.devops import hemma_deploy_and_verify
+from scripts.sir_convert_a_lot.devops import hemma_deploy_and_verify, public_edge_verification
 
 
 def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_error(
@@ -39,13 +42,13 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
 
     hemma_deploy_and_verify._remote_recreate_service()
 
-    assert calls[0] == ["pdm", "run", "dev-recreate", "sir_convert_a_lot_prod"]
+    assert calls[0] == ["pdm", "run", "prod-recreate", "sir_convert_a_lot_prod"]
     assert calls[1] == [
         "sudo",
         "-n",
         "/home/paunchygent/.local/bin/pdm",
         "run",
-        "dev-recreate",
+        "prod-recreate",
         "sir_convert_a_lot_prod",
     ]
 
@@ -70,7 +73,7 @@ def test_remote_recreate_service_raises_on_non_permission_error(
     with pytest.raises(hemma_deploy_and_verify.CommandExecutionError, match="unexpected"):
         hemma_deploy_and_verify._remote_recreate_service()
 
-    assert calls == [["pdm", "run", "dev-recreate", "sir_convert_a_lot_prod"]]
+    assert calls == [["pdm", "run", "prod-recreate", "sir_convert_a_lot_prod"]]
 
 
 def test_fetch_readyz_with_retry_handles_transient_failures(
@@ -105,3 +108,105 @@ def test_fetch_readyz_with_retry_handles_transient_failures(
     )
 
     assert payload["ready"] is True
+
+
+def test_execute_workflow_records_public_edge_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    remote_calls: list[list[str]] = []
+
+    def fake_run_command(
+        command: list[str],
+        *,
+        label: str,
+        env: dict[str, str] | None = None,
+        redactions: tuple[str, ...] = (),
+    ) -> str:
+        del label, env, redactions
+        if command == ["git", "push", "origin", "HEAD"]:
+            return ""
+        raise AssertionError(f"unexpected local command: {command!r}")
+
+    def fake_run_remote(
+        remote_args: list[str],
+        *,
+        label: str,
+        redactions: tuple[str, ...] = (),
+    ) -> str:
+        del label, redactions
+        remote_calls.append(remote_args)
+        if remote_args == ["git", "pull", "--ff-only"]:
+            return ""
+        if remote_args == ["git", "rev-parse", "HEAD"]:
+            return "abc\n"
+        if remote_args[:4] == ["pdm", "run", "python", "-m"]:
+            return ""
+        if remote_args == ["curl", "-fsS", "http://127.0.0.1:28085/metrics"]:
+            return "# safe metrics\n"
+        raise AssertionError(f"unexpected remote command: {remote_args!r}")
+
+    def fake_verify_public_edge(
+        *,
+        paths: public_edge_verification.PublicEdgeArtifactPaths,
+        remote_revision: str,
+        run_local: public_edge_verification.CommandRunner,
+        run_remote: public_edge_verification.CommandRunner,
+    ) -> dict[str, object]:
+        del run_local, run_remote
+        assert remote_revision == "abc"
+        return {
+            "status": "passed",
+            "public_host": "convert.hule.education",
+            "nginx_proxy": {
+                "convert_server_name_registered": True,
+                "reserved_default_host_configured": True,
+            },
+            "unknown_host_probe": {
+                "allowed_status_observed": True,
+                "reserved_placeholder_observed": True,
+            },
+            "public_edge_artifact": paths.public_edge_json.name,
+        }
+
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", fake_run_command)
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
+    monkeypatch.setattr(hemma_deploy_and_verify, "_remote_recreate_service", lambda: None)
+    monkeypatch.setattr(
+        hemma_deploy_and_verify,
+        "_fetch_readyz_with_retry",
+        lambda service_url: {"ready": True, "service_revision": "abc"},
+    )
+    monkeypatch.setattr(
+        hemma_deploy_and_verify,
+        "verify_public_edge",
+        fake_verify_public_edge,
+    )
+
+    settings = hemma_deploy_and_verify.WorkflowSettings(
+        expected_revision="abc",
+        lane="host",
+        service_url="http://127.0.0.1:28085",
+        output_root=tmp_path,
+        api_key="secret",
+        api_key_source="cli",
+        allow_dev_key=False,
+    )
+
+    report = hemma_deploy_and_verify.execute_workflow(settings)
+
+    assert report["status"] == "passed"
+    checks = report["checks"]
+    assert isinstance(checks, dict)
+    assert checks["public_https_readyz_passed"] is True
+    assert checks["public_tls_certificate_passed"] is True
+    assert checks["nginx_proxy_public_host_registered"] is True
+    assert checks["default_host_reserved_placeholder_passed"] is True
+    assert report["public_edge"] is not None
+
+    report_payload = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report_payload["checks"]["default_host_reserved_placeholder_passed"] is True
+    report_md = (tmp_path / "report.md").read_text(encoding="utf-8")
+    assert "public_edge.json" in report_md
+    assert (tmp_path / "public_edge.json").exists()
+    assert remote_calls[-1] == ["curl", "-fsS", "http://127.0.0.1:28085/metrics"]

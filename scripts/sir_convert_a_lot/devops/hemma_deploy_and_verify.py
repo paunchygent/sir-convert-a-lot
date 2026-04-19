@@ -2,8 +2,8 @@
 
 Purpose:
     Execute Task 76 deploy parity and live verification in one deterministic
-    command: push -> remote pull -> rebuild/recreate -> readiness parity ->
-    live GPU smoke -> metrics safety scan.
+    command: push -> remote pull -> production rebuild/recreate -> readiness
+    parity -> live GPU smoke -> metrics safety scan.
 
 Relationships:
     - Exposed as `pdm run hemma-deploy-and-verify`.
@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.devops.hemma_deploy_report import build_report_markdown
 from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import (
     VerificationContractError,
     assert_expected_revision_matches_remote,
@@ -33,6 +34,11 @@ from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import
     resolve_api_key,
     scan_metrics_forbidden_substrings,
     service_url_for_lane,
+)
+from scripts.sir_convert_a_lot.devops.public_edge_verification import (
+    PublicEdgeVerificationError,
+    initialize_public_edge_artifacts,
+    verify_public_edge,
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-76-hemma-deploy-verify")
@@ -152,56 +158,6 @@ def _resolve_expected_revision(raw_revision: str) -> str:
     return resolved
 
 
-def _build_report_markdown(report: dict[str, object]) -> str:
-    """Render human-readable markdown summary from report payload."""
-    checks = report.get("checks")
-    checks_obj = checks if isinstance(checks, dict) else {}
-    metrics_forbidden = checks_obj.get("metrics_forbidden_substrings")
-    forbidden = metrics_forbidden if isinstance(metrics_forbidden, list) else []
-    expected_remote_ok = checks_obj.get("expected_revision_matches_remote")
-    service_remote_ok = checks_obj.get("service_revision_matches_remote")
-    live_smoke_ok = checks_obj.get("live_smoke_passed")
-    metrics_ok = checks_obj.get("metrics_scan_passed")
-
-    lines: list[str] = [
-        "# Task 76 Hemma Deploy and Verify Report",
-        "",
-        f"- generated_at: `{report.get('generated_at')}`",
-        f"- status: `{report.get('status')}`",
-        f"- expected_revision: `{report.get('expected_revision')}`",
-        f"- remote_revision: `{report.get('remote_revision')}`",
-        f"- service_revision: `{report.get('service_revision')}`",
-        f"- lane: `{report.get('lane')}`",
-        f"- service_url: `{report.get('service_url')}`",
-        f"- api_key_source: `{report.get('api_key_source')}`",
-        "",
-        "## Checks",
-        "",
-        f"- expected_revision_matches_remote: `{expected_remote_ok}`",
-        f"- service_revision_matches_remote: `{service_remote_ok}`",
-        f"- live_smoke_passed: `{live_smoke_ok}`",
-        f"- metrics_scan_passed: `{metrics_ok}`",
-        f"- metrics_forbidden_substrings: `{forbidden}`",
-        "",
-    ]
-    failure_obj = report.get("failure")
-    if isinstance(failure_obj, str) and failure_obj.strip() != "":
-        lines.extend(["## Failure", "", failure_obj, ""])
-    lines.extend(
-        [
-            "## Evidence Files",
-            "",
-            "- `report.json`",
-            "- `report.md`",
-            "- `readyz.json`",
-            "- `metrics.prom`",
-            "- `remote_head.txt`",
-            "",
-        ]
-    )
-    return "\n".join(lines)
-
-
 def _load_workflow_settings(args: argparse.Namespace) -> WorkflowSettings:
     """Resolve settings and enforce API-key contracts before workflow execution."""
     resolved_expected_revision = _resolve_expected_revision(str(args.expected_revision))
@@ -288,11 +244,11 @@ def _initialize_artifacts(output_root: Path) -> tuple[Path, Path, Path, Path, Pa
 
 def _remote_recreate_service() -> None:
     """Recreate remote service, retrying with sudo when Docker socket is restricted."""
-    recreate_args = ["pdm", "run", "dev-recreate", "sir_convert_a_lot_prod"]
+    recreate_args = ["pdm", "run", "prod-recreate", "sir_convert_a_lot_prod"]
     try:
         _run_remote(
             recreate_args,
-            label="remote pdm run dev-recreate sir_convert_a_lot_prod",
+            label="remote pdm run prod-recreate sir_convert_a_lot_prod",
         )
         return
     except CommandExecutionError as exc:
@@ -305,10 +261,10 @@ def _remote_recreate_service() -> None:
             "-n",
             "/home/paunchygent/.local/bin/pdm",
             "run",
-            "dev-recreate",
+            "prod-recreate",
             "sir_convert_a_lot_prod",
         ],
-        label="remote sudo -n pdm run dev-recreate sir_convert_a_lot_prod",
+        label="remote sudo -n pdm run prod-recreate sir_convert_a_lot_prod",
     )
 
 
@@ -328,14 +284,20 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
             "service_revision_matches_remote": False,
             "live_smoke_passed": False,
             "metrics_scan_passed": False,
+            "public_https_readyz_passed": False,
+            "public_tls_certificate_passed": False,
+            "nginx_proxy_public_host_registered": False,
+            "default_host_reserved_placeholder_passed": False,
             "metrics_forbidden_substrings": [],
         },
+        "public_edge": None,
         "failure": None,
     }
 
     report_json_path, report_md_path, readyz_path, metrics_path, remote_head_path = (
         _initialize_artifacts(settings.output_root)
     )
+    public_edge_paths = initialize_public_edge_artifacts(settings.output_root)
 
     try:
         _run_command(["git", "push", "origin", "HEAD"], label="git push origin HEAD")
@@ -416,14 +378,33 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         if isinstance(checks_obj, dict):
             checks_obj["metrics_scan_passed"] = True
 
+        public_edge_report = verify_public_edge(
+            paths=public_edge_paths,
+            remote_revision=remote_revision,
+            run_local=lambda command, label: _run_command(command, label=label),
+            run_remote=lambda command, label: _run_remote(command, label=label),
+        )
+        report["public_edge"] = public_edge_report
+        checks_obj = report["checks"]
+        if isinstance(checks_obj, dict):
+            checks_obj["public_https_readyz_passed"] = True
+            checks_obj["public_tls_certificate_passed"] = True
+            checks_obj["nginx_proxy_public_host_registered"] = True
+            checks_obj["default_host_reserved_placeholder_passed"] = True
+
         report["status"] = "passed"
         report["failure"] = None
-    except (CommandExecutionError, VerificationContractError, json.JSONDecodeError) as exc:
+    except (
+        CommandExecutionError,
+        VerificationContractError,
+        PublicEdgeVerificationError,
+        json.JSONDecodeError,
+    ) as exc:
         report["status"] = "failed"
         report["failure"] = str(exc)
 
     _write_json(report_json_path, report)
-    report_md_path.write_text(_build_report_markdown(report) + "\n", encoding="utf-8")
+    report_md_path.write_text(build_report_markdown(report) + "\n", encoding="utf-8")
     return report
 
 
@@ -452,12 +433,18 @@ def main(argv: list[str] | None = None) -> int:
                 "service_revision_matches_remote": False,
                 "live_smoke_passed": False,
                 "metrics_scan_passed": False,
+                "public_https_readyz_passed": False,
+                "public_tls_certificate_passed": False,
+                "nginx_proxy_public_host_registered": False,
+                "default_host_reserved_placeholder_passed": False,
                 "metrics_forbidden_substrings": [],
             },
+            "public_edge": None,
             "failure": str(exc),
         }
+        initialize_public_edge_artifacts(output_root)
         _write_json(report_json_path, report)
-        report_md_path.write_text(_build_report_markdown(report) + "\n", encoding="utf-8")
+        report_md_path.write_text(build_report_markdown(report) + "\n", encoding="utf-8")
         readyz_path.write_text("{}\n", encoding="utf-8")
         metrics_path.write_text("# metrics not captured\n", encoding="utf-8")
         remote_head_path.write_text("unavailable\n", encoding="utf-8")

@@ -195,38 +195,53 @@ pdm run run-hemma --shell 'command -v docker && docker --version'
 pdm run run-hemma --shell 'sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
 ```
 
-## Containerized Runtime (Task 22 Command Surface)
+## Containerized Runtime Command Surfaces
 
-Local canonical compose commands (repo root):
+Local CPU-only debug compose commands (repo root):
 
 ```bash
 pdm run dev-build
 pdm run dev-start
 pdm run dev-check
 pdm run dev-ps
-pdm run dev-logs sir_convert_a_lot_prod
+pdm run dev-logs sir_convert_a_lot_dev
 pdm run dev-config
 pdm run dev-stop
+```
+
+Hemma production compose commands (repo root):
+
+```bash
+pdm run prod-build
+pdm run prod-start
+pdm run prod-recreate sir_convert_a_lot_prod
+pdm run prod-check
+pdm run prod-ps
+pdm run prod-logs sir_convert_a_lot_prod
+pdm run prod-config
+pdm run prod-stop
 ```
 
 Command-surface guarantees:
 
 - `docker compose` v2 only (never `docker-compose`).
-- Compose builds one shared runtime image (`sir-convert-a-lot-runtime:*`) and
-  runs one canonical conversion service (`sir_convert_a_lot_prod`).
+- `dev-*` commands always use `compose.local.yaml` and target the CPU-only
+  local debug service (`sir_convert_a_lot_dev`).
+- `prod-*` commands always use `compose.yaml` and target the Hemma production
+  service (`sir_convert_a_lot_prod`).
 - Wrapper auto-derives `SIR_CONVERT_A_LOT_SERVICE_REVISION` from `git rev-parse HEAD`
   when unset, and defaults `SIR_CONVERT_A_LOT_EXPECTED_REVISION` to the same value.
 - Health remains `/readyz`-gated, so stale/mismatched revision/profile/data-root
   configurations stay non-ready by contract.
 
-Remote Hemma execution stays wrapper-driven (`run-hemma` argv mode):
+Remote Hemma production execution stays wrapper-driven (`run-hemma` argv mode):
 
 ```bash
-pdm run run-hemma -- pdm run dev-build
-pdm run run-hemma -- pdm run dev-start
-pdm run run-hemma -- pdm run dev-check
-pdm run run-hemma -- pdm run dev-logs sir_convert_a_lot_prod
-pdm run run-hemma -- pdm run dev-stop
+pdm run run-hemma -- pdm run prod-build
+pdm run run-hemma -- pdm run prod-recreate sir_convert_a_lot_prod
+pdm run run-hemma -- pdm run prod-check
+pdm run run-hemma -- pdm run prod-logs sir_convert_a_lot_prod
+pdm run run-hemma -- pdm run prod-stop
 ```
 
 ## GPU Verification (ROCm/HIP)
@@ -320,17 +335,42 @@ Deterministic evidence path:
   - `readyz.json`
   - `metrics.prom`
   - `remote_head.txt`
+  - `public_edge.json`
+  - `public_readyz.json`
+  - `public_tls.json`
+  - `nginx_proxy_default.conf`
+  - `nginx_proxy_env.txt`
+  - `unknown_host_response.txt`
+
+Public-edge proof contract:
+
+- `public_readyz.json` is fetched from
+  `https://convert.hule.education/readyz` with normal TLS verification.
+- `public_tls.json` records the validated certificate subject, issuer, validity
+  window, and DNS SANs for `convert.hule.education`.
+- `nginx_proxy_default.conf` records the rendered `nginx-proxy` config; it must
+  include `server_name convert.hule.education`.
+- `nginx_proxy_env.txt` records the `nginx-proxy` container environment; it must
+  include `DEFAULT_HOST=hemma-reserved-default-host`.
+- `unknown_host_response.txt` records the deliberately unowned host probe using
+  `--resolve` and `--insecure` only for route-selection proof; it must return a
+  404/421-style reserved placeholder response rather than a product app.
 
 Decision tree (fail-closed):
 
 1. `expected_revision != remote_revision`:
    - push the intended commit, rerun with the pushed SHA.
 1. `service_revision != remote_revision`:
-   - recreate service (`pdm run dev-recreate` on Hemma), verify `/readyz`, rerun gate.
+   - recreate service (`pdm run prod-recreate sir_convert_a_lot_prod` on Hemma), verify
+     `/readyz`, rerun gate.
 1. key resolution fails:
    - provide `--api-key` or set `SIR_CONVERT_A_LOT_V2_API_KEY`; avoid implicit `dev-only-key`.
 1. metrics safety scan fails (`job_id=`, `jobv2_`):
    - remove forbidden high-cardinality labels and rerun verification.
+1. public-edge proof fails:
+   - restore the `sir_convert_a_lot_prod` vhost, the
+     `hemma-reserved-default-host` default host in `~/infrastructure`, or the
+     public TLS/certificate chain before rerunning the gate.
 
 ## Bottleneck Triage Workflow (Task 73)
 
