@@ -220,6 +220,14 @@ Dependency-image contract:
   ROCm/CPU torch runtime pins, and EasyOCR preload inputs only.
 - PDM scripts, tool configuration, docs, tests, and unrelated
   `pyproject.toml` metadata are not dependency-image hash inputs.
+- Dependency image freshness also includes a recipe hash covering
+  `Dockerfile.deps`, `scripts/devops/service-deps-image.sh`, the dependency
+  input generator, the explicit `PYTHON_IMAGE`, system package contract,
+  pip policy, BuildKit cache mount IDs, and EasyOCR preload command contract.
+- The deploy-facing dependency image tag uses the combined dependency-image
+  hash, and dependency images are labeled with dependency hash, recipe hash,
+  and combined dependency-image hash. Normal `ensure` rejects an existing tag
+  unless those labels match the current contract.
 - `Dockerfile.deps` uses BuildKit pip cache mounts for normal requirements and
   torch wheel downloads; do not prune BuildKit cache for routine proof.
 - `Dockerfile` and `Dockerfile.local` consume `DEPS_IMAGE` and copy app/runtime
@@ -314,6 +322,8 @@ Task 255 cache-hot proof artifacts belong under:
 - `build/verification/task-255-service-deps-image-cache/`
   - dependency input snapshots before and after script-only changes;
   - a controlled runtime dependency or runtime pin delta proving hash movement;
+  - recipe and combined image identity snapshots proving recipe changes move
+    image freshness without widening the package dependency hash;
   - detached Hemma dependency/app/recreate build logs;
   - image tags, BuildKit cache summary, `report.md`, and `report.json`.
 

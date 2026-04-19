@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -31,8 +32,22 @@ from scripts.sir_convert_a_lot.devops.service_image_build_contract import (
 RuntimeKind = Literal["rocm", "cpu"]
 
 SCHEMA_VERSION = 1
+RECIPE_SCHEMA_VERSION = 1
+IMAGE_IDENTITY_SCHEMA_VERSION = 1
+DEFAULT_PYTHON_IMAGE = "python:3.11-slim"
 DEFAULT_EASYOCR_LANGUAGES = ("sv", "en")
 DEFAULT_EASYOCR_MODEL_STORAGE_DIRECTORY = "/opt/easyocr-models"
+DOCKERFILE_DEPS_RELATIVE_PATH = Path("Dockerfile.deps")
+SERVICE_DEPS_SCRIPT_RELATIVE_PATH = Path("scripts/devops/service-deps-image.sh")
+DEPENDENCY_INPUT_GENERATOR_RELATIVE_PATH = Path(
+    "scripts/sir_convert_a_lot/devops/service_dependency_inputs.py"
+)
+RECIPE_SOURCE_FILES = (
+    DOCKERFILE_DEPS_RELATIVE_PATH,
+    SERVICE_DEPS_SCRIPT_RELATIVE_PATH,
+    DEPENDENCY_INPUT_GENERATOR_RELATIVE_PATH,
+)
+_CACHE_MOUNT_ID_PATTERN = re.compile(r"id=([A-Za-z0-9_.-]+)")
 
 
 @dataclass(frozen=True)
@@ -52,6 +67,23 @@ class EasyOcrPreloadContract:
             "languages": list(self.languages),
             "model_storage_directory": self.model_storage_directory,
         }
+
+
+@dataclass(frozen=True)
+class DependencyImageIdentity:
+    """Combined service dependency image identity fields."""
+
+    dependency_hash: str
+    recipe_hash: str
+    dependency_image_hash: str
+
+    def as_shell_exports(self) -> str:
+        """Return shell-style key/value lines for wrappers."""
+        return (
+            f"dependency_hash={self.dependency_hash}\n"
+            f"recipe_hash={self.recipe_hash}\n"
+            f"dependency_image_hash={self.dependency_image_hash}\n"
+        )
 
 
 def _sha256_text(value: str) -> str:
@@ -74,6 +106,121 @@ def dependency_input_hash(payload: dict[str, object]) -> str:
         sort_keys=True,
     )
     return _sha256_text(canonical_payload)
+
+
+def recipe_input_hash(payload: dict[str, object]) -> str:
+    """Return the stable build-recipe hash for a generated recipe payload."""
+    hash_payload = {key: value for key, value in payload.items() if key != "recipe_hash"}
+    canonical_payload = json.dumps(
+        hash_payload,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return _sha256_text(canonical_payload)
+
+
+def dependency_image_identity_hash(*, dependency_hash: str, recipe_hash: str) -> str:
+    """Return the image identity hash from dependency truth plus build recipe."""
+    canonical_payload = json.dumps(
+        {
+            "dependency_hash": dependency_hash,
+            "recipe_hash": recipe_hash,
+            "schema_version": IMAGE_IDENTITY_SCHEMA_VERSION,
+        },
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return _sha256_text(canonical_payload)
+
+
+def _relative_file_hashes(project_root: Path) -> dict[str, str]:
+    """Return SHA-256 hashes for repo files that define dependency-image recipes."""
+    file_hashes: dict[str, str] = {}
+    for relative_path in RECIPE_SOURCE_FILES:
+        file_hashes[relative_path.as_posix()] = _sha256_text(
+            project_root.joinpath(relative_path).read_text(encoding="utf-8")
+        )
+    return file_hashes
+
+
+def _extract_system_packages(dockerfile_text: str) -> list[str]:
+    """Extract the system package contract from Dockerfile.deps."""
+    packages: list[str] = []
+    collecting = False
+    for raw_line in dockerfile_text.splitlines():
+        stripped_line = raw_line.strip()
+        if "apt-get install -y --no-install-recommends" in stripped_line:
+            collecting = True
+            continue
+        if not collecting:
+            continue
+        if stripped_line.startswith("&&"):
+            break
+        package_name = stripped_line.removesuffix("\\").strip()
+        if package_name:
+            packages.append(package_name)
+    return packages
+
+
+def _extract_easyocr_preload_commands(dockerfile_text: str) -> list[str]:
+    """Return Dockerfile command fragments that preload EasyOCR models."""
+    lines = dockerfile_text.splitlines()
+    commands: list[str] = []
+    for index, line in enumerate(lines):
+        if "easyocr.Reader" not in line:
+            continue
+        command_lines = lines[max(index - 1, 0) : index + 1]
+        commands.append(" ".join(part.strip().removesuffix("\\").strip() for part in command_lines))
+    return commands
+
+
+def _extract_cache_mount_ids(dockerfile_text: str) -> list[str]:
+    """Return BuildKit cache mount identifiers used by the dependency Dockerfile."""
+    return sorted(set(_CACHE_MOUNT_ID_PATTERN.findall(dockerfile_text)))
+
+
+def _dockerfile_syntax_line(dockerfile_text: str) -> str:
+    """Return the Dockerfile frontend syntax line when present."""
+    for line in dockerfile_text.splitlines():
+        stripped_line = line.strip()
+        if stripped_line:
+            return stripped_line
+    return ""
+
+
+def build_recipe_input_payload(
+    *,
+    project_root: Path,
+    python_image: str = DEFAULT_PYTHON_IMAGE,
+    easyocr_preload: EasyOcrPreloadContract = EasyOcrPreloadContract(),
+) -> dict[str, object]:
+    """Build the dependency-image recipe payload from Docker build truth."""
+    dockerfile_text = project_root.joinpath(DOCKERFILE_DEPS_RELATIVE_PATH).read_text(
+        encoding="utf-8"
+    )
+    payload: dict[str, object] = {
+        "dockerfile_contract": {
+            "buildkit_cache_mount_ids": _extract_cache_mount_ids(dockerfile_text),
+            "easyocr_preload": easyocr_preload.as_json_object(),
+            "easyocr_preload_commands": _extract_easyocr_preload_commands(dockerfile_text),
+            "python_image": python_image,
+            "syntax": _dockerfile_syntax_line(dockerfile_text),
+            "system_packages": _extract_system_packages(dockerfile_text),
+        },
+        "pip_policy": {
+            "upgrade_pip": "python -m pip install --upgrade pip",
+            "install_service_requirements": (
+                "python -m pip install --no-deps -r /tmp/service-requirements.txt"
+            ),
+            "install_torch": "python -m pip install --upgrade torch torchvision torchaudio",
+        },
+        "recipe_source_files": _relative_file_hashes(project_root),
+        "schema_version": RECIPE_SCHEMA_VERSION,
+    }
+    payload["recipe_hash"] = recipe_input_hash(payload)
+    return payload
 
 
 def rocm_runtime_pins_json(contract: RocmRuntimeContract) -> dict[str, object]:
@@ -134,14 +281,48 @@ def build_project_dependency_input_payload(
     )
 
 
+def build_project_dependency_image_identity_payload(
+    *,
+    project_root: Path,
+    requirements_text: str,
+    runtime_kind: RuntimeKind,
+    python_image: str = DEFAULT_PYTHON_IMAGE,
+) -> dict[str, object]:
+    """Build the combined dependency-image identity payload for a runtime lane."""
+    dependency_payload = build_project_dependency_input_payload(
+        project_root=project_root,
+        requirements_text=requirements_text,
+        runtime_kind=runtime_kind,
+    )
+    recipe_payload = build_recipe_input_payload(
+        project_root=project_root,
+        python_image=python_image,
+    )
+    dependency_hash = str(dependency_payload["dependency_hash"])
+    recipe_hash = str(recipe_payload["recipe_hash"])
+    image_hash = dependency_image_identity_hash(
+        dependency_hash=dependency_hash,
+        recipe_hash=recipe_hash,
+    )
+    return {
+        "dependency_hash": dependency_hash,
+        "dependency_image_hash": image_hash,
+        "python_image": python_image,
+        "recipe_hash": recipe_hash,
+        "runtime_kind": runtime_kind,
+        "schema_version": IMAGE_IDENTITY_SCHEMA_VERSION,
+    }
+
+
 def write_dependency_inputs(
     *,
     project_root: Path,
     requirements_path: Path,
     output_dir: Path,
     runtime_kind: RuntimeKind,
-) -> str:
-    """Write runtime env files plus dependency input JSON and return its hash."""
+    python_image: str = DEFAULT_PYTHON_IMAGE,
+) -> DependencyImageIdentity:
+    """Write runtime env files plus dependency identity JSON artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
     requirements_text = requirements_path.read_text(encoding="utf-8")
     rocm_contract = load_rocm_runtime_contract(project_root)
@@ -166,7 +347,29 @@ def write_dependency_inputs(
         _canonical_json(payload),
         encoding="utf-8",
     )
-    return dependency_hash
+    recipe_payload = build_recipe_input_payload(
+        project_root=project_root,
+        python_image=python_image,
+    )
+    (output_dir / "service-build-recipe-inputs.json").write_text(
+        _canonical_json(recipe_payload),
+        encoding="utf-8",
+    )
+    identity_payload = build_project_dependency_image_identity_payload(
+        project_root=project_root,
+        requirements_text=requirements_text,
+        runtime_kind=runtime_kind,
+        python_image=python_image,
+    )
+    (output_dir / f"service-dependency-image-identity-{runtime_kind}.json").write_text(
+        _canonical_json(identity_payload),
+        encoding="utf-8",
+    )
+    return DependencyImageIdentity(
+        dependency_hash=dependency_hash,
+        recipe_hash=str(recipe_payload["recipe_hash"]),
+        dependency_image_hash=str(identity_payload["dependency_image_hash"]),
+    )
 
 
 def _parse_args() -> argparse.Namespace:
@@ -198,6 +401,17 @@ def _parse_args() -> argparse.Namespace:
         required=True,
         help="Runtime dependency lane to hash.",
     )
+    parser.add_argument(
+        "--python-image",
+        default=DEFAULT_PYTHON_IMAGE,
+        help="Explicit Python base image used by Dockerfile.deps.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("hash", "shell"),
+        default="hash",
+        help="Output dependency hash only or shell-style identity fields.",
+    )
     return parser.parse_args()
 
 
@@ -213,13 +427,17 @@ def _runtime_kind_from_arg(value: str) -> RuntimeKind:
 def main() -> None:
     """Generate dependency input artifacts and print the dependency hash."""
     args = _parse_args()
-    dependency_hash = write_dependency_inputs(
+    identity = write_dependency_inputs(
         project_root=args.project_root,
         requirements_path=args.requirements,
         output_dir=args.output_dir,
         runtime_kind=_runtime_kind_from_arg(args.runtime),
+        python_image=args.python_image,
     )
-    print(dependency_hash)
+    if args.format == "shell":
+        print(identity.as_shell_exports(), end="")
+    else:
+        print(identity.dependency_hash)
 
 
 if __name__ == "__main__":

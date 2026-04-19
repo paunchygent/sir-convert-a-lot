@@ -19,9 +19,14 @@ import stat
 import subprocess
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.devops.service_dependency_inputs import (
+    build_project_dependency_image_identity_payload,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEV_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "dev-compose.sh"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
+SERVICE_REQUIREMENTS = REPO_ROOT / "docker" / "service-deps" / "service-requirements.txt"
 
 
 def _write_fake_docker(script_dir: Path) -> None:
@@ -36,15 +41,42 @@ case "${1:-}" in
     ;;
   image)
     if [[ "${2:-}" == "inspect" ]]; then
-      exit 1
+      if [[ "${FAKE_DOCKER_IMAGE_EXISTS:-0}" != "1" ]]; then
+        exit 1
+      fi
+      if [[ "${3:-}" == "--format" ]]; then
+        case "${4:-}" in
+          *sir-convert-a-lot.dependency-hash*)
+            echo "${FAKE_DOCKER_LABEL_DEPENDENCY_HASH:-}"
+            ;;
+          *sir-convert-a-lot.recipe-hash*)
+            echo "${FAKE_DOCKER_LABEL_RECIPE_HASH:-}"
+            ;;
+          *sir-convert-a-lot.dependency-image-hash*)
+            echo "${FAKE_DOCKER_LABEL_DEPENDENCY_IMAGE_HASH:-}"
+            ;;
+          *)
+            echo ""
+            ;;
+        esac
+      fi
+      exit 0
     fi
     echo "fake-docker: unsupported image command: $*" >&2
     exit 90
     ;;
   build)
+    shift
+    if [[ -n "${FAKE_DOCKER_LOG:-}" && "${FAKE_DOCKER_LOG_BUILDS:-0}" == "1" ]]; then
+      printf "build %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
+    fi
     exit 0
     ;;
   tag)
+    shift
+    if [[ -n "${FAKE_DOCKER_LOG:-}" && "${FAKE_DOCKER_LOG_BUILDS:-0}" == "1" ]]; then
+      printf "tag %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
+    fi
     exit 0
     ;;
   *)
@@ -99,6 +131,19 @@ def _run_wrapper(
         text=True,
         capture_output=True,
     )
+
+
+def _current_rocm_identity() -> dict[str, str]:
+    payload = build_project_dependency_image_identity_payload(
+        project_root=REPO_ROOT,
+        requirements_text=SERVICE_REQUIREMENTS.read_text(encoding="utf-8"),
+        runtime_kind="rocm",
+    )
+    return {
+        "dependency_hash": str(payload["dependency_hash"]),
+        "dependency_image_hash": str(payload["dependency_image_hash"]),
+        "recipe_hash": str(payload["recipe_hash"]),
+    }
 
 
 def test_dev_compose_requires_action_argument() -> None:
@@ -222,3 +267,60 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
         f"-f {REPO_ROOT / 'compose.yaml'} up -d --force-recreate --build sir_convert_a_lot_prod"
     )
     assert log_lines[1] == "service_revision=prod_rev expected_revision=prod_rev"
+
+
+def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_docker(fake_bin)
+    log_file = tmp_path / "docker.log"
+    identity = _current_rocm_identity()
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["FAKE_DOCKER_LOG"] = str(log_file)
+    env["FAKE_DOCKER_LOG_BUILDS"] = "1"
+    env["FAKE_DOCKER_IMAGE_EXISTS"] = "1"
+    env["FAKE_DOCKER_LABEL_DEPENDENCY_HASH"] = identity["dependency_hash"]
+    env["FAKE_DOCKER_LABEL_RECIPE_HASH"] = identity["recipe_hash"]
+    env["FAKE_DOCKER_LABEL_DEPENDENCY_IMAGE_HASH"] = identity["dependency_image_hash"]
+    env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
+    env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
+
+    result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
+    assert result.returncode == 0
+
+    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    dependency_image = f"sir-convert-a-lot-deps-rocm:{identity['dependency_image_hash']}"
+    assert f"tag {dependency_image} sir-convert-a-lot-deps-rocm:local" in log_lines
+    assert not any(line.startswith("build --file Dockerfile.deps") for line in log_lines)
+
+
+def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
+    tmp_path: Path,
+) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_docker(fake_bin)
+    log_file = tmp_path / "docker.log"
+    identity = _current_rocm_identity()
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["FAKE_DOCKER_LOG"] = str(log_file)
+    env["FAKE_DOCKER_LOG_BUILDS"] = "1"
+    env["FAKE_DOCKER_IMAGE_EXISTS"] = "1"
+    env["FAKE_DOCKER_LABEL_DEPENDENCY_HASH"] = identity["dependency_hash"]
+    env["FAKE_DOCKER_LABEL_RECIPE_HASH"] = "stale-recipe"
+    env["FAKE_DOCKER_LABEL_DEPENDENCY_IMAGE_HASH"] = identity["dependency_image_hash"]
+    env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
+    env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
+
+    result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
+    assert result.returncode == 0
+
+    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    assert any(line.startswith("build --file Dockerfile.deps") for line in log_lines)
+    assert any(
+        f"--build-arg SERVICE_RECIPE_HASH={identity['recipe_hash']}" in line for line in log_lines
+    )

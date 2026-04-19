@@ -1,0 +1,52 @@
+{
+  "dockerfile_contract": {
+    "buildkit_cache_mount_ids": [
+      "sir-convert-a-lot-pip",
+      "sir-convert-a-lot-pip-cpu",
+      "sir-convert-a-lot-pip-rocm"
+    ],
+    "easyocr_preload": {
+      "download_enabled": true,
+      "gpu": false,
+      "languages": [
+        "sv",
+        "en"
+      ],
+      "model_storage_directory": "/opt/easyocr-models"
+    },
+    "easyocr_preload_commands": [
+      "RUN mkdir -p /opt/easyocr-models && python -c 'import easyocr; easyocr.Reader([\"sv\", \"en\"], gpu=False, model_storage_directory=\"/opt/easyocr-models\", download_enabled=True, verbose=False)'",
+      "RUN mkdir -p /opt/easyocr-models && python -c 'import easyocr; easyocr.Reader([\"sv\", \"en\"], gpu=False, model_storage_directory=\"/opt/easyocr-models\", download_enabled=True, verbose=False)'"
+    ],
+    "python_image": "python:3.11-slim",
+    "syntax": "# syntax=docker/dockerfile:1",
+    "system_packages": [
+      "libgl1",
+      "libglib2.0-0",
+      "libharfbuzz-subset0",
+      "libpango-1.0-0",
+      "libpangoft2-1.0-0",
+      "libsm6",
+      "libx11-6",
+      "libxext6",
+      "libxcb1",
+      "libxrender1",
+      "pandoc",
+      "tesseract-ocr",
+      "tesseract-ocr-eng",
+      "tesseract-ocr-swe"
+    ]
+  },
+  "pip_policy": {
+    "install_service_requirements": "python -m pip install --no-deps -r /tmp/service-requirements.txt",
+    "install_torch": "python -m pip install --upgrade torch torchvision torchaudio",
+    "upgrade_pip": "python -m pip install --upgrade pip"
+  },
+  "recipe_hash": "b73103f7eb1258eb7be902b74b10675cbd92c6c14db4e0c0c5c29d72ebc6f81f",
+  "recipe_source_files": {
+    "Dockerfile.deps": "8bf2f46b18e886ebccdf41c93bfff0d29d333a839a0b436586bdd1344901ef6a",
+    "scripts/devops/service-deps-image.sh": "628e16ab36d64d897a6b21d6e636f7bb5b659456890e1c5f7b2b1a0629279f1c",
+    "scripts/sir_convert_a_lot/devops/service_dependency_inputs.py": "135c4dc098b6e9dd97a03bef99eac9d168b41a543f7c4878e75f9a5187dd000d"
+  },
+  "schema_version": 1
+}

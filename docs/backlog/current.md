@@ -95,6 +95,10 @@ DevOps task authority.
     Hemma repo, and verified through detached dependency-build, app-only-build,
     and production-recreate proof logs. The proof artifacts live under
     `build/verification/task-255-service-deps-image-cache/`.
+  - Review 05 requested one Task 255 fix: dependency-image freshness must
+    include build-recipe truth. The follow-up adds recipe hashing, combined
+    dependency-image identity, and Docker label verification before accepting
+    existing dependency image tags.
 
 ## Next Actions
 
@@ -105,9 +109,8 @@ DevOps task authority.
     artifacts in the canonical report;
   - run the live Hemma deploy/public curl gate only through detached deploy
     surfaces.
-- Keep Task 255 closed unless a follow-up explicitly changes dependency
-  image policy. Its proof packet is
-  `build/verification/task-255-service-deps-image-cache/`.
+- Finish the Review 05 Task 255 follow-up by rerunning focused local gates and
+  repeating the detached Hemma app-only proof with recipe-hash image freshness.
 - Keep Task 239 closed as historical partial layering context. Do not reopen it
   for the dependency-image work unless Task 255 explicitly supersedes or amends
   a documented Task 239 acceptance boundary.

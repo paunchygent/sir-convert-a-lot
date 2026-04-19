@@ -60,6 +60,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTRACT_DIR="${REPO_ROOT}/docker/service-deps"
 REQUIREMENTS_PATH="${CONTRACT_DIR}/service-requirements.txt"
+PYTHON_IMAGE="${SIR_CONVERT_A_LOT_DEPS_PYTHON_IMAGE:-python:3.11-slim}"
 
 cd "${REPO_ROOT}"
 
@@ -69,24 +70,72 @@ python -m scripts.sir_convert_a_lot.devops.export_service_requirements \
   --project-root "${REPO_ROOT}" \
   --output "${REQUIREMENTS_PATH}"
 
-DEPENDENCY_HASH="$(python -m scripts.sir_convert_a_lot.devops.service_dependency_inputs \
+IDENTITY_OUTPUT="$(python -m scripts.sir_convert_a_lot.devops.service_dependency_inputs \
   --project-root "${REPO_ROOT}" \
   --requirements "${REQUIREMENTS_PATH}" \
   --output-dir "${CONTRACT_DIR}" \
-  --runtime "${RUNTIME_KIND}")"
+  --runtime "${RUNTIME_KIND}" \
+  --python-image "${PYTHON_IMAGE}" \
+  --format shell)"
 
-HASH_IMAGE="${IMAGE_REPOSITORY}:${DEPENDENCY_HASH}"
+DEPENDENCY_HASH=""
+RECIPE_HASH=""
+DEPENDENCY_IMAGE_HASH=""
+while IFS='=' read -r key value; do
+  case "${key}" in
+    dependency_hash)
+      DEPENDENCY_HASH="${value}"
+      ;;
+    recipe_hash)
+      RECIPE_HASH="${value}"
+      ;;
+    dependency_image_hash)
+      DEPENDENCY_IMAGE_HASH="${value}"
+      ;;
+  esac
+done <<<"${IDENTITY_OUTPUT}"
+
+if [[ -z "${DEPENDENCY_HASH}" || -z "${RECIPE_HASH}" || -z "${DEPENDENCY_IMAGE_HASH}" ]]; then
+  echo "service-deps-image: dependency identity helper did not emit required hashes" >&2
+  echo "${IDENTITY_OUTPUT}" >&2
+  exit 69
+fi
+
+HASH_IMAGE="${IMAGE_REPOSITORY}:${DEPENDENCY_IMAGE_HASH}"
 LOCAL_IMAGE="${IMAGE_REPOSITORY}:local"
 
 image_exists() {
   docker image inspect "${HASH_IMAGE}" >/dev/null 2>&1
 }
 
+image_label() {
+  local label_key="$1"
+  docker image inspect --format "{{ index .Config.Labels \"${label_key}\" }}" "${HASH_IMAGE}" 2>/dev/null || true
+}
+
+image_label_matches() {
+  local label_key="$1"
+  local expected_value="$2"
+  local actual_value
+  actual_value="$(image_label "${label_key}")"
+  [[ "${actual_value}" == "${expected_value}" ]]
+}
+
+image_is_current() {
+  image_exists \
+    && image_label_matches "sir-convert-a-lot.dependency-hash" "${DEPENDENCY_HASH}" \
+    && image_label_matches "sir-convert-a-lot.recipe-hash" "${RECIPE_HASH}" \
+    && image_label_matches "sir-convert-a-lot.dependency-image-hash" "${DEPENDENCY_IMAGE_HASH}"
+}
+
 build_args=(
   docker build
   --file Dockerfile.deps
   --target "${TARGET_STAGE}"
+  --build-arg "PYTHON_IMAGE=${PYTHON_IMAGE}"
   --build-arg "SERVICE_DEPENDENCY_HASH=${DEPENDENCY_HASH}"
+  --build-arg "SERVICE_RECIPE_HASH=${RECIPE_HASH}"
+  --build-arg "SERVICE_DEPENDENCY_IMAGE_HASH=${DEPENDENCY_IMAGE_HASH}"
   --tag "${HASH_IMAGE}"
   --tag "${LOCAL_IMAGE}"
 )
@@ -97,7 +146,7 @@ fi
 
 build_args+=(.)
 
-if [[ "${ACTION}" == "ensure" ]] && image_exists; then
+if [[ "${ACTION}" == "ensure" ]] && image_is_current; then
   docker tag "${HASH_IMAGE}" "${LOCAL_IMAGE}" >/dev/null
 else
   "${build_args[@]}"
@@ -105,5 +154,7 @@ fi
 
 printf "runtime_kind=%s\n" "${RUNTIME_KIND}"
 printf "dependency_hash=%s\n" "${DEPENDENCY_HASH}"
+printf "recipe_hash=%s\n" "${RECIPE_HASH}"
+printf "dependency_image_hash=%s\n" "${DEPENDENCY_IMAGE_HASH}"
 printf "deps_image=%s\n" "${HASH_IMAGE}"
 printf "deps_image_local=%s\n" "${LOCAL_IMAGE}"

@@ -1,0 +1,8 @@
+{
+  "dependency_hash": "958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
+  "dependency_image_hash": "b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89",
+  "python_image": "python:3.11-slim",
+  "recipe_hash": "b73103f7eb1258eb7be902b74b10675cbd92c6c14db4e0c0c5c29d72ebc6f81f",
+  "runtime_kind": "rocm",
+  "schema_version": 1
+}

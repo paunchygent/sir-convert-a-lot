@@ -53,13 +53,13 @@ Hemma.
 ## Acceptance Criteria
 
 1. Dockerized prod/eval service startup is deterministic and uses canonical compose commands.
-2. Dependency-image rebuilds are keyed by narrow dependency artifacts, not by
+1. Dependency-image rebuilds are keyed by narrow dependency artifacts, not by
    full `pyproject.toml` metadata or PDM script changes.
-3. Readiness-gated startup prevents stale/misconfigured lanes from being treated as healthy.
-4. Container restarts preserve in-flight/finished job artifacts per defined retention policy.
-5. Operators can deploy, verify, and recover using documented, script-backed commands only.
-6. Long-running Hemma production deploy/recover work is detached and monitored separately.
-7. Evidence exists for local + Hemma validation across startup, readiness,
+1. Readiness-gated startup prevents stale/misconfigured lanes from being treated as healthy.
+1. Container restarts preserve in-flight/finished job artifacts per defined retention policy.
+1. Operators can deploy, verify, and recover using documented, script-backed commands only.
+1. Long-running Hemma production deploy/recover work is detached and monitored separately.
+1. Evidence exists for local + Hemma validation across startup, readiness,
    persistence, public-edge recovery, cache-hot rebuild, and recovery paths.
 
 ## Test Requirements

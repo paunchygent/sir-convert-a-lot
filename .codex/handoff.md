@@ -23,6 +23,10 @@ runbooks, or skills.
   under `docker/service-deps/`, `Dockerfile.deps` owns ROCm/CPU dependency
   images, and production/local runtime Dockerfiles consume explicit
   `DEPS_IMAGE` app layers.
+- Review 05 requested a Task 255 follow-up: dependency image freshness must
+  include build-recipe truth. Current local work adds recipe hashing, combined
+  dependency-image identity, and label verification before accepting existing
+  dependency image tags.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -61,9 +65,9 @@ runbooks, or skills.
 1. Finish Task 254 by making `hemma-deploy-and-verify` deploy-detached-aware
    and by emitting durable public-edge/default-host artifacts in the canonical
    report.
-1. Keep Task 255 closed unless a follow-up explicitly changes dependency
-   image policy. Its final proof packet is under
-   `build/verification/task-255-service-deps-image-cache/`.
+1. Finish the Review 05 Task 255 follow-up by rerunning focused local gates,
+   pushing the fix, and repeating detached Hemma app-only proof with the new
+   recipe-hash image identity.
 1. Before any future Hemma Qwen run, use:
    `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
    and

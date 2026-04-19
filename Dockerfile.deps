@@ -45,11 +45,8 @@ RUN mkdir -p /var/lib/sir-convert-a-lot/prod /var/lib/sir-convert-a-lot/local
 
 FROM runtime-base AS deps-base
 
-ARG SERVICE_DEPENDENCY_HASH=unknown
-
 LABEL org.opencontainers.image.title="sir-convert-a-lot service dependencies"
 LABEL org.opencontainers.image.description="Generated service dependency image"
-LABEL sir-convert-a-lot.dependency-hash="${SERVICE_DEPENDENCY_HASH}"
 
 COPY docker/service-deps/service-requirements.txt /tmp/service-requirements.txt
 
@@ -60,6 +57,10 @@ RUN --mount=type=cache,id=sir-convert-a-lot-pip,target=/root/.cache/pip \
     python -m pip install --no-deps -r /tmp/service-requirements.txt
 
 FROM deps-base AS rocm-deps
+
+ARG SERVICE_DEPENDENCY_HASH=unknown
+ARG SERVICE_RECIPE_HASH=unknown
+ARG SERVICE_DEPENDENCY_IMAGE_HASH=unknown
 
 COPY docker/service-deps/rocm-runtime.env /tmp/rocm-runtime.env
 
@@ -74,7 +75,15 @@ RUN --mount=type=cache,id=sir-convert-a-lot-pip-rocm,target=/root/.cache/pip \
 RUN mkdir -p /opt/easyocr-models \
     && python -c 'import easyocr; easyocr.Reader(["sv", "en"], gpu=False, model_storage_directory="/opt/easyocr-models", download_enabled=True, verbose=False)'
 
+LABEL sir-convert-a-lot.dependency-hash="${SERVICE_DEPENDENCY_HASH}"
+LABEL sir-convert-a-lot.recipe-hash="${SERVICE_RECIPE_HASH}"
+LABEL sir-convert-a-lot.dependency-image-hash="${SERVICE_DEPENDENCY_IMAGE_HASH}"
+
 FROM deps-base AS cpu-deps
+
+ARG SERVICE_DEPENDENCY_HASH=unknown
+ARG SERVICE_RECIPE_HASH=unknown
+ARG SERVICE_DEPENDENCY_IMAGE_HASH=unknown
 
 COPY docker/service-deps/cpu-runtime.env /tmp/cpu-runtime.env
 
@@ -87,3 +96,7 @@ RUN --mount=type=cache,id=sir-convert-a-lot-pip-cpu,target=/root/.cache/pip \
 
 RUN mkdir -p /opt/easyocr-models \
     && python -c 'import easyocr; easyocr.Reader(["sv", "en"], gpu=False, model_storage_directory="/opt/easyocr-models", download_enabled=True, verbose=False)'
+
+LABEL sir-convert-a-lot.dependency-hash="${SERVICE_DEPENDENCY_HASH}"
+LABEL sir-convert-a-lot.recipe-hash="${SERVICE_RECIPE_HASH}"
+LABEL sir-convert-a-lot.dependency-image-hash="${SERVICE_DEPENDENCY_IMAGE_HASH}"

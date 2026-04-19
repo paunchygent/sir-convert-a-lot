@@ -262,8 +262,17 @@ def test_dependency_dockerfile_uses_generated_inputs_and_buildkit_pip_cache() ->
     assert "pdm.lock" not in dockerfile_text
     assert "COPY docker/service-deps/service-requirements.txt" in dockerfile_text
     assert "COPY docker/service-deps/rocm-runtime.env" in dockerfile_text
+    assert "ARG SERVICE_DEPENDENCY_HASH=unknown" in dockerfile_text
+    assert "ARG SERVICE_RECIPE_HASH=unknown" in dockerfile_text
+    assert "ARG SERVICE_DEPENDENCY_IMAGE_HASH=unknown" in dockerfile_text
     assert "--mount=type=cache,id=sir-convert-a-lot-pip" in dockerfile_text
     assert "--mount=type=cache,id=sir-convert-a-lot-pip-rocm" in dockerfile_text
+    assert 'LABEL sir-convert-a-lot.dependency-hash="${SERVICE_DEPENDENCY_HASH}"' in dockerfile_text
+    assert 'LABEL sir-convert-a-lot.recipe-hash="${SERVICE_RECIPE_HASH}"' in dockerfile_text
+    assert (
+        'LABEL sir-convert-a-lot.dependency-image-hash="${SERVICE_DEPENDENCY_IMAGE_HASH}"'
+        in dockerfile_text
+    )
     assert "--no-cache-dir" not in dockerfile_text
     assert "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}" in dockerfile_text
     assert "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}" in dockerfile_text

@@ -1,0 +1,8 @@
+{
+  "dependency_hash": "bfaccf69f62f3a1666928ddcf0e1cf6e3867c6b8ec4c0b91b5c67bd93ecc9897",
+  "dependency_image_hash": "e012fe9dd168bd4c4f163026be4840e7b244956c9c8c0d891a08f226941790ff",
+  "python_image": "python:3.11-slim",
+  "recipe_hash": "b73103f7eb1258eb7be902b74b10675cbd92c6c14db4e0c0c5c29d72ebc6f81f",
+  "runtime_kind": "cpu",
+  "schema_version": 1
+}

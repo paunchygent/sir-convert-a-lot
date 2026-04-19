@@ -129,6 +129,11 @@ Out of scope:
     healthy.
   - Final durable proof artifacts are present under
     `build/verification/task-255-service-deps-image-cache/`.
+  - Review 05 found that the first hash-tagged image identity could stay stale
+    when the dependency-image build recipe changed. The fix adds a separate
+    build-recipe hash and combined dependency-image hash, labels images with
+    all three freshness values, and makes normal `ensure` reject existing tags
+    whose labels do not match the current contract.
 
 ## Acceptance Criteria
 
@@ -136,6 +141,8 @@ Out of scope:
   dependency hash and does not invalidate the ROCm dependency image layer.
 - [x] A real runtime dependency or runtime pin change does change the service
   dependency hash and requires an explicit dependency-image rebuild.
+- [x] A dependency-image recipe change changes the deploy-facing dependency
+  image identity even when runtime package truth is unchanged.
 - [x] The production runtime image consumes a dependency image through an
   explicit `DEPS_IMAGE` build argument and copies only app/runtime source after
   dependency layers are established.
@@ -148,6 +155,8 @@ Out of scope:
   Task 254.
 - [x] Hemma verification demonstrates one dependency rebuild and one subsequent
   app-only or ops-only rebuild where the ROCm dependency work remains cached.
+- [x] Existing dependency image tags are accepted only when Docker image labels
+  match the current dependency hash, recipe hash, and dependency-image hash.
 
 ## Validation Commands
 
@@ -199,7 +208,7 @@ under `build/verification/task-255-service-deps-image-cache/`:
 - `prod-app-only-build.log`: detached app/ops-only service image rebuild log
   proving ROCm torch and EasyOCR preload work are cached or not rerun.
 - `image-tags.json`: dependency image tag, runtime image tag, revision, and
-  dependency hash used for the proof.
+  dependency hash, recipe hash, and dependency-image hash used for the proof.
 - `buildkit-cache-summary.txt`: non-destructive BuildKit cache summary before
   and after the proof.
 - `report.md` / `report.json`: final pass/fail summary for dependency hash,
