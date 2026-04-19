@@ -1,7 +1,7 @@
 {
   "task": "task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys",
   "generated_at": "2026-04-19",
-  "status": "partial_local_pass_hemma_pending",
+  "status": "passed",
   "dependency_hash_invariant": {
     "rocm_before": "958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
     "rocm_after_script_only": "958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
@@ -23,12 +23,37 @@
     "git_diff_check": "passed"
   },
   "hemma_validation": {
-    "status": "pending",
-    "reason": "The implementation is currently local worktree state. Hemma proof must run after these changes are available in /home/paunchygent/apps/sir-convert-a-lot through Git.",
-    "required_detached_commands": [
-      "pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build -- pdm run prod-deps-rocm-build",
-      "pdm run run-local-pdm hemma-command-start task255-prod-app-only-build -- pdm run prod-build",
-      "pdm run run-local-pdm hemma-command-start task255-prod-recreate -- pdm run prod-recreate sir_convert_a_lot_prod"
-    ]
+    "status": "passed",
+    "remote_revision": "7173c03f8b414caa7fa1e9c84a0c6b33b5b357b8",
+    "dependency_build": {
+      "label": "task255-prod-deps-rocm-build-sudo-snap",
+      "remote_log": "/home/paunchygent/apps/sir-convert-a-lot/.artifacts/hemma-command-task255-prod-deps-rocm-build-sudo-snap-20260419T121528Z.log",
+      "local_log": "prod-deps-rocm-build.log",
+      "dependency_image": "sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
+      "dependency_image_id": "sha256:dc08aff03796977388560d550da2f04b5c3e3310088fa3b39cdfb782e6d1d4c2",
+      "rocm_torch_installed": true,
+      "easyocr_preloaded": true,
+      "buildkit_pip_cache_mounts": true
+    },
+    "app_only_build": {
+      "label": "task255-prod-app-only-build-sudo-snap",
+      "remote_log": "/home/paunchygent/apps/sir-convert-a-lot/.artifacts/hemma-command-task255-prod-app-only-build-sudo-snap-20260419T122407Z.log",
+      "local_log": "prod-app-only-build.log",
+      "reran_heavy_dependency_work": false
+    },
+    "prod_recreate": {
+      "label": "task255-prod-recreate-sudo-snap",
+      "remote_log": "/home/paunchygent/apps/sir-convert-a-lot/.artifacts/hemma-command-task255-prod-recreate-sudo-snap-20260419T122423Z.log",
+      "local_log": "prod-recreate.log",
+      "runtime_image": "sir-convert-a-lot-runtime:local",
+      "runtime_image_id": "sha256:41804019dfd0e0608ebd1e1faeca8faec0df0b9d8e1718383828f8672df37f78",
+      "container": "sir_convert_a_lot_prod",
+      "health": "healthy",
+      "ports": "127.0.0.1:28085->8085/tcp"
+    },
+    "clean_dependency_rebuild": {
+      "status": "not_run",
+      "reason": "Normal Task 255 proof is non-destructive; prod-deps-rocm-build-clean is reserved for explicit cold dependency rebuild testing."
+    }
   }
 }

@@ -1,0 +1,59 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 750B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.38kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 1.22kB done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 1.57MB 0.0s done
+#5 DONE 0.1s
+
+#6 [ 1/10] FROM docker.io/library/sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690
+#6 DONE 0.7s
+
+#7 [ 2/10] COPY scripts/__init__.py ./scripts/__init__.py
+#7 DONE 0.1s
+
+#8 [ 3/10] COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
+#8 DONE 0.2s
+
+#9 [ 4/10] COPY scripts/sir_convert_a_lot/service.py ./scripts/sir_convert_a_lot/service.py
+#9 DONE 0.2s
+
+#10 [ 5/10] COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application
+#10 DONE 0.2s
+
+#11 [ 6/10] COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain
+#11 DONE 0.2s
+
+#12 [ 7/10] COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure
+#12 DONE 0.3s
+
+#13 [ 8/10] COPY scripts/sir_convert_a_lot/integrations ./scripts/sir_convert_a_lot/integrations
+#13 DONE 0.2s
+
+#14 [ 9/10] COPY scripts/sir_convert_a_lot/interfaces ./scripts/sir_convert_a_lot/interfaces
+#14 DONE 0.2s
+
+#15 [10/10] COPY scripts/sir_convert_a_lot/templates ./scripts/sir_convert_a_lot/templates
+#15 DONE 0.2s
+
+#16 exporting to image
+#16 exporting layers
+#16 exporting layers 0.4s done
+#16 writing image sha256:54836eee7b3133bb94acd4bb64b296477398b7dee022399a2dea2995c59bec20 0.0s done
+#16 naming to docker.io/library/sir-convert-a-lot-runtime:local 0.0s done
+#16 DONE 0.5s
+
+#17 resolving provenance for metadata file
+#17 DONE 0.2s
+ sir-convert-a-lot-runtime:local  Built

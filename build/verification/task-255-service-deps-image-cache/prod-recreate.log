@@ -1,0 +1,62 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 750B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.38kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 1.22kB done
+#4 DONE 0.0s
+
+#5 [ 1/10] FROM docker.io/library/sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 21.00kB 0.0s done
+#6 DONE 0.1s
+
+#7 [ 4/10] COPY scripts/sir_convert_a_lot/service.py ./scripts/sir_convert_a_lot/service.py
+#7 CACHED
+
+#8 [ 7/10] COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure
+#8 CACHED
+
+#9 [ 6/10] COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain
+#9 CACHED
+
+#10 [ 2/10] COPY scripts/__init__.py ./scripts/__init__.py
+#10 CACHED
+
+#11 [ 5/10] COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application
+#11 CACHED
+
+#12 [ 8/10] COPY scripts/sir_convert_a_lot/integrations ./scripts/sir_convert_a_lot/integrations
+#12 CACHED
+
+#13 [ 3/10] COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
+#13 CACHED
+
+#14 [ 9/10] COPY scripts/sir_convert_a_lot/interfaces ./scripts/sir_convert_a_lot/interfaces
+#14 CACHED
+
+#15 [10/10] COPY scripts/sir_convert_a_lot/templates ./scripts/sir_convert_a_lot/templates
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 writing image sha256:41804019dfd0e0608ebd1e1faeca8faec0df0b9d8e1718383828f8672df37f78 done
+#16 naming to docker.io/library/sir-convert-a-lot-runtime:local 0.0s done
+#16 DONE 0.1s
+
+#17 resolving provenance for metadata file
+#17 DONE 0.0s
+ sir-convert-a-lot-runtime:local  Built
+ Container sir_convert_a_lot_prod  Recreate
+ Container sir_convert_a_lot_prod  Recreated
+ Container sir_convert_a_lot_prod  Starting
+ Container sir_convert_a_lot_prod  Started

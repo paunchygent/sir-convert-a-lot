@@ -77,6 +77,14 @@ Task 254 proves detached production recovery/public-edge verification, and
 Task 255 proves cache-hot dependency-image rebuild behavior with linked
 runbook/API documentation updates.
 
+## Progress Notes
+
+- 2026-04-19: Task 255 completed the cache-hot dependency-image rebuild slice.
+  Final evidence is in
+  `build/verification/task-255-service-deps-image-cache/`. Story 05 remains
+  open while Task 254 public-edge detached deploy verification is still the
+  immediate production recovery authority.
+
 ## Checklist
 
 - [ ] Implementation complete

@@ -1,6 +1,6 @@
 # Task 255 Service Dependency Image Cache Report
 
-Status: partial local pass, Hemma proof pending.
+Status: passed.
 
 ## Dependency Hash Proof
 
@@ -33,17 +33,40 @@ truth changes do move it.
 
 ## Hemma Proof
 
-Pending. The implementation is currently local worktree state, so the detached
-Hemma proof must run after these changes are available in the canonical remote
-repo through Git.
+Detached Hemma proof ran from the canonical remote repo after `main` was
+updated to commit `7173c03f8b414caa7fa1e9c84a0c6b33b5b357b8`.
 
-Required detached commands:
+Detached commands:
 
 ```bash
-pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build -- pdm run prod-deps-rocm-build
-pdm run run-local-pdm hemma-command-monitor -- <remote-deps-build-log-path>
-pdm run run-local-pdm hemma-command-start task255-prod-app-only-build -- pdm run prod-build
-pdm run run-local-pdm hemma-command-monitor -- <remote-app-build-log-path>
-pdm run run-local-pdm hemma-command-start task255-prod-recreate -- pdm run prod-recreate sir_convert_a_lot_prod
-pdm run run-local-pdm hemma-command-monitor -- <remote-recreate-log-path>
+pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build-sudo-snap -- sudo -n env PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /home/paunchygent/.local/bin/pdm run prod-deps-rocm-build
+pdm run run-local-pdm hemma-command-start task255-prod-app-only-build-sudo-snap -- sudo -n env PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /home/paunchygent/.local/bin/pdm run prod-build
+pdm run run-local-pdm hemma-command-start task255-prod-recreate-sudo-snap -- sudo -n env PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /home/paunchygent/.local/bin/pdm run prod-recreate sir_convert_a_lot_prod
 ```
+
+Remote logs captured locally:
+
+- `prod-deps-rocm-build.log`
+- `prod-app-only-build.log`
+- `prod-recreate.log`
+- `prod-compose-ps.json`
+- `buildkit-cache-summary-hemma-after.txt`
+
+Results:
+
+- Dependency image build used BuildKit pip cache mounts for normal
+  requirements and ROCm torch wheel downloads.
+- ROCm torch, torchvision, torchaudio, and triton-rocm installed only in the
+  dependency image lane.
+- EasyOCR detection and recognition models preloaded only in the dependency
+  image lane.
+- Dependency image tag:
+  `sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690`.
+- App-only production build consumed the dependency image directly and copied
+  app/runtime source without rerunning pip, ROCm torch, or EasyOCR preload.
+- Production recreate reused cached runtime layers and started
+  `sir_convert_a_lot_prod` healthy on `127.0.0.1:28085->8085/tcp`.
+
+`prod-deps-rocm-build-clean` was not run as part of this normal proof because
+the Task 255 proof was intentionally non-destructive; the clean rebuild command
+surface is reserved for explicit cold dependency rebuild testing.

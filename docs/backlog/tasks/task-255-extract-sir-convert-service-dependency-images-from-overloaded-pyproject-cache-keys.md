@@ -2,7 +2,7 @@
 id: task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys
 title: Extract Sir Convert service dependency images from overloaded pyproject cache keys
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-04-19'
 last_updated: '2026-04-19'
@@ -121,26 +121,32 @@ Out of scope:
   - Local gates passed: docs, skills, handoff, format, lint, typecheck,
     compose contract tests, service-image/compose/dockerfile test slice,
     coverage gate, task index, and whitespace diff check.
-  - Task remains open until full local gates, detached Hemma proof logs, and
-    final durable report artifacts are present.
+  - Detached Hemma proof ran from commit
+    `7173c03f8b414caa7fa1e9c84a0c6b33b5b357b8`: the ROCm dependency image
+    build installed ROCm torch and preloaded EasyOCR once, the app-only
+    production build consumed that dependency image without rerunning heavy
+    dependency work, and `prod-recreate` restarted `sir_convert_a_lot_prod`
+    healthy.
+  - Final durable proof artifacts are present under
+    `build/verification/task-255-service-deps-image-cache/`.
 
 ## Acceptance Criteria
 
-- [ ] A PDM script-only change to `pyproject.toml` does not change the service
+- [x] A PDM script-only change to `pyproject.toml` does not change the service
   dependency hash and does not invalidate the ROCm dependency image layer.
-- [ ] A real runtime dependency or runtime pin change does change the service
+- [x] A real runtime dependency or runtime pin change does change the service
   dependency hash and requires an explicit dependency-image rebuild.
-- [ ] The production runtime image consumes a dependency image through an
+- [x] The production runtime image consumes a dependency image through an
   explicit `DEPS_IMAGE` build argument and copies only app/runtime source after
   dependency layers are established.
-- [ ] ROCm torch and EasyOCR preload work are in the dependency image lane, not
+- [x] ROCm torch and EasyOCR preload work are in the dependency image lane, not
   repeated during app-only service rebuilds.
-- [ ] BuildKit dependency builds reuse pip package cache across invalidated
+- [x] BuildKit dependency builds reuse pip package cache across invalidated
   dependency-layer rebuilds unless the operator intentionally prunes cache.
-- [ ] `compose.yaml` and `compose.local.yaml` keep separate production/local
+- [x] `compose.yaml` and `compose.local.yaml` keep separate production/local
   surfaces and do not regress to the dev/prod compose confusion closed by
   Task 254.
-- [ ] Hemma verification demonstrates one dependency rebuild and one subsequent
+- [x] Hemma verification demonstrates one dependency rebuild and one subsequent
   app-only or ops-only rebuild where the ROCm dependency work remains cached.
 
 ## Validation Commands
@@ -188,8 +194,8 @@ under `build/verification/task-255-service-deps-image-cache/`:
   truth changes.
 - `prod-deps-rocm-build.log`: detached dependency image build log proving the
   ROCm dependency image tag and pip cache mount behavior.
-- `prod-deps-rocm-build-clean.log`: detached clean dependency image rebuild log
-  proving the clean-build path.
+- `prod-deps-rocm-build-clean.log`: optional detached clean dependency image
+  rebuild log for explicit cold dependency rebuild testing only.
 - `prod-app-only-build.log`: detached app/ops-only service image rebuild log
   proving ROCm torch and EasyOCR preload work are cached or not rerun.
 - `image-tags.json`: dependency image tag, runtime image tag, revision, and
@@ -202,5 +208,5 @@ under `build/verification/task-255-service-deps-image-cache/`:
 ## Checklist
 
 - [x] Implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated

@@ -295,8 +295,15 @@ pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build -- pdm ru
 pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
 pdm run run-local-pdm hemma-command-start task255-prod-app-only-build -- pdm run prod-build
 pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
-pdm run run-local-pdm hemma-command-start sir-prod-recreate -- sudo -n /home/paunchygent/.local/bin/pdm run prod-recreate sir_convert_a_lot_prod
+pdm run run-local-pdm hemma-command-start task255-prod-recreate -- pdm run prod-recreate sir_convert_a_lot_prod
 pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
+```
+
+If the current Hemma Docker socket requires sudo and Docker is provided by
+Snap, preserve both PDM and Docker on `PATH` in the detached command:
+
+```bash
+pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build-sudo-snap -- sudo -n env PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /home/paunchygent/.local/bin/pdm run prod-deps-rocm-build
 ```
 
 The detached launcher writes authoritative remote logs and PID breadcrumbs under

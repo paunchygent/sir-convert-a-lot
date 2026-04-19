@@ -45,7 +45,7 @@ Task 254 remains the immediate production recovery authority. It owns the
 detached Hemma deploy/public-edge proof, reserved default-host behavior, and the
 canonical `hemma-deploy-and-verify` report evidence.
 
-Task 255 is the follow-up build architecture authority. It owns the dependency
+Task 255 is now the completed build architecture slice. It owns the dependency
 image split, narrow dependency input artifacts, BuildKit pip cache mounts, and
 the proof that PDM script-only changes no longer invalidate ROCm torch,
 EasyOCR preload, or other heavy dependency work.
@@ -91,6 +91,10 @@ DevOps task authority.
     lanes, generated narrow `docker/service-deps/` inputs, switched
     production/local runtime Dockerfiles to explicit `DEPS_IMAGE`, and added
     contract tests for PDM script-only non-invalidation.
+  - Task 255 was committed and pushed to `main`, deployed into the canonical
+    Hemma repo, and verified through detached dependency-build, app-only-build,
+    and production-recreate proof logs. The proof artifacts live under
+    `build/verification/task-255-service-deps-image-cache/`.
 
 ## Next Actions
 
@@ -101,14 +105,9 @@ DevOps task authority.
     artifacts in the canonical report;
   - run the live Hemma deploy/public curl gate only through detached deploy
     surfaces.
-- Then execute Task 255:
-  - run the full local validation gate set;
-  - push or otherwise make the Task 255 implementation available in the
-    canonical Hemma repo through Git;
-  - prove one dependency rebuild and one cache-hot app/ops-only rebuild on
-    Hemma with detached monitoring where work can outlive the local session;
-  - finalize `build/verification/task-255-service-deps-image-cache/` report
-    artifacts before marking Task 255 complete.
+- Keep Task 255 closed unless a follow-up explicitly changes dependency
+  image policy. Its proof packet is
+  `build/verification/task-255-service-deps-image-cache/`.
 - Keep Task 239 closed as historical partial layering context. Do not reopen it
   for the dependency-image work unless Task 255 explicitly supersedes or amends
   a documented Task 239 acceptance boundary.
