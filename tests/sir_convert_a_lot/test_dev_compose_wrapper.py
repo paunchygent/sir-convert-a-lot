@@ -30,11 +30,28 @@ def _write_fake_docker(script_dir: Path) -> None:
         """#!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "${1:-}" != "compose" ]]; then
-  echo "fake-docker: expected compose subcommand, got: $*" >&2
-  exit 90
-fi
-shift
+case "${1:-}" in
+  compose)
+    shift
+    ;;
+  image)
+    if [[ "${2:-}" == "inspect" ]]; then
+      exit 1
+    fi
+    echo "fake-docker: unsupported image command: $*" >&2
+    exit 90
+    ;;
+  build)
+    exit 0
+    ;;
+  tag)
+    exit 0
+    ;;
+  *)
+    echo "fake-docker: expected compose/build/image/tag command, got: $*" >&2
+    exit 90
+    ;;
+esac
 
 if [[ "${1:-}" == "version" ]]; then
   echo "Docker Compose version v2.fake"

@@ -4,7 +4,7 @@ id: RUN-hemma-devops-and-gpu
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 status: active
 created: '2026-02-11'
-updated: '2026-03-08'
+updated: '2026-04-19'
 owners:
   - platform
 system: hemma.hule.education
@@ -197,9 +197,44 @@ pdm run run-hemma --shell 'sudo docker ps --format "table {{.Names}}\t{{.Status}
 
 ## Containerized Runtime Command Surfaces
 
+Dependency images are an explicit lane. Rebuild them when runtime dependency
+truth changes, not for app-source or PDM script-only changes.
+
+Production ROCm dependency image commands:
+
+```bash
+pdm run prod-deps-rocm-build
+pdm run prod-deps-rocm-build-clean
+```
+
+Local CPU dependency image command:
+
+```bash
+pdm run dev-deps-cpu-build
+```
+
+Dependency-image contract:
+
+- Dependency inputs are generated under `docker/service-deps/`.
+- The dependency hash is computed from filtered production requirements,
+  ROCm/CPU torch runtime pins, and EasyOCR preload inputs only.
+- PDM scripts, tool configuration, docs, tests, and unrelated
+  `pyproject.toml` metadata are not dependency-image hash inputs.
+- `Dockerfile.deps` uses BuildKit pip cache mounts for normal requirements and
+  torch wheel downloads; do not prune BuildKit cache for routine proof.
+- `Dockerfile` and `Dockerfile.local` consume `DEPS_IMAGE` and copy app/runtime
+  source only after dependency images already contain `.venv`, torch, and
+  EasyOCR models.
+- Normal `prod-build`, `prod-recreate`, and `dev-build` ensure the hash-tagged
+  dependency image exists. If the dependency hash is unchanged, they reuse it
+  instead of reinstalling ROCm torch or preloading EasyOCR.
+- Use the clean dependency command only for an intentional cold dependency
+  image rebuild; it should not be part of routine app-only deploy proof.
+
 Local CPU-only debug compose commands (repo root):
 
 ```bash
+pdm run dev-deps-cpu-build
 pdm run dev-build
 pdm run dev-start
 pdm run dev-check
@@ -212,6 +247,8 @@ pdm run dev-stop
 Hemma production compose commands (repo root):
 
 ```bash
+pdm run prod-deps-rocm-build
+pdm run prod-deps-rocm-build-clean
 pdm run prod-build
 pdm run prod-start
 pdm run prod-recreate sir_convert_a_lot_prod
@@ -229,6 +266,12 @@ Command-surface guarantees:
   local debug service (`sir_convert_a_lot_dev`).
 - `prod-*` commands always use `compose.yaml` and target the Hemma production
   service (`sir_convert_a_lot_prod`).
+- Production app/runtime builds use `SIR_CONVERT_A_LOT_DEPS_IMAGE` via
+  compose build args and default to the current
+  `sir-convert-a-lot-deps-rocm:<dependency-hash>` image prepared by the
+  wrapper.
+- Local app/runtime builds use the matching CPU dependency image,
+  `sir-convert-a-lot-deps-cpu:<dependency-hash>`.
 - Wrapper auto-derives `SIR_CONVERT_A_LOT_SERVICE_REVISION` from `git rev-parse HEAD`
   when unset, and defaults `SIR_CONVERT_A_LOT_EXPECTED_REVISION` to the same value.
 - Health remains `/readyz`-gated, so stale/mismatched revision/profile/data-root
@@ -248,12 +291,24 @@ Long-running Hemma deploy commands must be launched detached and monitored
 separately:
 
 ```bash
+pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build -- pdm run prod-deps-rocm-build
+pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
+pdm run run-local-pdm hemma-command-start task255-prod-app-only-build -- pdm run prod-build
+pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
 pdm run run-local-pdm hemma-command-start sir-prod-recreate -- sudo -n /home/paunchygent/.local/bin/pdm run prod-recreate sir_convert_a_lot_prod
 pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
 ```
 
 The detached launcher writes authoritative remote logs and PID breadcrumbs under
 `/home/paunchygent/apps/sir-convert-a-lot/.artifacts/`.
+
+Task 255 cache-hot proof artifacts belong under:
+
+- `build/verification/task-255-service-deps-image-cache/`
+  - dependency input snapshots before and after script-only changes;
+  - a controlled runtime dependency or runtime pin delta proving hash movement;
+  - detached Hemma dependency/app/recreate build logs;
+  - image tags, BuildKit cache summary, `report.md`, and `report.json`.
 
 ## GPU Verification (ROCm/HIP)
 

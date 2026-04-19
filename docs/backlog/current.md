@@ -87,6 +87,10 @@ DevOps task authority.
     heavy dependency-builder chain, including ROCm torch and EasyOCR preload.
   - Story 05 was promoted as the active DevOps story under Epic 03, and Task
     255 was created as the explicit dependency-image/cache-key follow-up.
+  - Task 255 implementation extracted hash-addressed ROCm/CPU dependency image
+    lanes, generated narrow `docker/service-deps/` inputs, switched
+    production/local runtime Dockerfiles to explicit `DEPS_IMAGE`, and added
+    contract tests for PDM script-only non-invalidation.
 
 ## Next Actions
 
@@ -98,12 +102,13 @@ DevOps task authority.
   - run the live Hemma deploy/public curl gate only through detached deploy
     surfaces.
 - Then execute Task 255:
-  - define the narrow dependency input artifact/hash;
-  - add production ROCm dependency image build surfaces;
-  - add BuildKit pip cache mounts;
-  - update compose/PDM/runbook contracts;
+  - run the full local validation gate set;
+  - push or otherwise make the Task 255 implementation available in the
+    canonical Hemma repo through Git;
   - prove one dependency rebuild and one cache-hot app/ops-only rebuild on
-    Hemma with detached monitoring where work can outlive the local session.
+    Hemma with detached monitoring where work can outlive the local session;
+  - finalize `build/verification/task-255-service-deps-image-cache/` report
+    artifacts before marking Task 255 complete.
 - Keep Task 239 closed as historical partial layering context. Do not reopen it
   for the dependency-image work unless Task 255 explicitly supersedes or amends
   a documented Task 239 acceptance boundary.

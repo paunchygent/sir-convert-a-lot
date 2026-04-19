@@ -84,8 +84,29 @@ export SIR_CONVERT_A_LOT_EXPECTED_REVISION="${resolved_expected_revision}"
 
 COMPOSE_CMD=(docker compose -f "${COMPOSE_FILE}")
 
+ensure_dependency_image() {
+  local deps_runtime="${SIR_CONVERT_A_LOT_DEPS_RUNTIME:-}"
+  if [[ -z "${deps_runtime}" ]]; then
+    return 0
+  fi
+
+  local deps_output
+  deps_output="$(bash "${SCRIPT_DIR}/service-deps-image.sh" "${deps_runtime}" ensure)"
+  while IFS='=' read -r key value; do
+    if [[ "${key}" == "deps_image" ]]; then
+      export SIR_CONVERT_A_LOT_DEPS_IMAGE="${value}"
+      return 0
+    fi
+  done <<<"${deps_output}"
+
+  echo "${COMPOSE_LABEL}: dependency image helper did not emit deps_image" >&2
+  echo "${deps_output}" >&2
+  exit 69
+}
+
 case "${ACTION}" in
   start)
+    ensure_dependency_image
     "${COMPOSE_CMD[@]}" up -d --build "$@"
     ;;
   stop)
@@ -96,12 +117,15 @@ case "${ACTION}" in
     fi
     ;;
   build)
+    ensure_dependency_image
     "${COMPOSE_CMD[@]}" build "$@"
     ;;
   build-clean)
+    ensure_dependency_image
     "${COMPOSE_CMD[@]}" build --no-cache "$@"
     ;;
   recreate)
+    ensure_dependency_image
     "${COMPOSE_CMD[@]}" up -d --force-recreate --build "$@"
     ;;
   logs)

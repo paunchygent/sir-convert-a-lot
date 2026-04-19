@@ -1,0 +1,34 @@
+{
+  "task": "task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys",
+  "generated_at": "2026-04-19",
+  "status": "partial_local_pass_hemma_pending",
+  "dependency_hash_invariant": {
+    "rocm_before": "958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
+    "rocm_after_script_only": "958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690",
+    "rocm_after_runtime_dependency_delta": "cdbccff98310cf4a564d811307d8312da1f85ecd0ac913a317ff18ef6733cb42",
+    "script_only_unchanged": true,
+    "runtime_dependency_delta_changed": true
+  },
+  "local_validation": {
+    "docs_validate": "passed",
+    "skills_validate": "passed",
+    "handoff_validate": "passed",
+    "format_all": "passed",
+    "lint_fix": "passed",
+    "typecheck_all": "passed",
+    "compose_contract_tests": "passed",
+    "service_image_compose_dockerfile_slice": "passed",
+    "coverage_gate": "passed",
+    "index_tasks": "passed",
+    "git_diff_check": "passed"
+  },
+  "hemma_validation": {
+    "status": "pending",
+    "reason": "The implementation is currently local worktree state. Hemma proof must run after these changes are available in /home/paunchygent/apps/sir-convert-a-lot through Git.",
+    "required_detached_commands": [
+      "pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build -- pdm run prod-deps-rocm-build",
+      "pdm run run-local-pdm hemma-command-start task255-prod-app-only-build -- pdm run prod-build",
+      "pdm run run-local-pdm hemma-command-start task255-prod-recreate -- pdm run prod-recreate sir_convert_a_lot_prod"
+    ]
+  }
+}

@@ -3,8 +3,11 @@
 # BuildKit.
 *
 
-!pyproject.toml
-!pdm.lock
+!docker
+docker/*
+!docker/service-deps
+!docker/service-deps/**
+
 !scripts
 scripts/*
 

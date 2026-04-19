@@ -18,8 +18,11 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 DOCKERFILE = REPO_ROOT / "Dockerfile"
+DOCKERFILE_DEPS = REPO_ROOT / "Dockerfile.deps"
 DOCKERIGNORE = REPO_ROOT / ".dockerignore"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
+COMPOSE_ACTIONS_SCRIPT = REPO_ROOT / "scripts" / "devops" / "compose-actions.sh"
+PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 
 
 def _load_compose() -> dict[str, object]:
@@ -134,7 +137,9 @@ def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:
     assert isinstance(build_obj, dict)
     assert build_obj.get("context") == "."
     assert build_obj.get("dockerfile") == "Dockerfile"
-    assert "args" not in build_obj
+    assert build_obj.get("args") == {
+        "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}"
+    }
 
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
     assert service.get("group_add") == ["video", "render"]
@@ -149,14 +154,11 @@ def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None
     assert "scripts/sir_convert_a_lot/devops/*" in dockerignore_rules
 
     required_file_paths = {
-        "pyproject.toml",
-        "pdm.lock",
+        "docker/service-deps",
+        "docker/service-deps/**",
         "scripts/__init__.py",
         "scripts/sir_convert_a_lot/__init__.py",
         "scripts/sir_convert_a_lot/service.py",
-        "scripts/sir_convert_a_lot/devops/__init__.py",
-        "scripts/sir_convert_a_lot/devops/export_service_requirements.py",
-        "scripts/sir_convert_a_lot/devops/service_image_build_contract.py",
     }
     for path in required_file_paths:
         assert f"!{path}" in dockerignore_rules
@@ -176,6 +178,8 @@ def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None
     assert "!docs" not in dockerignore_rules
     assert "!tests" not in dockerignore_rules
     assert "!build" not in dockerignore_rules
+    assert "!pyproject.toml" not in dockerignore_rules
+    assert "!pdm.lock" not in dockerignore_rules
 
 
 def test_compose_declares_only_prod_named_volume() -> None:
@@ -189,26 +193,38 @@ def test_compose_declares_only_prod_named_volume() -> None:
 def test_prod_compose_helper_targets_production_compose_surface() -> None:
     script_text = PROD_COMPOSE_SCRIPT.read_text(encoding="utf-8")
     assert 'SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.yaml"' in script_text
+    assert 'SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"' in script_text
 
 
-def test_dockerfile_uses_supported_runtime_settings_for_single_service() -> None:
+def test_prod_pdm_scripts_expose_dependency_image_lane() -> None:
+    pyproject_text = PYPROJECT_FILE.read_text(encoding="utf-8")
+    assert (
+        '"prod-deps-rocm-build" = "bash scripts/devops/service-deps-image.sh rocm build"'
+        in pyproject_text
+    )
+    assert (
+        '"prod-deps-rocm-build-clean" = '
+        '"bash scripts/devops/service-deps-image.sh rocm build-clean"' in pyproject_text
+    )
+    assert '"prod-build" = "bash scripts/devops/prod-compose.sh build"' in pyproject_text
+    assert '"prod-recreate" = "bash scripts/devops/prod-compose.sh recreate"' in pyproject_text
+
+
+def test_compose_actions_ensures_dependency_image_before_app_builds() -> None:
+    script_text = COMPOSE_ACTIONS_SCRIPT.read_text(encoding="utf-8")
+    assert "service-deps-image.sh" in script_text
+    assert 'export SIR_CONVERT_A_LOT_DEPS_IMAGE="${value}"' in script_text
+    assert "ensure_dependency_image" in script_text
+
+
+def test_dockerfile_consumes_explicit_rocm_dependency_image_for_single_service() -> None:
     dockerfile_text = DOCKERFILE.read_text(encoding="utf-8")
-    assert "FROM python:3.11-slim AS runtime-base" in dockerfile_text
-    assert "FROM runtime-base AS dependency-builder" in dockerfile_text
-    assert "COPY --from=dependency-builder /app/.venv /app/.venv" in dockerfile_text
-    assert "export_service_requirements.py" in dockerfile_text
-    assert "service_image_build_contract.py" in dockerfile_text
-    assert (
-        "python -m pip install --no-cache-dir --no-deps -r /tmp/service-requirements.txt"
-        in dockerfile_text
-    )
-    assert (
-        "python -m scripts.sir_convert_a_lot.devops.export_service_requirements" in dockerfile_text
-    )
-    assert 'load_rocm_runtime_contract(Path("/app")).as_shell_exports()' in dockerfile_text
-    assert "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}" in dockerfile_text
-    assert "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}" in dockerfile_text
-    assert "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}" in dockerfile_text
+    assert "ARG DEPS_IMAGE=sir-convert-a-lot-deps-rocm:local" in dockerfile_text
+    assert "FROM ${DEPS_IMAGE} AS runtime" in dockerfile_text
+    assert "FROM runtime-base AS dependency-builder" not in dockerfile_text
+    assert "COPY pyproject.toml" not in dockerfile_text
+    assert "pdm.lock" not in dockerfile_text
+    assert "--no-cache-dir" not in dockerfile_text
     assert "COPY scripts ./scripts" not in dockerfile_text
     assert (
         "COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application"
@@ -238,3 +254,18 @@ def test_dockerfile_uses_supported_runtime_settings_for_single_service() -> None
     assert "EXPOSE 8085" in dockerfile_text
     assert "EXPOSE 8086" not in dockerfile_text
     assert "/var/lib/sir-convert-a-lot/eval" not in dockerfile_text
+
+
+def test_dependency_dockerfile_uses_generated_inputs_and_buildkit_pip_cache() -> None:
+    dockerfile_text = DOCKERFILE_DEPS.read_text(encoding="utf-8")
+    assert "COPY pyproject.toml" not in dockerfile_text
+    assert "pdm.lock" not in dockerfile_text
+    assert "COPY docker/service-deps/service-requirements.txt" in dockerfile_text
+    assert "COPY docker/service-deps/rocm-runtime.env" in dockerfile_text
+    assert "--mount=type=cache,id=sir-convert-a-lot-pip" in dockerfile_text
+    assert "--mount=type=cache,id=sir-convert-a-lot-pip-rocm" in dockerfile_text
+    assert "--no-cache-dir" not in dockerfile_text
+    assert "torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}" in dockerfile_text
+    assert "torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}" in dockerfile_text
+    assert "torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}" in dockerfile_text
+    assert "easyocr.Reader" in dockerfile_text

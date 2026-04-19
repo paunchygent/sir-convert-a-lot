@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DEPS_IMAGE: ${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}
     container_name: sir_convert_a_lot_prod
     restart: unless-stopped
     env_file:

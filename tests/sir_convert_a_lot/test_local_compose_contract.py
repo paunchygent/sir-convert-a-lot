@@ -21,6 +21,7 @@ COMPOSE_LOCAL_FILE = REPO_ROOT / "compose.local.yaml"
 DOCKERFILE_LOCAL = REPO_ROOT / "Dockerfile.local"
 DEV_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "dev-compose.sh"
 DOCKERIGNORE = REPO_ROOT / ".dockerignore"
+PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 
 
 def _load_local_compose() -> dict[str, object]:
@@ -74,6 +75,9 @@ def test_local_compose_uses_cpu_only_local_service_contract() -> None:
     assert isinstance(build_obj, dict)
     assert build_obj.get("context") == "."
     assert build_obj.get("dockerfile") == "Dockerfile.local"
+    assert build_obj.get("args") == {
+        "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-cpu:local}"
+    }
 
     env_map = _service_env_map(service)
     assert env_map["SIR_CONVERT_A_LOT_DATA_DIR"] == "/var/lib/sir-convert-a-lot/local"
@@ -118,10 +122,11 @@ def test_local_compose_uses_readyz_healthcheck_with_deterministic_timing() -> No
 
 def test_dockerfile_local_uses_cpu_runtime_contract_and_local_entrypoint() -> None:
     dockerfile_text = DOCKERFILE_LOCAL.read_text(encoding="utf-8")
-    assert 'load_cpu_runtime_contract(Path("/app"))' in dockerfile_text
-    assert '"torch==${SIR_CONVERT_A_LOT_TORCH_VERSION}"' in dockerfile_text
-    assert '"torchvision==${SIR_CONVERT_A_LOT_TORCHVISION_VERSION}"' in dockerfile_text
-    assert '"torchaudio==${SIR_CONVERT_A_LOT_TORCHAUDIO_VERSION}"' in dockerfile_text
+    assert "ARG DEPS_IMAGE=sir-convert-a-lot-deps-cpu:local" in dockerfile_text
+    assert "FROM ${DEPS_IMAGE} AS runtime" in dockerfile_text
+    assert "COPY pyproject.toml" not in dockerfile_text
+    assert "pdm.lock" not in dockerfile_text
+    assert "--no-cache-dir" not in dockerfile_text
     assert "scripts.sir_convert_a_lot.service_local:app" in dockerfile_text
     assert "/dev/kfd" not in dockerfile_text
     assert "/dev/dri" not in dockerfile_text
@@ -130,6 +135,16 @@ def test_dockerfile_local_uses_cpu_runtime_contract_and_local_entrypoint() -> No
 def test_dev_compose_helper_targets_local_compose_surface() -> None:
     script_text = DEV_COMPOSE_SCRIPT.read_text(encoding="utf-8")
     assert 'SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.local.yaml"' in script_text
+    assert 'SIR_CONVERT_A_LOT_DEPS_RUNTIME="cpu"' in script_text
+
+
+def test_dev_pdm_scripts_expose_cpu_dependency_image_lane() -> None:
+    pyproject_text = PYPROJECT_FILE.read_text(encoding="utf-8")
+    assert (
+        '"dev-deps-cpu-build" = "bash scripts/devops/service-deps-image.sh cpu build"'
+        in pyproject_text
+    )
+    assert '"dev-build" = "bash scripts/devops/dev-compose.sh build"' in pyproject_text
 
 
 def test_dockerignore_whitelists_local_service_entrypoint() -> None:

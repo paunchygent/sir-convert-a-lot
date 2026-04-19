@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Consumes `pdm export --prod --without-hashes` from the repository root.
-    - Used by the root `Dockerfile` dependency-builder stage.
+    - Used by the service dependency input generator before Docker builds.
     - Covered by `tests/sir_convert_a_lot/test_export_service_requirements.py`.
 """
 
@@ -81,6 +81,18 @@ def filter_requirement_lines(
     return "\n".join(filtered_lines).rstrip() + "\n"
 
 
+def export_filtered_requirements(project_root: Path) -> str:
+    """Return locked production requirements with image-managed torch packages removed."""
+    exported_requirements = subprocess.run(
+        ["pdm", "export", "--prod", "--without-hashes", "--format", "requirements"],
+        cwd=project_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    return filter_requirement_lines(exported_requirements)
+
+
 def _parse_args() -> argparse.Namespace:
     """Parse command-line arguments for the requirements export helper."""
     parser = argparse.ArgumentParser(
@@ -104,15 +116,8 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     """Export, filter, and persist the service runtime requirements file."""
     args = _parse_args()
-    exported_requirements = subprocess.run(
-        ["pdm", "export", "--prod", "--without-hashes", "--format", "requirements"],
-        cwd=args.project_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    filtered_requirements = filter_requirement_lines(exported_requirements)
-    args.output.write_text(filtered_requirements, encoding="utf-8")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(export_filtered_requirements(args.project_root), encoding="utf-8")
 
 
 if __name__ == "__main__":

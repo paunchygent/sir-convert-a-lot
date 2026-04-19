@@ -1,9 +1,9 @@
 ---
-id: 'task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys'
-title: 'Extract Sir Convert service dependency images from overloaded pyproject cache keys'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys
+title: Extract Sir Convert service dependency images from overloaded pyproject cache keys
+type: task
+status: in_progress
+priority: high
 created: '2026-04-19'
 last_updated: '2026-04-19'
 related:
@@ -25,6 +25,7 @@ labels:
   - devops
   - production
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -81,21 +82,47 @@ Out of scope:
 
 ## Deliverables
 
-- [ ] A committed dependency-image Dockerfile or equivalent build surface for
+- [x] A committed dependency-image Dockerfile or equivalent build surface for
   the production ROCm dependency layer.
-- [ ] A committed narrow dependency input artifact or generator/validator pair
+- [x] A committed narrow dependency input artifact or generator/validator pair
   for service runtime requirements and runtime pins.
-- [ ] Runtime service image build uses `DEPS_IMAGE` and no longer rebuilds
+- [x] Runtime service image build uses `DEPS_IMAGE` and no longer rebuilds
   heavy dependencies because full `pyproject.toml` changed for a PDM script or
   tooling-only reason.
-- [ ] BuildKit pip cache mounts are used for dependency package downloads,
+- [x] BuildKit pip cache mounts are used for dependency package downloads,
   including ROCm torch wheel downloads.
-- [ ] Production/local compose and PDM command surfaces expose explicit
+- [x] Production/local compose and PDM command surfaces expose explicit
   dependency-image build, clean rebuild, and normal service rebuild paths.
-- [ ] Runbook guidance explains when to rebuild dependency images and how to
+- [x] Runbook guidance explains when to rebuild dependency images and how to
   prove a normal deploy stayed cache-hot.
-- [ ] Contract tests cover dependency hash inputs, Dockerfile layering,
+- [x] Contract tests cover dependency hash inputs, Dockerfile layering,
   compose build arguments, and pyproject script-only non-invalidation.
+
+## Progress Notes
+
+- 2026-04-19:
+  - Added `Dockerfile.deps` as the explicit ROCm/CPU dependency image build
+    surface. It copies only generated `docker/service-deps/` inputs and uses
+    BuildKit pip cache mounts for normal requirements, CPU torch, and ROCm
+    torch installs.
+  - Reduced `Dockerfile` and `Dockerfile.local` to runtime/app images that
+    consume `DEPS_IMAGE` and copy application source only after `.venv`, torch,
+    and EasyOCR models are already baked in a dependency image.
+  - Added `scripts/devops/service-deps-image.sh` and PDM command surfaces:
+    `prod-deps-rocm-build`, `prod-deps-rocm-build-clean`,
+    `dev-deps-cpu-build`, while preserving normal `prod-build`,
+    `prod-recreate`, and `dev-build` flows through dependency-image ensure.
+  - Added `service_dependency_inputs.py` and generated
+    `docker/service-deps/` artifacts. The dependency hash is computed from
+    filtered production requirements, runtime pins, and EasyOCR preload inputs,
+    not PDM scripts or tool-only config.
+  - Local contract tests prove script-only `pyproject.toml` changes keep the
+    dependency hash stable and runtime dependency/runtime pin changes move it.
+  - Local gates passed: docs, skills, handoff, format, lint, typecheck,
+    compose contract tests, service-image/compose/dockerfile test slice,
+    coverage gate, task index, and whitespace diff check.
+  - Task remains open until full local gates, detached Hemma proof logs, and
+    final durable report artifacts are present.
 
 ## Acceptance Criteria
 
@@ -174,6 +201,6 @@ under `build/verification/task-255-service-deps-image-cache/`:
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated

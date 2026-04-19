@@ -18,6 +18,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 export SIR_CONVERT_A_LOT_COMPOSE_LABEL="prod-compose"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.yaml"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE_DESCRIPTION="production compose file"
-export SIR_CONVERT_A_LOT_COMPOSE_USAGE=$'Usage:\n  pdm run prod-start [service...]\n  pdm run prod-stop [service...]\n  pdm run prod-build [service...]\n  pdm run prod-build-clean [service...]\n  pdm run prod-recreate [service...]\n  pdm run prod-logs [service...]\n  pdm run prod-ps [service...]\n  pdm run prod-config\n  pdm run prod-check'
+export SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"
+export SIR_CONVERT_A_LOT_COMPOSE_USAGE=$'Usage:\n  pdm run prod-deps-rocm-build\n  pdm run prod-deps-rocm-build-clean\n  pdm run prod-start [service...]\n  pdm run prod-stop [service...]\n  pdm run prod-build [service...]\n  pdm run prod-build-clean [service...]\n  pdm run prod-recreate [service...]\n  pdm run prod-logs [service...]\n  pdm run prod-ps [service...]\n  pdm run prod-config\n  pdm run prod-check'
 
 exec bash "${SCRIPT_DIR}/compose-actions.sh" "$@"

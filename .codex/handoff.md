@@ -23,6 +23,11 @@ runbooks, or skills.
   Task 239 partial layering slice. Its core invariant is that PDM script-only
   changes must not invalidate ROCm torch, EasyOCR preload, or other heavy
   dependency work.
+- Task 255 implementation is in progress locally: dependency image inputs now
+  live under `docker/service-deps/`, `Dockerfile.deps` owns ROCm/CPU dependency
+  images, and production/local runtime Dockerfiles consume explicit
+  `DEPS_IMAGE` app layers. Detached Hemma proof is still pending until the
+  implementation is available in the canonical remote repo via Git.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -61,9 +66,12 @@ runbooks, or skills.
 1. Finish Task 254 by making `hemma-deploy-and-verify` deploy-detached-aware
    and by emitting durable public-edge/default-host artifacts in the canonical
    report.
-1. Then execute Task 255: dependency input hash, ROCm dependency image lane,
-   BuildKit pip cache mounts, compose/PDM surfaces, runbook update, and Hemma
-   cache-hot proof.
+1. Finish Task 255 validation: run the full local gate list, make the branch
+   available to Hemma through Git, then launch detached
+   `task255-prod-deps-rocm-build`, `task255-prod-app-only-build`, and
+   `task255-prod-recreate` proof commands. Do not mark Task 255 complete until
+   the final `build/verification/task-255-service-deps-image-cache/` report
+   artifacts exist.
 1. Before any future Hemma Qwen run, use:
    `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
    and
@@ -71,6 +79,21 @@ runbooks, or skills.
 
 ## Validation
 
+- 2026-04-19 Task 255 focused checks:
+  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_service_dependency_inputs.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py tests/sir_convert_a_lot/test_export_service_requirements.py tests/sir_convert_a_lot/test_service_image_build_contract.py -q`
+  passed.
+- 2026-04-19 Task 255 full local gates passed:
+  `pdm run docs-validate`; `pdm run skills-validate`;
+  `pdm run handoff-validate`; `pdm run format-all`; `pdm run lint-fix`;
+  `pdm run typecheck-all`;
+  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py -q`;
+  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "service_image or compose or dockerfile" -q`;
+  `pdm run coverage-gate`;
+  `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`;
+  `git diff --check`.
+- 2026-04-19 Task 255 local proof artifacts were written under
+  `build/verification/task-255-service-deps-image-cache/`; Hemma detached proof
+  logs are still pending.
 - 2026-04-19 docs-governance slice:
   `pdm run docs-validate`, `pdm run handoff-validate`, and `git diff --check`
   are required before closeout.
