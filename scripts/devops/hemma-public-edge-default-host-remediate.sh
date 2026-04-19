@@ -119,13 +119,13 @@ EOF
   tmp_file="$(mktemp)"
   awk -v block="${reserved_service_block}" '
     /^  acme-companion:/ && ! inserted {
-      printf "%s", block
+      printf "%s\n", block
       inserted = 1
     }
     { print }
     END {
       if (! inserted) {
-        printf "%s", block
+        printf "%s\n", block
       }
     }
   ' "${compose_file}" > "${tmp_file}"
