@@ -71,6 +71,7 @@ def test_default_host_remediation_targets_shared_infrastructure_surface() -> Non
     assert "docker-compose.yml" in script_text
     assert "DEFAULT_HOST=hemma-reserved-default-host" in script_text
     assert "VIRTUAL_HOST=hemma-reserved-default-host" in script_text
+    assert "CERT_NAME=convert.hule.education" in script_text
     assert "PROXY_DEFAULT_SERVER=true" in script_text
     assert "return 404" in script_text
     assert 'printf "%s\\n", block' in script_text

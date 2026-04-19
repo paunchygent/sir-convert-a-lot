@@ -15,6 +15,7 @@ set -euo pipefail
 infra_root="${HEMMA_INFRASTRUCTURE_ROOT:-/home/paunchygent/infrastructure}"
 compose_file="${infra_root}/docker-compose.yml"
 reserved_host="hemma-reserved-default-host"
+reserved_cert_name="convert.hule.education"
 reserved_conf="${infra_root}/nginx/reserved-default-host.conf"
 deploy=0
 
@@ -108,6 +109,7 @@ if ! grep -qE "^  ${reserved_host}:" "${compose_file}"; then
     environment:
       - VIRTUAL_HOST=hemma-reserved-default-host
       - VIRTUAL_PORT=8080
+      - CERT_NAME=convert.hule.education
       - PROXY_DEFAULT_SERVER=true
     networks:
       default:
@@ -130,6 +132,10 @@ EOF
     }
   ' "${compose_file}" > "${tmp_file}"
   mv "${tmp_file}" "${compose_file}"
+fi
+
+if ! grep -qE '^[[:space:]]*-[[:space:]]*CERT_NAME=convert\.hule\.education$' "${compose_file}"; then
+  sed -i "/^[[:space:]]*-[[:space:]]*VIRTUAL_PORT=8080$/a\\      - CERT_NAME=${reserved_cert_name}" "${compose_file}"
 fi
 
 sudo docker compose -f "${compose_file}" config >/dev/null
