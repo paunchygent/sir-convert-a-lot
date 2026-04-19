@@ -202,6 +202,7 @@ distribution = false
 "prod-check" = "bash scripts/devops/prod-compose.sh check"
 "hemma-command-start" = "bash scripts/devops/hemma-command-start.sh"
 "hemma-command-monitor" = "bash scripts/devops/hemma-command-monitor.sh"
+"hemma-public-edge-default-host-remediate" = "bash scripts/devops/hemma-public-edge-default-host-remediate.sh"
 "new-task" = "python -m scripts.docs_as_code.new_task"
 "new-programme" = "python -m scripts.docs_as_code.new_task --type programme"
 "new-epic" = "python -m scripts.docs_as_code.new_task --type epic"

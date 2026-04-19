@@ -59,6 +59,8 @@ unknown hosts may render that product.
 - Launch long-running Hemma production recreate commands through the detached
   command surface (`pdm run run-local-pdm hemma-command-start ...`) and monitor
   the remote log separately.
+- Launch shared public-edge infrastructure reconciles through the same detached
+  command surface; do not run `~/infrastructure` compose deploys attached.
 - Recreate the Hemma production container through the corrected surface so the
   live Docker restart policy matches `compose.yaml` (`unless-stopped`).
 - Extend verification to prove `https://convert.hule.education/readyz` with
@@ -71,7 +73,7 @@ unknown hosts may render that product.
   - effective config proof:
     `sudo docker exec nginx-proxy sed -n '1,260p' /etc/nginx/conf.d/default.conf`
   - deployment command:
-    `cd ~/infrastructure && sudo docker compose -f docker-compose.yml up -d`
+    `pdm run run-local-pdm hemma-command-start public-edge-default-host -- bash scripts/devops/hemma-public-edge-default-host-remediate.sh --deploy`
 - Implement or link the preferred fail-closed default-host posture in that
   surface: a deliberately named `hemma-reserved-default-host` placeholder
   container on `hule-network`, with `DEFAULT_HOST` on `nginx-proxy` pointing to
@@ -145,6 +147,7 @@ Unknown-host probe policy:
 - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_hemma_deploy_and_verify.py tests/sir_convert_a_lot/test_public_edge_verification.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_local_compose_contract.py tests/sir_convert_a_lot/test_compose_contract.py -q`
 - `pdm run run-local-pdm hemma-command-start sir-prod-recreate -- sudo -n /home/paunchygent/.local/bin/pdm run prod-recreate sir_convert_a_lot_prod`
 - `pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>`
+- `pdm run run-local-pdm hemma-command-start public-edge-default-host -- bash scripts/devops/hemma-public-edge-default-host-remediate.sh --deploy`
 - `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
 - `curl -fsS https://convert.hule.education/readyz`
 - `curl -Iv https://convert.hule.education/readyz`

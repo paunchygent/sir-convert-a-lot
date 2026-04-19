@@ -383,6 +383,13 @@ Decision tree (fail-closed):
      `hemma-reserved-default-host` default host in `~/infrastructure`, or the
      public TLS/certificate chain before rerunning the gate.
 
+Reserved default-host remediation must be launched detached:
+
+```bash
+pdm run run-local-pdm hemma-command-start public-edge-default-host -- bash scripts/devops/hemma-public-edge-default-host-remediate.sh --deploy
+pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
+```
+
 ## Bottleneck Triage Workflow (Task 73)
 
 Use this flow to identify slowdown source without high-cardinality metric labels.
