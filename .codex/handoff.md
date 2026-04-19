@@ -27,6 +27,27 @@ runbooks, or skills.
   image freshness now includes build-recipe truth through a separate recipe
   hash, a combined dependency-image hash, and Docker label verification before
   accepting existing dependency image tags.
+- Epic 09 is proposed for the Sir Convert Gateway cutover. ADR-0009, Stories
+  33-37, Tasks 256-264, and
+  `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md` now
+  govern the planning path. Task 256 must inventory all callers/access lanes
+  before any public route is removed or repointed.
+- ADR-0009 review feedback has been incorporated into the planning spine:
+  Sir Convert consumes HuleEdu `InternalIdentityContextV1` with audience
+  `sir-convert-a-lot` instead of minting a parallel identity contract, Task 259
+  is a hard prerequisite for ADR acceptance, user-originated backend jobs must
+  carry context-derived ownership, unknown public consumers require empirical
+  public-edge evidence, and `convert.hule.education` defaults to a fail-closed
+  reserved posture after cutover.
+- Third-pass review approved the Epic 09 planning spine. Keep ADR-0009
+  proposed until Task 259 locks the Sir-specific `InternalIdentityContextV1`
+  authorization profile and proves non-browser service/operator extensions do
+  not introduce a second signed issuer or browser-adjacent auth path.
+- Task 265 is in progress for pre-cutover public-edge isolation:
+  `sir_convert_a_lot_prod` should stay internal/tunnel reachable, while
+  `sir_convert_a_lot_public_reserved` owns `convert.hule.education` and returns
+  the reserved non-product public response until the Gateway cutover deliberately
+  re-enables the intended public edge.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -43,6 +64,10 @@ runbooks, or skills.
 - Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active public-edge recovery task: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md`.
 - Active dependency-image follow-up task: `docs/backlog/tasks/task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys.md`.
+- Active Gateway cutover planning epic:
+  `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
+- Gateway cutover inventory reference:
+  `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md`.
 - Active Qwen Task 101 ledger:
   `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
 - Qwen experiment governance:
@@ -65,6 +90,9 @@ runbooks, or skills.
 1. Finish Task 254 by making `hemma-deploy-and-verify` deploy-detached-aware
    and by emitting durable public-edge/default-host artifacts in the canonical
    report.
+1. Start Epic 09 with Task 256: inventory HuleEdu, Skriptoteket, internal
+   service, public direct, and local operator Sir Convert callers in the
+   gateway cutover inventory reference before implementation.
 1. Before any future Hemma Qwen run, use:
    `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
    and
@@ -98,9 +126,13 @@ runbooks, or skills.
   app-only `prod-build` reused that image without rerunning ROCm torch or
   EasyOCR, and detached `prod-recreate sir_convert_a_lot_prod` started
   healthy on `127.0.0.1:28085->8085/tcp`.
-- 2026-04-19 docs-governance slice:
-  `pdm run docs-validate`, `pdm run handoff-validate`, and `git diff --check`
-  are required before closeout.
+- 2026-04-19 Epic 09 docs-governance slice:
+  ADR-0009 review feedback incorporated and third-pass review approved the
+  planning spine. Final closeout gates after the latest handoff/current update:
+  `pdm run docs-validate`;
+  `pdm run skills-validate`; `pdm run handoff-validate`;
+  `pdm run index-tasks --root docs/backlog --out /tmp/sir_tasks_index_final_rereview.md --fail-on-missing`;
+  `git diff --check`.
 - `pdm run ruff format scripts/docs_as_code/validate_handoff.py`: passed
 - `pdm run ruff check scripts/docs_as_code/validate_handoff.py`: passed
 - `pdm run handoff-validate`: passed

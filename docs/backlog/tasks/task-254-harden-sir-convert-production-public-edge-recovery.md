@@ -58,17 +58,19 @@ unknown hosts may render that product.
 - Keep `pdm run dev-*` local-only: `scripts/devops/dev-compose.sh` must use
   `compose.local.yaml` and target `sir_convert_a_lot_dev` for laptop CPU debug.
 - Update the Task 76 deploy-and-verify workflow so production recreate uses the
-  production compose surface (`pdm run prod-recreate sir_convert_a_lot_prod`)
-  rather than the local `compose.local.yaml` dev wrapper.
+  production compose surface (`pdm run prod-recreate sir_convert_a_lot_prod sir_convert_a_lot_public_reserved`) rather than the local
+  `compose.local.yaml` dev wrapper.
 - Launch long-running Hemma production recreate commands through the detached
   command surface (`pdm run run-local-pdm hemma-command-start ...`) and monitor
   the remote log separately.
 - Launch shared public-edge infrastructure reconciles through the same detached
   command surface; do not run `~/infrastructure` compose deploys attached.
-- Recreate the Hemma production container through the corrected surface so the
-  live Docker restart policy matches `compose.yaml` (`unless-stopped`).
-- Extend verification to prove `https://convert.hule.education/readyz` with
-  normal TLS hostname validation, in addition to the existing host lane.
+- Recreate the Hemma production app and reserved public-edge containers through
+  the corrected surface so live Docker restart policies match `compose.yaml`
+  (`unless-stopped`).
+- Extend verification to prove `https://convert.hule.education/readyz` returns
+  the reserved public-edge response with normal TLS hostname validation, in
+  addition to the existing host-lane readiness proof.
 - Own the shared nginx-proxy default-host hardening through the Hemma
   infrastructure surface:
   - remote root: `~/infrastructure`
@@ -100,20 +102,21 @@ Out of scope:
 ## Deliverables
 
 - [x] A committed production compose/recreate command surface exists and uses
-  `compose.yaml` (`pdm run prod-recreate sir_convert_a_lot_prod`).
+  `compose.yaml` (`pdm run prod-recreate sir_convert_a_lot_prod sir_convert_a_lot_public_reserved`).
 - [x] A committed detached Hemma command surface exists for long-running
   production deploy commands.
-- [x] `hemma-deploy-and-verify` recreates `sir_convert_a_lot_prod` through the
-  production command surface.
-- [ ] The live Hemma `sir_convert_a_lot_prod` container runs with restart policy
+- [x] `hemma-deploy-and-verify` recreates `sir_convert_a_lot_prod` and
+  `sir_convert_a_lot_public_reserved` through the production command surface.
+- [ ] The live Hemma `sir_convert_a_lot_prod` and
+  `sir_convert_a_lot_public_reserved` containers run with restart policy
   `unless-stopped`.
 - [ ] The public nginx-proxy config registers `server_name convert.hule.education`
   while the service is running.
 - [ ] The shared nginx-proxy default host is fail-closed through a reserved
   placeholder owned by `~/infrastructure/docker-compose.yml` rather than
   Skriptoteket, HuleEdu, Sir Convert-a-Lot, or another product app.
-- [ ] Verification artifacts prove internal `/readyz`, public HTTPS `/readyz`,
-  public TLS certificate validity, nginx-proxy public-host ownership,
+- [ ] Verification artifacts prove internal `/readyz`, public HTTPS reserved
+  response, public TLS certificate validity, nginx-proxy public-host ownership,
   reserved default-host behavior, revision parity, and metrics safety.
 
 ## Acceptance Criteria
@@ -122,8 +125,8 @@ Out of scope:
   `sir_convert_a_lot_prod` as running or healthy.
 - [ ] `pdm run run-hemma -- sudo docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' sir_convert_a_lot_prod`
   returns `unless-stopped`.
-- [ ] `curl -fsS https://convert.hule.education/readyz` succeeds without
-  `--insecure` or `--resolve`.
+- [ ] `curl -isS https://convert.hule.education/readyz` succeeds without
+  `--insecure` or `--resolve` and returns the reserved public-edge marker.
 - [ ] `curl -Iv https://convert.hule.education/readyz` shows a certificate
   subject/SAN valid for `convert.hule.education`, not the Skriptoteket
   fallback certificate.
@@ -131,9 +134,9 @@ Out of scope:
   reserved placeholder response instead of routing to Skriptoteket, HuleEdu,
   or Sir Convert-a-Lot.
 - [ ] `pdm run run-hemma -- sudo docker exec nginx-proxy sed -n '1,260p' /etc/nginx/conf.d/default.conf`
-  shows `server_name convert.hule.education` for Sir Convert and shows the
-  `DEFAULT_HOST`/default upstream targeting `hemma-reserved-default-host`,
-  not a product app.
+  shows `server_name convert.hule.education` routed to the Sir Convert
+  reserved public-edge service and shows the `DEFAULT_HOST`/default upstream
+  targeting `hemma-reserved-default-host`, not a product app.
 - [ ] The canonical deploy-and-verify report passes for the pushed revision.
 
 Unknown-host probe policy:
@@ -149,11 +152,11 @@ Unknown-host probe policy:
 
 - `pdm run docs-validate`
 - `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_hemma_deploy_and_verify.py tests/sir_convert_a_lot/test_public_edge_verification.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_local_compose_contract.py tests/sir_convert_a_lot/test_compose_contract.py -q`
-- `pdm run run-local-pdm hemma-command-start sir-prod-recreate -- sudo -n /home/paunchygent/.local/bin/pdm run prod-recreate sir_convert_a_lot_prod`
+- `pdm run run-local-pdm hemma-command-start sir-prod-recreate -- sudo -n /home/paunchygent/.local/bin/pdm run prod-recreate sir_convert_a_lot_prod sir_convert_a_lot_public_reserved`
 - `pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>`
 - `pdm run run-local-pdm hemma-command-start public-edge-default-host -- bash scripts/devops/hemma-public-edge-default-host-remediate.sh --deploy`
 - `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
-- `curl -fsS https://convert.hule.education/readyz`
+- `curl -isS https://convert.hule.education/readyz`
 - `curl -Iv https://convert.hule.education/readyz`
 - `curl --resolve sir-convert-unowned-edge-proof.hule.education:443:<hemma-public-ip> --insecure -isS https://sir-convert-unowned-edge-proof.hule.education/`
 - `pdm run run-hemma -- sudo docker exec nginx-proxy sed -n '1,260p' /etc/nginx/conf.d/default.conf`
@@ -166,8 +169,8 @@ Canonical deploy-and-verify evidence files:
 - `metrics.prom`: canonical metrics safety scan input.
 - `remote_head.txt`: deployed Hemma repo revision.
 - `public_edge.json`: structured public-edge proof summary.
-- `public_readyz.json`: strict-TLS `https://convert.hule.education/readyz`
-  payload.
+- `public_host_response.txt`: strict-TLS
+  `https://convert.hule.education/readyz` reserved public-edge response.
 - `public_tls.json`: validated `convert.hule.education` certificate summary.
 - `nginx_proxy_default.conf`: rendered nginx-proxy config containing
   `server_name convert.hule.education`.

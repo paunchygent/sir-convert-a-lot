@@ -23,7 +23,8 @@ links:
 Hemma-hosted conversion service over:
 
 - tunnel lane: `http://127.0.0.1:28085`
-- internet lane: `https://convert.hule.education`
+- Gateway/public lane: disabled until the Gateway cutover deliberately
+  re-enables the intended public edge
 
 Natural-language usage convention for assistants:
 
@@ -61,7 +62,8 @@ service lane:
 Rationale: the supported local `:8085` lane is an explicit CPU-only Docker dev
 service, not a host-run Python process and not the Hemma ROCm production image.
 That keeps laptop debugging deterministic while the real integration path stays
-on Hemma or the public service domain for downstream apps such as Skriptoteket.
+on Hemma through the tunnel/internal lane until the Gateway-fronted public lane
+is proven and explicitly re-enabled.
 
 TTS planning note:
 
@@ -350,7 +352,7 @@ pdm run sir-convert-a-lot convert ./pdfs --output-dir ./research
 1. Ensure service is running on Hemma.
 1. Choose exactly one client lane:
    - tunnel: `http://127.0.0.1:28085`
-   - internet: `https://convert.hule.education`
+   - Gateway/public lane: disabled until cutover proof re-enables it
 1. Run from any repo directory:
 
 ```bash
@@ -379,13 +381,12 @@ pdm run convert-a-lot convert ./folder_with_pdfs \
   --ocr-language en
 ```
 
-Internet lane equivalent:
+The direct internet lane is disabled before the Gateway cutover. Use the tunnel
+lane for operator conversion work until a Gateway-fronted public path is proven
+and explicitly re-enabled.
 
 ```bash
-pdm run convert-a-lot convert ./folder_with_pdfs \
-  --output-dir ./research \
-  --service-url https://convert.hule.education \
-  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
+curl -isS https://convert.hule.education/readyz
 ```
 
 ## Deterministic Manifest

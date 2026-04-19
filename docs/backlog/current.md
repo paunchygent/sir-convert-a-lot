@@ -9,7 +9,10 @@ last_updated: '2026-04-19'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
+  - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
+  - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
   - docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
@@ -17,6 +20,7 @@ related:
   - docs/backlog/tasks/task-242-establish-permanent-docker-visible-hemma-bind-roots-for-scratch-backed-qwen-runtimes.md
   - docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md
   - docs/backlog/tasks/task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys.md
+  - docs/backlog/tasks/task-265-disable-direct-sir-convert-public-app-route-before-gateway-cutover.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -40,6 +44,9 @@ Current governing spine:
 - Task 254: Production public-edge recovery and detached deploy verification.
 - Task 255: Service dependency image extraction from overloaded
   `pyproject.toml` cache keys.
+- Epic 09: Gateway cutover and internal access contract for Sir Convert-a-Lot.
+- Task 265: Pre-cutover direct public app-route isolation for
+  `convert.hule.education`.
 
 Task 254 remains the immediate production recovery authority. It owns the
 detached Hemma deploy/public-edge proof, reserved default-host behavior, and the
@@ -49,6 +56,11 @@ Task 255 is now the completed build architecture slice. It owns the dependency
 image split, narrow dependency input artifacts, BuildKit pip cache mounts, and
 the proof that PDM script-only changes no longer invalidate ROCm torch,
 EasyOCR preload, or other heavy dependency work.
+
+Epic 09 is the proposed access-architecture cutover. It owns the ADR-backed
+migration from direct public product access on `convert.hule.education` to
+HuleEdu Gateway-fronted product/browser access while preserving direct internal
+Hemma service use and local operator GPU-offload tunnel workflows.
 
 Task 239 is retained as the earlier completed partial layering slice. It
 narrowed app-source/context invalidation, but Task 255 owns the unresolved
@@ -103,6 +115,26 @@ DevOps task authority.
     and verified through detached recipe-aware dependency warm-up, app-only
     build, and production recreate proof from commit
     `d23855375ec848a8c45ae40d43e23c4f8b23d319`.
+  - ADR-0009, Epic 09, Stories 33-37, Tasks 256-264, and
+    `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md` were
+    created as the planning spine for the Gateway cutover. The inventory
+    reference is the durable place for migration-relevant caller/access-lane
+    facts before any public route is removed or repointed.
+  - Review feedback on ADR-0009 tightened the cutover boundary: Sir Convert
+    must consume HuleEdu `InternalIdentityContextV1` with audience
+    `sir-convert-a-lot` instead of minting a parallel identity contract, Task
+    259 is a hard prerequisite for ADR acceptance, user-originated backend jobs
+    must carry context-derived ownership, unknown public consumers require
+    empirical public-edge evidence, and the direct public host defaults to
+    fail-closed reserved posture.
+  - Third-pass review approved the Epic 09 planning spine. ADR-0009 remains
+    proposed until Task 259 locks the Sir-specific `InternalIdentityContextV1`
+    authorization profile and proves non-browser service/operator extensions
+    do not introduce a second signed issuer or browser-adjacent auth path.
+  - Task 265 started the pre-cutover public-edge isolation implementation:
+    `sir_convert_a_lot_prod` no longer advertises `convert.hule.education`
+    directly, and the production compose/public-edge proof now routes the
+    hostname to a reserved non-product response.
 
 ## Next Actions
 
@@ -113,6 +145,10 @@ DevOps task authority.
     artifacts in the canonical report;
   - run the live Hemma deploy/public curl gate only through detached deploy
     surfaces.
+- Start Epic 09 with Task 256 before any gateway cutover implementation:
+  inventory HuleEdu, Skriptoteket, internal service, public direct, and local
+  operator callers in
+  `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md`.
 - Keep Task 239 closed as historical partial layering context. Do not reopen it
   for the dependency-image work unless Task 255 explicitly supersedes or amends
   a documented Task 239 acceptance boundary.

@@ -244,11 +244,17 @@ def _initialize_artifacts(output_root: Path) -> tuple[Path, Path, Path, Path, Pa
 
 def _remote_recreate_service() -> None:
     """Recreate remote service, retrying with sudo when Docker socket is restricted."""
-    recreate_args = ["pdm", "run", "prod-recreate", "sir_convert_a_lot_prod"]
+    recreate_args = [
+        "pdm",
+        "run",
+        "prod-recreate",
+        "sir_convert_a_lot_prod",
+        "sir_convert_a_lot_public_reserved",
+    ]
     try:
         _run_remote(
             recreate_args,
-            label="remote pdm run prod-recreate sir_convert_a_lot_prod",
+            label="remote pdm run prod-recreate public edge services",
         )
         return
     except CommandExecutionError as exc:
@@ -263,8 +269,9 @@ def _remote_recreate_service() -> None:
             "run",
             "prod-recreate",
             "sir_convert_a_lot_prod",
+            "sir_convert_a_lot_public_reserved",
         ],
-        label="remote sudo -n pdm run prod-recreate sir_convert_a_lot_prod",
+        label="remote sudo -n pdm run prod-recreate public edge services",
     )
 
 
@@ -284,7 +291,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
             "service_revision_matches_remote": False,
             "live_smoke_passed": False,
             "metrics_scan_passed": False,
-            "public_https_readyz_passed": False,
+            "public_https_reserved_passed": False,
             "public_tls_certificate_passed": False,
             "nginx_proxy_public_host_registered": False,
             "default_host_reserved_placeholder_passed": False,
@@ -387,7 +394,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         report["public_edge"] = public_edge_report
         checks_obj = report["checks"]
         if isinstance(checks_obj, dict):
-            checks_obj["public_https_readyz_passed"] = True
+            checks_obj["public_https_reserved_passed"] = True
             checks_obj["public_tls_certificate_passed"] = True
             checks_obj["nginx_proxy_public_host_registered"] = True
             checks_obj["default_host_reserved_placeholder_passed"] = True
@@ -433,7 +440,7 @@ def main(argv: list[str] | None = None) -> int:
                 "service_revision_matches_remote": False,
                 "live_smoke_passed": False,
                 "metrics_scan_passed": False,
-                "public_https_readyz_passed": False,
+                "public_https_reserved_passed": False,
                 "public_tls_certificate_passed": False,
                 "nginx_proxy_public_host_registered": False,
                 "default_host_reserved_placeholder_passed": False,

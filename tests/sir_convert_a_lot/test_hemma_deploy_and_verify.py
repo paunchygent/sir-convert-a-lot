@@ -42,7 +42,13 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
 
     hemma_deploy_and_verify._remote_recreate_service()
 
-    assert calls[0] == ["pdm", "run", "prod-recreate", "sir_convert_a_lot_prod"]
+    assert calls[0] == [
+        "pdm",
+        "run",
+        "prod-recreate",
+        "sir_convert_a_lot_prod",
+        "sir_convert_a_lot_public_reserved",
+    ]
     assert calls[1] == [
         "sudo",
         "-n",
@@ -50,6 +56,7 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
         "run",
         "prod-recreate",
         "sir_convert_a_lot_prod",
+        "sir_convert_a_lot_public_reserved",
     ]
 
 
@@ -73,7 +80,15 @@ def test_remote_recreate_service_raises_on_non_permission_error(
     with pytest.raises(hemma_deploy_and_verify.CommandExecutionError, match="unexpected"):
         hemma_deploy_and_verify._remote_recreate_service()
 
-    assert calls == [["pdm", "run", "prod-recreate", "sir_convert_a_lot_prod"]]
+    assert calls == [
+        [
+            "pdm",
+            "run",
+            "prod-recreate",
+            "sir_convert_a_lot_prod",
+            "sir_convert_a_lot_public_reserved",
+        ]
+    ]
 
 
 def test_fetch_readyz_with_retry_handles_transient_failures(
@@ -198,7 +213,7 @@ def test_execute_workflow_records_public_edge_report(
     assert report["status"] == "passed"
     checks = report["checks"]
     assert isinstance(checks, dict)
-    assert checks["public_https_readyz_passed"] is True
+    assert checks["public_https_reserved_passed"] is True
     assert checks["public_tls_certificate_passed"] is True
     assert checks["nginx_proxy_public_host_registered"] is True
     assert checks["default_host_reserved_placeholder_passed"] is True

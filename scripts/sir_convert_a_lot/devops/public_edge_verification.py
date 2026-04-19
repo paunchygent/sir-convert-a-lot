@@ -19,9 +19,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 PUBLIC_HOST = "convert.hule.education"
+PUBLIC_RESERVED_MARKER = "sir-convert-a-lot-public-edge-reserved"
 UNKNOWN_HOST_PROBE = "sir-convert-unowned-edge-proof.hule.education"
 RESERVED_DEFAULT_HOST = "hemma-reserved-default-host"
-UNKNOWN_HOST_ALLOWED_STATUS_LINES = (
+RESERVED_ALLOWED_STATUS_LINES = (
     "HTTP/1.1 404",
     "HTTP/2 404",
     "HTTP/1.1 421",
@@ -40,7 +41,7 @@ class PublicEdgeArtifactPaths:
     """Paths for durable Task 254 public-edge evidence artifacts."""
 
     public_edge_json: Path
-    public_readyz_json: Path
+    public_host_response_txt: Path
     public_tls_json: Path
     nginx_proxy_config_txt: Path
     nginx_proxy_env_txt: Path
@@ -51,14 +52,16 @@ def initialize_public_edge_artifacts(output_root: Path) -> PublicEdgeArtifactPat
     """Create deterministic public-edge artifact placeholders."""
     paths = PublicEdgeArtifactPaths(
         public_edge_json=output_root / "public_edge.json",
-        public_readyz_json=output_root / "public_readyz.json",
+        public_host_response_txt=output_root / "public_host_response.txt",
         public_tls_json=output_root / "public_tls.json",
         nginx_proxy_config_txt=output_root / "nginx_proxy_default.conf",
         nginx_proxy_env_txt=output_root / "nginx_proxy_env.txt",
         unknown_host_response_txt=output_root / "unknown_host_response.txt",
     )
     _write_json(paths.public_edge_json, {"status": "not captured"})
-    _write_json(paths.public_readyz_json, {})
+    paths.public_host_response_txt.write_text(
+        "# public host response not captured\n", encoding="utf-8"
+    )
     _write_json(paths.public_tls_json, {})
     paths.nginx_proxy_config_txt.write_text("# nginx-proxy config not captured\n", encoding="utf-8")
     paths.nginx_proxy_env_txt.write_text("# nginx-proxy env not captured\n", encoding="utf-8")
@@ -75,11 +78,8 @@ def verify_public_edge(
     run_local: CommandRunner,
     run_remote: CommandRunner,
 ) -> dict[str, object]:
-    """Capture public-edge evidence and fail closed on Task 254 drift."""
-    public_readyz = _fetch_public_readyz(run_local=run_local)
-    _write_json(paths.public_readyz_json, public_readyz)
-    _assert_public_readyz(public_readyz=public_readyz, remote_revision=remote_revision)
-
+    """Capture public-edge evidence and fail closed on public-host drift."""
+    del remote_revision
     tls_summary = _fetch_tls_certificate_summary(host=PUBLIC_HOST)
     _write_json(paths.public_tls_json, tls_summary)
 
@@ -123,10 +123,21 @@ def verify_public_edge(
             f"nginx-proxy DEFAULT_HOST is not {RESERVED_DEFAULT_HOST}."
         )
 
+    public_response = _fetch_public_reserved_response(run_local=run_local)
+    paths.public_host_response_txt.write_text(public_response, encoding="utf-8")
+    public_status_allowed = _contains_any(public_response, RESERVED_ALLOWED_STATUS_LINES)
+    public_reserved_observed = PUBLIC_RESERVED_MARKER in public_response
+    if not public_status_allowed:
+        raise PublicEdgeVerificationError("Public-host probe did not return 404 or 421.")
+    if not public_reserved_observed:
+        raise PublicEdgeVerificationError(
+            f"Public-host probe did not expose {PUBLIC_RESERVED_MARKER} evidence."
+        )
+
     public_ip = _resolve_public_ip(PUBLIC_HOST)
     unknown_response = _fetch_unknown_host_response(run_local=run_local, public_ip=public_ip)
     paths.unknown_host_response_txt.write_text(unknown_response, encoding="utf-8")
-    unknown_status_allowed = _contains_any(unknown_response, UNKNOWN_HOST_ALLOWED_STATUS_LINES)
+    unknown_status_allowed = _contains_any(unknown_response, RESERVED_ALLOWED_STATUS_LINES)
     unknown_reserved_observed = RESERVED_DEFAULT_HOST in unknown_response
     if not unknown_status_allowed:
         raise PublicEdgeVerificationError("Unknown-host probe did not return 404 or 421.")
@@ -139,8 +150,11 @@ def verify_public_edge(
         "status": "passed",
         "public_host": PUBLIC_HOST,
         "public_ip": public_ip,
-        "public_readyz_ready": public_readyz.get("ready") is True,
-        "public_readyz_service_revision": public_readyz.get("service_revision"),
+        "public_host_reserved": {
+            "allowed_status_observed": public_status_allowed,
+            "reserved_marker_observed": public_reserved_observed,
+            "response_artifact": paths.public_host_response_txt.name,
+        },
         "tls": tls_summary,
         "nginx_proxy": {
             "convert_server_name_registered": convert_server_registered,
@@ -159,27 +173,11 @@ def verify_public_edge(
     return report
 
 
-def _fetch_public_readyz(*, run_local: CommandRunner) -> dict[str, object]:
-    readyz_raw = run_local(["curl", "-fsS", f"https://{PUBLIC_HOST}/readyz"], "public readyz fetch")
-    parsed: object = json.loads(readyz_raw)
-    if not isinstance(parsed, dict):
-        raise PublicEdgeVerificationError("public readyz payload is not an object")
-    payload: dict[str, object] = {}
-    for key_obj, value_obj in parsed.items():
-        if isinstance(key_obj, str):
-            payload[key_obj] = value_obj
-    return payload
-
-
-def _assert_public_readyz(*, public_readyz: dict[str, object], remote_revision: str) -> None:
-    if public_readyz.get("ready") is not True:
-        raise PublicEdgeVerificationError("public readyz did not report ready=true")
-    service_revision = public_readyz.get("service_revision")
-    if service_revision != remote_revision:
-        raise PublicEdgeVerificationError(
-            "public readyz service_revision does not match remote HEAD. "
-            f"service_revision={service_revision!r} remote_revision={remote_revision!r}"
-        )
+def _fetch_public_reserved_response(*, run_local: CommandRunner) -> str:
+    return run_local(
+        ["curl", "-isS", f"https://{PUBLIC_HOST}/readyz"],
+        "public host reserved proof",
+    )
 
 
 def _fetch_tls_certificate_summary(*, host: str) -> dict[str, object]:

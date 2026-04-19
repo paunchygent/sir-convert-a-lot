@@ -76,6 +76,7 @@ def test_compose_declares_single_prod_service_only() -> None:
     services_obj = compose.get("services")
     assert isinstance(services_obj, dict)
     assert "sir_convert_a_lot_prod" in services_obj
+    assert "sir_convert_a_lot_public_reserved" in services_obj
     assert "sir_convert_a_lot_eval" not in services_obj
 
 
@@ -114,6 +115,9 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     )
     assert env_map["SIR_CONVERT_A_LOT_DATA_DIR"] == "/var/lib/sir-convert-a-lot/prod"
     assert "SIR_CONVERT_A_LOT_EVAL_DATA_DIR" not in env_map
+    assert "VIRTUAL_HOST" not in env_map
+    assert "VIRTUAL_PORT" not in env_map
+    assert "LETSENCRYPT_HOST" not in env_map
 
     assert service.get("command") == [
         "uvicorn",
@@ -125,6 +129,30 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     ]
     volumes = service.get("volumes")
     assert volumes == ["sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod"]
+
+
+def test_compose_routes_public_host_to_reserved_edge_not_app() -> None:
+    compose = _load_compose()
+    reserved_service = _require_service(compose, "sir_convert_a_lot_public_reserved")
+
+    assert reserved_service.get("image") == "nginx:1.27-alpine"
+    assert reserved_service.get("container_name") == "sir_convert_a_lot_public_reserved"
+    assert reserved_service.get("restart") == "unless-stopped"
+    assert reserved_service.get("volumes") == [
+        "./docker/public-edge/reserved-default.conf:/etc/nginx/conf.d/default.conf:ro"
+    ]
+    assert reserved_service.get("expose") == ["8080"]
+
+    env_map = _service_env_map(reserved_service)
+    assert env_map["VIRTUAL_HOST"] == "${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}"
+    assert env_map["VIRTUAL_PORT"] == "8080"
+    assert env_map["LETSENCRYPT_HOST"] == "${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}"
+
+    reserved_config = (REPO_ROOT / "docker" / "public-edge" / "reserved-default.conf").read_text(
+        encoding="utf-8"
+    )
+    assert "return 421" in reserved_config
+    assert "sir-convert-a-lot-public-edge-reserved" in reserved_config
 
 
 def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:

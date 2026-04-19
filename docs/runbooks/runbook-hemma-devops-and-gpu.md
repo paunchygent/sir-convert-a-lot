@@ -42,7 +42,8 @@ remaining aligned with existing HuleEdu and Skriptoteket server patterns.
 Only these client lanes are canonical for conversion calls:
 
 - Tunnel lane: `http://127.0.0.1:28085`
-- Internet lane: `https://convert.hule.education`
+- Gateway/public lane: disabled until the Gateway cutover deliberately
+  re-enables the intended public edge
 
 Do not use superseded client lanes such as `127.0.0.1:8085` or `127.0.0.1:18085`.
 
@@ -419,7 +420,7 @@ Deterministic evidence path:
   - `metrics.prom`
   - `remote_head.txt`
   - `public_edge.json`
-  - `public_readyz.json`
+  - `public_host_response.txt`
   - `public_tls.json`
   - `nginx_proxy_default.conf`
   - `nginx_proxy_env.txt`
@@ -427,8 +428,10 @@ Deterministic evidence path:
 
 Public-edge proof contract:
 
-- `public_readyz.json` is fetched from
-  `https://convert.hule.education/readyz` with normal TLS verification.
+- `public_host_response.txt` is fetched from
+  `https://convert.hule.education/readyz` with normal TLS verification. Before
+  the Gateway cutover, it must show the reserved Sir Convert public-edge
+  response rather than app readiness.
 - `public_tls.json` records the validated certificate subject, issuer, validity
   window, and DNS SANs for `convert.hule.education`.
 - `nginx_proxy_default.conf` records the rendered `nginx-proxy` config; it must
@@ -451,9 +454,11 @@ Decision tree (fail-closed):
 1. metrics safety scan fails (`job_id=`, `jobv2_`):
    - remove forbidden high-cardinality labels and rerun verification.
 1. public-edge proof fails:
-   - restore the `sir_convert_a_lot_prod` vhost, the
+   - restore the `sir_convert_a_lot_public_reserved` vhost, the
      `hemma-reserved-default-host` default host in `~/infrastructure`, or the
-     public TLS/certificate chain before rerunning the gate.
+     public TLS/certificate chain before rerunning the gate. Do not restore
+     direct public routing to `sir_convert_a_lot_prod` before the Gateway
+     cutover proof explicitly re-enables the intended public edge.
 
 Reserved default-host remediation must be launched detached:
 
@@ -943,13 +948,14 @@ pdm run convert-a-lot convert ./pdfs \
   --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
-Internet lane equivalent:
+The direct internet lane is disabled before the Gateway cutover. Use the
+tunnel/internal lane for operator conversion work until a Gateway-fronted
+public path is proven and explicitly re-enabled.
+
+Reserved public host proof:
 
 ```bash
-pdm run convert-a-lot convert ./pdfs \
-  --output-dir ./research \
-  --service-url https://convert.hule.education \
-  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
+curl -isS https://convert.hule.education/readyz
 ```
 
 ## Production Env Mirroring Policy (Cross-Repo)
@@ -991,7 +997,8 @@ pdm run run-hemma -- pdm run validate:docling-gpu-live \
 
 - Pull tracked changes on Hemma with `git pull`.
 - Do not use `scp` for tracked repository files.
-- Keep client call guidance restricted to tunnel (`28085`) or internet (`https://convert.hule.education`).
+- Keep client call guidance restricted to tunnel (`28085`) until the
+  Gateway-fronted public lane is proven and explicitly re-enabled.
 - Do not introduce new direct local client lanes in docs, skills, or runbooks.
 - Keep GPU as default execution policy; CPU fallback requires documented decision update.
 

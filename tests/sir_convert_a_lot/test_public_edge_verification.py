@@ -30,8 +30,13 @@ def test_verify_public_edge_writes_durable_artifacts(
     def fake_run_local(command: list[str], label: str) -> str:
         del label
         local_calls.append(command)
-        if command == ["curl", "-fsS", "https://convert.hule.education/readyz"]:
-            return '{"ready": true, "service_revision": "abc"}'
+        if command == ["curl", "-isS", "https://convert.hule.education/readyz"]:
+            return (
+                "HTTP/2 421\r\n"
+                "x-sir-convert-public-edge: reserved\r\n"
+                "\r\n"
+                "sir-convert-a-lot-public-edge-reserved\n"
+            )
         if command[:3] == [
             "curl",
             "--resolve",
@@ -73,7 +78,10 @@ def test_verify_public_edge_writes_durable_artifacts(
     )
 
     assert report["status"] == "passed"
-    assert report["public_readyz_ready"] is True
+    public_host_reserved = report["public_host_reserved"]
+    assert isinstance(public_host_reserved, dict)
+    assert public_host_reserved["allowed_status_observed"] is True
+    assert public_host_reserved["reserved_marker_observed"] is True
     nginx_proxy = report["nginx_proxy"]
     assert isinstance(nginx_proxy, dict)
     assert nginx_proxy["convert_server_name_registered"] is True
@@ -81,7 +89,9 @@ def test_verify_public_edge_writes_durable_artifacts(
 
     edge_payload = json.loads(paths.public_edge_json.read_text(encoding="utf-8"))
     assert edge_payload["status"] == "passed"
-    assert json.loads(paths.public_readyz_json.read_text(encoding="utf-8"))["ready"] is True
+    assert "sir-convert-a-lot-public-edge-reserved" in paths.public_host_response_txt.read_text(
+        encoding="utf-8"
+    )
     assert "server_name convert.hule.education" in paths.nginx_proxy_config_txt.read_text(
         encoding="utf-8"
     )
@@ -103,7 +113,7 @@ def test_verify_public_edge_rejects_product_default_host(
 
     def fake_run_local(command: list[str], label: str) -> str:
         del command, label
-        return '{"ready": true, "service_revision": "abc"}'
+        return "HTTP/2 421\r\n\r\nsir-convert-a-lot-public-edge-reserved\n"
 
     def fake_run_remote(command: list[str], label: str) -> str:
         del label

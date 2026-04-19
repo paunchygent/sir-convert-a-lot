@@ -96,7 +96,8 @@ This policy applies to the sidecar runtime, not retroactively to the current mai
 - No direct public sidecar ingress.
 - Public clients continue to talk only to the canonical Sir Convert-a-Lot service lanes:
   - tunnel: `http://127.0.0.1:28085`
-  - internet: `https://convert.hule.education`
+  - Gateway/public lane after the ADR-0009 cutover re-enables the intended
+    public edge
 
 ## 5. Route Sequencing
 
