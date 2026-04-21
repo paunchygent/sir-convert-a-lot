@@ -9,6 +9,7 @@ last_updated: '2026-04-19'
 related:
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/backlog/tasks/task-258-fix-unauthenticated-sir-convert-api-failures-and-prod-metadata-exposure.md
   - docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md
 labels:

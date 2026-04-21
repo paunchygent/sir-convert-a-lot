@@ -10,7 +10,10 @@ related:
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/backlog/tasks/task-256-inventory-sir-convert-callers-and-access-lanes-before-gateway-cutover.md
+  - docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md
+  - docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md
   - docs/backlog/tasks/task-257-publish-adr-0009-for-gateway-fronted-sir-convert-access.md
 labels:
   - adr
@@ -41,9 +44,9 @@ internal service and local operator lanes.
 
 - [ ] ADR-0009 is accepted or explicitly revised with unresolved questions
   tracked.
-- [ ] The inventory reference contains enough caller/lane data to support
+- [x] The inventory reference contains enough caller/lane data to support
   migration sequencing.
-- [ ] The Sir Convert `InternalIdentityContextV1` authorization profile is
+- [x] The Sir Convert `InternalIdentityContextV1` authorization profile is
   locked or the ADR remains proposed.
 - [ ] Converter and downstream docs distinguish public Gateway, internal
   direct, and local operator lanes.

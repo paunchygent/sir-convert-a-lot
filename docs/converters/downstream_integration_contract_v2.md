@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-03-26
+updated: 2026-04-19
 owners:
   - platform
 tags:
@@ -17,6 +17,8 @@ links:
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/docx-template-catalog-contract-v2.md
   - docs/converters/sir_convert_a_lot.md
+  - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
 ---
@@ -46,15 +48,22 @@ Version lock:
 
 ## Canonical Headers and Multipart Contract
 
-Required headers:
+Current service-v2 transport headers:
 
 - `X-API-Key`: service secret
 - `Idempotency-Key`: required for `POST /v2/convert/jobs`
 
-Auth rule:
+Current migration rule:
 
-- v2 uses one service API key only.
-- There is no supported internal-key or trusted-bundle submission lane.
+- `X-API-Key` remains the current transport credential for direct v2 service
+  calls.
+- Under ADR-0009, user-originated product work must also carry HuleEdu
+  `InternalIdentityContextV1` with audience `sir-convert-a-lot` once the
+  Gateway/internal identity cutover lands.
+- The Sir Convert authorization profile is
+  `docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md`.
+- `X-API-Key` must not remain the long-term job/artifact ownership boundary
+  for user-originated workloads.
 
 Optional header:
 

@@ -10,6 +10,7 @@ related:
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
   - docs/backlog/stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
 labels:
   - huledu
   - gateway
@@ -34,6 +35,10 @@ to serve Sir Convert workloads for product/browser traffic.
   material before downstream forwarding, then signs
   `InternalIdentityContextV1` for audience `sir-convert-a-lot`.
 - Define upload and artifact streaming behavior.
+- Define the HuleEdu-owned service/operator context minting surfaces required
+  by the Sir Convert authorization profile, including the internal
+  service-token exchange, operator wrapper path, and field mapping that remains
+  valid under the HuleEdu `InternalIdentityContextV1` v1 schema.
 - Define error normalization and timeout behavior.
 - Define production-edge configuration separately from local-only proxy gates
   so no local proof toggle is promoted to production without an accepted
@@ -54,6 +59,10 @@ to serve Sir Convert workloads for product/browser traffic.
 - [ ] CORS and CSRF proof requirements for protected reads and unsafe writes.
 - [ ] Production-edge contract requirements that prevent promoting local-only
   proxy gates into production.
+- [ ] Service/operator context minting surface requirements, including
+  HuleEdu-owned signing authority, mandatory field mapping, non-browser
+  `session_id` handles, lane restrictions, and no undeclared top-level
+  Sir-specific fields.
 - [ ] Linked HuleEdu Gateway implementation backlog or PR reference.
 - [ ] Linked Skriptoteket consumer migration backlog or PR reference when
   Skriptoteket usage is in scope.
@@ -75,6 +84,9 @@ to serve Sir Convert workloads for product/browser traffic.
 - [ ] Gateway signs `InternalIdentityContextV1` with audience
   `sir-convert-a-lot`; Sir Convert rejects missing, invalid, wrong-audience,
   expired, unknown-key, and spoofed unsigned identity inputs.
+- [ ] Non-browser service/operator contexts are minted only by the HuleEdu-owned
+  Gateway/internal identity authority and cannot be self-signed by Sir Convert,
+  service callers, or operator tooling.
 - [ ] CORS and CSRF behavior is proven for protected reads and unsafe writes.
 - [ ] Local-only proxy gates are explicitly forbidden from becoming production
   exposure without a production-edge contract and proof.

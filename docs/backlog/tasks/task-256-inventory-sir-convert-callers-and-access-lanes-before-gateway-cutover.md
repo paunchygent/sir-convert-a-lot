@@ -2,7 +2,7 @@
 id: task-256-inventory-sir-convert-callers-and-access-lanes-before-gateway-cutover
 title: Inventory Sir Convert callers and access lanes before gateway cutover
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-04-19'
 last_updated: '2026-04-19'
@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-34-adr-and-contract-authority-for-sir-convert-gateway-cutover.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
+  - docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
@@ -26,8 +27,8 @@ PR-sized execution unit; may be linked to a story or standalone.
 ## Objective
 
 Inventory every current Sir Convert caller, access lane, credential source,
-route usage, and migration constraint before the Gateway cutover changes any
-public or internal access behavior.
+route usage, and migration constraint before Gateway product migration or final
+live public-edge re-enable changes public or internal access behavior.
 
 ## PR Scope
 
@@ -46,29 +47,53 @@ public or internal access behavior.
 
 ## Deliverables
 
-- [ ] Updated caller/access-lane inventory reference.
-- [ ] Decision-ready migration matrix for public, internal, and local operator
+- [x] Updated caller/access-lane inventory reference.
+- [x] Decision-ready migration matrix for public, internal, and local operator
   lanes.
-- [ ] Redacted public-edge usage artifact showing observed
+- [x] Redacted public-edge usage artifact showing observed
   `convert.hule.education` route/status/caller patterns over the chosen
   evidence window.
-- [ ] Follow-up task links for Gateway, internal identity, local operator, and
+- [x] Follow-up task links for Gateway, internal identity, local operator, and
   public-edge restriction work.
 
 ## Acceptance Criteria
 
-- [ ] No public route is removed or repointed before the inventory is complete.
-- [ ] HuleEdu and Skriptoteket direct usages are classified with target lanes.
-- [ ] Local operator tunnel/offload use cases are explicitly preserved.
-- [ ] Internal service direct-call use cases are explicitly preserved.
-- [ ] Unknown or unowned direct public consumers are either ruled out or tracked
+- [x] No Gateway product route migration or final live public-edge re-enable is
+  performed before the inventory is complete. Task 265's fail-closed reserved
+  public-host isolation is recorded as a pre-cutover safety control.
+- [x] HuleEdu and Skriptoteket direct usages are classified with target lanes.
+- [x] Local operator tunnel/offload use cases are explicitly preserved.
+- [x] Internal service direct-call use cases are explicitly preserved.
+- [x] Unknown or unowned direct public consumers are either ruled out or tracked
   as cutover blockers.
-- [ ] Unknown public consumers are not marked ruled out by repo inspection
+- [x] Unknown public consumers are not marked ruled out by repo inspection
   alone. If access logs or equivalent empirical evidence are unavailable, they
   remain a cutover blocker.
 
 ## Checklist
 
-- [ ] Inventory complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Inventory complete
+- [x] Validation complete
+- [x] Docs updated
+
+## Completion Notes
+
+Completed on 2026-04-19.
+
+Inventory findings:
+
+- HuleEdu repo inspection found public ingress monitoring and optional
+  host-wide startup references, but no current HuleEdu application code calling
+  Sir Convert directly.
+- Skriptoteket has user-originated backend callers in Conversion Hub and
+  Klassrumskartan class-list PDF import.
+- Projektveckor Portal is a retained internal Hemma caller using the direct
+  Docker-network service lane.
+- Local operator tunnel/offload remains a required lane.
+- Public-edge evidence was captured under
+  `build/verification/task-256-gateway-cutover-caller-inventory/`.
+
+The 24h nginx-proxy evidence did not show a successful public conversion
+workflow, but unknown public consumers are **not** ruled out because the current
+log format cannot classify API-key presence. Task 266 owns auth-aware public
+edge evidence before final cutover proof.

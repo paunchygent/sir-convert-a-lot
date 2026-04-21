@@ -19,7 +19,9 @@ tags:
 links:
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
   - docs/backlog/tasks/task-256-inventory-sir-convert-callers-and-access-lanes-before-gateway-cutover.md
+  - docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md
   - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/internal_adapter_contract_v2.md
@@ -68,6 +70,8 @@ identity reference:
 
 Sir Convert consumes that contract with audience `sir-convert-a-lot` and adds
 only a Sir-specific authorization profile for conversion jobs and artifacts.
+The profile is tracked in
+`docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md`.
 
 ### 2.1 Public product lane
 
@@ -111,6 +115,16 @@ Sir Convert must enforce issuer, key id, signature, expiry, context version,
 replay protections where needed, and audience `sir-convert-a-lot` according to
 the HuleEdu reference contract. Browser cookies, bearer tokens, CSRF headers,
 and unsigned identity headers are not downstream identity.
+
+For non-browser internal service and local operator workflows, Sir Convert also
+consumes HuleEdu-minted `InternalIdentityContextV1`. Those contexts must be
+minted by a HuleEdu-owned Gateway/internal identity authority using the
+canonical HuleEdu signing key set and `iss == "api_gateway_service"`. Sir
+Convert must not mint contexts, accept a Sir-specific issuer, accept
+service/operator self-signed contexts, or treat API keys as job/artifact
+ownership. Required service/operator field mappings, including nonblank
+non-browser `session_id` handles, are defined in the Sir Convert authorization
+profile.
 
 Sir Convert must derive durable job ownership from the verified
 `InternalIdentityContextV1` plus the Sir-specific authorization profile and
@@ -202,8 +216,8 @@ direct internal lane.
 - Complete the caller/access-lane inventory in
   `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md`.
 - Complete Task 259 before ADR acceptance so the Sir-specific
-  `InternalIdentityContextV1` authorization profile is not left as
-  implementation discretion.
+  `InternalIdentityContextV1` authorization profile and implementation test
+  plan are not left as implementation discretion.
 - Harden the current public surface before cutover so unauthorized traffic
   fails cleanly and metadata exposure is reduced.
 - Add Gateway proxy planning and implementation tasks in the HuleEdu repo once

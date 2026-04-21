@@ -10,6 +10,7 @@ related:
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
   - docs/backlog/stories/story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - scripts/sir_convert_a_lot/interfaces/http_auth_v2.py
   - scripts/sir_convert_a_lot/interfaces/http_routes_health.py
   - scripts/sir_convert_a_lot/interfaces/http_api.py
@@ -36,6 +37,14 @@ metadata directly.
 - Disable or gate `/docs`, `/redoc`, `/openapi.json`, `/metrics`, and detailed
   readiness in production.
 - Add security headers either in FastAPI middleware or nginx-proxy config.
+- Add identity-verification regression tests for the Sir Convert profile,
+  including wrong audience, invalid signature, unknown key id, API-key-only
+  user-originated calls, cross-owner artifact reads, and service/operator
+  self-signed context rejection.
+- Add schema-compatibility regression tests proving accepted service/operator
+  contexts validate through the canonical HuleEdu
+  `InternalIdentityContextV1` v1 model and unknown top-level `sir_convert_*`
+  fields fail closed.
 - Add regression tests and public-edge smoke evidence.
 
 ## Deliverables

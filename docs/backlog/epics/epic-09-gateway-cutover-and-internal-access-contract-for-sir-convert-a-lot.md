@@ -12,6 +12,8 @@ related:
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
   - docs/backlog/tasks/task-256-inventory-sir-convert-callers-and-access-lanes-before-gateway-cutover.md
+  - docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md
+  - docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
   - gateway
@@ -44,6 +46,8 @@ a local operator-accessible GPU offload lane.
 - HuleEdu Gateway proxy route planning and cross-repo implementation handoff.
 - Local operator tunnel/offload lane preservation.
 - Pre-cutover direct public app-route isolation for `convert.hule.education`.
+- Auth-aware public-edge evidence for ruling out or blocking unknown direct
+  public consumers before final live testing.
 - Public `convert.hule.education` restriction or fail-closed cutover.
 - End-to-end security and migration proof.
 
@@ -68,8 +72,8 @@ a local operator-accessible GPU offload lane.
 
 - [ ] ADR-0009 is accepted and linked from converter docs, runbooks, and
   downstream integration guidance.
-- [ ] Every current caller and access lane is inventoried before any public
-  route is removed or repointed.
+- [x] Every current caller and access lane is inventoried before Gateway
+  product migration or final live public-edge re-enable.
 - [ ] Product/browser traffic is routed through HuleEdu Gateway with Gateway
   session/CSRF/role/entitlement enforcement.
 - [ ] Direct internal Hemma callers have a documented and tested Sir Convert
@@ -82,6 +86,8 @@ a local operator-accessible GPU offload lane.
   metrics, or detailed readiness by default.
 - [ ] Cutover proof demonstrates public deny, Gateway allow, internal service
   allow, local operator allow, and unknown-host fail-closed behavior.
+- [ ] Unknown public consumers are either ruled out by auth-aware redacted
+  public-edge evidence or carried as explicit cutover blockers.
 
 ## Checklist
 

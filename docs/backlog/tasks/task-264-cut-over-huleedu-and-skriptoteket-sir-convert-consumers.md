@@ -12,6 +12,7 @@ related:
   - docs/backlog/stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
 labels:
   - huledu
   - skriptoteket

@@ -30,8 +30,7 @@ runbooks, or skills.
 - Epic 09 is proposed for the Sir Convert Gateway cutover. ADR-0009, Stories
   33-37, Tasks 256-264, and
   `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md` now
-  govern the planning path. Task 256 must inventory all callers/access lanes
-  before any public route is removed or repointed.
+  govern the planning path.
 - ADR-0009 review feedback has been incorporated into the planning spine:
   Sir Convert consumes HuleEdu `InternalIdentityContextV1` with audience
   `sir-convert-a-lot` instead of minting a parallel identity contract, Task 259
@@ -43,11 +42,50 @@ runbooks, or skills.
   proposed until Task 259 locks the Sir-specific `InternalIdentityContextV1`
   authorization profile and proves non-browser service/operator extensions do
   not introduce a second signed issuer or browser-adjacent auth path.
-- Task 265 is in progress for pre-cutover public-edge isolation:
-  `sir_convert_a_lot_prod` should stay internal/tunnel reachable, while
-  `sir_convert_a_lot_public_reserved` owns `convert.hule.education` and returns
-  the reserved non-product public response until the Gateway cutover deliberately
-  re-enables the intended public edge.
+- Task 265 is completed, pushed, pulled on Hemma, and redeployed from commit
+  `f6eebfecd2cee273699e5b656ac49f7fb26cd248`. `sir_convert_a_lot_prod` remains
+  healthy on the internal/tunnel lane, while `sir_convert_a_lot_public_reserved`
+  owns `convert.hule.education` and returns the reserved non-product public
+  response until the Gateway cutover deliberately re-enables the intended
+  public edge.
+- Task 256 is completed. The caller inventory found no direct HuleEdu app
+  caller, found Skriptoteket user-originated backend callers in Conversion Hub
+  and Klassrumskartan class-list PDF import, found Projektveckor Portal as a
+  retained internal Hemma caller, and preserved the local operator tunnel/offload
+  lane.
+- Task 266 is proposed as the follow-up for auth-aware public-edge evidence.
+  The Task 256 24h nginx-proxy evidence did not show successful public
+  conversion traffic, but unknown public consumers remain a Task 263 cutover
+  blocker until API-key presence can be classified without logging secrets.
+- Task 259 is completed as a contract/profile definition task. The Sir Convert
+  authorization profile consumes HuleEdu `InternalIdentityContextV1` with
+  audience `sir-convert-a-lot`, defines context-derived job/artifact ownership,
+  keeps `X-API-Key` transport-only during migration, and names implementation
+  tests for spoofed headers, wrong audience, invalid signatures, cross-owner
+  reads, service contexts, and operator contexts.
+- Review 06 denied ADR-0009 acceptance. The remaining blocker is that
+  non-browser service/operator contexts are named but not contract-complete:
+  the docs must lock the minting authority and canonical field mapping,
+  including mandatory HuleEdu `session_id`, without introducing a parallel Sir
+  signer or browser-adjacent operator path.
+- Review 06 follow-up amended Task 259 and the authorization profile:
+  service/operator contexts must be minted only by a HuleEdu-owned
+  Gateway/internal identity authority using the canonical HuleEdu signing key
+  set and `iss == "api_gateway_service"`. Sir Convert, internal service
+  callers, and operator CLI tooling must not sign contexts. Non-browser
+  contexts now have explicit signed field mappings, nonblank non-browser
+  `session_id` handles, lane restrictions, and audit semantics.
+- Review 06 re-review kept ADR-0009 denied. The remaining blocker is schema
+  compatibility: the profile adds top-level `sir_convert_*` fields to
+  `InternalIdentityContextV1`, but the upstream HuleEdu v1 model forbids extra
+  fields.
+- Review 06 schema follow-up amended the profile to keep the top-level payload
+  valid under HuleEdu `InternalIdentityContextV1` v1. Sir Convert now derives
+  context kind from `sub` and `roles`, registered caller from `source_app`, and
+  workload purpose from route/grants with optional narrowing through signed
+  `active_context`; unknown top-level `sir_convert_*` fields must fail closed.
+- Review 06 second re-review approved ADR-0009 acceptance readiness. ADR-0009
+  remains proposed until Task 257 performs the explicit acceptance update.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -68,6 +106,14 @@ runbooks, or skills.
   `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
 - Gateway cutover inventory reference:
   `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md`.
+- Sir Convert identity authorization profile:
+  `docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md`.
+- Completed Gateway cutover profile task:
+  `docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md`.
+- Auth-aware public-edge evidence follow-up:
+  `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
+- ADR-0009 readiness review:
+  `docs/backlog/reviews/review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness.md`.
 - Active Qwen Task 101 ledger:
   `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
 - Qwen experiment governance:
@@ -87,12 +133,17 @@ runbooks, or skills.
 
 ## Next Actions
 
-1. Finish Task 254 by making `hemma-deploy-and-verify` deploy-detached-aware
-   and by emitting durable public-edge/default-host artifacts in the canonical
-   report.
-1. Start Epic 09 with Task 256: inventory HuleEdu, Skriptoteket, internal
-   service, public direct, and local operator Sir Convert callers in the
-   gateway cutover inventory reference before implementation.
+1. Continue Epic 09 with Task 257: accept ADR-0009 now that Review 06 is closed
+   and the Task 256/259 prerequisites are complete.
+1. Then move into Task 258/260 implementation planning: runtime enforcement,
+   metadata hardening, Gateway route mechanics, and route tests must prove the
+   profile rather than merely referencing it.
+1. Keep Task 266 in the cutover gate before Task 263 final proof: collect
+   auth-aware public-edge evidence with API-key presence represented only as
+   `present`, `absent`, or `unavailable`.
+1. Keep Task 254's deploy verifier follow-up available for future public-edge
+   proof hardening without reopening the completed Task 265 reserved-host
+   deployment posture.
 1. Before any future Hemma Qwen run, use:
    `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
    and
@@ -100,47 +151,28 @@ runbooks, or skills.
 
 ## Validation
 
-- 2026-04-19 Task 255 focused checks:
-  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_service_dependency_inputs.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py tests/sir_convert_a_lot/test_export_service_requirements.py tests/sir_convert_a_lot/test_service_image_build_contract.py -q`
-  passed.
-- 2026-04-19 Task 255 full local gates passed:
-  `pdm run docs-validate`; `pdm run skills-validate`;
-  `pdm run handoff-validate`; `pdm run format-all`; `pdm run lint-fix`;
-  `pdm run typecheck-all`;
-  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py -q`;
-  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot -k "service_image or compose or dockerfile" -q`;
-  `pdm run coverage-gate`;
-  `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`;
-  `git diff --check`.
-- 2026-04-19 Task 255 detached Hemma proof passed from commit
-  `7173c03f8b414caa7fa1e9c84a0c6b33b5b357b8`: ROCm dependency image
-  `sir-convert-a-lot-deps-rocm:958c03d4fceb446ba95eec0681c7d51c07de8d9c02595e962e282a7cdd22b690`
-  built with BuildKit pip cache mounts, app-only `prod-build` reused the
-  dependency image without rerunning heavy dependency work, and
-  `prod-recreate sir_convert_a_lot_prod` started healthy. Final artifacts are
-  under `build/verification/task-255-service-deps-image-cache/`.
-- 2026-04-19 Review 05 follow-up proof passed from commit
-  `d23855375ec848a8c45ae40d43e23c4f8b23d319`: ROCm dependency image
-  `sir-convert-a-lot-deps-rocm:b6265e4ee42c43c255e400bc1516cc04d8601ceaf6961008dc09ad7a60f6df89`
-  carries matching dependency, recipe, and dependency-image labels. Detached
-  app-only `prod-build` reused that image without rerunning ROCm torch or
-  EasyOCR, and detached `prod-recreate sir_convert_a_lot_prod` started
-  healthy on `127.0.0.1:28085->8085/tcp`.
-- 2026-04-19 Epic 09 docs-governance slice:
-  ADR-0009 review feedback incorporated and third-pass review approved the
-  planning spine. Final closeout gates after the latest handoff/current update:
+- 2026-04-19 Task 255, Review 05, and the initial Epic 09 docs-governance
+  gates/proofs passed; durable details live in governed task/review docs.
+- 2026-04-19 Task 256 inventory and Task 259 authorization-profile slices
+  passed docs/skills/handoff/index validation plus `git diff --check`; durable
+  details live in the governed task/reference docs.
+- 2026-04-19 Review 06 ADR-0009 readiness review denied acceptance until its
+  identity-profile blockers are resolved.
+- 2026-04-19 Review 06 follow-up amended Task 259 and the profile to lock
+  HuleEdu-owned service/operator context minting, required field mapping,
+  non-browser `session_id` handling, lane restrictions, and proof requirements.
+  Closeout validation passed:
   `pdm run docs-validate`;
-  `pdm run skills-validate`; `pdm run handoff-validate`;
-  `pdm run index-tasks --root docs/backlog --out /tmp/sir_tasks_index_final_rereview.md --fail-on-missing`;
+  `pdm run skills-validate`;
+  `pdm run handoff-validate`;
+  `pdm run index-tasks --root docs/backlog --out /tmp/sir_tasks_index_review06_followup.md --fail-on-missing`;
   `git diff --check`.
-- `pdm run ruff format scripts/docs_as_code/validate_handoff.py`: passed
-- `pdm run ruff check scripts/docs_as_code/validate_handoff.py`: passed
-- `pdm run handoff-validate`: passed
-- `pdm run docs-validate`: passed
-- `pdm run skills-validate`: passed
-- `git diff --check`: passed
-- Skill-repository closeout also passed:
-  `pdm run docs-sync`, `pdm run docs-validate`, and `git diff --check`.
+- 2026-04-19 Review 06 re-review kept ADR-0009 denied because the profile's
+  top-level `sir_convert_*` context fields are outside the HuleEdu v1 schema.
+- 2026-04-19 Review 06 schema follow-up removed undeclared top-level Sir fields
+  from the profile and mapped those semantics through allowed HuleEdu v1
+  fields. Closeout validation passed docs/skills/handoff/index and
+  `git diff --check`.
 
 ## Stop Conditions
 

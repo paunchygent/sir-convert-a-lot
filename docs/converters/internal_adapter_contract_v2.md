@@ -4,7 +4,7 @@ id: CONV-internal-adapter-contract-v2
 title: Internal Adapter Contract v2
 status: active
 created: 2026-03-04
-updated: 2026-03-26
+updated: 2026-04-19
 owners:
   - platform
 tags:
@@ -14,6 +14,8 @@ tags:
   - internal
 links:
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - scripts/sir_convert_a_lot/integrations/adapter_profiles.py
   - tests/sir_convert_a_lot/test_integration_adapter_conformance.py
 ---
@@ -32,8 +34,11 @@ headers, and error propagation), not service runtime policy internals.
 - Applies to internal integration layers only.
 - All submissions must target `/v2/convert/jobs*` endpoints (no legacy version lanes).
 - Adapter helpers must remain transport-only; conversion policy and orchestration live in this repo.
-- Internal adapters use the same single v2 service API key as other supported
-  consumers; there is no separate internal-key lane.
+- Internal adapters currently use the v2 service API key as a transport
+  credential. Under ADR-0009, user-originated adapter calls must also preserve
+  HuleEdu `InternalIdentityContextV1` with audience `sir-convert-a-lot` so job
+  and artifact authorization is not reduced to global service-key ownership.
+- There is no separate Sir-specific signed identity transport.
 
 ## Mandatory Adapter Requirements
 
@@ -127,6 +132,9 @@ Required scenario coverage includes:
 ## Tunnel and Operational Expectations
 
 - Local/internal consumers use the internal HTTP endpoint plus `X-API-Key`.
+- After the Gateway/internal identity cutover, user-originated internal calls
+  also carry verified `InternalIdentityContextV1` according to
+  `docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md`.
 - Tunnel-first local development follows:
   - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 

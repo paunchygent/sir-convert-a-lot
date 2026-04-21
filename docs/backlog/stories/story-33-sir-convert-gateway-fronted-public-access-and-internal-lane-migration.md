@@ -11,6 +11,7 @@ related:
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/backlog/tasks/task-264-cut-over-huleedu-and-skriptoteket-sir-convert-consumers.md
   - docs/backlog/tasks/task-265-disable-direct-sir-convert-public-app-route-before-gateway-cutover.md
+  - docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md
   - docs/backlog/tasks/task-262-restrict-convert-hule-education-public-edge-after-gateway-cutover.md
   - docs/backlog/tasks/task-263-run-sir-convert-gateway-cutover-proof-and-security-review.md
 labels:

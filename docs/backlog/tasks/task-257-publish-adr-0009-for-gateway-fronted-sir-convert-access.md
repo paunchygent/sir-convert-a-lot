@@ -11,6 +11,8 @@ related:
   - docs/backlog/stories/story-34-adr-and-contract-authority-for-sir-convert-gateway-cutover.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
+  - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
+  - docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md
 labels:
   - adr
   - gateway
@@ -40,7 +42,7 @@ public Sir Convert access and preserved internal/operator lanes.
 ## Deliverables
 
 - [ ] Accepted ADR-0009.
-- [ ] Completed Task 259 identity-contract prerequisite.
+- [x] Completed Task 259 identity-contract prerequisite.
 - [ ] Updated links from affected docs.
 - [ ] Follow-up implementation tasks are confirmed or revised.
 
