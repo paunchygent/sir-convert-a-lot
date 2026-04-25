@@ -65,7 +65,7 @@ docs:
 
     - name: runbook
       folder: docs/runbooks
-      filename_regex: "^runbook-[a-z0-9-]+\\.md$"
+      filename_regex: "^(runbook-[a-z0-9-]+|INDEX)\\.md$"
       type: runbook
       id_regex: "^RUN-[a-z0-9-]+$"
       status_allowed: [draft, active, deprecated]
@@ -74,7 +74,7 @@ docs:
 
     - name: reference
       folder: docs/reference
-      filename_regex: "^ref-[a-z0-9-]+\\.md$"
+      filename_regex: "^(ref-[a-z0-9-]+|INDEX)\\.md$"
       type: reference
       id_regex: "^REF-[a-z0-9-]+$"
       status_allowed: [draft, active, deprecated]
@@ -128,8 +128,8 @@ docs:
 
     - name: backlog-meta
       folder: docs/backlog
-      filename_regex: "^(README|current)\\.md$"
-      type_one_of: [task-log, reference]
+      filename_regex: "^(README|INDEX)\\.md$"
+      type: reference
       id_regex: "^[a-z0-9][a-z0-9._-]*$"
       status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
       required: [priority, last_updated]

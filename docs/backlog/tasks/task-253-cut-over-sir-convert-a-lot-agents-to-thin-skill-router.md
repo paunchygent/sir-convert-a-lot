@@ -2,10 +2,10 @@
 id: task-253-cut-over-sir-convert-a-lot-agents-to-thin-skill-router
 title: Cut over Sir Convert-a-Lot AGENTS to thin skill router
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-04-18'
-last_updated: '2026-04-18'
+last_updated: '2026-04-25'
 related: []
 labels:
   - agents
@@ -40,27 +40,34 @@ governed backlog docs.
 
 ## Deliverables
 
-- [ ] Root `AGENTS.md` is slim and router-shaped.
-- [ ] Docs/backlog governance points to `agent-docs-governance` plus the Sir
+- [x] Root `AGENTS.md` is slim and router-shaped.
+- [x] Docs/backlog governance points to `agent-docs-governance` plus the Sir
   Convert-a-Lot reference.
-- [ ] Retained local skills and shared/global skills remain clearly separated.
-- [ ] No retired `.agents/` or local shared-skill duplicate guidance is
+- [x] Retained local skills and shared/global skills remain clearly separated.
+- [x] No retired `.agents/` or local shared-skill duplicate guidance is
   reintroduced.
+- [x] Generated `docs/index.md` and lane `INDEX.md` files are maintained by
+  `pdm run docs-sync`.
+- [x] Active planning context routes through `.codex/handoff.md`, not
+  `docs/backlog/current.md`.
 
 ## Acceptance Criteria
 
-- [ ] `AGENTS.md` keeps stable repo identity, hard invariants, command-context
+- [x] `AGENTS.md` keeps stable repo identity, hard invariants, command-context
   principles, skill router, docs authority, and validation defaults.
-- [ ] Detailed procedure for docs, local dev, Hemma, conversion, Qwen/ML,
+- [x] Detailed procedure for docs, local dev, Hemma, conversion, Qwen/ML,
   speech, reviews, and handoff routes to skills/references/runbooks/docs.
-- [ ] Existing shared/global skill list is replaced or reduced to a router that
+- [x] Existing shared/global skill list is replaced or reduced to a router that
   names task lanes and start-here skills.
-- [ ] Validation evidence includes `pdm run docs-validate`,
-  `pdm run skills-validate`, `pdm run handoff-validate`, and
+- [x] Root docs navigation is generated through `pdm run docs-sync`.
+- [x] Active planning context routes through `.codex/handoff.md`.
+- [x] Validation evidence includes `pdm run docs-sync`,
+  `pdm run docs-validate`, `pdm run skills-validate`,
+  `pdm run handoff-validate`, and
   `git diff --check`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

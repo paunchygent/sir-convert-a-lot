@@ -218,6 +218,8 @@ distribution = false
 "validate-docs" = "python -m scripts.docs_as_code.validate_docs"
 "docs-validate" = { composite = ["validate-tasks", "validate-docs"] }
 "index-tasks" = "python -m scripts.docs_as_code.index_tasks"
+"index-docs" = "python -m scripts.docs_as_code.index_docs"
+"docs-sync" = { composite = ["index-docs"] }
 "skills-validate" = "python -m scripts.docs_as_code.validate_skills"
 "handoff-validate" = "python -m scripts.docs_as_code.validate_handoff"
 "format" = "ruff format ."

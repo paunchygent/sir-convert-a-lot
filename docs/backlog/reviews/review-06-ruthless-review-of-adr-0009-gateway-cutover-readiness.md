@@ -1,9 +1,9 @@
 ---
-id: 'review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness'
-title: 'Ruthless review of ADR-0009 gateway cutover readiness'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness
+title: Ruthless review of ADR-0009 gateway cutover readiness
+type: review
+status: completed
+priority: high
 created: '2026-04-19'
 last_updated: '2026-04-19'
 related:
@@ -22,6 +22,7 @@ labels:
   - auth
   - cutover
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

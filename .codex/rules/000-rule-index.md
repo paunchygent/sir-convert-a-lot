@@ -23,7 +23,8 @@ scope: repo
 - `095-qwen-training-architecture-boundaries.md`: Hard SRP/DDD boundaries for the Qwen control-plane and training-runtime lane.
 - `096-qwen-experiment-governance.md`: Experiment taxonomy, single-ledger, promotion-ladder, and surface-status rules for Qwen Task 101 work.
 
-Session context (non-rule):
+Session and docs context (non-rule):
 
 - `../handoff.md`: Volatile current-state handoff and validation evidence.
 - `../long-term-memory/index.md`: Durable session-history doorway.
+- `../../docs/index.md`: Generated root documentation doorway.

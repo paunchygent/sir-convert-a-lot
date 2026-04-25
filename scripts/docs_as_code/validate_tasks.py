@@ -169,13 +169,11 @@ def validate_location(path: Path, item_type: str) -> list[str]:
                 f"{repo_relative(path)}: type '{item_type}' must be stored at docs/backlog root"
             )
 
-    if item_type == "task-log" and rel.name != "current.md":
-        errors.append(f"{repo_relative(path)}: task-log file must be named current.md")
-
     if item_type == "reference" and len(parts) == 1:
-        if rel.name != "README.md" and not rel.name.startswith("README-"):
+        if rel.name not in {"README.md", "INDEX.md"} and not rel.name.startswith("README-"):
             errors.append(
-                f"{repo_relative(path)}: root reference filename should be README.md or README-*.md"
+                f"{repo_relative(path)}: root reference filename should be README.md, "
+                "README-*.md, or INDEX.md"
             )
 
     return errors
@@ -232,8 +230,6 @@ def validate_file(path: Path) -> list[str]:
 
     errors.extend(validate_location(path, item_type))
     errors.extend(validate_sections(path, text, item_type))
-    if item_type == "task-log":
-        errors.extend(validate_task_log_invariants(path, text))
     if item_type == "review":
         related_obj = frontmatter.get("related")
         if not isinstance(related_obj, list) or not related_obj:

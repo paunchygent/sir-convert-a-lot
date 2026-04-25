@@ -70,8 +70,6 @@ def resolve_target(task_type: str, title: str) -> tuple[str, Path]:
 
     base_dir = BACKLOG_DIR / subdir if subdir else BACKLOG_DIR
 
-    if task_type == "task-log":
-        return "current-task-log", base_dir / "current.md"
     if task_type == "reference":
         return f"reference-{slug}", base_dir / f"README-{slug}.md"
 

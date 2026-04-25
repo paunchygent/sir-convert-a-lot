@@ -12,17 +12,13 @@ tags:
 scope: repo
 ---
 
-- Keep `docs/backlog/current.md` updated after each major implementation phase.
-- Treat `docs/backlog/current.md` as the canonical active task log, not as a session handoff.
+- Keep `.codex/handoff.md` updated after each major implementation phase.
+- Treat `.codex/handoff.md` as the canonical active planning pointer and
+  current-session handoff.
+- Treat `docs/index.md` as the generated root docs doorway.
 - Treat `.codex/long-term-memory/index.md` as the session-history index for completed or compacted session context.
-- `docs/backlog/current.md` must follow hard H2 template and order exactly:
-  - `## Context`
-  - `## Worklog`
-  - `## Next Actions`
-- Enforce cleanup/compression invariants for `docs/backlog/current.md`:
-  - keep file at or below 220 lines,
-  - keep dated `Worklog` entries at or below 12,
-  - compress older detail into task/reference docs while keeping key outcomes.
+- Generated docs indexes are refreshed only through `pdm run docs-sync`; do not
+  edit `docs/index.md` or lane `INDEX.md` files by hand.
 - Session handoff cadence is mandatory:
   - each session must update `.codex/handoff.md` with current-session work, validation evidence, and next-session goals,
   - durable session history belongs under `.codex/long-term-memory/` rather than a separate session folder,
@@ -38,6 +34,7 @@ scope: repo
 - Keep API docs, ADRs, runbooks, and CLI docs synchronized with implementation.
 - Use Google-style module docstrings for discoverability in code modules.
 - Run docs-as-code validations before commit:
+  - `pdm run docs-sync`
   - `pdm run docs-validate`
   - `pdm run skills-validate`
   - `pdm run handoff-validate`

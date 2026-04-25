@@ -129,16 +129,6 @@ TEMPLATES: dict[str, TaskTemplate] = {
         ),
         intro="Structured review artifact for implementation or readiness checks.",
     ),
-    "task-log": TaskTemplate(
-        status="active",
-        sections=(
-            "Context",
-            "Worklog",
-            "Next Actions",
-        ),
-        checklist=(),
-        intro="Rolling execution log for the active session context.",
-    ),
     "reference": TaskTemplate(
         status="active",
         sections=("Purpose",),
@@ -154,7 +144,6 @@ TYPE_TO_SUBDIR: dict[str, str] = {
     "task": "tasks",
     "fix": "tasks",
     "review": "reviews",
-    "task-log": "",
     "reference": "",
 }
 
@@ -165,7 +154,6 @@ TYPE_TO_FILENAME_PREFIX: dict[str, str] = {
     "task": "task",
     "fix": "fix",
     "review": "review",
-    "task-log": "current",
     "reference": "README",
 }
 

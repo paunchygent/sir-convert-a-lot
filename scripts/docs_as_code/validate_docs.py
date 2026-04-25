@@ -8,6 +8,7 @@ Relationships:
     - Source contract: `docs/_meta/docs-contract.yaml`
     - Invoked by: `pdm run validate-docs`
     - Complements: `scripts.docs_as_code.validate_tasks`
+    - Checks generated docs index freshness via `scripts.docs_as_code.index_docs`
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from pathlib import Path
 import yaml
 
 from scripts.docs_as_code.common import ROOT
+from scripts.docs_as_code.index_docs import validate_generated_indexes
 
 YamlMapping = dict[str, object]
 FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -378,6 +380,9 @@ def main(argv: list[str]) -> int:
 
     for path in rule_paths:
         violations.extend(validate_rule(path, rules_contract))
+
+    for message in validate_generated_indexes():
+        violations.append(Violation("generated-docs-indexes", message))
 
     if violations:
         print("\n[docs-validate] Contract violations found:\n")

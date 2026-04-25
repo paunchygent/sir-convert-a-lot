@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-04-19'
+last_updated: '2026-04-25'
 ---
 
 ## Purpose
@@ -86,6 +86,14 @@ runbooks, or skills.
   `active_context`; unknown top-level `sir_convert_*` fields must fail closed.
 - Review 06 second re-review approved ADR-0009 acceptance readiness. ADR-0009
   remains proposed until Task 257 performs the explicit acceptance update.
+- Task 253 is the current docs-governance authority for cutting root
+  `AGENTS.md` over to a thin skill router and aligning generated docs indexes
+  with the canonical `.codex/handoff.md` active-context model.
+- Epic 10 is now the active feature lane for DigiExam to Exam.net migration.
+  Story 38 and Task 267 were scaffolded after reviewing the research baseline.
+  Task 267 is the immediate implementation authority for parser v1 fixtures,
+  confidence/warning reporting, and fail-closed handling of unknown or degraded
+  item shapes.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -98,7 +106,10 @@ runbooks, or skills.
 
 ## Active Pointers
 
-- Active planning log: `docs/backlog/current.md`.
+- Generated docs doorway: `docs/index.md`.
+- Active planning and session handoff: `.codex/handoff.md`.
+- Thin agent-router task:
+  `docs/backlog/tasks/task-253-cut-over-sir-convert-a-lot-agents-to-thin-skill-router.md`.
 - Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active public-edge recovery task: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md`.
 - Active dependency-image follow-up task: `docs/backlog/tasks/task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys.md`.
@@ -112,6 +123,14 @@ runbooks, or skills.
   `docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md`.
 - Auth-aware public-edge evidence follow-up:
   `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
+- Active DigiExam migration epic:
+  `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
+- Active DigiExam parser story:
+  `docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md`.
+- Active DigiExam parser task:
+  `docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md`.
+- DigiExam and Exam.net migration research:
+  `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
 - ADR-0009 readiness review:
   `docs/backlog/reviews/review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness.md`.
 - Active Qwen Task 101 ledger:
@@ -133,17 +152,15 @@ runbooks, or skills.
 
 ## Next Actions
 
-1. Continue Epic 09 with Task 257: accept ADR-0009 now that Review 06 is closed
-   and the Task 256/259 prerequisites are complete.
-1. Then move into Task 258/260 implementation planning: runtime enforcement,
-   metadata hardening, Gateway route mechanics, and route tests must prove the
-   profile rather than merely referencing it.
-1. Keep Task 266 in the cutover gate before Task 263 final proof: collect
-   auth-aware public-edge evidence with API-key presence represented only as
-   `present`, `absent`, or `unavailable`.
-1. Keep Task 254's deploy verifier follow-up available for future public-edge
-   proof hardening without reopening the completed Task 265 reserved-host
-   deployment posture.
+1. Continue EPIC-10 with Task 267: implement DigiExam parser v1 fixtures and
+   confidence reporting against the two tracked sample PDFs.
+1. Keep Task 267 narrow: parser module, typed item stream, source evidence,
+   warnings/confidence, Swedish diacritic extraction checks, and missing
+   answer-key provenance only.
+1. Stop before Exam.net renderer, QTI/native import, service API, or bulk
+   migration workflow changes unless a new governed task is created.
+1. Keep Epic 09/Task 266 available as a separate cutover lane; do not mix it
+   into the DigiExam parser implementation.
 1. Before any future Hemma Qwen run, use:
    `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
    and

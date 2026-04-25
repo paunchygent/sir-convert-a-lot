@@ -30,6 +30,7 @@ Documentation in this repository is governed by a strict, machine-validated cont
 ## Commands
 
 ```bash
+pdm run docs-sync
 pdm run validate-docs
 pdm run validate-tasks
 pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing

@@ -9,6 +9,8 @@ last_updated: '2026-04-25'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md
+  - docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md
   - docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md
 labels:
   - epic
@@ -55,11 +57,13 @@ re-authoring per exam.
 
 ## Stories
 
-Story scaffolding is deferred until the initial research reference has been
-reviewed. Planned lanes, in dependency order:
+The initial research baseline has been reviewed for the parser lane. Planned
+lanes, in dependency order:
 
 1. Exam.net ingestion research and target-format decision.
-1. DigiExam PDF parser v1 with regression fixtures and confidence reporting.
+1. `docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md`
+   for DigiExam PDF parser v1 with regression fixtures and confidence
+   reporting.
 1. Sir Convert intermediate exam representation and manifest schema.
 1. Exam.net-targeted renderer.
 1. Bulk migration CLI/API workflow and parity report.
@@ -67,17 +71,17 @@ reviewed. Planned lanes, in dependency order:
 ## Acceptance Criteria
 
 - [ ] The Exam.net target behavior is researched against official/current
-      guidance and empirical trial uploads before implementation stories choose
-      a renderer target.
+  guidance and empirical trial uploads before implementation stories choose
+  a renderer target.
 - [ ] Parser v1 has regression coverage for the observed DigiExam jsPDF samples
-      and fails closed on unknown item shapes.
+  and fails closed on unknown item shapes.
 - [ ] Intermediate representation stores item type, points, prompts,
-      source-location evidence, and answer-key provenance separately from any
-      rendered Exam.net artifact.
+  source-location evidence, and answer-key provenance separately from any
+  rendered Exam.net artifact.
 - [ ] Bulk conversion emits a deterministic artifact set plus a human-readable
-      parity report for teacher review before upload.
+  parity report for teacher review before upload.
 - [ ] HuleEduOS sample/source paths are treated as fixtures or source inputs,
-      not as the owning runtime for this feature.
+  not as the owning runtime for this feature.
 
 ## Risks
 
@@ -98,6 +102,9 @@ reviewed. Planned lanes, in dependency order:
 - Original planning docs were moved from the HuleEduOS classroom-material repo
   on 2026-04-24 because this belongs to Sir Convert-a-Lot's conversion platform
   backlog.
+- Story 38 and Task 267 were scaffolded on 2026-04-25 after reviewing the
+  research baseline. They are the first parser implementation authority and do
+  not approve renderer or bulk workflow changes.
 - Current sample files have been copied into the repo under
   `inputs/examples/digiexam-exports/` with a manifest README.
 - The promoted Exam.net PDF-converter schemas are recorded in
@@ -107,7 +114,7 @@ reviewed. Planned lanes, in dependency order:
 
 ## Checklist
 
-- [ ] Story lane scaffolded after research review.
+- [x] Story lane scaffolded after research review.
 - [ ] Exam.net ingestion target selected.
 - [ ] Parser fixtures and confidence gate defined.
 - [ ] Renderer target and parity-report gate defined.

@@ -1,199 +1,142 @@
-# Sir Convert-a-Lot Agent Guidelines
+# Sir Convert-a-Lot Agent Entrypoint
 
-## Purpose
+Sir Convert-a-Lot is the canonical document-conversion platform for reliable,
+LLM-friendly PDF, DOCX, Markdown, HTML, and exam-migration workflows. It is a
+Python/PDM repository with Hemma offload, GPU-first runtime governance, and
+docs-as-code as the source of planning and contract truth.
 
-This repository is the canonical home for **Sir Convert-a-Lot**. It is designed for
-reliable, LLM-friendly document conversion workflows with Hemma offloading and GPU-first governance.
+This file is a thin router. Keep durable procedure in skills, rules, runbooks,
+reference docs, ADRs, and backlog items rather than expanding this root context.
 
-## Golden Rules (Mandatory)
+## Non-Negotiables
 
-1. No behavior change without docs-as-code planning.
-1. Contract-first delivery: docs/API/ADR are normative.
-1. Strict DRY and SOLID code only - no duplication, no god objects \<400 LoC.
-1. No typing shortcuts (`Any`, casts, `# type: ignore`, lint ignores) in new code.
-1. Use canonical wrappers for local vs remote command context.
+- Use skills before planning or implementation. Start with the global skill
+  registry, then use repo-owned skills under `.codex/skills/` when they are
+  specifically relevant.
+- Use docs-as-code for planning and structural changes. Every production
+  behavior change needs backlog authority under `docs/backlog/`; externally
+  visible contracts need ADR/API/reference authority.
+- Follow `.codex/rules/000-rule-index.md` for targeted repo rules. Do not
+  bulk-load the rules directory.
+- Do not revert, overwrite, or delete changes you did not make without explicit
+  approval.
+- Keep implementation DRY and SOLID. Preserve DDD/Clean boundaries, use Dishka
+  DI where it clarifies composition, keep modules under roughly 400-500 lines,
+  and refactor before files become broad catch-alls.
+- Do not introduce typing shortcuts in new code: no `Any`, `typing.cast`,
+  `# type: ignore`, lint ignores, or compatibility shims to bypass gates.
+- Add a Google-style module docstring at the top of new or materially changed
+  Python modules describing purpose and relationships.
+- Use Context7 or primary upstream docs before changing third-party dependency
+  usage or complex external workflows.
+- Keep command context explicit: local work uses `pdm run run-local-pdm ...`;
+  Hemma work uses `pdm run run-hemma -- ...` or a committed detached command
+  surface.
+- Git workflow is merge-only: never rebase, amend, force-push, or hide conflict
+  resolution in history.
+- Use BuildKit for Docker builds and Docker Compose v2 (`docker compose`), never
+  plain `docker build` or `docker-compose`.
+- GPU/offload work is GPU-first and decision-governed. Do not introduce silent
+  CPU fallback.
+- Never commit secrets, local `.env` files, student PII, or generated model,
+  conversion, benchmark, or review artefacts unless a task explicitly promotes a
+  sanitized summary.
 
-## Session Start (Mandatory)
+## Session Start
 
 1. Read this file.
 1. Check `.codex/handoff.md` only for volatile current-state pointers.
-1. Read `.codex/rules/000-rule-index.md` when repo rules are needed.
-1. Read task-relevant rules from the index.
-1. Confirm active planning context in `docs/backlog/current.md`.
-1. Validate docs-as-code state before implementation:
-   - `pdm run docs-validate`
+1. Select the task-relevant skill before planning or implementation.
+1. Load `.codex/rules/000-rule-index.md` only when repo rules are needed, then
+   open the specific rule files the task requires.
+1. Use `.codex/handoff.md` for active planning pointers and `docs/index.md` as
+   the generated durable docs doorway.
+1. Use `docs/DOCS_STRUCTURE_SPEC.md`, `docs/backlog/README.md`, and
+   `docs/_meta/docs-contract.yaml` for durable docs topology and validation
+   rules.
 
-## Planning and Docs Taxonomy (Invariant)
+## Skill Router
 
-### Planning hierarchy
+| Task | Start Here |
+|---|---|
+| Docs-as-code, backlog contracts, scaffolding, governed docs | `agent-docs-governance` plus its Sir Convert-a-Lot reference |
+| Planning, decomposition, tranche sequencing | `agent-planning` plus its Sir Convert-a-Lot reference |
+| Next-session or developer handoff messages | `agent-session-handoff` plus its Sir Convert-a-Lot reference |
+| Local dev, PDM scripts, wrappers, local Docker, dependency workflow | `local-devops` plus any Sir Convert-a-Lot reference |
+| Hemma deploys, remote operations, shared host runtime, GPU/offload lanes | `hemma-devops` plus `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md` when Sir-specific |
+| Sir Convert client usage from other repos or operator workflows | `sir-convert-a-lot-client` |
+| Qwen3-TTS fine-tuning, preprocessing, evaluation, and promotion decisions | `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md` |
+| Speech-model fine-tuning beyond Qwen-specific guidance | `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md` |
+| Colab/Hemma notebook orchestration | `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md` |
+| Code review | `ruthless-code-review` |
+| Review/context packages | `repomix-package-builder` |
+| Logs, metrics, traces, dashboards, public-edge logging policy | `observability-stack` |
+| Browser automation, screenshots, Playwright proof | `playwright-testing` |
+| PDM metadata migration | `pdm`, explicit use only |
 
-`programme -> epic -> story -> task`
+Shared skills are authored in
+`/Users/olofs_mba/Documents/Repos/skill-repository/skills/` first. Repo facts
+belong in shared-skill references or repo-local leaf skills, not in copied
+shared-skill bodies.
 
-Canonical location:
+- For any skill creation or update, use the system `skill-creator` skill first.
+  Keep `SKILL.md` concise; route examples, rationale, and detailed procedure to
+  referenced resources.
 
-- `docs/backlog/`
+## Agent Surface
 
-Task policy:
+- `.codex/skills/`: truly Sir Convert-specific workflow/domain skills only.
+- `.codex/rules/`: targeted repo invariants and discovery rules.
+- `.codex/handoff.md`: volatile current-state handoff; keep durable doctrine
+  out of it.
+- `.codex/long-term-memory/index.md`: durable session-history doorway.
+- `.codex/repomix_packages/`: ignored generated AI-review packages.
 
-- Tasks are small PR-sized execution units.
-- A task may be linked to a story, or exist independently when the change is scoped and coherent.
+Do not recreate retired `.agents/` compatibility shims or local duplicates of
+shared/global skills.
 
-### Documentation classes
+## Durable Docs
 
-- Runbooks (operational instructions): `docs/runbooks/`
-- Reference docs (research/reports/reviews/future plans): `docs/reference/`
-- ADRs (decisions): `docs/decisions/`
-- PDRs (high-level product value/features): `docs/pdr/`
-- Converter/API docs: `docs/converters/`
-- Docs contract metadata: `docs/_meta/docs-contract.yaml`
+- Generated docs doorway: `docs/index.md`
+- Active planning pointer: `.codex/handoff.md`
+- Backlog guide and hierarchy: `docs/backlog/README.md`
+- Docs topology: `docs/DOCS_STRUCTURE_SPEC.md`
+- Docs contract: `docs/_meta/docs-contract.yaml`
+- Converter/API contracts: `docs/converters/`
+- ADRs and decisions: `docs/decisions/`
+- Product direction: `docs/pdr/`
+- Runbooks: `docs/runbooks/`
+- References, research, reviews, and roadmaps: `docs/reference/`
 
-All docs and rules must include YAML frontmatter and satisfy contract validation.
+When a backlog item, ADR, reference, runbook, or active decision changes, update
+the governing docs and `.codex/handoff.md` as needed, then refresh generated
+indexes with `pdm run docs-sync`. Promote policy, procedure, acceptance
+criteria, and implementation doctrine to governed docs instead of burying them
+in handoff or memory.
 
-## Canonical Scripts and Command Context
+## Command Policy
 
-### Local wrappers
+Run commands from the repository root and prefer named `pdm run ...` scripts.
+Do not invent ad hoc command strings when a script exists.
 
-Use for repo-root execution with `.env` loading:
+Default close-out:
 
-```bash
-pdm run run-local-pdm <script> [args]
-```
+- Docs/governance change: `pdm run docs-sync`, `pdm run docs-validate`,
+  `pdm run skills-validate`, `pdm run handoff-validate`, and `git diff --check`
+- Python/backend change: `pdm run format-all`, `pdm run lint-fix`,
+  `pdm run typecheck-all`, focused `pdm run pytest-root <path-or-nodeid>`, and
+  `pdm run coverage-gate` where conversion-core coverage applies
+- Docker/runtime change: use the relevant local or Hemma skill/runbook, named
+  compose wrappers, health checks, bounded logs, and exact proof artifacts
+- Qwen/ML change: use the Qwen/speech skills and the governed runbooks before
+  launching or interpreting experiments
 
-### Remote Hemma wrappers
+Use `pdm run run-hemma -- ...` in argv mode by default. Treat
+`pdm run run-hemma --shell ...` as exception-only for short probes that cannot
+be expressed in argv mode. Promote non-trivial remote workflows to committed
+scripts and run long Hemma jobs through detached surfaces with separately
+observable logs, reports, or status commands.
 
-Use for explicit remote execution in Hemma repo root:
-
-```bash
-pdm run run-hemma -- <command> [args]
-pdm run run-hemma --shell "<command with operators>"
-```
-
-Strict execution policy:
-
-- Default to argv mode: `pdm run run-hemma -- <command> [args]`.
-- Treat `--shell` as exception-only; use it only for short operator usage that cannot be expressed in argv mode.
-- For any non-trivial remote workflow (multi-step checks, probes, reports, loops, JSON parsing), commit a script in this repo and invoke that script via argv mode.
-- Never run inline heredoc Python/Bash payloads through `run-hemma --shell` for routine operations.
-- Never use `run-hemma --shell` as an ad hoc command transport layer when a committed script surface exists or should exist.
-- Detached execution is the default for long-running Hemma work.
-- Any Hemma job that may outlive the local client session or tunnel must be launched through a detached remote surface and observed separately through committed logs, reports, or status commands.
-- Attached `run-hemma` execution is short-probe-only.
-
-Environment overrides:
-
-- `SIR_CONVERT_A_LOT_HEMMA_HOST`
-- `SIR_CONVERT_A_LOT_HEMMA_ROOT`
-
-### Planning scaffolds
-
-- `pdm run new-programme "<title>"`
-- `pdm run new-epic "<title>"`
-- `pdm run new-story "<title>"`
-- `pdm run new-task "<title>"`
-- `pdm run new-review "<title>"`
-
-## Quality Gates (Mandatory)
-
-```bash
-pdm run format-all
-pdm run lint-fix
-pdm run typecheck-all
-pdm run pytest-root <path-or-nodeid>
-```
-
-Docs gates:
-
-```bash
-pdm run docs-validate
-```
-
-Skill-surface gate:
-
-```bash
-pdm run skills-validate
-```
-
-Handoff gate:
-
-```bash
-pdm run handoff-validate
-```
-
-## Docker v2 Standards (Greatest Hits)
-
-- Use `docker compose` (v2), never `docker-compose`.
-- Keep compose commands explicit and reproducible.
-- For debugging capture: `docker compose ps`, `docker compose logs`, `docker compose config`.
-- Use health endpoints for readiness, not sleep-based startup assumptions.
-
-## PostgreSQL Standards (Greatest Hits)
-
-- PostgreSQL is canonical relational database.
-- Migration files are immutable once applied.
-- Add forward migrations for changes; avoid editing history.
-- Validate schema changes with integration tests.
-
-## PDM Standards (Greatest Hits)
-
-- Run PDM from repository root.
-- Keep dependency and lockfile changes synchronized.
-- Prefer named PDM scripts for repeatable workflows.
-
-## Hemma Operations and GPU (Greatest Hits)
-
-Canonical runbook:
-
-- `docs/runbooks/runbook-hemma-devops-and-gpu.md`
-
-Repo-local skills retained for Sir Convert-specific operations:
-
-- `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
-- `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
-- `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
-- `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md`
-
-Shared/global skills used from `~/.codex/skills`, not duplicated locally:
-
-- `sir-convert-a-lot-client`
-- `agent-docs-governance`
-- `agent-planning`
-- `agent-session-handoff`
-
-Cross-repo topology awareness on Hemma:
-
-- `~/apps/sir-convert-a-lot`
-- `~/apps/huleedu`
-- `~/apps/skriptoteket`
-- `~/infrastructure`
-
-Policy:
-
-- GPU-first execution is default and decision-governed.
-- No silent CPU fallback.
-- Use tunnels for local dev access by default.
-- Long-running Hemma work must not depend on the stability of the local client, tunnel, or attached SSH session.
-- Hemma storage tiers are explicit and mandatory:
-  - `/srv/scratch` is the fast SSD work tier for Docker root/BuildKit cache,
-    HF/model caches, and active generated artifacts.
-  - `/srv/storage` is the large HDD bulk-data tier for raw corpora and colder
-    retained datasets.
-  - The Hemma OS disk (`/`) must not be the long-term home for Docker
-    persistent state or large ML artifact trees.
-
-## Do Not
-
-- Do not create ad hoc converter scripts outside canonical service/CLI surfaces.
-- Do not bypass docs contract or task hierarchy.
-- Do not use `scp` for tracked repo code sync to Hemma (use `git pull` on host repo).
-- Do not execute multiline or heavily quoted payloads through `pdm run run-hemma --shell`; promote them to committed scripts.
-- Do not use raw `ssh hemma ...` for normal repo operations when `run-hemma` wrappers are available.
-
-## Key Paths
-
-- Rules: `.codex/rules/`
-- Session handoff: `.codex/handoff.md`
-- Long-term memory: `.codex/long-term-memory/index.md`
-- Skills: `.codex/skills/`
-- Global skills registry: `~/.codex/skills/` for canonical shared skills
-- Planning: `docs/backlog/`
-- Product/ops docs: `docs/`
+Long-running dev services, Docker volumes, Hemma jobs, and generated artefact
+trees should not be stopped, reset, pruned, or deleted unless the user asks or a
+governing task explicitly authorizes it.

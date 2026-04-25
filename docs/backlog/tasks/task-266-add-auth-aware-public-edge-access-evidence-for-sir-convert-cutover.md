@@ -1,9 +1,9 @@
 ---
-id: 'task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover'
-title: 'Add auth-aware public-edge access evidence for Sir Convert cutover'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover
+title: Add auth-aware public-edge access evidence for Sir Convert cutover
+type: task
+status: proposed
+priority: high
 created: '2026-04-19'
 last_updated: '2026-04-19'
 related:
@@ -18,6 +18,7 @@ labels:
   - access-logs
   - cutover
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
