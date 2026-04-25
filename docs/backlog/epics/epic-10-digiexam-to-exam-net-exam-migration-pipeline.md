@@ -5,7 +5,7 @@ type: epic
 status: proposed
 priority: high
 created: '2026-04-24'
-last_updated: '2026-04-24'
+last_updated: '2026-04-25'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
@@ -85,8 +85,10 @@ reviewed. Planned lanes, in dependency order:
   and other DigiExam item shapes are not yet represented.
 - Student-view DigiExam exports do not appear to include answer-key metadata for
   multiple-choice or matching items.
-- Exam.net ingestion heuristics are not documented in this repo yet; renderer
-  design may change after research.
+- Exam.net PDF-converter target behavior is documented in the linked reference
+  from public research and empirical v2 student/key printout experiments. The
+  renderer target must avoid source-side multiple-choice labels because
+  Exam.net owns option labels and reshuffles alternatives by default.
 - DigiExam's embedded `Identity-H` font can degrade text extraction on future
   exports; parser v1 must detect character loss and use OCR fallback policy
   when needed.
@@ -96,11 +98,12 @@ reviewed. Planned lanes, in dependency order:
 - Original planning docs were moved from the HuleEduOS classroom-material repo
   on 2026-04-24 because this belongs to Sir Convert-a-Lot's conversion platform
   backlog.
-- Current sample files are still known by their HuleEduOS source paths until a
-  Sir Convert fixture task copies or references them explicitly:
-  `/Users/olofs_mba/Documents/Repos/html_to_pdf_handout_templates/input/_-25cEkologiprov51-55.pdf`
-  and
-  `/Users/olofs_mba/Documents/Repos/html_to_pdf_handout_templates/input/_-Kemikapitel2ht2525dECA.pdf`.
+- Current sample files have been copied into the repo under
+  `inputs/examples/digiexam-exports/` with a manifest README.
+- The promoted Exam.net PDF-converter schemas are recorded in
+  `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
+  Production renderer work must use no-label indented multiple-choice
+  alternatives with exact-text answer keys, not labelled fallback layouts.
 
 ## Checklist
 
