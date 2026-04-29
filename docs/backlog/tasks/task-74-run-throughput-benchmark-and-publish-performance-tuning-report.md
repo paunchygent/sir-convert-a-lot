@@ -5,11 +5,14 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-04'
-last_updated: '2026-03-06'
+last_updated: '2026-04-27'
 related:
   - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md
+  - docs/backlog/stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md
   - docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md
   - docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md
+  - docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md
+  - docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py
   - scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py
@@ -47,6 +50,10 @@ conversions on Hemma.
 - A dedicated bounded sweep command surface now exists for that follow-up work:
   - local: `pdm run benchmark:task-74-two-worker-sweep`
   - Hemma: `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>`
+- Dirty real-data OCR evidence added by Story 39 must extend this Task 74 report schema and command
+  surface rather than bypassing it. Story 39 evidence is not acceptance evidence for Task 74 unless it
+  also preserves this task's Task 76 parity requirement, safe profile matrix, and forbidden 4-worker
+  OOM-profile guardrail.
 - Make the runtime surface explicit in the evidence bundle:
   - `mode=in_process_app` is acceptable for harness development/smoke evidence,
   - final closeout evidence must also prove deploy/runtime parity on Hemma via `T76`, and must

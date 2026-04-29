@@ -5,7 +5,7 @@ type: task
 status: completed
 priority: high
 created: '2026-03-05'
-last_updated: '2026-03-05'
+last_updated: '2026-04-29'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md
@@ -62,10 +62,13 @@ Provide a robust, fail-fast multilingual OCR configuration for long PDF conversi
     - `--ocr-language <tag>` (repeatable)
   - Emit audit metadata:
     - `result.conversion_metadata.ocr_enabled`
-    - `result.conversion_metadata.ocr_languages_requested`
     - `result.conversion_metadata.ocr_engine_used`
     - `result.conversion_metadata.ocr_languages_used`
-    - `result.conversion_metadata.ocr_acceleration_used` (separate from backend `acceleration_used`)
+  - Task 269 supersedes the earlier proposed result fields
+    `ocr_languages_requested` and `ocr_acceleration_used`. Requested languages
+    stay in `pdf_options.ocr_languages`; observed OCR-stage acceleration is
+    deferred until a future task defines runtime evidence separate from backend
+    `acceleration_used`.
 - Runtime:
   - In Docling backend converter build, set `pipeline_options.ocr_options` explicitly when OCR is
     enabled and `ocr_engine != auto`.
@@ -117,8 +120,9 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
   - `conversion_metadata.ocr_engine_used` and `ocr_languages_used` are populated.
 - [x] GPU-first policy holds for OCR:
   - `conversion_metadata.acceleration_used="cuda"` for Docling execution,
-  - `conversion_metadata.ocr_acceleration_used="cuda"` when `acceleration_policy=gpu_required`,
-  - no silent CPU fallback when EasyOCR is requested with GPU-required policy.
+  - no silent CPU fallback when EasyOCR is requested with GPU-required policy,
+  - the old `conversion_metadata.ocr_acceleration_used` claim is superseded by
+    Task 269 and is not part of the active v2 result contract.
 - [x] Preflight gate is fail-fast:
   - missing `swe` for Tesseract fails job creation with remediation instructions.
 - [x] Deploy-time smoke stays lightweight:

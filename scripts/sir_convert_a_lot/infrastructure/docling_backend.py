@@ -209,6 +209,10 @@ class DoclingConversionBackend(ConversionBackend):
             backend_used="docling",
             acceleration_used=acceleration_used,
             ocr_enabled=ocr_enabled,
+            ocr_engine_used=request.ocr_engine.value
+            if ocr_enabled and request.ocr_engine is not None
+            else None,
+            ocr_languages_used=list(request.ocr_languages) if ocr_enabled else [],
             warnings=warnings,
             phase_timings_ms=phase_timings_ms,
         )

@@ -15,6 +15,7 @@ Relationships:
 
 from __future__ import annotations
 
+import hashlib
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
 from dataclasses import dataclass, field
@@ -51,6 +52,10 @@ from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
 from scripts.sir_convert_a_lot.infrastructure.ocr_resolution_v2 import (
     ResolvedPdfOcrRequestV2,
     resolve_pdf_ocr_request,
+)
+from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoint_metadata_v2 import (
+    PdfCheckpointTerminalMetadataError,
+    aggregate_pdf_checkpoint_terminal_metadata,
 )
 from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import (
     PdfCheckpointV2,
@@ -106,6 +111,8 @@ class PdfChunkConversionOutcomeV2:
     backend_used: str | None
     acceleration_used: str | None
     ocr_enabled: bool
+    ocr_engine_used: str | None
+    ocr_languages_used: list[str]
     warnings: list[str]
     phase_timings_ms: dict[str, int]
     chunk_elapsed_ms: int
@@ -248,7 +255,7 @@ def _convert_one_pdf_chunk(
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
     resolved_ocr: ResolvedPdfOcrRequestV2 | None,
-) -> tuple[str, str | None, str | None, bool, list[str], dict[str, int]]:
+) -> tuple[str, str | None, str | None, bool, str | None, list[str], list[str], dict[str, int]]:
     try:
         markdown_content, pdf_metadata, pdf_warnings, pdf_timings = execute_job_conversion(
             spec=v1_spec,
@@ -297,6 +304,8 @@ def _convert_one_pdf_chunk(
         pdf_metadata.backend_used,
         pdf_metadata.acceleration_used,
         bool(pdf_metadata.ocr_enabled),
+        pdf_metadata.ocr_engine_used,
+        list(pdf_metadata.ocr_languages_used),
         list(pdf_warnings),
         dict(pdf_timings),
     )
@@ -327,34 +336,144 @@ def _upsert_checkpoint_chunk_record(
     checkpoint.chunks = filtered
 
 
+class PdfCheckpointArtifactIntegrityError(Exception):
+    """Raised when checkpoint chunk artifacts cannot safely assemble final markdown."""
+
+
+def _expected_sha256(record: PdfChunkRecordV2) -> str:
+    if not record.sha256.startswith("sha256:"):
+        raise PdfCheckpointArtifactIntegrityError(
+            f"Chunk {record.chunk_index} has invalid sha256 metadata."
+        )
+    return record.sha256.removeprefix("sha256:")
+
+
+def _read_verified_chunk_text(*, job_dir: Path, record: PdfChunkRecordV2) -> str:
+    chunk_path = job_dir / record.artifact_relpath
+    if not chunk_path.exists() or not chunk_path.is_file():
+        raise PdfCheckpointArtifactIntegrityError(
+            f"Chunk {record.chunk_index} artifact is missing."
+        )
+    payload = chunk_path.read_bytes()
+    if len(payload) != record.size_bytes:
+        raise PdfCheckpointArtifactIntegrityError(
+            f"Chunk {record.chunk_index} artifact size does not match checkpoint metadata."
+        )
+    if hashlib.sha256(payload).hexdigest() != _expected_sha256(record):
+        raise PdfCheckpointArtifactIntegrityError(
+            f"Chunk {record.chunk_index} artifact checksum does not match checkpoint metadata."
+        )
+    try:
+        return payload.decode("utf-8").rstrip("\n")
+    except UnicodeDecodeError as exc:
+        raise PdfCheckpointArtifactIntegrityError(
+            f"Chunk {record.chunk_index} artifact is not valid UTF-8 markdown."
+        ) from exc
+
+
+def _ordered_complete_succeeded_chunks(checkpoint: PdfCheckpointV2) -> list[PdfChunkRecordV2]:
+    if checkpoint.total_pages is None:
+        raise PdfCheckpointArtifactIntegrityError("Checkpoint is missing total_pages.")
+    succeeded = [chunk for chunk in checkpoint.chunks if chunk.status == "succeeded"]
+    ordered = sorted(succeeded, key=lambda record: (record.start_page, record.end_page))
+    if len(ordered) == 0:
+        raise PdfCheckpointArtifactIntegrityError("Checkpoint has no succeeded chunks.")
+
+    seen: set[tuple[int, int, int]] = set()
+    expected_start_page = 1
+    for record in ordered:
+        key = _chunk_identity_key(
+            chunk_index=record.chunk_index,
+            start_page=record.start_page,
+            end_page=record.end_page,
+        )
+        if key in seen:
+            raise PdfCheckpointArtifactIntegrityError(
+                f"Checkpoint has duplicate chunk identity for chunk {record.chunk_index}."
+            )
+        seen.add(key)
+        if record.start_page != expected_start_page:
+            raise PdfCheckpointArtifactIntegrityError(
+                "Checkpoint succeeded chunks do not cover every page exactly once."
+            )
+        expected_start_page = record.end_page + 1
+    if expected_start_page != checkpoint.total_pages + 1:
+        raise PdfCheckpointArtifactIntegrityError(
+            "Checkpoint succeeded chunks do not cover the full document."
+        )
+    return ordered
+
+
 def _assemble_final_markdown_from_checkpoint(
     *, upload_path: Path, checkpoint: PdfCheckpointV2
 ) -> str:
     job_dir = upload_path.parent.parent
-    succeeded = [chunk for chunk in checkpoint.chunks if chunk.status == "succeeded"]
-    ordered = sorted(succeeded, key=lambda record: (record.start_page, record.end_page))
+    ordered = _ordered_complete_succeeded_chunks(checkpoint)
     parts: list[str] = []
     for record in ordered:
-        chunk_path = job_dir / record.artifact_relpath
-        if not chunk_path.exists():
-            continue
-        parts.append(chunk_path.read_text(encoding="utf-8").rstrip("\n"))
-    if len(parts) == 0:
-        return ""
+        parts.append(_read_verified_chunk_text(job_dir=job_dir, record=record))
     return "\n\n".join(parts).rstrip("\n") + "\n"
-
-
-def _append_unique_warnings(target: list[str], additional: list[str]) -> None:
-    seen = set(target)
-    for warning in additional:
-        if warning in seen:
-            continue
-        target.append(warning)
-        seen.add(warning)
 
 
 def _merge_phase_timings(current: dict[str, int], additional: dict[str, int]) -> dict[str, int]:
     return merge_phase_timings_canonical_v2(current=current, additional=additional)
+
+
+def _load_pdf_checkpoint_or_fail_closed(*, upload_path: Path) -> PdfCheckpointV2 | None:
+    try:
+        return load_pdf_checkpoint(upload_path=upload_path)
+    except Exception as exc:
+        raise ServiceError(
+            status_code=500,
+            code="checkpoint_invalid",
+            message=("PDF checkpoint payload is incompatible with the required metadata schema."),
+            retryable=False,
+        ) from exc
+
+
+def _required_checkpoint_metadata_value(*, label: str, value: str | None) -> str:
+    if value is None or value.strip() == "":
+        raise ServiceError(
+            status_code=500,
+            code="checkpoint_metadata_missing",
+            message=f"PDF chunk completed without {label} metadata to persist.",
+            retryable=False,
+        )
+    return value
+
+
+def _observed_ocr_engine_used_for_checkpoint_record(
+    *,
+    ocr_enabled: bool,
+    ocr_engine_used: str | None,
+) -> str | None:
+    if not ocr_enabled:
+        return None
+    if ocr_engine_used is None or ocr_engine_used.strip() == "":
+        raise ServiceError(
+            status_code=500,
+            code="checkpoint_metadata_missing",
+            message="OCR chunk completed without observed OCR engine metadata to persist.",
+            retryable=False,
+        )
+    return ocr_engine_used
+
+
+def _observed_ocr_languages_used_for_checkpoint_record(
+    *,
+    ocr_enabled: bool,
+    ocr_languages_used: list[str],
+) -> list[str]:
+    if not ocr_enabled:
+        return []
+    if len(ocr_languages_used) == 0:
+        raise ServiceError(
+            status_code=500,
+            code="checkpoint_metadata_missing",
+            message="OCR chunk completed without observed OCR language metadata to persist.",
+            retryable=False,
+        )
+    return list(ocr_languages_used)
 
 
 def execute_pdf_to_markdown_with_checkpoints_v2(
@@ -417,7 +536,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
             retryable=False,
         )
 
-    checkpoint = load_pdf_checkpoint(upload_path=job.upload_path)
+    checkpoint = _load_pdf_checkpoint_or_fail_closed(upload_path=job.upload_path)
     total_pages_obj = checkpoint.total_pages if checkpoint is not None else None
     if total_pages_obj is None:
         total_pages_obj = best_effort_pdf_total_pages(job.upload_path)
@@ -467,15 +586,13 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                 retryable=True,
             ) from exc
         ocr_enabled = bool(pdf_metadata.ocr_enabled)
-        ocr_engine_used = resolved_ocr_engine.value if ocr_enabled and resolved_ocr_engine else None
-        ocr_languages_used = list(resolved_ocr_languages) if ocr_enabled else []
         return (
             markdown_content,
             pdf_metadata.backend_used,
             pdf_metadata.acceleration_used,
             ocr_enabled,
-            ocr_engine_used,
-            ocr_languages_used,
+            pdf_metadata.ocr_engine_used if ocr_enabled else None,
+            list(pdf_metadata.ocr_languages_used) if ocr_enabled else [],
             list(pdf_warnings),
             normalize_phase_timings_map(dict(pdf_timings)),
         )
@@ -509,11 +626,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                 )
             )
 
-    warnings: list[str] = []
     phase_timings_ms: dict[str, int] = {}
-    backend_used: str | None = None
-    acceleration_used: str | None = None
-    ocr_enabled_any = False
     conversion_started = time.perf_counter()
 
     try:
@@ -562,6 +675,8 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                     chunk_backend_used,
                     chunk_acceleration_used,
                     chunk_ocr_enabled,
+                    chunk_ocr_engine_used,
+                    chunk_ocr_languages_used,
                     chunk_warnings,
                     chunk_phase_timings,
                 ) = _convert_one_pdf_chunk(
@@ -583,6 +698,8 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                     backend_used=chunk_backend_used,
                     acceleration_used=chunk_acceleration_used,
                     ocr_enabled=chunk_ocr_enabled,
+                    ocr_engine_used=chunk_ocr_engine_used,
+                    ocr_languages_used=chunk_ocr_languages_used,
                     warnings=chunk_warnings,
                     phase_timings_ms=chunk_phase_timings,
                     chunk_elapsed_ms=chunk_elapsed_ms,
@@ -657,12 +774,6 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                         commit_cursor += 1
                         continue
 
-                    if backend_used is None:
-                        backend_used = outcome.backend_used
-                    if acceleration_used is None:
-                        acceleration_used = outcome.acceleration_used
-                    ocr_enabled_any = ocr_enabled_any or bool(outcome.ocr_enabled)
-                    _append_unique_warnings(warnings, outcome.warnings)
                     phase_timings_ms = _merge_phase_timings(
                         phase_timings_ms, outcome.phase_timings_ms
                     )
@@ -678,25 +789,45 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                         end_page=outcome.end_page,
                         markdown_content=outcome.markdown_content,
                     )
+                    chunk_phase_timings_ms = normalize_phase_timings_map(
+                        {
+                            **outcome.phase_timings_ms,
+                            TIMING_KEY_CHUNK_TOTAL_MS: outcome.chunk_elapsed_ms,
+                        }
+                    )
+                    chunk_record = PdfChunkRecordV2(
+                        chunk_index=outcome.chunk_index,
+                        start_page=outcome.start_page,
+                        end_page=outcome.end_page,
+                        status="succeeded",
+                        started_at=dt_to_rfc3339(utc_now()),
+                        completed_at=dt_to_rfc3339(utc_now()),
+                        artifact_relpath=relpath,
+                        sha256=f"sha256:{sha_hex}",
+                        size_bytes=size_bytes,
+                        backend_used=_required_checkpoint_metadata_value(
+                            label="backend_used",
+                            value=outcome.backend_used,
+                        ),
+                        acceleration_used=_required_checkpoint_metadata_value(
+                            label="acceleration_used",
+                            value=outcome.acceleration_used,
+                        ),
+                        ocr_enabled=outcome.ocr_enabled,
+                        ocr_engine_used=_observed_ocr_engine_used_for_checkpoint_record(
+                            ocr_enabled=outcome.ocr_enabled,
+                            ocr_engine_used=outcome.ocr_engine_used,
+                        ),
+                        ocr_languages_used=_observed_ocr_languages_used_for_checkpoint_record(
+                            ocr_enabled=outcome.ocr_enabled,
+                            ocr_languages_used=outcome.ocr_languages_used,
+                        ),
+                        warnings=list(outcome.warnings),
+                        phase_timings_ms=chunk_phase_timings_ms,
+                    )
                     _upsert_checkpoint_chunk_record(
                         checkpoint=checkpoint,
-                        record=PdfChunkRecordV2(
-                            chunk_index=outcome.chunk_index,
-                            start_page=outcome.start_page,
-                            end_page=outcome.end_page,
-                            status="succeeded",
-                            started_at=dt_to_rfc3339(utc_now()),
-                            completed_at=dt_to_rfc3339(utc_now()),
-                            artifact_relpath=relpath,
-                            sha256=f"sha256:{sha_hex}",
-                            size_bytes=size_bytes,
-                            phase_timings_ms=normalize_phase_timings_map(
-                                {
-                                    **outcome.phase_timings_ms,
-                                    TIMING_KEY_CHUNK_TOTAL_MS: outcome.chunk_elapsed_ms,
-                                }
-                            ),
-                        ),
+                        record=chunk_record,
                     )
                     completed_chunk_keys.add(chunk_key)
                     checkpoint.processed_pages = min(
@@ -716,6 +847,12 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
                         phase_timings_ms,
                         {TIMING_KEY_CHECKPOINT_PERSIST_MS: checkpoint_persist_ms},
                     )
+                    chunk_record.phase_timings_ms = _merge_phase_timings(
+                        chunk_record.phase_timings_ms,
+                        {TIMING_KEY_CHECKPOINT_PERSIST_MS: checkpoint_persist_ms},
+                    )
+                    checkpoint.updated_at = dt_to_rfc3339(utc_now()) or checkpoint.updated_at
+                    persist_pdf_checkpoint(upload_path=job.upload_path, checkpoint=checkpoint)
                     if is_cancel_requested is not None and is_cancel_requested():
                         raise PdfConversionCanceledV2(job_id=job.job_id)
 
@@ -748,19 +885,33 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
         except Exception:
             pass
 
-    final_markdown = _assemble_final_markdown_from_checkpoint(
-        upload_path=job.upload_path,
-        checkpoint=checkpoint,
-    )
-    ocr_engine_used = resolved_ocr_engine.value if ocr_enabled_any and resolved_ocr_engine else None
-    ocr_languages_used = list(resolved_ocr_languages) if ocr_enabled_any else []
+    try:
+        final_markdown = _assemble_final_markdown_from_checkpoint(
+            upload_path=job.upload_path,
+            checkpoint=checkpoint,
+        )
+        terminal_metadata = aggregate_pdf_checkpoint_terminal_metadata(checkpoint)
+    except PdfCheckpointArtifactIntegrityError as exc:
+        raise ServiceError(
+            status_code=500,
+            code="checkpoint_artifact_invalid",
+            message=f"PDF checkpoint artifact integrity check failed: {exc}",
+            retryable=False,
+        ) from exc
+    except PdfCheckpointTerminalMetadataError as exc:
+        raise ServiceError(
+            status_code=500,
+            code="checkpoint_metadata_missing",
+            message=f"PDF checkpoint cannot explain terminal conversion metadata: {exc}",
+            retryable=False,
+        ) from exc
     return (
         final_markdown,
-        backend_used,
-        acceleration_used,
-        ocr_enabled_any,
-        ocr_engine_used,
-        ocr_languages_used,
-        warnings,
-        phase_timings_ms,
+        terminal_metadata.backend_used,
+        terminal_metadata.acceleration_used,
+        terminal_metadata.ocr_enabled,
+        terminal_metadata.ocr_engine_used,
+        terminal_metadata.ocr_languages_used,
+        terminal_metadata.warnings,
+        terminal_metadata.phase_timings_ms,
     )

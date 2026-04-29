@@ -5,7 +5,7 @@ type: epic
 status: proposed
 priority: high
 created: '2026-04-24'
-last_updated: '2026-04-25'
+last_updated: '2026-04-26'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
@@ -105,6 +105,10 @@ lanes, in dependency order:
 - Story 38 and Task 267 were scaffolded on 2026-04-25 after reviewing the
   research baseline. They are the first parser implementation authority and do
   not approve renderer or bulk workflow changes.
+- Task 267 completed on 2026-04-26 with a typed parser result contract, PyMuPDF
+  text-line adapter, deterministic fixture tests for both tracked PDFs, and
+  fail-closed synthetic coverage for lossy extraction, missing anchors, unknown
+  shapes, and incomplete matching structures.
 - Current sample files have been copied into the repo under
   `inputs/examples/digiexam-exports/` with a manifest README.
 - The promoted Exam.net PDF-converter schemas are recorded in
@@ -116,5 +120,5 @@ lanes, in dependency order:
 
 - [x] Story lane scaffolded after research review.
 - [ ] Exam.net ingestion target selected.
-- [ ] Parser fixtures and confidence gate defined.
+- [x] Parser fixtures and confidence gate defined.
 - [ ] Renderer target and parity-report gate defined.

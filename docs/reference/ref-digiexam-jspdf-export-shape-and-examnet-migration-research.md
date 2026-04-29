@@ -36,8 +36,8 @@ Digiexam export examples on 2026-04-25:
   - biology/ecology exam, 3 A4 pages, 15 items, all open-ended written response
     with some `a)`/`b)`/`c)` subparts.
 - `inputs/examples/digiexam-exports/_-Kemikapitel2ht2525dECA.pdf`
-  - chemistry exam, 3 A4 pages, mixed item types: multiple choice, matching
-    (`Para ihop`), and open-ended written response.
+  - chemistry exam, 3 A4 pages, 12 items: 3 multiple-choice items, 1 matching
+    item (`Para ihop`), and 8 open-ended written-response items.
 
 Sample size is two. Heuristics derived here must be revalidated against a
 larger corpus before a bulk pipeline is locked in.
@@ -88,6 +88,36 @@ An item in a DigiExam export is a vertical block with this observed structure:
 
 No ruled tables, inline images, math notation, true/false items, ordering
 items, or gap-fill items were observed in the two samples.
+
+### Chemistry Fixture Baseline
+
+Task 267 parser tests must treat the chemistry sample as this exact ordered
+item stream:
+
+| Order | Header/title | Expected type | Point marker | Notes |
+|---|---|---|---|---|
+| 1 | `Materia` | multiple choice | absent | options are prompt-visible only; answer key is absent |
+| 2 | `Para ihop` | matching | absent | carries numbered left prompts, lettered right options, and blank-row evidence |
+| 3 | `Grundämnen` | multiple choice | absent | option text crosses a page boundary in layout extraction |
+| 4 | `Atomen` | open ended | `Max poäng : 4` | subparts `a)` through `d)` |
+| 5 | `Ämnen` | open ended | `Max poäng : 4` | subparts `a)` through `c)` |
+| 6 | `Joner` | multiple choice | absent | options are prompt-visible only; answer key is absent |
+| 7 | `Emulsion` | open ended | `Max poäng : 2` | single prompt |
+| 8 | `Separera` | open ended | `Max poäng : 3` | subparts plus instruction line |
+| 9 | `Reaktion` | open ended | `Max poäng : 3` | subparts `a)` through `c)` |
+| 10 | `Förklara` | open ended | `Max poäng : 3` | single prompt |
+| 11 | `Te` | open ended | `Max poäng : 3` | single prompt |
+| 12 | `Dela upp färg` | open ended | `Max poäng : 3` | subparts `a)` through `c)` |
+
+Chemistry fixture tests must assert:
+
+- total item count is 12;
+- ordered headers/titles match the table above;
+- item-type breakdown is 3 multiple-choice, 1 matching, and 8 open-ended;
+- point-marker evidence is present exactly where the table lists a marker;
+- multiple-choice and matching answer-key provenance is `absent`;
+- the `Para ihop` item preserves the matching blank-row evidence separately
+  from any future renderer-ready match-pair schema.
 
 ### Robust Parsing Anchors
 

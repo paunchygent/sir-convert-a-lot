@@ -43,6 +43,8 @@ class ConversionResultData:
     backend_used: str
     acceleration_used: str
     ocr_enabled: bool
+    ocr_engine_used: str | None = None
+    ocr_languages_used: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     phase_timings_ms: dict[str, int] = field(default_factory=dict)
 

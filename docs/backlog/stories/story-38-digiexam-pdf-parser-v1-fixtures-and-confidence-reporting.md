@@ -2,10 +2,10 @@
 id: story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting
 title: DigiExam PDF parser v1 fixtures and confidence reporting
 type: story
-status: proposed
+status: completed
 priority: high
 created: '2026-04-25'
-last_updated: '2026-04-25'
+last_updated: '2026-04-26'
 related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md
@@ -37,7 +37,8 @@ Exam.net renderer or bulk workflow depends on the parser output.
   options or matching structures when present, and extraction warnings.
 - Prove the two observed PDFs from the research baseline:
   - ecology sample: 15 open-ended items with subpart handling;
-  - chemistry sample: mixed multiple-choice, matching, and open-ended items.
+  - chemistry sample: 12 ordered items with 3 multiple-choice, 1 matching, and
+    8 open-ended items.
 - Add confidence reporting that distinguishes high-confidence parsed fields,
   degraded extraction, unknown item shapes, and missing answer-key provenance.
 - Keep answer-key reconstruction, Exam.net rendering, QTI/native import
@@ -46,28 +47,28 @@ Exam.net renderer or bulk workflow depends on the parser output.
 
 ## Acceptance Criteria
 
-- [ ] Parser v1 produces deterministic item counts and item-type breakdowns for
+- [x] Parser v1 produces deterministic item counts and item-type breakdowns for
   both tracked DigiExam sample PDFs.
-- [ ] Every parsed item includes source-location evidence sufficient for a
+- [x] Every parsed item includes source-location evidence sufficient for a
   teacher or developer to trace the output back to the source PDF.
-- [ ] `Max poäng : N` markers are captured when present and absence is reported
+- [x] `Max poäng : N` markers are captured when present and absence is reported
   explicitly rather than inferred.
-- [ ] Multiple-choice and matching items report missing answer-key provenance
+- [x] Multiple-choice and matching items report missing answer-key provenance
   instead of guessing correct answers.
-- [ ] Swedish diacritic extraction is checked and lossy extraction produces a
+- [x] Swedish diacritic extraction is checked and lossy extraction produces a
   warning or fail-closed confidence result.
-- [ ] Unknown item shapes fail closed with actionable warnings and do not
+- [x] Unknown item shapes fail closed with actionable warnings and do not
   silently enter a renderer-ready stream.
 
 ## Test Requirements
 
-- [ ] Regression tests cover the ecology and chemistry sample PDFs in
+- [x] Regression tests cover the ecology and chemistry sample PDFs in
   `inputs/examples/digiexam-exports/`.
-- [ ] Tests assert item counts, item types, point marker extraction, and warning
+- [x] Tests assert item counts, item types, point marker extraction, and warning
   classes from the parser report.
-- [ ] Tests cover Swedish characters and the `Identity-H`/fallback-font risk
+- [x] Tests cover Swedish characters and the `Identity-H`/fallback-font risk
   called out in the research reference.
-- [ ] Tests cover at least one synthetic or fixture-level unknown-shape case
+- [x] Tests cover at least one synthetic or fixture-level unknown-shape case
   that must fail closed.
 
 ## Done Definition
@@ -79,6 +80,6 @@ is recorded without starting renderer or bulk workflow implementation.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

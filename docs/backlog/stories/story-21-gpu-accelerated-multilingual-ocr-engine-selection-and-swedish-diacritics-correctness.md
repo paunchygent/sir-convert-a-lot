@@ -5,7 +5,7 @@ type: story
 status: completed
 priority: high
 created: '2026-03-05'
-last_updated: '2026-03-05'
+last_updated: '2026-04-29'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md
@@ -46,8 +46,13 @@ Make PDF OCR both correct for Swedish (preserve `å`, `ä`, `ö`) and fast enoug
   - Emit OCR audit metadata in `result.conversion_metadata`:
     - `ocr_enabled` (effective: did OCR run),
     - `ocr_engine_used`,
-    - `ocr_languages_requested` + `ocr_languages_used`,
-    - `ocr_acceleration_used` (separate from backend `acceleration_used`).
+    - `ocr_languages_used`.
+  - Superseded by Task 269: the earlier proposed result fields
+    `ocr_languages_requested` and `ocr_acceleration_used` are not active v2
+    result metadata. Requested languages remain input/configuration under
+    `pdf_options.ocr_languages`; OCR-stage acceleration requires separate
+    future authority because it is not observed independently from backend
+    `acceleration_used`.
 - Runtime implementation:
   - Default OCR engine on Hemma: EasyOCR with GPU enabled and Swedish+English languages.
   - Optional OCR engine: Tesseract (CLI) with Swedish+English language packs.
@@ -71,11 +76,15 @@ Make PDF OCR both correct for Swedish (preserve `å`, `ä`, `ö`) and fast enoug
   - `result.conversion_metadata.ocr_languages_used` includes `sv`.
 - [ ] OCR engine + language selection are explicit and observable:
   - v2 accepts engine/language fields in PDF options,
-  - `result.conversion_metadata` includes `ocr_engine_used`, `ocr_languages_requested`, and `ocr_languages_used`.
+  - `result.conversion_metadata` includes `ocr_engine_used` and
+    `ocr_languages_used`,
+  - Task 269 supersedes the old `ocr_languages_requested` result claim; request
+    echo remains in `pdf_options.ocr_languages`, not terminal result metadata.
 - [ ] Default Hemma OCR engine is GPU-capable and verified live:
   - EasyOCR is the default for OCR-enabled PDF runs,
   - `result.conversion_metadata.acceleration_used="cuda"` for Docling execution,
-  - `result.conversion_metadata.ocr_acceleration_used="cuda"` for OCR when `acceleration_policy=gpu_required`.
+  - Task 269 supersedes the old `ocr_acceleration_used` result claim; a future
+    task must define observed OCR-stage acceleration before adding such a field.
 - [ ] Preflight is fail-fast and actionable:
   - missing engine/language fails at job creation (no multi-hour run),
   - error message includes remediation steps (install/enable engine + language).

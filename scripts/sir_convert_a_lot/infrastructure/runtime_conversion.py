@@ -98,6 +98,8 @@ def execute_job_conversion(
         backend_used=backend_result.backend_used,
         acceleration_used=backend_result.acceleration_used,
         ocr_enabled=backend_result.ocr_enabled,
+        ocr_engine_used=backend_result.ocr_engine_used,
+        ocr_languages_used=list(backend_result.ocr_languages_used),
         table_mode=spec.conversion.table_mode,
         options_fingerprint=f"sha256:{options_fingerprint}",
     )

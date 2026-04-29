@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-04-25'
+last_updated: '2026-04-29'
 ---
 
 ## Purpose
@@ -15,77 +15,16 @@ runbooks, or skills.
 
 ## Current State
 
-- The current active implementation lane is now the Epic 03 / Story 05 DevOps
-  lane for Hemma-hosted service operations.
-- Task 254 remains the immediate production recovery authority for detached
-  deploy verification, public HTTPS proof, and reserved default-host behavior.
-- Task 255 is completed and pushed to `main`. Dependency image inputs live
-  under `docker/service-deps/`, `Dockerfile.deps` owns ROCm/CPU dependency
-  images, and production/local runtime Dockerfiles consume explicit
-  `DEPS_IMAGE` app layers.
-- Review 05 Task 255 follow-up is completed and pushed to `main`. Dependency
-  image freshness now includes build-recipe truth through a separate recipe
-  hash, a combined dependency-image hash, and Docker label verification before
-  accepting existing dependency image tags.
-- Epic 09 is proposed for the Sir Convert Gateway cutover. ADR-0009, Stories
-  33-37, Tasks 256-264, and
-  `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md` now
-  govern the planning path.
-- ADR-0009 review feedback has been incorporated into the planning spine:
-  Sir Convert consumes HuleEdu `InternalIdentityContextV1` with audience
-  `sir-convert-a-lot` instead of minting a parallel identity contract, Task 259
-  is a hard prerequisite for ADR acceptance, user-originated backend jobs must
-  carry context-derived ownership, unknown public consumers require empirical
-  public-edge evidence, and `convert.hule.education` defaults to a fail-closed
-  reserved posture after cutover.
-- Third-pass review approved the Epic 09 planning spine. Keep ADR-0009
-  proposed until Task 259 locks the Sir-specific `InternalIdentityContextV1`
-  authorization profile and proves non-browser service/operator extensions do
-  not introduce a second signed issuer or browser-adjacent auth path.
-- Task 265 is completed, pushed, pulled on Hemma, and redeployed from commit
-  `f6eebfecd2cee273699e5b656ac49f7fb26cd248`. `sir_convert_a_lot_prod` remains
-  healthy on the internal/tunnel lane, while `sir_convert_a_lot_public_reserved`
-  owns `convert.hule.education` and returns the reserved non-product public
-  response until the Gateway cutover deliberately re-enables the intended
-  public edge.
-- Task 256 is completed. The caller inventory found no direct HuleEdu app
-  caller, found Skriptoteket user-originated backend callers in Conversion Hub
-  and Klassrumskartan class-list PDF import, found Projektveckor Portal as a
-  retained internal Hemma caller, and preserved the local operator tunnel/offload
-  lane.
-- Task 266 is proposed as the follow-up for auth-aware public-edge evidence.
-  The Task 256 24h nginx-proxy evidence did not show successful public
-  conversion traffic, but unknown public consumers remain a Task 263 cutover
-  blocker until API-key presence can be classified without logging secrets.
-- Task 259 is completed as a contract/profile definition task. The Sir Convert
-  authorization profile consumes HuleEdu `InternalIdentityContextV1` with
-  audience `sir-convert-a-lot`, defines context-derived job/artifact ownership,
-  keeps `X-API-Key` transport-only during migration, and names implementation
-  tests for spoofed headers, wrong audience, invalid signatures, cross-owner
-  reads, service contexts, and operator contexts.
-- Review 06 denied ADR-0009 acceptance. The remaining blocker is that
-  non-browser service/operator contexts are named but not contract-complete:
-  the docs must lock the minting authority and canonical field mapping,
-  including mandatory HuleEdu `session_id`, without introducing a parallel Sir
-  signer or browser-adjacent operator path.
-- Review 06 follow-up amended Task 259 and the authorization profile:
-  service/operator contexts must be minted only by a HuleEdu-owned
-  Gateway/internal identity authority using the canonical HuleEdu signing key
-  set and `iss == "api_gateway_service"`. Sir Convert, internal service
-  callers, and operator CLI tooling must not sign contexts. Non-browser
-  contexts now have explicit signed field mappings, nonblank non-browser
-  `session_id` handles, lane restrictions, and audit semantics.
-- Review 06 re-review kept ADR-0009 denied. The remaining blocker is schema
-  compatibility: the profile adds top-level `sir_convert_*` fields to
-  `InternalIdentityContextV1`, but the upstream HuleEdu v1 model forbids extra
-  fields.
-- Review 06 schema follow-up amended the profile to keep the top-level payload
-  valid under HuleEdu `InternalIdentityContextV1` v1. Sir Convert now derives
-  context kind from `sub` and `roles`, registered caller from `source_app`, and
-  workload purpose from route/grants with optional narrowing through signed
-  `active_context`; unknown top-level `sir_convert_*` fields must fail closed.
-- Review 06 second re-review approved ADR-0009 acceptance readiness. ADR-0009
-  remains proposed until Task 257 performs the explicit acceptance update.
+- Epic 03 / Story 05 remains the DevOps lane for Hemma-hosted service
+  operations; Task 254 and Task 255 details live in their governed docs.
+- Epic 09 / ADR-0009 remains the proposed Gateway cutover lane. Review 06 is
+  resolved to acceptance readiness, but ADR-0009 stays proposed until Task 257
+  performs the explicit acceptance update.
+- Task 265 was deployed on Hemma from commit
+  `f6eebfecd2cee273699e5b656ac49f7fb26cd248`; `convert.hule.education` remains
+  reserved until the Gateway cutover intentionally reopens the public edge.
+- Task 266 remains the follow-up for auth-aware public-edge evidence and unknown
+  public consumer classification without logging secrets.
 - Task 253 is the current docs-governance authority for cutting root
   `AGENTS.md` over to a thin skill router and aligning generated docs indexes
   with the canonical `.codex/handoff.md` active-context model.
@@ -94,6 +33,32 @@ runbooks, or skills.
   Task 267 is the immediate implementation authority for parser v1 fixtures,
   confidence/warning reporting, and fail-closed handling of unknown or degraded
   item shapes.
+- Task 267 is completed locally. Parser v1 now lives under the Sir Convert
+  domain/infrastructure surfaces with deterministic tests for the two tracked
+  DigiExam PDFs, explicit source evidence, answer-key provenance, and
+  fail-closed typed warnings for degraded or unknown shapes. It still does not
+  introduce Exam.net rendering, service/API routes, QTI/native import, or bulk
+  migration workflow behavior.
+- Review 07 follow-up fixed the parser-readiness blockers: exact
+  multiple-choice prompt/options assertions now cover `Materia`, `Grundämnen`,
+  and `Joner`; the `Grundämnen` page-boundary option no longer leaks into
+  `Atomen`; and the out-of-scope `Match answers` renderer schema was removed
+  from the Task 267 reference closeout.
+- Task 268 is completed locally under Story 39. PDF checkpoint schema is now
+  `v2_pdf_checkpoint_v2`, succeeded chunk records persist backend/OCR metadata,
+  warnings, and canonical timings, and zero-new-chunk finalization hydrates
+  terminal metadata from checkpoint records without reprocessing. Old v1
+  checkpoint payloads fail closed; there is no backwards-compatibility bridge.
+- Review 08 follow-up for Task 268 is implemented locally. The parallel test is
+  order-insensitive, terminal assembly fails closed on missing/corrupt or
+  incomplete chunk artifacts, OCR engine/language metadata is observed from the
+  backend result contract, and the public checkpoint v2 schema is documented.
+- Task 269 Review 09 is closed as approved under Story 39. Outcome B remains
+  the OCR metadata contract, and no-OCR PDF semantics are now explicit:
+  `ocr_languages_used=[]` when OCR was applicable but not executed, and
+  `ocr_languages_used=null` only where OCR is not applicable.
+  The 2026-04-29 re-review approved Task 268; Story 39 remains open for Task
+  269, Task 270, Task 271, and final Task 74 evidence.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -125,9 +90,9 @@ runbooks, or skills.
   `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active DigiExam migration epic:
   `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-- Active DigiExam parser story:
+- Completed DigiExam parser story:
   `docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md`.
-- Active DigiExam parser task:
+- Completed DigiExam parser task:
   `docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md`.
 - DigiExam and Exam.net migration research:
   `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
@@ -152,11 +117,14 @@ runbooks, or skills.
 
 ## Next Actions
 
-1. Continue EPIC-10 with Task 267: implement DigiExam parser v1 fixtures and
-   confidence reporting against the two tracked sample PDFs.
-1. Keep Task 267 narrow: parser module, typed item stream, source evidence,
-   warnings/confidence, Swedish diacritic extraction checks, and missing
-   answer-key provenance only.
+1. Arrange a separate retained post-implementation review for Task 267 before
+   treating the parser lane as independently approved.
+1. Continue Story 39 with Task 270 to add the dirty PDF OCR corpus manifest and
+   benchmark report schema before any Hemma dirty-corpus performance run.
+1. Continue EPIC-10 with the next governed slice only after review: likely the
+   Sir Convert intermediate exam representation and manifest schema, or a
+   renderer-target decision task if Exam.net ingestion evidence still needs
+   narrowing.
 1. Stop before Exam.net renderer, QTI/native import, service API, or bulk
    migration workflow changes unless a new governed task is created.
 1. Keep Epic 09/Task 266 available as a separate cutover lane; do not mix it
@@ -168,28 +136,41 @@ runbooks, or skills.
 
 ## Validation
 
-- 2026-04-19 Task 255, Review 05, and the initial Epic 09 docs-governance
-  gates/proofs passed; durable details live in governed task/review docs.
-- 2026-04-19 Task 256 inventory and Task 259 authorization-profile slices
-  passed docs/skills/handoff/index validation plus `git diff --check`; durable
-  details live in the governed task/reference docs.
-- 2026-04-19 Review 06 ADR-0009 readiness review denied acceptance until its
-  identity-profile blockers are resolved.
-- 2026-04-19 Review 06 follow-up amended Task 259 and the profile to lock
-  HuleEdu-owned service/operator context minting, required field mapping,
-  non-browser `session_id` handling, lane restrictions, and proof requirements.
-  Closeout validation passed:
-  `pdm run docs-validate`;
-  `pdm run skills-validate`;
-  `pdm run handoff-validate`;
-  `pdm run index-tasks --root docs/backlog --out /tmp/sir_tasks_index_review06_followup.md --fail-on-missing`;
+- Older April 2026 Gateway, Task 255, Task 256, Task 259, and Review 06
+  validation evidence lives in the linked governed task, reference, and review
+  docs.
+- 2026-04-27 Task 267 Review 07 follow-up validation
+  passed: `pdm run format-all`; `pdm run lint-fix`;
+  `pdm run typecheck-all` (`Success: no issues found in 571 source files`);
+  `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_pdf_parser_v1.py -q`
+  (`10 passed`); `pdm run coverage-gate` (`1061 passed, 5 skipped`, total
+  coverage `95.55%`); `pdm run docs-sync`; `pdm run docs-validate`;
+  `pdm run skills-validate`; `pdm run handoff-validate`; `git diff --check`.
+- 2026-04-28 Task 268 validation passed: `pdm run format-all`;
+  `pdm run lint-fix`; `pdm run typecheck-all`
+  (`Success: no issues found in 574 source files`);
+  `pdm run pytest-root tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`
+  (`19 passed`); `pdm run coverage-gate` (`1065 passed, 5 skipped`, total
+  coverage `95.47%`).
+- 2026-04-28 Review 08 follow-up validation passed:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
+  (`20 passed`) and `pdm run typecheck-all`
+  (`Success: no issues found in 574 source files`).
+- 2026-04-29 Task 269 focused validation passed:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q`
+  (`4 passed`).
+- 2026-04-29 Task 269 Review 09 follow-up validation passed:
+  focused Task 269 suite (`5 passed`), `pdm run format-all`, `pdm run lint-fix`,
+  `pdm run typecheck-all` (`Success: no issues found in 575 source files`),
+  `pdm run docs-sync`, `pdm run docs-validate`, `pdm run validate-tasks`,
+  `pdm run skills-validate`, `pdm run handoff-validate`, and
   `git diff --check`.
-- 2026-04-19 Review 06 re-review kept ADR-0009 denied because the profile's
-  top-level `sir_convert_*` context fields are outside the HuleEdu v1 schema.
-- 2026-04-19 Review 06 schema follow-up removed undeclared top-level Sir fields
-  from the profile and mapped those semantics through allowed HuleEdu v1
-  fields. Closeout validation passed docs/skills/handoff/index and
-  `git diff --check`.
+- 2026-04-29 Review 08 re-review approved Task 268 after verifying:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
+  (`20 passed`); `pdm run typecheck-all`
+  (`Success: no issues found in 574 source files`); `pdm run docs-sync`;
+  `pdm run docs-validate`; `pdm run skills-validate`;
+  `pdm run handoff-validate`; `git diff --check`.
 
 ## Stop Conditions
 

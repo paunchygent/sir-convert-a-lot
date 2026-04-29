@@ -590,7 +590,14 @@ Telemetry and acceleration evidence fields in `result.conversion_metadata`:
   - `null` when OCR is not executed or not applicable.
 - `ocr_languages_used` (`list[string] | null`):
   - best-effort normalized OCR language tags used for the OCR stage (for example `["sv","en"]`),
-  - `null` when OCR is not executed or not applicable.
+  - `[]` for PDF routes where OCR was applicable but not executed,
+  - `null` for routes where OCR is not applicable.
+- Deferred OCR fields:
+  - `ocr_languages_requested` is not part of result metadata; request intent is
+    represented by `pdf_options.ocr_languages` in the submitted job spec.
+  - `ocr_acceleration_used` is not part of result metadata; `acceleration_used`
+    reports backend execution acceleration, and separate OCR-stage acceleration
+    requires future observed telemetry before it can be published.
 - `gpu_runtime_kind` (`string | null`):
   - best-effort runtime kind observed for GPU-backed jobs (`rocm`, `cuda`, or `null`).
 - `gpu_device_count` (`int | null`):
@@ -652,11 +659,52 @@ Response matrix:
 
 Fetch the latest persisted checkpoint metadata for long-running PDF routes.
 
+The success payload is the raw v2 PDF checkpoint document. The current schema
+is `v2_pdf_checkpoint_v2`; earlier checkpoint payloads are not bridged. If a
+retained checkpoint cannot be parsed under the current schema, the endpoint
+returns `500` with `error.code = "checkpoint_invalid"` and resume/finalization
+must fail closed rather than infer metadata.
+
+Root fields:
+
+- `schema_version`: literal `v2_pdf_checkpoint_v2`.
+- `job_id`: source job id for the checkpoint payload.
+- `updated_at`: RFC3339 timestamp for the latest checkpoint write.
+- `total_pages`: total PDF page count when known.
+- `chunk_size_pages`: configured chunk size for the PDF route.
+- `processed_pages`: pages covered by succeeded chunk records.
+- `failed_pages`: pages covered by failed chunk records.
+- `chunks`: ordered or unordered chunk records; clients must sort by
+  `(start_page,end_page,chunk_index)` when reconstructing order.
+
+Succeeded chunk records include:
+
+- `chunk_index`, `start_page`, `end_page`: chunk identity and inclusive page range.
+- `status`: `succeeded` or `failed`.
+- `started_at`, `completed_at`: best-effort RFC3339 timestamps, nullable.
+- `artifact_relpath`: job-relative markdown chunk artifact path.
+- `sha256`: `sha256:<hex>` digest for the chunk artifact bytes.
+- `size_bytes`: chunk artifact byte length.
+- `backend_used`: observed backend label for the chunk.
+- `acceleration_used`: observed acceleration label for the chunk.
+- `ocr_enabled`: `true` only when OCR actually ran for the chunk.
+- `ocr_engine_used`: observed OCR engine when `ocr_enabled=true`; otherwise `null`.
+- `ocr_languages_used`: observed OCR languages when `ocr_enabled=true`; otherwise `[]`.
+- `warnings`: backend/runtime warnings retained for the chunk.
+- `phase_timings_ms`: canonical timing map retained for the chunk.
+
+Terminal finalization verifies every succeeded chunk artifact exists and matches
+the recorded `size_bytes` and `sha256`. Missing, corrupt, duplicate, or
+incomplete chunk coverage fails closed with a non-retryable checkpoint error
+instead of publishing a truncated artifact or inferred terminal metadata.
+
 Response matrix:
 
 - `200 OK`: returns checkpoint JSON payload when available.
 - `202 Accepted`: job exists (`queued|running|canceled`) but no checkpoint is available yet.
 - `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
+- `500 Internal Server Error`: checkpoint payload is unreadable or incompatible;
+  `error.code = "checkpoint_invalid"`.
 - `409 Conflict`: job is terminal and no checkpoint is available;
   `error.code = "checkpoint_not_available"`.
 

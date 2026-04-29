@@ -149,6 +149,11 @@ pdm run run-local-pdm hemma-repair-rocm-runtime
 - OCR engine + language selection (PDF routes; service API v2):
   - `--ocr-engine auto|easyocr|tesseract_cli` (default: `auto` delegates to runtime defaults)
   - `--ocr-language <tag>` (repeatable; BCP47/ISO639-1 tags like `sv`, `en`, `sv-SE`)
+  - Result metadata reports `ocr_enabled`, `ocr_engine_used`, and
+    `ocr_languages_used` only.
+  - Requested OCR languages remain request input (`pdf_options.ocr_languages`);
+    `ocr_acceleration_used` is deferred until OCR-stage acceleration is observed
+    separately from backend `acceleration_used`.
   - Hemma runtime defaults are controlled by env vars:
     - `SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE`
     - `SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES` (comma-separated, e.g. `sv,en`)

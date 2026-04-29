@@ -76,6 +76,12 @@ def test_pdf_partial_and_checkpoint_endpoints_transition_202_to_200(
                 artifact_relpath=relpath,
                 sha256=f"sha256:{sha_hex}",
                 size_bytes=size_bytes,
+                backend_used="docling",
+                acceleration_used="cuda",
+                ocr_enabled=False,
+                ocr_engine_used=None,
+                ocr_languages_used=[],
+                warnings=[],
                 phase_timings_ms={"chunk_total_ms": 5},
             )
         )
@@ -180,8 +186,16 @@ def test_pdf_partial_and_checkpoint_endpoints_transition_202_to_200(
     )
     assert checkpoint_post.status_code == 200
     payload = checkpoint_post.json()
+    assert payload["schema_version"] == "v2_pdf_checkpoint_v2"
     assert payload["job_id"] == job_id
     assert payload["processed_pages"] == 1
+    assert payload["chunks"][0]["backend_used"] == "docling"
+    assert payload["chunks"][0]["acceleration_used"] == "cuda"
+    assert payload["chunks"][0]["ocr_enabled"] is False
+    assert payload["chunks"][0]["ocr_engine_used"] is None
+    assert payload["chunks"][0]["ocr_languages_used"] == []
+    assert payload["chunks"][0]["warnings"] == []
+    assert payload["chunks"][0]["phase_timings_ms"] == {"chunk_total_ms": 5}
 
     allow_finish.set()
     assert _wait_for_terminal(client, "secret-key", job_id) == JobStatus.SUCCEEDED

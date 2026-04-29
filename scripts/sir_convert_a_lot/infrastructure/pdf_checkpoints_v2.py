@@ -18,9 +18,9 @@ import hashlib
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     atomic_write_json,
@@ -75,7 +75,29 @@ class PdfChunkRecordV2(BaseModel):
     artifact_relpath: str
     sha256: str
     size_bytes: int = Field(ge=0)
+    backend_used: str = Field(min_length=1)
+    acceleration_used: str = Field(min_length=1)
+    ocr_enabled: bool
+    ocr_engine_used: str | None = Field(default=None, min_length=1)
+    ocr_languages_used: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     phase_timings_ms: dict[str, int] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_succeeded_metadata(self) -> Self:
+        if self.status != "succeeded":
+            return self
+        if self.ocr_enabled:
+            if self.ocr_engine_used is None:
+                raise ValueError("succeeded OCR chunks must record ocr_engine_used")
+            if len(self.ocr_languages_used) == 0:
+                raise ValueError("succeeded OCR chunks must record ocr_languages_used")
+            return self
+        if self.ocr_engine_used is not None:
+            raise ValueError("non-OCR chunks must not record ocr_engine_used")
+        if len(self.ocr_languages_used) > 0:
+            raise ValueError("non-OCR chunks must not record ocr_languages_used")
+        return self
 
 
 class PdfCheckpointV2(BaseModel):
@@ -83,7 +105,7 @@ class PdfCheckpointV2(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["v2_pdf_checkpoint_v1"] = "v2_pdf_checkpoint_v1"
+    schema_version: Literal["v2_pdf_checkpoint_v2"] = "v2_pdf_checkpoint_v2"
     job_id: str = Field(min_length=1)
     updated_at: str
     total_pages: int | None = Field(default=None, ge=1)

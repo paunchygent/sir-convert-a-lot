@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-04-25
-last_updated: 2026-04-25
+created: 2026-04-29
+last_updated: 2026-04-29
 related: []
 labels:
   - generated
@@ -38,6 +38,9 @@ Generated index for backlog planning documents.
 | review-04-ruthless-review-of-task-254-production-public-edge-recovery | [Ruthless review of Task 254 production public edge recovery](reviews/review-04-ruthless-review-of-task-254-production-public-edge-recovery.md) | review | completed |
 | review-05-ruthless-review-of-task-255-dependency-image-cache-split | [Ruthless review of Task 255 dependency image cache split](reviews/review-05-ruthless-review-of-task-255-dependency-image-cache-split.md) | review | completed |
 | review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness | [Ruthless review of ADR-0009 gateway cutover readiness](reviews/review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness.md) | review | completed |
+| review-07-ruthless-review-of-task-267-digiexam-parser-v1-readiness | [Ruthless review of Task 267 DigiExam parser v1 readiness](reviews/review-07-ruthless-review-of-task-267-digiexam-parser-v1-readiness.md) | review | completed |
+| review-08-ruthless-review-of-task-268-pdf-ocr-checkpoint-metadata-truth | [Ruthless review of Task 268 PDF OCR checkpoint metadata truth](reviews/review-08-ruthless-review-of-task-268-pdf-ocr-checkpoint-metadata-truth.md) | review | completed |
+| review-09-ruthless-review-of-task-269-ocr-metadata-contract-alignment | [Ruthless review of Task 269 OCR metadata contract alignment](reviews/review-09-ruthless-review-of-task-269-ocr-metadata-contract-alignment.md) | review | completed |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -78,7 +81,8 @@ Generated index for backlog planning documents.
 | story-35-preserve-internal-service-and-local-operator-sir-convert-lanes | [Preserve internal service and local operator Sir Convert lanes](stories/story-35-preserve-internal-service-and-local-operator-sir-convert-lanes.md) | story | proposed |
 | story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover | [Sir Convert internal auth and metadata hardening before cutover](stories/story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover.md) | story | proposed |
 | story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads | [HuleEdu Gateway proxy integration for Sir Convert workloads](stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md) | story | proposed |
-| story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting | [DigiExam PDF parser v1 fixtures and confidence reporting](stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md) | story | proposed |
+| story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting | [DigiExam PDF parser v1 fixtures and confidence reporting](stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md) | story | completed |
+| story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate | [Harden and align PDF OCR path with dirty real-data performance gate](stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md) | story | proposed |
 | 005-bootstrap-docs-as-code-structure-under-docs | [Bootstrap docs-as-code structure under docs/](tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md) | task | completed |
 | 006-migrate-canonical-converter-code-and-quality-gates | [Migrate canonical converter code and quality gates](tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md) | task | completed |
 | 007-prepare-docker-hemma-service-foundation | [Prepare Docker + Hemma service foundation](tasks/task-04-04-prepare-docker-hemma-service-foundation.md) | task | completed |
@@ -272,8 +276,12 @@ Generated index for backlog planning documents.
 | task-264-cut-over-huleedu-and-skriptoteket-sir-convert-consumers | [Cut over HuleEdu and Skriptoteket Sir Convert consumers](tasks/task-264-cut-over-huleedu-and-skriptoteket-sir-convert-consumers.md) | task | proposed |
 | task-265-disable-direct-sir-convert-public-app-route-before-gateway-cutover | [Disable direct Sir Convert public app route before gateway cutover](tasks/task-265-disable-direct-sir-convert-public-app-route-before-gateway-cutover.md) | task | completed |
 | task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover | [Add auth-aware public-edge access evidence for Sir Convert cutover](tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md) | task | proposed |
-| task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate | [Implement DigiExam PDF parser v1 fixtures and confidence gate](tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md) | task | proposed |
+| task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate | [Implement DigiExam PDF parser v1 fixtures and confidence gate](tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md) | task | completed |
+| task-268-preserve-pdf-ocr-checkpoint-resume-metadata-truth | [Preserve PDF OCR checkpoint resume metadata truth](tasks/task-268-preserve-pdf-ocr-checkpoint-resume-metadata-truth.md) | task | completed |
+| task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests | [Reconcile PDF OCR metadata contract across docs runtime and tests](tasks/task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests.md) | task | completed |
 | task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning | [Dockerized Hemma ROCm GPU passthrough and runtime wheel pinning](tasks/task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning.md) | task | completed |
+| task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema | [Add dirty PDF OCR corpus manifest and benchmark report schema](tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md) | task | proposed |
+| task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence | [Run safe Hemma dirty PDF OCR benchmark and publish tuning evidence](tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md) | task | proposed |
 | task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint | [Markdown to PDF via HTML intermediary (Pandoc + WeasyPrint)](tasks/task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint.md) | task | completed |
 | task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx | [PDF to DOCX service pipeline (API v2)](tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md) | task | completed |
 | task-30-markdown-to-docx-via-html-intermediary-pandoc | [Markdown to DOCX via HTML intermediary (Pandoc)](tasks/task-30-markdown-to-docx-via-html-intermediary-pandoc.md) | task | completed |

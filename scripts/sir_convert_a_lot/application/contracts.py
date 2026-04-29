@@ -84,6 +84,8 @@ class ConversionMetadata(BaseModel):
     backend_used: str
     acceleration_used: str
     ocr_enabled: bool
+    ocr_engine_used: str | None = None
+    ocr_languages_used: list[str] = Field(default_factory=list)
     table_mode: TableMode
     options_fingerprint: str
 

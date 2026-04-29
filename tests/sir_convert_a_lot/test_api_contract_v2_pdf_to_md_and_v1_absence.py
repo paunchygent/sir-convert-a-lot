@@ -123,6 +123,10 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
     assert metadata["ocr_enabled"] is True
     assert metadata["ocr_engine_used"] == "auto"
     assert metadata["ocr_languages_used"] == ["en"]
+    legacy_requested_field = "ocr_languages_" + "requested"
+    legacy_ocr_acceleration_field = "ocr_" + "acceleration_used"
+    assert legacy_requested_field not in metadata
+    assert legacy_ocr_acceleration_field not in metadata
 
     artifact_response = client.get(
         f"/v2/convert/jobs/{job_id}/artifact",
@@ -131,6 +135,83 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
     assert artifact_response.status_code == 200
     assert artifact_response.headers.get("content-type", "").startswith("text/markdown")
     assert artifact_response.text == "# Converted from PDF\n\nBody\n"
+
+
+def test_pdf_to_md_no_ocr_result_uses_empty_language_list(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
+
+    def _successful_executor(**kwargs) -> V2ExecutionResult:
+        job = kwargs["job"]
+        assert job.source_format == SourceFormatV2.PDF
+        assert job.output_format == OutputFormatV2.MD
+        return V2ExecutionResult(
+            artifact_bytes=b"# Converted without OCR\n\nSelectable text\n",
+            pipeline_used="pdf_to_md_v2",
+            backend_used="docling",
+            acceleration_used="cpu",
+            warnings=[],
+            phase_timings_ms={"markdown_normalize_ms": 3},
+            options_fingerprint="contract_test_pdf_md_no_ocr",
+            ocr_enabled=False,
+            ocr_engine_used=None,
+            ocr_languages_used=[],
+        )
+
+    monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _successful_executor)
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=True,
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+        )
+    )
+    client = TestClient(app)
+
+    spec = _job_spec_v2(
+        filename="selectable.pdf",
+        source_format=SourceFormatV2.PDF,
+        output_format=OutputFormatV2.MD,
+    )
+    spec["pdf_options"] = {
+        "backend_strategy": "auto",
+        "ocr_mode": "off",
+        "table_mode": "accurate",
+        "normalize": "strict",
+    }
+    spec["execution"] = {
+        "acceleration_policy": "cpu_only",
+        "priority": "normal",
+        "document_timeout_seconds": 1800,
+    }
+
+    create_response = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem-pdf-md-no-ocr-v2",
+        file_name="selectable.pdf",
+        file_bytes=b"%PDF-1.4\n% fake selectable\n%%EOF\n",
+        spec=spec,
+    )
+    assert create_response.status_code in {200, 202}
+    job_id = create_response.json()["job"]["job_id"]
+    assert _wait_for_terminal(client, "secret-key", job_id) == JobStatus.SUCCEEDED
+
+    result_response = client.get(
+        f"/v2/convert/jobs/{job_id}/result",
+        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_pdf_md_no_ocr_v2"},
+    )
+    assert result_response.status_code == 200
+    metadata = result_response.json()["result"]["conversion_metadata"]
+    assert metadata["ocr_enabled"] is False
+    assert metadata["ocr_engine_used"] is None
+    assert metadata["ocr_languages_used"] == []
 
 
 def test_v1_conversion_routes_are_not_registered(tmp_path: Path) -> None:
