@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-04'
-last_updated: '2026-04-27'
+last_updated: '2026-04-29'
 related:
   - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md
   - docs/backlog/stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md
@@ -48,16 +48,20 @@ conversions on Hemma.
   closely related bounded parameters) until evidence proves a different setting is both stable and
   materially faster.
 - A dedicated bounded sweep command surface now exists for that follow-up work:
-  - local: `pdm run benchmark:task-74-two-worker-sweep`
-  - Hemma: `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>`
+  - local smoke/schema only: `pdm run benchmark:task-74-two-worker-sweep`
+  - production Hemma evidence: `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>`
 - Dirty real-data OCR evidence added by Story 39 must extend this Task 74 report schema and command
   surface rather than bypassing it. Story 39 evidence is not acceptance evidence for Task 74 unless it
-  also preserves this task's Task 76 parity requirement, safe profile matrix, and forbidden 4-worker
-  OOM-profile guardrail.
+  also preserves this task's Task 76 parity requirement, safe profile matrix, executed-source hash
+  verification, and forbidden 4-worker OOM-profile guardrail.
 - Make the runtime surface explicit in the evidence bundle:
-  - `mode=in_process_app` is acceptable for harness development/smoke evidence,
-  - final closeout evidence must also prove deploy/runtime parity on Hemma via `T76`, and must
-    document why the measured runtime surface is representative of the production lane.
+  - `mode=in_process_app` is acceptable only for harness development, schema validation, and
+    command-surface smoke checks,
+  - local/in-process runs must not be cited as performance proof, throughput proof, tuning proof, or
+    production default evidence,
+  - final closeout evidence must run against the production service on Hemma, prove deploy/runtime
+    parity via `T76`, and document why the measured service lane is representative of the
+    production OCR path.
 
 Measurement rules (must be explicit in report):
 
@@ -71,14 +75,19 @@ Measurement rules (must be explicit in report):
 ## Ruthless Review Gaps To Close
 
 - Runtime-parity ambiguity:
-  - the current harness runs `mode=in_process_app`, which is not automatically the same as the
-    deployed Hemma service/runtime image.
-  - `T74` must not be terminalized on harness-only evidence without explicit `T76` deploy parity and
-    a written parity statement in the report.
+  - the local harness can run `mode=in_process_app`, which is not the deployed Hemma service/runtime
+    image and cannot produce accepted performance evidence.
+  - `T74` must not be terminalized on harness-only evidence; accepted performance evidence requires
+    the production service on Hemma, explicit `T76` deploy parity, and a written parity statement in
+    the report.
 - Evidence sufficiency ambiguity:
-  - local CPU-only smoke artifacts are command-surface evidence only and must never be presented as
-    acceptance evidence for Story 20 / Epic 06 closeout.
-  - final evidence must be Hemma-hosted, GPU-backed, and tied to the pushed revision under review.
+  - local CPU-only smoke artifacts are command-surface/schema evidence only and must never be
+    presented as performance, throughput, tuning, or acceptance evidence for Story 20 / Epic 06
+    closeout.
+  - smoke assertions and smoke command stdout must not print or assert p50/p90, latency,
+    pages-per-minute, throughput, or improvement percentages.
+  - final performance evidence must be captured against the production service on Hemma, be
+    GPU-backed, and be tied to the pushed revision under review.
 - Determinism gap:
   - Story 20 requires no output-determinism/API-contract regression under parallel mode; `T74`
     therefore needs explicit artifact-digest or equivalent determinism evidence in addition to
@@ -94,7 +103,8 @@ Measurement rules (must be explicit in report):
 
 1. Re-run `T76` on the current pushed revision and record the exact `expected_revision`,
    `remote_revision`, and `service_revision`.
-1. Execute the canonical `T74` profile matrix on Hemma with GPU-backed settings:
+1. Execute the canonical `T74` profile matrix against the production service on Hemma with
+   GPU-backed settings:
    - `page_counts=120,180,240`
    - `acceleration_policy=gpu_required`
    - `ocr_mode=force`
@@ -174,17 +184,20 @@ Measurement rules (must be explicit in report):
   - benchmark harness: `scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py`
   - markdown report writer: `scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py`
 - The harness now:
-  - generates representative scanned-PDF corpus files,
-  - runs baseline and tuned runtime profiles through the v2 API/runtime path,
-  - captures p50/p90 latency, success/error rates, queue/worker saturation, and GPU gauges,
+  - generates deterministic scanned-PDF corpus files for command-surface smoke and regression
+    checks,
+  - can run baseline and tuned runtime profiles through the v2 API/runtime path,
   - emits JSON + markdown artifacts under `build/benchmarks/story-20/`.
+- Performance fields in local smoke artifacts are diagnostic byproducts only; they are not
+  acceptance, tuning, throughput, or production default evidence.
 - Added regression coverage:
   - `tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py`
 - Started the first closeout blocker for final evidence integrity:
   - benchmark payload/report now embed explicit runtime-surface declaration,
   - Task 76 parity metadata can be loaded from `report.json` or explicit CLI flags,
   - the evidence bundle now computes and records `runtime_parity.parity_proven`.
-- Local smoke command completed on laptop using CPU-only overrides:
+- Local smoke command completed on laptop using CPU-only overrides. This is command-surface/schema
+  evidence only and does not prove performance, throughput, tuning, or production defaults:
   - `build/benchmarks/story-20/task-74-throughput-smoke-local.json`
   - `build/benchmarks/story-20/task-74-throughput-smoke-local.md`
 - Live Hemma evidence is still pending:
@@ -214,7 +227,8 @@ Measurement rules (must be explicit in report):
 
 - `pdm run typecheck-all` (pass: `Success: no issues found in 211 source files`)
 - `pdm run pytest-root tests/sir_convert_a_lot/test_benchmark_story20_parallel_throughput.py tests/sir_convert_a_lot/test_benchmark_story20_telemetry_overhead.py tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py -q` (pass: `9 passed`)
-- Local smoke command (pass for command surface; not acceptance evidence):
+- Local smoke command (pass for command surface/schema only; not performance, throughput, tuning, or
+  acceptance evidence):
   - `pdm run benchmark:task-74 --page-counts 2,3 --acceleration-policy cpu_only --ocr-mode off --ocr-engine auto --ocr-languages en --no-gpu-available --max-poll-seconds 120 --output-json build/benchmarks/story-20/task-74-throughput-smoke-local.json --output-report build/benchmarks/story-20/task-74-throughput-smoke-local.md --corpus-root build/benchmarks/story-20/task-74-smoke-corpus --data-root build/benchmarks/story-20/task-74-smoke-runtime`
 
 ## Planned Acceptance Commands

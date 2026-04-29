@@ -34,6 +34,9 @@ class JobRecord(TypedDict):
     pages_per_minute: float | None
     backend_used: str | None
     acceleration_used: str | None
+    ocr_enabled: bool | None
+    ocr_engine_used: str | None
+    ocr_languages_used: list[str] | None
     gpu_busy_percent: int | None
     gpu_memory_used_percent: int | None
     warnings: list[str]
@@ -168,6 +171,85 @@ class ComparisonSummary(TypedDict):
     rollback_conditions: list[str]
 
 
+class DirtyCorpusManifestEntry(TypedDict):
+    """One metadata-only dirty OCR corpus entry."""
+
+    source_id: str
+    source_sha256: str
+    page_count: int
+    dirty_data_classes: list[str]
+    expected_ocr_languages: list[str]
+    privacy_state: str
+    safe_excerpts_may_be_reported: bool
+
+
+class DirtyCorpusManifestSummary(TypedDict):
+    """Sanitized summary of the dirty OCR corpus manifest."""
+
+    schema_version: str
+    corpus_id: str
+    entry_count: int
+    executed_entry_count: int
+    total_pages: int
+    dirty_data_class_counts: dict[str, int]
+    required_dirty_data_classes_present: list[str]
+    missing_required_dirty_data_classes: list[str]
+    expected_ocr_languages: list[str]
+    privacy_state_counts: dict[str, int]
+    safe_excerpt_entry_count: int
+    synthetic_fixture_entry_count: int
+    contains_real_dirty_inputs: bool
+    source_hashes_verified: bool
+    real_data_gate_satisfied: bool
+    entries: list[DirtyCorpusManifestEntry]
+
+
+class ProfileSafetySummary(TypedDict):
+    """Task 74 safe-profile classification for one benchmark profile."""
+
+    profile_name: str
+    max_chunk_workers: int
+    gpu_stage_max_concurrency: int
+    safe_profile: bool
+    unsafe_reason: str | None
+
+
+class DirtyCorpusFailureTaxonomy(TypedDict):
+    """Failure and warning buckets required by the dirty-corpus report."""
+
+    failed_job_count: int
+    warning_count: int
+    input_quality_warning_count: int
+    engine_runtime_failure_count: int
+    timeout_failure_count: int
+    gpu_resource_failure_count: int
+    conversion_bug_failure_count: int
+
+
+class DirtyCorpusOcrMetadataSummary(TypedDict):
+    """Observed OCR/backend metadata summary for dirty-corpus reports."""
+
+    ocr_enabled_job_count: int
+    ocr_engine_used_values: list[str]
+    ocr_languages_used_values: list[str]
+    backend_used_values: list[str]
+    acceleration_used_values: list[str]
+    warning_count: int
+
+
+class DirtyCorpusReportExtension(TypedDict):
+    """Task 270 dirty-corpus extension embedded in Task 74 reports."""
+
+    schema_version: str
+    manifest: DirtyCorpusManifestSummary
+    profile_safety: list[ProfileSafetySummary]
+    all_profiles_safe: bool
+    task76_parity_required: bool
+    task76_parity_proven: bool
+    failure_taxonomy: DirtyCorpusFailureTaxonomy
+    ocr_metadata_summary: DirtyCorpusOcrMetadataSummary
+
+
 class BenchmarkPayload(TypedDict):
     """Canonical Task 74 benchmark payload shape."""
 
@@ -180,3 +262,4 @@ class BenchmarkPayload(TypedDict):
     runtime_parity: RuntimeParitySummary
     profiles: list[ProfilePayload]
     comparison: ComparisonSummary
+    dirty_corpus: DirtyCorpusReportExtension | None

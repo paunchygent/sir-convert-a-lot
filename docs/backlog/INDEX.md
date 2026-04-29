@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-04-29
-last_updated: 2026-04-29
+created: 2026-04-30
+last_updated: 2026-04-30
 related: []
 labels:
   - generated
@@ -280,7 +280,7 @@ Generated index for backlog planning documents.
 | task-268-preserve-pdf-ocr-checkpoint-resume-metadata-truth | [Preserve PDF OCR checkpoint resume metadata truth](tasks/task-268-preserve-pdf-ocr-checkpoint-resume-metadata-truth.md) | task | completed |
 | task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests | [Reconcile PDF OCR metadata contract across docs runtime and tests](tasks/task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests.md) | task | completed |
 | task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning | [Dockerized Hemma ROCm GPU passthrough and runtime wheel pinning](tasks/task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning.md) | task | completed |
-| task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema | [Add dirty PDF OCR corpus manifest and benchmark report schema](tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md) | task | proposed |
+| task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema | [Add dirty PDF OCR corpus manifest and benchmark report schema](tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md) | task | completed |
 | task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence | [Run safe Hemma dirty PDF OCR benchmark and publish tuning evidence](tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md) | task | proposed |
 | task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint | [Markdown to PDF via HTML intermediary (Pandoc + WeasyPrint)](tasks/task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint.md) | task | completed |
 | task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx | [PDF to DOCX service pipeline (API v2)](tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md) | task | completed |

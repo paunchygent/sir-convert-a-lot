@@ -90,8 +90,11 @@ path on hard, dirty, real PDFs before claiming the OCR lane is production-tuned.
   - Private or PII-bearing source PDFs must remain untracked; evidence may use
     sanitized summaries, hashes, page counts, and excerpts only when safe.
 - Hemma proof:
-  - Run the real-data benchmark through the committed Task 74 local/Hemma
-    command surfaces, not a one-off benchmark path.
+  - Run the real-data benchmark through the committed Task 74 production Hemma
+    command surface, not a local/in-process run and not a one-off benchmark
+    path.
+  - Bind every executed private PDF to the metadata-only manifest by verifying
+    `source_sha256` before generating dirty-corpus benchmark evidence.
   - Prove Task 76 deploy/runtime parity on the exact revision before accepting
     final dirty-corpus benchmark evidence.
   - Record throughput, stage timings, OCR engine/language metadata, GPU runtime
@@ -160,11 +163,14 @@ record the outcome in the relevant task doc:
   docs, runtime metadata, smoke reports, and tests.
 - `docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md`:
   extend the Task 74 report schema with hard/dirty corpus manifest support,
-  local dry-run validation, privacy safeguards, Task 76 parity fields, and safe
-  profile classification.
+  local dry-run validation, privacy safeguards, Task 76 parity fields, and
+  fail-closed safe profile classification. The generated synthetic scanned
+  corpus remains harness smoke input only and cannot satisfy the real-data
+  acceptance gate.
 - `docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md`:
-  run the safe Hemma dirty-corpus OCR benchmark, publish sanitized evidence,
-  and define rollback/tuning defaults or a documented blocker.
+  run the safe dirty-corpus OCR benchmark against the production service on
+  Hemma, publish sanitized evidence, and define rollback/tuning defaults or a
+  documented blocker.
 
 ## Acceptance Criteria
 
@@ -191,9 +197,12 @@ record the outcome in the relevant task doc:
   - a corpus manifest describes each dirty input class, page count, source
     hash, OCR language expectation, and privacy/sanitization state,
   - at least one benchmark report is generated from hard/dirty real PDFs,
+  - the report records `source_hashes_verified=true` and
+    `executed_entry_count=entry_count`,
   - story completion is blocked if only synthetic fixtures have been run.
 - [ ] Performance requirements are hard gates:
-  - Hemma benchmark evidence includes baseline and candidate/tuned profile,
+  - accepted benchmark evidence runs against the production service on Hemma
+    and includes baseline and candidate/tuned profile,
   - median wall-clock improves by >= 40% versus baseline for the selected
     corpus, or the story remains open with a documented blocker,
   - the operator "300 PDFs" target remains visible: \<= 60 minutes on the tuned
@@ -211,8 +220,11 @@ record the outcome in the relevant task doc:
 - [ ] GPU-first governance holds:
   - GPU-required runs fail closed when ROCm/CUDA evidence is unavailable,
   - no runtime silently changes to CPU OCR for a GPU-required job,
-  - any CPU-only local test mode is clearly test-only and cannot masquerade as
-    production proof.
+  - any CPU-only local test mode is clearly smoke/schema/regression only and
+    cannot masquerade as performance, throughput, tuning, acceptance, or
+    production proof,
+  - smoke assertions and smoke command stdout do not print or assert p50/p90,
+    latency, pages-per-minute, throughput, or improvement percentages.
 
 ## Test Requirements
 
@@ -222,7 +234,7 @@ record the outcome in the relevant task doc:
   semantics.
 - [ ] Focused Docling backend tests for `ocr_mode=auto`, `force`, and `off`
   metadata truth under resolved EasyOCR/Tesseract settings.
-- [ ] Dirty-corpus harness tests that validate manifest/report schema without
+- [x] Dirty-corpus harness tests that validate manifest/report schema without
   requiring private PDFs in the repository.
 - [ ] Hemma live benchmark command producing deterministic JSON/Markdown report
   artifacts under `build/verification/` or `build/benchmarks/`.

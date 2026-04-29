@@ -12,6 +12,7 @@ Relationships:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -107,3 +108,66 @@ def test_parse_args_switches_to_two_worker_sweep_defaults() -> None:
     assert settings.data_root == run_task74_hemma_benchmark.DEFAULT_SWEEP_DATA_ROOT
     assert settings.two_worker_chunk_sizes == "2,3,4,6,8"
     assert settings.two_worker_gpu_stage_caps == "1,2"
+
+
+def test_main_stdout_excludes_performance_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    output_json = tmp_path / "task74.json"
+    output_report = tmp_path / "task74.md"
+
+    def execute_workflow_stub(
+        settings: run_task74_hemma_benchmark.Task74HemmaSettings,
+    ) -> dict[str, object]:
+        assert settings.output_json == output_json
+        return {
+            "comparison": {
+                "recommended_profile": "parallel_conservative",
+                "p50_improvement_percent": 41.7,
+                "meets_target": True,
+            },
+            "runtime_parity": {"parity_proven": True},
+            "dirty_corpus": {
+                "all_profiles_safe": True,
+                "manifest": {"source_hashes_verified": True},
+            },
+        }
+
+    monkeypatch.setattr(
+        run_task74_hemma_benchmark,
+        "execute_workflow",
+        execute_workflow_stub,
+    )
+
+    exit_code = run_task74_hemma_benchmark.main(
+        [
+            "--expected-revision",
+            "abc1234",
+            "--output-json",
+            output_json.as_posix(),
+            "--output-report",
+            output_report.as_posix(),
+            "--dirty-corpus-manifest",
+            "metadata-only-manifest.json",
+            "--dirty-corpus-source-root",
+            "private-pdf-root",
+        ]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    summary = json.loads(output)
+    assert summary == {
+        "dirty_corpus_all_profiles_safe": True,
+        "dirty_corpus_manifest_loaded": True,
+        "dirty_corpus_source_hashes_verified": True,
+        "output_json": output_json.as_posix(),
+        "output_report": output_report.as_posix(),
+        "runtime_parity_proven": True,
+    }
+    assert "recommended_profile" not in output
+    assert "p50" not in output
+    assert "improvement" not in output
+    assert "meets_target" not in output

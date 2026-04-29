@@ -22,6 +22,7 @@ from scripts.sir_convert_a_lot.benchmark_story20_throughput_report import (
     DEFAULT_OUTPUT_REPORT,
     RuntimeParityInputs,
     _build_two_worker_sweep_profiles,
+    main,
     run_benchmark,
 )
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
@@ -79,14 +80,61 @@ def test_run_benchmark_writes_expected_payload_and_report(
     assert payload["benchmark_id"] == "task-74-throughput-benchmark"
     assert payload["comparison"]["baseline_profile"] == "serial_baseline"
     assert payload["comparison"]["tuned_profile"] == "parallel_conservative"
-    assert payload["comparison"]["recommended_profile"] == "parallel_conservative"
-    assert payload["comparison"]["p50_improvement_percent"] >= 0.0
     assert len(payload["profiles"]) == 2
+    assert payload["dirty_corpus"] is None
     assert payload["runtime_surface"]["mode"] == "in_process_app"
     assert payload["runtime_parity"]["parity_proven"] is False
     report_text = output_report.read_text(encoding="utf-8")
     assert "## Runtime Surface" in report_text
     assert "## Runtime Parity" in report_text
+
+
+def test_smoke_command_stdout_excludes_performance_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        runtime_engine_v2,
+        "execute_v2_job_conversion",
+        _stub_execute_v2_job_conversion,
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchmark_story20_throughput_report",
+            "--output-json",
+            (tmp_path / "task74.json").as_posix(),
+            "--output-report",
+            (tmp_path / "task74.md").as_posix(),
+            "--corpus-root",
+            (tmp_path / "corpus").as_posix(),
+            "--data-root",
+            (tmp_path / "runtime").as_posix(),
+            "--page-counts",
+            "2",
+            "--acceleration-policy",
+            "cpu_only",
+            "--ocr-mode",
+            "off",
+            "--ocr-engine",
+            "auto",
+            "--ocr-languages",
+            "en",
+            "--no-gpu-available",
+        ],
+    )
+
+    main()
+
+    output = capsys.readouterr().out
+    assert "task74-benchmark-written" in output
+    assert "p50" not in output
+    assert "p90" not in output
+    assert "latency" not in output
+    assert "throughput" not in output
+    assert "pages_per_minute" not in output
+    assert "improvement" not in output
 
 
 def test_build_two_worker_sweep_profiles_stays_within_safe_bounds() -> None:
@@ -272,7 +320,7 @@ def test_run_benchmark_fails_fast_when_easyocr_missing_for_in_process_mode(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.benchmark_story20_throughput_report.importlib.util.find_spec",
+        "scripts.sir_convert_a_lot.benchmarking.story20_ocr_runtime.importlib.util.find_spec",
         lambda _module_name: None,
     )
 
@@ -297,7 +345,7 @@ def test_run_benchmark_fails_fast_when_easyocr_model_dir_missing(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.benchmark_story20_throughput_report.importlib.util.find_spec",
+        "scripts.sir_convert_a_lot.benchmarking.story20_ocr_runtime.importlib.util.find_spec",
         lambda _module_name: importlib.machinery.ModuleSpec("easyocr", loader=None),
     )
 

@@ -5,7 +5,7 @@ type: review
 status: completed
 priority: high
 created: '2026-04-25'
-last_updated: '2026-04-26'
+last_updated: '2026-04-30'
 related:
   - docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md
   - docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md
@@ -51,6 +51,31 @@ Structured review artifact for implementation or readiness checks.
     observed item headers.
 
 ## Findings
+
+### Re-review Findings 2026-04-30
+
+No remaining blocking findings for Task 267.
+
+- The multiple-choice prompt/option segmentation finding is resolved. The parser
+  now derives options from indented lines, preserves multi-line prompts, blocks
+  text that appears after option lines, and the fixture tests assert exact
+  `prompt_lines` and `options` for `Materia`, `Grundämnen`, and `Joner`.
+- The `Grundämnen`/`Atomen` page-boundary leak finding is resolved. The parser
+  now repairs pre-point indented spillover into the previous multiple-choice
+  block, and the tests assert that `vatten` stays in `Grundämnen.options` and
+  does not appear in `Atomen.prompt_lines`.
+- The renderer-scope finding is resolved. The `Match answers` renderer schema
+  and production renderer target expansion have been removed from the research
+  reference; only the parser-side "do not synthesize Correct matches" rule
+  remains in Task 267.
+
+Validation evidence gathered during this re-review:
+
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_pdf_parser_v1.py -q`
+  passed with `10 passed`.
+- A live chemistry parse confirmed `status == success`, `renderer_ready == true`,
+  exact multiple-choice prompts/options for `Materia`, `Grundämnen`, and
+  `Joner`, and no `vatten` leak into `Atomen`.
 
 ### Re-review Findings 2026-04-26
 
@@ -252,28 +277,23 @@ Structured review artifact for implementation or readiness checks.
 
 ## Decision
 
-changes_requested
+approved
 
 ## Response
 
-The 2026-04-26 implementation resolves the original planning blockers around
-baseline determinism, typed confidence state, ownership paths, and validation
-commands. It is still not approval-ready because the returned parser result can
-mark corrupted chemistry prompt/option structure as renderer-ready, and the
-docs closeout widens renderer target semantics outside Task 267.
+The 2026-04-30 re-review resolves the remaining parser correctness and
+renderer-scope findings from 2026-04-26. Task 267 is approved from this retained
+review surface.
 
 ## Follow-up Actions
 
-1. Fix multiple-choice prompt/option segmentation and assert exact
-   prompt/options for all chemistry multiple-choice items.
-1. Fix or block the `Grundämnen`/`Atomen` page-boundary option leakage.
-1. Remove or re-govern the `Match answers` renderer schema added during Task
-   267 closeout.
+1. No required Task 267 follow-up remains from this review.
 
 ## Completion
 
 Initial review completed on 2026-04-25 with changes requested. Re-review
-completed on 2026-04-26 with changes still requested.
+completed on 2026-04-26 with changes still requested. Re-review completed on
+2026-04-30 and approved.
 
 ## Checklist
 

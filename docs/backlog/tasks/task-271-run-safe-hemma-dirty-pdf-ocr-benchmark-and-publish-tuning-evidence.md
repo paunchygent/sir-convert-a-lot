@@ -5,7 +5,7 @@ type: task
 status: proposed
 priority: high
 created: '2026-04-27'
-last_updated: '2026-04-27'
+last_updated: '2026-04-29'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md
@@ -29,15 +29,22 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Run the dirty real-data OCR benchmark on Hemma through the safe Task 74 command
-surface, publish sanitized tuning evidence, and block Story 39 closeout on
-unsafe or non-representative performance proof.
+Run the dirty real-data OCR benchmark against the production service on Hemma
+through the safe Task 74 command surface, publish sanitized tuning evidence,
+and block Story 39 closeout on unsafe or non-representative performance proof.
 
 ## PR Scope
 
 - Use the manifest/report schema from Task 270.
 - Re-run Task 76 deploy/runtime parity on the current pushed revision before
   any final benchmark evidence is accepted.
+- Accept no local, in-process, synthetic-corpus, or smoke-run metrics as
+  performance proof; local surfaces may validate only schema, command wiring,
+  manifest privacy, and fail-closed profile classification.
+- Provide the private Hemma source root alongside the metadata-only manifest so
+  the benchmark runner can hash executed PDFs, verify them against manifest
+  `source_sha256` values, and copy only sanitized `source_id.pdf` names into the
+  execution corpus.
 - Run only Task 74-approved safe profiles:
   - `serial_baseline`,
   - `parallel_conservative`,
@@ -68,11 +75,21 @@ unsafe or non-representative performance proof.
 
 ## Acceptance Criteria
 
-- [ ] Final evidence is Hemma-hosted, GPU-backed, and tied to the pushed
-  revision under review.
+- [ ] Final evidence is captured against the production service on Hemma,
+  GPU-backed, and tied to the pushed revision under review.
 - [ ] Runtime parity is proven through Task 76 before the benchmark result is
   accepted.
+- [ ] No local, in-process, synthetic-corpus, or smoke output is used as
+  performance, throughput, tuning, acceptance, or production default evidence.
+- [ ] Smoke assertions and smoke command stdout remain schema/safety-only and
+  do not print or assert p50/p90, latency, pages-per-minute, throughput, or
+  improvement percentages.
 - [ ] The dirty-corpus run uses the Task 74 report schema and command surface.
+- [ ] The dirty-corpus report records `source_hashes_verified=true`,
+  `executed_entry_count=entry_count`, and `real_data_gate_satisfied=true`;
+  manifest-only validation cannot satisfy this gate.
+- [ ] Sanitized JSON/Markdown evidence omits the manifest path, private source
+  root, and private PDF filenames.
 - [ ] Unsafe profiles fail closed:
   - no 4-worker OOM-profile rerun as acceptance evidence,
   - no profile outside the safe 2-worker boundary unless a new governed
@@ -94,6 +111,7 @@ unsafe or non-representative performance proof.
 
 - `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha>`
 - `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>`
+- `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha> --dirty-corpus-manifest <metadata-only-manifest.json> --dirty-corpus-source-root <private-pdf-root>`
 - `scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py`
 - `scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py`
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`

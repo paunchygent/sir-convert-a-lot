@@ -14,7 +14,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .story20_throughput_types import BenchmarkPayload, ProfilePayload
+from .story20_throughput_types import (
+    BenchmarkPayload,
+    DirtyCorpusReportExtension,
+    ProfilePayload,
+)
 
 
 def _render_profile_rows(profiles: list[ProfilePayload]) -> list[str]:
@@ -38,6 +42,77 @@ def _render_profile_rows(profiles: list[ProfilePayload]) -> list[str]:
             f"{resource['peak_chunk_worker_saturation_ratio']:.3f} | "
             f"{resource['peak_gpu_busy_percent']:.1f} |"
         )
+    return lines
+
+
+def _render_dirty_corpus_section(dirty_corpus: DirtyCorpusReportExtension | None) -> list[str]:
+    if dirty_corpus is None:
+        return []
+    manifest = dirty_corpus["manifest"]
+    ocr_summary = dirty_corpus["ocr_metadata_summary"]
+    failure_taxonomy = dirty_corpus["failure_taxonomy"]
+    lines = [
+        "",
+        "## Dirty Corpus Manifest",
+        f"- Schema: `{manifest['schema_version']}`",
+        f"- Corpus id: `{manifest['corpus_id']}`",
+        f"- Entries: `{manifest['entry_count']}`",
+        f"- Executed entries: `{manifest['executed_entry_count']}`",
+        f"- Total pages: `{manifest['total_pages']}`",
+        f"- Source hashes verified: `{manifest['source_hashes_verified']}`",
+        f"- Real-data gate satisfied: `{manifest['real_data_gate_satisfied']}`",
+        (
+            "- Missing required dirty classes: "
+            f"`{', '.join(manifest['missing_required_dirty_data_classes']) or 'none'}`"
+        ),
+        f"- Expected OCR languages: `{', '.join(manifest['expected_ocr_languages'])}`",
+        f"- Privacy states: `{manifest['privacy_state_counts']}`",
+        f"- Synthetic fixture entries: `{manifest['synthetic_fixture_entry_count']}`",
+        f"- Safe excerpt entries: `{manifest['safe_excerpt_entry_count']}`",
+        "",
+        "## Dirty Corpus Safety",
+        f"- All profiles inside Task 74 safe matrix: `{dirty_corpus['all_profiles_safe']}`",
+        f"- Task 76 parity required: `{dirty_corpus['task76_parity_required']}`",
+        f"- Task 76 parity proven: `{dirty_corpus['task76_parity_proven']}`",
+        "",
+        "| Profile | Workers | GPU Stage Cap | Safe | Reason |",
+        "|---|---:|---:|---|---|",
+    ]
+    for profile in dirty_corpus["profile_safety"]:
+        lines.append(
+            "| "
+            f"{profile['profile_name']} | "
+            f"{profile['max_chunk_workers']} | "
+            f"{profile['gpu_stage_max_concurrency']} | "
+            f"{profile['safe_profile']} | "
+            f"{profile['unsafe_reason'] or ''} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Dirty Corpus OCR Metadata",
+            f"- OCR enabled jobs: `{ocr_summary['ocr_enabled_job_count']}`",
+            f"- OCR engines used: `{', '.join(ocr_summary['ocr_engine_used_values']) or 'none'}`",
+            (
+                "- OCR languages used: "
+                f"`{', '.join(ocr_summary['ocr_languages_used_values']) or 'none'}`"
+            ),
+            f"- Backends used: `{', '.join(ocr_summary['backend_used_values']) or 'none'}`",
+            (
+                "- Acceleration used: "
+                f"`{', '.join(ocr_summary['acceleration_used_values']) or 'none'}`"
+            ),
+            "",
+            "## Dirty Corpus Failure Taxonomy",
+            f"- Failed jobs: `{failure_taxonomy['failed_job_count']}`",
+            f"- Warnings: `{failure_taxonomy['warning_count']}`",
+            (f"- Input-quality warnings: `{failure_taxonomy['input_quality_warning_count']}`"),
+            (f"- Engine/runtime failures: `{failure_taxonomy['engine_runtime_failure_count']}`"),
+            f"- Timeout failures: `{failure_taxonomy['timeout_failure_count']}`",
+            f"- GPU/resource failures: `{failure_taxonomy['gpu_resource_failure_count']}`",
+            f"- Conversion-bug failures: `{failure_taxonomy['conversion_bug_failure_count']}`",
+        ]
+    )
     return lines
 
 
@@ -133,6 +208,7 @@ def write_report(
     rollback_conditions = comparison["rollback_conditions"]
     for item in rollback_conditions:
         lines.append(f"- {item}")
+    lines.extend(_render_dirty_corpus_section(payload["dirty_corpus"]))
     if payload["runtime_parity"]["notes"]:
         lines.extend(["", "## Parity Notes"])
         for note in payload["runtime_parity"]["notes"]:

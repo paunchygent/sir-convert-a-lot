@@ -514,7 +514,7 @@ curl -fsS http://127.0.0.1:28085/metrics > /tmp/sir_metrics.prom
      - `gpu_memory_used_percent`
    - join with request/response `X-Correlation-ID` and lifecycle events.
 
-Local synthetic overhead evidence command (generated artifact under `build/`):
+Local synthetic overhead regression command (generated artifact under `build/`):
 
 ```bash
 pdm run benchmark:task-73-telemetry \
@@ -531,15 +531,17 @@ Benchmark payload variants:
 - `telemetry_sink_disabled`: runtime telemetry calls enabled with no sink attached.
 - `telemetry_calls_bypassed`: runtime telemetry calls bypassed in hot paths.
 
-Overhead deltas:
+Overhead deltas are implementation diagnostics only. They do not establish
+production performance, throughput, tuning, or default-setting evidence:
 
 - `overhead_percent.full_vs_sink_disabled`
 - `overhead_percent.full_vs_bypassed`
 
 ## Local Parallel Throughput Fixture (Task 72)
 
-Use this deterministic local benchmark to confirm the Task 72 worker-pool implementation before
-moving to Hemma production-profile tuning in Task 74.
+Use this deterministic local fixture to confirm Task 72 worker-pool scheduling
+and byte-stability behavior before moving to production-service tuning on Hemma
+in Task 74. This fixture is not production performance proof.
 
 Command:
 
@@ -556,8 +558,9 @@ pdm run benchmark:task-72 \
 
 Interpretation rules:
 
-- `comparison.p50_wall_clock_improvement_percent` should stay at or above the Task 72 floor
-  (`>= 10%`) for the deterministic fixture.
+- `comparison.p50_wall_clock_improvement_percent` is a deterministic scheduling-regression guard
+  for this fixture only. It must not be cited as production throughput evidence or as justification
+  for Hemma defaults.
 - `comparison.byte_identical_to_serial` must remain `true`.
 - `serial.result_metadata.parallel_enabled` must be `false`.
 - `parallel.result_metadata.parallel_enabled` must be `true`.
@@ -565,8 +568,8 @@ Interpretation rules:
 
 Rollout guardrails:
 
-- Treat this command as implementation evidence only; do not use it to set Hemma production
-  defaults.
+- Treat this command as implementation/regression evidence only; do not use it to set Hemma
+  production defaults or to claim accepted OCR performance.
 - Keep `SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=0` by default until Task 74 publishes tuned
   Hemma guidance and rollback criteria.
 - Do not reintroduce the removed 4-worker OCR benchmark profile without new written evidence; the
@@ -576,9 +579,11 @@ Rollout guardrails:
 ## Throughput Benchmark Harness (Task 74)
 
 Use the committed Task 74 harness to compare baseline and tuned long-PDF profiles and publish
-machine-readable plus markdown evidence.
+machine-readable plus markdown evidence. Accepted performance evidence must run against the
+production service on Hemma after Task 76 parity; local commands in this section are command-surface
+smoke/schema checks only.
 
-Local command surface:
+Local command surface smoke only:
 
 ```bash
 pdm run benchmark:task-74 \
@@ -590,7 +595,7 @@ pdm run benchmark:task-74 \
   --gpu-available
 ```
 
-Bounded 2-worker tuning sweep:
+Local bounded 2-worker sweep smoke only:
 
 ```bash
 pdm run benchmark:task-74-two-worker-sweep \
@@ -604,18 +609,38 @@ pdm run benchmark:task-74-two-worker-sweep \
   --gpu-available
 ```
 
-Remote Hemma execution path after push/deploy parity:
+Production Hemma execution path after push/deploy parity:
 
 ```bash
 pdm run run-hemma -- pdm run benchmark:task-74-hemma \
   --expected-revision <sha>
 ```
 
-Bounded 2-worker Hemma sweep:
+Production Hemma bounded 2-worker sweep:
 
 ```bash
 pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma \
   --expected-revision <sha>
+```
+
+Dirty-corpus manifest validation:
+
+```bash
+pdm run benchmark:task-270-validate-dirty-corpus-manifest \
+  --manifest <metadata-only-manifest.json>
+```
+
+This command is schema-only. It does not execute private PDFs and cannot
+satisfy the Story 39 dirty real-data gate.
+
+Dirty-corpus benchmark evidence uses the same Task 74 production Hemma command
+surface with a metadata-only manifest:
+
+```bash
+pdm run run-hemma -- pdm run benchmark:task-74-hemma \
+  --expected-revision <sha> \
+  --dirty-corpus-manifest <metadata-only-manifest.json> \
+  --dirty-corpus-source-root <private-pdf-root>
 ```
 
 Usage notes:
@@ -627,12 +652,37 @@ Usage notes:
   - runs `pdm sync --prod --no-editable --no-self` on the Hemma host runtime,
   - warms a host EasyOCR cache under `~/.cache/sir-convert-a-lot/easyocr-models`,
   - reruns the live host-lane smoke on the expected revision before benchmarking.
-- The harness records p50/p90 wall-clock latency, success/error rate, queue depth, worker
-  saturation, chunk-worker saturation, and GPU busy/memory gauges.
+- The production Hemma benchmark artifacts record p50/p90 wall-clock latency, success/error rate,
+  queue depth, worker saturation, chunk-worker saturation, and GPU busy/memory gauges. Local smoke
+  artifacts may contain diagnostic payload fields but are never accepted as performance, throughput,
+  tuning, acceptance, or production default evidence.
 - The committed benchmark matrix is intentionally restricted to:
   - `serial_baseline` (`max_chunk_workers=1`, `chunk_size_pages=8`, `gpu_stage_max_concurrency=1`)
   - `parallel_conservative` (`max_chunk_workers=2`, `chunk_size_pages=4`,
     `gpu_stage_max_concurrency=2`)
+- The local generated scanned corpus is a deterministic command-surface smoke input. It is
+  intentionally synthetic and cannot satisfy Story 39 dirty real-data acceptance. Task 74/Story 39
+  acceptance benchmark evidence must run against the production service on Hemma after Task 76
+  parity proof.
+- Smoke assertions and command stdout are schema/safety-only. Do not treat local or Hemma smoke
+  output as performance evidence, and do not assert or print p50/p90, latency, pages-per-minute,
+  throughput, or improvement percentages from smoke checks.
+- Dirty-corpus manifests are metadata-only. Commit only stable ids, `sha256:<hex>` source hashes,
+  page counts, dirty-data classes, expected OCR languages, privacy state, and safe-excerpt flags.
+  Do not commit private PDFs, local path fields, `.env` files, raw OCR excerpts, or PII-bearing
+  filenames/titles.
+- Dirty-corpus benchmark execution requires `--dirty-corpus-source-root`. The runner hashes private
+  PDFs under that root, matches bytes to manifest `source_sha256` values, verifies page counts,
+  copies only sanitized `source_id.pdf` filenames into the benchmark execution corpus, and records
+  `source_hashes_verified=true` only after all manifest entries are bound to executed bytes.
+- Manifest-only validation, synthetic generated PDFs, and missing source-root runs must not be
+  accepted as dirty real-data evidence.
+- Dirty-corpus benchmark reports add the Task 270 extension with manifest summary, Task 76 parity
+  status, profile safety classification, warning/failure taxonomy, and OCR/backend metadata
+  summary.
+- When `--dirty-corpus-manifest` is present, the harness fails closed before benchmark execution if
+  any resolved profile exceeds Task 74's safe 2-worker boundary or matches the removed 4-worker OOM
+  profile family.
 - Use the bounded 2-worker sweep when exploring alternatives; it keeps `max_chunk_workers=2` and
   varies only chunk size plus bounded GPU stage cap so candidate profiles stay within the reviewed
   safety envelope.

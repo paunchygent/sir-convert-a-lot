@@ -5,7 +5,7 @@ type: task
 status: completed
 priority: high
 created: '2026-03-04'
-last_updated: '2026-03-05'
+last_updated: '2026-04-29'
 related:
   - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md
   - docs/backlog/tasks/task-72-parallelize-pdf-ocr-conversion-with-bounded-worker-pools.md
@@ -71,11 +71,14 @@ instead of tuning blindly.
   - regression tests for canonical timing normalization and no-`job_id` metric labels,
   - success/failure-path metrics contract tests (`/metrics` label safety + terminal counters),
   - acceleration policy + GPU utilization snapshot fields in `result.conversion_metadata`,
-  - synthetic sustained-load overhead benchmark evidence:
+  - synthetic sustained-load overhead regression evidence:
     - `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`
     - benchmark id: `task-73-telemetry-overhead`,
     - run sample (`2026-03-05`): `overhead_percent.full_vs_sink_disabled=1.3728%`,
       `overhead_percent.full_vs_bypassed=-1.4069%`, bounded labels verified.
+    - this local artifact is telemetry implementation evidence only; it must not be cited as
+      production performance proof, throughput proof, tuning evidence, acceptance evidence, or a
+      reason to set Hemma production defaults.
   - benchmark contract hardened with strict canonical fields:
     - removed deprecated field `telemetry_overhead_percent`,
     - retained explicit mode-only overhead keys.

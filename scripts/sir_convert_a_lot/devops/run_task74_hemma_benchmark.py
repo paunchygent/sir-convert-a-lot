@@ -60,6 +60,8 @@ class Task74HemmaSettings:
     two_worker_sweep: bool
     two_worker_chunk_sizes: str
     two_worker_gpu_stage_caps: str
+    dirty_corpus_manifest: Path | None
+    dirty_corpus_source_root: Path | None
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,16 @@ def _parse_args(argv: list[str]) -> Task74HemmaSettings:
     parser.add_argument("--two-worker-sweep", action="store_true")
     parser.add_argument("--two-worker-chunk-sizes", default="2,3,4,6,8")
     parser.add_argument("--two-worker-gpu-stage-caps", default="1,2")
+    parser.add_argument(
+        "--dirty-corpus-manifest",
+        type=Path,
+        help="Metadata-only dirty PDF OCR corpus manifest to embed in Task 74 evidence.",
+    )
+    parser.add_argument(
+        "--dirty-corpus-source-root",
+        type=Path,
+        help="Private Hemma directory containing dirty PDFs whose hashes match the manifest.",
+    )
     args = parser.parse_args(argv)
     output_json = (
         args.output_json
@@ -128,6 +140,8 @@ def _parse_args(argv: list[str]) -> Task74HemmaSettings:
         two_worker_sweep=bool(args.two_worker_sweep),
         two_worker_chunk_sizes=str(args.two_worker_chunk_sizes),
         two_worker_gpu_stage_caps=str(args.two_worker_gpu_stage_caps),
+        dirty_corpus_manifest=args.dirty_corpus_manifest,
+        dirty_corpus_source_root=args.dirty_corpus_source_root,
     )
 
 
@@ -375,6 +389,20 @@ def _run_task74_benchmark(
                 settings.two_worker_gpu_stage_caps,
             ]
         )
+    if settings.dirty_corpus_manifest is not None:
+        if settings.dirty_corpus_source_root is None:
+            raise ValueError(
+                "--dirty-corpus-manifest requires --dirty-corpus-source-root so "
+                "executed private PDFs can be hash-verified."
+            )
+        benchmark_args.extend(
+            [
+                "--dirty-corpus-manifest",
+                settings.dirty_corpus_manifest.as_posix(),
+                "--dirty-corpus-source-root",
+                settings.dirty_corpus_source_root.as_posix(),
+            ]
+        )
     _run_command(
         benchmark_args,
         label="benchmark:task-74",
@@ -416,24 +444,38 @@ def execute_workflow(settings: Task74HemmaSettings) -> dict[str, object]:
     return _read_json_object(settings.output_json, label="Task 74 benchmark payload")
 
 
+def _build_stdout_summary(
+    *,
+    settings: Task74HemmaSettings,
+    payload: dict[str, object],
+) -> dict[str, object]:
+    runtime_parity_obj = payload.get("runtime_parity")
+    if not isinstance(runtime_parity_obj, dict):
+        raise SystemExit("Task 74 benchmark payload is missing `runtime_parity`.")
+    dirty_corpus_obj = payload.get("dirty_corpus")
+    dirty_corpus_loaded = dirty_corpus_obj is not None
+    all_profiles_safe: object = None
+    source_hashes_verified: object = None
+    if isinstance(dirty_corpus_obj, dict):
+        all_profiles_safe = dirty_corpus_obj.get("all_profiles_safe")
+        manifest_obj = dirty_corpus_obj.get("manifest")
+        if isinstance(manifest_obj, dict):
+            source_hashes_verified = manifest_obj.get("source_hashes_verified")
+    return {
+        "output_json": settings.output_json.as_posix(),
+        "output_report": settings.output_report.as_posix(),
+        "runtime_parity_proven": runtime_parity_obj.get("parity_proven"),
+        "dirty_corpus_manifest_loaded": dirty_corpus_loaded,
+        "dirty_corpus_all_profiles_safe": all_profiles_safe,
+        "dirty_corpus_source_hashes_verified": source_hashes_verified,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments, run the workflow, and print a compact machine-readable summary."""
     settings = _parse_args(sys.argv[1:] if argv is None else argv)
     payload = execute_workflow(settings)
-    comparison_obj = payload.get("comparison")
-    if not isinstance(comparison_obj, dict):
-        raise SystemExit("Task 74 benchmark payload is missing `comparison`.")
-    runtime_parity_obj = payload.get("runtime_parity")
-    if not isinstance(runtime_parity_obj, dict):
-        raise SystemExit("Task 74 benchmark payload is missing `runtime_parity`.")
-    summary = {
-        "output_json": settings.output_json.as_posix(),
-        "recommended_profile": comparison_obj.get("recommended_profile"),
-        "p50_improvement_percent": comparison_obj.get("p50_improvement_percent"),
-        "meets_target": comparison_obj.get("meets_target"),
-        "runtime_parity_proven": runtime_parity_obj.get("parity_proven"),
-    }
-    print(json.dumps(summary, sort_keys=True))
+    print(json.dumps(_build_stdout_summary(settings=settings, payload=payload), sort_keys=True))
     return 0
 
 

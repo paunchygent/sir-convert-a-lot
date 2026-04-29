@@ -59,6 +59,18 @@ runbooks, or skills.
   `ocr_languages_used=null` only where OCR is not applicable.
   The 2026-04-29 re-review approved Task 268; Story 39 remains open for Task
   269, Task 270, Task 271, and final Task 74 evidence.
+- Task 270 is completed locally under Story 39. The Task 74 benchmark command
+  surface now accepts a metadata-only dirty PDF OCR corpus manifest, embeds a
+  sanitized dirty-corpus report extension, provides a manifest-only validation
+  command, and fails closed on dirty-corpus profiles outside the Task 74 safe
+  2-worker boundary. The generated synthetic scanned corpus remains harness
+  smoke input only and cannot satisfy Story 39 real-data acceptance. Local
+  smoke assertions/stdout are schema/safety-only and must not print or assert
+  performance metrics; dirty-corpus benchmark evidence now requires
+  `--dirty-corpus-source-root` so executed private PDF bytes are hash-verified
+  against manifest `source_sha256` values before `real_data_gate_satisfied` can
+  become true. Accepted performance proof must run against the production
+  service on Hemma after Task 76 parity.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -119,8 +131,11 @@ runbooks, or skills.
 
 1. Arrange a separate retained post-implementation review for Task 267 before
    treating the parser lane as independently approved.
-1. Continue Story 39 with Task 270 to add the dirty PDF OCR corpus manifest and
-   benchmark report schema before any Hemma dirty-corpus performance run.
+1. Continue Story 39 with Task 271 to run the safe Hemma dirty-corpus OCR
+   benchmark against private real-data inputs. Use the Task 270 metadata-only
+   manifest/report schema, private source-root hash verification, Task 74 safe
+   profile matrix, and Task 76 parity evidence before accepting performance
+   results.
 1. Continue EPIC-10 with the next governed slice only after review: likely the
    Sir Convert intermediate exam representation and manifest schema, or a
    renderer-target decision task if Exam.net ingestion evidence still needs
