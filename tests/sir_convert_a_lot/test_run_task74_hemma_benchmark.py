@@ -171,3 +171,65 @@ def test_main_stdout_excludes_performance_metrics(
     assert "p50" not in output
     assert "improvement" not in output
     assert "meets_target" not in output
+
+
+def test_run_task74_benchmark_uses_scratch_backed_miopen_cache(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured_env: dict[str, str] = {}
+    commands: list[list[str]] = []
+    monkeypatch.setattr(
+        run_task74_hemma_benchmark,
+        "DEFAULT_MIOPEN_USER_DB_PATH",
+        tmp_path / "miopen" / "user-db",
+    )
+    monkeypatch.setattr(
+        run_task74_hemma_benchmark,
+        "DEFAULT_MIOPEN_KERNEL_CACHE_DIR",
+        tmp_path / "miopen" / "kernel-cache",
+    )
+
+    def run_command_stub(
+        argv: list[str],
+        *,
+        label: str,
+        cwd: Path = run_task74_hemma_benchmark.CANONICAL_REPO_ROOT,
+        redactions: tuple[str, ...] = (),
+        env_overrides: dict[str, str] | None = None,
+    ) -> str:
+        del label, cwd, redactions
+        commands.append(argv)
+        if env_overrides is not None:
+            captured_env.update(env_overrides)
+        return ""
+
+    monkeypatch.setattr(run_task74_hemma_benchmark, "_run_command", run_command_stub)
+    settings = run_task74_hemma_benchmark._parse_args(
+        [
+            "--expected-revision",
+            "abc1234",
+            "--output-json",
+            (tmp_path / "out.json").as_posix(),
+            "--output-report",
+            (tmp_path / "out.md").as_posix(),
+        ]
+    )
+
+    run_task74_hemma_benchmark._run_task74_benchmark(
+        settings,
+        api_key="secret-key",
+        remote_revision="abc1234",
+        service_revision="abc1234",
+        default_ocr_engine="easyocr",
+        default_ocr_languages=("sv", "en"),
+    )
+
+    assert commands[-1][:3] == ["pdm", "run", "benchmark:task-74"]
+    assert captured_env == {
+        "MIOPEN_FIND_MODE": "FAST",
+        "MIOPEN_USER_DB_PATH": (tmp_path / "miopen" / "user-db").as_posix(),
+        "MIOPEN_CUSTOM_CACHE_DIR": (tmp_path / "miopen" / "kernel-cache").as_posix(),
+    }
+    assert (tmp_path / "miopen" / "user-db").is_dir()
+    assert (tmp_path / "miopen" / "kernel-cache").is_dir()

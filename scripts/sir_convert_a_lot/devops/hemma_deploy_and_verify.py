@@ -42,8 +42,9 @@ from scripts.sir_convert_a_lot.devops.public_edge_verification import (
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-76-hemma-deploy-verify")
-DOCKER_SOCKET_PERMISSION_DENIED = (
-    "permission denied while trying to connect to the Docker daemon socket"
+DOCKER_SOCKET_PERMISSION_DENIED_MESSAGES = (
+    "permission denied while trying to connect to the Docker daemon socket",
+    "permission denied while trying to connect to the docker API",
 )
 
 
@@ -258,13 +259,16 @@ def _remote_recreate_service() -> None:
         )
         return
     except CommandExecutionError as exc:
-        if DOCKER_SOCKET_PERMISSION_DENIED not in str(exc):
+        error_text = str(exc)
+        if not any(message in error_text for message in DOCKER_SOCKET_PERMISSION_DENIED_MESSAGES):
             raise
 
     _run_remote(
         [
             "sudo",
             "-n",
+            "env",
+            "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
             "/home/paunchygent/.local/bin/pdm",
             "run",
             "prod-recreate",

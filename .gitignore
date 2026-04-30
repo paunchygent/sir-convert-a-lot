@@ -12,6 +12,7 @@ build/
 .artifacts/
 .DS_Store
 data/conversion-inputs/
+inputs/dirty_pdf_to_ocr/
 **/repomix_packages/
 
 # Generated benchmark/evaluation output (policy: never track under docs/reference)

@@ -133,6 +133,13 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL"] == (
         "${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL:-docling_layout_egret_large}"
     )
+    assert env_map["MIOPEN_FIND_MODE"] == "${MIOPEN_FIND_MODE:-FAST}"
+    assert env_map["MIOPEN_USER_DB_PATH"] == (
+        "${MIOPEN_USER_DB_PATH:-/srv/scratch/sir-convert-a-lot/cache/miopen/user-db}"
+    )
+    assert env_map["MIOPEN_CUSTOM_CACHE_DIR"] == (
+        "${MIOPEN_CUSTOM_CACHE_DIR:-/srv/scratch/sir-convert-a-lot/cache/miopen/kernel-cache}"
+    )
 
     assert service.get("command") == [
         "uvicorn",
@@ -143,7 +150,14 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
         "8085",
     ]
     volumes = service.get("volumes")
-    assert volumes == ["sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod"]
+    assert volumes == [
+        "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
+        (
+            "${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:"
+            "/srv/scratch/sir-convert-a-lot/cache/miopen"
+        ),
+    ]
 
 
 def test_compose_routes_public_host_to_reserved_edge_not_app() -> None:

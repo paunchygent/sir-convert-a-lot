@@ -2,10 +2,10 @@
 id: task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence
 title: Run safe Hemma dirty PDF OCR benchmark and publish tuning evidence
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-04-27'
-last_updated: '2026-04-29'
+last_updated: '2026-04-30'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md
@@ -128,6 +128,43 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated
+
+## Kickoff Evidence (2026-04-30)
+
+- Local dirty-corpus operator folder is ignored by git via `.gitignore`.
+- Pilot dirty-corpus manifest was generated from 9 local PDFs with stable
+  `source_id` values, SHA-256 hashes, page counts, and private privacy state.
+- The pilot corpus is staged on Hemma under the ignored operator folder and the
+  Hemma checkout is fast-forwarded to revision
+  `a8197a0a82b4cedd78eb603c52ac47a00d7c0d67`.
+- Hemma manifest validation passes as schema/privacy proof only.
+- Hemma source-root verification matched 9 manifest entries to 9 PDFs and 9
+  total pages without launching a benchmark.
+- This pilot corpus is not final Task 271 acceptance evidence: every PDF is
+  currently one page, so the manifest still reports missing `long_document` and
+  cannot satisfy the full dirty-corpus real-data gate or 300-PDF target.
+- Initial Hemma pilot exposed a ROCm/MIOpen EasyOCR failure mode during repeated
+  PDF OCR:
+  - default MIOpen execution emitted `IsEnoughWorkspace` warnings for
+    `GemmFwdRest` with required scratch sizes around 343-405 MiB while the
+    selected path reported `provided ptr: 0 size: 0`,
+  - a 9-PDF in-process diagnostic without explicit MIOpen settings reproduced
+    `miopenStatusUnknownError` / HIP unspecified launch failure after several
+    successes,
+  - a controlled rerun with `MIOPEN_FIND_MODE=FAST`,
+    `MIOPEN_USER_DB_PATH=/srv/scratch/sir-convert-a-lot/cache/miopen/user-db`,
+    and
+    `MIOPEN_CUSTOM_CACHE_DIR=/srv/scratch/sir-convert-a-lot/cache/miopen/kernel-cache`
+    completed all 9 pilot PDFs successfully and did not emit the MIOpen
+    workspace warnings.
+- The successful diagnostic tree has been copied locally under
+  `build/benchmarks/story-39/local-copies/miopen-fast-diagnostic/` for operator
+  inspection. This remains diagnostic runtime evidence only, not Task 271
+  performance proof.
+- Follow-up implementation in this task makes the MIOpen cache/scratch settings
+  repeatable for production compose and the host-side Task 74 Hemma runner, and
+  removes Docling's deprecated EasyOCR `use_gpu` option in favor of
+  `pipeline_options.accelerator_options.device`.
 
 ## Closeout
 

@@ -22,6 +22,7 @@ import argparse
 import importlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -42,6 +43,10 @@ DEFAULT_SWEEP_OUTPUT_REPORT = Path(
 DEFAULT_SWEEP_CORPUS_ROOT = Path("build/benchmarks/story-20/task-74-two-worker-sweep-corpus")
 DEFAULT_SWEEP_DATA_ROOT = Path("build/benchmarks/story-20/task-74-two-worker-sweep-runtime")
 DEFAULT_HOST_EASYOCR_CACHE = Path("/home/paunchygent/.cache/sir-convert-a-lot/easyocr-models")
+DEFAULT_MIOPEN_CACHE_ROOT = Path("/srv/scratch/sir-convert-a-lot/cache/miopen")
+DEFAULT_MIOPEN_USER_DB_PATH = DEFAULT_MIOPEN_CACHE_ROOT / "user-db"
+DEFAULT_MIOPEN_KERNEL_CACHE_DIR = DEFAULT_MIOPEN_CACHE_ROOT / "kernel-cache"
+DEFAULT_MIOPEN_FIND_MODE = "FAST"
 
 
 @dataclass(frozen=True)
@@ -159,13 +164,18 @@ def _run_command(
     label: str,
     cwd: Path = CANONICAL_REPO_ROOT,
     redactions: tuple[str, ...] = (),
+    env_overrides: dict[str, str] | None = None,
 ) -> str:
+    process_env = None
+    if env_overrides is not None:
+        process_env = {**os.environ, **env_overrides}
     result = subprocess.run(
         argv,
         cwd=cwd,
         check=False,
         capture_output=True,
         text=True,
+        env=process_env,
     )
     if result.returncode != 0:
         stdout = _redact(result.stdout.strip(), redactions=redactions)
@@ -277,6 +287,17 @@ def _warm_easyocr_cache(cache_dir: Path, *, languages: tuple[str, ...]) -> None:
         download_enabled=True,
         verbose=False,
     )
+
+
+def _prepare_miopen_cache() -> dict[str, str]:
+    """Create scratch-backed MIOpen cache roots and return process env overrides."""
+    DEFAULT_MIOPEN_USER_DB_PATH.mkdir(parents=True, exist_ok=True)
+    DEFAULT_MIOPEN_KERNEL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    return {
+        "MIOPEN_FIND_MODE": DEFAULT_MIOPEN_FIND_MODE,
+        "MIOPEN_USER_DB_PATH": DEFAULT_MIOPEN_USER_DB_PATH.as_posix(),
+        "MIOPEN_CUSTOM_CACHE_DIR": DEFAULT_MIOPEN_KERNEL_CACHE_DIR.as_posix(),
+    }
 
 
 def _read_json_object(path: Path, *, label: str) -> dict[str, object]:
@@ -407,6 +428,7 @@ def _run_task74_benchmark(
         benchmark_args,
         label="benchmark:task-74",
         redactions=(api_key,),
+        env_overrides=_prepare_miopen_cache(),
     )
 
 

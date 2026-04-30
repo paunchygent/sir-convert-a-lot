@@ -188,6 +188,22 @@ Persistent Docker-visible bind-root rule for scratch-backed Qwen runtimes:
   - interpret that as: `/srv/scratch/...` remains canonical storage, while the
     home-backed mirrors are the Docker-visible bind roots
 
+MIOpen scratch/cache rule for PDF OCR:
+
+- EasyOCR/Docling GPU OCR uses PyTorch ROCm convolution paths backed by
+  MIOpen. Keep MIOpen's user database and kernel cache on the SSD scratch tier
+  instead of ephemeral container-home defaults.
+- Production compose sets:
+  - `MIOPEN_FIND_MODE=FAST`
+  - `MIOPEN_USER_DB_PATH=/srv/scratch/sir-convert-a-lot/cache/miopen/user-db`
+  - `MIOPEN_CUSTOM_CACHE_DIR=/srv/scratch/sir-convert-a-lot/cache/miopen/kernel-cache`
+- The production container bind-mounts the Docker-visible
+  `/home/paunchygent/.data/sir-convert-a-lot/cache/miopen` path into
+  `/srv/scratch/sir-convert-a-lot/cache/miopen`; the home-backed path is the
+  snap-Docker-visible mirror of the canonical scratch cache root.
+- The Task 74 Hemma benchmark runner applies the same environment to host-side
+  in-process benchmark execution before launching OCR profiles.
+
 ## SSH and Service Health
 
 ```bash

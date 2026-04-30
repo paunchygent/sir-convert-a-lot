@@ -412,7 +412,6 @@ class DoclingConversionBackend(ConversionBackend):
             if key.ocr_engine == OcrEngineV2.EASYOCR:
                 pipeline_options.ocr_options = EasyOcrOptions(
                     lang=list(key.ocr_languages),
-                    use_gpu=bool(key.ocr_use_gpu) if key.ocr_use_gpu is not None else True,
                     download_enabled=self._easyocr_download_enabled,
                     model_storage_directory=self._easyocr_model_storage_directory,
                 )

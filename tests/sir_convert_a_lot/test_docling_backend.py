@@ -13,8 +13,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import EasyOcrOptions, PdfPipelineOptions
 
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
+from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendExecutionError,
     BackendGpuUnavailableError,
@@ -23,6 +27,7 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     DoclingConversionBackend,
+    _ConverterKey,
     _DoclingAttempt,
     _resolve_layout_model_config,
 )
@@ -185,6 +190,33 @@ def test_force_mode_runs_single_ocr_pass(monkeypatch) -> None:
     assert calls == [(True, True)]
     assert result.ocr_enabled is True
     assert result.warnings == []
+
+
+def test_easyocr_options_use_pipeline_accelerator_device() -> None:
+    backend = DoclingConversionBackend(easyocr_model_storage_directory="/opt/easyocr-models")
+    converter = backend._get_converter(
+        _ConverterKey(
+            table_mode=TableMode.FAST,
+            ocr_enabled=True,
+            force_full_page_ocr=True,
+            ocr_engine=OcrEngineV2.EASYOCR,
+            ocr_languages=("sv", "en"),
+            ocr_use_gpu=True,
+            acceleration_device=AcceleratorDevice.CUDA,
+            layout_model_key="docling_layout_heron",
+            formula_enrichment=False,
+            formula_preset="codeformulav2",
+        )
+    )
+
+    format_option = converter.format_to_options[InputFormat.PDF]
+    pipeline_options = format_option.pipeline_options
+
+    assert isinstance(pipeline_options, PdfPipelineOptions)
+    assert isinstance(pipeline_options.ocr_options, EasyOcrOptions)
+    assert pipeline_options.accelerator_options.device == AcceleratorDevice.CUDA
+    assert pipeline_options.ocr_options.use_gpu is None
+    assert pipeline_options.ocr_options.model_storage_directory == "/opt/easyocr-models"
 
 
 def test_auto_mode_retries_when_low_confidence_even_if_dense(monkeypatch) -> None:

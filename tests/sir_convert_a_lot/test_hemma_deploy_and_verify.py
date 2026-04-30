@@ -52,6 +52,44 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
     assert calls[1] == [
         "sudo",
         "-n",
+        "env",
+        "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "/home/paunchygent/.local/bin/pdm",
+        "run",
+        "prod-recreate",
+        "sir_convert_a_lot_prod",
+        "sir_convert_a_lot_public_reserved",
+    ]
+
+
+def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_remote(
+        remote_args: list[str],
+        *,
+        label: str,
+        redactions: tuple[str, ...] = (),
+    ) -> str:
+        del label, redactions
+        calls.append(remote_args)
+        if len(calls) == 1:
+            raise hemma_deploy_and_verify.CommandExecutionError(
+                "permission denied while trying to connect to the docker API"
+            )
+        return ""
+
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
+
+    hemma_deploy_and_verify._remote_recreate_service()
+
+    assert calls[1] == [
+        "sudo",
+        "-n",
+        "env",
+        "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "/home/paunchygent/.local/bin/pdm",
         "run",
         "prod-recreate",
