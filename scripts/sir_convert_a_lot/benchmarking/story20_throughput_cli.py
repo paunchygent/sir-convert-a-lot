@@ -22,6 +22,7 @@ from .story20_profile_runner import DEFAULT_PAGE_COUNTS, run_benchmark
 from .story20_profiles import (
     DEFAULT_TWO_WORKER_SWEEP_CHUNK_SIZES,
     DEFAULT_TWO_WORKER_SWEEP_GPU_STAGE_CAPS,
+    ProfileSpec,
 )
 from .story20_runtime_parity import RuntimeParityInputs, coerce_optional_str
 
@@ -72,6 +73,20 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--runtime-host")
     parser.add_argument("--runtime-service-url")
     parser.add_argument("--easyocr-model-storage-dir")
+    parser.add_argument("--service-profile-name")
+    parser.add_argument(
+        "--service-profile-parallel-enabled",
+        dest="service_profile_parallel_enabled",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--service-profile-serial",
+        dest="service_profile_parallel_enabled",
+        action="store_false",
+    )
+    parser.add_argument("--service-profile-max-chunk-workers", type=int)
+    parser.add_argument("--service-profile-chunk-size-pages", type=int)
+    parser.add_argument("--service-profile-gpu-stage-max-concurrency", type=int)
     parser.add_argument("--dirty-corpus-manifest", type=Path)
     parser.add_argument("--dirty-corpus-source-root", type=Path)
     parser.add_argument("--validate-dirty-corpus-manifest-only", action="store_true")
@@ -138,8 +153,47 @@ def _build_parser() -> argparse.ArgumentParser:
         parity_service_remote_ok=None,
         parity_live_smoke_passed=None,
         parity_metrics_scan_passed=None,
+        service_profile_parallel_enabled=None,
     )
     return parser
+
+
+def _require_positive_int(value: int | None, *, label: str) -> int:
+    if value is None or value <= 0:
+        raise ValueError(f"{label} must be a positive integer for production_service mode.")
+    return value
+
+
+def _build_service_profile_from_args(args: argparse.Namespace) -> list[ProfileSpec] | None:
+    if str(args.runtime_mode) != "production_service":
+        return None
+    profile_name_obj = args.service_profile_name
+    if not isinstance(profile_name_obj, str) or profile_name_obj.strip() == "":
+        raise ValueError("--service-profile-name is required for production_service mode.")
+    parallel_enabled_obj = args.service_profile_parallel_enabled
+    if not isinstance(parallel_enabled_obj, bool):
+        raise ValueError(
+            "--service-profile-parallel-enabled or --service-profile-serial is required "
+            "for production_service mode."
+        )
+    return [
+        ProfileSpec(
+            profile_name=profile_name_obj.strip(),
+            parallel_enabled=parallel_enabled_obj,
+            max_chunk_workers=_require_positive_int(
+                args.service_profile_max_chunk_workers,
+                label="--service-profile-max-chunk-workers",
+            ),
+            chunk_size_pages=_require_positive_int(
+                args.service_profile_chunk_size_pages,
+                label="--service-profile-chunk-size-pages",
+            ),
+            gpu_stage_max_concurrency=_require_positive_int(
+                args.service_profile_gpu_stage_max_concurrency,
+                label="--service-profile-gpu-stage-max-concurrency",
+            ),
+        )
+    ]
 
 
 def main() -> None:
@@ -199,6 +253,7 @@ def main() -> None:
         two_worker_gpu_stage_caps=two_worker_gpu_stage_caps,
         dirty_corpus_manifest=args.dirty_corpus_manifest,
         dirty_corpus_source_root=args.dirty_corpus_source_root,
+        profiles=_build_service_profile_from_args(args),
     )
     print(
         "task74-benchmark-written",

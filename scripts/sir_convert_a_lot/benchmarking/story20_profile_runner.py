@@ -27,7 +27,7 @@ from .dirty_pdf_corpus import (
 )
 from .output_policy import enforce_generated_output_path
 from .story20_corpus import build_verified_dirty_corpus, generate_corpus
-from .story20_http_profile import run_profile
+from .story20_http_profile import run_profile as run_in_process_profile
 from .story20_ocr_runtime import assert_in_process_runtime_supports_requested_ocr
 from .story20_profiles import (
     DEFAULT_TWO_WORKER_SWEEP_CHUNK_SIZES,
@@ -38,6 +38,7 @@ from .story20_profiles import (
     default_profiles,
 )
 from .story20_runtime_parity import RuntimeParityInputs, build_runtime_parity_summary
+from .story20_service_profile import run_profile as run_service_profile
 from .story20_throughput_report import write_report
 from .story20_throughput_types import (
     BenchmarkPayload,
@@ -74,10 +75,74 @@ def _select_tuned_profile(profile_payloads: list[ProfilePayload]) -> ProfilePayl
     tuned_candidates = [
         profile for profile in profile_payloads[1:] if profile["summary"]["failed_jobs"] == 0
     ]
+    if not tuned_candidates:
+        tuned_candidates = [
+            profile for profile in profile_payloads if profile["summary"]["failed_jobs"] == 0
+        ]
     return min(
-        tuned_candidates or profile_payloads[1:],
+        tuned_candidates or profile_payloads,
         key=lambda profile: profile["summary"]["latency_seconds"]["p50"],
     )
+
+
+def _profile_payloads_for_runtime(
+    *,
+    runtime_mode: str,
+    resolved_profiles: list[ProfileSpec],
+    runtime_service_url: str | None,
+    corpus_root: Path,
+    corpus_records: list[CorpusFileRecord],
+    data_root: Path,
+    api_key: str,
+    acceleration_policy: str,
+    ocr_mode: str,
+    ocr_engine: str,
+    ocr_languages: list[str],
+    max_poll_seconds: float,
+    gpu_available: bool,
+    easyocr_model_storage_directory: str | None,
+) -> list[ProfilePayload]:
+    if runtime_mode == "in_process_app":
+        return [
+            run_in_process_profile(
+                profile=profile,
+                corpus_root=corpus_root,
+                corpus_records=corpus_records,
+                data_root=data_root,
+                api_key=api_key,
+                acceleration_policy=acceleration_policy,
+                ocr_mode=ocr_mode,
+                ocr_engine=ocr_engine,
+                ocr_languages=ocr_languages,
+                max_poll_seconds=max_poll_seconds,
+                gpu_available=gpu_available,
+                easyocr_model_storage_directory=easyocr_model_storage_directory,
+            )
+            for profile in resolved_profiles
+        ]
+    if runtime_mode == "production_service":
+        if runtime_service_url is None:
+            raise ValueError("runtime_mode=production_service requires --runtime-service-url.")
+        if len(resolved_profiles) != 1:
+            raise ValueError(
+                "runtime_mode=production_service requires exactly one deployed service profile; "
+                "do not claim per-profile tuning through a fixed production service."
+            )
+        return [
+            run_service_profile(
+                profile=resolved_profiles[0],
+                service_url=runtime_service_url,
+                corpus_root=corpus_root,
+                corpus_records=corpus_records,
+                api_key=api_key,
+                acceleration_policy=acceleration_policy,
+                ocr_mode=ocr_mode,
+                ocr_engine=ocr_engine,
+                ocr_languages=ocr_languages,
+                max_poll_seconds=max_poll_seconds,
+            )
+        ]
+    raise ValueError(f"Unsupported Task 74 runtime mode `{runtime_mode}`.")
 
 
 def _build_payload(
@@ -142,6 +207,7 @@ def _build_payload(
             build_dirty_corpus_report_extension(
                 manifest=dirty_corpus_summary,
                 profiles=profile_payloads,
+                runtime_surface=runtime_surface,
                 runtime_parity=runtime_parity,
             )
             if dirty_corpus_summary is not None
@@ -233,23 +299,22 @@ def run_benchmark(
     runtime_surface["mode"] = runtime_mode
     runtime_surface["host"] = runtime_host
     runtime_surface["service_url"] = runtime_service_url
-    profile_payloads = [
-        run_profile(
-            profile=profile,
-            corpus_root=corpus_root,
-            corpus_records=corpus_records,
-            data_root=data_root,
-            api_key=api_key,
-            acceleration_policy=acceleration_policy,
-            ocr_mode=ocr_mode,
-            ocr_engine=ocr_engine,
-            ocr_languages=resolved_languages,
-            max_poll_seconds=max_poll_seconds,
-            gpu_available=gpu_available,
-            easyocr_model_storage_directory=easyocr_model_storage_directory,
-        )
-        for profile in resolved_profiles
-    ]
+    profile_payloads = _profile_payloads_for_runtime(
+        runtime_mode=runtime_mode,
+        resolved_profiles=resolved_profiles,
+        runtime_service_url=runtime_service_url,
+        corpus_root=corpus_root,
+        corpus_records=corpus_records,
+        data_root=data_root,
+        api_key=api_key,
+        acceleration_policy=acceleration_policy,
+        ocr_mode=ocr_mode,
+        ocr_engine=ocr_engine,
+        ocr_languages=resolved_languages,
+        max_poll_seconds=max_poll_seconds,
+        gpu_available=gpu_available,
+        easyocr_model_storage_directory=easyocr_model_storage_directory,
+    )
     payload = _build_payload(
         runtime_mode=runtime_mode,
         corpus_root=corpus_root,

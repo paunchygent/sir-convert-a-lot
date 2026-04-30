@@ -20,10 +20,15 @@ import pytest
 from scripts.sir_convert_a_lot.benchmark_story20_throughput_report import (
     DEFAULT_OUTPUT_JSON,
     DEFAULT_OUTPUT_REPORT,
+    ProfileSpec,
     RuntimeParityInputs,
     _build_two_worker_sweep_profiles,
     main,
     run_benchmark,
+)
+from scripts.sir_convert_a_lot.benchmarking.story20_throughput_types import (
+    CorpusFileRecord,
+    ProfilePayload,
 )
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
@@ -210,6 +215,113 @@ def test_run_benchmark_supports_two_worker_sweep_profiles(
         "parallel_2w_chunk3_cap1",
         "parallel_2w_chunk3_cap2",
         "parallel_2w_chunk4_cap1",
+    ]
+
+
+def test_production_service_runtime_does_not_dispatch_testclient_profile(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    def forbidden_in_process_profile(**_kwargs: object) -> ProfilePayload:
+        raise AssertionError("production_service runtime must not use TestClient profile runner")
+
+    def service_profile_stub(
+        *,
+        profile: ProfileSpec,
+        service_url: str,
+        corpus_root: Path,
+        corpus_records: list[CorpusFileRecord],
+        api_key: str,
+        acceleration_policy: str,
+        ocr_mode: str,
+        ocr_engine: str,
+        ocr_languages: list[str],
+        max_poll_seconds: float,
+    ) -> ProfilePayload:
+        del service_url, corpus_root, api_key, acceleration_policy
+        del ocr_mode, ocr_engine, ocr_languages, max_poll_seconds
+        return {
+            "profile_name": profile.profile_name,
+            "config": {
+                "parallel_enabled": profile.parallel_enabled,
+                "max_chunk_workers": profile.max_chunk_workers,
+                "chunk_size_pages": profile.chunk_size_pages,
+                "gpu_stage_max_concurrency": profile.gpu_stage_max_concurrency,
+                "acceleration_policy": "gpu_required",
+            },
+            "summary": {
+                "total_jobs": len(corpus_records),
+                "succeeded_jobs": len(corpus_records),
+                "failed_jobs": 0,
+                "success_rate": 1.0,
+                "error_rate": 0.0,
+                "total_latency_seconds": 5.0,
+                "latency_seconds": {"min": 5.0, "mean": 5.0, "p50": 5.0, "p90": 5.0, "max": 5.0},
+                "pages_per_minute_p50": 24.0,
+            },
+            "resource_evidence": {
+                "peak_jobs_queued": 0.0,
+                "peak_jobs_active": 1.0,
+                "peak_worker_saturation_ratio": 0.0,
+                "peak_chunk_worker_saturation_ratio": 0.0,
+                "peak_gpu_busy_percent": 25.0,
+                "peak_gpu_memory_used_percent": 10.0,
+                "contains_job_id_label": False,
+            },
+            "jobs": [
+                {
+                    "source_file": record["filename"],
+                    "page_count": record["page_count"],
+                    "job_id": f"job_{index:03d}",
+                    "status": "succeeded",
+                    "latency_seconds": 5.0,
+                    "pages_per_minute": 24.0,
+                    "backend_used": "docling",
+                    "acceleration_used": "cuda",
+                    "ocr_enabled": True,
+                    "ocr_engine_used": "easyocr",
+                    "ocr_languages_used": ["sv", "en"],
+                    "gpu_busy_percent": 25,
+                    "gpu_memory_used_percent": 10,
+                    "warnings": [],
+                }
+                for index, record in enumerate(corpus_records, start=1)
+            ],
+        }
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.benchmarking.story20_profile_runner.run_in_process_profile",
+        forbidden_in_process_profile,
+    )
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.benchmarking.story20_profile_runner.run_service_profile",
+        service_profile_stub,
+    )
+
+    payload = run_benchmark(
+        output_json=tmp_path / "task74-service.json",
+        output_report=tmp_path / "task74-service.md",
+        corpus_root=tmp_path / "corpus",
+        data_root=tmp_path / "runtime",
+        page_counts=(2,),
+        api_key="benchmark-key",
+        runtime_mode="production_service",
+        runtime_host="hemma",
+        runtime_service_url="http://127.0.0.1:28085",
+        profiles=[
+            ProfileSpec(
+                profile_name="production_service_current",
+                parallel_enabled=True,
+                max_chunk_workers=2,
+                chunk_size_pages=4,
+                gpu_stage_max_concurrency=2,
+            )
+        ],
+    )
+
+    assert payload["runtime_surface"]["mode"] == "production_service"
+    assert [profile["profile_name"] for profile in payload["profiles"]] == [
+        "production_service_current"
     ]
 
 

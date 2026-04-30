@@ -26,6 +26,10 @@ from scripts.sir_convert_a_lot.benchmark_story20_throughput_report import (
 )
 from scripts.sir_convert_a_lot.benchmarking import dirty_pdf_corpus
 from scripts.sir_convert_a_lot.benchmarking.dirty_pdf_corpus import load_dirty_corpus_manifest
+from scripts.sir_convert_a_lot.benchmarking.story20_throughput_types import (
+    CorpusFileRecord,
+    ProfilePayload,
+)
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
 
@@ -108,6 +112,72 @@ def _write_private_pdf(path: Path, *, page_count: int = 1) -> str:
     finally:
         document.close()
     return f"sha256:{hashlib.sha256(path.read_bytes()).hexdigest()}"
+
+
+def _service_profile_payload(
+    *,
+    profile: ProfileSpec,
+    corpus_records: list[CorpusFileRecord],
+) -> ProfilePayload:
+    total_pages = sum(record["page_count"] for record in corpus_records)
+    total_latency_seconds = 120.0
+    return {
+        "profile_name": profile.profile_name,
+        "config": {
+            "parallel_enabled": profile.parallel_enabled,
+            "max_chunk_workers": profile.max_chunk_workers,
+            "chunk_size_pages": profile.chunk_size_pages,
+            "gpu_stage_max_concurrency": profile.gpu_stage_max_concurrency,
+            "acceleration_policy": "gpu_required",
+        },
+        "summary": {
+            "total_jobs": len(corpus_records),
+            "succeeded_jobs": len(corpus_records),
+            "failed_jobs": 0,
+            "success_rate": 1.0,
+            "error_rate": 0.0,
+            "total_latency_seconds": total_latency_seconds,
+            "latency_seconds": {
+                "min": total_latency_seconds,
+                "mean": total_latency_seconds,
+                "p50": total_latency_seconds,
+                "p90": total_latency_seconds,
+                "max": total_latency_seconds,
+            },
+            "pages_per_minute_p50": round((float(total_pages) / total_latency_seconds) * 60.0, 6),
+        },
+        "resource_evidence": {
+            "peak_jobs_queued": 0.0,
+            "peak_jobs_active": 1.0,
+            "peak_worker_saturation_ratio": 0.0,
+            "peak_chunk_worker_saturation_ratio": 0.0,
+            "peak_gpu_busy_percent": 50.0,
+            "peak_gpu_memory_used_percent": 20.0,
+            "contains_job_id_label": False,
+        },
+        "jobs": [
+            {
+                "source_file": record["filename"],
+                "page_count": record["page_count"],
+                "job_id": f"job_{index:03d}",
+                "status": "succeeded",
+                "latency_seconds": total_latency_seconds,
+                "pages_per_minute": round(
+                    (float(record["page_count"]) / total_latency_seconds) * 60.0,
+                    6,
+                ),
+                "backend_used": "docling",
+                "acceleration_used": "cuda",
+                "ocr_enabled": True,
+                "ocr_engine_used": "easyocr",
+                "ocr_languages_used": ["sv", "en"],
+                "gpu_busy_percent": 50,
+                "gpu_memory_used_percent": 20,
+                "warnings": [],
+            }
+            for index, record in enumerate(corpus_records, start=1)
+        ],
+    }
 
 
 def test_dirty_corpus_manifest_validates_metadata_without_private_pdfs(tmp_path: Path) -> None:
@@ -270,17 +340,107 @@ def test_run_benchmark_embeds_verified_dirty_corpus_report_extension(
     assert dirty_corpus["task76_parity_proven"] is True
     assert dirty_corpus["all_profiles_safe"] is True
     assert dirty_corpus["ocr_metadata_summary"]["ocr_engine_used_values"] == ["easyocr"]
+    assert dirty_corpus["task271_proof"]["target_executed_pages"] == 150
+    assert dirty_corpus["task271_proof"]["tuned_total_pages"] == 1
+    assert dirty_corpus["task271_proof"]["meets_150_page_target"] is False
     output_json_text = (tmp_path / "task74.json").read_text(encoding="utf-8")
     report_text = (tmp_path / "task74.md").read_text(encoding="utf-8")
     assert "## Dirty Corpus Manifest" in report_text
     assert "## Dirty Corpus Safety" in report_text
     assert "## Dirty Corpus OCR Metadata" in report_text
+    assert "## Task 271 Final Proof Target" in report_text
     assert manifest_path.as_posix() not in output_json_text
     assert private_source_root.as_posix() not in output_json_text
     assert private_pdf.name not in output_json_text
     assert manifest_path.as_posix() not in report_text
     assert private_source_root.as_posix() not in report_text
     assert private_pdf.name not in report_text
+
+
+@pytest.mark.parametrize("page_count", [1, 149])
+def test_task271_proof_rejects_under_150_pages_even_on_production_service(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    page_count: int,
+) -> None:
+    private_source_root = tmp_path / "private"
+    private_pdf = private_source_root / "dirty-source.pdf"
+    source_sha256 = _write_private_pdf(private_pdf, page_count=page_count)
+    manifest_path = tmp_path / "dirty-corpus-manifest.json"
+    manifest_path.write_text(
+        _dirty_manifest_json(source_sha256=source_sha256, page_count=page_count),
+        encoding="utf-8",
+    )
+
+    def service_profile_stub(
+        *,
+        profile: ProfileSpec,
+        service_url: str,
+        corpus_root: Path,
+        corpus_records: list[CorpusFileRecord],
+        api_key: str,
+        acceleration_policy: str,
+        ocr_mode: str,
+        ocr_engine: str,
+        ocr_languages: list[str],
+        max_poll_seconds: float,
+    ) -> ProfilePayload:
+        del service_url, corpus_root, api_key, acceleration_policy
+        del ocr_mode, ocr_engine, ocr_languages, max_poll_seconds
+        return _service_profile_payload(profile=profile, corpus_records=corpus_records)
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.benchmarking.story20_profile_runner.run_service_profile",
+        service_profile_stub,
+    )
+
+    payload = run_benchmark(
+        output_json=tmp_path / f"task74-{page_count}.json",
+        output_report=tmp_path / f"task74-{page_count}.md",
+        corpus_root=tmp_path / f"corpus-{page_count}",
+        data_root=tmp_path / f"runtime-{page_count}",
+        api_key="benchmark-key",
+        acceleration_policy="gpu_required",
+        ocr_mode="force",
+        ocr_engine="easyocr",
+        ocr_languages=["sv", "en"],
+        runtime_mode="production_service",
+        runtime_host="hemma",
+        runtime_service_url="http://127.0.0.1:28085",
+        runtime_parity_inputs=RuntimeParityInputs(
+            report_json_path=None,
+            status="passed",
+            lane="host",
+            expected_revision="abc",
+            remote_revision="abc",
+            service_revision="abc",
+            expected_revision_matches_remote=True,
+            service_revision_matches_remote=True,
+            live_smoke_passed=True,
+            metrics_scan_passed=True,
+        ),
+        profiles=[
+            ProfileSpec(
+                profile_name="production_service_current",
+                parallel_enabled=True,
+                max_chunk_workers=2,
+                chunk_size_pages=4,
+                gpu_stage_max_concurrency=2,
+            )
+        ],
+        dirty_corpus_manifest=manifest_path,
+        dirty_corpus_source_root=private_source_root,
+    )
+
+    dirty_corpus = payload["dirty_corpus"]
+    assert dirty_corpus is not None
+    task271_proof = dirty_corpus["task271_proof"]
+    assert task271_proof["production_service_runtime"] is True
+    assert task271_proof["source_hashes_verified"] is True
+    assert task271_proof["tuned_total_pages"] == page_count
+    assert task271_proof["target_executed_pages"] == 150
+    assert task271_proof["target_wall_clock_seconds"] == 3600
+    assert task271_proof["meets_150_page_target"] is False
 
 
 def test_dirty_corpus_report_fails_closed_on_removed_four_worker_profile(

@@ -51,6 +51,7 @@ def _render_dirty_corpus_section(dirty_corpus: DirtyCorpusReportExtension | None
     manifest = dirty_corpus["manifest"]
     ocr_summary = dirty_corpus["ocr_metadata_summary"]
     failure_taxonomy = dirty_corpus["failure_taxonomy"]
+    task271_proof = dirty_corpus["task271_proof"]
     lines = [
         "",
         "## Dirty Corpus Manifest",
@@ -111,6 +112,16 @@ def _render_dirty_corpus_section(dirty_corpus: DirtyCorpusReportExtension | None
             f"- Timeout failures: `{failure_taxonomy['timeout_failure_count']}`",
             f"- GPU/resource failures: `{failure_taxonomy['gpu_resource_failure_count']}`",
             f"- Conversion-bug failures: `{failure_taxonomy['conversion_bug_failure_count']}`",
+            "",
+            "## Task 271 Final Proof Target",
+            (f"- Production service runtime: `{task271_proof['production_service_runtime']}`"),
+            f"- Target executed pages: `{task271_proof['target_executed_pages']}`",
+            f"- Target wall-clock seconds: `{task271_proof['target_wall_clock_seconds']}`",
+            f"- Tuned profile: `{task271_proof['tuned_profile']}`",
+            f"- Tuned total pages: `{task271_proof['tuned_total_pages']}`",
+            (f"- Tuned wall-clock seconds: `{task271_proof['tuned_wall_clock_seconds']}`"),
+            f"- Tuned success rate: `{task271_proof['tuned_success_rate']}`",
+            (f"- Meets 150-page target: `{task271_proof['meets_150_page_target']}`"),
         ]
     )
     return lines

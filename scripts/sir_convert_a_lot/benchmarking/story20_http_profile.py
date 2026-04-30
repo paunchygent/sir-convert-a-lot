@@ -188,6 +188,7 @@ def _summarize(
         "failed_jobs": failed_jobs,
         "success_rate": round(success_rate, 6),
         "error_rate": round(error_rate, 6),
+        "total_latency_seconds": round(sum(latencies), 6),
         "latency_seconds": {
             "min": round(min(latencies), 6) if latencies else 0.0,
             "mean": round(mean_latency, 6),

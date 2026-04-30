@@ -71,6 +71,10 @@ runbooks, or skills.
   against manifest `source_sha256` values before `real_data_gate_satisfied` can
   become true. Accepted performance proof must run against the production
   service on Hemma after Task 76 parity.
+- Task 271 implementation is in progress. The Hemma Task 74 runner now targets
+  `runtime_surface.mode=production_service`, records the deployed service
+  profile as `production_service_current`, fails closed on non-production
+  payloads, and adds `dirty_corpus.task271_proof` for the 150-page target.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.

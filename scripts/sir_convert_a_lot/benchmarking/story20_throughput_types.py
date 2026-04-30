@@ -60,6 +60,7 @@ class ProfileSummary(TypedDict):
     failed_jobs: int
     success_rate: float
     error_rate: float
+    total_latency_seconds: float
     latency_seconds: LatencySummary
     pages_per_minute_p50: float
 
@@ -237,6 +238,24 @@ class DirtyCorpusOcrMetadataSummary(TypedDict):
     warning_count: int
 
 
+class Task271ProofSummary(TypedDict):
+    """Final dirty-corpus proof target fields required by Task 271."""
+
+    runtime_mode: str
+    production_service_runtime: bool
+    target_executed_pages: int
+    target_wall_clock_seconds: int
+    tuned_profile: str
+    tuned_total_pages: int
+    tuned_wall_clock_seconds: float
+    tuned_success_rate: float
+    source_hashes_verified: bool
+    real_data_gate_satisfied: bool
+    task76_parity_proven: bool
+    all_profiles_safe: bool
+    meets_150_page_target: bool
+
+
 class DirtyCorpusReportExtension(TypedDict):
     """Task 270 dirty-corpus extension embedded in Task 74 reports."""
 
@@ -248,6 +267,7 @@ class DirtyCorpusReportExtension(TypedDict):
     task76_parity_proven: bool
     failure_taxonomy: DirtyCorpusFailureTaxonomy
     ocr_metadata_summary: DirtyCorpusOcrMetadataSummary
+    task271_proof: Task271ProofSummary
 
 
 class BenchmarkPayload(TypedDict):

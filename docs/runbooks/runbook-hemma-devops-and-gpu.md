@@ -664,15 +664,18 @@ Usage notes:
 - The canonical Hemma runner now performs the required preflight before invoking `benchmark:task-74`:
   - runs `pdm run hemma-sync-prod-env-mirror`,
   - verifies `~/apps/sir-convert-a-lot/.env` resolves to the canonical prod env file,
-  - requires the canonical env to contain the Task 74 OCR defaults,
+  - requires the canonical env to contain the Task 74 OCR defaults and deployed PDF chunk profile,
   - runs `pdm sync --prod --no-editable --no-self` on the Hemma host runtime,
-  - warms a host EasyOCR cache under `~/.cache/sir-convert-a-lot/easyocr-models`,
-  - reruns the live host-lane smoke on the expected revision before benchmarking.
+  - reruns the live host-lane smoke on the expected revision before benchmarking,
+  - invokes the benchmark harness with `runtime_surface.mode=production_service`.
 - The production Hemma benchmark artifacts record p50/p90 wall-clock latency, success/error rate,
   queue depth, worker saturation, chunk-worker saturation, and GPU busy/memory gauges. Local smoke
   artifacts may contain diagnostic payload fields but are never accepted as performance, throughput,
   tuning, acceptance, or production default evidence.
-- The committed benchmark matrix is intentionally restricted to:
+- The final production-service benchmark records the single deployed service profile as
+  `production_service_current`; it does not claim dynamic per-profile tuning through the fixed live
+  service.
+- Local/in-process tuning exploration remains intentionally restricted to:
   - `serial_baseline` (`max_chunk_workers=1`, `chunk_size_pages=8`, `gpu_stage_max_concurrency=1`)
   - `parallel_conservative` (`max_chunk_workers=2`, `chunk_size_pages=4`,
     `gpu_stage_max_concurrency=2`)
@@ -696,12 +699,17 @@ Usage notes:
 - Dirty-corpus benchmark reports add the Task 270 extension with manifest summary, Task 76 parity
   status, profile safety classification, warning/failure taxonomy, and OCR/backend metadata
   summary.
+- Dirty-corpus benchmark reports also add the Task 271 final-proof fields:
+  `target_executed_pages=150`, `target_wall_clock_seconds=3600`, `tuned_total_pages`,
+  `tuned_wall_clock_seconds`, `production_service_runtime`, and `meets_150_page_target`.
+  A 1-page or 149-page dirty corpus must not be treated as final-proof-ready.
 - When `--dirty-corpus-manifest` is present, the harness fails closed before benchmark execution if
   any resolved profile exceeds Task 74's safe 2-worker boundary or matches the removed 4-worker OOM
   profile family.
-- Use the bounded 2-worker sweep when exploring alternatives; it keeps `max_chunk_workers=2` and
-  varies only chunk size plus bounded GPU stage cap so candidate profiles stay within the reviewed
-  safety envelope.
+- Use the bounded 2-worker sweep only when exploring alternatives; it keeps `max_chunk_workers=2`
+  and varies only chunk size plus bounded GPU stage cap so candidate profiles stay within the
+  reviewed safety envelope. It is not final Task 271 proof unless a later governed workflow redeploys
+  the production service per profile and records each run through the production-service lane.
 - The generated Task 74 JSON/markdown artifacts now include runtime-surface and runtime-parity
   sections; treat `runtime_parity.parity_proven=true` as mandatory for final closeout evidence.
 - Use `pdm run benchmark:task-74` directly only for local command-surface smoke checks. The Hemma

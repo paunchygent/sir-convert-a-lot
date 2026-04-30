@@ -31,6 +31,10 @@ def test_verify_env_contract_accepts_canonical_symlink(
                 "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE=easyocr",
                 "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en",
                 "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models",
+                "SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=1",
+                "SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS=2",
+                "SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES=4",
+                "SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY=2",
             ]
         )
         + "\n",
@@ -54,6 +58,11 @@ def test_verify_env_contract_accepts_canonical_symlink(
     assert contract.api_key == "secret-key"
     assert contract.default_ocr_engine == "easyocr"
     assert contract.default_ocr_languages == ("sv", "en")
+    assert contract.deployed_profile.profile_name == "production_service_current"
+    assert contract.deployed_profile.parallel_enabled is True
+    assert contract.deployed_profile.max_chunk_workers == 2
+    assert contract.deployed_profile.chunk_size_pages == 4
+    assert contract.deployed_profile.gpu_stage_max_concurrency == 2
 
 
 def test_verify_env_contract_rejects_missing_required_keys(
@@ -129,6 +138,7 @@ def test_main_stdout_excludes_performance_metrics(
                 "meets_target": True,
             },
             "runtime_parity": {"parity_proven": True},
+            "runtime_surface": {"mode": "production_service"},
             "dirty_corpus": {
                 "all_profiles_safe": True,
                 "manifest": {"source_hashes_verified": True},
@@ -166,6 +176,7 @@ def test_main_stdout_excludes_performance_metrics(
         "output_json": output_json.as_posix(),
         "output_report": output_report.as_posix(),
         "runtime_parity_proven": True,
+        "runtime_surface_mode": "production_service",
     }
     assert "recommended_profile" not in output
     assert "p50" not in output
@@ -223,9 +234,24 @@ def test_run_task74_benchmark_uses_scratch_backed_miopen_cache(
         service_revision="abc1234",
         default_ocr_engine="easyocr",
         default_ocr_languages=("sv", "en"),
+        deployed_profile=run_task74_hemma_benchmark.ProfileSpec(
+            profile_name="production_service_current",
+            parallel_enabled=True,
+            max_chunk_workers=2,
+            chunk_size_pages=4,
+            gpu_stage_max_concurrency=2,
+        ),
     )
 
     assert commands[-1][:3] == ["pdm", "run", "benchmark:task-74"]
+    assert "--runtime-mode" in commands[-1]
+    assert commands[-1][commands[-1].index("--runtime-mode") + 1] == "production_service"
+    assert "in_process_app" not in commands[-1]
+    assert "--service-profile-name" in commands[-1]
+    assert commands[-1][commands[-1].index("--service-profile-name") + 1] == (
+        "production_service_current"
+    )
+    assert "--service-profile-parallel-enabled" in commands[-1]
     assert captured_env == {
         "MIOPEN_FIND_MODE": "FAST",
         "MIOPEN_USER_DB_PATH": (tmp_path / "miopen" / "user-db").as_posix(),

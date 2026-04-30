@@ -3,9 +3,9 @@
 Purpose:
     Execute the full Task 74 Hemma benchmark workflow against a parity-checked
     revision by synchronizing the prod env mirror, verifying the server-side
-    env contract, syncing the host PDM runtime, warming a host EasyOCR cache,
-    rerunning the live host-lane smoke, and then invoking the benchmark
-    harness with explicit parity metadata.
+    env contract, syncing the host PDM runtime, rerunning the live host-lane
+    smoke, and then invoking the benchmark harness with explicit parity
+    metadata against the deployed production service.
 
 Relationships:
     - Reuses `scripts/devops/sync-prod-env-mirror.sh` for canonical Hemma env
@@ -19,14 +19,18 @@ Relationships:
 from __future__ import annotations
 
 import argparse
-import importlib
-import importlib.util
 import json
 import os
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from scripts.sir_convert_a_lot.benchmarking.story20_profiles import ProfileSpec
+from scripts.sir_convert_a_lot.devops.task74_hemma_env_profile import (
+    deployed_profile_from_env,
+)
+from scripts.sir_convert_a_lot.devops.task74_hemma_summary import build_stdout_summary
 
 CANONICAL_REPO_ROOT = Path("/home/paunchygent/apps/sir-convert-a-lot")
 CANONICAL_ENV_PATH = Path("/home/paunchygent/infrastructure/env/prod/sir-convert-a-lot.env")
@@ -76,6 +80,7 @@ class VerifiedEnvContract:
     api_key: str
     default_ocr_engine: str
     default_ocr_languages: tuple[str, ...]
+    deployed_profile: ProfileSpec
     canonical_env_path: Path
     repo_env_link: Path
 
@@ -233,6 +238,10 @@ def _verify_env_contract() -> VerifiedEnvContract:
         "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE",
         "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES",
         "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR",
+        "SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS",
+        "SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS",
+        "SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES",
+        "SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY",
     )
     missing = [key for key in required_keys if env_values.get(key, "").strip() == ""]
     if missing:
@@ -254,6 +263,7 @@ def _verify_env_contract() -> VerifiedEnvContract:
         api_key=env_values["SIR_CONVERT_A_LOT_V2_API_KEY"],
         default_ocr_engine=env_values["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"],
         default_ocr_languages=default_languages,
+        deployed_profile=deployed_profile_from_env(env_values),
         canonical_env_path=CANONICAL_ENV_PATH,
         repo_env_link=CANONICAL_ENV_LINK,
     )
@@ -263,29 +273,6 @@ def _sync_host_runtime() -> None:
     _run_command(
         ["pdm", "sync", "--prod", "--no-editable", "--no-self"],
         label="pdm sync --prod --no-editable --no-self",
-    )
-
-
-def _ensure_module_installed(module_name: str) -> None:
-    if importlib.util.find_spec(module_name) is None:
-        raise SystemExit(
-            f"Required module `{module_name}` is missing from the Hemma host PDM runtime "
-            "after `pdm sync`."
-        )
-
-
-def _warm_easyocr_cache(cache_dir: Path, *, languages: tuple[str, ...]) -> None:
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    easyocr_module = importlib.import_module("easyocr")
-    reader_cls = getattr(easyocr_module, "Reader", None)
-    if not callable(reader_cls):
-        raise SystemExit("easyocr.Reader is unavailable in the Hemma host runtime.")
-    reader_cls(
-        list(languages),
-        gpu=False,
-        model_storage_directory=cache_dir.as_posix(),
-        download_enabled=True,
-        verbose=False,
     )
 
 
@@ -353,6 +340,7 @@ def _run_task74_benchmark(
     service_revision: str,
     default_ocr_engine: str,
     default_ocr_languages: tuple[str, ...],
+    deployed_profile: ProfileSpec,
 ) -> None:
     benchmark_args = [
         "pdm",
@@ -378,11 +366,24 @@ def _run_task74_benchmark(
         "--ocr-languages",
         ",".join(default_ocr_languages),
         "--runtime-mode",
-        "in_process_app",
+        "production_service",
         "--runtime-host",
         "hemma",
         "--runtime-service-url",
         settings.service_url,
+        "--service-profile-name",
+        deployed_profile.profile_name,
+        (
+            "--service-profile-parallel-enabled"
+            if deployed_profile.parallel_enabled
+            else "--service-profile-serial"
+        ),
+        "--service-profile-max-chunk-workers",
+        str(deployed_profile.max_chunk_workers),
+        "--service-profile-chunk-size-pages",
+        str(deployed_profile.chunk_size_pages),
+        "--service-profile-gpu-stage-max-concurrency",
+        str(deployed_profile.gpu_stage_max_concurrency),
         "--easyocr-model-storage-dir",
         settings.host_easyocr_cache_dir.as_posix(),
         "--parity-status",
@@ -432,16 +433,23 @@ def _run_task74_benchmark(
     )
 
 
+def _require_production_service_payload(payload: dict[str, object]) -> None:
+    runtime_surface_obj = payload.get("runtime_surface")
+    if not isinstance(runtime_surface_obj, dict):
+        raise SystemExit("Task 74 benchmark payload is missing `runtime_surface`.")
+    runtime_mode = runtime_surface_obj.get("mode")
+    if runtime_mode != "production_service":
+        raise SystemExit(
+            "Task 271 Hemma benchmark evidence must run against the deployed "
+            f"production service, got runtime_surface.mode={runtime_mode!r}."
+        )
+
+
 def execute_workflow(settings: Task74HemmaSettings) -> dict[str, object]:
     """Run the canonical Task 74 Hemma workflow and return the benchmark payload."""
     env_contract = _verify_env_contract()
     remote_revision = _verify_expected_revision(settings.expected_revision)
     _sync_host_runtime()
-    _ensure_module_installed("easyocr")
-    _warm_easyocr_cache(
-        settings.host_easyocr_cache_dir,
-        languages=env_contract.default_ocr_languages,
-    )
 
     readyz_payload = _run_live_smoke(settings.smoke_output_root, api_key=env_contract.api_key)
     service_revision = _require_string(
@@ -462,42 +470,27 @@ def execute_workflow(settings: Task74HemmaSettings) -> dict[str, object]:
         service_revision=service_revision,
         default_ocr_engine=env_contract.default_ocr_engine,
         default_ocr_languages=env_contract.default_ocr_languages,
+        deployed_profile=env_contract.deployed_profile,
     )
-    return _read_json_object(settings.output_json, label="Task 74 benchmark payload")
-
-
-def _build_stdout_summary(
-    *,
-    settings: Task74HemmaSettings,
-    payload: dict[str, object],
-) -> dict[str, object]:
-    runtime_parity_obj = payload.get("runtime_parity")
-    if not isinstance(runtime_parity_obj, dict):
-        raise SystemExit("Task 74 benchmark payload is missing `runtime_parity`.")
-    dirty_corpus_obj = payload.get("dirty_corpus")
-    dirty_corpus_loaded = dirty_corpus_obj is not None
-    all_profiles_safe: object = None
-    source_hashes_verified: object = None
-    if isinstance(dirty_corpus_obj, dict):
-        all_profiles_safe = dirty_corpus_obj.get("all_profiles_safe")
-        manifest_obj = dirty_corpus_obj.get("manifest")
-        if isinstance(manifest_obj, dict):
-            source_hashes_verified = manifest_obj.get("source_hashes_verified")
-    return {
-        "output_json": settings.output_json.as_posix(),
-        "output_report": settings.output_report.as_posix(),
-        "runtime_parity_proven": runtime_parity_obj.get("parity_proven"),
-        "dirty_corpus_manifest_loaded": dirty_corpus_loaded,
-        "dirty_corpus_all_profiles_safe": all_profiles_safe,
-        "dirty_corpus_source_hashes_verified": source_hashes_verified,
-    }
+    payload = _read_json_object(settings.output_json, label="Task 74 benchmark payload")
+    _require_production_service_payload(payload)
+    return payload
 
 
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments, run the workflow, and print a compact machine-readable summary."""
     settings = _parse_args(sys.argv[1:] if argv is None else argv)
     payload = execute_workflow(settings)
-    print(json.dumps(_build_stdout_summary(settings=settings, payload=payload), sort_keys=True))
+    print(
+        json.dumps(
+            build_stdout_summary(
+                output_json=settings.output_json,
+                output_report=settings.output_report,
+                payload=payload,
+            ),
+            sort_keys=True,
+        )
+    )
     return 0
 
 

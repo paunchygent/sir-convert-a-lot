@@ -46,9 +46,11 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   `source_sha256` values, and copy only sanitized `source_id.pdf` names into the
   execution corpus.
 - Run only Task 74-approved safe profiles:
-  - `serial_baseline`,
-  - `parallel_conservative`,
-  - bounded 2-worker sweeps if needed.
+  - final production-service proof records the single deployed service profile
+    as `production_service_current`,
+  - in-process/local profile sweeps may still compare `serial_baseline`,
+    `parallel_conservative`, or bounded 2-worker variants, but those sweeps are
+    command-surface or tuning exploration only and cannot satisfy final proof.
 - Treat the removed 4-worker ROCm HIP OOM profile as forbidden unless a new
   governed decision explicitly reopens it.
 - Capture sanitized benchmark JSON/Markdown evidence with:
@@ -85,6 +87,9 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   do not print or assert p50/p90, latency, pages-per-minute, throughput, or
   improvement percentages.
 - [ ] The dirty-corpus run uses the Task 74 report schema and command surface.
+- [ ] The Hemma command fails closed unless `runtime_surface.mode` is
+  `production_service`; final Task 271 evidence must not dispatch through the
+  in-process FastAPI `TestClient` profile runner.
 - [ ] The dirty-corpus report records `source_hashes_verified=true`,
   `executed_entry_count=entry_count`, and `real_data_gate_satisfied=true`;
   manifest-only validation cannot satisfy this gate.
@@ -100,6 +105,10 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   dirty corpus, or Story 39 remains open with a documented blocker.
 - [ ] The operator 150 PDF-page proof target is evaluated from measured
   evidence:
+  - report field `dirty_corpus.task271_proof.meets_150_page_target=true`,
+  - report fields include `target_executed_pages=150`,
+    `target_wall_clock_seconds=3600`, `tuned_total_pages`,
+    `tuned_wall_clock_seconds`, and `production_service_runtime=true`,
   - \<= 60 minutes on tuned Hemma profile for a manifest-verified dirty corpus
     with at least 150 executed PDF pages, or
   - a governed blocker keeps the target open.
@@ -111,8 +120,8 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
 ## Entry Points
 
 - `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha>`
-- `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>`
 - `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha> --dirty-corpus-manifest <metadata-only-manifest.json> --dirty-corpus-source-root <private-pdf-root>`
+- `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>` remains a safe exploration command only unless the service is redeployed per governed profile and the resulting evidence is tied to the production-service lane.
 - `scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py`
 - `scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py`
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
@@ -121,6 +130,11 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
 
 - [ ] No new benchmark profile can be accepted without Task 76 parity evidence.
 - [ ] The report marks unsafe profile requests as hard failures.
+- [ ] Regression tests prove the Hemma command sends
+  `--runtime-mode production_service` and the production-service benchmark path
+  cannot dispatch through the in-process `TestClient` runner.
+- [ ] Regression tests prove 1-page and 149-page dirty corpora cannot set
+  `meets_150_page_target=true`, even with verified source hashes.
 - [ ] The evidence bundle includes deterministic artifact digests or equivalent
   stable-output checks for tuned vs baseline profiles.
 
