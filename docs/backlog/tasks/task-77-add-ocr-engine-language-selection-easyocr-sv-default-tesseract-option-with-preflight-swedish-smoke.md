@@ -133,7 +133,8 @@ cd ../sir-worktrees/task-77-ocr-engine-sv
 - [x] Performance evidence captured (live check + targets):
   - record median `pages_per_minute` and stage timing keys for the smoke OCR job(s),
   - document a baseline vs new default comparison (tie into `T74` throughput benchmark report),
-  - explicit operator benchmark target for the “300 PDFs” corpus:
+  - explicit operator benchmark target for the dirty PDF OCR corpus, clarified
+    by Task 271 as 150 executed PDF pages:
     - wall-clock \<= 60 minutes on Hemma tuned defaults, with report artifact.
 
 ## Validation Evidence (Local)

@@ -94,7 +94,8 @@ Make PDF OCR both correct for Swedish (preserve `å`, `ä`, `ö`) and fast enoug
   - smoke report artifacts are written under a deterministic `build/verification/...` directory.
 - [ ] Performance target (Hemma live evidence):
   - batch throughput improves materially versus the documented baseline,
-  - explicit target for the operator-provided “300 PDFs” corpus:
+  - explicit target for the operator-provided dirty PDF OCR corpus, clarified
+    by Task 271 as 150 executed PDF pages:
     - total wall-clock \<= 60 minutes on Hemma default tuned profile,
     - evidence includes median `pages_per_minute` and stage timings.
 

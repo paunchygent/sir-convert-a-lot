@@ -98,9 +98,10 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   closeout.
 - [ ] Median wall-clock improves by >= 40% versus baseline for the selected
   dirty corpus, or Story 39 remains open with a documented blocker.
-- [ ] The operator "300 PDFs" target is evaluated or explicitly projected from
-  measured evidence:
-  - \<= 60 minutes on tuned Hemma profile, or
+- [ ] The operator 150 PDF-page proof target is evaluated from measured
+  evidence:
+  - \<= 60 minutes on tuned Hemma profile for a manifest-verified dirty corpus
+    with at least 150 executed PDF pages, or
   - a governed blocker keeps the target open.
 - [ ] Metrics safety records `contains_job_id_label=false`.
 - [ ] Reports include OCR quality evidence for Swedish diacritics where
@@ -142,7 +143,13 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   total pages without launching a benchmark.
 - This pilot corpus is not final Task 271 acceptance evidence: every PDF is
   currently one page, so the manifest still reports missing `long_document` and
-  cannot satisfy the full dirty-corpus real-data gate or 300-PDF target.
+  cannot satisfy the full dirty-corpus real-data gate or 150 PDF-page proof
+  target.
+- The Syntes long-document corpus update added `dirty-pdf-ocr-longdoc-001`
+  with 148 observed PDF pages. Together with the 9 one-page pilot PDFs, the
+  operator manifest now has 10 entries and 157 total PDF pages; Hemma
+  source-root verification matched all 10 entries and all 157 pages without
+  launching OCR.
 - Initial Hemma pilot exposed a ROCm/MIOpen EasyOCR failure mode during repeated
   PDF OCR:
   - default MIOpen execution emitted `IsEnoughWorkspace` warnings for
@@ -191,7 +198,7 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
 - Production-service probe outputs were copied locally under
   `build/verification/local-copies/task-271-miopen-prod-service-probe/`.
   This is production-runtime health evidence only, not throughput,
-  performance, tuning, acceptance, or 300-PDF projection evidence.
+  performance, tuning, acceptance, or 150 PDF-page proof evidence.
 
 ## Closeout
 

@@ -205,8 +205,9 @@ record the outcome in the relevant task doc:
     and includes baseline and candidate/tuned profile,
   - median wall-clock improves by >= 40% versus baseline for the selected
     corpus, or the story remains open with a documented blocker,
-  - the operator "300 PDFs" target remains visible: \<= 60 minutes on the tuned
-    Hemma profile unless a later governed decision revises it,
+  - the operator 150 PDF-page proof target remains visible: \<= 60 minutes on
+    the tuned Hemma profile for a manifest-verified dirty corpus with at least
+    150 executed PDF pages unless a later governed decision revises it,
   - dirty-corpus benchmarking extends the Task 74 report schema and command
     surface,
   - Task 76 parity evidence is required for the exact revision under benchmark,
