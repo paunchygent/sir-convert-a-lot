@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-04-29'
+last_updated: '2026-04-30'
 ---
 
 ## Purpose
@@ -59,22 +59,21 @@ runbooks, or skills.
   `ocr_languages_used=null` only where OCR is not applicable.
   The 2026-04-29 re-review approved Task 268; Story 39 remains open for Task
   269, Task 270, Task 271, and final Task 74 evidence.
-- Task 270 is completed locally under Story 39. The Task 74 benchmark command
-  surface now accepts a metadata-only dirty PDF OCR corpus manifest, embeds a
-  sanitized dirty-corpus report extension, provides a manifest-only validation
-  command, and fails closed on dirty-corpus profiles outside the Task 74 safe
-  2-worker boundary. The generated synthetic scanned corpus remains harness
-  smoke input only and cannot satisfy Story 39 real-data acceptance. Local
-  smoke assertions/stdout are schema/safety-only and must not print or assert
-  performance metrics; dirty-corpus benchmark evidence now requires
-  `--dirty-corpus-source-root` so executed private PDF bytes are hash-verified
-  against manifest `source_sha256` values before `real_data_gate_satisfied` can
-  become true. Accepted performance proof must run against the production
-  service on Hemma after Task 76 parity.
-- Task 271 implementation is in progress. The Hemma Task 74 runner now targets
-  `runtime_surface.mode=production_service`, records the deployed service
-  profile as `production_service_current`, fails closed on non-production
-  payloads, and adds `dirty_corpus.task271_proof` for the 150-page target.
+- Task 270 is completed locally under Story 39. Dirty-corpus evidence now
+  requires metadata-only manifests plus `--dirty-corpus-source-root` hash
+  verification; synthetic/local smoke remains schema/safety-only and cannot
+  satisfy real-data performance proof.
+- Task 271 implementation and Hemma proof are captured. Revision
+  `405cddc59d02974f43eaf03556bad92cdd1c2341` was deployed and parity-verified
+  before a detached production-service dirty-corpus benchmark ran on Hemma.
+  The run verified 10 private manifest entries / 157 pages, processed them via
+  `runtime_surface.mode=production_service`, reported `success_rate=1.0`,
+  `failed_jobs=0`, `contains_job_id_label=false`, and met the 150-page target
+  with `tuned_wall_clock_seconds=2179.0`. Raw JSON/Markdown artifacts live in
+  ignored `build/benchmarks/story-39/` paths and were copied locally under
+  `build/benchmarks/story-39/local-copies/task-271-dirty-pdf-ocr-proof/`.
+  Story 39 still needs a reviewer decision or follow-up for the separate
+  production-service `>=40%` baseline-vs-tuned improvement gate.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -135,11 +134,11 @@ runbooks, or skills.
 
 1. Arrange a separate retained post-implementation review for Task 267 before
    treating the parser lane as independently approved.
-1. Continue Story 39 with Task 271 to run the safe Hemma dirty-corpus OCR
-   benchmark against private real-data inputs. Use the Task 270 metadata-only
-   manifest/report schema, private source-root hash verification, Task 74 safe
-   profile matrix, and Task 76 parity evidence before accepting performance
-   results.
+1. Review Task 271 evidence and decide the next Story 39 closeout slice:
+   either run a governed production-service baseline/tuned A/B proof for the
+   remaining `>=40%` improvement gate, or record a Task 74/Story 39 blocker
+   decision. Do not treat the Task 271 current-profile proof as baseline-vs-
+   tuned improvement evidence.
 1. Continue EPIC-10 with the next governed slice only after review: likely the
    Sir Convert intermediate exam representation and manifest schema, or a
    renderer-target decision task if Exam.net ingestion evidence still needs

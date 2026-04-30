@@ -68,12 +68,12 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
 
 ## Deliverables
 
-- [ ] Task 76 parity evidence for the exact revision under benchmark.
-- [ ] Dirty-corpus benchmark JSON and Markdown report.
-- [ ] Safe-profile compliance proof.
-- [ ] Runbook/defaults update or explicit blocker explaining why defaults must
+- [x] Task 76 parity evidence for the exact revision under benchmark.
+- [x] Dirty-corpus benchmark JSON and Markdown report.
+- [x] Safe-profile compliance proof.
+- [x] Runbook/defaults update or explicit blocker explaining why defaults must
   stay unchanged.
-- [ ] Story 39 / Task 74 evidence links updated.
+- [x] Story 39 / Task 74 evidence links updated.
 
 ## Acceptance Criteria
 
@@ -140,9 +140,9 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated
 
 ## Kickoff Evidence (2026-04-30)
 
@@ -213,6 +213,85 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   `build/verification/local-copies/task-271-miopen-prod-service-probe/`.
   This is production-runtime health evidence only, not throughput,
   performance, tuning, acceptance, or 150 PDF-page proof evidence.
+
+## Final 150-Page Proof Evidence (2026-04-30)
+
+- Implementation revision:
+  `405cddc59d02974f43eaf03556bad92cdd1c2341`.
+- Hemma deploy/runtime parity for that exact revision passed before the
+  benchmark:
+  - deploy report:
+    `build/verification/task-76-hemma-deploy-verify-task271-profile/report.md`,
+  - remote revision and service revision both matched
+    `405cddc59d02974f43eaf03556bad92cdd1c2341`,
+  - live smoke, metrics scan, public edge, TLS, and reserved default-host checks
+    passed.
+- The benchmark was launched through the committed detached Hemma command
+  surface:
+  - detached log:
+    `.artifacts/hemma-command-task271-dirty-proof-20260430T103413Z.log`,
+  - command surface:
+    `pdm run benchmark:task-74-hemma --expected-revision 405cddc59d02974f43eaf03556bad92cdd1c2341 --dirty-corpus-manifest inputs/dirty_pdf_to_ocr/dirty_pdf_ocr_manifest.json --dirty-corpus-source-root inputs/dirty_pdf_to_ocr`.
+- Benchmark artifacts were written on Hemma and copied locally for operator
+  inspection under ignored `build/` paths:
+  - remote JSON:
+    `build/benchmarks/story-39/task-271-dirty-pdf-ocr-benchmark-hemma.json`,
+  - remote Markdown:
+    `build/benchmarks/story-39/task-271-dirty-pdf-ocr-benchmark-report-hemma.md`,
+  - local copies:
+    `build/benchmarks/story-39/local-copies/task-271-dirty-pdf-ocr-proof/`.
+- Raw artifacts remain untracked because `build/` is ignored and the raw
+  report includes the sanitized execution-corpus location. The committed
+  evidence below intentionally records only sanitized facts, stable source ids,
+  hashes/page counts, and artifact locations; it does not commit private PDFs,
+  private source roots, original PDF filenames, or OCR excerpts.
+- Production-service proof summary:
+  - `runtime_surface.mode=production_service`,
+  - `runtime_surface.host=hemma`,
+  - profile `production_service_current`,
+  - `source_hashes_verified=true`,
+  - `executed_entry_count=10`,
+  - `entry_count=10`,
+  - `real_data_gate_satisfied=true`,
+  - `total_pages=157`,
+  - `target_executed_pages=150`,
+  - `target_wall_clock_seconds=3600`,
+  - `tuned_total_pages=157`,
+  - `tuned_wall_clock_seconds=2179.0`,
+  - `production_service_runtime=true`,
+  - `meets_150_page_target=true`,
+  - `success_rate=1.0`,
+  - `failed_jobs=0`,
+  - `resource_evidence.contains_job_id_label=false`.
+- OCR/backend metadata summary:
+  - OCR enabled jobs: `10`,
+  - OCR engine used: `easyocr`,
+  - OCR languages used: `en, sv`,
+  - backend used: `docling`,
+  - acceleration used: `cuda`.
+- Failure and warning taxonomy:
+  - failed jobs: `0`,
+  - warnings: `4`,
+  - input-quality warnings: `0`,
+  - engine/runtime failures: `0`,
+  - timeout failures: `0`,
+  - GPU/resource failures: `0`,
+  - conversion-bug failures: `0`,
+  - recent production container log scan during and after the run found `0`
+    matches for `MIOpen`, `ERROR`, `WARNING`, `Traceback`, or `Exception`.
+- Counts-only Swedish-diacritic evidence from downloaded Markdown artifacts:
+  - 10 OCR artifacts were scanned without storing excerpts in git,
+  - 1 artifact contained Swedish diacritic code points,
+  - total Swedish diacritic code points observed: `18615`,
+  - the long-document source id accounted for those counts:
+    `å=4981`, `ä=8718`, `ö=4728`, `Å=8`, `Ä=108`, `Ö=72`.
+- The production-service current-profile report intentionally records
+  `p50_improvement_percent=0.0` and `meets_target=false` because a fixed
+  deployed service profile cannot truthfully compare itself against a separate
+  production-service baseline. Do not use this run to claim the Story 39
+  `>=40%` baseline-vs-tuned improvement gate. That gate needs either a governed
+  service-backed baseline/tuned A/B proof or an explicit Story 39/Task 74
+  blocker decision.
 
 ## Closeout
 

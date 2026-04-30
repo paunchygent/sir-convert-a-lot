@@ -2,10 +2,10 @@
 id: story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate
 title: Harden and align PDF OCR path with dirty real-data performance gate
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-04-27'
-last_updated: '2026-04-29'
+last_updated: '2026-04-30'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-19-checkpointed-partial-results-and-resumable-ocr-pipeline.md
@@ -193,7 +193,7 @@ record the outcome in the relevant task doc:
     `ocr_languages_requested` or `ocr_acceleration_used`,
   - Task 269 applies selected Outcome B by explicitly deferring or superseding
     both fields everywhere they appear in active/completed contract language.
-- [ ] The real-data gate exists and is mandatory:
+- [x] The real-data gate exists and is mandatory:
   - a corpus manifest describes each dirty input class, page count, source
     hash, OCR language expectation, and privacy/sanitization state,
   - at least one benchmark report is generated from hard/dirty real PDFs,
@@ -218,6 +218,44 @@ record the outcome in the relevant task doc:
   - low-confidence/sparse output and OCR retry warnings are visible in reports,
   - failures are classified by input quality, engine/runtime availability,
     timeout, GPU/resource pressure, or conversion bug.
+
+## Task 271 Evidence Update (2026-04-30)
+
+- Task 271 captured the first dirty real-data production-service benchmark on
+  Hemma for revision `405cddc59d02974f43eaf03556bad92cdd1c2341`.
+- Task 76 parity passed for the same revision before the benchmark:
+  `build/verification/task-76-hemma-deploy-verify-task271-profile/report.md`.
+- Dirty-corpus production benchmark artifacts were written under ignored
+  `build/` paths and copied locally for operator inspection:
+  - `build/benchmarks/story-39/task-271-dirty-pdf-ocr-benchmark-hemma.json`,
+  - `build/benchmarks/story-39/task-271-dirty-pdf-ocr-benchmark-report-hemma.md`,
+  - `build/benchmarks/story-39/local-copies/task-271-dirty-pdf-ocr-proof/`.
+- Sanitized proof facts:
+  - runtime mode: `production_service`,
+  - deployed profile: `production_service_current`,
+  - source hashes verified: `true`,
+  - executed entries: `10` of `10`,
+  - total pages: `157`,
+  - success rate: `1.0`,
+  - failed jobs: `0`,
+  - metrics safety: `contains_job_id_label=false`,
+  - 150-page target: `157` pages in `2179.0` seconds, so
+    `meets_150_page_target=true`.
+- OCR/backend facts:
+  - OCR engine used: `easyocr`,
+  - OCR languages used: `en, sv`,
+  - backend used: `docling`,
+  - acceleration used: `cuda`.
+- Counts-only quality probe found `18615` Swedish diacritic code points in the
+  long-document Markdown artifact without committing OCR excerpts. This is
+  positive long-document evidence, but the story-level quality gate remains
+  open until review accepts the quality evidence shape across all expected dirty
+  classes.
+- The production-service current-profile report intentionally does not satisfy
+  the `>=40%` baseline-vs-tuned improvement gate: with one fixed deployed
+  profile it records `p50_improvement_percent=0.0` and `meets_target=false`.
+  Keep the performance requirement open until a governed service-backed
+  baseline/tuned A/B proof is run or Task 74 records a blocker decision.
 - [ ] GPU-first governance holds:
   - GPU-required runs fail closed when ROCm/CUDA evidence is unavailable,
   - no runtime silently changes to CPU OCR for a GPU-required job,

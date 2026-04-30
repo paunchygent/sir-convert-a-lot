@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-04'
-last_updated: '2026-04-29'
+last_updated: '2026-04-30'
 related:
   - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md
   - docs/backlog/stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md
@@ -200,15 +200,11 @@ Measurement rules (must be explicit in report):
   evidence only and does not prove performance, throughput, tuning, or production defaults:
   - `build/benchmarks/story-20/task-74-throughput-smoke-local.json`
   - `build/benchmarks/story-20/task-74-throughput-smoke-local.md`
-- Live Hemma evidence is still pending:
-  - Task 76 deploy-parity must be rerun on the current pushed revision before the final Hemma
-    benchmark/report pass.
-  - Final closeout evidence still needs:
-    - Hemma GPU-backed benchmark artifacts,
-    - runtime-parity declaration,
-    - determinism proof,
-    - explicit metrics-safety result,
-    - runbook defaults + rollback thresholds derived from the benchmark evidence.
+- Historical Task 74 closeout remains open for true baseline-vs-tuned comparison:
+  Task 271 later captured a production-service dirty-corpus proof on Hemma, but
+  that run records the fixed deployed service profile as
+  `production_service_current` and does not by itself satisfy the `>=40%`
+  baseline-vs-tuned improvement gate.
 
 ## Benchmark Decision Update (2026-03-06)
 
@@ -222,6 +218,29 @@ Measurement rules (must be explicit in report):
   command surface to vary chunk size plus bounded GPU stage cap; if those experiments still fail to
   reach the `>= 40%` target, production default stays serial and parallel mode remains opt-in via
   explicit `.env` override.
+
+## Dirty-Corpus Production-Service Evidence (2026-04-30)
+
+- Task 271 captured a safe dirty real-data production-service benchmark on
+  Hemma for revision `405cddc59d02974f43eaf03556bad92cdd1c2341` after passing
+  Task 76 deploy/runtime parity on that same revision.
+- Artifact locations are ignored `build/` evidence paths:
+  - `build/benchmarks/story-39/task-271-dirty-pdf-ocr-benchmark-hemma.json`,
+  - `build/benchmarks/story-39/task-271-dirty-pdf-ocr-benchmark-report-hemma.md`.
+- Sanitized result facts:
+  - runtime mode: `production_service`,
+  - profile: `production_service_current`,
+  - source hashes verified: `true`,
+  - executed entries: `10` of `10`,
+  - total pages: `157`,
+  - success rate: `1.0`,
+  - failed jobs: `0`,
+  - metrics safety: `contains_job_id_label=false`,
+  - 150-page target: `157` pages in `2179.0` seconds.
+- This run is valid Task 271 production-service proof for the 150-page target.
+  It is not a standalone Task 74 closeout for the `>=40%` improvement target
+  because the benchmark report truthfully records only the current deployed
+  profile and therefore reports `p50_improvement_percent=0.0`.
 
 ## Validation Evidence
 
