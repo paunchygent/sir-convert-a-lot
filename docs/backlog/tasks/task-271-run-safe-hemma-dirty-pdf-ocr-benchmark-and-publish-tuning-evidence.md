@@ -165,6 +165,33 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   repeatable for production compose and the host-side Task 74 Hemma runner, and
   removes Docling's deprecated EasyOCR `use_gpu` option in favor of
   `pipeline_options.accelerator_options.device`.
+- Revision `9abbb29bd22f7aadfc3bff870b6b25d80cea1f48` was pushed, pulled on
+  Hemma, and deployed through Task 76 parity:
+  - report: `build/verification/task-76-hemma-deploy-verify/report.md`,
+  - status: `passed`,
+  - remote revision and service revision both matched
+    `9abbb29bd22f7aadfc3bff870b6b25d80cea1f48`.
+- Live production container probe confirmed:
+  - `MIOPEN_FIND_MODE=FAST`,
+  - `MIOPEN_USER_DB_PATH=/srv/scratch/sir-convert-a-lot/cache/miopen/user-db`,
+  - `MIOPEN_CUSTOM_CACHE_DIR=/srv/scratch/sir-convert-a-lot/cache/miopen/kernel-cache`,
+  - the container bind mount is read-write from
+    `/home/paunchygent/.data/sir-convert-a-lot/cache/miopen` to
+    `/srv/scratch/sir-convert-a-lot/cache/miopen`.
+- Production-service diagnostic OCR probe against `http://127.0.0.1:28085`
+  converted the same 9 pilot PDFs with `ocr_mode=force`, `ocr_engine=easyocr`,
+  and `sv,en` languages:
+  - output root:
+    `build/verification/task-271-miopen-prod-service-probe/`,
+  - manifest: `sir_convert_a_lot_manifest.json`,
+  - 9 entries, all `status=succeeded`,
+  - no recent container-log matches for `MIOpen`, `IsEnoughWorkspace`,
+    `miopenStatus`, `HIP error`, `unspecified launch failure`, or the Docling
+    deprecated `use_gpu` warning.
+- Production-service probe outputs were copied locally under
+  `build/verification/local-copies/task-271-miopen-prod-service-probe/`.
+  This is production-runtime health evidence only, not throughput,
+  performance, tuning, acceptance, or 300-PDF projection evidence.
 
 ## Closeout
 
