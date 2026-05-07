@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-04-30
-last_updated: 2026-04-30
+created: 2026-05-08
+last_updated: 2026-05-08
 related: []
 labels:
   - generated
@@ -41,6 +41,7 @@ Generated index for backlog planning documents.
 | review-07-ruthless-review-of-task-267-digiexam-parser-v1-readiness | [Ruthless review of Task 267 DigiExam parser v1 readiness](reviews/review-07-ruthless-review-of-task-267-digiexam-parser-v1-readiness.md) | review | completed |
 | review-08-ruthless-review-of-task-268-pdf-ocr-checkpoint-metadata-truth | [Ruthless review of Task 268 PDF OCR checkpoint metadata truth](reviews/review-08-ruthless-review-of-task-268-pdf-ocr-checkpoint-metadata-truth.md) | review | completed |
 | review-09-ruthless-review-of-task-269-ocr-metadata-contract-alignment | [Ruthless review of Task 269 OCR metadata contract alignment](reviews/review-09-ruthless-review-of-task-269-ocr-metadata-contract-alignment.md) | review | completed |
+| review-10-ruthless-review-of-story-39-follow-up-task-272-and-task-273-drafts | [Ruthless review of Story 39 follow-up Task 272 and Task 273 drafts](reviews/review-10-ruthless-review-of-story-39-follow-up-task-272-and-task-273-drafts.md) | review | completed |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -83,6 +84,8 @@ Generated index for backlog planning documents.
 | story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads | [HuleEdu Gateway proxy integration for Sir Convert workloads](stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md) | story | proposed |
 | story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting | [DigiExam PDF parser v1 fixtures and confidence reporting](stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md) | story | completed |
 | story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate | [Harden and align PDF OCR path with dirty real-data performance gate](stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md) | story | in_progress |
+| story-40-digiexam-dxe-source-parser-and-answer-key-provenance | [DigiExam .dxe source parser and answer-key provenance](stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md) | story | completed |
+| story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema | [DigiExam renderer-neutral intermediate exam representation and manifest schema](stories/story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema.md) | story | completed |
 | 005-bootstrap-docs-as-code-structure-under-docs | [Bootstrap docs-as-code structure under docs/](tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md) | task | completed |
 | 006-migrate-canonical-converter-code-and-quality-gates | [Migrate canonical converter code and quality gates](tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md) | task | completed |
 | 007-prepare-docker-hemma-service-foundation | [Prepare Docker + Hemma service foundation](tasks/task-04-04-prepare-docker-hemma-service-foundation.md) | task | completed |
@@ -282,6 +285,10 @@ Generated index for backlog planning documents.
 | task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning | [Dockerized Hemma ROCm GPU passthrough and runtime wheel pinning](tasks/task-27-dockerized-hemma-rocm-gpu-passthrough-and-runtime-wheel-pinning.md) | task | completed |
 | task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema | [Add dirty PDF OCR corpus manifest and benchmark report schema](tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md) | task | completed |
 | task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence | [Run safe Hemma dirty PDF OCR benchmark and publish tuning evidence](tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md) | task | in_progress |
+| task-272-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs | [Add formula-aware final pass and linked PDF/image artifacts for dirty PDF OCR outputs](tasks/task-272-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs.md) | task | proposed |
+| task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling | [Run chunk-size 8 production baseline tuning proof with warm-up and GPU sampling](tasks/task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling.md) | task | proposed |
+| task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate | [Implement DigiExam .dxe parser fixtures and result-PDF answer enrichment gate](tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md) | task | completed |
+| task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract | [Implement DigiExam intermediate exam representation and manifest schema contract](tasks/task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract.md) | task | completed |
 | task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint | [Markdown to PDF via HTML intermediary (Pandoc + WeasyPrint)](tasks/task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint.md) | task | completed |
 | task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx | [PDF to DOCX service pipeline (API v2)](tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md) | task | completed |
 | task-30-markdown-to-docx-via-html-intermediary-pandoc | [Markdown to DOCX via HTML intermediary (Pandoc)](tasks/task-30-markdown-to-docx-via-html-intermediary-pandoc.md) | task | completed |

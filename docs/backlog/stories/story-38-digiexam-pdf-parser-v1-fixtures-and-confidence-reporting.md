@@ -5,10 +5,11 @@ type: story
 status: completed
 priority: high
 created: '2026-04-25'
-last_updated: '2026-04-26'
+last_updated: '2026-05-07'
 related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md
+  - docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md
   - docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md
 labels:
   - exam-migration
@@ -35,7 +36,7 @@ Exam.net renderer or bulk workflow depends on the parser output.
 - Parse DigiExam PDF exports into item blocks with stable source evidence:
   header, item number or title, item type, prompt text, optional point marker,
   options or matching structures when present, and extraction warnings.
-- Prove the two observed PDFs from the research baseline:
+- Preserve the two observed PDFs as legacy PDF regression fixtures:
   - ecology sample: 15 open-ended items with subpart handling;
   - chemistry sample: 12 ordered items with 3 multiple-choice, 1 matching, and
     8 open-ended items.
@@ -67,7 +68,7 @@ Exam.net renderer or bulk workflow depends on the parser output.
 - [x] Tests assert item counts, item types, point marker extraction, and warning
   classes from the parser report.
 - [x] Tests cover Swedish characters and the `Identity-H`/fallback-font risk
-  called out in the research reference.
+  called out in the reference docs.
 - [x] Tests cover at least one synthetic or fixture-level unknown-shape case
   that must fail closed.
 

@@ -20,6 +20,9 @@ related:
   - docs/backlog/tasks/task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests.md
   - docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md
   - docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md
+  - docs/backlog/tasks/task-272-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs.md
+  - docs/backlog/tasks/task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling.md
+  - docs/backlog/reviews/review-10-ruthless-review-of-story-39-follow-up-task-272-and-task-273-drafts.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/sir_convert_a_lot.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -171,6 +174,16 @@ record the outcome in the relevant task doc:
   run the safe dirty-corpus OCR benchmark against the production service on
   Hemma, publish sanitized evidence, and define rollback/tuning defaults or a
   documented blocker.
+- `docs/backlog/tasks/task-272-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs.md`:
+  repair dirty textbook output quality by adding a formula-aware final pass for
+  pages/chunks that still contain `<!-- formula-not-decoded -->`, and by
+  replacing bare image placeholders with linked retained image/object and
+  companion PDF artifacts.
+- `docs/backlog/tasks/task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling.md`:
+  treat the Task 271 production-service proof as the new baseline, test
+  `chunk_size_pages=8` under the same 2-worker cap, keep MIOpen cache settings
+  unchanged, exclude warm-up from measurement, and improve GPU/resource
+  sampling before changing defaults.
 
 ## Acceptance Criteria
 
@@ -201,10 +214,12 @@ record the outcome in the relevant task doc:
     `executed_entry_count=entry_count`,
   - story completion is blocked if only synthetic fixtures have been run.
 - [ ] Performance requirements are hard gates:
-  - accepted benchmark evidence runs against the production service on Hemma
-    and includes baseline and candidate/tuned profile,
-  - median wall-clock improves by >= 40% versus baseline for the selected
-    corpus, or the story remains open with a documented blocker,
+  - accepted benchmark evidence runs against the production service on Hemma,
+  - the Task 271 production-service result is the current baseline for follow-up
+    optimization; do not rerun a serial baseline unless a later governed
+    decision explicitly asks for it,
+  - Task 273 evaluates `chunk_size_pages=8` against the Task 271 baseline with
+    warm-up excluded and credible GPU/resource sampling,
   - the operator 150 PDF-page proof target remains visible: \<= 60 minutes on
     the tuned Hemma profile for a manifest-verified dirty corpus with at least
     150 executed PDF pages unless a later governed decision revises it,
@@ -215,6 +230,10 @@ record the outcome in the relevant task doc:
     closed unless Task 74 is updated by a later governed decision.
 - [ ] Quality requirements are hard gates:
   - Swedish diacritics survive OCR in real dirty inputs where expected,
+  - `<!-- formula-not-decoded -->` markers are repaired through a bounded
+    formula-aware final pass or reported as explicit residual quality debt,
+  - bare `<!-- image -->` placeholders are replaced with linked retained
+    image/object artifacts when extractable visual content exists,
   - low-confidence/sparse output and OCR retry warnings are visible in reports,
   - failures are classified by input quality, engine/runtime availability,
     timeout, GPU/resource pressure, or conversion bug.
@@ -251,11 +270,22 @@ record the outcome in the relevant task doc:
   positive long-document evidence, but the story-level quality gate remains
   open until review accepts the quality evidence shape across all expected dirty
   classes.
-- The production-service current-profile report intentionally does not satisfy
-  the `>=40%` baseline-vs-tuned improvement gate: with one fixed deployed
-  profile it records `p50_improvement_percent=0.0` and `meets_target=false`.
-  Keep the performance requirement open until a governed service-backed
-  baseline/tuned A/B proof is run or Task 74 records a blocker decision.
+- The production-service current-profile report is now treated as the new
+  baseline for follow-up optimization. Do not rerun a serial baseline for this
+  story unless a later governed decision changes that baseline policy.
+- Task 272 and Task 273 were added as follow-up slices after reviewing the
+  Syntes output:
+  - Task 272 owns formula-aware final-pass quality repair, a full generated OCR
+    PDF companion, and linked retained visual artifacts through a terminal
+    `artifact/bundle` ZIP contract while keeping the primary Markdown artifact
+    route unchanged,
+  - Task 273 owns `chunk_size_pages=8` production-service tuning with warm-up
+    exclusion, numeric promotion gates, quality non-regression thresholds, and
+    fail-closed GPU/resource sampling.
+- Review 10 re-reviewed and approved the amended Task 272 / Task 273 drafts.
+  The old Task 74 `>=40%` toy improvement gate is withdrawn as a blocker; Task
+  272 now carries the precise artifact/retention contract and Task 273 now
+  carries numeric promotion/resource-sampling thresholds.
 - [ ] GPU-first governance holds:
   - GPU-required runs fail closed when ROCm/CUDA evidence is unavailable,
   - no runtime silently changes to CPU OCR for a GPU-required job,

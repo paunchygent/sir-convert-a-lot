@@ -3,8 +3,8 @@ type: reference
 id: REF-reference-index
 title: Reference Index
 status: active
-created: 2026-04-30
-last_updated: 2026-04-30
+created: 2026-05-08
+last_updated: 2026-05-08
 owners:
   - platform
 labels:
@@ -22,6 +22,7 @@ Generated index for reference, research, review, and roadmap documents.
 
 | ID | Title | Type | Status |
 |---|---|---|---|
+| REF-digiexam-exam-artifact-item-type-evidence | [DigiExam Exam Artifact Item Type Evidence](ref-digiexam-exam-artifact-item-type-evidence.md) | reference | active |
 | REF-digiexam-jspdf-export-shape-and-examnet-migration-research | [DigiExam jsPDF Export Shape And Exam.net Migration Research](ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md) | reference | active |
 | REF-dockerized-hemma-gpu-passthrough-gap-2026-02-16 | [Reference: Dockerized Hemma GPU passthrough gap (2026-02-16)](ref-dockerized-hemma-gpu-passthrough-gap-2026-02-16.md) | reference | active |
 | REF-docling-form-ordering-exam-pdf-2026-02-16 | [Bug report: Docling form extraction ordering regression on exam PDF](ref-docling-form-ordering-exam-pdf-2026-02-16.md) | reference | active |

@@ -1,11 +1,13 @@
-"""DigiExam parser v1 domain result contracts.
+"""DigiExam parser domain result contracts.
 
 Purpose:
-    Define the typed value objects emitted by the DigiExam parser, including
-    item structure, source evidence, readiness status, and warning provenance.
+    Define the typed value objects emitted by DigiExam source parsers, including
+    item structure, source evidence, readiness status, answer-key provenance,
+    and warning provenance.
 
 Relationships:
-    - Used by `domain.digiexam_parser` for parser output.
+    - Used by `domain.digiexam_parser` for legacy PDF fallback parser output.
+    - Used by `domain.digiexam_dxe_parser` for canonical `.dxe` parser output.
     - Used by `infrastructure.digiexam_pdf_text` for source-line and metadata
       handoff from PyMuPDF extraction.
 """
@@ -17,10 +19,13 @@ from enum import StrEnum
 
 
 class DigiExamItemType(StrEnum):
-    """Item types observed in the Task 267 fixture corpus."""
+    """Item types observed in DigiExam parser fixture corpora."""
 
     OPEN_ENDED = "open_ended"
     MULTIPLE_CHOICE = "multiple_choice"
+    SINGLE_CHOICE = "single_choice"
+    MULTIPLE_RESPONSE = "multiple_response"
+    GAP_FILL = "gap_fill"
     MATCHING = "matching"
     UNKNOWN = "unknown"
 
@@ -33,11 +38,12 @@ class DigiExamParseStatus(StrEnum):
 
 
 class DigiExamWarningCode(StrEnum):
-    """Typed parser warning categories required by Task 267."""
+    """Typed parser warning categories required by DigiExam parser tasks."""
 
     MISSING_ANSWER_KEY_PROVENANCE = "missing_answer_key_provenance"
     MISSING_REQUIRED_ANCHOR = "missing_required_anchor"
     LOSSY_SWEDISH_TEXT_EXTRACTION = "lossy_swedish_text_extraction"
+    MALFORMED_SOURCE = "malformed_source"
     UNKNOWN_SOURCE_SHAPE = "unknown_source_shape"
     UNSUPPORTED_STRUCTURE = "unsupported_structure"
 
@@ -46,6 +52,9 @@ class DigiExamAnswerKeyProvenance(StrEnum):
     """Answer-key provenance states for parser output."""
 
     ABSENT = "absent"
+    DXE_POPULATED_KEY = "dxe_populated_key"
+    GRADED_RESULT_PDF_CORRECT_LABELS = "graded_result_pdf_correct_labels"
+    MANUAL_TEACHER_KEY = "manual_teacher_key"
     NOT_APPLICABLE = "not_applicable"
 
 
@@ -97,6 +106,41 @@ class DigiExamMatchingStructure:
 
 
 @dataclass(frozen=True)
+class DigiExamAlternative:
+    """One ordered DigiExam alternative with source answer-key flags preserved."""
+
+    id: int
+    title: str
+    about: str
+    right: bool
+
+
+@dataclass(frozen=True)
+class DigiExamGap:
+    """One DigiExam gap-fill blank with source validations preserved."""
+
+    guid: str
+    validations: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DigiExamGapAnswer:
+    """One correct gap-fill value bound to the corresponding DigiExam blank."""
+
+    guid: str
+    value: str
+
+
+@dataclass(frozen=True)
+class DigiExamGradingPolicy:
+    """Observed DigiExam grading-policy fields for machine-marked items."""
+
+    grading_type: int | None
+    is_alternative_choice_limit_enabled: bool | None
+    alternative_choice_limit: int | None
+
+
+@dataclass(frozen=True)
 class DigiExamItem:
     """Parsed DigiExam item with source evidence and provenance state."""
 
@@ -109,6 +153,16 @@ class DigiExamItem:
     matching: DigiExamMatchingStructure | None
     answer_key_provenance: DigiExamAnswerKeyProvenance
     warnings: tuple[DigiExamWarning, ...]
+    question_id: int | None = None
+    digiexam_type_code: int | None = None
+    prompt_html: str | None = None
+    max_score: int | None = None
+    alternatives: tuple[DigiExamAlternative, ...] = ()
+    gaps: tuple[DigiExamGap, ...] = ()
+    grading_policy: DigiExamGradingPolicy | None = None
+    correct_alternative_ids: tuple[int, ...] = ()
+    correct_gap_values: tuple[str, ...] = ()
+    correct_gap_answers: tuple[DigiExamGapAnswer, ...] = ()
 
 
 @dataclass(frozen=True)

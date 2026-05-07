@@ -5,10 +5,11 @@ type: task
 status: completed
 priority: high
 created: '2026-04-25'
-last_updated: '2026-04-27'
+last_updated: '2026-05-07'
 related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md
+  - docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md
   - docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md
   - inputs/examples/digiexam-exports/README.md
 labels:
@@ -53,10 +54,10 @@ unknown or degraded item shapes from being treated as renderer-ready.
 - Add regression fixtures/tests for:
   - `inputs/examples/digiexam-exports/_-25cEkologiprov51-55.pdf`;
   - `inputs/examples/digiexam-exports/_-Kemikapitel2ht2525dECA.pdf`.
-- Assert the research-baseline expectations:
+- Assert the legacy PDF regression fixture expectations:
   - ecology sample has 15 open-ended items;
-  - chemistry sample has 12 items in the exact order recorded by the research
-    reference;
+  - chemistry sample has 12 items in the exact order recorded by the artifact
+    evidence reference;
   - chemistry item-type breakdown is 3 multiple-choice, 1 matching, and 8
     open-ended items;
   - `Max poäng : N` markers are captured where present;
@@ -83,7 +84,8 @@ unknown or degraded item shapes from being treated as renderer-ready.
 - [x] Parser output is deterministic for both tracked PDFs.
 - [x] Ecology output contains exactly 15 open-ended items.
 - [x] Chemistry output contains exactly 12 ordered items with headers/titles,
-  type breakdown, and point-marker evidence matching the research baseline.
+  type breakdown, and point-marker evidence matching the legacy PDF regression
+  fixture expectations.
 - [x] Parsed item results carry traceable source evidence.
 - [x] Missing answer keys are represented as provenance state, not reconstructed
   from prompts or options.

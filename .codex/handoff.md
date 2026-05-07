@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-04-30'
+last_updated: '2026-05-08'
 ---
 
 ## Purpose
@@ -29,10 +29,17 @@ runbooks, or skills.
   `AGENTS.md` over to a thin skill router and aligning generated docs indexes
   with the canonical `.codex/handoff.md` active-context model.
 - Epic 10 is now the active feature lane for DigiExam to Exam.net migration.
-  Story 38 and Task 267 were scaffolded after reviewing the research baseline.
-  Task 267 is the immediate implementation authority for parser v1 fixtures,
-  confidence/warning reporting, and fail-closed handling of unknown or degraded
-  item shapes.
+  Story 38 and Task 267 are completed as the legacy PDF fallback parser lane.
+  Story 40 and Task 274 are completed as the `.dxe` source parsing lane plus
+  optional sanitized graded-result PDF enrichment of correct machine-marked
+  answers only. The changes-requested parser probes and stale-index follow-up
+  are accepted, and the required backend `coverage-gate` closeout passed on
+  2026-05-08.
+- Story 41 and Task 275 are completed as the EPIC-10 renderer-neutral
+  intermediate representation lane. The active schema versions are
+  `digiexam_intermediate_exam_v1` and `digiexam_ir_manifest_v1`; they preserve
+  parser structure, provenance, warnings, and manual follow-up without choosing
+  Exam.net renderer/import syntax.
 - Task 267 is completed locally. Parser v1 now lives under the Sir Convert
   domain/infrastructure surfaces with deterministic tests for the two tracked
   DigiExam PDFs, explicit source evidence, answer-key provenance, and
@@ -57,8 +64,6 @@ runbooks, or skills.
   the OCR metadata contract, and no-OCR PDF semantics are now explicit:
   `ocr_languages_used=[]` when OCR was applicable but not executed, and
   `ocr_languages_used=null` only where OCR is not applicable.
-  The 2026-04-29 re-review approved Task 268; Story 39 remains open for Task
-  269, Task 270, Task 271, and final Task 74 evidence.
 - Task 270 is completed locally under Story 39. Dirty-corpus evidence now
   requires metadata-only manifests plus `--dirty-corpus-source-root` hash
   verification; synthetic/local smoke remains schema/safety-only and cannot
@@ -72,8 +77,15 @@ runbooks, or skills.
   with `tuned_wall_clock_seconds=2179.0`. Raw JSON/Markdown artifacts live in
   ignored `build/benchmarks/story-39/` paths and were copied locally under
   `build/benchmarks/story-39/local-copies/task-271-dirty-pdf-ocr-proof/`.
-  Story 39 still needs a reviewer decision or follow-up for the separate
-  production-service `>=40%` baseline-vs-tuned improvement gate.
+  The Task 271 result is now the Story 39 optimization baseline; do not rerun a
+  serial baseline unless a later governed decision changes that policy.
+- Task 272 and Task 273 are proposed Story 39 follow-ups: formula-aware full
+  OCR PDF plus linked artifacts, then `chunk_size_pages=8` production tuning
+  with warm-up and GPU sampling.
+- Review 10 re-reviewed and approved the amended Task 272/273 drafts. The
+  `>=40%` toy improvement gate is withdrawn as a blocker; Task 272 now carries
+  the public artifact/retention contract and Task 273 now carries numeric
+  promotion/resource thresholds.
 - `TASK-0046` compacted this handoff, moved durable March 2026 history into
   long-term memory, and added the real `pdm run handoff-validate` command
   surface.
@@ -109,6 +121,18 @@ runbooks, or skills.
   `docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md`.
 - Completed DigiExam parser task:
   `docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md`.
+- Completed DigiExam `.dxe` parser story:
+  `docs/backlog/stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md`.
+- Completed DigiExam `.dxe` parser task:
+  `docs/backlog/tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md`.
+- Completed DigiExam IR story:
+  `docs/backlog/stories/story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema.md`.
+- Completed DigiExam IR task:
+  `docs/backlog/tasks/task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract.md`.
+- DigiExam IR converter contract:
+  `docs/converters/digiexam-intermediate-exam-representation-contract.md`.
+- DigiExam artifact and item-type evidence:
+  `docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md`.
 - DigiExam and Exam.net migration research:
   `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
 - ADR-0009 readiness review:
@@ -132,63 +156,36 @@ runbooks, or skills.
 
 ## Next Actions
 
-1. Arrange a separate retained post-implementation review for Task 267 before
-   treating the parser lane as independently approved.
-1. Review Task 271 evidence and decide the next Story 39 closeout slice:
-   either run a governed production-service baseline/tuned A/B proof for the
-   remaining `>=40%` improvement gate, or record a Task 74/Story 39 blocker
-   decision. Do not treat the Task 271 current-profile proof as baseline-vs-
-   tuned improvement evidence.
-1. Continue EPIC-10 with the next governed slice only after review: likely the
-   Sir Convert intermediate exam representation and manifest schema, or a
-   renderer-target decision task if Exam.net ingestion evidence still needs
-   narrowing.
+1. Continue Story 39 with the next governed implementation slice: Task 272 for
+   formula-aware final pass and linked artifact bundle, or Task 273 for
+   `chunk_size_pages=8` production-service tuning proof.
+1. Continue EPIC-10 with Exam.net ingestion research and target-format decision
+   before any renderer implementation.
 1. Stop before Exam.net renderer, QTI/native import, service API, or bulk
    migration workflow changes unless a new governed task is created.
 1. Keep Epic 09/Task 266 available as a separate cutover lane; do not mix it
    into the DigiExam parser implementation.
-1. Before any future Hemma Qwen run, use:
-   `pdm run run-hemma -- pdm run qwen-docker-bind-roots status`
-   and
-   `pdm run run-hemma -- pdm run qwen-docker-bind-roots probe`.
 
 ## Validation
 
 - Older April 2026 Gateway, Task 255, Task 256, Task 259, and Review 06
   validation evidence lives in the linked governed task, reference, and review
   docs.
-- 2026-04-27 Task 267 Review 07 follow-up validation
-  passed: `pdm run format-all`; `pdm run lint-fix`;
-  `pdm run typecheck-all` (`Success: no issues found in 571 source files`);
-  `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_pdf_parser_v1.py -q`
-  (`10 passed`); `pdm run coverage-gate` (`1061 passed, 5 skipped`, total
-  coverage `95.55%`); `pdm run docs-sync`; `pdm run docs-validate`;
-  `pdm run skills-validate`; `pdm run handoff-validate`; `git diff --check`.
-- 2026-04-28 Task 268 validation passed: `pdm run format-all`;
-  `pdm run lint-fix`; `pdm run typecheck-all`
-  (`Success: no issues found in 574 source files`);
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`
-  (`19 passed`); `pdm run coverage-gate` (`1065 passed, 5 skipped`, total
-  coverage `95.47%`).
-- 2026-04-28 Review 08 follow-up validation passed:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
-  (`20 passed`) and `pdm run typecheck-all`
-  (`Success: no issues found in 574 source files`).
-- 2026-04-29 Task 269 focused validation passed:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q`
-  (`4 passed`).
-- 2026-04-29 Task 269 Review 09 follow-up validation passed:
-  focused Task 269 suite (`5 passed`), `pdm run format-all`, `pdm run lint-fix`,
-  `pdm run typecheck-all` (`Success: no issues found in 575 source files`),
-  `pdm run docs-sync`, `pdm run docs-validate`, `pdm run validate-tasks`,
-  `pdm run skills-validate`, `pdm run handoff-validate`, and
-  `git diff --check`.
-- 2026-04-29 Review 08 re-review approved Task 268 after verifying:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
-  (`20 passed`); `pdm run typecheck-all`
-  (`Success: no issues found in 574 source files`); `pdm run docs-sync`;
-  `pdm run docs-validate`; `pdm run skills-validate`;
-  `pdm run handoff-validate`; `git diff --check`.
+- 2026-05-07 Task 274 changes-requested follow-up validation passed:
+  `pdm run format-all`; `pdm run lint-fix`;
+  `pdm run typecheck-all` (`Success: no issues found in 591 source files`);
+  `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_dxe_parser.py tests/sir_convert_a_lot/test_digiexam_pdf_parser_v1.py -q`
+  (`23 passed`).
+- 2026-05-08 Task 274 closeout validation passed: `pdm run docs-sync`;
+  `pdm run docs-validate` (`Validated 339 backlog files`;
+  `Validated docs=393 rules=11`); `pdm run coverage-gate`
+  (`1097 passed, 5 skipped`, total coverage `95.55%`).
+- 2026-05-08 Task 275 validation passed: focused DigiExam IR/parser tests
+  (`27 passed`), `typecheck-all` (`Success: no issues found in 593 source files`), and `coverage-gate` (`1101 passed, 5 skipped`, total coverage
+  `95.55%`).
+- Older Task 267, Task 268, and Task 269 validation evidence lives in their
+  governed task/review docs and long-term memory entries; keep this handoff
+  focused on active blockers and next actions.
 
 ## Stop Conditions
 

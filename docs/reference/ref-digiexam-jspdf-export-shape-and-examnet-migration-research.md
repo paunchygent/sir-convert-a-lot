@@ -4,7 +4,7 @@ id: REF-digiexam-jspdf-export-shape-and-examnet-migration-research
 title: DigiExam jsPDF Export Shape And Exam.net Migration Research
 status: active
 created: 2026-04-24
-updated: 2026-04-25
+updated: 2026-05-07
 owners:
   - platform
 tags:
@@ -15,14 +15,19 @@ tags:
   - parser
 links:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
+  - docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md
 ---
 
 ## Purpose
 
-This reference is the research baseline for the Sir Convert-a-Lot DigiExam to
-Exam.net migration epic. It records the observable shape of exam PDFs exported
-from DigiExam, the open questions about Exam.net ingestion, and the conversion
-architecture that should be governed by `EPIC-10`.
+This reference records the initial PDF research for the Sir Convert-a-Lot
+DigiExam to Exam.net migration epic. It records the observable shape of exam
+PDFs exported from DigiExam, the open questions about Exam.net ingestion, and
+the renderer architecture that should be governed by `EPIC-10`.
+
+The canonical source for what each DigiExam artifact and item type contains or
+does not contain is
+`docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md`.
 
 No parser, renderer, or service behavior change is approved by this reference
 alone. Stories and tasks under `EPIC-10` decide implementation.
@@ -30,7 +35,7 @@ alone. Stories and tasks under `EPIC-10` decide implementation.
 ## Sample Corpus
 
 Two source PDFs were inspected on 2026-04-24 and copied into this repo as
-Digiexam export examples on 2026-04-25:
+DigiExam export examples on 2026-04-25:
 
 - `inputs/examples/digiexam-exports/_-25cEkologiprov51-55.pdf`
   - biology/ecology exam, 3 A4 pages, 15 items, all open-ended written response
@@ -41,6 +46,25 @@ Digiexam export examples on 2026-04-25:
 
 Sample size is two. Heuristics derived here must be revalidated against a
 larger corpus before a bulk pipeline is locked in.
+
+Additional teacher-export evidence was inspected on 2026-05-07 and is recorded
+in `docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md`:
+
+- `1772718003-test samma prov i digiexam.dxe`
+  - DigiExam JSON export with one exam, seven questions, structured
+    single-choice, multiple-response, free-text, and gap-fill question data.
+- `DigiExam-Test-som-nedladdningsbar.pdf`
+  - blank/student-view jsPDF export of the same exam.
+- `2026_05_07-Test-OlofLarsson.pdf`
+  - graded student-result jsPDF export for the same exam, including correct
+    answer labels, student-selected answers, gap-fill keys, and awarded points.
+
+## Current State: DigiExam Artifact Evidence
+
+`docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md` owns the
+artifact evidence registry, item-type matrix, teacher source policy, and parser
+contract implications. Keep item-type containment statements there so later
+tasks can link one source of truth instead of duplicating partial evidence.
 
 ## Current State: DigiExam PDF Shape
 
@@ -59,65 +83,6 @@ Both sample files share the following container fingerprint from `pdfinfo`:
 Practical consequence: the files are untagged, imageless, A4, and machine-text
 heavy. Parser design should use layout-aware text extraction through Sir
 Convert's PDF extraction stack, not structural PDF tags.
-
-### Item Anatomy
-
-An item in a DigiExam export is a vertical block with this observed structure:
-
-1. Header line:
-   - numbered form: `Fråga <N>` where `<N>` is a 1-indexed integer;
-   - titled form: a short free-text title on its own line, such as `Materia`,
-     `Grundämnen`, `Atomen`, `Joner`, or `Para ihop`.
-1. Optional point marker: `Max poäng : <N>`. It appears on every observed
-   open-ended item and is absent on observed multiple-choice and matching
-   items.
-1. Prompt body in Swedish prose, sometimes with subparts introduced by `a)`,
-   `b)`, or `c)`.
-1. Response region rendered as vertical whitespace. Blank lines are therefore
-   not reliable delimiters; the next item header is the reliable boundary.
-
-### Item Types Observed
-
-- Open-ended written response: header, optional point marker, prompt text, and
-  blank answer space.
-- Multiple choice: titled header, no observed point marker, prompt, then options
-  on separate indented lines. The correct answer is not present in the PDF.
-- Matching / fill-in-the-letter (`Para ihop`): numbered prompts, lettered
-  answer options, and a trailing DigiExam answer-blank artifact row such as
-  `1 = 1.   2= 2.   3= 3.   4= 4.`.
-
-No ruled tables, inline images, math notation, true/false items, ordering
-items, or gap-fill items were observed in the two samples.
-
-### Chemistry Fixture Baseline
-
-Task 267 parser tests must treat the chemistry sample as this exact ordered
-item stream:
-
-| Order | Header/title | Expected type | Point marker | Notes |
-|---|---|---|---|---|
-| 1 | `Materia` | multiple choice | absent | options are prompt-visible only; answer key is absent |
-| 2 | `Para ihop` | matching | absent | carries numbered left prompts, lettered right options, and blank-row evidence |
-| 3 | `Grundämnen` | multiple choice | absent | option text crosses a page boundary in layout extraction |
-| 4 | `Atomen` | open ended | `Max poäng : 4` | subparts `a)` through `d)` |
-| 5 | `Ämnen` | open ended | `Max poäng : 4` | subparts `a)` through `c)` |
-| 6 | `Joner` | multiple choice | absent | options are prompt-visible only; answer key is absent |
-| 7 | `Emulsion` | open ended | `Max poäng : 2` | single prompt |
-| 8 | `Separera` | open ended | `Max poäng : 3` | subparts plus instruction line |
-| 9 | `Reaktion` | open ended | `Max poäng : 3` | subparts `a)` through `c)` |
-| 10 | `Förklara` | open ended | `Max poäng : 3` | single prompt |
-| 11 | `Te` | open ended | `Max poäng : 3` | single prompt |
-| 12 | `Dela upp färg` | open ended | `Max poäng : 3` | subparts `a)` through `c)` |
-
-Chemistry fixture tests must assert:
-
-- total item count is 12;
-- ordered headers/titles match the table above;
-- item-type breakdown is 3 multiple-choice, 1 matching, and 8 open-ended;
-- point-marker evidence is present exactly where the table lists a marker;
-- multiple-choice and matching answer-key provenance is `absent`;
-- the `Para ihop` item preserves the matching blank-row evidence separately
-  from any future renderer-ready match-pair schema.
 
 ### Robust Parsing Anchors
 
@@ -392,14 +357,21 @@ PDF pattern.
 
 ## Target Architecture
 
-End-state: Sir Convert ingests a folder of DigiExam jsPDF exports and emits
+End-state: Sir Convert ingests teacher-provided DigiExam `.dxe` files, with
+optional graded student-result PDFs for correct-answer enrichment, and emits
 artifacts that Exam.net imports cleanly, plus a parity report teachers can
 review before upload.
 
 Proposed architecture, pending target research:
 
-- Parser stage: DigiExam PDF to structured item stream, using layout-aware PDF
-  extraction and explicit parse-confidence evidence.
+- Parser stage: DigiExam `.dxe` to structured item stream, using typed JSON
+  contracts and explicit provenance for question structure, prompt content,
+  item types, scores, alternatives, and gaps.
+- Optional result-PDF enrichment stage: graded DigiExam result PDF to
+  correct-answer evidence for machine-marked items only. Incorrect student
+  answers and student-performance history are discarded.
+- Optional parity stage: blank/student-view DigiExam PDF to visual and text
+  parity evidence when teachers can supply it.
 - Intermediate representation: structured item stream to a Sir Convert exam
   migration schema with item type, prompt body, option/matching structures,
   point values, source spans, extraction warnings, and answer-key provenance.
@@ -413,15 +385,17 @@ Proposed architecture, pending target research:
 
 1. Exam.net ingestion research and target-format decision.
 1. DigiExam PDF parser v1 with regression fixtures.
+1. DigiExam `.dxe` parser and optional graded-result PDF answer-key enrichment
+   contract.
 1. Sir Convert intermediate exam representation and manifest schema.
 1. Exam.net-targeted renderer.
 1. Bulk conversion workflow and parity report.
 
 ## Risks And Gaps
 
-- Only two sample PDFs are available today.
-- Observed multiple-choice and matching items carry no correct-answer metadata
-  in the PDF.
+- Artifact and item-type containment claims belong in
+  `docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md`; this
+  research reference should not restate them.
 - The embedded `hebrew` / `Identity-H` font causes Poppler warnings and could
   produce lossy extraction on future exports.
 - Renderer decisions made before Exam.net ingestion research are likely to be
