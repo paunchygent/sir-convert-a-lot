@@ -85,6 +85,34 @@ def test_job_spec_requires_execution_for_pdf_source() -> None:
         JobSpecV2.model_validate(payload)
 
 
+@pytest.mark.parametrize(
+    ("source_format", "output_format"),
+    [
+        ("md", "pdf"),
+        ("html", "pdf"),
+        ("docx", "md"),
+    ],
+)
+def test_job_spec_normalizes_ignored_pdf_runtime_options_for_non_pdf_sources(
+    source_format: str,
+    output_format: str,
+) -> None:
+    payload = _base_payload(source_format=source_format, output_format=output_format)
+    payload["pdf_options"] = {
+        "backend_strategy": "not-a-backend",
+        "ocr_languages": [123],
+    }
+    payload["execution"] = {
+        "acceleration_policy": "not-a-policy",
+        "document_timeout_seconds": "not-an-integer",
+    }
+
+    spec = JobSpecV2.model_validate(payload)
+
+    assert spec.pdf_options is None
+    assert spec.execution is None
+
+
 def test_job_spec_rejects_css_filenames_for_docx_output() -> None:
     payload = _base_payload(source_format="md", output_format="docx")
     conversion = payload["conversion"]

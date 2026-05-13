@@ -35,7 +35,7 @@ to `pdf -> md`.
   - replace local Pandoc/WeasyPrint route tests with v2-client stubs to avoid
     requiring laptop-local converter binaries.
 - Docs:
-  - update CLI guide and `docs/backlog/current.md` to reflect the pivot.
+  - update CLI guide and `.codex/handoff.md` to reflect the pivot.
 
 ## Deliverables
 

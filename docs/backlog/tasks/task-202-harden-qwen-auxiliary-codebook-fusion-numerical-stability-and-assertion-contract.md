@@ -7,7 +7,7 @@ priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
 related:
-  - docs/backlog/current.md
+  - .codex/handoff.md
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
   - docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md

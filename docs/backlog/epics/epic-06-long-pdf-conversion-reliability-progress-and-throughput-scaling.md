@@ -107,8 +107,8 @@ high-throughput pipeline with:
 - [x] `T77` `docs/backlog/tasks/task-77-add-ocr-engine-language-selection-easyocr-sv-default-tesseract-option-with-preflight-swedish-smoke.md`
 - [x] `T268` `docs/backlog/tasks/task-268-preserve-pdf-ocr-checkpoint-resume-metadata-truth.md`
 - [x] `T269` `docs/backlog/tasks/task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests.md`
-- [ ] `T270` `docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md`
-- [ ] `T271` `docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md`
+- [x] `T270` `docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md`
+- [x] `T271` `docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md`
 - [ ] `T74` `docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md`
 
 ## Execution Plan (Implementation Order)
@@ -165,7 +165,8 @@ always include verification evidence.
   - check the corresponding `T##` checkbox in this epic and any story trackers.
 - [ ] For major slices (after `T69`, `T71`, `T74`):
   - update `.codex/handoff.md`,
-  - archive into `docs/backlog/current.md` (keep within RULE-090 limits).
+  - keep volatile active-session state in `.codex/handoff.md` and move durable
+    history to governed docs or long-term memory.
 
 ## Acceptance Criteria
 

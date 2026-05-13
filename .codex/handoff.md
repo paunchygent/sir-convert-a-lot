@@ -35,7 +35,10 @@ runbooks, or skills.
   Story 44/Task 278 are completed as the API/artifact contract gate for
   authenticated Skriptoteket delivery before QTI, service runtime, or
   Skriptoteket UI implementation proceeds.
-  Story 45 is now scaffolded for normal teacher-owned Exam.net artifacts.
+  Story 45 is now scaffolded for normal teacher-owned Exam.net artifacts, and
+  Story 46 is the cleanup prerequisite before more Exam.net authoring runtime.
+  Task 284/Review 13 and Tasks 285-287/Review 14 are closed; continue with
+  Tasks 288/289 before further Exam.net runtime.
   Task 279 completed on 2026-05-12 as the docs-as-code direction gate: the
   route family is one shared service API v2 lifecycle with separate
   `digiexam_dxe -> examnet_migration_bundle` and
@@ -56,6 +59,9 @@ runbooks, or skills.
   QTI integration, live service-route smoke coverage over a bounded local
   OneDrive `.dxe` corpus subset, selective `conversion.targets`, and
   manifest-backed `/result` metadata. Review 12 is accepted after re-review.
+  Task 291 completed the public Exam Converter grant-lane contract:
+  `PublicConversionGrantV1`, `owner_kind=public_grant`, lease-bound artifacts,
+  and continued `PR-0320` runtime blocking until a later governed slice.
   The HuleEdu auth-edge implementation authority moved from the former Task 260
   planning lane to HuleEdu `ST-01-07`.
   Review 11's Task 276 zero-payload embedded-asset blocker was remediated on
@@ -112,6 +118,12 @@ runbooks, or skills.
   `docs/backlog/tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md`.
 - Proposed Exam.net artifact authoring bundle story:
   `docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md`.
+- Proposed service/source cleanup tranche before more Exam.net runtime work:
+  `docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md`.
+- Completed cleanup tranche docs/source tasks: Tasks 284-287; Review 14 is
+  accepted in
+  `docs/backlog/reviews/review-14-ruthless-review-of-tasks-285-287-service-route-registry-runtime-and-cli-split.md`.
+  Next Story 46 tasks: Tasks 288/289.
 - Completed Exam.net authoring/QTI direction gate:
   `docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md`.
 - Completed QTI sample package and validation-report implementation task:
@@ -121,6 +133,8 @@ runbooks, or skills.
 - Completed runtime task and HuleEdu auth-edge dependency:
   `docs/backlog/tasks/task-282-implement-digiexam-migration-service-runtime-artifact-bundle-routes.md`;
   `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-07-expose-sir-convert-artifact-bundle-routes-through-huleedu-auth-edge.md`.
+- Completed public Exam Converter grant-lane contract: Task 291, paired with
+  HuleEdu `TASK-0563`.
 - DigiExam migration service API/artifact contract:
   `docs/converters/digiexam-migration-service-api-artifact-contract.md`.
 - Draft Exam.net artifact authoring service API/artifact contract:
@@ -148,6 +162,7 @@ runbooks, or skills.
 
 ## Next Actions
 
+1. Continue Story 46 with Tasks 288/289 before further Exam.net runtime.
 1. Continue Story 39 with the next governed implementation slice: Task 272 for
    formula-aware final pass and linked artifact bundle, or Task 273 for
    `chunk_size_pages=8` production-service tuning proof.
@@ -157,6 +172,8 @@ runbooks, or skills.
    `aud=sir-convert-a-lot`; Skriptoteket then needs an adapter/UI/user-file
    task that consumes the Task 282 artifact-bundle contract after Review 12
    re-review acceptance.
+1. Keep Skriptoteket `PR-0320` public runtime blocked until a governed runtime
+   slice consumes HuleEdu `TASK-0563` and Sir Convert Task 291.
 1. Keep the Exam.net artifact authoring route separate from the DigiExam
    migration route. Do not feed Exam.net-origin PDFs or Word exports into
    `digiexam_dxe -> examnet_migration_bundle`.
@@ -168,20 +185,12 @@ runbooks, or skills.
 
 ## Validation
 
-- Older validation evidence for Gateway, Story 39, and EPIC-10 Tasks 267-280
-  lives in the linked governed tasks, references, reviews, and long-term memory
-  entries.
-- 2026-05-12 Task 281 validation passed with local-only OneDrive corpus
-  metadata, parser, IR, docs, skills, handoff, and diff-check gates.
-- 2026-05-13 Task 282 Review 12 remediation validation passed:
-  `pdm run format-all`; `pdm run lint-fix`; `pdm run typecheck-all`
-  (`Success: no issues found in 622 source files`); focused Task 282 API tests
-  (`12 passed`, including selective targets, `/result` metadata, and live
-  OneDrive `.dxe` service-route subset); `pdm run coverage-gate`
-  (`1140 passed, 5 skipped`, total coverage `93.38%`); `pdm run docs-sync`;
-  `pdm run docs-validate` (`Validated 353 backlog files`;
-  `Validated docs=412 rules=11`); `pdm run skills-validate`;
-  `pdm run handoff-validate`; `git diff --check`.
+- Older validation evidence lives in linked governed tasks, references, reviews,
+  and long-term memory entries.
+- 2026-05-13 pre-release gates passed: `format-all`, `lint-fix`,
+  `typecheck-all` (`638 source files`), focused Story 46 tests (`11 passed`),
+  `coverage-gate` (`1159 passed, 5 skipped`, coverage `95.93%`), docs/skills/
+  handoff validation, and `git diff --check`.
 
 ## Stop Conditions
 

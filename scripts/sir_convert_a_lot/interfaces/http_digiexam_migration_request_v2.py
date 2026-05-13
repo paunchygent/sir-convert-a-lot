@@ -24,8 +24,6 @@ from fastapi import UploadFile
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
     ExamMigrationTargetV2,
     JobSpecV2,
-    OutputFormatV2,
-    SourceFormatV2,
     normalized_exam_migration_targets_v2,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
@@ -44,15 +42,6 @@ class DigiExamMigrationCompanionUploadsV2:
     graded_result_pdf_sha256: str | None
     parity_pdf_bytes: bytes | None
     parity_pdf_sha256: str | None
-
-
-def is_digiexam_migration_route(spec: JobSpecV2) -> bool:
-    """Return whether a v2 job spec targets the DigiExam migration bundle route."""
-
-    return (
-        spec.source.format == SourceFormatV2.DIGIEXAM_DXE
-        and spec.conversion.output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE
-    )
 
 
 def normalized_digiexam_targets(spec: JobSpecV2) -> tuple[ExamMigrationTargetV2, ...]:

@@ -16,6 +16,7 @@ tags:
 links:
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md
+  - docs/backlog/tasks/task-291-define-public-exam-converter-grant-lane-for-digiexam-migration-bundles.md
   - docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/internal_adapter_contract_v2.md
@@ -109,6 +110,42 @@ public conversion requires a separate accepted ADR/task.
 | Non-browser internal service | Internal transport plus Sir-profiled service context using the canonical HuleEdu identity headers | verified service context | Requires explicit grants and must not use a separate Sir-signed issuer. |
 | Local operator | Tunnel/internal transport plus Sir-profiled operator context using the canonical HuleEdu identity headers | verified operator context | Must be auditable and distinct from product/browser work. |
 | Anonymous public | none | none | Reserved/fail-closed only. |
+
+## Public Exam Converter Grant Exception
+
+Task 291 defines a separate public grant exception for Skriptoteket's no-login
+Exam Converter lane. This exception does not change the
+`InternalIdentityContextV1` caller classes above and does not make anonymous
+public traffic an identity-bearing caller class.
+
+The only accepted public exception is a HuleEdu-signed
+`PublicConversionGrantV1` scoped to:
+
+- `source_app=skriptoteket`
+- `capability=documents.conversion_hub.exam_converter`
+- `route_key=digiexam_dxe_to_examnet_migration_bundle`
+- `source_format=digiexam_dxe`
+- `output_format=examnet_migration_bundle`
+- `allowed_targets` within `examnet_pdf` and `qti_package`
+
+Sir Convert verifies that grant through the DigiExam migration service
+API/artifact contract, persists `owner_kind=public_grant`, and authorizes only
+the public submit/status/result/artifact operations named there. This public
+grant is not user identity, service identity, operator identity, org or tenant
+authority, API-key ownership, browser session authority, or a shortcut for
+general public Sir Convert conversion.
+
+Public artifact manifest reads and named downloads require a matching
+`PublicArtifactReadLeaseV1` bound to the persisted public-grant job, owner
+digest, route, parent grant, artifact key, target snapshot, TTL, and correlation
+id. Expired or mismatched public grants and leases fail closed without falling
+back to authenticated user, service, operator, guest, or transport-key
+ownership.
+
+The public grant authority is paired with HuleEdu `TASK-0563` and the HuleEdu
+`REF-public-exam-converter-grant-v1-contract`. Skriptoteket `PR-0320` remains
+blocked until both the HuleEdu minting authority and Sir Convert verifier /
+ownership contract are accepted.
 
 ## Minting Authority
 

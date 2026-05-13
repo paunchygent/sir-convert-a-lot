@@ -48,8 +48,8 @@ governed backlog docs.
   reintroduced.
 - [x] Generated `docs/index.md` and lane `INDEX.md` files are maintained by
   `pdm run docs-sync`.
-- [x] Active planning context routes through `.codex/handoff.md`, not
-  `docs/backlog/current.md`.
+- [x] Active planning context routes through `.codex/handoff.md`; the retired
+  backlog-current file is no longer the active context surface.
 
 ## Acceptance Criteria
 

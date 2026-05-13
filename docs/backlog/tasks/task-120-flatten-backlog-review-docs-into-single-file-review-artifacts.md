@@ -9,7 +9,7 @@ last_updated: '2026-03-09'
 related:
   - docs/backlog/reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md
   - docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md
-  - docs/backlog/current.md
+  - .codex/handoff.md
 labels:
   - docs-as-code
   - reviews

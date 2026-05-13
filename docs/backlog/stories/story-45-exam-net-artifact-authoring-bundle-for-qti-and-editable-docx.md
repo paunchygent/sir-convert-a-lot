@@ -5,12 +5,14 @@ type: story
 status: proposed
 priority: high
 created: '2026-05-12'
-last_updated: '2026-05-12'
+last_updated: '2026-05-13'
 related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md
   - docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md
   - docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md
+  - docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md
+  - docs/backlog/tasks/task-285-introduce-service-v2-route-policy-handler-registry-before-exam-net-authoring-runtime.md
   - docs/converters/examnet-artifact-authoring-service-api-artifact-contract.md
   - docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md
   - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
@@ -62,6 +64,9 @@ still being able to recreate Exam.net exams through PDF-to-exam conversion.
   visual PDF-to-DOCX conversion.
 - Keep service runtime implementation, Skriptoteket UI, and Exam.net browser
   automation out of this story unless later tasks authorize them.
+- Treat Story 46 and Task 285 as prerequisites before this route gains service
+  runtime behavior: generic job creation must delegate route-specific
+  validation and companion reads to a route policy/handler registry.
 
 ## Acceptance Criteria
 
@@ -79,6 +84,9 @@ still being able to recreate Exam.net exams through PDF-to-exam conversion.
   optional local semantic smoke, and Exam.net import proof.
 - [x] The first QTI implementation emits deterministic sample packages and
   `qti_validation_report` artifacts before service runtime exposure.
+- [ ] Service runtime implementation waits for the Story 46 route-handler
+  registry so `examnet_artifact -> teacher_authoring_bundle` does not add
+  route-specific branching to generic job creation.
 - [ ] Editable DOCX output is generated from normalized exam authoring IR and
   preserves item semantics teachers can edit.
 - [ ] Matching items are first-class in the authoring IR and supported target

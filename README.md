@@ -52,8 +52,10 @@ pdm run convert-a-lot routes
 
 **Service & Conversion:**
 
-- `docker compose up -d sir_convert_a_lot_prod`
-- `docker compose logs -f sir_convert_a_lot_prod`
+- `pdm run dev-start`
+- `pdm run dev-logs`
+- `pdm run prod-start`
+- `pdm run prod-logs sir_convert_a_lot_prod`
 - `pdm run convert-a-lot convert <path> --output-dir <dir>`
 - `pdm run convert-a-lot jobs [cancel|resume|partial|checkpoint]`
 
@@ -86,7 +88,7 @@ Local-runtime rule:
 
 **Governance:**
 
-- System rules: `.agents/rules/`
+- System rules: `.codex/rules/`
 - Active backlog: `docs/backlog/`
 - Docs contract: `docs/_meta/docs-contract.yaml`
 

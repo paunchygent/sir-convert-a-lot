@@ -63,7 +63,7 @@ The post-`T153` review found a bounded but concrete remediation slice:
   - non-tautological scratch-capacity thresholds
   - Task 101 launch/status/report artifact exposure of the new checkpoint
     policy fields
-- Reconcile docs governance drift across `docs/backlog/current.md`, Story 25,
+- Reconcile docs governance drift across `.codex/handoff.md`, Story 25,
   Task 101, and related handoff context so the canonical planning surface
   matches the real Qwen pilot state.
 - Update task/runbook language if the operator-facing checkpoint policy or
@@ -103,7 +103,7 @@ The post-`T153` review found a bounded but concrete remediation slice:
   retention.
 - [x] Task 101 launch/status/report artifact tests assert the configured durable
   checkpoint retention and minimum-free-space fields.
-- [x] `docs/backlog/current.md`, Story 25, Task 101, and related handoff
+- [x] `.codex/handoff.md`, Story 25, Task 101, and related handoff
   context no longer disagree about the active lane or bounded-pilot completion
   state.
 - [x] `pdm run validate-tasks`, `pdm run validate-docs`, and task indexing pass

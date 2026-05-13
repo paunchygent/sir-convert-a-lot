@@ -5,7 +5,7 @@ type: epic
 status: proposed
 priority: high
 created: '2026-04-24'
-last_updated: '2026-05-12'
+last_updated: '2026-05-13'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
@@ -16,6 +16,7 @@ related:
   - docs/backlog/stories/story-43-digiexam-exam-net-oriented-pdf-renderer.md
   - docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md
   - docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md
+  - docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md
   - docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md
   - docs/backlog/tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md
   - docs/backlog/tasks/task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract.md
@@ -145,6 +146,11 @@ fallback parser lane. Planned lanes, in dependency order:
    validation-report gate: MCQ, free text, image-bearing MCQ/free text,
    unsupported-resource omission, and proof-gated matching before any service
    runtime exposure.
+1. `docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md`
+   for the governed cleanup tranche that must precede more Exam.net runtime
+   work: docs-state reconciliation, route-handler registry, runtime/CLI hotspot
+   extraction, experiment-surface demotion, Task 200 scaffold closeout, and a
+   validated onboarding map.
 1. Full QTI/native import lane, implemented behind the accepted API/artifact
    contracts and Task 280 validation foundation.
 1. Service API exposure and Skriptoteket adapter/UI workflow.
@@ -183,6 +189,9 @@ fallback parser lane. Planned lanes, in dependency order:
 - [x] Deterministic QTI sample packages exist for MCQ, free text,
   image-bearing MCQ/free text, and proof-gated matching before QTI is exposed
   as a service runtime target.
+- [ ] More Exam.net service runtime work is gated behind Story 46's
+  active-surface cleanup and route-handler registry, so `create_job` remains a
+  generic lifecycle endpoint rather than a route-specific branch knot.
 - [ ] Matching items are first-class in the IR and authoring route, but rendered
   with exact pairings only when source evidence provides the answer-key
   provenance.

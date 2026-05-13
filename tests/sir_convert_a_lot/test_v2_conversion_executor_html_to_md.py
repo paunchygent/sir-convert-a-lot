@@ -229,7 +229,7 @@ def test_execute_v2_job_conversion_html_to_md_maps_converter_error(
     assert error.retryable is False
 
 
-def test_execute_v2_job_conversion_html_to_md_uses_timeout_from_execution_spec(
+def test_execute_v2_job_conversion_html_to_md_ignores_non_pdf_execution_spec(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -268,7 +268,7 @@ def test_execute_v2_job_conversion_html_to_md_uses_timeout_from_execution_spec(
         pymupdf_backend=_UnusedBackend(),
     )
 
-    assert captured_timeout_seconds == [45]
+    assert captured_timeout_seconds == [300]
 
 
 def test_execute_v2_job_conversion_html_to_md_uses_default_timeout_without_execution_spec(

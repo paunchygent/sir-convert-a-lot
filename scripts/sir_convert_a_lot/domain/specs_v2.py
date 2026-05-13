@@ -12,6 +12,7 @@ Relationships:
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import StrEnum
 from typing import Literal
 
@@ -244,6 +245,63 @@ class RetentionSpecV2(BaseModel):
     pin: bool = False
 
 
+def _source_format_from_raw_value(value: object) -> SourceFormatV2 | None:
+    if isinstance(value, SourceFormatV2):
+        return value
+    if isinstance(value, str):
+        try:
+            return SourceFormatV2(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _output_format_from_raw_value(value: object) -> OutputFormatV2 | None:
+    if isinstance(value, OutputFormatV2):
+        return value
+    if isinstance(value, str):
+        try:
+            return OutputFormatV2(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _route_ignored_runtime_option_names_from_raw_payload(value: object) -> tuple[str, ...]:
+    if not isinstance(value, Mapping):
+        return ()
+    source_obj = value.get("source")
+    conversion_obj = value.get("conversion")
+    if not isinstance(source_obj, Mapping) or not isinstance(conversion_obj, Mapping):
+        return ()
+
+    source_format = _source_format_from_raw_value(source_obj.get("format"))
+    output_format = _output_format_from_raw_value(conversion_obj.get("output_format"))
+    if source_format is None or output_format is None:
+        return ()
+
+    from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
+        route_key_for_values_v2,
+        route_policy_for_key_v2,
+    )
+
+    policy = route_policy_for_key_v2(
+        route_key_for_values_v2(
+            source_format=source_format,
+            output_format=output_format,
+        )
+    )
+    if policy is None:
+        return ()
+
+    ignored: list[str] = []
+    if policy.ignores_pdf_options:
+        ignored.append("pdf_options")
+    if policy.ignores_execution:
+        ignored.append("execution")
+    return tuple(ignored)
+
+
 class JobSpecV2(BaseModel):
     """Complete v2 job specification."""
 
@@ -257,98 +315,28 @@ class JobSpecV2(BaseModel):
     digiexam_migration_options: DigiExamMigrationOptionsV2 | None = None
     retention: RetentionSpecV2 = Field(default_factory=RetentionSpecV2)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_route_ignored_runtime_options(cls, value: object) -> object:
+        del cls
+        ignored_option_names = _route_ignored_runtime_option_names_from_raw_payload(value)
+        if not ignored_option_names or not isinstance(value, Mapping):
+            return value
+        normalized = dict(value)
+        for option_name in ignored_option_names:
+            normalized.pop(option_name, None)
+        return normalized
+
     @model_validator(mode="after")
     def _validate_route(self) -> "JobSpecV2":
-        if self.source.kind != SourceKindV2.UPLOAD:
-            raise ValueError("source.kind must be 'upload' in v2")
+        from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
+            ignored_runtime_option_names_for_spec_v2,
+            validate_job_spec_route_policy_v2,
+        )
 
-        route = (self.source.format, self.conversion.output_format)
-        allowed_routes: set[tuple[SourceFormatV2, OutputFormatV2]] = {
-            (SourceFormatV2.PDF, OutputFormatV2.MD),
-            (SourceFormatV2.DOCX, OutputFormatV2.MD),
-            (SourceFormatV2.HTML, OutputFormatV2.MD),
-            (SourceFormatV2.DOCX, OutputFormatV2.PDF),
-            (SourceFormatV2.MD, OutputFormatV2.PDF),
-            (SourceFormatV2.MD, OutputFormatV2.DOCX),
-            (SourceFormatV2.HTML, OutputFormatV2.PDF),
-            (SourceFormatV2.HTML, OutputFormatV2.DOCX),
-            (SourceFormatV2.PDF, OutputFormatV2.DOCX),
-            (SourceFormatV2.DIGIEXAM_DXE, OutputFormatV2.EXAMNET_MIGRATION_BUNDLE),
-        }
-        if route not in allowed_routes:
-            raise ValueError(
-                f"Unsupported v2 route: {self.source.format.value} -> "
-                f"{self.conversion.output_format.value}"
-            )
-
-        if self.source.format == SourceFormatV2.PDF:
-            if self.pdf_options is None:
-                raise ValueError("pdf_options is required when source.format is 'pdf'")
-            if self.execution is None:
-                raise ValueError("execution is required when source.format is 'pdf'")
-
-        if self.source.format != SourceFormatV2.DIGIEXAM_DXE:
-            if self.digiexam_migration_options is not None:
-                raise ValueError(
-                    "digiexam_migration_options is only supported for DigiExam migration routes"
-                )
-            if self.conversion.targets:
-                raise ValueError("conversion.targets is only supported for exam migration outputs")
-            if self.conversion.artifact_language is not None:
-                raise ValueError(
-                    "conversion.artifact_language is only supported for exam migration outputs"
-                )
-        else:
-            if self.pdf_options is not None:
-                raise ValueError("pdf_options is not supported for DigiExam migration routes")
-            if self.execution is not None:
-                raise ValueError("execution is not supported for DigiExam migration routes")
-            if self.conversion.reference_docx_filename is not None:
-                raise ValueError(
-                    "reference_docx_filename is not supported for DigiExam migration routes"
-                )
-            if self.conversion.template is not None:
-                raise ValueError("template is not supported for DigiExam migration routes")
-            if self.conversion.css_filenames:
-                raise ValueError("css_filenames is not supported for DigiExam migration routes")
-            if self.conversion.pdf_layout is not None:
-                raise ValueError("pdf_layout is not supported for DigiExam migration routes")
-            if self.conversion.page_css_mode is not None:
-                raise ValueError("page_css_mode is not supported for DigiExam migration routes")
-
-        if self.conversion.output_format != OutputFormatV2.PDF and self.conversion.css_filenames:
-            raise ValueError("css_filenames is only supported for PDF outputs")
-
-        if (
-            self.conversion.output_format != OutputFormatV2.PDF
-            and self.conversion.pdf_layout is not None
-        ):
-            raise ValueError("pdf_layout is only supported for PDF outputs")
-        if (
-            self.conversion.output_format != OutputFormatV2.PDF
-            and self.conversion.page_css_mode is not None
-        ):
-            raise ValueError("page_css_mode is only supported for PDF outputs")
-        if (
-            self.conversion.output_format == OutputFormatV2.PDF
-            and self.conversion.page_css_mode == PdfPageCssModeV2.AUTHOR_OWNED
-            and self.conversion.pdf_layout is not None
-        ):
-            raise ValueError("page_css_mode='author_owned' cannot be combined with pdf_layout")
-
-        if self.conversion.output_format != OutputFormatV2.DOCX:
-            if self.conversion.reference_docx_filename is not None:
-                raise ValueError("reference_docx_filename is only supported for DOCX outputs")
-            if self.conversion.template is not None:
-                raise ValueError("template is only supported for DOCX outputs")
-        elif (
-            self.conversion.reference_docx_filename is not None
-            and self.conversion.template is not None
-        ):
-            raise ValueError(
-                "reference_docx_filename and template cannot both be provided for DOCX outputs"
-            )
-
+        validate_job_spec_route_policy_v2(self)
+        for option_name in ignored_runtime_option_names_for_spec_v2(self):
+            setattr(self, option_name, None)
         return self
 
 

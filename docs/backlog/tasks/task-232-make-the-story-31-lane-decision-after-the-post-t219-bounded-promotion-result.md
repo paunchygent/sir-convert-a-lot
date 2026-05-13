@@ -44,7 +44,7 @@ Story 31 lane decision:
     work
 - Record the decision in:
   - Story 31
-  - `docs/backlog/current.md`
+  - `.codex/handoff.md`
   - the Task 101 live ledger
 - Do not launch new experiments from this task; this is an interpretation and
   routing task.

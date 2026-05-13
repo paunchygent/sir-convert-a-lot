@@ -49,6 +49,19 @@ The CLI exposes a typed route registry for supported/planned conversions. Routes
 
 Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
 
+## Service V2 Route Boundary
+
+`POST /v2/convert/jobs` resolves supported routes through
+`domain.service_routes_v2` and `interfaces.http_create_job_routes_v2`.
+`domain.service_routes_v2` owns the shared route-policy metadata consumed by
+`JobSpecV2` validation and HTTP create-job handler lookup. The generic job
+endpoint owns multipart mechanics, auth context, idempotency, route lookup, and
+job persistence; route handlers own route-specific companion uploads and target
+preparation.
+
+The `examnet_artifact -> teacher_authoring_bundle` route remains draft-only
+until a later governed runtime task registers and implements that route.
+
 ## Local Runtime Rule
 
 For local app integration and local verification that depends on the `:8085`
@@ -178,10 +191,12 @@ pdm run run-local-pdm hemma-repair-rocm-runtime
   - Filesystem-backed runtime engine (`runtime_engine.py`).
 - `interfaces/`
   - HTTP API adapter (`http_api.py`)
-  - HTTP client adapter (`http_client.py`)
+  - HTTP client adapter (`http_client_v2.py`)
   - CLI adapter (`cli_app.py`)
-- Compatibility facades at package root (`service.py`, `client.py`, `cli.py`, `models.py`, `runtime.py`)
-  preserve stable imports during migration.
+- Package-root service entrypoints are limited to current files such as
+  `service.py` and `service_local.py`; client and model imports should use the
+  current `interfaces/`, `application/`, `domain/`, and `infrastructure/`
+  modules directly.
 
 ## Client Commands
 

@@ -5,7 +5,7 @@ Purpose:
     route-option guards and DOCX template selector checks.
 
 Relationships:
-    - Used by `interfaces.http_routes_jobs_v2`.
+    - Used by `interfaces.http_create_job_routes_v2` route handlers.
     - Uses template resolver from `infrastructure.docx_template_catalog_v2`.
 """
 

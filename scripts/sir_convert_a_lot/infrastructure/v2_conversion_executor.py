@@ -38,8 +38,10 @@ from scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_helpers import (
     convert_markdown_content_to_docx_v2,
 )
 from scripts.sir_convert_a_lot.infrastructure.v2_non_pdf_models import NonPdfExecutionOutcomeV2
-from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpointed_executor import (
+from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpoint_models import (
     PdfCheckpointProgressUpdateV2,
+)
+from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpointed_executor import (
     execute_pdf_to_markdown_with_checkpoints_v2,
 )
 

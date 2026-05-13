@@ -29,6 +29,9 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
     JobRecordDataV2,
     JobRecordResponseV2,
 )
+from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
+    normalized_fingerprint_payload_for_spec_v2,
+)
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerprint_for_request_v2
@@ -41,12 +44,9 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
     require_internal_identity_auth_context_v2,
     require_job_access_v2,
 )
-from scripts.sir_convert_a_lot.interfaces.http_digiexam_migration_request_v2 import (
-    is_digiexam_migration_route,
-    read_digiexam_migration_companions_v2,
-)
-from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import (
-    validate_create_job_route_constraints,
+from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
+    CreateJobCompanionPartsV2,
+    build_create_job_route_registry_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_job_artifacts_v2 import (
     register_job_artifact_routes_v2,
@@ -111,6 +111,7 @@ def _infer_format_from_filename(filename: str) -> SourceFormatV2 | None:
 def build_job_router_v2(*, service_started_at: str) -> APIRouter:
     """Build v2 job router with stable app-state wiring."""
     router = APIRouter()
+    route_registry = build_create_job_route_registry_v2()
     register_job_artifact_routes_v2(router=router, service_started_at=service_started_at)
     register_job_resume_routes_v2(router=router, service_started_at=service_started_at)
 
@@ -173,47 +174,6 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 retryable=False,
             )
 
-        resources_bytes: bytes | None = None
-        resources_sha256: str | None = None
-        if resources is not None:
-            resources_bytes = await resources.read()
-            if len(resources_bytes) > runtime.config.max_upload_bytes:
-                raise ServiceError(
-                    status_code=413,
-                    code="payload_too_large",
-                    message="Uploaded resources zip exceeds configured size limit.",
-                    retryable=False,
-                )
-            resources_sha256 = hashlib.sha256(resources_bytes).hexdigest()
-
-        reference_docx_bytes: bytes | None = None
-        reference_docx_sha256: str | None = None
-        if reference_docx is not None:
-            if reference_docx.filename is None or reference_docx.filename.strip() == "":
-                raise ServiceError(
-                    status_code=400,
-                    code="validation_error",
-                    message="Uploaded reference_docx must include a filename.",
-                    retryable=False,
-                    details={"field": "reference_docx.filename"},
-                )
-            if not reference_docx.filename.lower().endswith(".docx"):
-                raise ServiceError(
-                    status_code=415,
-                    code="unsupported_media_type",
-                    message="reference_docx must be a .docx file.",
-                    retryable=False,
-                )
-            reference_docx_bytes = await reference_docx.read()
-            if len(reference_docx_bytes) > runtime.config.max_upload_bytes:
-                raise ServiceError(
-                    status_code=413,
-                    code="payload_too_large",
-                    message="Uploaded reference_docx exceeds configured size limit.",
-                    retryable=False,
-                )
-            reference_docx_sha256 = hashlib.sha256(reference_docx_bytes).hexdigest()
-
         try:
             raw_spec_object = json.loads(job_spec)
         except json.JSONDecodeError as exc:
@@ -265,61 +225,39 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 },
             )
 
-        validate_create_job_route_constraints(
-            spec=spec,
-            resources_uploaded=resources_bytes is not None,
-            reference_docx_uploaded=reference_docx_bytes is not None,
-        )
-
-        digiexam_companions = None
-        if is_digiexam_migration_route(spec):
+        route_handler = route_registry.require_handler_for_spec(spec)
+        if route_handler.policy.create_required_grant is not None:
             auth_context = require_internal_identity_auth_context_v2(
                 request,
                 service_started_at=service_started_at,
-                required_grant="sir-convert:jobs:create",
+                required_grant=route_handler.policy.create_required_grant,
             )
-            form = await request.form()
-            digiexam_companions = await read_digiexam_migration_companions_v2(
-                spec=spec,
-                config=runtime.config,
-                primary_payload_size=len(payload_bytes),
-                form_part_names={str(key) for key in form.keys()},
-                resources_uploaded=resources_bytes is not None,
-                reference_docx_uploaded=reference_docx_bytes is not None,
+        form = await request.form()
+        prepared_route = await route_handler.prepare(
+            spec=spec,
+            config=runtime.config,
+            primary_payload_size=len(payload_bytes),
+            parts=CreateJobCompanionPartsV2(
+                resources=resources,
+                reference_docx=reference_docx,
                 graded_result_pdf=graded_result_pdf,
                 parity_pdf=parity_pdf,
-            )
-        elif graded_result_pdf is not None or parity_pdf is not None:
-            unsupported_parts = []
-            if graded_result_pdf is not None:
-                unsupported_parts.append("graded_result_pdf")
-            if parity_pdf is not None:
-                unsupported_parts.append("parity_pdf")
-            raise ServiceError(
-                status_code=422,
-                code="digiexam_companion_unsupported",
-                message=(
-                    "DigiExam companion uploads are only accepted by the migration bundle route."
-                ),
-                retryable=False,
-                details={"unsupported_parts": unsupported_parts},
-            )
+                form_part_names=frozenset(str(key) for key in form.keys()),
+            ),
+        )
 
         scope_key = f"{auth_context.owner_api_key_scope}:POST:/v2/convert/jobs:{idempotency_key}"
         file_sha256 = hashlib.sha256(payload_bytes).hexdigest()
         request_fingerprint = fingerprint_for_request_v2(
-            spec_payload=raw_spec,
+            spec_payload=normalized_fingerprint_payload_for_spec_v2(
+                raw_payload=raw_spec,
+                spec=spec,
+            ),
             file_sha256=file_sha256,
-            resources_sha256=resources_sha256,
-            reference_docx_sha256=reference_docx_sha256,
-            graded_result_pdf_sha256=(
-                digiexam_companions.graded_result_pdf_sha256
-                if digiexam_companions is not None
-                else None
-            ),
-            parity_pdf_sha256=(
-                digiexam_companions.parity_pdf_sha256 if digiexam_companions is not None else None
-            ),
+            resources_sha256=prepared_route.resources_sha256,
+            reference_docx_sha256=prepared_route.reference_docx_sha256,
+            graded_result_pdf_sha256=prepared_route.graded_result_pdf_sha256,
+            parity_pdf_sha256=prepared_route.parity_pdf_sha256,
         )
 
         existing_record = runtime.get_idempotency(scope_key)
@@ -352,16 +290,10 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             spec=spec,
             owner_api_key_scope=auth_context.owner_api_key_scope,
             upload_bytes=payload_bytes,
-            resources_zip_bytes=resources_bytes,
-            reference_docx_bytes=reference_docx_bytes,
-            graded_result_pdf_bytes=(
-                digiexam_companions.graded_result_pdf_bytes
-                if digiexam_companions is not None
-                else None
-            ),
-            parity_pdf_bytes=(
-                digiexam_companions.parity_pdf_bytes if digiexam_companions is not None else None
-            ),
+            resources_zip_bytes=prepared_route.resources_zip_bytes,
+            reference_docx_bytes=prepared_route.reference_docx_bytes,
+            graded_result_pdf_bytes=prepared_route.graded_result_pdf_bytes,
+            parity_pdf_bytes=prepared_route.parity_pdf_bytes,
         )
         runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
         runtime.run_job_async(job.job_id)

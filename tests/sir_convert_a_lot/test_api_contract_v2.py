@@ -13,17 +13,22 @@ Relationships:
 
 from __future__ import annotations
 
+import copy
 import json
 import time
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
-from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import V2ExecutionResult
+from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
+    V2ExecutionResult,
+    fingerprint_job_options,
+)
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 
@@ -196,6 +201,112 @@ def test_create_job_idempotency_collision_returns_conflict(tmp_path: Path, monke
     assert first.status_code == 202
     assert collision.status_code == 409
     assert collision.json()["error"]["code"] == "idempotency_key_reused_with_different_payload"
+
+
+@pytest.mark.parametrize(
+    ("filename", "source_format", "output_format", "file_bytes"),
+    [
+        ("note.md", SourceFormatV2.MD, OutputFormatV2.PDF, b"# Title\n\nHello.\n"),
+        ("index.html", SourceFormatV2.HTML, OutputFormatV2.PDF, b"<h1>Hello</h1>\n"),
+        (
+            "input.docx",
+            SourceFormatV2.DOCX,
+            OutputFormatV2.MD,
+            b"PK\x03\x04fake-docx-content",
+        ),
+    ],
+)
+def test_non_pdf_pdf_runtime_options_are_ignored_for_idempotency_and_metadata(
+    tmp_path: Path,
+    monkeypatch,
+    filename: str,
+    source_format: SourceFormatV2,
+    output_format: OutputFormatV2,
+    file_bytes: bytes,
+) -> None:
+    from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2
+
+    def _stub_executor(**kwargs) -> V2ExecutionResult:
+        job = kwargs["job"]
+        assert job.spec.pdf_options is None
+        assert job.spec.execution is None
+        artifact_bytes = (
+            b"%PDF-1.7\nignored-runtime-options\n"
+            if job.output_format == OutputFormatV2.PDF
+            else b"# Ignored runtime options\n"
+        )
+        return V2ExecutionResult(
+            artifact_bytes=artifact_bytes,
+            pipeline_used=f"{job.source_format.value}_to_{job.output_format.value}_v2",
+            backend_used="stubbed",
+            acceleration_used=None,
+            warnings=[],
+            phase_timings_ms={},
+            options_fingerprint=fingerprint_job_options(job.spec),
+            ocr_enabled=None,
+            ocr_engine_used=None,
+            ocr_languages_used=None,
+        )
+
+    monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _stub_executor)
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / f"service_data_{source_format.value}_{output_format.value}",
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+        )
+    )
+    client = TestClient(app)
+    base_spec = _job_spec_v2(
+        filename=filename,
+        source_format=source_format,
+        output_format=output_format,
+    )
+    spec_with_ignored_options = copy.deepcopy(base_spec)
+    spec_with_ignored_options["pdf_options"] = {
+        "backend_strategy": "not-a-backend",
+        "ocr_languages": [123],
+    }
+    spec_with_ignored_options["execution"] = {
+        "acceleration_policy": "not-a-policy",
+        "document_timeout_seconds": "not-an-integer",
+    }
+    idempotency_key = f"idem-ignore-runtime-options-{source_format.value}-{output_format.value}"
+
+    first = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key=idempotency_key,
+        file_name=filename,
+        file_bytes=file_bytes,
+        spec=spec_with_ignored_options,
+    )
+    replay = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key=idempotency_key,
+        file_name=filename,
+        file_bytes=file_bytes,
+        spec=base_spec,
+    )
+
+    assert first.status_code in {200, 202}
+    assert replay.status_code in {200, 202}
+    job_id = first.json()["job"]["job_id"]
+    assert replay.json()["job"]["job_id"] == job_id
+    assert replay.headers.get("X-Idempotent-Replay") == "true"
+    assert _wait_for_terminal(client, "secret-key", job_id) == JobStatus.SUCCEEDED
+
+    result = client.get(
+        f"/v2/convert/jobs/{job_id}/result",
+        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_ignored_options"},
+    )
+
+    assert result.status_code == 200
+    metadata = result.json()["result"]["conversion_metadata"]
+    assert metadata["acceleration_policy_requested"] is None
 
 
 def test_result_and_artifact_return_pending_when_job_not_terminal(

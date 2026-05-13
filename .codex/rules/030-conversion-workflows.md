@@ -4,7 +4,7 @@ rule_id: RULE-030
 title: Conversion Workflows
 status: active
 created: '2026-02-11'
-updated: '2026-03-04'
+updated: '2026-05-13'
 owners:
   - platform
 tags:
@@ -22,7 +22,8 @@ scope: repo
 
 ## Core Commands
 
-- `pdm run serve:sir-convert-a-lot`
+- `pdm run dev-start`
+- `pdm run dev-logs`
 - `pdm run convert-a-lot convert <source> --output-dir <target>`
 - `pdm run sir-convert-a-lot convert <source> --output-dir <target>`
 
@@ -35,6 +36,9 @@ scope: repo
 ## Execution Rules
 
 - API is async job-based; no separate sync endpoint in v2.
+- Local service integration uses the CPU-only Docker dev service via
+  `pdm run dev-start`; do not use host-run `serve:sir-convert-a-lot` as the
+  active local integration lane.
 - `POST /v2/convert/jobs` must enforce idempotency semantics.
 - Standard error envelope is mandatory for all non-2xx responses.
 - Artifact bytes are fetched via `GET /v2/convert/jobs/{job_id}/artifact` (not inline).

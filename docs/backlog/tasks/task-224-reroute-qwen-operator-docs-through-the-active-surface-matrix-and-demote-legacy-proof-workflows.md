@@ -12,7 +12,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
-  - docs/backlog/current.md
+  - .codex/handoff.md
   - .codex/rules/096-qwen-experiment-governance.md
 labels:
   - qwen

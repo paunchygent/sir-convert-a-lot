@@ -14,25 +14,16 @@ Relationships:
 from __future__ import annotations
 
 import threading
-import time
 from typing import Literal
 from uuid import uuid4
 
-from scripts.sir_convert_a_lot.domain.specs import AccelerationPolicy, JobStatus
-from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, SourceFormatV2
+from scripts.sir_convert_a_lot.domain.specs import JobStatus
+from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
     graded_result_pdf_path_for_upload,
     parity_pdf_path_for_upload,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
-from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
-    GpuRuntimeProbeResult,
-    probe_torch_gpu_runtime,
-)
-from scripts.sir_convert_a_lot.infrastructure.gpu_utilization_snapshot import (
-    GpuUtilizationSnapshotTimeoutError,
-    sample_gpu_utilization_snapshot,
-)
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
 from scripts.sir_convert_a_lot.infrastructure.job_events_v2 import JobLifecycleEventRecordV2
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
@@ -42,17 +33,24 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2 import JobStoreV2
 from scripts.sir_convert_a_lot.infrastructure.ocr_preflight_v2 import preflight_pdf_ocr_or_raise
-from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import load_pdf_checkpoint
-from scripts.sir_convert_a_lot.infrastructure.pdf_metadata_v2 import best_effort_pdf_total_pages
-from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
-    TIMING_KEY_CONVERSION_TOTAL_MS,
-)
 from scripts.sir_convert_a_lot.infrastructure.pymupdf_backend import PyMuPdfConversionBackend
+from scripts.sir_convert_a_lot.infrastructure.runtime_capacity_telemetry_v2 import (
+    RuntimeCapacityTelemetryEmitterV2,
+    RuntimeChunkWorkerLimiterV2,
+    RuntimeGpuUtilizationFieldsV2,
+    collect_gpu_utilization_fields_v2,
+    observe_canceled_job_telemetry_v2,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2 import (
     start_conversion_heartbeat_v2,
 )
+from scripts.sir_convert_a_lot.infrastructure.runtime_job_runner_v2 import run_runtime_job_v2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
+from scripts.sir_convert_a_lot.infrastructure.runtime_supervision_v2 import (
+    RuntimeSupervisorV2,
+    join_supervisor_thread_v2,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_telemetry_v2 import (
     NoopRuntimeTelemetrySinkV2,
     RuntimeTelemetrySinkV2,
@@ -61,20 +59,12 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_webhook_service_v2 import 
     RuntimeWebhookServiceV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor import (
-    V2ExecutionResult,
     execute_v2_job_conversion,
-)
-from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpointed_executor import (
-    PdfCheckpointProgressUpdateV2,
-    PdfConversionCanceledV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.webhook_delivery_v2 import WebhookDeliveryWorkerV2
 from scripts.sir_convert_a_lot.infrastructure.webhook_subscriptions_v2_store import (
     WebhookSubscriptionStoreV2,
 )
-
-_GPU_SNAPSHOT_WARNING_CAPTURE_FAILED = "gpu_snapshot_capture_failed"
-_GPU_SNAPSHOT_WARNING_CAPTURE_TIMEOUT = "gpu_snapshot_capture_timeout"
 
 
 class ServiceRuntimeV2:
@@ -127,164 +117,77 @@ class ServiceRuntimeV2:
         self._shutdown_event = threading.Event()
         self._supervisor_thread: threading.Thread | None = None
         self._active_job_ids: set[str] = set()
-        self._chunk_workers_active = 0
-        self._chunk_stage_semaphore = threading.BoundedSemaphore(
-            max(1, int(self.config.gpu_stage_max_concurrency))
+        self._capacity_telemetry = RuntimeCapacityTelemetryEmitterV2(
+            config=self.config,
+            telemetry_sink=self.telemetry_sink,
+            job_store=self.job_store,
+            active_job_count=self._active_job_count,
+            active_chunk_worker_count=self._active_chunk_worker_count,
+        )
+        self._chunk_worker_limiter = RuntimeChunkWorkerLimiterV2(
+            max_concurrency=self.config.gpu_stage_max_concurrency,
+            emit_capacity=self._emit_chunk_capacity_metrics,
+        )
+        self._supervisor = RuntimeSupervisorV2(
+            config=self.config,
+            job_store=self.job_store,
+            active_job_ids=self._active_job_ids,
+            lock=self._lock,
+            shutdown_event=self._shutdown_event,
+            run_job_async=self.run_job_async,
+            emit_capacity=self._emit_runtime_capacity_metrics,
         )
 
         self.job_store.sweep_expired()
         self.job_store.recover_running_jobs_to_queued(active_job_ids=self._active_job_ids)
 
-        if self.config.enable_supervisor:
-            self._supervisor_thread = threading.Thread(target=self._supervisor_loop, daemon=True)
-            self._supervisor_thread.start()
+        self._supervisor_thread = self._supervisor.start_if_enabled()
         self._emit_runtime_capacity_metrics()
         self._emit_chunk_capacity_metrics()
 
-    def _queued_job_count(self) -> int:
-        queued_jobs = 0
-        for job_id in self.job_store.list_job_ids():
-            try:
-                record = self.job_store.get_job(job_id)
-            except (JobMissingV2, JobExpiredV2):
-                continue
-            if record.status == JobStatus.QUEUED:
-                queued_jobs += 1
-        return queued_jobs
+    def _active_job_count(self) -> int:
+        with self._lock:
+            return len(self._active_job_ids)
+
+    def _active_chunk_worker_count(self) -> int:
+        return self._chunk_worker_limiter.active_workers
 
     def _emit_runtime_capacity_metrics(self) -> None:
-        if not self.config.enable_runtime_telemetry_calls:
-            return
-        try:
-            with self._lock:
-                active_jobs = len(self._active_job_ids)
-                max_workers = max(1, self.config.max_workers)
-                gpu_stage_global_cap = max(1, self.config.gpu_stage_max_concurrency)
-            queued_jobs = self._queued_job_count()
-            self.telemetry_sink.observe_runtime_capacity(
-                active_jobs=active_jobs,
-                queued_jobs=queued_jobs,
-                max_workers=max_workers,
-                gpu_available=self.config.gpu_available,
-                gpu_stage_global_cap=gpu_stage_global_cap,
-            )
-        except Exception:
-            return
+        self._capacity_telemetry.emit_runtime_capacity()
 
     def _emit_chunk_capacity_metrics(self) -> None:
-        if not self.config.enable_runtime_telemetry_calls:
-            return
-        try:
-            with self._lock:
-                active_chunk_workers = max(0, int(self._chunk_workers_active))
-                max_chunk_workers_per_job = (
-                    max(1, int(self.config.max_chunk_workers))
-                    if self.config.enable_parallel_pdf_chunks
-                    else 1
-                )
-                global_chunk_worker_cap = max(1, int(self.config.gpu_stage_max_concurrency))
-            self.telemetry_sink.observe_chunk_capacity(
-                active_chunk_workers=active_chunk_workers,
-                max_chunk_workers_per_job=max_chunk_workers_per_job,
-                global_chunk_worker_cap=global_chunk_worker_cap,
-            )
-        except Exception:
-            return
+        self._capacity_telemetry.emit_chunk_capacity()
 
     def _acquire_chunk_worker_slot(self) -> None:
-        """Acquire one global chunk worker slot and emit chunk capacity metrics."""
-        self._chunk_stage_semaphore.acquire()
-        with self._lock:
-            self._chunk_workers_active += 1
-        self._emit_chunk_capacity_metrics()
+        self._chunk_worker_limiter.acquire()
 
     def _release_chunk_worker_slot(self) -> None:
-        """Release one global chunk worker slot and emit chunk capacity metrics."""
-        with self._lock:
-            self._chunk_workers_active = max(0, self._chunk_workers_active - 1)
-        try:
-            self._chunk_stage_semaphore.release()
-        finally:
-            self._emit_chunk_capacity_metrics()
-
-    @staticmethod
-    def _resolve_acceleration_policy(job: StoredJobV2) -> AccelerationPolicy | None:
-        execution = job.spec.execution
-        if execution is None:
-            return None
-        return execution.acceleration_policy
+        self._chunk_worker_limiter.release()
 
     @staticmethod
     def _collect_gpu_utilization_fields(
         *,
         acceleration_used: str | None,
     ) -> tuple[str | None, int | None, int | None, int | None]:
-        if acceleration_used != "cuda":
-            return None, None, None, None
-        probe: GpuRuntimeProbeResult = probe_torch_gpu_runtime()
-        runtime_kind = probe.runtime_kind if probe.runtime_kind in {"rocm", "cuda"} else "none"
-        snapshot = sample_gpu_utilization_snapshot(runtime_kind=runtime_kind)
-        busy_percent = snapshot.gpu_busy_percent if snapshot is not None else None
-        memory_percent = snapshot.gpu_memory_used_percent if snapshot is not None else None
-        return (
-            runtime_kind if runtime_kind != "none" else None,
-            probe.device_count if probe.device_count >= 0 else None,
-            busy_percent,
-            memory_percent,
+        fields: RuntimeGpuUtilizationFieldsV2 = collect_gpu_utilization_fields_v2(
+            acceleration_used=acceleration_used
         )
-
-    @staticmethod
-    def _resolve_requested_acceleration_policy_value(job: object) -> str | None:
-        spec_obj = getattr(job, "spec", None)
-        execution_obj = getattr(spec_obj, "execution", None)
-        policy_obj = getattr(execution_obj, "acceleration_policy", None)
-        if isinstance(policy_obj, AccelerationPolicy):
-            return policy_obj.value
-        if isinstance(policy_obj, str) and policy_obj.strip() != "":
-            return policy_obj
-        return None
-
-    def _supervisor_loop(self) -> None:
-        """Background supervisor that runs queued jobs and re-runs recovered jobs."""
-        while not self._shutdown_event.is_set():
-            try:
-                self.job_store.sweep_expired()
-                self.job_store.recover_running_jobs_to_queued(active_job_ids=self._active_job_ids)
-
-                with self._lock:
-                    active_count = len(self._active_job_ids)
-                    max_workers = max(1, self.config.max_workers)
-                if active_count < max_workers:
-                    for job_id in self.job_store.list_job_ids():
-                        with self._lock:
-                            if len(self._active_job_ids) >= max_workers:
-                                break
-                            if job_id in self._active_job_ids:
-                                continue
-                        try:
-                            record = self.job_store.get_job(job_id)
-                        except (JobMissingV2, JobExpiredV2):
-                            continue
-                        if record.status != JobStatus.QUEUED:
-                            continue
-                        self.run_job_async(job_id)
-            except Exception:
-                pass
-            self._emit_runtime_capacity_metrics()
-
-            self._shutdown_event.wait(timeout=max(0.05, self.config.supervisor_poll_seconds))
+        return (
+            fields.runtime_kind,
+            fields.device_count,
+            fields.busy_percent,
+            fields.memory_used_percent,
+        )
 
     def shutdown(self) -> None:
         """Stop background supervisor loops and release runtime resources."""
         self._shutdown_event.set()
         if self.webhook_delivery_worker is not None:
             self.webhook_delivery_worker.stop()
-        if self._supervisor_thread is None:
-            return
-        if not self._supervisor_thread.is_alive():
-            return
-        join_timeout_seconds = max(1.0, self.config.supervisor_poll_seconds * 4)
-        self._supervisor_thread.join(timeout=join_timeout_seconds)
+        join_supervisor_thread_v2(
+            thread=self._supervisor_thread,
+            supervisor_poll_seconds=self.config.supervisor_poll_seconds,
+        )
 
     def _new_job_id(self) -> str:
         return f"jobv2_{uuid4().hex[:26]}"
@@ -484,18 +387,11 @@ class ServiceRuntimeV2:
             self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
             canceled = self._safe_get_job(job_id)
             if canceled is not None:
-                if self.config.enable_runtime_telemetry_calls:
-                    try:
-                        self.telemetry_sink.observe_terminal_job(
-                            status=canceled.status,
-                            source_format=canceled.source_format,
-                            output_format=canceled.output_format,
-                            backend_used=canceled.backend_used,
-                            acceleration_policy=self._resolve_acceleration_policy(canceled),
-                            acceleration_used=canceled.acceleration_used,
-                        )
-                    except Exception:
-                        pass
+                observe_canceled_job_telemetry_v2(
+                    enabled=self.config.enable_runtime_telemetry_calls,
+                    telemetry_sink=self.telemetry_sink,
+                    job=canceled,
+                )
             self._emit_runtime_capacity_metrics()
             return "accepted"
         if job.status == JobStatus.CANCELED:
@@ -514,260 +410,22 @@ class ServiceRuntimeV2:
 
     def _run_job(self, job_id: str) -> None:
         try:
-            try:
-                claimed = self.job_store.claim_queued_job(job_id)
-            except (JobMissingV2, JobExpiredV2):
-                return
-            if not claimed:
-                return
-
-            job = self.get_job(job_id)
-            if job is None:
-                return
-
-            time.sleep(self.config.processing_delay_seconds)
-
-            job = self.get_job(job_id)
-            if job is None:
-                return
-            if job.status == JobStatus.CANCELED:
-                return
-
-            total_pages: int | None = None
-            if job.source_format == SourceFormatV2.PDF:
-                checkpoint = None
-                try:
-                    checkpoint = load_pdf_checkpoint(upload_path=job.upload_path)
-                except Exception:
-                    checkpoint = None
-                total_pages = checkpoint.total_pages if checkpoint is not None else None
-                if total_pages is None:
-                    total_pages = best_effort_pdf_total_pages(job.upload_path)
-                processed_pages = checkpoint.processed_pages if checkpoint is not None else 0
-                failed_pages = checkpoint.failed_pages if checkpoint is not None else 0
-                percent_complete = (
-                    (processed_pages / float(total_pages)) * 100.0
-                    if total_pages is not None and total_pages > 0
-                    else None
-                )
-            else:
-                processed_pages = None
-                failed_pages = None
-                percent_complete = None
-            self.job_store.update_progress(
-                job_id,
-                status=JobStatus.RUNNING,
-                stage="converting",
-                total_pages=total_pages,
-                processed_pages=processed_pages,
-                failed_pages=failed_pages,
-                percent_complete=percent_complete,
-            )
-            self.job_store.touch_heartbeat(job_id)
-            self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
-            heartbeat_stop, heartbeat_thread = start_conversion_heartbeat_v2(
-                job_store=self.job_store,
+            run_runtime_job_v2(
                 job_id=job_id,
-                heartbeat_interval_seconds=self.config.heartbeat_interval_seconds,
+                config=self.config,
+                job_store=self.job_store,
+                webhook_service=self.webhook_service,
+                docling_backend=self.docling_backend,
+                pymupdf_backend=self.pymupdf_backend,
+                telemetry_sink=self.telemetry_sink,
+                get_job=self.get_job,
+                safe_get_job=self._safe_get_job,
+                collect_gpu_utilization_fields=self._collect_gpu_utilization_fields,
+                acquire_chunk_worker_slot=self._acquire_chunk_worker_slot,
+                release_chunk_worker_slot=self._release_chunk_worker_slot,
+                execute_conversion=execute_v2_job_conversion,
+                start_heartbeat=start_conversion_heartbeat_v2,
             )
-
-            try:
-                conversion_started = time.perf_counter()
-
-                def _progress_callback(update: PdfCheckpointProgressUpdateV2) -> None:
-                    try:
-                        self.job_store.update_progress(
-                            job_id,
-                            status=JobStatus.RUNNING,
-                            stage="converting",
-                            total_pages=update.total_pages,
-                            processed_pages=update.processed_pages,
-                            failed_pages=update.failed_pages,
-                            percent_complete=update.percent_complete,
-                            pages_per_minute=update.pages_per_minute,
-                            eta_seconds=update.eta_seconds,
-                            phase_timings_ms=update.phase_timings_ms,
-                        )
-                        self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
-                    except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
-                        return
-
-                def _is_cancel_requested() -> bool:
-                    current = self.get_job(job_id)
-                    return current is not None and current.status == JobStatus.CANCELED
-
-                result: V2ExecutionResult = execute_v2_job_conversion(
-                    job=job,
-                    config=self.config,
-                    docling_backend=self.docling_backend,
-                    pymupdf_backend=self.pymupdf_backend,
-                    progress_callback=_progress_callback,
-                    is_cancel_requested=_is_cancel_requested,
-                    on_chunk_worker_start=self._acquire_chunk_worker_slot,
-                    on_chunk_worker_finish=self._release_chunk_worker_slot,
-                )
-                phase_timings_ms = dict(result.phase_timings_ms)
-                phase_timings_ms[TIMING_KEY_CONVERSION_TOTAL_MS] = max(
-                    0, int((time.perf_counter() - conversion_started) * 1000)
-                )
-                acceleration_policy_requested = self._resolve_requested_acceleration_policy_value(
-                    job
-                )
-                warnings = list(result.warnings)
-                gpu_snapshot_warning: str | None = None
-                gpu_runtime_kind: str | None = None
-                gpu_device_count: int | None = None
-                gpu_busy_percent: int | None = None
-                gpu_memory_used_percent: int | None = None
-                if self.config.enable_runtime_telemetry_calls:
-                    try:
-                        (
-                            gpu_runtime_kind,
-                            gpu_device_count,
-                            gpu_busy_percent,
-                            gpu_memory_used_percent,
-                        ) = self._collect_gpu_utilization_fields(
-                            acceleration_used=result.acceleration_used
-                        )
-                    except GpuUtilizationSnapshotTimeoutError:
-                        gpu_snapshot_warning = _GPU_SNAPSHOT_WARNING_CAPTURE_TIMEOUT
-                    except Exception:
-                        gpu_snapshot_warning = _GPU_SNAPSHOT_WARNING_CAPTURE_FAILED
-                if gpu_snapshot_warning is not None and gpu_snapshot_warning not in warnings:
-                    warnings.append(gpu_snapshot_warning)
-                heartbeat_stop.set()
-                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
-                self.job_store.mark_succeeded(
-                    job_id,
-                    artifact_bytes=result.artifact_bytes,
-                    pipeline_used=result.pipeline_used,
-                    backend_used=result.backend_used,
-                    acceleration_used=result.acceleration_used,
-                    ocr_enabled=result.ocr_enabled,
-                    ocr_engine_used=result.ocr_engine_used,
-                    ocr_languages_used=result.ocr_languages_used,
-                    options_fingerprint=f"sha256:{result.options_fingerprint}",
-                    acceleration_policy_requested=acceleration_policy_requested,
-                    gpu_runtime_kind=gpu_runtime_kind,
-                    gpu_device_count=gpu_device_count,
-                    gpu_busy_percent=gpu_busy_percent,
-                    gpu_memory_used_percent=gpu_memory_used_percent,
-                    template_id=result.template_id,
-                    template_version=result.template_version,
-                    template_artifact_sha256=result.template_artifact_sha256,
-                    parallel_enabled=result.parallel_enabled,
-                    max_chunk_workers=result.max_chunk_workers,
-                    chunk_size_pages=result.chunk_size_pages,
-                    effective_gpu_stage_limit=result.effective_gpu_stage_limit,
-                    scheduling_mode=result.scheduling_mode,
-                    warnings=warnings,
-                    phase_timings_ms=phase_timings_ms,
-                )
-                self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
-                succeeded = self._safe_get_job(job_id)
-                if succeeded is not None and self.config.enable_runtime_telemetry_calls:
-                    try:
-                        self.telemetry_sink.observe_phase_timings(
-                            source_format=succeeded.source_format,
-                            phase_timings_ms=succeeded.phase_timings_ms,
-                        )
-                        self.telemetry_sink.observe_retry_warnings(
-                            source_format=succeeded.source_format,
-                            warnings=succeeded.warnings,
-                        )
-                        self.telemetry_sink.observe_gpu_snapshot(
-                            runtime_kind=succeeded.gpu_runtime_kind,
-                            gpu_device_count=succeeded.gpu_device_count,
-                            gpu_busy_percent=succeeded.gpu_busy_percent,
-                            gpu_memory_used_percent=succeeded.gpu_memory_used_percent,
-                        )
-                        self.telemetry_sink.observe_terminal_job(
-                            status=succeeded.status,
-                            source_format=succeeded.source_format,
-                            output_format=succeeded.output_format,
-                            backend_used=succeeded.backend_used,
-                            acceleration_policy=self._resolve_acceleration_policy(succeeded),
-                            acceleration_used=succeeded.acceleration_used,
-                        )
-                    except Exception:
-                        pass
-            except PdfConversionCanceledV2:
-                heartbeat_stop.set()
-                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
-                self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
-                return
-            except JobStateConflictV2:
-                return
-            except ServiceError as exc:
-                conversion_elapsed_ms = max(
-                    0, int((time.perf_counter() - conversion_started) * 1000)
-                )
-                heartbeat_stop.set()
-                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
-                try:
-                    self.job_store.mark_failed(
-                        job_id,
-                        code=exc.code,
-                        message=exc.message,
-                        retryable=exc.retryable,
-                        details=exc.details,
-                        phase_timings_ms={TIMING_KEY_CONVERSION_TOTAL_MS: conversion_elapsed_ms},
-                    )
-                    self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
-                    failed = self._safe_get_job(job_id)
-                    if failed is not None and self.config.enable_runtime_telemetry_calls:
-                        try:
-                            self.telemetry_sink.observe_phase_timings(
-                                source_format=failed.source_format,
-                                phase_timings_ms=failed.phase_timings_ms,
-                            )
-                            self.telemetry_sink.observe_terminal_job(
-                                status=failed.status,
-                                source_format=failed.source_format,
-                                output_format=failed.output_format,
-                                backend_used=failed.backend_used,
-                                acceleration_policy=self._resolve_acceleration_policy(failed),
-                                acceleration_used=failed.acceleration_used,
-                            )
-                        except Exception:
-                            pass
-                except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
-                    return
-            except Exception as exc:  # pragma: no cover - defensive fallback
-                conversion_elapsed_ms = max(
-                    0, int((time.perf_counter() - conversion_started) * 1000)
-                )
-                heartbeat_stop.set()
-                heartbeat_thread.join(timeout=max(0.5, self.config.heartbeat_interval_seconds))
-                try:
-                    self.job_store.mark_failed(
-                        job_id,
-                        code="conversion_internal_error",
-                        message=f"Unexpected conversion error: {exc}",
-                        retryable=True,
-                        details=None,
-                        phase_timings_ms={TIMING_KEY_CONVERSION_TOTAL_MS: conversion_elapsed_ms},
-                    )
-                    self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
-                    failed = self._safe_get_job(job_id)
-                    if failed is not None and self.config.enable_runtime_telemetry_calls:
-                        try:
-                            self.telemetry_sink.observe_phase_timings(
-                                source_format=failed.source_format,
-                                phase_timings_ms=failed.phase_timings_ms,
-                            )
-                            self.telemetry_sink.observe_terminal_job(
-                                status=failed.status,
-                                source_format=failed.source_format,
-                                output_format=failed.output_format,
-                                backend_used=failed.backend_used,
-                                acceleration_policy=self._resolve_acceleration_policy(failed),
-                                acceleration_used=failed.acceleration_used,
-                            )
-                        except Exception:
-                            pass
-                except (JobMissingV2, JobExpiredV2, JobStateConflictV2):
-                    return
         finally:
             with self._lock:
                 self._active_job_ids.discard(job_id)

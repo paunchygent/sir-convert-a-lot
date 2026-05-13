@@ -7,7 +7,7 @@ priority: high
 created: '2026-03-16'
 last_updated: '2026-03-16'
 related:
-  - docs/backlog/current.md
+  - .codex/handoff.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
 labels:
   - qwen

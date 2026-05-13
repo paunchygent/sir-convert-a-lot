@@ -88,10 +88,9 @@ scripts/sir_convert_a_lot/
 ├── application/     # Response and manifest contracts
 ├── infrastructure/  # Runtime engine and persistence
 ├── interfaces/      # HTTP/CLI adapters and clients
-├── cli.py           # Compatibility facade
-├── service.py       # Service entrypoint facade
-├── client.py        # Client export facade
-└── models.py        # Model export facade
+├── service.py       # FastAPI app entrypoint for container/service startup
+├── service_local.py # Local service helper entrypoint
+└── devops/          # Hemma/local operational command helpers
 ```
 
 ## API Reference

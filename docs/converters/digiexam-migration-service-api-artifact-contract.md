@@ -20,6 +20,7 @@ links:
   - docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md
   - docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md
   - docs/backlog/tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md
+  - docs/backlog/tasks/task-291-define-public-exam-converter-grant-lane-for-digiexam-migration-bundles.md
   - docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md
   - docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
@@ -35,8 +36,10 @@ links:
 
 ## Purpose
 
-Define the service API v2 extension contract for authenticated DigiExam
-migration jobs submitted by Skriptoteket and executed by Sir Convert-a-Lot.
+Define the service API v2 extension contract for DigiExam migration jobs
+submitted by Skriptoteket and executed by Sir Convert-a-Lot. The default lane is
+authenticated Skriptoteket product work. A narrow public Exam Converter grant
+lane is defined below as a separate contract exception for future runtime work.
 
 This contract is the boundary between the products:
 
@@ -181,7 +184,190 @@ users even when the transport API key is valid:
 - named artifact download
 - checkpoint or future partial-route reads if later added to this route
 
-Direct anonymous public conversion is not part of this contract.
+Direct anonymous public conversion is not part of this contract. The only public
+exception is the HuleEdu-signed public Exam Converter grant lane below.
+
+## Public Exam Converter Grant Lane
+
+Task 291 adds a contract-only public grant lane for the blocked Skriptoteket
+`PR-0320` no-login Exam Converter workflow. It does not implement public runtime
+conversion, does not reopen `convert.hule.education`, and does not change the
+authenticated `InternalIdentityContextV1` behavior above.
+
+The authority chain is intentionally split:
+
+- HuleEdu `TASK-0563` and
+  `/Users/olofs_mba/Documents/Repos/huleedu/docs/reference/ref-public-exam-converter-grant-v1-contract.md`
+  define the minting authority and normative `PublicConversionGrantV1` field
+  contract.
+- This Sir Convert contract defines verifier input, public job ownership,
+  route operations, artifact-read authorization, and rejection behavior.
+- Skriptoteket `PR-0320` remains blocked until the HuleEdu grant authority and
+  this Sir Convert verifier/ownership contract are both accepted by their
+  respective review gates.
+
+### Public Grant Boundary
+
+`PublicConversionGrantV1` is not `InternalIdentityContextV1`, not a browser
+session, not a user identity, not service ownership, and not an operator lane.
+It must not contain user, org, tenant, role, product-realm subject, email,
+display-name, session, or linked-identity fields.
+
+The browser never calls Sir Convert directly and never receives Sir Convert
+transport credentials, HuleEdu signing material, or a self-constructed grant.
+The Skriptoteket public backend is the server-side grant carrier: it obtains a
+HuleEdu-signed grant through the HuleEdu public grant authority and carries it
+to the Sir Convert public-grant verifier when a later runtime task implements
+the lane.
+
+`X-API-Key` may remain a transport admission credential for the server-side
+integration, but it is never public job ownership and never authorizes public
+submit, status, result, artifact-list, or named-download access without a valid
+public grant or public artifact-read lease.
+
+### Accepted Public Grant Fields
+
+Sir Convert must verify the exact signed HuleEdu grant payload before creating
+or authorizing any public grant-owned job.
+
+| Field | Required semantics |
+| --- | --- |
+| `grant_version` | Literal integer `1`. |
+| `iss` | HuleEdu minting authority; initially `api_gateway_service` unless a later accepted HuleEdu task narrows it. |
+| `aud` | Sir Convert public grant verifier audience; initially `sir-convert-a-lot`. |
+| `source_app` | `skriptoteket`. |
+| `capability` | `documents.conversion_hub.exam_converter`. |
+| `route_key` | `digiexam_dxe_to_examnet_migration_bundle`. |
+| `source_format` | `digiexam_dxe`. |
+| `output_format` | `examnet_migration_bundle`. |
+| `allowed_targets` | Non-empty subset of `examnet_pdf` and `qti_package`. |
+| `upload_digest` | Digest of the exact public upload payload or canonical multipart digest used for idempotency. |
+| `policy_version` | Nonblank public Exam Converter policy version. |
+| `policy_profile_id` | Nonblank payload, rate, concurrency, TTL, and telemetry profile identifier. |
+| `max_upload_bytes` | Maximum aggregate multipart payload accepted under the grant. |
+| `allowed_mime_types` | MIME/type allowlist for the public upload parts. |
+| `request_time_budget_seconds` | Maximum server processing budget represented by the policy. |
+| `artifact_ttl_seconds` | Maximum retention window for public grant artifacts. |
+| `artifact_read_lease_seconds` | Maximum read-lease window for manifest and named artifact downloads. |
+| `rate_limit_profile_id` | Public rate-limit profile applied before minting or forwarding. |
+| `concurrency_profile_id` | Public concurrency profile applied before minting or forwarding. |
+| `correlation_id` | Required correlation id propagated across submit, poll, result, manifest, and download. |
+| `iat` / `exp` | Issued-at and expiry timestamps accepted only within configured skew. |
+| `jti` | Nonblank nonce used for replay and idempotency handling. |
+
+The verifier must reject unknown required-behavior fields until both HuleEdu and
+Sir Convert accept the new shape. Additive optional fields are allowed only
+when their absence preserves the v1 behavior above.
+
+### Public Job Ownership
+
+Successful public submit persists an ownership envelope with:
+
+| Field | Required semantics |
+| --- | --- |
+| `owner_kind` | `public_grant`. |
+| `owner_digest` | Stable digest derived only from verifier-approved grant identity material, including issuer, audience, capability, route key, policy version, and `jti`. |
+| `source_app` | Signed `source_app`. |
+| `route_key` | Signed route key. |
+| `allowed_targets_snapshot` | Signed allowed-target list captured at job creation. |
+| `policy_profile_id` | Signed policy profile captured at job creation. |
+| `artifact_read_lease_expires_at` | Derived from grant policy and job/artifact lifecycle. |
+| `upload_digest` | Signed upload digest captured at job creation and used for duplicate-submit idempotency. |
+| `correlation_id` | Signed or propagated correlation id. |
+
+Public ownership must never be derived from IP address, browser cookies,
+browser bearer tokens, unsigned form fields, `X-API-Key`, authenticated user
+identity, service identity, operator identity, or product-visible metadata. A
+public grant-owned job must not be upgraded into authenticated user files,
+global service ownership, recoverable guest ownership, or operator ownership by
+Sir Convert.
+
+One grant `jti` can create at most one Sir Convert job. Exact duplicate submits
+with the same grant `jti`, owner digest, upload digest, route, target snapshot,
+policy profile, and idempotency key converge on the existing job. Mismatched
+reuse of a grant `jti` or idempotency key returns a deterministic conflict
+error and must not create a second job.
+
+### Public Routes And Operations
+
+The public grant lane uses the same downstream v2 route family, but only for
+this route key and only when the public verifier succeeds.
+
+| Operation | Authorization rule |
+| --- | --- |
+| `POST /v2/convert/jobs` | Requires a valid `PublicConversionGrantV1`; creates a `public_grant` owner envelope and accepts only `digiexam_dxe -> examnet_migration_bundle` job specs whose requested targets are within `allowed_targets`. |
+| `GET /v2/convert/jobs/{job_id}` | Requires a valid, unexpired public grant whose verified owner digest and `jti` match the persisted public-grant job. |
+| `GET /v2/convert/jobs/{job_id}/result` | Same public grant ownership rule as job status. |
+| `GET /v2/convert/jobs/{job_id}/artifacts` | Requires a valid `PublicArtifactReadLeaseV1` for `bundle_manifest` bound to the persisted public-grant job. |
+| `GET /v2/convert/jobs/{job_id}/artifacts/{artifact_key}` | Requires a valid `PublicArtifactReadLeaseV1` for the exact artifact key bound to the persisted public-grant job. |
+
+Public grant status and result polling fail closed when the grant is missing,
+expired, malformed, untrusted, or no longer matches the persisted public owner
+envelope. Public artifact reads fail closed when the artifact-read lease is
+missing, expired, mismatched, replayed outside the idempotent retry policy, or
+requests an unavailable artifact.
+
+### Public Artifact-Read Lease
+
+Public artifact listing and named downloads require a signed
+`PublicArtifactReadLeaseV1`. Unspecified derived lease shapes are forbidden in
+v1.
+
+Every lease must include:
+
+| Field | Required semantics |
+| --- | --- |
+| `lease_version` | Literal integer `1`. |
+| `iss` | Sir Convert issuer, initially `sir-convert-a-lot`. |
+| `aud` | Sir Convert public artifact-read verifier audience. |
+| `parent_grant_jti` | Parent public grant `jti`. |
+| `job_id` | Exact public-grant-owned job id. |
+| `artifact_key` | Exact artifact key, or `bundle_manifest` for manifest/list reads. |
+| `owner_digest` | Persisted owner digest derived from the parent grant. |
+| `route_key` | `digiexam_dxe_to_examnet_migration_bundle`. |
+| `source_app` | `skriptoteket`. |
+| `allowed_targets_snapshot` | Parent grant target snapshot. |
+| `policy_version` | Parent grant policy version. |
+| `iat` / `exp` | Lease issued-at and expiry timestamps. |
+| `jti` | Nonblank lease nonce. |
+| `correlation_id` | Correlation id propagated from the parent grant/job. |
+
+The lease TTL must not exceed the smallest of the parent grant
+`artifact_read_lease_seconds`, the remaining artifact retention window, and the
+Sir Convert public artifact-read maximum configured for this route. Expired or
+mismatched leases return deterministic public artifact access errors without
+falling back to user, service, operator, guest, or API-key ownership.
+
+### Public Grant Rejections
+
+Public grant failures use the standard v2 error envelope with route-specific
+codes. Runtime tasks may refine names, but must preserve these conditions as
+separate deterministic rejection classes:
+
+| Condition | HTTP status | Code |
+| --- | --- | --- |
+| Missing public grant on public submit, status, or result | `401` | `public_grant_required` |
+| Malformed, unsigned, unknown-key, or untrusted grant | `401` | `public_grant_untrusted` |
+| Expired grant or future `iat` beyond accepted skew | `401` | `public_grant_expired` |
+| Wrong audience | `403` | `public_grant_wrong_audience` |
+| Wrong capability | `403` | `public_grant_wrong_capability` |
+| Wrong route, source format, or output format | `403` | `public_grant_wrong_route` |
+| Requested target outside `allowed_targets` | `403` | `public_grant_target_not_allowed` |
+| Replayed or mismatched grant `jti` outside idempotency policy | `409` | `public_grant_replay_rejected` |
+| Valid transport API key but no valid public grant ownership | `403` | `public_grant_ownership_required` |
+| Missing artifact-read lease for public artifact list/download | `401` | `public_artifact_read_lease_required` |
+| Expired, wrong-job, wrong-artifact, wrong-owner, or widened-target lease | `403` | `public_artifact_read_lease_denied` |
+
+Direct public `convert.hule.education` product traffic outside the accepted
+grant lane remains fail-closed. Public grants do not authorize arbitrary Sir
+Convert routes, general file conversion, Exam.net browser automation,
+authenticated artifact saving, Vault/MyFiles writes, account history, or
+recoverable guest jobs.
+
+The Task 282 privacy boundary is unchanged for public grant jobs: companion
+result PDFs may enrich only correct machine-marked answers, and
+product-visible outputs must not contain wrong answers, free-text student
+answers, scores, identity markers, or student-performance history.
 
 ## Request Contract
 
@@ -745,6 +931,26 @@ The Skriptoteket adapter/UI task must add consumer conformance tests proving:
 - teachers can see partial/blocked/manual-follow-up states;
 - downloaded and saved user-file artifacts preserve bundle metadata.
 
+The later public Exam Converter runtime task must add Sir Convert conformance
+tests proving:
+
+- valid `PublicConversionGrantV1` submit, status, result, artifact manifest,
+  and named artifact download behavior for the
+  `digiexam_dxe -> examnet_migration_bundle` route;
+- `owner_kind=public_grant` persistence, owner digest derivation from verified
+  grant material, exact duplicate-submit convergence, and mismatched
+  grant/idempotency reuse rejection;
+- rejection for missing grant, malformed grant, expired grant, wrong audience,
+  wrong capability, wrong route, over-target requests, replayed `jti`, forged
+  issuer/key id, and valid `X-API-Key` without public grant ownership;
+- `PublicArtifactReadLeaseV1` rejection for missing, expired, wrong-job,
+  wrong-artifact, wrong-owner, widened-target, and replay-outside-idempotency
+  cases;
+- direct public `convert.hule.education` traffic remains fail-closed outside
+  the accepted grant lane;
+- forbidden result-PDF data is absent from public API responses, product-facing
+  logs, manifests, and artifacts.
+
 ## Follow-On Implementation Gates
 
 Task 278 authorizes this contract only. The next implementation work must be
@@ -760,6 +966,10 @@ split as follows:
 - Skriptoteket adapter/UI and user-file persistence: a later Skriptoteket-owned
   task that consumes the accepted Sir Convert contract without forking
   conversion policy.
+- Public Exam Converter runtime: a later governed runtime task may consume
+  HuleEdu `TASK-0563` and Sir Convert Task 291 to implement
+  `PublicConversionGrantV1` verification, `owner_kind=public_grant`, and
+  `PublicArtifactReadLeaseV1` authorization for Skriptoteket `PR-0320`.
 
 No Skriptoteket code, editable DOCX generation, Exam.net browser automation, or
-anonymous public conversion is approved by this task.
+public runtime conversion is approved by Task 278 alone.
