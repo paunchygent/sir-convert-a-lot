@@ -44,6 +44,21 @@ def test_filter_requirement_lines_drops_torch_and_cuda_requirements() -> None:
     assert "nvidia-cudnn-cu12==9.10.2.21" not in filtered_requirements
 
 
+def test_filter_requirement_lines_preserves_internal_identity_crypto_dependency() -> None:
+    raw_requirements = "\n".join(
+        [
+            "cryptography==46.0.5",
+            "cffi==2.0.0",
+            "",
+        ]
+    )
+
+    filtered_requirements = filter_requirement_lines(raw_requirements)
+
+    assert "cryptography==46.0.5" in filtered_requirements
+    assert "cffi==2.0.0" in filtered_requirements
+
+
 def test_filter_requirement_lines_preserves_comments_and_non_matching_lines() -> None:
     raw_requirements = "\n".join(
         [
