@@ -20,6 +20,10 @@ from uuid import uuid4
 
 from scripts.sir_convert_a_lot.domain.specs import AccelerationPolicy, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
+    graded_result_pdf_path_for_upload,
+    parity_pdf_path_for_upload,
+)
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
     GpuRuntimeProbeResult,
@@ -438,6 +442,8 @@ class ServiceRuntimeV2:
         upload_bytes: bytes,
         resources_zip_bytes: bytes | None,
         reference_docx_bytes: bytes | None,
+        graded_result_pdf_bytes: bytes | None = None,
+        parity_pdf_bytes: bytes | None = None,
     ) -> StoredJobV2:
         preflight_pdf_ocr_or_raise(spec=spec, config=self.config)
         job_id = self._new_job_id()
@@ -449,6 +455,12 @@ class ServiceRuntimeV2:
             resources_zip_bytes=resources_zip_bytes,
             reference_docx_bytes=reference_docx_bytes,
         )
+        if graded_result_pdf_bytes is not None:
+            graded_result_pdf_path_for_upload(record.upload_path).write_bytes(
+                graded_result_pdf_bytes
+            )
+        if parity_pdf_bytes is not None:
+            parity_pdf_path_for_upload(record.upload_path).write_bytes(parity_pdf_bytes)
         stored = self.get_job(record.job_id)
         if stored is None:
             raise RuntimeError("created v2 job must be loadable immediately")

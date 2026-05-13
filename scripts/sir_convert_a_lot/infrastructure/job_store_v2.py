@@ -58,6 +58,8 @@ def _artifact_content_type(output_format: OutputFormatV2) -> str:
         return "application/pdf"
     if output_format == OutputFormatV2.DOCX:
         return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    if output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
+        return "application/json"
     raise AssertionError(f"Unsupported output_format: {output_format}")
 
 

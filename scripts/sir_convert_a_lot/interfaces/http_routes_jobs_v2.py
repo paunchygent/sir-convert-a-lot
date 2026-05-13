@@ -36,8 +36,14 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
 from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
+    auth_context_for_job_access_v2,
     require_api_key_v2,
+    require_internal_identity_auth_context_v2,
     require_job_access_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_digiexam_migration_request_v2 import (
+    is_digiexam_migration_route,
+    read_digiexam_migration_companions_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import (
     validate_create_job_route_constraints,
@@ -97,6 +103,8 @@ def _infer_format_from_filename(filename: str) -> SourceFormatV2 | None:
         return SourceFormatV2.HTML
     if suffix == ".docx":
         return SourceFormatV2.DOCX
+    if suffix == ".dxe":
+        return SourceFormatV2.DIGIEXAM_DXE
     return None
 
 
@@ -113,6 +121,8 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         job_spec: str = Form(...),
         resources: UploadFile | None = File(None),
         reference_docx: UploadFile | None = File(None),
+        graded_result_pdf: UploadFile | None = File(None),
+        parity_pdf: UploadFile | None = File(None),
         wait_seconds: int = Query(default=0, ge=0, le=20),
     ) -> JSONResponse:
         auth_context = require_api_key_v2(request, service_started_at=service_started_at)
@@ -261,6 +271,40 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             reference_docx_uploaded=reference_docx_bytes is not None,
         )
 
+        digiexam_companions = None
+        if is_digiexam_migration_route(spec):
+            auth_context = require_internal_identity_auth_context_v2(
+                request,
+                service_started_at=service_started_at,
+                required_grant="sir-convert:jobs:create",
+            )
+            form = await request.form()
+            digiexam_companions = await read_digiexam_migration_companions_v2(
+                spec=spec,
+                config=runtime.config,
+                primary_payload_size=len(payload_bytes),
+                form_part_names={str(key) for key in form.keys()},
+                resources_uploaded=resources_bytes is not None,
+                reference_docx_uploaded=reference_docx_bytes is not None,
+                graded_result_pdf=graded_result_pdf,
+                parity_pdf=parity_pdf,
+            )
+        elif graded_result_pdf is not None or parity_pdf is not None:
+            unsupported_parts = []
+            if graded_result_pdf is not None:
+                unsupported_parts.append("graded_result_pdf")
+            if parity_pdf is not None:
+                unsupported_parts.append("parity_pdf")
+            raise ServiceError(
+                status_code=422,
+                code="digiexam_companion_unsupported",
+                message=(
+                    "DigiExam companion uploads are only accepted by the migration bundle route."
+                ),
+                retryable=False,
+                details={"unsupported_parts": unsupported_parts},
+            )
+
         scope_key = f"{auth_context.owner_api_key_scope}:POST:/v2/convert/jobs:{idempotency_key}"
         file_sha256 = hashlib.sha256(payload_bytes).hexdigest()
         request_fingerprint = fingerprint_for_request_v2(
@@ -268,6 +312,14 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             file_sha256=file_sha256,
             resources_sha256=resources_sha256,
             reference_docx_sha256=reference_docx_sha256,
+            graded_result_pdf_sha256=(
+                digiexam_companions.graded_result_pdf_sha256
+                if digiexam_companions is not None
+                else None
+            ),
+            parity_pdf_sha256=(
+                digiexam_companions.parity_pdf_sha256 if digiexam_companions is not None else None
+            ),
         )
 
         existing_record = runtime.get_idempotency(scope_key)
@@ -302,6 +354,14 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             upload_bytes=payload_bytes,
             resources_zip_bytes=resources_bytes,
             reference_docx_bytes=reference_docx_bytes,
+            graded_result_pdf_bytes=(
+                digiexam_companions.graded_result_pdf_bytes
+                if digiexam_companions is not None
+                else None
+            ),
+            parity_pdf_bytes=(
+                digiexam_companions.parity_pdf_bytes if digiexam_companions is not None else None
+            ),
         )
         runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
         runtime.run_job_async(job.job_id)
@@ -330,18 +390,37 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
     @router.get("/v2/convert/jobs/{job_id}")
     async def get_job(job_id: str, request: Request) -> JSONResponse:
-        auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        job = require_job_access_v2(auth_context=auth_context, job=job)
+        auth_context = auth_context_for_job_access_v2(
+            request,
+            service_started_at=service_started_at,
+            job=job,
+            required_grant="sir-convert:jobs:read-own",
+        )
+        job = require_job_access_v2(
+            auth_context=auth_context,
+            job=job,
+            required_grant="sir-convert:jobs:read-own",
+        )
         payload = _job_record_response(job).model_dump(mode="json")
         return JSONResponse(status_code=200, content=payload)
 
     @router.post("/v2/convert/jobs/{job_id}/cancel")
     async def cancel_job(job_id: str, request: Request) -> JSONResponse:
-        auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-        require_job_access_v2(auth_context=auth_context, job=runtime.get_job(job_id))
+        job = runtime.get_job(job_id)
+        auth_context = auth_context_for_job_access_v2(
+            request,
+            service_started_at=service_started_at,
+            job=job,
+            required_grant="sir-convert:jobs:cancel-own",
+        )
+        require_job_access_v2(
+            auth_context=auth_context,
+            job=job,
+            required_grant="sir-convert:jobs:cancel-own",
+        )
         result = runtime.cancel_job(job_id)
         if result == "missing":
             raise ServiceError(

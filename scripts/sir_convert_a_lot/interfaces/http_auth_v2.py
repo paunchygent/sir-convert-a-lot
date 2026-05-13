@@ -19,6 +19,9 @@ from fastapi import Request
 
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
+from scripts.sir_convert_a_lot.interfaces.http_internal_identity_v2 import (
+    require_verified_internal_identity_v2,
+)
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,8 @@ class AuthContextV2:
 
     api_key: str
     owner_api_key_scope: str
+    grants: frozenset[str] = frozenset()
+    identity_context_verified: bool = False
 
 
 class JobOwnedResourceV2(Protocol):
@@ -58,13 +63,34 @@ def require_job_access_v2(
     *,
     auth_context: AuthContextV2,
     job: _JobOwnedResourceT | None,
+    required_grant: str | None = None,
+    access_denied_code: str = "job_access_denied",
 ) -> _JobOwnedResourceT:
     """Require that the authenticated caller owns the target job."""
 
     if job is None:
         raise _job_not_found_error()
     if job.owner_api_key_scope != auth_context.owner_api_key_scope:
+        if (
+            job.owner_api_key_scope.startswith("identity:v1:")
+            or auth_context.identity_context_verified
+        ):
+            raise ServiceError(
+                status_code=403,
+                code=access_denied_code,
+                message="Authenticated caller does not own this job.",
+                retryable=False,
+            )
         raise _job_not_found_error()
+    if required_grant is not None and job.owner_api_key_scope.startswith("identity:v1:"):
+        if required_grant not in auth_context.grants:
+            raise ServiceError(
+                status_code=403,
+                code=access_denied_code,
+                message="Authenticated caller is missing the required grant.",
+                retryable=False,
+                details={"required_grant": required_grant},
+            )
     return job
 
 
@@ -88,4 +114,53 @@ def require_api_key_v2(
         code="auth_invalid_api_key",
         message="Missing or invalid X-API-Key.",
         retryable=False,
+    )
+
+
+def require_internal_identity_auth_context_v2(
+    request: Request,
+    *,
+    service_started_at: str,
+    required_grant: str,
+) -> AuthContextV2:
+    """Authenticate transport and signed HuleEdu identity for user-originated v2 work."""
+
+    transport_context = require_api_key_v2(request, service_started_at=service_started_at)
+    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
+    identity = require_verified_internal_identity_v2(
+        headers=request.headers,
+        config=runtime.config,
+    )
+    if required_grant not in identity.grants:
+        raise ServiceError(
+            status_code=403,
+            code="auth_missing_internal_identity_grant",
+            message="Signed internal identity is missing the required Sir Convert grant.",
+            retryable=False,
+            details={"required_grant": required_grant},
+        )
+    return AuthContextV2(
+        api_key=transport_context.api_key,
+        owner_api_key_scope=identity.owner_scope,
+        grants=identity.grants,
+        identity_context_verified=True,
+    )
+
+
+def auth_context_for_job_access_v2(
+    request: Request,
+    *,
+    service_started_at: str,
+    job: JobOwnedResourceV2 | None,
+    required_grant: str,
+) -> AuthContextV2:
+    """Resolve API-key or identity-derived auth according to persisted job ownership."""
+
+    transport_context = require_api_key_v2(request, service_started_at=service_started_at)
+    if job is None or not job.owner_api_key_scope.startswith("identity:v1:"):
+        return transport_context
+    return require_internal_identity_auth_context_v2(
+        request,
+        service_started_at=service_started_at,
+        required_grant=required_grant,
     )

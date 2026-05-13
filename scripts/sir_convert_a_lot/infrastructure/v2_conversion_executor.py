@@ -21,6 +21,9 @@ from typing import Callable
 
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import ConversionBackend
+from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_builder import (
+    execute_digiexam_migration_bundle_job,
+)
 from scripts.sir_convert_a_lot.infrastructure.resources_zip import (
     ResourcesZipError,
     extract_resources_zip,
@@ -159,7 +162,15 @@ def execute_v2_job_conversion(
     phase_timings_ms: dict[str, int] = {}
     profile: PdfExecutionProfileV2 | None = None
 
-    if job.source_format == SourceFormatV2.PDF and job.output_format in {
+    if (
+        job.source_format == SourceFormatV2.DIGIEXAM_DXE
+        and job.output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE
+    ):
+        bundle_result = execute_digiexam_migration_bundle_job(job=job)
+        pipeline_used = "digiexam_dxe_to_examnet_migration_bundle_v2"
+        warnings = list(bundle_result.warnings)
+        phase_timings_ms = dict(bundle_result.phase_timings_ms)
+    elif job.source_format == SourceFormatV2.PDF and job.output_format in {
         OutputFormatV2.MD,
         OutputFormatV2.DOCX,
     }:

@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-05-08'
+last_updated: '2026-05-13'
 ---
 
 ## Purpose
@@ -28,57 +28,44 @@ runbooks, or skills.
 - Task 253 is the current docs-governance authority for cutting root
   `AGENTS.md` over to a thin skill router and aligning generated docs indexes
   with the canonical `.codex/handoff.md` active-context model.
-- Epic 10 is now the active feature lane for DigiExam to Exam.net migration.
-  Story 38 and Task 267 are completed as the legacy PDF fallback parser lane.
-  Story 40 and Task 274 are completed as the `.dxe` source parsing lane plus
-  optional sanitized graded-result PDF enrichment of correct machine-marked
-  answers only. The changes-requested parser probes and stale-index follow-up
-  are accepted, and the required backend `coverage-gate` closeout passed on
-  2026-05-08.
-- Story 41 and Task 275 are completed as the EPIC-10 renderer-neutral
-  intermediate representation lane. The active schema versions are
-  `digiexam_intermediate_exam_v1` and `digiexam_ir_manifest_v1`; they preserve
-  parser structure, provenance, warnings, and manual follow-up without choosing
-  Exam.net renderer/import syntax.
-- Task 267 is completed locally. Parser v1 now lives under the Sir Convert
-  domain/infrastructure surfaces with deterministic tests for the two tracked
-  DigiExam PDFs, explicit source evidence, answer-key provenance, and
-  fail-closed typed warnings for degraded or unknown shapes. It still does not
-  introduce Exam.net rendering, service/API routes, QTI/native import, or bulk
-  migration workflow behavior.
-- Review 07 follow-up fixed the parser-readiness blockers: exact
-  multiple-choice prompt/options assertions now cover `Materia`, `Grundämnen`,
-  and `Joner`; the `Grundämnen` page-boundary option no longer leaks into
-  `Atomen`; and the out-of-scope `Match answers` renderer schema was removed
-  from the Task 267 reference closeout.
-- Task 268 is completed locally under Story 39. PDF checkpoint schema is now
-  `v2_pdf_checkpoint_v2`, succeeded chunk records persist backend/OCR metadata,
-  warnings, and canonical timings, and zero-new-chunk finalization hydrates
-  terminal metadata from checkpoint records without reprocessing. Old v1
-  checkpoint payloads fail closed; there is no backwards-compatibility bridge.
-- Review 08 follow-up for Task 268 is implemented locally. The parallel test is
-  order-insensitive, terminal assembly fails closed on missing/corrupt or
-  incomplete chunk artifacts, OCR engine/language metadata is observed from the
-  backend result contract, and the public checkpoint v2 schema is documented.
-- Task 269 Review 09 is closed as approved under Story 39. Outcome B remains
-  the OCR metadata contract, and no-OCR PDF semantics are now explicit:
-  `ocr_languages_used=[]` when OCR was applicable but not executed, and
-  `ocr_languages_used=null` only where OCR is not applicable.
-- Task 270 is completed locally under Story 39. Dirty-corpus evidence now
-  requires metadata-only manifests plus `--dirty-corpus-source-root` hash
-  verification; synthetic/local smoke remains schema/safety-only and cannot
-  satisfy real-data performance proof.
-- Task 271 implementation and Hemma proof are captured. Revision
-  `405cddc59d02974f43eaf03556bad92cdd1c2341` was deployed and parity-verified
-  before a detached production-service dirty-corpus benchmark ran on Hemma.
-  The run verified 10 private manifest entries / 157 pages, processed them via
-  `runtime_surface.mode=production_service`, reported `success_rate=1.0`,
-  `failed_jobs=0`, `contains_job_id_label=false`, and met the 150-page target
-  with `tuned_wall_clock_seconds=2179.0`. Raw JSON/Markdown artifacts live in
-  ignored `build/benchmarks/story-39/` paths and were copied locally under
-  `build/benchmarks/story-39/local-copies/task-271-dirty-pdf-ocr-proof/`.
-  The Task 271 result is now the Story 39 optimization baseline; do not rerun a
-  serial baseline unless a later governed decision changes that policy.
+- Epic 10 is active for DigiExam to Exam.net migration. Completed lanes:
+  Story 38/Task 267 PDF fallback parser, Story 40/Task 274 `.dxe` parser plus
+  sanitized result-PDF enrichment, Story 41/Task 275 IR, Story 42/Task 276
+  embedded assets, and Story 43/Task 277 Exam.net-oriented PDF renderer.
+  Story 44/Task 278 are completed as the API/artifact contract gate for
+  authenticated Skriptoteket delivery before QTI, service runtime, or
+  Skriptoteket UI implementation proceeds.
+  Story 45 is now scaffolded for normal teacher-owned Exam.net artifacts.
+  Task 279 completed on 2026-05-12 as the docs-as-code direction gate: the
+  route family is one shared service API v2 lifecycle with separate
+  `digiexam_dxe -> examnet_migration_bundle` and
+  `examnet_artifact -> teacher_authoring_bundle` contracts. The Exam.net route
+  makes QTI packages, editable DOCX, Swedish Exam.net PDF-to-exam converter
+  PDFs, QTI validation reports, and manual-follow-up reports first-class
+  artifact targets.
+  Task 280 completed as the QTI implementation gate: deterministic QTI 2.1
+  sample packages for MCQ, free text, image-bearing MCQ/free text,
+  unsupported-resource omission, and proof-gated matching plus
+  `qti_validation_report` output.
+  Task 281 completed for the local OneDrive `.dxe` validation corpus: raw files
+  stay ignored/local-only, and the tracked evidence is a metadata-only manifest
+  plus parser/IR regression tests.
+  Task 282 completed the Sir Convert service-runtime implementation for
+  DigiExam migration artifact bundle routes: signed HuleEdu
+  `InternalIdentityContextV1` ownership, `digiexam_dxe -> examnet_migration_bundle`, named artifact listing/download routes, Task 280
+  QTI integration, live service-route smoke coverage over a bounded local
+  OneDrive `.dxe` corpus subset, selective `conversion.targets`, and
+  manifest-backed `/result` metadata. Review 12 is accepted after re-review.
+  The HuleEdu auth-edge implementation authority moved from the former Task 260
+  planning lane to HuleEdu `ST-01-07`.
+  Review 11's Task 276 zero-payload embedded-asset blocker was remediated on
+  2026-05-12 and closed: `bodyHTML` `data-image-id` references now fail closed
+  with `missing_embedded_asset_reference` when `question.images[]` is empty or
+  absent.
+- Story 39 checkpoint/OCR lanes through Task 271 are completed or reviewed in
+  their governed docs. Task 271's production-service dirty-corpus result is the
+  current optimization baseline; do not rerun a serial baseline unless a later
+  governed decision changes that policy.
 - Task 272 and Task 273 are proposed Story 39 follow-ups: formula-aware full
   OCR PDF plus linked artifacts, then `chunk_size_pages=8` production tuning
   with warm-up and GPU sampling.
@@ -86,13 +73,9 @@ runbooks, or skills.
   `>=40%` toy improvement gate is withdrawn as a blocker; Task 272 now carries
   the public artifact/retention contract and Task 273 now carries numeric
   promotion/resource thresholds.
-- `TASK-0046` compacted this handoff, moved durable March 2026 history into
-  long-term memory, and added the real `pdm run handoff-validate` command
-  surface.
-- `TASK-0043` completed the direct governance cutover from `.agents/` paths to
-  `.codex/` paths. Do not recreate compatibility shims.
-- `TASK-0045` added the shared command grammar now available in this repo:
-  `pdm run docs-validate` and `pdm run skills-validate`.
+- `TASK-0046`, `TASK-0043`, and `TASK-0045` established the compact handoff,
+  `.codex/` governance surface, and validation command grammar. Do not
+  recreate retired `.agents/` shims.
 - Generated repomix packages belong under ignored `.codex/repomix_packages/`;
   do not track generated XML packages.
 
@@ -117,18 +100,33 @@ runbooks, or skills.
   `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active DigiExam migration epic:
   `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-- Completed DigiExam parser story:
-  `docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md`.
-- Completed DigiExam parser task:
-  `docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md`.
-- Completed DigiExam `.dxe` parser story:
-  `docs/backlog/stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md`.
-- Completed DigiExam `.dxe` parser task:
-  `docs/backlog/tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md`.
-- Completed DigiExam IR story:
-  `docs/backlog/stories/story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema.md`.
-- Completed DigiExam IR task:
-  `docs/backlog/tasks/task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract.md`.
+- Completed DigiExam parser/IR docs: Story 38/Task 267, Story 40/Task 274,
+  Story 41/Task 275.
+- Completed DigiExam embedded asset story/task: Story 42 and Task 276.
+- Completed DigiExam Exam.net PDF renderer story/task: Story 43 and Task 277.
+- Completed DigiExam migration API/artifact delivery story:
+  `docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md`.
+- Completed DigiExam migration API/artifact contract task:
+  `docs/backlog/tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md`.
+- Proposed Exam.net artifact authoring bundle story:
+  `docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md`.
+- Completed Exam.net authoring/QTI direction gate:
+  `docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md`.
+- Completed QTI sample package and validation-report implementation task:
+  `docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md`.
+- Completed DigiExam `.dxe` validation corpus classification task:
+  `docs/backlog/tasks/task-281-classify-digiexam-dxe-validation-corpus-and-add-parser-regression-gate.md`.
+- Completed runtime task and HuleEdu auth-edge dependency:
+  `docs/backlog/tasks/task-282-implement-digiexam-migration-service-runtime-artifact-bundle-routes.md`;
+  `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-07-expose-sir-convert-artifact-bundle-routes-through-huleedu-auth-edge.md`.
+- DigiExam migration service API/artifact contract:
+  `docs/converters/digiexam-migration-service-api-artifact-contract.md`.
+- Draft Exam.net artifact authoring service API/artifact contract:
+  `docs/converters/examnet-artifact-authoring-service-api-artifact-contract.md`.
+- Exam.net Swedish PDF-to-exam renderer profile:
+  `docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md`.
+- Exam.net QTI import contract and validation strategy:
+  `docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md`.
 - DigiExam IR converter contract:
   `docs/converters/digiexam-intermediate-exam-representation-contract.md`.
 - DigiExam artifact and item-type evidence:
@@ -146,46 +144,42 @@ runbooks, or skills.
 - Durable session-history index:
   `.codex/long-term-memory/index.md`.
 
-## Durable Memory
-
-- TASK-0043 governance cutover memory:
-  `.codex/long-term-memory/entries/session-2026-04-16-task-0043.md`.
-- March 2026 service, local runtime, service image, and Qwen operator
-  history compacted from the former long handoff:
-  `.codex/long-term-memory/entries/session-2026-03-25-service-and-qwen-operator-history.md`.
-
 ## Next Actions
 
 1. Continue Story 39 with the next governed implementation slice: Task 272 for
    formula-aware final pass and linked artifact bundle, or Task 273 for
    `chunk_size_pages=8` production-service tuning proof.
-1. Continue EPIC-10 with Exam.net ingestion research and target-format decision
-   before any renderer implementation.
-1. Stop before Exam.net renderer, QTI/native import, service API, or bulk
-   migration workflow changes unless a new governed task is created.
+1. Continue the cutover on the HuleEdu/Skriptoteket side: HuleEdu `ST-01-07`
+   must proxy `/sir-convert/v2/...` to Sir Convert's downstream
+   `/v2/convert/...` routes and sign `InternalIdentityContextV1` with
+   `aud=sir-convert-a-lot`; Skriptoteket then needs an adapter/UI/user-file
+   task that consumes the Task 282 artifact-bundle contract after Review 12
+   re-review acceptance.
+1. Keep the Exam.net artifact authoring route separate from the DigiExam
+   migration route. Do not feed Exam.net-origin PDFs or Word exports into
+   `digiexam_dxe -> examnet_migration_bundle`.
+1. Stop before editable DOCX generation, service API runtime changes, bulk
+   migration workflow, Skriptoteket code, anonymous public conversion, or
+   Exam.net browser/upload automation unless a new governed task authorizes it.
 1. Keep Epic 09/Task 266 available as a separate cutover lane; do not mix it
    into the DigiExam parser implementation.
 
 ## Validation
 
-- Older April 2026 Gateway, Task 255, Task 256, Task 259, and Review 06
-  validation evidence lives in the linked governed task, reference, and review
-  docs.
-- 2026-05-07 Task 274 changes-requested follow-up validation passed:
-  `pdm run format-all`; `pdm run lint-fix`;
-  `pdm run typecheck-all` (`Success: no issues found in 591 source files`);
-  `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_dxe_parser.py tests/sir_convert_a_lot/test_digiexam_pdf_parser_v1.py -q`
-  (`23 passed`).
-- 2026-05-08 Task 274 closeout validation passed: `pdm run docs-sync`;
-  `pdm run docs-validate` (`Validated 339 backlog files`;
-  `Validated docs=393 rules=11`); `pdm run coverage-gate`
-  (`1097 passed, 5 skipped`, total coverage `95.55%`).
-- 2026-05-08 Task 275 validation passed: focused DigiExam IR/parser tests
-  (`27 passed`), `typecheck-all` (`Success: no issues found in 593 source files`), and `coverage-gate` (`1101 passed, 5 skipped`, total coverage
-  `95.55%`).
-- Older Task 267, Task 268, and Task 269 validation evidence lives in their
-  governed task/review docs and long-term memory entries; keep this handoff
-  focused on active blockers and next actions.
+- Older validation evidence for Gateway, Story 39, and EPIC-10 Tasks 267-280
+  lives in the linked governed tasks, references, reviews, and long-term memory
+  entries.
+- 2026-05-12 Task 281 validation passed with local-only OneDrive corpus
+  metadata, parser, IR, docs, skills, handoff, and diff-check gates.
+- 2026-05-13 Task 282 Review 12 remediation validation passed:
+  `pdm run format-all`; `pdm run lint-fix`; `pdm run typecheck-all`
+  (`Success: no issues found in 622 source files`); focused Task 282 API tests
+  (`12 passed`, including selective targets, `/result` metadata, and live
+  OneDrive `.dxe` service-route subset); `pdm run coverage-gate`
+  (`1140 passed, 5 skipped`, total coverage `93.38%`); `pdm run docs-sync`;
+  `pdm run docs-validate` (`Validated 353 backlog files`;
+  `Validated docs=412 rules=11`); `pdm run skills-validate`;
+  `pdm run handoff-validate`; `git diff --check`.
 
 ## Stop Conditions
 

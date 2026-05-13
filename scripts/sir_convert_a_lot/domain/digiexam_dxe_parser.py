@@ -39,6 +39,9 @@ from scripts.sir_convert_a_lot.domain.digiexam_dxe_answer_enrichment import (
     dxe_gap_answers,
     match_result_pdf_answers,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_embedded_assets import (
+    extract_digiexam_embedded_assets,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_result_pdf_answers import (
     DigiExamResultPdfAnswerEvidence,
 )
@@ -189,6 +192,13 @@ class DigiExamDxeParser:
         gaps, gap_warnings = _gaps(question.get("blanks"), span)
         warnings.extend(alternative_warnings)
         warnings.extend(gap_warnings)
+        embedded_assets = extract_digiexam_embedded_assets(
+            image_values=question.get("images"),
+            prompt_html=prompt_html,
+            item_sequence=index,
+            source_span=span,
+        )
+        warnings.extend(embedded_assets.warnings)
 
         evidence_item = answer_evidence.item_for_title(title) if answer_evidence and title else None
         dxe_correct_alternative_ids = tuple(
@@ -261,6 +271,8 @@ class DigiExamDxeParser:
             correct_alternative_ids=correct_alternative_ids,
             correct_gap_values=correct_gap_values,
             correct_gap_answers=correct_gap_answers,
+            embedded_assets=embedded_assets.assets,
+            embedded_asset_references=embedded_assets.references,
         )
         return _QuestionParse(item=item, warnings=tuple(warnings))
 

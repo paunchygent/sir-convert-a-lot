@@ -4,7 +4,7 @@ id: CONV-internal-adapter-contract-v2
 title: Internal Adapter Contract v2
 status: active
 created: 2026-03-04
-updated: 2026-04-19
+updated: 2026-05-11
 owners:
   - platform
 tags:
@@ -13,6 +13,7 @@ tags:
   - contract
   - internal
 links:
+  - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
@@ -34,6 +35,9 @@ headers, and error propagation), not service runtime policy internals.
 - Applies to internal integration layers only.
 - All submissions must target `/v2/convert/jobs*` endpoints (no legacy version lanes).
 - Adapter helpers must remain transport-only; conversion policy and orchestration live in this repo.
+- Route-specific adapters, including DigiExam migration for Skriptoteket, must
+  follow the route-specific converter contract without embedding conversion
+  policy in the consumer app.
 - Internal adapters currently use the v2 service API key as a transport
   credential. Under ADR-0009, user-originated adapter calls must also preserve
   HuleEdu `InternalIdentityContextV1` with audience `sir-convert-a-lot` so job
@@ -61,6 +65,14 @@ headers, and error propagation), not service runtime policy internals.
   - `conversion.output_format: "md"`
   - `execution.acceleration_policy: "gpu_required"` (unless explicit caller override)
   - `retention.pin: false`
+- For Skriptoteket DigiExam migration, required defaults are owned by
+  `docs/converters/digiexam-migration-service-api-artifact-contract.md` and
+  include:
+  - `api_version: "v2"`
+  - `source.kind: "upload"`
+  - `source.format: "digiexam_dxe"`
+  - `conversion.output_format: "examnet_migration_bundle"`
+  - `retention.pin: false`
 
 Canonical reference implementation:
 
@@ -84,7 +96,8 @@ Canonical reference implementation:
   - `idem_<consumer>_<sha48>`
   - `<sha48>` is first 48 hex chars of SHA256 over:
     - normalized `job_spec` JSON (`sort_keys=true`, compact separators), and
-    - uploaded file SHA256.
+    - uploaded file SHA256,
+    - plus route-specific companion file SHA256 values when present.
 - Same payload and file must produce the same key.
 - Payload or file changes must produce a different key.
 
@@ -115,6 +128,17 @@ Canonical reference implementation:
 - Adapters must keep using Sir Convert for general conversion and parsing
   workloads rather than for renderer-owned teacher artifacts.
 
+### 8. DigiExam migration adapter boundary
+
+- Skriptoteket may submit `.dxe` files and optional governed companion PDFs
+  through the DigiExam migration contract.
+- The adapter must remain transport-only: it builds headers and job specs,
+  uploads declared parts, polls status/result, lists named artifacts, downloads
+  artifacts, and passes artifact metadata to Skriptoteket user-file storage.
+- The adapter must not parse `.dxe`, parse graded-result PDFs, infer answer
+  keys, hide manual-follow-up states, rewrite target warnings, or inspect Sir
+  Convert work directories.
+
 ## Conformance Gate (Primary)
 
 The acceptance gate for this contract is automated conformance tests in:
@@ -123,11 +147,14 @@ The acceptance gate for this contract is automated conformance tests in:
 
 Required scenario coverage includes:
 
-- Canonical `JobSpec` equivalence across `huledu` and `skriptoteket`.
+- Canonical `JobSpec` equivalence across HuleEdu and Skriptoteket callers.
 - Deterministic idempotency key behavior.
 - Correlation pass-through plus deterministic fallback generation.
 - Non-mutating error propagation (auth/validation/timeout).
 - End-to-end adapter smoke path through canonical API app.
+- DigiExam migration conformance must cover route-specific idempotency over
+  `.dxe` plus companion digests and named artifact bundle handling when the
+  runtime route is implemented.
 
 ## Tunnel and Operational Expectations
 

@@ -124,7 +124,7 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 ## Acceptance Criteria
 
 - [x] Evidence uses this exact external corpus path (do not vendor PDFs into this repo):
-  - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+  - `/Users/olofs_mba/Documents/Repos/huleedu/docs/research/research_papers/llm_as_a_annotater`
 - [ ] Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary
   generated under `build/benchmarks/task-12-scientific-corpus/`. All resulting .mds are high
   quality and pass manual review for accuracy, completeness, and formatting.

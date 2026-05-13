@@ -4,14 +4,17 @@ id: REF-digiexam-exam-artifact-item-type-evidence
 title: DigiExam Exam Artifact Item Type Evidence
 status: active
 created: 2026-05-07
-updated: 2026-05-07
+updated: 2026-05-12
 owners:
   - platform
 tags: []
 links:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md
+  - docs/backlog/stories/story-42-digiexam-renderer-neutral-embedded-asset-support.md
+  - docs/backlog/tasks/task-281-classify-digiexam-dxe-validation-corpus-and-add-parser-regression-gate.md
   - docs/backlog/tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md
+  - docs/backlog/tasks/task-276-implement-digiexam-dxe-embedded-asset-ir-support.md
   - docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md
 ---
 
@@ -33,8 +36,58 @@ to this reference, then add task-specific acceptance criteria on top.
 | `DXE-2026-05-07-duplicate` | `inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/1772718003-test-duplicate.dxe` | `9b4b35fab0e22675805e9ec70c1bf5f99c3c4d3c43d7f5fbec3eeec641491c38` | DigiExam `.dxe` JSON export | Same schema and question content as `DXE-2026-05-07-structure`; only checksum/timestamp metadata differs |
 | `BLANK-PDF-2026-05-07` | `inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/DigiExam-Test-som-nedladdningsbar.pdf` | `2c66ff8ad84ddb4300091c04c87ed397ca6927ae0443cd208399055081b86ab8` | Blank/student-view jsPDF export | Visual and text parity evidence for the same 7-question exam |
 | `RESULT-PDF-2026-05-07-SANITIZED` | `inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/graded-student-result-sanitized.pdf` | `cf0e333ab65f08a21e5345fcc37f8d431c066cdc6b77dcc646e31f35a71e8664` | Sanitized graded student-result jsPDF export | Optional correct-answer enrichment for machine-marked items only |
+| `DXE-2026-05-11-SANITIZED-EMBEDDED-IMAGE` | `inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/sanitized-embedded-image.dxe` | `abf3c12065928946df68f0105788ceddb300fcea1bdde716755c90bc59459309` | Minimal sanitized `.dxe` JSON export | Embedded `question.images[]` PNG plus `data-image-id` binding fixture for Task 276 |
+| `DXE-CORPUS-MANIFEST-2026-05-12` | `inputs/examples/digiexam-evidence/digiexam-dxe-validation-corpus-2026-05-12.manifest.json` | `035957d69f83c2eba625190370adea013e7b00cbe04cac220121ebf9dbaf8167` | Metadata-only `.dxe` validation-corpus manifest | Task 281 parser/IR regression evidence for the local raw OneDrive corpus; contains counts and hashes only |
 | `PDF-ECOLOGY-2026-04-25` | `inputs/examples/digiexam-exports/_-25cEkologiprov51-55.pdf` | `bc1ef30b8f378e193fc42746d91e849dcc5face4117b5dbea448610fa40f6873` | Blank/student-view jsPDF export | Legacy Task 267 open-ended PDF parser fixture |
 | `PDF-CHEMISTRY-2026-04-25` | `inputs/examples/digiexam-exports/_-Kemikapitel2ht2525dECA.pdf` | `8a2e2a72915861f62981d2db7087e3363621c6087b4eb7ab1442046e0b3b6a7e` | Blank/student-view jsPDF export | Legacy Task 267 mixed PDF parser fixture with MCQ, matching, and open-ended items |
+
+## Local Untracked Asset Evidence
+
+A colleague-provided `.dxe` export named `1776888013-ak7-lag-och-ratt.dxe`
+showed that a question can contain base64 PNG data under `question.images[]`
+and bind it from `bodyHTML` with `<img data-image-id="0">`. The raw export also
+contains unnecessary metadata such as user, organization, encryption, and timing
+fields, so it must remain local-private and ignored. Task 276 used it only to
+derive the tracked minimal sanitized fixture
+`DXE-2026-05-11-SANITIZED-EMBEDDED-IMAGE`.
+
+The observed embedded asset shape is:
+
+- source array: `question.images[]`;
+- prompt binding: `data-image-id`;
+- observed media: PNG;
+- required parser behavior: decode, hash, type, size, bind, and fail closed on
+  invalid or unbound asset data, including `data-image-id` references when
+  `question.images[]` is empty or absent.
+
+## Local Untracked Validation Corpus
+
+On 2026-05-12, a larger local `.dxe` validation package was added under:
+
+```text
+inputs/examples/digiexam-evidence/OneDrive_1_5-12-2026/
+```
+
+Initial metadata-only parser smoke found:
+
+- 23 `.dxe` JSON exports;
+- all 23 parse with status `success`;
+- 317 total items;
+- item-type breakdown: 273 open-ended, 27 single-choice, 4 multiple-response,
+  and 13 gap-fill;
+- 8 embedded image assets;
+- 44 `missing_answer_key_provenance` warnings and no other warning codes.
+
+Task 281 classifies the raw package as local-only validation material and keeps
+it ignored through `.gitignore`. The committed evidence is the metadata-only
+manifest `DXE-CORPUS-MANIFEST-2026-05-12`, which records filenames, file
+hashes, byte sizes, parser status, item-type counts, warning-code counts,
+embedded asset counts and hashes, and answer-key provenance counts.
+
+Task 281 did not derive new sanitized/minimal fixtures because the corpus did
+not expose a new parser edge. Future parser changes may derive focused fixtures
+from this corpus only when the derived artifact removes raw prompts, user or
+organization metadata, timing/encryption metadata, and raw embedded payloads.
 
 ## Source Policy
 
@@ -101,7 +154,7 @@ The corresponding parser contract is:
 - point-marker evidence is present exactly where the table lists a marker;
 - multiple-choice and matching answer-key provenance is absent;
 - the `Para ihop` item preserves matching structure separately from any future
-  renderer-ready match-pair schema.
+  target-specific match-pair rendering/import schema.
 
 ## Unsupported Or Unobserved Item Types
 

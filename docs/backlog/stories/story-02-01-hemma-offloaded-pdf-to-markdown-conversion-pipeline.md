@@ -56,7 +56,7 @@ and be triggered from local development so research-paper ingestion does not sat
   - A crashed/interrupted `running` job deterministically recovers to `queued` and can be rerun.
 - Production-readiness gate:
   - Hemma tunnel acceptance run converts 10/10 PDFs from:
-    `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+    `/Users/olofs_mba/Documents/Repos/huleedu/docs/research/research_papers/llm_as_a_annotater`
 - Redundant converter drift is removed after stabilization gate.
 
 ## Test Requirements
@@ -242,7 +242,7 @@ This story is being executed through these PR-sized tasks:
 
 2. Remove redundant converter implementations and repo-local drift:
 
-- deprecate/remove duplicate converter CLI surfaces in `huledu-reboot`,
+- deprecate/remove duplicate converter CLI surfaces in `huleedu`,
 - keep only thin wrappers that call canonical CLI/API contract.
 
 3. Publish one cohesive and versioned converter surface:

@@ -13,6 +13,7 @@ Relationships:
 
 from __future__ import annotations
 
+import base64
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -40,6 +41,7 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_pdf_text import (
 
 _DXE_FIXTURE_DIR = Path("inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types")
 _DXE = _DXE_FIXTURE_DIR / "1772718003-test-samma-prov-i-digiexam.dxe"
+_EMBEDDED_IMAGE_DXE = _DXE_FIXTURE_DIR / "sanitized-embedded-image.dxe"
 _RESULT_PDF = _DXE_FIXTURE_DIR / "graded-student-result-sanitized.pdf"
 _CHEMISTRY_PDF = Path("inputs/examples/digiexam-exports/_-Kemikapitel2ht2525dECA.pdf")
 
@@ -97,6 +99,8 @@ def test_dxe_parser_output_maps_to_renderer_neutral_ir_without_answer_synthesis(
     assert manifest.schema_version == DIGIEXAM_IR_MANIFEST_SCHEMA_VERSION
     assert manifest.exam_schema_version == DIGIEXAM_IR_SCHEMA_VERSION
     assert manifest.item_count == 7
+    assert manifest.asset_count == 0
+    assert manifest.asset_summaries == ()
     assert manifest.warning_count == len(parse_result.warnings)
     assert manifest.manual_follow_up_count == 7
     assert [
@@ -121,6 +125,42 @@ def test_dxe_parser_output_maps_to_renderer_neutral_ir_without_answer_synthesis(
         for item in exam.items
     ]
     assert manifest.item_summaries[0].manual_follow_up_required is True
+    assert all(item.embedded_assets == () for item in exam.items)
+    assert all(summary.asset_summaries == () for summary in manifest.item_summaries)
+
+
+def test_dxe_embedded_assets_map_to_ir_and_manifest_v2_summaries() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["bodyHTML"] = (
+        '<p><img data-image-id="0" /></p><p><img data-image-id="0" /></p>'
+    )
+    parse_result = DigiExamDxeParser().parse_payload(payload, filename=_EMBEDDED_IMAGE_DXE.name)
+
+    exam = build_digiexam_intermediate_exam(parse_result)
+    manifest = build_digiexam_ir_manifest(exam)
+    item = exam.items[0]
+    asset = item.embedded_assets[0]
+    asset_summary = manifest.item_summaries[0].asset_summaries[0]
+
+    assert exam.schema_version == "digiexam_intermediate_exam_v2"
+    assert manifest.schema_version == "digiexam_ir_manifest_v2"
+    assert manifest.exam_schema_version == "digiexam_intermediate_exam_v2"
+    assert manifest.asset_count == 1
+    assert manifest.asset_summaries == (asset_summary,)
+    assert item.prompt_html is not None
+    assert 'data-image-id="0"' in item.prompt_html
+    assert [reference.reference_order for reference in item.embedded_asset_references] == [1, 2]
+    assert asset_summary.item_id == item.item_id
+    assert asset_summary.asset_id == asset.asset_id
+    assert asset_summary.source_image_index == asset.source_image_index
+    assert asset_summary.sha256 == asset.sha256
+    assert asset_summary.media_type == "image/png"
+    assert base64.b64decode(asset.content_base64, validate=True)
+    assert asset_summary.byte_length == asset.byte_length
+    assert asset_summary.width_px == 1
+    assert asset_summary.height_px == 1
+    assert asset_summary.reference_count == 2
+    assert asset_summary.reference_orders == (1, 2)
 
 
 def test_result_pdf_enrichment_maps_correct_answers_and_reduces_manual_follow_up() -> None:

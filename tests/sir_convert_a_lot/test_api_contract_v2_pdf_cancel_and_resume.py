@@ -13,6 +13,8 @@ Relationships:
 from __future__ import annotations
 
 import hashlib
+import threading
+import time
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -26,6 +28,55 @@ from tests.sir_convert_a_lot.test_api_contract_v2 import (
     _job_spec_v2,
     _post_create,
 )
+
+
+class _JobCompletionSignal:
+    """Condition-backed completion signal for background runtime jobs in tests."""
+
+    def __init__(self) -> None:
+        self._condition = threading.Condition()
+        self._completed_job_ids: set[str] = set()
+
+    def mark_completed(self, job_id: str) -> None:
+        with self._condition:
+            self._completed_job_ids.add(job_id)
+            self._condition.notify_all()
+
+    def wait_for(self, job_id: str, *, timeout_seconds: float) -> None:
+        deadline = time.monotonic() + timeout_seconds
+        with self._condition:
+            while job_id not in self._completed_job_ids:
+                remaining_seconds = deadline - time.monotonic()
+                if remaining_seconds <= 0:
+                    raise AssertionError(f"Job did not complete before timeout: {job_id}")
+                self._condition.wait(timeout=remaining_seconds)
+
+
+def _install_job_completion_signal(monkeypatch) -> _JobCompletionSignal:
+    from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
+
+    completion_signal = _JobCompletionSignal()
+    original_run_job = ServiceRuntimeV2._run_job
+
+    def _run_job_with_completion_signal(self: ServiceRuntimeV2, job_id: str) -> None:
+        try:
+            original_run_job(self, job_id)
+        finally:
+            completion_signal.mark_completed(job_id)
+
+    monkeypatch.setattr(ServiceRuntimeV2, "_run_job", _run_job_with_completion_signal)
+    return completion_signal
+
+
+def _wait_for_signal(
+    signal: threading.Event,
+    *,
+    timeout_seconds: float,
+    failure_message: str,
+) -> None:
+    if signal.wait(timeout=timeout_seconds):
+        return
+    raise AssertionError(failure_message)
 
 
 def _build_pdf_bytes(*, pages: int) -> bytes:
@@ -244,6 +295,37 @@ def test_resume_idempotency_replay_survives_public_key_rotation(
     monkeypatch,
 ) -> None:
     from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
+    from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import PdfCheckpointV2
+
+    completion_signal = _install_job_completion_signal(monkeypatch)
+    checkpoint_ready = threading.Event()
+    source_worker_can_continue = threading.Event()
+    checkpoint_gate_lock = threading.Lock()
+    checkpoint_gate_used = False
+    original_persist_pdf_checkpoint = v2_pdf_checkpointed_executor.persist_pdf_checkpoint
+
+    def _persist_pdf_checkpoint_with_source_gate(
+        *,
+        upload_path: Path,
+        checkpoint: PdfCheckpointV2,
+    ) -> None:
+        nonlocal checkpoint_gate_used
+        original_persist_pdf_checkpoint(upload_path=upload_path, checkpoint=checkpoint)
+
+        should_hold_source_worker = False
+        with checkpoint_gate_lock:
+            if not checkpoint_gate_used and checkpoint.processed_pages > 0:
+                checkpoint_gate_used = True
+                should_hold_source_worker = True
+
+        if not should_hold_source_worker:
+            return
+        checkpoint_ready.set()
+        _wait_for_signal(
+            source_worker_can_continue,
+            timeout_seconds=10.0,
+            failure_message="Source worker was not released after checkpoint gate.",
+        )
 
     def _stub_execute_job_conversion(
         *,
@@ -298,6 +380,11 @@ def test_resume_idempotency_replay_survives_public_key_rotation(
     monkeypatch.setattr(
         v2_pdf_checkpointed_executor, "execute_job_conversion", _stub_execute_job_conversion
     )
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor,
+        "persist_pdf_checkpoint",
+        _persist_pdf_checkpoint_with_source_gate,
+    )
 
     base_config = ServiceConfig(
         api_key="secret-key",
@@ -336,31 +423,35 @@ def test_resume_idempotency_replay_survives_public_key_rotation(
         file_bytes=pdf_bytes,
         spec=spec,
     )
+    assert create.status_code in {200, 202}
     job_id = create.json()["job"]["job_id"]
 
-    for _ in range(100):
+    _wait_for_signal(
+        checkpoint_ready,
+        timeout_seconds=10.0,
+        failure_message="Checkpoint never became available before cancel.",
+    )
+    try:
         status = client.get(
             f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "secret-key"}
         ).json()["job"]["status"]
-        if status == JobStatus.RUNNING.value:
-            break
-    else:
-        raise AssertionError("Job never reached running status.")
+        assert status == JobStatus.RUNNING.value
 
-    for _ in range(200):
-        response = client.get(
+        checkpoint = client.get(
             f"/v2/convert/jobs/{job_id}/checkpoint", headers={"X-API-Key": "secret-key"}
         )
-        if response.status_code == 200 and int(response.json().get("processed_pages", 0)) > 0:
-            break
-    else:
-        raise AssertionError("Checkpoint never became available before cancel.")
+        assert checkpoint.status_code == 200
+        assert int(checkpoint.json().get("processed_pages", 0)) > 0
 
-    cancel = client.post(
-        f"/v2/convert/jobs/{job_id}/cancel",
-        headers={"X-API-Key": "secret-key"},
-    )
-    assert cancel.status_code in {200, 202}
+        cancel = client.post(
+            f"/v2/convert/jobs/{job_id}/cancel",
+            headers={"X-API-Key": "secret-key"},
+        )
+        assert cancel.status_code in {200, 202}
+    finally:
+        source_worker_can_continue.set()
+
+    completion_signal.wait_for(job_id, timeout_seconds=10.0)
 
     first_resume = client.post(
         f"/v2/convert/jobs/{job_id}/resume",
@@ -393,3 +484,4 @@ def test_resume_idempotency_replay_survives_public_key_rotation(
     assert replay_resume.status_code in {200, 202}
     assert replay_resume.headers["X-Idempotent-Replay"] == "true"
     assert replay_resume.json()["job"]["job_id"] == resumed_job_id
+    completion_signal.wait_for(resumed_job_id, timeout_seconds=10.0)

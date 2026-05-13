@@ -117,9 +117,9 @@ pre-cutover evidence window.
 
 | Caller | Workload class | Current routes | Current auth | Target decision | Blocker/follow-up |
 | --- | --- | --- | --- | --- | --- |
-| HuleEdu public ingress monitor | ops/monitoring | `GET https://convert.hule.education/healthz` | none | Retire or change to reserved-host proof; Gateway product route monitoring must be separate | HuleEdu monitor update in Task 260/263 handoff. |
-| HuleEdu Gateway | future product/browser public entry | TBD Gateway routes for current product use cases | HuleEdu browser session + CSRF | Implement Gateway routes that sign `InternalIdentityContextV1` with audience `sir-convert-a-lot` | Task 260. |
-| Skriptoteket Conversion Hub | user-originated product/backend | `POST /v2/convert/jobs`, `GET /v2/convert/jobs/{job_id}`, `GET /v2/convert/jobs/{job_id}/artifact` | `SIR_CONVERT_A_LOT_V2_API_KEY` transport key | Preserve local Skriptoteket job ledger, but Sir Convert must receive verified user context and enforce context-derived upstream ownership | Tasks 259, 260, 264. |
+| HuleEdu public ingress monitor | ops/monitoring | `GET https://convert.hule.education/healthz` | none | Retire or change to reserved-host proof; Gateway product route monitoring must be separate | HuleEdu monitor update in HuleEdu `ST-01-07` or Task 263 handoff. |
+| HuleEdu Gateway | future product/browser public entry | `/sir-convert/v2/convert/...` Gateway route family planned by HuleEdu `ST-01-07` | HuleEdu browser session + CSRF | Implement Gateway routes that sign `InternalIdentityContextV1` with audience `sir-convert-a-lot` | `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-07-expose-sir-convert-artifact-bundle-routes-through-huleedu-auth-edge.md`. |
+| Skriptoteket Conversion Hub | user-originated product/backend | `POST /v2/convert/jobs`, `GET /v2/convert/jobs/{job_id}`, `GET /v2/convert/jobs/{job_id}/artifact` | `SIR_CONVERT_A_LOT_V2_API_KEY` transport key | Preserve local Skriptoteket job ledger, but Sir Convert must receive verified user context and enforce context-derived upstream ownership | Tasks 259, 264, Task 282, and HuleEdu `ST-01-07`. |
 | Skriptoteket class-list PDF import | user-originated product/backend | `POST /v2/convert/jobs`, status, artifact via `extract_text_direct` | `SIR_CONVERT_A_LOT_V2_API_KEY` transport key | Same as Conversion Hub; treat backend submission as user-originated teacher work | Tasks 259, 264. |
 | Skriptoteket webhook subscription helpers | service/operator administration | `/v2/push/webhooks/subscriptions` create/list/delete | `SIR_CONVERT_A_LOT_V2_API_KEY` | Keep internal/admin only under Sir-profiled service/operator authorization | Task 259. |
 | Projektveckor Portal exports | user-originated/internal service | `POST /v2/convert/jobs`, `GET /v2/convert/jobs/{job_id}`, `GET /v2/convert/jobs/{job_id}/artifact` | `PVP_SIR_CONVERT_A_LOT_API_KEY`; Docker-network base URL | Preserve direct internal service lane; add Sir-profiled service/user context before global API-key authorization is retired | Task 259 plus downstream Projektveckor follow-up. |
@@ -131,8 +131,10 @@ pre-cutover evidence window.
 - Should HuleEdu public ingress monitoring remove `convert.hule.education` from
   product-health expectations until the Gateway route exists, or keep a
   reserved-host assertion?
-- Which exact HuleEdu Gateway route names should front Skriptoteket Conversion
-  Hub and future HuleEdu product flows?
+- Does the `/sir-convert/v2/convert/...` Gateway route family from HuleEdu
+  `ST-01-07` cover every Skriptoteket Conversion Hub operation, or does
+  Skriptoteket also need a HuleEdu-owned delegated identity exchange for
+  backend-mediated save-to-user-files work?
 - Does any external non-Hule service rely on `convert.hule.education` as a
   machine-to-machine API?
 - What evidence window is sufficient after Task 266 adds API-key-presence-safe
@@ -149,7 +151,8 @@ pre-cutover evidence window.
 | 2026-04-19 | Treat Skriptoteket Conversion Hub and class-list PDF import as user-originated backend workloads even though the HTTP call to Sir Convert is made by the Skriptoteket backend. | The actor is a signed-in product user and artifacts are user-facing; the backend must not collapse these jobs into global service-key ownership. | Tasks 259, 260, and 264. |
 | 2026-04-19 | Treat Projektveckor Portal as a retained internal Hemma consumer that must be included in the authorization profile. | It uses direct Docker-network Sir Convert routes for teacher-facing document exports and is not covered by the HuleEdu/Skriptoteket-only wording. | Task 259 and a downstream Projektveckor follow-up. |
 | 2026-04-19 | Unknown public consumers are not fully ruled out by the available 24h nginx-proxy evidence. | The evidence shows no successful public conversion flow, but the log format cannot record API-key presence/absence and the window is short. | Task 266 and Task 263. |
-| 2026-04-19 | Sir Convert authorization profile is defined as HuleEdu `InternalIdentityContextV1` plus Sir-specific ownership/grant rules. | Locks the ADR-0009 identity boundary without minting a parallel signed Sir transport. | Task 258 runtime enforcement and Task 260 Gateway route mechanics. |
+| 2026-04-19 | Sir Convert authorization profile is defined as HuleEdu `InternalIdentityContextV1` plus Sir-specific ownership/grant rules. | Locks the ADR-0009 identity boundary without minting a parallel signed Sir transport. | Task 258 runtime enforcement, Task 282 runtime artifact routes, and HuleEdu `ST-01-07` Gateway route mechanics. |
+| 2026-05-13 | The former Task 260 Gateway-route planning lane moved to HuleEdu `ST-01-07`, with Sir Convert Task 282 owning the service-runtime artifact bundle side. | Keeps HuleEdu auth-edge implementation in the repo that owns Gateway while preventing drift from the concrete EPIC-10 artifact-bundle API contract. | `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-07-expose-sir-convert-artifact-bundle-routes-through-huleedu-auth-edge.md`; `docs/backlog/tasks/task-282-implement-digiexam-migration-service-runtime-artifact-bundle-routes.md`. |
 
 ## Validation Checklist
 

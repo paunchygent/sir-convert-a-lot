@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-04-19
+updated: 2026-05-11
 owners:
   - platform
 tags:
@@ -14,6 +14,7 @@ tags:
   - contract
 links:
   - docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md
+  - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/docx-template-catalog-contract-v2.md
   - docs/converters/sir_convert_a_lot.md
@@ -37,6 +38,8 @@ handling, template discovery, and deterministic error handling on service API v2
 ## Contract Authority and Version Policy
 
 - API contract authority: `docs/converters/multi_format_conversion_service_api_v2.md`
+- DigiExam migration API/artifact contract authority:
+  `docs/converters/digiexam-migration-service-api-artifact-contract.md`
 - Template authority: `docs/converters/docx-template-catalog-contract-v2.md`
 - CLI usage authority: `docs/converters/sir_convert_a_lot.md`
 
@@ -75,12 +78,18 @@ Optional header:
 - `job_spec`: required JSON string (v2 schema)
 - `resources`: optional zip (route-constrained)
 - `reference_docx`: optional DOCX (route-constrained)
+- route-specific optional companion parts only where a route-specific contract
+  defines them.
 
 Deterministic route constraints:
 
 - `resources` is allowed only for `html -> md` when `output_format="md"`.
 - `reference_docx` is not allowed for `output_format="md"`.
 - `conversion.template` and `reference_docx` must not be combined.
+- DigiExam migration is the current route-specific exception: it accepts
+  `graded_result_pdf` and `parity_pdf` companion parts under
+  `docs/converters/digiexam-migration-service-api-artifact-contract.md` and
+  rejects generic `resources` or `reference_docx`.
 
 ## Capability Matrix (Implemented v2 Routes)
 
@@ -95,6 +104,15 @@ Deterministic route constraints:
 | `html` | `docx` | `html -> docx` | Service pipeline |
 | `pdf` | `docx` | `pdf -> docx` | Service pipeline |
 | `docx` | `pdf` | `docx -> pdf` | Service pipeline |
+
+## Planned Specialized Routes
+
+These routes have accepted or active contracts but are not runtime surfaces
+until their implementation tasks land:
+
+| Source | Target | Route key | Contract |
+| --- | --- | --- | --- |
+| `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
 
 ## PDF Page CSS Modes
 

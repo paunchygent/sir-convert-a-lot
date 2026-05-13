@@ -62,6 +62,11 @@ class ServiceConfig:
     webhook_secret_overlap_seconds: int = 24 * 3600
     enable_webhook_onboarding: bool = False
     enable_webhook_delivery: bool = False
+    internal_identity_public_keys: dict[str, str] = field(default_factory=dict)
+    internal_identity_expected_audience: str = "sir-convert-a-lot"
+    internal_identity_expected_issuer: str = "api_gateway_service"
+    internal_identity_ttl_seconds: int = 60
+    internal_identity_allowed_clock_skew_seconds: int = 5
 
 
 @dataclass(frozen=True)

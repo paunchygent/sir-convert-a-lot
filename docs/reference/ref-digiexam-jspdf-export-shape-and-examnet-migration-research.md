@@ -4,7 +4,7 @@ id: REF-digiexam-jspdf-export-shape-and-examnet-migration-research
 title: DigiExam jsPDF Export Shape And Exam.net Migration Research
 status: active
 created: 2026-04-24
-updated: 2026-05-07
+updated: 2026-05-12
 owners:
   - platform
 tags:
@@ -15,7 +15,13 @@ tags:
   - parser
 links:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
+  - docs/backlog/stories/story-43-digiexam-exam-net-oriented-pdf-renderer.md
+  - docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md
+  - docs/backlog/tasks/task-277-implement-digiexam-exam-net-oriented-pdf-renderer-and-live-validation.md
+  - docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md
   - docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md
+  - docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md
+  - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
 ---
 
 ## Purpose
@@ -175,13 +181,13 @@ Use one of these score markers:
 - `poäng: N`
 - `Max poäng: N`
 
-Preferred default:
+Preferred default for non-localized import smoke tests:
 
 ```text
 Points: 4
 ```
 
-Preferred Swedish-friendly alternative:
+Preferred Swedish-friendly renderer default:
 
 ```text
 Poängvärde: 4
@@ -334,26 +340,76 @@ For long-form answers, do not try to force rubric import through the PDF
 converter. Keep rubric data in the migration sidecar until Exam.net offers a
 structured route or a manual setup step.
 
-## Production Renderer Target
+## Forward Renderer Profile
 
-Bottom-line production target:
+Task 277's first Exam.net PDF renderer was built from the measured 2026-05-11
+student/key printout experiments below. On 2026-05-12, additional empirical
+work promoted a Swedish-first PDF-to-exam profile for future renderer work:
 
 ```text
 Fråga N
-Points: N
-Type: Multiple choice | Multiple response | Short answer | Free text
-[Visible prompt, including student instructions]
-    [Option text]
-    [Option text]
-    [Option text]
-    [Option text]
-Correct answer(s): [exact answer text]
+Poängvärde: N
+Typ: [Flerval | Kort svar | Fritext | Matcha ihop]
 ```
 
+Use
+`docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md` as the
+canonical forward renderer profile. It owns the Swedish labels, exact-text
+answer-key syntax, `Flerval`, `Kort svar`, `Fritext`, and `Matcha ihop`
+profiles, plus the gap-fill experiment boundary.
+
 Do not implement labelled multiple-choice or other weaker fallback layouts in
-the production renderer. Failed or unsupported source items should be flagged
-for manual rebuild or structured-import handling, not rendered through a weaker
-PDF pattern.
+the production renderer. Items without an empirically promoted Exam.net
+PDF-converter target shape should be flagged for manual rebuild or later
+structured-import handling, not rendered through a weaker PDF pattern. This is
+a renderer target-proof boundary; it is not a parser or IR limitation.
+
+The English control-line examples in this reference remain historical Task 277
+evidence, not the current default for new Exam.net-oriented authoring surfaces.
+
+## Task 277 Renderer Implementation Contract
+
+Story 43 / Task 277 implements the first production renderer for this target
+shape. The renderer consumes Sir Convert's DigiExam IR rather than reading
+`.dxe` JSON directly, and it remains separate from QTI/native import, service
+routes, bulk workflow, and Exam.net browser/upload automation.
+
+The renderer implementation shape is deliberately modular:
+
+- `digiexam_examnet_pdf_contracts.py` defines target status, warnings, item,
+  document, and asset-file value objects.
+- `digiexam_examnet_pdf_assets.py` validates canonical IR asset payloads,
+  verifies hash/length identity, and prepares local asset files.
+- `digiexam_examnet_pdf_prompt.py` sanitizes DigiExam prompt HTML and rewrites
+  `data-image-id` references to local image paths.
+- `digiexam_examnet_pdf_items.py` renders supported item sections into the
+  promoted Exam.net PDF-converter text shape.
+- `digiexam_examnet_pdf_html.py` assembles the final HTML document consumed by
+  WeasyPrint.
+- `digiexam_examnet_pdf.py` remains a thin domain coordinator.
+- `infrastructure/digiexam_examnet_pdf_renderer.py` materializes HTML, assets,
+  and the final PDF through the existing WeasyPrint wrapper.
+
+Task 277 emits Exam.net PDF-converter text only for free text, single-answer
+multiple choice, multiple response, and one-gap short-answer items. Parser and
+IR layers may still preserve richer source structures such as matching pairs.
+Those structures block only at this renderer when no governed PDF-converter
+target shape exists, or when machine-marked output lacks source-proven answer
+key data.
+
+Later renderer tasks may promote matching output and Swedish machine-marked
+labels only through
+`docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md` and fresh
+fixture-backed import proof.
+
+Live validation for this renderer must generate a real PDF and inspect it with
+PyMuPDF for:
+
+- `Fråga N`, `Poängvärde: N`, free-text `Typ: Fritext`, and target-safe
+  machine-marked type markers;
+- visible prompt text;
+- embedded image presence for asset-bearing IR;
+- absence of unresolved `data-image-id` placeholders in the materialized HTML.
 
 ## Target Architecture
 

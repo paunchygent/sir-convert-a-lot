@@ -86,6 +86,8 @@ class JobStoreV2Core:
         return self._job_dir(job_id) / "raw" / "reference.docx"
 
     def _artifact_path(self, job_id: str, output_format: OutputFormatV2) -> Path:
+        if output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
+            return self._job_dir(job_id) / "artifacts" / "artifact-bundle.json"
         suffix = output_format.value
         return self._job_dir(job_id) / "artifacts" / f"output.{suffix}"
 

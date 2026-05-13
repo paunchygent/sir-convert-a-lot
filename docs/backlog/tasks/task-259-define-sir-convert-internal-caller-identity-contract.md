@@ -101,8 +101,8 @@ It consumes HuleEdu `InternalIdentityContextV1` with audience
 test plan for spoofed headers, wrong audience, invalid signatures,
 cross-owner artifact reads, service contexts, and operator contexts.
 
-Runtime enforcement and route tests remain owned by Task 258, Task 260, and the
-consumer cutover/proof tasks.
+Runtime enforcement and route tests remain owned by Task 258, Task 282,
+HuleEdu `ST-01-07`, and the consumer cutover/proof tasks.
 
 Review 06 resolution:
 

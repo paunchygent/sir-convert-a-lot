@@ -121,6 +121,19 @@ class ConversionMetadataV2(BaseModel):
     scheduling_mode: str | None = None
 
 
+class DigiExamMigrationConversionMetadataV2(ConversionMetadataV2):
+    """Route-specific result metadata for DigiExam migration bundles."""
+
+    route_key: Literal["digiexam_dxe_to_examnet_migration_bundle"]
+    bundle_schema_version: Literal["digiexam_migration_bundle_v1"]
+    bundle_status: Literal["complete", "partial", "blocked"]
+    source_sha256: str
+    target_availability: dict[str, str]
+    manual_follow_up_required: bool
+    warning_count: int = Field(ge=0)
+    artifact_count: int = Field(ge=0)
+
+
 class DocxTemplateSummaryV2(BaseModel):
     """Selection-ready template summary in v2 template listing responses."""
 
@@ -187,7 +200,7 @@ class ResultPayloadV2(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     artifact: ArtifactMetadataV2
-    conversion_metadata: ConversionMetadataV2
+    conversion_metadata: DigiExamMigrationConversionMetadataV2 | ConversionMetadataV2
     warnings: list[str] = Field(default_factory=list)
 
 

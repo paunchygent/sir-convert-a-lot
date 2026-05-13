@@ -13,6 +13,8 @@ Relationships:
 
 from __future__ import annotations
 
+import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -60,8 +62,10 @@ class _CssFactory(Protocol):
 
 
 def _load_weasyprint() -> tuple[_HtmlFactory, _CssFactory, _UrlFetcher]:
+    _configure_macos_homebrew_library_path()
     try:
-        from weasyprint import CSS, HTML, default_url_fetcher
+        from weasyprint import CSS, HTML
+        from weasyprint.urls import URLFetcher
     except ModuleNotFoundError as exc:
         raise HtmlToPdfConversionError(
             code=WEASYPRINT_NOT_INSTALLED,
@@ -73,7 +77,40 @@ def _load_weasyprint() -> tuple[_HtmlFactory, _CssFactory, _UrlFetcher]:
             message=f"WeasyPrint native dependencies are missing: {exc}",
         ) from exc
 
-    return HTML, CSS, default_url_fetcher
+    local_file_fetcher = URLFetcher(
+        allowed_protocols={"file"},
+        allow_redirects=False,
+    ).fetch
+    return HTML, CSS, local_file_fetcher
+
+
+def _configure_macos_homebrew_library_path() -> None:
+    """Expose Homebrew GTK/Pango libraries to WeasyPrint on local macOS."""
+
+    if sys.platform != "darwin":
+        return
+
+    candidate_dirs = (
+        Path("/opt/homebrew/lib"),
+        Path("/usr/local/lib"),
+    )
+    existing_dirs = tuple(
+        candidate_dir
+        for candidate_dir in candidate_dirs
+        if (candidate_dir / "libgobject-2.0.0.dylib").exists()
+    )
+    if not existing_dirs:
+        return
+
+    current_paths = tuple(
+        path for path in os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "").split(":") if path
+    )
+    merged_paths = current_paths + tuple(
+        str(candidate_dir)
+        for candidate_dir in existing_dirs
+        if str(candidate_dir) not in current_paths
+    )
+    os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = ":".join(merged_paths)
 
 
 def _build_restricted_url_fetcher(
@@ -128,12 +165,8 @@ def _build_restricted_url_fetcher(
                 message=f"Blocked resource path outside allowed workdir: {url}",
             )
 
-        return default_url_fetcher(
-            resolved_candidate.as_uri(),
-            timeout=timeout,
-            ssl_context=ssl_context,
-            http_headers=http_headers,
-        )
+        del timeout, ssl_context, http_headers
+        return default_url_fetcher(resolved_candidate.as_uri())
 
     return _restricted_url_fetcher
 

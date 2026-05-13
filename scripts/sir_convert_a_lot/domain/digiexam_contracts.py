@@ -46,6 +46,11 @@ class DigiExamWarningCode(StrEnum):
     MALFORMED_SOURCE = "malformed_source"
     UNKNOWN_SOURCE_SHAPE = "unknown_source_shape"
     UNSUPPORTED_STRUCTURE = "unsupported_structure"
+    INVALID_EMBEDDED_ASSET_BASE64 = "invalid_embedded_asset_base64"
+    UNSUPPORTED_EMBEDDED_ASSET_MEDIA = "unsupported_embedded_asset_media"
+    MISSING_EMBEDDED_ASSET_REFERENCE = "missing_embedded_asset_reference"
+    UNUSED_EMBEDDED_ASSET_PAYLOAD = "unused_embedded_asset_payload"
+    AMBIGUOUS_EMBEDDED_ASSET_BINDING = "ambiguous_embedded_asset_binding"
 
 
 class DigiExamAnswerKeyProvenance(StrEnum):
@@ -141,6 +146,30 @@ class DigiExamGradingPolicy:
 
 
 @dataclass(frozen=True)
+class DigiExamEmbeddedAsset:
+    """One decoded DigiExam embedded asset bound to a source item."""
+
+    asset_id: str
+    item_sequence: int
+    source_image_index: int
+    sha256: str
+    media_type: str
+    content_base64: str
+    byte_length: int
+    width_px: int
+    height_px: int
+
+
+@dataclass(frozen=True)
+class DigiExamEmbeddedAssetReference:
+    """One ordered bodyHTML reference to a decoded embedded asset."""
+
+    asset_id: str
+    source_image_index: int
+    reference_order: int
+
+
+@dataclass(frozen=True)
 class DigiExamItem:
     """Parsed DigiExam item with source evidence and provenance state."""
 
@@ -163,6 +192,8 @@ class DigiExamItem:
     correct_alternative_ids: tuple[int, ...] = ()
     correct_gap_values: tuple[str, ...] = ()
     correct_gap_answers: tuple[DigiExamGapAnswer, ...] = ()
+    embedded_assets: tuple[DigiExamEmbeddedAsset, ...] = ()
+    embedded_asset_references: tuple[DigiExamEmbeddedAssetReference, ...] = ()
 
 
 @dataclass(frozen=True)

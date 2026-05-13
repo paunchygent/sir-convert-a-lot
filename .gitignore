@@ -13,6 +13,7 @@ build/
 .DS_Store
 data/conversion-inputs/
 inputs/dirty_pdf_to_ocr/
+inputs/examples/digiexam-evidence/OneDrive_1_5-12-2026/
 **/repomix_packages/
 
 # Generated benchmark/evaluation output (policy: never track under docs/reference)

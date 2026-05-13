@@ -1,0 +1,41 @@
+{
+  "examList": [
+    {
+      "id": 1,
+      "title": "Sanitized embedded asset fixture",
+      "about": "",
+      "openBook": false
+    }
+  ],
+  "exams": [
+    {
+      "id": 1,
+      "title": "Sanitized embedded asset fixture",
+      "subject": "Sanitized",
+      "questions": [
+        {
+          "id": 10,
+          "title": "Embedded image prompt",
+          "about": "Synthetic sanitized fixture for embedded asset parsing.",
+          "bodyHTML": "<p><img data-image-id=\"0\" class=\"fr-fic fr-dib\" /></p><p><span class=\"dxWordGap fr-inner\" dx-wg-id=\"gap-1\" dx-wg-width=\"64\"></span></p>",
+          "images": [
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+          ],
+          "maxScore": 1,
+          "notes": "",
+          "type": 3,
+          "matrixAbilityMask": [],
+          "onlineResources": null,
+          "editorVersion": 2,
+          "gradingType": 2,
+          "blanks": [
+            {
+              "guid": "gap-1",
+              "validations": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

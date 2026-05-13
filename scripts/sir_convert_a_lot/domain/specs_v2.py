@@ -40,6 +40,7 @@ class SourceFormatV2(StrEnum):
     MD = "md"
     HTML = "html"
     DOCX = "docx"
+    DIGIEXAM_DXE = "digiexam_dxe"
 
 
 class OutputFormatV2(StrEnum):
@@ -48,6 +49,32 @@ class OutputFormatV2(StrEnum):
     MD = "md"
     PDF = "pdf"
     DOCX = "docx"
+    EXAMNET_MIGRATION_BUNDLE = "examnet_migration_bundle"
+
+
+class ExamMigrationTargetV2(StrEnum):
+    """Supported target artifacts for exam-migration bundle routes."""
+
+    EXAMNET_PDF = "examnet_pdf"
+    QTI_PACKAGE = "qti_package"
+
+
+DEFAULT_EXAM_MIGRATION_TARGETS_V2: tuple[ExamMigrationTargetV2, ...] = (
+    ExamMigrationTargetV2.EXAMNET_PDF,
+    ExamMigrationTargetV2.QTI_PACKAGE,
+)
+
+
+class DigiExamResultPdfUsageV2(StrEnum):
+    """Allowed use of optional DigiExam graded-result PDF evidence."""
+
+    CORRECT_MACHINE_MARKED_ANSWERS_ONLY = "correct_machine_marked_answers_only"
+
+
+class DigiExamManualFollowUpPolicyV2(StrEnum):
+    """Allowed manual-follow-up reporting policy for DigiExam migration."""
+
+    EMIT_ITEM_ADDRESSABLE_REPORT = "emit_item_addressable_report"
 
 
 class PdfPaperSizeV2(StrEnum):
@@ -120,6 +147,23 @@ class ConversionSpecV2(BaseModel):
     pdf_layout: PdfLayoutV2 | None = None
     template: TemplateSelectorV2 | None = None
     reference_docx_filename: str | None = None
+    targets: list[ExamMigrationTargetV2] = Field(default_factory=list)
+    artifact_language: str | None = Field(default=None, min_length=2, max_length=8)
+
+
+class DigiExamMigrationOptionsV2(BaseModel):
+    """Route-specific options for DigiExam migration bundle jobs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    graded_result_pdf_filename: str | None = None
+    parity_pdf_filename: str | None = None
+    result_pdf_usage: DigiExamResultPdfUsageV2 = (
+        DigiExamResultPdfUsageV2.CORRECT_MACHINE_MARKED_ANSWERS_ONLY
+    )
+    manual_follow_up_policy: DigiExamManualFollowUpPolicyV2 = (
+        DigiExamManualFollowUpPolicyV2.EMIT_ITEM_ADDRESSABLE_REPORT
+    )
 
 
 class PdfOptionsV2(BaseModel):
@@ -210,6 +254,7 @@ class JobSpecV2(BaseModel):
     conversion: ConversionSpecV2
     pdf_options: PdfOptionsV2 | None = None
     execution: ExecutionSpecV2 | None = None
+    digiexam_migration_options: DigiExamMigrationOptionsV2 | None = None
     retention: RetentionSpecV2 = Field(default_factory=RetentionSpecV2)
 
     @model_validator(mode="after")
@@ -228,6 +273,7 @@ class JobSpecV2(BaseModel):
             (SourceFormatV2.HTML, OutputFormatV2.PDF),
             (SourceFormatV2.HTML, OutputFormatV2.DOCX),
             (SourceFormatV2.PDF, OutputFormatV2.DOCX),
+            (SourceFormatV2.DIGIEXAM_DXE, OutputFormatV2.EXAMNET_MIGRATION_BUNDLE),
         }
         if route not in allowed_routes:
             raise ValueError(
@@ -240,6 +286,35 @@ class JobSpecV2(BaseModel):
                 raise ValueError("pdf_options is required when source.format is 'pdf'")
             if self.execution is None:
                 raise ValueError("execution is required when source.format is 'pdf'")
+
+        if self.source.format != SourceFormatV2.DIGIEXAM_DXE:
+            if self.digiexam_migration_options is not None:
+                raise ValueError(
+                    "digiexam_migration_options is only supported for DigiExam migration routes"
+                )
+            if self.conversion.targets:
+                raise ValueError("conversion.targets is only supported for exam migration outputs")
+            if self.conversion.artifact_language is not None:
+                raise ValueError(
+                    "conversion.artifact_language is only supported for exam migration outputs"
+                )
+        else:
+            if self.pdf_options is not None:
+                raise ValueError("pdf_options is not supported for DigiExam migration routes")
+            if self.execution is not None:
+                raise ValueError("execution is not supported for DigiExam migration routes")
+            if self.conversion.reference_docx_filename is not None:
+                raise ValueError(
+                    "reference_docx_filename is not supported for DigiExam migration routes"
+                )
+            if self.conversion.template is not None:
+                raise ValueError("template is not supported for DigiExam migration routes")
+            if self.conversion.css_filenames:
+                raise ValueError("css_filenames is not supported for DigiExam migration routes")
+            if self.conversion.pdf_layout is not None:
+                raise ValueError("pdf_layout is not supported for DigiExam migration routes")
+            if self.conversion.page_css_mode is not None:
+                raise ValueError("page_css_mode is not supported for DigiExam migration routes")
 
         if self.conversion.output_format != OutputFormatV2.PDF and self.conversion.css_filenames:
             raise ValueError("css_filenames is only supported for PDF outputs")
@@ -275,3 +350,18 @@ class JobSpecV2(BaseModel):
             )
 
         return self
+
+
+def normalized_exam_migration_targets_v2(spec: JobSpecV2) -> tuple[ExamMigrationTargetV2, ...]:
+    """Return exam-migration targets, defaulting to all governed route targets."""
+
+    if not spec.conversion.targets:
+        return DEFAULT_EXAM_MIGRATION_TARGETS_V2
+    seen: set[ExamMigrationTargetV2] = set()
+    ordered: list[ExamMigrationTargetV2] = []
+    for target in spec.conversion.targets:
+        if target in seen:
+            continue
+        ordered.append(target)
+        seen.add(target)
+    return tuple(ordered)

@@ -61,7 +61,7 @@ the primary expected load profile for Sir Convert-a-Lot.
   - mixed complexity (figures, tables, multi-column text, references, appendices)
   - representative page-count spread for demanding workloads
   - default source path in HuleEdu repo:
-    - `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater`
+    - `/Users/olofs_mba/Documents/Repos/huleedu/docs/research/research_papers/llm_as_a_annotater`
 - Evidence outputs:
   - per-document status summary
   - conversion duration summary (distribution, not single sample)

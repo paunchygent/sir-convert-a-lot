@@ -19,7 +19,7 @@ links:
   - docs/runbooks/runbook-v2-async-push-delivery.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
-  - /Users/olofs_mba/Documents/Repos/huledu-reboot/docs/runbooks/hemma-server-operations-huleedu.md
+  - /Users/olofs_mba/Documents/Repos/huleedu/docs/runbooks/hemma-server-operations-huleedu.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-home-server.md
 ---
 

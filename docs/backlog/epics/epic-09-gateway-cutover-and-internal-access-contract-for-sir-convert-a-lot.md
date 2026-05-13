@@ -5,7 +5,7 @@ type: epic
 status: proposed
 priority: critical
 created: '2026-04-19'
-last_updated: '2026-04-19'
+last_updated: '2026-05-13'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
@@ -44,6 +44,8 @@ a local operator-accessible GPU offload lane.
   with audience `sir-convert-a-lot`, covering Gateway-forwarded product
   workloads plus explicit non-browser service/operator extensions.
 - HuleEdu Gateway proxy route planning and cross-repo implementation handoff.
+  The HuleEdu execution authority is now
+  `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-07-expose-sir-convert-artifact-bundle-routes-through-huleedu-auth-edge.md`.
 - Local operator tunnel/offload lane preservation.
 - Pre-cutover direct public app-route isolation for `convert.hule.education`.
 - Auth-aware public-edge evidence for ruling out or blocking unknown direct
@@ -66,6 +68,8 @@ a local operator-accessible GPU offload lane.
 1. `docs/backlog/stories/story-33-sir-convert-gateway-fronted-public-access-and-internal-lane-migration.md`
 1. `docs/backlog/stories/story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover.md`
 1. `docs/backlog/stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md`
+   (completed Sir Convert-side handoff; implementation authority moved to
+   HuleEdu `ST-01-07`)
 1. `docs/backlog/stories/story-35-preserve-internal-service-and-local-operator-sir-convert-lanes.md`
 
 ## Acceptance Criteria

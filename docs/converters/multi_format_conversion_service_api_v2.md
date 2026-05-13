@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-03-26
+updated: 2026-05-13
 owners:
   - platform
 tags:
@@ -24,6 +24,7 @@ links:
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
   - docs/converters/docx-template-catalog-contract-v2.md
+  - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/multi_format_conversion_service_api_v2_async_push.md
   - docs/converters/multi_format_conversion_service_api_v2_errors.md
@@ -46,6 +47,12 @@ Service API v2 is the single active conversion contract surface for:
 - `md -> pdf` (via HTML intermediary)
 - `md -> docx` (via HTML intermediary)
 - `pdf -> docx` (service pipeline: `pdf -> md -> html -> docx`)
+- `digiexam_dxe -> examnet_migration_bundle` (DigiExam migration artifact
+  bundle for authenticated Skriptoteket workflows)
+
+Specialized route extensions are governed by route-specific converter
+contracts. The DigiExam migration extension is defined in
+`docs/converters/digiexam-migration-service-api-artifact-contract.md`.
 
 ## Status
 
@@ -59,6 +66,8 @@ Service API v2 is the single active conversion contract surface for:
 - Downstream GUI integration guide: `docs/converters/downstream_integration_contract_v2.md`
 - Async push extension contract:
   `docs/converters/multi_format_conversion_service_api_v2_async_push.md`
+- DigiExam migration artifact-bundle contract:
+  `docs/converters/digiexam-migration-service-api-artifact-contract.md`
 
 ## Base Conventions
 
@@ -123,10 +132,13 @@ Supported v2 conversions (service-executed on Hemma):
 - `md -> pdf` (Pandoc -> HTML -> WeasyPrint)
 - `md -> docx` (Pandoc -> HTML -> Pandoc)
 - `pdf -> docx` (Docling/PyMuPDF -> Markdown -> HTML -> DOCX)
+- `digiexam_dxe -> examnet_migration_bundle` (DigiExam `.dxe` parser -> IR ->
+  Exam.net PDF + QTI package + named artifact bundle)
 
-## Approved Next Route (Not Yet Implemented)
+## Approved Route Extensions (Not Yet Implemented)
 
-The next approved v2 route extension is:
+The approved v2 route extensions that are not yet implemented in the runtime
+are:
 
 - `md -> wav` (sidecar-backed TTS on Hemma; see ADR-0006)
 
@@ -138,6 +150,10 @@ Important:
   not an in-process dependency in the main service image.
 - Internal multi-backend TTS reuse is governed by ADR-0007; backend-native sidecar APIs are not
   the normative Sir-facing contract.
+
+The implemented DigiExam migration route keeps `.dxe` as the required
+structure source and uses a route-specific named artifact bundle rather than
+the generic singular artifact as its product-facing contract.
 
 ## Data Contracts (v2)
 
@@ -235,9 +251,11 @@ Prometheus metric labels must remain bounded-cardinality:
 Field rules:
 
 - `source.kind`: v2 requires `upload`
-- `source.format`: `pdf | docx | md | html`
+- `source.format`: `pdf | docx | md | html`; route-specific extension:
+  `digiexam_dxe`
 - `conversion.output_format`:
   - active runtime: `md | pdf | docx`
+  - route-specific extension: `examnet_migration_bundle`
   - approved next extension (not yet implemented): `wav` for `md -> wav`
 - `conversion.template`:
   - canonical DOCX selector shape:
@@ -625,6 +643,10 @@ The response content-type is derived from the stored artifact format:
 - PDF: `application/pdf`
 - DOCX: `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
 - Approved next extension (not yet implemented): WAV `audio/wav`
+- DigiExam migration route extension: the singular artifact may return
+  `artifact-bundle.json` as `application/json`, while consumers should use the
+  route-specific named artifact endpoints defined in
+  `docs/converters/digiexam-migration-service-api-artifact-contract.md`.
 
 Response matrix:
 

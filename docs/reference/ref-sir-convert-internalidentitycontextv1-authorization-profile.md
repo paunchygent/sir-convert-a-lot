@@ -4,7 +4,7 @@ id: REF-sir-convert-internalidentitycontextv1-authorization-profile
 title: Sir Convert InternalIdentityContextV1 Authorization Profile
 status: active
 created: 2026-04-19
-updated: 2026-04-19
+updated: 2026-05-13
 owners:
   - platform
 tags:
@@ -33,17 +33,19 @@ the HuleEdu contract owned by ADR-0039 and
 
 Canonical external authority:
 
-- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/decisions/0039-huleedu-owned-browser-session-authority-and-saas-bootstrap-contract.md`
-- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/reference/ref-internal-identity-context-v1-contract.md`
+- `/Users/olofs_mba/Documents/Repos/huleedu/docs/decisions/0039-huleedu-owned-browser-session-authority-and-saas-bootstrap-contract.md`
+- `/Users/olofs_mba/Documents/Repos/huleedu/docs/reference/ref-internal-identity-context-v1-contract.md`
 
 ## Transport Authority
 
-Sir Convert accepts identity only through the canonical HuleEdu headers:
+Sir Convert accepts identity only through the canonical HuleEdu headers. Header
+matching is HTTP case-insensitive, but docs, tests, clients, and examples MUST
+use this exact casing and spelling:
 
-- `X-Huledu-Identity-Context-Version`
-- `X-Huledu-Identity-Context`
-- `X-Huledu-Identity-Key-Id`
-- `X-Huledu-Identity-Signature`
+- `X-HuleEdu-Identity-Context-Version`
+- `X-HuleEdu-Identity-Context`
+- `X-HuleEdu-Identity-Key-Id`
+- `X-HuleEdu-Identity-Signature`
 - `X-Correlation-ID`
 
 Verification must fail closed unless all canonical checks pass:
@@ -82,6 +84,22 @@ Sir Convert must reject or ignore these as identity:
 Gateway route work must strip browser-supplied identity, cookie, bearer, and
 CSRF material before downstream forwarding.
 
+## Product Entry And Downstream Routes
+
+Public product/browser traffic enters through the HuleEdu Gateway route family:
+
+- product/browser entry: `/sir-convert/v2/convert/...`
+- downstream Sir Convert service route: `/v2/convert/...`
+
+The Gateway owns browser session, CSRF, entitlement checks, identity minting,
+and path forwarding. Sir Convert does not expose `/sir-convert/v2/...` in its
+own runtime; it receives the forwarded downstream `/v2/convert/...` request
+with HuleEdu-signed identity headers.
+
+`convert.hule.education` remains reserved/fail-closed for browser product
+traffic. Reopening that host for a status page, external M2M API, or direct
+public conversion requires a separate accepted ADR/task.
+
 ## Caller Classes
 
 | Class | Allowed transport | Ownership source | Notes |
@@ -107,9 +125,10 @@ Allowed minting paths:
   worker may not replace that context with a service-owned context.
 - Non-browser service contexts are minted only through a HuleEdu-owned
   internal service-token exchange or equivalent HuleEdu Gateway/internal
-  identity surface. The exact HuleEdu route name is owned by Task 260, but the
-  authority is not optional: it is HuleEdu-owned, signs with the HuleEdu
-  Gateway/internal identity key set, and emits `iss == "api_gateway_service"`.
+  identity surface. The exact HuleEdu route name is owned by HuleEdu
+  `ST-01-07` or a task under that story, but the authority is not optional: it
+  is HuleEdu-owned, signs with the HuleEdu Gateway/internal identity key set,
+  and emits `iss == "api_gateway_service"`.
 - Local operator contexts are minted only through a HuleEdu-owned operator
   context surface or wrapper that authenticates the operator before signing.
   The local Sir Convert client, SSH tunnel, and Sir Convert service must not
@@ -132,7 +151,7 @@ model, and they do not unblock final cutover proof.
 
 ## Canonical V1 Field Mapping
 
-All fields below are signed inside `X-Huledu-Identity-Context`. Unsigned
+All fields below are signed inside `X-HuleEdu-Identity-Context`. Unsigned
 request headers or query parameters cannot override them.
 
 The top-level payload must remain valid HuleEdu `InternalIdentityContextV1`.
@@ -270,6 +289,8 @@ permissions.
 | `GET /v2/convert/jobs/{job_id}` | Same persisted owner or explicit operator/service grant. |
 | `GET /v2/convert/jobs/{job_id}/result` | Same persisted owner or explicit operator/service grant. |
 | `GET /v2/convert/jobs/{job_id}/artifact` | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant. |
+| `GET /v2/convert/jobs/{job_id}/artifacts` | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant. |
+| `GET /v2/convert/jobs/{job_id}/artifacts/{artifact_key}` | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant. |
 | `POST /v2/convert/jobs/{job_id}/cancel` | Same persisted owner plus `sir-convert:jobs:cancel-own`, or explicit operator/service grant. |
 | partial, checkpoint, resume, and SSE routes | Same owner rule as the parent job route. |
 | `GET /v2/templates/docx*` | Valid context plus `sir-convert:templates:read`, unless explicitly reduced to an internal unauthenticated catalog in a later accepted decision. |
@@ -329,8 +350,9 @@ authorization tests:
 
 ## Migration Notes
 
-Task 260 must map Gateway routes to this profile and prove protected-edge
-mechanics in HuleEdu. Task 264 must migrate known Skriptoteket and HuleEdu
-consumers so product/user work carries this context. Projektveckor Portal is a
-retained internal consumer and needs a downstream follow-up before global
-service-key ownership can be retired.
+HuleEdu `ST-01-07` must map Gateway routes to this profile and prove
+protected-edge mechanics in HuleEdu. Task 282 must enforce the Sir Convert
+runtime side for named artifact bundle routes. Task 264 must migrate known
+Skriptoteket and HuleEdu consumers so product/user work carries this context.
+Projektveckor Portal is a retained internal consumer and needs a downstream
+follow-up before global service-key ownership can be retired.

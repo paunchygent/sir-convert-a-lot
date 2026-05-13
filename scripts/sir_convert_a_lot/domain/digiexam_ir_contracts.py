@@ -21,6 +21,8 @@ from typing import Literal
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamAlternative,
     DigiExamAnswerKeyProvenance,
+    DigiExamEmbeddedAsset,
+    DigiExamEmbeddedAssetReference,
     DigiExamGap,
     DigiExamGapAnswer,
     DigiExamGradingPolicy,
@@ -33,10 +35,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamWarning,
 )
 
-DIGIEXAM_IR_SCHEMA_VERSION: Literal["digiexam_intermediate_exam_v1"] = (
-    "digiexam_intermediate_exam_v1"
+DIGIEXAM_IR_SCHEMA_VERSION: Literal["digiexam_intermediate_exam_v2"] = (
+    "digiexam_intermediate_exam_v2"
 )
-DIGIEXAM_IR_MANIFEST_SCHEMA_VERSION: Literal["digiexam_ir_manifest_v1"] = "digiexam_ir_manifest_v1"
+DIGIEXAM_IR_MANIFEST_SCHEMA_VERSION: Literal["digiexam_ir_manifest_v2"] = "digiexam_ir_manifest_v2"
 
 
 class DigiExamIrManualFollowUpReason(StrEnum):
@@ -87,13 +89,15 @@ class DigiExamIrItem:
     grading_policy: DigiExamGradingPolicy | None
     answer_key: DigiExamIrAnswerKey
     warnings: tuple[DigiExamWarning, ...]
+    embedded_assets: tuple[DigiExamEmbeddedAsset, ...]
+    embedded_asset_references: tuple[DigiExamEmbeddedAssetReference, ...]
 
 
 @dataclass(frozen=True)
 class DigiExamIntermediateExam:
     """Top-level renderer-neutral DigiExam exam representation."""
 
-    schema_version: Literal["digiexam_intermediate_exam_v1"]
+    schema_version: Literal["digiexam_intermediate_exam_v2"]
     source_filename: str
     source_producer: str | None
     parse_status: DigiExamParseStatus
@@ -101,6 +105,22 @@ class DigiExamIntermediateExam:
     items: tuple[DigiExamIrItem, ...]
     warnings: tuple[DigiExamWarning, ...]
     manual_follow_ups: tuple[DigiExamIrManualFollowUp, ...]
+
+
+@dataclass(frozen=True)
+class DigiExamIrManifestAssetSummary:
+    """Deterministic asset summary for parity consumers."""
+
+    item_id: str
+    asset_id: str
+    source_image_index: int
+    sha256: str
+    media_type: str
+    byte_length: int
+    width_px: int
+    height_px: int
+    reference_count: int
+    reference_orders: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -113,19 +133,22 @@ class DigiExamIrManifestItemSummary:
     item_type: DigiExamItemType
     answer_key_provenance: DigiExamAnswerKeyProvenance
     manual_follow_up_required: bool
+    asset_summaries: tuple[DigiExamIrManifestAssetSummary, ...]
 
 
 @dataclass(frozen=True)
 class DigiExamIrManifest:
     """Deterministic renderer-neutral DigiExam manifest summary."""
 
-    schema_version: Literal["digiexam_ir_manifest_v1"]
-    exam_schema_version: Literal["digiexam_intermediate_exam_v1"]
+    schema_version: Literal["digiexam_ir_manifest_v2"]
+    exam_schema_version: Literal["digiexam_intermediate_exam_v2"]
     source_filename: str
     source_producer: str | None
     parse_status: DigiExamParseStatus
     renderer_ready: bool
     item_count: int
+    asset_count: int
+    asset_summaries: tuple[DigiExamIrManifestAssetSummary, ...]
     warning_count: int
     manual_follow_up_count: int
     item_summaries: tuple[DigiExamIrManifestItemSummary, ...]
@@ -160,6 +183,8 @@ def build_digiexam_intermediate_exam(parse_result: DigiExamParseResult) -> DigiE
                     correct_gap_answers=source_item.correct_gap_answers,
                 ),
                 warnings=source_item.warnings,
+                embedded_assets=source_item.embedded_assets,
+                embedded_asset_references=source_item.embedded_asset_references,
             )
         )
         manual_follow_ups.extend(_item_manual_follow_ups(item_id, source_item))
@@ -191,6 +216,23 @@ def build_digiexam_ir_manifest(exam: DigiExamIntermediateExam) -> DigiExamIrMani
     """Build a deterministic manifest summary from a DigiExam IR exam."""
 
     manual_item_ids = {follow_up.item_id for follow_up in exam.manual_follow_ups}
+    item_summaries = tuple(
+        DigiExamIrManifestItemSummary(
+            item_id=item.item_id,
+            sequence=item.sequence,
+            title=item.title,
+            item_type=item.item_type,
+            answer_key_provenance=item.answer_key.provenance,
+            manual_follow_up_required=item.item_id in manual_item_ids,
+            asset_summaries=_asset_summaries(item),
+        )
+        for item in exam.items
+    )
+    asset_summaries = tuple(
+        asset_summary
+        for item_summary in item_summaries
+        for asset_summary in item_summary.asset_summaries
+    )
     return DigiExamIrManifest(
         schema_version=DIGIEXAM_IR_MANIFEST_SCHEMA_VERSION,
         exam_schema_version=exam.schema_version,
@@ -199,19 +241,11 @@ def build_digiexam_ir_manifest(exam: DigiExamIntermediateExam) -> DigiExamIrMani
         parse_status=exam.parse_status,
         renderer_ready=exam.renderer_ready,
         item_count=len(exam.items),
+        asset_count=len(asset_summaries),
+        asset_summaries=asset_summaries,
         warning_count=len(exam.warnings),
         manual_follow_up_count=len(exam.manual_follow_ups),
-        item_summaries=tuple(
-            DigiExamIrManifestItemSummary(
-                item_id=item.item_id,
-                sequence=item.sequence,
-                title=item.title,
-                item_type=item.item_type,
-                answer_key_provenance=item.answer_key.provenance,
-                manual_follow_up_required=item.item_id in manual_item_ids,
-            )
-            for item in exam.items
-        ),
+        item_summaries=item_summaries,
     )
 
 
@@ -264,6 +298,31 @@ def _item_manual_follow_ups(
 
 def _item_id(sequence: int) -> str:
     return f"item-{sequence:03d}"
+
+
+def _asset_summaries(item: DigiExamIrItem) -> tuple[DigiExamIrManifestAssetSummary, ...]:
+    summaries: list[DigiExamIrManifestAssetSummary] = []
+    for asset in item.embedded_assets:
+        reference_orders = tuple(
+            reference.reference_order
+            for reference in item.embedded_asset_references
+            if reference.asset_id == asset.asset_id
+        )
+        summaries.append(
+            DigiExamIrManifestAssetSummary(
+                item_id=item.item_id,
+                asset_id=asset.asset_id,
+                source_image_index=asset.source_image_index,
+                sha256=asset.sha256,
+                media_type=asset.media_type,
+                byte_length=asset.byte_length,
+                width_px=asset.width_px,
+                height_px=asset.height_px,
+                reference_count=len(reference_orders),
+                reference_orders=reference_orders,
+            )
+        )
+    return tuple(summaries)
 
 
 _MACHINE_MARKED_ITEM_TYPES = frozenset(

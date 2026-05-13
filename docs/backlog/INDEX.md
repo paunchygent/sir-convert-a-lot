@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-05-08
-last_updated: 2026-05-08
+created: 2026-05-13
+last_updated: 2026-05-13
 related: []
 labels:
   - generated
@@ -42,6 +42,8 @@ Generated index for backlog planning documents.
 | review-08-ruthless-review-of-task-268-pdf-ocr-checkpoint-metadata-truth | [Ruthless review of Task 268 PDF OCR checkpoint metadata truth](reviews/review-08-ruthless-review-of-task-268-pdf-ocr-checkpoint-metadata-truth.md) | review | completed |
 | review-09-ruthless-review-of-task-269-ocr-metadata-contract-alignment | [Ruthless review of Task 269 OCR metadata contract alignment](reviews/review-09-ruthless-review-of-task-269-ocr-metadata-contract-alignment.md) | review | completed |
 | review-10-ruthless-review-of-story-39-follow-up-task-272-and-task-273-drafts | [Ruthless review of Story 39 follow-up Task 272 and Task 273 drafts](reviews/review-10-ruthless-review-of-story-39-follow-up-task-272-and-task-273-drafts.md) | review | completed |
+| review-11-ruthless-review-of-task-276-digiexam-embedded-asset-ir-support | [Ruthless review of Task 276 DigiExam embedded asset IR support](reviews/review-11-ruthless-review-of-task-276-digiexam-embedded-asset-ir-support.md) | review | completed |
+| review-12-ruthless-review-of-task-282-digiexam-migration-service-runtime-artifact-bundle-routes | [Ruthless review of Task 282 DigiExam migration service runtime artifact bundle routes](reviews/review-12-ruthless-review-of-task-282-digiexam-migration-service-runtime-artifact-bundle-routes.md) | review | completed |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -81,11 +83,15 @@ Generated index for backlog planning documents.
 | story-34-adr-and-contract-authority-for-sir-convert-gateway-cutover | [ADR and contract authority for Sir Convert gateway cutover](stories/story-34-adr-and-contract-authority-for-sir-convert-gateway-cutover.md) | story | proposed |
 | story-35-preserve-internal-service-and-local-operator-sir-convert-lanes | [Preserve internal service and local operator Sir Convert lanes](stories/story-35-preserve-internal-service-and-local-operator-sir-convert-lanes.md) | story | proposed |
 | story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover | [Sir Convert internal auth and metadata hardening before cutover](stories/story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover.md) | story | proposed |
-| story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads | [HuleEdu Gateway proxy integration for Sir Convert workloads](stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md) | story | proposed |
+| story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads | [HuleEdu Gateway proxy integration for Sir Convert workloads](stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md) | story | completed |
 | story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting | [DigiExam PDF parser v1 fixtures and confidence reporting](stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md) | story | completed |
 | story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate | [Harden and align PDF OCR path with dirty real-data performance gate](stories/story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md) | story | in_progress |
 | story-40-digiexam-dxe-source-parser-and-answer-key-provenance | [DigiExam .dxe source parser and answer-key provenance](stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md) | story | completed |
 | story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema | [DigiExam renderer-neutral intermediate exam representation and manifest schema](stories/story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema.md) | story | completed |
+| story-42-digiexam-renderer-neutral-embedded-asset-support | [DigiExam renderer-neutral embedded asset support](stories/story-42-digiexam-renderer-neutral-embedded-asset-support.md) | story | completed |
+| story-43-digiexam-exam-net-oriented-pdf-renderer | [DigiExam Exam.net-oriented PDF renderer](stories/story-43-digiexam-exam-net-oriented-pdf-renderer.md) | story | completed |
+| story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract | [DigiExam migration API and Skriptoteket artifact delivery contract](stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md) | story | completed |
+| story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx | [Exam.net artifact authoring bundle for QTI and editable DOCX](stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md) | story | proposed |
 | 005-bootstrap-docs-as-code-structure-under-docs | [Bootstrap docs-as-code structure under docs/](tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md) | task | completed |
 | 006-migrate-canonical-converter-code-and-quality-gates | [Migrate canonical converter code and quality gates](tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md) | task | completed |
 | 007-prepare-docker-hemma-service-foundation | [Prepare Docker + Hemma service foundation](tasks/task-04-04-prepare-docker-hemma-service-foundation.md) | task | completed |
@@ -272,7 +278,6 @@ Generated index for backlog planning documents.
 | task-258-fix-unauthenticated-sir-convert-api-failures-and-prod-metadata-exposure | [Remediate unauthenticated Sir Convert API failures and prod metadata exposure](tasks/task-258-fix-unauthenticated-sir-convert-api-failures-and-prod-metadata-exposure.md) | task | proposed |
 | task-259-define-sir-convert-internal-caller-identity-contract | [Define Sir Convert InternalIdentityContextV1 authorization profile](tasks/task-259-define-sir-convert-internal-caller-identity-contract.md) | task | completed |
 | task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback | [Docling form cluster ordering source patch with deterministic quality gate and fallback](tasks/task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback.md) | task | in_progress |
-| task-260-plan-huleedu-gateway-proxy-routes-for-sir-convert-jobs-and-artifacts | [Plan HuleEdu Gateway proxy routes for Sir Convert jobs and artifacts](tasks/task-260-plan-huleedu-gateway-proxy-routes-for-sir-convert-jobs-and-artifacts.md) | task | proposed |
 | task-261-preserve-local-operator-tunnel-lane-for-gpu-backed-conversions | [Preserve local operator tunnel lane for GPU-backed conversions](tasks/task-261-preserve-local-operator-tunnel-lane-for-gpu-backed-conversions.md) | task | proposed |
 | task-262-restrict-convert-hule-education-public-edge-after-gateway-cutover | [Restrict convert.hule.education public edge after gateway cutover](tasks/task-262-restrict-convert-hule-education-public-edge-after-gateway-cutover.md) | task | proposed |
 | task-263-run-sir-convert-gateway-cutover-proof-and-security-review | [Run Sir Convert gateway cutover proof and security review](tasks/task-263-run-sir-convert-gateway-cutover-proof-and-security-review.md) | task | proposed |
@@ -289,7 +294,14 @@ Generated index for backlog planning documents.
 | task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling | [Run chunk-size 8 production baseline tuning proof with warm-up and GPU sampling](tasks/task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling.md) | task | proposed |
 | task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate | [Implement DigiExam .dxe parser fixtures and result-PDF answer enrichment gate](tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md) | task | completed |
 | task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract | [Implement DigiExam intermediate exam representation and manifest schema contract](tasks/task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract.md) | task | completed |
+| task-276-implement-digiexam-dxe-embedded-asset-ir-support | [Implement DigiExam dxe embedded asset IR support](tasks/task-276-implement-digiexam-dxe-embedded-asset-ir-support.md) | task | completed |
+| task-277-implement-digiexam-exam-net-oriented-pdf-renderer-and-live-validation | [Implement DigiExam Exam.net-oriented PDF renderer and live validation](tasks/task-277-implement-digiexam-exam-net-oriented-pdf-renderer-and-live-validation.md) | task | completed |
+| task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract | [Define DigiExam migration API artifact bundle and Skriptoteket ownership contract](tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md) | task | completed |
+| task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile | [Define Exam.net artifact source contract and Swedish PDF-to-exam renderer profile](tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md) | task | completed |
 | task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint | [Markdown to PDF via HTML intermediary (Pandoc + WeasyPrint)](tasks/task-28-markdown-to-pdf-via-html-intermediary-pandoc-weasyprint.md) | task | completed |
+| task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate | [Implement Exam.net QTI sample packages and validation report gate](tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md) | task | completed |
+| task-281-classify-digiexam-dxe-validation-corpus-and-add-parser-regression-gate | [Classify DigiExam DXE validation corpus and add parser regression gate](tasks/task-281-classify-digiexam-dxe-validation-corpus-and-add-parser-regression-gate.md) | task | completed |
+| task-282-implement-digiexam-migration-service-runtime-artifact-bundle-routes | [Implement DigiExam migration service runtime artifact bundle routes](tasks/task-282-implement-digiexam-migration-service-runtime-artifact-bundle-routes.md) | task | completed |
 | task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx | [PDF to DOCX service pipeline (API v2)](tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md) | task | completed |
 | task-30-markdown-to-docx-via-html-intermediary-pandoc | [Markdown to DOCX via HTML intermediary (Pandoc)](tasks/task-30-markdown-to-docx-via-html-intermediary-pandoc.md) | task | completed |
 | task-31-cli-route-registry-for-local-and-hybrid-conversions | [CLI route registry for local and hybrid conversions](tasks/task-31-cli-route-registry-for-local-and-hybrid-conversions.md) | task | completed |

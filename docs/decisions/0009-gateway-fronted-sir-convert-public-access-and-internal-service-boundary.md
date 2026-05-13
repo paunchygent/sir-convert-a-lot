@@ -65,8 +65,8 @@ identity transport for Gateway/user-originated traffic is HuleEdu's accepted
 `InternalIdentityContextV1` contract from ADR-0039 and the HuleEdu internal
 identity reference:
 
-- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/decisions/0039-huleedu-owned-browser-session-authority-and-saas-bootstrap-contract.md`
-- `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/reference/ref-internal-identity-context-v1-contract.md`
+- `/Users/olofs_mba/Documents/Repos/huleedu/docs/decisions/0039-huleedu-owned-browser-session-authority-and-saas-bootstrap-contract.md`
+- `/Users/olofs_mba/Documents/Repos/huleedu/docs/reference/ref-internal-identity-context-v1-contract.md`
 
 Sir Convert consumes that contract with audience `sir-convert-a-lot` and adds
 only a Sir-specific authorization profile for conversion jobs and artifacts.
@@ -105,10 +105,10 @@ job ownership or artifact authorization.
 
 Sir Convert must verify the canonical HuleEdu headers:
 
-- `X-Huledu-Identity-Context-Version`
-- `X-Huledu-Identity-Context`
-- `X-Huledu-Identity-Key-Id`
-- `X-Huledu-Identity-Signature`
+- `X-HuleEdu-Identity-Context-Version`
+- `X-HuleEdu-Identity-Context`
+- `X-HuleEdu-Identity-Key-Id`
+- `X-HuleEdu-Identity-Signature`
 - `X-Correlation-ID`
 
 Sir Convert must enforce issuer, key id, signature, expiry, context version,

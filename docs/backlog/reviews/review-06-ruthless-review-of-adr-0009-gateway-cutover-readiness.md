@@ -43,7 +43,7 @@ Structured review artifact for implementation or readiness checks.
     internal and local operator lanes remain first-class if their identity
     profile is explicit and testable.
 - External contract checked:
-  `/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/reference/ref-internal-identity-context-v1-contract.md`
+  `/Users/olofs_mba/Documents/Repos/huleedu/docs/reference/ref-internal-identity-context-v1-contract.md`
   and the corresponding `InternalIdentityContextV1` model. The canonical
   contract requires nonblank `iss`, `aud`, `sub`, `session_id`,
   `policy_version`, and `jti`, and states that Gateway produces the signed
@@ -145,9 +145,9 @@ New finding:
      `docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md`
      lines 156-158 define `sir_convert_context_kind`,
      `sir_convert_registered_caller`, and `sir_convert_workload_purpose` as
-     signed fields inside `X-Huledu-Identity-Context`. The canonical HuleEdu
+     signed fields inside `X-HuleEdu-Identity-Context`. The canonical HuleEdu
      model at
-     `/Users/olofs_mba/Documents/Repos/huledu-reboot/libs/common_core/src/common_core/internal_identity_context.py`
+     `/Users/olofs_mba/Documents/Repos/huleedu/libs/common_core/src/common_core/internal_identity_context.py`
      lines 28-58 uses `ConfigDict(extra="forbid")` and does not include those
      fields. The HuleEdu reference contract lists the allowed required and
      optional payload fields, and these Sir-specific names are not among them.

@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2-errors
 title: Multi-format Conversion Service API v2 Errors
 status: active
 created: 2026-03-04
-updated: 2026-03-05
+updated: 2026-05-11
 owners:
   - platform
 tags:
@@ -13,6 +13,7 @@ tags:
   - v2
   - errors
 links:
+  - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
 ---
 
@@ -56,6 +57,11 @@ links:
   - `500 Internal Server Error`
   - `error.code = "html_to_markdown_failed"`
   - `error.retryable = false`
+
+DigiExam migration route errors are governed by
+`docs/converters/digiexam-migration-service-api-artifact-contract.md` because
+that route has source-validation, companion-evidence, privacy, and named
+artifact-bundle semantics beyond the generic v2 routes.
 
 ## Error Envelope (v2)
 

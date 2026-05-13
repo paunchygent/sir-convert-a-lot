@@ -12,6 +12,8 @@ Relationships:
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 from pathlib import Path
 
@@ -37,7 +39,12 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_pdf_text import (
 _FIXTURE_DIR = Path("inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types")
 _DXE = _FIXTURE_DIR / "1772718003-test-samma-prov-i-digiexam.dxe"
 _DUPLICATE_DXE = _FIXTURE_DIR / "1772718003-test-duplicate.dxe"
+_EMBEDDED_IMAGE_DXE = _FIXTURE_DIR / "sanitized-embedded-image.dxe"
 _RESULT_PDF = _FIXTURE_DIR / "graded-student-result-sanitized.pdf"
+_PNG_BASE64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR42mNk+M9QDwADhgGA"
+    "WjR9awAAAABJRU5ErkJggg=="
+)
 
 
 def _result_pdf_evidence():
@@ -82,6 +89,8 @@ def test_dxe_fixture_preserves_exact_observed_structure_without_answer_synthesis
     )
     assert all(item.correct_alternative_ids == () for item in machine_marked)
     assert all(item.correct_gap_values == () for item in machine_marked)
+    assert all(item.embedded_assets == () for item in result.items)
+    assert all(item.embedded_asset_references == () for item in result.items)
 
 
 def test_dxe_fixture_preserves_alternatives_gaps_and_grading_policy() -> None:
@@ -135,6 +144,152 @@ def test_duplicate_dxe_fixture_proves_same_question_shape() -> None:
     assert [item.max_score for item in duplicate.items] == [
         item.max_score for item in primary.items
     ]
+
+
+def test_dxe_embedded_image_fixture_binds_renderer_neutral_asset_to_body_html() -> None:
+    result = DigiExamDxeParser().parse_file(_EMBEDDED_IMAGE_DXE)
+
+    assert result.status == DigiExamParseStatus.SUCCESS
+    assert result.renderer_ready is True
+    item = result.items[0]
+    asset = item.embedded_assets[0]
+    reference = item.embedded_asset_references[0]
+    decoded = base64.b64decode(_PNG_BASE64, validate=True)
+
+    assert len(item.embedded_assets) == 1
+    assert asset.asset_id.startswith("item-001-asset-001-")
+    assert asset.source_image_index == 0
+    assert asset.sha256 == hashlib.sha256(decoded).hexdigest()
+    assert asset.media_type == "image/png"
+    assert base64.b64decode(asset.content_base64, validate=True) == decoded
+    assert asset.byte_length == len(decoded)
+    assert asset.width_px == 1
+    assert asset.height_px == 1
+    assert reference.asset_id == asset.asset_id
+    assert reference.source_image_index == 0
+    assert reference.reference_order == 1
+
+
+def test_repeated_dxe_embedded_image_references_are_valid_ordered_references() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["bodyHTML"] = (
+        '<p><img data-image-id="0" /></p><p><img data-image-id="0" /></p>'
+    )
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="repeated-image.dxe")
+
+    assert result.status == DigiExamParseStatus.SUCCESS
+    assert len(result.items[0].embedded_assets) == 1
+    assert [
+        reference.reference_order for reference in result.items[0].embedded_asset_references
+    ] == [1, 2]
+    assert {reference.asset_id for reference in result.items[0].embedded_asset_references} == {
+        result.items[0].embedded_assets[0].asset_id
+    }
+
+
+def test_invalid_embedded_asset_base64_fails_closed_with_typed_warning() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["images"][0] = "not valid base64"
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="invalid-image.dxe")
+
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
+    assert result.items[0].embedded_assets == ()
+    assert DigiExamWarningCode.INVALID_EMBEDDED_ASSET_BASE64 in {
+        warning.code for warning in result.warnings
+    }
+
+
+def test_unsupported_embedded_asset_media_fails_closed_with_typed_warning() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["images"][0] = "aGVsbG8="
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="unsupported-image.dxe")
+
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
+    assert result.items[0].embedded_assets == ()
+    assert DigiExamWarningCode.UNSUPPORTED_EMBEDDED_ASSET_MEDIA in {
+        warning.code for warning in result.warnings
+    }
+
+
+def test_missing_embedded_asset_reference_fails_closed_with_typed_warning() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["bodyHTML"] = '<p><img data-image-id="1" /></p>'
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="missing-image-ref.dxe")
+
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
+    assert result.items[0].embedded_asset_references == ()
+    assert DigiExamWarningCode.MISSING_EMBEDDED_ASSET_REFERENCE in {
+        warning.code for warning in result.warnings
+    }
+
+
+def test_empty_embedded_asset_payloads_with_body_reference_fail_closed() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["images"] = []
+    payload["exams"][0]["questions"][0]["bodyHTML"] = '<p><img data-image-id="0" /></p>'
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="empty-images-ref.dxe")
+
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
+    assert result.items[0].embedded_assets == ()
+    assert result.items[0].embedded_asset_references == ()
+    assert DigiExamWarningCode.MISSING_EMBEDDED_ASSET_REFERENCE in {
+        warning.code for warning in result.warnings
+    }
+
+
+def test_missing_embedded_asset_payloads_with_body_reference_fail_closed() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    del payload["exams"][0]["questions"][0]["images"]
+    payload["exams"][0]["questions"][0]["bodyHTML"] = '<p><img data-image-id="0" /></p>'
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="missing-images-ref.dxe")
+
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
+    assert result.items[0].embedded_assets == ()
+    assert result.items[0].embedded_asset_references == ()
+    assert DigiExamWarningCode.MISSING_EMBEDDED_ASSET_REFERENCE in {
+        warning.code for warning in result.warnings
+    }
+
+
+def test_unused_embedded_asset_payload_fails_closed_with_typed_warning() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["bodyHTML"] = "<p>No image reference.</p>"
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="unused-image.dxe")
+
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
+    assert result.items[0].embedded_asset_references == ()
+    assert DigiExamWarningCode.UNUSED_EMBEDDED_ASSET_PAYLOAD in {
+        warning.code for warning in result.warnings
+    }
+
+
+def test_ambiguous_embedded_asset_binding_fails_closed_with_typed_warning() -> None:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    payload["exams"][0]["questions"][0]["bodyHTML"] = (
+        '<p><img data-image-id="0" data-image-id="1" /></p>'
+    )
+
+    result = DigiExamDxeParser().parse_payload(payload, filename="ambiguous-image-ref.dxe")
+
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
+    assert result.items[0].embedded_asset_references == ()
+    assert DigiExamWarningCode.AMBIGUOUS_EMBEDDED_ASSET_BINDING in {
+        warning.code for warning in result.warnings
+    }
 
 
 def test_result_pdf_enrichment_imports_only_correct_machine_marked_answers() -> None:
