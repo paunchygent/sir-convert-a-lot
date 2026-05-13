@@ -305,6 +305,7 @@ Command-surface guarantees:
 Remote Hemma production execution stays wrapper-driven (`run-hemma` argv mode):
 
 ```bash
+pdm run hemma-prod-recreate
 pdm run run-hemma -- pdm run prod-build
 pdm run run-hemma -- pdm run prod-recreate sir_convert_a_lot_prod
 pdm run run-hemma -- pdm run prod-check
@@ -325,7 +326,17 @@ pdm run run-local-pdm hemma-command-monitor -- <remote-log-path>
 ```
 
 If the current Hemma Docker socket requires sudo and Docker is provided by
-Snap, preserve both PDM and Docker on `PATH` in the detached command:
+Snap, use the stable local recreate command instead of hand-writing the
+sudo/PATH bridge:
+
+```bash
+pdm run hemma-prod-recreate
+```
+
+The command preserves `/home/paunchygent/.local/bin` for PDM and `/snap/bin` for
+Docker across the remote sudo boundary, then delegates to the canonical
+`prod-recreate` compose wrapper. Use the lower-level detached form only when a
+governed task explicitly needs detached log breadcrumbs:
 
 ```bash
 pdm run run-local-pdm hemma-command-start task255-prod-deps-rocm-build-sudo-snap -- sudo -n env PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /home/paunchygent/.local/bin/pdm run prod-deps-rocm-build

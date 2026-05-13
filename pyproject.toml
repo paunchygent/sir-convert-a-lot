@@ -182,6 +182,7 @@ distribution = false
 "hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"
 "hemma-deploy-and-verify" = "python -m scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify"
 "hemma-verify-v2-conversions" = "bash scripts/devops/verify-hemma-v2-conversions.sh"
+"hemma-prod-recreate" = "bash scripts/devops/hemma-prod-recreate.sh"
 "hemma-sync-prod-env-mirror" = "bash scripts/devops/sync-prod-env-mirror.sh"
 "hemma-repair-rocm-runtime" = "bash scripts/devops/repair-hemma-rocm-runtime.sh"
 "dev-start" = "bash scripts/devops/dev-compose.sh start"

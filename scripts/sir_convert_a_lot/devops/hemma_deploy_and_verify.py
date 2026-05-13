@@ -42,6 +42,17 @@ from scripts.sir_convert_a_lot.devops.public_edge_verification import (
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-76-hemma-deploy-verify")
+REMOTE_PDM = "/home/paunchygent/.local/bin/pdm"
+REMOTE_DEPLOY_PATH = (
+    "/home/paunchygent/.local/bin:"
+    "/snap/bin:"
+    "/usr/local/sbin:"
+    "/usr/local/bin:"
+    "/usr/sbin:"
+    "/usr/bin:"
+    "/sbin:"
+    "/bin"
+)
 DOCKER_SOCKET_PERMISSION_DENIED_MESSAGES = (
     "permission denied while trying to connect to the Docker daemon socket",
     "permission denied while trying to connect to the docker API",
@@ -268,8 +279,8 @@ def _remote_recreate_service() -> None:
             "sudo",
             "-n",
             "env",
-            "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-            "/home/paunchygent/.local/bin/pdm",
+            f"PATH={REMOTE_DEPLOY_PATH}",
+            REMOTE_PDM,
             "run",
             "prod-recreate",
             "sir_convert_a_lot_prod",

@@ -121,6 +121,26 @@ def test_pdm_script_only_pyproject_change_does_not_change_dependency_hash(
     assert after_hash == before_hash
 
 
+def test_app_runtime_dockerfile_change_does_not_change_dependency_recipe_hash(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_files(tmp_path)
+    tmp_path.joinpath("Dockerfile").write_text(
+        "FROM sir-convert-a-lot-deps-rocm:local\nCOPY scripts ./scripts\n",
+        encoding="utf-8",
+    )
+
+    before_payload = build_recipe_input_payload(project_root=tmp_path)
+
+    tmp_path.joinpath("Dockerfile").write_text(
+        "FROM sir-convert-a-lot-deps-rocm:local\nCOPY scripts ./scripts\nCOPY docs ./docs\n",
+        encoding="utf-8",
+    )
+    after_payload = build_recipe_input_payload(project_root=tmp_path)
+
+    assert after_payload["recipe_hash"] == before_payload["recipe_hash"]
+
+
 def test_runtime_requirement_change_changes_dependency_hash(tmp_path: Path) -> None:
     _write_pyproject(
         tmp_path,
