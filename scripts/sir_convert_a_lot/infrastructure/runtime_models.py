@@ -15,6 +15,9 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v2 import (
+    PublicExamConverterAccessProfileV2,
+)
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 
@@ -22,6 +25,15 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 def utc_now() -> datetime:
     """Return the current UTC timestamp."""
     return datetime.now(UTC)
+
+
+@dataclass(frozen=True)
+class PublicExamConverterRuntimeAccessConfig:
+    """Server-side trust material for public Exam Converter access."""
+
+    profile: PublicExamConverterAccessProfileV2
+    grant_public_keys: dict[str, str] = field(default_factory=dict)
+    artifact_read_lease_secret: str | None = None
 
 
 @dataclass(frozen=True)
@@ -67,6 +79,7 @@ class ServiceConfig:
     internal_identity_expected_issuer: str = "api_gateway_service"
     internal_identity_ttl_seconds: int = 60
     internal_identity_allowed_clock_skew_seconds: int = 5
+    public_exam_converter_access: PublicExamConverterRuntimeAccessConfig | None = None
 
 
 @dataclass(frozen=True)

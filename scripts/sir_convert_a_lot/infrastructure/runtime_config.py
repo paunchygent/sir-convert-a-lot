@@ -16,8 +16,14 @@ import json
 import os
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v2 import (
+    PublicExamConverterAccessProfileV2,
+)
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
-from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import (
+    PublicExamConverterRuntimeAccessConfig,
+    ServiceConfig,
+)
 
 CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
     "SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY",
@@ -133,6 +139,129 @@ def _internal_identity_public_keys_from_env() -> dict[str, str]:
             ),
         )
     return public_keys
+
+
+def _public_exam_converter_grant_public_keys_from_env() -> dict[str, str]:
+    """Return HuleEdu public Exam Converter grant verification keys by key id."""
+
+    public_keys: dict[str, str] = {}
+    trusted_json = os.getenv("SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEYS_JSON")
+    if trusted_json is not None and trusted_json.strip() != "":
+        try:
+            decoded = json.loads(trusted_json)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEYS_JSON must be valid JSON"
+            ) from exc
+        if not isinstance(decoded, dict):
+            raise ValueError(
+                "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEYS_JSON must decode to an object"
+            )
+        for raw_key_id, raw_public_key in decoded.items():
+            if not isinstance(raw_key_id, str) or not isinstance(raw_public_key, str):
+                raise ValueError(
+                    "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEYS_JSON entries "
+                    "must map string key ids to PEM strings"
+                )
+            key_id = raw_key_id.strip()
+            if key_id == "":
+                raise ValueError(
+                    "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEYS_JSON "
+                    "contains a blank key id"
+                )
+            public_keys[key_id] = _normalize_pem_text(
+                raw_public_key,
+                field_name=(f"SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEYS_JSON[{key_id}]"),
+            )
+
+    signing_key_id = os.getenv(
+        "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_SIGNING_KEY_ID",
+        "gateway-identity-rs256-v1",
+    ).strip()
+    inline_public_key = os.getenv("SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEY")
+    public_key_path = os.getenv("SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEY_PATH")
+    if inline_public_key is not None and inline_public_key.strip() != "":
+        public_keys.setdefault(
+            signing_key_id,
+            _normalize_pem_text(
+                inline_public_key,
+                field_name="SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEY",
+            ),
+        )
+    elif public_key_path is not None and public_key_path.strip() != "":
+        public_keys.setdefault(
+            signing_key_id,
+            _read_public_key_path(
+                public_key_path,
+                field_name="SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_PUBLIC_KEY_PATH",
+            ),
+        )
+    return public_keys
+
+
+def _public_exam_converter_access_from_env(
+    *,
+    allowed_clock_skew_seconds: int,
+) -> PublicExamConverterRuntimeAccessConfig | None:
+    """Return public Exam Converter access config when explicitly configured."""
+
+    public_keys = _public_exam_converter_grant_public_keys_from_env()
+    lease_secret = os.getenv("SIR_CONVERT_PUBLIC_EXAM_CONVERTER_ARTIFACT_READ_LEASE_SECRET")
+    public_env_present = bool(public_keys) or (lease_secret is not None and lease_secret.strip())
+    if not public_env_present:
+        return None
+    if not public_keys:
+        raise ValueError("Public Exam Converter grant verification keys must be configured")
+    if lease_secret is None or lease_secret.strip() == "":
+        raise ValueError("Public Exam Converter artifact-read lease secret must be configured")
+
+    grant_max_ttl_seconds = _parse_bounded_int_env(
+        name="SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_MAX_TTL_SECONDS",
+        default=300,
+        minimum=1,
+        maximum=3600,
+    )
+    lease_max_seconds = _parse_bounded_int_env(
+        name="SIR_CONVERT_PUBLIC_EXAM_CONVERTER_ARTIFACT_READ_LEASE_MAX_SECONDS",
+        default=1800,
+        minimum=1,
+        maximum=86_400,
+    )
+    profile = PublicExamConverterAccessProfileV2(
+        grant_expected_issuer=os.getenv(
+            "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_ISSUER",
+            "api_gateway_service",
+        ).strip()
+        or "api_gateway_service",
+        grant_expected_audience=os.getenv(
+            "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_GRANT_AUDIENCE",
+            "sir-convert-a-lot",
+        ).strip()
+        or "sir-convert-a-lot",
+        grant_expected_policy_version=os.getenv(
+            "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_POLICY_VERSION",
+            "public-exam-converter-2026-05-13",
+        ).strip()
+        or "public-exam-converter-2026-05-13",
+        grant_max_ttl_seconds=grant_max_ttl_seconds,
+        allowed_clock_skew_seconds=allowed_clock_skew_seconds,
+        artifact_read_lease_issuer=os.getenv(
+            "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_ARTIFACT_READ_LEASE_ISSUER",
+            "sir-convert-a-lot",
+        ).strip()
+        or "sir-convert-a-lot",
+        artifact_read_lease_audience=os.getenv(
+            "SIR_CONVERT_PUBLIC_EXAM_CONVERTER_ARTIFACT_READ_LEASE_AUDIENCE",
+            "sir-convert-public-artifact-read",
+        ).strip()
+        or "sir-convert-public-artifact-read",
+        artifact_read_lease_max_seconds=lease_max_seconds,
+    )
+    return PublicExamConverterRuntimeAccessConfig(
+        profile=profile,
+        grant_public_keys=public_keys,
+        artifact_read_lease_secret=lease_secret.strip(),
+    )
 
 
 def fingerprint_for_request(spec_payload: dict[str, object], file_sha256: str) -> str:
@@ -277,4 +406,7 @@ def service_config_from_env() -> ServiceConfig:
         or "api_gateway_service",
         internal_identity_ttl_seconds=internal_identity_ttl_seconds,
         internal_identity_allowed_clock_skew_seconds=internal_identity_allowed_clock_skew_seconds,
+        public_exam_converter_access=_public_exam_converter_access_from_env(
+            allowed_clock_skew_seconds=internal_identity_allowed_clock_skew_seconds,
+        ),
     )

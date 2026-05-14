@@ -97,6 +97,16 @@ Convert produced a terminal migration bundle. Target-specific availability is
 reported inside the bundle as `complete`, `partial`, or `blocked`; consumers
 must not infer target availability from job status alone.
 
+Planned Epic 11 overlay work keeps target readiness Sir Convert-owned. When
+Skriptoteket later sends teacher edits or a teacher decision to accept the
+current item state, that input is represented as a source-bound ingestion
+overlay, not as local UI readiness. Sir Convert must validate the overlay,
+recompute the effective exam, and emit per-target readiness before consumers
+enable PDF or QTI downloads. A teacher acceptance can clear the teacher-review
+gate for missing answer keys, but it must not synthesize answer keys, mutate
+source IR provenance, bypass QTI validation, or enable a target whose renderer
+still lacks a governed safe shape.
+
 ## Cutover Route Boundary
 
 The product/browser route is HuleEdu Gateway-owned:

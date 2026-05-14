@@ -33,7 +33,11 @@ from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
     normalized_fingerprint_payload_for_spec_v2,
 )
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES
-from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, SourceFormatV2
+from scripts.sir_convert_a_lot.domain.specs_v2 import (
+    JobSpecV2,
+    SourceFormatV2,
+    normalized_exam_migration_targets_v2,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerprint_for_request_v2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
@@ -47,6 +51,14 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     CreateJobCompanionPartsV2,
     build_create_job_route_registry_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_access_v2 import (
+    is_public_job_v2,
+    issue_public_artifact_read_lease_fragment_v2,
+    public_bundle_manifest_artifact_key_v2,
+    public_conversion_grant_header_present_v2,
+    require_public_create_access_v2,
+    require_public_job_access_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_job_artifacts_v2 import (
     register_job_artifact_routes_v2,
@@ -127,6 +139,8 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         wait_seconds: int = Query(default=0, ge=0, le=20),
     ) -> JSONResponse:
         auth_context = require_api_key_v2(request, service_started_at=service_started_at)
+        owner_scope = auth_context.owner_api_key_scope
+        public_grant_access = None
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -227,11 +241,22 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
         route_handler = route_registry.require_handler_for_spec(spec)
         if route_handler.policy.create_required_grant is not None:
-            auth_context = require_internal_identity_auth_context_v2(
-                request,
-                service_started_at=service_started_at,
-                required_grant=route_handler.policy.create_required_grant,
-            )
+            if public_conversion_grant_header_present_v2(request):
+                public_grant_access = require_public_create_access_v2(
+                    request=request,
+                    service_started_at=service_started_at,
+                    requested_targets=frozenset(
+                        target.value for target in normalized_exam_migration_targets_v2(spec)
+                    ),
+                )
+                owner_scope = public_grant_access.owner_scope
+            else:
+                auth_context = require_internal_identity_auth_context_v2(
+                    request,
+                    service_started_at=service_started_at,
+                    required_grant=route_handler.policy.create_required_grant,
+                )
+                owner_scope = auth_context.owner_api_key_scope
         form = await request.form()
         prepared_route = await route_handler.prepare(
             spec=spec,
@@ -246,7 +271,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             ),
         )
 
-        scope_key = f"{auth_context.owner_api_key_scope}:POST:/v2/convert/jobs:{idempotency_key}"
+        scope_key = f"{owner_scope}:POST:/v2/convert/jobs:{idempotency_key}"
         file_sha256 = hashlib.sha256(payload_bytes).hexdigest()
         request_fingerprint = fingerprint_for_request_v2(
             spec_payload=normalized_fingerprint_payload_for_spec_v2(
@@ -281,6 +306,14 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                     retryable=False,
                 )
             body = _job_record_response(existing_job).model_dump(mode="json")
+            if public_grant_access is not None:
+                body["public_artifact_read_lease"] = issue_public_artifact_read_lease_fragment_v2(
+                    request=request,
+                    service_started_at=service_started_at,
+                    verified_grant=public_grant_access,
+                    job=existing_job,
+                    artifact_key=public_bundle_manifest_artifact_key_v2(),
+                )
             replay_status_code = 200 if existing_job.status in TERMINAL_JOB_STATUSES else 202
             response = JSONResponse(status_code=replay_status_code, content=body)
             response.headers["X-Idempotent-Replay"] = "true"
@@ -288,7 +321,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
         job = runtime.create_job(
             spec=spec,
-            owner_api_key_scope=auth_context.owner_api_key_scope,
+            owner_api_key_scope=owner_scope,
             upload_bytes=payload_bytes,
             resources_zip_bytes=prepared_route.resources_zip_bytes,
             reference_docx_bytes=prepared_route.reference_docx_bytes,
@@ -318,12 +351,35 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
         response_status = 200 if current.status in TERMINAL_JOB_STATUSES else 202
         payload = _job_record_response(current).model_dump(mode="json")
+        if public_grant_access is not None:
+            payload["public_artifact_read_lease"] = issue_public_artifact_read_lease_fragment_v2(
+                request=request,
+                service_started_at=service_started_at,
+                verified_grant=public_grant_access,
+                job=current,
+                artifact_key=public_bundle_manifest_artifact_key_v2(),
+            )
         return JSONResponse(status_code=response_status, content=payload)
 
     @router.get("/v2/convert/jobs/{job_id}")
     async def get_job(job_id: str, request: Request) -> JSONResponse:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
+        if is_public_job_v2(job):
+            if job is None:
+                raise ServiceError(
+                    status_code=404,
+                    code="job_not_found",
+                    message="Job not found or expired.",
+                    retryable=False,
+                )
+            require_public_job_access_v2(
+                request=request,
+                service_started_at=service_started_at,
+                job=job,
+            )
+            payload = _job_record_response(job).model_dump(mode="json")
+            return JSONResponse(status_code=200, content=payload)
         auth_context = auth_context_for_job_access_v2(
             request,
             service_started_at=service_started_at,

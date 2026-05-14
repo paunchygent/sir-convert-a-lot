@@ -3,8 +3,8 @@ type: reference
 id: REF-reference-index
 title: Reference Index
 status: active
-created: 2026-05-13
-last_updated: 2026-05-13
+created: 2026-05-14
+last_updated: 2026-05-14
 owners:
   - platform
 labels:
@@ -24,6 +24,7 @@ Generated index for reference, research, review, and roadmap documents.
 |---|---|---|---|
 | REF-digiexam-exam-artifact-item-type-evidence | [DigiExam Exam Artifact Item Type Evidence](ref-digiexam-exam-artifact-item-type-evidence.md) | reference | active |
 | REF-digiexam-jspdf-export-shape-and-examnet-migration-research | [DigiExam jsPDF Export Shape And Exam.net Migration Research](ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md) | reference | active |
+| REF-digiexam-machine-marked-answer-key-completion-architecture | [DigiExam Machine-marked Answer-key Completion Architecture](ref-digiexam-machine-marked-answer-key-completion-architecture.md) | reference | active |
 | REF-dockerized-hemma-gpu-passthrough-gap-2026-02-16 | [Reference: Dockerized Hemma GPU passthrough gap (2026-02-16)](ref-dockerized-hemma-gpu-passthrough-gap-2026-02-16.md) | reference | active |
 | REF-docling-form-ordering-exam-pdf-2026-02-16 | [Bug report: Docling form extraction ordering regression on exam PDF](ref-docling-form-ordering-exam-pdf-2026-02-16.md) | reference | active |
 | REF-espeak-ng-swedish-phoneme-integration-for-chatterbox | [eSpeak NG Swedish Phoneme Integration Research for Chatterbox](ref-espeak-ng-swedish-phoneme-integration-for-chatterbox.md) | reference | active |
@@ -31,6 +32,8 @@ Generated index for reference, research, review, and roadmap documents.
 | REF-examnet-qti-import-contract-and-validation-strategy | [Exam.net QTI Import Contract And Validation Strategy](ref-examnet-qti-import-contract-and-validation-strategy.md) | reference | active |
 | REF-hemma-sidecar-tts-md-to-wav-contract-outline | [Hemma Sidecar TTS md to wav Contract Outline](ref-hemma-sidecar-tts-md-to-wav-contract-outline.md) | reference | active |
 | REF-html-to-pdf-handout-templates-conversion-capability-matrix-2026-02-18 | [html_to_pdf_handout_templates conversion capability matrix](ref-html-to-pdf-handout-templates-conversion-capability-matrix-2026-02-18.md) | reference | active |
+| REF-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan | [Local Model Answer-key Completion Runtime And Benchmark Plan](ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md) | reference | active |
+| REF-machine-marked-answer-key-completion-implementation-roadmap | [Machine-marked Answer-key Completion Implementation Roadmap](ref-machine-marked-answer-key-completion-implementation-roadmap.md) | reference | active |
 | REF-qwen3-tts-colab-portable-slice-preprocessing | [Qwen3-TTS Colab Portable Slice Preprocessing Reference](ref-qwen3-tts-colab-portable-slice-preprocessing.md) | reference | active |
 | REF-qwen3-tts-swedish-corpus-curation-policy | [Qwen3-TTS Swedish Corpus Curation Policy](ref-qwen3-tts-swedish-corpus-curation-policy.md) | reference | active |
 | REF-qwen3-tts-swedish-finetuning-guide | [Qwen3-TTS Swedish Finetuning Guide for General Language Support](ref-qwen3-tts-swedish-finetuning-guide.md) | reference | active |

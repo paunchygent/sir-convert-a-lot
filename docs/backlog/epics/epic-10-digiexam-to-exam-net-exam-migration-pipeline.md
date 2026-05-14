@@ -9,6 +9,7 @@ last_updated: '2026-05-13'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
+  - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md
   - docs/backlog/stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md
   - docs/backlog/stories/story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema.md
@@ -33,6 +34,7 @@ related:
   - docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md
   - docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md
   - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
+  - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
 labels:
   - epic
   - conversion-platform
@@ -107,7 +109,8 @@ minimal re-authoring.
 - Reconstructing answer keys when they are absent from all available DigiExam
   exports. Free-text answers, rubrics, marking matrices, and assessment guides
   remain manual Exam.net marking steps unless a teacher-provided source supplies
-  them.
+  them. Machine-marked answer-key completion for missing source evidence is now
+  governed separately by `EPIC-11` and must not be treated as parser evidence.
 - Preserving incorrect student answers from graded result PDFs. Result PDFs may
   enrich correct-answer data only.
 - Treating Exam.net-origin teacher PDFs, Word exports, answer keys, or QTI
@@ -154,6 +157,9 @@ fallback parser lane. Planned lanes, in dependency order:
 1. Full QTI/native import lane, implemented behind the accepted API/artifact
    contracts and Task 280 validation foundation.
 1. Service API exposure and Skriptoteket adapter/UI workflow.
+1. `docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md`
+   for optional teacher overlay and policy-gated machine-marked answer-key
+   completion that preserves this epic's source-bound parser semantics.
 1. Bulk migration workflow and parity report.
 
 ## Acceptance Criteria

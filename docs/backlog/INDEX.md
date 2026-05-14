@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-05-13
-last_updated: 2026-05-13
+created: 2026-05-14
+last_updated: 2026-05-14
 related: []
 labels:
   - generated
@@ -30,6 +30,7 @@ Generated index for backlog planning documents.
 | epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab | [Qwen3-TTS Swedish language expansion fine-tuning on Hemma and Colab](epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md) | epic | in_progress |
 | epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot | [Gateway cutover and internal access contract for Sir Convert-a-Lot](epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md) | epic | proposed |
 | epic-10-digiexam-to-exam-net-exam-migration-pipeline | [DigiExam to Exam.net exam migration pipeline](epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md) | epic | proposed |
+| epic-11-machine-marked-answer-key-completion-for-exam-conversion | [Machine-marked answer-key completion for exam conversion](epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md) | epic | proposed |
 | fix-01-harden-cli-timeout-handling-for-long-running-background-jobs | [Harden CLI timeout handling for long-running background jobs](tasks/fix-01-harden-cli-timeout-handling-for-long-running-background-jobs.md) | fix | completed |
 | 001-sir-convert-a-lot-platform-foundation-programme | [Sir Convert-a-Lot platform foundation](programmes/programme-01-sir-convert-a-lot-platform-foundation.md) | programme | in_progress |
 | review-01-brutal-review-service-api-v2-multi-format-pivot | [Brutal review: service API v2 multi-format pivot](reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md) | review | completed |
@@ -95,6 +96,9 @@ Generated index for backlog planning documents.
 | story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract | [DigiExam migration API and Skriptoteket artifact delivery contract](stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md) | story | completed |
 | story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx | [Exam.net artifact authoring bundle for QTI and editable DOCX](stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md) | story | proposed |
 | story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime | [Service source simplification and active surface truth cleanup before Exam.net runtime](stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md) | story | proposed |
+| story-47-structured-llm-provider-harness-for-answer-key-completion | [Structured LLM provider harness for answer-key completion](stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md) | story | proposed |
+| story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion | [DigiExam overlay and effective IR contract for answer-key completion](stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md) | story | proposed |
+| story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion | [Skriptoteket teacher review workflow for answer-key completion](stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md) | story | proposed |
 | 005-bootstrap-docs-as-code-structure-under-docs | [Bootstrap docs-as-code structure under docs/](tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md) | task | completed |
 | 006-migrate-canonical-converter-code-and-quality-gates | [Migrate canonical converter code and quality gates](tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md) | task | completed |
 | 007-prepare-docker-hemma-service-foundation | [Prepare Docker + Hemma service foundation](tasks/task-04-04-prepare-docker-hemma-service-foundation.md) | task | completed |
@@ -315,7 +319,17 @@ Generated index for backlog planning documents.
 | task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx | [PDF to DOCX service pipeline (API v2)](tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md) | task | completed |
 | task-290-generate-and-validate-compact-service-onboarding-map | [Generate and validate compact service onboarding map](tasks/task-290-generate-and-validate-compact-service-onboarding-map.md) | task | proposed |
 | task-291-define-public-exam-converter-grant-lane-for-digiexam-migration-bundles | [Define public Exam Converter grant lane for DigiExam migration bundles](tasks/task-291-define-public-exam-converter-grant-lane-for-digiexam-migration-bundles.md) | task | completed |
+| task-292-implement-public-exam-converter-grant-verifier-and-read-leases | [Implement public Exam Converter grant verifier and artifact read leases](tasks/task-292-implement-public-exam-converter-grant-verifier-and-read-leases.md) | task | completed |
+| task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan | [Capture machine-marked answer-key completion architecture and tranche plan](tasks/task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan.md) | task | completed |
+| task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts | [Define DigiExam ingestion overlay fingerprints and effective IR artifacts](tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md) | task | proposed |
+| task-295-implement-teacher-overlay-application-and-effective-ir-reporting | [Implement teacher overlay application and effective IR reporting](tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md) | task | proposed |
+| task-296-extract-structured-chat-provider-harness-for-local-first-completion | [Extract structured chat provider harness for local-first completion](tasks/task-296-extract-structured-chat-provider-harness-for-local-first-completion.md) | task | proposed |
+| task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items | [Implement advisory answer-key completion reports for choice and gap-fill items](tasks/task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items.md) | task | proposed |
+| task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate | [Implement reviewed answer-key completion application and matching IR v3 gate](tasks/task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate.md) | task | proposed |
+| task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff | [Publish cross-repo Skriptoteket and HuleEdu answer-key completion handoff](tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md) | task | proposed |
 | task-30-markdown-to-docx-via-html-intermediary-pandoc | [Markdown to DOCX via HTML intermediary (Pandoc)](tasks/task-30-markdown-to-docx-via-html-intermediary-pandoc.md) | task | completed |
+| task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion | [Benchmark local model shortlist for answer-key completion](tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md) | task | proposed |
+| task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview | [Smoke test Granite 4.1 8B FP8 on ROCm vLLM preview](tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md) | task | completed |
 | task-31-cli-route-registry-for-local-and-hybrid-conversions | [CLI route registry for local and hybrid conversions](tasks/task-31-cli-route-registry-for-local-and-hybrid-conversions.md) | task | completed |
 | task-32-html-css-to-pdf-route-weasyprint-with-deterministic-manifest | [HTML+CSS to PDF route (WeasyPrint) with deterministic manifest](tasks/task-32-html-css-to-pdf-route-weasyprint-with-deterministic-manifest.md) | task | completed |
 | task-33-service-multi-format-api-v2-contract-adr | [Service multi-format API v2 contract + ADR](tasks/task-33-service-multi-format-api-v2-contract-adr.md) | task | completed |

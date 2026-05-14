@@ -1,215 +1,47 @@
 ---
 name: sir-convert-a-lot-devops-hemma
 description: >-
-  Repo-specific DevOps skill for running Sir Convert-a-Lot on Hemma with
-  GPU-first policy, tunnel-or-internet client access policy, and cross-repo
-  awareness of HuleEdu and Skriptoteket server layout.
+  Repo-specific router for Sir Convert-a-Lot Hemma operations, GPU runtime
+  checks, client access lanes, and cross-repo coexistence.
 ---
 
 # Sir Convert-a-Lot DevOps (Hemma + GPU)
 
-## Use This Skill When
+## Use When
 
-- Deploying or troubleshooting Sir Convert-a-Lot on `hemma.hule.education`.
-- Verifying GPU/ROCm readiness for conversion workloads.
-- Running local-to-remote tunnel workflows for conversion jobs.
-- Coordinating coexistence with HuleEdu and Skriptoteket on the same host.
+- Operating or troubleshooting Sir Convert-a-Lot on Hemma.
+- Verifying GPU, ROCm, vLLM, llama.cpp, or model-cache runtime behavior.
+- Running tunnel, deploy, smoke, or live verification work.
+- Checking coexistence with HuleEdu or Skriptoteket on the same host.
 
-## Source of Truth
+## Read Order
 
-- `docs/runbooks/runbook-hemma-devops-and-gpu.md`
-- `docs/converters/sir_convert_a_lot.md`
-- `docs/converters/multi_format_conversion_service_api_v2.md`
-- `docs/decisions/0002-multi-format-service-api-v2.md`
+1. `docs/runbooks/runbook-hemma-devops-and-gpu.md`
+1. Route from that doorway to the focused runbook:
+   - `docs/runbooks/runbook-hemma-service-ops.md`
+   - `docs/runbooks/runbook-hemma-gpu-runtime.md`
+   - `docs/runbooks/runbook-hemma-conversion-benchmarks.md`
+   - `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md`
+1. For public contracts, read:
+   - `docs/converters/sir_convert_a_lot.md`
+   - `docs/converters/multi_format_conversion_service_api_v2.md`
+   - `docs/decisions/0002-multi-format-service-api-v2.md`
 
-Cross-repo operational references:
+## Workflow
 
-- `/Users/olofs_mba/Documents/Repos/huleedu/docs/runbooks/hemma-server-operations-huleedu.md`
-- `/Users/olofs_mba/Documents/Repos/huleedu/docs/runbooks/gpu-ai-workloads-on-hemma-huleedu.md`
-- `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-home-server.md`
-- `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/runbooks/runbook-gpu-ai-workloads.md`
+1. Confirm the governed task/reference/ADR surface before changing runtime behavior.
+1. Use `pdm run run-hemma -- ...` from the local repo root for remote commands.
+1. Use committed detached runners for long Hemma jobs.
+1. Record durable findings in the governing task, reference, ADR, or runbook.
+1. Keep this `SKILL.md` as a router; do not add task logs or command dumps here.
 
-## Canonical Command Surfaces
+## Global Invariants
 
-Local wrapper (loads `.env`, enforces repo root):
-
-```bash
-pdm run run-local-pdm <script> [args]
-```
-
-Remote Hemma wrapper (enforces remote repo root):
-
-```bash
-pdm run run-hemma -- <command> [args]
-pdm run run-hemma --shell "<command with shell operators>"
-```
-
-Detached execution policy:
-
-- Use attached `run-hemma` only for short probes, validation commands, and fast
-  status checks.
-- Any long-running Hemma work must be launched through a detached remote
-  surface so the job survives local client disconnects, tunnel drops, or
-  session resets.
-- Prefer committed detached runners, named background containers, or remote
-  `tmux`/supervised surfaces over foreground client-attached execution.
-
-Historical GPU monitoring policy for long Hemma ML runs:
-
-- Prefer a real host time-series collector when one exists.
-- If the host does not already expose historical GPU time-series monitoring,
-  use the committed detached Task 116 resource monitor in parallel with the long
-  run:
-
-```bash
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor launch
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor status
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor summary
-```
-
-- Do not treat `journald` alone as historical GPU monitoring unless a separate
-  sampler service is already writing periodic GPU samples into the journal.
-
-## Hemma Storage Model
-
-Treat Hemma storage tiers as an operational contract, not a convenience choice.
-
-- `/srv/scratch` is the fast SSD working tier:
-  - Docker root and BuildKit cache
-  - Hugging Face/model caches
-  - active generated artifacts under repo `build/` trees
-- `/srv/storage` is the large HDD bulk-data tier:
-  - raw corpora
-  - cold retained datasets
-  - other large, slow-moving bulk assets
-- The Hemma OS disk (`/`) must not be used for long-lived Docker state or
-  large ML artifact trees.
-
-Recurring scratch-governance rule for high-churn Qwen lanes:
-
-- keep active proof, training, and evaluation roots on `/srv/scratch`
-- demote only cold completed artifact trees onto `/srv/storage` and keep a
-  symlink at the original scratch path
-- block recurring maintenance while active `qwen-*` containers or an explicit
-  scratch-maintenance block file are present
-- prefer the committed recurring maintenance surface over ad hoc cleanup:
-
-```bash
-pdm run run-hemma -- pdm run qwen-scratch-policy audit
-pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state
-pdm run run-hemma -- pdm run qwen-scratch-policy install-timer --enable-linger --prune-docker-state
-pdm run run-hemma -- pdm run qwen-scratch-policy status-timer
-```
-
-- use `remediate --source-path ...` when you need one explicit, operator-chosen
-  archive move rather than the policy-driven recurring pass
-- Story 29 proof wrappers now fail early on insufficient scratch headroom, so
-  restore headroom before rerunning `qwen-t197-proof` or `qwen-t198-proof`
-- Story 29 fallback standalone eval is also detached by contract:
-  `pdm run run-hemma -- pdm run qwen-story29-eval-detached launch ...`
-  and
-  `pdm run run-hemma -- pdm run qwen-story29-eval-detached status ...`
-
-Deploy parity gate (one-command deploy + verify):
-
-```bash
-pdm run hemma-deploy-and-verify \
-  --expected-revision <sha> \
-  --lane host \
-  --api-key <key>
-```
-
-Deploy verification evidence path (deterministic):
-
-- Use `--output-root` for deterministic evidence output and include:
-  - `report.json`
-  - `report.md`
-  - `readyz.json`
-  - `metrics.prom`
-  - `remote_head.txt`
-
-Wrapper behavior is deterministic:
-
-- validates `SIR_CONVERT_A_LOT_HEMMA_ROOT` exists and is a git repo before command execution.
-- asserts effective remote cwd equals configured root.
-- runs commands in `bash --noprofile --norc`.
-- streams the prepared script over stdin to avoid SSH quoting/argv ambiguity.
-- fails with explicit exit codes:
-  - `66` root missing
-  - `67` root is not a git repo
-  - `68` cwd mismatch
-
-## Hemma Repo Topology Awareness
-
-- `~/apps/sir-convert-a-lot`: this service repo.
-- `~/apps/huleedu`: HuleEdu stack + NLP offload.
-- `~/apps/skriptoteket`: Skriptoteket stack.
-- `~/infrastructure`: shared nginx/certbot edge infra.
-
-## Mandatory First Step (Path Guard)
-
-Before any deployment/smoke actions:
-
-1. Verify repo location is under `~/apps`:
-
-```bash
-pdm run run-hemma --shell 'find /home/paunchygent -maxdepth 4 -type d -name "sir-convert-a-lot" 2>/dev/null | sort'
-```
-
-2. If missing, bootstrap canonical path:
-
-```bash
-ssh hemma "/bin/bash -lc 'mkdir -p /home/paunchygent/apps && cd /home/paunchygent/apps && git clone git@github.com:paunchygent/sir-convert-a-lot.git'"
-```
-
-3. If multiple copies exist, standardize on:
-
-- `/home/paunchygent/apps/sir-convert-a-lot`
-- set `SIR_CONVERT_A_LOT_HEMMA_ROOT` accordingly for wrappers.
-
-## GPU-First Guardrails
-
-- Prefer GPU execution path by default for conversion service workloads.
-- Never silently switch to CPU fallback when GPU is unavailable.
-- If fallback policy changes, require ADR/backlog updates first.
-
-## Tunnel-First Dev Flow
-
-Canonical client access lanes (no superseded local lanes):
-
-- Tunnel lane: `http://127.0.0.1:28085`
-- Internet lane: `https://convert.hule.education`
-- Do not guide clients to `127.0.0.1:8085` or `127.0.0.1:18085`.
-
-Verification lane policy:
-
-- host lane (`28085`) is canonical for deploy/live verification.
-- docker lane (`8085`) is internal-only container validation and must not be
-  documented as a client access lane.
-
-API key policy for deploy/live verification:
-
-- precedence: `--api-key` > `SIR_CONVERT_A_LOT_API_KEY` > error.
-- implicit `dev-only-key` is rejected unless explicitly passed via
-  `--api-key dev-only-key` or `--allow-dev-key`.
-- API keys must never be persisted in reports/logs/artifacts.
-
-Canonical Hemma prod env mirror/symlink command:
-
-```bash
-pdm run run-hemma -- pdm run hemma-sync-prod-env-mirror
-```
-
-```bash
-ssh hemma -L 28085:127.0.0.1:28085 -N
-curl -fsS http://127.0.0.1:28085/healthz
-pdm run convert-a-lot convert ./pdfs --output-dir ./research --service-url http://127.0.0.1:28085
-```
-
-## Minimal Triage Commands
-
-```bash
-pdm run run-hemma -- /bin/bash -lc 'sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
-pdm run run-hemma -- rocminfo
-pdm run run-hemma -- rocm-smi
-```
+- Canonical remote repo root: `/home/paunchygent/apps/sir-convert-a-lot`.
+- Canonical client tunnel lane: `http://127.0.0.1:28085`.
+- GPU/offload work is GPU-first; no silent CPU fallback.
+- Docker work uses BuildKit and Docker Compose v2.
+- Long-lived Docker state, model caches, and generated working artifacts stay off
+  the Hemma OS disk.
+- Public ports, secrets, student PII, and generated benchmark artifacts need
+  explicit governing authority before promotion.

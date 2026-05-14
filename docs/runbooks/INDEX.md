@@ -3,8 +3,8 @@ type: runbook
 id: RUN-runbook-index
 title: Runbook Index
 status: active
-created: 2026-05-13
-last_updated: 2026-05-13
+created: 2026-05-14
+last_updated: 2026-05-14
 owners:
   - platform
 system: docs
@@ -24,6 +24,10 @@ Generated index for operational runbooks.
 | ID | Title | Type | Status |
 |---|---|---|---|
 | RUN-chatterbox-multilingual-tuning-on-hemma | [Chatterbox Multilingual Tuning Runbook for Hemma](runbook-chatterbox-multilingual-tuning-on-hemma.md) | runbook | active |
+| RUN-hemma-conversion-benchmarks | [Hemma Conversion Benchmark Runbook for Sir Convert-a-Lot](runbook-hemma-conversion-benchmarks.md) | runbook | active |
 | RUN-hemma-devops-and-gpu | [Hemma DevOps and GPU Runbook for Sir Convert-a-Lot](runbook-hemma-devops-and-gpu.md) | runbook | active |
+| RUN-hemma-gpu-runtime | [Hemma GPU Runtime Runbook for Sir Convert-a-Lot](runbook-hemma-gpu-runtime.md) | runbook | active |
+| RUN-hemma-service-ops | [Hemma Service Operations Runbook for Sir Convert-a-Lot](runbook-hemma-service-ops.md) | runbook | active |
+| RUN-hemma-tts-sidecar-benchmarks | [Hemma TTS Sidecar Benchmark Runbook for Sir Convert-a-Lot](runbook-hemma-tts-sidecar-benchmarks.md) | runbook | active |
 | RUN-qwen3-swedish-finetuning-on-hemma-and-colab | [Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab](runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md) | runbook | active |
 | RUN-v2-async-push-delivery | [V2 Async Push Delivery Runbook](runbook-v2-async-push-delivery.md) | runbook | active |

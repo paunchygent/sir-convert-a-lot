@@ -42,6 +42,15 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
     auth_context_for_job_access_v2,
     require_job_access_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_access_v2 import (
+    is_public_job_v2,
+    public_bundle_manifest_artifact_key_v2,
+    require_public_artifact_read_lease_v2,
+    require_public_job_access_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_artifacts_v2 import (
+    load_public_bundle_manifest_v2,
+)
 
 
 def _content_type_for_output(output_format: OutputFormatV2) -> str:
@@ -61,17 +70,31 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
     async def get_result(job_id: str, request: Request) -> JSONResponse:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        auth_context = auth_context_for_job_access_v2(
-            request,
-            service_started_at=service_started_at,
-            job=job,
-            required_grant="sir-convert:jobs:read-own",
-        )
-        job = require_job_access_v2(
-            auth_context=auth_context,
-            job=job,
-            required_grant="sir-convert:jobs:read-own",
-        )
+        if is_public_job_v2(job):
+            if job is None:
+                raise ServiceError(
+                    status_code=404,
+                    code="job_not_found",
+                    message="Job not found or expired.",
+                    retryable=False,
+                )
+            require_public_job_access_v2(
+                request=request,
+                service_started_at=service_started_at,
+                job=job,
+            )
+        else:
+            auth_context = auth_context_for_job_access_v2(
+                request,
+                service_started_at=service_started_at,
+                job=job,
+                required_grant="sir-convert:jobs:read-own",
+            )
+            job = require_job_access_v2(
+                auth_context=auth_context,
+                job=job,
+                required_grant="sir-convert:jobs:read-own",
+            )
 
         if job.status not in TERMINAL_JOB_STATUSES:
             pending = JobPendingResultResponseV2(job_id=job.job_id, status=job.status)
@@ -159,22 +182,52 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
     async def get_artifact_bundle_manifest(job_id: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        auth_context = auth_context_for_job_access_v2(
-            request,
-            service_started_at=service_started_at,
-            job=job,
-            required_grant="sir-convert:artifacts:read-own",
-        )
-        job = require_job_access_v2(
-            auth_context=auth_context,
-            job=job,
-            required_grant="sir-convert:artifacts:read-own",
-            access_denied_code="artifact_access_denied",
-        )
+        public_grant = None
+        if is_public_job_v2(job):
+            if job is None:
+                raise ServiceError(
+                    status_code=404,
+                    code="job_not_found",
+                    message="Job not found or expired.",
+                    retryable=False,
+                )
+            public_grant = require_public_job_access_v2(
+                request=request,
+                service_started_at=service_started_at,
+                job=job,
+            )
+            require_public_artifact_read_lease_v2(
+                request=request,
+                service_started_at=service_started_at,
+                verified_grant=public_grant,
+                job=job,
+                artifact_key=public_bundle_manifest_artifact_key_v2(),
+            )
+        else:
+            auth_context = auth_context_for_job_access_v2(
+                request,
+                service_started_at=service_started_at,
+                job=job,
+                required_grant="sir-convert:artifacts:read-own",
+            )
+            job = require_job_access_v2(
+                auth_context=auth_context,
+                job=job,
+                required_grant="sir-convert:artifacts:read-own",
+                access_denied_code="artifact_access_denied",
+            )
         _require_digiexam_bundle_job(job)
         pending = _pending_or_unsuccessful_response(job)
         if pending is not None:
             return pending
+        if public_grant is not None:
+            manifest = load_public_bundle_manifest_v2(
+                request=request,
+                service_started_at=service_started_at,
+                job=job,
+                verified_grant=public_grant,
+            )
+            return JSONResponse(status_code=200, content=manifest)
         return FileResponse(
             path=job.artifact_path.as_posix(),
             media_type="application/json",
@@ -185,18 +238,39 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
     async def get_named_artifact(job_id: str, artifact_key: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        auth_context = auth_context_for_job_access_v2(
-            request,
-            service_started_at=service_started_at,
-            job=job,
-            required_grant="sir-convert:artifacts:read-own",
-        )
-        job = require_job_access_v2(
-            auth_context=auth_context,
-            job=job,
-            required_grant="sir-convert:artifacts:read-own",
-            access_denied_code="artifact_access_denied",
-        )
+        if is_public_job_v2(job):
+            if job is None:
+                raise ServiceError(
+                    status_code=404,
+                    code="job_not_found",
+                    message="Job not found or expired.",
+                    retryable=False,
+                )
+            public_grant = require_public_job_access_v2(
+                request=request,
+                service_started_at=service_started_at,
+                job=job,
+            )
+            require_public_artifact_read_lease_v2(
+                request=request,
+                service_started_at=service_started_at,
+                verified_grant=public_grant,
+                job=job,
+                artifact_key=artifact_key,
+            )
+        else:
+            auth_context = auth_context_for_job_access_v2(
+                request,
+                service_started_at=service_started_at,
+                job=job,
+                required_grant="sir-convert:artifacts:read-own",
+            )
+            job = require_job_access_v2(
+                auth_context=auth_context,
+                job=job,
+                required_grant="sir-convert:artifacts:read-own",
+                access_denied_code="artifact_access_denied",
+            )
         _require_digiexam_bundle_job(job)
         pending = _pending_or_unsuccessful_response(job)
         if pending is not None:

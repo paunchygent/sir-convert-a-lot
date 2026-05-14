@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-05-13'
+last_updated: '2026-05-14'
 ---
 
 ## Purpose
@@ -28,46 +28,14 @@ runbooks, or skills.
 - Task 253 is the current docs-governance authority for cutting root
   `AGENTS.md` over to a thin skill router and aligning generated docs indexes
   with the canonical `.codex/handoff.md` active-context model.
-- Epic 10 is active for DigiExam to Exam.net migration. Completed lanes:
-  Story 38/Task 267 PDF fallback parser, Story 40/Task 274 `.dxe` parser plus
-  sanitized result-PDF enrichment, Story 41/Task 275 IR, Story 42/Task 276
-  embedded assets, and Story 43/Task 277 Exam.net-oriented PDF renderer.
-  Story 44/Task 278 are completed as the API/artifact contract gate for
-  authenticated Skriptoteket delivery before QTI, service runtime, or
-  Skriptoteket UI implementation proceeds.
-  Story 45 is now scaffolded for normal teacher-owned Exam.net artifacts, and
-  Story 46 is the cleanup prerequisite before more Exam.net authoring runtime.
-  Task 284/Review 13 and Tasks 285-287/Review 14 are closed; continue with
-  Tasks 288/289 before further Exam.net runtime.
-  Task 279 completed on 2026-05-12 as the docs-as-code direction gate: the
-  route family is one shared service API v2 lifecycle with separate
-  `digiexam_dxe -> examnet_migration_bundle` and
-  `examnet_artifact -> teacher_authoring_bundle` contracts. The Exam.net route
-  makes QTI packages, editable DOCX, Swedish Exam.net PDF-to-exam converter
-  PDFs, QTI validation reports, and manual-follow-up reports first-class
-  artifact targets.
-  Task 280 completed as the QTI implementation gate: deterministic QTI 2.1
-  sample packages for MCQ, free text, image-bearing MCQ/free text,
-  unsupported-resource omission, and proof-gated matching plus
-  `qti_validation_report` output.
-  Task 281 completed for the local OneDrive `.dxe` validation corpus: raw files
-  stay ignored/local-only, and the tracked evidence is a metadata-only manifest
-  plus parser/IR regression tests.
-  Task 282 completed the Sir Convert service-runtime implementation for
-  DigiExam migration artifact bundle routes: signed HuleEdu
-  `InternalIdentityContextV1` ownership, `digiexam_dxe -> examnet_migration_bundle`, named artifact listing/download routes, Task 280
-  QTI integration, live service-route smoke coverage over a bounded local
-  OneDrive `.dxe` corpus subset, selective `conversion.targets`, and
-  manifest-backed `/result` metadata. Review 12 is accepted after re-review.
-  Task 291 completed the public Exam Converter grant-lane contract:
-  `PublicConversionGrantV1`, `owner_kind=public_grant`, lease-bound artifacts,
-  and continued `PR-0320` runtime blocking until a later governed slice.
-  The HuleEdu auth-edge implementation authority moved from the former Task 260
-  planning lane to HuleEdu `ST-01-07`.
-  Review 11's Task 276 zero-payload embedded-asset blocker was remediated on
-  2026-05-12 and closed: `bodyHTML` `data-image-id` references now fail closed
-  with `missing_embedded_asset_reference` when `question.images[]` is empty or
-  absent.
+- Epic 10 is active for DigiExam to Exam.net migration. Completed lanes include
+  parser/IR/assets/PDF/QTI/service-runtime work through Task 282, public grant
+  contract/runtime through Tasks 291/292, and the separate
+  `digiexam_dxe -> examnet_migration_bundle` versus
+  `examnet_artifact -> teacher_authoring_bundle` route split. Story 45 is
+  scaffolded for teacher-owned Exam.net artifacts; Story 46 is the cleanup
+  prerequisite before more Exam.net authoring runtime, with Tasks 288/289 next.
+  HuleEdu auth-edge implementation authority lives in HuleEdu `ST-01-07`.
 - Story 39 checkpoint/OCR lanes through Task 271 are completed or reviewed in
   their governed docs. Task 271's production-service dirty-corpus result is the
   current optimization baseline; do not rerun a serial baseline unless a later
@@ -79,12 +47,6 @@ runbooks, or skills.
   `>=40%` toy improvement gate is withdrawn as a blocker; Task 272 now carries
   the public artifact/retention contract and Task 273 now carries numeric
   promotion/resource thresholds.
-- `TASK-0046`, `TASK-0043`, and `TASK-0045` established the compact handoff,
-  `.codex/` governance surface, and validation command grammar. Do not
-  recreate retired `.agents/` shims.
-- Generated repomix packages belong under ignored `.codex/repomix_packages/`;
-  do not track generated XML packages.
-
 ## Active Pointers
 
 - Generated docs doorway: `docs/index.md`.
@@ -124,17 +86,20 @@ runbooks, or skills.
   accepted in
   `docs/backlog/reviews/review-14-ruthless-review-of-tasks-285-287-service-route-registry-runtime-and-cli-split.md`.
   Next Story 46 tasks: Tasks 288/289.
-- Completed Exam.net authoring/QTI direction gate:
-  `docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md`.
-- Completed QTI sample package and validation-report implementation task:
-  `docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md`.
-- Completed DigiExam `.dxe` validation corpus classification task:
-  `docs/backlog/tasks/task-281-classify-digiexam-dxe-validation-corpus-and-add-parser-regression-gate.md`.
-- Completed runtime task and HuleEdu auth-edge dependency:
-  `docs/backlog/tasks/task-282-implement-digiexam-migration-service-runtime-artifact-bundle-routes.md`;
-  `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-07-expose-sir-convert-artifact-bundle-routes-through-huleedu-auth-edge.md`.
-- Completed public Exam Converter grant-lane contract: Task 291, paired with
-  HuleEdu `TASK-0563`.
+- Completed DigiExam route/runtime and public Exam Converter docs: Tasks
+  279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
+- Active answer-key completion lane: Epic 11; settled interim provider is
+  Granite FP8 on Hemma ROCm vLLM at `0.70`, cached under the canonical HF
+  scratch path after Task 301 returned constrained `choice` `B`.
+  Story 48/Task 294 and Story 49 now explicitly own teacher review decisions,
+  including accepting the current missing-answer-key state, as Sir
+  Convert-validated ingestion overlays. Skriptoteket must not enable PDF/QTI
+  from local acceptance alone; Task 295 must recompute target readiness after
+  overlay application and keep unsupported target shapes or failed validation
+  blocked.
+- Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
+  a thin router, the former omnibus Hemma runbook is a compact doorway, and
+  focused service/GPU/conversion/TTS runbooks carry current operator guidance.
 - DigiExam migration service API/artifact contract:
   `docs/converters/digiexam-migration-service-api-artifact-contract.md`.
 - Draft Exam.net artifact authoring service API/artifact contract:
@@ -151,14 +116,6 @@ runbooks, or skills.
   `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
 - ADR-0009 readiness review:
   `docs/backlog/reviews/review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness.md`.
-- Active Qwen Task 101 ledger:
-  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
-- Qwen experiment governance:
-  `.codex/rules/096-qwen-experiment-governance.md`.
-- Hemma/Qwen runbook:
-  `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`.
-- Durable session-history index:
-  `.codex/long-term-memory/index.md`.
 
 ## Next Actions
 
@@ -166,14 +123,15 @@ runbooks, or skills.
 1. Continue Story 39 with the next governed implementation slice: Task 272 for
    formula-aware final pass and linked artifact bundle, or Task 273 for
    `chunk_size_pages=8` production-service tuning proof.
-1. Continue the cutover on the HuleEdu/Skriptoteket side: HuleEdu `ST-01-07`
-   must proxy `/sir-convert/v2/...` to Sir Convert's downstream
-   `/v2/convert/...` routes and sign `InternalIdentityContextV1` with
-   `aud=sir-convert-a-lot`; Skriptoteket then needs an adapter/UI/user-file
-   task that consumes the Task 282 artifact-bundle contract after Review 12
-   re-review acceptance.
-1. Keep Skriptoteket `PR-0320` public runtime blocked until a governed runtime
-   slice consumes HuleEdu `TASK-0563` and Sir Convert Task 291.
+1. Continue the HuleEdu/Skriptoteket cutover: HuleEdu `ST-01-07` proxies
+   `/sir-convert/v2/...`; Skriptoteket then consumes the Task 282 contract.
+1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
+   evidence; do not widen this lane beyond
+   `digiexam_dxe -> examnet_migration_bundle`.
+1. For machine-marked answer-key completion, start with Task 294 before runtime:
+   define source-bound review decisions, accepted-current-state semantics, and
+   target-readiness reporting before Task 295 applies overlays or Skriptoteket
+   enables PDF/QTI from Sir Convert readiness.
 1. Keep the Exam.net artifact authoring route separate from the DigiExam
    migration route. Do not feed Exam.net-origin PDFs or Word exports into
    `digiexam_dxe -> examnet_migration_bundle`.
@@ -191,6 +149,10 @@ runbooks, or skills.
   `typecheck-all` (`638 source files`), focused Story 46 tests (`11 passed`),
   `coverage-gate` (`1159 passed, 5 skipped`, coverage `95.93%`), docs/skills/
   handoff validation, and `git diff --check`.
+- 2026-05-13 Task 292 focused gates passed: policy/runtime pytest (`12 passed`), `pdm run lint`, and `pdm run typecheck`.
+- 2026-05-14 Hemma skill/runbook cleanup gates passed: `pdm run docs-sync`,
+  `pdm run docs-validate`, `pdm run skills-validate`,
+  `pdm run handoff-validate`, and `git diff --check`.
 
 ## Stop Conditions
 
