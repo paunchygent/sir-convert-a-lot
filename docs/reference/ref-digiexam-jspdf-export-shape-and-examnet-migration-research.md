@@ -449,7 +449,7 @@ Proposed architecture, pending target research:
 1. DigiExam PDF parser v1 with regression fixtures.
 1. DigiExam `.dxe` parser and optional graded-result PDF answer-key enrichment
    contract.
-1. Sir Convert intermediate exam representation and manifest schema.
+1. Sir Convert intermediary exam shape and source-adapter manifest schema.
 1. Exam.net-targeted renderer.
 1. Bulk conversion workflow and parity report.
 

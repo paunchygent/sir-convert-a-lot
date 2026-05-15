@@ -70,7 +70,7 @@ runbooks, or skills.
   `docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md`.
 - Auth-aware public-edge evidence follow-up:
   `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
-- Active DigiExam migration epic:
+- Active exam artifact conversion/authoring umbrella epic:
   `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Completed DigiExam parser/IR docs: Story 38/Task 267, Story 40/Task 274,
   Story 41/Task 275.
