@@ -1,9 +1,9 @@
 ---
-id: 'task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items'
-title: 'Implement advisory answer-key completion reports for choice and gap-fill items'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items
+title: Implement advisory answer-key completion reports for choice and gap-fill items
+type: task
+status: proposed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -19,6 +19,7 @@ labels:
   - choice
   - gap-fill
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

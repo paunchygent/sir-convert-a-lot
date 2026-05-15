@@ -47,6 +47,7 @@ class CreateJobCompanionPartsV2:
     reference_docx: UploadFile | None
     graded_result_pdf: UploadFile | None
     parity_pdf: UploadFile | None
+    digiexam_ingestion_overlay: UploadFile | None
     form_part_names: frozenset[str]
 
 
@@ -62,6 +63,8 @@ class PreparedCreateJobRouteV2:
     graded_result_pdf_sha256: str | None = None
     parity_pdf_bytes: bytes | None = None
     parity_pdf_sha256: str | None = None
+    digiexam_ingestion_overlay_bytes: bytes | None = None
+    digiexam_ingestion_overlay_sha256: str | None = None
 
 
 DEFAULT_DOCUMENT_CREATE_JOB_ROUTE_KEYS_V2: tuple[RouteKeyV2, ...] = (
@@ -153,12 +156,15 @@ class DigiExamMigrationCreateJobRouteHandlerV2:
             reference_docx_uploaded=parts.reference_docx is not None,
             graded_result_pdf=parts.graded_result_pdf,
             parity_pdf=parts.parity_pdf,
+            digiexam_ingestion_overlay=parts.digiexam_ingestion_overlay,
         )
         return PreparedCreateJobRouteV2(
             graded_result_pdf_bytes=companions.graded_result_pdf_bytes,
             graded_result_pdf_sha256=companions.graded_result_pdf_sha256,
             parity_pdf_bytes=companions.parity_pdf_bytes,
             parity_pdf_sha256=companions.parity_pdf_sha256,
+            digiexam_ingestion_overlay_bytes=companions.digiexam_ingestion_overlay_bytes,
+            digiexam_ingestion_overlay_sha256=companions.digiexam_ingestion_overlay_sha256,
         )
 
 
@@ -228,6 +234,8 @@ def _reject_digiexam_companions_for_default_route(parts: CreateJobCompanionParts
         unsupported_parts.append("graded_result_pdf")
     if parts.parity_pdf is not None:
         unsupported_parts.append("parity_pdf")
+    if parts.digiexam_ingestion_overlay is not None:
+        unsupported_parts.append("digiexam_ingestion_overlay")
     if unsupported_parts:
         raise ServiceError(
             status_code=422,

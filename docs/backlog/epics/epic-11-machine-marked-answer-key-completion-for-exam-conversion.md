@@ -1,11 +1,11 @@
 ---
-id: 'epic-11-machine-marked-answer-key-completion-for-exam-conversion'
-title: 'Machine-marked answer-key completion for exam conversion'
-type: 'epic'
-status: 'proposed'
-priority: 'high'
+id: epic-11-machine-marked-answer-key-completion-for-exam-conversion
+title: Machine-marked answer-key completion for exam conversion
+type: epic
+status: proposed
+priority: high
 created: '2026-05-14'
-last_updated: '2026-05-14'
+last_updated: '2026-05-15'
 related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
@@ -33,6 +33,7 @@ labels:
   - llm
   - skriptoteket
 ---
+
 Major capability increment managed through linked stories.
 
 ## Goal
@@ -52,9 +53,11 @@ review gates.
 - Optional `digiexam_ingestion_overlay` multipart input for the existing
   `digiexam_dxe -> examnet_migration_bundle` route.
 - Source item fingerprints and overlay source binding so Skriptoteket can
-  round-trip item context safely.
+  round-trip teacher edits, manual answer keys, and review decisions safely.
+- A hard `digiexam_migration_bundle_v2` break with no v1 compatibility shim,
+  so consumers migrate to target readiness and effective-exam semantics.
 - A distinct `effective_ir_json` artifact when teacher overlay or applied
-  completion changes renderer input.
+  completion changes renderer input, using `digiexam_effective_exam_v1`.
 - Teacher/manual answer-key overlay semantics that remain authoritative only in
   the effective layer.
 - Local-first structured LLM answer-key completion for missing machine-marked

@@ -1,9 +1,9 @@
 ---
-id: 'task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview'
-title: 'Smoke test Granite 4.1 8B FP8 on ROCm vLLM preview'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview
+title: Smoke test Granite 4.1 8B FP8 on ROCm vLLM preview
+type: task
+status: completed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -21,6 +21,7 @@ labels:
   - granite
   - structured-output
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -142,8 +143,7 @@ Serve attempts:
   `ChannelWiseTorchFP8ScaledMMLinearKernel` for `CompressedTensorsW8A8Fp8`, and
   used the Triton attention backend.
 - Startup warning observed:
-  `AITER is not found or QuarkOCP_MX is not supported on the current platform.
-  QuarkOCP_MX quantization will not be available.`
+  `AITER is not found or QuarkOCP_MX is not supported on the current platform. QuarkOCP_MX quantization will not be available.`
 - Weight download took about `150.6s`; safetensors loading took about `24.0s`;
   model loading used `9.05 GiB`; torch compile took about `76.9s`; graph
   capture took about `13s` and `2.83 GiB`.

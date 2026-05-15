@@ -1,9 +1,9 @@
 ---
-id: 'story-47-structured-llm-provider-harness-for-answer-key-completion'
-title: 'Structured LLM provider harness for answer-key completion'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-47-structured-llm-provider-harness-for-answer-key-completion
+title: Structured LLM provider harness for answer-key completion
+type: story
+status: proposed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -22,6 +22,7 @@ labels:
   - answer-key-completion
   - provider-policy
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective

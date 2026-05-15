@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-05-14
-last_updated: 2026-05-14
+created: 2026-05-15
+last_updated: 2026-05-15
 related: []
 labels:
   - generated
@@ -321,8 +321,8 @@ Generated index for backlog planning documents.
 | task-291-define-public-exam-converter-grant-lane-for-digiexam-migration-bundles | [Define public Exam Converter grant lane for DigiExam migration bundles](tasks/task-291-define-public-exam-converter-grant-lane-for-digiexam-migration-bundles.md) | task | completed |
 | task-292-implement-public-exam-converter-grant-verifier-and-read-leases | [Implement public Exam Converter grant verifier and artifact read leases](tasks/task-292-implement-public-exam-converter-grant-verifier-and-read-leases.md) | task | completed |
 | task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan | [Capture machine-marked answer-key completion architecture and tranche plan](tasks/task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan.md) | task | completed |
-| task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts | [Define DigiExam ingestion overlay fingerprints and effective IR artifacts](tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md) | task | proposed |
-| task-295-implement-teacher-overlay-application-and-effective-ir-reporting | [Implement teacher overlay application and effective IR reporting](tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md) | task | proposed |
+| task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts | [Define DigiExam ingestion overlay fingerprints and effective IR artifacts](tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md) | task | completed |
+| task-295-implement-teacher-overlay-application-and-effective-ir-reporting | [Implement teacher overlay application and effective IR reporting](tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md) | task | completed |
 | task-296-extract-structured-chat-provider-harness-for-local-first-completion | [Extract structured chat provider harness for local-first completion](tasks/task-296-extract-structured-chat-provider-harness-for-local-first-completion.md) | task | proposed |
 | task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items | [Implement advisory answer-key completion reports for choice and gap-fill items](tasks/task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items.md) | task | proposed |
 | task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate | [Implement reviewed answer-key completion application and matching IR v3 gate](tasks/task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate.md) | task | proposed |

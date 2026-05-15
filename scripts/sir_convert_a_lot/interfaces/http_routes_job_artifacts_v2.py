@@ -439,10 +439,12 @@ def _conversion_metadata_for_job(
             effective_gpu_stage_limit=job.effective_gpu_stage_limit,
             scheduling_mode=job.scheduling_mode,
             route_key="digiexam_dxe_to_examnet_migration_bundle",
-            bundle_schema_version="digiexam_migration_bundle_v1",
+            bundle_schema_version="digiexam_migration_bundle_v2",
             bundle_status=bundle_metadata.bundle_status,
             source_sha256=bundle_metadata.source_sha256,
-            target_availability=bundle_metadata.target_availability,
+            target_readiness_report_artifact_key=(
+                bundle_metadata.target_readiness_report_artifact_key
+            ),
             manual_follow_up_required=bundle_metadata.manual_follow_up_required,
             warning_count=bundle_metadata.warning_count,
             artifact_count=bundle_metadata.artifact_count,

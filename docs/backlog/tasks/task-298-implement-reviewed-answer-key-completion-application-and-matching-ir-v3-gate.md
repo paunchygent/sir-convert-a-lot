@@ -1,9 +1,9 @@
 ---
-id: 'task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate'
-title: 'Implement reviewed answer-key completion application and matching IR v3 gate'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate
+title: Implement reviewed answer-key completion application and matching IR v3 gate
+type: task
+status: proposed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -19,6 +19,7 @@ labels:
   - matching
   - review-gate
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

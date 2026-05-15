@@ -30,6 +30,7 @@ links:
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
 ---
+
 ## Purpose
 
 This roadmap sequences the implementation of Sir Convert-a-Lot's
@@ -101,42 +102,45 @@ accepts overlays or emits completion reports.
 
 Checklist:
 
-- [ ] Add `digiexam_ingestion_overlay` to the service API/artifact contract as
+- [x] Add `digiexam_ingestion_overlay` to the service API/artifact contract as
   an optional multipart part.
-- [ ] Add job-spec options for overlay policy, completion mode, eligible item
+- [x] Add job-spec options for overlay policy, completion mode, eligible item
   types, and remote provider policy.
-- [ ] Define `digiexam_ingestion_overlay_v1`.
-- [ ] Define teacher review-decision entries, including accepting the current
+- [x] Define `digiexam_ingestion_overlay_v1`.
+- [x] Define teacher review-decision entries, including accepting the current
   missing answer-key state without adding answer data.
-- [ ] Define source item fingerprint inputs and exclusion rules.
-- [ ] Define `effective_ir_json` artifact semantics.
-- [ ] Define `overlay_report_v1`.
-- [ ] Define `answer_key_completion_report_v1`.
-- [ ] Define `target_readiness_report_v1` with per-target and per-item blockers
-  after overlay application.
-- [ ] Define idempotency inputs including overlay digest.
-- [ ] Decide whether the first effective IR can reuse current IR schema or
-  needs a version bump.
-- [ ] Keep matching application blocked unless exact matching pairs exist in IR.
+- [x] Define source item fingerprint inputs and exclusion rules.
+- [x] Define `effective_ir_json` artifact semantics as
+  `digiexam_effective_exam_v1`.
+- [x] Define `ingestion_overlay_report_v1`.
+- [x] Define `answer_key_completion_report_v1`.
+- [x] Define `target_readiness_report_v1` with per-target and per-item
+  consumer readiness after overlay application.
+- [x] Define idempotency inputs including overlay digest.
+- [x] Decide that the first effective IR must not reuse the parser-owned source
+  IR schema.
+- [x] Keep matching application blocked unless exact matching pairs exist in IR.
 
 Checkpoint:
 
-- [ ] Contract examples cover source binding, teacher context, choice patch,
-  gap-fill patch, matching patch, manual answer key, accepted current state,
-  and target readiness.
-- [ ] The docs explicitly say teacher context is not answer evidence.
-- [ ] The docs explicitly say local Skriptoteket acceptance is not file
+- [x] Contract examples cover source binding, source-derived item context,
+  choice patch, gap-fill patch, matching patch, manual answer key, accepted
+  current state, and target readiness.
+- [x] The docs explicitly say source-derived item context is not answer
+  evidence.
+- [x] The docs explicitly say local Skriptoteket acceptance is not file
   readiness; only Sir Convert target readiness can enable PDF or QTI.
-- [ ] Default `source_evidence_only` examples remain backwards compatible.
-- [ ] Retained review or reviewer-ready package confirms no privacy-policy
-  regression.
+- [x] `digiexam_migration_bundle_v2` is documented as a hard bundle break with
+  no v1 compatibility shim or source-only fallback lane.
+- [x] Contract text confirms no privacy-policy regression for product-visible
+  outputs, overlays, reports, and target readiness.
 
 Stop conditions:
 
-- Stop if the overlay contract needs raw files, base64 assets, result PDF text,
-  student data, owner metadata, or artifact paths.
-- Stop if a breaking API change is required for existing
-  `digiexam_dxe -> examnet_migration_bundle` clients.
+- Stop if the overlay contract needs raw files, caller-supplied raw asset
+  payloads, result PDF text, student data, owner metadata, or artifact paths.
+- Stop if a breaking API change is introduced without locating the Sir Convert,
+  Skriptoteket, and HuleEdu consumers that must migrate.
 
 ## Tranche 2: Overlay Runtime Foundation
 
@@ -153,14 +157,16 @@ Checklist:
 - [ ] Persist overlay bytes beside uploads.
 - [ ] Include overlay digest in idempotency.
 - [ ] Add an overlay application service that returns source exam, effective
-  exam, and overlay report.
+  exam, and ingestion overlay report.
 - [ ] Apply review-decision entries without mutating parser evidence or source
   IR answer-key provenance.
 - [ ] Emit `effective_ir_json` only when renderer input changes.
-- [ ] Emit `overlay_report` as a named artifact when overlays are present.
+- [ ] Emit `ingestion_overlay_report` as a named artifact when overlays are
+  present.
 - [ ] Emit target readiness after overlay application and before named target
   artifacts become downloadable.
-- [ ] Prove existing no-overlay route behavior remains unchanged.
+- [ ] Prove no-overlay requests emit v2 bundles and target readiness without
+  applying overlay behavior.
 
 Checkpoint:
 
@@ -170,7 +176,7 @@ Checkpoint:
 - [ ] Bundle tests prove source IR remains unchanged and effective IR changes
   only when expected.
 - [ ] Bundle tests prove accepted current state clears only the teacher-review
-  gate and keeps unsupported target shapes or failed QTI validation blocked.
+  gate and keeps unsupported target shapes or failed QTI validation unavailable.
 - [ ] Focused route tests prove overlay persistence and idempotency.
 
 Stop conditions:

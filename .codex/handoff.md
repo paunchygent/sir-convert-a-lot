@@ -47,6 +47,7 @@ runbooks, or skills.
   `>=40%` toy improvement gate is withdrawn as a blocker; Task 272 now carries
   the public artifact/retention contract and Task 273 now carries numeric
   promotion/resource thresholds.
+
 ## Active Pointers
 
 - Generated docs doorway: `docs/index.md`.
@@ -88,15 +89,13 @@ runbooks, or skills.
   Next Story 46 tasks: Tasks 288/289.
 - Completed DigiExam route/runtime and public Exam Converter docs: Tasks
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
-- Active answer-key completion lane: Epic 11; settled interim provider is
-  Granite FP8 on Hemma ROCm vLLM at `0.70`, cached under the canonical HF
-  scratch path after Task 301 returned constrained `choice` `B`.
-  Story 48/Task 294 and Story 49 now explicitly own teacher review decisions,
-  including accepting the current missing-answer-key state, as Sir
-  Convert-validated ingestion overlays. Skriptoteket must not enable PDF/QTI
-  from local acceptance alone; Task 295 must recompute target readiness after
-  overlay application and keep unsupported target shapes or failed validation
-  blocked.
+- Active answer-key completion lane: Epic 11; Task 294 completed the hard
+  `digiexam_migration_bundle_v2` contract break, `digiexam_effective_exam_v1`,
+  source fingerprints, target readiness, overlay/report schemas, and consumer
+  break inventory. Task 295 implemented source-bound teacher overlay ingestion,
+  effective renderer input, source fingerprints in the IR manifest, overlay
+  reports, and post-overlay target readiness. Granite FP8 on Hemma ROCm vLLM
+  remains the interim local provider from Task 301.
 - Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
   a thin router, the former omnibus Hemma runbook is a compact doorway, and
   focused service/GPU/conversion/TTS runbooks carry current operator guidance.
@@ -128,10 +127,10 @@ runbooks, or skills.
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. For machine-marked answer-key completion, start with Task 294 before runtime:
-   define source-bound review decisions, accepted-current-state semantics, and
-   target-readiness reporting before Task 295 applies overlays or Skriptoteket
-   enables PDF/QTI from Sir Convert readiness.
+1. For machine-marked answer-key completion, continue with Task 296/297:
+   extract the structured local provider harness and then emit advisory
+   answer-key completion reports on top of Task 295's overlay/effective IR
+   substrate.
 1. Keep the Exam.net artifact authoring route separate from the DigiExam
    migration route. Do not feed Exam.net-origin PDFs or Word exports into
    `digiexam_dxe -> examnet_migration_bundle`.
@@ -153,6 +152,12 @@ runbooks, or skills.
 - 2026-05-14 Hemma skill/runbook cleanup gates passed: `pdm run docs-sync`,
   `pdm run docs-validate`, `pdm run skills-validate`,
   `pdm run handoff-validate`, and `git diff --check`.
+- 2026-05-15 Task 294 contract gates passed: `pdm run docs-sync`,
+  `pdm run docs-validate`, `pdm run skills-validate`,
+  `pdm run handoff-validate`, and `git diff --check`.
+- 2026-05-15 Task 295 focused implementation gates passed: `pdm run format-all`, `pdm run lint-fix`, `pdm run typecheck-all`, focused
+  DigiExam overlay/IR/API pytest, docs/skills/handoff validation, and
+  `git diff --check`.
 
 ## Stop Conditions
 

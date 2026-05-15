@@ -2,7 +2,7 @@
 
 Purpose:
     Resolve product-facing artifact keys from the terminal
-    `digiexam_migration_bundle_v1` manifest without exposing private job
+    `digiexam_migration_bundle_v2` manifest without exposing private job
     directories or synthesizing empty files.
 
 Relationships:
@@ -40,9 +40,9 @@ class ResolvedDigiExamMigrationArtifact:
 class DigiExamMigrationResultMetadataFields:
     """Route-specific result metadata derived from a persisted bundle manifest."""
 
-    bundle_status: Literal["complete", "partial", "blocked"]
+    bundle_status: Literal["complete", "partial", "needs_review", "failed"]
     source_sha256: str
-    target_availability: dict[str, str]
+    target_readiness_report_artifact_key: Literal["target_readiness_report"]
     manual_follow_up_required: bool
     warning_count: int
     artifact_count: int
@@ -99,7 +99,7 @@ def load_digiexam_migration_result_metadata(
     return DigiExamMigrationResultMetadataFields(
         bundle_status=_required_bundle_status(manifest),
         source_sha256=source_sha256,
-        target_availability=_target_availability(entries),
+        target_readiness_report_artifact_key=_target_readiness_artifact_key(manifest),
         manual_follow_up_required=_required_bool(manual_follow_up, "required"),
         warning_count=_required_int(warnings, "count"),
         artifact_count=len(entries),
@@ -139,8 +139,8 @@ def _resolve_entry(
 ) -> ResolvedDigiExamMigrationArtifact:
     availability = entry.get("availability")
     if availability != DigiExamMigrationArtifactAvailability.AVAILABLE.value:
-        blocker_code = entry.get("blocker_code")
-        error_code = _unavailable_artifact_error_code(availability, blocker_code)
+        unavailable_code = entry.get("unavailable_code")
+        error_code = _unavailable_artifact_error_code(availability, unavailable_code)
         raise ServiceError(
             status_code=409,
             code=error_code,
@@ -171,9 +171,9 @@ def _resolve_entry(
     )
 
 
-def _unavailable_artifact_error_code(availability: object, blocker_code: object) -> str:
-    if isinstance(blocker_code, str):
-        return blocker_code
+def _unavailable_artifact_error_code(availability: object, unavailable_code: object) -> str:
+    if isinstance(unavailable_code, str):
+        return unavailable_code
     if availability == DigiExamMigrationArtifactAvailability.NOT_REQUESTED.value:
         return "digiexam_artifact_not_requested"
     if availability == DigiExamMigrationArtifactAvailability.NOT_IMPLEMENTED.value:
@@ -182,7 +182,7 @@ def _unavailable_artifact_error_code(availability: object, blocker_code: object)
         return "digiexam_artifact_not_supported_by_examnet"
     if availability == DigiExamMigrationArtifactAvailability.FAILED.value:
         return "digiexam_artifact_failed"
-    return "digiexam_artifact_blocked"
+    return "digiexam_artifact_unavailable"
 
 
 def _required_artifact_entries(manifest: dict[str, object]) -> tuple[dict[str, object], ...]:
@@ -197,23 +197,14 @@ def _required_artifact_entries(manifest: dict[str, object]) -> tuple[dict[str, o
     return tuple(normalized_entries)
 
 
-def _target_availability(entries: tuple[dict[str, object], ...]) -> dict[str, str]:
-    target_keys = {
-        DigiExamMigrationArtifactKey.EXAMNET_PDF.value,
-        DigiExamMigrationArtifactKey.QTI_PACKAGE.value,
-    }
-    availability_by_key: dict[str, str] = {}
-    for entry in entries:
-        artifact_key = entry.get("artifact_key")
-        if artifact_key not in target_keys:
-            continue
-        availability = entry.get("availability")
-        if not isinstance(artifact_key, str) or not isinstance(availability, str):
-            raise _invalid_manifest_error()
-        availability_by_key[artifact_key] = availability
-    if set(availability_by_key) != target_keys:
+def _target_readiness_artifact_key(
+    manifest: dict[str, object],
+) -> Literal["target_readiness_report"]:
+    readiness = _required_object(manifest, "readiness")
+    artifact_key = _required_string(readiness, "artifact_key")
+    if artifact_key != DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT.value:
         raise _invalid_manifest_error()
-    return availability_by_key
+    return "target_readiness_report"
 
 
 def _required_object(payload: dict[str, object], key: str) -> dict[str, object]:
@@ -232,14 +223,16 @@ def _required_string(payload: dict[str, object], key: str) -> str:
 
 def _required_bundle_status(
     payload: dict[str, object],
-) -> Literal["complete", "partial", "blocked"]:
+) -> Literal["complete", "partial", "needs_review", "failed"]:
     value = _required_string(payload, "bundle_status")
     if value == "complete":
         return "complete"
     if value == "partial":
         return "partial"
-    if value == "blocked":
-        return "blocked"
+    if value == "needs_review":
+        return "needs_review"
+    if value == "failed":
+        return "failed"
     raise _invalid_manifest_error()
 
 

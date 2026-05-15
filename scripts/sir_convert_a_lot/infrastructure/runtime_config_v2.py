@@ -23,6 +23,7 @@ def fingerprint_for_request_v2(
     reference_docx_sha256: str | None,
     graded_result_pdf_sha256: str | None = None,
     parity_pdf_sha256: str | None = None,
+    digiexam_ingestion_overlay_sha256: str | None = None,
 ) -> str:
     """Create deterministic idempotency fingerprint for a v2 create-job request."""
     normalized = json.dumps(spec_payload, sort_keys=True, separators=(",", ":"))
@@ -30,10 +31,11 @@ def fingerprint_for_request_v2(
     reference_part = reference_docx_sha256 or ""
     graded_result_part = graded_result_pdf_sha256 or ""
     parity_part = parity_pdf_sha256 or ""
+    overlay_part = digiexam_ingestion_overlay_sha256 or ""
     return hashlib.sha256(
         (
             f"{normalized}:{file_sha256}:{resources_part}:{reference_part}:"
-            f"{graded_result_part}:{parity_part}"
+            f"{graded_result_part}:{parity_part}:{overlay_part}"
         ).encode("utf-8")
     ).hexdigest()
 

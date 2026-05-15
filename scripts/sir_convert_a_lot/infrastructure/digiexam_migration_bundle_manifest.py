@@ -57,24 +57,45 @@ def available_entry(
     )
 
 
-def blocked_entry(
+def unavailable_entry(
     *,
     job: StoredJobV2,
     key: DigiExamMigrationArtifactKey,
-    blocker_code: str,
+    unavailable_code: str,
 ) -> DigiExamMigrationArtifactEntry:
-    """Create a blocked manifest entry for a target that could not be produced."""
+    """Create an unavailable entry for a target that could not be produced."""
 
     definition = ARTIFACT_DEFINITIONS[key]
     return DigiExamMigrationArtifactEntry(
         artifact_key=key,
         filename=definition.filename,
         content_type=definition.content_type,
-        availability=DigiExamMigrationArtifactAvailability.BLOCKED,
+        availability=DigiExamMigrationArtifactAvailability.UNAVAILABLE,
         size_bytes=None,
         sha256=None,
         download_path=None,
-        blocker_code=blocker_code,
+        unavailable_code=unavailable_code,
+    )
+
+
+def failed_entry(
+    *,
+    job: StoredJobV2,
+    key: DigiExamMigrationArtifactKey,
+    unavailable_code: str,
+) -> DigiExamMigrationArtifactEntry:
+    """Create a failed entry for a target that attempted generation."""
+
+    definition = ARTIFACT_DEFINITIONS[key]
+    return DigiExamMigrationArtifactEntry(
+        artifact_key=key,
+        filename=definition.filename,
+        content_type=definition.content_type,
+        availability=DigiExamMigrationArtifactAvailability.FAILED,
+        size_bytes=None,
+        sha256=None,
+        download_path=None,
+        unavailable_code=unavailable_code,
     )
 
 
@@ -123,6 +144,8 @@ def complete_entries(
     artifacts_dir: Path,
     pdf_entry: DigiExamMigrationArtifactEntry,
     qti_entries: dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifactEntry],
+    effective_ir_entry: DigiExamMigrationArtifactEntry | None = None,
+    ingestion_overlay_report_entry: DigiExamMigrationArtifactEntry | None = None,
 ) -> tuple[DigiExamMigrationArtifactEntry, ...]:
     """Return the full ordered required artifact entry list for a bundle."""
 
@@ -130,10 +153,26 @@ def complete_entries(
         DigiExamMigrationArtifactKey.BUNDLE_MANIFEST: _manifest_entry(job),
         DigiExamMigrationArtifactKey.EXAMNET_PDF: pdf_entry,
         **qti_entries,
+        DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON: (
+            effective_ir_entry
+            or not_requested_entry(job=job, key=DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON)
+        ),
+        DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT: (
+            ingestion_overlay_report_entry
+            or not_requested_entry(
+                job=job,
+                key=DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT,
+            )
+        ),
+        DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT: not_requested_entry(
+            job=job,
+            key=DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT,
+        ),
     }
     for key in (
         DigiExamMigrationArtifactKey.IR_JSON,
         DigiExamMigrationArtifactKey.MIGRATION_MANIFEST,
+        DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT,
         DigiExamMigrationArtifactKey.MANUAL_FOLLOW_UP_REPORT,
         DigiExamMigrationArtifactKey.WARNINGS_REPORT,
         DigiExamMigrationArtifactKey.ASSET_SUMMARY,
@@ -218,8 +257,15 @@ def bundle_status(
         for entry in requested_target_entries
         if entry.availability == DigiExamMigrationArtifactAvailability.AVAILABLE
     ]
+    failed_targets = [
+        entry
+        for entry in requested_target_entries
+        if entry.availability == DigiExamMigrationArtifactAvailability.FAILED
+    ]
     if not available_targets:
-        return DigiExamMigrationBundleStatus.BLOCKED
+        if failed_targets:
+            return DigiExamMigrationBundleStatus.FAILED
+        return DigiExamMigrationBundleStatus.NEEDS_REVIEW
     if manual_follow_up_count > 0 or len(available_targets) != len(requested_target_entries):
         return DigiExamMigrationBundleStatus.PARTIAL
     return DigiExamMigrationBundleStatus.COMPLETE

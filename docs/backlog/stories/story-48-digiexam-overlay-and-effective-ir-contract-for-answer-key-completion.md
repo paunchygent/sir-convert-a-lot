@@ -1,11 +1,11 @@
 ---
-id: 'story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion'
-title: 'DigiExam overlay and effective IR contract for answer-key completion'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion
+title: DigiExam overlay and effective IR contract for answer-key completion
+type: story
+status: proposed
+priority: high
 created: '2026-05-14'
-last_updated: '2026-05-14'
+last_updated: '2026-05-15'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
@@ -21,23 +21,26 @@ labels:
   - answer-key-completion
   - skriptoteket
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
 
 Define and implement the source-bound ingestion overlay and effective IR
-contract that lets Skriptoteket provide teacher context, bounded item patches,
-and manual answer keys without mutating the parser-owned source IR.
+contract that lets Skriptoteket provide bounded item patches, manual answer
+keys, and review decisions without mutating the parser-owned source IR.
 
 ## Scope
 
 - Add contract authority for optional multipart
   `digiexam_ingestion_overlay`.
+- Break the migration bundle contract to `digiexam_migration_bundle_v2` with no
+  v1 compatibility shim or source-only fallback lane.
 - Add `DigiExamMigrationOptionsV2` fields for overlay filename/policy and
   answer-key completion options while preserving current defaults.
 - Define `digiexam_ingestion_overlay_v1` with source file SHA256, source IR
   SHA256/schema version, item IDs, sequence numbers, source item fingerprints,
-  teacher context, bounded effective item patches, and manual answer keys.
+  bounded effective item patches, manual answer keys, and review decisions.
 - Define teacher review decisions in the overlay contract, including
   accepting the current source/effective state for export without adding an
   answer key. Review decisions must be source-bound by item fingerprint and
@@ -45,9 +48,11 @@ and manual answer keys without mutating the parser-owned source IR.
 - Add stable source item fingerprints to source IR manifest item summaries.
 - Persist overlay bytes beside uploads and include overlay digest in
   idempotency.
-- Emit `overlay_report` and `effective_ir_json` when overlay changes renderer
-  input.
-- Emit target-readiness semantics from Sir Convert after overlay application.
+- Emit `ingestion_overlay_report` when an overlay is submitted and
+  `effective_ir_json` when overlay changes renderer input. `effective_ir_json`
+  uses `digiexam_effective_exam_v1`, not the source IR schema.
+- Emit `target_readiness_report_v1` from Sir Convert after overlay application,
+  with consumer-ready states rather than a single coarse blocker class.
   Readiness must be per target and per item, distinguish missing answer keys
   from unsupported target shapes, and state whether the artifact can actually
   be created under the accepted-current-state policy.
@@ -63,12 +68,10 @@ and manual answer keys without mutating the parser-owned source IR.
   available in source IR manifest item summaries.
 - [ ] Overlay application fails closed on item ID, sequence, fingerprint, item
   type, or source file/IR mismatch.
-- [ ] Teacher context can enrich candidate construction without becoming answer
-  evidence.
 - [ ] Manual answer keys from overlay are represented only as teacher/effective
   provenance and never as parser evidence.
 - [ ] `effective_ir_json` is emitted only when effective renderer input differs
-  from source IR.
+  from source IR and uses `digiexam_effective_exam_v1`.
 - [ ] Teacher review decisions such as accepting missing answer keys are
   represented as overlay decisions, not local Skriptoteket flags, and target
   artifacts remain unavailable unless Sir Convert can create valid outputs
@@ -76,8 +79,8 @@ and manual answer keys without mutating the parser-owned source IR.
 - [ ] Target readiness reports keep unsupported item/target shapes, such as
   multi-gap gap-fill without a governed renderer/import shape, distinct from
   ordinary missing `Facit`/answer-key review.
-- [ ] Existing default route behavior remains `source_evidence_only` with no
-  overlay application unless requested.
+- [ ] Existing default route behavior remains source-owned, but the bundle
+  schema is `digiexam_migration_bundle_v2` for every terminal bundle.
 
 ## Test Requirements
 

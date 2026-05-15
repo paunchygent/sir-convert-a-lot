@@ -159,6 +159,7 @@ def test_digiexam_handler_owns_generic_companion_rejection(tmp_path: Path) -> No
                     reference_docx=None,
                     graded_result_pdf=None,
                     parity_pdf=None,
+                    digiexam_ingestion_overlay=None,
                     form_part_names=frozenset({"file", "job_spec", "resources"}),
                 ),
             )

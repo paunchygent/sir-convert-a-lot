@@ -125,10 +125,10 @@ class DigiExamMigrationConversionMetadataV2(ConversionMetadataV2):
     """Route-specific result metadata for DigiExam migration bundles."""
 
     route_key: Literal["digiexam_dxe_to_examnet_migration_bundle"]
-    bundle_schema_version: Literal["digiexam_migration_bundle_v1"]
-    bundle_status: Literal["complete", "partial", "blocked"]
+    bundle_schema_version: Literal["digiexam_migration_bundle_v2"]
+    bundle_status: Literal["complete", "partial", "needs_review", "failed"]
     source_sha256: str
-    target_availability: dict[str, str]
+    target_readiness_report_artifact_key: Literal["target_readiness_report"]
     manual_follow_up_required: bool
     warning_count: int = Field(ge=0)
     artifact_count: int = Field(ge=0)

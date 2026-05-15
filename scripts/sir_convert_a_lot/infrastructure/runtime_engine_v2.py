@@ -21,6 +21,7 @@ from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
     graded_result_pdf_path_for_upload,
+    ingestion_overlay_path_for_upload,
     parity_pdf_path_for_upload,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
@@ -347,6 +348,7 @@ class ServiceRuntimeV2:
         reference_docx_bytes: bytes | None,
         graded_result_pdf_bytes: bytes | None = None,
         parity_pdf_bytes: bytes | None = None,
+        digiexam_ingestion_overlay_bytes: bytes | None = None,
     ) -> StoredJobV2:
         preflight_pdf_ocr_or_raise(spec=spec, config=self.config)
         job_id = self._new_job_id()
@@ -364,6 +366,10 @@ class ServiceRuntimeV2:
             )
         if parity_pdf_bytes is not None:
             parity_pdf_path_for_upload(record.upload_path).write_bytes(parity_pdf_bytes)
+        if digiexam_ingestion_overlay_bytes is not None:
+            ingestion_overlay_path_for_upload(record.upload_path).write_bytes(
+                digiexam_ingestion_overlay_bytes
+            )
         stored = self.get_job(record.job_id)
         if stored is None:
             raise RuntimeError("created v2 job must be loadable immediately")

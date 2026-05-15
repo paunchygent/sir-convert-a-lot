@@ -29,6 +29,12 @@ from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_contracts import (
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_qti_adapter import (
     build_examnet_qti_items_from_digiexam_ir,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay import (
+    parse_and_apply_digiexam_ingestion_overlay,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
+    DigiExamIngestionOverlayError,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     build_digiexam_intermediate_exam,
     build_digiexam_ir_manifest,
@@ -44,6 +50,9 @@ from scripts.sir_convert_a_lot.domain.digiexam_result_pdf_answers import (
     DigiExamResultPdfAnswerExtractor,
     normalize_result_text,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
+    build_digiexam_target_readiness_report,
+)
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import ExamNetQtiPackageStatus
 from scripts.sir_convert_a_lot.domain.examnet_qti_package import build_examnet_qti_package_plan
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
@@ -55,18 +64,20 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_examnet_pdf_renderer impo
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
     graded_result_pdf_path_for_upload,
+    ingestion_overlay_path_for_upload,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
     artifact_path,
     available_entry,
-    blocked_entry,
     bundle_status,
     complete_entries,
     expires_at,
+    failed_entry,
     json_bytes,
     json_ready,
     not_requested_entry,
     not_requested_qti_entries,
+    unavailable_entry,
     write_json,
     write_manual_follow_up_report,
     write_warnings_report,
@@ -98,6 +109,7 @@ def execute_digiexam_migration_bundle_job(
     artifacts_dir = job.artifact_path.parent
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     source_bytes = job.upload_path.read_bytes()
+    source_file_sha256 = f"sha256:{hashlib.sha256(source_bytes).hexdigest()}"
     answer_evidence = _answer_evidence_for_job(job)
 
     parse_result = DigiExamDxeParser().parse_file(job.upload_path, answer_evidence=answer_evidence)
@@ -116,6 +128,52 @@ def execute_digiexam_migration_bundle_job(
 
     ir_path = artifact_path(artifacts_dir, DigiExamMigrationArtifactKey.IR_JSON)
     write_json(ir_path, json_ready(asdict(exam)))
+    source_ir_sha256 = _artifact_sha256(ir_path)
+    effective_exam = exam
+    effective_exam_sha256 = source_ir_sha256
+    effective_ir_entry = None
+    ingestion_overlay_report_entry = None
+    overlay_result = None
+    overlay_path = ingestion_overlay_path_for_upload(job.upload_path)
+    if overlay_path.exists():
+        try:
+            overlay_result = parse_and_apply_digiexam_ingestion_overlay(
+                overlay_bytes=overlay_path.read_bytes(),
+                source_file_sha256=source_file_sha256,
+                source_ir_sha256=source_ir_sha256,
+                source_exam=exam,
+            )
+        except DigiExamIngestionOverlayError as exc:
+            raise ServiceError(
+                status_code=422,
+                code=exc.code,
+                message=str(exc),
+                retryable=False,
+                details=exc.details,
+            ) from exc
+        effective_exam = overlay_result.effective_exam_for_rendering
+        overlay_report_path = artifact_path(
+            artifacts_dir,
+            DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT,
+        )
+        write_json(overlay_report_path, json_ready(asdict(overlay_result.ingestion_overlay_report)))
+        ingestion_overlay_report_entry = available_entry(
+            job=job,
+            key=DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT,
+            path=overlay_report_path,
+        )
+        if overlay_result.renderer_input_changed:
+            effective_ir_path = artifact_path(
+                artifacts_dir,
+                DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON,
+            )
+            write_json(effective_ir_path, json_ready(asdict(overlay_result.effective_exam_report)))
+            effective_exam_sha256 = _artifact_sha256(effective_ir_path)
+            effective_ir_entry = available_entry(
+                job=job,
+                key=DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON,
+                path=effective_ir_path,
+            )
     migration_manifest_path = artifact_path(
         artifacts_dir, DigiExamMigrationArtifactKey.MIGRATION_MANIFEST
     )
@@ -133,7 +191,7 @@ def execute_digiexam_migration_bundle_job(
 
     if ExamMigrationTargetV2.EXAMNET_PDF in requested_targets:
         pdf_entry, pdf_warnings = _build_examnet_pdf_artifact(
-            job=job, artifacts_dir=artifacts_dir, exam=exam
+            job=job, artifacts_dir=artifacts_dir, exam=effective_exam
         )
     else:
         pdf_entry = not_requested_entry(job=job, key=DigiExamMigrationArtifactKey.EXAMNET_PDF)
@@ -143,7 +201,7 @@ def execute_digiexam_migration_bundle_job(
         qti_entries, qti_follow_ups, qti_warnings = _build_qti_artifacts(
             job=job,
             artifacts_dir=artifacts_dir,
-            exam=exam,
+            exam=effective_exam,
         )
     else:
         qti_entries = not_requested_qti_entries(job)
@@ -154,7 +212,9 @@ def execute_digiexam_migration_bundle_job(
     )
     manual_follow_up_count = write_manual_follow_up_report(
         path=manual_follow_up_path,
-        exam_follow_ups=json_ready(tuple(asdict(entry) for entry in exam.manual_follow_ups)),
+        exam_follow_ups=json_ready(
+            tuple(asdict(entry) for entry in effective_exam.manual_follow_ups)
+        ),
         qti_follow_ups=qti_follow_ups,
     )
     warnings_path = artifact_path(artifacts_dir, DigiExamMigrationArtifactKey.WARNINGS_REPORT)
@@ -164,12 +224,39 @@ def execute_digiexam_migration_bundle_job(
         pdf_warnings=json_ready(tuple(asdict(warning) for warning in pdf_warnings)),
         qti_warnings=qti_warnings,
     )
+    target_readiness_path = artifact_path(
+        artifacts_dir,
+        DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT,
+    )
+    target_readiness_entries = tuple(
+        entry
+        for entry in (pdf_entry, *qti_entries.values())
+        if entry.artifact_key
+        in {DigiExamMigrationArtifactKey.EXAMNET_PDF, DigiExamMigrationArtifactKey.QTI_PACKAGE}
+    )
+    write_json(
+        target_readiness_path,
+        asdict(
+            build_digiexam_target_readiness_report(
+                job_id=job.job_id,
+                exam=effective_exam,
+                entries=target_readiness_entries,
+                source_ir_sha256=source_ir_sha256,
+                effective_exam_sha256=effective_exam_sha256,
+                accepted_review_decisions=(
+                    overlay_result.accepted_review_decisions if overlay_result is not None else ()
+                ),
+            )
+        ),
+    )
 
     entries = complete_entries(
         job=job,
         artifacts_dir=artifacts_dir,
         pdf_entry=pdf_entry,
         qti_entries=qti_entries,
+        effective_ir_entry=effective_ir_entry,
+        ingestion_overlay_report_entry=ingestion_overlay_report_entry,
     )
     resolved_bundle_status = bundle_status(entries, manual_follow_up_count)
     manifest = {
@@ -177,7 +264,7 @@ def execute_digiexam_migration_bundle_job(
         "job_id": job.job_id,
         "source": {
             "filename": job.source_filename,
-            "sha256": f"sha256:{hashlib.sha256(source_bytes).hexdigest()}",
+            "sha256": source_file_sha256,
             "format": job.source_format.value,
         },
         "bundle_status": resolved_bundle_status.value,
@@ -187,6 +274,17 @@ def execute_digiexam_migration_bundle_job(
             "required": manual_follow_up_count > 0,
             "artifact_key": DigiExamMigrationArtifactKey.MANUAL_FOLLOW_UP_REPORT.value,
             "count": manual_follow_up_count,
+        },
+        "readiness": {
+            "artifact_key": DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT.value,
+            "exportable_targets": _exportable_targets(entries),
+            "review_required": manual_follow_up_count > 0,
+        },
+        "source_binding": {
+            "source_ir_schema_version": exam.schema_version,
+            "source_ir_sha256": source_ir_sha256,
+            "effective_exam_schema_version": "digiexam_effective_exam_v1",
+            "effective_exam_sha256": effective_exam_sha256,
         },
         "warnings": {
             "artifact_key": DigiExamMigrationArtifactKey.WARNINGS_REPORT.value,
@@ -259,10 +357,10 @@ def _build_examnet_pdf_artifact(
             result.warnings,
         )
     return (
-        blocked_entry(
+        unavailable_entry(
             job=job,
             key=DigiExamMigrationArtifactKey.EXAMNET_PDF,
-            blocker_code=_pdf_blocker_code(result.warnings),
+            unavailable_code=_pdf_unavailable_code(result.warnings),
         ),
         result.warnings,
     )
@@ -297,10 +395,10 @@ def _build_qti_artifacts(
             path=written.package_path,
         )
     else:
-        entries[DigiExamMigrationArtifactKey.QTI_PACKAGE] = blocked_entry(
+        entries[DigiExamMigrationArtifactKey.QTI_PACKAGE] = failed_entry(
             job=job,
             key=DigiExamMigrationArtifactKey.QTI_PACKAGE,
-            blocker_code="qti_validation_failed",
+            unavailable_code="qti_validation_failed",
         )
     entries[DigiExamMigrationArtifactKey.QTI_VALIDATION_REPORT] = available_entry(
         job=job,
@@ -314,7 +412,24 @@ def _build_qti_artifacts(
     return entries, follow_ups, list(plan.warnings)
 
 
-def _pdf_blocker_code(warnings: tuple[DigiExamExamNetPdfWarning, ...]) -> str:
+def _exportable_targets(entries: tuple[DigiExamMigrationArtifactEntry, ...]) -> list[str]:
+    target_keys = {
+        DigiExamMigrationArtifactKey.EXAMNET_PDF,
+        DigiExamMigrationArtifactKey.QTI_PACKAGE,
+    }
+    return [
+        entry.artifact_key.value
+        for entry in entries
+        if entry.artifact_key in target_keys and entry.download_path is not None
+    ]
+
+
+def _artifact_sha256(path: Path) -> str:
+    payload = path.read_bytes()
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
+def _pdf_unavailable_code(warnings: tuple[DigiExamExamNetPdfWarning, ...]) -> str:
     if not warnings:
         return "unsupported_target_shape"
     first_code = warnings[0].code.value

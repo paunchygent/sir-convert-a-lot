@@ -4,7 +4,7 @@ id: CONV-digiexam-intermediate-exam-representation-contract
 title: DigiExam Intermediate Exam Representation Contract
 status: active
 created: 2026-05-08
-updated: 2026-05-12
+updated: 2026-05-15
 owners:
   - platform
 tags:
@@ -63,6 +63,8 @@ The active schema versions after Task 276 are:
 
 - exam IR: `digiexam_intermediate_exam_v2`;
 - manifest: `digiexam_ir_manifest_v2`.
+- effective exam: `digiexam_effective_exam_v1` when overlays or applied
+  completion change renderer input.
 
 Schema changes that remove fields or alter semantics require a new version.
 Additive fields may remain on the same version only when existing consumers can
@@ -76,6 +78,12 @@ contractually present.
 Task 277 added `content_base64` to the v2 asset record as an additive field.
 Existing metadata and manifest consumers can ignore it safely, while PDF/QTI
 renderers need it to carry referenced assets instead of only comparing hashes.
+
+Task 294 does not extend `digiexam_intermediate_exam_v2` to carry teacher
+overlays or applied LLM completion. Source IR remains parser-owned truth.
+Runtime output that incorporates reviewed answer-key completion, manual answer
+keys, item patches, or review decisions MUST use `digiexam_effective_exam_v1`
+and retain source binding back to the parser-owned IR.
 
 ## Exam IR Shape
 
@@ -109,9 +117,73 @@ Each item MUST include:
 - embedded asset records;
 - ordered embedded asset references.
 
+Each manifest item summary MUST include source-binding fields for overlays:
+
+- `item_id`;
+- 1-based `sequence`;
+- `item_type`;
+- `source_item_fingerprint`;
+- source IR schema version and source IR digest through the enclosing manifest.
+
+`source_item_fingerprint` MUST be derived from stable source structure only:
+item type, title/prompt text, alternatives, gap IDs/order, matching column
+structure, asset hashes/references, max score, and grading policy fields that
+affect target shape. It MUST exclude answer keys, result-PDF enrichment,
+teacher overlays, LLM suggestions, manual answer keys, and review decisions.
+
 The IR MUST preserve item structure separately from answer-key data. A multiple
 choice item with options and absent answer provenance remains a structured item
 with a missing answer key, not a negative answer key.
+
+## Effective Exam Contract
+
+`digiexam_effective_exam_v1` is the renderer input after source evidence,
+accepted manual overlays, applied completion, or review decisions have been
+resolved. It is not parser evidence and must not be serialized as
+`digiexam_intermediate_exam_v2`.
+
+The top-level effective exam MUST include:
+
+- `schema_version`: `digiexam_effective_exam_v1`;
+- `source_ir_schema_version`;
+- `source_ir_sha256`;
+- `source_file_sha256`;
+- optional `ingestion_overlay_sha256`;
+- optional `answer_key_completion_report_sha256`;
+- ordered effective items;
+- effective provenance summary;
+- target-readiness input summary.
+
+Each effective item MUST include:
+
+- `item_id`, `sequence`, `item_type`, and `source_item_fingerprint`;
+- source item reference;
+- effective prompt/options/gaps/matching structure after any item patch;
+- effective answer key, when present;
+- effective answer-key provenance, such as `source_evidence`,
+  `manual_teacher_key`, `reviewed_llm_completion`, or `absent`;
+- applied overlay entry identifiers;
+- review decisions applied to the item.
+
+`Godkänn` / accept-current-state review decisions may affect target readiness
+only after Sir Convert recomputes the effective exam and validates the target.
+They do not create answer keys and do not alter source IR provenance.
+
+## Matching Answer-Pair Requirement
+
+Matching structure in source IR is not enough for applied matching answer-key
+completion. Before Sir Convert may apply or render matching answer completion,
+the IR/effective exam contract MUST expose exact answer pairs:
+
+- stable `left_id`;
+- stable `right_id`;
+- `correct_matching_pairs` as ordered pairs of known IDs;
+- right-option reuse policy;
+- validation that every referenced left/right ID exists.
+
+Until those fields are implemented and validated, matching completion remains
+advisory/manual-review only. This is a critical dependency for Task 298, not an
+optional nice-to-have.
 
 ## Embedded Asset Contract
 

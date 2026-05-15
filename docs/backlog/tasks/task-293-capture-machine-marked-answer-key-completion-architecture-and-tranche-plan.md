@@ -1,9 +1,9 @@
 ---
-id: 'task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan'
-title: 'Capture machine-marked answer-key completion architecture and tranche plan'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan
+title: Capture machine-marked answer-key completion architecture and tranche plan
+type: task
+status: completed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -21,6 +21,7 @@ labels:
   - llm
   - cross-repo
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

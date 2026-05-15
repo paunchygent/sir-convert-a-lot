@@ -24,6 +24,7 @@ links:
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
 ---
+
 ## Purpose
 
 This reference records the first local `llama.cpp` GGUF model shortlist and

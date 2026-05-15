@@ -1,11 +1,11 @@
 ---
-id: 'story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion'
-title: 'Skriptoteket teacher review workflow for answer-key completion'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion
+title: Skriptoteket teacher review workflow for answer-key completion
+type: story
+status: proposed
+priority: high
 created: '2026-05-14'
-last_updated: '2026-05-14'
+last_updated: '2026-05-15'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
@@ -21,6 +21,7 @@ labels:
   - conversion-hub
   - provider-decision
 ---
+
 Implementation slice with acceptance-driven scope.
 
 ## Objective
@@ -34,8 +35,8 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
 - Publish the Sir Convert contract details Skriptoteket needs for overlay
   creation: source IR manifest item summaries, source item fingerprints,
   overlay schema, completion modes, manual follow-up report, completion report,
-  and named artifacts.
-- Keep Skriptoteket as a consumer/UI owner: it may collect teacher context,
+  target readiness report, `digiexam_migration_bundle_v2`, and named artifacts.
+- Keep Skriptoteket as a consumer/UI owner: it may collect teacher edits,
   submit overlays, show reports, and save final artifacts, but it must not infer
   answer keys outside the governed overlay/manual-key path.
 - Define teacher-review states for source evidence, teacher overlay,
@@ -45,6 +46,9 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   Convert through the overlay contract. It must not treat local UI acceptance
   as file readiness and must refresh target readiness from Sir Convert before
   enabling PDF/QTI download or save.
+- Define that `Godkänn` triggers or resubmits a Sir Convert-owned
+  `review_decision` flow; it does not locally unlock files until refreshed
+  target readiness returns export-enabled rows.
 - Preserve public/authenticated access boundaries from the existing Exam
   Converter grant lane; remote LLM fallback for public jobs requires a future
   signed grant contract.
@@ -63,6 +67,11 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
 - [ ] Teacher acceptance of the current missing-answer-key state is represented
   as an overlay review decision, not a local UI flag, and only Sir Convert
   target-readiness output can enable target artifacts.
+- [ ] The UI consumes readiness classes such as `ready`,
+  `ready_after_accepted_current_state`, `needs_teacher_answer_key`,
+  `needs_teacher_review_decision`, `unsupported_target_shape`, and
+  `target_validation_failed` without collapsing them into one generic blocked
+  state.
 - [ ] Public Exam Converter jobs remain remote-provider-forbidden unless a
   signed public grant version explicitly opts in.
 - [ ] HuleEdu LLM Provider reuse is treated as a future provider-surface task,

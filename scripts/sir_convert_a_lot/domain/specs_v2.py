@@ -78,6 +78,13 @@ class DigiExamManualFollowUpPolicyV2(StrEnum):
     EMIT_ITEM_ADDRESSABLE_REPORT = "emit_item_addressable_report"
 
 
+class DigiExamIngestionOverlayPolicyV2(StrEnum):
+    """Allowed teacher overlay application policies for DigiExam migration."""
+
+    NONE = "none"
+    APPLY_TEACHER_OVERLAY = "apply_teacher_overlay"
+
+
 class PdfPaperSizeV2(StrEnum):
     """Supported PDF paper sizes for v2 PDF outputs."""
 
@@ -165,6 +172,30 @@ class DigiExamMigrationOptionsV2(BaseModel):
     manual_follow_up_policy: DigiExamManualFollowUpPolicyV2 = (
         DigiExamManualFollowUpPolicyV2.EMIT_ITEM_ADDRESSABLE_REPORT
     )
+    ingestion_overlay_filename: str | None = None
+    ingestion_overlay_policy: DigiExamIngestionOverlayPolicyV2 = (
+        DigiExamIngestionOverlayPolicyV2.NONE
+    )
+
+    @model_validator(mode="after")
+    def _validate_ingestion_overlay_policy(self) -> "DigiExamMigrationOptionsV2":
+        has_filename = self.ingestion_overlay_filename is not None
+        if has_filename and self.ingestion_overlay_policy != (
+            DigiExamIngestionOverlayPolicyV2.APPLY_TEACHER_OVERLAY
+        ):
+            raise ValueError(
+                "digiexam_migration_options.ingestion_overlay_policy must be "
+                "'apply_teacher_overlay' when ingestion_overlay_filename is present"
+            )
+        if (
+            not has_filename
+            and self.ingestion_overlay_policy != DigiExamIngestionOverlayPolicyV2.NONE
+        ):
+            raise ValueError(
+                "digiexam_migration_options.ingestion_overlay_policy must be "
+                "'none' when ingestion_overlay_filename is omitted"
+            )
+        return self
 
 
 class PdfOptionsV2(BaseModel):

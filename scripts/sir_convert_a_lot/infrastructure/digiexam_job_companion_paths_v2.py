@@ -26,3 +26,9 @@ def parity_pdf_path_for_upload(upload_path: Path) -> Path:
     """Return the raw-area path for an accepted parity PDF."""
 
     return upload_path.parent / "parity_pdf.pdf"
+
+
+def ingestion_overlay_path_for_upload(upload_path: Path) -> Path:
+    """Return the raw-area path for an accepted DigiExam ingestion overlay."""
+
+    return upload_path.parent / "digiexam_ingestion_overlay.json"

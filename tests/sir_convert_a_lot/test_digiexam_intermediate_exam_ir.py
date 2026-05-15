@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import base64
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
@@ -34,6 +34,9 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
 from scripts.sir_convert_a_lot.domain.digiexam_parser import DigiExamParser
 from scripts.sir_convert_a_lot.domain.digiexam_result_pdf_answers import (
     DigiExamResultPdfAnswerExtractor,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
+    source_item_fingerprint,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_pdf_text import (
     DigiExamPdfTextExtractor,
@@ -109,6 +112,7 @@ def test_dxe_parser_output_maps_to_renderer_neutral_ir_without_answer_synthesis(
             summary.sequence,
             summary.title,
             summary.item_type,
+            summary.source_item_fingerprint,
             summary.answer_key_provenance,
             summary.manual_follow_up_required,
         )
@@ -119,6 +123,7 @@ def test_dxe_parser_output_maps_to_renderer_neutral_ir_without_answer_synthesis(
             item.sequence,
             item.title,
             item.item_type,
+            source_item_fingerprint(item),
             item.answer_key.provenance,
             item.item_id in {follow_up.item_id for follow_up in exam.manual_follow_ups},
         )
@@ -190,6 +195,26 @@ def test_result_pdf_enrichment_maps_correct_answers_and_reduces_manual_follow_up
     assert manifest.item_summaries[1].answer_key_provenance == (
         DigiExamAnswerKeyProvenance.GRADED_RESULT_PDF_CORRECT_LABELS
     )
+
+
+def test_source_item_fingerprint_ignores_answer_key_but_tracks_source_structure() -> None:
+    parse_result = DigiExamDxeParser().parse_file(_DXE)
+    exam = build_digiexam_intermediate_exam(parse_result)
+    item = exam.items[1]
+
+    baseline = source_item_fingerprint(item)
+    with_changed_key = replace(
+        item,
+        answer_key=replace(
+            item.answer_key,
+            provenance=DigiExamAnswerKeyProvenance.MANUAL_TEACHER_KEY,
+            correct_alternative_ids=(2,),
+        ),
+    )
+    with_changed_prompt = replace(item, prompt_lines=(*item.prompt_lines, "ny rad"))
+
+    assert source_item_fingerprint(with_changed_key) == baseline
+    assert source_item_fingerprint(with_changed_prompt) != baseline
 
 
 def test_result_pdf_enriched_ir_and_manifest_do_not_serialize_student_result_data() -> None:

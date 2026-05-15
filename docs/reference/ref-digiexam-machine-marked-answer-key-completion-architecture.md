@@ -4,7 +4,7 @@ id: REF-digiexam-machine-marked-answer-key-completion-architecture
 title: DigiExam Machine-marked Answer-key Completion Architecture
 status: active
 created: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-15
 owners:
   - platform
 tags:
@@ -24,6 +24,7 @@ links:
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
   - docs/reference/ref-machine-marked-answer-key-completion-implementation-roadmap.md
 ---
+
 ## Purpose
 
 This reference captures the accepted planning shape from
@@ -46,16 +47,17 @@ stored under parser provenance values such as `dxe_populated_key`,
 `graded_result_pdf_correct_labels`, `manual_teacher_key`, `absent`, or
 `not_applicable`.
 
-Sir Convert owns the producer route:
+Sir Convert owns the producer route and v2 bundle contract:
 
 ```text
 digiexam_dxe -> examnet_migration_bundle
+bundle: digiexam_migration_bundle_v2
 ```
 
-Skriptoteket may submit teacher/item context, bounded item patches, manual
-answer keys, and completion options. Sir Convert owns validation, source
-binding, provider policy, artifact semantics, manifests, named artifact
-exposure, and access control.
+Skriptoteket may submit bounded item patches, manual answer keys, review
+decisions, and completion options. Sir Convert owns validation, source binding,
+provider policy, artifact semantics, manifests, named artifact exposure, and
+access control.
 
 ## End-to-End Shape
 
@@ -63,22 +65,25 @@ exposure, and access control.
 .dxe + optional graded result PDF
   -> source-bound DigiExam parser result
   -> source-bound DigiExam IR
-  -> optional Skriptoteket teacher/item overlay
   -> optional local-first machine-marked answer-key completion
-  -> effective DigiExam IR
+  -> optional Skriptoteket teacher edit/review overlay on a later request
+  -> digiexam_effective_exam_v1 when renderer input changes
   -> Exam.net artifacts, QTI package, reports, manifest, named artifact API
 ```
 
 The existing `ir_json` remains the source IR: what source evidence proved. A
-new `effective_ir_json` artifact is emitted only when teacher overlay or applied
-completion changes renderer input. This prevents renderer and consumer code from
-silently changing the meaning of the existing source-bound IR artifact.
+new `effective_ir_json` artifact uses `digiexam_effective_exam_v1` and is
+emitted only when teacher overlay or applied completion changes renderer input.
+This prevents renderer and consumer code from silently changing the meaning of
+the existing source-bound IR artifact.
 
 ## Overlay Contract
 
 The overlay bridge from Skriptoteket is a route-owned JSON contract, not a raw
 JSON Patch. It is optional, size-bounded, source-bound, and free from raw files,
-base64 assets, student data, and full exam-level metadata.
+caller-supplied raw asset payloads, student data, and full exam-level metadata.
+Teacher-visible images remain available through Sir Convert-owned source IR,
+effective exam, named artifact, or asset-reference surfaces.
 
 Required top-level shape:
 
@@ -103,8 +108,6 @@ content.
 
 Overlay item payloads may include:
 
-- `teacher_context`: task instructions, language, and bounded additional item
-  context for candidate construction.
 - `effective_item_patch`: a type-specific choice, gap-fill, or matching patch
   that mutates only the effective IR.
 - `manual_answer_key`: a teacher-authored or teacher-accepted key that is
@@ -114,6 +117,12 @@ Overlay item payloads may include:
   answer. Review decisions are not answer keys, do not change parser
   provenance, and must be bound to the item ID, sequence, type, and source item
   fingerprint.
+
+Source-derived item context for the first enrichment pass comes from `.dxe`
+fields already represented in source IR, such as exam metadata, item title,
+prompt/body HTML, alternatives, gaps, matching columns, grading policy, and
+asset references. It is not a Skriptoteket overlay field and does not become
+answer-key evidence.
 
 ## Target Readiness And Accepted Current State
 
@@ -146,18 +155,25 @@ must not:
 Target readiness must remain per-target and per-item. It must distinguish at
 least:
 
-- missing machine-marked answer key, not yet accepted;
-- missing machine-marked answer key, accepted but target has no governed
-  best-effort shape;
-- accepted missing answer key with target artifact created under an explicit
-  policy;
-- unsupported target shape, for example multi-gap gap-fill without governed
-  PDF/QTI representation; and
-- target validation failure, for example QTI package validation.
+- `ready`;
+- `ready_after_accepted_current_state`;
+- `needs_teacher_answer_key`;
+- `needs_teacher_review_decision`;
+- `unsupported_target_shape`, for example multi-gap gap-fill without governed
+  PDF/QTI representation;
+- `target_validation_failed`, for example QTI package validation;
+- `provider_unavailable`;
+- `not_requested`; and
+- `not_implemented`.
+
+Every readiness row must carry enough consumer detail for Skriptoteket to render
+the next action without re-implementing conversion policy: target, item binding
+when item-specific, reason code, `export_enabled`, `teacher_action`,
+`retryable`, and a localized message key.
 
 ## Completion Modes
 
-Default behavior is unchanged:
+Default completion/provider policy:
 
 ```text
 mode = source_evidence_only

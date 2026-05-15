@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal
 
-DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION: Literal["digiexam_migration_bundle_v1"] = (
-    "digiexam_migration_bundle_v1"
+DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION: Literal["digiexam_migration_bundle_v2"] = (
+    "digiexam_migration_bundle_v2"
 )
 
 
@@ -30,7 +30,11 @@ class DigiExamMigrationArtifactKey(StrEnum):
     QTI_PACKAGE = "qti_package"
     QTI_VALIDATION_REPORT = "qti_validation_report"
     IR_JSON = "ir_json"
+    EFFECTIVE_IR_JSON = "effective_ir_json"
     MIGRATION_MANIFEST = "migration_manifest"
+    TARGET_READINESS_REPORT = "target_readiness_report"
+    INGESTION_OVERLAY_REPORT = "ingestion_overlay_report"
+    ANSWER_KEY_COMPLETION_REPORT = "answer_key_completion_report"
     MANUAL_FOLLOW_UP_REPORT = "manual_follow_up_report"
     WARNINGS_REPORT = "warnings_report"
     ASSET_SUMMARY = "asset_summary"
@@ -40,7 +44,7 @@ class DigiExamMigrationArtifactAvailability(StrEnum):
     """Availability states for named bundle artifacts."""
 
     AVAILABLE = "available"
-    BLOCKED = "blocked"
+    UNAVAILABLE = "unavailable"
     FAILED = "failed"
     NOT_REQUESTED = "not_requested"
     NOT_IMPLEMENTED = "not_implemented"
@@ -52,7 +56,8 @@ class DigiExamMigrationBundleStatus(StrEnum):
 
     COMPLETE = "complete"
     PARTIAL = "partial"
-    BLOCKED = "blocked"
+    NEEDS_REVIEW = "needs_review"
+    FAILED = "failed"
 
 
 @dataclass(frozen=True)
@@ -75,7 +80,7 @@ class DigiExamMigrationArtifactEntry:
     size_bytes: int | None
     sha256: str | None
     download_path: str | None
-    blocker_code: str | None = None
+    unavailable_code: str | None = None
     depends_on: str | None = None
 
 
@@ -105,9 +110,29 @@ ARTIFACT_DEFINITIONS: dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifa
         filename="digiexam-ir.json",
         content_type="application/json",
     ),
+    DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON: DigiExamMigrationArtifactDefinition(
+        artifact_key=DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON,
+        filename="digiexam-effective-exam.json",
+        content_type="application/json",
+    ),
     DigiExamMigrationArtifactKey.MIGRATION_MANIFEST: DigiExamMigrationArtifactDefinition(
         artifact_key=DigiExamMigrationArtifactKey.MIGRATION_MANIFEST,
         filename="migration-manifest.json",
+        content_type="application/json",
+    ),
+    DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT: DigiExamMigrationArtifactDefinition(
+        artifact_key=DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT,
+        filename="target-readiness-report.json",
+        content_type="application/json",
+    ),
+    DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT: DigiExamMigrationArtifactDefinition(
+        artifact_key=DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT,
+        filename="ingestion-overlay-report.json",
+        content_type="application/json",
+    ),
+    DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT: DigiExamMigrationArtifactDefinition(
+        artifact_key=DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT,
+        filename="answer-key-completion-report.json",
         content_type="application/json",
     ),
     DigiExamMigrationArtifactKey.MANUAL_FOLLOW_UP_REPORT: DigiExamMigrationArtifactDefinition(
@@ -133,7 +158,11 @@ REQUIRED_ARTIFACT_KEYS: tuple[DigiExamMigrationArtifactKey, ...] = (
     DigiExamMigrationArtifactKey.QTI_PACKAGE,
     DigiExamMigrationArtifactKey.QTI_VALIDATION_REPORT,
     DigiExamMigrationArtifactKey.IR_JSON,
+    DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON,
     DigiExamMigrationArtifactKey.MIGRATION_MANIFEST,
+    DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT,
+    DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT,
+    DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT,
     DigiExamMigrationArtifactKey.MANUAL_FOLLOW_UP_REPORT,
     DigiExamMigrationArtifactKey.WARNINGS_REPORT,
     DigiExamMigrationArtifactKey.ASSET_SUMMARY,

@@ -1,9 +1,9 @@
 ---
-id: 'task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff'
-title: 'Publish cross-repo Skriptoteket and HuleEdu answer-key completion handoff'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff
+title: Publish cross-repo Skriptoteket and HuleEdu answer-key completion handoff
+type: task
+status: proposed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -19,6 +19,7 @@ labels:
   - handoff
   - provider-decision
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

@@ -136,6 +136,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         reference_docx: UploadFile | None = File(None),
         graded_result_pdf: UploadFile | None = File(None),
         parity_pdf: UploadFile | None = File(None),
+        digiexam_ingestion_overlay: UploadFile | None = File(None),
         wait_seconds: int = Query(default=0, ge=0, le=20),
     ) -> JSONResponse:
         auth_context = require_api_key_v2(request, service_started_at=service_started_at)
@@ -267,6 +268,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 reference_docx=reference_docx,
                 graded_result_pdf=graded_result_pdf,
                 parity_pdf=parity_pdf,
+                digiexam_ingestion_overlay=digiexam_ingestion_overlay,
                 form_part_names=frozenset(str(key) for key in form.keys()),
             ),
         )
@@ -283,6 +285,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             reference_docx_sha256=prepared_route.reference_docx_sha256,
             graded_result_pdf_sha256=prepared_route.graded_result_pdf_sha256,
             parity_pdf_sha256=prepared_route.parity_pdf_sha256,
+            digiexam_ingestion_overlay_sha256=(prepared_route.digiexam_ingestion_overlay_sha256),
         )
 
         existing_record = runtime.get_idempotency(scope_key)
@@ -327,6 +330,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             reference_docx_bytes=prepared_route.reference_docx_bytes,
             graded_result_pdf_bytes=prepared_route.graded_result_pdf_bytes,
             parity_pdf_bytes=prepared_route.parity_pdf_bytes,
+            digiexam_ingestion_overlay_bytes=(prepared_route.digiexam_ingestion_overlay_bytes),
         )
         runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
         runtime.run_job_async(job.job_id)

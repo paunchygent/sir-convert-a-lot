@@ -28,9 +28,12 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 
-_ALLOWED_DIGIEXAM_PART_NAMES = frozenset({"file", "job_spec", "graded_result_pdf", "parity_pdf"})
+_ALLOWED_DIGIEXAM_PART_NAMES = frozenset(
+    {"file", "job_spec", "graded_result_pdf", "parity_pdf", "digiexam_ingestion_overlay"}
+)
 _DIGIEXAM_DXE_MAX_BYTES = 50 * 1024 * 1024
 _COMPANION_PDF_MAX_BYTES = 100 * 1024 * 1024
+_INGESTION_OVERLAY_MAX_BYTES = 2 * 1024 * 1024
 _AGGREGATE_MAX_BYTES = 200 * 1024 * 1024
 
 
@@ -42,6 +45,8 @@ class DigiExamMigrationCompanionUploadsV2:
     graded_result_pdf_sha256: str | None
     parity_pdf_bytes: bytes | None
     parity_pdf_sha256: str | None
+    digiexam_ingestion_overlay_bytes: bytes | None
+    digiexam_ingestion_overlay_sha256: str | None
 
 
 def normalized_digiexam_targets(spec: JobSpecV2) -> tuple[ExamMigrationTargetV2, ...]:
@@ -60,6 +65,7 @@ async def read_digiexam_migration_companions_v2(
     reference_docx_uploaded: bool,
     graded_result_pdf: UploadFile | None,
     parity_pdf: UploadFile | None,
+    digiexam_ingestion_overlay: UploadFile | None,
 ) -> DigiExamMigrationCompanionUploadsV2:
     """Validate and read DigiExam migration companion uploads."""
 
@@ -84,7 +90,16 @@ async def read_digiexam_migration_companions_v2(
         field_name="parity_pdf",
         filename_field="digiexam_migration_options.parity_pdf_filename",
     )
-    total_size = primary_payload_size + len(graded_result_bytes or b"") + len(parity_bytes or b"")
+    overlay_bytes = await _read_optional_ingestion_overlay(
+        upload=digiexam_ingestion_overlay,
+        declared_filename=options.ingestion_overlay_filename if options else None,
+    )
+    total_size = (
+        primary_payload_size
+        + len(graded_result_bytes or b"")
+        + len(parity_bytes or b"")
+        + len(overlay_bytes or b"")
+    )
     if total_size > min(config.max_upload_bytes * 4, _AGGREGATE_MAX_BYTES):
         raise ServiceError(
             status_code=413,
@@ -98,6 +113,8 @@ async def read_digiexam_migration_companions_v2(
         graded_result_pdf_sha256=_sha256(graded_result_bytes),
         parity_pdf_bytes=parity_bytes,
         parity_pdf_sha256=_sha256(parity_bytes),
+        digiexam_ingestion_overlay_bytes=overlay_bytes,
+        digiexam_ingestion_overlay_sha256=_sha256(overlay_bytes),
     )
 
 
@@ -223,6 +240,76 @@ async def _read_optional_pdf(
             message="DigiExam companion upload is not a readable PDF payload.",
             retryable=False,
             details={"field": field_name},
+        )
+    return payload
+
+
+async def _read_optional_ingestion_overlay(
+    *,
+    upload: UploadFile | None,
+    declared_filename: str | None,
+) -> bytes | None:
+    if upload is None:
+        if declared_filename is not None:
+            raise ServiceError(
+                status_code=422,
+                code="validation_error",
+                message="Declared ingestion overlay filename has no matching multipart upload.",
+                retryable=False,
+                details={
+                    "field": "digiexam_migration_options.ingestion_overlay_filename",
+                    "filename": declared_filename,
+                },
+            )
+        return None
+    if upload.filename is None or upload.filename.strip() == "":
+        raise ServiceError(
+            status_code=400,
+            code="validation_error",
+            message="DigiExam ingestion overlay upload must include a filename.",
+            retryable=False,
+            details={"field": "digiexam_ingestion_overlay.filename"},
+        )
+    filename = Path(upload.filename).name
+    if declared_filename is None or filename != declared_filename:
+        raise ServiceError(
+            status_code=422,
+            code="validation_error",
+            message="DigiExam ingestion overlay filename must match job spec declaration.",
+            retryable=False,
+            details={
+                "field": "digiexam_migration_options.ingestion_overlay_filename",
+                "declared": declared_filename,
+                "upload": filename,
+            },
+        )
+    if not filename.lower().endswith(".json"):
+        raise ServiceError(
+            status_code=422,
+            code="digiexam_companion_unsupported",
+            message="DigiExam ingestion overlay must be a JSON file.",
+            retryable=False,
+            details={"field": "digiexam_ingestion_overlay", "filename": filename},
+        )
+    payload = await upload.read()
+    if len(payload) == 0:
+        raise ServiceError(
+            status_code=422,
+            code="digiexam_companion_unsupported",
+            message="DigiExam ingestion overlay upload is empty.",
+            retryable=False,
+            details={"field": "digiexam_ingestion_overlay"},
+        )
+    if len(payload) > _INGESTION_OVERLAY_MAX_BYTES:
+        raise ServiceError(
+            status_code=413,
+            code="digiexam_payload_too_large",
+            message="DigiExam ingestion overlay exceeds the route size limit.",
+            retryable=False,
+            details={
+                "part": "digiexam_ingestion_overlay",
+                "limit_bytes": _INGESTION_OVERLAY_MAX_BYTES,
+            },
         )
     return payload
 

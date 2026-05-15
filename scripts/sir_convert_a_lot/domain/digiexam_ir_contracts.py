@@ -131,6 +131,7 @@ class DigiExamIrManifestItemSummary:
     sequence: int
     title: str
     item_type: DigiExamItemType
+    source_item_fingerprint: str
     answer_key_provenance: DigiExamAnswerKeyProvenance
     manual_follow_up_required: bool
     asset_summaries: tuple[DigiExamIrManifestAssetSummary, ...]
@@ -215,6 +216,10 @@ def build_digiexam_intermediate_exam(parse_result: DigiExamParseResult) -> DigiE
 def build_digiexam_ir_manifest(exam: DigiExamIntermediateExam) -> DigiExamIrManifest:
     """Build a deterministic manifest summary from a DigiExam IR exam."""
 
+    from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
+        source_item_fingerprint,
+    )
+
     manual_item_ids = {follow_up.item_id for follow_up in exam.manual_follow_ups}
     item_summaries = tuple(
         DigiExamIrManifestItemSummary(
@@ -222,6 +227,7 @@ def build_digiexam_ir_manifest(exam: DigiExamIntermediateExam) -> DigiExamIrMani
             sequence=item.sequence,
             title=item.title,
             item_type=item.item_type,
+            source_item_fingerprint=source_item_fingerprint(item),
             answer_key_provenance=item.answer_key.provenance,
             manual_follow_up_required=item.item_id in manual_item_ids,
             asset_summaries=_asset_summaries(item),

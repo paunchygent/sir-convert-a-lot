@@ -1,9 +1,9 @@
 ---
-id: 'task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion'
-title: 'Benchmark local model shortlist for answer-key completion'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion
+title: Benchmark local model shortlist for answer-key completion
+type: task
+status: proposed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -19,6 +19,7 @@ labels:
   - answer-key-completion
   - structured-output
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

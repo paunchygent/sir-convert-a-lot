@@ -1,9 +1,9 @@
 ---
-id: 'task-296-extract-structured-chat-provider-harness-for-local-first-completion'
-title: 'Extract structured chat provider harness for local-first completion'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-296-extract-structured-chat-provider-harness-for-local-first-completion
+title: Extract structured chat provider harness for local-first completion
+type: task
+status: proposed
+priority: high
 created: '2026-05-14'
 last_updated: '2026-05-14'
 related:
@@ -18,6 +18,7 @@ labels:
   - local-first
   - dishka
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
