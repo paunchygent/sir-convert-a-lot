@@ -162,8 +162,11 @@ QTI packages must use
 - MCQ and free text are the vendor-reported minimum supported areas.
 - Images may be packaged when source IR has renderer-neutral assets and the
   manifest references them deterministically.
-- Matching, short answer, and gap fill require explicit Exam.net sample proof
-  before production promotion.
+- Matching, short answer, and gap fill require explicit target-profile proof
+  before production promotion. Matching IR should remain QTI-permissive, but
+  Exam.net PDF readiness currently allows only one-to-one matched pairs plus
+  unmatched right-side distractors. Exam.net QTI readiness stays
+  vendor-unproven until Exam.net exposes a QTI import test path.
 - Audio files, PDF attachments, GeoGebra, and tool resources are omitted from
   the Exam.net QTI target and reported for manual follow-up.
 
@@ -181,9 +184,12 @@ codes:
 - `qti_validation_failed`
 - `editable_docx_semantic_structure_incomplete`
 
-Matching is supported only when source evidence contains left prompts, right
-options, and exact pairings. If the source has matching structure but no
-correct pairs, preserve the structure and emit `manual_answer_key_required`.
+Matching is supported for Exam.net PDF only when source evidence contains
+source prompts, target options, exact pairings, no source-to-many-target keyed
+pairs, and no target-to-many-source keyed pairs. Unmatched target options may be
+preserved as
+distractors. If the source has matching structure but no correct pairs,
+preserve the structure and emit `manual_answer_key_required`.
 
 ## Follow-On Gates
 

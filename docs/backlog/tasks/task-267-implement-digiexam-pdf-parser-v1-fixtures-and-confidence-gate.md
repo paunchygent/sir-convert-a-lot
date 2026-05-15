@@ -54,18 +54,19 @@ unknown or degraded item shapes from being treated as renderer-ready.
 - Add regression fixtures/tests for:
   - `inputs/examples/digiexam-exports/_-25cEkologiprov51-55.pdf`;
   - `inputs/examples/digiexam-exports/_-Kemikapitel2ht2525dECA.pdf`.
-- Assert the legacy PDF regression fixture expectations:
+- Assert the PDF artifact regression fixture expectations:
   - ecology sample has 15 open-ended items;
   - chemistry sample has 12 items in the exact order recorded by the artifact
     evidence reference;
-  - chemistry item-type breakdown is 3 multiple-choice, 1 matching, and 8
-    open-ended items;
+  - chemistry item-type breakdown is 3 multiple-choice, 1 unknown
+    matching-like PDF artifact row, and 8 open-ended items;
   - `Max poäng : N` markers are captured where present;
-  - multiple-choice and matching answer keys are reported as absent when the PDF
-    does not contain them.
+  - multiple-choice answer keys are reported as absent when the PDF does not
+    contain them, while matching-like PDF rows fail closed as unsupported
+    DigiExam source shapes.
 - Add a fail-closed confidence gate for unknown shapes, lossy Swedish text
   extraction, missing required anchors, or unsupported item structures.
-- Update EPIC-10, Story 38, the research reference only if implementation
+- Update EPIC-10, Story 38, and the research reference when implementation
   changes the documented parser contract.
 
 ## Deliverables
@@ -84,13 +85,13 @@ unknown or degraded item shapes from being treated as renderer-ready.
 - [x] Parser output is deterministic for both tracked PDFs.
 - [x] Ecology output contains exactly 15 open-ended items.
 - [x] Chemistry output contains exactly 12 ordered items with headers/titles,
-  type breakdown, and point-marker evidence matching the legacy PDF regression
+  type breakdown, and point-marker evidence matching the PDF artifact regression
   fixture expectations.
 - [x] Parsed item results carry traceable source evidence.
 - [x] Missing answer keys are represented as provenance state, not reconstructed
   from prompts or options.
 - [x] Matching items preserve numbered left prompts, lettered right options, and
-  blank-row evidence; DigiExam source PDFs without answer keys do not synthesize
+  blank-row evidence; PDF source artifacts without answer keys do not synthesize
   `Correct matches`.
 - [x] Swedish diacritics are checked; degraded extraction produces a blocked
   parse status or `renderer_ready == false`.

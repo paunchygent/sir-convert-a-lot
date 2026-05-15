@@ -72,6 +72,11 @@ Schema requirements Sir Convert depends on:
   variables, and matching-style interactions bind to directed-pair response
   variables. Omitting a correct response is not the same as proving a
   automatically evaluated item.
+- Match interactions in QTI 2.1 and QTI 3.0 use two ordered match sets and
+  directed pairs. Per-choice association limits such as `matchMax`/`match-max`
+  define whether one source can connect to several targets or one target can
+  receive several sources. Therefore Sir Convert's intermediary matching IR
+  must not assume one-to-one matching.
 
 Contract consequence: bare QTI schema validity does not universally require a
 machine-marked answer key. Sir Convert target readiness is intentionally
@@ -112,7 +117,7 @@ Initial supported interactions:
 | Single-choice multiple choice | `choiceInteraction`, single cardinality | Vendor-reported minimum area: MCQ. |
 | Multiple-response multiple choice | `choiceInteraction`, multiple cardinality | Treat as MCQ family; must be proven with Exam.net sample import. |
 | Free text / essay | `extendedTextInteraction` | Vendor-reported minimum area: free text. |
-| Matching | `matchInteraction` | QTI 2.1 conformance tests include match interaction, but Exam.net support is not yet vendor-confirmed; keep behind explicit sample proof. |
+| Matching | `matchInteraction` | QTI supports directed-pair matching with association constraints, including many-to-one and distractor choices. Exam.net QTI import is not available yet, so keep live Exam.net readiness behind future import proof. |
 | Short answer | `textEntryInteraction` or equivalent profile | Not part of the vendor-stated minimum; require sample proof. |
 | Gap fill | `textEntryInteraction` in item body | Not promoted; require sample proof. |
 
@@ -214,7 +219,8 @@ Task 303 should therefore proceed with local package/schema/profile proof and
 record Exam.net import proof as a vendor-unproven external dependency until an
 Exam.net import test path is available. The generated samples should be
 realistic preservation cases, not simplified files that hide difficult item
-types.
+types. Because Exam.net does not yet expose QTI import, no task may require an
+Exam.net-accepted QTI package as proof before that vendor surface exists.
 
 ## Validation Ladder
 
@@ -267,7 +273,7 @@ Exam.net import proof.
 ### 4. Exam.net Import Proof
 
 Because Exam.net's importer is still under development, the final promotion
-gate is vendor/import proof:
+gate is vendor/import proof after Exam.net exposes an import test path:
 
 - produce a minimal sample package for each supported item type;
 - include image resource samples;
@@ -277,6 +283,9 @@ gate is vendor/import proof:
   or a follow-on review artifact.
 
 No QTI item type is production-supported for Exam.net until it has this proof.
+Until then, QTI packages may be reported as schema/profile-valid general QTI
+artifacts, but `target_readiness_report_v1` must mark live Exam.net QTI import
+readiness as vendor-unproven or not supported.
 
 ## Required Sample Packages
 
@@ -289,6 +298,9 @@ deterministic sample packages for:
 - MCQ with embedded image;
 - free text with embedded image;
 - matching with exact pairs;
+- matching with many-source-to-one-target pairs;
+- matching with one-source-to-many-target pairs;
+- matching with unmatched target/right distractors;
 - short answer with accepted variants;
 - unsupported audio/PDF/tool resource omission with manual follow-up.
 
@@ -369,7 +381,7 @@ answer-pair support, automatic evaluation, or IR v3 application.
 | `unkeyed-single-choice-preserved` | real DXE `item-002` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
 | `unkeyed-multiple-response-preserved` | real DXE `item-004` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
 | `manual-gap-fill-preserved-as-free-text` | real DXE `item-007` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
-| `manual-matching-preserved-as-free-text` | contract sample pending real matching DXE fixture | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+| `manual-matching-preserved-as-free-text` | contract sample; keyed matching waits for `ExamAuthoringIR v1` plus real Exam.net/authoring matching fixtures | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
 
 Current Task 303 package hashes:
 

@@ -127,19 +127,19 @@ Checklist:
   an optional multipart part.
 - [x] Add job-spec options for overlay policy, completion mode, eligible item
   types, and remote provider policy.
-- [x] Define `digiexam_ingestion_overlay_v1`.
+- [x] Define `digiexam_ingestion_overlay_v2`.
 - [x] Define teacher review-decision entries, including accepting the current
   missing answer-key state without adding answer data.
 - [x] Define source item fingerprint inputs and exclusion rules.
 - [x] Define `effective_ir_json` artifact semantics as
-  `digiexam_effective_exam_v1`.
+  `digiexam_effective_exam_v2`.
 - [x] Define `ingestion_overlay_report_v1`.
 - [x] Define `answer_key_completion_report_v1`.
 - [x] Define `target_readiness_report_v1` with per-target and per-item
   consumer readiness after overlay application.
 - [x] Define idempotency inputs including overlay digest.
-- [x] Decide that the first effective IR must not reuse the parser-owned source
-  IR schema.
+- [x] Decide that effective IR must not reuse the parser-owned source IR
+  schema.
 - [x] Keep matching application blocked unless exact matching pairs exist in IR.
 
 Checkpoint:
@@ -151,8 +151,8 @@ Checkpoint:
   evidence.
 - [x] The docs explicitly say local Skriptoteket acceptance is not file
   readiness; only Sir Convert target readiness can enable PDF or QTI.
-- [x] `digiexam_migration_bundle_v2` is documented as a hard bundle break with
-  no v1 compatibility shim or source-only fallback lane.
+- [x] The current `digiexam_migration_bundle_v3` contract is documented as a
+  hard bundle cutover with no compatibility shim or source-only fallback lane.
 - [x] Contract text confirms no privacy-policy regression for product-visible
   outputs, overlays, reports, and target readiness.
 
@@ -222,8 +222,8 @@ Checklist:
 - [x] Apply choice/MCQ visible option and prompt/body repairs to effective IR.
 - [x] Apply gap-fill visible prompt/body and source-bound gap repair fields to
   effective IR.
-- [x] Apply matching visible prompt/body and left/right text repair fields to
-  effective IR.
+- [x] Keep matching visible prompt/body and pair editing out of the DigiExam
+  effective IR path; matching is owned by the neutral authoring slice.
 - [x] Prove PDF and QTI renderers consume effective item content when the
   target shape is governed and validation passes.
 - [x] Recompute target readiness after patch application and target
@@ -325,26 +325,41 @@ Stop conditions:
 
 Governing task: `task-298-define-matching-answer-key-pair-ir-contract.md`.
 
-Goal: define the first-class matching answer-key pair shape before teacher
-overlays, LLM advisory output, reviewed application, PDF rendering, or QTI
-export may claim matching can be automatically evaluated.
+Goal: define the first-class source-neutral matching answer-key pair shape
+before teacher overlays, LLM advisory output, reviewed application, PDF
+rendering, or QTI export may claim matching can be automatically evaluated.
 
 Checklist:
 
-- [ ] Add stable `left_id` and `right_id` bindings for matching prompts and
-  options.
-- [ ] Add `correct_matching_pairs` as ordered pairs of known IDs.
-- [ ] Define right-option reuse policy and completeness validation.
+- [x] Add stable source and target bindings for matching prompts and options in
+  `ExamAuthoringIR v1`.
+- [x] Add directed answer pairs as ordered pairs of known source/target IDs in
+  `ExamAuthoringIR v1`.
+- [ ] Preserve QTI-style `match_min`/`match_max` or equivalent association
+  constraints so the IR can represent many-left-to-one, one-left-to-many,
+  one-to-one, and right-side distractors.
+- [ ] Define target-profile completeness validation separately from
+  intermediary IR validation.
 - [ ] Preserve source-bound parser provenance separately from effective
   teacher/manual or reviewed answer-key provenance.
 - [ ] Update manifest/report, target-readiness, PDF, and QTI contract surfaces
   that depend on matching answer-key shape.
+- [ ] Surface OpenAPI/Skriptoteket consumer impacts before changing generated
+  schemas or runtime response JSON.
+- [ ] Replace cross-repo hard-coded schema version strings with generated or
+  centralized contract constants before closing the version bump.
 
 Checkpoint:
 
 - [ ] Matching answer-key pairs are first-class IR/effective-IR data.
 - [ ] Matching remains manual/unkeyed or unavailable for automatic evaluation
   until exact trusted pairs exist.
+- [ ] Exam.net PDF readiness enforces one-to-one matched pairs with optional
+  unmatched right-side distractors, while general IR remains QTI-permissive.
+- [ ] Exam.net QTI readiness remains vendor-unproven until Exam.net provides an
+  import test path.
+- [ ] Sir Convert and Skriptoteket consumers reference schema-version constants
+  or generated types rather than duplicating version literals at callsites.
 - [ ] Later provider/advisory/application tasks can consume the contract
   without changing it.
 
@@ -352,19 +367,27 @@ Stop conditions:
 
 - Stop if correct pairs would be inferred from visible prompt text.
 - Stop if matching pairs cannot be represented as exact ID-bound data.
+- Stop if target-specific Exam.net PDF limits would be encoded into
+  parser-owned source IR or effective IR.
+- Stop if OpenAPI/Skriptoteket compatibility would change without a real schema
+  version bump and same-slice consumer updates.
+- Stop if the version bump depends on scattered hard-coded schema strings in
+  either repo.
 
 ## Tranche 2.8: Gapped/open-cloze Accepted-value IR Contract
 
 Governing task: `task-305-define-gapped-open-cloze-accepted-value-ir-contract.md`.
 
-Goal: define the first-class gap/open-cloze accepted-value shape before teacher
-overlays, LLM advisory output, reviewed application, PDF rendering, or QTI
-export may claim gapped/open-cloze items can be automatically evaluated.
+Goal: define the first-class, source-neutral gap/open-cloze accepted-value
+shape in `ExamAuthoringIR v1` before teacher overlays, LLM advisory output,
+reviewed application, PDF rendering, or QTI export may claim gapped/open-cloze
+items can be automatically evaluated.
 
 Checklist:
 
-- [ ] Define stable gap IDs, visible order, prompt binding, and source spans.
-- [ ] Add accepted values per gap as structured answer-key data.
+- [ ] Define stable gap IDs, display order, prompt binding, source evidence,
+  and source spans.
+- [ ] Add accepted values per gap as structured authoring answer-key data.
 - [ ] Define normalization policy and whether it is validation-only or
   target-specific.
 - [ ] Define multi-gap completeness rules.
@@ -372,12 +395,18 @@ Checklist:
   teacher/manual or reviewed answer-key provenance.
 - [ ] Update manifest/report, target-readiness, PDF, and QTI contract surfaces
   that depend on gap accepted-value shape.
+- [ ] Keep unsupported target export as target-readiness/degradation, not an IR
+  restriction.
+- [ ] Preserve teacher choices for degraded/manual/free-text inclusion,
+  omission, or manual recreation guidance.
 
 Checkpoint:
 
-- [ ] Gap accepted values are first-class IR/effective-IR data.
+- [ ] Gap accepted values are first-class `ExamAuthoringIR v1` data.
 - [ ] Gapped/open-cloze items remain manual/unkeyed or unavailable for
   automatic evaluation until trusted accepted values exist.
+- [ ] Matching-styled gap/open-cloze workaround evidence is not promoted to
+  DigiExam matching; target remapping decisions stay in validators/exporters.
 - [ ] Later provider/advisory/application tasks can consume the contract
   without changing it.
 
@@ -385,6 +414,11 @@ Stop conditions:
 
 - Stop if accepted values would be inferred from visible prompt text.
 - Stop if accepted values cannot be represented as exact gap-ID-bound data.
+- Stop if target limitations are encoded as source-parser or neutral-IR
+  restrictions.
+- Stop if the implementation deepens `DigiExamIntermediateExam` into a
+  universal model instead of mapping source-neutral concepts into
+  `ExamAuthoringIR v1`.
 
 ## Tranche 3: Structured Provider Harness
 

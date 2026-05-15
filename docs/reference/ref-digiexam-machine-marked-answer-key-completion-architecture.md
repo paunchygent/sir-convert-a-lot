@@ -51,11 +51,11 @@ stored under parser provenance values such as `dxe_populated_key`,
 `graded_result_pdf_correct_labels`, `manual_teacher_key`, `absent`, or
 `not_applicable`.
 
-Sir Convert owns the producer route and v2 bundle contract:
+Sir Convert owns the producer route and current bundle contract:
 
 ```text
 digiexam_dxe -> examnet_migration_bundle
-bundle: digiexam_migration_bundle_v2
+bundle: digiexam_migration_bundle_v3
 ```
 
 Skriptoteket may submit bounded item patches, manual answer keys, review
@@ -71,12 +71,12 @@ access control.
   -> source-bound DigiExam IR
   -> optional local-first machine-marked answer-key completion
   -> optional Skriptoteket teacher edit/review overlay on a later request
-  -> digiexam_effective_exam_v1 when renderer input changes
+  -> digiexam_effective_exam_v2 when renderer input changes
   -> Exam.net artifacts, QTI package, reports, manifest, named artifact API
 ```
 
 The existing `ir_json` remains the source IR: what source evidence proved. A
-new `effective_ir_json` artifact uses `digiexam_effective_exam_v1` and is
+new `effective_ir_json` artifact uses `digiexam_effective_exam_v2` and is
 emitted only when teacher overlay or applied completion changes renderer input.
 This prevents renderer and consumer code from silently changing the meaning of
 the existing source-bound IR artifact.
@@ -93,10 +93,10 @@ Required top-level shape:
 
 ```json
 {
-  "schema_version": "digiexam_ingestion_overlay_v1",
+  "schema_version": "digiexam_ingestion_overlay_v2",
   "source_binding": {
     "source_file_sha256": "sha256:...",
-    "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+    "source_ir_schema_version": "digiexam_intermediate_exam_v3",
     "source_ir_sha256": "sha256:..."
   },
   "items": []
@@ -106,14 +106,14 @@ Required top-level shape:
 Each item binds to `item_id`, `sequence`, and a
 `source_item_fingerprint`. The fingerprint must be derived from stable source
 structure such as item type, prompt/title text, alternatives, gap IDs/order,
-matching columns, and asset hashes. Answer keys are excluded from the
+and asset hashes. Answer keys are excluded from the
 fingerprint because the fingerprint protects structural freshness, not answer
 content.
 
 Overlay item payloads may include:
 
-- `effective_item_patch`: a type-specific choice, gap-fill, or matching patch
-  that mutates only the effective IR.
+- `effective_item_patch`: a type-specific choice or gap-fill patch that mutates
+  only the effective IR.
 - `manual_answer_key`: a teacher-authored or teacher-accepted key that is
   authoritative in the effective layer.
 - `review_decision`: a teacher decision about the current item state, such as
@@ -124,9 +124,8 @@ Overlay item payloads may include:
 
 Source-derived item context for the first enrichment pass comes from `.dxe`
 fields already represented in source IR, such as exam metadata, item title,
-prompt/body HTML, alternatives, gaps, matching columns, grading policy, and
-asset references. It is not a Skriptoteket overlay field and does not become
-answer-key evidence.
+prompt/body HTML, alternatives, gaps, grading policy, and asset references. It
+is not a Skriptoteket overlay field and does not become answer-key evidence.
 
 Runtime status: Task 295 applies manual answer keys and review decisions. Task
 302 applies supported `effective_item_patch` visible-content repairs to

@@ -129,7 +129,7 @@ Exam.net, API, or bulk-workflow rendering behavior.
 - [x] IR and manifest schema constants are bumped to v2, while no-image
   regression tests prove existing `.dxe` fixtures map to empty asset summaries
   and unchanged answer-key provenance.
-- [x] Existing no-image `.dxe` and legacy PDF fallback tests remain green.
+- [x] Existing no-image `.dxe` and PDF artifact fallback tests remain green.
 - [x] The implementation does not add renderer-specific PDF/QTI/Exam.net
   syntax.
 

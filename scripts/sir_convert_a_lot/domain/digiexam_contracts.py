@@ -26,7 +26,6 @@ class DigiExamItemType(StrEnum):
     SINGLE_CHOICE = "single_choice"
     MULTIPLE_RESPONSE = "multiple_response"
     GAP_FILL = "gap_fill"
-    MATCHING = "matching"
     UNKNOWN = "unknown"
 
 
@@ -102,15 +101,6 @@ class DigiExamWarning:
 
 
 @dataclass(frozen=True)
-class DigiExamMatchingStructure:
-    """Observed matching item structure from the source PDF."""
-
-    left_prompts: tuple[str, ...]
-    right_options: tuple[str, ...]
-    blank_row_evidence: str | None
-
-
-@dataclass(frozen=True)
 class DigiExamAlternative:
     """One ordered DigiExam alternative with source answer-key flags preserved."""
 
@@ -179,7 +169,6 @@ class DigiExamItem:
     prompt_lines: tuple[str, ...]
     point_marker: DigiExamPointMarker | None
     options: tuple[str, ...]
-    matching: DigiExamMatchingStructure | None
     answer_key_provenance: DigiExamAnswerKeyProvenance
     warnings: tuple[DigiExamWarning, ...]
     question_id: int | None = None

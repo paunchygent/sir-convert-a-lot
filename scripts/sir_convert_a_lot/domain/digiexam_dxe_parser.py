@@ -258,7 +258,6 @@ class DigiExamDxeParser:
                 else None
             ),
             options=tuple(alternative.title for alternative in alternatives),
-            matching=None,
             answer_key_provenance=provenance,
             warnings=tuple(warnings),
             question_id=question_id,

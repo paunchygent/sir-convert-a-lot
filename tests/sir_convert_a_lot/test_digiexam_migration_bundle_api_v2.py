@@ -27,6 +27,14 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from fastapi.testclient import TestClient
 from httpx import Response
 
+from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DIGIEXAM_IR_SCHEMA_VERSION
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
+    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
+    TARGET_READINESS_REPORT_SCHEMA_VERSION,
+)
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
@@ -68,7 +76,7 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
     manifest = manifest_response.json()
     artifact_entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
 
-    assert manifest["schema_version"] == "digiexam_migration_bundle_v2"
+    assert manifest["schema_version"] == DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION
     assert manifest["source"]["format"] == "digiexam_dxe"
     assert manifest["bundle_status"] == "partial"
     assert set(artifact_entries) == {
@@ -120,7 +128,7 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
         headers=headers,
     )
     assert readiness_response.status_code == 200
-    assert readiness_response.json()["schema_version"] == "target_readiness_report_v1"
+    assert readiness_response.json()["schema_version"] == TARGET_READINESS_REPORT_SCHEMA_VERSION
 
 
 def test_digiexam_migration_respects_examnet_pdf_only_target(tmp_path: Path) -> None:
@@ -404,10 +412,10 @@ def test_digiexam_migration_applies_source_bound_teacher_overlay(
     item_summary = migration_manifest["item_summaries"][0]
     overlay_bytes = json.dumps(
         {
-            "schema_version": "digiexam_ingestion_overlay_v1",
+            "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
             "source_binding": {
                 "source_file_sha256": baseline_manifest["source"]["sha256"],
-                "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+                "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
                 "source_ir_sha256": baseline_manifest["source_binding"]["source_ir_sha256"],
             },
             "items": [
@@ -596,7 +604,7 @@ def test_digiexam_migration_live_onedrive_dxe_corpus_subset(tmp_path: Path) -> N
         manifest = manifest_response.json()
         entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
 
-        assert manifest["schema_version"] == "digiexam_migration_bundle_v2"
+        assert manifest["schema_version"] == DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION
         assert manifest["source"]["filename"] == filename
         assert manifest["source"]["format"] == "digiexam_dxe"
         assert manifest["bundle_status"] in {"complete", "partial", "needs_review", "failed"}
@@ -873,10 +881,10 @@ def _choice_overlay_bytes(
         raise RuntimeError("baseline manifest has no source binding")
     return json.dumps(
         {
-            "schema_version": "digiexam_ingestion_overlay_v1",
+            "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
             "source_binding": {
                 "source_file_sha256": source["sha256"],
-                "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+                "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
                 "source_ir_sha256": source_binding["source_ir_sha256"],
             },
             "items": [
@@ -908,10 +916,10 @@ def _accept_current_state_overlay_bytes(
         raise RuntimeError("baseline manifest has no source binding")
     return json.dumps(
         {
-            "schema_version": "digiexam_ingestion_overlay_v1",
+            "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
             "source_binding": {
                 "source_file_sha256": source["sha256"],
-                "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+                "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
                 "source_ir_sha256": source_binding["source_ir_sha256"],
             },
             "items": [

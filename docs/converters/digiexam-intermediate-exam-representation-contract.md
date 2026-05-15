@@ -35,20 +35,20 @@ exam artifact conversion and authoring boundary.
 
 The IR is owned by Sir Convert-a-Lot. It is not a DigiExam mirror, an Exam.net
 renderer schema, a QTI package, or a bulk-conversion API response. It is the
-stable boundary between source parsers and later renderer/import stories.
-DigiExam is the first implemented source adapter, not the product boundary.
-Future Exam.net-origin PDFs, Word exports, answer-key artifacts, and other
-source formats should feed the same source-adapter to intermediary-shape to
-target-renderer pattern, with a governed schema decision before any shared
-non-DigiExam schema name is introduced.
+current DigiExam source-adapter boundary. DigiExam is the first implemented
+source adapter, not the product boundary. Future Exam.net-origin PDFs, Word
+exports, answer-key artifacts, and other source formats must feed a governed
+source-neutral authoring IR instead of extending this DigiExam-named contract.
+Task 307 introduces that `ExamAuthoringIR v1` direction with matching
+interactions as the first extracted slice.
 
 ## Scope
 
 In scope:
 
 - parsed exam metadata and parser status;
-- source item order, item type, prompt body, point values, options, matching
-  structures, gap identifiers, source spans, and warnings;
+- source item order, item type, prompt body, point values, options, gap
+  identifiers, source spans, and warnings;
 - answer-key provenance and source-proven correct answers when available;
 - manual follow-up records for missing answer keys or manual marking;
 - embedded asset payloads required by downstream renderers;
@@ -65,11 +65,11 @@ Out of scope:
 
 ## Versioning
 
-The active schema versions after Task 276 are:
+The active schema versions after Tasks 298/307 are:
 
-- exam IR: `digiexam_intermediate_exam_v2`;
-- manifest: `digiexam_ir_manifest_v2`.
-- effective exam: `digiexam_effective_exam_v1` when overlays or applied
+- exam IR: `digiexam_intermediate_exam_v3`;
+- manifest: `digiexam_ir_manifest_v3`;
+- effective exam: `digiexam_effective_exam_v2` when overlays or applied
   completion change renderer input.
 
 Schema changes that remove fields or alter semantics require a new version.
@@ -85,11 +85,18 @@ Task 277 added `content_base64` to the v2 asset record as an additive field.
 Existing metadata and manifest consumers can ignore it safely, while PDF/QTI
 renderers need it to carry referenced assets instead of only comparing hashes.
 
-Task 294 does not extend `digiexam_intermediate_exam_v2` to carry teacher
-overlays or applied LLM completion. Source IR remains parser-owned truth.
-Runtime output that incorporates reviewed answer-key completion, manual answer
-keys, item patches, or review decisions MUST use `digiexam_effective_exam_v1`
+Task 294 did not extend source IR to carry teacher overlays or applied LLM
+completion. Source IR remains parser-owned truth. Runtime output that
+incorporates reviewed answer-key completion, manual answer keys, item patches,
+or review decisions MUST use the active `digiexam_effective_exam_v2` contract
 and retain source binding back to the parser-owned IR.
+
+Task 298/307 removes DigiExam-owned matching semantics from this contract
+rather than adding a speculative `.dxe` matching adapter. Matching answer-key
+pairs now belong to the first `ExamAuthoringIR v1` slice. Retired
+`left_id`/`right_id` matching payloads must not be accepted through aliases,
+and DigiExam migration contracts do not carry replacement
+`correct_matching_pairs` fields.
 
 ## Exam IR Shape
 
@@ -115,7 +122,6 @@ Each item MUST include:
 - `max_score`;
 - `source_span`;
 - `options`;
-- `matching`;
 - `gaps`;
 - `grading_policy`;
 - `answer_key`;
@@ -132,9 +138,9 @@ Each manifest item summary MUST include source-binding fields for overlays:
 - source IR schema version and source IR digest through the enclosing manifest.
 
 `source_item_fingerprint` MUST be derived from stable source structure only:
-item type, title/prompt text, alternatives, gap IDs/order, matching column
-structure, asset hashes/references, max score, and grading policy fields that
-affect target shape. It MUST exclude answer keys, result-PDF enrichment,
+item type, title/prompt text, alternatives, gap IDs/order,
+asset hashes/references, max score, and grading policy fields that affect
+target shape. It MUST exclude answer keys, result-PDF enrichment,
 teacher overlays, LLM suggestions, manual answer keys, and review decisions.
 
 The IR MUST preserve item structure separately from answer-key data. A multiple
@@ -143,14 +149,14 @@ with a missing answer key, not a negative answer key.
 
 ## Effective Exam Contract
 
-`digiexam_effective_exam_v1` is the renderer input after source evidence,
+`digiexam_effective_exam_v2` is the renderer input after source evidence,
 accepted manual overlays, applied completion, or review decisions have been
 resolved. It is not parser evidence and must not be serialized as
-`digiexam_intermediate_exam_v2`.
+`digiexam_intermediate_exam_v3`.
 
 The top-level effective exam MUST include:
 
-- `schema_version`: `digiexam_effective_exam_v1`;
+- `schema_version`: `digiexam_effective_exam_v2`;
 - `source_ir_schema_version`;
 - `source_ir_sha256`;
 - `source_file_sha256`;
@@ -164,7 +170,7 @@ Each effective item MUST include:
 
 - `item_id`, `sequence`, `item_type`, and `source_item_fingerprint`;
 - source item reference;
-- effective prompt/options/gaps/matching structure after any item patch;
+- effective prompt/options/gaps structure after any item patch;
 - effective answer key, when present;
 - effective answer-key provenance, such as `source_evidence`,
   `manual_teacher_key`, `reviewed_llm_completion`, or `absent`;
@@ -177,19 +183,42 @@ They do not create answer keys and do not alter source IR provenance.
 
 ## Matching Answer-Pair Requirement
 
-Matching structure in source IR is not enough for applied matching answer-key
-completion. Before Sir Convert may apply or render matching answer completion,
-the IR/effective exam contract MUST expose exact answer pairs:
+Canonical DigiExam `.dxe` sources do not carry matching items. DigiExam PDF
+artifacts that visually show matching-like rows are non-canonical source
+evidence and must remain blocked/unknown in the DigiExam parser path rather
+than becoming DigiExam-owned matching IR.
 
-- stable `left_id`;
-- stable `right_id`;
-- `correct_matching_pairs` as ordered pairs of known IDs;
-- right-option reuse policy;
-- validation that every referenced left/right ID exists.
+Matching answer-key completion is a source-neutral authoring concern. Before
+Sir Convert may apply or render keyed matching answer completion, a
+matching-capable source adapter must map real source evidence into the
+QTI-aligned `ExamAuthoringIR v1` matching model:
 
-Until those fields are implemented and validated, matching completion remains
-advisory/manual-review only. This is the Task 298 contract gate, not an
-optional nice-to-have.
+- ordered source/left match-set choices with stable IDs;
+- ordered target/right match-set choices with stable IDs;
+- per-choice association constraints such as `match_min` and `match_max`;
+- interaction-level association constraints such as `min_associations` and
+  `max_associations`;
+- directed answer pairs as ordered pairs of known source/target IDs;
+- validation that every referenced source/target ID exists;
+- validation that duplicate identical pairs and association-limit violations
+  fail closed;
+- allowance for unmatched target/right choices as distractors.
+
+The neutral authoring contract MUST NOT encode the current Exam.net PDF profile
+as source truth. QTI 2.1/3.0-style matching can represent many-source-to-one-target
+and one-source-to-many-target relationships when the relevant choices'
+association constraints allow them. Target validators decide whether a
+particular target accepts that shape.
+
+The current Exam.net PDF target profile is narrower than the IR: keyed matching
+is target-ready only when each source/left choice has at most one matched
+target/right choice, each matched target/right choice is used at most once, and
+unmatched target/right choices may remain as distractors. Exam.net QTI import
+support remains vendor-unproven until Exam.net exposes an import test path.
+
+Until a real matching-capable source adapter feeds `ExamAuthoringIR v1`, DigiExam
+migration must not claim keyed matching export. This is the Task 298/307
+contract gate, not an optional nice-to-have.
 
 ## Gap/open-cloze Accepted-value Requirement
 
@@ -249,6 +278,9 @@ Answer-key fields MUST include:
   `manual_teacher_key`, or `not_applicable`;
 - `correct_alternative_ids`;
 - `correct_gap_answers` as gap `guid` plus accepted `value`.
+
+Matching answer pairs are intentionally absent from DigiExam IR. Real matching
+sources must map into `ExamAuthoringIR v1` instead.
 
 The IR and manifest MUST NOT retain incorrect student selections, student
 free-text answers, earned-score labels or values, student identity markers, or

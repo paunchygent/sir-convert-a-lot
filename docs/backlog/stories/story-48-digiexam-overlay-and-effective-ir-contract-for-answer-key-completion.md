@@ -41,11 +41,12 @@ keys, and review decisions without mutating the parser-owned source IR.
 
 - Add contract authority for optional multipart
   `digiexam_ingestion_overlay`.
-- Break the migration bundle contract to `digiexam_migration_bundle_v2` with no
-  v1 compatibility shim or source-only fallback lane.
+- Break the migration bundle contract to `digiexam_migration_bundle_v3` with no
+  compatibility shim or source-only fallback lane after the Task 298 matching
+  cutover.
 - Add `DigiExamMigrationOptionsV2` fields for overlay filename/policy and
   answer-key completion options while preserving current defaults.
-- Define `digiexam_ingestion_overlay_v1` with source file SHA256, source IR
+- Define `digiexam_ingestion_overlay_v2` with source file SHA256, source IR
   SHA256/schema version, item IDs, sequence numbers, source item fingerprints,
   bounded effective item patches, manual answer keys, and review decisions.
 - Define teacher review decisions in the overlay contract, including
@@ -57,7 +58,7 @@ keys, and review decisions without mutating the parser-owned source IR.
   idempotency.
 - Emit `ingestion_overlay_report` when an overlay is submitted and
   `effective_ir_json` when overlay changes renderer input. `effective_ir_json`
-  uses `digiexam_effective_exam_v1`, not the source IR schema.
+  uses `digiexam_effective_exam_v2`, not the source IR schema.
 - Emit `target_readiness_report_v1` from Sir Convert after overlay application,
   with consumer-ready states rather than a single coarse blocker class.
   Readiness must be per target and per item, distinguish missing answer keys
@@ -65,12 +66,23 @@ keys, and review decisions without mutating the parser-owned source IR.
   be created under the accepted-current-state policy.
 - Keep source answer-key provenance strict; teacher overlay provenance belongs
   to the effective layer.
+- Keep overlay input, overlay reports, effective IR, manifests, target
+  readiness reports, product-visible outputs, and retained public artifacts
+  free of forbidden raw/private payload classes: raw `.dxe`, raw PDF text,
+  result-PDF content or student-result data, raw overlay JSON, raw model
+  responses, full exam-level metadata that is not route-owned, identity
+  markers, earned scores, wrong selections, free-text student answers,
+  per-student performance history, and raw/base64 asset payloads.
 - Implement item-content repair as a separate runtime slice after Task 295:
   `effective_item_patch` changes effective renderer input only and must not
   mutate source IR or answer-key provenance.
-- Define a later governed unkeyed/manual QTI profile so teacher
-  `accept_current_state_for_export` can enable QTI only when the selected QTI
-  2.1 or QTI 3.0 package is schema-valid and target-valid under that profile.
+- Preserve Task 303's completed `unkeyed_manual_qti_2_1_v1` profile:
+  teacher `accept_current_state_for_export` may enable QTI only when the
+  selected QTI package is schema-valid, profile-valid, target-valid, free of
+  unsupported resources, and marked with vendor-unproven Exam.net import proof
+  until a live vendor test path exists. The profile preserves visible content
+  without claiming automatic evaluation when trusted machine-marked keys are
+  absent.
 - Publish and snapshot the generated Sir Convert v2 OpenAPI contract so
   Skriptoteket can validate overlay/effective-IR/readiness integration before
   live Docker/service tests.
@@ -79,11 +91,46 @@ keys, and review decisions without mutating the parser-owned source IR.
   completion or target export may treat those shapes as automatically
   evaluated.
 
+## Current State
+
+Story 48 is proposed as the remaining roll-up for the answer-key completion
+contract shape. Several child slices are already completed and must not be
+reopened by default:
+
+- Task 294 completed the prior hard bundle break, source fingerprints,
+  overlay/report schemas, effective IR, and consumer break inventory. Task 298
+  supersedes those public schema versions with the current
+  `digiexam_migration_bundle_v3`, `digiexam_ingestion_overlay_v2`, and
+  `digiexam_effective_exam_v2` cutover for matching answer-key pairs.
+- Task 295 implemented source-bound teacher overlay ingestion, effective IR
+  reporting, target readiness after manual keys/review decisions, and the
+  overlay privacy/provenance guard rails.
+- Task 302 implemented `effective_item_patch` for visible item-content repairs
+  in effective IR while preserving source IR and source answer-key provenance.
+- Task 303 completed the `unkeyed_manual_qti_2_1_v1` profile for accepted
+  current-state exports with local package/profile validation and
+  vendor-unproven Exam.net import status.
+- Task 304 published the generated v2 OpenAPI snapshot for the DigiExam
+  overlay, effective-IR, and target-readiness contract.
+
+Remaining blockers for Story 48 closeout are proposed and ordered:
+
+1. Task 298 defines exact ID-bound matching answer-key pairs before matching
+   can be treated as automatically evaluated.
+1. Task 305 defines gap/open-cloze accepted values before gapped items can be
+   treated as automatically evaluated.
+1. Task 306 applies reviewed completion into effective IR only after Tasks 298
+   and 305 provide the first-class pair/value contracts and validators.
+
 ## Acceptance Criteria
 
 - [ ] The service API contract names the new optional multipart part and
   rejects unknown parts, malformed JSON, oversized overlays, missing job-spec
-  references, stale source bindings, and raw/base64 asset payloads.
+  references, stale source bindings, raw/base64 asset payloads, raw `.dxe`,
+  raw PDF text, result-PDF content or student-result data, raw overlay JSON,
+  raw model responses, unowned full exam-level metadata, identity markers,
+  earned scores, wrong selections, free-text student answers, and per-student
+  performance history.
 - [ ] Source item fingerprints are deterministic, exclude answer keys, and are
   available in source IR manifest item summaries.
 - [ ] Overlay application fails closed on item ID, sequence, fingerprint, item
@@ -91,7 +138,7 @@ keys, and review decisions without mutating the parser-owned source IR.
 - [ ] Manual answer keys from overlay are represented only as teacher/effective
   provenance and never as parser evidence.
 - [ ] `effective_ir_json` is emitted only when effective renderer input differs
-  from source IR and uses `digiexam_effective_exam_v1`.
+  from source IR and uses `digiexam_effective_exam_v2`.
 - [ ] Teacher review decisions such as accepting missing answer keys are
   represented as overlay decisions, not local Skriptoteket flags, and target
   artifacts remain unavailable unless Sir Convert can create valid outputs
@@ -100,7 +147,7 @@ keys, and review decisions without mutating the parser-owned source IR.
   multi-gap gap-fill without a governed renderer/import shape, distinct from
   ordinary missing `Facit`/answer-key review.
 - [ ] Existing default route behavior remains source-owned, but the bundle
-  schema is `digiexam_migration_bundle_v2` for every terminal bundle.
+  schema is `digiexam_migration_bundle_v3` for every terminal bundle.
 - [x] Item-content repairs through `effective_item_patch` are runtime-applied
   only after Task 302 validates source-bound patch shapes and proves PDF/QTI
   renderers consume effective content.
@@ -109,12 +156,26 @@ keys, and review decisions without mutating the parser-owned source IR.
   selected QTI version.
 - [x] Task 304 publishes generated v2 OpenAPI with typed DigiExam migration
   bundle, overlay, effective-IR, and target-readiness schemas for consumers.
+- [ ] Reviewed completion stays disabled for matching answer-key pairs until
+  Task 298 provides exact pair fields, validation, provenance, manifest/report,
+  and target-readiness semantics.
+- [ ] Reviewed completion stays disabled for gapped/open-cloze accepted values
+  until Task 305 provides exact gap/value fields, validation, normalization,
+  provenance, manifest/report, and target-readiness semantics.
+- [ ] Task 306 applies reviewed completion only through the completed Task 298
+  and Task 305 contracts; before those contracts exist it must reject or leave
+  matching and gapped/open-cloze items in manual-follow-up state rather than
+  infer answer keys from prompt text, renderer labels, or provider output.
 
 ## Test Requirements
 
 - [ ] Contract tests cover valid overlay, missing job-spec reference, stale
   source hash, stale item fingerprint, wrong item type, oversized JSON, unknown
-  fields, and forbidden raw/base64 payloads.
+  fields, forbidden raw/base64 payloads, raw `.dxe`, raw PDF text,
+  result-PDF content or student-result data, raw overlay JSON, raw model
+  responses, unowned full exam-level metadata, identity markers, earned
+  scores, wrong selections, free-text student answers, and per-student
+  performance history.
 - [ ] Manifest tests prove item fingerprints are stable and answer-key changes
   do not alter them.
 - [ ] Builder tests prove source IR remains unchanged while effective IR and
@@ -123,6 +184,13 @@ keys, and review decisions without mutating the parser-owned source IR.
   different conversion request.
 - [x] OpenAPI contract tests prove the committed snapshot matches runtime
   schema generation and includes consumer-required DigiExam components.
+- [ ] QTI readiness tests prove Task 303's `unkeyed_manual_qti_2_1_v1` profile
+  can enable accepted-current-state QTI only after package/profile validation,
+  unsupported-resource checks, item-level manual/unkeyed follow-up reporting,
+  and vendor-unproven Exam.net import status are preserved.
+- [ ] Answer-key completion tests prove Task 306 cannot apply matching pairs or
+  gap accepted values until Task 298 and Task 305 have completed their
+  first-class IR/effective-IR contracts and validators.
 
 ## Done Definition
 

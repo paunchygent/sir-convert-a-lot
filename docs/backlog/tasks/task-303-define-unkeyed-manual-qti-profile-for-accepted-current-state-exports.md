@@ -183,15 +183,16 @@ Checkpoint:
   omitting `correctResponse` and automatic `responseProcessing`.
 - Accepted-current-state gap-fill items are preserved as manual/free-text QTI
   from real tracked DigiExam DXE fixture item `item-007`.
-- The code path can preserve matching IR items as manual/free-text QTI, but the
-  tracked DXE fixture set does not currently include a real matching item. The
-  Task 303 matching sample is therefore a Task-298-aware contract sample and
+- The code path can preserve matching-like contract samples as manual/free-text
+  QTI, but canonical DigiExam `.dxe` sources do not carry matching items. The
+  Task 303 matching sample is therefore not a DigiExam capability claim and
   does not claim reviewed matching answer-pair support, automatic evaluation,
   or IR v3 application.
 - Additional local DXE mining under `inputs/` found more real choice and
   gap-fill examples, including matching-like gap-fill prompts, but no parsed
-  `DigiExamItemType.MATCHING` fixture. A real matching DXE should replace the
-  contract-only matching sample as soon as one is available.
+  `DigiExamItemType.MATCHING` fixture. Keyed matching QTI export waits for Task
+  307's `ExamAuthoringIR v1` and real matching-capable source fixtures from
+  Exam.net PDF artifacts or teacher-authored structured DOCX/Markdown.
 - Task 298 remains the authority for matching answer-pair fields. Task 305 owns
   the gapped/open-cloze accepted-value contract. Task 306 owns later reviewed
   answer-key application into effective IR.

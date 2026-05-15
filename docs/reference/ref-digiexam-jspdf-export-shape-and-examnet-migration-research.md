@@ -53,8 +53,10 @@ DigiExam export examples on 2026-04-25:
   - biology/ecology exam, 3 A4 pages, 15 items, all open-ended written response
     with some `a)`/`b)`/`c)` subparts.
 - `inputs/examples/digiexam-exports/_-Kemikapitel2ht2525dECA.pdf`
-  - chemistry exam, 3 A4 pages, 12 items: 3 multiple-choice items, 1 matching
-    item (`Para ihop`), and 8 open-ended written-response items.
+  - chemistry exam, 3 A4 pages, 12 items: 3 multiple-choice items, 1
+    matching-like visual PDF row (`Para ihop`) now treated as
+    unsupported/non-canonical in the DigiExam parser path, and 8 open-ended
+    written-response items.
 
 Sample size is two. Heuristics derived here must be revalidated against a
 larger corpus before a bulk pipeline is locked in.

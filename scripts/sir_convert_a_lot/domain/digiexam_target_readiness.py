@@ -7,14 +7,13 @@ Purpose:
 Relationships:
     - Consumes the DigiExam source IR and bundle artifact entries.
     - Produced by `infrastructure.digiexam_migration_bundle_builder`.
-    - Mirrors the `target_readiness_report_v1` contract in converter docs.
+    - Mirrors the target-readiness artifact contract in converter docs.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
 
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
@@ -25,14 +24,14 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
     DigiExamMigrationArtifactEntry,
     DigiExamMigrationArtifactKey,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    TARGET_READINESS_REPORT_SCHEMA_VERSION,
+    TargetReadinessReportSchemaVersion,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
     source_item_fingerprint,
 )
 from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
-
-TARGET_READINESS_REPORT_SCHEMA_VERSION: Literal["target_readiness_report_v1"] = (
-    "target_readiness_report_v1"
-)
 
 
 class DigiExamTargetReadiness(StrEnum):
@@ -70,7 +69,7 @@ class DigiExamTargetReadinessRow:
 class DigiExamTargetReadinessReport:
     """Top-level target-readiness report persisted as a named artifact."""
 
-    schema_version: Literal["target_readiness_report_v1"]
+    schema_version: TargetReadinessReportSchemaVersion
     job_id: str
     source_ir_sha256: str
     effective_exam_sha256: str

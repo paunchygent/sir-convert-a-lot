@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
 
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamAlternative,
@@ -28,17 +27,19 @@ from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamGradingPolicy,
     DigiExamItem,
     DigiExamItemType,
-    DigiExamMatchingStructure,
     DigiExamParseResult,
     DigiExamParseStatus,
     DigiExamSourceSpan,
     DigiExamWarning,
 )
-
-DIGIEXAM_IR_SCHEMA_VERSION: Literal["digiexam_intermediate_exam_v2"] = (
-    "digiexam_intermediate_exam_v2"
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_INTERMEDIATE_EXAM_SCHEMA_VERSION,
+    DIGIEXAM_IR_MANIFEST_SCHEMA_VERSION,
+    DigiExamIntermediateExamSchemaVersion,
+    DigiExamIrManifestSchemaVersion,
 )
-DIGIEXAM_IR_MANIFEST_SCHEMA_VERSION: Literal["digiexam_ir_manifest_v2"] = "digiexam_ir_manifest_v2"
+
+DIGIEXAM_IR_SCHEMA_VERSION = DIGIEXAM_INTERMEDIATE_EXAM_SCHEMA_VERSION
 
 
 class DigiExamIrManualFollowUpReason(StrEnum):
@@ -84,7 +85,6 @@ class DigiExamIrItem:
     digiexam_type_code: int | None
     options: tuple[str, ...]
     alternatives: tuple[DigiExamAlternative, ...]
-    matching: DigiExamMatchingStructure | None
     gaps: tuple[DigiExamGap, ...]
     grading_policy: DigiExamGradingPolicy | None
     answer_key: DigiExamIrAnswerKey
@@ -97,7 +97,7 @@ class DigiExamIrItem:
 class DigiExamIntermediateExam:
     """Top-level renderer-neutral DigiExam exam representation."""
 
-    schema_version: Literal["digiexam_intermediate_exam_v2"]
+    schema_version: DigiExamIntermediateExamSchemaVersion
     source_filename: str
     source_producer: str | None
     parse_status: DigiExamParseStatus
@@ -141,8 +141,8 @@ class DigiExamIrManifestItemSummary:
 class DigiExamIrManifest:
     """Deterministic renderer-neutral DigiExam manifest summary."""
 
-    schema_version: Literal["digiexam_ir_manifest_v2"]
-    exam_schema_version: Literal["digiexam_intermediate_exam_v2"]
+    schema_version: DigiExamIrManifestSchemaVersion
+    exam_schema_version: DigiExamIntermediateExamSchemaVersion
     source_filename: str
     source_producer: str | None
     parse_status: DigiExamParseStatus
@@ -175,7 +175,6 @@ def build_digiexam_intermediate_exam(parse_result: DigiExamParseResult) -> DigiE
                 digiexam_type_code=source_item.digiexam_type_code,
                 options=source_item.options,
                 alternatives=source_item.alternatives,
-                matching=source_item.matching,
                 gaps=source_item.gaps,
                 grading_policy=source_item.grading_policy,
                 answer_key=DigiExamIrAnswerKey(
@@ -337,6 +336,5 @@ _MACHINE_MARKED_ITEM_TYPES = frozenset(
         DigiExamItemType.SINGLE_CHOICE,
         DigiExamItemType.MULTIPLE_RESPONSE,
         DigiExamItemType.GAP_FILL,
-        DigiExamItemType.MATCHING,
     }
 )

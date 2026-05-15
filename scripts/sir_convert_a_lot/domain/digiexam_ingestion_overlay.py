@@ -26,8 +26,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_effective_item_patch import (
     apply_effective_item_patch,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
-    DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
-    INGESTION_OVERLAY_REPORT_SCHEMA_VERSION,
     DigiExamEffectiveAnswerKey,
     DigiExamEffectiveExam,
     DigiExamEffectiveItem,
@@ -42,7 +40,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts impor
     DigiExamOverlayApplicationResult,
     DigiExamOverlayChoiceManualAnswerKey,
     DigiExamOverlayGapFillManualAnswerKey,
-    DigiExamOverlayMatchingManualAnswerKey,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DIGIEXAM_IR_SCHEMA_VERSION,
@@ -50,6 +47,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIrAnswerKey,
     DigiExamIrItem,
     DigiExamIrManualFollowUpReason,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
+    INGESTION_OVERLAY_REPORT_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
     source_item_fingerprint,
@@ -222,11 +223,6 @@ def _manual_key_replacement(
 ) -> DigiExamIrItem | None:
     key = entry.manual_answer_key
     if key is None:
-        return None
-    if isinstance(key, DigiExamOverlayMatchingManualAnswerKey):
-        rejected.append(
-            _rejected(entry, "matching_answer_key_not_supported", "Matching keys need IR v3.")
-        )
         return None
     if isinstance(key, DigiExamOverlayChoiceManualAnswerKey):
         return _choice_replacement(entry=entry, item=item, key=key, rejected=rejected)

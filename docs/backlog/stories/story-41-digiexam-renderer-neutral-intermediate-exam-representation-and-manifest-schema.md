@@ -36,8 +36,8 @@ shape to Exam.net-compatible PDF and QTI targets.
 
 - Convert existing DigiExam parser outputs into one stable Sir Convert-owned
   intermediate exam model.
-- Preserve item order, item type, prompt body, options, matching prompts,
-  gap identifiers, point values, source spans, parse status, warnings, and
+- Preserve item order, item type, prompt body, options, gap identifiers, point
+  values, source spans, parse status, warnings, and
   answer-key provenance.
 - Represent manual follow-up explicitly for open-ended marking, missing machine
   answer keys, unsupported shapes, and parser-blocking warnings.
@@ -54,11 +54,12 @@ shape to Exam.net-compatible PDF and QTI targets.
   renderer names.
 - [x] The IR can be built from the completed `.dxe` parser output for the
   2026-05-07 mixed-question fixture.
-- [x] The IR can be built from the legacy PDF fallback parser output without
+- [x] The IR can be built from the PDF artifact parser output without
   promoting PDF-only evidence above `.dxe` evidence.
 - [x] The IR preserves source item order and stable item identifiers.
 - [x] The IR preserves open-ended, single-choice, multiple-response, gap-fill,
-  matching, and unknown item-type states without renderer-specific syntax.
+  and unknown item-type states without renderer-specific syntax. Matching-like
+  PDF artifact rows remain unknown/non-canonical in the DigiExam lane.
 - [x] The IR carries answer-key provenance separately from item structure.
 - [x] The IR preserves result-PDF-enriched correct MCQ IDs and gap GUID/value
   answer pairs when they are available.
@@ -79,7 +80,8 @@ shape to Exam.net-compatible PDF and QTI targets.
 - [x] Fixture-backed tests cover `.dxe` output with absent answer keys.
 - [x] Fixture-backed tests cover `.dxe` output enriched from the sanitized
   graded-result PDF.
-- [x] Fixture-backed tests cover the legacy chemistry PDF matching structure.
+- [x] Fixture-backed tests cover the chemistry PDF artifact's matching-like
+  visible rows as unsupported/non-canonical DigiExam evidence.
 - [x] Tests assert manual follow-up entries for open-ended manual marking and
   missing machine-answer keys.
 - [x] Tests serialize the graded-result PDF enriched IR and manifest and assert

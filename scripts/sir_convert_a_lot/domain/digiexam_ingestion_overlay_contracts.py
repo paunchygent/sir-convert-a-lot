@@ -19,17 +19,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamItemType
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DigiExamIntermediateExam
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DigiExamEffectiveExamSchemaVersion,
+    DigiExamIngestionOverlaySchemaVersion,
+    DigiExamIntermediateExamSchemaVersion,
+    IngestionOverlayReportSchemaVersion,
+)
 from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
-
-DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION: Literal["digiexam_ingestion_overlay_v1"] = (
-    "digiexam_ingestion_overlay_v1"
-)
-DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION: Literal["digiexam_effective_exam_v1"] = (
-    "digiexam_effective_exam_v1"
-)
-INGESTION_OVERLAY_REPORT_SCHEMA_VERSION: Literal["ingestion_overlay_report_v1"] = (
-    "ingestion_overlay_report_v1"
-)
 
 
 class DigiExamIngestionOverlayError(ValueError):
@@ -47,7 +43,7 @@ class DigiExamOverlaySourceBinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     source_file_sha256: str
-    source_ir_schema_version: Literal["digiexam_intermediate_exam_v2"]
+    source_ir_schema_version: DigiExamIntermediateExamSchemaVersion
     source_ir_sha256: str
 
 
@@ -86,28 +82,8 @@ class DigiExamOverlayGapFillManualAnswerKey(BaseModel):
     gap_answers: tuple[DigiExamOverlayGapAnswer, ...] = Field(min_length=1)
 
 
-class DigiExamOverlayMatchingPair(BaseModel):
-    """Contract-level matching pair kept unsupported until exact IR fields exist."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    left_id: str = Field(min_length=1)
-    right_id: str = Field(min_length=1)
-
-
-class DigiExamOverlayMatchingManualAnswerKey(BaseModel):
-    """Manual matching answer key accepted at DTO level but not applied yet."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    kind: Literal["matching"]
-    matching_pairs: tuple[DigiExamOverlayMatchingPair, ...] = Field(min_length=1)
-
-
 DigiExamOverlayManualAnswerKey = Annotated[
-    DigiExamOverlayChoiceManualAnswerKey
-    | DigiExamOverlayGapFillManualAnswerKey
-    | DigiExamOverlayMatchingManualAnswerKey,
+    DigiExamOverlayChoiceManualAnswerKey | DigiExamOverlayGapFillManualAnswerKey,
     Field(discriminator="kind"),
 ]
 
@@ -195,48 +171,8 @@ class DigiExamOverlayGapFillItemPatch(DigiExamOverlayVisibleTextPatch):
         return self
 
 
-class DigiExamOverlayMatchingTextOverride(BaseModel):
-    """Bounded matching-column text patch using source 1-based positions."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    index: int = Field(ge=1)
-    text: str = Field(min_length=1, max_length=500)
-
-    @field_validator("text")
-    @classmethod
-    def _validate_text(cls, value: str) -> str:
-        normalized = value.strip()
-        _reject_embedded_resources(normalized)
-        return normalized
-
-
-class DigiExamOverlayMatchingItemPatch(DigiExamOverlayVisibleTextPatch):
-    """Bounded matching item patch applied only to effective visible text."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    kind: Literal["matching"]
-    left_overrides: tuple[DigiExamOverlayMatchingTextOverride, ...] = ()
-    right_overrides: tuple[DigiExamOverlayMatchingTextOverride, ...] = ()
-
-    @model_validator(mode="after")
-    def _require_patch_content(self) -> Self:
-        if (
-            self.title is None
-            and self.prompt_html is None
-            and self.prompt_lines is None
-            and not self.left_overrides
-            and not self.right_overrides
-        ):
-            raise ValueError("matching item patch must contain at least one visible edit")
-        return self
-
-
 DigiExamOverlayEffectiveItemPatch = Annotated[
-    DigiExamOverlayChoiceItemPatch
-    | DigiExamOverlayGapFillItemPatch
-    | DigiExamOverlayMatchingItemPatch,
+    DigiExamOverlayChoiceItemPatch | DigiExamOverlayGapFillItemPatch,
     Field(discriminator="kind"),
 ]
 
@@ -271,7 +207,7 @@ class DigiExamIngestionOverlay(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["digiexam_ingestion_overlay_v1"]
+    schema_version: DigiExamIngestionOverlaySchemaVersion
     source_binding: DigiExamOverlaySourceBinding
     items: tuple[DigiExamIngestionOverlayItem, ...] = Field(min_length=1)
 
@@ -321,13 +257,11 @@ class DigiExamEffectiveItemPatchSummary:
     changed_fields: tuple[str, ...]
     patched_alternative_ids: tuple[int, ...]
     patched_gap_ids: tuple[str, ...]
-    patched_matching_left_indices: tuple[int, ...]
-    patched_matching_right_indices: tuple[int, ...]
 
 
 @dataclass(frozen=True)
 class DigiExamEffectiveItem:
-    """One effective item summary for `digiexam_effective_exam_v1`."""
+    """One effective item summary for the current effective-exam schema."""
 
     item_id: str
     sequence: int
@@ -343,9 +277,9 @@ class DigiExamEffectiveItem:
 class DigiExamEffectiveExam:
     """Effective exam artifact payload consumed by review consumers."""
 
-    schema_version: Literal["digiexam_effective_exam_v1"]
+    schema_version: DigiExamEffectiveExamSchemaVersion
     source_file_sha256: str
-    source_ir_schema_version: Literal["digiexam_intermediate_exam_v2"]
+    source_ir_schema_version: DigiExamIntermediateExamSchemaVersion
     source_ir_sha256: str
     ingestion_overlay_sha256: str | None
     answer_key_completion_report_sha256: str | None
@@ -356,7 +290,7 @@ class DigiExamEffectiveExam:
 class DigiExamIngestionOverlayReport:
     """Overlay application report that excludes raw overlay JSON."""
 
-    schema_version: Literal["ingestion_overlay_report_v1"]
+    schema_version: IngestionOverlayReportSchemaVersion
     overlay_sha256: str
     source_ir_sha256: str
     accepted_entries: tuple[DigiExamIngestionOverlayAcceptedEntry, ...]

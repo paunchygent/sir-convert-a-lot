@@ -22,6 +22,9 @@ from pydantic import BaseModel
 from scripts.sir_convert_a_lot.application.openapi_contracts_v2 import (
     OPENAPI_CONTRACT_COMPONENT_MODELS,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    digiexam_schema_version_extension,
+)
 
 JsonObject = dict[str, object]
 
@@ -75,6 +78,7 @@ def _patch_create_job_multipart_contract(schema: MutableMapping[str, object]) ->
         "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
         "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
     }
+    post_operation["x-sir-convert-digiexam-schema-versions"] = digiexam_schema_version_extension()
     content = _multipart_content(post_operation)
     content["encoding"] = {
         "job_spec": {"contentType": "application/json"},

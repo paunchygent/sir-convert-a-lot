@@ -235,9 +235,10 @@ fallback parser lane. Planned lanes, in dependency order:
 
 - Fixture coverage remains narrow: the `.dxe` evidence currently covers one
   committed 7-question mixed exam plus a duplicate export, one local
-  colleague-provided export with an embedded image, and legacy PDF evidence
+  colleague-provided export with an embedded image, and PDF artifact evidence
   covers two student-view PDFs. True/false, ordering, table-based, math-heavy,
-  attachment, and additional DigiExam item shapes are not yet represented.
+  attachment, and additional DigiExam `.dxe` item shapes are not yet
+  represented.
 - DigiExam artifact containment and absence claims must stay linked to the
   evidence files in
   `docs/reference/ref-digiexam-exam-artifact-item-type-evidence.md`; do not
@@ -265,8 +266,9 @@ fallback parser lane. Planned lanes, in dependency order:
   on 2026-04-24 because this belongs to Sir Convert-a-Lot's conversion platform
   backlog.
 - Story 38 and Task 267 were scaffolded on 2026-04-25 after reviewing the
-  initial PDF research evidence. They are legacy PDF fallback parser authority
-  and do not approve renderer, `.dxe`, or bulk workflow changes.
+  initial PDF research evidence. They are PDF artifact parser authority for the
+  pre-`.dxe` fallback lane and do not approve renderer, `.dxe`, or bulk
+  workflow changes.
 - Task 267 completed on 2026-04-26 with a typed parser result contract, PyMuPDF
   text-line adapter, deterministic fixture tests for both tracked PDFs, and
   fail-closed synthetic coverage for lossy extraction, missing anchors, unknown

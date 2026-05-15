@@ -15,11 +15,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
-
-DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION: Literal["digiexam_migration_bundle_v2"] = (
-    "digiexam_migration_bundle_v2"
-)
 
 
 class DigiExamMigrationArtifactKey(StrEnum):

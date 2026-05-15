@@ -14,6 +14,12 @@ from __future__ import annotations
 
 import json
 
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
+    DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
+    TARGET_READINESS_REPORT_SCHEMA_VERSION,
+    digiexam_schema_version_extension,
+)
 from scripts.sir_convert_a_lot.openapi_export_v2 import (
     DEFAULT_OPENAPI_CONTRACT_PATH,
     build_openapi_contract_v2,
@@ -53,6 +59,9 @@ def test_create_job_openapi_contract_exposes_typed_multipart_json_parts() -> Non
         "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
         "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
     }
+    assert create_job["x-sir-convert-digiexam-schema-versions"] == (
+        digiexam_schema_version_extension()
+    )
 
     request_body = _mapping(create_job["requestBody"])
     content = _mapping(request_body["content"])
@@ -91,8 +100,24 @@ def test_digiexam_consumer_components_are_published() -> None:
     readiness_report = _mapping(schemas["DigiExamTargetReadinessReportV1"])
     readiness_properties = _mapping(readiness_report["properties"])
     readiness_schema_version = _mapping(readiness_properties["schema_version"])
-    assert readiness_schema_version["const"] == ("target_readiness_report_v1")
+    assert readiness_schema_version["const"] == TARGET_READINESS_REPORT_SCHEMA_VERSION
     effective_exam = _mapping(schemas["DigiExamEffectiveExamV1"])
     effective_properties = _mapping(effective_exam["properties"])
     effective_schema_version = _mapping(effective_properties["schema_version"])
-    assert effective_schema_version["const"] == ("digiexam_effective_exam_v1")
+    assert effective_schema_version["const"] == DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION
+    ingestion_overlay = _mapping(schemas["DigiExamIngestionOverlay"])
+    ingestion_properties = _mapping(ingestion_overlay["properties"])
+    ingestion_schema_version = _mapping(ingestion_properties["schema_version"])
+    assert ingestion_schema_version["const"] == DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION
+    assert "DigiExamOverlayMatchingPair" not in schemas
+    assert "DigiExamOverlayMatchingManualAnswerKey" not in schemas
+    assert "DigiExamOverlayMatchingItemPatch" not in schemas
+
+    effective_answer_key = _mapping(schemas["DigiExamEffectiveAnswerKeyV1"])
+    effective_answer_key_properties = _mapping(effective_answer_key["properties"])
+    assert "correct_matching_pairs" not in effective_answer_key_properties
+
+    effective_patch_summary = _mapping(schemas["DigiExamEffectiveItemPatchSummaryV1"])
+    effective_patch_summary_properties = _mapping(effective_patch_summary["properties"])
+    assert "patched_matching_left_indices" not in effective_patch_summary_properties
+    assert "patched_matching_right_indices" not in effective_patch_summary_properties

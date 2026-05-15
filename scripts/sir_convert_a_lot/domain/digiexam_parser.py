@@ -21,7 +21,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamDocumentMetadata,
     DigiExamItem,
     DigiExamItemType,
-    DigiExamMatchingStructure,
     DigiExamParseResult,
     DigiExamParseStatus,
     DigiExamPointMarker,
@@ -41,9 +40,6 @@ class _MultipleChoiceParts:
 
 _QUESTION_HEADER_RE = re.compile(r"^Fråga\s+\d+$")
 _POINT_MARKER_RE = re.compile(r"^Max poäng\s*:\s*(?P<points>\d+)$")
-_NUMBERED_MATCH_RE = re.compile(r"^\d+\.\s*(?P<text>.+)$")
-_LETTERED_OPTION_RE = re.compile(r"^[a-z]\.\s*(?P<text>.+)$")
-_BLANK_ROW_RE = re.compile(r"^(?:\d+\s*=\s*\d+\.\s*){2,}$")
 _KNOWN_CHEMISTRY_HEADERS = frozenset(
     {
         "Materia",
@@ -157,9 +153,6 @@ class DigiExamParser:
             if item_type == DigiExamItemType.MULTIPLE_CHOICE
             else None
         )
-        matching = (
-            self._matching_structure(block) if item_type == DigiExamItemType.MATCHING else None
-        )
         options = multiple_choice.options if multiple_choice is not None else ()
         warnings = self._item_warnings(header, item_type, span)
         if multiple_choice is not None:
@@ -171,7 +164,6 @@ class DigiExamParser:
             prompt_lines=self._prompt_lines(block, point_marker, item_type, multiple_choice),
             point_marker=point_marker,
             options=options,
-            matching=matching,
             answer_key_provenance=self._answer_key_provenance(item_type),
             warnings=warnings,
         )
@@ -182,12 +174,8 @@ class DigiExamParser:
         block: tuple[DigiExamSourceLine, ...],
         point_marker: DigiExamPointMarker | None,
     ) -> DigiExamItemType:
-        if header == "Para ihop":
-            return DigiExamItemType.MATCHING
         if point_marker is not None:
             return DigiExamItemType.OPEN_ENDED
-        if any(_LETTERED_OPTION_RE.match(line.text.strip()) for line in block[1:]):
-            return DigiExamItemType.MATCHING
         if self._has_multiple_choice_options(block):
             return DigiExamItemType.MULTIPLE_CHOICE
         return DigiExamItemType.UNKNOWN
@@ -249,28 +237,6 @@ class DigiExamParser:
             warnings=tuple(warnings),
         )
 
-    def _matching_structure(
-        self, block: tuple[DigiExamSourceLine, ...]
-    ) -> DigiExamMatchingStructure:
-        left_prompts: list[str] = []
-        right_options: list[str] = []
-        blank_row_evidence: str | None = None
-        for line in block[1:]:
-            clean = _normalize_inline_space(line.text)
-            numbered_match = _NUMBERED_MATCH_RE.match(clean)
-            lettered_match = _LETTERED_OPTION_RE.match(clean)
-            if numbered_match:
-                left_prompts.append(numbered_match.group("text"))
-            elif lettered_match:
-                right_options.append(lettered_match.group("text"))
-            elif _BLANK_ROW_RE.match(clean):
-                blank_row_evidence = clean
-        return DigiExamMatchingStructure(
-            left_prompts=tuple(left_prompts),
-            right_options=tuple(right_options),
-            blank_row_evidence=blank_row_evidence,
-        )
-
     def _options(self, block: tuple[DigiExamSourceLine, ...]) -> tuple[str, ...]:
         prompt_seen = False
         options: list[str] = []
@@ -302,12 +268,6 @@ class DigiExamParser:
             clean = _normalize_inline_space(line.text)
             if clean == "" or clean == point_text:
                 continue
-            if item_type == DigiExamItemType.MATCHING and (
-                _NUMBERED_MATCH_RE.match(clean)
-                or _LETTERED_OPTION_RE.match(clean)
-                or _BLANK_ROW_RE.match(clean)
-            ):
-                continue
             lines.append(clean)
         return tuple(lines)
 
@@ -327,7 +287,7 @@ class DigiExamParser:
                     source_span=span,
                 )
             )
-        if item_type in {DigiExamItemType.MULTIPLE_CHOICE, DigiExamItemType.MATCHING}:
+        if item_type == DigiExamItemType.MULTIPLE_CHOICE:
             warnings.append(
                 DigiExamWarning(
                     code=DigiExamWarningCode.MISSING_ANSWER_KEY_PROVENANCE,
@@ -353,25 +313,10 @@ class DigiExamParser:
                     blocking=True,
                 )
             )
-        for item in items:
-            if item.item_type == DigiExamItemType.MATCHING and item.matching is not None:
-                if (
-                    not item.matching.left_prompts
-                    or not item.matching.right_options
-                    or item.matching.blank_row_evidence is None
-                ):
-                    warnings.append(
-                        DigiExamWarning(
-                            code=DigiExamWarningCode.UNSUPPORTED_STRUCTURE,
-                            message=f"Matching structure is incomplete for '{item.header}'.",
-                            blocking=True,
-                            source_span=item.source_span,
-                        )
-                    )
         return tuple(warnings)
 
     def _answer_key_provenance(self, item_type: DigiExamItemType) -> DigiExamAnswerKeyProvenance:
-        if item_type in {DigiExamItemType.MULTIPLE_CHOICE, DigiExamItemType.MATCHING}:
+        if item_type == DigiExamItemType.MULTIPLE_CHOICE:
             return DigiExamAnswerKeyProvenance.ABSENT
         return DigiExamAnswerKeyProvenance.NOT_APPLICABLE
 

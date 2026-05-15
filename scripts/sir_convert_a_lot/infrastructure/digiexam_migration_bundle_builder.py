@@ -41,7 +41,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
 )
 from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
     ARTIFACT_DEFINITIONS,
-    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
     DigiExamMigrationArtifactEntry,
     DigiExamMigrationArtifactKey,
 )
@@ -49,6 +48,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_result_pdf_answers import (
     DigiExamResultPdfAnswerEvidence,
     DigiExamResultPdfAnswerExtractor,
     normalize_result_text,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
+    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
     build_digiexam_target_readiness_report,
@@ -291,7 +294,7 @@ def execute_digiexam_migration_bundle_job(
         "source_binding": {
             "source_ir_schema_version": exam.schema_version,
             "source_ir_sha256": source_ir_sha256,
-            "effective_exam_schema_version": "digiexam_effective_exam_v1",
+            "effective_exam_schema_version": DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
             "effective_exam_sha256": effective_exam_sha256,
         },
         "warnings": {

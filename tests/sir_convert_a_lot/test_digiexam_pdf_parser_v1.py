@@ -86,8 +86,8 @@ def test_ecology_pdf_fixture_matches_exact_open_ended_baseline() -> None:
 def test_chemistry_pdf_fixture_matches_exact_mixed_item_baseline() -> None:
     result = _parse_pdf(_CHEMISTRY_PDF)
 
-    assert result.status == DigiExamParseStatus.SUCCESS
-    assert result.renderer_ready is True
+    assert result.status == DigiExamParseStatus.BLOCKED
+    assert result.renderer_ready is False
     assert result.metadata.page_count == 3
     assert len(result.items) == 12
     assert [item.header for item in result.items] == [
@@ -106,8 +106,8 @@ def test_chemistry_pdf_fixture_matches_exact_mixed_item_baseline() -> None:
     ]
     assert Counter(item.item_type for item in result.items) == {
         DigiExamItemType.MULTIPLE_CHOICE: 3,
-        DigiExamItemType.MATCHING: 1,
         DigiExamItemType.OPEN_ENDED: 8,
+        DigiExamItemType.UNKNOWN: 1,
     }
     assert [item.point_marker.points if item.point_marker else None for item in result.items] == [
         None,
@@ -125,29 +125,36 @@ def test_chemistry_pdf_fixture_matches_exact_mixed_item_baseline() -> None:
     ]
 
 
-def test_chemistry_matching_item_preserves_structure_without_synthesizing_keys() -> None:
+def test_examnet_style_pdf_matching_is_not_digiexam_canonical_structure() -> None:
     result = _parse_pdf(_CHEMISTRY_PDF)
     matching_item = result.items[1]
 
     assert matching_item.header == "Para ihop"
-    assert matching_item.item_type == DigiExamItemType.MATCHING
-    assert matching_item.answer_key_provenance == DigiExamAnswerKeyProvenance.ABSENT
-    assert matching_item.matching is not None
-    assert matching_item.matching.left_prompts == (
-        "Kolatom",
-        "Syreatom",
-        "Syremolekyl",
-        "Koldioxid",
+    assert matching_item.item_type == DigiExamItemType.UNKNOWN
+    assert matching_item.answer_key_provenance == DigiExamAnswerKeyProvenance.NOT_APPLICABLE
+    assert matching_item.prompt_lines == (
+        "Skriv rätt bokstav i ordluckan.",
+        "1. Kolatom",
+        "2. Syreatom",
+        "3. Syremolekyl",
+        "4. Koldioxid",
+        "a. O 2",
+        "b. O",
+        "c. CO 2",
+        "d. C",
+        "1 = 1. 2 = 2. 3 = 3. 4 = 4.",
     )
-    assert matching_item.matching.right_options == ("O 2", "O", "CO 2", "C")
-    assert matching_item.matching.blank_row_evidence == "1 = 1. 2 = 2. 3 = 3. 4 = 4."
+
+    assert DigiExamWarningCode.UNKNOWN_SOURCE_SHAPE in {
+        warning.code for warning in matching_item.warnings
+    }
 
     missing_key_warnings = [
         warning
         for warning in result.warnings
         if warning.code == DigiExamWarningCode.MISSING_ANSWER_KEY_PROVENANCE
     ]
-    assert len(missing_key_warnings) == 4
+    assert len(missing_key_warnings) == 3
     assert all(not warning.blocking for warning in missing_key_warnings)
 
 
@@ -281,7 +288,5 @@ def test_incomplete_matching_structure_blocks_renderer_ready_output() -> None:
 
     assert result.status == DigiExamParseStatus.BLOCKED
     assert result.renderer_ready is False
-    assert result.items[0].item_type == DigiExamItemType.MATCHING
-    assert DigiExamWarningCode.UNSUPPORTED_STRUCTURE in {
-        warning.code for warning in result.warnings
-    }
+    assert result.items[0].item_type == DigiExamItemType.UNKNOWN
+    assert DigiExamWarningCode.UNKNOWN_SOURCE_SHAPE in {warning.code for warning in result.warnings}

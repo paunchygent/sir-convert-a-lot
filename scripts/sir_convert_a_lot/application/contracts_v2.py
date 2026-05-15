@@ -22,6 +22,9 @@ from scripts.sir_convert_a_lot.application.contracts import ErrorBody
 from scripts.sir_convert_a_lot.application.public_exam_converter_contract_v2 import (
     PublicArtifactReadLeaseResponseV2,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DigiExamMigrationBundleSchemaVersion,
+)
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 
@@ -134,7 +137,7 @@ class DigiExamMigrationConversionMetadataV2(ConversionMetadataV2):
     """Route-specific result metadata for DigiExam migration bundles."""
 
     route_key: Literal["digiexam_dxe_to_examnet_migration_bundle"]
-    bundle_schema_version: Literal["digiexam_migration_bundle_v2"]
+    bundle_schema_version: DigiExamMigrationBundleSchemaVersion
     bundle_status: Literal["complete", "partial", "needs_review", "failed"]
     source_sha256: str
     target_readiness_report_artifact_key: Literal["target_readiness_report"]

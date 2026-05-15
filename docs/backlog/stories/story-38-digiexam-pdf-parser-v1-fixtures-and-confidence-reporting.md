@@ -35,10 +35,11 @@ Exam.net renderer or bulk workflow depends on the parser output.
   the first regression fixture set.
 - Parse DigiExam PDF exports into item blocks with stable source evidence:
   header, item number or title, item type, prompt text, optional point marker,
-  options or matching structures when present, and extraction warnings.
-- Preserve the two observed PDFs as legacy PDF regression fixtures:
+  options, unsupported matching-like visible rows, and extraction warnings.
+- Preserve the two observed PDFs as PDF artifact regression fixtures:
   - ecology sample: 15 open-ended items with subpart handling;
-  - chemistry sample: 12 ordered items with 3 multiple-choice, 1 matching, and
+  - chemistry sample: 12 ordered items with 3 multiple-choice, 1 unknown
+    matching-like PDF artifact row, and
     8 open-ended items.
 - Add confidence reporting that distinguishes high-confidence parsed fields,
   degraded extraction, unknown item shapes, and missing answer-key provenance.
@@ -54,8 +55,9 @@ Exam.net renderer or bulk workflow depends on the parser output.
   teacher or developer to trace the output back to the source PDF.
 - [x] `Max poäng : N` markers are captured when present and absence is reported
   explicitly rather than inferred.
-- [x] Multiple-choice and matching items report missing answer-key provenance
-  instead of guessing correct answers.
+- [x] Multiple-choice items report missing answer-key provenance instead of
+  guessing correct answers; matching-like PDF rows fail closed as unsupported
+  DigiExam source shapes.
 - [x] Swedish diacritic extraction is checked and lossy extraction produces a
   warning or fail-closed confidence result.
 - [x] Unknown item shapes fail closed with actionable warnings and do not

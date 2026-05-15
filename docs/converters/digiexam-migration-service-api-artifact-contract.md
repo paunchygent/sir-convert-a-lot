@@ -110,13 +110,15 @@ Convert produced a terminal migration bundle. Target-specific readiness is
 reported inside the bundle through `target_readiness_report_v1`; consumers must
 not infer target availability from job status or bundle status alone.
 
-## Bundle V2 Break
+## Bundle V3 Cutover
 
-Task 294 makes the migration bundle a hard `digiexam_migration_bundle_v2`
-contract break. There is no `digiexam_migration_bundle_v1` compatibility shim,
-source-only fallback lane, or dual-version response mode. Existing consumers
-must migrate to the v2 manifest, target readiness report, and effective-exam
-semantics before depending on this route.
+Task 294 introduced the first hard migration-bundle break for overlay and
+effective-exam semantics. Task 298 supersedes that baseline with the current
+`digiexam_migration_bundle_v3` contract so matching answer-key pairs can be
+represented without compatibility aliases. There is no compatibility shim,
+source-only fallback lane, or dual-version response mode for older bundle
+contracts. Existing consumers must migrate to the v3 manifest, target
+readiness report, and effective-exam semantics before depending on this route.
 
 Planned Epic 11 overlay work keeps target readiness Sir Convert-owned. When
 Skriptoteket later sends teacher edits or a teacher decision to accept the
@@ -131,7 +133,7 @@ still lacks a governed safe shape.
 Task 295 implements runtime application for manual answer keys and review
 decisions. Task 302 implements runtime application of supported
 `effective_item_patch` values for item text, option text, prompt/body,
-gap-fill visible prompt repair, and matching visible left/right text repair.
+and gap-fill visible prompt repair.
 Task 303 owns the later unkeyed/manual QTI profile that can make teacher
 acceptance enable QTI when the selected QTI package has no other schema/profile
 violations.
@@ -447,7 +449,7 @@ resource archive.
     "parity_pdf_filename": "student-view.pdf",
     "result_pdf_usage": "correct_machine_marked_answers_only",
     "manual_follow_up_policy": "emit_item_addressable_report",
-    "bundle_schema_version": "digiexam_migration_bundle_v2",
+    "bundle_schema_version": "digiexam_migration_bundle_v3",
     "completion_mode": "source_evidence_only",
     "eligible_completion_item_types": ["choice", "multiple_response", "gap_fill"],
     "remote_provider_policy": "forbidden",
@@ -474,7 +476,7 @@ Field rules:
   the uploaded `parity_pdf` part filename.
 - `result_pdf_usage` MUST be `correct_machine_marked_answers_only`.
 - `manual_follow_up_policy` MUST be `emit_item_addressable_report`.
-- `bundle_schema_version` MUST be `digiexam_migration_bundle_v2`.
+- `bundle_schema_version` MUST be `digiexam_migration_bundle_v3`.
 - `completion_mode` MUST be one of `source_evidence_only`,
   `local_llm_suggest_missing_machine_marked`, or
   `local_llm_apply_missing_machine_marked_with_review`.
@@ -486,8 +488,9 @@ Field rules:
 - `ingestion_overlay_filename`, when present, MUST match the uploaded
   `digiexam_ingestion_overlay` part filename.
 
-The contract no longer preserves bundle-v1 source-only compatibility. A request
-without overlay still produces a v2 manifest and v2 readiness report.
+The contract no longer preserves older source-only compatibility. A request
+without overlay still produces the current bundle manifest and readiness
+report.
 
 ### Accepted Companion Evidence
 
@@ -501,7 +504,7 @@ Accepted companion files are intentionally narrow:
 
 ## Ingestion Overlay Contract
 
-`digiexam_ingestion_overlay_v1` is accepted only when referenced by
+`digiexam_ingestion_overlay_v2` is accepted only when referenced by
 `digiexam_migration_options.ingestion_overlay_filename`. It is source-bound and
 uses concrete teacher edits, manual answer keys, or review decisions.
 
@@ -512,10 +515,10 @@ remain unchanged.
 
 ```json
 {
-  "schema_version": "digiexam_ingestion_overlay_v1",
+  "schema_version": "digiexam_ingestion_overlay_v2",
   "source_binding": {
     "source_file_sha256": "sha256:source-file",
-    "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+    "source_ir_schema_version": "digiexam_intermediate_exam_v3",
     "source_ir_sha256": "sha256:source-ir"
   },
   "items": [
@@ -560,25 +563,26 @@ Gap-fill overlays use existing source gap IDs:
 }
 ```
 
-Matching overlays may be represented at contract level, but applied matching
-completion is disabled until exact source/effective matching answer-pair fields
-exist. Gapped/open-cloze overlays likewise require exact gap accepted-value
-fields before applied completion can treat them as automatically evaluated:
+Matching overlays are not part of the DigiExam migration overlay contract.
+Canonical DigiExam `.dxe` files do not carry matching items, and the DigiExam
+adapter must not introduce a speculative keyed matching QTI bridge. Task
+298/307 moves matching semantics into the source-neutral `ExamAuthoringIR v1`
+slice instead. Future matching-capable source adapters must use that neutral
+contract with `source_id`/`target_id` directed pairs and must not accept retired
+`left_id`/`right_id` aliases.
 
-```json
-{
-  "item_id": "item-3",
-  "sequence": 3,
-  "item_type": "matching",
-  "source_item_fingerprint": "sha256:item-source",
-  "manual_answer_key": {
-    "kind": "matching",
-    "matching_pairs": [
-      {"left_id": "left-1", "right_id": "right-a"}
-    ]
-  }
-}
-```
+The implementation must version affected public DigiExam artifacts for removed
+legacy matching overlay fields and update Skriptoteket consumers in the same
+slice.
+
+Schema-version handling must use generated or centralized constants. Do not
+copy version literals across Sir Convert runtime modules, OpenAPI tests,
+Skriptoteket adapters, or browser API models. Where a consumer must branch on a
+schema version, that branch must reference a contract constant or generated
+type derived from the Sir Convert contract snapshot.
+
+Gapped/open-cloze overlays likewise require exact gap accepted-value fields
+before applied completion can treat them as automatically evaluated.
 
 Accepted-current-state is a review decision, not an answer key:
 
@@ -599,19 +603,19 @@ Accepted-current-state is a review decision, not an answer key:
 
 Source-derived item context is not an overlay field. It is the parser/provider
 input context already present in source IR: exam title/metadata, item title,
-prompt/body HTML, alternatives, gaps, matching columns, grading policy, and
-asset references. It is not answer-key evidence.
+prompt/body HTML, alternatives, gaps, grading policy, and asset references. It
+is not answer-key evidence.
 
 ## Effective Exam And Report Contracts
 
-`effective_ir_json` uses `digiexam_effective_exam_v1` whenever source IR is not
+`effective_ir_json` uses `digiexam_effective_exam_v2` whenever source IR is not
 the exact renderer input.
 
 ```json
 {
-  "schema_version": "digiexam_effective_exam_v1",
+  "schema_version": "digiexam_effective_exam_v2",
   "source_file_sha256": "sha256:source-file",
-  "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+  "source_ir_schema_version": "digiexam_intermediate_exam_v3",
   "source_ir_sha256": "sha256:source-ir",
   "ingestion_overlay_sha256": "sha256:overlay",
   "answer_key_completion_report_sha256": null,
@@ -749,7 +753,7 @@ route-specific conversion metadata.
     },
     "conversion_metadata": {
       "route_key": "digiexam_dxe_to_examnet_migration_bundle",
-      "bundle_schema_version": "digiexam_migration_bundle_v2",
+      "bundle_schema_version": "digiexam_migration_bundle_v3",
       "bundle_status": "partial",
       "source_sha256": "sha256:...",
       "target_readiness_report_artifact_key": "target_readiness_report",
@@ -790,11 +794,11 @@ routes. It must not inspect Sir Convert work directories.
 ### Bundle Manifest
 
 The canonical bundle manifest schema version is
-`digiexam_migration_bundle_v2`.
+`digiexam_migration_bundle_v3`.
 
 ```json
 {
-  "schema_version": "digiexam_migration_bundle_v2",
+  "schema_version": "digiexam_migration_bundle_v3",
   "job_id": "job_123",
   "source": {
     "filename": "exam.dxe",
@@ -846,9 +850,9 @@ The canonical bundle manifest schema version is
     "review_required": true
   },
   "source_binding": {
-    "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+    "source_ir_schema_version": "digiexam_intermediate_exam_v3",
     "source_ir_sha256": "sha256:...",
-    "effective_exam_schema_version": "digiexam_effective_exam_v1",
+    "effective_exam_schema_version": "digiexam_effective_exam_v2",
     "effective_exam_sha256": "sha256:..."
   },
   "warnings": {
@@ -894,7 +898,7 @@ unavailable-artifact error.
 | `qti_package` | `qti-package.zip` | `application/zip` | Available when the Task 280 QTI package generator passes the governed profile. Blocked when validation fails or the source shape falls outside the proof-gated QTI profile. |
 | `qti_validation_report` | `qti-validation-report.json` | `application/json` | Present when QTI generation is requested or defaulted. Task 280 defines `examnet_qti_validation_report_v1`; Task 282 service bundles expose this report as a named artifact. |
 | `ir_json` | `digiexam-ir.json` | `application/json` | Available when `.dxe` parsing reaches IR generation. May include teacher-owned embedded asset payloads required by renderers. |
-| `effective_ir_json` | `digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, or review decision changes renderer input. Uses `digiexam_effective_exam_v1`, not the parser-owned source IR schema. |
+| `effective_ir_json` | `digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, or review decision changes renderer input. Uses `digiexam_effective_exam_v2`, not the parser-owned source IR schema. |
 | `migration_manifest` | `migration-manifest.json` | `application/json` | Available when IR manifest generation succeeds. Must not embed raw asset payloads or result-PDF private data. |
 | `target_readiness_report` | `target-readiness-report.json` | `application/json` | Always available for terminal v2 bundles. It is the consumer authority for enabling PDF/QTI export actions. |
 | `ingestion_overlay_report` | `ingestion-overlay-report.json` | `application/json` | Available when an overlay is submitted. Summarizes accepted/rejected overlay entries without exposing raw overlay JSON. |
@@ -979,10 +983,10 @@ Example:
 {
   "item_id": "item_0004",
   "sequence": 4,
-  "title": "Fråga 4",
-  "item_type": "matching",
+  "title": "Para ihop",
+  "item_type": "unknown",
   "reason_code": "unsupported_target_shape",
-  "message": "Kontrollera och skapa matchningsfrågan manuellt i Exam.net.",
+  "message": "Kontrollera itemformen manuellt innan export.",
   "affected_targets": ["examnet_pdf", "qti_package"]
 }
 ```
@@ -1085,8 +1089,30 @@ Example:
 }
 ```
 
+Matching readiness rows are reserved for future matching-capable source flows
+that consume `ExamAuthoringIR v1`; DigiExam `.dxe` migration must not emit
+keyed matching readiness rows. Future matching readiness rows must distinguish
+at least:
+
+- `matching_pairs_missing`: the IR/effective item has matching structure but no
+  trusted directed pairs.
+- `matching_pair_ids_invalid`: a submitted or reviewed pair references an
+  unknown source/left or target/right ID.
+- `matching_association_limits_exceeded`: the directed pair set violates the
+  item's intermediary `match_min`/`match_max` or association count limits.
+- `matching_shape_not_supported_by_examnet_pdf`: the item is valid IR or
+  general QTI shape, but the Exam.net PDF target profile rejects it, such as
+  left-to-many or right-to-many keyed matching.
+- `examnet_qti_import_unproven`: a package may be general-QTI valid, but live
+  Exam.net QTI import readiness cannot be claimed until Exam.net exposes an
+  import test path.
+
+Skriptoteket must display these as Sir Convert-owned readiness states. It must
+not infer exportability from duplicate right IDs, unmatched right IDs, or local
+pair counts.
+
 `Godkänn` / accept-current-state is represented only as a source-bound
-`review_decision` in `digiexam_ingestion_overlay_v1`. It can enable export only
+`review_decision` in `digiexam_ingestion_overlay_v2`. It can enable export only
 after Sir Convert validates the overlay, recomputes effective exam and target
 readiness, creates the target bytes, and validates that target. It never creates
 an answer key and never changes source IR provenance.
@@ -1109,6 +1135,8 @@ The adapter must not:
 - parse `.dxe` or result PDFs;
 - infer answer keys;
 - rewrite target-shape warnings;
+- infer matching target support from pair counts, duplicate IDs, or unmatched
+  right-side options;
 - inspect Sir Convert job directories;
 - choose private artifact paths;
 - hide target readiness, validation-failed, or manual-follow-up states from
@@ -1137,6 +1165,15 @@ Skriptoteket must refresh from Sir Convert before enabling export/save:
 - artifact availability and download paths;
 - target validation state;
 - effective exam digest after overlay or completion.
+
+When Task 298/307 removes DigiExam-owned matching fields, Skriptoteket must
+regenerate from the Sir Convert OpenAPI snapshot and replace hard-coded schema
+strings with generated or centralized contract constants in projection models,
+save metadata, and UI/API tests in the same schema-bump slice. DigiExam review
+state must not draft matching pairs, and target export/save buttons remain
+bound to refreshed `target_readiness_report_v1` rows from Sir Convert. No
+Skriptoteket adapter may submit or accept retired `left_id`/`right_id` matching
+pair payloads after the cutover.
 
 When Skriptoteket saves an artifact into user files, it should persist at
 least:
@@ -1229,7 +1266,7 @@ file metadata.
 
 ```json
 {
-  "schema_version": "digiexam_migration_bundle_v2",
+  "schema_version": "digiexam_migration_bundle_v3",
   "job_id": "job_456",
   "bundle_status": "needs_review",
   "artifacts": [

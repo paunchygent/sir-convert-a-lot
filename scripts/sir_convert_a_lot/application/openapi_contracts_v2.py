@@ -25,12 +25,19 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
     DigiExamMigrationArtifactAvailability,
     DigiExamMigrationArtifactKey,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DigiExamEffectiveExamSchemaVersion,
+    DigiExamIntermediateExamSchemaVersion,
+    DigiExamMigrationBundleSchemaVersion,
+    IngestionOverlayReportSchemaVersion,
+    TargetReadinessReportSchemaVersion,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import DigiExamTargetReadiness
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 
 
 class DigiExamMigrationBundleSourceV2(BaseModel):
-    """Source summary in `digiexam_migration_bundle_v2` manifests."""
+    """Source summary in current DigiExam migration bundle manifests."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -40,7 +47,7 @@ class DigiExamMigrationBundleSourceV2(BaseModel):
 
 
 class DigiExamMigrationBundleRetentionV2(BaseModel):
-    """Retention summary in `digiexam_migration_bundle_v2` manifests."""
+    """Retention summary in current DigiExam migration bundle manifests."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -65,7 +72,7 @@ class DigiExamMigrationBundleArtifactEntryV2(BaseModel):
 
 
 class DigiExamMigrationBundleManualFollowUpV2(BaseModel):
-    """Manual follow-up summary in `digiexam_migration_bundle_v2` manifests."""
+    """Manual follow-up summary in current DigiExam migration bundle manifests."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -89,14 +96,14 @@ class DigiExamMigrationBundleSourceBindingV2(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    source_ir_schema_version: Literal["digiexam_intermediate_exam_v2"]
+    source_ir_schema_version: DigiExamIntermediateExamSchemaVersion
     source_ir_sha256: str
-    effective_exam_schema_version: Literal["digiexam_effective_exam_v1"]
+    effective_exam_schema_version: DigiExamEffectiveExamSchemaVersion
     effective_exam_sha256: str
 
 
 class DigiExamMigrationBundleWarningsV2(BaseModel):
-    """Warnings summary in `digiexam_migration_bundle_v2` manifests."""
+    """Warnings summary in current DigiExam migration bundle manifests."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -109,7 +116,7 @@ class DigiExamMigrationBundleManifestV2(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["digiexam_migration_bundle_v2"]
+    schema_version: DigiExamMigrationBundleSchemaVersion
     job_id: str
     source: DigiExamMigrationBundleSourceV2
     bundle_status: Literal["complete", "partial", "needs_review", "failed"]
@@ -144,7 +151,7 @@ class DigiExamTargetReadinessReportV1(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["target_readiness_report_v1"]
+    schema_version: TargetReadinessReportSchemaVersion
     job_id: str
     source_ir_sha256: str
     effective_exam_sha256: str
@@ -169,8 +176,6 @@ class DigiExamEffectiveItemPatchSummaryV1(BaseModel):
     changed_fields: list[str] = Field(default_factory=list)
     patched_alternative_ids: list[int] = Field(default_factory=list)
     patched_gap_ids: list[str] = Field(default_factory=list)
-    patched_matching_left_indices: list[int] = Field(default_factory=list)
-    patched_matching_right_indices: list[int] = Field(default_factory=list)
 
 
 class DigiExamEffectiveReviewDecisionV1(BaseModel):
@@ -185,7 +190,7 @@ class DigiExamEffectiveReviewDecisionV1(BaseModel):
 
 
 class DigiExamEffectiveItemV1(BaseModel):
-    """One item summary in `digiexam_effective_exam_v1` artifacts."""
+    """One item summary in current effective exam artifacts."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -204,9 +209,9 @@ class DigiExamEffectiveExamV1(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["digiexam_effective_exam_v1"]
+    schema_version: DigiExamEffectiveExamSchemaVersion
     source_file_sha256: str
-    source_ir_schema_version: Literal["digiexam_intermediate_exam_v2"]
+    source_ir_schema_version: DigiExamIntermediateExamSchemaVersion
     source_ir_sha256: str
     ingestion_overlay_sha256: str | None = None
     answer_key_completion_report_sha256: str | None = None
@@ -239,7 +244,7 @@ class DigiExamIngestionOverlayReportV1(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["ingestion_overlay_report_v1"]
+    schema_version: IngestionOverlayReportSchemaVersion
     overlay_sha256: str
     source_ir_sha256: str
     accepted_entries: list[DigiExamIngestionOverlayAcceptedEntryV1]

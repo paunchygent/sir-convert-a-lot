@@ -37,14 +37,12 @@ repair.
 
 ## PR Scope
 
-- Apply `effective_item_patch` to `digiexam_effective_exam_v1` only. The
-  parser-owned `digiexam_intermediate_exam_v2` artifact, source manifest, and
+- Apply `effective_item_patch` to `digiexam_effective_exam_v2` only. The
+  parser-owned `digiexam_intermediate_exam_v3` artifact, source manifest, and
   parser provenance must remain byte-for-byte source owned.
 - Validate patch payloads by item type before application:
   - choice/multiple-choice option text and visible item body fields;
-  - gap-fill visible prompt/body and gap-level visible repair fields;
-  - matching visible prompt/body, left/right text labels, and source-bound
-    option identifiers.
+  - gap-fill visible prompt/body and gap-level visible repair fields.
 - Reject patches that try to create new source item IDs, source asset IDs,
   answer-key provenance, raw/base64 assets, arbitrary HTML resources, scoring
   policy, or unbounded free-form context.
@@ -140,16 +138,16 @@ Checkpoint:
   manual key or a governed unkeyed/manual target profile applies.
 - [x] PDF and QTI outputs consume effective item content only after effective
   patch validation succeeds.
-- [x] Contract tests cover text, option, prompt/body, gap, and matching visible
-  field repair plus negative cases.
+- [x] Contract tests cover text, option, prompt/body, and gap visible field
+  repair plus negative cases.
 
 ## Implementation Evidence
 
 - Added `domain.digiexam_effective_item_patch` as the focused visible-content
   patch application service.
-- Extended strict overlay DTOs for choice, gap-fill, and matching visible patch
-  shapes while keeping raw/base64 resources, arbitrary external resource
-  references, scoring policy, and answer-key provenance out of patch payloads.
+- Extended strict overlay DTOs for choice and gap-fill visible patch shapes
+  while keeping raw/base64 resources, arbitrary external resource references,
+  scoring policy, and answer-key provenance out of patch payloads.
 - `domain.digiexam_ingestion_overlay` now applies valid
   `effective_item_patch` values into effective renderer input, reports
   `effective_item_patch` in `ingestion_overlay_report_v1`, and preserves the

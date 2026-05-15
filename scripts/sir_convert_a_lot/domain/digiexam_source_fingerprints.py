@@ -39,7 +39,6 @@ def source_item_fingerprint(item: DigiExamIrItem) -> str:
         "alternatives": _json_ready(
             tuple(asdict(alternative) for alternative in item.alternatives)
         ),
-        "matching": _json_ready(asdict(item.matching)) if item.matching is not None else None,
         "gaps": _json_ready(tuple(asdict(gap) for gap in item.gaps)),
         "grading_policy": (
             _json_ready(asdict(item.grading_policy)) if item.grading_policy is not None else None

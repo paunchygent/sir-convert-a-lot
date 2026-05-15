@@ -14,16 +14,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
-    DigiExamItemType,
-    DigiExamMatchingStructure,
-)
+from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamItemType
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
     DigiExamEffectiveItemPatchSummary,
     DigiExamIngestionOverlayItem,
     DigiExamOverlayChoiceItemPatch,
     DigiExamOverlayGapFillItemPatch,
-    DigiExamOverlayMatchingItemPatch,
     DigiExamOverlayVisibleTextPatch,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DigiExamIrItem
@@ -65,9 +61,7 @@ def apply_effective_item_patch(
         return DigiExamEffectiveItemPatchResult(application=None, rejection=None)
     if isinstance(patch, DigiExamOverlayChoiceItemPatch):
         return _apply_choice_patch(item=item, patch=patch)
-    if isinstance(patch, DigiExamOverlayGapFillItemPatch):
-        return _apply_gap_fill_patch(item=item, patch=patch)
-    return _apply_matching_patch(item=item, patch=patch)
+    return _apply_gap_fill_patch(item=item, patch=patch)
 
 
 def _apply_choice_patch(
@@ -122,63 +116,6 @@ def _apply_gap_fill_patch(
     )
 
 
-def _apply_matching_patch(
-    *,
-    item: DigiExamIrItem,
-    patch: DigiExamOverlayMatchingItemPatch,
-) -> DigiExamEffectiveItemPatchResult:
-    if item.item_type != DigiExamItemType.MATCHING or item.matching is None:
-        return _rejected("patch_item_type_mismatch", "Matching patch on non-matching item.")
-    left_indices = tuple(override.index for override in patch.left_overrides)
-    right_indices = tuple(override.index for override in patch.right_overrides)
-    if len(set(left_indices)) != len(left_indices):
-        return _rejected("duplicate_patch_left_index", "Matching patch duplicates left indices.")
-    if len(set(right_indices)) != len(right_indices):
-        return _rejected("duplicate_patch_right_index", "Matching patch duplicates right indices.")
-    if any(index > len(item.matching.left_prompts) for index in left_indices):
-        return _rejected(
-            "unknown_patch_left_index", "Matching patch references unknown left items."
-        )
-    if any(index > len(item.matching.right_options) for index in right_indices):
-        return _rejected(
-            "unknown_patch_right_index", "Matching patch references unknown right items."
-        )
-
-    item_after_text, changed_fields = _apply_visible_text_patch(item=item, patch=patch)
-    matching = item_after_text.matching
-    if matching is None:
-        return _rejected(
-            "patch_item_type_mismatch", "Matching patch on missing matching structure."
-        )
-    left_prompts = _replace_by_one_based_index(
-        values=matching.left_prompts,
-        replacements={override.index: override.text for override in patch.left_overrides},
-    )
-    right_options = _replace_by_one_based_index(
-        values=matching.right_options,
-        replacements={override.index: override.text for override in patch.right_overrides},
-    )
-    if left_prompts != matching.left_prompts:
-        changed_fields = (*changed_fields, "matching_left_overrides")
-    if right_options != matching.right_options:
-        changed_fields = (*changed_fields, "matching_right_overrides")
-    replacement = replace(
-        item_after_text,
-        matching=DigiExamMatchingStructure(
-            left_prompts=left_prompts,
-            right_options=right_options,
-            blank_row_evidence=matching.blank_row_evidence,
-        ),
-    )
-    return _accepted(
-        item=item,
-        replacement=replacement,
-        changed_fields=changed_fields,
-        patched_matching_left_indices=left_indices,
-        patched_matching_right_indices=right_indices,
-    )
-
-
 def _apply_visible_text_patch(
     *,
     item: DigiExamIrItem,
@@ -211,14 +148,6 @@ def _apply_visible_text_patch(
     )
 
 
-def _replace_by_one_based_index(
-    *,
-    values: tuple[str, ...],
-    replacements: dict[int, str],
-) -> tuple[str, ...]:
-    return tuple(replacements.get(index, value) for index, value in enumerate(values, start=1))
-
-
 def _accepted(
     *,
     item: DigiExamIrItem,
@@ -226,8 +155,6 @@ def _accepted(
     changed_fields: tuple[str, ...],
     patched_alternative_ids: tuple[int, ...] = (),
     patched_gap_ids: tuple[str, ...] = (),
-    patched_matching_left_indices: tuple[int, ...] = (),
-    patched_matching_right_indices: tuple[int, ...] = (),
 ) -> DigiExamEffectiveItemPatchResult:
     if replacement == item or not changed_fields:
         return DigiExamEffectiveItemPatchResult(application=None, rejection=None)
@@ -238,8 +165,6 @@ def _accepted(
                 changed_fields=changed_fields,
                 patched_alternative_ids=patched_alternative_ids,
                 patched_gap_ids=patched_gap_ids,
-                patched_matching_left_indices=patched_matching_left_indices,
-                patched_matching_right_indices=patched_matching_right_indices,
             ),
         ),
         rejection=None,

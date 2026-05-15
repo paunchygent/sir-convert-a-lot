@@ -147,9 +147,9 @@ def test_dxe_embedded_assets_map_to_ir_and_manifest_v2_summaries() -> None:
     asset = item.embedded_assets[0]
     asset_summary = manifest.item_summaries[0].asset_summaries[0]
 
-    assert exam.schema_version == "digiexam_intermediate_exam_v2"
-    assert manifest.schema_version == "digiexam_ir_manifest_v2"
-    assert manifest.exam_schema_version == "digiexam_intermediate_exam_v2"
+    assert exam.schema_version == DIGIEXAM_IR_SCHEMA_VERSION
+    assert manifest.schema_version == DIGIEXAM_IR_MANIFEST_SCHEMA_VERSION
+    assert manifest.exam_schema_version == DIGIEXAM_IR_SCHEMA_VERSION
     assert manifest.asset_count == 1
     assert manifest.asset_summaries == (asset_summary,)
     assert item.prompt_html is not None
@@ -240,27 +240,40 @@ def test_result_pdf_enriched_ir_and_manifest_do_not_serialize_student_result_dat
     assert "3. fel svar" not in serialized_contract
 
 
-def test_legacy_pdf_matching_structure_maps_without_synthesizing_answer_key() -> None:
+def test_non_digiexam_pdf_matching_structure_stays_non_canonical_in_ir() -> None:
     parse_result = _parse_chemistry_pdf()
 
     exam = build_digiexam_intermediate_exam(parse_result)
     matching_item = exam.items[1]
+    matching_follow_ups = tuple(
+        follow_up for follow_up in exam.manual_follow_ups if follow_up.item_id == "item-002"
+    )
 
     assert exam.source_filename == _CHEMISTRY_PDF.name
+    assert exam.parse_status == DigiExamParseStatus.BLOCKED
+    assert exam.renderer_ready is False
     assert len(exam.items) == 12
     assert matching_item.title == "Para ihop"
-    assert matching_item.item_type == DigiExamItemType.MATCHING
-    assert matching_item.matching is not None
-    assert matching_item.matching.left_prompts == (
-        "Kolatom",
-        "Syreatom",
-        "Syremolekyl",
-        "Koldioxid",
+    assert matching_item.item_type == DigiExamItemType.UNKNOWN
+    assert matching_item.prompt_lines == (
+        "Skriv rätt bokstav i ordluckan.",
+        "1. Kolatom",
+        "2. Syreatom",
+        "3. Syremolekyl",
+        "4. Koldioxid",
+        "a. O 2",
+        "b. O",
+        "c. CO 2",
+        "d. C",
+        "1 = 1. 2 = 2. 3 = 3. 4 = 4.",
     )
-    assert matching_item.matching.right_options == ("O 2", "O", "CO 2", "C")
-    assert matching_item.answer_key.provenance == DigiExamAnswerKeyProvenance.ABSENT
-    assert DigiExamIrManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED in {
-        follow_up.reason for follow_up in exam.manual_follow_ups
+    assert "matching" not in asdict(matching_item)
+    assert matching_item.answer_key.provenance == DigiExamAnswerKeyProvenance.NOT_APPLICABLE
+    assert matching_item.answer_key.correct_alternative_ids == ()
+    assert matching_item.answer_key.correct_gap_answers == ()
+    assert {follow_up.reason for follow_up in matching_follow_ups} == {
+        DigiExamIrManualFollowUpReason.UNSUPPORTED_ITEM_TYPE,
+        DigiExamIrManualFollowUpReason.PARSER_WARNING_BLOCKS_RENDERING,
     }
 
 

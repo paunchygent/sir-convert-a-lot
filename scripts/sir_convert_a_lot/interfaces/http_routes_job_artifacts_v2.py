@@ -28,6 +28,9 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
 from scripts.sir_convert_a_lot.application.openapi_contracts_v2 import (
     DigiExamMigrationBundleManifestV2,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
+)
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_artifacts import (
@@ -466,7 +469,7 @@ def _conversion_metadata_for_job(
             effective_gpu_stage_limit=job.effective_gpu_stage_limit,
             scheduling_mode=job.scheduling_mode,
             route_key="digiexam_dxe_to_examnet_migration_bundle",
-            bundle_schema_version="digiexam_migration_bundle_v2",
+            bundle_schema_version=DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
             bundle_status=bundle_metadata.bundle_status,
             source_sha256=bundle_metadata.source_sha256,
             target_readiness_report_artifact_key=(

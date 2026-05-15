@@ -29,7 +29,7 @@ runbooks, or skills.
   `AGENTS.md` over to a thin skill router and aligning generated docs indexes
   with the canonical `.codex/handoff.md` active-context model.
 - Epic 10 is active for exam artifact conversion and authoring to
-  Exam.net-compatible targets. DigiExam is one legacy source adapter, not the
+  Exam.net-compatible targets. DigiExam is one source adapter, not the
   product boundary. Completed lanes include parser/IR/assets/PDF/QTI/service
   runtime work through Task 282 for `digiexam_dxe -> examnet_migration_bundle`,
   public grant contract/runtime through Tasks 291/292, and the separate
@@ -90,25 +90,32 @@ runbooks, or skills.
   Next Story 46 tasks: Tasks 288/289.
 - Completed DigiExam route/runtime and public Exam Converter docs: Tasks
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
-- Active answer-key completion lane: Epic 11; Task 294 completed the hard
-  `digiexam_migration_bundle_v2` contract break, `digiexam_effective_exam_v1`,
-  source fingerprints, target readiness, overlay/report schemas, and consumer
-  break inventory. Task 295 implemented source-bound teacher overlay ingestion,
-  effective renderer input, source fingerprints in the IR manifest, overlay
-  reports, and post-overlay target readiness for manual answer keys and review
-  decisions. Task 302 implemented `effective_item_patch` visible item-content
-  repairs for effective IR while preserving source IR and answer-key
-  provenance. Task 304 publishes a generated v2 OpenAPI snapshot for the
-  DigiExam overlay/effective-IR/readiness contract so Skriptoteket can validate
-  consumer types before live Docker/service tests. Task 303 completed the
+- Active answer-key completion lane: Epic 11; Task 294 completed the prior hard
+  bundle/effective-IR break with source fingerprints, target readiness,
+  overlay/report schemas, and consumer break inventory. Tasks 298 and 307
+  completed the source-neutral `ExamAuthoringIR v1` matching slice and removed
+  DigiExam-owned matching semantics from parser/IR/overlay/readiness/OpenAPI
+  contracts. Task 305 is the next planning/implementation authority for
+  source-neutral gap/open-cloze accepted values; unsupported target export is
+  target-readiness/degradation, not an IR restriction. Task 295 implemented
+  source-bound teacher overlay
+  ingestion, effective renderer input, source fingerprints in the IR manifest,
+  overlay reports, and post-overlay target readiness for manual answer keys and
+  review decisions. Task 302 implemented `effective_item_patch` visible
+  item-content repairs for effective IR while preserving source IR and
+  answer-key provenance. Task 304 publishes a generated v2 OpenAPI snapshot for
+  the DigiExam overlay/effective-IR/readiness contract so Skriptoteket can
+  validate consumer types before live Docker/service tests. Task 303 completed the
   unkeyed/manual QTI profile that lets accepted-current-state enable QTI only
   after schema/profile validation. The profile is preservation-first: missing
   machine-marked keys remove automatic evaluation claims rather than visible
   QTI/PDF question content whenever a deterministic manual/unkeyed
   representation is valid. Exam.net import proof remains
   vendor-unproven/external until a vendor test path exists. The generated Task
-  303 samples use real tracked DXE choice and gap-fill items; matching remains a
-  Task-298-aware contract sample until a real matching DXE fixture is available.
+  303 samples use real tracked DXE choice and gap-fill items. DigiExam `.dxe`
+  does not carry matching items; keyed matching QTI bridging waits for real
+  matching-capable source fixtures from Exam.net PDF artifacts or
+  teacher-authored structured DOCX/Markdown through `ExamAuthoringIR v1`.
   Granite FP8 on Hemma ROCm vLLM remains the interim local provider from Task
   301\.
 - Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
@@ -142,11 +149,18 @@ runbooks, or skills.
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. For machine-marked answer-key completion, continue with the contract-shape
-   split before provider/application work: Task 298 for matching answer-key
-   pairs, Task 305 for gapped/open-cloze accepted values, then Task 296/297 for
-   structured provider/advisory reports and Task 306 for reviewed application
-   into effective IR.
+1. For machine-marked answer-key completion, continue with Task 305 for
+   source-neutral gapped/open-cloze accepted values before provider/application
+   work. Preserve Task 307's architecture boundary: DigiExam remains one source
+   adapter, source-neutral concepts map into `ExamAuthoringIR v1`, and target
+   limitations are reported through readiness/degradation rather than source IR
+   restrictions. Then continue to Task 296/297 for structured
+   provider/advisory reports and Task 306 for reviewed application into
+   effective IR.
+1. Treat Task 307 as completed but still binding before implementing any new
+   Exam.net PDF, teacher-authored DOCX, or teacher-authored Markdown source
+   parser: new parsers need source-native parse models plus adapters into
+   `ExamAuthoringIR v1`, not direct target-exporter coupling.
 1. For accepted-current-state QTI export, use Task 303's completed
    `unkeyed_manual_qti_2_1_v1` profile and keep Exam.net import proof marked
    vendor-unproven until the vendor provides a test path.
@@ -163,17 +177,8 @@ runbooks, or skills.
 
 - Older validation evidence lives in linked governed tasks, references, reviews,
   and long-term memory entries.
-- 2026-05-13 pre-release gates passed: `format-all`, `lint-fix`,
-  `typecheck-all` (`638 source files`), focused Story 46 tests (`11 passed`),
-  `coverage-gate` (`1159 passed, 5 skipped`, coverage `95.93%`), docs/skills/
-  handoff validation, and `git diff --check`.
-- 2026-05-13 Task 292 focused gates passed: policy/runtime pytest (`12 passed`), `pdm run lint`, and `pdm run typecheck`.
-- 2026-05-14 Hemma skill/runbook cleanup gates passed: `pdm run docs-sync`,
-  `pdm run docs-validate`, `pdm run skills-validate`,
-  `pdm run handoff-validate`, and `git diff --check`.
-- 2026-05-15 Task 294 contract gates passed: `pdm run docs-sync`,
-  `pdm run docs-validate`, `pdm run skills-validate`,
-  `pdm run handoff-validate`, and `git diff --check`.
+- 2026-05-13 through 2026-05-15 validation evidence for pre-release, Task 292,
+  Hemma runbook cleanup, and Task 294 lives in linked governed tasks/reviews.
 - 2026-05-15 Task 295 focused implementation gates passed: `pdm run format-all`, `pdm run lint-fix`, `pdm run typecheck-all`, focused
   DigiExam overlay/IR/API pytest, docs/skills/handoff validation, and
   `git diff --check`.

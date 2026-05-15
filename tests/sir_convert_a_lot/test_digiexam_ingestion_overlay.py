@@ -15,13 +15,6 @@ import json
 
 import pytest
 
-from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
-    DigiExamAnswerKeyProvenance,
-    DigiExamItemType,
-    DigiExamMatchingStructure,
-    DigiExamParseStatus,
-    DigiExamSourceSpan,
-)
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf import (
     build_digiexam_examnet_pdf_document,
@@ -38,9 +31,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts impor
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DIGIEXAM_IR_SCHEMA_VERSION,
     DigiExamIntermediateExam,
-    DigiExamIrAnswerKey,
-    DigiExamIrItem,
     build_digiexam_intermediate_exam,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
     source_item_fingerprint,
@@ -148,35 +142,6 @@ def test_teacher_overlay_applies_gap_fill_prompt_patch_to_effective_exam() -> No
     assert report_item.effective_item_patch.changed_fields == ("prompt_html", "prompt_lines")
 
 
-def test_teacher_overlay_applies_matching_visible_text_patch_to_effective_exam() -> None:
-    exam = _matching_source_exam()
-    item = exam.items[0]
-
-    result = parse_and_apply_digiexam_ingestion_overlay(
-        overlay_bytes=_matching_patch_overlay_bytes(source_item_fingerprint(item)),
-        source_file_sha256="sha256:file",
-        source_ir_sha256="sha256:ir",
-        source_exam=exam,
-    )
-
-    effective_item = result.effective_exam_for_rendering.items[0]
-    assert effective_item.matching is not None
-    assert exam.items[0].matching is not None
-    assert exam.items[0].matching.left_prompts == ("Kolatom", "Syreatom")
-    assert effective_item.matching.left_prompts == ("Kolatom", "Syreatom reparerad")
-    assert effective_item.matching.right_options == ("C", "O reparerad")
-    assert result.ingestion_overlay_report.accepted_entries[0].applied_fields == (
-        "effective_item_patch",
-    )
-    assert result.effective_exam_report.items[0].effective_item_patch is not None
-    assert result.effective_exam_report.items[
-        0
-    ].effective_item_patch.patched_matching_left_indices == (2,)
-    assert result.effective_exam_report.items[
-        0
-    ].effective_item_patch.patched_matching_right_indices == (2,)
-
-
 def test_teacher_overlay_rejects_raw_asset_payload_in_item_patch() -> None:
     exam = _source_exam()
 
@@ -266,55 +231,13 @@ def _gap_source_exam() -> DigiExamIntermediateExam:
     return build_digiexam_intermediate_exam(parse_result)
 
 
-def _matching_source_exam() -> DigiExamIntermediateExam:
-    source_span = DigiExamSourceSpan(start_page=1, start_line=1, end_page=1, end_line=4)
-    item = DigiExamIrItem(
-        item_id="item-001",
-        sequence=1,
-        title="Para ihop",
-        item_type=DigiExamItemType.MATCHING,
-        source_span=source_span,
-        prompt_html="<p>Para ihop atomerna.</p>",
-        prompt_lines=("Para ihop atomerna.",),
-        max_score=2,
-        digiexam_type_code=None,
-        options=(),
-        alternatives=(),
-        matching=DigiExamMatchingStructure(
-            left_prompts=("Kolatom", "Syreatom"),
-            right_options=("C", "O"),
-            blank_row_evidence=None,
-        ),
-        gaps=(),
-        grading_policy=None,
-        answer_key=DigiExamIrAnswerKey(
-            provenance=DigiExamAnswerKeyProvenance.ABSENT,
-            correct_alternative_ids=(),
-            correct_gap_answers=(),
-        ),
-        warnings=(),
-        embedded_assets=(),
-        embedded_asset_references=(),
-    )
-    return DigiExamIntermediateExam(
-        schema_version=DIGIEXAM_IR_SCHEMA_VERSION,
-        source_filename="matching.pdf",
-        source_producer=None,
-        parse_status=DigiExamParseStatus.SUCCESS,
-        renderer_ready=True,
-        items=(item,),
-        warnings=(),
-        manual_follow_ups=(),
-    )
-
-
 def _overlay_bytes(source_fingerprint: str) -> bytes:
     return json.dumps(
         {
-            "schema_version": "digiexam_ingestion_overlay_v1",
+            "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
             "source_binding": {
                 "source_file_sha256": "sha256:file",
-                "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+                "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
                 "source_ir_sha256": "sha256:ir",
             },
             "items": [
@@ -399,33 +322,16 @@ def _gap_patch_overlay_bytes(source_fingerprint: str) -> bytes:
     ).encode("utf-8")
 
 
-def _matching_patch_overlay_bytes(source_fingerprint: str) -> bytes:
-    return json.dumps(
-        _overlay_payload(
-            source_fingerprint=source_fingerprint,
-            item_fields={
-                "item_type": "matching",
-                "effective_item_patch": {
-                    "kind": "matching",
-                    "left_overrides": [{"index": 2, "text": "Syreatom reparerad"}],
-                    "right_overrides": [{"index": 2, "text": "O reparerad"}],
-                },
-            },
-        ),
-        sort_keys=True,
-    ).encode("utf-8")
-
-
 def _overlay_payload(
     *,
     source_fingerprint: str,
     item_fields: dict[str, object],
 ) -> dict[str, object]:
     return {
-        "schema_version": "digiexam_ingestion_overlay_v1",
+        "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
         "source_binding": {
             "source_file_sha256": "sha256:file",
-            "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+            "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
             "source_ir_sha256": "sha256:ir",
         },
         "items": [

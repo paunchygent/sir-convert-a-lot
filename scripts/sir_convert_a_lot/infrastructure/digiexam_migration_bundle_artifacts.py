@@ -1,9 +1,9 @@
 """Named artifact resolution for DigiExam migration bundles.
 
 Purpose:
-    Resolve product-facing artifact keys from the terminal
-    `digiexam_migration_bundle_v2` manifest without exposing private job
-    directories or synthesizing empty files.
+    Resolve product-facing artifact keys from the terminal DigiExam migration
+    bundle manifest without exposing private job directories or synthesizing
+    empty files.
 
 Relationships:
     - Used by `interfaces.http_routes_job_artifacts_v2`.
@@ -19,9 +19,11 @@ from pathlib import Path
 from typing import Literal
 
 from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
-    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
     DigiExamMigrationArtifactAvailability,
     DigiExamMigrationArtifactKey,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2

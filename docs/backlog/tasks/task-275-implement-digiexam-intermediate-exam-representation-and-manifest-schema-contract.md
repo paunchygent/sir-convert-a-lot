@@ -43,7 +43,8 @@ pattern later routes must follow.
 - Cover the current real fixture family:
   - `.dxe` mixed-question fixture without answer enrichment;
   - `.dxe` mixed-question fixture enriched from sanitized graded-result PDF;
-  - legacy chemistry PDF fallback fixture with matching structure.
+  - chemistry PDF artifact fallback fixture with matching-like visible rows
+    treated as unsupported/non-canonical DigiExam evidence.
 - Keep the module files below repo size limits and add Google-style module
   docstrings to new Python modules.
 - Do not implement an Exam.net renderer, QTI/native import, service/API routes,
@@ -64,8 +65,8 @@ pattern later routes must follow.
 - [x] `.dxe` parse output maps to an IR with exactly 7 ordered items and the
   observed type sequence `0, 1, 1, 2, 2, 2, 3` preserved as source metadata.
 - [x] The IR item stream preserves titles, prompt HTML/text, max scores,
-  ordered alternatives, gap GUIDs, matching structures, source spans, warnings,
-  and grading-policy metadata where present.
+  ordered alternatives, gap GUIDs, source spans, warnings, and grading-policy
+  metadata where present.
 - [x] The IR stores answer-key provenance separately from item structure and
   carries correct MCQ IDs and gap GUID/value answers only when parser evidence
   supplied them.

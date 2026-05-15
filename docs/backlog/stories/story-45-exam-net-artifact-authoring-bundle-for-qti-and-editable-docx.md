@@ -5,7 +5,7 @@ type: story
 status: proposed
 priority: high
 created: '2026-05-12'
-last_updated: '2026-05-13'
+last_updated: '2026-05-15'
 related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md
@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md
   - docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md
   - docs/backlog/tasks/task-285-introduce-service-v2-route-policy-handler-registry-before-exam-net-authoring-runtime.md
+  - docs/backlog/tasks/task-307-define-source-neutral-exam-authoring-ir-v1-and-adapter-boundary.md
   - docs/converters/examnet-artifact-authoring-service-api-artifact-contract.md
   - docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md
   - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
@@ -49,12 +50,18 @@ still being able to recreate Exam.net exams through PDF-to-exam conversion.
   supplied answer source.
 - Define a normalized exam authoring IR shared by QTI, editable DOCX, and
   Exam.net PDF-to-exam renderer outputs.
+- Treat Task 307 as a hard architectural blocker before implementing any new
+  Exam.net PDF, teacher-authored DOCX, or teacher-authored Markdown source
+  parser. Those sources must map through a source-adapter-to-`ExamAuthoringIR`
+  boundary rather than reusing DigiExam-specific parser/IR contracts or
+  duplicating DigiExam parsing logic.
 - Promote the Swedish PDF-to-exam renderer profile for Exam.net converter PDFs,
   including `Typ: Flerval`, `Typ: Kort svar`, `Typ: Fritext`, and
   `Typ: Matcha ihop`.
-- Treat matching questions as supported when source evidence includes left
-  prompts, right options, and exact-text correct pairs. Preserve matching
-  structure with `manual_answer_key_required` when correct pairs are absent.
+- Treat matching questions as supported when Exam.net or teacher-authored
+  source evidence includes source prompts, target options, and exact-text
+  correct pairs. Preserve matching structure with
+  `manual_answer_key_required` when correct pairs are absent.
 - Define QTI package generation and validation expectations using the QTI
   validation strategy reference.
 - Implement the first QTI package slice through Task 280: deterministic sample
@@ -91,6 +98,10 @@ still being able to recreate Exam.net exams through PDF-to-exam conversion.
   preserves item semantics teachers can edit.
 - [ ] Matching items are first-class in the authoring IR and supported target
   outputs only when answer-key provenance exists.
+- [ ] New source parser implementation remains blocked until Task 307 defines
+  the first `ExamAuthoringIR v1` matching slice, documents the
+  parser-adapter-neutral-IR architecture, and blocks target exporters from
+  consuming source-specific parse DTOs directly.
 
 ## Test Requirements
 
@@ -108,6 +119,8 @@ still being able to recreate Exam.net exams through PDF-to-exam conversion.
   conversion.
 - [ ] Exam.net converter PDF tests verify the Swedish canonical labels and
   exact-text answer-key profile.
+- [ ] Architecture tests or review gates prove new source parsers cannot bypass
+  `ExamAuthoringIR v1` after Task 307 lands.
 
 ## Done Definition
 

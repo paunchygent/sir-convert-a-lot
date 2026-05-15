@@ -228,15 +228,26 @@ matches source wording.
 Matching is promoted as a supported target shape only when source evidence
 contains:
 
-- ordered left prompts;
-- ordered right options;
+- ordered source prompts;
+- ordered target options;
 - explicit pairings as exact text.
+- no source prompt mapped to more than one target option;
+- no matched target option reused by more than one source prompt;
+- optional extra target options that are not matched to any source prompt,
+  treated as distractors.
 
-If the source has left/right structure but no correct pairings, preserve the
+If the source has source/target structure but no correct pairings, preserve the
 structure and emit `manual_answer_key_required`; do not synthesize pairings.
 
 Avoid letter-pair keys such as `1=b; 2=a` as the default. Exact text pairing is
 the canonical renderer profile.
+
+This Exam.net PDF profile is intentionally narrower than the Sir Convert
+intermediary IR and general QTI. The IR may represent many-left-to-one or
+left-to-many matching through QTI-style association constraints, but this PDF
+target profile must report those shapes as not ready for keyed Exam.net PDF
+export until a later fixture proves Exam.net's browser-based builder and
+PDF-to-exam converter accept them.
 
 ## Not Yet Promoted: Lucktext / Gap Fill
 
@@ -288,7 +299,7 @@ The authoring IR must preserve:
 - prompt body;
 - point value;
 - alternatives;
-- matching left/right lists and exact pairs when present;
+- matching source/target lists and exact pairs when present;
 - accepted short-answer variants;
 - free-text instructions and sidecar rubric metadata;
 - warnings and manual-follow-up requirements.
@@ -301,6 +312,8 @@ fixture-backed proof for:
 - single-answer flerval import with `Flera val = av`;
 - semicolon short-answer variants as separate accepted answers;
 - matching import with exact-text `Rätta par`;
+- matching import with unmatched right-side distractors;
+- negative matching fixtures for left-to-many and right-to-many keyed pairs;
 - Exam.net-origin PDF/Word source classification;
 - QTI export/import mapping for matching;
 - QTI 2.1 package validation through the selected validator ladder;

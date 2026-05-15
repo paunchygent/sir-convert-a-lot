@@ -510,7 +510,7 @@
             "type": "array"
           },
           "schema_version": {
-            "const": "digiexam_effective_exam_v1",
+            "const": "digiexam_effective_exam_v2",
             "title": "Schema Version",
             "type": "string"
           },
@@ -519,7 +519,7 @@
             "type": "string"
           },
           "source_ir_schema_version": {
-            "const": "digiexam_intermediate_exam_v2",
+            "const": "digiexam_intermediate_exam_v3",
             "title": "Source Ir Schema Version",
             "type": "string"
           },
@@ -562,20 +562,6 @@
             },
             "title": "Patched Gap Ids",
             "type": "array"
-          },
-          "patched_matching_left_indices": {
-            "items": {
-              "type": "integer"
-            },
-            "title": "Patched Matching Left Indices",
-            "type": "array"
-          },
-          "patched_matching_right_indices": {
-            "items": {
-              "type": "integer"
-            },
-            "title": "Patched Matching Right Indices",
-            "type": "array"
           }
         },
         "title": "DigiExamEffectiveItemPatchSummaryV1",
@@ -583,7 +569,7 @@
       },
       "DigiExamEffectiveItemV1": {
         "additionalProperties": false,
-        "description": "One item summary in `digiexam_effective_exam_v1` artifacts.",
+        "description": "One item summary in current effective exam artifacts.",
         "properties": {
           "applied_overlay_entry_ids": {
             "items": {
@@ -701,7 +687,7 @@
             "type": "array"
           },
           "schema_version": {
-            "const": "digiexam_ingestion_overlay_v1",
+            "const": "digiexam_ingestion_overlay_v2",
             "title": "Schema Version",
             "type": "string"
           },
@@ -756,8 +742,7 @@
                 "discriminator": {
                   "mapping": {
                     "choice": "#/components/schemas/DigiExamOverlayChoiceItemPatch",
-                    "gap_fill": "#/components/schemas/DigiExamOverlayGapFillItemPatch",
-                    "matching": "#/components/schemas/DigiExamOverlayMatchingItemPatch"
+                    "gap_fill": "#/components/schemas/DigiExamOverlayGapFillItemPatch"
                   },
                   "propertyName": "kind"
                 },
@@ -767,9 +752,6 @@
                   },
                   {
                     "$ref": "#/components/schemas/DigiExamOverlayGapFillItemPatch"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DigiExamOverlayMatchingItemPatch"
                   }
                 ]
               },
@@ -794,8 +776,7 @@
                 "discriminator": {
                   "mapping": {
                     "choice": "#/components/schemas/DigiExamOverlayChoiceManualAnswerKey",
-                    "gap_fill": "#/components/schemas/DigiExamOverlayGapFillManualAnswerKey",
-                    "matching": "#/components/schemas/DigiExamOverlayMatchingManualAnswerKey"
+                    "gap_fill": "#/components/schemas/DigiExamOverlayGapFillManualAnswerKey"
                   },
                   "propertyName": "kind"
                 },
@@ -805,9 +786,6 @@
                   },
                   {
                     "$ref": "#/components/schemas/DigiExamOverlayGapFillManualAnswerKey"
-                  },
-                  {
-                    "$ref": "#/components/schemas/DigiExamOverlayMatchingManualAnswerKey"
                   }
                 ]
               },
@@ -939,7 +917,6 @@
           "single_choice",
           "multiple_response",
           "gap_fill",
-          "matching",
           "unknown"
         ],
         "title": "DigiExamItemType",
@@ -1110,7 +1087,7 @@
             "$ref": "#/components/schemas/DigiExamMigrationBundleRetentionV2"
           },
           "schema_version": {
-            "const": "digiexam_migration_bundle_v2",
+            "const": "digiexam_migration_bundle_v3",
             "title": "Schema Version",
             "type": "string"
           },
@@ -1141,7 +1118,7 @@
       },
       "DigiExamMigrationBundleManualFollowUpV2": {
         "additionalProperties": false,
-        "description": "Manual follow-up summary in `digiexam_migration_bundle_v2` manifests.",
+        "description": "Manual follow-up summary in current DigiExam migration bundle manifests.",
         "properties": {
           "artifact_key": {
             "const": "manual_follow_up_report",
@@ -1196,7 +1173,7 @@
       },
       "DigiExamMigrationBundleRetentionV2": {
         "additionalProperties": false,
-        "description": "Retention summary in `digiexam_migration_bundle_v2` manifests.",
+        "description": "Retention summary in current DigiExam migration bundle manifests.",
         "properties": {
           "expires_at": {
             "anyOf": [
@@ -1226,7 +1203,7 @@
         "description": "Source/effective IR hashes published in bundle manifests.",
         "properties": {
           "effective_exam_schema_version": {
-            "const": "digiexam_effective_exam_v1",
+            "const": "digiexam_effective_exam_v2",
             "title": "Effective Exam Schema Version",
             "type": "string"
           },
@@ -1235,7 +1212,7 @@
             "type": "string"
           },
           "source_ir_schema_version": {
-            "const": "digiexam_intermediate_exam_v2",
+            "const": "digiexam_intermediate_exam_v3",
             "title": "Source Ir Schema Version",
             "type": "string"
           },
@@ -1255,7 +1232,7 @@
       },
       "DigiExamMigrationBundleSourceV2": {
         "additionalProperties": false,
-        "description": "Source summary in `digiexam_migration_bundle_v2` manifests.",
+        "description": "Source summary in current DigiExam migration bundle manifests.",
         "properties": {
           "filename": {
             "title": "Filename",
@@ -1281,7 +1258,7 @@
       },
       "DigiExamMigrationBundleWarningsV2": {
         "additionalProperties": false,
-        "description": "Warnings summary in `digiexam_migration_bundle_v2` manifests.",
+        "description": "Warnings summary in current DigiExam migration bundle manifests.",
         "properties": {
           "artifact_key": {
             "const": "warnings_report",
@@ -1344,7 +1321,7 @@
             "title": "Backend Used"
           },
           "bundle_schema_version": {
-            "const": "digiexam_migration_bundle_v2",
+            "const": "digiexam_migration_bundle_v3",
             "title": "Bundle Schema Version",
             "type": "string"
           },
@@ -1862,152 +1839,6 @@
         "title": "DigiExamOverlayGapFillManualAnswerKey",
         "type": "object"
       },
-      "DigiExamOverlayMatchingItemPatch": {
-        "additionalProperties": false,
-        "description": "Bounded matching item patch applied only to effective visible text.",
-        "properties": {
-          "kind": {
-            "const": "matching",
-            "title": "Kind",
-            "type": "string"
-          },
-          "left_overrides": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/DigiExamOverlayMatchingTextOverride"
-            },
-            "title": "Left Overrides",
-            "type": "array"
-          },
-          "prompt_html": {
-            "anyOf": [
-              {
-                "maxLength": 8000,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Prompt Html"
-          },
-          "prompt_lines": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "maxItems": 20,
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Prompt Lines"
-          },
-          "right_overrides": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/DigiExamOverlayMatchingTextOverride"
-            },
-            "title": "Right Overrides",
-            "type": "array"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Title"
-          }
-        },
-        "required": [
-          "kind"
-        ],
-        "title": "DigiExamOverlayMatchingItemPatch",
-        "type": "object"
-      },
-      "DigiExamOverlayMatchingManualAnswerKey": {
-        "additionalProperties": false,
-        "description": "Manual matching answer key accepted at DTO level but not applied yet.",
-        "properties": {
-          "kind": {
-            "const": "matching",
-            "title": "Kind",
-            "type": "string"
-          },
-          "matching_pairs": {
-            "items": {
-              "$ref": "#/components/schemas/DigiExamOverlayMatchingPair"
-            },
-            "minItems": 1,
-            "title": "Matching Pairs",
-            "type": "array"
-          }
-        },
-        "required": [
-          "kind",
-          "matching_pairs"
-        ],
-        "title": "DigiExamOverlayMatchingManualAnswerKey",
-        "type": "object"
-      },
-      "DigiExamOverlayMatchingPair": {
-        "additionalProperties": false,
-        "description": "Contract-level matching pair kept unsupported until exact IR fields exist.",
-        "properties": {
-          "left_id": {
-            "minLength": 1,
-            "title": "Left Id",
-            "type": "string"
-          },
-          "right_id": {
-            "minLength": 1,
-            "title": "Right Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "left_id",
-          "right_id"
-        ],
-        "title": "DigiExamOverlayMatchingPair",
-        "type": "object"
-      },
-      "DigiExamOverlayMatchingTextOverride": {
-        "additionalProperties": false,
-        "description": "Bounded matching-column text patch using source 1-based positions.",
-        "properties": {
-          "index": {
-            "minimum": 1,
-            "title": "Index",
-            "type": "integer"
-          },
-          "text": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "index",
-          "text"
-        ],
-        "title": "DigiExamOverlayMatchingTextOverride",
-        "type": "object"
-      },
       "DigiExamOverlayReviewDecision": {
         "additionalProperties": false,
         "description": "Teacher review decision that never creates answer-key evidence.",
@@ -2062,7 +1893,7 @@
             "type": "string"
           },
           "source_ir_schema_version": {
-            "const": "digiexam_intermediate_exam_v2",
+            "const": "digiexam_intermediate_exam_v3",
             "title": "Source Ir Schema Version",
             "type": "string"
           },
@@ -3499,6 +3330,15 @@
           "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
           "job_spec": "#/components/schemas/JobSpecV2",
           "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1"
+        },
+        "x-sir-convert-digiexam-schema-versions": {
+          "effective_exam": "digiexam_effective_exam_v2",
+          "ingestion_overlay": "digiexam_ingestion_overlay_v2",
+          "ingestion_overlay_report": "ingestion_overlay_report_v1",
+          "intermediate_exam": "digiexam_intermediate_exam_v3",
+          "ir_manifest": "digiexam_ir_manifest_v3",
+          "migration_bundle": "digiexam_migration_bundle_v3",
+          "target_readiness_report": "target_readiness_report_v1"
         }
       }
     },

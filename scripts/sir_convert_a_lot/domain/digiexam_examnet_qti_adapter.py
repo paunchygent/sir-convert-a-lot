@@ -83,8 +83,6 @@ def _qti_item(item: DigiExamIrItem, *, accepted_current_state: bool) -> ExamNetQ
         )
     if item.item_type == DigiExamItemType.GAP_FILL and accepted_current_state:
         return _manual_free_text_item(item, _gap_fill_preservation_lines(item))
-    if item.item_type == DigiExamItemType.MATCHING and accepted_current_state:
-        return _manual_free_text_item(item, _matching_preservation_lines(item))
     return None
 
 
@@ -170,27 +168,6 @@ def _gap_fill_preservation_lines(item: DigiExamIrItem) -> tuple[str, ...]:
         lines.append(f"Lucka {index}: {label}")
     if not item.gaps:
         lines.append("Besvara lucktextfrågan manuellt efter import.")
-    return tuple(lines)
-
-
-def _matching_preservation_lines(item: DigiExamIrItem) -> tuple[str, ...]:
-    lines = [*_prompt_lines(item)]
-    if item.matching is None:
-        lines.append("Para ihop posterna manuellt efter import.")
-        return tuple(lines)
-    if item.matching.left_prompts:
-        lines.append("Vänster kolumn:")
-        lines.extend(
-            f"{index}. {text}" for index, text in enumerate(item.matching.left_prompts, start=1)
-        )
-    if item.matching.right_options:
-        lines.append("Höger kolumn:")
-        lines.extend(
-            f"{chr(64 + index)}. {text}"
-            for index, text in enumerate(item.matching.right_options, start=1)
-        )
-    if item.matching.blank_row_evidence:
-        lines.append(f"Ursprunglig svarsyta: {item.matching.blank_row_evidence}")
     return tuple(lines)
 
 

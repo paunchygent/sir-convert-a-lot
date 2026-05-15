@@ -4,7 +4,7 @@ id: REF-digiexam-exam-artifact-item-type-evidence
 title: DigiExam Exam Artifact Item Type Evidence
 status: active
 created: 2026-05-07
-updated: 2026-05-12
+updated: 2026-05-15
 owners:
   - platform
 tags: []
@@ -108,10 +108,12 @@ The migration model must not retain the student's incorrect answers, free-text
 student answers, per-student scores, or student-performance history. Result
 PDFs are answer-key evidence only.
 
-Blank/student-view PDFs are optional visual and extraction parity evidence.
-They are not the parser baseline when `.dxe` is available. Treat them as
-last-resort PDF-only fallback inputs and legacy regression fixtures, not as the
-preferred source for future EPIC-10 structure work.
+Blank/student-view PDFs are optional visual and extraction parity evidence for
+DigiExam migration, and separate source evidence for Exam.net or
+teacher-authored PDF artifact lanes when the source role is declared. They are
+not the parser baseline when `.dxe` is available. Treat their matching
+structure as non-DXE evidence and route future keyed matching semantics through
+the governed Exam.net/authoring IR path, not through DigiExam `.dxe`.
 
 ## Item-Type Evidence Matrix
 
@@ -121,12 +123,12 @@ preferred source for future EPIC-10 structure work.
 | Single-choice MCQ | `DXE-2026-05-07-structure`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED` | `.dxe` type `1`, title, prompt, `maxScore`, and ordered alternatives. Result PDF labels identify correct alternatives with `(Korrekt svar)` or `(Korrekt alternativ)`. | In the observed `.dxe`, every alternative has `right: false`; blank PDF contains no hidden correct-answer metadata. Result PDF may show a student's wrong selection as `(Fel svar)`. | Use `.dxe` for structure. Use result-PDF labels only for correct-answer enrichment. Discard `(Fel svar)` and all student-result history. Without result-PDF evidence, mark answer-key provenance absent and require manual answer entry. |
 | Multiple-response MCQ | `DXE-2026-05-07-structure`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED` | `.dxe` type `2`, title, prompt, `maxScore`, ordered alternatives, `gradingType`, `isAlternativeChoiceLimitEnabled`, and `alternativeChoiceLimit`. Result PDF labels identify correct alternatives. | In the observed `.dxe`, every alternative has `right: false`. Blank PDF contains no correct-answer metadata. One result PDF does not prove the full score function for every possible response combination. | Use `.dxe` for structure and policy fields. Use result-PDF labels only for correct answers. Discard wrong selections. Treat scoring policy as source metadata, but require target-specific validation before claiming full automatic marking parity. |
 | Gap-fill / lucktext | `DXE-2026-05-07-structure`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED` | `.dxe` type `3`, prompt `bodyHTML`, `dxWordGap` spans, gap GUIDs, `maxScore`, and `gradingType`. Blank PDF renders numbered gaps. Result PDF exposes correct gap words in the checked result view. | Observed `.dxe` gap `validations` arrays are empty. The test prompt also contains answer-like words as visible prompt text; that is not hidden answer-key provenance. | Use `.dxe` for gap structure. Use result-PDF correct gap words only as answer-key enrichment. Ignore wrong student gap values. Without result-PDF or populated validations, require manual accepted answers. |
-| Matching / pair items | `PDF-CHEMISTRY-2026-04-25` | Student-view PDF exposes a titled `Para ihop` item, numbered left prompts, lettered right options, and a blank-row artifact such as `1 = 1. 2 = 2. 3 = 3. 4 = 4.` | No `.dxe` matching fixture was observed in the 2026-05-07 sample. Student-view PDF carries no correct matches. | Preserve left prompts, right options, and blank-row evidence. Do not synthesize correct matches. Require a teacher-provided answer source or manual answer entry. |
+| Matching-styled gap/open-cloze workaround | `PDF-CHEMISTRY-2026-04-25` | Student-view PDF exposes a titled `Para ihop` item, numbered prompt rows, lettered target-like options, and a blank-row artifact such as `1 = 1. 2 = 2. 3 = 3. 4 = 4.` | Canonical DigiExam `.dxe` sources do not carry matching items. Student-view PDF carries no correct matches. | Treat as non-canonical PDF artifact evidence in the current DigiExam parser path. Task 305 should revisit this as likely gap/open-cloze source intent: preserve visible lines now, and later map supported source evidence into neutral `ExamAuthoringIR v1` gap/open-cloze structures. Target validators/exporters, not the source parser, decide whether matching remapping, degraded manual/free-text output, omission, or manual recreation guidance is safe. |
 
-## Legacy Chemistry PDF Regression Fixture
+## Chemistry PDF Artifact Regression Fixture
 
-`PDF-CHEMISTRY-2026-04-25` remains a legacy Task 267 PDF parser regression
-fixture. It is the same blank/student-view artifact class as
+`PDF-CHEMISTRY-2026-04-25` remains a Task 267 PDF parser regression fixture.
+It is the same blank/student-view artifact class as
 `BLANK-PDF-2026-05-07`, so it must not be treated as the EPIC-10 parser
 baseline after the `.dxe` source-policy decision. Parser tests may keep this
 exact ordered stream only to preserve PDF-only fallback behavior:
@@ -134,7 +136,7 @@ exact ordered stream only to preserve PDF-only fallback behavior:
 | Order | Header/title | Expected type | Point marker | Source note |
 |---|---|---|---|---|
 | 1 | `Materia` | multiple choice | absent | Student-view PDF options only; answer key absent |
-| 2 | `Para ihop` | matching | absent | Student-view PDF matching structure only; answer key absent |
+| 2 | `Para ihop` | unknown | absent | Non-canonical matching-styled gap/open-cloze workaround evidence; answer key absent |
 | 3 | `Grundämnen` | multiple choice | absent | Student-view PDF option text crosses a page boundary |
 | 4 | `Atomen` | open ended | `Max poäng : 4` | Student-view PDF subparts `a)` through `d)` |
 | 5 | `Ämnen` | open ended | `Max poäng : 4` | Student-view PDF subparts `a)` through `c)` |
@@ -150,11 +152,15 @@ The corresponding parser contract is:
 
 - total item count is 12;
 - ordered headers/titles match the table above;
-- item-type breakdown is 3 multiple-choice, 1 matching, and 8 open-ended;
+- item-type breakdown is 3 multiple-choice, 1 unknown, and 8 open-ended;
 - point-marker evidence is present exactly where the table lists a marker;
-- multiple-choice and matching answer-key provenance is absent;
-- the `Para ihop` item preserves matching structure separately from any future
-  target-specific match-pair rendering/import schema.
+- multiple-choice answer-key provenance is absent, while the `Para ihop` item
+  is marked `not_applicable` because it is not a supported DigiExam source
+  item type;
+- the `Para ihop` item preserves visible source lines only in the current
+  DigiExam parser path; Task 305 may promote the source intent into
+  source-neutral gap/open-cloze authoring IR when the evidence is sufficient,
+  but target-specific matching remapping remains a validator/exporter decision.
 
 ## Unsupported Or Unobserved Item Types
 
