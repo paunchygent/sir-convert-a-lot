@@ -67,6 +67,12 @@ p {{
   margin: 6pt 0;
   max-width: 100%;
 }}
+.gap-placeholder {{
+  border-bottom: 1pt solid #111;
+  display: inline-block;
+  min-width: 42pt;
+  text-align: center;
+}}
 .options {{
   margin: 8pt 0 8pt 18pt;
 }}

@@ -140,6 +140,9 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["MIOPEN_CUSTOM_CACHE_DIR"] == (
         "${MIOPEN_CUSTOM_CACHE_DIR:-/srv/scratch/sir-convert-a-lot/cache/miopen/kernel-cache}"
     )
+    assert env_map["HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH"] == (
+        "/run/secrets/huleedu-gateway-internal-identity-public-key.pem"
+    )
 
     assert service.get("command") == [
         "uvicorn",
@@ -156,6 +159,12 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
             "${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-"
             "/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:"
             "/srv/scratch/sir-convert-a-lot/cache/miopen"
+        ),
+        (
+            "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"
+            "/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/"
+            "gateway-internal-identity-public-key.pem}:"
+            "/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro"
         ),
     ]
 

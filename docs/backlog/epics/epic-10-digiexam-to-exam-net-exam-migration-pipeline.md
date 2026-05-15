@@ -18,6 +18,7 @@ related:
   - docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md
   - docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md
   - docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md
+  - docs/backlog/stories/story-50-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries.md
   - docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md
   - docs/backlog/tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md
   - docs/backlog/tasks/task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract.md
@@ -27,6 +28,10 @@ related:
   - docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md
   - docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md
   - docs/backlog/tasks/task-281-classify-digiexam-dxe-validation-corpus-and-add-parser-regression-gate.md
+  - docs/backlog/tasks/task-313-audit-solid-domain-coupling-and-implementation-branch-hotspots-across-exam-converter-surfaces.md
+  - docs/backlog/tasks/task-315-extract-exam-net-pdf-item-rendering-policy-strategies-from-item-type-branch-ladder.md
+  - docs/backlog/tasks/task-316-extract-target-readiness-policy-decisions-from-artifact-availability-and-target-string-branches.md
+  - docs/backlog/tasks/task-317-unify-answer-key-eligibility-and-source-evidence-mapping-decisions-across-manifests-and-adapters.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/examnet-artifact-authoring-service-api-artifact-contract.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
@@ -35,6 +40,7 @@ related:
   - docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md
   - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
+  - docs/reference/ref-exam-converter-solid-domain-coupling-audit.md
 labels:
   - epic
   - conversion-platform
@@ -170,6 +176,9 @@ fallback parser lane. Planned lanes, in dependency order:
    work: docs-state reconciliation, route-handler registry, runtime/CLI hotspot
    extraction, experiment-surface demotion, Task 200 scaffold closeout, and a
    validated onboarding map.
+1. `docs/backlog/stories/story-50-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries.md`
+   for the governed audit and follow-up refactors where exam-converter business
+   policy is entangled with implementation branch mechanics.
 1. Full QTI/native import lane, implemented behind the accepted API/artifact
    contracts and Task 280 validation foundation.
 1. Service API exposure and Skriptoteket adapter/UI workflow.

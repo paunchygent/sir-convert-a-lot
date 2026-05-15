@@ -53,6 +53,24 @@ def _set_retention(
     manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def _manifest_payload(*, store: JobStoreV2, job_id: str) -> dict[str, object]:
+    payload = json.loads(store._manifest_path(job_id).read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    return payload
+
+
+def _write_manifest_payload(
+    *,
+    store: JobStoreV2,
+    job_id: str,
+    payload: dict[str, object],
+) -> None:
+    store._manifest_path(job_id).write_text(
+        json.dumps(payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
 def test_recover_running_jobs_to_queued_recovers_only_orphaned_running_jobs(
     tmp_path: Path,
 ) -> None:
@@ -93,6 +111,36 @@ def test_recover_running_jobs_to_queued_recovers_only_orphaned_running_jobs(
     assert store.get_job("jobv2_running_active").status == JobStatus.RUNNING
     assert store.get_job("jobv2_running_orphan").status == JobStatus.QUEUED
     assert store.get_job("jobv2_queued").status == JobStatus.QUEUED
+
+
+def test_get_job_accepts_legacy_persisted_input_trust_mode(tmp_path: Path) -> None:
+    """Stored manifests may contain retired fields that public requests reject."""
+    store = JobStoreV2(
+        data_root=tmp_path / "service_data",
+        raw_ttl_seconds=3600,
+        artifact_ttl_seconds=3600,
+    )
+    job_id = "jobv2_legacy_manifest"
+    store.create_job(
+        job_id=job_id,
+        spec=_md_to_pdf_spec(filename="legacy.md"),
+        upload_bytes=b"# Legacy\n",
+        resources_zip_bytes=None,
+        reference_docx_bytes=None,
+    )
+    payload = _manifest_payload(store=store, job_id=job_id)
+    job_spec = payload["job_spec"]
+    assert isinstance(job_spec, dict)
+    conversion = job_spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["input_trust_mode"] = "untrusted_upload"
+    _write_manifest_payload(store=store, job_id=job_id, payload=payload)
+
+    record = store.get_job(job_id)
+    store.sweep_expired()
+
+    assert record.spec.conversion.output_format.value == "pdf"
+    assert store.get_job(job_id).status == JobStatus.QUEUED
 
 
 def test_sweep_expired_creates_and_cleans_tombstones(tmp_path: Path) -> None:

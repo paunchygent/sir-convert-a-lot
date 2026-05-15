@@ -26,11 +26,15 @@ links:
   - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-296-extract-structured-chat-provider-harness-for-local-first-completion.md
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
+  - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
   - docs/backlog/tasks/task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items.md
   - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
+  - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
+  - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
+  - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
@@ -61,8 +65,14 @@ task, reference, report, or retained review surface.
    settlement: Task 301.
 1. Advisory completion reports: Task 297.
 1. Reviewed application into effective IR: Task 306.
-1. Local model benchmark harness and live matrix: Task 300.
+1. Granite/vLLM live validation on the versioned DigiExam DXE corpus: Task
+   309\.
+1. Validation-only force-eval over source-keyed live-validation items: Task
+   310\.
+1. Strict service-backed auth/public-edge mirror validation: Task 311.
 1. Cross-repo Skriptoteket/HuleEdu handoff: Task 299.
+1. Deferred local model benchmark harness and live matrix: Task 300, after the
+   full app path is working and deployed.
 
 Do not collapse these tranches. The sequence protects source-bound parser
 provenance, prevents provider code from leaking into parser/rendering concerns,
@@ -71,9 +81,17 @@ and keeps model choice evidence-driven.
 Task 301 is allowed to run before the full benchmark harness because it is a
 bounded operator smoke test of a runtime candidate, not a provider integration
 or final model-selection gate. Its evidence settles Granite 4.1 8B FP8 on vLLM
-as the interim local provider while the feature is implemented. Task 300 remains
-the real-data benchmark authority for later comparison against the GGUF
-shortlist before longer-term promotion.
+as the interim local provider while the feature is implemented. Task 309 is the
+first production-path live validation of that interim provider, using the
+versioned pure DigiExam DXE corpus and strict golden-backed correctness
+metrics. Task 300 remains the later comparative benchmark authority for a
+GGUF/vLLM bake-off and must not start until the full app path is working and
+deployed.
+
+Task 310 and Task 311 are follow-up gates after Task 309: Task 310 isolates
+validation-only force-eval so it cannot leak into production advisory behavior,
+and Task 311 intentionally includes deployed service, auth, and public-edge
+readiness for the production mirror.
 
 Tasks 302 and 303 close the overlay/export contract gaps discovered after Task
 295: Task 302 now applies supported item-content patches to effective IR, while
@@ -425,6 +443,52 @@ Stop conditions:
   universal model instead of mapping source-neutral concepts into
   `ExamAuthoringIR v1`.
 
+## Tranche 2.9: Exam.net PDF Manual/unkeyed Accepted-current-state Profile
+
+Governing task:
+`task-308-define-examnet-pdf-manual-unkeyed-accepted-current-state-profile-and-multigap-readiness.md`.
+
+Goal: define the Exam.net PDF counterpart to Task 303's manual/unkeyed QTI
+profile so teacher `accept_current_state_for_export` can enable PDF when Sir
+Convert can preserve visible item content without trusted automatic answer-key
+data. Missing-key single-choice, missing-key multiple-response, and
+item-013-style multi-gap gap/open-cloze items must render under this explicit
+user request, either as native PDF-to-exam shapes when fixture-proven or as
+degraded manual/free-text PDF shapes when native import is unproven.
+
+Task 303 is QTI-only. It proves that missing keys can become
+manual/unkeyed QTI when XML/package/profile validation allows it. It does not
+prove that the Exam.net PDF-to-exam renderer can do the same. The PDF route
+must define its own profile, renderer behavior, and target-readiness proof.
+
+Checklist:
+
+- [ ] Define supported and unsupported PDF manual/unkeyed shapes for accepted
+  current-state.
+- [ ] Thread accepted-current-state target policy into the Exam.net PDF
+  renderer or an equivalent PDF target validator.
+- [ ] Prove PDF bytes are created and validated before reporting
+  `ready_after_accepted_current_state` for `examnet_pdf`.
+- [ ] Use item-013 as the regression case for a five-blank `Lucktext` item
+  with an embedded image and no accepted blank values.
+- [ ] Promote native multi-gap `Lucktext` PDF rendering if fixture proof
+  validates the shape; otherwise render a governed degraded manual/free-text
+  PDF shape that preserves prompt text, blanks, embedded images, order, and
+  manual-follow-up state.
+- [ ] Fix warning/readiness precedence so item-specific multi-gap limitations
+  are not masked by the first `manual_answer_key_required` warning or confused
+  with fatal target unavailability when degraded rendering succeeds.
+
+Stop conditions:
+
+- Stop if PDF output would drop visible prompt text, alternatives, gaps,
+  embedded images, or manual follow-up semantics.
+- Stop if neither native nor degraded manual/free-text rendering can preserve
+  the item content requested for PDF export.
+- Stop if the profile would invent answers or source provenance.
+- Stop if public JSON shape changes without OpenAPI snapshot and same-slice
+  consumer impact planning.
+
 ## Tranche 3: Structured Provider Harness
 
 Governing task: `task-296-extract-structured-chat-provider-harness-for-local-first-completion.md`.
@@ -546,12 +610,14 @@ Stop conditions:
 - Stop if image/model acquisition would require destructive cache or Docker
   pruning.
 
-## Tranche 4: Local Model Benchmark Harness
+## Tranche 4: Deferred Local Model Benchmark Harness
 
 Governing task: `task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md`.
 
 Goal: benchmark the settled vLLM Granite FP8 route against the mandatory local
-model matrix on real data after the first feature implementation path exists.
+model matrix on real data after the full app path is working and deployed.
+Task 309 owns the first Granite/vLLM-only live validation and failure-path
+inventory; do not use this tranche for that precursor run.
 
 Mandatory first-pass matrix:
 
@@ -574,6 +640,9 @@ Checklist:
 - [ ] Add corpus loader for real multiple choice, multiple response, matching,
   and open cloze/gap-fill items.
 - [ ] Enforce grammar/schema-constrained output only.
+- [ ] Prefer vLLM `choice` values for MCQ/MCW items with clear bounded
+  candidate selection; use JSON Schema/grammar only where the provider harness
+  proves support or the item type requires structured objects.
 - [ ] Disable thinking/direct-output traces where needed.
 - [ ] Emit deterministic JSON report and Markdown summary.
 
@@ -586,6 +655,8 @@ Checkpoint:
 - [ ] Report can recommend no model if wrong-but-valid risk is too high.
 - [ ] The selected model is justified by real data, not model-card benchmark
   scores.
+- [ ] The bake-off starts only after Task 309 has completed and the full app
+  path is working and deployed.
 
 Stop conditions:
 
@@ -671,6 +742,165 @@ Stop conditions:
 
 - Stop if applying a completion would overwrite source-bound evidence.
 - Stop if matching pairs or gap accepted values are not first-class IR data.
+
+## Tranche 6.4: Provider-Protocol Candidate Planning
+
+Governing task:
+`task-312-make-answer-key-candidate-planning-provider-protocol-driven.md`.
+
+Goal: make the advisory answer-key candidate planner provider-protocol driven
+before Task 309 live validation, so Granite/vLLM can use per-item constrained
+output modes without embedding provider-specific branches in the orchestration
+service.
+
+Checkpoint:
+
+- [ ] Answer-key orchestration consumes an injected/default candidate planner.
+- [ ] Granite/vLLM choice and multiple-response rows use bounded
+  `structured_outputs.choice` values.
+- [ ] Granite/vLLM gap-fill rows use vLLM JSON Schema object mode.
+- [ ] Generic providers continue to use JSON Schema decision objects.
+- [ ] Provider-native choice responses decode into the stable advisory answer
+  payload before report construction.
+- [ ] Invalid bounded choices become manual follow-up, not valid suggestions.
+
+Stop conditions:
+
+- Stop if the implementation requires model-name conditionals inside the
+  orchestration service.
+- Stop if per-item output mode selection requires changing the persistent
+  provider connection or service identity.
+
+## Tranche 6.5: Granite/VLLM Live Validation
+
+Governing task: `task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md`.
+
+Goal: validate the completed structured-provider, advisory report, and reviewed
+apply paths against the real Granite/vLLM stack on Hemma before any model
+bake-off or wider corpus expansion.
+
+Corpus boundary:
+
+- Use only the pure DigiExam `.dxe` exports moved to
+  `inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/`.
+- Freeze source SHA, item fingerprint, item type, eligibility, skip reason, and
+  source binding in a validation manifest.
+- Commit the moved `.dxe` files as the governed versioned fixture corpus; do
+  not fall back to manifest-only validation for this lane.
+- Create teacher-verified expected answers for every scored eligible item.
+  Straightforward grade 7-9 multiple-choice, multiple-response, and gap/open
+  cloze cases are implementer-owned; only genuinely ambiguous cases should be
+  escalated for adjudication.
+
+Runtime checklist:
+
+- [ ] Run Hemma preflight for remote revision, `rocminfo`, `rocm-smi`,
+  scratch/cache path, port `8017`, vLLM `/v1/models`, request logging disabled,
+  localhost-only exposure, and no CPU fallback.
+- [ ] Add committed detached launch/status wrappers before the long run.
+- [ ] Start or reuse a named persistent Granite/vLLM localhost-only container
+  on port `8017`, with request logging disabled and image/model/cache/runtime
+  state recorded.
+- [ ] Leave the Granite/vLLM provider running after validation until the
+  operator explicitly asks for stop or cleanup.
+- [ ] Run the existing detached resource-monitor pattern beside the validation.
+- [ ] Retain JSON/Markdown reports outside git with runtime lane, revision,
+  manifest, and GPU state.
+- [ ] Run provider microprobes for vLLM `choice`, JSON Schema choice object,
+  and JSON Schema gap-fill object.
+- [ ] Prefer vLLM `choice` values for MCQ/MCW items with clear bounded
+  candidate selection.
+- [ ] Run the full-corpus production advisory path in-process on Hemma with
+  `local_llm_suggest_missing_machine_marked`.
+- [ ] Run a small deployed service-backed smoke against the same persistent
+  provider after the in-process pass.
+- [ ] Evaluate valid suggestion, manual follow-up, wrong-but-valid answer,
+  unknown IDs, duplicate IDs, partial gap answers, latency, tokens/sec, and
+  backend failure code.
+- [ ] Run a small reviewed-apply probe from known valid overlay candidates and
+  prove apply mode makes no provider call.
+- [ ] If the first pass succeeds, record the next governed follow-up as a
+  strict service-backed mirror validation with auth/public-edge readiness in
+  scope and validation-only force-eval policy for source-keyed items through
+  Tasks 310 and 311.
+
+Checkpoint:
+
+- [ ] Advisory mode has zero source IR mutation and zero effective IR mutation.
+- [ ] Retained artifacts have zero raw prompts and zero raw provider responses.
+- [ ] Malformed outputs are never counted as success.
+- [ ] Unknown IDs and duplicate IDs are zero for any promotion claim.
+- [ ] Wrong-but-valid answers are the primary safety metric; manual follow-up
+  remains acceptable, plausible wrong keys do not.
+- [ ] Persistent failure paths are documented without item-specific prompt
+  engineering and are reserved for later generalized retry/failure-policy work.
+- [ ] The initial Task 309 run does not use force-eval over source-keyed items.
+- [ ] The next service-backed mirror gate may use explicit validation-only
+  force-eval before production/auth-edge mirror execution.
+
+Stop conditions:
+
+- Stop if the run would expand beyond the versioned pure DXE corpus.
+- Stop if goldens are missing for scored items.
+- Stop if Hemma cannot prove GPU execution without CPU fallback.
+- Stop if request logging or exposure controls cannot be proven.
+- Stop if the implementation would stop the persistent Granite/vLLM provider as
+  ordinary Task 309 closeout.
+- Stop if force-eval is enabled in the initial Task 309 advisory run.
+- Stop if the strict auth/public-edge service-backed mirror starts before the
+  in-process plus service-smoke validation succeeds.
+- Stop before starting a model bake-off.
+
+## Tranche 6.6: Validation-only Force-eval
+
+Governing task:
+`task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md`.
+
+Goal: add an explicit validation-only path for source-keyed items before the
+strict service-backed mirror, without changing production advisory semantics.
+
+Checklist:
+
+- [ ] Require an explicit validation command or validation-only flag.
+- [ ] Keep default production advisory behavior skipping source-keyed items.
+- [ ] Withhold trusted source answer keys from provider payloads and use them
+  only in evaluator/golden comparison.
+- [ ] Report force-eval metrics separately from missing-key advisory metrics.
+- [ ] Preserve zero source IR mutation, zero effective IR mutation, and zero raw
+  prompt/response retention.
+
+Stop conditions:
+
+- Stop if force-eval can be enabled by normal production conversion requests.
+- Stop if provider payloads include trusted source answer keys.
+- Stop if force-eval output can be applied as an answer key.
+
+## Tranche 6.7: Strict Service-backed Mirror
+
+Governing task:
+`task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md`.
+
+Goal: mirror the successful Task 309 validation through the deployed service
+path, intentionally including auth/public-edge readiness and alpha-readiness
+evidence.
+
+Checklist:
+
+- [ ] Use the persistent Granite/vLLM provider established by Task 309 unless a
+  governed operator decision changes the provider lane.
+- [ ] Run through the deployed service path, not the in-process executor.
+- [ ] Prove authenticated access, public-edge readiness, provider reachability,
+  and request logging posture.
+- [ ] Optionally run Task 310 validation-only force-eval before the
+  production/auth-edge mirror execution.
+- [ ] Compare service-backed outputs against Task 309's in-process baseline.
+
+Stop conditions:
+
+- Stop if the service mirror silently falls back to in-process execution.
+- Stop if auth/public-edge readiness is unproven.
+- Stop if the provider becomes publicly exposed.
+- Stop before running any model bake-off.
 
 ## Tranche 7: Cross-Repo Integration
 

@@ -82,6 +82,105 @@ def test_choice_completion_report_uses_candidate_lineage_not_prompt_text() -> No
     assert "reviewed" not in rendered_report
 
 
+def test_granite_vllm_choice_rows_use_bounded_choice_values() -> None:
+    provider = _FakeProvider({"choice": "2"})
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_exam(_choice_payload()),
+            provider_set=StructuredChatProviderSet(primary=_vllm_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    assert provider.profiles[0].output_mode == StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE
+    assert provider.requests[0].output_spec.choice_values == ("1", "2")
+    assert provider.requests[0].output_spec.json_schema["required"] == ["choice"]
+    assert report.items[0].answer_payload == {"kind": "choice", "correct_alternative_ids": [2]}
+
+
+def test_granite_vllm_multiple_response_rows_use_bounded_subset_values() -> None:
+    provider = _FakeProvider({"choice": "1,3"})
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_exam(_multiple_response_payload()),
+            provider_set=StructuredChatProviderSet(primary=_vllm_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    assert provider.profiles[0].output_mode == StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE
+    assert provider.requests[0].output_spec.choice_values == (
+        "1",
+        "2",
+        "3",
+        "1,2",
+        "1,3",
+        "2,3",
+        "1,2,3",
+    )
+    assert report.items[0].answer_payload == {"kind": "choice", "correct_alternative_ids": [1, 3]}
+
+
+def test_granite_vllm_gap_rows_use_json_schema_object_mode() -> None:
+    provider = _FakeProvider(
+        {
+            "decision_state": "answered",
+            "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
+            "manual_follow_up_code": None,
+        }
+    )
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_exam(_gap_payload()),
+            provider_set=StructuredChatProviderSet(primary=_vllm_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    assert provider.profiles[0].output_mode == StructuredLLMOutputMode.VLLM_JSON_SCHEMA
+    assert provider.requests[0].output_spec.choice_values == ()
+    assert provider.requests[0].output_spec.json_schema["required"] == [
+        "decision_state",
+        "gap_answers",
+        "manual_follow_up_code",
+    ]
+    assert report.items[0].answer_payload == {
+        "kind": "gap_fill",
+        "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
+    }
+
+
+def test_invalid_granite_vllm_choice_value_becomes_manual_follow_up() -> None:
+    provider = _FakeProvider({"choice": "999"})
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_exam(_choice_payload()),
+            provider_set=StructuredChatProviderSet(primary=_vllm_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    item = report.items[0]
+
+    assert item.decision_state == DigiExamAnswerKeyCompletionDecisionState.MANUAL_FOLLOW_UP_REQUIRED
+    assert (
+        item.backend_failure_code == DigiExamAnswerKeyCompletionFailureCode.LLM_OUTPUT_INVALID.value
+    )
+    assert item.answer_payload is None
+
+
 def test_invalid_choice_output_becomes_manual_follow_up_without_candidate_digest() -> None:
     provider = _FakeProvider(
         {
@@ -263,6 +362,7 @@ class _FakeProvider:
     def __init__(self, content: dict[str, JsonValue]) -> None:
         self._content = content
         self.requests: list[StructuredLLMRequest] = []
+        self.profiles: list[StructuredLLMProviderProfile] = []
 
     async def complete_structured_chat(
         self,
@@ -270,8 +370,8 @@ class _FakeProvider:
         request: StructuredLLMRequest,
         profile: StructuredLLMProviderProfile,
     ) -> StructuredLLMResponse:
-        del profile
         self.requests.append(request)
+        self.profiles.append(profile)
         return StructuredLLMResponse(content=self._content, finish_reason="stop")
 
 
@@ -310,6 +410,23 @@ def _profile(*, context_window_tokens: int = 4096) -> StructuredLLMProviderProfi
     )
 
 
+def _vllm_profile(*, context_window_tokens: int = 4096) -> StructuredLLMProviderProfile:
+    return StructuredLLMProviderProfile(
+        provider_id="local-granite-vllm",
+        model="ibm-granite/granite-4.1-8b-fp8",
+        endpoint_kind=StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
+        is_remote=False,
+        context_window_tokens=context_window_tokens,
+        max_output_tokens=512,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=False,
+            supports_vllm_structured_choice=True,
+        ),
+    )
+
+
 def _route_policy() -> StructuredLLMRoutePolicy:
     return StructuredLLMRoutePolicy(
         remote_providers_enabled=False,
@@ -341,6 +458,31 @@ def _choice_payload(*, prompt_multiplier: int = 1) -> dict[str, object]:
                         "alternatives": [
                             {"id": 1, "title": "Alpha", "about": "", "right": False},
                             {"id": 2, "title": "Beta", "about": "", "right": False},
+                        ],
+                    }
+                ]
+            }
+        ]
+    }
+
+
+def _multiple_response_payload() -> dict[str, object]:
+    return {
+        "exams": [
+            {
+                "questions": [
+                    {
+                        "id": 1,
+                        "title": "Multiple response without key",
+                        "about": "",
+                        "bodyHTML": "<p>Choose prime numbers.</p>",
+                        "images": [],
+                        "maxScore": 2,
+                        "type": 2,
+                        "alternatives": [
+                            {"id": 1, "title": "2", "about": "", "right": False},
+                            {"id": 2, "title": "4", "about": "", "right": False},
+                            {"id": 3, "title": "5", "about": "", "right": False},
                         ],
                     }
                 ]

@@ -24,8 +24,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_contracts import (
     AssetReferenceKey,
     DigiExamExamNetPdfItemRender,
     DigiExamExamNetPdfItemRenderResult,
+    DigiExamExamNetPdfRenderPolicy,
     DigiExamExamNetPdfWarning,
     DigiExamExamNetPdfWarningCode,
+    blocking_examnet_pdf_warnings,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_prompt import (
     prompt_has_renderable_content,
@@ -43,15 +45,18 @@ def render_examnet_pdf_items(
     *,
     exam: DigiExamIntermediateExam,
     asset_paths_by_reference: Mapping[AssetReferenceKey, str],
+    render_policy: DigiExamExamNetPdfRenderPolicy | None = None,
 ) -> DigiExamExamNetPdfItemRenderResult:
     """Render all supported IR items into Exam.net PDF sections."""
 
+    resolved_policy = render_policy or DigiExamExamNetPdfRenderPolicy()
     items: list[DigiExamExamNetPdfItemRender] = []
     warnings: list[DigiExamExamNetPdfWarning] = []
     for item in exam.items:
         item_render, item_warnings = _render_item(
             item=item,
             asset_paths_by_reference=asset_paths_by_reference,
+            accepted_current_state=resolved_policy.accepts_current_state(item.item_id),
         )
         warnings.extend(item_warnings)
         if item_render is not None:
@@ -64,6 +69,7 @@ def _render_item(
     *,
     item: DigiExamIrItem,
     asset_paths_by_reference: Mapping[AssetReferenceKey, str],
+    accepted_current_state: bool,
 ) -> tuple[DigiExamExamNetPdfItemRender | None, tuple[DigiExamExamNetPdfWarning, ...]]:
     warnings: list[DigiExamExamNetPdfWarning] = []
     points = _points(item)
@@ -83,17 +89,32 @@ def _render_item(
                 item_id=item.item_id,
             )
         )
-    if warnings:
+    if blocking_examnet_pdf_warnings(tuple(warnings)):
         return None, tuple(warnings)
 
     if item.item_type == DigiExamItemType.OPEN_ENDED:
         return _open_ended_item(item, points, prompt_render.html), ()
     if item.item_type in {DigiExamItemType.MULTIPLE_CHOICE, DigiExamItemType.SINGLE_CHOICE}:
-        return _single_choice_item(item, points, prompt_render.html)
+        return _single_choice_item(
+            item,
+            points,
+            prompt_render.html,
+            accepted_current_state=accepted_current_state,
+        )
     if item.item_type == DigiExamItemType.MULTIPLE_RESPONSE:
-        return _multiple_response_item(item, points, prompt_render.html)
+        return _multiple_response_item(
+            item,
+            points,
+            prompt_render.html,
+            accepted_current_state=accepted_current_state,
+        )
     if item.item_type == DigiExamItemType.GAP_FILL:
-        return _short_answer_item(item, points, prompt_render.html)
+        return _short_answer_item(
+            item,
+            points,
+            prompt_render.html,
+            accepted_current_state=accepted_current_state,
+        )
 
     return None, (
         DigiExamExamNetPdfWarning(
@@ -134,8 +155,20 @@ def _open_ended_item(
 
 
 def _single_choice_item(
-    item: DigiExamIrItem, points: int, prompt_html: str
+    item: DigiExamIrItem,
+    points: int,
+    prompt_html: str,
+    *,
+    accepted_current_state: bool,
 ) -> tuple[DigiExamExamNetPdfItemRender | None, tuple[DigiExamExamNetPdfWarning, ...]]:
+    if item.answer_key.provenance == DigiExamAnswerKeyProvenance.ABSENT and accepted_current_state:
+        return _manual_unkeyed_choice_item(
+            item,
+            points,
+            prompt_html,
+            source_type_label="flervalsfråga med ett svar",
+        )
+
     option_text_by_id, warnings = _option_text_by_id(item)
     if warnings:
         return None, warnings
@@ -166,8 +199,20 @@ def _single_choice_item(
 
 
 def _multiple_response_item(
-    item: DigiExamIrItem, points: int, prompt_html: str
+    item: DigiExamIrItem,
+    points: int,
+    prompt_html: str,
+    *,
+    accepted_current_state: bool,
 ) -> tuple[DigiExamExamNetPdfItemRender | None, tuple[DigiExamExamNetPdfWarning, ...]]:
+    if item.answer_key.provenance == DigiExamAnswerKeyProvenance.ABSENT and accepted_current_state:
+        return _manual_unkeyed_choice_item(
+            item,
+            points,
+            prompt_html,
+            source_type_label="flervalsfråga med flera svar",
+        )
+
     option_text_by_id, warnings = _option_text_by_id(item)
     if warnings:
         return None, warnings
@@ -201,8 +246,15 @@ def _multiple_response_item(
 
 
 def _short_answer_item(
-    item: DigiExamIrItem, points: int, prompt_html: str
+    item: DigiExamIrItem,
+    points: int,
+    prompt_html: str,
+    *,
+    accepted_current_state: bool,
 ) -> tuple[DigiExamExamNetPdfItemRender | None, tuple[DigiExamExamNetPdfWarning, ...]]:
+    if not item.answer_key.correct_gap_answers and accepted_current_state:
+        return _manual_unkeyed_gap_item(item, points, prompt_html)
+
     if len(item.gaps) != 1:
         return None, (
             DigiExamExamNetPdfWarning(
@@ -237,6 +289,99 @@ def _short_answer_item(
     )
 
 
+def _manual_unkeyed_choice_item(
+    item: DigiExamIrItem,
+    points: int,
+    prompt_html: str,
+    *,
+    source_type_label: str,
+) -> tuple[DigiExamExamNetPdfItemRender | None, tuple[DigiExamExamNetPdfWarning, ...]]:
+    option_texts = _manual_option_texts(item)
+    if not option_texts:
+        return None, (_answer_key_mismatch(item, "manual choice rendering needs options"),)
+    return (
+        DigiExamExamNetPdfItemRender(
+            html=_item_shell(
+                item=item,
+                points=points,
+                item_type_label="Fritext",
+                instruction=(
+                    f"Manuell bedömning. Ursprunglig {source_type_label} utan betrott facit."
+                ),
+                prompt_html=prompt_html,
+                body_html=_options_html(option_texts),
+                item_type_marker="Typ",
+            )
+        ),
+        (
+            DigiExamExamNetPdfWarning(
+                code=DigiExamExamNetPdfWarningCode.MANUAL_UNKEYED_CHOICE_RENDERED,
+                message=(
+                    f"Item {item.item_id} rendered as manual/unkeyed PDF because "
+                    "accepted-current-state was requested without trusted choice key data."
+                ),
+                item_id=item.item_id,
+                blocking=False,
+            ),
+        ),
+    )
+
+
+def _manual_unkeyed_gap_item(
+    item: DigiExamIrItem,
+    points: int,
+    prompt_html: str,
+) -> tuple[DigiExamExamNetPdfItemRender | None, tuple[DigiExamExamNetPdfWarning, ...]]:
+    warnings = [
+        DigiExamExamNetPdfWarning(
+            code=DigiExamExamNetPdfWarningCode.MANUAL_UNKEYED_GAP_OPEN_CLOZE_RENDERED,
+            message=(
+                f"Item {item.item_id} rendered as manual/unkeyed PDF because "
+                "accepted-current-state was requested without trusted gap accepted values."
+            ),
+            item_id=item.item_id,
+            blocking=False,
+        ),
+        DigiExamExamNetPdfWarning(
+            code=DigiExamExamNetPdfWarningCode.EXAMNET_PDF_GAP_OPEN_CLOZE_NATIVE_SUPPORT_UNPROVEN,
+            message=(
+                f"Item {item.item_id} uses degraded manual/free-text PDF rendering because "
+                "native Exam.net gap/open-cloze PDF import is unproven."
+            ),
+            item_id=item.item_id,
+            blocking=False,
+        ),
+    ]
+    if len(item.gaps) != 1:
+        warnings.append(
+            DigiExamExamNetPdfWarning(
+                code=DigiExamExamNetPdfWarningCode.EXAMNET_PDF_MULTI_GAP_OPEN_CLOZE_DEGRADED,
+                message=(
+                    f"Item {item.item_id} has {len(item.gaps)} gaps and was rendered through "
+                    "the degraded manual/free-text PDF profile."
+                ),
+                item_id=item.item_id,
+                blocking=False,
+            )
+        )
+    return (
+        DigiExamExamNetPdfItemRender(
+            html=_item_shell(
+                item=item,
+                points=points,
+                item_type_label="Fritext",
+                instruction=(
+                    "Manuell bedömning. Ursprunglig lucktext utan betrodda accepterade värden."
+                ),
+                prompt_html=prompt_html,
+                body_html=_gap_order_html(item),
+                item_type_marker="Typ",
+            )
+        ),
+        tuple(warnings),
+    )
+
+
 def _option_text_by_id(
     item: DigiExamIrItem,
 ) -> tuple[dict[int, str], tuple[DigiExamExamNetPdfWarning, ...]]:
@@ -261,6 +406,16 @@ def _option_text_by_id(
     return option_text_by_id, tuple(warnings)
 
 
+def _manual_option_texts(item: DigiExamIrItem) -> tuple[str, ...]:
+    return tuple(
+        option_text
+        for option_text in (
+            " ".join(alternative.title.split()) for alternative in item.alternatives
+        )
+        if option_text
+    )
+
+
 def _missing_answer_key(item: DigiExamIrItem) -> DigiExamExamNetPdfWarning:
     return DigiExamExamNetPdfWarning(
         code=DigiExamExamNetPdfWarningCode.MANUAL_ANSWER_KEY_REQUIRED,
@@ -280,6 +435,13 @@ def _answer_key_mismatch(item: DigiExamIrItem, reason: str) -> DigiExamExamNetPd
 def _options_html(options: tuple[str, ...]) -> str:
     options_html = "".join(f"<p>{escape(option)}</p>" for option in options)
     return f'<div class="options">{options_html}</div>'
+
+
+def _gap_order_html(item: DigiExamIrItem) -> str:
+    if not item.gaps:
+        return '<div class="gap-list"><p>Lucktextfrågan bedöms manuellt efter import.</p></div>'
+    gap_rows = "".join(f"<p>Lucka {index}</p>" for index, _gap in enumerate(item.gaps, start=1))
+    return f'<div class="gap-list">{gap_rows}</div>'
 
 
 def _item_shell(

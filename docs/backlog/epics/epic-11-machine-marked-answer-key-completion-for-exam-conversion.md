@@ -20,6 +20,9 @@ related:
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
+  - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
+  - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
+  - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
   - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
@@ -118,6 +121,14 @@ Task 301 is an experimental Hemma runtime smoke checkpoint for Granite 4.1 8B
 FP8 on the ROCm vLLM preview image; it can inform provider viability, but it
 does not replace Task 300's `llama.cpp` GGUF benchmark matrix or authorize
 production model selection.
+Task 309 is the Granite/vLLM production-path live-validation checkpoint over
+the versioned pure DigiExam DXE corpus. It precedes any model bake-off and uses
+teacher-verified goldens, strict wrong-but-valid reporting, and no raw
+prompt/response retention. Task 310 owns validation-only force-eval over
+source-keyed items as a follow-up gate, and Task 311 owns the strict
+service-backed auth/public-edge mirror validation. Task 300's comparative
+model benchmark remains deferred until the full app path is working and
+deployed.
 
 ## Acceptance Criteria
 

@@ -17,7 +17,9 @@ Relationships:
 from __future__ import annotations
 
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
-    candidate_request_for_item,
+    DigiExamAnswerKeyCandidatePlannerProtocol,
+    DigiExamCompletionCandidatePlan,
+    answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
     ANSWER_KEY_COMPLETION_SAFETY_MARGIN_TOKENS,
@@ -28,9 +30,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts i
     DigiExamAnswerKeyCompletionValidationState,
     answer_key_candidate_payload_digest,
     completion_report,
-)
-from scripts.sir_convert_a_lot.domain.digiexam_answer_key_payloads import (
-    answer_payload_from_model_content,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamAnswerKeyProvenance,
@@ -66,6 +65,7 @@ async def build_digiexam_answer_key_completion_report(
     provider_set: StructuredChatProviderSet | None,
     route_policy: StructuredLLMRoutePolicy,
     provider: StructuredChatProviderProtocol | None,
+    candidate_planner: DigiExamAnswerKeyCandidatePlannerProtocol | None = None,
 ) -> DigiExamAnswerKeyCompletionReport:
     """Build advisory answer-key candidates for one effective DigiExam exam."""
 
@@ -73,16 +73,18 @@ async def build_digiexam_answer_key_completion_report(
     rows: list[DigiExamAnswerKeyCompletionReportItem] = []
     for item in exam.items:
         profile = _selected_profile(provider_set=provider_set, route_decision=route_decision)
-        candidate = candidate_request_for_item(job_id=job_id, item=item, profile=profile)
+        planner = candidate_planner or answer_key_candidate_planner_for_profile(profile)
+        candidate = planner.plan_candidate(job_id=job_id, item=item, profile=profile)
         if candidate is None:
             rows.append(_non_provider_entry(item, profile=profile))
             continue
-        if profile is None or provider is None:
+        provider_profile = candidate.provider_profile
+        if provider_profile is None or provider is None:
             rows.append(
                 _manual_entry(
                     item=item,
                     request=candidate.request,
-                    profile=profile,
+                    profile=provider_profile,
                     failure_code=DigiExamAnswerKeyCompletionFailureCode.PROVIDER_CONFIG_MISSING,
                 )
             )
@@ -92,13 +94,13 @@ async def build_digiexam_answer_key_completion_report(
                 _manual_entry(
                     item=item,
                     request=candidate.request,
-                    profile=profile,
+                    profile=provider_profile,
                     failure_code=DigiExamAnswerKeyCompletionFailureCode.PROVIDER_ROUTE_BLOCKED,
                     backend_status=route_decision.reason.value,
                 )
             )
             continue
-        rows.append(await _provider_entry(candidate.request, item, profile, provider))
+        rows.append(await _provider_entry(candidate, provider))
 
     return completion_report(
         job_id=job_id,
@@ -108,11 +110,19 @@ async def build_digiexam_answer_key_completion_report(
 
 
 async def _provider_entry(
-    request: StructuredLLMRequest,
-    item: DigiExamIrItem,
-    profile: StructuredLLMProviderProfile,
+    candidate: DigiExamCompletionCandidatePlan,
     provider: StructuredChatProviderProtocol,
 ) -> DigiExamAnswerKeyCompletionReportItem:
+    request = candidate.request
+    item = candidate.item
+    profile = candidate.provider_profile
+    if profile is None:
+        return _manual_entry(
+            item=item,
+            request=request,
+            profile=profile,
+            failure_code=DigiExamAnswerKeyCompletionFailureCode.PROVIDER_CONFIG_MISSING,
+        )
     budget = resolve_structured_llm_token_budget(
         profile=profile,
         requested_max_output_tokens=request.max_output_tokens,
@@ -135,7 +145,7 @@ async def _provider_entry(
             profile=profile,
             failure_code=exc.failure_code,
         )
-    return _response_entry(item=item, request=request, profile=profile, response=response)
+    return _response_entry(candidate=candidate, profile=profile, response=response)
 
 
 def _route_decision(
@@ -171,12 +181,13 @@ def _selected_profile(
 
 def _response_entry(
     *,
-    item: DigiExamIrItem,
-    request: StructuredLLMRequest,
+    candidate: DigiExamCompletionCandidatePlan,
     profile: StructuredLLMProviderProfile,
     response: StructuredLLMResponse,
 ) -> DigiExamAnswerKeyCompletionReportItem:
-    answer_payload = answer_payload_from_model_content(item=item, content=response.content)
+    item = candidate.item
+    request = candidate.request
+    answer_payload = candidate.decoder.decode(item=item, response=response)
     if answer_payload is None:
         return _manual_entry(
             item=item,

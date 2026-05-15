@@ -17,6 +17,7 @@ related:
   - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
+  - docs/backlog/tasks/task-308-define-examnet-pdf-manual-unkeyed-accepted-current-state-profile-and-multigap-readiness.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
@@ -83,6 +84,14 @@ keys, and review decisions without mutating the parser-owned source IR.
   until a live vendor test path exists. The profile preserves visible content
   without claiming automatic evaluation when trusted machine-marked keys are
   absent.
+- Treat Exam.net PDF accepted-current-state as a separate governed target
+  profile. Task 303 does not make PDF exportable. Until Task 308 defines and
+  validates a PDF manual/unkeyed profile, Sir Convert must keep PDF disabled
+  when accepted-current-state cannot preserve the visible item shape without
+  trusted keys. Task 308 must support user-requested PDF rendering for
+  missing-key single-choice, missing-key multiple-response, and item-013-style
+  multi-gap gap/open-cloze items through native PDF-to-exam shapes when proven
+  or degraded manual/free-text shapes when native import is unproven.
 - Publish and snapshot the generated Sir Convert v2 OpenAPI contract so
   Skriptoteket can validate overlay/effective-IR/readiness integration before
   live Docker/service tests.
@@ -110,6 +119,13 @@ reopened by default:
 - Task 303 completed the `unkeyed_manual_qti_2_1_v1` profile for accepted
   current-state exports with local package/profile validation and
   vendor-unproven Exam.net import status.
+- Task 303 is QTI-only. Task 308 remains the owner for an Exam.net PDF
+  manual/unkeyed accepted-current-state profile and for item-specific
+  readiness/warning precision when PDF target limitations, such as multi-gap
+  `Lucktext`, coexist with missing answer-key evidence. The Task 308 outcome
+  must be content-preserving PDF output under explicit accepted-current-state
+  for missing-key choice and item-013-style multi-gap items unless no native or
+  degraded manual representation can preserve the visible item.
 - Task 304 published the generated v2 OpenAPI snapshot for the DigiExam
   overlay, effective-IR, and target-readiness contract.
 
@@ -125,6 +141,10 @@ Remaining blocker for Story 48 closeout:
 1. Task 306 applies reviewed completion into effective IR only through the
    completed Task 298 and Task 305 first-class pair/value contracts and
    validators.
+1. Task 308 defines the accepted-current-state Exam.net PDF profile, implements
+   missing-key choice and item-013-style multi-gap rendering, and fixes
+   readiness reporting so native multi-gap/gap-open-cloze target limitations
+   are not masked by coarse missing-key warning precedence.
 
 ## Acceptance Criteria
 
@@ -147,9 +167,15 @@ Remaining blocker for Story 48 closeout:
   represented as overlay decisions, not local Skriptoteket flags, and target
   artifacts remain unavailable unless Sir Convert can create valid outputs
   under that policy.
-- [ ] Target readiness reports keep unsupported item/target shapes, such as
-  multi-gap gap-fill without a governed renderer/import shape, distinct from
-  ordinary missing `Facit`/answer-key review.
+- [x] Target readiness reports keep unsupported native item/target shapes, such
+  as multi-gap gap-fill without proven native PDF-to-exam import behavior,
+  distinct from ordinary missing `Facit`/answer-key review and from successful
+  degraded manual PDF rendering.
+- [x] Accepted-current-state can enable Exam.net PDF only after Task 308
+  defines a governed PDF manual/unkeyed profile, creates target bytes, and
+  validates the target. Missing-key choice and item-013-style multi-gap items
+  must render when a native or degraded manual shape preserves visible content;
+  otherwise PDF stays unavailable with item-specific readiness reasons.
 - [ ] Existing default route behavior remains source-owned, but the bundle
   schema is `digiexam_migration_bundle_v3` for every terminal bundle.
 - [x] Item-content repairs through `effective_item_patch` are runtime-applied
@@ -195,6 +221,10 @@ Remaining blocker for Story 48 closeout:
 - [ ] Answer-key completion tests prove Task 306 can apply matching pairs or
   gap accepted values only through the completed Task 298 and Task 305
   first-class IR/effective-IR contracts and validators.
+- [x] PDF readiness tests prove Task 308 renders missing-key choice and
+  item-013-style multi-gap accepted-current-state PDF output without answer-key
+  claims, and reports native multi-gap target limitations distinctly from
+  missing answer-key review when degraded rendering is used.
 
 ## Done Definition
 

@@ -37,7 +37,8 @@ to this reference, then add task-specific acceptance criteria on top.
 | `BLANK-PDF-2026-05-07` | `inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/DigiExam-Test-som-nedladdningsbar.pdf` | `2c66ff8ad84ddb4300091c04c87ed397ca6927ae0443cd208399055081b86ab8` | Blank/student-view jsPDF export | Visual and text parity evidence for the same 7-question exam |
 | `RESULT-PDF-2026-05-07-SANITIZED` | `inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/graded-student-result-sanitized.pdf` | `cf0e333ab65f08a21e5345fcc37f8d431c066cdc6b77dcc646e31f35a71e8664` | Sanitized graded student-result jsPDF export | Optional correct-answer enrichment for machine-marked items only |
 | `DXE-2026-05-11-SANITIZED-EMBEDDED-IMAGE` | `inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/sanitized-embedded-image.dxe` | `abf3c12065928946df68f0105788ceddb300fcea1bdde716755c90bc59459309` | Minimal sanitized `.dxe` JSON export | Embedded `question.images[]` PNG plus `data-image-id` binding fixture for Task 276 |
-| `DXE-CORPUS-MANIFEST-2026-05-12` | `inputs/examples/digiexam-evidence/digiexam-dxe-validation-corpus-2026-05-12.manifest.json` | `035957d69f83c2eba625190370adea013e7b00cbe04cac220121ebf9dbaf8167` | Metadata-only `.dxe` validation-corpus manifest | Task 281 parser/IR regression evidence for the local raw OneDrive corpus; contains counts and hashes only |
+| `DXE-CORPUS-MANIFEST-2026-05-12` | `inputs/examples/digiexam-evidence/digiexam-dxe-validation-corpus-2026-05-12.manifest.json` | `035957d69f83c2eba625190370adea013e7b00cbe04cac220121ebf9dbaf8167` | Metadata-only `.dxe` validation-corpus manifest | Task 281 parser/IR regression evidence for the then-local raw OneDrive corpus; contains counts and hashes only |
+| `DXE-FIXTURE-CORPUS-2026-05-12` | `inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/` | See per-file `validation-corpus-manifest.json` | Versioned raw DigiExam `.dxe` fixture corpus | Task 309 live-validation fixture set promoted from the former local OneDrive corpus |
 | `PDF-ECOLOGY-2026-04-25` | `inputs/examples/digiexam-exports/_-25cEkologiprov51-55.pdf` | `bc1ef30b8f378e193fc42746d91e849dcc5face4117b5dbea448610fa40f6873` | Blank/student-view jsPDF export | Legacy Task 267 open-ended PDF parser fixture |
 | `PDF-CHEMISTRY-2026-04-25` | `inputs/examples/digiexam-exports/_-Kemikapitel2ht2525dECA.pdf` | `8a2e2a72915861f62981d2db7087e3363621c6087b4eb7ab1442046e0b3b6a7e` | Blank/student-view jsPDF export | Legacy Task 267 mixed PDF parser fixture with MCQ, matching, and open-ended items |
 
@@ -60,12 +61,13 @@ The observed embedded asset shape is:
   invalid or unbound asset data, including `data-image-id` references when
   `question.images[]` is empty or absent.
 
-## Local Untracked Validation Corpus
+## Versioned Live-validation DXE Corpus
 
-On 2026-05-12, a larger local `.dxe` validation package was added under:
+On 2026-05-12, a larger local `.dxe` validation package was added. Task 309
+promoted those pure DigiExam exports into the versioned fixture root:
 
 ```text
-inputs/examples/digiexam-evidence/OneDrive_1_5-12-2026/
+inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/
 ```
 
 Initial metadata-only parser smoke found:
@@ -79,8 +81,8 @@ Initial metadata-only parser smoke found:
 - 44 `missing_answer_key_provenance` warnings and no other warning codes.
 
 Task 305 rechecked every `.dxe` file available under `inputs/` on
-2026-05-15, including tracked fixtures, local-private evidence, and the ignored
-OneDrive validation corpus. The combined local pool contained 27 `.dxe` files,
+2026-05-15, including tracked fixtures, local-private evidence, and the then
+ignored OneDrive validation corpus. The combined local pool contained 27 `.dxe` files,
 340 parsed items, 21 gap-fill items, and 113 total gap placeholders. Every
 observed gap placeholder was represented by a `.dxe` `blanks[]` entry with
 only `guid` and `validations`, every observed `validations` array was empty,
@@ -88,16 +90,14 @@ and every observed gap GUID was bound back into `bodyHTML` through a
 `span dx-wg-id` prompt binding. No raw prompt text, raw `.dxe`, owner metadata,
 student data, or embedded payload was promoted into committed evidence.
 
-Task 281 classifies the raw package as local-only validation material and keeps
-it ignored through `.gitignore`. The committed evidence is the metadata-only
-manifest `DXE-CORPUS-MANIFEST-2026-05-12`, which records filenames, file
-hashes, byte sizes, parser status, item-type counts, warning-code counts,
-embedded asset counts and hashes, and answer-key provenance counts.
-
-Task 281 did not derive new sanitized/minimal fixtures because the corpus did
-not expose a new parser edge. Future parser changes may derive focused fixtures
-from this corpus only when the derived artifact removes raw prompts, user or
-organization metadata, timing/encryption metadata, and raw embedded payloads.
+Task 281 originally classified the raw package as local-only validation
+material and retained only the metadata manifest
+`DXE-CORPUS-MANIFEST-2026-05-12`. Task 309 supersedes that retention decision
+for this corpus only: the pure `.dxe` files are now tracked as governed live
+validation fixtures, with `validation-corpus-manifest.json` freezing source
+SHA, item fingerprints, item type, eligibility, skip reason, and provider
+output mode. Live prompts, provider responses, Hemma reports, and generated
+validation artifacts remain outside git.
 
 ## Source Policy
 

@@ -15,6 +15,10 @@ related:
   - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
+  - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
+  - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
+  - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
+  - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
 labels:
@@ -71,6 +75,22 @@ route still makes no structured LLM calls and keeps
 candidate-lineage `answer-key-completion-report.json` artifact only when
 requested, validates backend output strictly, and leaves source IR, effective
 IR, Exam.net PDF, and QTI unchanged.
+
+Task 312 is the provider-protocol correction required before Task 309 live
+validation. It keeps answer-key orchestration provider-neutral by injecting a
+candidate planner. The Granite/vLLM planner selects bounded
+`structured_outputs.choice` for choice and multiple-response rows, while using
+vLLM JSON Schema for gap-fill rows. Generic providers keep the JSON
+Schema-backed planner.
+
+Task 309 is the proposed live-validation checkpoint for the completed harness
+and advisory path. It validates the interim Granite FP8/vLLM provider on Hemma
+against a versioned pure DigiExam DXE corpus before the deferred Task 300
+comparative model bake-off. MCQ/MCW live requests should prefer vLLM `choice`
+values when candidate selection is clear and bounded; JSON Schema remains part
+of provider microprobes and gap-fill object validation. Task 310 and Task 311
+then separate validation-only force-eval from the strict service-backed
+auth/public-edge mirror.
 
 ## Acceptance Criteria
 

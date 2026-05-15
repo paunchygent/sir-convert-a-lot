@@ -83,6 +83,9 @@ def test_local_compose_uses_cpu_only_local_service_contract() -> None:
     assert env_map["SIR_CONVERT_A_LOT_DATA_DIR"] == "/var/lib/sir-convert-a-lot/local"
     assert env_map["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"] == "tesseract_cli"
     assert env_map["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES"] == "sv,en"
+    assert env_map["HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH"] == (
+        "/run/huleedu/internal-identity/gateway-internal-identity-public-key.pem"
+    )
     assert "VIRTUAL_HOST" not in env_map
     assert "LETSENCRYPT_HOST" not in env_map
 
@@ -98,7 +101,13 @@ def test_local_compose_uses_cpu_only_local_service_contract() -> None:
     assert service.get("group_add") is None
     assert service.get("ports") == ["${SIR_CONVERT_A_LOT_LOCAL_PORT:-8085}:8085"]
     assert service.get("volumes") == [
-        "sir-convert-a-lot-local-data:/var/lib/sir-convert-a-lot/local"
+        "sir-convert-a-lot-local-data:/var/lib/sir-convert-a-lot/local",
+        (
+            "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"
+            "../huleedu/secrets/local-runtime/internal-identity/"
+            "gateway-internal-identity-public-key.pem}:"
+            "/run/huleedu/internal-identity/gateway-internal-identity-public-key.pem:ro"
+        ),
     ]
 
 

@@ -19,9 +19,11 @@ from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_assets import (
 )
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_contracts import (
     DigiExamExamNetPdfDocument,
+    DigiExamExamNetPdfRenderPolicy,
     DigiExamExamNetPdfStatus,
     DigiExamExamNetPdfWarning,
     DigiExamExamNetPdfWarningCode,
+    blocking_examnet_pdf_warnings,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_html import (
     build_examnet_pdf_html,
@@ -36,6 +38,8 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
 
 def build_digiexam_examnet_pdf_document(
     exam: DigiExamIntermediateExam,
+    *,
+    accepted_current_state_item_ids: tuple[str, ...] = (),
 ) -> DigiExamExamNetPdfDocument:
     """Build an Exam.net PDF-converter HTML plan from a DigiExam IR exam."""
 
@@ -50,15 +54,18 @@ def build_digiexam_examnet_pdf_document(
     item_result = render_examnet_pdf_items(
         exam=exam,
         asset_paths_by_reference=asset_preparation.asset_paths_by_reference,
+        render_policy=DigiExamExamNetPdfRenderPolicy(
+            accepted_current_state_item_ids=accepted_current_state_item_ids
+        ),
     )
-    if item_result.warnings:
+    if blocking_examnet_pdf_warnings(item_result.warnings):
         return _blocked(item_result.warnings)
 
     return DigiExamExamNetPdfDocument(
         status=DigiExamExamNetPdfStatus.SUCCESS,
         html=build_examnet_pdf_html(source_filename=exam.source_filename, items=item_result.items),
         asset_files=asset_preparation.asset_files,
-        warnings=(),
+        warnings=item_result.warnings,
     )
 
 

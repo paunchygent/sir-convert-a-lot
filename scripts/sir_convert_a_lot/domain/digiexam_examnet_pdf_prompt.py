@@ -64,6 +64,7 @@ class _PromptHtmlRenderer(HTMLParser):
         self._asset_paths_by_reference = asset_paths_by_reference
         self._parts: list[str] = []
         self._warnings: list[DigiExamExamNetPdfWarning] = []
+        self._gap_span_depth = 0
 
     def render(self, prompt_html: str) -> DigiExamExamNetPdfPromptRender:
         """Return sanitized prompt HTML and warnings."""
@@ -78,9 +79,16 @@ class _PromptHtmlRenderer(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """Handle allowed prompt start tags."""
 
+        if self._gap_span_depth:
+            self._gap_span_depth += 1
+            return
         normalized_tag = tag.lower()
         if normalized_tag == "img":
             self._handle_image(attrs)
+            return
+        if normalized_tag == "span" and _has_gap_id(attrs):
+            self._parts.append('<span class="gap-placeholder">[____]</span>')
+            self._gap_span_depth = 1
             return
         if normalized_tag in {"p", "strong", "em", "sup", "sub"}:
             self._parts.append(f"<{normalized_tag}>")
@@ -92,9 +100,25 @@ class _PromptHtmlRenderer(HTMLParser):
         if normalized_tag == "br":
             self._parts.append("<br>")
 
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Handle self-closing allowed prompt tags."""
+
+        normalized_tag = tag.lower()
+        if normalized_tag == "img":
+            self._handle_image(attrs)
+            return
+        if normalized_tag == "span" and _has_gap_id(attrs):
+            self._parts.append('<span class="gap-placeholder">[____]</span>')
+            return
+        if normalized_tag == "br":
+            self._parts.append("<br>")
+
     def handle_endtag(self, tag: str) -> None:
         """Handle allowed prompt end tags."""
 
+        if self._gap_span_depth:
+            self._gap_span_depth -= 1
+            return
         normalized_tag = tag.lower()
         if normalized_tag in {"p", "strong", "em", "sup", "sub"}:
             self._parts.append(f"</{normalized_tag}>")
@@ -106,6 +130,8 @@ class _PromptHtmlRenderer(HTMLParser):
     def handle_data(self, data: str) -> None:
         """Handle prompt text."""
 
+        if self._gap_span_depth:
+            return
         self._parts.append(escape(data))
 
     def _handle_image(self, attrs: list[tuple[str, str | None]]) -> None:
@@ -132,6 +158,12 @@ def _image_id(attrs: list[tuple[str, str | None]]) -> int | None:
     if value is None or not value.isdecimal():
         return None
     return int(value)
+
+
+def _has_gap_id(attrs: list[tuple[str, str | None]]) -> bool:
+    attr_map = {key.lower(): value for key, value in attrs if value is not None}
+    gap_id = attr_map.get("dx-wg-id")
+    return gap_id is not None and gap_id.strip() != ""
 
 
 def _missing_image_warning(item_id: str, image_id: str) -> DigiExamExamNetPdfWarning:

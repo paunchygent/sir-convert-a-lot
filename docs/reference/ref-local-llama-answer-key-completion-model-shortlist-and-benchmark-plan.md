@@ -4,7 +4,7 @@ id: REF-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan
 title: Local Model Answer-key Completion Runtime And Benchmark Plan
 status: active
 created: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-15
 owners:
   - platform
 tags:
@@ -20,6 +20,10 @@ links:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
   - docs/backlog/tasks/task-296-extract-structured-chat-provider-harness-for-local-first-completion.md
+  - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
+  - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
+  - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
+  - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
@@ -34,15 +38,18 @@ answer-key completion route.
 The current implementation default is **vLLM serving
 `ibm-granite/granite-4.1-8b-fp8`** on Hemma's R9700 ROCm preview lane. That
 choice is an interim engineering default so the feature can be implemented
-against a concrete local structured provider. Final model selection still
-requires live structured experiments on real teacher/DigiExam items with
-grammar/schema-constrained decoding and backend validation.
+against a concrete local structured provider. Task 309 is the first live
+validation of this current Granite/vLLM stack against the production advisory
+path and a versioned pure DigiExam DXE corpus. Task 300 remains the later
+comparative model bake-off and must not start until the full app path is
+working and deployed.
 
 ## Current Working Runtime
 
 Use this runtime for the first Sir Convert implementation of the local
-answer-key completion provider until Task 300 runs the deeper comparative
-benchmark:
+answer-key completion provider. Task 309 validates this runtime against the
+production advisory route; Task 300 later compares it with the GGUF shortlist
+after the full application path is working and deployed:
 
 ```text
 provider_runtime: vllm
@@ -117,10 +124,76 @@ Excluded from the first pass:
 Structured-output support is treated as a runtime property enforced by the
 provider adapter, followed by Sir Convert backend validation. For llama.cpp
 candidates this means GBNF or JSON Schema constrained decoding. For the interim
-vLLM runtime this means `structured_outputs` constraints, starting with
-`choice` for MCQ/MCW decisions and expanding to JSON Schema only behind
-provider-harness tests. Do not trust a model card's tool-calling claim as
-sufficient proof for this route.
+vLLM runtime this means `structured_outputs` constraints. Use `choice` values
+as the preferred implementation for MCQ/MCW items where candidate selection is
+clear and bounded, because avoiding a model-generated JSON wrapper reduces the
+failure surface. JSON Schema remains required for gap-fill objects and for
+capability microprobes, but it is not the preferred MCQ/MCW path when a
+bounded `choice` value can express the decision. Do not trust a model card's
+tool-calling claim as sufficient proof for this route.
+
+## Granite Live Validation Precursor
+
+Task 309 validates the current Granite/vLLM implementation before any
+comparative bake-off. It uses only the pure DigiExam `.dxe` exports moved to:
+
+```text
+inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/
+```
+
+That task must move the files into a versioned DigiExam DXE fixture location,
+freeze a corpus manifest with source SHA and item fingerprints, and create a
+teacher-verified expected-answer manifest for every scored item. Straightforward
+grade 7-9 choice and gap/open-cloze goldens are owned by the implementer; only
+genuinely ambiguous cases should be surfaced for adjudication.
+The moved `.dxe` files are committed as the versioned fixture corpus; this
+lane is not manifest-only.
+
+Task 309's preferred execution shape is a low-variable first pass: full-corpus
+production advisory validation through the in-process job path on Hemma, plus a
+small deployed service-backed smoke against the same provider. If that pass
+succeeds, the follow-up is a strictly service-backed mirror validation with
+auth/public-edge readiness intentionally in scope. Validation-only force-eval
+over source-keyed items is reserved for Task 310 and the later service-backed
+mirror follow-up, not for Task 309's initial advisory run. Task 311 owns the
+strict service-backed mirror with auth/public-edge readiness.
+
+The Granite/vLLM provider for Task 309 is persistent by default. Use a named
+localhost-only container on port `8017`, disable request logging, record
+image/model/cache/runtime state, and leave it running until the operator
+explicitly asks for stop or cleanup. Run the existing detached resource-monitor
+pattern alongside the validation so GPU and memory behavior are part of the
+evidence.
+
+Task 312 is the precondition that makes the preferred Task 309 shape real in
+production code. The advisory answer-key orchestration consumes an injected
+candidate planner instead of branching on Granite/vLLM details. The
+Granite/vLLM planner derives the item-local provider output mode from provider
+capabilities and item type: choice and multiple-response rows use bounded
+`structured_outputs.choice` values, while gap-fill rows use vLLM JSON Schema
+objects. Generic providers keep the JSON Schema planner.
+
+The live run has three phases:
+
+1. Provider microprobes for vLLM `choice`, JSON Schema choice object, and JSON
+   Schema gap-fill object.
+1. In-process production advisory execution over all eligible DXE items with
+   `local_llm_suggest_missing_machine_marked`, followed by a small deployed
+   service-backed smoke.
+1. Evaluation against goldens for valid suggestion, manual follow-up,
+   wrong-but-valid answer, unknown IDs, duplicate IDs, partial gap answers,
+   latency, tokens/sec, and backend failure code.
+
+Acceptance is intentionally strict: retained artifacts must contain no raw
+prompts or raw provider responses, advisory mode must mutate neither source IR
+nor effective IR, malformed output cannot count as success, unknown and
+duplicate IDs must be zero for promotion, and wrong-but-valid answers are the
+primary safety metric. Manual follow-up is acceptable; plausible wrong keys are
+not.
+
+Do not prompt-engineer around a specific difficult item. Persistent failure
+paths should be documented across runs and shaped later into generalized retry
+or failure-handling policy by item type or failure class.
 
 ## Verified Source Notes
 
@@ -143,8 +216,9 @@ documentation:
 ## Ranked Candidate Pool
 
 The current working runtime above is the implementation default. All rows below
-remain mandatory first-pass benchmark entries once Task 300 compares the settled
-vLLM Granite FP8 route against the GGUF local candidates.
+remain mandatory first-pass benchmark entries once Task 300, deferred until the
+full app path is working and deployed, compares the settled vLLM Granite FP8
+route against the GGUF local candidates.
 
 | Rank | Model | First quant | Role | Reason to test |
 |---:|---|---|---|---|

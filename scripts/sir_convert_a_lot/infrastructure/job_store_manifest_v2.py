@@ -22,6 +22,9 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_to_rfc3339,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import StoredJobRecordV2
+from scripts.sir_convert_a_lot.infrastructure.job_store_spec_compat_v2 import (
+    normalize_stored_job_spec_payload_v2,
+)
 from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
     TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
     normalize_phase_timings_map,
@@ -140,7 +143,7 @@ def parse_stored_job_record(
     spec_payload = payload.get("job_spec")
     if not isinstance(spec_payload, dict):
         raise ValueError(f"manifest missing job_spec object: {manifest_path}")
-    spec = JobSpecV2.model_validate(spec_payload)
+    spec = JobSpecV2.model_validate(normalize_stored_job_spec_payload_v2(spec_payload))
 
     owner_payload = payload.get("owner")
     owner_api_key_scope = "service-api-key"

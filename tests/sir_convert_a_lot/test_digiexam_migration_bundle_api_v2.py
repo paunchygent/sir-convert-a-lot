@@ -71,7 +71,8 @@ _KEY_ID = "gateway-identity-rs256-v1"
 _API_KEY = "secret-key"
 _FIXTURE_DIR = Path("inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types")
 _EMBEDDED_IMAGE_DXE = _FIXTURE_DIR / "sanitized-embedded-image.dxe"
-_ONEDRIVE_CORPUS_ROOT = Path("inputs/examples/digiexam-evidence/OneDrive_1_5-12-2026")
+_ONEDRIVE_CORPUS_ROOT = Path("inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe")
+_ITEM_013_DXE = _ONEDRIVE_CORPUS_ROOT / "1811577114-ekologiprov-v-49-25d-e.dxe"
 _LIVE_CORPUS_DXE_FILENAMES = (
     "1776888013-ak7-lag-och-ratt.dxe",
     "1790207116-23c-atom-och-karnfysik-eca.dxe",
@@ -687,6 +688,164 @@ def test_accept_current_state_enables_manual_unkeyed_qti_without_correct_respons
     assert "choice_002" in item_xml
     assert "correctResponse" not in item_xml
     assert "responseProcessing" not in item_xml
+
+
+def test_accept_current_state_enables_manual_unkeyed_examnet_pdf_without_key_claims(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    headers = _headers(identity, subject="teacher-1", grants=_read_grants())
+    source_payload = _missing_answer_key_payload()
+
+    baseline_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-accept-current-pdf-baseline",
+        wait_seconds=20,
+        payload=source_payload,
+    )
+    baseline_job_id = baseline_response.json()["job"]["job_id"]
+    baseline_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
+        headers=headers,
+    ).json()
+    migration_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
+        headers=headers,
+    ).json()
+
+    overlay_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-accept-current-pdf",
+        wait_seconds=20,
+        payload=source_payload,
+        digiexam_ingestion_overlay=(
+            "teacher-overlay.json",
+            _accept_current_state_overlay_bytes(
+                baseline_manifest=baseline_manifest,
+                item_summary=migration_manifest["item_summaries"][0],
+                target="examnet_pdf",
+            ),
+        ),
+    )
+    assert overlay_response.status_code == 200
+    job_id = overlay_response.json()["job"]["job_id"]
+    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
+    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+
+    assert entries["examnet_pdf"]["availability"] == "available"
+    readiness = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
+        headers=headers,
+    ).json()
+    assert any(
+        row["target"] == "examnet_pdf"
+        and row["readiness"] == "ready_after_accepted_current_state"
+        and row["reason_code"] == "accepted_current_state_pdf_manual_unkeyed_profile"
+        and row["export_enabled"] is True
+        for row in readiness["targets"]
+    )
+
+    pdf_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
+        headers=headers,
+    )
+    assert pdf_response.status_code == 200
+    with pymupdf.open(stream=pdf_response.content, filetype="pdf") as document:
+        text = "\n".join(str(page.get_text("text", sort=True)) for page in document)
+    assert "Alpha" in text
+    assert "Beta" in text
+    assert "Correct answer" not in text
+    assert "Correct answers" not in text
+
+
+def test_accept_current_state_enables_manual_unkeyed_examnet_pdf_for_item_013_multigap(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    headers = _headers(identity, subject="teacher-1", grants=_read_grants())
+    source_payload = _item_013_payload()
+
+    baseline_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-item-013-pdf-baseline",
+        wait_seconds=20,
+        payload=source_payload,
+    )
+    baseline_job_id = baseline_response.json()["job"]["job_id"]
+    baseline_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
+        headers=headers,
+    ).json()
+    migration_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
+        headers=headers,
+    ).json()
+
+    overlay_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-item-013-pdf",
+        wait_seconds=20,
+        payload=source_payload,
+        digiexam_ingestion_overlay=(
+            "teacher-overlay.json",
+            _accept_current_state_overlay_bytes(
+                baseline_manifest=baseline_manifest,
+                item_summary=migration_manifest["item_summaries"][0],
+                target="examnet_pdf",
+            ),
+        ),
+    )
+    assert overlay_response.status_code == 200
+    job_id = overlay_response.json()["job"]["job_id"]
+    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
+    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+
+    assert entries["examnet_pdf"]["availability"] == "available"
+    readiness = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
+        headers=headers,
+    ).json()
+    assert any(
+        row["target"] == "examnet_pdf"
+        and row["readiness"] == "ready_after_accepted_current_state"
+        and row["export_enabled"] is True
+        for row in readiness["targets"]
+    )
+    warnings = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/warnings_report",
+        headers=headers,
+    ).json()
+    warning_codes = {
+        warning["code"]
+        for warning in warnings["examnet_pdf_warnings"]
+        if warning["blocking"] is False
+    }
+    assert "manual_unkeyed_gap_open_cloze_rendered" in warning_codes
+    assert "examnet_pdf_multi_gap_open_cloze_degraded" in warning_codes
+
+    pdf_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
+        headers=headers,
+    )
+    assert pdf_response.status_code == 200
+    with pymupdf.open(stream=pdf_response.content, filetype="pdf") as document:
+        text = "\n".join(str(page.get_text("text", sort=True)) for page in document)
+        has_image = any(page.get_images(full=True) for page in document)
+    assert has_image
+    assert text.count("____") >= 5
+    assert "Lucka 1" in text
+    assert "Lucka 5" in text
+    assert "Correct answers" not in text
 
 
 def test_digiexam_migration_applies_source_bound_teacher_overlay(
@@ -1449,4 +1608,22 @@ def _embedded_image_payload() -> dict[str, object]:
     )
     question["type"] = 0
     question["blanks"] = []
+    return payload
+
+
+def _item_013_payload() -> dict[str, object]:
+    loaded_payload = json.loads(_ITEM_013_DXE.read_text(encoding="utf-8"))
+    if not isinstance(loaded_payload, dict):
+        raise RuntimeError("Item 013 fixture has no root object")
+    payload = {str(key): value for key, value in loaded_payload.items()}
+    exams = payload["exams"]
+    if not isinstance(exams, list):
+        raise RuntimeError("Item 013 fixture has no exams list")
+    exam = exams[0]
+    if not isinstance(exam, dict):
+        raise RuntimeError("Item 013 fixture has no exam object")
+    questions = exam["questions"]
+    if not isinstance(questions, list):
+        raise RuntimeError("Item 013 fixture has no questions list")
+    exam["questions"] = [questions[12]]
     return payload

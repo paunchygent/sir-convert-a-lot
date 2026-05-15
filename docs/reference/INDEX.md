@@ -28,6 +28,7 @@ Generated index for reference, research, review, and roadmap documents.
 | REF-dockerized-hemma-gpu-passthrough-gap-2026-02-16 | [Reference: Dockerized Hemma GPU passthrough gap (2026-02-16)](ref-dockerized-hemma-gpu-passthrough-gap-2026-02-16.md) | reference | active |
 | REF-docling-form-ordering-exam-pdf-2026-02-16 | [Bug report: Docling form extraction ordering regression on exam PDF](ref-docling-form-ordering-exam-pdf-2026-02-16.md) | reference | active |
 | REF-espeak-ng-swedish-phoneme-integration-for-chatterbox | [eSpeak NG Swedish Phoneme Integration Research for Chatterbox](ref-espeak-ng-swedish-phoneme-integration-for-chatterbox.md) | reference | active |
+| REF-exam-converter-solid-domain-coupling-audit | [Exam Converter SOLID Domain Coupling Audit](ref-exam-converter-solid-domain-coupling-audit.md) | reference | active |
 | REF-examnet-pdf-to-exam-swedish-renderer-profile | [Exam.net PDF-to-Exam Swedish Renderer Profile](ref-examnet-pdf-to-exam-swedish-renderer-profile.md) | reference | active |
 | REF-examnet-qti-import-contract-and-validation-strategy | [Exam.net QTI Import Contract And Validation Strategy](ref-examnet-qti-import-contract-and-validation-strategy.md) | reference | active |
 | REF-hemma-sidecar-tts-md-to-wav-contract-outline | [Hemma Sidecar TTS md to wav Contract Outline](ref-hemma-sidecar-tts-md-to-wav-contract-outline.md) | reference | active |

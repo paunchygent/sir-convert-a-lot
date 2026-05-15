@@ -37,6 +37,10 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_examnet_pdf_renderer impo
 
 _FIXTURE_DIR = Path("inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types")
 _EMBEDDED_IMAGE_DXE = _FIXTURE_DIR / "sanitized-embedded-image.dxe"
+_ITEM_013_DXE = (
+    Path("inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe")
+    / "1811577114-ekologiprov-v-49-25d-e.dxe"
+)
 
 
 def test_examnet_pdf_document_uses_promoted_converter_shape_without_option_labels() -> None:
@@ -74,6 +78,52 @@ def test_examnet_pdf_document_blocks_machine_marked_item_without_answer_key() ->
     assert DigiExamExamNetPdfWarningCode.MANUAL_ANSWER_KEY_REQUIRED in {
         warning.code for warning in document.warnings
     }
+
+
+def test_examnet_pdf_document_accepts_current_state_for_missing_key_choice() -> None:
+    payload = _renderable_payload()
+    payload["exams"][0]["questions"][1]["alternatives"][1]["right"] = False
+    exam = _exam_from_payload(payload, filename="missing-key-accepted.dxe")
+
+    document = build_digiexam_examnet_pdf_document(
+        exam,
+        accepted_current_state_item_ids=("item-002",),
+    )
+
+    assert document.status == DigiExamExamNetPdfStatus.SUCCESS
+    assert "Typ: Fritext" in document.html
+    assert "Ursprunglig flervalsfråga med ett svar utan betrott facit" in document.html
+    assert "<p>Alpha</p>" in document.html
+    assert "<p>Beta</p>" in document.html
+    assert "Correct answer:" not in document.html
+    assert DigiExamExamNetPdfWarningCode.MANUAL_UNKEYED_CHOICE_RENDERED in {
+        warning.code for warning in document.warnings if not warning.blocking
+    }
+
+
+def test_examnet_pdf_document_accepts_current_state_for_item_013_multigap() -> None:
+    exam = _item_013_exam()
+
+    document = build_digiexam_examnet_pdf_document(
+        exam,
+        accepted_current_state_item_ids=("item-001",),
+    )
+
+    assert document.status == DigiExamExamNetPdfStatus.SUCCESS
+    assert len(document.asset_files) == 1
+    assert document.html.count("[____]") == 5
+    assert "Typ: Fritext" in document.html
+    assert "Ursprunglig lucktext utan betrodda accepterade värden" in document.html
+    assert "Lucka 1" in document.html
+    assert "Lucka 5" in document.html
+    assert "Correct answers:" not in document.html
+    nonblocking_codes = {warning.code for warning in document.warnings if not warning.blocking}
+    assert DigiExamExamNetPdfWarningCode.MANUAL_UNKEYED_GAP_OPEN_CLOZE_RENDERED in (
+        nonblocking_codes
+    )
+    assert DigiExamExamNetPdfWarningCode.EXAMNET_PDF_MULTI_GAP_OPEN_CLOZE_DEGRADED in (
+        nonblocking_codes
+    )
 
 
 def test_examnet_pdf_document_blocks_source_labelled_options() -> None:
@@ -148,6 +198,13 @@ def _embedded_image_open_ended_exam() -> DigiExamIntermediateExam:
     question["type"] = 0
     question["blanks"] = []
     return _exam_from_payload(payload, filename="embedded-open-ended.dxe")
+
+
+def _item_013_exam() -> DigiExamIntermediateExam:
+    payload = json.loads(_ITEM_013_DXE.read_text(encoding="utf-8"))
+    exam = payload["exams"][0]
+    exam["questions"] = [exam["questions"][12]]
+    return _exam_from_payload(payload, filename="item-013-multigap.dxe")
 
 
 def _renderable_payload():

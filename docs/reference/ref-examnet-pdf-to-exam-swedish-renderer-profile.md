@@ -249,12 +249,42 @@ target profile must report those shapes as not ready for keyed Exam.net PDF
 export until a later fixture proves Exam.net's browser-based builder and
 PDF-to-exam converter accept them.
 
-## Not Yet Promoted: Lucktext / Gap Fill
+## Manual/unkeyed Accepted-current-state PDF
 
-Gap-fill PDF-to-exam support is not promoted yet. Current evidence suggests
-external answer-key lists can be misread as matching or short-answer content.
+Gap-fill PDF-to-exam auto-evaluation support is not promoted yet. Current
+evidence suggests external answer-key lists can be misread as matching or
+short-answer content.
 
-Next experiment profile:
+Accepted-current-state does not change source evidence by itself. Task 303
+defines a manual/unkeyed QTI profile only; Task 308 owns the Exam.net PDF
+counterpart. Under that profile, `Godkänn` may enable PDF only after Sir
+Convert creates PDF bytes that preserve visible item content and avoids all
+answer-key, accepted-value, and automatic-evaluation claims.
+
+For missing-key single-choice and multiple-response items, the required PDF
+behavior is content-preserving manual/unkeyed rendering: keep the prompt,
+alternatives, media, order, points, and manual-follow-up state; omit `Correct answer`, `Correct answers`, accepted-value lists, and any automatic marking
+claim. If native unkeyed Exam.net choice import is not fixture-proven, the
+renderer must use a governed degraded manual/free-text representation that
+still preserves the visible choices for teacher review or manual recreation.
+
+The current live ecology fixture exposes the unresolved edge case clearly:
+`item-013` is a DigiExam `Lucktext`/gap item with five blanks, an embedded
+image, and no accepted values in blank validations. The PDF renderer currently
+blocks multi-gap DigiExam items because there is no governed Exam.net
+PDF-converter target shape. If missing answer-key and multi-gap target-shape
+warnings are both present, target readiness must not report only the coarse
+accepted-current-state missing-key path; it must preserve the item-specific
+multi-gap limitation so consumers can show the correct teacher action.
+
+Task 308 owns the follow-up: define the Exam.net PDF manual/unkeyed profile,
+promote a native multi-gap `Lucktext` rendering shape only if fixture proof
+validates the importer behavior, and otherwise render through a governed
+degraded manual/free-text shape. In both cases, warning/readiness precedence
+must keep item-specific native target limitations visible instead of masking
+them behind the first renderer warning.
+
+Preferred native experiment profile:
 
 ```text
 Fråga 8
@@ -264,7 +294,7 @@ Typ: Lucktext
 Cellens kortsiktiga energivaluta är [ATP].
 ```
 
-or:
+Alternative native label experiment:
 
 ```text
 Fråga 9
@@ -276,6 +306,21 @@ Vid cellandning reagerar [glukos] med [syre] och bildar [koldioxid] och [vatten]
 
 No separate `Rätt svar:`, `Rätta svar:`, or `Facit:` line should be used in
 the next gap-fill experiment.
+
+Required degraded fallback profile when native import is unproven:
+
+```text
+Fråga 10
+Poängvärde: 5
+Typ: Fritext
+
+Manuell bedömning. Ursprunglig lucktext med fem luckor:
+Cellens kortsiktiga energivaluta är [____]. ...
+```
+
+The degraded fallback is not a claim that Exam.net will create native gap
+fields. It is a governed content-preserving PDF export path for teachers who
+explicitly request accepted-current-state output and accept manual follow-up.
 
 ## Authoring Bundle Direction
 

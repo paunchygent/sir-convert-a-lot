@@ -1201,19 +1201,40 @@ pair counts.
 Gap/open-cloze readiness rows consume the Task 305
 `ExamAuthoringGapOpenClozeInteraction` semantics. Missing accepted values on
 required gaps mean the item is structurally valid but not automatically
-evaluable. Unsupported native target export, such as current multi-gap
-Exam.net PDF export, is reported as `unsupported_target_shape` with teacher
+evaluable. Unsupported native target export, such as unproven multi-gap
+Exam.net PDF import, is reported as a native-target limitation with teacher
 action
-`choose_degraded_manual_free_text_or_omit_or_manual_recreation`. This preserves
-the teacher's choices: include a degraded/manual/free-text representation where
-available, omit the item, or use the item as a source for manual recreation in
-the target authoring UI.
+`choose_degraded_manual_free_text_or_omit_or_manual_recreation`. When the user
+explicitly accepts current state for PDF export and Sir Convert can preserve
+visible content, the required fallback is a governed degraded/manual PDF
+representation rather than target unavailability. This preserves the teacher's
+choices: include a degraded/manual/free-text representation, omit the item, or
+use the item as a source for manual recreation in the target authoring UI.
 
 `Godkänn` / accept-current-state is represented only as a source-bound
 `review_decision` in `digiexam_ingestion_overlay_v2`. It can enable export only
 after Sir Convert validates the overlay, recomputes effective exam and target
 readiness, creates the target bytes, and validates that target. It never creates
 an answer key and never changes source IR provenance.
+
+Task 303 defines this accepted-current-state path for QTI only. Exam.net PDF
+requires a separate governed manual/unkeyed target profile before accepted
+current state can enable PDF for missing-key machine-marked items. Task 308
+owns that profile and must support user-requested PDF rendering for missing-key
+single-choice, missing-key multiple-response, and item-013-style multi-gap
+gap/open-cloze items by preserving visible content without answer-key or
+automatic-evaluation claims. Until that profile is implemented, PDF may remain
+unavailable even when QTI is `ready_after_accepted_current_state`.
+
+When an item has multiple material blockers, such as missing accepted values
+and a multi-gap `Lucktext` shape without a promoted native Exam.net PDF target,
+Sir Convert must not let artifact-level first-warning selection hide the
+item-specific native target limitation. The artifact entry may expose one
+`unavailable_code`, but `target_readiness_report_v1` must preserve actionable
+item reasons and degraded/manual mode warnings so Skriptoteket does not display
+a generic accepted-current-state blocker for item-013-style cases. A native
+multi-gap limitation is not fatal when the degraded PDF profile preserves the
+prompt, blanks, embedded image, ordering, and manual-follow-up state.
 
 ## Skriptoteket Adapter Contract
 

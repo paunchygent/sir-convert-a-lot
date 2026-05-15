@@ -55,6 +55,12 @@ Initial smoke on 2026-05-12 found:
 This task decides what can be retained as metadata-only evidence, what must
 stay local-private, and what sanitized fixtures should be derived.
 
+2026-05-15 update: Task 309 supersedes this retention decision for this one
+pure DigiExam corpus only. The files were promoted to
+`inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/` for
+Granite/vLLM answer-key live validation, while Task 281 remains the historical
+metadata-only parser-regression decision.
+
 ## PR Scope
 
 - Inspect the local validation package without printing or committing raw exam

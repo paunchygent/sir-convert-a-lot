@@ -35,6 +35,7 @@ services:
       - SIR_CONVERT_A_LOT_DOCLING_LAYOUT_FALLBACK_MODELS=${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_FALLBACK_MODELS:-docling_layout_heron}
       - SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH:-1}
       - SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE:-1}
+      - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
     command:
       - uvicorn
       - scripts.sir_convert_a_lot.service:app
@@ -53,6 +54,7 @@ services:
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
+      - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
     networks:
       - hule-network
     healthcheck:

@@ -21,6 +21,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_exam_authoring_adapter import (
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
+    DigiExamIrItem,
     DigiExamIrManualFollowUpReason,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
@@ -149,13 +150,12 @@ def _rows_for_target(
         accepted_missing_item_ids = accepted_review_item_ids.intersection(
             missing_answer_key_item_ids
         )
-        if target == DigiExamMigrationArtifactKey.QTI_PACKAGE.value and accepted_missing_item_ids:
+        if accepted_missing_item_ids:
             item_by_id = {item.item_id: item for item in exam.items}
             return tuple(
                 _accepted_current_state_row(
                     target=target,
-                    item_id=item_id,
-                    sequence=item_by_id[item_id].sequence,
+                    item=item_by_id[item_id],
                     source_item_fingerprint=fingerprints[item_id],
                 )
                 for item_id in sorted(accepted_missing_item_ids)
@@ -260,8 +260,7 @@ def _unsupported_gap_open_cloze_rows(
 def _accepted_current_state_row(
     *,
     target: str,
-    item_id: str,
-    sequence: int,
+    item: DigiExamIrItem,
     source_item_fingerprint: str,
 ) -> DigiExamTargetReadinessRow:
     return DigiExamTargetReadinessRow(
@@ -269,14 +268,20 @@ def _accepted_current_state_row(
         readiness=DigiExamTargetReadiness.READY_AFTER_ACCEPTED_CURRENT_STATE,
         export_enabled=True,
         artifact_key=target,
-        reason_code="accepted_current_state_manual_unkeyed_profile",
+        reason_code=_accepted_current_state_reason_code(target),
         teacher_action="review_after_import",
         retryable=False,
         message_key="exam_converter.target.ready_after_accepted_current_state",
-        item_id=item_id,
-        sequence=sequence,
+        item_id=item.item_id,
+        sequence=item.sequence,
         source_item_fingerprint=source_item_fingerprint,
     )
+
+
+def _accepted_current_state_reason_code(target: str) -> str:
+    if target == DigiExamMigrationArtifactKey.EXAMNET_PDF.value:
+        return "accepted_current_state_pdf_manual_unkeyed_profile"
+    return "accepted_current_state_manual_unkeyed_profile"
 
 
 def _missing_key_row(

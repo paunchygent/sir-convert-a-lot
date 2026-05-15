@@ -8,10 +8,7 @@ last_updated: '2026-05-15'
 
 ## Purpose
 
-Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
-and next actions. Move durable session history to
-`.codex/long-term-memory/entries/` and governed doctrine to docs, rules,
-runbooks, or skills.
+Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence, and next actions. Move durable session history to `.codex/long-term-memory/entries/` and governed doctrine to docs, rules, runbooks, or skills.
 
 ## Current State
 
@@ -53,25 +50,17 @@ runbooks, or skills.
 
 - Generated docs doorway: `docs/index.md`.
 - Active planning and session handoff: `.codex/handoff.md`.
-- Thin agent-router task:
-  `docs/backlog/tasks/task-253-cut-over-sir-convert-a-lot-agents-to-thin-skill-router.md`.
+- Thin agent-router task: `docs/backlog/tasks/task-253-cut-over-sir-convert-a-lot-agents-to-thin-skill-router.md`.
 - Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active public-edge recovery task: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md`.
 - Active dependency-image follow-up task: `docs/backlog/tasks/task-255-extract-sir-convert-service-dependency-images-from-overloaded-pyproject-cache-keys.md`.
-- Completed Hemma production deploy-command hardening task:
-  `docs/backlog/tasks/task-283-harden-hemma-production-deploy-command-and-cache-hot-recreate.md`.
-- Active Gateway cutover planning epic:
-  `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
-- Gateway cutover inventory reference:
-  `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md`.
-- Sir Convert identity authorization profile:
-  `docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md`.
-- Completed Gateway cutover profile task:
-  `docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md`.
-- Auth-aware public-edge evidence follow-up:
-  `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
-- Active exam artifact conversion/authoring umbrella epic:
-  `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
+- Completed Hemma production deploy-command hardening task: `docs/backlog/tasks/task-283-harden-hemma-production-deploy-command-and-cache-hot-recreate.md`.
+- Active Gateway cutover planning epic: `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
+- Gateway cutover inventory reference: `docs/reference/ref-sir-convert-gateway-cutover-caller-inventory.md`.
+- Sir Convert identity authorization profile: `docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md`.
+- Completed Gateway cutover profile task: `docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md`.
+- Auth-aware public-edge evidence follow-up: `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
+- Active exam artifact conversion/authoring umbrella epic: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Completed DigiExam parser/IR docs: Story 38/Task 267, Story 40/Task 274,
   Story 41/Task 275.
 - Completed DigiExam embedded asset story/task: Story 42 and Task 276.
@@ -100,10 +89,18 @@ runbooks, or skills.
   advisory candidate-lineage reports for choice/gap-fill items. Task 306
   completed reviewed overlay application into effective IR, with parser/source
   provenance untouched, bounded lineage in `digiexam_effective_exam_v2`, and
-  apply mode making no structured-provider calls.
-  Granite FP8 on Hemma ROCm vLLM remains the interim local provider from Task
-  301; keyed matching QTI bridging waits for real matching-capable source
-  fixtures through `ExamAuthoringIR v1`.
+  apply mode making no structured-provider calls. Task 312 completed the
+  Granite/vLLM provider-protocol planner correction; Story 50/Task 313 now
+  track the broader SOLID domain-coupling audit separately from Task 312. Task
+  309 remains in progress for live validation, with Tasks 310/311 scaffolded
+  follow-ups. Keyed matching QTI bridging waits for real matching-capable
+  fixtures.
+- Review 17 retained Task 306 as `changes_requested` because Skriptoteket's
+  checked-in Sir Convert generated OpenAPI TypeScript surface is stale against
+  the Task 306 snapshot. Sir-local reviewed-overlay/effective-IR semantics and
+  no-provider apply/default-route checks passed review; the next implementation
+  slice should be a narrow Skriptoteket consumer-sync pass, not new Sir Convert
+  feature work.
 - Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
   a thin router, the former omnibus Hemma runbook is a compact doorway, and
   focused service/GPU/conversion/TTS runbooks carry current operator guidance.
@@ -135,8 +132,12 @@ runbooks, or skills.
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. For machine-marked answer-key completion, request the post-implementation
-   review for Task 306 before opening a new runtime slice.
+1. Task 308 is implemented: the Exam.net PDF manual/unkeyed
+   accepted-current-state profile now renders missing-key choice items and
+   item-013-style multi-gap items when explicitly requested, using degraded
+   manual/free-text output while native PDF-to-exam import is unproven. The
+   next natural step in this lane is post-implementation review or another
+   remaining Story 48 checklist item, not a second PDF-profile implementation.
 1. Treat Task 307 as completed but still binding before implementing any new
    Exam.net PDF, teacher-authored DOCX, or teacher-authored Markdown source
    parser: new parsers need source-native parse models plus adapters into
@@ -158,22 +159,10 @@ runbooks, or skills.
 - 2026-05-13 through 2026-05-15 validation evidence for pre-release, Task 292,
   Hemma runbook cleanup, and Tasks 294/295/302 lives in linked governed
   tasks/reviews.
-- 2026-05-15 Task 305 gates passed. Task 296 tranche 1 gates passed:
-  focused structured-provider tests (`15 passed`), `typecheck-all`,
-  docs/skills/handoff validation, `coverage-gate` (`1216 passed, 5 skipped`,
-  coverage `95.43%`), and `git diff --check`.
-- 2026-05-15 Task 296 tranche 2 focused tests passed:
-  `test_structured_llm_provider_harness.py` plus
-  `test_structured_llm_provider_execution.py` (`26 passed`), followed by
-  `format-all`, `lint-fix`, `typecheck-all` with no issues in `668` source
-  files, docs/skills/handoff validation after `docs-sync`, `coverage-gate`
-  (`1232 passed, 5 skipped`, coverage `95.43%`), and `git diff --check`.
-- 2026-05-15 Task 296 tranche 3 focused tests passed:
-  structured-provider harness/execution/composition plus DigiExam default
-  artifact-route no-call proof (`32 passed`), followed by `format-all` and
-  `lint-fix`, `typecheck-all` with no issues in `671` source files,
-  docs/skills/handoff validation after `docs-sync`, `coverage-gate`
-  (`1238 passed, 5 skipped`, coverage `95.43%`), and `git diff --check`.
+- 2026-05-15 Task 296 tranches 1-3 gates passed; detailed evidence lives in
+  the governed task/review docs. The final tranche included structured-provider
+  harness/execution/composition, default artifact-route no-call proof, docs
+  validation after `docs-sync`, `coverage-gate`, and `git diff --check`.
 - 2026-05-15 Review 16 accepted after third remediation: focused ExamAuthoringIR
   gap/matching tests (`23 passed`), live bypass probes fail closed,
   `format-all`, `lint-fix`, `typecheck-all`, docs/skills/handoff validation
@@ -186,6 +175,14 @@ runbooks, or skills.
 - 2026-05-15 Task 306 gates passed: focused reviewed-completion apply/no-call
   proof (`26 passed`), `typecheck-all`, docs/skills/handoff validation, full
   `coverage-gate` (`1257 passed, 5 skipped`, coverage `95.48%`).
+- 2026-05-15 Task 312 and Task 309 surface gates passed:
+  provider/structured/live-run focused tests (`48 passed`) plus
+  `typecheck-all`.
+- 2026-05-15 Review 17 flagged one downstream consumer-sync blocker:
+  Skriptoteket `frontend/apps/skriptoteket/src/api/sirConvertOpenapi.d.ts` is
+  stale against Sir Convert's Task 306 OpenAPI snapshot. Review 17 separately
+  verified Sir-local overlay/effective-IR semantics and no structured-provider
+  calls for apply/default routes.
 
 ## Stop Conditions
 
