@@ -14,6 +14,9 @@ related:
   - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
   - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
+  - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
+  - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
+  - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
@@ -71,6 +74,10 @@ keys, and review decisions without mutating the parser-owned source IR.
 - Publish and snapshot the generated Sir Convert v2 OpenAPI contract so
   Skriptoteket can validate overlay/effective-IR/readiness integration before
   live Docker/service tests.
+- Define matching pair and gapped/open-cloze accepted-value answer-key shapes
+  as first-class intermediary/effective IR contracts before reviewed
+  completion or target export may treat those shapes as automatically
+  evaluated.
 
 ## Acceptance Criteria
 
@@ -97,7 +104,7 @@ keys, and review decisions without mutating the parser-owned source IR.
 - [x] Item-content repairs through `effective_item_patch` are runtime-applied
   only after Task 302 validates source-bound patch shapes and proves PDF/QTI
   renderers consume effective content.
-- [ ] Missing machine-marked keys keep QTI disabled unless Task 303 or a later
+- [x] Missing machine-marked keys keep QTI disabled unless Task 303 or a later
   governed QTI profile validates an unkeyed/manual representation for the
   selected QTI version.
 - [x] Task 304 publishes generated v2 OpenAPI with typed DigiExam migration

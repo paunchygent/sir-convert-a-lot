@@ -16,6 +16,7 @@ from xml.etree import ElementTree
 
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiChoice,
+    ExamNetQtiEvaluationMode,
     ExamNetQtiImageResource,
     ExamNetQtiInteractionType,
     ExamNetQtiItem,
@@ -55,7 +56,7 @@ def serialize_qti_assessment_item(
     _append_prompt(item_body, item.prompt_lines)
     _append_images(item_body, item.image_resources, image_paths)
     _append_interaction(item_body, item)
-    if item.interaction_type in {
+    if item.evaluation_mode == ExamNetQtiEvaluationMode.AUTOMATIC and item.interaction_type in {
         ExamNetQtiInteractionType.SINGLE_CHOICE,
         ExamNetQtiInteractionType.MULTIPLE_RESPONSE,
         ExamNetQtiInteractionType.MATCHING,
@@ -115,10 +116,11 @@ def _append_response_declaration(
             "baseType": base_type,
         },
     )
-    correct_response = ElementTree.SubElement(declaration, _qti("correctResponse"))
-    for value in values:
-        value_element = ElementTree.SubElement(correct_response, _qti("value"))
-        value_element.text = value
+    if values:
+        correct_response = ElementTree.SubElement(declaration, _qti("correctResponse"))
+        for value in values:
+            value_element = ElementTree.SubElement(correct_response, _qti("value"))
+            value_element.text = value
 
 
 def _append_score_outcome(root: ElementTree.Element, item: ExamNetQtiItem) -> None:
@@ -196,7 +198,7 @@ def _append_interaction(parent: ElementTree.Element, item: ExamNetQtiItem) -> No
 def _append_choice_interaction(parent: ElementTree.Element, item: ExamNetQtiItem) -> None:
     max_choices = "1"
     if item.interaction_type == ExamNetQtiInteractionType.MULTIPLE_RESPONSE:
-        max_choices = str(len(item.correct_choice_identifiers))
+        max_choices = str(len(item.correct_choice_identifiers) or len(item.choices))
     interaction = ElementTree.SubElement(
         parent,
         _qti("choiceInteraction"),

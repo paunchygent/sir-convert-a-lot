@@ -27,11 +27,13 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiChoice,
+    ExamNetQtiEvaluationMode,
     ExamNetQtiImageResource,
     ExamNetQtiInteractionType,
     ExamNetQtiItem,
     ExamNetQtiManualFollowUp,
     ExamNetQtiManualFollowUpReason,
+    ExamNetQtiManualRepresentation,
 )
 
 
@@ -45,13 +47,16 @@ class DigiExamExamNetQtiAdapterResult:
 
 def build_examnet_qti_items_from_digiexam_ir(
     exam: DigiExamIntermediateExam,
+    *,
+    accepted_current_state_item_ids: tuple[str, ...] = (),
 ) -> DigiExamExamNetQtiAdapterResult:
     """Convert supported DigiExam IR items to reusable Exam.net QTI items."""
 
     qti_items: list[ExamNetQtiItem] = []
     follow_ups: list[ExamNetQtiManualFollowUp] = []
+    accepted_item_ids = frozenset(accepted_current_state_item_ids)
     for item in exam.items:
-        qti_item = _qti_item(item)
+        qti_item = _qti_item(item, accepted_current_state=item.item_id in accepted_item_ids)
         if qti_item is None:
             follow_ups.append(_not_supported_follow_up(item))
         else:
@@ -61,19 +66,33 @@ def build_examnet_qti_items_from_digiexam_ir(
     )
 
 
-def _qti_item(item: DigiExamIrItem) -> ExamNetQtiItem | None:
+def _qti_item(item: DigiExamIrItem, *, accepted_current_state: bool) -> ExamNetQtiItem | None:
     if item.item_type == DigiExamItemType.OPEN_ENDED:
         return _base_qti_item(item, ExamNetQtiInteractionType.FREE_TEXT)
     if item.item_type in {DigiExamItemType.SINGLE_CHOICE, DigiExamItemType.MULTIPLE_CHOICE}:
-        return _choice_item(item, ExamNetQtiInteractionType.SINGLE_CHOICE)
+        return _choice_item(
+            item,
+            ExamNetQtiInteractionType.SINGLE_CHOICE,
+            accepted_current_state=accepted_current_state,
+        )
     if item.item_type == DigiExamItemType.MULTIPLE_RESPONSE:
-        return _choice_item(item, ExamNetQtiInteractionType.MULTIPLE_RESPONSE)
+        return _choice_item(
+            item,
+            ExamNetQtiInteractionType.MULTIPLE_RESPONSE,
+            accepted_current_state=accepted_current_state,
+        )
+    if item.item_type == DigiExamItemType.GAP_FILL and accepted_current_state:
+        return _manual_free_text_item(item, _gap_fill_preservation_lines(item))
+    if item.item_type == DigiExamItemType.MATCHING and accepted_current_state:
+        return _manual_free_text_item(item, _matching_preservation_lines(item))
     return None
 
 
 def _choice_item(
     item: DigiExamIrItem,
     interaction_type: ExamNetQtiInteractionType,
+    *,
+    accepted_current_state: bool,
 ) -> ExamNetQtiItem:
     base_item = _base_qti_item(item, interaction_type)
     correct_ids: tuple[str, ...] = ()
@@ -81,6 +100,9 @@ def _choice_item(
         correct_ids = tuple(
             _choice_identifier(value) for value in item.answer_key.correct_alternative_ids
         )
+    evaluation_mode = ExamNetQtiEvaluationMode.AUTOMATIC
+    if not correct_ids and accepted_current_state:
+        evaluation_mode = ExamNetQtiEvaluationMode.MANUAL_UNKEYED
     return ExamNetQtiItem(
         item_id=base_item.item_id,
         sequence=base_item.sequence,
@@ -88,6 +110,8 @@ def _choice_item(
         interaction_type=interaction_type,
         prompt_lines=base_item.prompt_lines,
         max_score=base_item.max_score,
+        evaluation_mode=evaluation_mode,
+        source_item_type=item.item_type.value,
         choices=tuple(
             ExamNetQtiChoice(
                 identifier=_choice_identifier(alternative.id),
@@ -112,11 +136,62 @@ def _base_qti_item(
         interaction_type=interaction_type,
         prompt_lines=_prompt_lines(item),
         max_score=item.max_score,
+        source_item_type=item.item_type.value,
         image_resources=tuple(
             _image_resource(item, index, asset)
             for index, asset in enumerate(item.embedded_assets, start=1)
         ),
     )
+
+
+def _manual_free_text_item(
+    item: DigiExamIrItem,
+    prompt_lines: tuple[str, ...],
+) -> ExamNetQtiItem:
+    base_item = _base_qti_item(item, ExamNetQtiInteractionType.FREE_TEXT)
+    return ExamNetQtiItem(
+        item_id=base_item.item_id,
+        sequence=base_item.sequence,
+        title=base_item.title,
+        interaction_type=ExamNetQtiInteractionType.FREE_TEXT,
+        prompt_lines=prompt_lines,
+        max_score=base_item.max_score,
+        evaluation_mode=ExamNetQtiEvaluationMode.MANUAL_UNKEYED,
+        manual_representation=ExamNetQtiManualRepresentation.FREE_TEXT_PRESERVATION,
+        source_item_type=item.item_type.value,
+        image_resources=base_item.image_resources,
+    )
+
+
+def _gap_fill_preservation_lines(item: DigiExamIrItem) -> tuple[str, ...]:
+    lines = [*_prompt_lines(item)]
+    for index, gap in enumerate(item.gaps, start=1):
+        label = gap.guid or f"gap_{index:03d}"
+        lines.append(f"Lucka {index}: {label}")
+    if not item.gaps:
+        lines.append("Besvara lucktextfrågan manuellt efter import.")
+    return tuple(lines)
+
+
+def _matching_preservation_lines(item: DigiExamIrItem) -> tuple[str, ...]:
+    lines = [*_prompt_lines(item)]
+    if item.matching is None:
+        lines.append("Para ihop posterna manuellt efter import.")
+        return tuple(lines)
+    if item.matching.left_prompts:
+        lines.append("Vänster kolumn:")
+        lines.extend(
+            f"{index}. {text}" for index, text in enumerate(item.matching.left_prompts, start=1)
+        )
+    if item.matching.right_options:
+        lines.append("Höger kolumn:")
+        lines.extend(
+            f"{chr(64 + index)}. {text}"
+            for index, text in enumerate(item.matching.right_options, start=1)
+        )
+    if item.matching.blank_row_evidence:
+        lines.append(f"Ursprunglig svarsyta: {item.matching.blank_row_evidence}")
+    return tuple(lines)
 
 
 def _image_resource(

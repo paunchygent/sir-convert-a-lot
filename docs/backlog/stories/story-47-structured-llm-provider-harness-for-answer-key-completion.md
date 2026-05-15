@@ -12,7 +12,9 @@ related:
   - docs/backlog/tasks/task-296-extract-structured-chat-provider-harness-for-local-first-completion.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
   - docs/backlog/tasks/task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items.md
-  - docs/backlog/tasks/task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate.md
+  - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
+  - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
+  - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
 labels:
@@ -40,7 +42,10 @@ budgeting, Dishka wiring, and remote fallback policy where appropriate.
   llama.cpp-compatible chat completions.
 - Keep provider capabilities explicit: JSON Schema, GBNF, remote/local, context
   window, output-token budget, parser profile, and health.
-- Define item-type-specific output schemas for choice, gap-fill, and matching.
+- Define item-type-specific output schemas for choice, gap-fill, and matching,
+  consuming Task 298 and Task 305 contract shapes for matching pairs and
+  gapped/open-cloze accepted values rather than inventing provider-only
+  structures.
 - Reuse Skriptoteket's budgeting idea: context window minus max output tokens
   minus safety margin, with conservative fallback for unknown/local tokenizers.
 - Implement route policy where remote provider fallback is forbidden by default

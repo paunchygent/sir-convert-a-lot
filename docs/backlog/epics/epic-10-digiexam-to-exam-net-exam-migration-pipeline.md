@@ -1,11 +1,11 @@
 ---
 id: epic-10-digiexam-to-exam-net-exam-migration-pipeline
-title: DigiExam to Exam.net exam migration pipeline
+title: Exam artifact conversion and authoring to Exam.net-compatible targets
 type: epic
 status: proposed
 priority: high
 created: '2026-04-24'
-last_updated: '2026-05-13'
+last_updated: '2026-05-15'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-03-unified-conversion-service.md
@@ -39,6 +39,8 @@ labels:
   - epic
   - conversion-platform
   - exam-migration
+  - exam-authoring
+  - artifact-conversion
   - pdf
   - parser
   - qti
@@ -57,6 +59,18 @@ Both lanes preserve item boundaries, item types, point values, answer shapes,
 and explicit manual follow-up so teachers can validate imported exams with
 minimal re-authoring.
 
+## Umbrella Boundary
+
+This epic is the umbrella for exam artifact conversion and authoring to
+Exam.net-compatible PDF and QTI targets. It is not a product boundary named
+after DigiExam. DigiExam is one source adapter, currently the legacy migration
+adapter with `.dxe` as its canonical structure source. Exam.net-compatible
+PDFs, Word exports, answer-key artifacts, and later supported file formats
+belong to sibling source adapters that feed a Sir Convert-owned intermediary
+exam shape before target renderers emit Exam.net PDF-to-exam converter files,
+schema-valid QTI packages, editable DOCX, reports, and manual-follow-up
+artifacts.
+
 ## In Scope
 
 - Characterize DigiExam artifact and item-type evidence in
@@ -65,16 +79,18 @@ minimal re-authoring.
   `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
 - Research Exam.net ingestion behavior and native import details before each
   renderer lane implements target-specific output.
-- Build a Sir Convert parser stage for DigiExam `.dxe` exports that emits a
-  stable structured item stream with explicit parse-confidence and
-  unknown-shape reporting.
+- Build a Sir Convert parser stage for the DigiExam source adapter that emits
+  a stable structured item stream with explicit parse-confidence and
+  unknown-shape reporting from `.dxe` exports.
 - Accept graded DigiExam student-result PDFs as optional companion evidence for
   correct machine-marked answers only.
 - Use blank/student-view DigiExam PDFs as optional visual parity evidence, not
   as the preferred structure source when `.dxe` is available.
-- Define an intermediate exam representation owned by Sir Convert, with fields
-  for item type, prompt body, options/matching pairs, point values, source
-  spans, and answer-key provenance when available.
+- Define an intermediary exam shape owned by Sir Convert, with fields for item
+  type, prompt body, options/matching pairs, point values, source spans, and
+  answer-key provenance when available. Implemented schema names may remain
+  source-adapter-specific until a later governed generalization task promotes a
+  shared schema.
 - Preserve embedded `.dxe` question assets as renderer-neutral IR assets before
   any renderer decides how to place them in PDF, QTI, or Exam.net artifacts.
 - Render Exam.net-targeted artifacts from that representation in separate

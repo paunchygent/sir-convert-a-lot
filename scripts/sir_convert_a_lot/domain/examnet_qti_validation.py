@@ -57,6 +57,7 @@ def build_examnet_qti_validation_report(
         schema_version=EXAMNET_QTI_VALIDATION_REPORT_SCHEMA_VERSION,
         generator_version=EXAMNET_QTI_GENERATOR_VERSION,
         qti_version=EXAMNET_QTI_VERSION,
+        profile_id=plan.profile_id,
         package_filename=package_filename,
         package_sha256=package_sha256,
         package_status=_report_status(plan, local_result),

@@ -28,6 +28,9 @@ Implementation slice with acceptance-driven scope.
 Define and implement the first renderer-neutral DigiExam intermediate exam
 representation and manifest schema. This story sits after the completed PDF and
 `.dxe` parser lanes and before any Exam.net renderer/import decision.
+DigiExam is the source adapter for this story; the broader product boundary is
+exam artifact conversion/authoring through a Sir Convert-owned intermediary
+shape to Exam.net-compatible PDF and QTI targets.
 
 ## Scope
 

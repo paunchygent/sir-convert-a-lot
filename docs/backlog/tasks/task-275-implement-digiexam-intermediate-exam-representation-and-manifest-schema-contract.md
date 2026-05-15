@@ -29,6 +29,9 @@ Implement the first DigiExam intermediate exam representation and manifest
 schema contract. The slice translates completed parser outputs into a
 renderer-neutral model that later Exam.net renderer, parity report, and bulk
 workflow stories can consume without re-reading parser-specific fields.
+DigiExam is the source adapter for this task, not the product boundary; the
+model establishes the source-adapter to intermediary-shape to target-renderer
+pattern later routes must follow.
 
 ## PR Scope
 

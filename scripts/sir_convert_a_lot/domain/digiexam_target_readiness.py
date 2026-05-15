@@ -133,6 +133,21 @@ def _rows_for_target(
 ) -> tuple[DigiExamTargetReadinessRow, ...]:
     target = entry.artifact_key.value
     if entry.availability == DigiExamMigrationArtifactAvailability.AVAILABLE:
+        accepted_missing_item_ids = accepted_review_item_ids.intersection(
+            missing_answer_key_item_ids
+        )
+        if target == DigiExamMigrationArtifactKey.QTI_PACKAGE.value and accepted_missing_item_ids:
+            item_by_id = {item.item_id: item for item in exam.items}
+            return tuple(
+                _accepted_current_state_row(
+                    target=target,
+                    item_id=item_id,
+                    sequence=item_by_id[item_id].sequence,
+                    source_item_fingerprint=fingerprints[item_id],
+                )
+                for item_id in sorted(accepted_missing_item_ids)
+                if item_id in item_by_id
+            )
         return (
             DigiExamTargetReadinessRow(
                 target=target,
@@ -182,6 +197,28 @@ def _rows_for_target(
             "manual_target_creation_required",
             False,
         ),
+    )
+
+
+def _accepted_current_state_row(
+    *,
+    target: str,
+    item_id: str,
+    sequence: int,
+    source_item_fingerprint: str,
+) -> DigiExamTargetReadinessRow:
+    return DigiExamTargetReadinessRow(
+        target=target,
+        readiness=DigiExamTargetReadiness.READY_AFTER_ACCEPTED_CURRENT_STATE,
+        export_enabled=True,
+        artifact_key=target,
+        reason_code="accepted_current_state_manual_unkeyed_profile",
+        teacher_action="review_after_import",
+        retryable=False,
+        message_key="exam_converter.target.ready_after_accepted_current_state",
+        item_id=item_id,
+        sequence=sequence,
+        source_item_fingerprint=source_item_fingerprint,
     )
 
 

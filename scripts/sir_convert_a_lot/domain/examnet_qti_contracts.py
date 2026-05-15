@@ -27,6 +27,10 @@ EXAMNET_QTI_VALIDATION_REPORT_SCHEMA_VERSION: Literal["examnet_qti_validation_re
 EXAMNET_QTI_GENERATOR_VERSION: Literal["task_280_examnet_qti_2_1_v1"] = (
     "task_280_examnet_qti_2_1_v1"
 )
+EXAMNET_QTI_AUTOMATIC_PROFILE_ID: Literal["examnet_qti_2_1_v1"] = "examnet_qti_2_1_v1"
+EXAMNET_QTI_MANUAL_UNKEYED_PROFILE_ID: Literal["unkeyed_manual_qti_2_1_v1"] = (
+    "unkeyed_manual_qti_2_1_v1"
+)
 EXAMNET_QTI_PACKAGE_CONTENT_TYPE: Literal["application/zip"] = "application/zip"
 EXAMNET_QTI_REPORT_CONTENT_TYPE: Literal["application/json"] = "application/json"
 
@@ -38,6 +42,20 @@ class ExamNetQtiInteractionType(StrEnum):
     MULTIPLE_RESPONSE = "multiple_response"
     FREE_TEXT = "free_text"
     MATCHING = "matching"
+
+
+class ExamNetQtiEvaluationMode(StrEnum):
+    """Whether Sir Convert asserts automatic evaluation for the QTI item."""
+
+    AUTOMATIC = "automatic_evaluation"
+    MANUAL_UNKEYED = "manual_unkeyed"
+
+
+class ExamNetQtiManualRepresentation(StrEnum):
+    """Manual/unkeyed preservation shape selected for a QTI item."""
+
+    NATIVE_INTERACTION = "native_interaction"
+    FREE_TEXT_PRESERVATION = "free_text_preservation"
 
 
 class ExamNetQtiPackageStatus(StrEnum):
@@ -78,6 +96,7 @@ class ExamNetQtiManualFollowUpReason(StrEnum):
     """Manual follow-up reasons owned by the QTI target profile."""
 
     MANUAL_ANSWER_KEY_REQUIRED = "manual_answer_key_required"
+    AUTOMATIC_EVALUATION_UNSUPPORTED = "automatic_evaluation_unsupported"
     NOT_SUPPORTED_BY_EXAMNET = "not_supported_by_examnet"
     UNSUPPORTED_EXAMNET_QTI_RESOURCE = "unsupported_examnet_qti_resource"
     QTI_VALIDATION_FAILED = "qti_validation_failed"
@@ -132,6 +151,11 @@ class ExamNetQtiItem:
     interaction_type: ExamNetQtiInteractionType
     prompt_lines: tuple[str, ...]
     max_score: int | None
+    evaluation_mode: ExamNetQtiEvaluationMode = ExamNetQtiEvaluationMode.AUTOMATIC
+    manual_representation: ExamNetQtiManualRepresentation = (
+        ExamNetQtiManualRepresentation.NATIVE_INTERACTION
+    )
+    source_item_type: str | None = None
     choices: tuple[ExamNetQtiChoice, ...] = ()
     correct_choice_identifiers: tuple[str, ...] = ()
     match_pairs: tuple[ExamNetQtiMatchPair, ...] = ()
@@ -168,6 +192,7 @@ class ExamNetQtiPackagePlan:
     schema_version: Literal["examnet_qti_package_plan_v1"]
     generator_version: Literal["task_280_examnet_qti_2_1_v1"]
     qti_version: Literal["2.1"]
+    profile_id: Literal["examnet_qti_2_1_v1", "unkeyed_manual_qti_2_1_v1"]
     package_name: str
     status: ExamNetQtiPackageStatus
     target_support_status: ExamNetQtiTargetSupportStatus
@@ -196,6 +221,7 @@ class ExamNetQtiValidationReport:
     schema_version: Literal["examnet_qti_validation_report_v1"]
     generator_version: Literal["task_280_examnet_qti_2_1_v1"]
     qti_version: Literal["2.1"]
+    profile_id: Literal["examnet_qti_2_1_v1", "unkeyed_manual_qti_2_1_v1"]
     package_filename: str
     package_sha256: str | None
     package_status: ExamNetQtiPackageStatus

@@ -30,11 +30,17 @@ links:
 ## Purpose
 
 Define the renderer-neutral intermediate exam representation and manifest
-contract for the DigiExam to Exam.net migration lane.
+contract for the DigiExam source-adapter lane inside Sir Convert's broader
+exam artifact conversion and authoring boundary.
 
 The IR is owned by Sir Convert-a-Lot. It is not a DigiExam mirror, an Exam.net
 renderer schema, a QTI package, or a bulk-conversion API response. It is the
 stable boundary between source parsers and later renderer/import stories.
+DigiExam is the first implemented source adapter, not the product boundary.
+Future Exam.net-origin PDFs, Word exports, answer-key artifacts, and other
+source formats should feed the same source-adapter to intermediary-shape to
+target-renderer pattern, with a governed schema decision before any shared
+non-DigiExam schema name is introduced.
 
 ## Scope
 
@@ -182,8 +188,24 @@ the IR/effective exam contract MUST expose exact answer pairs:
 - validation that every referenced left/right ID exists.
 
 Until those fields are implemented and validated, matching completion remains
-advisory/manual-review only. This is a critical dependency for Task 298, not an
+advisory/manual-review only. This is the Task 298 contract gate, not an
 optional nice-to-have.
+
+## Gap/open-cloze Accepted-value Requirement
+
+Gap-fill and open-cloze structure in source IR is not enough for automatic
+evaluation. Before Sir Convert may apply or render gapped/open-cloze answer
+completion, the IR/effective exam contract MUST expose exact accepted values
+bound to stable gap IDs:
+
+- stable `gap_id`;
+- visible gap order and prompt binding;
+- accepted values per gap;
+- normalization policy for comparison and export;
+- multi-gap completeness validation.
+
+Until those fields are implemented and validated, gapped/open-cloze completion
+remains advisory/manual-review only. This is the Task 305 contract gate.
 
 ## Embedded Asset Contract
 

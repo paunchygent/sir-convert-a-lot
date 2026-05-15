@@ -61,8 +61,9 @@ treated as first-class contract inputs rather than later UI-local state.
   Convert's target-readiness output before enabling PDF, QTI, or save actions.
 - Define `effective_ir_json` as `digiexam_effective_exam_v1`; it must not reuse
   the parser-owned source IR schema.
-- Make exact matching answer-pair fields a critical dependency before applied
-  matching completion can be enabled.
+- Make exact matching answer-pair fields and gapped/open-cloze accepted-value
+  fields critical dependencies before applied completion can be enabled for
+  those item shapes.
 
 ## Deliverables
 

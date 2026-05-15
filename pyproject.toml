@@ -130,6 +130,7 @@ distribution = false
 "benchmark:task-74" = "python -m scripts.sir_convert_a_lot.benchmark_story20_throughput_report"
 "benchmark:task-270-validate-dirty-corpus-manifest" = "python -m scripts.sir_convert_a_lot.benchmarking.dirty_pdf_corpus"
 "examnet-qti-samples" = "python -m scripts.sir_convert_a_lot.examnet_qti_sample_packages"
+"examnet-qti-task-303-samples" = "python -m scripts.sir_convert_a_lot.examnet_qti_sample_packages --task task-303"
 "benchmark:task-74-two-worker-sweep" = "python -m scripts.sir_convert_a_lot.benchmark_story20_throughput_report --two-worker-sweep"
 "benchmark:task-74-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_task74_hemma_benchmark"
 "benchmark:task-74-two-worker-sweep-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_task74_hemma_benchmark --two-worker-sweep"
