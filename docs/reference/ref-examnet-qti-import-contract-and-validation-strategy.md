@@ -31,6 +31,12 @@ links:
 Define the QTI target boundary and validation strategy for Exam.net-oriented
 exam artifacts in Sir Convert.
 
+This reference is source-format agnostic. DigiExam, Exam.net-origin PDFs, Word
+exports, and later supported source formats may feed QTI generation only
+through the governed Sir Convert intermediary exam shape for their route. QTI
+2.1/3.0 validity, Exam.net proof, and manual-follow-up semantics are target
+contracts, not DigiExam-specific behavior.
+
 This reference records the current vendor-reported Exam.net direction and the
 validator ladder that future QTI tasks must satisfy before claiming QTI output
 is ready for teachers.

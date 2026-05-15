@@ -26,10 +26,16 @@ links:
 
 ## Purpose
 
-This reference records the initial PDF research for the Sir Convert-a-Lot
-DigiExam to Exam.net migration epic. It records the observable shape of exam
-PDFs exported from DigiExam, the open questions about Exam.net ingestion, and
-the renderer architecture that should be governed by `EPIC-10`.
+This reference records the initial DigiExam source-adapter PDF research for Sir
+Convert-a-Lot's exam artifact conversion and authoring work. It records the
+observable shape of exam PDFs exported from DigiExam, the open questions about
+Exam.net ingestion, and the renderer architecture that should be governed by
+`EPIC-10`.
+
+DigiExam evidence here must not be read as the whole product boundary. It is
+one source adapter feeding Sir Convert's intermediary exam shape before target
+renderers produce Exam.net PDF-to-exam converter PDFs and schema-valid QTI
+packages.
 
 The canonical source for what each DigiExam artifact and item type contains or
 does not contain is

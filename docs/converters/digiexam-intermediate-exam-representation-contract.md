@@ -30,11 +30,17 @@ links:
 ## Purpose
 
 Define the renderer-neutral intermediate exam representation and manifest
-contract for the DigiExam to Exam.net migration lane.
+contract for the DigiExam source-adapter lane inside Sir Convert's broader
+exam artifact conversion and authoring boundary.
 
 The IR is owned by Sir Convert-a-Lot. It is not a DigiExam mirror, an Exam.net
 renderer schema, a QTI package, or a bulk-conversion API response. It is the
 stable boundary between source parsers and later renderer/import stories.
+DigiExam is the first implemented source adapter, not the product boundary.
+Future Exam.net-origin PDFs, Word exports, answer-key artifacts, and other
+source formats should feed the same source-adapter to intermediary-shape to
+target-renderer pattern, with a governed schema decision before any shared
+non-DigiExam schema name is introduced.
 
 ## Scope
 

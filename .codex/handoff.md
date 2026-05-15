@@ -28,10 +28,11 @@ runbooks, or skills.
 - Task 253 is the current docs-governance authority for cutting root
   `AGENTS.md` over to a thin skill router and aligning generated docs indexes
   with the canonical `.codex/handoff.md` active-context model.
-- Epic 10 is active for DigiExam to Exam.net migration. Completed lanes include
-  parser/IR/assets/PDF/QTI/service-runtime work through Task 282, public grant
-  contract/runtime through Tasks 291/292, and the separate
-  `digiexam_dxe -> examnet_migration_bundle` versus
+- Epic 10 is active for exam artifact conversion and authoring to
+  Exam.net-compatible targets. DigiExam is one legacy source adapter, not the
+  product boundary. Completed lanes include parser/IR/assets/PDF/QTI/service
+  runtime work through Task 282 for `digiexam_dxe -> examnet_migration_bundle`,
+  public grant contract/runtime through Tasks 291/292, and the separate
   `examnet_artifact -> teacher_authoring_bundle` route split. Story 45 is
   scaffolded for teacher-owned Exam.net artifacts; Story 46 is the cleanup
   prerequisite before more Exam.net authoring runtime, with Tasks 288/289 next.
