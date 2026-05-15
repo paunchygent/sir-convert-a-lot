@@ -92,22 +92,15 @@ runbooks, or skills.
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
 - Active answer-key completion lane: Epic 11; Tasks 294/295/302/303/304 built
   overlay/effective-IR/readiness/OpenAPI and unkeyed-manual QTI foundations.
-  Tasks 298/305/307 completed source-neutral `ExamAuthoringIR v1` matching and
-  gap/open-cloze contracts while keeping DigiExam as one source adapter.
-  Review 16 remediation is implemented and pending re-review: gap accepted
-  values now carry value-level provenance with a derived aggregate summary;
-  matching validation rejects malformed association bounds and opaque aggregate
-  `mixed` provenance while pairs lack per-pair provenance. Task 296 is
-  completed: tranche 1 added pure structured LLM contracts,
-  provider profiles/capabilities, local-first routing, token-budget preflight,
-  metadata-only capture, and Chat/Responses/llama.cpp/vLLM payload builders;
-  tranche 2 added async HTTP provider execution plus typed response parsing and
-  failure mapping; tranche 3 added service settings/config loading,
-  constant-backed provider config, Dishka composition, and route/runtime
-  no-call-by-default proof. Task 297 is completed: advisory choice and gap-fill
-  answer-key completion now emits candidate-lineage reports only, updates the
-  generated OpenAPI v2 component surface, and keeps default artifact routes free
-  of structured LLM calls.
+  Tasks 298/305/307 completed source-neutral `ExamAuthoringIR v1` matching/gap
+  contracts; Review 16 is accepted after the third remediation. It rejects
+  value-level gap `mixed`, aggregate matching `mixed`, and non-empty matching
+  pairs with `absent`. Task 296 completed the structured-provider harness,
+  Dishka/runtime wiring, and default route no-call proof. Task 297 completed
+  advisory candidate-lineage reports for choice/gap-fill items. Task 306
+  completed reviewed overlay application into effective IR, with parser/source
+  provenance untouched, bounded lineage in `digiexam_effective_exam_v2`, and
+  apply mode making no structured-provider calls.
   Granite FP8 on Hemma ROCm vLLM remains the interim local provider from Task
   301; keyed matching QTI bridging waits for real matching-capable source
   fixtures through `ExamAuthoringIR v1`.
@@ -142,9 +135,8 @@ runbooks, or skills.
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. For machine-marked answer-key completion, Task 306 is the next governed
-   implementation slice: apply reviewed advisory candidates into effective IR
-   without changing parser/source provenance.
+1. For machine-marked answer-key completion, request the post-implementation
+   review for Task 306 before opening a new runtime slice.
 1. Treat Task 307 as completed but still binding before implementing any new
    Exam.net PDF, teacher-authored DOCX, or teacher-authored Markdown source
    parser: new parsers need source-native parse models plus adapters into
@@ -182,15 +174,18 @@ runbooks, or skills.
   `lint-fix`, `typecheck-all` with no issues in `671` source files,
   docs/skills/handoff validation after `docs-sync`, `coverage-gate`
   (`1238 passed, 5 skipped`, coverage `95.43%`), and `git diff --check`.
-- 2026-05-15 Review 16 remediation gates passed: focused
-  ExamAuthoringIR gap/matching tests (`21 passed`), `format-all`, `lint-fix`,
-  `typecheck-all`, docs/skills/handoff validation after `docs-sync`,
-  `coverage-gate` (`1240 passed, 5 skipped`, coverage `95.43%`), and
-  `git diff --check`.
+- 2026-05-15 Review 16 accepted after third remediation: focused ExamAuthoringIR
+  gap/matching tests (`23 passed`), live bypass probes fail closed,
+  `format-all`, `lint-fix`, `typecheck-all`, docs/skills/handoff validation
+  after `docs-sync`, `coverage-gate` (`1250 passed, 5 skipped`, coverage
+  `95.46%`), and `git diff --check`.
 - 2026-05-15 Task 297 focused tests passed: advisory answer-key completion
   domain tests, DigiExam route mutation/no-call proofs, and OpenAPI contract
   tests (`12 passed`) after `pdm run openapi-export-v2`; full `coverage-gate`
   passed (`1248 passed, 5 skipped`, coverage `95.46%`).
+- 2026-05-15 Task 306 gates passed: focused reviewed-completion apply/no-call
+  proof (`26 passed`), `typecheck-all`, docs/skills/handoff validation, full
+  `coverage-gate` (`1257 passed, 5 skipped`, coverage `95.48%`).
 
 ## Stop Conditions
 

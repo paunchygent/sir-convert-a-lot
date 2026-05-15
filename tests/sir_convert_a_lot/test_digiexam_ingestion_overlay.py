@@ -14,7 +14,14 @@ from __future__ import annotations
 import json
 
 import pytest
+from pydantic import JsonValue
 
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
+    CHOICE_PROMPT_TEMPLATE_VERSION,
+    DigiExamAnswerKeyCompletionValidationState,
+    answer_key_candidate_payload_digest,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamAnswerKeyProvenance
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf import (
     build_digiexam_examnet_pdf_document,
@@ -27,6 +34,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay import (
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
     DigiExamIngestionOverlayError,
+    DigiExamOverlayReviewedCompletionOutcome,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DIGIEXAM_IR_SCHEMA_VERSION,
@@ -34,6 +42,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     build_digiexam_intermediate_exam,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
     DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
@@ -121,6 +130,152 @@ def test_teacher_overlay_patched_choice_content_feeds_pdf_and_qti_renderers() ->
     assert qti_result.items[0].correct_choice_identifiers == ("choice_001",)
 
 
+def test_reviewed_completion_accepts_unchanged_candidate_into_effective_ir_only() -> None:
+    exam = _source_exam()
+    item = exam.items[0]
+    answer_payload = _choice_answer_payload(2)
+
+    result = parse_and_apply_digiexam_ingestion_overlay(
+        overlay_bytes=_reviewed_completion_overlay_bytes(
+            source_fingerprint=source_item_fingerprint(item),
+            answer_payload=answer_payload,
+            review_outcome=DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value,
+            candidate_payload_digest=answer_key_candidate_payload_digest(answer_payload),
+        ),
+        source_file_sha256="sha256:file",
+        source_ir_sha256="sha256:ir",
+        source_exam=exam,
+        allow_reviewed_completion=True,
+    )
+
+    report_item = result.effective_exam_report.items[0]
+    lineage = report_item.effective_answer_key.lineage if report_item.effective_answer_key else None
+    assert exam.items[0].answer_key.provenance == "absent"
+    assert result.effective_exam_for_rendering.items[0].answer_key.provenance == (
+        "manual_teacher_key"
+    )
+    assert result.effective_exam_for_rendering.items[0].answer_key.correct_alternative_ids == (2,)
+    assert result.effective_exam_report.answer_key_completion_report_sha256 == (
+        "sha256:completion-report"
+    )
+    assert report_item.effective_answer_key is not None
+    assert report_item.effective_answer_key.provenance == "reviewed"
+    assert report_item.effective_answer_key.correct_alternative_ids == (2,)
+    assert lineage is not None
+    assert lineage.candidate_id == "candidate-item-001"
+    assert lineage.schema_version == DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION
+    assert lineage.prompt_template_version == CHOICE_PROMPT_TEMPLATE_VERSION
+    assert lineage.review_outcome == (
+        DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value
+    )
+    assert result.ingestion_overlay_report.accepted_entries[0].applied_fields == (
+        "reviewed_completion_answer_key",
+    )
+    assert result.ingestion_overlay_report.rejected_entries == ()
+
+
+def test_reviewed_completion_teacher_edit_becomes_teacher_provided_with_lineage() -> None:
+    exam = _source_exam()
+    item = exam.items[0]
+    original_payload = _choice_answer_payload(1)
+    edited_payload = _choice_answer_payload(2)
+
+    result = parse_and_apply_digiexam_ingestion_overlay(
+        overlay_bytes=_reviewed_completion_overlay_bytes(
+            source_fingerprint=source_item_fingerprint(item),
+            answer_payload=edited_payload,
+            review_outcome=DigiExamOverlayReviewedCompletionOutcome.TEACHER_EDITED.value,
+            candidate_payload_digest=answer_key_candidate_payload_digest(original_payload),
+        ),
+        source_file_sha256="sha256:file",
+        source_ir_sha256="sha256:ir",
+        source_exam=exam,
+        allow_reviewed_completion=True,
+    )
+
+    effective_answer_key = result.effective_exam_report.items[0].effective_answer_key
+    assert effective_answer_key is not None
+    assert effective_answer_key.provenance == "teacher_provided"
+    assert effective_answer_key.correct_alternative_ids == (2,)
+    assert effective_answer_key.lineage is not None
+    assert effective_answer_key.lineage.candidate_payload_digest == (
+        answer_key_candidate_payload_digest(original_payload)
+    )
+    assert effective_answer_key.lineage.review_outcome == (
+        DigiExamOverlayReviewedCompletionOutcome.TEACHER_EDITED.value
+    )
+
+
+def test_reviewed_completion_without_apply_mode_fails_closed() -> None:
+    exam = _source_exam()
+    item = exam.items[0]
+    answer_payload = _choice_answer_payload(2)
+
+    with pytest.raises(DigiExamIngestionOverlayError) as error_info:
+        parse_and_apply_digiexam_ingestion_overlay(
+            overlay_bytes=_reviewed_completion_overlay_bytes(
+                source_fingerprint=source_item_fingerprint(item),
+                answer_payload=answer_payload,
+                review_outcome=DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value,
+                candidate_payload_digest=answer_key_candidate_payload_digest(answer_payload),
+            ),
+            source_file_sha256="sha256:file",
+            source_ir_sha256="sha256:ir",
+            source_exam=exam,
+        )
+
+    assert error_info.value.code == "digiexam_reviewed_completion_not_requested"
+
+
+def test_reviewed_completion_accepted_unchanged_requires_matching_candidate_digest() -> None:
+    exam = _source_exam()
+    item = exam.items[0]
+    answer_payload = _choice_answer_payload(2)
+
+    with pytest.raises(DigiExamIngestionOverlayError) as error_info:
+        parse_and_apply_digiexam_ingestion_overlay(
+            overlay_bytes=_reviewed_completion_overlay_bytes(
+                source_fingerprint=source_item_fingerprint(item),
+                answer_payload=answer_payload,
+                review_outcome=DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value,
+                candidate_payload_digest=answer_key_candidate_payload_digest(
+                    _choice_answer_payload(1)
+                ),
+            ),
+            source_file_sha256="sha256:file",
+            source_ir_sha256="sha256:ir",
+            source_exam=exam,
+            allow_reviewed_completion=True,
+        )
+
+    assert error_info.value.code == (
+        "digiexam_ingestion_overlay_reviewed_completion_candidate_digest_mismatch"
+    )
+
+
+def test_reviewed_completion_cannot_overwrite_source_bound_answer_key() -> None:
+    exam = _source_keyed_exam()
+    item = exam.items[0]
+    answer_payload = _choice_answer_payload(2)
+
+    with pytest.raises(DigiExamIngestionOverlayError) as error_info:
+        parse_and_apply_digiexam_ingestion_overlay(
+            overlay_bytes=_reviewed_completion_overlay_bytes(
+                source_fingerprint=source_item_fingerprint(item),
+                answer_payload=answer_payload,
+                review_outcome=DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value,
+                candidate_payload_digest=answer_key_candidate_payload_digest(answer_payload),
+            ),
+            source_file_sha256="sha256:file",
+            source_ir_sha256="sha256:ir",
+            source_exam=exam,
+            allow_reviewed_completion=True,
+        )
+
+    assert error_info.value.code == "digiexam_ingestion_overlay_source_bound_answer_key_exists"
+    assert exam.items[0].answer_key.provenance == DigiExamAnswerKeyProvenance.DXE_POPULATED_KEY
+
+
 def test_teacher_overlay_applies_gap_fill_prompt_patch_to_effective_exam() -> None:
     exam = _gap_source_exam()
     item = exam.items[0]
@@ -190,6 +345,34 @@ def _source_exam():
                             "alternatives": [
                                 {"id": 1, "title": "Alpha", "about": "", "right": False},
                                 {"id": 2, "title": "Beta", "about": "", "right": False},
+                            ],
+                        }
+                    ]
+                }
+            ]
+        },
+        filename="exam.dxe",
+    )
+    return build_digiexam_intermediate_exam(parse_result)
+
+
+def _source_keyed_exam() -> DigiExamIntermediateExam:
+    parse_result = DigiExamDxeParser().parse_payload(
+        {
+            "exams": [
+                {
+                    "questions": [
+                        {
+                            "id": 1,
+                            "title": "Single with key",
+                            "about": "",
+                            "bodyHTML": "<p>Choose the Greek letter.</p>",
+                            "images": [],
+                            "maxScore": 2,
+                            "type": 1,
+                            "alternatives": [
+                                {"id": 1, "title": "Alpha", "about": "", "right": False},
+                                {"id": 2, "title": "Beta", "about": "", "right": True},
                             ],
                         }
                     ]
@@ -320,6 +503,46 @@ def _gap_patch_overlay_bytes(source_fingerprint: str) -> bytes:
         ),
         sort_keys=True,
     ).encode("utf-8")
+
+
+def _reviewed_completion_overlay_bytes(
+    *,
+    source_fingerprint: str,
+    answer_payload: dict[str, JsonValue],
+    review_outcome: str,
+    candidate_payload_digest: str,
+) -> bytes:
+    kind = answer_payload.get("kind")
+    if not isinstance(kind, str):
+        raise RuntimeError("reviewed completion answer payload kind must be a string")
+    return json.dumps(
+        _overlay_payload(
+            source_fingerprint=source_fingerprint,
+            item_fields={
+                "reviewed_completion_answer_key": {
+                    "kind": kind,
+                    "review_decision_id": "review-decision-001",
+                    "review_outcome": review_outcome,
+                    "candidate_lineage": {
+                        "completion_report_sha256": "sha256:completion-report",
+                        "candidate_id": "candidate-item-001",
+                        "candidate_payload_digest": candidate_payload_digest,
+                        "provider_profile_id": "local-structured",
+                        "schema_name": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+                        "schema_version": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+                        "prompt_template_version": CHOICE_PROMPT_TEMPLATE_VERSION,
+                        "validation_state": DigiExamAnswerKeyCompletionValidationState.VALID.value,
+                    },
+                    "answer_payload": answer_payload,
+                },
+            },
+        ),
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _choice_answer_payload(correct_id: int) -> dict[str, JsonValue]:
+    return {"kind": "choice", "correct_alternative_ids": [correct_id]}
 
 
 def _overlay_payload(

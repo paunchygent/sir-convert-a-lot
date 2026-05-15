@@ -50,6 +50,7 @@ class ExamAuthoringMatchingValidationIssueCode(StrEnum):
     INVALID_INTERACTION_BOUNDS = "invalid_matching_interaction_bounds"
     INVALID_SOURCE_BOUNDS = "invalid_matching_source_choice_bounds"
     INVALID_TARGET_BOUNDS = "invalid_matching_target_choice_bounds"
+    ABSENT_PROVENANCE_WITH_PAIRS = "absent_matching_provenance_with_pairs"
     MIXED_PROVENANCE_WITHOUT_PAIR_PROVENANCE = "mixed_matching_provenance_without_pair_provenance"
     ASSOCIATION_COUNT_OUT_OF_BOUNDS = "matching_association_count_out_of_bounds"
     SOURCE_ASSOCIATION_LIMIT_EXCEEDED = "matching_source_association_limit_exceeded"
@@ -337,19 +338,27 @@ def _duplicate_pair_issues(
 def _answer_key_provenance_issues(
     answer_key: ExamAuthoringMatchingAnswerKey,
 ) -> tuple[ExamAuthoringMatchingValidationIssue, ...]:
-    if answer_key.provenance != ExamAuthoringAnswerKeyProvenance.MIXED:
-        return ()
-    return (
-        ExamAuthoringMatchingValidationIssue(
-            reason_code=(
-                ExamAuthoringMatchingValidationIssueCode.MIXED_PROVENANCE_WITHOUT_PAIR_PROVENANCE
-            ),
-            message=(
-                "Matching answer keys cannot use aggregate mixed provenance "
-                "until matching pairs carry per-pair provenance."
-            ),
-        ),
-    )
+    issues: list[ExamAuthoringMatchingValidationIssue] = []
+    if answer_key.provenance == ExamAuthoringAnswerKeyProvenance.ABSENT and answer_key.pairs:
+        issues.append(
+            ExamAuthoringMatchingValidationIssue(
+                reason_code=ExamAuthoringMatchingValidationIssueCode.ABSENT_PROVENANCE_WITH_PAIRS,
+                message="Matching answer keys with directed pairs require non-absent provenance.",
+            )
+        )
+    if answer_key.provenance == ExamAuthoringAnswerKeyProvenance.MIXED:
+        issues.append(
+            ExamAuthoringMatchingValidationIssue(
+                reason_code=(
+                    ExamAuthoringMatchingValidationIssueCode.MIXED_PROVENANCE_WITHOUT_PAIR_PROVENANCE
+                ),
+                message=(
+                    "Matching answer keys cannot use aggregate mixed provenance "
+                    "until matching pairs carry per-pair provenance."
+                ),
+            )
+        )
+    return tuple(issues)
 
 
 def _interaction_bound_shape_issues(

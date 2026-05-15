@@ -13,6 +13,7 @@ Relationships:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -86,6 +87,70 @@ DigiExamOverlayManualAnswerKey = Annotated[
     DigiExamOverlayChoiceManualAnswerKey | DigiExamOverlayGapFillManualAnswerKey,
     Field(discriminator="kind"),
 ]
+
+
+class DigiExamOverlayReviewedCompletionOutcome(StrEnum):
+    """Teacher review outcomes for applying an advisory candidate."""
+
+    ACCEPTED_UNCHANGED = "accepted_unchanged"
+    TEACHER_EDITED = "teacher_edited"
+
+
+class DigiExamOverlayReviewedCompletionCandidateLineage(BaseModel):
+    """Bounded lineage for a reviewed advisory answer-key candidate."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    completion_report_sha256: str = Field(min_length=1)
+    candidate_id: str = Field(min_length=1, max_length=160)
+    candidate_payload_digest: str = Field(min_length=1)
+    provider_profile_id: str = Field(min_length=1, max_length=160)
+    schema_name: str = Field(min_length=1, max_length=160)
+    schema_version: str = Field(min_length=1, max_length=160)
+    prompt_template_version: str = Field(min_length=1, max_length=160)
+    validation_state: Literal["valid"]
+
+
+class DigiExamOverlayReviewedChoiceAnswerPayload(BaseModel):
+    """Reviewed choice answer payload using Task 297 candidate semantics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["choice"]
+    correct_alternative_ids: tuple[int, ...] = Field(min_length=1)
+
+
+class DigiExamOverlayReviewedGapFillAnswerPayload(BaseModel):
+    """Reviewed gap-fill answer payload using Task 305 candidate semantics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["gap_fill"]
+    gap_answers: tuple[DigiExamOverlayGapAnswer, ...] = Field(min_length=1)
+
+
+DigiExamOverlayReviewedCompletionAnswerPayload = Annotated[
+    DigiExamOverlayReviewedChoiceAnswerPayload | DigiExamOverlayReviewedGapFillAnswerPayload,
+    Field(discriminator="kind"),
+]
+
+
+class DigiExamOverlayReviewedCompletionAnswerKey(BaseModel):
+    """Teacher-reviewed advisory answer key applied only to effective IR."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["choice", "gap_fill"]
+    review_decision_id: str = Field(min_length=1, max_length=120)
+    review_outcome: DigiExamOverlayReviewedCompletionOutcome
+    candidate_lineage: DigiExamOverlayReviewedCompletionCandidateLineage
+    answer_payload: DigiExamOverlayReviewedCompletionAnswerPayload
+
+    @model_validator(mode="after")
+    def _validate_payload_kind(self) -> Self:
+        if self.kind != self.answer_payload.kind:
+            raise ValueError("reviewed completion kind must match answer_payload.kind")
+        return self
 
 
 class DigiExamOverlayVisibleTextPatch(BaseModel):
@@ -199,7 +264,16 @@ class DigiExamIngestionOverlayItem(BaseModel):
     source_item_fingerprint: str = Field(min_length=1)
     effective_item_patch: DigiExamOverlayEffectiveItemPatch | None = None
     manual_answer_key: DigiExamOverlayManualAnswerKey | None = None
+    reviewed_completion_answer_key: DigiExamOverlayReviewedCompletionAnswerKey | None = None
     review_decision: DigiExamOverlayReviewDecision | None = None
+
+    @model_validator(mode="after")
+    def _validate_answer_key_source(self) -> Self:
+        if self.manual_answer_key is not None and self.reviewed_completion_answer_key is not None:
+            raise ValueError("manual_answer_key and reviewed_completion_answer_key are exclusive")
+        if self.review_decision is not None and self.reviewed_completion_answer_key is not None:
+            raise ValueError("review_decision and reviewed_completion_answer_key are exclusive")
+        return self
 
 
 class DigiExamIngestionOverlay(BaseModel):
@@ -248,6 +322,30 @@ class DigiExamEffectiveAnswerKey:
     provenance: str
     correct_alternative_ids: tuple[int, ...]
     correct_gap_answers: tuple[dict[str, str], ...]
+    lineage: "DigiExamEffectiveAnswerKeyLineage | None" = None
+
+
+@dataclass(frozen=True)
+class DigiExamEffectiveAnswerKeyLineage:
+    """Bounded reviewed-completion lineage surfaced in effective IR."""
+
+    completion_report_sha256: str
+    candidate_id: str
+    candidate_payload_digest: str
+    provider_profile_id: str
+    schema_name: str
+    schema_version: str
+    prompt_template_version: str
+    validation_state: str
+    review_decision_id: str
+    review_outcome: str
+
+
+class DigiExamEffectiveAnswerKeyProvenance(StrEnum):
+    """Effective answer-key provenance states separate from parser evidence."""
+
+    REVIEWED = "reviewed"
+    TEACHER_PROVIDED = "teacher_provided"
 
 
 @dataclass(frozen=True)

@@ -225,6 +225,22 @@ def test_matching_contract_rejects_mixed_provenance_without_pair_provenance() ->
     }
 
 
+def test_matching_contract_rejects_absent_provenance_with_pairs() -> None:
+    interaction = _matching_interaction(
+        pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+        min_associations=1,
+        max_associations=1,
+        provenance=ExamAuthoringAnswerKeyProvenance.ABSENT,
+    )
+
+    result = validate_exam_authoring_matching_interaction(interaction)
+
+    assert result.valid is False
+    assert ExamAuthoringMatchingValidationIssueCode.ABSENT_PROVENANCE_WITH_PAIRS in {
+        issue.reason_code for issue in result.issues
+    }
+
+
 def test_matching_contract_allows_reviewed_whole_key_provenance() -> None:
     interaction = _matching_interaction(
         pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),

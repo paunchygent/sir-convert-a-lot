@@ -658,6 +658,71 @@
         "title": "DigiExamAnswerKeyCompletionReportV1",
         "type": "object"
       },
+      "DigiExamEffectiveAnswerKeyLineageV1": {
+        "additionalProperties": false,
+        "description": "Bounded reviewed-completion lineage in effective exam artifacts.",
+        "properties": {
+          "candidate_id": {
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "candidate_payload_digest": {
+            "title": "Candidate Payload Digest",
+            "type": "string"
+          },
+          "completion_report_sha256": {
+            "title": "Completion Report Sha256",
+            "type": "string"
+          },
+          "prompt_template_version": {
+            "title": "Prompt Template Version",
+            "type": "string"
+          },
+          "provider_profile_id": {
+            "title": "Provider Profile Id",
+            "type": "string"
+          },
+          "review_decision_id": {
+            "title": "Review Decision Id",
+            "type": "string"
+          },
+          "review_outcome": {
+            "enum": [
+              "accepted_unchanged",
+              "teacher_edited"
+            ],
+            "title": "Review Outcome",
+            "type": "string"
+          },
+          "schema_name": {
+            "title": "Schema Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "validation_state": {
+            "const": "valid",
+            "title": "Validation State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "completion_report_sha256",
+          "candidate_id",
+          "candidate_payload_digest",
+          "provider_profile_id",
+          "schema_name",
+          "schema_version",
+          "prompt_template_version",
+          "validation_state",
+          "review_decision_id",
+          "review_outcome"
+        ],
+        "title": "DigiExamEffectiveAnswerKeyLineageV1",
+        "type": "object"
+      },
       "DigiExamEffectiveAnswerKeyV1": {
         "additionalProperties": false,
         "description": "Effective answer-key summary without changing source provenance.",
@@ -678,6 +743,17 @@
             },
             "title": "Correct Gap Answers",
             "type": "array"
+          },
+          "lineage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamEffectiveAnswerKeyLineageV1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "provenance": {
             "title": "Provenance",
@@ -1016,6 +1092,17 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/DigiExamOverlayReviewDecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "reviewed_completion_answer_key": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamOverlayReviewedCompletionAnswerKey"
               },
               {
                 "type": "null"
@@ -2106,6 +2193,181 @@
           "accepted_targets"
         ],
         "title": "DigiExamOverlayReviewDecision",
+        "type": "object"
+      },
+      "DigiExamOverlayReviewedChoiceAnswerPayload": {
+        "additionalProperties": false,
+        "description": "Reviewed choice answer payload using Task 297 candidate semantics.",
+        "properties": {
+          "correct_alternative_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Correct Alternative Ids",
+            "type": "array"
+          },
+          "kind": {
+            "const": "choice",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "correct_alternative_ids"
+        ],
+        "title": "DigiExamOverlayReviewedChoiceAnswerPayload",
+        "type": "object"
+      },
+      "DigiExamOverlayReviewedCompletionAnswerKey": {
+        "additionalProperties": false,
+        "description": "Teacher-reviewed advisory answer key applied only to effective IR.",
+        "properties": {
+          "answer_payload": {
+            "discriminator": {
+              "mapping": {
+                "choice": "#/components/schemas/DigiExamOverlayReviewedChoiceAnswerPayload",
+                "gap_fill": "#/components/schemas/DigiExamOverlayReviewedGapFillAnswerPayload"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamOverlayReviewedChoiceAnswerPayload"
+              },
+              {
+                "$ref": "#/components/schemas/DigiExamOverlayReviewedGapFillAnswerPayload"
+              }
+            ],
+            "title": "Answer Payload"
+          },
+          "candidate_lineage": {
+            "$ref": "#/components/schemas/DigiExamOverlayReviewedCompletionCandidateLineage"
+          },
+          "kind": {
+            "enum": [
+              "choice",
+              "gap_fill"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "review_decision_id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Review Decision Id",
+            "type": "string"
+          },
+          "review_outcome": {
+            "$ref": "#/components/schemas/DigiExamOverlayReviewedCompletionOutcome"
+          }
+        },
+        "required": [
+          "kind",
+          "review_decision_id",
+          "review_outcome",
+          "candidate_lineage",
+          "answer_payload"
+        ],
+        "title": "DigiExamOverlayReviewedCompletionAnswerKey",
+        "type": "object"
+      },
+      "DigiExamOverlayReviewedCompletionCandidateLineage": {
+        "additionalProperties": false,
+        "description": "Bounded lineage for a reviewed advisory answer-key candidate.",
+        "properties": {
+          "candidate_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "candidate_payload_digest": {
+            "minLength": 1,
+            "title": "Candidate Payload Digest",
+            "type": "string"
+          },
+          "completion_report_sha256": {
+            "minLength": 1,
+            "title": "Completion Report Sha256",
+            "type": "string"
+          },
+          "prompt_template_version": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Prompt Template Version",
+            "type": "string"
+          },
+          "provider_profile_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Provider Profile Id",
+            "type": "string"
+          },
+          "schema_name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Schema Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "validation_state": {
+            "const": "valid",
+            "title": "Validation State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "completion_report_sha256",
+          "candidate_id",
+          "candidate_payload_digest",
+          "provider_profile_id",
+          "schema_name",
+          "schema_version",
+          "prompt_template_version",
+          "validation_state"
+        ],
+        "title": "DigiExamOverlayReviewedCompletionCandidateLineage",
+        "type": "object"
+      },
+      "DigiExamOverlayReviewedCompletionOutcome": {
+        "description": "Teacher review outcomes for applying an advisory candidate.",
+        "enum": [
+          "accepted_unchanged",
+          "teacher_edited"
+        ],
+        "title": "DigiExamOverlayReviewedCompletionOutcome",
+        "type": "string"
+      },
+      "DigiExamOverlayReviewedGapFillAnswerPayload": {
+        "additionalProperties": false,
+        "description": "Reviewed gap-fill answer payload using Task 305 candidate semantics.",
+        "properties": {
+          "gap_answers": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamOverlayGapAnswer"
+            },
+            "minItems": 1,
+            "title": "Gap Answers",
+            "type": "array"
+          },
+          "kind": {
+            "const": "gap_fill",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "gap_answers"
+        ],
+        "title": "DigiExamOverlayReviewedGapFillAnswerPayload",
         "type": "object"
       },
       "DigiExamOverlaySourceBinding": {

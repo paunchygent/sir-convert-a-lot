@@ -179,6 +179,27 @@ def test_gap_open_cloze_contract_preserves_mixed_value_provenance() -> None:
     ]
 
 
+def test_gap_open_cloze_contract_rejects_value_level_mixed_provenance() -> None:
+    interaction = _gap_interaction(
+        accepted_values=(
+            _accepted_value(
+                "gap-001",
+                "Photosynthesis",
+                provenance=ExamAuthoringAnswerKeyProvenance.MIXED,
+            ),
+            _accepted_value("gap-002", "Chlorophyll"),
+        )
+    )
+
+    result = validate_exam_authoring_gap_open_cloze_interaction(interaction)
+
+    assert result.valid is False
+    assert result.automatic_evaluation_ready is False
+    assert ExamAuthoringGapValidationIssueCode.ACCEPTED_VALUE_WITH_MIXED_PROVENANCE in {
+        issue.reason_code for issue in result.issues
+    }
+
+
 def test_gap_open_cloze_contract_rejects_absent_or_inconsistent_value_provenance() -> None:
     interaction = _gap_interaction(
         accepted_values=(

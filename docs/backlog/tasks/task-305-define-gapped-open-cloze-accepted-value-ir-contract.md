@@ -190,14 +190,16 @@ The validator separates three states that must not be collapsed:
 Missing accepted values on required gaps keep the interaction structurally
 valid but not automatically evaluable. Duplicate gap IDs, blank IDs, unknown
 IDs, blank accepted values, duplicate normalized values, duplicate display
-orders, accepted values with absent provenance, and accepted values whose typed
-provenance contradicts known evidence origin are contract failures.
+orders, accepted values with absent or value-level mixed provenance, and
+accepted values whose typed provenance contradicts known evidence origin are
+contract failures.
 
-Per-value provenance is the validation authority. The aggregate answer-key
-provenance is a derived summary only: it is `absent` when no accepted values
-exist, a single provenance when all values share it, and `mixed` when a
-multi-gap or multi-value key combines source-provided, teacher-provided, or
-reviewed accepted values.
+Per-value provenance is the validation authority. Accepted values must carry a
+concrete trust state: `source_provided`, `teacher_provided`, or `reviewed`. The
+aggregate answer-key provenance is a derived summary only: it is `absent` when
+no accepted values exist, a single provenance when all values share it, and
+`mixed` when a multi-gap or multi-value key combines source-provided,
+teacher-provided, or reviewed accepted values.
 
 Normalization is explicit and validation-owned:
 

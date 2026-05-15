@@ -202,6 +202,16 @@ class DigiExamMigrationOptionsV2(BaseModel):
     @model_validator(mode="after")
     def _validate_ingestion_overlay_policy(self) -> "DigiExamMigrationOptionsV2":
         has_filename = self.ingestion_overlay_filename is not None
+        if (
+            self.completion_mode
+            == DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
+            and not has_filename
+        ):
+            raise ValueError(
+                "digiexam_migration_options.ingestion_overlay_filename is required "
+                "when completion_mode is "
+                f"'{DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW.value}'"
+            )
         if has_filename and self.ingestion_overlay_policy != (
             DigiExamIngestionOverlayPolicyV2.APPLY_TEACHER_OVERLAY
         ):

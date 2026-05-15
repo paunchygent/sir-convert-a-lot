@@ -28,6 +28,14 @@ from scripts.sir_convert_a_lot.domain.exam_authoring_schema_versions import (
     ExamAuthoringIrSchemaVersion,
 )
 
+_CONCRETE_ACCEPTED_VALUE_PROVENANCES = frozenset(
+    {
+        ExamAuthoringAnswerKeyProvenance.SOURCE_PROVIDED,
+        ExamAuthoringAnswerKeyProvenance.TEACHER_PROVIDED,
+        ExamAuthoringAnswerKeyProvenance.REVIEWED,
+    }
+)
+
 
 class ExamAuthoringGapNormalizationProfile(StrEnum):
     """Normalization profiles used for validation and target decisions."""
@@ -57,6 +65,7 @@ class ExamAuthoringGapValidationIssueCode(StrEnum):
     DUPLICATE_NORMALIZED_ACCEPTED_VALUE = "duplicate_gap_open_cloze_normalized_accepted_value"
     MISSING_REQUIRED_ACCEPTED_VALUE = "missing_required_gap_open_cloze_accepted_value"
     ACCEPTED_VALUE_WITHOUT_PROVENANCE = "accepted_gap_open_cloze_value_without_provenance"
+    ACCEPTED_VALUE_WITH_MIXED_PROVENANCE = "accepted_gap_open_cloze_value_with_mixed_provenance"
     ACCEPTED_VALUE_PROVENANCE_EVIDENCE_MISMATCH = (
         "accepted_gap_open_cloze_value_provenance_evidence_mismatch"
     )
@@ -355,6 +364,20 @@ def _accepted_value_issues(
                     normalized_value=normalized,
                 )
             )
+        if accepted_value.provenance == ExamAuthoringAnswerKeyProvenance.MIXED:
+            issues.append(
+                ExamAuthoringGapValidationIssue(
+                    reason_code=(
+                        ExamAuthoringGapValidationIssueCode.ACCEPTED_VALUE_WITH_MIXED_PROVENANCE
+                    ),
+                    message=(
+                        "Accepted value provenance must be a concrete trust state; "
+                        "mixed is derived only at the answer-key summary level."
+                    ),
+                    gap_id=accepted_value.gap_id,
+                    normalized_value=normalized,
+                )
+            )
         issues.extend(_accepted_value_evidence_issues(accepted_value, normalized))
         seen_values = normalized_by_gap.setdefault(accepted_value.gap_id, set())
         if normalized in seen_values:
@@ -412,7 +435,7 @@ def _missing_required_value_issues(
         accepted_value.gap_id
         for accepted_value in interaction.answer_key.accepted_values
         if accepted_value.gap_id in gap_ids
-        and accepted_value.provenance != ExamAuthoringAnswerKeyProvenance.ABSENT
+        and accepted_value.provenance in _CONCRETE_ACCEPTED_VALUE_PROVENANCES
         and normalize_exam_authoring_gap_value(
             accepted_value.value, interaction.normalization_profile
         )

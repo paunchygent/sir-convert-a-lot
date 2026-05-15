@@ -44,10 +44,11 @@ slice is allowed to change.
 
 ## Core Decision
 
-The DigiExam parser remains source-bound. It may derive answer keys only from
-`.dxe` source fields, graded-result PDF correct-answer evidence, or validated
-teacher/manual overlay. LLM output is never parser evidence and must not be
-stored under parser provenance values such as `dxe_populated_key`,
+The DigiExam parser remains source-bound. Parser provenance may derive answer
+keys only from `.dxe` source fields or graded-result PDF correct-answer
+evidence. Teacher/manual overlays and reviewed completions are effective-IR
+applications, not parser evidence. LLM output is never parser evidence and
+must not be stored under parser provenance values such as `dxe_populated_key`,
 `graded_result_pdf_correct_labels`, `manual_teacher_key`, `absent`, or
 `not_applicable`.
 

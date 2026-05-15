@@ -169,6 +169,24 @@ class DigiExamEffectiveAnswerKeyV1(BaseModel):
     provenance: str
     correct_alternative_ids: list[int] = Field(default_factory=list)
     correct_gap_answers: list[dict[str, str]] = Field(default_factory=list)
+    lineage: "DigiExamEffectiveAnswerKeyLineageV1 | None" = None
+
+
+class DigiExamEffectiveAnswerKeyLineageV1(BaseModel):
+    """Bounded reviewed-completion lineage in effective exam artifacts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    completion_report_sha256: str
+    candidate_id: str
+    candidate_payload_digest: str
+    provider_profile_id: str
+    schema_name: str
+    schema_version: str
+    prompt_template_version: str
+    validation_state: Literal["valid"]
+    review_decision_id: str
+    review_outcome: Literal["accepted_unchanged", "teacher_edited"]
 
 
 class DigiExamEffectiveItemPatchSummaryV1(BaseModel):

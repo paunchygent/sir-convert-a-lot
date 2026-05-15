@@ -59,6 +59,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import ExamNetQtiPackageStatus
 from scripts.sir_convert_a_lot.domain.examnet_qti_package import build_examnet_qti_package_plan
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
+    DigiExamAnswerKeyCompletionModeV2,
     ExamMigrationTargetV2,
     normalized_exam_migration_targets_v2,
 )
@@ -132,6 +133,11 @@ def execute_digiexam_migration_bundle_job(
     exam = build_digiexam_intermediate_exam(parse_result)
     ir_manifest = build_digiexam_ir_manifest(exam)
     requested_targets = normalized_exam_migration_targets_v2(job.spec)
+    completion_mode = _completion_mode(job)
+    reviewed_completion_apply_requested = (
+        completion_mode
+        == DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
+    )
 
     ir_path = artifact_path(artifacts_dir, DigiExamMigrationArtifactKey.IR_JSON)
     write_json(ir_path, json_ready(asdict(exam)))
@@ -142,6 +148,16 @@ def execute_digiexam_migration_bundle_job(
     ingestion_overlay_report_entry = None
     overlay_result = None
     overlay_path = ingestion_overlay_path_for_upload(job.upload_path)
+    if reviewed_completion_apply_requested and not overlay_path.exists():
+        raise ServiceError(
+            status_code=422,
+            code="digiexam_reviewed_completion_overlay_required",
+            message=(
+                "Reviewed completion apply mode requires a source-bound "
+                "reviewed completion overlay."
+            ),
+            retryable=False,
+        )
     if overlay_path.exists():
         try:
             overlay_result = parse_and_apply_digiexam_ingestion_overlay(
@@ -149,6 +165,7 @@ def execute_digiexam_migration_bundle_job(
                 source_file_sha256=source_file_sha256,
                 source_ir_sha256=source_ir_sha256,
                 source_exam=exam,
+                allow_reviewed_completion=reviewed_completion_apply_requested,
             )
         except DigiExamIngestionOverlayError as exc:
             raise ServiceError(
@@ -337,6 +354,13 @@ def _answer_evidence_for_job(job: StoredJobV2) -> DigiExamResultPdfAnswerEvidenc
             retryable=False,
         )
     return DigiExamResultPdfAnswerExtractor(student_block_delimiter=delimiter).extract(lines)
+
+
+def _completion_mode(job: StoredJobV2) -> DigiExamAnswerKeyCompletionModeV2:
+    options = job.spec.digiexam_migration_options
+    if options is None:
+        return DigiExamAnswerKeyCompletionModeV2.SOURCE_EVIDENCE_ONLY
+    return options.completion_mode
 
 
 def _infer_student_block_delimiter(lines: tuple[str, ...]) -> str | None:

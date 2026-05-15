@@ -97,8 +97,11 @@ def test_digiexam_consumer_components_are_published() -> None:
         "DigiExamMigrationBundleManifestV2",
         "DigiExamTargetReadinessReportV1",
         "DigiExamEffectiveExamV1",
+        "DigiExamEffectiveAnswerKeyLineageV1",
         "DigiExamIngestionOverlayReportV1",
         "DigiExamAnswerKeyCompletionReportV1",
+        "DigiExamOverlayReviewedCompletionAnswerKey",
+        "DigiExamOverlayReviewedCompletionCandidateLineage",
     ):
         assert component_name in schemas
 
@@ -125,6 +128,12 @@ def test_digiexam_consumer_components_are_published() -> None:
     effective_answer_key = _mapping(schemas["DigiExamEffectiveAnswerKeyV1"])
     effective_answer_key_properties = _mapping(effective_answer_key["properties"])
     assert "correct_matching_pairs" not in effective_answer_key_properties
+    assert "lineage" in effective_answer_key_properties
+    lineage_schema = _mapping(schemas["DigiExamEffectiveAnswerKeyLineageV1"])
+    lineage_properties = _mapping(lineage_schema["properties"])
+    assert "completion_report_sha256" in lineage_properties
+    assert "candidate_payload_digest" in lineage_properties
+    assert "review_outcome" in lineage_properties
 
     effective_patch_summary = _mapping(schemas["DigiExamEffectiveItemPatchSummaryV1"])
     effective_patch_summary_properties = _mapping(effective_patch_summary["properties"])

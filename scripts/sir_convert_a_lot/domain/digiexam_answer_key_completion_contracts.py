@@ -13,6 +13,8 @@ Relationships:
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 
@@ -114,6 +116,16 @@ def report_to_json_payload(report: DigiExamAnswerKeyCompletionReport) -> dict[st
     """Return report JSON using only bounded candidate-lineage fields."""
 
     return _json_value(asdict(report))
+
+
+def answer_key_candidate_payload_digest(payload: dict[str, JsonValue]) -> str:
+    """Return the canonical digest for a backend-validated candidate payload."""
+
+    return f"sha256:{hashlib.sha256(_canonical_json(payload).encode('utf-8')).hexdigest()}"
+
+
+def _canonical_json(payload: JsonValue) -> str:
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _json_value(value: object) -> dict[str, JsonValue]:

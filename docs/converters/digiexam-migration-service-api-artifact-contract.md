@@ -480,6 +480,9 @@ Field rules:
 - `completion_mode` MUST be one of `source_evidence_only`,
   `local_llm_suggest_missing_machine_marked`, or
   `local_llm_apply_missing_machine_marked_with_review`.
+- `local_llm_apply_missing_machine_marked_with_review` requires a submitted
+  `digiexam_ingestion_overlay` part and matching `ingestion_overlay_filename`;
+  it applies reviewed data and must not call a structured provider.
 - `remote_provider_policy` defaults to `forbidden`; public/grant jobs must keep
   it forbidden until a later signed grant version explicitly allows otherwise.
 - `ingestion_overlay_policy` MUST be `none` when
@@ -510,8 +513,9 @@ uses concrete teacher edits, manual answer keys, or review decisions.
 
 Current runtime note: Task 295 applies manual answer keys and review decisions.
 Task 302 applies supported `effective_item_patch` values to effective renderer
-input only. Source IR, source manifest fingerprints, and parser provenance
-remain unchanged.
+input only. Task 306 applies reviewed completion keys only when
+`completion_mode=local_llm_apply_missing_machine_marked_with_review`. Source
+IR, source manifest fingerprints, and parser provenance remain unchanged.
 
 ```json
 {
@@ -535,7 +539,7 @@ remain unchanged.
       },
       "manual_answer_key": {
         "kind": "choice",
-        "correct_alternative_ids": ["B"]
+        "correct_alternative_ids": [2]
       },
       "review_decision": null
     }
@@ -562,6 +566,44 @@ Gap-fill overlays use existing source gap IDs:
   }
 }
 ```
+
+Reviewed completion overlays are separate from `manual_answer_key` and
+`review_decision`:
+
+```json
+{
+  "item_id": "item-1",
+  "sequence": 1,
+  "item_type": "single_choice",
+  "source_item_fingerprint": "sha256:item-source",
+  "reviewed_completion_answer_key": {
+    "kind": "choice",
+    "review_decision_id": "review-decision-001",
+    "review_outcome": "accepted_unchanged",
+    "candidate_lineage": {
+      "completion_report_sha256": "sha256:completion-report",
+      "candidate_id": "candidate-item-001",
+      "candidate_payload_digest": "sha256:candidate-payload",
+      "provider_profile_id": "local-structured",
+      "schema_name": "digiexam_choice_answer_key_decision_v1",
+      "schema_version": "digiexam_choice_answer_key_decision_v1",
+      "prompt_template_version": "digiexam_choice_answer_key_prompt_v1",
+      "validation_state": "valid"
+    },
+    "answer_payload": {
+      "kind": "choice",
+      "correct_alternative_ids": [2]
+    }
+  }
+}
+```
+
+For `accepted_unchanged`, `answer_payload` must digest to
+`candidate_lineage.candidate_payload_digest`. For `teacher_edited`, the payload
+may differ from the advisory candidate but must still validate against the
+item-local ID/value contract. Candidate lineage is audit metadata; it is not
+source/parser provenance and does not authorize cross-job lookup in this
+slice.
 
 Matching overlays are not part of the DigiExam migration overlay contract.
 Canonical DigiExam `.dxe` files do not carry matching items, and the DigiExam
@@ -626,8 +668,10 @@ the exact renderer input.
       "item_type": "choice",
       "source_item_fingerprint": "sha256:item-source",
       "effective_answer_key": {
-        "provenance": "manual_teacher_key",
-        "correct_alternative_ids": ["B"]
+        "provenance": "teacher_provided",
+        "correct_alternative_ids": [2],
+        "correct_gap_answers": [],
+        "lineage": null
       },
       "applied_overlay_entry_ids": ["item-1"],
       "review_decisions": []
@@ -635,6 +679,32 @@ the exact renderer input.
   ]
 }
 ```
+
+Reviewed completion keys use effective provenance, not parser provenance:
+
+```json
+{
+  "provenance": "reviewed",
+  "correct_alternative_ids": [2],
+  "correct_gap_answers": [],
+  "lineage": {
+    "completion_report_sha256": "sha256:completion-report",
+    "candidate_id": "candidate-item-001",
+    "candidate_payload_digest": "sha256:candidate-payload",
+    "provider_profile_id": "local-structured",
+    "schema_name": "digiexam_choice_answer_key_decision_v1",
+    "schema_version": "digiexam_choice_answer_key_decision_v1",
+    "prompt_template_version": "digiexam_choice_answer_key_prompt_v1",
+    "validation_state": "valid",
+    "review_decision_id": "review-decision-001",
+    "review_outcome": "accepted_unchanged"
+  }
+}
+```
+
+Teacher-edited reviewed candidates use `provenance: "teacher_provided"` with
+the same bounded lineage. Plain `manual_answer_key` overlays use
+`provenance: "teacher_provided"` with `lineage: null`.
 
 `ingestion_overlay_report_v1` records validation/application outcomes without
 exposing raw overlay JSON:
@@ -919,7 +989,7 @@ unavailable-artifact error.
 | `migration_manifest` | `migration-manifest.json` | `application/json` | Available when IR manifest generation succeeds. Must not embed raw asset payloads or result-PDF private data. |
 | `target_readiness_report` | `target-readiness-report.json` | `application/json` | Always available for terminal v2 bundles. It is the consumer authority for enabling PDF/QTI export actions. |
 | `ingestion_overlay_report` | `ingestion-overlay-report.json` | `application/json` | Available when an overlay is submitted. Summarizes accepted/rejected overlay entries without exposing raw overlay JSON. |
-| `answer_key_completion_report` | `answer-key-completion-report.json` | `application/json` | Available when local LLM answer-key completion is requested. Contains structured decisions and backend validation states, not raw prompts or raw model responses. |
+| `answer_key_completion_report` | `answer-key-completion-report.json` | `application/json` | Available for advisory `local_llm_suggest_missing_machine_marked`. Not requested for reviewed apply mode in this slice; reviewed apply consumes submitted bounded lineage and must not call the provider. |
 | `manual_follow_up_report` | `manual-follow-up.md` | `text/markdown; charset=utf-8` | Always available for terminal bundles. Empty or review-only when no action is required. |
 | `warnings_report` | `warnings.json` | `application/json` | Always available for terminal bundles. Empty list when there are no warnings. |
 | `asset_summary` | `asset-summary.json` | `application/json` | Always available for terminal bundles. Must contain hashes and metadata only, not raw base64 payloads. |

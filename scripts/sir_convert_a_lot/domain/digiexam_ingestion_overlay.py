@@ -27,6 +27,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_effective_item_patch import (
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
     DigiExamEffectiveAnswerKey,
+    DigiExamEffectiveAnswerKeyProvenance,
     DigiExamEffectiveExam,
     DigiExamEffectiveItem,
     DigiExamEffectiveItemPatchSummary,
@@ -48,6 +49,11 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIrItem,
     DigiExamIrManualFollowUpReason,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_reviewed_completion_application import (
+    effective_answer_key_for_item,
+    reviewed_completion_replacement,
+    reviewed_completion_report_sha256,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
     INGESTION_OVERLAY_REPORT_SCHEMA_VERSION,
@@ -64,11 +70,16 @@ def parse_and_apply_digiexam_ingestion_overlay(
     source_file_sha256: str,
     source_ir_sha256: str,
     source_exam: DigiExamIntermediateExam,
+    allow_reviewed_completion: bool = False,
 ) -> DigiExamOverlayApplicationResult:
     """Validate and apply one overlay to a source exam."""
 
     overlay = _parse_overlay(overlay_bytes)
     overlay_sha256 = f"sha256:{hashlib.sha256(overlay_bytes).hexdigest()}"
+    _validate_reviewed_completion_policy(
+        overlay=overlay,
+        allow_reviewed_completion=allow_reviewed_completion,
+    )
     _validate_source_binding(
         overlay=overlay,
         source_file_sha256=source_file_sha256,
@@ -140,6 +151,28 @@ def _validate_item_bindings(
             )
 
 
+def _validate_reviewed_completion_policy(
+    *,
+    overlay: DigiExamIngestionOverlay,
+    allow_reviewed_completion: bool,
+) -> None:
+    has_reviewed_completion = any(
+        entry.reviewed_completion_answer_key is not None for entry in overlay.items
+    )
+    if has_reviewed_completion and not allow_reviewed_completion:
+        raise DigiExamIngestionOverlayError(
+            "digiexam_reviewed_completion_not_requested",
+            "Reviewed completion answer keys require the reviewed completion apply mode.",
+            {},
+        )
+    if allow_reviewed_completion and not has_reviewed_completion:
+        raise DigiExamIngestionOverlayError(
+            "digiexam_reviewed_completion_overlay_required",
+            "Reviewed completion apply mode requires reviewed completion overlay data.",
+            {},
+        )
+
+
 def _apply_overlay(
     *,
     overlay: DigiExamIngestionOverlay,
@@ -154,6 +187,8 @@ def _apply_overlay(
     effective_items: list[DigiExamEffectiveItem] = []
     accepted_reviews: list[tuple[str, ExamMigrationTargetV2]] = []
     answered_item_ids: set[str] = set()
+    effective_answer_keys: dict[str, DigiExamEffectiveAnswerKey] = {}
+    answer_key_completion_report_sha256 = reviewed_completion_report_sha256(overlay)
     items_by_id = {item.item_id: item for item in source_exam.items}
     for entry in overlay.items:
         item = items_by_id[entry.item_id]
@@ -181,6 +216,18 @@ def _apply_overlay(
             applied_fields.append("manual_answer_key")
             answered_item_ids.add(item.item_id)
             item = replacement
+            effective_answer_keys[item.item_id] = effective_answer_key_for_item(
+                item,
+                provenance=DigiExamEffectiveAnswerKeyProvenance.TEACHER_PROVIDED,
+                lineage=None,
+            )
+        reviewed_completion = reviewed_completion_replacement(entry=entry, item=item)
+        if reviewed_completion is not None:
+            item = reviewed_completion.item
+            replacements[item.item_id] = item
+            applied_fields.append("reviewed_completion_answer_key")
+            answered_item_ids.add(item.item_id)
+            effective_answer_keys[item.item_id] = reviewed_completion.effective_answer_key
         if review_decisions:
             applied_fields.append("review_decision")
         if applied_fields:
@@ -192,6 +239,7 @@ def _apply_overlay(
                 source_item_fingerprint=entry.source_item_fingerprint,
                 patch_summary=patch_summary,
                 review_decisions=review_decisions,
+                effective_answer_key=effective_answer_keys.get(item.item_id),
             )
         )
     effective_exam = _replace_exam_items(source_exam, replacements, answered_item_ids)
@@ -201,6 +249,7 @@ def _apply_overlay(
             source_file_sha256=source_file_sha256,
             source_ir_sha256=source_ir_sha256,
             overlay_sha256=overlay_sha256,
+            answer_key_completion_report_sha256=answer_key_completion_report_sha256,
             items=tuple(effective_items),
         ),
         ingestion_overlay_report=DigiExamIngestionOverlayReport(
@@ -321,6 +370,7 @@ def _effective_exam_report(
     source_file_sha256: str,
     source_ir_sha256: str,
     overlay_sha256: str,
+    answer_key_completion_report_sha256: str | None,
     items: tuple[DigiExamEffectiveItem, ...],
 ) -> DigiExamEffectiveExam:
     return DigiExamEffectiveExam(
@@ -329,7 +379,7 @@ def _effective_exam_report(
         source_ir_schema_version=DIGIEXAM_IR_SCHEMA_VERSION,
         source_ir_sha256=source_ir_sha256,
         ingestion_overlay_sha256=overlay_sha256,
-        answer_key_completion_report_sha256=None,
+        answer_key_completion_report_sha256=answer_key_completion_report_sha256,
         items=items,
     )
 
@@ -341,29 +391,17 @@ def _effective_item(
     source_item_fingerprint: str,
     patch_summary: DigiExamEffectiveItemPatchSummary | None,
     review_decisions: tuple[DigiExamEffectiveReviewDecision, ...],
+    effective_answer_key: DigiExamEffectiveAnswerKey | None,
 ) -> DigiExamEffectiveItem:
     return DigiExamEffectiveItem(
         item_id=item.item_id,
         sequence=item.sequence,
         item_type=item.item_type.value,
         source_item_fingerprint=source_item_fingerprint,
-        effective_answer_key=_effective_answer_key(item)
-        if "manual_answer_key" in applied
-        else None,
+        effective_answer_key=effective_answer_key,
         effective_item_patch=patch_summary,
         applied_overlay_entry_ids=(item.item_id,) if applied else (),
         review_decisions=review_decisions,
-    )
-
-
-def _effective_answer_key(item: DigiExamIrItem) -> DigiExamEffectiveAnswerKey:
-    return DigiExamEffectiveAnswerKey(
-        provenance=item.answer_key.provenance.value,
-        correct_alternative_ids=item.answer_key.correct_alternative_ids,
-        correct_gap_answers=tuple(
-            {"gap_id": answer.guid, "value": answer.value}
-            for answer in item.answer_key.correct_gap_answers
-        ),
     )
 
 

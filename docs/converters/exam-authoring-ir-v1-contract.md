@@ -72,7 +72,8 @@ A matching interaction contains:
 
 The neutral validator rejects blank choice IDs, duplicate source or target
 choice IDs, duplicate identical pairs, unknown source or target IDs, opaque
-aggregate `mixed` answer-key provenance, malformed association bounds,
+aggregate `mixed` answer-key provenance, non-empty pairs with `absent`
+answer-key provenance, malformed association bounds,
 interaction association-count violations, and per-choice association-limit
 violations. Minimum bounds must be non-negative. Maximum bounds must be
 non-negative; `0` means unbounded, while every non-zero maximum must be greater
@@ -147,14 +148,15 @@ Focused proof lives in:
 The neutral validator rejects duplicate gap IDs, blank gap IDs, duplicate or
 invalid display order, blank prompt bindings, unknown gap IDs, blank accepted
 values, duplicate normalized accepted values, accepted values with absent
-provenance, and accepted values whose typed provenance contradicts known
-evidence origin.
+provenance, accepted values with value-level mixed provenance, and accepted
+values whose typed provenance contradicts known evidence origin.
 
 Accepted-value provenance is the authoritative trust unit for automatic
-evaluation. The answer-key provenance summary is derived from its values:
-`absent`, one concrete provenance when all values share it, or `mixed` when a
-multi-gap or multi-value key combines source-provided, teacher-provided, or
-reviewed values.
+evaluation. Accepted values themselves must use concrete trust states:
+`source_provided`, `teacher_provided`, or `reviewed`. The answer-key provenance
+summary is derived from its values: `absent`, one concrete provenance when all
+values share it, or `mixed` when a multi-gap or multi-value key combines
+source-provided, teacher-provided, or reviewed values.
 
 Missing accepted values for required gaps keep the interaction structurally
 valid but not ready for automatic evaluation. This distinction is deliberate:

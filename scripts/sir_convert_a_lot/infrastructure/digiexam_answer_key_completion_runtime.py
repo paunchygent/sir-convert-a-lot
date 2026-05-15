@@ -37,7 +37,7 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest
     available_entry,
     write_json,
 )
-from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_di import (
     create_structured_llm_async_container,
@@ -67,12 +67,7 @@ def write_requested_digiexam_answer_key_completion_report(
     if completion_mode == (
         DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
     ):
-        raise ServiceError(
-            status_code=422,
-            code="answer_key_completion_apply_not_implemented",
-            message="Reviewed LLM answer-key application is reserved for Task 306.",
-            retryable=False,
-        )
+        return None
 
     report_path = artifact_path(
         artifacts_dir,

@@ -2,7 +2,7 @@
 id: review-16-ruthless-review-of-tasks-305-and-307-examauthoringir-contracts
 title: Ruthless review of Tasks 305 and 307 ExamAuthoringIR contracts
 type: review
-status: pending
+status: completed
 priority: high
 created: '2026-05-15'
 last_updated: '2026-05-15'
@@ -17,7 +17,7 @@ labels:
   - task-305
   - task-307
   - exam-authoring-ir
-  - changes-requested
+  - accepted
 ---
 
 Structured review artifact for implementation or readiness checks.
@@ -188,9 +188,82 @@ Structured review artifact for implementation or readiness checks.
    aggregate `MIXED` is rejected unless per-pair provenance exists. Run:
    `pdm run pytest-root tests/sir_convert_a_lot/test_exam_authoring_matching_contracts.py`.
 
+1. [x] `blocker` - Task 305 still accepts opaque `mixed` provenance on an
+   individual gap accepted value.
+
+   Evidence:
+
+   - The shared `ExamAuthoringAnswerKeyProvenance` enum includes `MIXED` at
+     `scripts/sir_convert_a_lot/domain/exam_authoring_ir_contracts.py:37`.
+   - `ExamAuthoringGapAcceptedValue` uses that enum directly at
+     `scripts/sir_convert_a_lot/domain/exam_authoring_gap_contracts.py:92`.
+   - The gap validator only rejects `ABSENT` accepted-value provenance at
+     `scripts/sir_convert_a_lot/domain/exam_authoring_gap_contracts.py:349`;
+     it does not reject value-level `MIXED`.
+   - Required-gap readiness counts any non-`ABSENT` value as trusted at
+     `scripts/sir_convert_a_lot/domain/exam_authoring_gap_contracts.py:411`.
+   - A live re-review probe built one required gap with one accepted value whose
+     provenance was `MIXED`; validation returned
+     `ExamAuthoringGapValidationResult(valid=True, automatic_evaluation_ready=True, target_export_ready=True, issues=())`.
+
+   Why it matters:
+   Review 16's original Task 305 blocker was about avoiding opaque aggregate
+   provenance by moving trust to each accepted value. Letting one value itself
+   be `mixed` recreates the same opacity at the trust unit Task 306 must consume:
+   the effective IR cannot tell whether that answer came from source evidence,
+   a teacher key, or reviewed completion.
+
+   Required fix:
+   Keep `mixed` as a derived `ExamAuthoringGapAnswerKey.provenance` summary only.
+   Reject `ExamAuthoringGapAcceptedValue.provenance == MIXED`, or split the enum
+   so accepted values can only use concrete trust states:
+   `source_provided`, `teacher_provided`, or `reviewed`. The summary may remain
+   `absent` for no values and `mixed` when multiple concrete value provenances
+   are present.
+
+   Proof requirement:
+   Add a gap contract test proving a value-level `MIXED` accepted value fails
+   validation and blocks automatic evaluation, while a source-plus-teacher
+   multi-value key still derives aggregate `MIXED`. Run:
+   `pdm run pytest-root tests/sir_convert_a_lot/test_exam_authoring_gap_contracts.py`.
+
+1. [x] `blocker` - Task 307 still accepts keyed matching pairs with `absent`
+   answer-key provenance.
+
+   Evidence:
+
+   - `ExamAuthoringMatchingAnswerKey` stores aggregate provenance and directed
+     pairs at `scripts/sir_convert_a_lot/domain/exam_authoring_ir_contracts.py:90`.
+   - Task 298 says absent provenance is the state when no trusted matching pairs
+     exist at
+     `docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md:70`.
+   - The matching validator only rejects aggregate `MIXED` provenance at
+     `scripts/sir_convert_a_lot/domain/exam_authoring_ir_contracts.py:337`; it
+     does not reject non-empty pairs with `ABSENT` provenance.
+   - A live re-review probe built one exact source-target pair with
+     `ExamAuthoringAnswerKeyProvenance.ABSENT`; validation returned
+     `ExamAuthoringMatchingValidationResult(valid=True, issues=())`.
+
+   Why it matters:
+   `ABSENT` means no trusted answer key. If the validator accepts concrete pairs
+   while provenance says absent, Task 306 and target exporters can machine-apply
+   or export matching answers with no trust state. That collapses the source,
+   teacher, and reviewed provenance boundary Review 16 is supposed to protect.
+
+   Required fix:
+   Add a matching validation issue for non-empty `pairs` with `ABSENT`
+   provenance. Reviewed application can still emit whole-key `REVIEWED`; teacher
+   overlays can emit `TEACHER_PROVIDED`; source adapters with real matching
+   evidence can emit `SOURCE_PROVIDED`. `ABSENT` must remain the no-key state.
+
+   Proof requirement:
+   Add a matching contract test proving non-empty pairs with `ABSENT` provenance
+   fail validation, and keep the existing reviewed whole-key proof green. Run:
+   `pdm run pytest-root tests/sir_convert_a_lot/test_exam_authoring_matching_contracts.py`.
+
 ## Decision
 
-changes_requested
+approved
 
 ## Response
 
@@ -252,6 +325,46 @@ Second remediation implemented on 2026-05-15 and ready for re-review:
   (`1240 passed, 5 skipped`, coverage `95.43%`), and `git diff --check`
   passed.
 
+Second re-review on 2026-05-15 requested changes:
+
+- Focused tests still pass (`21 passed`), but live probes found two remaining
+  provenance trust bypasses before Task 306 can consume the contract:
+  value-level `mixed` gap provenance is accepted as automatically evaluable,
+  and non-empty matching pairs are accepted with aggregate `absent` provenance.
+
+Third remediation implemented on 2026-05-15 and ready for re-review:
+
+- Task 305 gap validation now rejects
+  `ExamAuthoringGapAcceptedValue.provenance == MIXED` with
+  `accepted_gap_open_cloze_value_with_mixed_provenance`. Mixed provenance remains
+  a derived `ExamAuthoringGapAnswerKey.provenance` summary only.
+- Required-gap automatic evaluation now counts only concrete accepted-value
+  provenance states: `source_provided`, `teacher_provided`, and `reviewed`.
+- Task 307 matching validation now rejects non-empty directed pair sets with
+  `ExamAuthoringAnswerKeyProvenance.ABSENT` using
+  `absent_matching_provenance_with_pairs`. `ABSENT` remains the no-trusted-key
+  state.
+- Focused regression proof:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_exam_authoring_matching_contracts.py tests/sir_convert_a_lot/test_exam_authoring_gap_contracts.py`
+  passed with `23 passed`.
+- Live probes for the two re-review bypasses now fail closed:
+  `gap_mixed_probe False False` with
+  `accepted_gap_open_cloze_value_with_mixed_provenance`, and
+  `matching_absent_pairs_probe False` with
+  `absent_matching_provenance_with_pairs`.
+- Closeout gates passed: `format-all`, `lint-fix`, `typecheck-all`,
+  `coverage-gate` (`1250 passed, 5 skipped`, coverage `95.46%`),
+  `docs-sync`, `docs-validate`, `skills-validate`, `handoff-validate`, and
+  `git diff --check`.
+
+Third re-review on 2026-05-15 accepted the remediation:
+
+- Value-level `mixed` gap provenance now fails contract validation and blocks
+  automatic evaluation; aggregate gap `mixed` remains a derived summary only.
+- Non-empty matching pairs with `absent` provenance now fail validation.
+- Live probes confirmed the two previously accepted bypass shapes now return
+  `valid=False`.
+
 ## Follow-up Actions
 
 1. Completed: fix the Task 305 per-accepted-value provenance shape before Task 306 consumes
@@ -260,14 +373,19 @@ Second remediation implemented on 2026-05-15 and ready for re-review:
    source adapters are implemented.
 1. Completed: reject aggregate `mixed` matching provenance before new
    matching-capable source adapters are implemented.
+1. Completed: reject value-level `mixed` gap accepted-value provenance before
+   Task 306 consumes accepted values.
+1. Completed: reject non-empty matching pairs with `absent` provenance before
+   Task 306 consumes matching pairs.
 
 ## Completion
 
 Review opened on 2026-05-15 with blocking findings. Original blocker
 remediation was re-reviewed on 2026-05-15, but the shared provenance change
 introduced one remaining Task 307 blocker. Second remediation was implemented
-on 2026-05-15 and is ready for reviewer re-review; review status remains
-pending until that re-review closes the finding.
+on 2026-05-15. Second re-review on 2026-05-15 found two remaining provenance
+trust blockers. Third remediation was re-reviewed and accepted on 2026-05-15.
+Review closed as `approved`.
 
 ## Checklist
 
@@ -275,4 +393,4 @@ pending until that re-review closes the finding.
 - [x] Decision recorded
 - [x] Response recorded
 - [x] Follow-up tasks linked
-- [ ] Review closed
+- [x] Review closed

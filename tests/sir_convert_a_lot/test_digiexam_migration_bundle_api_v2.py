@@ -26,10 +26,20 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from fastapi.testclient import TestClient
 from httpx import Response
+from pydantic import JsonValue
 
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
+    CHOICE_PROMPT_TEMPLATE_VERSION,
+    DigiExamAnswerKeyCompletionValidationState,
+    answer_key_candidate_payload_digest,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
+    DigiExamOverlayReviewedCompletionOutcome,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DIGIEXAM_IR_SCHEMA_VERSION
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION,
+    DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
     DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
     DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
@@ -37,6 +47,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
     TARGET_READINESS_REPORT_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
+from scripts.sir_convert_a_lot.domain.specs_v2 import DigiExamAnswerKeyCompletionModeV2
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
     StructuredLLMEndpointKind,
@@ -237,7 +248,9 @@ def test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts
         idempotency_key="idem-digiexam-advisory-report",
         wait_seconds=20,
         payload=_missing_answer_key_payload(),
-        completion_mode="local_llm_suggest_missing_machine_marked",
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED
+        ).value,
     )
 
     assert response.status_code == 200
@@ -276,6 +289,152 @@ def test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts
     assert "source_provided" not in rendered_report
     assert "teacher_provided" not in rendered_report
     assert "reviewed" not in rendered_report
+
+
+def test_digiexam_migration_reviewed_completion_apply_uses_overlay_without_provider(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_calls: list[str] = []
+
+    async def forbidden_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self
+        provider_calls.append(profile.provider_id)
+        raise AssertionError(f"Unexpected structured LLM call for {request.item_id}")
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        forbidden_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, structured_llm=_structured_llm_config())
+    headers = _headers(identity, subject="teacher-llm-reviewed", grants=_read_grants())
+    source_payload = _missing_answer_key_payload()
+
+    baseline_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-llm-reviewed",
+        idempotency_key="idem-reviewed-completion-baseline",
+        wait_seconds=20,
+        payload=source_payload,
+    )
+    assert baseline_response.status_code == 200
+    baseline_job_id = baseline_response.json()["job"]["job_id"]
+    baseline_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
+        headers=headers,
+    ).json()
+    migration_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
+        headers=headers,
+    ).json()
+    answer_payload = _choice_answer_payload(2)
+
+    overlay_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-llm-reviewed",
+        idempotency_key="idem-reviewed-completion-apply",
+        wait_seconds=20,
+        payload=source_payload,
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
+        ).value,
+        digiexam_ingestion_overlay=(
+            "teacher-overlay.json",
+            _reviewed_completion_overlay_bytes(
+                baseline_manifest=baseline_manifest,
+                item_summary=migration_manifest["item_summaries"][0],
+                answer_payload=answer_payload,
+                review_outcome=DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value,
+                candidate_payload_digest=answer_key_candidate_payload_digest(answer_payload),
+            ),
+        ),
+    )
+
+    assert overlay_response.status_code == 200
+    assert provider_calls == []
+    job_id = overlay_response.json()["job"]["job_id"]
+    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
+    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+    source_ir = client.get(f"/v2/convert/jobs/{job_id}/artifacts/ir_json", headers=headers).json()
+    effective_ir = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/effective_ir_json",
+        headers=headers,
+    ).json()
+
+    assert entries["answer_key_completion_report"]["availability"] == "not_requested"
+    assert entries["effective_ir_json"]["availability"] == "available"
+    assert entries["examnet_pdf"]["availability"] == "available"
+    assert entries["qti_package"]["availability"] == "available"
+    assert source_ir["items"][0]["answer_key"]["provenance"] == "absent"
+    assert effective_ir["answer_key_completion_report_sha256"] == "sha256:completion-report"
+    effective_answer_key = effective_ir["items"][0]["effective_answer_key"]
+    assert effective_answer_key["provenance"] == "reviewed"
+    assert effective_answer_key["correct_alternative_ids"] == [2]
+    assert effective_answer_key["lineage"]["candidate_id"] == "candidate-item-001"
+    assert effective_answer_key["lineage"]["schema_version"] == (
+        DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION
+    )
+    assert effective_answer_key["lineage"]["prompt_template_version"] == (
+        CHOICE_PROMPT_TEMPLATE_VERSION
+    )
+    assert effective_answer_key["lineage"]["review_outcome"] == (
+        DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value
+    )
+
+
+def test_digiexam_migration_reviewed_completion_apply_requires_overlay(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_calls: list[str] = []
+
+    async def forbidden_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self
+        provider_calls.append(profile.provider_id)
+        raise AssertionError(f"Unexpected structured LLM call for {request.item_id}")
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        forbidden_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, structured_llm=_structured_llm_config())
+
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-llm-reviewed-required",
+        idempotency_key="idem-reviewed-completion-missing-overlay",
+        wait_seconds=20,
+        payload=_missing_answer_key_payload(),
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
+        ).value,
+    )
+
+    assert response.status_code == 422
+    error = response.json()["error"]
+    assert error["code"] == "validation_error"
+    assert (
+        DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW.value
+        in error["details"]["errors"][0]["msg"]
+    )
+    assert provider_calls == []
 
 
 def test_digiexam_migration_respects_examnet_pdf_only_target(tmp_path: Path) -> None:
@@ -615,7 +774,8 @@ def test_digiexam_migration_applies_source_bound_teacher_overlay(
     ).json()
 
     assert source_ir["items"][0]["answer_key"]["provenance"] == "absent"
-    assert effective_ir["items"][0]["effective_answer_key"]["provenance"] == "manual_teacher_key"
+    assert effective_ir["items"][0]["effective_answer_key"]["provenance"] == "teacher_provided"
+    assert effective_ir["items"][0]["effective_answer_key"]["lineage"] is None
     assert overlay_report["accepted_entries"][0]["applied_fields"] == ["manual_answer_key"]
     assert overlay_report["rejected_entries"] == []
     assert {row["target"]: row["export_enabled"] for row in readiness["targets"]} == {
@@ -947,7 +1107,7 @@ def _post_digiexam_job(
     source_file: tuple[str, bytes] | None = None,
     headers: dict[str, str] | None = None,
     targets: tuple[str, ...] = ("examnet_pdf", "qti_package"),
-    completion_mode: str = "source_evidence_only",
+    completion_mode: str = DigiExamAnswerKeyCompletionModeV2.SOURCE_EVIDENCE_ONLY.value,
 ) -> Response:
     request_headers = headers or _headers(
         identity,
@@ -1121,6 +1281,64 @@ def _accept_current_state_overlay_bytes(
         },
         sort_keys=True,
     ).encode("utf-8")
+
+
+def _reviewed_completion_overlay_bytes(
+    *,
+    baseline_manifest: dict[str, object],
+    item_summary: dict[str, object],
+    answer_payload: dict[str, JsonValue],
+    review_outcome: str,
+    candidate_payload_digest: str,
+) -> bytes:
+    source = baseline_manifest["source"]
+    source_binding = baseline_manifest["source_binding"]
+    if not isinstance(source, dict) or not isinstance(source_binding, dict):
+        raise RuntimeError("baseline manifest has no source binding")
+    kind = answer_payload.get("kind")
+    if not isinstance(kind, str):
+        raise RuntimeError("reviewed completion answer payload kind must be a string")
+    return json.dumps(
+        {
+            "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
+            "source_binding": {
+                "source_file_sha256": source["sha256"],
+                "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
+                "source_ir_sha256": source_binding["source_ir_sha256"],
+            },
+            "items": [
+                {
+                    "item_id": item_summary["item_id"],
+                    "sequence": item_summary["sequence"],
+                    "item_type": item_summary["item_type"],
+                    "source_item_fingerprint": item_summary["source_item_fingerprint"],
+                    "reviewed_completion_answer_key": {
+                        "kind": kind,
+                        "review_decision_id": "review-decision-001",
+                        "review_outcome": review_outcome,
+                        "candidate_lineage": {
+                            "completion_report_sha256": "sha256:completion-report",
+                            "candidate_id": "candidate-item-001",
+                            "candidate_payload_digest": candidate_payload_digest,
+                            "provider_profile_id": "local-structured",
+                            "schema_name": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+                            "schema_version": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+                            "prompt_template_version": CHOICE_PROMPT_TEMPLATE_VERSION,
+                            "validation_state": (
+                                DigiExamAnswerKeyCompletionValidationState.VALID.value
+                            ),
+                        },
+                        "answer_payload": answer_payload,
+                    },
+                }
+            ],
+        },
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _choice_answer_payload(correct_id: int) -> dict[str, JsonValue]:
+    return {"kind": "choice", "correct_alternative_ids": [correct_id]}
 
 
 def _pdf_bytes(text: str) -> bytes:

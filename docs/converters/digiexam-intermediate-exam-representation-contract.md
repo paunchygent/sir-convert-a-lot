@@ -172,8 +172,10 @@ Each effective item MUST include:
 - source item reference;
 - effective prompt/options/gaps structure after any item patch;
 - effective answer key, when present;
-- effective answer-key provenance, such as `source_evidence`,
-  `manual_teacher_key`, `reviewed_llm_completion`, or `absent`;
+- effective answer-key provenance, such as `reviewed` or
+  `teacher_provided`, separate from parser/source provenance;
+- bounded reviewed-completion lineage when an applied key began as an advisory
+  candidate;
 - applied overlay entry identifiers;
 - review decisions applied to the item.
 

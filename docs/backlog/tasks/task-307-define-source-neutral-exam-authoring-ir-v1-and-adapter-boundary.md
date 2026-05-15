@@ -171,8 +171,9 @@ DigiExam parsing logic.
 - [x] Target-profile tests prove neutral matching association bounds can express
   QTI-permissive shapes, reject malformed negative or impossible bound shapes,
   and preserve the current Exam.net PDF one-to-one-plus-distractor constraint.
-- [x] Contract tests prove aggregate `mixed` matching provenance fails closed
-  while reviewed whole-key provenance remains valid.
+- [x] Contract tests prove aggregate `mixed` matching provenance and non-empty
+  pairs with `absent` provenance fail closed while reviewed whole-key
+  provenance remains valid.
 - [x] Architecture guard or review checklist test proving new source parser
   tasks must target `ExamAuthoringIR v1`.
 
@@ -185,6 +186,8 @@ DigiExam parsing logic.
   bounds before target-profile validators interpret the pair set.
 - Neutral validation rejects aggregate `mixed` matching provenance because
   current matching pairs do not carry per-pair provenance/evidence.
+- Neutral validation rejects non-empty matching pair sets whose whole-key
+  provenance is `absent`; `absent` remains the no-trusted-key state.
 - Removed DigiExam-owned matching structures, overlay payloads, effective-item
   patch fields, target-readiness matching rows, and OpenAPI matching overlay
   components from the DigiExam migration path.
