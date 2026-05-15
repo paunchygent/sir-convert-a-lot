@@ -2,7 +2,7 @@
 id: task-305-define-gapped-open-cloze-accepted-value-ir-contract
 title: Define gapped open-cloze accepted-value IR contract
 type: task
-status: proposed
+status: done
 priority: high
 created: '2026-05-15'
 last_updated: '2026-05-15'
@@ -64,12 +64,12 @@ is a governed Exam.net import/export proof path.
 
 The current `Para ihop` chemistry PDF fixture is best treated as a likely
 matching-styled gap/open-cloze workaround: it has gap-like visible answer slots
-and matching-like source/target structure. Task 305 should plan for this as
-neutral source intent, not as a DigiExam matching parser feature. If source
-evidence supports it, the source adapter may emit a gapped/open-cloze
-interaction with source evidence; later target validators/exporters can remap
-that neutral structure to matching, manual/free-text, omission, or manual
-recreation guidance according to target capability.
+and matching-like source/target structure. Task 305 treats this as neutral
+source intent, not as a DigiExam matching parser feature. If source evidence
+supports it, a future source adapter may emit a gapped/open-cloze interaction
+with source evidence; later target validators/exporters can remap that neutral
+structure to matching, manual/free-text, omission, or manual recreation
+guidance according to target capability.
 
 ## PR Scope
 
@@ -110,50 +110,141 @@ recreation guidance according to target capability.
 
 ## Deliverables
 
-- [ ] Gapped/open-cloze accepted-value `ExamAuthoringIR v1` contract.
-- [ ] Gap accepted-value validation rules and target-profile issue semantics.
-- [ ] Manifest/report shape for source-neutral gap answer-key provenance.
-- [ ] Renderer/QTI gate documentation proving gap/open-cloze remains
+- [x] Gapped/open-cloze accepted-value `ExamAuthoringIR v1` contract.
+- [x] Gap accepted-value validation rules and target-profile issue semantics.
+- [x] Manifest/report shape for source-neutral gap answer-key provenance.
+- [x] Renderer/QTI gate documentation proving gap/open-cloze remains
   manual/unkeyed, degraded, omitted, or manual-recreation-only unless trusted
   accepted values and target support exist.
-- [ ] Target-readiness contract rows that distinguish unsupported target
+- [x] Target-readiness contract rows that distinguish unsupported target
   export from unavailable source intent.
-- [ ] DigiExam route update plan showing which current DigiExam gap fields map
+- [x] DigiExam route update plan showing which current DigiExam gap fields map
   into the neutral authoring contract and which stay source-specific.
-- [ ] Planning note for matching-styled gapped items that keeps parser/adapters
+- [x] Planning note for matching-styled gapped items that keeps parser/adapters
   source-neutral and lets target validators decide matching/manual/free-text
   remapping.
-- [ ] Focused tests for gap ID binding, missing gaps, duplicate/conflicting
+- [x] Focused tests for gap ID binding, missing gaps, duplicate/conflicting
   values, normalization, multi-gap completeness, source/effective provenance,
   and target readiness.
 
 ## Acceptance Criteria
 
-- [ ] Gap accepted values are first-class structured `ExamAuthoringIR v1` data,
+- [x] Gap accepted values are first-class structured `ExamAuthoringIR v1` data,
   not prompt text, renderer labels, or provider-specific output.
-- [ ] Source IR remains source-owned: missing accepted values stay absent
+- [x] Source IR remains source-owned: missing accepted values stay absent
   unless the source adapter or trusted evidence supplies them.
-- [ ] Neutral authoring/effective data can carry teacher/manual or later
+- [x] Neutral authoring/effective data can carry teacher/manual or later
   reviewed accepted values without rewriting source-adapter provenance.
-- [ ] Gapped/open-cloze PDF/QTI output can distinguish source-proven,
+- [x] Gapped/open-cloze PDF/QTI output can distinguish source-proven,
   teacher/manual, reviewed effective, and absent answer-key provenance.
-- [ ] Multi-gap items are unavailable for automatic evaluation until every
+- [x] Multi-gap items are unavailable for automatic evaluation until every
   required gap has trusted accepted values under the governed completeness
   policy.
-- [ ] Task 303 manual/unkeyed preservation remains available where
+- [x] Task 303 manual/unkeyed preservation remains available where
   schema/profile validation allows it.
-- [ ] Target readiness reports target limitations as target capability or
+- [x] Target readiness reports target limitations as target capability or
   degradation, not as a reason to remove gap/open-cloze semantics from the
   source-neutral IR.
-- [ ] Teachers can see whether the target can include a degraded/manual/free-text
+- [x] Teachers can see whether the target can include a degraded/manual/free-text
   representation, omit the item, or use the item as a manual recreation source.
-- [ ] QTI 2.1/3.0 gap interaction support is documented separately from
+- [x] QTI 2.1/3.0 gap interaction support is documented separately from
   Exam.net-native gap import/export claims.
-- [ ] Matching-styled gap/open-cloze source shapes are not promoted to DigiExam
+- [x] Matching-styled gap/open-cloze source shapes are not promoted to DigiExam
   matching. They remain source-neutral gap/open-cloze authoring structures, and
   only target validators/exporters decide whether matching remapping is safe.
-- [ ] Reviewed application and LLM advisory tasks can consume the contract but
+- [x] Reviewed application and LLM advisory tasks can consume the contract but
   are not implemented here.
+
+## Implemented Shape
+
+Task 305 adds the gap/open-cloze authoring slice in:
+
+- `scripts/sir_convert_a_lot/domain/exam_authoring_gap_contracts.py`;
+- `scripts/sir_convert_a_lot/domain/digiexam_exam_authoring_adapter.py`;
+- `scripts/sir_convert_a_lot/domain/digiexam_target_readiness.py`.
+
+`ExamAuthoringGapOpenClozeInteraction` uses the existing
+`exam_authoring_ir_v1` schema version; no public schema-version bump was
+needed because this is an additive source-neutral authoring slice rather than
+a change to the DigiExam API payload schemas.
+
+The neutral interaction owns:
+
+- stable `gap_id`;
+- one-based `display_order`;
+- typed prompt binding (`html_attribute` or `source_locator`);
+- `required_for_auto_evaluation`;
+- per-gap accepted values, with typed value-level provenance and evidence;
+- normalization profile;
+- derived source-neutral answer-key provenance summary;
+- optional source evidence records.
+
+The validator separates three states that must not be collapsed:
+
+1. `valid`: the source-neutral contract is structurally valid.
+1. `automatic_evaluation_ready`: every required gap has trusted accepted
+   values under the selected normalization profile.
+1. `target_export_ready`: a target profile can emit the interaction without
+   unsupported target degradation.
+
+Missing accepted values on required gaps keep the interaction structurally
+valid but not automatically evaluable. Duplicate gap IDs, blank IDs, unknown
+IDs, blank accepted values, duplicate normalized values, duplicate display
+orders, accepted values with absent provenance, and accepted values whose typed
+provenance contradicts known evidence origin are contract failures.
+
+Per-value provenance is the validation authority. The aggregate answer-key
+provenance is a derived summary only: it is `absent` when no accepted values
+exist, a single provenance when all values share it, and `mixed` when a
+multi-gap or multi-value key combines source-provided, teacher-provided, or
+reviewed accepted values.
+
+Normalization is explicit and validation-owned:
+
+- `exact_trim_case_sensitive`;
+- `trim_case_insensitive`;
+- `trim_case_punctuation_insensitive`.
+
+Spelling variants are not inferred by normalization. They must be represented
+as separate accepted values supplied by source, teacher/manual, or reviewed
+evidence.
+
+The DigiExam adapter maps existing source-specific gap data into the neutral
+contract:
+
+- `DigiExamIrItem.gaps[].guid` -> `ExamAuthoringGap.gap_id`;
+- `.dxe` `bodyHTML` `span dx-wg-id` -> prompt binding;
+- `answer_key.correct_gap_answers[]` -> ID-bound accepted values with
+  value-level provenance;
+- `.dxe` populated validations and sanitized result-PDF correct labels ->
+  source-provided neutral provenance;
+- manual overlay keys -> teacher-provided neutral provenance.
+
+DigiExam remains a source adapter. This task does not make
+`DigiExamIntermediateExam` the universal authoring model, does not introduce a
+DigiExam matching item type, and does not make QTI/PDF exporters consume the
+neutral IR as their primary runtime input yet. Task 307 remains the later
+architecture cutover authority for target validators/exporters consuming
+`ExamAuthoringIR v1` directly.
+
+## DXE Evidence
+
+Task 305 rechecked every `.dxe` file available under `inputs/` on
+2026-05-15, including tracked fixtures, local-private evidence, and the ignored
+OneDrive validation corpus:
+
+- 27 `.dxe` files parsed successfully;
+- 340 parsed items;
+- 21 gap-fill items;
+- 113 total gap placeholders;
+- every observed gap placeholder was represented in `.dxe` `blanks[]`;
+- every observed `blanks[]` entry used only `guid` and `validations`;
+- every observed `validations` array was empty;
+- every observed gap GUID was bound back into `bodyHTML` through a
+  `span dx-wg-id` prompt binding.
+
+The committed tests preserve this as metadata-only evidence. They do not print
+raw prompt text, raw `.dxe` payloads, user metadata, or embedded assets.
 
 ## Target-Profile Planning Decision
 
@@ -234,6 +325,6 @@ Minimum documentation update surface:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

@@ -168,7 +168,7 @@ def execute_v2_job_conversion(
         job.source_format == SourceFormatV2.DIGIEXAM_DXE
         and job.output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE
     ):
-        bundle_result = execute_digiexam_migration_bundle_job(job=job)
+        bundle_result = execute_digiexam_migration_bundle_job(job=job, config=config)
         pipeline_used = "digiexam_dxe_to_examnet_migration_bundle_v2"
         warnings = list(bundle_result.warnings)
         phase_timings_ms = dict(bundle_result.phase_timings_ms)

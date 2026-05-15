@@ -62,6 +62,9 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
     ExamMigrationTargetV2,
     normalized_exam_migration_targets_v2,
 )
+from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_completion_runtime import (
+    write_requested_digiexam_answer_key_completion_report,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_examnet_pdf_renderer import (
     render_digiexam_examnet_pdf,
 )
@@ -89,7 +92,7 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_pdf_text import DigiExamP
 from scripts.sir_convert_a_lot.infrastructure.examnet_qti_package_writer import (
     write_examnet_qti_artifacts,
 )
-from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 
 
@@ -105,6 +108,7 @@ class DigiExamMigrationBundleExecutionResult:
 def execute_digiexam_migration_bundle_job(
     *,
     job: StoredJobV2,
+    config: ServiceConfig,
 ) -> DigiExamMigrationBundleExecutionResult:
     """Build and persist all named artifacts for one DigiExam migration job."""
 
@@ -177,6 +181,12 @@ def execute_digiexam_migration_bundle_job(
                 key=DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON,
                 path=effective_ir_path,
             )
+    answer_key_completion_report_entry = write_requested_digiexam_answer_key_completion_report(
+        job=job,
+        artifacts_dir=artifacts_dir,
+        exam=effective_exam,
+        config=config,
+    )
     migration_manifest_path = artifact_path(
         artifacts_dir, DigiExamMigrationArtifactKey.MIGRATION_MANIFEST
     )
@@ -268,6 +278,7 @@ def execute_digiexam_migration_bundle_job(
         qti_entries=qti_entries,
         effective_ir_entry=effective_ir_entry,
         ingestion_overlay_report_entry=ingestion_overlay_report_entry,
+        answer_key_completion_report_entry=answer_key_completion_report_entry,
     )
     resolved_bundle_status = bundle_status(entries, manual_follow_up_count)
     manifest = {

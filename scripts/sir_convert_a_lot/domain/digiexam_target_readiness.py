@@ -14,7 +14,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Final
 
+from scripts.sir_convert_a_lot.domain.digiexam_exam_authoring_adapter import (
+    build_exam_authoring_gap_open_cloze_interactions_from_digiexam_ir,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
     DigiExamIrManualFollowUpReason,
@@ -31,7 +35,17 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
 from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
     source_item_fingerprint,
 )
+from scripts.sir_convert_a_lot.domain.exam_authoring_gap_contracts import (
+    validate_examnet_pdf_gap_open_cloze_profile,
+)
 from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
+
+GAP_OPEN_CLOZE_TARGET_CHOICE_TEACHER_ACTION: Final = (
+    "choose_degraded_manual_free_text_or_omit_or_manual_recreation"
+)
+GAP_OPEN_CLOZE_UNSUPPORTED_TARGET_MESSAGE_KEY: Final = (
+    "exam_converter.target.gap_open_cloze.unsupported_target_shape"
+)
 
 
 class DigiExamTargetReadiness(StrEnum):
@@ -189,6 +203,14 @@ def _rows_for_target(
         return (
             _target_row(entry, DigiExamTargetReadiness.PROVIDER_UNAVAILABLE, "retry_later", True),
         )
+    if entry.unavailable_code == "unsupported_target_shape":
+        gap_rows = _unsupported_gap_open_cloze_rows(
+            target=target,
+            exam=exam,
+            fingerprints=fingerprints,
+        )
+        if gap_rows:
+            return gap_rows
     return (
         _target_row(
             entry,
@@ -197,6 +219,42 @@ def _rows_for_target(
             False,
         ),
     )
+
+
+def _unsupported_gap_open_cloze_rows(
+    *,
+    target: str,
+    exam: DigiExamIntermediateExam,
+    fingerprints: dict[str, str],
+) -> tuple[DigiExamTargetReadinessRow, ...]:
+    if target != DigiExamMigrationArtifactKey.EXAMNET_PDF.value:
+        return ()
+    interactions = build_exam_authoring_gap_open_cloze_interactions_from_digiexam_ir(exam)
+    item_by_id = {item.item_id: item for item in exam.items}
+    rows: list[DigiExamTargetReadinessRow] = []
+    for interaction in interactions:
+        validation = validate_examnet_pdf_gap_open_cloze_profile(interaction)
+        if validation.target_export_ready:
+            continue
+        item = item_by_id.get(interaction.interaction_id)
+        if item is None:
+            continue
+        rows.append(
+            DigiExamTargetReadinessRow(
+                target=target,
+                readiness=DigiExamTargetReadiness.UNSUPPORTED_TARGET_SHAPE,
+                export_enabled=False,
+                artifact_key=None,
+                reason_code=DigiExamTargetReadiness.UNSUPPORTED_TARGET_SHAPE.value,
+                teacher_action=GAP_OPEN_CLOZE_TARGET_CHOICE_TEACHER_ACTION,
+                retryable=False,
+                message_key=GAP_OPEN_CLOZE_UNSUPPORTED_TARGET_MESSAGE_KEY,
+                item_id=item.item_id,
+                sequence=item.sequence,
+                source_item_fingerprint=fingerprints[item.item_id],
+            )
+        )
+    return tuple(rows)
 
 
 def _accepted_current_state_row(

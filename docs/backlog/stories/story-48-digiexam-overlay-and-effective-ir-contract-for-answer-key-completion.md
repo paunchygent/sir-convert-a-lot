@@ -113,14 +113,18 @@ reopened by default:
 - Task 304 published the generated v2 OpenAPI snapshot for the DigiExam
   overlay, effective-IR, and target-readiness contract.
 
-Remaining blockers for Story 48 closeout are proposed and ordered:
+Completed answer-key-shape prerequisites:
 
-1. Task 298 defines exact ID-bound matching answer-key pairs before matching
-   can be treated as automatically evaluated.
-1. Task 305 defines gap/open-cloze accepted values before gapped items can be
-   treated as automatically evaluated.
-1. Task 306 applies reviewed completion into effective IR only after Tasks 298
-   and 305 provide the first-class pair/value contracts and validators.
+- Task 298 defines exact ID-bound matching answer-key pairs before matching can
+  be treated as automatically evaluated.
+- Task 305 defines gap/open-cloze accepted values before gapped items can be
+  treated as automatically evaluated.
+
+Remaining blocker for Story 48 closeout:
+
+1. Task 306 applies reviewed completion into effective IR only through the
+   completed Task 298 and Task 305 first-class pair/value contracts and
+   validators.
 
 ## Acceptance Criteria
 
@@ -156,16 +160,16 @@ Remaining blockers for Story 48 closeout are proposed and ordered:
   selected QTI version.
 - [x] Task 304 publishes generated v2 OpenAPI with typed DigiExam migration
   bundle, overlay, effective-IR, and target-readiness schemas for consumers.
-- [ ] Reviewed completion stays disabled for matching answer-key pairs until
+- [x] Reviewed completion stays disabled for matching answer-key pairs until
   Task 298 provides exact pair fields, validation, provenance, manifest/report,
   and target-readiness semantics.
-- [ ] Reviewed completion stays disabled for gapped/open-cloze accepted values
+- [x] Reviewed completion stays disabled for gapped/open-cloze accepted values
   until Task 305 provides exact gap/value fields, validation, normalization,
   provenance, manifest/report, and target-readiness semantics.
 - [ ] Task 306 applies reviewed completion only through the completed Task 298
-  and Task 305 contracts; before those contracts exist it must reject or leave
-  matching and gapped/open-cloze items in manual-follow-up state rather than
-  infer answer keys from prompt text, renderer labels, or provider output.
+  and Task 305 contracts; it must still reject or leave items in
+  manual-follow-up state rather than infer matching or gapped/open-cloze answer
+  keys from prompt text, renderer labels, or provider output.
 
 ## Test Requirements
 
@@ -188,8 +192,8 @@ Remaining blockers for Story 48 closeout are proposed and ordered:
   can enable accepted-current-state QTI only after package/profile validation,
   unsupported-resource checks, item-level manual/unkeyed follow-up reporting,
   and vendor-unproven Exam.net import status are preserved.
-- [ ] Answer-key completion tests prove Task 306 cannot apply matching pairs or
-  gap accepted values until Task 298 and Task 305 have completed their
+- [ ] Answer-key completion tests prove Task 306 can apply matching pairs or
+  gap accepted values only through the completed Task 298 and Task 305
   first-class IR/effective-IR contracts and validators.
 
 ## Done Definition

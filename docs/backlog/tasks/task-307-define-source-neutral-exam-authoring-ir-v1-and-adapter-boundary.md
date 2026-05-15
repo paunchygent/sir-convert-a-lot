@@ -93,6 +93,9 @@ DigiExam parsing logic.
   - directed answer pairs;
   - answer-key provenance;
   - source evidence hooks and validation provenance needed by future adapters.
+- Keep matching answer-key provenance as a whole-key trust state in this
+  slice. Aggregate `mixed` provenance must fail validation until a future
+  governed matching-pair contract adds per-pair provenance and evidence.
 - Define source evidence/span semantics that can represent DigiExam `.dxe`,
   layout PDF, DOCX, Markdown, and future source families without faking a
   DigiExam source shape.
@@ -166,8 +169,10 @@ DigiExam parsing logic.
   PDF or teacher-authored structured DOCX/Markdown matching shapes, not
   synthetic DigiExam matching assumptions.
 - [x] Target-profile tests prove neutral matching association bounds can express
-  QTI-permissive shapes and the current Exam.net PDF one-to-one-plus-distractor
-  constraint.
+  QTI-permissive shapes, reject malformed negative or impossible bound shapes,
+  and preserve the current Exam.net PDF one-to-one-plus-distractor constraint.
+- [x] Contract tests prove aggregate `mixed` matching provenance fails closed
+  while reviewed whole-key provenance remains valid.
 - [x] Architecture guard or review checklist test proving new source parser
   tasks must target `ExamAuthoringIR v1`.
 
@@ -176,6 +181,10 @@ DigiExam parsing logic.
 - Added `domain.exam_authoring_ir_contracts` and
   `domain.exam_authoring_schema_versions` as the source-neutral matching
   contract/version authority.
+- Neutral validation rejects malformed interaction and per-choice association
+  bounds before target-profile validators interpret the pair set.
+- Neutral validation rejects aggregate `mixed` matching provenance because
+  current matching pairs do not carry per-pair provenance/evidence.
 - Removed DigiExam-owned matching structures, overlay payloads, effective-item
   patch fields, target-readiness matching rows, and OpenAPI matching overlay
   components from the DigiExam migration path.

@@ -282,6 +282,14 @@ Answer-key fields MUST include:
 Matching answer pairs are intentionally absent from DigiExam IR. Real matching
 sources must map into `ExamAuthoringIR v1` instead.
 
+DigiExam gap data remains source-specific adapter data. Task 305 maps
+`DigiExamIrItem.gaps[].guid`, `.dxe` `bodyHTML` `span dx-wg-id` bindings, and
+`correct_gap_answers[]` into the source-neutral
+`ExamAuthoringGapOpenClozeInteraction` contract in
+`scripts/sir_convert_a_lot/domain/digiexam_exam_authoring_adapter.py`. Target
+validators/exporters may consume that neutral contract in later cutover work;
+this DigiExam IR contract must not become the universal gap/open-cloze model.
+
 The IR and manifest MUST NOT retain incorrect student selections, student
 free-text answers, earned-score labels or values, student identity markers, or
 student-performance history from result PDFs. Result PDFs may enrich only

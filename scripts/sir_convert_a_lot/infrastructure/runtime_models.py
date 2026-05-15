@@ -20,6 +20,10 @@ from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v
 )
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
+    StructuredLLMRuntimeConfig,
+    disabled_structured_llm_runtime_config,
+)
 
 
 def utc_now() -> datetime:
@@ -80,6 +84,9 @@ class ServiceConfig:
     internal_identity_ttl_seconds: int = 60
     internal_identity_allowed_clock_skew_seconds: int = 5
     public_exam_converter_access: PublicExamConverterRuntimeAccessConfig | None = None
+    structured_llm: StructuredLLMRuntimeConfig = field(
+        default_factory=disabled_structured_llm_runtime_config
+    )
 
 
 @dataclass(frozen=True)

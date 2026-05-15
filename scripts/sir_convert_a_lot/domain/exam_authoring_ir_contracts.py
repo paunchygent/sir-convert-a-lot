@@ -34,6 +34,7 @@ class ExamAuthoringAnswerKeyProvenance(StrEnum):
     SOURCE_PROVIDED = "source_provided"
     TEACHER_PROVIDED = "teacher_provided"
     REVIEWED = "reviewed"
+    MIXED = "mixed"
 
 
 class ExamAuthoringMatchingValidationIssueCode(StrEnum):
@@ -46,6 +47,10 @@ class ExamAuthoringMatchingValidationIssueCode(StrEnum):
     DUPLICATE_PAIR = "duplicate_matching_pair"
     UNKNOWN_SOURCE_ID = "unknown_matching_source_id"
     UNKNOWN_TARGET_ID = "unknown_matching_target_id"
+    INVALID_INTERACTION_BOUNDS = "invalid_matching_interaction_bounds"
+    INVALID_SOURCE_BOUNDS = "invalid_matching_source_choice_bounds"
+    INVALID_TARGET_BOUNDS = "invalid_matching_target_choice_bounds"
+    MIXED_PROVENANCE_WITHOUT_PAIR_PROVENANCE = "mixed_matching_provenance_without_pair_provenance"
     ASSOCIATION_COUNT_OUT_OF_BOUNDS = "matching_association_count_out_of_bounds"
     SOURCE_ASSOCIATION_LIMIT_EXCEEDED = "matching_source_association_limit_exceeded"
     TARGET_ASSOCIATION_LIMIT_EXCEEDED = "matching_target_association_limit_exceeded"
@@ -158,6 +163,12 @@ def validate_exam_authoring_matching_interaction(
     issues.extend(_blank_choice_issues("source", source_ids))
     issues.extend(_blank_choice_issues("target", target_ids))
     issues.extend(_duplicate_pair_issues(interaction.answer_key.pairs))
+    issues.extend(_answer_key_provenance_issues(interaction.answer_key))
+    issues.extend(
+        _interaction_bound_shape_issues(interaction.min_associations, interaction.max_associations)
+    )
+    issues.extend(_choice_bound_shape_issues("source", interaction.source_choices))
+    issues.extend(_choice_bound_shape_issues("target", interaction.target_choices))
 
     valid_source_ids = frozenset(source_ids)
     valid_target_ids = frozenset(target_ids)
@@ -182,7 +193,11 @@ def validate_exam_authoring_matching_interaction(
             )
 
     pair_count = len(interaction.answer_key.pairs)
-    if not _within_bounds(pair_count, interaction.min_associations, interaction.max_associations):
+    if _bounds_shape_valid(
+        interaction.min_associations, interaction.max_associations
+    ) and not _within_bounds(
+        pair_count, interaction.min_associations, interaction.max_associations
+    ):
         issues.append(
             ExamAuthoringMatchingValidationIssue(
                 reason_code=(
@@ -195,7 +210,7 @@ def validate_exam_authoring_matching_interaction(
     source_counts = _counts(pair.source_id for pair in interaction.answer_key.pairs)
     target_counts = _counts(pair.target_id for pair in interaction.answer_key.pairs)
     for choice in interaction.source_choices:
-        if not _within_bounds(
+        if _bounds_shape_valid(choice.match_min, choice.match_max) and not _within_bounds(
             source_counts.get(choice.choice_id, 0),
             choice.match_min,
             choice.match_max,
@@ -210,7 +225,7 @@ def validate_exam_authoring_matching_interaction(
                 )
             )
     for choice in interaction.target_choices:
-        if not _within_bounds(
+        if _bounds_shape_valid(choice.match_min, choice.match_max) and not _within_bounds(
             target_counts.get(choice.choice_id, 0),
             choice.match_min,
             choice.match_max,
@@ -319,6 +334,64 @@ def _duplicate_pair_issues(
     return tuple(issues)
 
 
+def _answer_key_provenance_issues(
+    answer_key: ExamAuthoringMatchingAnswerKey,
+) -> tuple[ExamAuthoringMatchingValidationIssue, ...]:
+    if answer_key.provenance != ExamAuthoringAnswerKeyProvenance.MIXED:
+        return ()
+    return (
+        ExamAuthoringMatchingValidationIssue(
+            reason_code=(
+                ExamAuthoringMatchingValidationIssueCode.MIXED_PROVENANCE_WITHOUT_PAIR_PROVENANCE
+            ),
+            message=(
+                "Matching answer keys cannot use aggregate mixed provenance "
+                "until matching pairs carry per-pair provenance."
+            ),
+        ),
+    )
+
+
+def _interaction_bound_shape_issues(
+    minimum: int, maximum: int
+) -> tuple[ExamAuthoringMatchingValidationIssue, ...]:
+    if _bounds_shape_valid(minimum, maximum):
+        return ()
+    return (
+        ExamAuthoringMatchingValidationIssue(
+            reason_code=ExamAuthoringMatchingValidationIssueCode.INVALID_INTERACTION_BOUNDS,
+            message=(
+                "Matching interaction bounds must use non-negative values and "
+                "a non-zero maximum must be greater than or equal to the minimum."
+            ),
+        ),
+    )
+
+
+def _choice_bound_shape_issues(
+    side: _MatchingChoiceSide,
+    choices: tuple[ExamAuthoringMatchingChoice, ...],
+) -> tuple[ExamAuthoringMatchingValidationIssue, ...]:
+    reason_code = (
+        ExamAuthoringMatchingValidationIssueCode.INVALID_SOURCE_BOUNDS
+        if side == "source"
+        else ExamAuthoringMatchingValidationIssueCode.INVALID_TARGET_BOUNDS
+    )
+    return tuple(
+        ExamAuthoringMatchingValidationIssue(
+            reason_code=reason_code,
+            message=(
+                "Matching choice bounds must use non-negative values and a "
+                "non-zero maximum must be greater than or equal to the minimum."
+            ),
+            source_id=choice.choice_id if side == "source" else None,
+            target_id=choice.choice_id if side == "target" else None,
+        )
+        for choice in choices
+        if not _bounds_shape_valid(choice.match_min, choice.match_max)
+    )
+
+
 def _duplicates(values: tuple[str, ...]) -> tuple[str, ...]:
     seen: set[str] = set()
     duplicates: list[str] = []
@@ -340,3 +413,7 @@ def _within_bounds(value: int, minimum: int, maximum: int) -> bool:
     if value < minimum:
         return False
     return maximum == 0 or value <= maximum
+
+
+def _bounds_shape_valid(minimum: int, maximum: int) -> bool:
+    return minimum >= 0 and maximum >= 0 and (maximum == 0 or maximum >= minimum)

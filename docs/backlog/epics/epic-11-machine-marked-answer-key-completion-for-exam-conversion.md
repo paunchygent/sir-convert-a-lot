@@ -111,9 +111,9 @@ Use
 as the tranche sequence and checkpoint ledger for this epic. It orders the work
 from contract foundation through overlay runtime, provider harness, local model
 benchmarking, advisory reports, reviewed application, and cross-repo handoff.
-Matching pair and gapped/open-cloze accepted-value contracts are explicit
-preconditions before reviewed application may write those answer-key shapes
-into effective IR.
+Task 298 matching pair and Task 305 gapped/open-cloze accepted-value contracts
+are completed preconditions before reviewed application may write those
+answer-key shapes into effective IR.
 Task 301 is an experimental Hemma runtime smoke checkpoint for Granite 4.1 8B
 FP8 on the ROCm vLLM preview image; it can inform provider viability, but it
 does not replace Task 300's `llama.cpp` GGUF benchmark matrix or authorize
@@ -133,14 +133,14 @@ production model selection.
   schemas needed by consumer type-generation and live-test preflight.
 - [ ] Teacher/manual overlay can remove manual follow-up only when source
   binding and type compatibility are proven.
-- [ ] Structured LLM completion is local-first, item-local, schema-specific,
+- [x] Structured LLM completion is local-first, item-local, schema-specific,
   non-explanatory, and metadata-only in normal capture.
-- [ ] Remote fallback cannot occur unless policy and signed authenticated/public
+- [x] Remote fallback cannot occur unless policy and signed authenticated/public
   consent explicitly allow it.
-- [ ] Advisory completion can be produced without changing renderer input.
+- [x] Advisory completion can be produced without changing renderer input.
 - [ ] Applied completion requires effective provenance, review/report artifacts,
   and tests proving source provenance remains strict.
-- [ ] Matching answer application waits for Task 298's exact pair contract,
+- [x] Matching answer application waits for Task 298's exact pair contract,
   and gapped/open-cloze application waits for Task 305's accepted-value
   contract.
 - [x] Accepted-current-state can enable QTI only under a governed

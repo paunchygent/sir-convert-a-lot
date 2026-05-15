@@ -1,5 +1,5 @@
 {
-  "dependency_hash": "bfde2ae9d017000920c183290504917c221c33cc373eecd714e5c6f85c4fc870",
+  "dependency_hash": "586b2389d22746124268ef6881bf2f23062a50c38651e421da82fe26ddd503f1",
   "easyocr_preload": {
     "download_enabled": true,
     "gpu": false,
@@ -9,7 +9,7 @@
     ],
     "model_storage_directory": "/opt/easyocr-models"
   },
-  "requirements_sha256": "7355ab2f38817a1b49e7d7bfb737b204d04429435437c6e29eca5f201384c6b4",
+  "requirements_sha256": "e2baa83a71464fd705fc07afbf17cbd9bc8070d4be1511c14fb476875879b832",
   "runtime_kind": "rocm",
   "runtime_pins": {
     "torch_index_url": "https://download.pytorch.org/whl/rocm7.1",
@@ -42,6 +42,7 @@
     "cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == \"Linux\"",
     "defusedxml==0.7.1",
     "dill==0.4.1",
+    "dishka==1.10.1",
     "docling==2.73.1",
     "docling-core[chunking]==2.75.0",
     "docling-ibm-models==3.13.2",

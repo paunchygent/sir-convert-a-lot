@@ -1,6 +1,6 @@
 {
-  "dependency_hash": "2faf42883374719089596b15e60ec893d5ea3f4afb27a4259bf1e23ccc077b89",
-  "dependency_image_hash": "3331efaa0efebdb067296aac63a571d77ae873251b25559b6b5b3b9a822161e7",
+  "dependency_hash": "f5dce3d37e40a18d67c3b43254196852883fb25b138d43601ee810a1dc75f866",
+  "dependency_image_hash": "50d7f7d910ad8311b25de14f3f48660e6ed1ac50814f7f71570ada72a88cf1e4",
   "python_image": "python:3.11-slim",
   "recipe_hash": "b73103f7eb1258eb7be902b74b10675cbd92c6c14db4e0c0c5c29d72ebc6f81f",
   "runtime_kind": "cpu",

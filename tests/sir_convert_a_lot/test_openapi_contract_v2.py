@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION,
     DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
     DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
     TARGET_READINESS_REPORT_SCHEMA_VERSION,
@@ -58,6 +59,9 @@ def test_create_job_openapi_contract_exposes_typed_multipart_json_parts() -> Non
         "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1",
         "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
         "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
+        "answer_key_completion_report": (
+            "#/components/schemas/DigiExamAnswerKeyCompletionReportV1"
+        ),
     }
     assert create_job["x-sir-convert-digiexam-schema-versions"] == (
         digiexam_schema_version_extension()
@@ -94,6 +98,7 @@ def test_digiexam_consumer_components_are_published() -> None:
         "DigiExamTargetReadinessReportV1",
         "DigiExamEffectiveExamV1",
         "DigiExamIngestionOverlayReportV1",
+        "DigiExamAnswerKeyCompletionReportV1",
     ):
         assert component_name in schemas
 
@@ -109,6 +114,10 @@ def test_digiexam_consumer_components_are_published() -> None:
     ingestion_properties = _mapping(ingestion_overlay["properties"])
     ingestion_schema_version = _mapping(ingestion_properties["schema_version"])
     assert ingestion_schema_version["const"] == DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION
+    completion_report = _mapping(schemas["DigiExamAnswerKeyCompletionReportV1"])
+    completion_properties = _mapping(completion_report["properties"])
+    completion_schema_version = _mapping(completion_properties["schema_version"])
+    assert completion_schema_version["const"] == ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION
     assert "DigiExamOverlayMatchingPair" not in schemas
     assert "DigiExamOverlayMatchingManualAnswerKey" not in schemas
     assert "DigiExamOverlayMatchingItemPatch" not in schemas

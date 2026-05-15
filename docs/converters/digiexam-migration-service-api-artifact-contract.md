@@ -661,29 +661,46 @@ Rejected patch fields remain item-addressable in `rejected_entries`; manual
 answer keys and review decisions continue through their separate Task 295
 paths.
 
-`answer_key_completion_report_v1` records structured local-provider decisions
-and backend validation states, never raw prompts or raw provider responses:
+`answer_key_completion_report_v1` records structured local-provider advisory
+candidates and backend validation states, never raw prompts, raw provider
+responses, source/parser provenance claims, student data, owner metadata, raw
+`.dxe`, or result-PDF content. Candidate digests are computed from the
+canonical backend-validated candidate payload only, not raw provider responses,
+raw prompts, or pre-validation payloads:
 
 ```json
 {
   "schema_version": "answer_key_completion_report_v1",
-  "provider_runtime": "vllm",
-  "model_profile": "ibm-granite/granite-4.1-8b-fp8",
+  "job_id": "job-1",
+  "completion_mode": "local_llm_suggest_missing_machine_marked",
   "items": [
     {
       "item_id": "item-1",
       "sequence": 1,
-      "item_type": "choice",
+      "item_type": "single_choice",
       "decision_state": "suggested",
+      "validation_state": "valid",
+      "candidate_id": "item-1:5d41402abc4b2a76",
+      "candidate_payload_digest": "sha256:5d41402abc4b2a76b9719d911017c5920f3a8c7e0b921b4d55ab11cd22ef3344",
       "answer_payload": {
         "kind": "choice",
-        "correct_alternative_ids": ["B"]
+        "correct_alternative_ids": [2]
       },
-      "backend_validation": "valid"
+      "provider_profile_id": "local-structured",
+      "model_profile": "ibm-granite/granite-4.1-8b-fp8",
+      "schema_name": "digiexam_choice_answer_key_decision_v1",
+      "schema_version": "digiexam_choice_answer_key_decision_v1",
+      "prompt_template_version": "digiexam_choice_answer_key_prompt_v1",
+      "backend_status": "success",
+      "backend_failure_code": null
     }
   ]
 }
 ```
+
+`answer_key_completion_report_v1` is also published as
+`DigiExamAnswerKeyCompletionReportV1` in the generated v2 OpenAPI contract so
+Skriptoteket can generate consumer types from the same versioned shape.
 
 Rejected companion classes include:
 
@@ -1014,7 +1031,7 @@ entries, target readiness reports, and manual-follow-up reports:
 | --- | --- | --- |
 | `source_ir_unavailable` | all | IR parse status prevents target rendering. |
 | `manual_answer_key_required` | `examnet_pdf`, `qti_package` | Source evidence lacks a machine-marked answer key. |
-| `unsupported_target_shape` | `examnet_pdf`, `qti_package` | IR item is valid but no governed target shape exists. |
+| `unsupported_target_shape` | `examnet_pdf`, `qti_package` | IR item is valid but no governed target shape exists. For gap/open-cloze this is a target capability/degradation state, not a reason to erase source intent. |
 | `embedded_asset_unavailable` | `examnet_pdf`, `qti_package` | Referenced asset cannot be carried safely. |
 | `qti_validation_failed` | `qti_package` | QTI generation ran but did not pass the governed validation profile. |
 | `not_supported_by_examnet` | `qti_package` | Source content maps to QTI but falls outside the governed Exam.net QTI support profile. |
@@ -1110,6 +1127,17 @@ at least:
 Skriptoteket must display these as Sir Convert-owned readiness states. It must
 not infer exportability from duplicate right IDs, unmatched right IDs, or local
 pair counts.
+
+Gap/open-cloze readiness rows consume the Task 305
+`ExamAuthoringGapOpenClozeInteraction` semantics. Missing accepted values on
+required gaps mean the item is structurally valid but not automatically
+evaluable. Unsupported native target export, such as current multi-gap
+Exam.net PDF export, is reported as `unsupported_target_shape` with teacher
+action
+`choose_degraded_manual_free_text_or_omit_or_manual_recreation`. This preserves
+the teacher's choices: include a degraded/manual/free-text representation where
+available, omit the item, or use the item as a source for manual recreation in
+the target authoring UI.
 
 `Godkänn` / accept-current-state is represented only as a source-bound
 `review_decision` in `digiexam_ingestion_overlay_v2`. It can enable export only

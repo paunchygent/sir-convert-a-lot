@@ -442,6 +442,222 @@
         "title": "ConversionSpecV2",
         "type": "object"
       },
+      "DigiExamAnswerKeyCompletionModeV2": {
+        "description": "Allowed answer-key completion modes for DigiExam migration.",
+        "enum": [
+          "source_evidence_only",
+          "local_llm_suggest_missing_machine_marked",
+          "local_llm_apply_missing_machine_marked_with_review"
+        ],
+        "title": "DigiExamAnswerKeyCompletionModeV2",
+        "type": "string"
+      },
+      "DigiExamAnswerKeyCompletionReportItemV1": {
+        "additionalProperties": false,
+        "description": "One advisory answer-key candidate lineage report item.",
+        "properties": {
+          "answer_payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Answer Payload"
+          },
+          "backend_failure_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Backend Failure Code"
+          },
+          "backend_status": {
+            "title": "Backend Status",
+            "type": "string"
+          },
+          "candidate_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Candidate Id"
+          },
+          "candidate_payload_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Candidate Payload Digest"
+          },
+          "decision_state": {
+            "enum": [
+              "suggested",
+              "manual_follow_up_required",
+              "skipped"
+            ],
+            "title": "Decision State",
+            "type": "string"
+          },
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "title": "Item Type",
+            "type": "string"
+          },
+          "model_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model Profile"
+          },
+          "prompt_template_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Template Version"
+          },
+          "provider_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Provider Profile Id"
+          },
+          "schema_name": {
+            "anyOf": [
+              {
+                "const": "digiexam_choice_answer_key_decision_v1",
+                "type": "string"
+              },
+              {
+                "const": "digiexam_gap_fill_answer_key_decision_v1",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Schema Name"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "const": "digiexam_choice_answer_key_decision_v1",
+                "type": "string"
+              },
+              {
+                "const": "digiexam_gap_fill_answer_key_decision_v1",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Schema Version"
+          },
+          "sequence": {
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "validation_state": {
+            "enum": [
+              "valid",
+              "invalid",
+              "manual_follow_up_required",
+              "skipped"
+            ],
+            "title": "Validation State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "sequence",
+          "item_type",
+          "decision_state",
+          "validation_state",
+          "backend_status"
+        ],
+        "title": "DigiExamAnswerKeyCompletionReportItemV1",
+        "type": "object"
+      },
+      "DigiExamAnswerKeyCompletionReportV1": {
+        "additionalProperties": false,
+        "description": "Advisory answer-key completion report without source provenance.",
+        "properties": {
+          "completion_mode": {
+            "const": "local_llm_suggest_missing_machine_marked",
+            "title": "Completion Mode",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamAnswerKeyCompletionReportItemV1"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "answer_key_completion_report_v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "job_id",
+          "completion_mode",
+          "items"
+        ],
+        "title": "DigiExamAnswerKeyCompletionReportV1",
+        "type": "object"
+      },
       "DigiExamEffectiveAnswerKeyV1": {
         "additionalProperties": false,
         "description": "Effective answer-key summary without changing source provenance.",
@@ -1562,6 +1778,10 @@
         "additionalProperties": false,
         "description": "Route-specific options for DigiExam migration bundle jobs.",
         "properties": {
+          "completion_mode": {
+            "$ref": "#/components/schemas/DigiExamAnswerKeyCompletionModeV2",
+            "default": "source_evidence_only"
+          },
           "graded_result_pdf_filename": {
             "anyOf": [
               {
@@ -1605,6 +1825,10 @@
             ],
             "default": null,
             "title": "Parity Pdf Filename"
+          },
+          "remote_provider_policy": {
+            "$ref": "#/components/schemas/DigiExamRemoteProviderPolicyV2",
+            "default": "forbidden"
           },
           "result_pdf_usage": {
             "$ref": "#/components/schemas/DigiExamResultPdfUsageV2",
@@ -1909,6 +2133,14 @@
         ],
         "title": "DigiExamOverlaySourceBinding",
         "type": "object"
+      },
+      "DigiExamRemoteProviderPolicyV2": {
+        "description": "Allowed remote-provider policies for DigiExam answer-key completion.",
+        "enum": [
+          "forbidden"
+        ],
+        "title": "DigiExamRemoteProviderPolicyV2",
+        "type": "string"
       },
       "DigiExamResultPdfUsageV2": {
         "description": "Allowed use of optional DigiExam graded-result PDF evidence.",
@@ -3324,6 +3556,7 @@
         },
         "summary": "Create Job",
         "x-sir-convert-contract-components": {
+          "answer_key_completion_report": "#/components/schemas/DigiExamAnswerKeyCompletionReportV1",
           "digiexam_ingestion_overlay": "#/components/schemas/DigiExamIngestionOverlay",
           "digiexam_migration_bundle_manifest": "#/components/schemas/DigiExamMigrationBundleManifestV2",
           "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
@@ -3332,7 +3565,10 @@
           "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1"
         },
         "x-sir-convert-digiexam-schema-versions": {
+          "answer_key_completion_report": "answer_key_completion_report_v1",
+          "choice_answer_key_decision": "digiexam_choice_answer_key_decision_v1",
           "effective_exam": "digiexam_effective_exam_v2",
+          "gap_fill_answer_key_decision": "digiexam_gap_fill_answer_key_decision_v1",
           "ingestion_overlay": "digiexam_ingestion_overlay_v2",
           "ingestion_overlay_report": "ingestion_overlay_report_v1",
           "intermediate_exam": "digiexam_intermediate_exam_v3",

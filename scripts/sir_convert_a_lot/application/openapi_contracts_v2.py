@@ -26,7 +26,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
     DigiExamMigrationArtifactKey,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    AnswerKeyCompletionReportSchemaVersion,
+    DigiExamChoiceAnswerKeyDecisionSchemaVersion,
     DigiExamEffectiveExamSchemaVersion,
+    DigiExamGapFillAnswerKeyDecisionSchemaVersion,
     DigiExamIntermediateExamSchemaVersion,
     DigiExamMigrationBundleSchemaVersion,
     IngestionOverlayReportSchemaVersion,
@@ -251,6 +254,47 @@ class DigiExamIngestionOverlayReportV1(BaseModel):
     rejected_entries: list[DigiExamIngestionOverlayRejectedEntryV1]
 
 
+class DigiExamAnswerKeyCompletionReportItemV1(BaseModel):
+    """One advisory answer-key candidate lineage report item."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    item_id: str
+    sequence: int = Field(ge=1)
+    item_type: str
+    decision_state: Literal["suggested", "manual_follow_up_required", "skipped"]
+    validation_state: Literal["valid", "invalid", "manual_follow_up_required", "skipped"]
+    candidate_id: str | None = None
+    candidate_payload_digest: str | None = None
+    answer_payload: dict[str, object] | None = None
+    provider_profile_id: str | None = None
+    model_profile: str | None = None
+    schema_name: (
+        DigiExamChoiceAnswerKeyDecisionSchemaVersion
+        | DigiExamGapFillAnswerKeyDecisionSchemaVersion
+        | None
+    ) = None
+    schema_version: (
+        DigiExamChoiceAnswerKeyDecisionSchemaVersion
+        | DigiExamGapFillAnswerKeyDecisionSchemaVersion
+        | None
+    ) = None
+    prompt_template_version: str | None = None
+    backend_status: str
+    backend_failure_code: str | None = None
+
+
+class DigiExamAnswerKeyCompletionReportV1(BaseModel):
+    """Advisory answer-key completion report without source provenance."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: AnswerKeyCompletionReportSchemaVersion
+    job_id: str
+    completion_mode: Literal["local_llm_suggest_missing_machine_marked"]
+    items: list[DigiExamAnswerKeyCompletionReportItemV1]
+
+
 OPENAPI_CONTRACT_COMPONENT_MODELS: tuple[type[BaseModel], ...] = (
     JobSpecV2,
     DigiExamIngestionOverlay,
@@ -258,4 +302,5 @@ OPENAPI_CONTRACT_COMPONENT_MODELS: tuple[type[BaseModel], ...] = (
     DigiExamTargetReadinessReportV1,
     DigiExamEffectiveExamV1,
     DigiExamIngestionOverlayReportV1,
+    DigiExamAnswerKeyCompletionReportV1,
 )

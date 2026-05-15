@@ -86,6 +86,9 @@ and those sources must map through `ExamAuthoringIR v1` once Task 307 lands.
   constraints, and required pairs are complete for the selected target profile.
 - Preserve source-bound parser provenance separately from teacher/manual or
   reviewed effective answer-key provenance.
+- Reject aggregate `mixed` matching provenance until matching pairs carry
+  first-class per-pair provenance and evidence. Current matching provenance is
+  a whole-key trust state only.
 - Update manifest, parity, manual-follow-up, target-readiness, PDF, and QTI
   contract docs where they depend on matching answer-key shape.
 - Keep applied matching completion disabled until this contract and its
@@ -119,8 +122,8 @@ and those sources must map through `ExamAuthoringIR v1` once Task 307 lands.
   strings in both repos where consumers branch on bundle, IR, overlay,
   effective-exam, or readiness schema versions.
 - [x] Focused tests for exact pair binding, missing IDs, duplicate identical
-  pairs, association-limit violations, distractor targets, source/effective
-  provenance, and target readiness.
+  pairs, malformed association bounds, association-limit violations,
+  distractor targets, source/effective provenance, and target readiness.
 
 ## Acceptance Criteria
 
@@ -137,6 +140,8 @@ and those sources must map through `ExamAuthoringIR v1` once Task 307 lands.
   key.
 - [x] Matching PDF/QTI output can distinguish source-proven, teacher/manual,
   reviewed effective, and absent answer-key provenance.
+- [x] Matching validation rejects opaque aggregate `mixed` provenance while
+  the pair contract has no per-pair provenance fields.
 - [x] Matching remains unavailable for automatic evaluation when exact pairs
   are missing, while Task 303 manual/unkeyed preservation remains available
   where schema/profile validation allows it.
@@ -163,7 +168,8 @@ and those sources must map through `ExamAuthoringIR v1` once Task 307 lands.
   `domain.exam_authoring_ir_contracts`, with centralized schema version and
   validation issue-code constants.
 - Neutral validation covers exact ID-bound pairs, unknown IDs, duplicate
-  identical pairs, distractors, association-limit violations, and
+  identical pairs, distractors, malformed association bounds,
+  association-limit violations, opaque `mixed` provenance rejection, and
   QTI-permissive many-to-one shapes.
 - The Exam.net PDF profile validator rejects repeated source IDs and repeated
   target IDs while allowing unmatched target distractors.

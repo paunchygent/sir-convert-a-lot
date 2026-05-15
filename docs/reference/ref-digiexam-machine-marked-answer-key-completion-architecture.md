@@ -205,6 +205,30 @@ Allowed modes are planned as:
 Source-bound evidence wins over LLM completion. A teacher override policy that
 can supersede source-bound evidence must be a separate governed decision.
 
+LLM completion metadata is candidate lineage, not answer-key provenance. The
+advisory report may retain bounded metadata such as provider profile ID,
+completion report digest, candidate digest, schema version, prompt-template
+version, backend status, and review decision ID. When a teacher accepts a
+candidate unchanged, applied effective provenance may become `reviewed` with
+lineage pointing back to the candidate. When a teacher edits the candidate
+before applying it, effective provenance becomes `teacher_provided` with
+lineage noting that the final key was edited from the candidate. Teacher keys
+written without a candidate remain `teacher_provided` without LLM lineage.
+None of these states reclassifies LLM output as source/parser evidence.
+Candidate digests are computed from the canonical backend-validated candidate
+payload only, never from raw prompts, raw provider responses, or pre-validation
+provider output.
+
+Matching answer keys stay whole-key provenance until a later governed
+per-pair provenance contract exists. A complete LLM-derived matching pair set
+can become a whole-key `reviewed` key after validation and review, and a
+teacher-edited or teacher-submitted matching pair set can become a whole-key
+`teacher_provided` key. Aggregate `mixed` matching provenance is invalid until
+the contract can say which individual pair came from which trusted source.
+This aggregate `mixed` prohibition is matching-specific. Gap/open-cloze can
+derive a `mixed` answer-key summary later from per-accepted-value provenance;
+Task 297 still emits only advisory candidates, not provenance.
+
 ## Provider Harness
 
 The reusable provider abstraction should be generic structured output, not

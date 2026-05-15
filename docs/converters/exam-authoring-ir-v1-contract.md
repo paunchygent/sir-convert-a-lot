@@ -28,9 +28,9 @@ source adapters and target validators/exporters. It prevents source-specific
 parse models, such as the DigiExam adapter shape, from becoming universal exam
 contracts by accident.
 
-Task 307 introduced the first slice: matching interactions. Task 305 is planned
-as the next slice for gapped/open-cloze accepted values. Later slices will move
-the remaining reusable choices, provenance, evidence spans, warnings, and
+Task 307 introduced the first slice: matching interactions. Task 305 adds the
+second slice: gapped/open-cloze accepted values. Later slices will move the
+remaining reusable choices, provenance, evidence spans, warnings, and
 manual-follow-up state into this authoring boundary after the relevant
 source-adapter contracts are complete.
 
@@ -65,17 +65,31 @@ A matching interaction contains:
   `match_min`/`match_max` association bounds;
 - ordered target choices with the same stable ID/text/order/bounds fields;
 - interaction-level `min_associations` and `max_associations`;
-- answer-key provenance;
+- whole-key answer-key provenance: `absent`, `source_provided`,
+  `teacher_provided`, or `reviewed`;
 - directed answer pairs from source choice ID to target choice ID;
 - optional source evidence records with source family, source ID, and locator.
 
 The neutral validator rejects blank choice IDs, duplicate source or target
-choice IDs, duplicate identical pairs, unknown source or target IDs, interaction
-association-count violations, and per-choice association-limit violations.
+choice IDs, duplicate identical pairs, unknown source or target IDs, opaque
+aggregate `mixed` answer-key provenance, malformed association bounds,
+interaction association-count violations, and per-choice association-limit
+violations. Minimum bounds must be non-negative. Maximum bounds must be
+non-negative; `0` means unbounded, while every non-zero maximum must be greater
+than or equal to its minimum.
 
 The neutral validator allows QTI-permissive shapes when bounds allow them,
 including many-source-to-one-target, one-source-to-many-target, one-to-one, and
 unmatched target distractors.
+
+Matching provenance is whole-key provenance in this slice. `mixed` is invalid
+for matching until a future governed contract adds per-pair provenance and
+evidence. A reviewed LLM-derived matching key may therefore be represented as a
+whole-key `reviewed` answer key only when the reviewed application accepts the
+complete directed pair set. Candidate lineage, such as provider profile,
+completion report digest, candidate digest, and review decision ID, belongs in
+the effective/report metadata owned by the reviewed-application slice, not in
+source parser provenance and not as aggregate `mixed` matching provenance.
 
 ## Target Profiles
 
@@ -90,7 +104,7 @@ Exam.net QTI import remains vendor-unproven until Exam.net exposes an import
 test path. Sir Convert may validate general QTI shape, but it must not claim
 live Exam.net QTI import readiness without that vendor path.
 
-## Implementation Authority
+## Matching Implementation Authority
 
 Runtime value objects and validators live in:
 
@@ -104,34 +118,69 @@ Focused proof lives in:
 The DigiExam parser and `DigiExamIntermediateExam` contracts intentionally do
 not contain matching structures or matching answer pairs after this slice.
 
-## Planned Gap/Open-Cloze Interaction V1
+## Gap/Open-Cloze Interaction V1
 
 Task 305 owns the first source-neutral gap/open-cloze accepted-value slice.
-This contract must preserve source intent even when a target cannot emit a
-native gap item.
+This contract preserves source intent even when a target cannot emit a native
+gap item.
 
-The planned gap/open-cloze interaction contains:
+The gap/open-cloze interaction contains:
 
 - stable interaction ID;
-- ordered gaps with `gap_id`, display order, prompt/body binding, and source
-  evidence/span;
-- accepted values per gap;
+- ordered gaps with `gap_id`, display order, typed prompt/body binding, a
+  required-for-auto-evaluation flag, and source evidence;
+- accepted values per gap, with typed value-level provenance and evidence;
 - normalization profile for validation and export decisions;
-- a flag or equivalent policy that states whether each gap is required for
-  automatic evaluation;
-- answer-key provenance;
+- derived answer-key provenance summary;
 - source evidence records that can represent DigiExam `.dxe`, layout PDF,
   DOCX, Markdown, or future source families without faking a DigiExam shape.
 
-The neutral validator should reject unknown gap IDs, duplicate/conflicting
-accepted values under the selected normalization profile, missing accepted
-values for required gaps, and multi-gap completeness violations. It should not
-reject source intent merely because a target cannot export a native gap item.
+Runtime value objects and validators live in:
+
+- `scripts/sir_convert_a_lot/domain/exam_authoring_gap_contracts.py`;
+- `scripts/sir_convert_a_lot/domain/digiexam_exam_authoring_adapter.py`.
+
+Focused proof lives in:
+
+- `tests/sir_convert_a_lot/test_exam_authoring_gap_contracts.py`.
+
+The neutral validator rejects duplicate gap IDs, blank gap IDs, duplicate or
+invalid display order, blank prompt bindings, unknown gap IDs, blank accepted
+values, duplicate normalized accepted values, accepted values with absent
+provenance, and accepted values whose typed provenance contradicts known
+evidence origin.
+
+Accepted-value provenance is the authoritative trust unit for automatic
+evaluation. The answer-key provenance summary is derived from its values:
+`absent`, one concrete provenance when all values share it, or `mixed` when a
+multi-gap or multi-value key combines source-provided, teacher-provided, or
+reviewed values.
+
+Missing accepted values for required gaps keep the interaction structurally
+valid but not ready for automatic evaluation. This distinction is deliberate:
+source intent is still preserved, while target readiness and teacher follow-up
+make the missing answer-key state visible.
+
+Normalization profiles are:
+
+- `exact_trim_case_sensitive`;
+- `trim_case_insensitive`;
+- `trim_case_punctuation_insensitive`.
+
+Normalization is validation-owned. Spelling variants are not inferred; they
+must appear as separate accepted values from trusted source, teacher/manual, or
+reviewed evidence.
 
 Target validators decide whether a gap/open-cloze interaction can be emitted as
 native Exam.net PDF, degraded manual/free-text, omitted with teacher approval,
 manual recreation guidance, general QTI, future Exam.net QTI, or another target
 shape.
+
+The current Exam.net PDF target profile reports native gap support as unproven
+and rejects native multi-gap export as unsupported target shape. Target
+readiness may still present teacher choices for degraded manual/free-text
+preservation, omission, or manual recreation. That target limitation does not
+remove source-neutral gap/open-cloze semantics from the IR.
 
 QTI 3 documents `qti-gap-match-interaction`, and QTI 2.1 includes
 `gapMatchInteraction`; these standards prove that gap interactions are QTI

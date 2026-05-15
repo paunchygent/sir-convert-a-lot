@@ -77,6 +77,9 @@ def _patch_create_job_multipart_contract(schema: MutableMapping[str, object]) ->
         "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1",
         "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
         "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
+        "answer_key_completion_report": (
+            "#/components/schemas/DigiExamAnswerKeyCompletionReportV1"
+        ),
     }
     post_operation["x-sir-convert-digiexam-schema-versions"] = digiexam_schema_version_extension()
     content = _multipart_content(post_operation)

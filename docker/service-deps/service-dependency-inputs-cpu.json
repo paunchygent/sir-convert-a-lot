@@ -1,5 +1,5 @@
 {
-  "dependency_hash": "2faf42883374719089596b15e60ec893d5ea3f4afb27a4259bf1e23ccc077b89",
+  "dependency_hash": "f5dce3d37e40a18d67c3b43254196852883fb25b138d43601ee810a1dc75f866",
   "easyocr_preload": {
     "download_enabled": true,
     "gpu": false,
@@ -9,7 +9,7 @@
     ],
     "model_storage_directory": "/opt/easyocr-models"
   },
-  "requirements_sha256": "7355ab2f38817a1b49e7d7bfb737b204d04429435437c6e29eca5f201384c6b4",
+  "requirements_sha256": "e2baa83a71464fd705fc07afbf17cbd9bc8070d4be1511c14fb476875879b832",
   "runtime_kind": "cpu",
   "runtime_pins": {
     "torch_version": "2.10.0",
@@ -41,6 +41,7 @@
     "cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2; platform_system == \"Linux\"",
     "defusedxml==0.7.1",
     "dill==0.4.1",
+    "dishka==1.10.1",
     "docling==2.73.1",
     "docling-core[chunking]==2.75.0",
     "docling-ibm-models==3.13.2",

@@ -24,6 +24,9 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_models import (
     PublicExamConverterRuntimeAccessConfig,
     ServiceConfig,
 )
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
+    structured_llm_runtime_config_from_env,
+)
 
 CPU_UNLOCK_ENV_VARS: tuple[str, str] = (
     "SIR_CONVERT_A_LOT_ALLOW_CPU_ONLY",
@@ -409,4 +412,5 @@ def service_config_from_env() -> ServiceConfig:
         public_exam_converter_access=_public_exam_converter_access_from_env(
             allowed_clock_skew_seconds=internal_identity_allowed_clock_skew_seconds,
         ),
+        structured_llm=structured_llm_runtime_config_from_env(),
     )

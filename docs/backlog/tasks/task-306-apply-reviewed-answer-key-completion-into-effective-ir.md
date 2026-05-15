@@ -36,6 +36,13 @@ gap accepted-value fields; Tasks 298 and 305 own those contract shapes.
 ## PR Scope
 
 - Add effective answer-key provenance separate from source parser provenance.
+- Add bounded answer-key lineage metadata separate from answer-key provenance
+  and parser provenance. Lineage may point to an LLM completion report,
+  provider profile, candidate digest, review decision, and whether the teacher
+  accepted unchanged or edited before applying.
+- Treat candidate digests as digests of canonical backend-validated candidate
+  payloads from Task 297, not as hashes of raw provider responses, prompts, or
+  provider-specific pre-validation output.
 - Apply validated completion only in
   `local_llm_apply_missing_machine_marked_with_review` mode.
 - Require report/review semantics that distinguish LLM-inferred output from
@@ -47,10 +54,18 @@ gap accepted-value fields; Tasks 298 and 305 own those contract shapes.
   repair.
 - Prove teacher-accepted suggestions can be resubmitted as manual overlay, but
   are not retroactively model provenance.
+- For matching, apply only whole-key reviewed or teacher-provided pair sets in
+  this task. Do not introduce aggregate `mixed` matching provenance unless a
+  separate governed slice adds per-pair provenance/evidence.
+- Keep the `mixed` prohibition scoped to matching. Gapped/open-cloze can derive
+  aggregate `mixed` later from per-accepted-value provenance under the Task 305
+  contract.
 
 ## Deliverables
 
 - [ ] Effective answer-key provenance model for reviewed completion.
+- [ ] Answer-key lineage metadata model for LLM candidate acceptance and
+  teacher edits.
 - [ ] Apply mode for reviewed completion.
 - [ ] Applied completion service.
 - [ ] Completion report and effective IR update semantics.
@@ -63,9 +78,15 @@ gap accepted-value fields; Tasks 298 and 305 own those contract shapes.
   completion.
 - [ ] Effective IR and bundle manifest identify LLM-inferred answer keys
   explicitly.
+- [ ] LLM completion metadata remains bounded lineage metadata. It must not be
+  stored as parser/source provenance, raw prompt text, raw model response, or
+  aggregate `mixed` matching provenance.
 - [ ] Teacher-accepted suggestions can be resubmitted as manual overlay, but
   are not retroactively model provenance.
 - [ ] Matching application uses only the Task 298 exact pair contract.
+- [ ] Reviewed matching application can accept a complete LLM-derived matching
+  pair set as whole-key `reviewed`, or a teacher-edited/submitted pair set as
+  `teacher_provided`, with lineage to the candidate when applicable.
 - [ ] Gapped/open-cloze application uses only the Task 305 accepted-value
   contract.
 - [ ] Public/grant jobs cannot use remote fallback unless a future signed grant

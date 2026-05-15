@@ -2,10 +2,10 @@
 id: story-47-structured-llm-provider-harness-for-answer-key-completion
 title: Structured LLM provider harness for answer-key completion
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-05-14'
-last_updated: '2026-05-14'
+last_updated: '2026-05-15'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
@@ -53,33 +53,52 @@ budgeting, Dishka wiring, and remote fallback policy where appropriate.
 - Keep production capture metadata-only unless a separate governed evaluation
   mode is added.
 
+## Current Implementation State
+
+Task 296 is completed. Sir Convert now has the reusable structured provider
+core: source-neutral contracts, provider profiles/capabilities, local-first
+routing policy, token-budget preflight, metadata-only capture, payload builders
+for Chat Completions, Responses, llama.cpp JSON Schema/GBNF, and vLLM
+structured choice, async HTTP provider execution, response
+parsing/failure-mapping, service settings loading, and opt-in Dishka
+composition.
+
+Task 297 is completed. The DigiExam migration bundle route now supports the
+opt-in `local_llm_suggest_missing_machine_marked` completion mode for advisory
+choice and gap-fill answer-key candidates. The default `source_evidence_only`
+route still makes no structured LLM calls and keeps
+`answer_key_completion_report` as `not_requested`. Advisory mode writes a
+candidate-lineage `answer-key-completion-report.json` artifact only when
+requested, validates backend output strictly, and leaves source IR, effective
+IR, Exam.net PDF, and QTI unchanged.
+
 ## Acceptance Criteria
 
-- [ ] Provider code is generic structured output, not edit-op-specific.
-- [ ] Chat Completions and Responses payload builders keep their schema shapes
+- [x] Provider code is generic structured output, not edit-op-specific.
+- [x] Chat Completions and Responses payload builders keep their schema shapes
   separate.
-- [ ] Local llama.cpp support is capability-configured and does not infer GBNF
+- [x] Local llama.cpp support is capability-configured and does not infer GBNF
   or JSON Schema support from host/port.
-- [ ] The completion prompt is single-turn and item-local with no full exam,
+- [x] The completion prompt is single-turn and item-local with no full exam,
   result PDF, raw `.dxe`, student data, owner metadata, or artifact paths.
-- [ ] Over-budget items are not sent to a provider and produce
+- [x] Over-budget items are not sent to a provider and produce
   `manual_follow_up_required` with backend failure code `over_budget`.
-- [ ] Provider failure, invalid JSON, schema mismatch, unknown IDs, duplicate
+- [x] Provider failure, invalid JSON, schema mismatch, unknown IDs, duplicate
   IDs, or invalid answer payloads become manual follow-up with backend-owned
   failure codes.
-- [ ] Remote fallback is attempted only when authenticated/signed policy allows
+- [x] Remote fallback is attempted only when authenticated/signed policy allows
   it and the request explicitly opts in.
 
 ## Test Requirements
 
-- [ ] Unit tests cover Chat Completions, Responses, and llama.cpp payload
+- [x] Unit tests cover Chat Completions, Responses, and llama.cpp payload
   construction for the same output spec.
 - [ ] Budget tests cover OpenAI-family, Mistral/Devstral-family, and unknown
   tokenizer resolver paths.
-- [ ] Routing tests cover local primary success, local unavailable with local
+- [x] Routing tests cover local primary success, local unavailable with local
   fallback, remote fallback forbidden, explicit false, missing consent, and
   allowed signed consent.
-- [ ] Capture tests prove raw prompts/responses and item text are not persisted
+- [x] Capture tests prove raw prompts/responses and item text are not persisted
   in normal production mode.
 
 ## Done Definition

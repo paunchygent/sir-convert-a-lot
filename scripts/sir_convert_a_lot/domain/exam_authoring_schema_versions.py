@@ -5,8 +5,9 @@ Purpose:
     that sit between source adapters and target validators/exporters.
 
 Relationships:
-    - Used by `domain.exam_authoring_ir_contracts` for the first Task 307
-      matching interaction slice.
+    - Used by `domain.exam_authoring_ir_contracts` and
+      `domain.exam_authoring_gap_contracts` for source-neutral interaction
+      slices.
     - Complements DigiExam-specific schema versions while reusable authoring
       concepts are extracted from adapter-shaped contracts.
 """

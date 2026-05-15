@@ -385,30 +385,35 @@ items can be automatically evaluated.
 
 Checklist:
 
-- [ ] Define stable gap IDs, display order, prompt binding, source evidence,
+- [x] Define stable gap IDs, display order, prompt binding, source evidence,
   and source spans.
-- [ ] Add accepted values per gap as structured authoring answer-key data.
-- [ ] Define normalization policy and whether it is validation-only or
+- [x] Add accepted values per gap as structured authoring answer-key data.
+- [x] Define normalization policy and whether it is validation-only or
   target-specific.
-- [ ] Define multi-gap completeness rules.
-- [ ] Preserve source-bound parser provenance separately from effective
+- [x] Define multi-gap completeness rules.
+- [x] Preserve source-bound parser provenance separately from effective
   teacher/manual or reviewed answer-key provenance.
-- [ ] Update manifest/report, target-readiness, PDF, and QTI contract surfaces
+- [x] Update manifest/report, target-readiness, PDF, and QTI contract surfaces
   that depend on gap accepted-value shape.
-- [ ] Keep unsupported target export as target-readiness/degradation, not an IR
+- [x] Keep unsupported target export as target-readiness/degradation, not an IR
   restriction.
-- [ ] Preserve teacher choices for degraded/manual/free-text inclusion,
+- [x] Preserve teacher choices for degraded/manual/free-text inclusion,
   omission, or manual recreation guidance.
 
 Checkpoint:
 
-- [ ] Gap accepted values are first-class `ExamAuthoringIR v1` data.
-- [ ] Gapped/open-cloze items remain manual/unkeyed or unavailable for
+- [x] Gap accepted values are first-class `ExamAuthoringIR v1` data.
+- [x] Gapped/open-cloze items remain manual/unkeyed or unavailable for
   automatic evaluation until trusted accepted values exist.
-- [ ] Matching-styled gap/open-cloze workaround evidence is not promoted to
+- [x] Matching-styled gap/open-cloze workaround evidence is not promoted to
   DigiExam matching; target remapping decisions stay in validators/exporters.
-- [ ] Later provider/advisory/application tasks can consume the contract
+- [x] Later provider/advisory/application tasks can consume the contract
   without changing it.
+
+Task 305 completed this tranche with
+`ExamAuthoringGapOpenClozeInteraction`, gap accepted-value validators,
+normalization profiles, DigiExam source-adapter mapping, and target-readiness
+degradation rows for unsupported multi-gap Exam.net PDF export.
 
 Stop conditions:
 
@@ -429,24 +434,67 @@ it to DigiExam parser or renderer internals.
 
 Checklist:
 
-- [ ] Add `StructuredChatProviderProtocol`.
-- [ ] Add `StructuredOutputSpec` with Chat Completions, Responses, and
+- [x] Add `StructuredChatProviderProtocol`.
+- [x] Add `StructuredOutputSpec` with Chat Completions, Responses, and
   llama.cpp grammar/schema payload fields.
-- [ ] Add provider profile/config models with explicit capabilities.
-- [ ] Add provider set and failover policy.
-- [ ] Add token budget resolver and item-local preflight.
-- [ ] Add metadata-only capture and telemetry decisions.
-- [ ] Add Dishka providers where composition and test injection benefit.
-- [ ] Add module-level Google-style docstrings to new Python modules.
+- [x] Add provider profile/config models with explicit capabilities.
+- [x] Add provider set and failover policy.
+- [x] Add token budget resolver and item-local preflight.
+- [x] Add metadata-only capture and telemetry decisions.
+- [x] Add Dishka providers where composition and test injection benefit.
+- [x] Add module-level Google-style docstrings to new Python modules.
+
+Tranche 3.1 evidence:
+
+- `domain.structured_llm_contracts` owns pure source-neutral provider
+  contracts, route policy, budget preflight, and metadata-only capture.
+- `infrastructure.structured_llm_payloads` builds Chat Completions, Responses,
+  llama.cpp JSON Schema, llama.cpp GBNF, and vLLM structured-choice payloads
+  without provider network calls.
+
+Tranche 3.2 evidence:
+
+- `infrastructure.structured_llm_provider` now executes configured
+  OpenAI-compatible structured-provider calls with endpoint selection for Chat
+  Completions, Responses, llama.cpp-compatible chat completions, and
+  vLLM-compatible chat completions.
+- `infrastructure.structured_llm_responses` now parses provider responses into
+  `StructuredLLMResponse` and maps missing config, request errors, HTTP status
+  errors, invalid JSON, empty content, non-JSON content, non-object content,
+  and conservative schema mismatches into typed backend failure codes.
+- This left service settings/config loading, Dishka composition, and
+  route/runtime default proof for the final Task 296 slice.
+
+Tranche 3.3 evidence:
+
+- `infrastructure.structured_llm_config` now loads disabled-by-default
+  service settings with centralized constants for provider env vars and JSON
+  provider keys.
+- `ServiceConfig` carries the structured LLM runtime config without making
+  parser, renderer, or HTTP artifact routes provider-aware.
+- `infrastructure.structured_llm_di` provides the opt-in Dishka async container
+  for `HttpStructuredChatProvider` and HTTP client lifecycle/test injection.
+- `dishka<2,>=1.7` is now a direct runtime dependency and the generated service
+  dependency manifests include it for CPU and ROCm images.
+- DigiExam migration default route proof shows the
+  `answer_key_completion_report` remains `not_requested` and provider execution
+  is not called during default artifact creation or download.
+- Task 296 is complete. Task 297 is complete; advisory candidate builders and
+  answer-key completion reports are implemented for missing choice and gap-fill
+  answer keys.
 
 Checkpoint:
 
-- [ ] Payload-builder tests cover Chat Completions `response_format`, Responses
+- [x] Payload-builder tests cover Chat Completions `response_format`, Responses
   `text.format`, and llama.cpp schema/GBNF modes.
-- [ ] Routing tests cover local success, local unavailable, remote forbidden,
+- [x] Routing tests cover local success, local unavailable, remote forbidden,
   explicit false, missing consent, and allowed signed consent.
-- [ ] Capture tests prove raw prompts, raw responses, item text, and student data
+- [x] Capture tests prove raw prompts, raw responses, item text, and student data
   are not persisted in normal mode.
+- [x] Composition tests cover disabled defaults, constant-backed env loading,
+  local-primary enforcement, API-key env indirection, Dishka provider
+  injection, and default DigiExam artifact routes making no structured LLM
+  calls.
 
 Stop conditions:
 
@@ -554,21 +602,36 @@ Goal: produce safe advisory completion reports without changing renderer input.
 
 Checklist:
 
-- [ ] Build choice candidate inputs.
-- [ ] Build gap-fill/open cloze candidate inputs.
-- [ ] Skip source-bound answer keys, unreliable structures, unsupported assets,
+- [x] Build choice candidate inputs.
+- [x] Build gap-fill/open cloze candidate inputs.
+- [x] Skip source-bound answer keys, unreliable structures, unsupported assets,
   unsupported item types, and over-budget items.
-- [ ] Add item-type output specs and backend validators.
-- [ ] Emit `answer_key_completion_report`.
-- [ ] Keep source IR, effective IR, PDF, QTI, and manifest output unchanged by
+- [x] Add item-type output specs and backend validators.
+- [x] Emit `answer_key_completion_report`.
+- [x] Keep source IR, effective IR, PDF, QTI, and manifest output unchanged by
   advisory suggestions.
 
 Checkpoint:
 
-- [ ] Tests prove advisory mode makes no renderer-input changes.
-- [ ] Reports include per-item status and backend failure code, but no raw
+- [x] Tests prove advisory mode makes no renderer-input changes.
+- [x] Reports include per-item status and backend failure code, but no raw
   prompts/responses or item text capture.
-- [ ] Manual follow-up remains safer than wrong-but-valid completion.
+- [x] Manual follow-up remains safer than wrong-but-valid completion.
+
+Evidence:
+
+- `scripts/sir_convert_a_lot/domain/digiexam_answer_key_completion.py`
+  orchestrates advisory report generation and converts provider failures,
+  over-budget prompts, duplicate/unknown IDs, and invalid payloads to manual
+  follow-up without candidate digests.
+- `scripts/sir_convert_a_lot/domain/digiexam_answer_key_completion_candidates.py`
+  builds item-local structured requests for choice and gap-fill/open-cloze
+  items using the Task 305 gap contract.
+- `scripts/sir_convert_a_lot/infrastructure/digiexam_answer_key_completion_runtime.py`
+  writes `answer-key-completion-report.json` only for the requested advisory
+  mode and leaves default routes as `not_requested`.
+- `DigiExamAnswerKeyCompletionReportV1` is published in the generated v2
+  OpenAPI snapshot for consumer type generation.
 
 Stop conditions:
 

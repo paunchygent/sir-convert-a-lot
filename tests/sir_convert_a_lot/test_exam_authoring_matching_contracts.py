@@ -116,12 +116,142 @@ def test_matching_contract_rejects_association_limit_violations() -> None:
     }
 
 
+def test_matching_contract_rejects_invalid_interaction_bounds() -> None:
+    negative_minimum = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            min_associations=-1,
+            max_associations=1,
+        )
+    )
+    negative_maximum = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            min_associations=0,
+            max_associations=-1,
+        )
+    )
+    impossible_bounds = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            min_associations=2,
+            max_associations=1,
+        )
+    )
+
+    assert {result.valid for result in (negative_minimum, negative_maximum, impossible_bounds)} == {
+        False
+    }
+    assert all(
+        ExamAuthoringMatchingValidationIssueCode.INVALID_INTERACTION_BOUNDS
+        in {issue.reason_code for issue in result.issues}
+        for result in (negative_minimum, negative_maximum, impossible_bounds)
+    )
+
+
+def test_matching_contract_rejects_invalid_source_choice_bounds() -> None:
+    negative_minimum = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            source_choice_bounds=(-1, 1),
+        )
+    )
+    negative_maximum = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            source_choice_bounds=(0, -1),
+        )
+    )
+    impossible_bounds = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            source_choice_bounds=(2, 1),
+        )
+    )
+
+    assert {result.valid for result in (negative_minimum, negative_maximum, impossible_bounds)} == {
+        False
+    }
+    assert all(
+        ExamAuthoringMatchingValidationIssueCode.INVALID_SOURCE_BOUNDS
+        in {issue.reason_code for issue in result.issues}
+        for result in (negative_minimum, negative_maximum, impossible_bounds)
+    )
+
+
+def test_matching_contract_rejects_invalid_target_choice_bounds() -> None:
+    negative_minimum = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            target_choice_bounds=(-1, 1),
+        )
+    )
+    negative_maximum = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            target_choice_bounds=(0, -1),
+        )
+    )
+    impossible_bounds = validate_exam_authoring_matching_interaction(
+        _matching_interaction(
+            pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+            target_choice_bounds=(2, 1),
+        )
+    )
+
+    assert {result.valid for result in (negative_minimum, negative_maximum, impossible_bounds)} == {
+        False
+    }
+    assert all(
+        ExamAuthoringMatchingValidationIssueCode.INVALID_TARGET_BOUNDS
+        in {issue.reason_code for issue in result.issues}
+        for result in (negative_minimum, negative_maximum, impossible_bounds)
+    )
+
+
+def test_matching_contract_rejects_mixed_provenance_without_pair_provenance() -> None:
+    interaction = _matching_interaction(
+        pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+        min_associations=1,
+        max_associations=1,
+        provenance=ExamAuthoringAnswerKeyProvenance.MIXED,
+    )
+
+    result = validate_exam_authoring_matching_interaction(interaction)
+
+    assert result.valid is False
+    assert ExamAuthoringMatchingValidationIssueCode.MIXED_PROVENANCE_WITHOUT_PAIR_PROVENANCE in {
+        issue.reason_code for issue in result.issues
+    }
+
+
+def test_matching_contract_allows_reviewed_whole_key_provenance() -> None:
+    interaction = _matching_interaction(
+        pairs=(ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),),
+        min_associations=1,
+        max_associations=1,
+        provenance=ExamAuthoringAnswerKeyProvenance.REVIEWED,
+    )
+
+    result = validate_exam_authoring_matching_interaction(interaction)
+
+    assert result.valid is True
+    assert result.issues == ()
+
+
 def _matching_interaction(
     *,
     pairs: tuple[ExamAuthoringMatchingPair, ...],
     min_associations: int = 2,
     max_associations: int = 2,
+    source_choice_bounds: tuple[int, int] = (1, 1),
+    target_choice_bounds: tuple[int, int] = (0, 0),
+    provenance: ExamAuthoringAnswerKeyProvenance = (
+        ExamAuthoringAnswerKeyProvenance.TEACHER_PROVIDED
+    ),
 ) -> ExamAuthoringMatchingInteraction:
+    source_min, source_max = source_choice_bounds
+    target_min, target_max = target_choice_bounds
     return build_exam_authoring_matching_interaction(
         interaction_id="matching-001",
         source_choices=(
@@ -129,8 +259,8 @@ def _matching_interaction(
                 choice_id="source-001",
                 order=1,
                 text="Författare 1",
-                match_min=1,
-                match_max=1,
+                match_min=source_min,
+                match_max=source_max,
             ),
             ExamAuthoringMatchingChoice(
                 choice_id="source-002",
@@ -145,8 +275,8 @@ def _matching_interaction(
                 choice_id="target-001",
                 order=1,
                 text="Romantiken",
-                match_min=0,
-                match_max=0,
+                match_min=target_min,
+                match_max=target_max,
             ),
             ExamAuthoringMatchingChoice(
                 choice_id="target-002",
@@ -159,7 +289,7 @@ def _matching_interaction(
         min_associations=min_associations,
         max_associations=max_associations,
         answer_key=ExamAuthoringMatchingAnswerKey(
-            provenance=ExamAuthoringAnswerKeyProvenance.TEACHER_PROVIDED,
+            provenance=provenance,
             pairs=pairs,
         ),
     )

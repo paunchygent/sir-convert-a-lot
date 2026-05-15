@@ -146,6 +146,7 @@ def complete_entries(
     qti_entries: dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifactEntry],
     effective_ir_entry: DigiExamMigrationArtifactEntry | None = None,
     ingestion_overlay_report_entry: DigiExamMigrationArtifactEntry | None = None,
+    answer_key_completion_report_entry: DigiExamMigrationArtifactEntry | None = None,
 ) -> tuple[DigiExamMigrationArtifactEntry, ...]:
     """Return the full ordered required artifact entry list for a bundle."""
 
@@ -169,6 +170,10 @@ def complete_entries(
             key=DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT,
         ),
     }
+    if answer_key_completion_report_entry is not None:
+        entries[DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT] = (
+            answer_key_completion_report_entry
+        )
     for key in (
         DigiExamMigrationArtifactKey.IR_JSON,
         DigiExamMigrationArtifactKey.MIGRATION_MANIFEST,

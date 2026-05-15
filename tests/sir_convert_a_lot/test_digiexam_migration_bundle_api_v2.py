@@ -29,6 +29,7 @@ from httpx import Response
 
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DIGIEXAM_IR_SCHEMA_VERSION
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION,
     DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
     DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
@@ -36,7 +37,23 @@ from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
     TARGET_READINESS_REPORT_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
+    StructuredChatProviderSet,
+    StructuredLLMEndpointKind,
+    StructuredLLMOutputMode,
+    StructuredLLMProviderCapabilities,
+    StructuredLLMProviderProfile,
+    StructuredLLMRequest,
+    StructuredLLMResponse,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
+    StructuredLLMRuntimeConfig,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
+    HttpStructuredChatProvider,
+    StructuredLLMProviderConnection,
+)
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 _KEY_ID = "gateway-identity-rs256-v1"
@@ -129,6 +146,136 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
     )
     assert readiness_response.status_code == 200
     assert readiness_response.json()["schema_version"] == TARGET_READINESS_REPORT_SCHEMA_VERSION
+
+
+def test_digiexam_migration_default_artifact_route_does_not_call_structured_llm(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_calls: list[str] = []
+
+    async def forbidden_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        provider_calls.append(profile.provider_id)
+        raise AssertionError(f"Unexpected structured LLM call for {request.item_id}")
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        forbidden_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-llm-default-off",
+        idempotency_key="idem-digiexam-bundle-no-llm-default",
+        wait_seconds=20,
+        targets=("examnet_pdf",),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["job"]["status"] == JobStatus.SUCCEEDED.value
+    job_id = response.json()["job"]["job_id"]
+
+    headers = _headers(identity, subject="teacher-llm-default-off", grants=_read_grants())
+    manifest_response = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers)
+    assert manifest_response.status_code == 200
+    artifact_entries = {
+        entry["artifact_key"]: entry for entry in manifest_response.json()["artifacts"]
+    }
+    assert artifact_entries["answer_key_completion_report"]["availability"] == "not_requested"
+
+    pdf_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
+        headers=headers,
+    )
+    assert pdf_response.status_code == 200
+    assert pdf_response.content.startswith(b"%PDF")
+    assert provider_calls == []
+
+
+def test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_calls: list[str] = []
+
+    async def advisory_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self
+        provider_calls.append(f"{profile.provider_id}:{request.item_id}")
+        return StructuredLLMResponse(
+            content={
+                "decision_state": "answered",
+                "correct_alternative_ids": [2],
+                "manual_follow_up_code": None,
+            },
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        advisory_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, structured_llm=_structured_llm_config())
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-llm-advisory",
+        idempotency_key="idem-digiexam-advisory-report",
+        wait_seconds=20,
+        payload=_missing_answer_key_payload(),
+        completion_mode="local_llm_suggest_missing_machine_marked",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["job"]["status"] == JobStatus.SUCCEEDED.value
+    job_id = response.json()["job"]["job_id"]
+
+    headers = _headers(identity, subject="teacher-llm-advisory", grants=_read_grants())
+    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
+    artifact_entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+
+    assert provider_calls == ["local-structured:item-001"]
+    assert artifact_entries["answer_key_completion_report"]["availability"] == "available"
+    assert artifact_entries["effective_ir_json"]["availability"] == "not_requested"
+    assert artifact_entries["examnet_pdf"]["availability"] == "unavailable"
+    assert artifact_entries["examnet_pdf"]["unavailable_code"] == "manual_answer_key_required"
+    assert manifest["manual_follow_up"]["required"] is True
+
+    source_ir = client.get(f"/v2/convert/jobs/{job_id}/artifacts/ir_json", headers=headers).json()
+    completion_report = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/answer_key_completion_report",
+        headers=headers,
+    ).json()
+    rendered_report = json.dumps(completion_report, ensure_ascii=False, sort_keys=True)
+
+    assert source_ir["items"][0]["answer_key"]["provenance"] == "absent"
+    assert completion_report["schema_version"] == ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION
+    assert completion_report["items"][0]["decision_state"] == "suggested"
+    assert completion_report["items"][0]["answer_payload"] == {
+        "kind": "choice",
+        "correct_alternative_ids": [2],
+    }
+    assert completion_report["items"][0]["candidate_payload_digest"].startswith("sha256:")
+    assert "Choose the Greek letter" not in rendered_report
+    assert "Alpha" not in rendered_report
+    assert "Beta" not in rendered_report
+    assert "source_provided" not in rendered_report
+    assert "teacher_provided" not in rendered_report
+    assert "reviewed" not in rendered_report
 
 
 def test_digiexam_migration_respects_examnet_pdf_only_target(tmp_path: Path) -> None:
@@ -751,7 +898,12 @@ class _IdentitySigner:
         }
 
 
-def _client(tmp_path: Path, identity: _IdentitySigner) -> TestClient:
+def _client(
+    tmp_path: Path,
+    identity: _IdentitySigner,
+    *,
+    structured_llm: StructuredLLMRuntimeConfig | None = None,
+) -> TestClient:
     app = create_app(
         ServiceConfig(
             api_key=_API_KEY,
@@ -760,6 +912,7 @@ def _client(tmp_path: Path, identity: _IdentitySigner) -> TestClient:
             enable_supervisor=False,
             processing_delay_seconds=0.0,
             internal_identity_public_keys={_KEY_ID: identity.public_key_pem},
+            structured_llm=structured_llm or StructuredLLMRuntimeConfig(),
         )
     )
     return TestClient(app)
@@ -794,6 +947,7 @@ def _post_digiexam_job(
     source_file: tuple[str, bytes] | None = None,
     headers: dict[str, str] | None = None,
     targets: tuple[str, ...] = ("examnet_pdf", "qti_package"),
+    completion_mode: str = "source_evidence_only",
 ) -> Response:
     request_headers = headers or _headers(
         identity,
@@ -825,6 +979,8 @@ def _post_digiexam_job(
             ),
             "result_pdf_usage": "correct_machine_marked_answers_only",
             "manual_follow_up_policy": "emit_item_addressable_report",
+            "completion_mode": completion_mode,
+            "remote_provider_policy": "forbidden",
         },
         "retention": {"pin": False},
     }
@@ -858,6 +1014,33 @@ def _post_digiexam_job(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
         headers=request_headers,
         files=files,
+    )
+
+
+def _structured_llm_config() -> StructuredLLMRuntimeConfig:
+    profile = StructuredLLMProviderProfile(
+        provider_id="local-structured",
+        model="local-model",
+        endpoint_kind=StructuredLLMEndpointKind.CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.JSON_SCHEMA,
+        is_remote=False,
+        context_window_tokens=4096,
+        max_output_tokens=512,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=False,
+            supports_vllm_structured_choice=False,
+        ),
+    )
+    return StructuredLLMRuntimeConfig(
+        enabled=True,
+        provider_set=StructuredChatProviderSet(primary=profile),
+        connections={
+            profile.provider_id: StructuredLLMProviderConnection(
+                provider_id=profile.provider_id,
+                base_url="http://127.0.0.1:8123",
+            )
+        },
     )
 
 

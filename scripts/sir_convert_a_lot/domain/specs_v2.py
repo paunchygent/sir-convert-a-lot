@@ -85,6 +85,22 @@ class DigiExamIngestionOverlayPolicyV2(StrEnum):
     APPLY_TEACHER_OVERLAY = "apply_teacher_overlay"
 
 
+class DigiExamAnswerKeyCompletionModeV2(StrEnum):
+    """Allowed answer-key completion modes for DigiExam migration."""
+
+    SOURCE_EVIDENCE_ONLY = "source_evidence_only"
+    LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED = "local_llm_suggest_missing_machine_marked"
+    LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW = (
+        "local_llm_apply_missing_machine_marked_with_review"
+    )
+
+
+class DigiExamRemoteProviderPolicyV2(StrEnum):
+    """Allowed remote-provider policies for DigiExam answer-key completion."""
+
+    FORBIDDEN = "forbidden"
+
+
 class PdfPaperSizeV2(StrEnum):
     """Supported PDF paper sizes for v2 PDF outputs."""
 
@@ -175,6 +191,12 @@ class DigiExamMigrationOptionsV2(BaseModel):
     ingestion_overlay_filename: str | None = None
     ingestion_overlay_policy: DigiExamIngestionOverlayPolicyV2 = (
         DigiExamIngestionOverlayPolicyV2.NONE
+    )
+    completion_mode: DigiExamAnswerKeyCompletionModeV2 = (
+        DigiExamAnswerKeyCompletionModeV2.SOURCE_EVIDENCE_ONLY
+    )
+    remote_provider_policy: DigiExamRemoteProviderPolicyV2 = (
+        DigiExamRemoteProviderPolicyV2.FORBIDDEN
     )
 
     @model_validator(mode="after")

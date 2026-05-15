@@ -78,6 +78,16 @@ Initial metadata-only parser smoke found:
 - 8 embedded image assets;
 - 44 `missing_answer_key_provenance` warnings and no other warning codes.
 
+Task 305 rechecked every `.dxe` file available under `inputs/` on
+2026-05-15, including tracked fixtures, local-private evidence, and the ignored
+OneDrive validation corpus. The combined local pool contained 27 `.dxe` files,
+340 parsed items, 21 gap-fill items, and 113 total gap placeholders. Every
+observed gap placeholder was represented by a `.dxe` `blanks[]` entry with
+only `guid` and `validations`, every observed `validations` array was empty,
+and every observed gap GUID was bound back into `bodyHTML` through a
+`span dx-wg-id` prompt binding. No raw prompt text, raw `.dxe`, owner metadata,
+student data, or embedded payload was promoted into committed evidence.
+
 Task 281 classifies the raw package as local-only validation material and keeps
 it ignored through `.gitignore`. The committed evidence is the metadata-only
 manifest `DXE-CORPUS-MANIFEST-2026-05-12`, which records filenames, file
@@ -122,8 +132,8 @@ the governed Exam.net/authoring IR path, not through DigiExam `.dxe`.
 | Free text / open-ended | `DXE-2026-05-07-structure`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED`, `PDF-ECOLOGY-2026-04-25`, `PDF-CHEMISTRY-2026-04-25` | `.dxe` type `0`, title, prompt `bodyHTML`/`about`, `maxScore`, and optional text-length cap fields. Blank PDFs expose prompt text, answer area, and point markers. Result PDFs expose one student's answer and awarded points. | No teacher rubric, marking matrix, model answer, accepted answer list, or reusable free-text answer key was observed. | Preserve as a manual-marking item. Mark answer-key/rubric provenance as absent or `manual_marking_required` according to the target format. Do not promote a student's response into the migrated exam. |
 | Single-choice MCQ | `DXE-2026-05-07-structure`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED` | `.dxe` type `1`, title, prompt, `maxScore`, and ordered alternatives. Result PDF labels identify correct alternatives with `(Korrekt svar)` or `(Korrekt alternativ)`. | In the observed `.dxe`, every alternative has `right: false`; blank PDF contains no hidden correct-answer metadata. Result PDF may show a student's wrong selection as `(Fel svar)`. | Use `.dxe` for structure. Use result-PDF labels only for correct-answer enrichment. Discard `(Fel svar)` and all student-result history. Without result-PDF evidence, mark answer-key provenance absent and require manual answer entry. |
 | Multiple-response MCQ | `DXE-2026-05-07-structure`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED` | `.dxe` type `2`, title, prompt, `maxScore`, ordered alternatives, `gradingType`, `isAlternativeChoiceLimitEnabled`, and `alternativeChoiceLimit`. Result PDF labels identify correct alternatives. | In the observed `.dxe`, every alternative has `right: false`. Blank PDF contains no correct-answer metadata. One result PDF does not prove the full score function for every possible response combination. | Use `.dxe` for structure and policy fields. Use result-PDF labels only for correct answers. Discard wrong selections. Treat scoring policy as source metadata, but require target-specific validation before claiming full automatic marking parity. |
-| Gap-fill / lucktext | `DXE-2026-05-07-structure`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED` | `.dxe` type `3`, prompt `bodyHTML`, `dxWordGap` spans, gap GUIDs, `maxScore`, and `gradingType`. Blank PDF renders numbered gaps. Result PDF exposes correct gap words in the checked result view. | Observed `.dxe` gap `validations` arrays are empty. The test prompt also contains answer-like words as visible prompt text; that is not hidden answer-key provenance. | Use `.dxe` for gap structure. Use result-PDF correct gap words only as answer-key enrichment. Ignore wrong student gap values. Without result-PDF or populated validations, require manual accepted answers. |
-| Matching-styled gap/open-cloze workaround | `PDF-CHEMISTRY-2026-04-25` | Student-view PDF exposes a titled `Para ihop` item, numbered prompt rows, lettered target-like options, and a blank-row artifact such as `1 = 1. 2 = 2. 3 = 3. 4 = 4.` | Canonical DigiExam `.dxe` sources do not carry matching items. Student-view PDF carries no correct matches. | Treat as non-canonical PDF artifact evidence in the current DigiExam parser path. Task 305 should revisit this as likely gap/open-cloze source intent: preserve visible lines now, and later map supported source evidence into neutral `ExamAuthoringIR v1` gap/open-cloze structures. Target validators/exporters, not the source parser, decide whether matching remapping, degraded manual/free-text output, omission, or manual recreation guidance is safe. |
+| Gap-fill / lucktext | `DXE-2026-05-07-structure`, `DXE-CORPUS-MANIFEST-2026-05-12`, `BLANK-PDF-2026-05-07`, `RESULT-PDF-2026-05-07-SANITIZED` | `.dxe` type `3`, prompt `bodyHTML`, `span dx-wg-id` bindings, `blanks[]` gap GUIDs, `maxScore`, and `gradingType`. Blank PDF renders numbered gaps. Result PDF exposes correct gap words in the checked result view. | Observed `.dxe` gap `validations` arrays are empty across the current local input pool. The test prompt also contains answer-like words as visible prompt text; that is not hidden answer-key provenance. | Use `.dxe` for gap structure. Map gap GUIDs, display order, and prompt bindings into source-neutral `ExamAuthoringIR v1` gap/open-cloze interactions. Use result-PDF correct gap words only as answer-key enrichment. Ignore wrong student gap values. Without result-PDF or populated validations, require manual accepted answers. |
+| Matching-styled gap/open-cloze workaround | `PDF-CHEMISTRY-2026-04-25` | Student-view PDF exposes a titled `Para ihop` item, numbered prompt rows, lettered target-like options, and a blank-row artifact such as `1 = 1. 2 = 2. 3 = 3. 4 = 4.` | Canonical DigiExam `.dxe` sources do not carry matching items. Student-view PDF carries no correct matches. | Treat as non-canonical PDF artifact evidence in the current DigiExam parser path. Task 305 defines the neutral gap/open-cloze contract available to future source adapters when source evidence is sufficient. Target validators/exporters, not the source parser, decide whether matching remapping, degraded manual/free-text output, omission, or manual recreation guidance is safe. |
 
 ## Chemistry PDF Artifact Regression Fixture
 
@@ -158,9 +168,10 @@ The corresponding parser contract is:
   is marked `not_applicable` because it is not a supported DigiExam source
   item type;
 - the `Para ihop` item preserves visible source lines only in the current
-  DigiExam parser path; Task 305 may promote the source intent into
-  source-neutral gap/open-cloze authoring IR when the evidence is sufficient,
-  but target-specific matching remapping remains a validator/exporter decision.
+  DigiExam parser path; Task 305 now provides the neutral gap/open-cloze
+  authoring IR contract that future source adapters can use when evidence is
+  sufficient, but target-specific matching remapping remains a
+  validator/exporter decision.
 
 ## Unsupported Or Unobserved Item Types
 
