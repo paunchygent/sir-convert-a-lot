@@ -1,31 +1,47 @@
-"""Deterministic Task 280 QTI sample package inputs.
+"""Deterministic Exam.net QTI sample package inputs.
 
 Purpose:
-    Provide small, governed sample item sets for Exam.net QTI 2.1 package and
-    validation-report generation.
+    Provide governed sample item sets for Exam.net QTI 2.1 package and
+    validation-report generation across QTI proof tasks.
 
 Relationships:
     - Uses the reusable QTI contracts instead of DigiExam-specific parser
       fixtures.
-    - Feeds the Task 280 sample-package CLI and regression tests.
+    - Feeds sample-package CLIs and regression tests for keyed and manual QTI
+      profiles.
 """
 
 from __future__ import annotations
 
 import base64
+import json
 from dataclasses import dataclass
+from pathlib import Path
 
+from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
+from scripts.sir_convert_a_lot.domain.digiexam_examnet_qti_adapter import (
+    build_examnet_qti_items_from_digiexam_ir,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
+    build_digiexam_intermediate_exam,
+)
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiChoice,
+    ExamNetQtiEvaluationMode,
     ExamNetQtiImageResource,
     ExamNetQtiInteractionType,
     ExamNetQtiItem,
+    ExamNetQtiManualRepresentation,
     ExamNetQtiMatchPair,
     ExamNetQtiUnsupportedResource,
 )
 
 _ONE_PIXEL_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+)
+_TASK_303_DXE_FIXTURE = Path(
+    "inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/"
+    "1772718003-test-samma-prov-i-digiexam.dxe"
 )
 
 
@@ -53,6 +69,17 @@ def examnet_qti_task_280_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
     )
 
 
+def examnet_qti_task_303_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
+    """Return deterministic Task 303 manual/unkeyed sample packages."""
+
+    return (
+        _unkeyed_single_choice_sample(),
+        _unkeyed_multiple_response_sample(),
+        _manual_gap_fill_preservation_sample(),
+        _manual_matching_preservation_sample(),
+    )
+
+
 def _single_choice_sample() -> ExamNetQtiSamplePackage:
     return _sample(
         "single-choice-mcq",
@@ -65,6 +92,66 @@ def _single_choice_sample() -> ExamNetQtiSamplePackage:
             correct=("choice_002",),
         ),
     )
+
+
+def _unkeyed_single_choice_sample() -> ExamNetQtiSamplePackage:
+    return _sample(
+        "unkeyed-single-choice-preserved",
+        _task_303_dxe_item("item-002"),
+    )
+
+
+def _unkeyed_multiple_response_sample() -> ExamNetQtiSamplePackage:
+    return _sample(
+        "unkeyed-multiple-response-preserved",
+        _task_303_dxe_item("item-004"),
+    )
+
+
+def _manual_gap_fill_preservation_sample() -> ExamNetQtiSamplePackage:
+    return _sample(
+        "manual-gap-fill-preserved-as-free-text",
+        _task_303_dxe_item("item-007"),
+    )
+
+
+def _manual_matching_preservation_sample() -> ExamNetQtiSamplePackage:
+    return _sample(
+        "manual-matching-preserved-as-free-text",
+        ExamNetQtiItem(
+            item_id="item_001",
+            sequence=1,
+            title="Matchning utan facit",
+            interaction_type=ExamNetQtiInteractionType.FREE_TEXT,
+            prompt_lines=(
+                "Para ihop varje begrepp med rätt förklaring.",
+                "Vänster kolumn:",
+                "1. kloroplast",
+                "2. mitokondrie",
+                "Höger kolumn:",
+                "A. fotosyntes",
+                "B. ATP-produktion",
+                "Ursprunglig svarsyta: 1 = __, 2 = __",
+            ),
+            max_score=2,
+            evaluation_mode=ExamNetQtiEvaluationMode.MANUAL_UNKEYED,
+            manual_representation=ExamNetQtiManualRepresentation.FREE_TEXT_PRESERVATION,
+            source_item_type="matching",
+        ),
+    )
+
+
+def _task_303_dxe_item(item_id: str) -> ExamNetQtiItem:
+    payload = json.loads(_TASK_303_DXE_FIXTURE.read_text(encoding="utf-8"))
+    exam = build_digiexam_intermediate_exam(
+        DigiExamDxeParser().parse_payload(payload, filename=_TASK_303_DXE_FIXTURE.name)
+    )
+    adapter_result = build_examnet_qti_items_from_digiexam_ir(
+        exam,
+        accepted_current_state_item_ids=(item_id,),
+    )
+    items = {item.item_id: item for item in adapter_result.items}
+    return items[item_id.replace("-", "_")]
 
 
 def _multiple_response_sample() -> ExamNetQtiSamplePackage:
@@ -180,6 +267,8 @@ def _choice_item(
     prompt: str,
     interaction_type: ExamNetQtiInteractionType,
     correct: tuple[str, ...],
+    evaluation_mode: ExamNetQtiEvaluationMode = ExamNetQtiEvaluationMode.AUTOMATIC,
+    source_item_type: str | None = None,
     image_resources: tuple[ExamNetQtiImageResource, ...] = (),
 ) -> ExamNetQtiItem:
     return ExamNetQtiItem(
@@ -189,6 +278,8 @@ def _choice_item(
         interaction_type=interaction_type,
         prompt_lines=(prompt,),
         max_score=4,
+        evaluation_mode=evaluation_mode,
+        source_item_type=source_item_type,
         choices=(
             ExamNetQtiChoice("choice_001", "Svaret använder relevanta belägg."),
             ExamNetQtiChoice("choice_002", "Svaret kopplar beläggen till huvudfrågan."),

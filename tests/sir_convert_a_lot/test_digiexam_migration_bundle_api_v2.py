@@ -301,6 +301,80 @@ def test_digiexam_migration_unavailable_pdf_target_returns_named_artifact_error(
     )
 
 
+def test_accept_current_state_enables_manual_unkeyed_qti_without_correct_response(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    headers = _headers(identity, subject="teacher-1", grants=_read_grants())
+    source_payload = _missing_answer_key_payload()
+
+    baseline_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-accept-current-baseline",
+        wait_seconds=20,
+        payload=source_payload,
+    )
+    assert baseline_response.status_code == 200
+    baseline_job_id = baseline_response.json()["job"]["job_id"]
+    baseline_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
+        headers=headers,
+    ).json()
+    migration_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
+        headers=headers,
+    ).json()
+
+    overlay_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-accept-current-qti",
+        wait_seconds=20,
+        payload=source_payload,
+        digiexam_ingestion_overlay=(
+            "teacher-overlay.json",
+            _accept_current_state_overlay_bytes(
+                baseline_manifest=baseline_manifest,
+                item_summary=migration_manifest["item_summaries"][0],
+                target="qti_package",
+            ),
+        ),
+    )
+    assert overlay_response.status_code == 200
+    job_id = overlay_response.json()["job"]["job_id"]
+    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
+    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+
+    assert entries["qti_package"]["availability"] == "available"
+    readiness = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
+        headers=headers,
+    ).json()
+    assert any(
+        row["target"] == "qti_package"
+        and row["readiness"] == "ready_after_accepted_current_state"
+        and row["export_enabled"] is True
+        for row in readiness["targets"]
+    )
+
+    qti_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/qti_package",
+        headers=headers,
+    )
+    assert qti_response.status_code == 200
+    with zipfile.ZipFile(BytesIO(qti_response.content)) as archive:
+        item_xml = archive.read("items/item_001.xml").decode("utf-8")
+
+    assert "choice_001" in item_xml
+    assert "choice_002" in item_xml
+    assert "correctResponse" not in item_xml
+    assert "responseProcessing" not in item_xml
+
+
 def test_digiexam_migration_applies_source_bound_teacher_overlay(
     tmp_path: Path,
 ) -> None:
@@ -814,6 +888,42 @@ def _choice_overlay_bytes(
                     "manual_answer_key": {
                         "kind": "choice",
                         "correct_alternative_ids": [correct_id],
+                    },
+                }
+            ],
+        },
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _accept_current_state_overlay_bytes(
+    *,
+    baseline_manifest: dict[str, object],
+    item_summary: dict[str, object],
+    target: str,
+) -> bytes:
+    source = baseline_manifest["source"]
+    source_binding = baseline_manifest["source_binding"]
+    if not isinstance(source, dict) or not isinstance(source_binding, dict):
+        raise RuntimeError("baseline manifest has no source binding")
+    return json.dumps(
+        {
+            "schema_version": "digiexam_ingestion_overlay_v1",
+            "source_binding": {
+                "source_file_sha256": source["sha256"],
+                "source_ir_schema_version": "digiexam_intermediate_exam_v2",
+                "source_ir_sha256": source_binding["source_ir_sha256"],
+            },
+            "items": [
+                {
+                    "item_id": item_summary["item_id"],
+                    "sequence": item_summary["sequence"],
+                    "item_type": item_summary["item_type"],
+                    "source_item_fingerprint": item_summary["source_item_fingerprint"],
+                    "review_decision": {
+                        "kind": "accept_current_state_for_export",
+                        "decision_id": "accept-qti-current-state",
+                        "accepted_targets": [target],
                     },
                 }
             ],

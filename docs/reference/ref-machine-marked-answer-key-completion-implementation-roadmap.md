@@ -276,25 +276,41 @@ Goal: define and validate the QTI profile that lets teacher
 when the selected QTI 2.1 or QTI 3.0 package is otherwise schema-valid and
 target-valid.
 
+Missing-key means Sir Convert lacks trusted source, manual, or reviewed
+effective correct-response data for automatic evaluation; it does not mean the
+visible question content is missing.
+
 Checklist:
 
-- [ ] Link authoritative QTI 2.1 and QTI 3.0 schema sources from the QTI
+- [x] Link authoritative QTI 2.1 and QTI 3.0 schema sources from the QTI
   reference.
-- [ ] Record the schema requirements Sir Convert depends on, including
+- [x] Record the schema requirements Sir Convert depends on, including
   optional response declarations, optional response processing, optional
   correct responses, and interaction binding requirements.
-- [ ] Define supported unkeyed/manual item representations and report
-  semantics.
-- [ ] Generate deterministic sample packages and validation reports for every
+- [x] Define preservation-first unkeyed/manual item representations and report
+  semantics. Missing keys remove automatic correct-answer/evaluation claims, not
+  visible question content.
+- [x] Preserve matching, gap-fill, and similar shapes through deterministic
+  manual/unkeyed QTI representations whenever schema/profile validation allows
+  it, even when Exam.net imports them as free-text/manual items or requires
+  teacher cleanup.
+- [x] Keep unsupported for automatic evaluation distinct from unavailable for
+  manual/unkeyed export in target readiness and validation reports.
+- [x] Generate deterministic sample packages and validation reports for every
   supported shape.
-- [ ] Update target readiness so accepted-current-state can enable QTI only
+- [x] Update target readiness so accepted-current-state can enable QTI only
   inside the validated unkeyed/manual profile.
+- [x] Record Exam.net import proof as vendor-unproven/external dependency until
+  the vendor provides an import test path; use realistic Sir Convert QTI exam
+  files for local proof and later vendor support.
 
 Checkpoint:
 
-- [ ] QTI schema-validity, Sir Convert target-validity, and Exam.net import
+- [x] QTI schema-validity, Sir Convert target-validity, and Exam.net import
   proof are distinct in docs and reports.
-- [ ] Unsupported or unproven QTI 2.1/3.0 shapes remain unavailable.
+- [x] Unsupported for automatic evaluation is distinct from unavailable for
+  manual/unkeyed export; only shapes that would drop visible content or break
+  validation remain unavailable.
 
 Stop conditions:
 

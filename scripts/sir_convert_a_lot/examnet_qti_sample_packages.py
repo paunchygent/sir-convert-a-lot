@@ -1,8 +1,8 @@
-"""Task 280 Exam.net QTI sample package generator.
+"""Exam.net QTI sample package generator.
 
 Purpose:
-    Materialize the governed deterministic QTI 2.1 sample packages and
-    validation reports used as the first Exam.net QTI proof gate.
+    Materialize governed deterministic QTI 2.1 sample packages and validation
+    reports for Exam.net QTI proof gates.
 
 Relationships:
     - Uses `domain.examnet_qti_samples` as the sample source.
@@ -20,13 +20,16 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
     build_examnet_qti_package_plan,
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_samples import (
+    ExamNetQtiSamplePackage,
     examnet_qti_task_280_samples,
+    examnet_qti_task_303_samples,
 )
 from scripts.sir_convert_a_lot.infrastructure.examnet_qti_package_writer import (
     write_examnet_qti_artifacts,
 )
 
 DEFAULT_OUTPUT_DIR = Path("inputs/examples/examnet-qti-samples/task-280")
+DEFAULT_TASK_303_OUTPUT_DIR = Path("inputs/examples/examnet-qti-samples/task-303")
 
 
 def main() -> int:
@@ -34,16 +37,23 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--task",
+        choices=("task-280", "task-303"),
+        default="task-280",
+        help="Governed QTI sample set to materialize.",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
-        default=DEFAULT_OUTPUT_DIR,
+        default=None,
         help="Directory where sample package subdirectories should be written.",
     )
     args = parser.parse_args()
 
+    output_dir = args.output_dir or _default_output_dir(args.task)
     summary = []
-    for sample in examnet_qti_task_280_samples():
-        sample_dir = args.output_dir / sample.name
+    for sample in _samples_for_task(args.task):
+        sample_dir = output_dir / sample.name
         plan = build_examnet_qti_package_plan(package_name=sample.name, items=sample.items)
         artifacts = write_examnet_qti_artifacts(
             plan=plan,
@@ -62,6 +72,18 @@ def main() -> int:
         )
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
+
+
+def _samples_for_task(task: str) -> tuple[ExamNetQtiSamplePackage, ...]:
+    if task == "task-303":
+        return examnet_qti_task_303_samples()
+    return examnet_qti_task_280_samples()
+
+
+def _default_output_dir(task: str) -> Path:
+    if task == "task-303":
+        return DEFAULT_TASK_303_OUTPUT_DIR
+    return DEFAULT_OUTPUT_DIR
 
 
 if __name__ == "__main__":

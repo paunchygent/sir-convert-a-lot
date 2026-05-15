@@ -97,7 +97,7 @@ keys, and review decisions without mutating the parser-owned source IR.
 - [x] Item-content repairs through `effective_item_patch` are runtime-applied
   only after Task 302 validates source-bound patch shapes and proves PDF/QTI
   renderers consume effective content.
-- [ ] Missing machine-marked keys keep QTI disabled unless Task 303 or a later
+- [x] Missing machine-marked keys keep QTI disabled unless Task 303 or a later
   governed QTI profile validates an unkeyed/manual representation for the
   selected QTI version.
 - [x] Task 304 publishes generated v2 OpenAPI with typed DigiExam migration

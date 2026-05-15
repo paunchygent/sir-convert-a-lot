@@ -14,12 +14,16 @@ from __future__ import annotations
 
 import hashlib
 import re
+from typing import Literal
 from xml.etree import ElementTree
 
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
+    EXAMNET_QTI_AUTOMATIC_PROFILE_ID,
     EXAMNET_QTI_GENERATOR_VERSION,
+    EXAMNET_QTI_MANUAL_UNKEYED_PROFILE_ID,
     EXAMNET_QTI_PACKAGE_SCHEMA_VERSION,
     EXAMNET_QTI_VERSION,
+    ExamNetQtiEvaluationMode,
     ExamNetQtiExamNetProofStatus,
     ExamNetQtiImageResource,
     ExamNetQtiInteractionType,
@@ -93,6 +97,7 @@ def build_examnet_qti_package_plan(
         schema_version=EXAMNET_QTI_PACKAGE_SCHEMA_VERSION,
         generator_version=EXAMNET_QTI_GENERATOR_VERSION,
         qti_version=EXAMNET_QTI_VERSION,
+        profile_id=_profile_id(items),
         package_name=package_name,
         status=ExamNetQtiPackageStatus.PASSED,
         target_support_status=_target_support_status(items),
@@ -109,6 +114,9 @@ def _manual_follow_ups(items: tuple[ExamNetQtiItem, ...]) -> tuple[ExamNetQtiMan
     for item in items:
         for resource in item.unsupported_resources:
             follow_ups.append(_unsupported_resource_follow_up(item, resource))
+        if item.evaluation_mode == ExamNetQtiEvaluationMode.MANUAL_UNKEYED:
+            follow_ups.append(_automatic_evaluation_follow_up(item))
+            continue
         if item.interaction_type == ExamNetQtiInteractionType.SINGLE_CHOICE:
             if len(item.correct_choice_identifiers) != 1:
                 follow_ups.append(_manual_answer_key_follow_up(item))
@@ -133,7 +141,7 @@ def _item_errors(item: ExamNetQtiItem) -> tuple[str, ...]:
         errors.append(f"Item {item.item_id} has an unsafe QTI identifier.")
     if not any(line.strip() for line in item.prompt_lines):
         errors.append(f"Item {item.item_id} has no prompt text.")
-    if item.max_score is None:
+    if item.max_score is None and item.evaluation_mode == ExamNetQtiEvaluationMode.AUTOMATIC:
         errors.append(f"Item {item.item_id} has no point value.")
     errors.extend(_choice_errors(item))
     errors.extend(_matching_errors(item))
@@ -160,6 +168,8 @@ def _choice_errors(item: ExamNetQtiItem) -> tuple[str, ...]:
     )
     if missing:
         errors.append(f"Item {item.item_id} has answer keys for missing choices.")
+    if item.evaluation_mode == ExamNetQtiEvaluationMode.MANUAL_UNKEYED:
+        return tuple(errors)
     if item.interaction_type == ExamNetQtiInteractionType.SINGLE_CHOICE:
         if len(item.correct_choice_identifiers) != 1:
             errors.append(f"Item {item.item_id} needs exactly one correct choice.")
@@ -174,6 +184,8 @@ def _matching_errors(item: ExamNetQtiItem) -> tuple[str, ...]:
         return ()
     if not item.match_pairs:
         return (f"Item {item.item_id} needs exact matching pairs.",)
+    if item.evaluation_mode == ExamNetQtiEvaluationMode.MANUAL_UNKEYED:
+        return ()
     identifiers = tuple(
         identifier
         for pair in item.match_pairs
@@ -205,6 +217,7 @@ def _blocked_plan(
         schema_version=EXAMNET_QTI_PACKAGE_SCHEMA_VERSION,
         generator_version=EXAMNET_QTI_GENERATOR_VERSION,
         qti_version=EXAMNET_QTI_VERSION,
+        profile_id=_profile_id(items),
         package_name=package_name,
         status=ExamNetQtiPackageStatus.BLOCKED,
         target_support_status=_target_support_status(items),
@@ -240,6 +253,21 @@ def _manual_answer_key_follow_up(item: ExamNetQtiItem) -> ExamNetQtiManualFollow
         title=item.title,
         reason_code=ExamNetQtiManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED,
         message="Lägg till eller kontrollera facit innan QTI-paketet används i Exam.net.",
+        affected_targets=("qti_package",),
+    )
+
+
+def _automatic_evaluation_follow_up(item: ExamNetQtiItem) -> ExamNetQtiManualFollowUp:
+    source_type = item.source_item_type or item.interaction_type.value
+    return ExamNetQtiManualFollowUp(
+        item_id=item.item_id,
+        sequence=item.sequence,
+        title=item.title,
+        reason_code=ExamNetQtiManualFollowUpReason.AUTOMATIC_EVALUATION_UNSUPPORTED,
+        message=(
+            f"Frågan exporteras som manuell QTI utan automatiskt facit "
+            f"(ursprunglig frågetyp: {source_type})."
+        ),
         affected_targets=("qti_package",),
     )
 
@@ -334,6 +362,14 @@ def _target_support_status(
     if any(item.interaction_type == ExamNetQtiInteractionType.MATCHING for item in items):
         return ExamNetQtiTargetSupportStatus.PROOF_GATED
     return ExamNetQtiTargetSupportStatus.VENDOR_REPORTED_MINIMUM
+
+
+def _profile_id(
+    items: tuple[ExamNetQtiItem, ...],
+) -> Literal["examnet_qti_2_1_v1", "unkeyed_manual_qti_2_1_v1"]:
+    if any(item.evaluation_mode == ExamNetQtiEvaluationMode.MANUAL_UNKEYED for item in items):
+        return EXAMNET_QTI_MANUAL_UNKEYED_PROFILE_ID
+    return EXAMNET_QTI_AUTOMATIC_PROFILE_ID
 
 
 def _proof_status(items: tuple[ExamNetQtiItem, ...]) -> ExamNetQtiExamNetProofStatus:

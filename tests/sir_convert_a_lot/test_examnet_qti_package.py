@@ -28,6 +28,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiChoice,
+    ExamNetQtiEvaluationMode,
     ExamNetQtiExamNetProofStatus,
     ExamNetQtiInteractionType,
     ExamNetQtiItem,
@@ -42,6 +43,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
 from scripts.sir_convert_a_lot.domain.examnet_qti_samples import (
     ExamNetQtiSamplePackage,
     examnet_qti_task_280_samples,
+    examnet_qti_task_303_samples,
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_validation import (
     build_examnet_qti_validation_report,
@@ -89,6 +91,48 @@ def test_choice_packages_encode_single_and_multiple_cardinality(tmp_path: Path) 
     assert _response_declaration(multiple_item).attrib["cardinality"] == "multiple"
     assert _choice_interaction(multiple_item).attrib["maxChoices"] == "3"
     assert _correct_values(multiple_item) == ["choice_001", "choice_002", "choice_004"]
+
+
+def test_task_303_unkeyed_choice_preserves_options_without_automatic_evaluation(
+    tmp_path: Path,
+) -> None:
+    samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
+    sample_dir = _write_sample(samples["unkeyed-multiple-response-preserved"], tmp_path)
+    item = _item_root(sample_dir / "qti-package.zip")
+    report = _read_report(sample_dir / "qti-validation-report.json")
+
+    assert _response_declaration(item).attrib["cardinality"] == "multiple"
+    assert _choice_interaction(item).attrib["maxChoices"] == "3"
+    assert len(item.findall(f".//{{{QTI_NAMESPACE}}}simpleChoice")) == 3
+    assert _correct_values(item) == []
+    assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
+    assert _json_string(report, "package_status") == "passed"
+    assert _json_string(report, "profile_id") == "unkeyed_manual_qti_2_1_v1"
+    follow_up = _first_manual_follow_up(report)
+    assert _json_string(follow_up, "reason_code") == (
+        ExamNetQtiManualFollowUpReason.AUTOMATIC_EVALUATION_UNSUPPORTED
+    )
+
+
+def test_task_303_gap_and_matching_samples_are_manual_free_text_preservation(
+    tmp_path: Path,
+) -> None:
+    samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
+    for sample_name, expected_text in (
+        ("manual-gap-fill-preserved-as-free-text", "Lucka 1: 84ef31ef"),
+        ("manual-matching-preserved-as-free-text", "Vänster kolumn:"),
+    ):
+        sample_dir = _write_sample(samples[sample_name], tmp_path / sample_name)
+        item = _item_root(sample_dir / "qti-package.zip")
+        report = _read_report(sample_dir / "qti-validation-report.json")
+
+        assert item.find(f".//{{{QTI_NAMESPACE}}}extendedTextInteraction") is not None
+        assert item.find(f".//{{{QTI_NAMESPACE}}}correctResponse") is None
+        assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
+        assert expected_text in _item_xml(sample_dir / "qti-package.zip")
+        assert _json_string(report, "examnet_proof_status") == (
+            ExamNetQtiExamNetProofStatus.VENDOR_REPORTED_UNPROVEN
+        )
 
 
 def test_free_text_package_uses_extended_text_without_answer_key(tmp_path: Path) -> None:
@@ -194,6 +238,43 @@ def test_validation_reports_cover_blocked_and_failed_states() -> None:
     assert "not a readable zip" in failed_report.errors[0]
 
 
+def test_manual_unkeyed_choice_plan_passes_where_automatic_choice_blocks() -> None:
+    item = ExamNetQtiItem(
+        item_id="item_001",
+        sequence=1,
+        title="Missing key",
+        interaction_type=ExamNetQtiInteractionType.SINGLE_CHOICE,
+        prompt_lines=("Choose one.",),
+        max_score=1,
+        choices=(
+            ExamNetQtiChoice("choice_001", "Alpha"),
+            ExamNetQtiChoice("choice_002", "Beta"),
+        ),
+    )
+    automatic_plan = build_examnet_qti_package_plan(
+        package_name="automatic-blocked",
+        items=(item,),
+    )
+    manual_plan = build_examnet_qti_package_plan(
+        package_name="manual-passed",
+        items=(
+            ExamNetQtiItem(
+                item_id=item.item_id,
+                sequence=item.sequence,
+                title=item.title,
+                interaction_type=item.interaction_type,
+                prompt_lines=item.prompt_lines,
+                max_score=item.max_score,
+                evaluation_mode=ExamNetQtiEvaluationMode.MANUAL_UNKEYED,
+                choices=item.choices,
+            ),
+        ),
+    )
+
+    assert automatic_plan.status == ExamNetQtiPackageStatus.BLOCKED
+    assert manual_plan.status == ExamNetQtiPackageStatus.PASSED
+
+
 def test_digiexam_ir_adapter_feeds_reusable_qti_package_plan() -> None:
     parse_result = DigiExamDxeParser().parse_payload(
         _digiexam_renderable_payload(),
@@ -276,7 +357,8 @@ def _item_root(package_path: Path) -> ElementTree.Element:
 
 def _item_xml(package_path: Path) -> str:
     with zipfile.ZipFile(package_path) as archive:
-        return archive.read("items/item_001.xml").decode("utf-8")
+        item_names = sorted(name for name in archive.namelist() if name.startswith("items/"))
+        return archive.read(item_names[0]).decode("utf-8")
 
 
 def _response_declaration(item: ElementTree.Element) -> ElementTree.Element:

@@ -65,12 +65,12 @@ Schema requirements Sir Convert depends on:
   present. For example, choice-like interactions bind to identifier response
   variables, and matching-style interactions bind to directed-pair response
   variables. Omitting a correct response is not the same as proving a
-  machine-scored item.
+  automatically evaluated item.
 
 Contract consequence: bare QTI schema validity does not universally require a
 machine-marked answer key. Sir Convert target readiness is intentionally
 stricter than schema validity whenever the selected profile claims an item is
-machine-scored or Exam.net-import-ready.
+automatically evaluated or Exam.net-import-ready.
 
 ## Vendor-Reported Exam.net Import Direction
 
@@ -130,10 +130,22 @@ target rather than hiding it in the package.
 
 ## Machine-marked Versus Manual/unkeyed Policy
 
+A machine-marked key is trusted correct-response data that lets Sir Convert
+assert how a learner response should be evaluated automatically. Examples
+include correct choice identifiers for choice items, reviewed matching pairs,
+accepted gap-fill values, or another source/manual/reviewed effective answer
+key that maps the item's QTI response variable to correct values.
+
+A missing machine-marked key means that no such trusted correct-response data
+exists for a machine-markable item in the source IR or effective layer. It does
+not mean the question content is missing, and it does not apply to open-ended
+manual items that are intentionally teacher-marked.
+
 In the current Exam.net QTI profile, choice, matching, gap-fill, and other
-machine-marked target shapes require a source, manual, or reviewed effective
-answer key before `qti_package` can be marked exportable. This is a Sir Convert
-target-readiness rule, not a universal QTI schema rule.
+machine-markable target shapes require a source, manual, or reviewed effective
+answer key before `qti_package` can be marked exportable as an automatically
+evaluated item. This is a Sir Convert target-readiness rule, not a universal
+QTI schema rule.
 
 Teacher `accept_current_state_for_export` decisions do not currently enable QTI
 for missing machine-marked keys. They can only clear teacher-review blockers
@@ -145,6 +157,58 @@ items that have no machine-marked key. It must prove package/XML/schema
 validation, local semantic smoke where available, target readiness semantics,
 and Exam.net import behavior before QTI export can be enabled by acceptance
 alone.
+
+### Task 303 Manual/unkeyed Preservation Direction
+
+The product direction for Task 303 is preservation-first: missing
+machine-marked keys must remove Sir Convert's automatic-evaluation claim, not
+remove the teacher-visible question from QTI or PDF output.
+
+For single-choice and multiple-response items, the first unkeyed/manual profile
+must preserve prompt text, all visible alternatives, allowed media/resources,
+and the response cardinality needed by the visible interaction. The generated
+QTI must omit `correctResponse`/`qti-correct-response` and automatic
+evaluation `responseProcessing` when no trusted answer key exists. In this
+profile, omitting automatic evaluation means Sir Convert does not declare a
+correct answer, response-processing template, or automatic correct/incorrect
+rule for the item. The report must identify the item as manual/unkeyed so
+Skriptoteket and teachers do not mistake the package for an automatically
+evaluated export.
+
+Matching, gap-fill, and similar item shapes are priority preservation cases,
+not automatic blockers. Task 303 must define deterministic manual/unkeyed QTI
+representations that keep their visible question content in the package when
+schema/profile validation allows it. It is acceptable for Exam.net to import
+these as free-text/manual items or to require teacher cleanup after import, but
+the package must not fail merely because such items exist. The target readiness
+and validation report must state the original item type, the chosen manual QTI
+representation, whether automatic evaluation was omitted, and any teacher
+follow-up needed after import.
+
+Only items that cannot be represented without dropping visible content,
+violating the QTI/package profile, including forbidden resources, or producing
+malformed XML may keep `qti_package` unavailable under this profile. Unsupported
+for automatic evaluation is not the same state as unavailable for
+manual/unkeyed export:
+
+- Unsupported for automatic evaluation means Sir Convert can preserve the
+  visible item in a schema/profile-valid package, but it does not assert a
+  correct answer or automatic evaluation rule. Target readiness may become
+  `ready_after_accepted_current_state` after teacher acceptance, and the report
+  must carry item-level manual/unkeyed follow-up.
+- Unavailable for manual/unkeyed export means Sir Convert cannot produce a
+  valid preservation package for the item or target without dropping visible
+  content, violating package/profile rules, including forbidden resources, or
+  emitting malformed XML. Teacher acceptance must not enable `qti_package` in
+  that state.
+
+Exam.net has explicitly asked for real Sir Convert QTI exam files so it can
+support realistic imported exams rather than curated Exam.net-specific samples.
+Task 303 should therefore proceed with local package/schema/profile proof and
+record Exam.net import proof as a vendor-unproven external dependency until an
+Exam.net import test path is available. The generated samples should be
+realistic preservation cases, not simplified files that hide difficult item
+types.
 
 ## Validation Ladder
 
@@ -277,6 +341,38 @@ Current package hashes:
 | `image-free-text` | `917dba37c29e44147826ac508942fafcd536d78cd3fcc552d1106bc0072d13e8` |
 | `matching-proof-gated` | `846818e5a2985be23e48077835b8ead3f49f7275182aef2f511ce79ffbca52bc` |
 | `unsupported-resource-omission` | `81f89c05149239d9d0c484bab82882af9ea9b3cb01eb7c4804a778c494440def` |
+
+### Task 303 Manual/unkeyed Sample Gate
+
+Task 303 adds deterministic QTI 2.1 manual/unkeyed preservation samples under
+`inputs/examples/examnet-qti-samples/task-303/`.
+
+Use `pdm run examnet-qti-task-303-samples` to regenerate the samples and
+reports.
+
+The single-choice, multiple-response, and gap-fill samples are derived from the
+tracked DigiExam `.dxe` fixture
+`inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/1772718003-test-samma-prov-i-digiexam.dxe`.
+The current tracked `.dxe` fixture set does not include a real matching item.
+The matching sample is therefore a Task-298-aware contract sample: it proves the
+manual/free-text preservation shape without claiming reviewed matching
+answer-pair support, automatic evaluation, or IR v3 application.
+
+| Sample | Source | Profile | Status | Exam.net proof status |
+| --- | --- | --- | --- | --- |
+| `unkeyed-single-choice-preserved` | real DXE `item-002` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+| `unkeyed-multiple-response-preserved` | real DXE `item-004` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+| `manual-gap-fill-preserved-as-free-text` | real DXE `item-007` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+| `manual-matching-preserved-as-free-text` | contract sample pending real matching DXE fixture | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+
+Current Task 303 package hashes:
+
+| Sample | QTI package SHA-256 |
+| --- | --- |
+| `unkeyed-single-choice-preserved` | `caba9ee65040f0879f1ef02694b18883f85bd00663a5d525d0cf77deef0e2faf` |
+| `unkeyed-multiple-response-preserved` | `60be8c1442baabf24f11d250fba1d2fd2cb9a827844c01fb83461d2e92318fc6` |
+| `manual-gap-fill-preserved-as-free-text` | `f064a580919ee27d8efd20020103df700468ae10db10415c9d1a40e9a122036a` |
+| `manual-matching-preserved-as-free-text` | `055f41e4ff11e109af8290037dc48aeebeeec9051ba9e36d6dcef606347e192b` |
 
 The `qti_validation_report` schema version is
 `examnet_qti_validation_report_v1`. Reports include package filename/hash, QTI

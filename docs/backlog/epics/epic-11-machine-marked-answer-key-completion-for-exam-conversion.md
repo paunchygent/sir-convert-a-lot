@@ -137,7 +137,7 @@ production model selection.
   and tests proving source provenance remains strict.
 - [ ] Matching answer application waits for the IR v3 gate that adds explicit
   matching pairs.
-- [ ] Accepted-current-state can enable QTI only under a governed
+- [x] Accepted-current-state can enable QTI only under a governed
   unkeyed/manual QTI profile with schema/profile validation and target
   readiness proof.
 - [ ] Skriptoteket and HuleEdu follow-up tasks are explicitly separated from

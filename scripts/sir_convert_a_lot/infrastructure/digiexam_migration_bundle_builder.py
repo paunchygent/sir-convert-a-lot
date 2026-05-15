@@ -202,6 +202,14 @@ def execute_digiexam_migration_bundle_job(
             job=job,
             artifacts_dir=artifacts_dir,
             exam=effective_exam,
+            accepted_current_state_item_ids=(
+                _accepted_current_state_item_ids(
+                    overlay_result.accepted_review_decisions,
+                    ExamMigrationTargetV2.QTI_PACKAGE,
+                )
+                if overlay_result is not None
+                else ()
+            ),
         )
     else:
         qti_entries = not_requested_qti_entries(job)
@@ -371,10 +379,14 @@ def _build_qti_artifacts(
     job: StoredJobV2,
     artifacts_dir: Path,
     exam,
+    accepted_current_state_item_ids: tuple[str, ...] = (),
 ) -> tuple[
     dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifactEntry], list[object], list[str]
 ]:
-    adapter_result = build_examnet_qti_items_from_digiexam_ir(exam)
+    adapter_result = build_examnet_qti_items_from_digiexam_ir(
+        exam,
+        accepted_current_state_item_ids=accepted_current_state_item_ids,
+    )
     plan = build_examnet_qti_package_plan(
         package_name=Path(job.source_filename).stem,
         items=adapter_result.items,
@@ -410,6 +422,17 @@ def _build_qti_artifacts(
         for follow_up in (*adapter_result.manual_follow_ups, *plan.manual_follow_ups)
     ]
     return entries, follow_ups, list(plan.warnings)
+
+
+def _accepted_current_state_item_ids(
+    accepted_review_decisions: tuple[tuple[str, ExamMigrationTargetV2], ...],
+    target: ExamMigrationTargetV2,
+) -> tuple[str, ...]:
+    return tuple(
+        item_id
+        for item_id, accepted_target in accepted_review_decisions
+        if accepted_target == target
+    )
 
 
 def _exportable_targets(entries: tuple[DigiExamMigrationArtifactEntry, ...]) -> list[str]:

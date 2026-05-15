@@ -99,9 +99,15 @@ runbooks, or skills.
   repairs for effective IR while preserving source IR and answer-key
   provenance. Task 304 publishes a generated v2 OpenAPI snapshot for the
   DigiExam overlay/effective-IR/readiness contract so Skriptoteket can validate
-  consumer types before live Docker/service tests. Task 303 is the planned
-  follow-up for an unkeyed/manual QTI profile that can let
-  accepted-current-state enable QTI only after schema/profile validation.
+  consumer types before live Docker/service tests. Task 303 completed the
+  unkeyed/manual QTI profile that lets accepted-current-state enable QTI only
+  after schema/profile validation. The profile is preservation-first: missing
+  machine-marked keys remove automatic evaluation claims rather than visible
+  QTI/PDF question content whenever a deterministic manual/unkeyed
+  representation is valid. Exam.net import proof remains
+  vendor-unproven/external until a vendor test path exists. The generated Task
+  303 samples use real tracked DXE choice and gap-fill items; matching remains a
+  Task-298-aware contract sample until a real matching DXE fixture is available.
   Granite FP8 on Hemma ROCm vLLM remains the interim local provider from Task
   301\.
 - Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
@@ -139,8 +145,9 @@ runbooks, or skills.
    extract the structured local provider harness and then emit advisory
    answer-key completion reports on top of Task 295's overlay/effective IR
    substrate.
-1. For accepted-current-state QTI export, use Task 303 before enabling
-   unkeyed/manual QTI downloads.
+1. For accepted-current-state QTI export, use Task 303's completed
+   `unkeyed_manual_qti_2_1_v1` profile and keep Exam.net import proof marked
+   vendor-unproven until the vendor provides a test path.
 1. Keep the Exam.net artifact authoring route separate from the DigiExam
    migration route. Do not feed Exam.net-origin PDFs or Word exports into
    `digiexam_dxe -> examnet_migration_bundle`.
