@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-05-14'
+last_updated: '2026-05-15'
 ---
 
 ## Purpose
@@ -94,8 +94,16 @@ runbooks, or skills.
   source fingerprints, target readiness, overlay/report schemas, and consumer
   break inventory. Task 295 implemented source-bound teacher overlay ingestion,
   effective renderer input, source fingerprints in the IR manifest, overlay
-  reports, and post-overlay target readiness. Granite FP8 on Hemma ROCm vLLM
-  remains the interim local provider from Task 301.
+  reports, and post-overlay target readiness for manual answer keys and review
+  decisions. Task 302 implemented `effective_item_patch` visible item-content
+  repairs for effective IR while preserving source IR and answer-key
+  provenance. Task 304 publishes a generated v2 OpenAPI snapshot for the
+  DigiExam overlay/effective-IR/readiness contract so Skriptoteket can validate
+  consumer types before live Docker/service tests. Task 303 is the planned
+  follow-up for an unkeyed/manual QTI profile that can let
+  accepted-current-state enable QTI only after schema/profile validation.
+  Granite FP8 on Hemma ROCm vLLM remains the interim local provider from Task
+  301\.
 - Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
   a thin router, the former omnibus Hemma runbook is a compact doorway, and
   focused service/GPU/conversion/TTS runbooks carry current operator guidance.
@@ -131,6 +139,8 @@ runbooks, or skills.
    extract the structured local provider harness and then emit advisory
    answer-key completion reports on top of Task 295's overlay/effective IR
    substrate.
+1. For accepted-current-state QTI export, use Task 303 before enabling
+   unkeyed/manual QTI downloads.
 1. Keep the Exam.net artifact authoring route separate from the DigiExam
    migration route. Do not feed Exam.net-origin PDFs or Word exports into
    `digiexam_dxe -> examnet_migration_bundle`.
@@ -158,6 +168,12 @@ runbooks, or skills.
 - 2026-05-15 Task 295 focused implementation gates passed: `pdm run format-all`, `pdm run lint-fix`, `pdm run typecheck-all`, focused
   DigiExam overlay/IR/API pytest, docs/skills/handoff validation, and
   `git diff --check`.
+- 2026-05-15 Task 302 focused implementation gates passed:
+  `pdm run format-all`, `pdm run lint-fix`, `pdm run typecheck-all`, focused
+  DigiExam overlay pytest (`7 passed`), DigiExam migration bundle API pytest
+  (`14 passed`), `pdm run coverage-gate` (`1181 passed, 5 skipped`, coverage
+  `95.42%`), `pdm run docs-sync`, `pdm run docs-validate`,
+  `pdm run skills-validate`, `pdm run handoff-validate`, and `git diff --check`.
 
 ## Stop Conditions
 

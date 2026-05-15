@@ -82,7 +82,11 @@ def _job_record_response(job: StoredJobV2) -> JobRecordResponseV2:
 
 
 def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
-    @router.post("/v2/convert/jobs/{job_id}/resume")
+    @router.post(
+        "/v2/convert/jobs/{job_id}/resume",
+        response_model=JobRecordResponseV2,
+        responses={202: {"model": JobRecordResponseV2}},
+    )
     async def resume_job(job_id: str, request: Request) -> JSONResponse:
         auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)

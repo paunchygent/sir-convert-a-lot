@@ -210,6 +210,7 @@ distribution = false
 "hemma-command-start" = "bash scripts/devops/hemma-command-start.sh"
 "hemma-command-monitor" = "bash scripts/devops/hemma-command-monitor.sh"
 "hemma-public-edge-default-host-remediate" = "bash scripts/devops/hemma-public-edge-default-host-remediate.sh"
+"openapi-export-v2" = "python -m scripts.sir_convert_a_lot.openapi_export_v2"
 "new-task" = "python -m scripts.docs_as_code.new_task"
 "new-programme" = "python -m scripts.docs_as_code.new_task --type programme"
 "new-epic" = "python -m scripts.docs_as_code.new_task --type epic"

@@ -20,8 +20,12 @@ links:
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
   - docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md
+  - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
+  - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
+  - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
+  - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
   - docs/reference/ref-machine-marked-answer-key-completion-implementation-roadmap.md
 ---
 
@@ -124,6 +128,11 @@ prompt/body HTML, alternatives, gaps, matching columns, grading policy, and
 asset references. It is not a Skriptoteket overlay field and does not become
 answer-key evidence.
 
+Runtime status: Task 295 applies manual answer keys and review decisions. Task
+302 applies supported `effective_item_patch` visible-content repairs to
+effective IR. That path remains separate from answer-key overlays and review
+decisions.
+
 ## Target Readiness And Accepted Current State
 
 Skriptoteket cannot make PDF or QTI downloadable by flipping a local review
@@ -151,6 +160,11 @@ must not:
 - treat unsupported target shapes as accepted missing answer keys; or
 - mark a named artifact as downloadable unless bytes were actually created and
   validated.
+
+For QTI, the current profile stays stricter than bare QTI schema validity:
+missing machine-marked keys keep `qti_package` disabled unless a manual key is
+provided or Task 303/later profile proves an unkeyed/manual QTI 2.1 or QTI 3.0
+representation with schema, target-readiness, and Exam.net import evidence.
 
 Target readiness must remain per-target and per-item. It must distinguish at
 least:
@@ -371,3 +385,9 @@ write source IR, effective IR if changed, overlay report, completion report
 
 Parser code must not know about LLMs. Renderers must not know about provider
 details. Artifact routes must not mutate jobs or IR.
+
+The v2 OpenAPI snapshot is the generated consumer-contract surface for this
+flow. It must include schemas for the multipart `job_spec` and
+`digiexam_ingestion_overlay` JSON parts plus the bundle manifest, effective
+exam, overlay report, and target-readiness report, so Skriptoteket can validate
+adapter/types before live service tests.

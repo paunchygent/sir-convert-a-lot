@@ -13,9 +13,9 @@ Relationships:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamItemType
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DigiExamIntermediateExam
@@ -112,26 +112,131 @@ DigiExamOverlayManualAnswerKey = Annotated[
 ]
 
 
+class DigiExamOverlayVisibleTextPatch(BaseModel):
+    """Shared visible item text patch fields for effective renderer input."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    prompt_html: str | None = Field(default=None, min_length=1, max_length=8000)
+    prompt_lines: tuple[str, ...] | None = Field(default=None, max_length=20)
+
+    @field_validator("title", "prompt_html")
+    @classmethod
+    def _validate_text_field(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if normalized == "":
+            raise ValueError("visible text patches must not be blank")
+        _reject_embedded_resources(normalized)
+        return normalized
+
+    @field_validator("prompt_lines")
+    @classmethod
+    def _validate_prompt_lines(cls, value: tuple[str, ...] | None) -> tuple[str, ...] | None:
+        if value is None:
+            return None
+        normalized = tuple(line.strip() for line in value)
+        if not normalized or any(line == "" for line in normalized):
+            raise ValueError("prompt lines must contain non-blank entries")
+        for line in normalized:
+            _reject_embedded_resources(line)
+        return normalized
+
+
 class DigiExamOverlayChoiceAlternativeOverride(BaseModel):
-    """Bounded alternative text patch parsed but not applied in Task 295."""
+    """Bounded alternative text patch for effective choice items."""
 
     model_config = ConfigDict(extra="forbid")
 
     alternative_id: int
     text: str = Field(min_length=1, max_length=500)
 
+    @field_validator("text")
+    @classmethod
+    def _validate_text(cls, value: str) -> str:
+        normalized = value.strip()
+        _reject_embedded_resources(normalized)
+        return normalized
 
-class DigiExamOverlayChoiceItemPatch(BaseModel):
-    """Bounded choice item patch parsed but not applied in Task 295."""
+
+class DigiExamOverlayChoiceItemPatch(DigiExamOverlayVisibleTextPatch):
+    """Bounded choice item patch applied only to the effective IR."""
 
     model_config = ConfigDict(extra="forbid")
 
     kind: Literal["choice"]
     alternative_overrides: tuple[DigiExamOverlayChoiceAlternativeOverride, ...] = ()
 
+    @model_validator(mode="after")
+    def _require_patch_content(self) -> Self:
+        if (
+            self.title is None
+            and self.prompt_html is None
+            and self.prompt_lines is None
+            and not self.alternative_overrides
+        ):
+            raise ValueError("choice item patch must contain at least one visible edit")
+        return self
+
+
+class DigiExamOverlayGapFillItemPatch(DigiExamOverlayVisibleTextPatch):
+    """Bounded gap-fill item patch applied only to the effective IR."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["gap_fill"]
+
+    @model_validator(mode="after")
+    def _require_patch_content(self) -> Self:
+        if self.title is None and self.prompt_html is None and self.prompt_lines is None:
+            raise ValueError("gap-fill item patch must contain at least one visible edit")
+        return self
+
+
+class DigiExamOverlayMatchingTextOverride(BaseModel):
+    """Bounded matching-column text patch using source 1-based positions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    index: int = Field(ge=1)
+    text: str = Field(min_length=1, max_length=500)
+
+    @field_validator("text")
+    @classmethod
+    def _validate_text(cls, value: str) -> str:
+        normalized = value.strip()
+        _reject_embedded_resources(normalized)
+        return normalized
+
+
+class DigiExamOverlayMatchingItemPatch(DigiExamOverlayVisibleTextPatch):
+    """Bounded matching item patch applied only to effective visible text."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["matching"]
+    left_overrides: tuple[DigiExamOverlayMatchingTextOverride, ...] = ()
+    right_overrides: tuple[DigiExamOverlayMatchingTextOverride, ...] = ()
+
+    @model_validator(mode="after")
+    def _require_patch_content(self) -> Self:
+        if (
+            self.title is None
+            and self.prompt_html is None
+            and self.prompt_lines is None
+            and not self.left_overrides
+            and not self.right_overrides
+        ):
+            raise ValueError("matching item patch must contain at least one visible edit")
+        return self
+
 
 DigiExamOverlayEffectiveItemPatch = Annotated[
-    DigiExamOverlayChoiceItemPatch,
+    DigiExamOverlayChoiceItemPatch
+    | DigiExamOverlayGapFillItemPatch
+    | DigiExamOverlayMatchingItemPatch,
     Field(discriminator="kind"),
 ]
 
@@ -210,6 +315,17 @@ class DigiExamEffectiveAnswerKey:
 
 
 @dataclass(frozen=True)
+class DigiExamEffectiveItemPatchSummary:
+    """Item-content patch summary surfaced without exposing raw overlay JSON."""
+
+    changed_fields: tuple[str, ...]
+    patched_alternative_ids: tuple[int, ...]
+    patched_gap_ids: tuple[str, ...]
+    patched_matching_left_indices: tuple[int, ...]
+    patched_matching_right_indices: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class DigiExamEffectiveItem:
     """One effective item summary for `digiexam_effective_exam_v1`."""
 
@@ -218,6 +334,7 @@ class DigiExamEffectiveItem:
     item_type: str
     source_item_fingerprint: str
     effective_answer_key: DigiExamEffectiveAnswerKey | None
+    effective_item_patch: DigiExamEffectiveItemPatchSummary | None
     applied_overlay_entry_ids: tuple[str, ...]
     review_decisions: tuple[DigiExamEffectiveReviewDecision, ...]
 
@@ -255,3 +372,10 @@ class DigiExamOverlayApplicationResult:
     ingestion_overlay_report: DigiExamIngestionOverlayReport
     renderer_input_changed: bool
     accepted_review_decisions: tuple[tuple[str, ExamMigrationTargetV2], ...]
+
+
+def _reject_embedded_resources(value: str) -> None:
+    lowered = value.lower()
+    forbidden_fragments = ("base64,", "data:", "<script", "<iframe", "src=", "href=")
+    if any(fragment in lowered for fragment in forbidden_fragments):
+        raise ValueError("visible text patches must not carry embedded resources")

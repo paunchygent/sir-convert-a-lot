@@ -1,0 +1,4383 @@
+{
+  "components": {
+    "schemas": {
+      "AccelerationPolicy": {
+        "description": "Execution acceleration policies supported by v1.",
+        "enum": [
+          "gpu_required",
+          "gpu_prefer",
+          "cpu_only"
+        ],
+        "title": "AccelerationPolicy",
+        "type": "string"
+      },
+      "ArtifactMetadataV2": {
+        "additionalProperties": false,
+        "description": "Artifact metadata for successful v2 job results.",
+        "properties": {
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "format": {
+            "$ref": "#/components/schemas/OutputFormatV2"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "filename",
+          "format",
+          "size_bytes",
+          "sha256",
+          "content_type"
+        ],
+        "title": "ArtifactMetadataV2",
+        "type": "object"
+      },
+      "BackendStrategy": {
+        "description": "Backend strategy values supported by v1.",
+        "enum": [
+          "auto",
+          "docling",
+          "pymupdf"
+        ],
+        "title": "BackendStrategy",
+        "type": "string"
+      },
+      "Body_create_job_v2_convert_jobs_post": {
+        "properties": {
+          "digiexam_ingestion_overlay": {
+            "$ref": "#/components/schemas/DigiExamIngestionOverlay",
+            "description": "Optional multipart JSON part carrying a source-bound teacher ingestion overlay."
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "graded_result_pdf": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graded Result Pdf"
+          },
+          "job_spec": {
+            "$ref": "#/components/schemas/JobSpecV2",
+            "description": "Multipart JSON part parsed as the v2 job specification."
+          },
+          "parity_pdf": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parity Pdf"
+          },
+          "reference_docx": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Docx"
+          },
+          "resources": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resources"
+          }
+        },
+        "required": [
+          "file",
+          "job_spec"
+        ],
+        "title": "Body_create_job_v2_convert_jobs_post",
+        "type": "object"
+      },
+      "ConversionMetadataV2": {
+        "additionalProperties": false,
+        "description": "Execution metadata for successful v2 conversion jobs.",
+        "properties": {
+          "acceleration_policy_requested": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceleration Policy Requested"
+          },
+          "acceleration_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceleration Used"
+          },
+          "backend_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backend Used"
+          },
+          "chunk_size_pages": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Size Pages"
+          },
+          "effective_gpu_stage_limit": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Gpu Stage Limit"
+          },
+          "gpu_busy_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Busy Percent"
+          },
+          "gpu_device_count": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Device Count"
+          },
+          "gpu_memory_used_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Memory Used Percent"
+          },
+          "gpu_runtime_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Runtime Kind"
+          },
+          "max_chunk_workers": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Chunk Workers"
+          },
+          "ocr_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Enabled"
+          },
+          "ocr_engine_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Engine Used"
+          },
+          "ocr_languages_used": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Languages Used"
+          },
+          "options_fingerprint": {
+            "title": "Options Fingerprint",
+            "type": "string"
+          },
+          "parallel_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Enabled"
+          },
+          "pipeline_used": {
+            "title": "Pipeline Used",
+            "type": "string"
+          },
+          "scheduling_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduling Mode"
+          },
+          "template_artifact_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Artifact Sha256"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "template_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Version"
+          }
+        },
+        "required": [
+          "pipeline_used",
+          "options_fingerprint"
+        ],
+        "title": "ConversionMetadataV2",
+        "type": "object"
+      },
+      "ConversionSpecV2": {
+        "additionalProperties": false,
+        "description": "Conversion section of the v2 job specification.",
+        "properties": {
+          "artifact_language": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Artifact Language"
+          },
+          "css_filenames": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Css Filenames",
+            "type": "array"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/OutputFormatV2"
+          },
+          "page_css_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PdfPageCssModeV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pdf_layout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PdfLayoutV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "reference_docx_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reference Docx Filename"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ExamMigrationTargetV2"
+            },
+            "title": "Targets",
+            "type": "array"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TemplateSelectorV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "output_format"
+        ],
+        "title": "ConversionSpecV2",
+        "type": "object"
+      },
+      "DigiExamEffectiveAnswerKeyV1": {
+        "additionalProperties": false,
+        "description": "Effective answer-key summary without changing source provenance.",
+        "properties": {
+          "correct_alternative_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Correct Alternative Ids",
+            "type": "array"
+          },
+          "correct_gap_answers": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Correct Gap Answers",
+            "type": "array"
+          },
+          "provenance": {
+            "title": "Provenance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provenance"
+        ],
+        "title": "DigiExamEffectiveAnswerKeyV1",
+        "type": "object"
+      },
+      "DigiExamEffectiveExamV1": {
+        "additionalProperties": false,
+        "description": "Effective exam artifact emitted when overlay changes renderer input.",
+        "properties": {
+          "answer_key_completion_report_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Answer Key Completion Report Sha256"
+          },
+          "ingestion_overlay_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingestion Overlay Sha256"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamEffectiveItemV1"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "digiexam_effective_exam_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_file_sha256": {
+            "title": "Source File Sha256",
+            "type": "string"
+          },
+          "source_ir_schema_version": {
+            "const": "digiexam_intermediate_exam_v2",
+            "title": "Source Ir Schema Version",
+            "type": "string"
+          },
+          "source_ir_sha256": {
+            "title": "Source Ir Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "source_file_sha256",
+          "source_ir_schema_version",
+          "source_ir_sha256",
+          "items"
+        ],
+        "title": "DigiExamEffectiveExamV1",
+        "type": "object"
+      },
+      "DigiExamEffectiveItemPatchSummaryV1": {
+        "additionalProperties": false,
+        "description": "Visible effective item patch summary for teacher-review consumers.",
+        "properties": {
+          "changed_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Changed Fields",
+            "type": "array"
+          },
+          "patched_alternative_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Patched Alternative Ids",
+            "type": "array"
+          },
+          "patched_gap_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Patched Gap Ids",
+            "type": "array"
+          },
+          "patched_matching_left_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Patched Matching Left Indices",
+            "type": "array"
+          },
+          "patched_matching_right_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Patched Matching Right Indices",
+            "type": "array"
+          }
+        },
+        "title": "DigiExamEffectiveItemPatchSummaryV1",
+        "type": "object"
+      },
+      "DigiExamEffectiveItemV1": {
+        "additionalProperties": false,
+        "description": "One item summary in `digiexam_effective_exam_v1` artifacts.",
+        "properties": {
+          "applied_overlay_entry_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Applied Overlay Entry Ids",
+            "type": "array"
+          },
+          "effective_answer_key": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamEffectiveAnswerKeyV1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "effective_item_patch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamEffectiveItemPatchSummaryV1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "title": "Item Type",
+            "type": "string"
+          },
+          "review_decisions": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamEffectiveReviewDecisionV1"
+            },
+            "title": "Review Decisions",
+            "type": "array"
+          },
+          "sequence": {
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "title": "Source Item Fingerprint",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "sequence",
+          "item_type",
+          "source_item_fingerprint"
+        ],
+        "title": "DigiExamEffectiveItemV1",
+        "type": "object"
+      },
+      "DigiExamEffectiveReviewDecisionV1": {
+        "additionalProperties": false,
+        "description": "Applied review decision surfaced in effective exam artifacts.",
+        "properties": {
+          "accepted_targets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accepted Targets",
+            "type": "array"
+          },
+          "decision_id": {
+            "title": "Decision Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          }
+        },
+        "required": [
+          "kind",
+          "decision_id",
+          "accepted_targets"
+        ],
+        "title": "DigiExamEffectiveReviewDecisionV1",
+        "type": "object"
+      },
+      "DigiExamIngestionOverlay": {
+        "additionalProperties": false,
+        "description": "Top-level source-bound ingestion overlay.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamIngestionOverlayItem"
+            },
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "digiexam_ingestion_overlay_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_binding": {
+            "$ref": "#/components/schemas/DigiExamOverlaySourceBinding"
+          }
+        },
+        "required": [
+          "schema_version",
+          "source_binding",
+          "items"
+        ],
+        "title": "DigiExamIngestionOverlay",
+        "type": "object"
+      },
+      "DigiExamIngestionOverlayAcceptedEntryV1": {
+        "additionalProperties": false,
+        "description": "Accepted overlay entry summary excluding raw overlay payloads.",
+        "properties": {
+          "applied_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Applied Fields",
+            "type": "array"
+          },
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "item_id",
+          "sequence",
+          "applied_fields"
+        ],
+        "title": "DigiExamIngestionOverlayAcceptedEntryV1",
+        "type": "object"
+      },
+      "DigiExamIngestionOverlayItem": {
+        "additionalProperties": false,
+        "description": "One source-bound overlay entry for a DigiExam item.",
+        "properties": {
+          "effective_item_patch": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "choice": "#/components/schemas/DigiExamOverlayChoiceItemPatch",
+                    "gap_fill": "#/components/schemas/DigiExamOverlayGapFillItemPatch",
+                    "matching": "#/components/schemas/DigiExamOverlayMatchingItemPatch"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DigiExamOverlayChoiceItemPatch"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DigiExamOverlayGapFillItemPatch"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DigiExamOverlayMatchingItemPatch"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effective Item Patch"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "$ref": "#/components/schemas/DigiExamItemType"
+          },
+          "manual_answer_key": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "choice": "#/components/schemas/DigiExamOverlayChoiceManualAnswerKey",
+                    "gap_fill": "#/components/schemas/DigiExamOverlayGapFillManualAnswerKey",
+                    "matching": "#/components/schemas/DigiExamOverlayMatchingManualAnswerKey"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DigiExamOverlayChoiceManualAnswerKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DigiExamOverlayGapFillManualAnswerKey"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DigiExamOverlayMatchingManualAnswerKey"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Manual Answer Key"
+          },
+          "review_decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamOverlayReviewDecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "sequence": {
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "minLength": 1,
+            "title": "Source Item Fingerprint",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "sequence",
+          "item_type",
+          "source_item_fingerprint"
+        ],
+        "title": "DigiExamIngestionOverlayItem",
+        "type": "object"
+      },
+      "DigiExamIngestionOverlayPolicyV2": {
+        "description": "Allowed teacher overlay application policies for DigiExam migration.",
+        "enum": [
+          "none",
+          "apply_teacher_overlay"
+        ],
+        "title": "DigiExamIngestionOverlayPolicyV2",
+        "type": "string"
+      },
+      "DigiExamIngestionOverlayRejectedEntryV1": {
+        "additionalProperties": false,
+        "description": "Rejected overlay entry summary with stable reason fields.",
+        "properties": {
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "item_id",
+          "sequence",
+          "reason_code",
+          "message"
+        ],
+        "title": "DigiExamIngestionOverlayRejectedEntryV1",
+        "type": "object"
+      },
+      "DigiExamIngestionOverlayReportV1": {
+        "additionalProperties": false,
+        "description": "Overlay application report emitted beside effective IR artifacts.",
+        "properties": {
+          "accepted_entries": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamIngestionOverlayAcceptedEntryV1"
+            },
+            "title": "Accepted Entries",
+            "type": "array"
+          },
+          "overlay_sha256": {
+            "title": "Overlay Sha256",
+            "type": "string"
+          },
+          "rejected_entries": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamIngestionOverlayRejectedEntryV1"
+            },
+            "title": "Rejected Entries",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "ingestion_overlay_report_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_ir_sha256": {
+            "title": "Source Ir Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "overlay_sha256",
+          "source_ir_sha256",
+          "accepted_entries",
+          "rejected_entries"
+        ],
+        "title": "DigiExamIngestionOverlayReportV1",
+        "type": "object"
+      },
+      "DigiExamItemType": {
+        "description": "Item types observed in DigiExam parser fixture corpora.",
+        "enum": [
+          "open_ended",
+          "multiple_choice",
+          "single_choice",
+          "multiple_response",
+          "gap_fill",
+          "matching",
+          "unknown"
+        ],
+        "title": "DigiExamItemType",
+        "type": "string"
+      },
+      "DigiExamManualFollowUpPolicyV2": {
+        "description": "Allowed manual-follow-up reporting policy for DigiExam migration.",
+        "enum": [
+          "emit_item_addressable_report"
+        ],
+        "title": "DigiExamManualFollowUpPolicyV2",
+        "type": "string"
+      },
+      "DigiExamMigrationArtifactAvailability": {
+        "description": "Availability states for named bundle artifacts.",
+        "enum": [
+          "available",
+          "unavailable",
+          "failed",
+          "not_requested",
+          "not_implemented",
+          "not_supported_by_examnet"
+        ],
+        "title": "DigiExamMigrationArtifactAvailability",
+        "type": "string"
+      },
+      "DigiExamMigrationArtifactKey": {
+        "description": "Required artifact keys for DigiExam migration terminal bundles.",
+        "enum": [
+          "bundle_manifest",
+          "examnet_pdf",
+          "qti_package",
+          "qti_validation_report",
+          "ir_json",
+          "effective_ir_json",
+          "migration_manifest",
+          "target_readiness_report",
+          "ingestion_overlay_report",
+          "answer_key_completion_report",
+          "manual_follow_up_report",
+          "warnings_report",
+          "asset_summary"
+        ],
+        "title": "DigiExamMigrationArtifactKey",
+        "type": "string"
+      },
+      "DigiExamMigrationBundleArtifactEntryV2": {
+        "additionalProperties": false,
+        "description": "One named artifact entry in a DigiExam migration bundle manifest.",
+        "properties": {
+          "artifact_key": {
+            "$ref": "#/components/schemas/DigiExamMigrationArtifactKey"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/DigiExamMigrationArtifactAvailability"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "depends_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Depends On"
+          },
+          "download_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Download Path"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sha256"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Size Bytes"
+          },
+          "unavailable_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unavailable Code"
+          }
+        },
+        "required": [
+          "artifact_key",
+          "filename",
+          "content_type",
+          "availability"
+        ],
+        "title": "DigiExamMigrationBundleArtifactEntryV2",
+        "type": "object"
+      },
+      "DigiExamMigrationBundleManifestV2": {
+        "additionalProperties": false,
+        "description": "Terminal artifact bundle manifest for DigiExam migration jobs.",
+        "properties": {
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamMigrationBundleArtifactEntryV2"
+            },
+            "title": "Artifacts",
+            "type": "array"
+          },
+          "bundle_status": {
+            "enum": [
+              "complete",
+              "partial",
+              "needs_review",
+              "failed"
+            ],
+            "title": "Bundle Status",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "manual_follow_up": {
+            "$ref": "#/components/schemas/DigiExamMigrationBundleManualFollowUpV2"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/DigiExamMigrationBundleReadinessSummaryV2"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/DigiExamMigrationBundleRetentionV2"
+          },
+          "schema_version": {
+            "const": "digiexam_migration_bundle_v2",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DigiExamMigrationBundleSourceV2"
+          },
+          "source_binding": {
+            "$ref": "#/components/schemas/DigiExamMigrationBundleSourceBindingV2"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/DigiExamMigrationBundleWarningsV2"
+          }
+        },
+        "required": [
+          "schema_version",
+          "job_id",
+          "source",
+          "bundle_status",
+          "retention",
+          "artifacts",
+          "manual_follow_up",
+          "readiness",
+          "source_binding",
+          "warnings"
+        ],
+        "title": "DigiExamMigrationBundleManifestV2",
+        "type": "object"
+      },
+      "DigiExamMigrationBundleManualFollowUpV2": {
+        "additionalProperties": false,
+        "description": "Manual follow-up summary in `digiexam_migration_bundle_v2` manifests.",
+        "properties": {
+          "artifact_key": {
+            "const": "manual_follow_up_report",
+            "title": "Artifact Key",
+            "type": "string"
+          },
+          "count": {
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "required",
+          "artifact_key",
+          "count"
+        ],
+        "title": "DigiExamMigrationBundleManualFollowUpV2",
+        "type": "object"
+      },
+      "DigiExamMigrationBundleReadinessSummaryV2": {
+        "additionalProperties": false,
+        "description": "Readiness summary pointing consumers to the authoritative report.",
+        "properties": {
+          "artifact_key": {
+            "const": "target_readiness_report",
+            "title": "Artifact Key",
+            "type": "string"
+          },
+          "exportable_targets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Exportable Targets",
+            "type": "array"
+          },
+          "review_required": {
+            "title": "Review Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "artifact_key",
+          "review_required"
+        ],
+        "title": "DigiExamMigrationBundleReadinessSummaryV2",
+        "type": "object"
+      },
+      "DigiExamMigrationBundleRetentionV2": {
+        "additionalProperties": false,
+        "description": "Retention summary in `digiexam_migration_bundle_v2` manifests.",
+        "properties": {
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expires At"
+          },
+          "pin": {
+            "title": "Pin",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pin"
+        ],
+        "title": "DigiExamMigrationBundleRetentionV2",
+        "type": "object"
+      },
+      "DigiExamMigrationBundleSourceBindingV2": {
+        "additionalProperties": false,
+        "description": "Source/effective IR hashes published in bundle manifests.",
+        "properties": {
+          "effective_exam_schema_version": {
+            "const": "digiexam_effective_exam_v1",
+            "title": "Effective Exam Schema Version",
+            "type": "string"
+          },
+          "effective_exam_sha256": {
+            "title": "Effective Exam Sha256",
+            "type": "string"
+          },
+          "source_ir_schema_version": {
+            "const": "digiexam_intermediate_exam_v2",
+            "title": "Source Ir Schema Version",
+            "type": "string"
+          },
+          "source_ir_sha256": {
+            "title": "Source Ir Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_ir_schema_version",
+          "source_ir_sha256",
+          "effective_exam_schema_version",
+          "effective_exam_sha256"
+        ],
+        "title": "DigiExamMigrationBundleSourceBindingV2",
+        "type": "object"
+      },
+      "DigiExamMigrationBundleSourceV2": {
+        "additionalProperties": false,
+        "description": "Source summary in `digiexam_migration_bundle_v2` manifests.",
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "format": {
+            "const": "digiexam_dxe",
+            "title": "Format",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "sha256",
+          "format"
+        ],
+        "title": "DigiExamMigrationBundleSourceV2",
+        "type": "object"
+      },
+      "DigiExamMigrationBundleWarningsV2": {
+        "additionalProperties": false,
+        "description": "Warnings summary in `digiexam_migration_bundle_v2` manifests.",
+        "properties": {
+          "artifact_key": {
+            "const": "warnings_report",
+            "title": "Artifact Key",
+            "type": "string"
+          },
+          "count": {
+            "minimum": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artifact_key",
+          "count"
+        ],
+        "title": "DigiExamMigrationBundleWarningsV2",
+        "type": "object"
+      },
+      "DigiExamMigrationConversionMetadataV2": {
+        "additionalProperties": false,
+        "description": "Route-specific result metadata for DigiExam migration bundles.",
+        "properties": {
+          "acceleration_policy_requested": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceleration Policy Requested"
+          },
+          "acceleration_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceleration Used"
+          },
+          "artifact_count": {
+            "minimum": 0.0,
+            "title": "Artifact Count",
+            "type": "integer"
+          },
+          "backend_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backend Used"
+          },
+          "bundle_schema_version": {
+            "const": "digiexam_migration_bundle_v2",
+            "title": "Bundle Schema Version",
+            "type": "string"
+          },
+          "bundle_status": {
+            "enum": [
+              "complete",
+              "partial",
+              "needs_review",
+              "failed"
+            ],
+            "title": "Bundle Status",
+            "type": "string"
+          },
+          "chunk_size_pages": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Size Pages"
+          },
+          "effective_gpu_stage_limit": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Gpu Stage Limit"
+          },
+          "gpu_busy_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Busy Percent"
+          },
+          "gpu_device_count": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Device Count"
+          },
+          "gpu_memory_used_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Memory Used Percent"
+          },
+          "gpu_runtime_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Runtime Kind"
+          },
+          "manual_follow_up_required": {
+            "title": "Manual Follow Up Required",
+            "type": "boolean"
+          },
+          "max_chunk_workers": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Chunk Workers"
+          },
+          "ocr_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Enabled"
+          },
+          "ocr_engine_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Engine Used"
+          },
+          "ocr_languages_used": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Languages Used"
+          },
+          "options_fingerprint": {
+            "title": "Options Fingerprint",
+            "type": "string"
+          },
+          "parallel_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Enabled"
+          },
+          "pipeline_used": {
+            "title": "Pipeline Used",
+            "type": "string"
+          },
+          "route_key": {
+            "const": "digiexam_dxe_to_examnet_migration_bundle",
+            "title": "Route Key",
+            "type": "string"
+          },
+          "scheduling_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduling Mode"
+          },
+          "source_sha256": {
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "target_readiness_report_artifact_key": {
+            "const": "target_readiness_report",
+            "title": "Target Readiness Report Artifact Key",
+            "type": "string"
+          },
+          "template_artifact_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Artifact Sha256"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "template_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Version"
+          },
+          "warning_count": {
+            "minimum": 0.0,
+            "title": "Warning Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pipeline_used",
+          "options_fingerprint",
+          "route_key",
+          "bundle_schema_version",
+          "bundle_status",
+          "source_sha256",
+          "target_readiness_report_artifact_key",
+          "manual_follow_up_required",
+          "warning_count",
+          "artifact_count"
+        ],
+        "title": "DigiExamMigrationConversionMetadataV2",
+        "type": "object"
+      },
+      "DigiExamMigrationOptionsV2": {
+        "additionalProperties": false,
+        "description": "Route-specific options for DigiExam migration bundle jobs.",
+        "properties": {
+          "graded_result_pdf_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Graded Result Pdf Filename"
+          },
+          "ingestion_overlay_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingestion Overlay Filename"
+          },
+          "ingestion_overlay_policy": {
+            "$ref": "#/components/schemas/DigiExamIngestionOverlayPolicyV2",
+            "default": "none"
+          },
+          "manual_follow_up_policy": {
+            "$ref": "#/components/schemas/DigiExamManualFollowUpPolicyV2",
+            "default": "emit_item_addressable_report"
+          },
+          "parity_pdf_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parity Pdf Filename"
+          },
+          "result_pdf_usage": {
+            "$ref": "#/components/schemas/DigiExamResultPdfUsageV2",
+            "default": "correct_machine_marked_answers_only"
+          }
+        },
+        "title": "DigiExamMigrationOptionsV2",
+        "type": "object"
+      },
+      "DigiExamOverlayChoiceAlternativeOverride": {
+        "additionalProperties": false,
+        "description": "Bounded alternative text patch for effective choice items.",
+        "properties": {
+          "alternative_id": {
+            "title": "Alternative Id",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alternative_id",
+          "text"
+        ],
+        "title": "DigiExamOverlayChoiceAlternativeOverride",
+        "type": "object"
+      },
+      "DigiExamOverlayChoiceItemPatch": {
+        "additionalProperties": false,
+        "description": "Bounded choice item patch applied only to the effective IR.",
+        "properties": {
+          "alternative_overrides": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DigiExamOverlayChoiceAlternativeOverride"
+            },
+            "title": "Alternative Overrides",
+            "type": "array"
+          },
+          "kind": {
+            "const": "choice",
+            "title": "Kind",
+            "type": "string"
+          },
+          "prompt_html": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Html"
+          },
+          "prompt_lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Lines"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "DigiExamOverlayChoiceItemPatch",
+        "type": "object"
+      },
+      "DigiExamOverlayChoiceManualAnswerKey": {
+        "additionalProperties": false,
+        "description": "Manual answer key for source choice items.",
+        "properties": {
+          "correct_alternative_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Correct Alternative Ids",
+            "type": "array"
+          },
+          "kind": {
+            "const": "choice",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "correct_alternative_ids"
+        ],
+        "title": "DigiExamOverlayChoiceManualAnswerKey",
+        "type": "object"
+      },
+      "DigiExamOverlayGapAnswer": {
+        "additionalProperties": false,
+        "description": "Manual accepted values for one source gap.",
+        "properties": {
+          "accepted_values": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Accepted Values",
+            "type": "array"
+          },
+          "gap_id": {
+            "minLength": 1,
+            "title": "Gap Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "gap_id",
+          "accepted_values"
+        ],
+        "title": "DigiExamOverlayGapAnswer",
+        "type": "object"
+      },
+      "DigiExamOverlayGapFillItemPatch": {
+        "additionalProperties": false,
+        "description": "Bounded gap-fill item patch applied only to the effective IR.",
+        "properties": {
+          "kind": {
+            "const": "gap_fill",
+            "title": "Kind",
+            "type": "string"
+          },
+          "prompt_html": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Html"
+          },
+          "prompt_lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Lines"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "DigiExamOverlayGapFillItemPatch",
+        "type": "object"
+      },
+      "DigiExamOverlayGapFillManualAnswerKey": {
+        "additionalProperties": false,
+        "description": "Manual answer key for source gap-fill items.",
+        "properties": {
+          "gap_answers": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamOverlayGapAnswer"
+            },
+            "minItems": 1,
+            "title": "Gap Answers",
+            "type": "array"
+          },
+          "kind": {
+            "const": "gap_fill",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "gap_answers"
+        ],
+        "title": "DigiExamOverlayGapFillManualAnswerKey",
+        "type": "object"
+      },
+      "DigiExamOverlayMatchingItemPatch": {
+        "additionalProperties": false,
+        "description": "Bounded matching item patch applied only to effective visible text.",
+        "properties": {
+          "kind": {
+            "const": "matching",
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_overrides": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DigiExamOverlayMatchingTextOverride"
+            },
+            "title": "Left Overrides",
+            "type": "array"
+          },
+          "prompt_html": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Html"
+          },
+          "prompt_lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Lines"
+          },
+          "right_overrides": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DigiExamOverlayMatchingTextOverride"
+            },
+            "title": "Right Overrides",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "DigiExamOverlayMatchingItemPatch",
+        "type": "object"
+      },
+      "DigiExamOverlayMatchingManualAnswerKey": {
+        "additionalProperties": false,
+        "description": "Manual matching answer key accepted at DTO level but not applied yet.",
+        "properties": {
+          "kind": {
+            "const": "matching",
+            "title": "Kind",
+            "type": "string"
+          },
+          "matching_pairs": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamOverlayMatchingPair"
+            },
+            "minItems": 1,
+            "title": "Matching Pairs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "matching_pairs"
+        ],
+        "title": "DigiExamOverlayMatchingManualAnswerKey",
+        "type": "object"
+      },
+      "DigiExamOverlayMatchingPair": {
+        "additionalProperties": false,
+        "description": "Contract-level matching pair kept unsupported until exact IR fields exist.",
+        "properties": {
+          "left_id": {
+            "minLength": 1,
+            "title": "Left Id",
+            "type": "string"
+          },
+          "right_id": {
+            "minLength": 1,
+            "title": "Right Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "left_id",
+          "right_id"
+        ],
+        "title": "DigiExamOverlayMatchingPair",
+        "type": "object"
+      },
+      "DigiExamOverlayMatchingTextOverride": {
+        "additionalProperties": false,
+        "description": "Bounded matching-column text patch using source 1-based positions.",
+        "properties": {
+          "index": {
+            "minimum": 1,
+            "title": "Index",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "text"
+        ],
+        "title": "DigiExamOverlayMatchingTextOverride",
+        "type": "object"
+      },
+      "DigiExamOverlayReviewDecision": {
+        "additionalProperties": false,
+        "description": "Teacher review decision that never creates answer-key evidence.",
+        "properties": {
+          "accepted_targets": {
+            "items": {
+              "$ref": "#/components/schemas/ExamMigrationTargetV2"
+            },
+            "minItems": 1,
+            "title": "Accepted Targets",
+            "type": "array"
+          },
+          "decision_id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Decision Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "accept_current_state_for_export",
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          }
+        },
+        "required": [
+          "kind",
+          "decision_id",
+          "accepted_targets"
+        ],
+        "title": "DigiExamOverlayReviewDecision",
+        "type": "object"
+      },
+      "DigiExamOverlaySourceBinding": {
+        "additionalProperties": false,
+        "description": "Source binding required for a trusted overlay.",
+        "properties": {
+          "source_file_sha256": {
+            "title": "Source File Sha256",
+            "type": "string"
+          },
+          "source_ir_schema_version": {
+            "const": "digiexam_intermediate_exam_v2",
+            "title": "Source Ir Schema Version",
+            "type": "string"
+          },
+          "source_ir_sha256": {
+            "title": "Source Ir Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_file_sha256",
+          "source_ir_schema_version",
+          "source_ir_sha256"
+        ],
+        "title": "DigiExamOverlaySourceBinding",
+        "type": "object"
+      },
+      "DigiExamResultPdfUsageV2": {
+        "description": "Allowed use of optional DigiExam graded-result PDF evidence.",
+        "enum": [
+          "correct_machine_marked_answers_only"
+        ],
+        "title": "DigiExamResultPdfUsageV2",
+        "type": "string"
+      },
+      "DigiExamTargetReadiness": {
+        "description": "Consumer-facing readiness classes for export targets.",
+        "enum": [
+          "ready",
+          "ready_after_accepted_current_state",
+          "needs_teacher_answer_key",
+          "needs_teacher_review_decision",
+          "unsupported_target_shape",
+          "target_validation_failed",
+          "provider_unavailable",
+          "not_requested",
+          "not_implemented"
+        ],
+        "title": "DigiExamTargetReadiness",
+        "type": "string"
+      },
+      "DigiExamTargetReadinessReportV1": {
+        "additionalProperties": false,
+        "description": "Authoritative target-readiness report for migration bundle consumers.",
+        "properties": {
+          "effective_exam_sha256": {
+            "title": "Effective Exam Sha256",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "target_readiness_report_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_ir_sha256": {
+            "title": "Source Ir Sha256",
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/DigiExamTargetReadinessRowV1"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "job_id",
+          "source_ir_sha256",
+          "effective_exam_sha256",
+          "targets"
+        ],
+        "title": "DigiExamTargetReadinessReportV1",
+        "type": "object"
+      },
+      "DigiExamTargetReadinessRowV1": {
+        "additionalProperties": false,
+        "description": "One target or target/item readiness row consumed by Skriptoteket.",
+        "properties": {
+          "artifact_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Artifact Key"
+          },
+          "export_enabled": {
+            "title": "Export Enabled",
+            "type": "boolean"
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Item Id"
+          },
+          "message_key": {
+            "title": "Message Key",
+            "type": "string"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/DigiExamTargetReadiness"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "sequence": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sequence"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Item Fingerprint"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "teacher_action": {
+            "title": "Teacher Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "readiness",
+          "export_enabled",
+          "reason_code",
+          "teacher_action",
+          "retryable",
+          "message_key"
+        ],
+        "title": "DigiExamTargetReadinessRowV1",
+        "type": "object"
+      },
+      "ExamMigrationTargetV2": {
+        "description": "Supported target artifacts for exam-migration bundle routes.",
+        "enum": [
+          "examnet_pdf",
+          "qti_package"
+        ],
+        "title": "ExamMigrationTargetV2",
+        "type": "string"
+      },
+      "ExecutionSpecV2": {
+        "additionalProperties": false,
+        "description": "Execution section of the v2 job specification.",
+        "properties": {
+          "acceleration_policy": {
+            "$ref": "#/components/schemas/AccelerationPolicy"
+          },
+          "document_timeout_seconds": {
+            "default": 1800,
+            "maximum": 7200,
+            "minimum": 30,
+            "title": "Document Timeout Seconds",
+            "type": "integer"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/Priority",
+            "default": "normal"
+          }
+        },
+        "required": [
+          "acceleration_policy"
+        ],
+        "title": "ExecutionSpecV2",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JobCreateResponseV2": {
+        "additionalProperties": false,
+        "description": "Response payload for v2 job creation endpoints.",
+        "properties": {
+          "api_version": {
+            "const": "v2",
+            "default": "v2",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/JobRecordDataV2"
+          },
+          "public_artifact_read_lease": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicArtifactReadLeaseResponseV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "job"
+        ],
+        "title": "JobCreateResponseV2",
+        "type": "object"
+      },
+      "JobLinksV2": {
+        "additionalProperties": false,
+        "description": "Hypermedia links included in v2 job status payloads.",
+        "properties": {
+          "artifact": {
+            "title": "Artifact",
+            "type": "string"
+          },
+          "cancel": {
+            "title": "Cancel",
+            "type": "string"
+          },
+          "result": {
+            "title": "Result",
+            "type": "string"
+          },
+          "self": {
+            "title": "Self",
+            "type": "string"
+          }
+        },
+        "required": [
+          "self",
+          "result",
+          "artifact",
+          "cancel"
+        ],
+        "title": "JobLinksV2",
+        "type": "object"
+      },
+      "JobPendingResultResponseV2": {
+        "additionalProperties": false,
+        "description": "Response payload when a v2 result request is made before completion.",
+        "properties": {
+          "api_version": {
+            "const": "v2",
+            "default": "v2",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          }
+        },
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "JobPendingResultResponseV2",
+        "type": "object"
+      },
+      "JobProgressV2": {
+        "additionalProperties": false,
+        "description": "Progress metadata for running v2 jobs.",
+        "properties": {
+          "current_phase_started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Phase Started At"
+          },
+          "eta_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eta Seconds"
+          },
+          "failed_pages": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed Pages"
+          },
+          "last_heartbeat_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Heartbeat At"
+          },
+          "pages_per_minute": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages Per Minute"
+          },
+          "percent_complete": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent Complete"
+          },
+          "phase_timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Canonical stage timings map. See v2 converter docs for key contract.",
+            "title": "Phase Timings Ms",
+            "type": "object"
+          },
+          "processed_pages": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Pages"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "total_pages": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Pages"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "title": "JobProgressV2",
+        "type": "object"
+      },
+      "JobRecordDataV2": {
+        "additionalProperties": false,
+        "description": "Job details payload embedded in v2 job record responses.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "links": {
+            "$ref": "#/components/schemas/JobLinksV2"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/OutputFormatV2"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/JobProgressV2"
+          },
+          "source_filename": {
+            "title": "Source Filename",
+            "type": "string"
+          },
+          "source_format": {
+            "$ref": "#/components/schemas/SourceFormatV2"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "created_at",
+          "updated_at",
+          "source_filename",
+          "source_format",
+          "output_format",
+          "progress",
+          "links"
+        ],
+        "title": "JobRecordDataV2",
+        "type": "object"
+      },
+      "JobRecordResponseV2": {
+        "additionalProperties": false,
+        "description": "Response payload for v2 job status endpoints.",
+        "properties": {
+          "api_version": {
+            "const": "v2",
+            "default": "v2",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/JobRecordDataV2"
+          }
+        },
+        "required": [
+          "job"
+        ],
+        "title": "JobRecordResponseV2",
+        "type": "object"
+      },
+      "JobResultResponseV2": {
+        "additionalProperties": false,
+        "description": "Response payload for v2 successful result retrieval.",
+        "properties": {
+          "api_version": {
+            "const": "v2",
+            "default": "v2",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ResultPayloadV2"
+          },
+          "status": {
+            "const": "succeeded",
+            "default": "succeeded",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "result"
+        ],
+        "title": "JobResultResponseV2",
+        "type": "object"
+      },
+      "JobSpecV2": {
+        "additionalProperties": false,
+        "description": "Complete v2 job specification.",
+        "properties": {
+          "api_version": {
+            "const": "v2",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "conversion": {
+            "$ref": "#/components/schemas/ConversionSpecV2"
+          },
+          "digiexam_migration_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamMigrationOptionsV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "execution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionSpecV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "pdf_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PdfOptionsV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "retention": {
+            "$ref": "#/components/schemas/RetentionSpecV2"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceSpecV2"
+          }
+        },
+        "required": [
+          "api_version",
+          "source",
+          "conversion"
+        ],
+        "title": "JobSpecV2",
+        "type": "object"
+      },
+      "JobStatus": {
+        "description": "Job status lifecycle states.",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "canceled"
+        ],
+        "title": "JobStatus",
+        "type": "string"
+      },
+      "NormalizeMode": {
+        "description": "Normalization modes supported by v1.",
+        "enum": [
+          "none",
+          "standard",
+          "strict"
+        ],
+        "title": "NormalizeMode",
+        "type": "string"
+      },
+      "OcrEngineV2": {
+        "description": "Supported OCR engines for PDF OCR stages.",
+        "enum": [
+          "auto",
+          "easyocr",
+          "tesseract_cli"
+        ],
+        "title": "OcrEngineV2",
+        "type": "string"
+      },
+      "OcrMode": {
+        "description": "OCR mode values supported by v1.",
+        "enum": [
+          "auto",
+          "off",
+          "force"
+        ],
+        "title": "OcrMode",
+        "type": "string"
+      },
+      "OutputFormatV2": {
+        "description": "Supported output formats for v2.",
+        "enum": [
+          "md",
+          "pdf",
+          "docx",
+          "examnet_migration_bundle"
+        ],
+        "title": "OutputFormatV2",
+        "type": "string"
+      },
+      "PdfCheckpointV2": {
+        "additionalProperties": false,
+        "description": "Durable checkpoint state for chunked PDF-to-markdown execution.",
+        "properties": {
+          "chunk_size_pages": {
+            "maximum": 500.0,
+            "minimum": 1.0,
+            "title": "Chunk Size Pages",
+            "type": "integer"
+          },
+          "chunks": {
+            "items": {
+              "$ref": "#/components/schemas/PdfChunkRecordV2"
+            },
+            "title": "Chunks",
+            "type": "array"
+          },
+          "failed_pages": {
+            "minimum": 0.0,
+            "title": "Failed Pages",
+            "type": "integer"
+          },
+          "job_id": {
+            "minLength": 1,
+            "title": "Job Id",
+            "type": "string"
+          },
+          "processed_pages": {
+            "minimum": 0.0,
+            "title": "Processed Pages",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "v2_pdf_checkpoint_v2",
+            "default": "v2_pdf_checkpoint_v2",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "total_pages": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Pages"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "updated_at",
+          "chunk_size_pages",
+          "processed_pages",
+          "failed_pages"
+        ],
+        "title": "PdfCheckpointV2",
+        "type": "object"
+      },
+      "PdfChunkRecordV2": {
+        "additionalProperties": false,
+        "description": "One persisted chunk record for a PDF conversion.",
+        "properties": {
+          "acceleration_used": {
+            "minLength": 1,
+            "title": "Acceleration Used",
+            "type": "string"
+          },
+          "artifact_relpath": {
+            "title": "Artifact Relpath",
+            "type": "string"
+          },
+          "backend_used": {
+            "minLength": 1,
+            "title": "Backend Used",
+            "type": "string"
+          },
+          "chunk_index": {
+            "minimum": 0.0,
+            "title": "Chunk Index",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "end_page": {
+            "minimum": 1.0,
+            "title": "End Page",
+            "type": "integer"
+          },
+          "ocr_enabled": {
+            "title": "Ocr Enabled",
+            "type": "boolean"
+          },
+          "ocr_engine_used": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Engine Used"
+          },
+          "ocr_languages_used": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ocr Languages Used",
+            "type": "array"
+          },
+          "phase_timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Phase Timings Ms",
+            "type": "object"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size_bytes": {
+            "minimum": 0.0,
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "start_page": {
+            "minimum": 1.0,
+            "title": "Start Page",
+            "type": "integer"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "chunk_index",
+          "start_page",
+          "end_page",
+          "status",
+          "artifact_relpath",
+          "sha256",
+          "size_bytes",
+          "backend_used",
+          "acceleration_used",
+          "ocr_enabled"
+        ],
+        "title": "PdfChunkRecordV2",
+        "type": "object"
+      },
+      "PdfLayoutV2": {
+        "additionalProperties": false,
+        "description": "Typed PDF layout presets for v2 PDF outputs.",
+        "properties": {
+          "margins_mm": {
+            "default": 12,
+            "maximum": 50,
+            "minimum": 0,
+            "title": "Margins Mm",
+            "type": "integer"
+          },
+          "orientation": {
+            "$ref": "#/components/schemas/PdfOrientationV2",
+            "default": "portrait"
+          },
+          "paper_size": {
+            "$ref": "#/components/schemas/PdfPaperSizeV2",
+            "default": "a4"
+          }
+        },
+        "title": "PdfLayoutV2",
+        "type": "object"
+      },
+      "PdfOptionsV2": {
+        "additionalProperties": false,
+        "description": "PDF-to-intermediate options for v2 routes that start from a PDF.",
+        "properties": {
+          "backend_strategy": {
+            "$ref": "#/components/schemas/BackendStrategy"
+          },
+          "normalize": {
+            "$ref": "#/components/schemas/NormalizeMode"
+          },
+          "ocr_engine": {
+            "$ref": "#/components/schemas/OcrEngineV2",
+            "default": "auto",
+            "description": "OCR engine selection. 'auto' delegates to runtime defaults."
+          },
+          "ocr_languages": {
+            "description": "Requested OCR languages as BCP47/ISO639-1 tags (e.g. ['sv','en']). Empty list delegates to runtime defaults.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ocr Languages",
+            "type": "array"
+          },
+          "ocr_mode": {
+            "$ref": "#/components/schemas/OcrMode"
+          },
+          "table_mode": {
+            "$ref": "#/components/schemas/TableMode"
+          }
+        },
+        "required": [
+          "backend_strategy",
+          "ocr_mode",
+          "table_mode",
+          "normalize"
+        ],
+        "title": "PdfOptionsV2",
+        "type": "object"
+      },
+      "PdfOrientationV2": {
+        "description": "Supported PDF orientations for v2 PDF outputs.",
+        "enum": [
+          "portrait",
+          "landscape"
+        ],
+        "title": "PdfOrientationV2",
+        "type": "string"
+      },
+      "PdfPageCssModeV2": {
+        "description": "Control whether PDF routes append service page CSS or trust author CSS.",
+        "enum": [
+          "preset_append",
+          "author_owned"
+        ],
+        "title": "PdfPageCssModeV2",
+        "type": "string"
+      },
+      "PdfPaperSizeV2": {
+        "description": "Supported PDF paper sizes for v2 PDF outputs.",
+        "enum": [
+          "a5",
+          "a4",
+          "a3"
+        ],
+        "title": "PdfPaperSizeV2",
+        "type": "string"
+      },
+      "Priority": {
+        "description": "Execution priority values supported by v1.",
+        "enum": [
+          "normal",
+          "high"
+        ],
+        "title": "Priority",
+        "type": "string"
+      },
+      "PublicArtifactReadLeaseResponseV2": {
+        "description": "Response fragment carrying a server-to-server artifact-read lease.",
+        "properties": {
+          "artifact_key": {
+            "minLength": 1,
+            "title": "Artifact Key",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "artifact_key",
+          "expires_at"
+        ],
+        "title": "PublicArtifactReadLeaseResponseV2",
+        "type": "object"
+      },
+      "ResultPayloadV2": {
+        "additionalProperties": false,
+        "description": "Result payload for successful v2 conversion jobs.",
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/ArtifactMetadataV2"
+          },
+          "conversion_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamMigrationConversionMetadataV2"
+              },
+              {
+                "$ref": "#/components/schemas/ConversionMetadataV2"
+              }
+            ],
+            "title": "Conversion Metadata"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "artifact",
+          "conversion_metadata"
+        ],
+        "title": "ResultPayloadV2",
+        "type": "object"
+      },
+      "RetentionSpecV2": {
+        "additionalProperties": false,
+        "description": "Retention section of the v2 job specification.",
+        "properties": {
+          "pin": {
+            "default": false,
+            "title": "Pin",
+            "type": "boolean"
+          }
+        },
+        "title": "RetentionSpecV2",
+        "type": "object"
+      },
+      "ServiceHealthResponse": {
+        "additionalProperties": false,
+        "description": "Liveness payload for `/healthz`.",
+        "properties": {
+          "data_root": {
+            "title": "Data Root",
+            "type": "string"
+          },
+          "service_profile": {
+            "title": "Service Profile",
+            "type": "string"
+          },
+          "service_revision": {
+            "title": "Service Revision",
+            "type": "string"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service_revision",
+          "started_at",
+          "data_root",
+          "service_profile"
+        ],
+        "title": "ServiceHealthResponse",
+        "type": "object"
+      },
+      "SourceFormatV2": {
+        "description": "Supported uploaded source formats for v2.",
+        "enum": [
+          "pdf",
+          "md",
+          "html",
+          "docx",
+          "digiexam_dxe"
+        ],
+        "title": "SourceFormatV2",
+        "type": "string"
+      },
+      "SourceKindV2": {
+        "description": "Supported source kinds for v2 conversion requests.",
+        "enum": [
+          "upload"
+        ],
+        "title": "SourceKindV2",
+        "type": "string"
+      },
+      "SourceSpecV2": {
+        "additionalProperties": false,
+        "description": "Source section of the v2 job specification.",
+        "properties": {
+          "filename": {
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "format": {
+            "$ref": "#/components/schemas/SourceFormatV2"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SourceKindV2"
+          }
+        },
+        "required": [
+          "kind",
+          "filename",
+          "format"
+        ],
+        "title": "SourceSpecV2",
+        "type": "object"
+      },
+      "TableMode": {
+        "description": "Table extraction modes supported by v1.",
+        "enum": [
+          "fast",
+          "accurate"
+        ],
+        "title": "TableMode",
+        "type": "string"
+      },
+      "TemplateSelectorV2": {
+        "additionalProperties": false,
+        "description": "Template selector for DOCX-producing v2 routes.",
+        "properties": {
+          "template_id": {
+            "minLength": 1,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "title": "Template Id",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version"
+          }
+        },
+        "required": [
+          "template_id"
+        ],
+        "title": "TemplateSelectorV2",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WebhookSecretRevokeRequestV2": {
+        "additionalProperties": false,
+        "description": "Request payload for webhook secret revocation.",
+        "properties": {
+          "version": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "next"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "title": "WebhookSecretRevokeRequestV2",
+        "type": "object"
+      },
+      "WebhookSecretRotateRequestV2": {
+        "additionalProperties": false,
+        "description": "Request payload for webhook secret rotation.",
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "title": "WebhookSecretRotateRequestV2",
+        "type": "object"
+      },
+      "WebhookSubscriptionCreateRequestV2": {
+        "additionalProperties": false,
+        "description": "Request payload for webhook subscription creation.",
+        "properties": {
+          "callback_url": {
+            "title": "Callback Url",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "event_types": {
+            "items": {
+              "enum": [
+                "job.queued",
+                "job.running",
+                "job.succeeded",
+                "job.failed",
+                "job.canceled"
+              ],
+              "type": "string"
+            },
+            "title": "Event Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "callback_url",
+          "event_types"
+        ],
+        "title": "WebhookSubscriptionCreateRequestV2",
+        "type": "object"
+      },
+      "WebhookSubscriptionUpdateRequestV2": {
+        "additionalProperties": false,
+        "description": "Request payload for webhook subscription update.",
+        "properties": {
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "event_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "job.queued",
+                    "job.running",
+                    "job.succeeded",
+                    "job.failed",
+                    "job.canceled"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Types"
+          }
+        },
+        "title": "WebhookSubscriptionUpdateRequestV2",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Sir Convert-a-Lot API",
+    "version": "2.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "healthcheck_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthcheck"
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Metrics"
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "readycheck_readyz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Readycheck"
+      }
+    },
+    "/v2/convert/jobs": {
+      "post": {
+        "operationId": "create_job_v2_convert_jobs_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "wait_seconds",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Wait Seconds",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "digiexam_ingestion_overlay": {
+                  "contentType": "application/json"
+                },
+                "job_spec": {
+                  "contentType": "application/json"
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_job_v2_convert_jobs_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreateResponseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCreateResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Job",
+        "x-sir-convert-contract-components": {
+          "digiexam_ingestion_overlay": "#/components/schemas/DigiExamIngestionOverlay",
+          "digiexam_migration_bundle_manifest": "#/components/schemas/DigiExamMigrationBundleManifestV2",
+          "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
+          "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
+          "job_spec": "#/components/schemas/JobSpecV2",
+          "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1"
+        }
+      }
+    },
+    "/v2/convert/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_v2_convert_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRecordResponseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/artifact": {
+      "get": {
+        "operationId": "get_artifact_v2_convert_jobs__job_id__artifact_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPendingResultResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/artifact/partial": {
+      "get": {
+        "operationId": "get_partial_artifact_v2_convert_jobs__job_id__artifact_partial_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPendingResultResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Partial Artifact"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/artifacts": {
+      "get": {
+        "operationId": "get_artifact_bundle_manifest_v2_convert_jobs__job_id__artifacts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigiExamMigrationBundleManifestV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPendingResultResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact Bundle Manifest"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/artifacts/{artifact_key}": {
+      "get": {
+        "operationId": "get_named_artifact_v2_convert_jobs__job_id__artifacts__artifact_key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "artifact_key",
+            "required": true,
+            "schema": {
+              "title": "Artifact Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPendingResultResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Named Artifact"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_job_v2_convert_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRecordResponseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRecordResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Job"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/checkpoint": {
+      "get": {
+        "operationId": "get_checkpoint_v2_convert_jobs__job_id__checkpoint_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfCheckpointV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPendingResultResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Checkpoint"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/events/stream": {
+      "get": {
+        "operationId": "stream_job_events_v2_convert_jobs__job_id__events_stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "last_event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream Job Events"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/result": {
+      "get": {
+        "operationId": "get_result_v2_convert_jobs__job_id__result_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResultResponseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPendingResultResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Result"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/resume": {
+      "post": {
+        "operationId": "resume_job_v2_convert_jobs__job_id__resume_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRecordResponseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRecordResponseV2"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resume Job"
+      }
+    },
+    "/v2/push/webhooks/subscriptions": {
+      "get": {
+        "operationId": "list_subscriptions_v2_push_webhooks_subscriptions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Subscriptions"
+      },
+      "post": {
+        "operationId": "create_subscription_v2_push_webhooks_subscriptions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionCreateRequestV2"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Subscription"
+      }
+    },
+    "/v2/push/webhooks/subscriptions/{subscription_id}": {
+      "delete": {
+        "operationId": "delete_subscription_v2_push_webhooks_subscriptions__subscription_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subscription_id",
+            "required": true,
+            "schema": {
+              "title": "Subscription Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Subscription"
+      },
+      "get": {
+        "operationId": "get_subscription_v2_push_webhooks_subscriptions__subscription_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subscription_id",
+            "required": true,
+            "schema": {
+              "title": "Subscription Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Subscription"
+      },
+      "patch": {
+        "operationId": "update_subscription_v2_push_webhooks_subscriptions__subscription_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subscription_id",
+            "required": true,
+            "schema": {
+              "title": "Subscription Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionUpdateRequestV2"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Subscription"
+      }
+    },
+    "/v2/push/webhooks/subscriptions/{subscription_id}/revoke-secret": {
+      "post": {
+        "operationId": "revoke_secret_v2_push_webhooks_subscriptions__subscription_id__revoke_secret_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subscription_id",
+            "required": true,
+            "schema": {
+              "title": "Subscription Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/WebhookSecretRevokeRequestV2"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Secret"
+      }
+    },
+    "/v2/push/webhooks/subscriptions/{subscription_id}/rotate-secret": {
+      "post": {
+        "operationId": "rotate_secret_v2_push_webhooks_subscriptions__subscription_id__rotate_secret_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subscription_id",
+            "required": true,
+            "schema": {
+              "title": "Subscription Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/WebhookSecretRotateRequestV2"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rotate Secret"
+      }
+    },
+    "/v2/templates/docx": {
+      "get": {
+        "operationId": "list_docx_templates_v2_templates_docx_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Docx Templates"
+      }
+    },
+    "/v2/templates/docx/{template_id}": {
+      "get": {
+        "operationId": "get_docx_template_v2_templates_docx__template_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Docx Template"
+      }
+    },
+    "/v2/templates/docx/{template_id}/versions/{version}": {
+      "get": {
+        "operationId": "get_docx_template_version_v2_templates_docx__template_id__versions__version__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Docx Template Version"
+      }
+    }
+  }
+}

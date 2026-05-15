@@ -25,6 +25,9 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
     JobResultResponseV2,
     ResultPayloadV2,
 )
+from scripts.sir_convert_a_lot.application.openapi_contracts_v2 import (
+    DigiExamMigrationBundleManifestV2,
+)
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_artifacts import (
@@ -32,6 +35,7 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_artifact
     resolve_digiexam_migration_artifact,
 )
 from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import (
+    PdfCheckpointV2,
     load_pdf_checkpoint,
     partial_artifact_path_for_job_upload,
 )
@@ -66,7 +70,11 @@ def _content_type_for_output(output_format: OutputFormatV2) -> str:
 
 
 def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
-    @router.get("/v2/convert/jobs/{job_id}/result")
+    @router.get(
+        "/v2/convert/jobs/{job_id}/result",
+        response_model=JobResultResponseV2,
+        responses={202: {"model": JobPendingResultResponseV2}},
+    )
     async def get_result(job_id: str, request: Request) -> JSONResponse:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
@@ -141,7 +149,10 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
         )
         return JSONResponse(status_code=200, content=payload.model_dump(mode="json"))
 
-    @router.get("/v2/convert/jobs/{job_id}/artifact")
+    @router.get(
+        "/v2/convert/jobs/{job_id}/artifact",
+        responses={202: {"model": JobPendingResultResponseV2}},
+    )
     async def get_artifact(job_id: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
@@ -178,7 +189,13 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
             filename=job.artifact_path.name,
         )
 
-    @router.get("/v2/convert/jobs/{job_id}/artifacts")
+    @router.get(
+        "/v2/convert/jobs/{job_id}/artifacts",
+        responses={
+            200: {"model": DigiExamMigrationBundleManifestV2},
+            202: {"model": JobPendingResultResponseV2},
+        },
+    )
     async def get_artifact_bundle_manifest(job_id: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
@@ -234,7 +251,10 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
             filename=job.artifact_path.name,
         )
 
-    @router.get("/v2/convert/jobs/{job_id}/artifacts/{artifact_key}")
+    @router.get(
+        "/v2/convert/jobs/{job_id}/artifacts/{artifact_key}",
+        responses={202: {"model": JobPendingResultResponseV2}},
+    )
     async def get_named_artifact(job_id: str, artifact_key: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
@@ -282,7 +302,10 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
             filename=resolved.filename,
         )
 
-    @router.get("/v2/convert/jobs/{job_id}/artifact/partial")
+    @router.get(
+        "/v2/convert/jobs/{job_id}/artifact/partial",
+        responses={202: {"model": JobPendingResultResponseV2}},
+    )
     async def get_partial_artifact(job_id: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
@@ -335,7 +358,11 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
             filename=partial_path.name,
         )
 
-    @router.get("/v2/convert/jobs/{job_id}/checkpoint")
+    @router.get(
+        "/v2/convert/jobs/{job_id}/checkpoint",
+        response_model=PdfCheckpointV2,
+        responses={202: {"model": JobPendingResultResponseV2}},
+    )
     async def get_checkpoint(job_id: str, request: Request) -> JSONResponse:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)

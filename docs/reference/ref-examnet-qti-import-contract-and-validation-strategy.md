@@ -4,7 +4,7 @@ id: REF-examnet-qti-import-contract-and-validation-strategy
 title: Exam.net QTI Import Contract And Validation Strategy
 status: active
 created: 2026-05-12
-updated: 2026-05-12
+updated: 2026-05-15
 owners:
   - platform
 tags:
@@ -20,6 +20,7 @@ links:
   - docs/backlog/tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md
   - docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md
   - docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md
+  - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/reference/ref-examnet-pdf-to-exam-swedish-renderer-profile.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/examnet-artifact-authoring-service-api-artifact-contract.md
@@ -33,6 +34,43 @@ exam artifacts in Sir Convert.
 This reference records the current vendor-reported Exam.net direction and the
 validator ladder that future QTI tasks must satisfy before claiming QTI output
 is ready for teachers.
+
+## Authoritative Schema Sources
+
+The full QTI schema text is not copied into this repository. The authoritative
+schema files remain the source of truth and must be used by implementation
+tasks, validators, and reviews:
+
+| Version | Authoritative schema source | Sir Convert use |
+| --- | --- | --- |
+| QTI 2.1 | `https://www.imsglobal.org/xsd/imsqti_v2p1.xsd` | Initial Exam.net package floor and current sample generator target. |
+| QTI 3.0 item schema | `https://purl.imsglobal.org/spec/qti/v3p0/schema/xsd/imsqti_itemv3p0p1_v1p0.xsd` | Compatibility/reference target for later QTI 3 package decisions. |
+
+Schema requirements Sir Convert depends on:
+
+- QTI 2.1 `assessmentItem` permits zero or more `responseDeclaration`
+  elements and zero or one `responseProcessing` element.
+- QTI 2.1 `responseDeclaration` permits zero or one `correctResponse`; the
+  schema documentation states that `correctResponse` is optional and must be
+  omitted when no optimal value is defined.
+- QTI 2.1 `correct` expression semantics allow `NULL` when no correct value was
+  declared.
+- QTI 3.0 `qti-assessment-item` permits zero or more
+  `qti-response-declaration` elements and zero or one
+  `qti-response-processing` element.
+- QTI 3.0 `qti-response-declaration` permits zero or one
+  `qti-correct-response`; the `correct` expression semantics allow `NULL` when
+  no correct value was declared.
+- Interactive item types still have binding requirements when interactions are
+  present. For example, choice-like interactions bind to identifier response
+  variables, and matching-style interactions bind to directed-pair response
+  variables. Omitting a correct response is not the same as proving a
+  machine-scored item.
+
+Contract consequence: bare QTI schema validity does not universally require a
+machine-marked answer key. Sir Convert target readiness is intentionally
+stricter than schema validity whenever the selected profile claims an item is
+machine-scored or Exam.net-import-ready.
 
 ## Vendor-Reported Exam.net Import Direction
 
@@ -89,6 +127,24 @@ phase 1:
 When source content contains unsupported resources, the package must emit
 manual follow-up records and omit the unsupported resource from the Exam.net QTI
 target rather than hiding it in the package.
+
+## Machine-marked Versus Manual/unkeyed Policy
+
+In the current Exam.net QTI profile, choice, matching, gap-fill, and other
+machine-marked target shapes require a source, manual, or reviewed effective
+answer key before `qti_package` can be marked exportable. This is a Sir Convert
+target-readiness rule, not a universal QTI schema rule.
+
+Teacher `accept_current_state_for_export` decisions do not currently enable QTI
+for missing machine-marked keys. They can only clear teacher-review blockers
+for targets that Sir Convert can create and validate under an accepted policy.
+
+Task 303 owns the later unkeyed/manual profile. That profile must define the
+exact QTI 2.1 and, if promoted, QTI 3.0 representation for accepted-current
+items that have no machine-marked key. It must prove package/XML/schema
+validation, local semantic smoke where available, target readiness semantics,
+and Exam.net import behavior before QTI export can be enabled by acceptance
+alone.
 
 ## Validation Ladder
 

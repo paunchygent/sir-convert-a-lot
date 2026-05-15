@@ -21,6 +21,10 @@ links:
   - docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md
   - docs/backlog/tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md
   - docs/backlog/tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md
+  - docs/backlog/tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md
+  - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
+  - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
+  - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
   - docs/backlog/tasks/task-291-define-public-exam-converter-grant-lane-for-digiexam-migration-bundles.md
   - docs/backlog/tasks/task-279-define-exam-net-artifact-source-contract-and-swedish-pdf-to-exam-renderer-profile.md
   - docs/backlog/tasks/task-280-implement-exam-net-qti-sample-packages-and-validation-report-gate.md
@@ -70,6 +74,14 @@ DigiExam migration uses the service API v2 job lifecycle:
 - named artifact listing and download endpoints defined below for this bundle
   route.
 
+The generated OpenAPI contract is part of the consumer contract. Sir Convert
+exports it with `pdm run openapi-export-v2` to
+`docs/_generated/openapi/sir-convert-a-lot-v2.openapi.json`. That snapshot must
+match the runtime FastAPI schema and include the DigiExam migration multipart
+JSON-part schemas, bundle manifest, effective exam, overlay report, and
+target-readiness report components before Skriptoteket live Docker/service
+tests rely on changed API behavior.
+
 The route is a v2 extension with this route key:
 
 ```json
@@ -115,6 +127,14 @@ enable PDF or QTI downloads. A teacher acceptance can clear the teacher-review
 gate for missing answer keys, but it must not synthesize answer keys, mutate
 source IR provenance, bypass QTI validation, or enable a target whose renderer
 still lacks a governed safe shape.
+
+Task 295 implements runtime application for manual answer keys and review
+decisions. Task 302 implements runtime application of supported
+`effective_item_patch` values for item text, option text, prompt/body,
+gap-fill visible prompt repair, and matching visible left/right text repair.
+Task 303 owns the later unkeyed/manual QTI profile that can make teacher
+acceptance enable QTI when the selected QTI package has no other schema/profile
+violations.
 
 ## Cutover Route Boundary
 
@@ -485,6 +505,11 @@ Accepted companion files are intentionally narrow:
 `digiexam_migration_options.ingestion_overlay_filename`. It is source-bound and
 uses concrete teacher edits, manual answer keys, or review decisions.
 
+Current runtime note: Task 295 applies manual answer keys and review decisions.
+Task 302 applies supported `effective_item_patch` values to effective renderer
+input only. Source IR, source manifest fingerprints, and parser provenance
+remain unchanged.
+
 ```json
 {
   "schema_version": "digiexam_ingestion_overlay_v1",
@@ -618,12 +643,18 @@ exposing raw overlay JSON:
     {
       "item_id": "item-1",
       "sequence": 1,
-      "applied_fields": ["effective_item_patch", "manual_answer_key"]
+      "applied_fields": ["manual_answer_key"]
     }
   ],
   "rejected_entries": []
 }
 ```
+
+Accepted overlay report `applied_fields` may include `effective_item_patch`
+only when a supported visible-content patch changed effective renderer input.
+Rejected patch fields remain item-addressable in `rejected_entries`; manual
+answer keys and review decisions continue through their separate Task 295
+paths.
 
 `answer_key_completion_report_v1` records structured local-provider decisions
 and backend validation states, never raw prompts or raw provider responses:

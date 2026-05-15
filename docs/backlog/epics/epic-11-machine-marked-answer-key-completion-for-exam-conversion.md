@@ -20,6 +20,9 @@ related:
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
+  - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
+  - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
+  - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
   - docs/reference/ref-machine-marked-answer-key-completion-implementation-roadmap.md
@@ -58,6 +61,8 @@ review gates.
   so consumers migrate to target readiness and effective-exam semantics.
 - A distinct `effective_ir_json` artifact when teacher overlay or applied
   completion changes renderer input, using `digiexam_effective_exam_v1`.
+- Runtime application of teacher item-content repair only through source-bound
+  `effective_item_patch` in the effective layer.
 - Teacher/manual answer-key overlay semantics that remain authoritative only in
   the effective layer.
 - Local-first structured LLM answer-key completion for missing machine-marked
@@ -117,6 +122,10 @@ production model selection.
   without changing default `source_evidence_only` behavior.
 - [ ] The source IR and effective IR are separate artifacts with explicit
   semantics in manifests and named artifact routes.
+- [x] Teacher item-content patches can repair effective renderer input without
+  mutating source IR, parser provenance, or answer-key evidence.
+- [x] Generated OpenAPI publishes the v2 DigiExam overlay/effective-IR/readiness
+  schemas needed by consumer type-generation and live-test preflight.
 - [ ] Teacher/manual overlay can remove manual follow-up only when source
   binding and type compatibility are proven.
 - [ ] Structured LLM completion is local-first, item-local, schema-specific,
@@ -128,6 +137,9 @@ production model selection.
   and tests proving source provenance remains strict.
 - [ ] Matching answer application waits for the IR v3 gate that adds explicit
   matching pairs.
+- [ ] Accepted-current-state can enable QTI only under a governed
+  unkeyed/manual QTI profile with schema/profile validation and target
+  readiness proof.
 - [ ] Skriptoteket and HuleEdu follow-up tasks are explicitly separated from
   Sir Convert runtime tasks.
 

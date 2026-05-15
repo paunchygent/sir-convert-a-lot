@@ -4,7 +4,7 @@ id: REF-machine-marked-answer-key-completion-implementation-roadmap
 title: Machine-marked Answer-key Completion Implementation Roadmap
 status: active
 created: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-15
 owners:
   - platform
 tags:
@@ -21,6 +21,9 @@ links:
   - docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md
   - docs/backlog/tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md
   - docs/backlog/tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md
+  - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
+  - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
+  - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-296-extract-structured-chat-provider-harness-for-local-first-completion.md
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
@@ -46,6 +49,9 @@ task, reference, report, or retained review surface.
 
 1. Contract foundation: Task 294.
 1. Overlay runtime foundation: Task 295.
+1. Teacher item-content overlay application: Task 302.
+1. Generated OpenAPI consumer contract publication: Task 304.
+1. Unkeyed/manual QTI profile for accepted-current-state export: Task 303.
 1. Structured provider harness: Task 296.
 1. Experimental Granite FP8/vLLM Hemma smoke and interim local provider
    settlement: Task 301.
@@ -64,6 +70,17 @@ or final model-selection gate. Its evidence settles Granite 4.1 8B FP8 on vLLM
 as the interim local provider while the feature is implemented. Task 300 remains
 the real-data benchmark authority for later comparison against the GGUF
 shortlist before longer-term promotion.
+
+Tasks 302 and 303 close the overlay/export contract gaps discovered after Task
+295: Task 302 now applies supported item-content patches to effective IR, while
+accepted-current-state still cannot enable QTI until Task 303 or a later
+governed unkeyed/manual profile proves schema/profile validity for the selected
+QTI version.
+
+Task 304 is the consumer-contract checkpoint before more Skriptoteket live
+integration. It makes the FastAPI-generated v2 OpenAPI snapshot deterministic
+and includes the multipart overlay, effective exam, bundle manifest, overlay
+report, and target-readiness schemas needed for consumer type generation.
 
 ## Tranche 0: Readiness Baseline
 
@@ -183,6 +200,106 @@ Stop conditions:
 
 - Stop if parser output must be mutated to make overlay application work.
 - Stop if renderers need provider or overlay validation details.
+
+## Tranche 2.5: Teacher Item-content Overlay Application
+
+Governing task: `task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md`.
+
+Goal: apply teacher item-content repairs from `effective_item_patch` to the
+effective renderer input while preserving source IR and answer-key provenance.
+
+Checklist:
+
+- [x] Validate patch payloads by item type with `extra=forbid`.
+- [x] Bind every patch to source item ID, sequence, item type, source item
+  fingerprint, and nested source IDs where applicable.
+- [x] Reject raw/base64 assets, arbitrary files, scoring policy changes, and
+  answer-key provenance in item-content patches.
+- [x] Apply choice/MCQ visible option and prompt/body repairs to effective IR.
+- [x] Apply gap-fill visible prompt/body and source-bound gap repair fields to
+  effective IR.
+- [x] Apply matching visible prompt/body and left/right text repair fields to
+  effective IR.
+- [x] Prove PDF and QTI renderers consume effective item content when the
+  target shape is governed and validation passes.
+- [x] Recompute target readiness after patch application and target
+  validation.
+
+Checkpoint:
+
+- [x] Source IR bytes, source manifest, parser provenance, and source item
+  fingerprints remain unchanged after item-content overlays.
+- [x] `ingestion_overlay_report_v1` names accepted and rejected patch fields.
+- [x] Missing answer keys remain missing unless a manual answer key or
+  governed unkeyed/manual target profile applies.
+
+Stop conditions:
+
+- Stop if item-content repair requires mutating parser output.
+- Stop if target readiness and renderer output disagree.
+- Stop before enabling unkeyed/manual QTI export.
+
+## Tranche 2.55: Generated OpenAPI Consumer Contract
+
+Governing task: `task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md`.
+
+Goal: publish a deterministic Sir Convert v2 OpenAPI snapshot so Skriptoteket
+can generate or validate consumer types before live Docker/service tests.
+
+Checklist:
+
+- [x] Add `pdm run openapi-export-v2`.
+- [x] Commit `docs/_generated/openapi/sir-convert-a-lot-v2.openapi.json`.
+- [x] Mark `job_spec` and `digiexam_ingestion_overlay` as multipart JSON
+  parts.
+- [x] Publish schemas for the DigiExam overlay, bundle manifest, effective
+  exam, overlay report, and target-readiness report.
+- [x] Add tests that fail when the committed OpenAPI snapshot is stale.
+
+Checkpoint:
+
+- [x] Skriptoteket no longer has to infer the changed overlay/effective-IR
+  service contract from Markdown alone before live integration tests.
+
+Stop conditions:
+
+- Stop if consumer contracts require compatibility shims for
+  `digiexam_migration_bundle_v1`.
+- Stop if route docs and generated OpenAPI disagree.
+
+## Tranche 2.6: Unkeyed/manual QTI Profile For Accepted-current-state
+
+Governing task: `task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md`.
+
+Goal: define and validate the QTI profile that lets teacher
+`accept_current_state_for_export` enable QTI export for missing-key items only
+when the selected QTI 2.1 or QTI 3.0 package is otherwise schema-valid and
+target-valid.
+
+Checklist:
+
+- [ ] Link authoritative QTI 2.1 and QTI 3.0 schema sources from the QTI
+  reference.
+- [ ] Record the schema requirements Sir Convert depends on, including
+  optional response declarations, optional response processing, optional
+  correct responses, and interaction binding requirements.
+- [ ] Define supported unkeyed/manual item representations and report
+  semantics.
+- [ ] Generate deterministic sample packages and validation reports for every
+  supported shape.
+- [ ] Update target readiness so accepted-current-state can enable QTI only
+  inside the validated unkeyed/manual profile.
+
+Checkpoint:
+
+- [ ] QTI schema-validity, Sir Convert target-validity, and Exam.net import
+  proof are distinct in docs and reports.
+- [ ] Unsupported or unproven QTI 2.1/3.0 shapes remain unavailable.
+
+Stop conditions:
+
+- Stop if Exam.net import proof contradicts the profile.
+- Stop if teacher acceptance would hide XML/schema/profile validation failures.
 
 ## Tranche 3: Structured Provider Harness
 

@@ -39,6 +39,9 @@ from scripts.sir_convert_a_lot.interfaces.http_app_state import (
     resolve_service_revision,
     shutdown_runtime_state,
 )
+from scripts.sir_convert_a_lot.interfaces.http_openapi_contract_v2 import (
+    configure_openapi_contract_v2,
+)
 from scripts.sir_convert_a_lot.interfaces.http_routes_health import build_health_router
 from scripts.sir_convert_a_lot.interfaces.http_routes_job_events_v2 import (
     build_job_events_router_v2,
@@ -175,4 +178,5 @@ def create_app(
     app.include_router(build_job_events_router_v2(service_started_at=service_started_at))
     app.include_router(build_webhook_onboarding_router_v2(service_started_at=service_started_at))
     app.include_router(build_templates_router_v2(service_started_at=service_started_at))
+    configure_openapi_contract_v2(app)
     return app

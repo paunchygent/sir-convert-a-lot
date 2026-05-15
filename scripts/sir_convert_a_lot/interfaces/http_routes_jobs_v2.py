@@ -24,6 +24,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from scripts.sir_convert_a_lot.application.contracts_v2 import (
+    JobCreateResponseV2,
     JobLinksV2,
     JobProgressV2,
     JobRecordDataV2,
@@ -127,7 +128,11 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
     register_job_artifact_routes_v2(router=router, service_started_at=service_started_at)
     register_job_resume_routes_v2(router=router, service_started_at=service_started_at)
 
-    @router.post("/v2/convert/jobs")
+    @router.post(
+        "/v2/convert/jobs",
+        response_model=JobCreateResponseV2,
+        responses={202: {"model": JobCreateResponseV2}},
+    )
     async def create_job(
         request: Request,
         file: UploadFile = File(...),
@@ -365,7 +370,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             )
         return JSONResponse(status_code=response_status, content=payload)
 
-    @router.get("/v2/convert/jobs/{job_id}")
+    @router.get("/v2/convert/jobs/{job_id}", response_model=JobRecordResponseV2)
     async def get_job(job_id: str, request: Request) -> JSONResponse:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
@@ -398,7 +403,11 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         payload = _job_record_response(job).model_dump(mode="json")
         return JSONResponse(status_code=200, content=payload)
 
-    @router.post("/v2/convert/jobs/{job_id}/cancel")
+    @router.post(
+        "/v2/convert/jobs/{job_id}/cancel",
+        response_model=JobRecordResponseV2,
+        responses={202: {"model": JobRecordResponseV2}},
+    )
     async def cancel_job(job_id: str, request: Request) -> JSONResponse:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)

@@ -22,12 +22,16 @@ from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamGapAnswer,
     DigiExamItemType,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_effective_item_patch import (
+    apply_effective_item_patch,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
     DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
     INGESTION_OVERLAY_REPORT_SCHEMA_VERSION,
     DigiExamEffectiveAnswerKey,
     DigiExamEffectiveExam,
     DigiExamEffectiveItem,
+    DigiExamEffectiveItemPatchSummary,
     DigiExamEffectiveReviewDecision,
     DigiExamIngestionOverlay,
     DigiExamIngestionOverlayAcceptedEntry,
@@ -148,24 +152,33 @@ def _apply_overlay(
     rejected: list[DigiExamIngestionOverlayRejectedEntry] = []
     effective_items: list[DigiExamEffectiveItem] = []
     accepted_reviews: list[tuple[str, ExamMigrationTargetV2]] = []
+    answered_item_ids: set[str] = set()
     items_by_id = {item.item_id: item for item in source_exam.items}
     for entry in overlay.items:
         item = items_by_id[entry.item_id]
         applied_fields: list[str] = []
         review_decisions = _review_decisions(entry)
         accepted_reviews.extend((entry.item_id, target) for target in _review_targets(entry))
-        if entry.effective_item_patch is not None:
+        patch_summary = None
+        patch_result = apply_effective_item_patch(entry=entry, item=item)
+        if patch_result.rejection is not None:
             rejected.append(
                 _rejected(
                     entry,
-                    "effective_item_patch_not_supported",
-                    "Item patches are not applied.",
+                    patch_result.rejection.reason_code,
+                    patch_result.rejection.message,
                 )
             )
+        if patch_result.application is not None:
+            item = patch_result.application.item
+            replacements[item.item_id] = item
+            patch_summary = patch_result.application.summary
+            applied_fields.append("effective_item_patch")
         replacement = _manual_key_replacement(entry=entry, item=item, rejected=rejected)
         if replacement is not None:
             replacements[item.item_id] = replacement
             applied_fields.append("manual_answer_key")
+            answered_item_ids.add(item.item_id)
             item = replacement
         if review_decisions:
             applied_fields.append("review_decision")
@@ -175,10 +188,12 @@ def _apply_overlay(
             _effective_item(
                 item=item,
                 applied=tuple(applied_fields),
+                source_item_fingerprint=entry.source_item_fingerprint,
+                patch_summary=patch_summary,
                 review_decisions=review_decisions,
             )
         )
-    effective_exam = _replace_exam_items(source_exam, replacements)
+    effective_exam = _replace_exam_items(source_exam, replacements, answered_item_ids)
     return DigiExamOverlayApplicationResult(
         effective_exam_for_rendering=effective_exam,
         effective_exam_report=_effective_exam_report(
@@ -286,15 +301,15 @@ def _gap_fill_replacement(
 def _replace_exam_items(
     source_exam: DigiExamIntermediateExam,
     replacements: dict[str, DigiExamIrItem],
+    answered_item_ids: set[str],
 ) -> DigiExamIntermediateExam:
     if not replacements:
         return source_exam
-    keyed_item_ids = frozenset(replacements)
     follow_ups = tuple(
         follow_up
         for follow_up in source_exam.manual_follow_ups
         if not (
-            follow_up.item_id in keyed_item_ids
+            follow_up.item_id in answered_item_ids
             and follow_up.reason == DigiExamIrManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED
         )
     )
@@ -327,16 +342,19 @@ def _effective_item(
     *,
     item: DigiExamIrItem,
     applied: tuple[str, ...],
+    source_item_fingerprint: str,
+    patch_summary: DigiExamEffectiveItemPatchSummary | None,
     review_decisions: tuple[DigiExamEffectiveReviewDecision, ...],
 ) -> DigiExamEffectiveItem:
     return DigiExamEffectiveItem(
         item_id=item.item_id,
         sequence=item.sequence,
         item_type=item.item_type.value,
-        source_item_fingerprint=source_item_fingerprint(item),
+        source_item_fingerprint=source_item_fingerprint,
         effective_answer_key=_effective_answer_key(item)
         if "manual_answer_key" in applied
         else None,
+        effective_item_patch=patch_summary,
         applied_overlay_entry_ids=(item.item_id,) if applied else (),
         review_decisions=review_decisions,
     )

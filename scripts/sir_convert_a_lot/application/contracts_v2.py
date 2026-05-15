@@ -19,6 +19,9 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from scripts.sir_convert_a_lot.application.contracts import ErrorBody
+from scripts.sir_convert_a_lot.application.public_exam_converter_contract_v2 import (
+    PublicArtifactReadLeaseResponseV2,
+)
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 
@@ -80,6 +83,12 @@ class JobRecordResponseV2(BaseModel):
 
     api_version: Literal["v2"] = "v2"
     job: JobRecordDataV2
+
+
+class JobCreateResponseV2(JobRecordResponseV2):
+    """Response payload for v2 job creation endpoints."""
+
+    public_artifact_read_lease: PublicArtifactReadLeaseResponseV2 | None = None
 
 
 class ArtifactMetadataV2(BaseModel):

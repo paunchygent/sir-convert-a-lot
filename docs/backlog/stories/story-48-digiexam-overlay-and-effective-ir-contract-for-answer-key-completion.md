@@ -11,7 +11,11 @@ related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md
   - docs/backlog/tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md
+  - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
+  - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
+  - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
+  - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
 labels:
@@ -58,6 +62,15 @@ keys, and review decisions without mutating the parser-owned source IR.
   be created under the accepted-current-state policy.
 - Keep source answer-key provenance strict; teacher overlay provenance belongs
   to the effective layer.
+- Implement item-content repair as a separate runtime slice after Task 295:
+  `effective_item_patch` changes effective renderer input only and must not
+  mutate source IR or answer-key provenance.
+- Define a later governed unkeyed/manual QTI profile so teacher
+  `accept_current_state_for_export` can enable QTI only when the selected QTI
+  2.1 or QTI 3.0 package is schema-valid and target-valid under that profile.
+- Publish and snapshot the generated Sir Convert v2 OpenAPI contract so
+  Skriptoteket can validate overlay/effective-IR/readiness integration before
+  live Docker/service tests.
 
 ## Acceptance Criteria
 
@@ -81,6 +94,14 @@ keys, and review decisions without mutating the parser-owned source IR.
   ordinary missing `Facit`/answer-key review.
 - [ ] Existing default route behavior remains source-owned, but the bundle
   schema is `digiexam_migration_bundle_v2` for every terminal bundle.
+- [x] Item-content repairs through `effective_item_patch` are runtime-applied
+  only after Task 302 validates source-bound patch shapes and proves PDF/QTI
+  renderers consume effective content.
+- [ ] Missing machine-marked keys keep QTI disabled unless Task 303 or a later
+  governed QTI profile validates an unkeyed/manual representation for the
+  selected QTI version.
+- [x] Task 304 publishes generated v2 OpenAPI with typed DigiExam migration
+  bundle, overlay, effective-IR, and target-readiness schemas for consumers.
 
 ## Test Requirements
 
@@ -93,6 +114,8 @@ keys, and review decisions without mutating the parser-owned source IR.
   overlay report reflect applied teacher changes.
 - [ ] Idempotency tests prove the same `.dxe` with different overlays becomes a
   different conversion request.
+- [x] OpenAPI contract tests prove the committed snapshot matches runtime
+  schema generation and includes consumer-required DigiExam components.
 
 ## Done Definition
 
