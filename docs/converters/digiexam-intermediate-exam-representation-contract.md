@@ -188,8 +188,24 @@ the IR/effective exam contract MUST expose exact answer pairs:
 - validation that every referenced left/right ID exists.
 
 Until those fields are implemented and validated, matching completion remains
-advisory/manual-review only. This is a critical dependency for Task 298, not an
+advisory/manual-review only. This is the Task 298 contract gate, not an
 optional nice-to-have.
+
+## Gap/open-cloze Accepted-value Requirement
+
+Gap-fill and open-cloze structure in source IR is not enough for automatic
+evaluation. Before Sir Convert may apply or render gapped/open-cloze answer
+completion, the IR/effective exam contract MUST expose exact accepted values
+bound to stable gap IDs:
+
+- stable `gap_id`;
+- visible gap order and prompt binding;
+- accepted values per gap;
+- normalization policy for comparison and export;
+- multi-gap completeness validation.
+
+Until those fields are implemented and validated, gapped/open-cloze completion
+remains advisory/manual-review only. This is the Task 305 contract gate.
 
 ## Embedded Asset Contract
 

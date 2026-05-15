@@ -28,7 +28,9 @@ links:
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
   - docs/backlog/tasks/task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items.md
-  - docs/backlog/tasks/task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate.md
+  - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
+  - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
+  - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
@@ -52,11 +54,13 @@ task, reference, report, or retained review surface.
 1. Teacher item-content overlay application: Task 302.
 1. Generated OpenAPI consumer contract publication: Task 304.
 1. Unkeyed/manual QTI profile for accepted-current-state export: Task 303.
+1. Matching answer-key pair IR contract: Task 298.
+1. Gapped/open-cloze accepted-value IR contract: Task 305.
 1. Structured provider harness: Task 296.
 1. Experimental Granite FP8/vLLM Hemma smoke and interim local provider
    settlement: Task 301.
 1. Advisory completion reports: Task 297.
-1. Reviewed/applied completion and matching IR v3 gate: Task 298.
+1. Reviewed application into effective IR: Task 306.
 1. Local model benchmark harness and live matrix: Task 300.
 1. Cross-repo Skriptoteket/HuleEdu handoff: Task 299.
 
@@ -317,6 +321,71 @@ Stop conditions:
 - Stop if Exam.net import proof contradicts the profile.
 - Stop if teacher acceptance would hide XML/schema/profile validation failures.
 
+## Tranche 2.7: Matching Answer-key Pair IR Contract
+
+Governing task: `task-298-define-matching-answer-key-pair-ir-contract.md`.
+
+Goal: define the first-class matching answer-key pair shape before teacher
+overlays, LLM advisory output, reviewed application, PDF rendering, or QTI
+export may claim matching can be automatically evaluated.
+
+Checklist:
+
+- [ ] Add stable `left_id` and `right_id` bindings for matching prompts and
+  options.
+- [ ] Add `correct_matching_pairs` as ordered pairs of known IDs.
+- [ ] Define right-option reuse policy and completeness validation.
+- [ ] Preserve source-bound parser provenance separately from effective
+  teacher/manual or reviewed answer-key provenance.
+- [ ] Update manifest/report, target-readiness, PDF, and QTI contract surfaces
+  that depend on matching answer-key shape.
+
+Checkpoint:
+
+- [ ] Matching answer-key pairs are first-class IR/effective-IR data.
+- [ ] Matching remains manual/unkeyed or unavailable for automatic evaluation
+  until exact trusted pairs exist.
+- [ ] Later provider/advisory/application tasks can consume the contract
+  without changing it.
+
+Stop conditions:
+
+- Stop if correct pairs would be inferred from visible prompt text.
+- Stop if matching pairs cannot be represented as exact ID-bound data.
+
+## Tranche 2.8: Gapped/open-cloze Accepted-value IR Contract
+
+Governing task: `task-305-define-gapped-open-cloze-accepted-value-ir-contract.md`.
+
+Goal: define the first-class gap/open-cloze accepted-value shape before teacher
+overlays, LLM advisory output, reviewed application, PDF rendering, or QTI
+export may claim gapped/open-cloze items can be automatically evaluated.
+
+Checklist:
+
+- [ ] Define stable gap IDs, visible order, prompt binding, and source spans.
+- [ ] Add accepted values per gap as structured answer-key data.
+- [ ] Define normalization policy and whether it is validation-only or
+  target-specific.
+- [ ] Define multi-gap completeness rules.
+- [ ] Preserve source-bound parser provenance separately from effective
+  teacher/manual or reviewed answer-key provenance.
+- [ ] Update manifest/report, target-readiness, PDF, and QTI contract surfaces
+  that depend on gap accepted-value shape.
+
+Checkpoint:
+
+- [ ] Gap accepted values are first-class IR/effective-IR data.
+- [ ] Gapped/open-cloze items remain manual/unkeyed or unavailable for
+  automatic evaluation until trusted accepted values exist.
+- [ ] Later provider/advisory/application tasks can consume the contract
+  without changing it.
+
+Stop conditions:
+
+- Stop if accepted values would be inferred from visible prompt text.
+- Stop if accepted values cannot be represented as exact gap-ID-bound data.
+
 ## Tranche 3: Structured Provider Harness
 
 Governing task: `task-296-extract-structured-chat-provider-harness-for-local-first-completion.md`.
@@ -472,20 +541,22 @@ Stop conditions:
 - Stop if advisory output is needed by renderers.
 - Stop if a provider error can become an answer key.
 
-## Tranche 6: Reviewed Application And Matching Gate
+## Tranche 6: Reviewed Application Into Effective IR
 
-Governing task: `task-298-implement-reviewed-answer-key-completion-application-and-matching-ir-v3-gate.md`.
+Governing task: `task-306-apply-reviewed-answer-key-completion-into-effective-ir.md`.
 
 Goal: apply validated completion only after explicit review semantics and IR
-support exist.
+support exist. Matching and gapped/open-cloze answer-key shapes are contract
+preconditions owned by Tasks 298 and 305.
 
 Checklist:
 
 - [ ] Add effective answer-key provenance distinct from parser provenance.
 - [ ] Add apply mode for reviewed completion.
 - [ ] Preserve source-bound evidence precedence.
-- [ ] Add matching answer-pair fields before applied matching completion.
-- [ ] Require exact left/right IDs and completeness validation.
+- [ ] Consume Task 298 matching answer-pair fields without widening them.
+- [ ] Consume Task 305 gap/open-cloze accepted-value fields without widening
+  them.
 - [ ] Emit effective IR and completion report when completion is applied.
 - [ ] Prove teacher-accepted suggestions can be resubmitted as manual overlay.
 
@@ -493,14 +564,16 @@ Checkpoint:
 
 - [ ] Source IR remains unchanged after applied completion.
 - [ ] Effective IR identifies LLM-inferred answer keys explicitly.
-- [ ] Matching remains blocked until IR v3 and validators prove exact pairs.
+- [ ] Matching remains blocked unless Task 298 validators prove exact pairs.
+- [ ] Gapped/open-cloze application remains blocked unless Task 305 validators
+  prove accepted values and completeness.
 - [ ] Public/grant jobs remain remote-provider-forbidden unless a later signed
   policy authorizes them.
 
 Stop conditions:
 
-- Stop if matching pairs cannot be represented as first-class IR data.
 - Stop if applying a completion would overwrite source-bound evidence.
+- Stop if matching pairs or gap accepted values are not first-class IR data.
 
 ## Tranche 7: Cross-Repo Integration
 

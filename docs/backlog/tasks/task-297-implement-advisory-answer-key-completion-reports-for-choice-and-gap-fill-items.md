@@ -11,6 +11,8 @@ related:
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
   - docs/backlog/tasks/task-296-extract-structured-chat-provider-harness-for-local-first-completion.md
+  - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
+  - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
 labels:
   - llm
@@ -36,6 +38,8 @@ missing choice and gap-fill answer keys without changing renderer input.
 - Skip items with source-bound answer keys, unreliable structure, unsupported
   assets, unsupported item types, or budget overflow.
 - Add item-type-specific output schemas for choice and gap-fill decisions.
+- Consume Task 305's gapped/open-cloze accepted-value contract for gap-fill
+  candidate/report shape; do not invent a provider-only answer-key structure.
 - Validate model output strictly and convert invalid output to manual follow-up.
 - Emit `answer_key_completion_report` with bounded metadata and per-item
   decisions.

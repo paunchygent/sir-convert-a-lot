@@ -192,8 +192,9 @@ Checkpoint:
   gap-fill examples, including matching-like gap-fill prompts, but no parsed
   `DigiExamItemType.MATCHING` fixture. A real matching DXE should replace the
   contract-only matching sample as soon as one is available.
-- Task 298 remains the authority for reviewed matching/gap answer application,
-  matching answer-pair fields, and any IR v3 gate.
+- Task 298 remains the authority for matching answer-pair fields. Task 305 owns
+  the gapped/open-cloze accepted-value contract. Task 306 owns later reviewed
+  answer-key application into effective IR.
 
 ## Stop Conditions
 

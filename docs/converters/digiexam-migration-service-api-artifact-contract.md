@@ -562,7 +562,8 @@ Gap-fill overlays use existing source gap IDs:
 
 Matching overlays may be represented at contract level, but applied matching
 completion is disabled until exact source/effective matching answer-pair fields
-exist:
+exist. Gapped/open-cloze overlays likewise require exact gap accepted-value
+fields before applied completion can treat them as automatically evaluated:
 
 ```json
 {

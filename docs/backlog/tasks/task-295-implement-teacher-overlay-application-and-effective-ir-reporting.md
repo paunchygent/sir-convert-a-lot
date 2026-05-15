@@ -195,16 +195,19 @@ Checkpoint:
 
 Checkpoint:
 
-- Task 295 can hand Task 297/298 an implemented overlay/effective IR substrate
-  without mixing in LLM completion or matching-pair schema work.
+- Task 295 can hand Task 298/305 the overlay/effective IR substrate for
+  answer-key contract-shape work, and later hand Task 297/306 the same
+  substrate for advisory reports and reviewed application without mixing in LLM
+  completion here.
 
 ## Out Of Scope
 
 - LLM provider harness extraction, local vLLM/llama.cpp invocation, model
   benchmarking, prompts, and answer-key suggestions; those belong to Tasks 296,
   297, 300, and 301.
-- Applying matching answer-key completion before exact `left_id`, `right_id`,
-  and `correct_matching_pairs` fields exist; Task 298 owns that gate.
+- Applying matching or gapped/open-cloze answer-key completion before exact
+  matching pair fields and gap accepted-value fields exist; Tasks 298 and 305
+  own those contract gates.
 - Skriptoteket UI implementation. Task 295 must produce the Sir Convert
   contract/runtime surface that Skriptoteket consumes.
 - HuleEdu provider/API changes.
@@ -222,8 +225,9 @@ Checkpoint:
   requested effective state; report readiness instead of synthesizing output.
 - Stop before changing public grant semantics, remote-provider policy, or
   Skriptoteket local persistence contracts.
-- Stop before widening matching completion beyond advisory/manual-review unless
-  the exact matching answer-pair IR fields are implemented.
+- Stop before widening matching or gapped/open-cloze completion beyond
+  advisory/manual-review unless the exact matching answer-pair and gap
+  accepted-value IR fields are implemented.
 
 ## Runtime Entry Points
 

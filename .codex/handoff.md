@@ -142,10 +142,11 @@ runbooks, or skills.
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. For machine-marked answer-key completion, continue with Task 296/297:
-   extract the structured local provider harness and then emit advisory
-   answer-key completion reports on top of Task 295's overlay/effective IR
-   substrate.
+1. For machine-marked answer-key completion, continue with the contract-shape
+   split before provider/application work: Task 298 for matching answer-key
+   pairs, Task 305 for gapped/open-cloze accepted values, then Task 296/297 for
+   structured provider/advisory reports and Task 306 for reviewed application
+   into effective IR.
 1. For accepted-current-state QTI export, use Task 303's completed
    `unkeyed_manual_qti_2_1_v1` profile and keep Exam.net import proof marked
    vendor-unproven until the vendor provides a test path.
