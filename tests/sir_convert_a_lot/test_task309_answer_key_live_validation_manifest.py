@@ -567,7 +567,12 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
     assert metadata["model"] == "qwen3.6-27b-q6k"
     assert metadata["provider_runtime"] == "llama-cpp-json-schema"
     assert metadata["default_output_mode"] == "json_schema"
+    assert metadata["context_window_tokens"] == 32768
+    assert metadata["max_output_tokens"] == 512
+    assert metadata["temperature"] == 0.15
     assert _object(metadata["capabilities"])["supports_multimodal_vision"] is True
+    assert _object(metadata["request_settings"])["context_window_tokens"] == 32768
+    assert _object(metadata["request_settings"])["temperature"] == 0.15
     assert (
         _object(metadata["artifact_paths"])["vision_media_path"]
         == (output_root / "vision-assets").as_posix()
@@ -662,6 +667,8 @@ def test_task309_evaluation_upgrades_legacy_qwen_run_report_metadata(
     assert metadata["metadata_source"] == "legacy_task309_run_report_profile_match"
     assert metadata["profile_name"] == "qwen36-llama-cpp"
     assert metadata["model"] == "qwen3.6-27b-q6k"
+    assert metadata["context_window_tokens"] == 32768
+    assert metadata["temperature"] == 0.15
     assert (
         _object(metadata["artifact_paths"])["vision_media_path"]
         == (output_root / "vision-assets").as_posix()
@@ -710,6 +717,9 @@ def _provider_run_metadata_payload(
     profile = build_task309_provider_profile(
         runtime=defaults.provider_runtime,
         model=defaults.model,
+        context_window_tokens=defaults.context_window_tokens,
+        max_output_tokens=defaults.max_output_tokens,
+        temperature=defaults.temperature,
         supports_multimodal_vision=defaults.permits_vision_assets,
     )
     return build_task309_provider_run_metadata(

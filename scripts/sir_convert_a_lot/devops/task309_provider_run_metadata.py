@@ -218,6 +218,9 @@ def _metadata_from_legacy_run_report(
     profile = build_task309_provider_profile(
         runtime=defaults.provider_runtime,
         model=model,
+        context_window_tokens=defaults.context_window_tokens,
+        max_output_tokens=defaults.max_output_tokens,
+        temperature=defaults.temperature,
         supports_multimodal_vision=defaults.permits_vision_assets,
     )
     output_root = run_report_path.parent

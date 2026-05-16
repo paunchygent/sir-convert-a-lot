@@ -62,6 +62,9 @@ class Task309ProviderDefaults:
     container_name: str
     cache_paths: tuple[str, ...]
     expected_model_id: str | None
+    context_window_tokens: int
+    max_output_tokens: int
+    temperature: float
     permits_vision_assets: bool = False
     request_settings: tuple[Task309ProviderSetting, ...] = ()
     launch_settings: tuple[Task309ProviderSetting, ...] = ()
@@ -75,6 +78,9 @@ GRANITE_TASK309_REPORTS_ROOT = GRANITE_TASK309_OUTPUT_ROOT / "advisory-corpus-re
 GRANITE_TASK309_PROVIDER_URL = "http://127.0.0.1:8017"
 GRANITE_TASK309_PROVIDER_PORT = 8017
 GRANITE_TASK309_MODEL = "ibm-granite/granite-4.1-8b-fp8"
+GRANITE_TASK309_CONTEXT_WINDOW_TOKENS = 4096
+GRANITE_TASK309_TEMPERATURE = 0.0
+TASK309_PROVIDER_MAX_OUTPUT_TOKENS = 512
 GRANITE_TASK309_CONTAINER_NAME = "sir-convert-task309-granite-vllm"
 GRANITE_TASK309_CACHE_PATHS = (
     "/srv/scratch/sir-convert-a-lot/cache/huggingface",
@@ -87,6 +93,8 @@ QWEN36_LLAMA_CPP_REPORTS_ROOT = QWEN36_LLAMA_CPP_OUTPUT_ROOT / "advisory-corpus-
 QWEN36_LLAMA_CPP_PROVIDER_URL = "http://127.0.0.1:8082"
 QWEN36_LLAMA_CPP_PROVIDER_PORT = 8082
 QWEN36_LLAMA_CPP_MODEL = "qwen3.6-27b-q6k"
+QWEN36_LLAMA_CPP_CONTEXT_WINDOW_TOKENS = 32768
+QWEN36_LLAMA_CPP_TEMPERATURE = 0.15
 QWEN36_LLAMA_CPP_CONTAINER_NAME = "task309-qwen36-llama-cpp-local"
 QWEN36_LLAMA_CPP_CACHE_PATH = "/srv/scratch/sir-convert-a-lot/cache/llama.cpp"
 QWEN36_LLAMA_CPP_SERVER_BINARY = "/srv/scratch/sir-convert-a-lot/bin/llama-server"
@@ -98,7 +106,7 @@ QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS = (
     "--port",
     str(QWEN36_LLAMA_CPP_PROVIDER_PORT),
     "--ctx-size",
-    "32768",
+    str(QWEN36_LLAMA_CPP_CONTEXT_WINDOW_TOKENS),
     "--n-gpu-layers",
     "all",
     "--fit",
@@ -109,7 +117,7 @@ QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS = (
     "--reasoning",
     "off",
     "--temp",
-    "0.15",
+    str(QWEN36_LLAMA_CPP_TEMPERATURE),
     "--offline",
     "--media-path",
     (QWEN36_LLAMA_CPP_OUTPUT_ROOT / "vision-assets").as_posix(),
@@ -127,9 +135,12 @@ TASK309_PROVIDER_DEFAULTS = {
         container_name=GRANITE_TASK309_CONTAINER_NAME,
         cache_paths=GRANITE_TASK309_CACHE_PATHS,
         expected_model_id=None,
+        context_window_tokens=GRANITE_TASK309_CONTEXT_WINDOW_TOKENS,
+        max_output_tokens=TASK309_PROVIDER_MAX_OUTPUT_TOKENS,
+        temperature=GRANITE_TASK309_TEMPERATURE,
         request_settings=(
             Task309ProviderSetting("stream", False),
-            Task309ProviderSetting("temperature", 0.0),
+            Task309ProviderSetting("temperature", GRANITE_TASK309_TEMPERATURE),
         ),
         launch_settings=(
             Task309ProviderSetting("host_bind", "127.0.0.1"),
@@ -148,15 +159,18 @@ TASK309_PROVIDER_DEFAULTS = {
         container_name=QWEN36_LLAMA_CPP_CONTAINER_NAME,
         cache_paths=(QWEN36_LLAMA_CPP_CACHE_PATH,),
         expected_model_id=QWEN36_LLAMA_CPP_MODEL,
+        context_window_tokens=QWEN36_LLAMA_CPP_CONTEXT_WINDOW_TOKENS,
+        max_output_tokens=TASK309_PROVIDER_MAX_OUTPUT_TOKENS,
+        temperature=QWEN36_LLAMA_CPP_TEMPERATURE,
         permits_vision_assets=True,
         request_settings=(
             Task309ProviderSetting("stream", False),
-            Task309ProviderSetting("temperature", 0.15),
+            Task309ProviderSetting("temperature", QWEN36_LLAMA_CPP_TEMPERATURE),
         ),
         launch_settings=(
             Task309ProviderSetting("host_bind", "127.0.0.1"),
             Task309ProviderSetting("port", QWEN36_LLAMA_CPP_PROVIDER_PORT),
-            Task309ProviderSetting("ctx_size", 32768),
+            Task309ProviderSetting("ctx_size", QWEN36_LLAMA_CPP_CONTEXT_WINDOW_TOKENS),
             Task309ProviderSetting("n_gpu_layers", "all"),
             Task309ProviderSetting("fit", "off"),
             Task309ProviderSetting("flash_attn", True),
@@ -166,6 +180,13 @@ TASK309_PROVIDER_DEFAULTS = {
         ),
     ),
 }
+
+DEFAULT_TASK309_PROVIDER_DEFAULTS = TASK309_PROVIDER_DEFAULTS[
+    Task309ProviderProfileName.GRANITE_VLLM
+]
+DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS = DEFAULT_TASK309_PROVIDER_DEFAULTS.context_window_tokens
+DEFAULT_TASK309_MAX_OUTPUT_TOKENS = DEFAULT_TASK309_PROVIDER_DEFAULTS.max_output_tokens
+DEFAULT_TASK309_TEMPERATURE = DEFAULT_TASK309_PROVIDER_DEFAULTS.temperature
 
 
 def task309_provider_runtime_values() -> tuple[str, ...]:
@@ -213,8 +234,9 @@ def build_task309_provider_profile(
     *,
     runtime: Task309StructuredProviderRuntime,
     model: str,
-    context_window_tokens: int = 4096,
-    max_output_tokens: int = 512,
+    context_window_tokens: int = DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
+    max_output_tokens: int = DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
+    temperature: float = DEFAULT_TASK309_TEMPERATURE,
     supports_multimodal_vision: bool = False,
 ) -> StructuredLLMProviderProfile:
     """Build the structured-provider profile for one Task 309 runtime."""
@@ -228,7 +250,7 @@ def build_task309_provider_profile(
             is_remote=False,
             context_window_tokens=context_window_tokens,
             max_output_tokens=max_output_tokens,
-            temperature=0.0,
+            temperature=temperature,
             capabilities=StructuredLLMProviderCapabilities(
                 supports_json_schema=True,
                 supports_gbnf=False,
@@ -244,7 +266,7 @@ def build_task309_provider_profile(
             is_remote=False,
             context_window_tokens=context_window_tokens,
             max_output_tokens=max_output_tokens,
-            temperature=0.15,
+            temperature=temperature,
             capabilities=StructuredLLMProviderCapabilities(
                 supports_json_schema=True,
                 supports_gbnf=True,
@@ -260,7 +282,7 @@ def build_task309_provider_profile(
         is_remote=False,
         context_window_tokens=context_window_tokens,
         max_output_tokens=max_output_tokens,
-        temperature=0.15,
+        temperature=temperature,
         capabilities=StructuredLLMProviderCapabilities(
             supports_json_schema=True,
             supports_gbnf=True,

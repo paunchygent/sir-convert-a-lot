@@ -37,7 +37,10 @@ from scripts.sir_convert_a_lot.devops.task309_provider_run_metadata import (
     build_task309_provider_run_metadata,
 )
 from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+    DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
     DEFAULT_TASK309_PROVIDER_RUNTIME,
+    DEFAULT_TASK309_TEMPERATURE,
     Task309ProviderProfileName,
     Task309StructuredProviderRuntime,
     build_task309_provider_profile,
@@ -115,6 +118,9 @@ def run_task309_advisory_corpus(
     model: str = DEFAULT_PROVIDER_MODEL,
     provider_profile_name: Task309ProviderProfileName = Task309ProviderProfileName.GRANITE_VLLM,
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
+    context_window_tokens: int = DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
+    max_output_tokens: int = DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
+    temperature: float = DEFAULT_TASK309_TEMPERATURE,
     supports_multimodal_vision: bool = False,
     vision_media_path: Path | None = None,
     require_provider_ready: bool = True,
@@ -130,6 +136,9 @@ def run_task309_advisory_corpus(
             model=model,
             provider_profile_name=provider_profile_name,
             provider_runtime=provider_runtime,
+            context_window_tokens=context_window_tokens,
+            max_output_tokens=max_output_tokens,
+            temperature=temperature,
             supports_multimodal_vision=supports_multimodal_vision,
             vision_media_path=vision_media_path,
             require_provider_ready=require_provider_ready,
@@ -146,6 +155,9 @@ async def _run_task309_advisory_corpus(
     model: str,
     provider_profile_name: Task309ProviderProfileName,
     provider_runtime: Task309StructuredProviderRuntime,
+    context_window_tokens: int,
+    max_output_tokens: int,
+    temperature: float,
     supports_multimodal_vision: bool,
     vision_media_path: Path | None,
     require_provider_ready: bool,
@@ -156,6 +168,9 @@ async def _run_task309_advisory_corpus(
     profile = build_task309_provider_profile(
         runtime=provider_runtime,
         model=model,
+        context_window_tokens=context_window_tokens,
+        max_output_tokens=max_output_tokens,
+        temperature=temperature,
         supports_multimodal_vision=supports_multimodal_vision,
     )
     resolved_vision_media_path = _resolved_vision_media_path(

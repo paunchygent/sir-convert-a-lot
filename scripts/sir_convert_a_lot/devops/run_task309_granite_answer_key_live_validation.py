@@ -77,6 +77,7 @@ from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles impor
     QWEN36_LLAMA_CPP_SERVER_BINARY,
     Task309ProviderDefaults,
     Task309ProviderProfileName,
+    parse_task309_provider_profile_name,
     parse_task309_provider_runtime,
     task309_defaults_for_provider_profile,
     task309_provider_profile_values,
@@ -124,11 +125,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return _blocked_exit_code(report.summary.valid, fail_on_blocked=args.fail_on_blocked)
     if args.command == "preview-request-shape":
+        defaults = _provider_defaults(args)
         preview = build_task309_request_shape_preview(
             corpus_root=args.corpus_root,
             provider_url=args.provider_url,
             model=args.model,
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            context_window_tokens=defaults.context_window_tokens,
+            max_output_tokens=defaults.max_output_tokens,
+            temperature=defaults.temperature,
             supports_multimodal_vision=_supports_multimodal_vision(args),
             vision_media_path=args.output_root / "vision-assets",
         )
@@ -186,10 +191,14 @@ def main(argv: list[str] | None = None) -> int:
         _write_hemma_preflight(output_root=args.output_root, preflight=preflight)
         return _blocked_exit_code(preflight.ready, fail_on_blocked=args.fail_on_blocked)
     if args.command == "microprobes":
+        defaults = _provider_defaults(args)
         microprobe_report = run_task309_microprobes(
             provider_url=args.provider_url,
             model=args.model,
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            context_window_tokens=defaults.context_window_tokens,
+            max_output_tokens=defaults.max_output_tokens,
+            temperature=defaults.temperature,
             supports_multimodal_vision=_supports_multimodal_vision(args),
             require_provider_ready=not args.skip_provider_ready_check,
             timeout_seconds=args.timeout_seconds,
@@ -201,13 +210,18 @@ def main(argv: list[str] | None = None) -> int:
             fail_on_blocked=args.fail_on_blocked,
         )
     if args.command == "run-advisory-corpus":
+        defaults = _provider_defaults(args)
         reports_root = args.reports_root or (args.output_root / "advisory-corpus-reports")
         corpus_report = run_task309_advisory_corpus(
             corpus_root=args.corpus_root,
             reports_root=reports_root,
             provider_url=args.provider_url,
             model=args.model,
+            provider_profile_name=parse_task309_provider_profile_name(args.provider_profile),
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            context_window_tokens=defaults.context_window_tokens,
+            max_output_tokens=defaults.max_output_tokens,
+            temperature=defaults.temperature,
             supports_multimodal_vision=_supports_multimodal_vision(args),
             vision_media_path=args.output_root / "vision-assets",
             require_provider_ready=not args.skip_provider_ready_check,

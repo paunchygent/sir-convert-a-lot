@@ -25,7 +25,10 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
     DEFAULT_PROVIDER_URL,
 )
 from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+    DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
     DEFAULT_TASK309_PROVIDER_RUNTIME,
+    DEFAULT_TASK309_TEMPERATURE,
     Task309StructuredProviderRuntime,
     build_task309_provider_profile,
 )
@@ -111,6 +114,9 @@ def build_task309_request_shape_preview(
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
+    context_window_tokens: int = DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
+    max_output_tokens: int = DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
+    temperature: float = DEFAULT_TASK309_TEMPERATURE,
     supports_multimodal_vision: bool = False,
     vision_media_path: Path = Path(
         "build/verification/task-309-request-shape-preview/vision-assets"
@@ -121,6 +127,9 @@ def build_task309_request_shape_preview(
     profile = build_task309_provider_profile(
         runtime=provider_runtime,
         model=model,
+        context_window_tokens=context_window_tokens,
+        max_output_tokens=max_output_tokens,
+        temperature=temperature,
         supports_multimodal_vision=supports_multimodal_vision,
     )
     base_planner = answer_key_candidate_planner_for_profile(profile)
