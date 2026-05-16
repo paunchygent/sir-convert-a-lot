@@ -50,6 +50,51 @@ This symlink must point to the current HIP-enabled llama.cpp build for GGUF
 answer-key model probes. Do not use older home-directory builds for Qwen3.5 or
 Gemma 4 validation; they may lack current architecture support.
 
+## llama.cpp HIP Build Stability
+
+`llama.cpp` HIP builds are heavyweight host operations.
+
+- Serialize: build first, verify the binary, then launch model providers and
+  run probes.
+- Do not overlap with local model serving, full advisory-corpus evaluation,
+  large model downloads, Docker image rebuilds, or other GPU/offload work.
+- Do not raise parallelism during an operator session just because the host has
+  idle cores. Prior `-j16` HIP builds made SSH/Tailscale access unreliable;
+  `nice -n 10` with `-j8` kept the recovered host responsive.
+
+Preflight:
+
+```bash
+pdm run run-hemma -- uptime
+pdm run run-hemma -- ps -eo pid,stat,ni,pcpu,pmem,comm,args
+pdm run run-hemma -- rocm-smi --showmeminfo vram --showpids
+```
+
+Build:
+
+```bash
+cd /srv/scratch/sir-convert-a-lot/build/llama.cpp-qwen35
+cmake -S . -B build-hip -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DGGML_HIP=ON \
+  -DAMDGPU_TARGETS=gfx1201 \
+  -DGGML_HIP_GRAPHS=ON \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+nohup nice -n 10 ninja -C build-hip -j8 llama-server \
+  > build-hip/build-log.txt 2>&1 &
+```
+
+Recovery:
+
+- After a host reset or interrupted configure, zero-byte `build.ninja` or
+  `CMakeCache.txt` means corrupt generator state. Recreate `build-hip` and
+  reconfigure; do not resume from object files alone.
+- For `relocation R_X86_64_32 ... can not be used when making a PIE object`,
+  reconfigure with `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` and rerun the bounded
+  detached build. Do not disable PIE unless a governed task records that
+  exception.
+
 ## GPU Verification
 
 Use these probes before GPU workload changes:

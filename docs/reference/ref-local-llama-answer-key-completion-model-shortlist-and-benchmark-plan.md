@@ -271,10 +271,11 @@ Task 309 DXE corpus via `llama-server` on `127.0.0.1:8082`:
 ```text
 provider_runtime: llama-cpp-json-schema
 model: qwen3.6-27b-q6k
-llama-server: 59778f019 (HIP, gfx1201)
+llama-server: 0253fb21f (version 9187, HIP, gfx1201)
 context: 32768
 temperature: 0.15          # task-optimal; card-default 0.7 gave worse results
 reasoning: off
+mtp: supported (--spec-type draft-mpt, not yet enabled)
 build: /srv/scratch/sir-convert-a-lot/build/llama.cpp-qwen35/build-hip/bin/llama-server
 ```
 
@@ -380,6 +381,37 @@ Devstral fails on Swedish curriculum terminology that Qwen3.6 handles
 correctly. Its SOTA coding/agentic benchmarks (SWE-bench, Aider) do not
 translate to Swedish educational content accuracy.
 
+### llama.cpp Rebuild for MTP Support
+
+On 2026-05-16, the Hemma `llama-server` was rebuilt from `59778f019` (version
+9174, no MTP) to `0253fb21f` (version 9187, with MTP) to enable speculative
+decoding for future speedup:
+
+```bash
+cd /srv/scratch/sir-convert-a-lot/build/llama.cpp-qwen35
+rm -rf build-hip
+cmake -B build-hip \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DGGML_HIP=ON \
+  -DAMDGPU_TARGETS=gfx1201 \
+  -DGGML_HIP_GRAPHS=ON \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+  -G Ninja
+nice -n 10 ninja -C build-hip -j8 llama-server
+```
+
+**Build lessons learned:**
+
+- `-j16` without `nice` saturated all CPU cores and starved SSH, requiring a
+  hard power-cycle to recover. Use `-j8` (half core count) and `nice -n 10`.
+- The first rebuild failed at link time with `relocation R_X86_64_32 against .rodata.str1.1` because PIE was enabled by default. Adding
+  `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` resolved this.
+- MTP is available via `--spec-type draft-mtp --spec-draft-n-max 2` but has not
+  yet been validated on the answer-key corpus. To use MTP, download the
+  separate MTP GGUF (`unsloth/Qwen3.6-27B-MTP-GGUF`) and launch with the flags
+  above.
+
 ### Promotion Status
 
 **Current guarded choice, not automatic promotion.** Both Qwen3.6-27B
@@ -420,9 +452,10 @@ documentation:
   uses `--chat-template-kwargs '{"enable_thinking":false}'`; the validated
   Hemma llama.cpp build also supports the newer `--reasoning off` switch. Use
   `/srv/scratch/sir-convert-a-lot/bin/llama-server` as the default Hemma
-  `llama-server`; it points to the newer HIP build that supports Qwen3.5 and
-  Gemma 4 GGUF architectures. After the completed Qwen3.6 and Devstral Task
-  309 runs, Gemma is no longer the immediate next diagnostic by default; keep
+  `llama-server`; it points to the newer HIP build that supports Qwen3.5,
+  Gemma 4, Qwen3.6, and MTP GGUF architectures. After the completed Qwen3.6
+  and Devstral Task 309 runs, Gemma is no longer the immediate next diagnostic
+  by default; keep
   it as future Task 300 comparison material unless a new governed operator
   decision reopens the model search.
 - Qwen3.6 27B guidance lists a 262,144-token native context and recommends

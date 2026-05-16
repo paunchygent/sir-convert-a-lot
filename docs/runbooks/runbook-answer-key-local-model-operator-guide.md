@@ -94,8 +94,11 @@ The symlink points at the newer HIP build under:
 /srv/scratch/sir-convert-a-lot/build/llama.cpp-qwen35/build-hip/bin/llama-server
 ```
 
-That build was configured from `llama.cpp` `59778f019` with HIP enabled for
-`gfx1201`.
+That build was configured from `llama.cpp` `0253fb21f` (version 9187) with HIP
+enabled for `gfx1201`. This build includes **MTP (Multi Token Prediction)**
+support via `--spec-type draft-mtp`. Use
+`docs/runbooks/runbook-hemma-gpu-runtime.md` for current `llama.cpp` HIP build
+stability, throttling, and recovery guidance.
 
 ## Model Settings
 
