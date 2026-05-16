@@ -22,7 +22,20 @@ import socket
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
+from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_launch import (
+    build_task309_provider_launch_plan,
+    launch_task309_provider,
+)
+from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_status import (
+    build_task309_hemma_preflight,
+    build_task309_provider_status,
+)
+from scripts.sir_convert_a_lot.devops.answer_key_llama_provider_launch import (
+    build_answer_key_llama_provider_launch_plan,
+    launch_task309_llama_provider,
+    qwen36_llama_required_process_args,
+)
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_CACHE_PATHS,
     DEFAULT_PROVIDER_CONTAINER_NAME,
     DEFAULT_PROVIDER_HOST_CACHE,
@@ -34,54 +47,28 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
     Task309ProviderLaunchResult,
     Task309ProviderStatus,
 )
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_launch import (
-    build_task309_provider_launch_plan,
-    launch_task309_provider,
-)
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_reporting import (
-    write_task309_hemma_preflight_artifacts,
-    write_task309_llama_provider_launch_artifacts,
-    write_task309_provider_launch_artifacts,
-    write_task309_provider_status_artifacts,
-)
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_status import (
-    build_task309_hemma_preflight,
-    build_task309_provider_status,
-)
-from scripts.sir_convert_a_lot.devops.task309_live_evaluation import (
-    evaluate_task309_advisory_reports,
-    write_task309_advisory_evaluation,
-)
-from scripts.sir_convert_a_lot.devops.task309_live_execution import (
-    Task309AdvisoryCorpusRunReport,
-    run_task309_advisory_corpus,
-)
-from scripts.sir_convert_a_lot.devops.task309_live_microprobes import (
+from scripts.sir_convert_a_lot.devops.answer_key_provider_microprobes import (
     Task309MicroprobeReport,
     run_task309_microprobes,
 )
-from scripts.sir_convert_a_lot.devops.task309_llama_provider_launch import (
-    build_task309_llama_provider_launch_plan,
-    launch_task309_llama_provider,
-    qwen36_llama_required_process_args,
+from scripts.sir_convert_a_lot.devops.answer_key_provider_reporting import (
+    write_answer_key_llama_provider_launch_artifacts,
+    write_task309_hemma_preflight_artifacts,
+    write_task309_provider_launch_artifacts,
+    write_task309_provider_status_artifacts,
 )
-from scripts.sir_convert_a_lot.devops.task309_request_shape_preview import (
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_corpus_execution import (
+    Task309AdvisoryCorpusRunReport,
+    run_task309_advisory_corpus,
+)
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_evaluation import (
+    evaluate_task309_advisory_reports,
+    write_task309_advisory_evaluation,
+)
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_request_shape_preview import (
     Task309RequestShapePreview,
-    build_task309_request_shape_preview,
-    write_task309_request_shape_preview,
-)
-from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
-    QWEN36_LLAMA_CPP_CACHE_PATH,
-    QWEN36_LLAMA_CPP_HF_FILE,
-    QWEN36_LLAMA_CPP_HF_REPO,
-    QWEN36_LLAMA_CPP_SERVER_BINARY,
-    Task309ProviderDefaults,
-    Task309ProviderProfileName,
-    parse_task309_provider_profile_name,
-    parse_task309_provider_runtime,
-    task309_defaults_for_provider_profile,
-    task309_provider_profile_values,
-    task309_provider_runtime_values,
+    build_answer_key_request_shape_preview,
+    write_answer_key_request_shape_preview,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
     Task309GoldenValidationReport,
@@ -91,6 +78,19 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manife
     build_task309_expected_answer_worklist,
     build_task309_live_validation_manifest,
     write_task309_json,
+)
+from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
+    QWEN36_LLAMA_CPP_CACHE_PATH,
+    QWEN36_LLAMA_CPP_HF_FILE,
+    QWEN36_LLAMA_CPP_HF_REPO,
+    QWEN36_LLAMA_CPP_SERVER_BINARY,
+    AnswerKeyProviderDefaults,
+    AnswerKeyProviderProfileName,
+    answer_key_defaults_for_provider_profile,
+    answer_key_provider_profile_values,
+    answer_key_provider_runtime_values,
+    parse_answer_key_provider_profile_name,
+    parse_answer_key_provider_runtime,
 )
 
 DEFAULT_CORPUS_ROOT = Path("inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe")
@@ -126,11 +126,11 @@ def main(argv: list[str] | None = None) -> int:
         return _blocked_exit_code(report.summary.valid, fail_on_blocked=args.fail_on_blocked)
     if args.command == "preview-request-shape":
         defaults = _provider_defaults(args)
-        preview = build_task309_request_shape_preview(
+        preview = build_answer_key_request_shape_preview(
             corpus_root=args.corpus_root,
             provider_url=args.provider_url,
             model=args.model,
-            provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            provider_runtime=parse_answer_key_provider_runtime(args.provider_runtime),
             context_window_tokens=defaults.context_window_tokens,
             max_output_tokens=defaults.max_output_tokens,
             temperature=defaults.temperature,
@@ -195,7 +195,7 @@ def main(argv: list[str] | None = None) -> int:
         microprobe_report = run_task309_microprobes(
             provider_url=args.provider_url,
             model=args.model,
-            provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            provider_runtime=parse_answer_key_provider_runtime(args.provider_runtime),
             context_window_tokens=defaults.context_window_tokens,
             max_output_tokens=defaults.max_output_tokens,
             temperature=defaults.temperature,
@@ -217,8 +217,8 @@ def main(argv: list[str] | None = None) -> int:
             reports_root=reports_root,
             provider_url=args.provider_url,
             model=args.model,
-            provider_profile_name=parse_task309_provider_profile_name(args.provider_profile),
-            provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            provider_profile_name=parse_answer_key_provider_profile_name(args.provider_profile),
+            provider_runtime=parse_answer_key_provider_runtime(args.provider_runtime),
             context_window_tokens=defaults.context_window_tokens,
             max_output_tokens=defaults.max_output_tokens,
             temperature=defaults.temperature,
@@ -316,7 +316,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Launch or dry-run the persistent Hemma-local llama.cpp provider.",
     )
     _add_provider_args(llama_launch)
-    llama_launch.set_defaults(provider_profile=Task309ProviderProfileName.QWEN36_LLAMA_CPP.value)
+    llama_launch.set_defaults(provider_profile=AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP.value)
     llama_launch.add_argument("--model", default=None)
     llama_launch.add_argument("--output-root", type=Path, default=None)
     llama_launch.add_argument("--server-binary", default=QWEN36_LLAMA_CPP_SERVER_BINARY)
@@ -401,7 +401,7 @@ def _add_provider_args(parser: argparse.ArgumentParser) -> None:
 def _add_provider_runtime_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--provider-runtime",
-        choices=task309_provider_runtime_values(),
+        choices=answer_key_provider_runtime_values(),
         default=None,
         help=(
             "Structured provider runtime. llama.cpp runtimes are restricted to "
@@ -413,8 +413,8 @@ def _add_provider_runtime_arg(parser: argparse.ArgumentParser) -> None:
 def _add_provider_profile_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--provider-profile",
-        choices=task309_provider_profile_values(),
-        default=Task309ProviderProfileName.GRANITE_VLLM.value,
+        choices=answer_key_provider_profile_values(),
+        default=AnswerKeyProviderProfileName.GRANITE_VLLM.value,
         help="Named provider defaults to apply before explicit CLI overrides.",
     )
 
@@ -431,9 +431,9 @@ def _apply_provider_defaults(args: argparse.Namespace) -> None:
         args.reports_root = defaults.reports_root
 
 
-def _provider_defaults(args: argparse.Namespace) -> Task309ProviderDefaults:
-    profile = getattr(args, "provider_profile", Task309ProviderProfileName.GRANITE_VLLM.value)
-    return task309_defaults_for_provider_profile(profile)
+def _provider_defaults(args: argparse.Namespace) -> AnswerKeyProviderDefaults:
+    profile = getattr(args, "provider_profile", AnswerKeyProviderProfileName.GRANITE_VLLM.value)
+    return answer_key_defaults_for_provider_profile(profile)
 
 
 def _set_default(args: argparse.Namespace, name: str, value: object) -> None:
@@ -448,7 +448,10 @@ def _expected_model_id(args: argparse.Namespace) -> str | None:
 
 def _required_process_args(args: argparse.Namespace) -> tuple[str, ...]:
     defaults = _provider_defaults(args)
-    if defaults.profile_name == Task309ProviderProfileName.QWEN36_LLAMA_CPP:
+    if defaults.profile_name in (
+        AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP,
+        AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP,
+    ):
         return qwen36_llama_required_process_args()
     return ()
 
@@ -567,8 +570,8 @@ def _launch_llama_provider(
 ) -> Task309LlamaProviderLaunchResult:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
-    plan = build_task309_llama_provider_launch_plan(
-        provider_profile=Task309ProviderProfileName(provider_profile),
+    plan = build_answer_key_llama_provider_launch_plan(
+        provider_profile=AnswerKeyProviderProfileName(provider_profile),
         provider_url=provider_url,
         model=model,
         port=port,
@@ -580,7 +583,7 @@ def _launch_llama_provider(
         dry_run=not execute,
     )
     result = launch_task309_llama_provider(plan)
-    json_path, markdown_path = write_task309_llama_provider_launch_artifacts(
+    json_path, markdown_path = write_answer_key_llama_provider_launch_artifacts(
         output_root=output_root,
         result=result,
     )
@@ -644,7 +647,7 @@ def _write_request_shape_preview(
 ) -> None:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
-    json_path, markdown_path = write_task309_request_shape_preview(
+    json_path, markdown_path = write_answer_key_request_shape_preview(
         output_root=output_root,
         preview=preview,
     )

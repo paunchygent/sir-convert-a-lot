@@ -27,7 +27,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
 CHOICE_PROMPT_TEMPLATE_VERSION = "digiexam_choice_answer_key_prompt_v1"
 GAP_FILL_PROMPT_TEMPLATE_VERSION = "digiexam_gap_fill_answer_key_prompt_v1"
 ANSWER_KEY_COMPLETION_SAFETY_MARGIN_TOKENS = 256
-ANSWER_KEY_COMPLETION_MAX_OUTPUT_TOKENS = 512
+ANSWER_KEY_COMPLETION_MAX_OUTPUT_TOKENS = 4096
 ANSWER_KEY_COMPLETION_SYSTEM_PROMPT = (
     "You propose only structured answer-key candidates for one exam item. "
     "Return no rationale, confidence, prose, or source/provenance claims."

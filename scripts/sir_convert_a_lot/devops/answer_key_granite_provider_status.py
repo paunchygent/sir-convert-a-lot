@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_CACHE_PATHS,
     DEFAULT_PROVIDER_CONTAINER_NAME,
     DEFAULT_PROVIDER_PORT,

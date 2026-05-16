@@ -8,7 +8,8 @@ Relationships:
     - Complements the Granite/vLLM Docker launch surface without replacing it.
     - Writes persistent pid/log artifacts under the governed Task 309 output
       root so the provider remains observable after the CLI exits.
-    - Uses the named provider defaults from `task309_structured_provider_profiles`.
+    - Uses the named provider defaults from
+      `infrastructure.answer_key_local_model_profiles`.
 """
 
 from __future__ import annotations
@@ -19,19 +20,19 @@ import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
-    TASK309_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
+    ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
     TASK309_PROVIDER_PERSISTENT_POLICY,
     Task309LlamaProviderLaunchPlan,
     Task309LlamaProviderLaunchResult,
 )
-from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     QWEN36_LLAMA_CPP_HF_FILE,
     QWEN36_LLAMA_CPP_HF_REPO,
     QWEN36_LLAMA_CPP_PROVIDER_URL,
     QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS,
     QWEN36_LLAMA_CPP_SERVER_BINARY,
-    Task309ProviderProfileName,
+    AnswerKeyProviderProfileName,
 )
 
 LLAMA_PROVIDER_HOST = "127.0.0.1"
@@ -39,9 +40,9 @@ LLAMA_PROVIDER_CONTEXT_TOKENS = "32768"
 LLAMA_PROVIDER_TEMPERATURE = "0.15"
 
 
-def build_task309_llama_provider_launch_plan(
+def build_answer_key_llama_provider_launch_plan(
     *,
-    provider_profile: Task309ProviderProfileName,
+    provider_profile: AnswerKeyProviderProfileName,
     provider_url: str = QWEN36_LLAMA_CPP_PROVIDER_URL,
     model: str,
     port: int,
@@ -89,7 +90,7 @@ def build_task309_llama_provider_launch_plan(
         log_path.as_posix(),
     )
     return Task309LlamaProviderLaunchPlan(
-        schema_version=TASK309_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
         generated_at=_utc_now_iso(),
         provider_profile=provider_profile.value,
         provider_url=provider_url,
@@ -178,7 +179,7 @@ def _result(
     error_kind: str | None,
 ) -> Task309LlamaProviderLaunchResult:
     return Task309LlamaProviderLaunchResult(
-        schema_version=TASK309_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
         launched_at=_utc_now_iso(),
         provider_profile=plan.provider_profile,
         dry_run=plan.dry_run,

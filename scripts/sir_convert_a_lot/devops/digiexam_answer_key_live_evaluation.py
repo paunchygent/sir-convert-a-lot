@@ -21,9 +21,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task309_provider_run_metadata import (
-    load_task309_provider_run_metadata_from_report,
-    structured_profile_from_task309_provider_run_metadata,
+from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
+    load_answer_key_provider_run_metadata_from_report,
+    structured_profile_from_answer_key_provider_run_metadata,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     answer_key_candidate_planner_for_profile,
@@ -202,10 +202,10 @@ def evaluate_task309_advisory_reports(
     goldens = _load_goldens(expected_answer_manifest_path)
     manifest_items = _load_manifest_items(validation_manifest_path)
     item_contexts = _load_item_contexts(expected_answer_manifest_path.parent)
-    provider_run_metadata = load_task309_provider_run_metadata_from_report(
+    provider_run_metadata = load_answer_key_provider_run_metadata_from_report(
         run_report_path=run_report_path
     )
-    diagnostic_profile = structured_profile_from_task309_provider_run_metadata(
+    diagnostic_profile = structured_profile_from_answer_key_provider_run_metadata(
         provider_run_metadata
     )
     report_paths = tuple(sorted(reports_root.glob("*.answer-key-completion-report.json")))

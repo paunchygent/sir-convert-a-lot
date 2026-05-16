@@ -5,9 +5,9 @@ Purpose:
     provider status and preflight reports.
 
 Relationships:
-    - Used by `task309_granite_provider_status` for non-mutating runtime
+    - Used by `answer_key_granite_provider_status` for non-mutating runtime
       probes.
-    - Used by `task309_granite_provider_reporting` for retained JSON and
+    - Used by `answer_key_provider_reporting` for retained JSON and
       Markdown artifacts.
     - Mirrors the Hemma GPU runtime runbook checks without carrying command
       execution logic.
@@ -17,10 +17,10 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-TASK309_PROVIDER_STATUS_SCHEMA_VERSION = "task309_granite_provider_status_v1"
+TASK309_PROVIDER_STATUS_SCHEMA_VERSION = "answer_key_granite_provider_status_v1"
 TASK309_HEMMA_PREFLIGHT_SCHEMA_VERSION = "task309_granite_hemma_preflight_v1"
 TASK309_PROVIDER_PERSISTENT_POLICY = "leave_running_until_operator_stop"
-TASK309_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION = "task309_llama_provider_launch_v1"
+ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION = "task309_llama_provider_launch_v1"
 DEFAULT_PROVIDER_URL = "http://127.0.0.1:8017"
 DEFAULT_PROVIDER_CONTAINER_NAME = "sir-convert-task309-granite-vllm"
 DEFAULT_PROVIDER_PORT = 8017

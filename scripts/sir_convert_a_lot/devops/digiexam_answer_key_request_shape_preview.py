@@ -20,22 +20,9 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_PROVIDER_MODEL,
     DEFAULT_PROVIDER_URL,
-)
-from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
-    DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
-    DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
-    DEFAULT_TASK309_PROVIDER_RUNTIME,
-    DEFAULT_TASK309_TEMPERATURE,
-    Task309StructuredProviderRuntime,
-    build_task309_provider_profile,
-)
-from scripts.sir_convert_a_lot.devops.task309_vision_assets import (
-    Task309VisionCandidatePlanner,
-    export_task309_vision_assets,
-    vision_item_assets_by_id,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     answer_key_candidate_planner_for_profile,
@@ -52,11 +39,23 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     build_digiexam_intermediate_exam,
 )
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import StructuredLLMOutputMode
+from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
+    DEFAULT_ANSWER_KEY_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_ANSWER_KEY_MAX_OUTPUT_TOKENS,
+    DEFAULT_ANSWER_KEY_PROVIDER_RUNTIME,
+    DEFAULT_ANSWER_KEY_TEMPERATURE,
+    AnswerKeyStructuredProviderRuntime,
+    build_answer_key_provider_profile,
+)
+from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
+    DigiExamVisionCandidatePlanner,
+    export_digiexam_answer_key_vision_assets,
+)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
     build_structured_llm_payload,
 )
 
-TASK309_REQUEST_SHAPE_PREVIEW_SCHEMA_VERSION = "task309_request_shape_preview_v1"
+ANSWER_KEY_REQUEST_SHAPE_PREVIEW_SCHEMA_VERSION = "task309_request_shape_preview_v1"
 
 
 @dataclass(frozen=True)
@@ -108,15 +107,15 @@ class Task309RequestShapePreview:
         return _json_object(asdict(self))
 
 
-def build_task309_request_shape_preview(
+def build_answer_key_request_shape_preview(
     *,
     corpus_root: Path,
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
-    provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
-    context_window_tokens: int = DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
-    max_output_tokens: int = DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
-    temperature: float = DEFAULT_TASK309_TEMPERATURE,
+    provider_runtime: AnswerKeyStructuredProviderRuntime = DEFAULT_ANSWER_KEY_PROVIDER_RUNTIME,
+    context_window_tokens: int = DEFAULT_ANSWER_KEY_CONTEXT_WINDOW_TOKENS,
+    max_output_tokens: int = DEFAULT_ANSWER_KEY_MAX_OUTPUT_TOKENS,
+    temperature: float = DEFAULT_ANSWER_KEY_TEMPERATURE,
     supports_multimodal_vision: bool = False,
     vision_media_path: Path = Path(
         "build/verification/task-309-request-shape-preview/vision-assets"
@@ -124,7 +123,7 @@ def build_task309_request_shape_preview(
 ) -> Task309RequestShapePreview:
     """Build a provider-free preview of the exact live request shape."""
 
-    profile = build_task309_provider_profile(
+    profile = build_answer_key_provider_profile(
         runtime=provider_runtime,
         model=model,
         context_window_tokens=context_window_tokens,
@@ -151,18 +150,17 @@ def build_task309_request_shape_preview(
     item_count = 0
     for source_path in sorted(corpus_root.glob("*.dxe")):
         exam = build_digiexam_intermediate_exam(parser.parse_file(source_path))
-        vision_export = (
-            export_task309_vision_assets(
+        item_assets_by_id = (
+            export_digiexam_answer_key_vision_assets(
                 exam=exam,
-                source_filename=source_path.name,
                 media_path=vision_media_path,
             )
             if profile.capabilities.supports_multimodal_vision
-            else None
+            else {}
         )
-        planner = Task309VisionCandidatePlanner(
+        planner = DigiExamVisionCandidatePlanner(
             base_planner=base_planner,
-            item_assets_by_id=vision_item_assets_by_id(vision_export) if vision_export else {},
+            item_assets_by_id=item_assets_by_id,
         )
         item_count += len(exam.items)
         for item in exam.items:
@@ -198,16 +196,8 @@ def build_task309_request_shape_preview(
                 profile=plan.provider_profile or profile,
                 request=plan.request,
             )
-            vision_assets = (
-                vision_item_assets_by_id(vision_export).get(item.item_id)
-                if vision_export is not None
-                else None
-            )
-            preview_path = (
-                vision_assets.preview.relative_path
-                if vision_assets is not None and vision_assets.preview is not None
-                else None
-            )
+            item_assets_by_id.get(item.item_id)
+            preview_path = None
             issues = _shape_issues(
                 item=item,
                 user_payload=user_payload,
@@ -251,7 +241,7 @@ def build_task309_request_shape_preview(
             )
     issue_counts = Counter(issue for row in rows for issue in row.issues)
     return Task309RequestShapePreview(
-        schema_version=TASK309_REQUEST_SHAPE_PREVIEW_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_REQUEST_SHAPE_PREVIEW_SCHEMA_VERSION,
         corpus_root=corpus_root.as_posix(),
         provider_url=provider_url,
         model=model,
@@ -268,7 +258,7 @@ def build_task309_request_shape_preview(
     )
 
 
-def write_task309_request_shape_preview(
+def write_answer_key_request_shape_preview(
     *,
     output_root: Path,
     preview: Task309RequestShapePreview,

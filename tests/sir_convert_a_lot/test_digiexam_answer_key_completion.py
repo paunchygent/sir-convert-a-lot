@@ -15,11 +15,17 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
+from pathlib import Path
 
+import pytest
 from pydantic import JsonValue
 
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion import (
     build_digiexam_answer_key_completion_report,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
+    answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
     DigiExamAnswerKeyCompletionDecisionState,
@@ -35,6 +41,7 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
     StructuredLLMBackendFailureCode,
     StructuredLLMEndpointKind,
+    StructuredLLMImageURLContentPart,
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderError,
@@ -43,8 +50,16 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMResponse,
     StructuredLLMRoutePolicy,
 )
+from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
+    DigiExamVisionCandidatePlanner,
+    export_digiexam_answer_key_vision_assets,
+)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
     build_structured_llm_payload,
+)
+
+_EMBEDDED_IMAGE_DXE = Path(
+    "inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/sanitized-embedded-image.dxe"
 )
 
 
@@ -466,6 +481,140 @@ def test_provider_failure_becomes_manual_follow_up_without_raw_capture() -> None
     assert "Beta" not in rendered_report
 
 
+def test_image_item_stays_manual_follow_up_without_vision_provider() -> None:
+    provider = _FakeProvider(
+        {
+            "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["bild"]}],
+        }
+    )
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_embedded_image_gap_exam(),
+            provider_set=StructuredChatProviderSet(primary=_llama_cpp_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    assert provider.requests == []
+    assert report.items[0].decision_state == (
+        DigiExamAnswerKeyCompletionDecisionState.MANUAL_FOLLOW_UP_REQUIRED
+    )
+    assert (
+        report.items[0].backend_failure_code
+        == DigiExamAnswerKeyCompletionFailureCode.UNSUPPORTED_ASSETS.value
+    )
+
+
+def test_image_item_uses_multimodal_request_when_vision_provider_is_enabled(
+    tmp_path: Path,
+) -> None:
+    provider = _FakeProvider(
+        {
+            "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["bild"]}],
+        }
+    )
+    profile = _llama_cpp_vision_profile()
+    exam = _embedded_image_gap_exam()
+    item_assets = export_digiexam_answer_key_vision_assets(
+        exam=exam,
+        media_path=tmp_path / "answer-key-vision-assets",
+    )
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=exam,
+            provider_set=StructuredChatProviderSet(primary=profile),
+            route_policy=_route_policy(),
+            provider=provider,
+            candidate_planner=DigiExamVisionCandidatePlanner(
+                base_planner=answer_key_candidate_planner_for_profile(profile),
+                item_assets_by_id=item_assets,
+            ),
+        )
+    )
+    request = provider.requests[0]
+    payload = report_to_json_payload(report)
+    rendered_report = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+    assert request.max_output_tokens == 4096
+    assert len(request.user_content_parts) == 2
+    image_part = request.user_content_parts[1]
+    assert isinstance(image_part, StructuredLLMImageURLContentPart)
+    assert image_part.url.startswith("file://item-001/assets/")
+    assert (tmp_path / "answer-key-vision-assets" / "item-001" / "assets").is_dir()
+    assert report.items[0].answer_payload == {
+        "kind": "gap_fill",
+        "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["bild"]}],
+    }
+    assert "content_base64" not in rendered_report
+    assert "iVBORw0KGgo" not in rendered_report
+    assert "Look at the embedded prompt image" not in rendered_report
+
+
+def test_invalid_image_asset_does_not_call_vision_provider(tmp_path: Path) -> None:
+    provider = _FakeProvider(
+        {
+            "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["bild"]}],
+        }
+    )
+    profile = _llama_cpp_vision_profile()
+    exam = _embedded_image_gap_exam(image_payload="not-base64")
+    item_assets = export_digiexam_answer_key_vision_assets(
+        exam=exam,
+        media_path=tmp_path / "answer-key-vision-assets",
+    )
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=exam,
+            provider_set=StructuredChatProviderSet(primary=profile),
+            route_policy=_route_policy(),
+            provider=provider,
+            candidate_planner=DigiExamVisionCandidatePlanner(
+                base_planner=answer_key_candidate_planner_for_profile(profile),
+                item_assets_by_id=item_assets,
+            ),
+        )
+    )
+
+    assert provider.requests == []
+    assert item_assets == {}
+    assert (
+        report.items[0].backend_failure_code
+        == DigiExamAnswerKeyCompletionFailureCode.UNRELIABLE_STRUCTURE.value
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "unsupported_media",
+        "missing_payload",
+        "invalid_base64",
+        "sha_mismatch",
+        "broken_reference",
+    ),
+)
+def test_vision_asset_export_rejects_unsupported_or_inconsistent_images(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    exam = _mutated_embedded_image_exam(mutation)
+
+    item_assets = export_digiexam_answer_key_vision_assets(
+        exam=exam,
+        media_path=tmp_path / "answer-key-vision-assets",
+    )
+
+    assert item_assets == {}
+    assert not (tmp_path / "answer-key-vision-assets").exists()
+
+
 class _FakeProvider:
     """Fake structured provider returning one response for every request."""
 
@@ -550,6 +699,28 @@ def _llama_cpp_profile(*, context_window_tokens: int = 4096) -> StructuredLLMPro
             supports_json_schema=True,
             supports_gbnf=True,
             supports_vllm_structured_choice=False,
+        ),
+    )
+
+
+def _llama_cpp_vision_profile(
+    *,
+    context_window_tokens: int = 32768,
+) -> StructuredLLMProviderProfile:
+    return StructuredLLMProviderProfile(
+        provider_id="local-llama-cpp",
+        model="qwen3.6-27b-q6k",
+        endpoint_kind=StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.JSON_SCHEMA,
+        is_remote=False,
+        context_window_tokens=context_window_tokens,
+        max_output_tokens=4096,
+        temperature=0.15,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=True,
+            supports_vllm_structured_choice=False,
+            supports_multimodal_vision=True,
         ),
     )
 
@@ -681,3 +852,38 @@ def _two_gap_payload() -> dict[str, object]:
             }
         ]
     }
+
+
+def _embedded_image_gap_exam(
+    *,
+    image_payload: str | None = None,
+) -> DigiExamIntermediateExam:
+    payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RuntimeError("Embedded image fixture has no root object.")
+    if image_payload is not None:
+        payload["exams"][0]["questions"][0]["images"][0] = image_payload
+    return _exam(payload)
+
+
+def _mutated_embedded_image_exam(mutation: str) -> DigiExamIntermediateExam:
+    exam = _embedded_image_gap_exam()
+    item = exam.items[0]
+    asset = item.embedded_assets[0]
+    if mutation == "unsupported_media":
+        changed_asset = replace(asset, media_type="image/gif")
+        changed_item = replace(item, embedded_assets=(changed_asset,))
+    elif mutation == "missing_payload":
+        changed_asset = replace(asset, content_base64="")
+        changed_item = replace(item, embedded_assets=(changed_asset,))
+    elif mutation == "invalid_base64":
+        changed_asset = replace(asset, content_base64="not-base64")
+        changed_item = replace(item, embedded_assets=(changed_asset,))
+    elif mutation == "sha_mismatch":
+        changed_asset = replace(asset, sha256="0" * 64)
+        changed_item = replace(item, embedded_assets=(changed_asset,))
+    elif mutation == "broken_reference":
+        changed_item = replace(item, embedded_asset_references=())
+    else:
+        raise RuntimeError(f"Unsupported mutation: {mutation}")
+    return replace(exam, items=(changed_item,))

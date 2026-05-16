@@ -96,11 +96,12 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   follow-ups. Granite/vLLM is demoted after the first live corpus run and
   direct probes showed unacceptable wrong-but-valid answer quality. Devstral
   Small on `llama.cpp` is also demoted after the full Task 309 corpus run.
-  Qwen3.6-27B-Q6_K on `llama.cpp` is the current guarded model choice for the
-  next service-backed validation lane, while still blocked from automatic
-  promotion by 3 wrong-but-valid suggestions. The Task 309 runner now supports
-  llama.cpp JSON Schema and GBNF-grammar constrained JSON runtimes only. A
-  Task 309 eval-only Qwen3.6 vision path now exports supported embedded
+  Qwen3.6-27B-Q6_K on `llama.cpp` is the current local model of choice right
+  now, while still guarded advisory and blocked from automatic promotion by 3
+  wrong-but-valid suggestions. Task 319 is the productionization authority for
+  moving Qwen3.6 vision-capable advisory completion into the main pipeline.
+  The Task 309 runner now supports llama.cpp JSON Schema and GBNF-grammar
+  constrained JSON runtimes only. A Task 309 eval-only Qwen3.6 vision path now exports supported embedded
   PNG/JPEG assets under `<output-root>/vision-assets`, renders per-item
   human-review preview HTML, sends llama.cpp multimodal `image_url` parts, and
   raises teacher-verified scored goldens from 42 to 44 without changing default
@@ -175,8 +176,8 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   `wrong_but_valid_count == 0` is **not met**. Temperature `0.15` was
   task-optimal (card-default `0.7` gave 38/4). Prompt engineering hit a hard
   ceiling on 3 persistent knowledge-boundary failures. Qwen3.6 is the current
-  model of choice for guarded advisory validation, not automatic answer-key
-  application.
+  local model of choice right now, with guarded advisory output and no
+  automatic answer-key application.
 - 2026-05-16 Devstral Small final: **34 correct, 8 wrong-but-valid, 2
   manual-follow-up** out of 44 eligible scored items. Devstral is demoted for
   this Swedish educational route.

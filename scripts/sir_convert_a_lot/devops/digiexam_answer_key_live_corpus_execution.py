@@ -22,34 +22,19 @@ from pathlib import Path
 
 import httpx
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
+from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_status import (
+    build_task309_provider_status,
+)
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_PROVIDER_MODEL,
     DEFAULT_PROVIDER_URL,
 )
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_status import (
-    build_task309_provider_status,
-)
-from scripts.sir_convert_a_lot.devops.task309_provider_exchange_capture import (
+from scripts.sir_convert_a_lot.devops.answer_key_provider_exchange_capture import (
     Task309CapturingStructuredChatProvider,
     Task309ProviderExchange,
 )
-from scripts.sir_convert_a_lot.devops.task309_provider_run_metadata import (
-    build_task309_provider_run_metadata,
-)
-from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
-    DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
-    DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
-    DEFAULT_TASK309_PROVIDER_RUNTIME,
-    DEFAULT_TASK309_TEMPERATURE,
-    Task309ProviderProfileName,
-    Task309StructuredProviderRuntime,
-    build_task309_provider_profile,
-    task309_defaults_for_provider_profile,
-)
-from scripts.sir_convert_a_lot.devops.task309_vision_assets import (
-    Task309VisionCandidatePlanner,
-    export_task309_vision_assets,
-    vision_item_assets_by_id,
+from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
+    build_answer_key_provider_run_metadata,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion import (
     build_digiexam_answer_key_completion_report,
@@ -70,6 +55,20 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
     StructuredLLMRoutePolicy,
+)
+from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
+    DEFAULT_ANSWER_KEY_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_ANSWER_KEY_MAX_OUTPUT_TOKENS,
+    DEFAULT_ANSWER_KEY_PROVIDER_RUNTIME,
+    DEFAULT_ANSWER_KEY_TEMPERATURE,
+    AnswerKeyProviderProfileName,
+    AnswerKeyStructuredProviderRuntime,
+    answer_key_defaults_for_provider_profile,
+    build_answer_key_provider_profile,
+)
+from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
+    DigiExamVisionCandidatePlanner,
+    export_digiexam_answer_key_vision_assets,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
@@ -116,11 +115,11 @@ def run_task309_advisory_corpus(
     reports_root: Path,
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
-    provider_profile_name: Task309ProviderProfileName = Task309ProviderProfileName.GRANITE_VLLM,
-    provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
-    context_window_tokens: int = DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
-    max_output_tokens: int = DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
-    temperature: float = DEFAULT_TASK309_TEMPERATURE,
+    provider_profile_name: AnswerKeyProviderProfileName = AnswerKeyProviderProfileName.GRANITE_VLLM,
+    provider_runtime: AnswerKeyStructuredProviderRuntime = DEFAULT_ANSWER_KEY_PROVIDER_RUNTIME,
+    context_window_tokens: int = DEFAULT_ANSWER_KEY_CONTEXT_WINDOW_TOKENS,
+    max_output_tokens: int = DEFAULT_ANSWER_KEY_MAX_OUTPUT_TOKENS,
+    temperature: float = DEFAULT_ANSWER_KEY_TEMPERATURE,
     supports_multimodal_vision: bool = False,
     vision_media_path: Path | None = None,
     require_provider_ready: bool = True,
@@ -153,8 +152,8 @@ async def _run_task309_advisory_corpus(
     reports_root: Path,
     provider_url: str,
     model: str,
-    provider_profile_name: Task309ProviderProfileName,
-    provider_runtime: Task309StructuredProviderRuntime,
+    provider_profile_name: AnswerKeyProviderProfileName,
+    provider_runtime: AnswerKeyStructuredProviderRuntime,
     context_window_tokens: int,
     max_output_tokens: int,
     temperature: float,
@@ -165,7 +164,7 @@ async def _run_task309_advisory_corpus(
 ) -> Task309AdvisoryCorpusRunReport:
     from urllib.parse import urlparse
 
-    profile = build_task309_provider_profile(
+    profile = build_answer_key_provider_profile(
         runtime=provider_runtime,
         model=model,
         context_window_tokens=context_window_tokens,
@@ -177,8 +176,8 @@ async def _run_task309_advisory_corpus(
         supports_multimodal_vision=profile.capabilities.supports_multimodal_vision,
         vision_media_path=vision_media_path,
     )
-    defaults = task309_defaults_for_provider_profile(provider_profile_name.value)
-    provider_run_metadata = build_task309_provider_run_metadata(
+    defaults = answer_key_defaults_for_provider_profile(provider_profile_name.value)
+    provider_run_metadata = build_answer_key_provider_run_metadata(
         profile_name=provider_profile_name,
         defaults=defaults,
         provider_url=provider_url,
@@ -222,17 +221,15 @@ async def _run_task309_advisory_corpus(
         )
         for source_path in files:
             exam = build_digiexam_intermediate_exam(parser.parse_file(source_path))
-            vision_export = (
-                export_task309_vision_assets(
+            item_assets_by_id = (
+                export_digiexam_answer_key_vision_assets(
                     exam=exam,
-                    source_filename=source_path.name,
                     media_path=resolved_vision_media_path,
                 )
                 if resolved_vision_media_path is not None
-                else None
+                else {}
             )
-            item_assets_by_id = vision_item_assets_by_id(vision_export) if vision_export else {}
-            candidate_planner = Task309VisionCandidatePlanner(
+            candidate_planner = DigiExamVisionCandidatePlanner(
                 base_planner=answer_key_candidate_planner_for_profile(profile),
                 item_assets_by_id=item_assets_by_id,
             )
@@ -294,7 +291,7 @@ def _blocked_corpus_report(
     corpus_root: Path,
     provider_url: str,
     model: str,
-    provider_runtime: Task309StructuredProviderRuntime,
+    provider_runtime: AnswerKeyStructuredProviderRuntime,
     provider_run_metadata: dict[str, object],
     file_count: int,
 ) -> Task309AdvisoryCorpusRunReport:

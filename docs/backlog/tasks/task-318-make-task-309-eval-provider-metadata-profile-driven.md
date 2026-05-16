@@ -121,7 +121,7 @@ and vision media path produced the reports being adjudicated.
 ## Closeout
 
 Implemented a profile-driven Task 309 provider-run metadata contract in
-`scripts/sir_convert_a_lot/devops/task309_provider_run_metadata.py`.
+`scripts/sir_convert_a_lot/devops/answer_key_provider_run_metadata.py`.
 `run-advisory-corpus` now writes the selected provider profile/runtime
 metadata into `in-process-advisory-corpus-run.json`, and
 `evaluate-advisory-corpus` carries that artifact-sourced metadata into both
@@ -133,8 +133,8 @@ falling back to Granite or any other default.
 
 Validation:
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_run_hemma_wrapper.py tests/sir_convert_a_lot/test_hemma_server_command_guards.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_run_hemma_wrapper.py tests/sir_convert_a_lot/test_hemma_server_command_guards.py`
 - `pdm run typecheck-all`
 
 ## Design Notes

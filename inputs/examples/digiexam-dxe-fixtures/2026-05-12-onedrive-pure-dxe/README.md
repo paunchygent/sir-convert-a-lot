@@ -18,6 +18,6 @@ Tracked metadata:
 - `expected-answer-worklist.json` lists the 42 eligible items that still need
   teacher-verified goldens before scoring.
 
-Use `pdm run task-309-answer-key-live prepare-manifests` to regenerate the
+Use `pdm run answer-key-live-validation digiexam prepare-manifests` to regenerate the
 tracked manifest/worklist, or pass `--output-root build/verification/...` for
 scratch copies during live-run preparation.

@@ -5,9 +5,9 @@ Purpose:
     Granite/vLLM provider used by Task 309 live answer-key validation.
 
 Relationships:
-    - Uses `task309_granite_provider_contracts` for the retained launch plan
+    - Uses `answer_key_provider_contracts` for the retained launch plan
       and launch result contracts.
-    - Complements `task309_granite_provider_status`, which verifies the
+    - Complements `answer_key_granite_provider_status`, which verifies the
       launched provider without stopping or cleaning it up.
     - Follows the Hemma GPU runtime runbook: localhost-only host bind,
       scratch-backed Hugging Face cache, ROCm devices, and disabled request
@@ -19,7 +19,7 @@ from __future__ import annotations
 import subprocess
 from datetime import UTC, datetime
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_PROVIDER_CONTAINER_CACHE,
     DEFAULT_PROVIDER_CONTAINER_NAME,
     DEFAULT_PROVIDER_GPU_MEMORY_UTILIZATION,
@@ -33,8 +33,8 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
     Task309ProviderLaunchResult,
 )
 
-TASK309_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION = "task309_granite_provider_launch_plan_v1"
-TASK309_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION = "task309_granite_provider_launch_result_v1"
+ANSWER_KEY_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION = "task309_granite_provider_launch_plan_v1"
+ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION = "task309_granite_provider_launch_result_v1"
 DEFAULT_CONTAINER_PORT = 8000
 DOCKER_COMMAND_PREFIX = ("sudo", "-n", "docker")
 HEMMA_VIDEO_GROUP_ID = "44"
@@ -96,7 +96,7 @@ def build_task309_provider_launch_plan(
         "--disable-log-requests",
     )
     return Task309ProviderLaunchPlan(
-        schema_version=TASK309_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION,
         generated_at=_utc_now_iso(),
         container_name=container_name,
         image=image,
@@ -116,7 +116,7 @@ def launch_task309_provider(plan: Task309ProviderLaunchPlan) -> Task309ProviderL
 
     if plan.dry_run:
         return Task309ProviderLaunchResult(
-            schema_version=TASK309_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
+            schema_version=ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
             launched_at=_utc_now_iso(),
             container_name=plan.container_name,
             dry_run=True,
@@ -140,7 +140,7 @@ def launch_task309_provider(plan: Task309ProviderLaunchPlan) -> Task309ProviderL
         return _failed_launch(plan, error_kind="TimeoutExpired")
     container_id = result.stdout.strip() if result.returncode == 0 else None
     return Task309ProviderLaunchResult(
-        schema_version=TASK309_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
         launched_at=_utc_now_iso(),
         container_name=plan.container_name,
         dry_run=False,
@@ -158,7 +158,7 @@ def _failed_launch(
     error_kind: str,
 ) -> Task309ProviderLaunchResult:
     return Task309ProviderLaunchResult(
-        schema_version=TASK309_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
         launched_at=_utc_now_iso(),
         container_name=plan.container_name,
         dry_run=plan.dry_run,

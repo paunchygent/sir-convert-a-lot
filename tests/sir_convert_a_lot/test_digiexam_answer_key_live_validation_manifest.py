@@ -17,20 +17,15 @@ from pathlib import Path
 
 import pytest
 
-from scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation import (
-    main as task309_runner_main,
+from scripts.sir_convert_a_lot.devops import run_answer_key_live_validation
+from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
+    build_answer_key_provider_run_metadata,
 )
-from scripts.sir_convert_a_lot.devops.task309_live_execution import (
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_corpus_execution import (
     Task309AdvisoryCorpusRunReport,
 )
-from scripts.sir_convert_a_lot.devops.task309_provider_run_metadata import (
-    build_task309_provider_run_metadata,
-)
-from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
-    Task309ProviderProfileName,
-    Task309StructuredProviderRuntime,
-    build_task309_provider_profile,
-    task309_defaults_for_provider_profile,
+from scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation import (
+    main as task309_runner_main,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
     TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION,
@@ -46,6 +41,12 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manife
     build_task309_live_validation_manifest,
     write_task309_json,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
+    AnswerKeyProviderProfileName,
+    AnswerKeyStructuredProviderRuntime,
+    answer_key_defaults_for_provider_profile,
+    build_answer_key_provider_profile,
+)
 
 _CORPUS_ROOT = Path("inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe")
 _EXPECTED_ANSWER_MANIFEST = _CORPUS_ROOT / "expected-answer-manifest.json"
@@ -59,6 +60,21 @@ _FORBIDDEN_MARKERS = (
     "system_prompt",
     "user_payload",
 )
+
+
+def test_answer_key_live_validation_dispatches_to_digiexam_source(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    received: list[list[str]] = []
+
+    def fake_digiexam_main(argv: list[str] | None = None) -> int:
+        received.append(list(argv or []))
+        return 0
+
+    monkeypatch.setattr(run_answer_key_live_validation, "digiexam_main", fake_digiexam_main)
+
+    assert run_answer_key_live_validation.main(["digiexam", "status"]) == 0
+    assert received == [["status"]]
 
 
 def test_task309_manifest_records_versioned_fixture_corpus() -> None:
@@ -298,7 +314,7 @@ def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
     ) -> Task309AdvisoryCorpusRunReport:
         captured.update(kwargs)
         provider_runtime = kwargs["provider_runtime"]
-        assert isinstance(provider_runtime, Task309StructuredProviderRuntime)
+        assert isinstance(provider_runtime, AnswerKeyStructuredProviderRuntime)
         return Task309AdvisoryCorpusRunReport(
             schema_version="task309_granite_advisory_corpus_run_v1",
             provider_url=str(kwargs["provider_url"]),
@@ -317,7 +333,7 @@ def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
             asset_eligible_count=0,
             multimodal_request_count=0,
             provider_run_metadata=_provider_run_metadata_payload(
-                profile_name=Task309ProviderProfileName.QWEN36_LLAMA_CPP,
+                profile_name=AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP,
                 reports_root=reports_root,
                 vision_media_path=output_root / "vision-assets",
             ),
@@ -326,7 +342,7 @@ def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
         )
 
     monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation"
+        "scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation"
         ".run_task309_advisory_corpus",
         fake_run_task309_advisory_corpus,
     )
@@ -411,7 +427,7 @@ def test_task309_provider_launch_surface_dry_runs_persistent_vllm_command(tmp_pa
     assert "127.0.0.1:8017:8000" in command
 
 
-def test_task309_llama_provider_launch_surface_dry_runs_hemma_local_command(
+def test_answer_key_llama_provider_launch_surface_dry_runs_hemma_local_command(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -535,7 +551,7 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
         {
             "schema_version": "task309_granite_advisory_corpus_run_v1",
             "provider_run_metadata": _provider_run_metadata_payload(
-                profile_name=Task309ProviderProfileName.QWEN36_LLAMA_CPP,
+                profile_name=AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP,
                 reports_root=reports_root,
                 vision_media_path=output_root / "vision-assets",
             ),
@@ -568,7 +584,7 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
     assert metadata["provider_runtime"] == "llama-cpp-json-schema"
     assert metadata["default_output_mode"] == "json_schema"
     assert metadata["context_window_tokens"] == 32768
-    assert metadata["max_output_tokens"] == 512
+    assert metadata["max_output_tokens"] == 4096
     assert metadata["temperature"] == 0.15
     assert _object(metadata["capabilities"])["supports_multimodal_vision"] is True
     assert _object(metadata["request_settings"])["context_window_tokens"] == 32768
@@ -709,12 +725,12 @@ def _count_map(value: object) -> dict[str, int]:
 
 def _provider_run_metadata_payload(
     *,
-    profile_name: Task309ProviderProfileName,
+    profile_name: AnswerKeyProviderProfileName,
     reports_root: Path,
     vision_media_path: Path | None,
 ) -> dict[str, object]:
-    defaults = task309_defaults_for_provider_profile(profile_name.value)
-    profile = build_task309_provider_profile(
+    defaults = answer_key_defaults_for_provider_profile(profile_name.value)
+    profile = build_answer_key_provider_profile(
         runtime=defaults.provider_runtime,
         model=defaults.model,
         context_window_tokens=defaults.context_window_tokens,
@@ -722,7 +738,7 @@ def _provider_run_metadata_payload(
         temperature=defaults.temperature,
         supports_multimodal_vision=defaults.permits_vision_assets,
     )
-    return build_task309_provider_run_metadata(
+    return build_answer_key_provider_run_metadata(
         profile_name=profile_name,
         defaults=defaults,
         provider_url=defaults.provider_url,

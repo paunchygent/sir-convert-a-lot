@@ -6,10 +6,10 @@ Purpose:
     run.
 
 Relationships:
-    - Built from `task309_structured_provider_profiles` provider defaults and
-      the selected `StructuredLLMProviderProfile`.
-    - Written by `task309_live_execution` into retained run artifacts.
-    - Read by `task309_live_evaluation` so adjudication evidence describes the
+    - Built from `infrastructure.answer_key_local_model_profiles` provider
+      defaults and the selected `StructuredLLMProviderProfile`.
+    - Written by `answer_key_live_corpus_execution` into retained run artifacts.
+    - Read by `answer_key_live_evaluation` so adjudication evidence describes the
       evaluated provider without reconstructing a hardcoded model.
 """
 
@@ -19,23 +19,23 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
-    Task309ProviderDefaults,
-    Task309ProviderProfileName,
-    Task309ProviderSetting,
-    Task309StructuredProviderRuntime,
-    build_task309_provider_profile,
-    task309_defaults_for_provider_profile,
-    task309_provider_profile_values,
-)
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMEndpointKind,
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderProfile,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
+    AnswerKeyProviderDefaults,
+    AnswerKeyProviderProfileName,
+    AnswerKeyProviderSetting,
+    AnswerKeyStructuredProviderRuntime,
+    answer_key_defaults_for_provider_profile,
+    answer_key_provider_profile_values,
+    build_answer_key_provider_profile,
+)
 
-TASK309_PROVIDER_RUN_METADATA_SCHEMA_VERSION = "task309_provider_run_metadata_v1"
+ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION = "task309_provider_run_metadata_v1"
 
 
 @dataclass(frozen=True)
@@ -95,12 +95,12 @@ class Task309ProviderRunMetadata:
         return _canonical_json(self.to_payload())
 
 
-def build_task309_provider_run_metadata(
+def build_answer_key_provider_run_metadata(
     *,
-    profile_name: Task309ProviderProfileName,
-    defaults: Task309ProviderDefaults,
+    profile_name: AnswerKeyProviderProfileName,
+    defaults: AnswerKeyProviderDefaults,
     provider_url: str,
-    provider_runtime: Task309StructuredProviderRuntime,
+    provider_runtime: AnswerKeyStructuredProviderRuntime,
     profile: StructuredLLMProviderProfile,
     reports_root: Path,
     vision_media_path: Path | None,
@@ -115,7 +115,7 @@ def build_task309_provider_run_metadata(
     if vision_media_path is not None:
         launch_settings["vision_media_path"] = vision_media_path.as_posix()
     return Task309ProviderRunMetadata(
-        schema_version=TASK309_PROVIDER_RUN_METADATA_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION,
         available=True,
         metadata_source=metadata_source,
         profile_name=profile_name.value,
@@ -138,14 +138,14 @@ def build_task309_provider_run_metadata(
     )
 
 
-def unavailable_task309_provider_run_metadata(
+def unavailable_answer_key_provider_run_metadata(
     *,
     metadata_source: str,
 ) -> Task309ProviderRunMetadata:
     """Return explicit unavailable metadata for legacy report-only evaluation."""
 
     return Task309ProviderRunMetadata(
-        schema_version=TASK309_PROVIDER_RUN_METADATA_SCHEMA_VERSION,
+        schema_version=ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION,
         available=False,
         metadata_source=metadata_source,
         profile_name=None,
@@ -168,16 +168,18 @@ def unavailable_task309_provider_run_metadata(
     )
 
 
-def load_task309_provider_run_metadata_from_report(
+def load_answer_key_provider_run_metadata_from_report(
     *,
     run_report_path: Path | None,
 ) -> Task309ProviderRunMetadata:
     """Load provider metadata from a retained run report path when available."""
 
     if run_report_path is None:
-        return unavailable_task309_provider_run_metadata(metadata_source="run_report_not_provided")
+        return unavailable_answer_key_provider_run_metadata(
+            metadata_source="run_report_not_provided"
+        )
     if not run_report_path.exists():
-        return unavailable_task309_provider_run_metadata(
+        return unavailable_answer_key_provider_run_metadata(
             metadata_source=f"run_report_missing:{run_report_path.as_posix()}"
         )
     payload = json.loads(run_report_path.read_text(encoding="utf-8"))
@@ -191,7 +193,7 @@ def load_task309_provider_run_metadata_from_report(
         )
     if not isinstance(metadata, dict):
         raise ValueError("Task 309 provider_run_metadata must be an object.")
-    return task309_provider_run_metadata_from_payload(metadata)
+    return answer_key_provider_run_metadata_from_payload(metadata)
 
 
 def _metadata_from_legacy_run_report(
@@ -203,7 +205,7 @@ def _metadata_from_legacy_run_report(
     provider_url = _optional_str(payload, "provider_url")
     provider_runtime = _optional_str(payload, "provider_runtime")
     if model is None or provider_url is None or provider_runtime is None:
-        return unavailable_task309_provider_run_metadata(
+        return unavailable_answer_key_provider_run_metadata(
             metadata_source=f"provider_run_metadata_missing:{run_report_path.as_posix()}"
         )
     defaults = _profile_defaults_matching_legacy_run(
@@ -212,10 +214,10 @@ def _metadata_from_legacy_run_report(
         provider_runtime=provider_runtime,
     )
     if defaults is None:
-        return unavailable_task309_provider_run_metadata(
+        return unavailable_answer_key_provider_run_metadata(
             metadata_source=f"provider_run_metadata_unmatched:{run_report_path.as_posix()}"
         )
-    profile = build_task309_provider_profile(
+    profile = build_answer_key_provider_profile(
         runtime=defaults.provider_runtime,
         model=model,
         context_window_tokens=defaults.context_window_tokens,
@@ -226,7 +228,7 @@ def _metadata_from_legacy_run_report(
     output_root = run_report_path.parent
     vision_media_path = output_root / "vision-assets" if defaults.permits_vision_assets else None
     reports_root = _legacy_reports_root(payload=payload, output_root=output_root)
-    return build_task309_provider_run_metadata(
+    return build_answer_key_provider_run_metadata(
         profile_name=defaults.profile_name,
         defaults=defaults,
         provider_url=provider_url,
@@ -243,9 +245,9 @@ def _profile_defaults_matching_legacy_run(
     model: str,
     provider_url: str,
     provider_runtime: str,
-) -> Task309ProviderDefaults | None:
-    for profile_value in task309_provider_profile_values():
-        defaults = task309_defaults_for_provider_profile(profile_value)
+) -> AnswerKeyProviderDefaults | None:
+    for profile_value in answer_key_provider_profile_values():
+        defaults = answer_key_defaults_for_provider_profile(profile_value)
         if (
             defaults.model == model
             and defaults.provider_url == provider_url
@@ -268,7 +270,7 @@ def _legacy_reports_root(
     return output_root / "advisory-corpus-reports"
 
 
-def task309_provider_run_metadata_from_payload(
+def answer_key_provider_run_metadata_from_payload(
     payload: dict[str, object],
 ) -> Task309ProviderRunMetadata:
     """Parse provider metadata from a JSON object."""
@@ -297,7 +299,7 @@ def task309_provider_run_metadata_from_payload(
     )
 
 
-def structured_profile_from_task309_provider_run_metadata(
+def structured_profile_from_answer_key_provider_run_metadata(
     metadata: Task309ProviderRunMetadata,
 ) -> StructuredLLMProviderProfile | None:
     """Rehydrate a generic provider profile from metadata for diagnostics."""
@@ -361,7 +363,7 @@ def _output_mode_policy_payload(profile: StructuredLLMProviderProfile) -> dict[s
 
 def _request_settings_payload(
     *,
-    defaults: Task309ProviderDefaults,
+    defaults: AnswerKeyProviderDefaults,
     profile: StructuredLLMProviderProfile,
 ) -> dict[str, object]:
     payload = _settings_payload(defaults.request_settings)
@@ -371,7 +373,7 @@ def _request_settings_payload(
     return payload
 
 
-def _settings_payload(settings: tuple[Task309ProviderSetting, ...]) -> dict[str, object]:
+def _settings_payload(settings: tuple[AnswerKeyProviderSetting, ...]) -> dict[str, object]:
     payload: dict[str, object] = {}
     for setting in settings:
         payload[setting.key] = _json_value(setting.value)

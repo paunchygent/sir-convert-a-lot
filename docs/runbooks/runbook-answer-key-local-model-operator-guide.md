@@ -198,15 +198,16 @@ candidate selection.
   should not be mixed.
 - Current llama.cpp support is not interchangeable across model generations.
   Qwen3.5 required a newer build that recognizes `qwen35`.
-- Qwen3.6 27B Q6_K was the first tested local model to answer the Swedish
+- Qwen3.6 27B Q6_K is the current local model of choice right now. It was the
+  first tested local model to answer the Swedish
   criminal-liability-age word-bank gap correctly as `15` with the flat JSON
   schema and word-bank enum shape. Full-corpus validation on 2026-05-16
   produced **39 correct, 3 wrong-but-valid, 2 manual-follow-up** out of 44
   eligible scored items. The 3 wrong-but-valid items are persistent reasoning
   failures (Swedish legal-actor confusion, multiple-response select-all bias,
   biology term abbreviation) that prompt engineering did not resolve. It is the
-  current model of choice for guarded advisory validation, not an automatic
-  answer-key promotion.
+  current model of choice for guarded advisory validation, not automatic
+  answer-key application.
 - Devstral-Small-2-24B-Q6_K_XL (`temp=0.1`, `top_p=0.9`, `top_k=40`, `--jinja`,
   16k context) on 2026-05-16 produced **34 correct, 8 wrong-but-valid, 2
   manual-follow-up** out of 44 eligible scored items. It fails items Qwen3.6
@@ -226,16 +227,23 @@ candidate selection.
 - Cache hygiene matters. Downloads must land on Scratch, and root-owned Docker
   or Hugging Face cache entries may require `sudo -n rm -rf` when the operator
   explicitly asks to clear promoted local model caches.
+- Remove superseded local model caches promptly after the operator has
+  preserved the validation result and selected the active local runtime lane.
+  On 2026-05-16 the non-MTP Qwen3.6 cache
+  (`models--unsloth--Qwen3.6-27B-GGUF`, 22 GB) and the Devstral cache
+  (`models--unsloth--Devstral-Small-2-24B-Instruct-2512-GGUF`, 21 GB) were
+  removed after Qwen3.6 remained the current local model choice and Devstral was
+  demoted. Scratch usage dropped from 74 % to 65 %.
 - Keep service exposure narrow. All probe servers in this lane bind to
   `127.0.0.1`; public-edge mirror validation belongs to the governed service
   validation task, not ad hoc model probing.
 
 ## Evaluation Command Surface
 
-The committed CLI is `pdm run task-309-answer-key-live`. When Codex is already
+The committed CLI is `pdm run answer-key-live-validation`. When Codex is already
 running directly on Hemma, run that command locally from the Hemma checkout; do
 not wrap it in an SSH tunnel. From a non-Hemma workstation, use
-`pdm run run-hemma -- pdm run task-309-answer-key-live ...`.
+`pdm run run-hemma -- pdm run answer-key-live-validation ...`.
 
 | Subcommand | Purpose | Where |
 |---|---|---|
@@ -271,32 +279,32 @@ Run in this order from the Hemma checkout for the Qwen3.6 lane. Artifacts go to
 
 ```bash
 ## 1. Goldens and request shape, no provider calls
-pdm run task-309-answer-key-live validate-goldens \
+pdm run answer-key-live-validation digiexam validate-goldens \
   --provider-profile qwen36-llama-cpp \
   --fail-on-blocked
 
-pdm run task-309-answer-key-live preview-request-shape \
+pdm run answer-key-live-validation digiexam preview-request-shape \
   --provider-profile qwen36-llama-cpp \
   --fail-on-blocked
 
 ## 2. Start persistent localhost-only llama.cpp provider
-pdm run task-309-answer-key-live launch-llama-provider \
+pdm run answer-key-live-validation digiexam launch-llama-provider \
   --provider-profile qwen36-llama-cpp \
   --execute \
   --fail-on-blocked
 
-pdm run task-309-answer-key-live provider-status \
+pdm run answer-key-live-validation digiexam provider-status \
   --provider-profile qwen36-llama-cpp \
   --timeout-seconds 20 \
   --fail-on-blocked
 
 ## 3. Live probes and full advisory corpus
-pdm run task-309-answer-key-live microprobes \
+pdm run answer-key-live-validation digiexam microprobes \
   --provider-profile qwen36-llama-cpp \
   --timeout-seconds 60 \
   --fail-on-blocked
 
-pdm run task-309-answer-key-live run-advisory-corpus \
+pdm run answer-key-live-validation digiexam run-advisory-corpus \
   --provider-profile qwen36-llama-cpp \
   --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports \
   --timeout-seconds 90 \
@@ -304,7 +312,7 @@ pdm run task-309-answer-key-live run-advisory-corpus \
 
 ## 4. Golden evaluation. Do not pass --fail-on-blocked for guarded Qwen3.6;
 ## wrong-but-valid rows remain review evidence, not auto-promotion proof.
-pdm run task-309-answer-key-live evaluate-advisory-corpus \
+pdm run answer-key-live-validation digiexam evaluate-advisory-corpus \
   --provider-profile qwen36-llama-cpp \
   --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports
 ```

@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
   - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
   - docs/backlog/tasks/task-313-audit-solid-domain-coupling-and-implementation-branch-hotspots-across-exam-converter-surfaces.md
+  - docs/backlog/tasks/task-319-enable-qwen3-6-vision-capable-advisory-answer-key-completion-in-the-main-pipeline.md
   - docs/reference/ref-exam-converter-solid-domain-coupling-audit.md
   - scripts/sir_convert_a_lot/domain/digiexam_answer_key_live_validation_manifest.py
   - scripts/sir_convert_a_lot/domain/digiexam_answer_key_completion_candidates.py
@@ -46,6 +47,9 @@ state through separate branch logic.
   by both live execution planning and the Task 309 validation manifest.
 - Preserve Task 309 manifest fields and counts while deriving them from the
   shared decision surface.
+- Include embedded-asset/vision eligibility as a policy input so text-only
+  providers retain the 42-item default corpus while Qwen3.6 vision-capable
+  runs can explicitly allow the 44 scored items proven by Task 309.
 - Introduce a typed source-evidence family/provenance mapper for DigiExam DXE,
   graded-result PDF correct labels, teacher overlay, and reviewed completion
   evidence.
@@ -58,6 +62,8 @@ state through separate branch logic.
 
 - [ ] Shared answer-key candidate eligibility/output-mode classifier.
 - [ ] Task 309 manifest generation wired to the shared classifier.
+- [ ] Shared embedded-asset/vision eligibility policy preserving separate
+  text-only and vision-capable outcomes.
 - [ ] Typed source-evidence family/provenance mapper.
 - [ ] Adapter and gap-contract tests proving existing classifications are
   unchanged.
@@ -68,6 +74,9 @@ state through separate branch logic.
   one domain service or policy object rather than duplicated in manifest code.
 - [ ] Task 309 output-mode counts still distinguish vLLM choice from JSON
   Schema exactly as the governed planner policy requires.
+- [ ] Text-only validation/advisory policy keeps embedded-asset rows skipped as
+  `unsupported_assets`; Qwen3.6 vision-capable policy can include supported
+  PNG/JPEG embedded assets without changing source provenance.
 - [ ] Adding a new source-evidence family requires changing one mapper, not
   multiple string-check helpers.
 - [ ] LLM completion lineage remains candidate metadata and never becomes

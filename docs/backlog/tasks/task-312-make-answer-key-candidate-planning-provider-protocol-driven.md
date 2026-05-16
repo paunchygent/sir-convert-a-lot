@@ -113,7 +113,7 @@ generic answer-key orchestration.
 
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py`
 - `pdm run format-all`
 - `pdm run lint-fix`
 - `pdm run typecheck-all`

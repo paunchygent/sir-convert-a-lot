@@ -50,6 +50,7 @@ STRUCTURED_LLM_PROVIDER_OUTPUT_MODE_KEY = "output_mode"
 STRUCTURED_LLM_PROVIDER_IS_REMOTE_KEY = "is_remote"
 STRUCTURED_LLM_PROVIDER_CONTEXT_WINDOW_TOKENS_KEY = "context_window_tokens"
 STRUCTURED_LLM_PROVIDER_MAX_OUTPUT_TOKENS_KEY = "max_output_tokens"
+STRUCTURED_LLM_PROVIDER_TEMPERATURE_KEY = "temperature"
 STRUCTURED_LLM_PROVIDER_BASE_URL_KEY = "base_url"
 STRUCTURED_LLM_PROVIDER_API_KEY_ENV_KEY = "api_key_env"
 STRUCTURED_LLM_PROVIDER_EXTRA_HEADERS_KEY = "extra_headers"
@@ -58,6 +59,7 @@ STRUCTURED_LLM_PROVIDER_CAPABILITIES_KEY = "capabilities"
 STRUCTURED_LLM_CAPABILITY_JSON_SCHEMA_KEY = "supports_json_schema"
 STRUCTURED_LLM_CAPABILITY_GBNF_KEY = "supports_gbnf"
 STRUCTURED_LLM_CAPABILITY_VLLM_CHOICE_KEY = "supports_vllm_structured_choice"
+STRUCTURED_LLM_CAPABILITY_MULTIMODAL_VISION_KEY = "supports_multimodal_vision"
 
 _BOOL_TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
 _BOOL_FALSE_VALUES = frozenset({"0", "false", "no", "off"})
@@ -197,6 +199,12 @@ def _provider_profile_from_payload(
             STRUCTURED_LLM_PROVIDER_MAX_OUTPUT_TOKENS_KEY,
             provider_id,
         ),
+        temperature=_optional_float(
+            payload,
+            STRUCTURED_LLM_PROVIDER_TEMPERATURE_KEY,
+            provider_id,
+            default=0.0,
+        ),
         capabilities=_capabilities_from_payload(
             _required_mapping(payload, STRUCTURED_LLM_PROVIDER_CAPABILITIES_KEY, provider_id),
             provider_id=provider_id,
@@ -240,6 +248,12 @@ def _capabilities_from_payload(
             payload,
             STRUCTURED_LLM_CAPABILITY_VLLM_CHOICE_KEY,
             provider_id,
+        ),
+        supports_multimodal_vision=_optional_bool(
+            payload,
+            STRUCTURED_LLM_CAPABILITY_MULTIMODAL_VISION_KEY,
+            provider_id,
+            default=False,
         ),
     )
 
@@ -376,6 +390,23 @@ def _optional_str(
 
 def _required_bool(payload: Mapping[object, object], key: str, provider_id: str) -> bool:
     value = payload.get(key)
+    if not isinstance(value, bool):
+        raise ValueError(
+            f"{STRUCTURED_LLM_PROVIDERS_JSON_ENV}[{provider_id}].{key} must be a boolean."
+        )
+    return value
+
+
+def _optional_bool(
+    payload: Mapping[object, object],
+    key: str,
+    provider_id: str,
+    *,
+    default: bool,
+) -> bool:
+    value = payload.get(key)
+    if value is None:
+        return default
     if not isinstance(value, bool):
         raise ValueError(
             f"{STRUCTURED_LLM_PROVIDERS_JSON_ENV}[{provider_id}].{key} must be a boolean."

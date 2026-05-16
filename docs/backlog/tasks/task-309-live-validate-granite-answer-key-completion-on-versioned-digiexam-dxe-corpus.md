@@ -269,7 +269,7 @@ Task 311 owns the strict production service-backed mirror.
   rows.
 - Added `expected-answer-worklist.json` for the 42 eligible items that need
   teacher-verified goldens before scoring.
-- Added the initial `pdm run task-309-answer-key-live` command surface for
+- Added the initial `pdm run answer-key-live-validation` command surface for
   manifest preparation and status inspection.
 - Task 312 is the required pre-task for live execution: the advisory
   answer-key path now uses a provider-protocol candidate planner so
@@ -279,7 +279,7 @@ Task 311 owns the strict production service-backed mirror.
 - Filled and validated `expected-answer-manifest.json` for the 42 eligible
   scored items. The manifest is teacher-verified by repository review, not
   model-generated.
-- Extended `pdm run task-309-answer-key-live` with the live-run execution
+- Extended `pdm run answer-key-live-validation` with the live-run execution
   surface:
   `launch-provider`, `provider-status`, `hemma-preflight`, `microprobes`, and
   `run-advisory-corpus`.
@@ -375,9 +375,10 @@ Task 311 owns the strict production service-backed mirror.
   corpus with `provider_runtime=llama-cpp-json-schema`, `--ctx-size 32768`,
   `--reasoning off`, and task-optimal `temperature=0.15`. The final scored
   result was 39 correct, 3 wrong-but-valid, 2 manual-follow-up, and 273 skipped
-  source-bound-key items. The zero wrong-but-valid promotion gate remains
-  unmet, but Qwen3.6 is the current guarded model of choice for the next
-  service-backed validation lane.
+  source-bound-key items. Qwen3.6 is the current local model of choice right
+  now, but the zero wrong-but-valid promotion gate remains unmet; suggestions
+  stay guarded advisory until teacher review or a later governed decision
+  changes that risk posture.
 - Devstral-Small-2-24B-Instruct-2512-UD-Q6_K_XL was later live-validated
   against the same full Task 309 corpus through `llama-server` on
   `127.0.0.1:8082`. The final scored result was 34 correct, 8 wrong-but-valid,
@@ -407,24 +408,24 @@ Task 311 owns the strict production service-backed mirror.
 
 ## Validation Evidence
 
-- `pdm run task-309-answer-key-live prepare-manifests --output-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe`
-- `pdm run task-309-answer-key-live status --output-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe`
-- `pdm run task-309-answer-key-live validate-goldens --output-root build/verification/task-309-granite-answer-key-live --fail-on-blocked`
-- `pdm run task-309-answer-key-live launch-provider --output-root build/verification/task-309-granite-answer-key-live`
-- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation launch-provider --execute --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --fail-on-blocked`
-- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation provider-status --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --timeout-seconds 20 --fail-on-blocked`
-- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation hemma-preflight --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --timeout-seconds 20 --fail-on-blocked`
-- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation microprobes --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --timeout-seconds 60 --fail-on-blocked`
+- `pdm run answer-key-live-validation digiexam prepare-manifests --output-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe`
+- `pdm run answer-key-live-validation digiexam status --output-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe`
+- `pdm run answer-key-live-validation digiexam validate-goldens --output-root build/verification/task-309-granite-answer-key-live --fail-on-blocked`
+- `pdm run answer-key-live-validation digiexam launch-provider --output-root build/verification/task-309-granite-answer-key-live`
+- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation launch-provider --execute --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --fail-on-blocked`
+- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation provider-status --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --timeout-seconds 20 --fail-on-blocked`
+- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation hemma-preflight --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --timeout-seconds 20 --fail-on-blocked`
+- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation microprobes --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --timeout-seconds 60 --fail-on-blocked`
 - `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor launch --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live/resource-monitor --runtime-kind rocm --interval-seconds 10 --duration-seconds 3600`
-- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation run-advisory-corpus --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live/advisory-corpus-reports --timeout-seconds 90 --fail-on-blocked`
-- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation evaluate-advisory-corpus --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live/advisory-corpus-reports --fail-on-blocked`
+- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation run-advisory-corpus --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live/advisory-corpus-reports --timeout-seconds 90 --fail-on-blocked`
+- `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation evaluate-advisory-corpus --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live/advisory-corpus-reports --fail-on-blocked`
 - `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor stop --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live/resource-monitor`
 - `ssh hemma "sudo docker stop sir-convert-task309-granite-vllm"`
 - `ssh hemma "sudo docker stop huleedu_rst_parser_service huleedu_essay_embed_offload sir_convert_a_lot_prod"`
 - `ssh hemma "rocm-smi --showuse --showmemuse --showpidgpus 2>/dev/null || true"`
 - `ssh hemma "sudo docker ps --format '{{.Names}} {{.Status}}' | grep -E 'sir-convert-task309|rst_parser|essay_embed|sir_convert_a_lot_prod' || true"`
 - `ssh hemma "ps -eo pid,comm,args | grep -E 'vllm|llama|devstral|granite|rst_parser|essay_scoring|offload.server|sir_convert_a_lot.service' | grep -v grep || true"`
-- `pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation preview-request-shape --provider-runtime llama-cpp-gbnf --output-root build/verification/task-309-llama-cpp-shape-smoke --corpus-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe`
+- `pdm run python -m scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation preview-request-shape --provider-runtime llama-cpp-gbnf --output-root build/verification/task-309-llama-cpp-shape-smoke --corpus-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe`
 - `ssh hemma "readlink -f /home/paunchygent/models/active.gguf && cat /home/paunchygent/models/active-model.txt"`
 - `ssh hemma "systemctl status --no-pager llama-server-rocm.service || true"`
 - `ssh hemma "cd /home/paunchygent/llama.cpp-rocm && sudo docker buildx build --load -t llama.cpp-rocm:7.2.0 --build-arg LLAMA_CPP_COMMIT=68717eac3c081eec00bbb961c0e0e3c129a1790f ."`
@@ -438,13 +439,13 @@ Task 311 owns the strict production service-backed mirror.
   `provider_runtime=llama-cpp-json-schema` and
   `model=devstral-small-24b`: 34 correct, 8 wrong-but-valid,
   2 manual-follow-up, 273 skipped.
-- `pdm run task-309-answer-key-live validate-goldens --output-root build/verification/task-309-vision-eval-support --fail-on-blocked`
-- `pdm run task-309-answer-key-live preview-request-shape --provider-profile qwen36-llama-cpp --output-root build/verification/task-309-vision-eval-support --fail-on-blocked`
+- `pdm run answer-key-live-validation digiexam validate-goldens --output-root build/verification/task-309-vision-eval-support --fail-on-blocked`
+- `pdm run answer-key-live-validation digiexam preview-request-shape --provider-profile qwen36-llama-cpp --output-root build/verification/task-309-vision-eval-support --fail-on-blocked`
 - `jq '{attempted:.attempted_item_count, eligible:.manifest_eligible_item_count, issue:.issue_count, multimodal:([.items[]|select(.multimodal_request==true)]|length), asset_rows:[.items[]|select(.asset_eligible==true)|{source_filename,item_id,preview_artifact_path,multimodal_request,issues}]}' build/verification/task-309-vision-eval-support/request-shape-preview.json`
 - `rg -n "data-image-id|content_base64|base64" build/verification/task-309-vision-eval-support/request-shape-preview.json build/verification/task-309-vision-eval-support/vision-assets || true`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`
 - `pdm run format-all`
 - `pdm run lint-fix`
 - `pdm run typecheck-all`

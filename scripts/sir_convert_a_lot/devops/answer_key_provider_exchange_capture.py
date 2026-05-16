@@ -5,7 +5,7 @@ Purpose:
     Task 309 live runs while preserving the normal provider decoding contract.
 
 Relationships:
-    - Used by `task309_live_execution` for advisory corpus evidence.
+    - Used by `answer_key_live_corpus_execution` for advisory corpus evidence.
     - Delegates payload construction to the generic structured LLM payload
       builder used by production providers.
     - Keeps raw exchange retention isolated from normal answer-key completion

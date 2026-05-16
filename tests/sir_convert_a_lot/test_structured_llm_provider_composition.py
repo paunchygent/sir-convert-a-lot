@@ -31,6 +31,7 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     STRUCTURED_LLM_CAPABILITY_GBNF_KEY,
     STRUCTURED_LLM_CAPABILITY_JSON_SCHEMA_KEY,
+    STRUCTURED_LLM_CAPABILITY_MULTIMODAL_VISION_KEY,
     STRUCTURED_LLM_CAPABILITY_VLLM_CHOICE_KEY,
     STRUCTURED_LLM_ENABLED_ENV,
     STRUCTURED_LLM_FALLBACK_PROVIDER_ID_ENV,
@@ -45,6 +46,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     STRUCTURED_LLM_PROVIDER_MAX_OUTPUT_TOKENS_KEY,
     STRUCTURED_LLM_PROVIDER_MODEL_KEY,
     STRUCTURED_LLM_PROVIDER_OUTPUT_MODE_KEY,
+    STRUCTURED_LLM_PROVIDER_TEMPERATURE_KEY,
     STRUCTURED_LLM_PROVIDER_TIMEOUT_SECONDS_KEY,
     STRUCTURED_LLM_PROVIDERS_JSON_ENV,
     STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV,
@@ -104,6 +106,7 @@ def test_structured_llm_service_config_loads_provider_set_from_constants() -> No
         config.provider_set.primary.endpoint_kind == StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS
     )
     assert config.provider_set.primary.output_mode == StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE
+    assert config.provider_set.primary.temperature == 0.15
     assert config.provider_set.fallback is not None
     assert config.provider_set.fallback.is_remote is True
     assert config.connections["granite-local"].normalized_base_url == "http://127.0.0.1:8123/v1"
@@ -113,6 +116,17 @@ def test_structured_llm_service_config_loads_provider_set_from_constants() -> No
     assert policy.allow_remote_fallback is False
     assert policy.remote_providers_enabled is True
     assert policy.remote_fallback_policy_authorized is True
+
+
+def test_structured_llm_service_config_loads_multimodal_vision_capability() -> None:
+    env = _provider_env()
+
+    config = structured_llm_runtime_config_from_env(env)
+
+    assert config.provider_set is not None
+    assert config.provider_set.primary.capabilities.supports_multimodal_vision is True
+    assert config.provider_set.fallback is not None
+    assert config.provider_set.fallback.capabilities.supports_multimodal_vision is False
 
 
 def test_structured_llm_service_config_requires_local_primary() -> None:
@@ -184,6 +198,7 @@ def _provider_env(
                 supports_json_schema=True,
                 supports_gbnf=False,
                 supports_vllm_structured_choice=True,
+                supports_multimodal_vision=True,
             ),
         ),
         "remote-openai": _provider_payload(
@@ -233,7 +248,8 @@ def _provider_payload(
         STRUCTURED_LLM_PROVIDER_OUTPUT_MODE_KEY: output_mode.value,
         STRUCTURED_LLM_PROVIDER_IS_REMOTE_KEY: is_remote,
         STRUCTURED_LLM_PROVIDER_CONTEXT_WINDOW_TOKENS_KEY: 32768,
-        STRUCTURED_LLM_PROVIDER_MAX_OUTPUT_TOKENS_KEY: 512,
+        STRUCTURED_LLM_PROVIDER_MAX_OUTPUT_TOKENS_KEY: 4096,
+        STRUCTURED_LLM_PROVIDER_TEMPERATURE_KEY: 0.15,
         STRUCTURED_LLM_PROVIDER_BASE_URL_KEY: base_url,
         STRUCTURED_LLM_PROVIDER_TIMEOUT_SECONDS_KEY: timeout_seconds,
         STRUCTURED_LLM_PROVIDER_CAPABILITIES_KEY: {
@@ -241,6 +257,9 @@ def _provider_payload(
             STRUCTURED_LLM_CAPABILITY_GBNF_KEY: capabilities.supports_gbnf,
             STRUCTURED_LLM_CAPABILITY_VLLM_CHOICE_KEY: (
                 capabilities.supports_vllm_structured_choice
+            ),
+            STRUCTURED_LLM_CAPABILITY_MULTIMODAL_VISION_KEY: (
+                capabilities.supports_multimodal_vision
             ),
         },
     }

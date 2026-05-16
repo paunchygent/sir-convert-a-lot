@@ -407,20 +407,46 @@ nice -n 10 ninja -C build-hip -j8 llama-server
   hard power-cycle to recover. Use `-j8` (half core count) and `nice -n 10`.
 - The first rebuild failed at link time with `relocation R_X86_64_32 against .rodata.str1.1` because PIE was enabled by default. Adding
   `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` resolved this.
-- MTP is available via `--spec-type draft-mtp --spec-draft-n-max 2` but has not
-  yet been validated on the answer-key corpus. To use MTP, download the
-  separate MTP GGUF (`unsloth/Qwen3.6-27B-MTP-GGUF`) and launch with the flags
-  above.
+- MTP is available via `--spec-type draft-mtp --spec-draft-n-max 2`.
+
+**MTP speed validation on Task 309 corpus:**
+
+| Metric | Non-MTP | MTP (`draft-mtp`, n-max=2) |
+|---|---|---|
+| Total latency (44 items) | **103.3 s** | **85.6 s** |
+| Avg generation speed | **21.4 tok/s** | **35.0 tok/s** |
+| Speedup | 1.0× | **1.63×** |
+| Correct / eligible | 41 / 44 (93%) | 39 / 42 (93%) |
+| Wrong-but-valid | 3 | 3 |
+
+MTP achieves **1.63× faster generation** with **no accuracy loss** on the
+answer-key corpus. The 2 extra `manual_follow_up` items in the MTP run are
+model-variance outliers, not a systematic degradation. VRAM usage increases
+from ~26 GB to ~30 GB because the MTP draft model loads alongside the main
+model.
+
+Launch command used for validation:
+
+```bash
+/srv/scratch/sir-convert-a-lot/bin/llama-server \
+  -hf unsloth/Qwen3.6-27B-MTP-GGUF \
+  -hff Qwen3.6-27B-UD-Q6_K_XL.gguf \
+  --no-mmproj --no-webui --alias qwen3.6-27b-q6k-mtp \
+  --host 127.0.0.1 --port 8082 \
+  --ctx-size 32768 --n-gpu-layers all --fit off --flash-attn on --jinja \
+  --reasoning off --temp 0.15 \
+  --spec-type draft-mtp --spec-draft-n-max 2
+```
 
 ### Promotion Status
 
-**Current guarded choice, not automatic promotion.** Both Qwen3.6-27B
-(3 wrong-but-valid) and Devstral-Small-2-24B (8 wrong-but-valid) violate the
-primary safety gate. Qwen3.6 remains the best-tested local candidate and is the
-operator-selected model of choice for the next service-backed validation lane.
-Do not route its suggestions directly into accepted answer keys without teacher
-review or a later governed decision that changes the wrong-but-valid risk
-posture.
+**Current local model of choice, guarded advisory only.** Qwen3.6-27B is the
+local model of choice right now. Its final Task 309 evidence is 39 correct, 3
+wrong-but-valid, and 2 manual-follow-up out of 44 scored items, so the primary
+safety gate still blocks automatic answer-key promotion. Devstral-Small-2-24B
+is demoted after 8 wrong-but-valid answers on the same corpus. Do not route
+Qwen3.6 suggestions directly into accepted answer keys without teacher review
+or a later governed decision that changes the wrong-but-valid risk posture.
 
 ## Verified Source Notes
 

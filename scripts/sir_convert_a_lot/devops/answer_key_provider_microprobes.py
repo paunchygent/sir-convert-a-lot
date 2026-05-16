@@ -19,20 +19,12 @@ from pathlib import Path
 
 import httpx
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
-    DEFAULT_PROVIDER_MODEL,
-    DEFAULT_PROVIDER_URL,
-)
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_status import (
+from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_status import (
     build_task309_provider_status,
 )
-from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
-    DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
-    DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
-    DEFAULT_TASK309_PROVIDER_RUNTIME,
-    DEFAULT_TASK309_TEMPERATURE,
-    Task309StructuredProviderRuntime,
-    build_task309_provider_profile,
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
+    DEFAULT_PROVIDER_MODEL,
+    DEFAULT_PROVIDER_URL,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_gbnf import (
     choice_answer_key_decision_gbnf,
@@ -52,6 +44,14 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMResponse,
     StructuredLLMTextContentPart,
     StructuredOutputSpec,
+)
+from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
+    DEFAULT_ANSWER_KEY_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_ANSWER_KEY_MAX_OUTPUT_TOKENS,
+    DEFAULT_ANSWER_KEY_PROVIDER_RUNTIME,
+    DEFAULT_ANSWER_KEY_TEMPERATURE,
+    AnswerKeyStructuredProviderRuntime,
+    build_answer_key_provider_profile,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     HttpStructuredChatProvider,
@@ -99,10 +99,10 @@ def run_task309_microprobes(
     *,
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
-    provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
-    context_window_tokens: int = DEFAULT_TASK309_CONTEXT_WINDOW_TOKENS,
-    max_output_tokens: int = DEFAULT_TASK309_MAX_OUTPUT_TOKENS,
-    temperature: float = DEFAULT_TASK309_TEMPERATURE,
+    provider_runtime: AnswerKeyStructuredProviderRuntime = DEFAULT_ANSWER_KEY_PROVIDER_RUNTIME,
+    context_window_tokens: int = DEFAULT_ANSWER_KEY_CONTEXT_WINDOW_TOKENS,
+    max_output_tokens: int = DEFAULT_ANSWER_KEY_MAX_OUTPUT_TOKENS,
+    temperature: float = DEFAULT_ANSWER_KEY_TEMPERATURE,
     supports_multimodal_vision: bool = False,
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
@@ -130,7 +130,7 @@ async def _run_task309_microprobes(
     *,
     provider_url: str,
     model: str,
-    provider_runtime: Task309StructuredProviderRuntime,
+    provider_runtime: AnswerKeyStructuredProviderRuntime,
     context_window_tokens: int,
     max_output_tokens: int,
     temperature: float,
@@ -158,7 +158,7 @@ async def _run_task309_microprobes(
             blocked=True,
             results=(),
         )
-    profile = build_task309_provider_profile(
+    profile = build_answer_key_provider_profile(
         runtime=provider_runtime,
         model=model,
         context_window_tokens=context_window_tokens,

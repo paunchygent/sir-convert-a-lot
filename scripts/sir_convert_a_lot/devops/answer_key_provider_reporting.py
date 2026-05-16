@@ -5,7 +5,7 @@ Purpose:
     and persistent Granite/vLLM provider status reports.
 
 Relationships:
-    - Consumes contracts from `task309_granite_provider_contracts`.
+    - Consumes contracts from `answer_key_provider_contracts`.
     - Writes through the Task 309 manifest JSON helper so report formatting is
       deterministic across corpus, golden, and provider evidence.
     - Keeps artifact rendering separate from non-mutating Docker/ROCm probes.
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
+from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     Task309HemmaPreflight,
     Task309LlamaProviderLaunchResult,
     Task309ProviderLaunchResult,
@@ -68,7 +68,7 @@ def write_task309_provider_launch_artifacts(
     return json_path, markdown_path
 
 
-def write_task309_llama_provider_launch_artifacts(
+def write_answer_key_llama_provider_launch_artifacts(
     *,
     output_root: Path,
     result: Task309LlamaProviderLaunchResult,

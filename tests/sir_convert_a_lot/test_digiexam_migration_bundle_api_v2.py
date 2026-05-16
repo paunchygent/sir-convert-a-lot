@@ -51,6 +51,7 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import DigiExamAnswerKeyCompletio
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
     StructuredLLMEndpointKind,
+    StructuredLLMImageURLContentPart,
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderProfile,
@@ -290,6 +291,74 @@ def test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts
     assert "source_provided" not in rendered_report
     assert "teacher_provided" not in rendered_report
     assert "reviewed" not in rendered_report
+
+
+def test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_image_urls: list[str] = []
+
+    async def advisory_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self
+        del profile
+        content_parts = request.user_content_parts
+        assert request.max_output_tokens == 4096
+        assert len(content_parts) == 2
+        image_part = content_parts[1]
+        assert isinstance(image_part, StructuredLLMImageURLContentPart)
+        provider_image_urls.append(image_part.url)
+        return StructuredLLMResponse(
+            content={
+                "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["bild"]}],
+            },
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        advisory_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, structured_llm=_qwen36_vision_structured_llm_config())
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-vision-advisory",
+        idempotency_key="idem-digiexam-vision-advisory-report",
+        wait_seconds=20,
+        payload=_embedded_image_gap_payload(),
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED
+        ).value,
+    )
+
+    assert response.status_code == 200
+    job_id = response.json()["job"]["job_id"]
+    headers = _headers(identity, subject="teacher-vision-advisory", grants=_read_grants())
+    completion_report = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/answer_key_completion_report",
+        headers=headers,
+    ).json()
+    rendered_report = json.dumps(completion_report, ensure_ascii=False, sort_keys=True)
+
+    assert len(provider_image_urls) == 1
+    assert provider_image_urls[0].startswith("file://item-001/assets/")
+    assert provider_image_urls[0].endswith(".png")
+    assert completion_report["items"][0]["decision_state"] == "suggested"
+    assert completion_report["items"][0]["answer_payload"] == {
+        "kind": "gap_fill",
+        "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["bild"]}],
+    }
+    assert "content_base64" not in rendered_report
+    assert "iVBORw0KGgo" not in rendered_report
+    assert "Look at the embedded prompt image" not in rendered_report
 
 
 def test_digiexam_migration_reviewed_completion_apply_uses_overlay_without_provider(
@@ -1363,6 +1432,35 @@ def _structured_llm_config() -> StructuredLLMRuntimeConfig:
     )
 
 
+def _qwen36_vision_structured_llm_config() -> StructuredLLMRuntimeConfig:
+    profile = StructuredLLMProviderProfile(
+        provider_id="qwen36-local-vision",
+        model="qwen3.6-27b-q6k",
+        endpoint_kind=StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.JSON_SCHEMA,
+        is_remote=False,
+        context_window_tokens=32768,
+        max_output_tokens=4096,
+        temperature=0.15,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=True,
+            supports_vllm_structured_choice=False,
+            supports_multimodal_vision=True,
+        ),
+    )
+    return StructuredLLMRuntimeConfig(
+        enabled=True,
+        provider_set=StructuredChatProviderSet(primary=profile),
+        connections={
+            profile.provider_id: StructuredLLMProviderConnection(
+                provider_id=profile.provider_id,
+                base_url="http://127.0.0.1:8123",
+            )
+        },
+    )
+
+
 def _read_grants() -> set[str]:
     return {"sir-convert:jobs:read-own", "sir-convert:artifacts:read-own"}
 
@@ -1609,6 +1707,13 @@ def _embedded_image_payload() -> dict[str, object]:
     question["type"] = 0
     question["blanks"] = []
     return payload
+
+
+def _embedded_image_gap_payload() -> dict[str, object]:
+    loaded_payload = json.loads(_EMBEDDED_IMAGE_DXE.read_text(encoding="utf-8"))
+    if not isinstance(loaded_payload, dict):
+        raise RuntimeError("Embedded image fixture has no root object")
+    return {str(key): value for key, value in loaded_payload.items()}
 
 
 def _item_013_payload() -> dict[str, object]:

@@ -365,7 +365,7 @@ def _request(
     user_payload_text = _canonical_json(user_payload)
     system_prompt = system_prompt_for_answer_key_item(item.item_type)
     max_output_tokens = (
-        min(ANSWER_KEY_COMPLETION_MAX_OUTPUT_TOKENS, profile.max_output_tokens)
+        profile.max_output_tokens
         if profile is not None
         else ANSWER_KEY_COMPLETION_MAX_OUTPUT_TOKENS
     )
