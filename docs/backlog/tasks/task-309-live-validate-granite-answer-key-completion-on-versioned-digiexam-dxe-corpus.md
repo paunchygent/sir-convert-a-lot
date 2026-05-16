@@ -416,6 +416,14 @@ Task 311 owns the strict production service-backed mirror.
   manifest coverage, 44/44 eligible coverage, and zero missing or unexpected
   refs. The JSON proof SHA-256 is
   `79a6d3349fe43c1add67b515b1070cbc797184fb5da6cbe18bba633c5cfcf551`.
+- Closed the remaining Task 319 live-provider proof on Hemma. The final
+  `qwen36-llama-cpp` provider status reports `ready=true`,
+  `localhost_only=true`, `expected_model_present=true`,
+  `llama_required_args_present=true`, and `no_cpu_fallback_proved=true`.
+  The server log proves `mmproj-F16.gguf` was loaded and the tiny vision
+  microprobe image was read from the configured `vision-assets` media path.
+  The final microprobe report has `blocked=false`, `provider_ready=true`, and
+  all choice, gap, and vision probes `ok=true`.
 
 ## Validation Evidence
 
@@ -458,6 +466,8 @@ Task 311 owns the strict production service-backed mirror.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_composition.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_vision_provider_without_media_root_fails_closed`
 - `pdm run run-hemma -- pdm run answer-key-live-validation digiexam evaluate-advisory-corpus --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports`
+- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam provider-status --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --timeout-seconds 20 --fail-on-blocked`
+- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam microprobes --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --timeout-seconds 60 --fail-on-blocked`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`
 - `pdm run format-all`
 - `pdm run lint-fix`

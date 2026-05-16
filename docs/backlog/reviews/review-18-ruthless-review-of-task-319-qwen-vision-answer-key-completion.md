@@ -21,7 +21,7 @@ labels:
   - qwen
   - vision
   - llama-cpp
-  - changes-requested
+  - approved
 ---
 
 Structured review artifact for implementation or readiness checks.
@@ -240,33 +240,42 @@ Structured review artifact for implementation or readiness checks.
 - The static launch plan includes the core expected Qwen llama.cpp settings:
   localhost bind, `--ctx-size 32768`, full GPU layers, `--fit off`,
   `--flash-attn on`, `--jinja`, `--reasoning off`, `--temp 0.15`,
-  `--offline`, `--media-path`, and a persistent log file. This is not accepted
-  as runtime proof until the live status and vision microprobe pass.
+  `--offline`, `--media-path`, and a persistent log file.
+- The final Hemma live proof closes the runtime blocker: provider status reports
+  `ready=true`, `localhost_only=true`, `expected_model_present=true`,
+  `llama_required_args_present=true`, and `no_cpu_fallback_proved=true`.
+- The live llama.cpp server log proves multimodal projector loading from
+  `mmproj-F16.gguf`, local `file://` image loading from the configured
+  `vision-assets` media path, and image processing during the vision
+  microprobe.
+- The final microprobe report is fully green: choice, gap, and vision probes
+  all report `ok=true`, `blocked=false`, `provider_ready=true`, and
+  `provider_runtime=llama-cpp-json-schema`.
 
 ## Decision
 
-changes_requested
+approved
 
 ## Response
 
-Partial remediation has been applied after the original review pass.
+The original blocker is remediated and verified.
 
-Task 319 now has the local service media-root contract needed for a persistent
-vision-capable llama.cpp provider to read production job images. The remaining
-approval blocker is live Hemma runtime proof: the current Hemma checkout and
-provider process still need to be synced/launched through the merge-only
-workflow and verified with provider-status plus a successful Qwen vision
-microprobe.
+Task 319 now has the service media-root contract needed for a persistent
+vision-capable llama.cpp provider to read production job images, the Hemma
+checkout is synced to the reviewed revision, the Qwen3.6 provider is live with
+the multimodal projector loaded, and provider-status plus microprobes prove the
+runtime lane end to end.
 
 ## Follow-up Actions
 
-1. Sync Hemma to the reviewed Task 319 revision, launch or verify the
-   `qwen36-llama-cpp` provider, and retain provider-status plus vision
-   microprobe reports that prove the actual runtime settings.
+1. None for Task 319 review closure. Future promotion remains governed by the
+   retained Qwen3.6 corpus quality result: 41 correct, 3 wrong-but-valid, 0
+   manual-follow-up, 273 skipped.
 
 ## Completion
 
-Review retained on 2026-05-16 with `changes_requested`.
+Review retained on 2026-05-16 with `changes_requested`, then closed as
+`approved` on 2026-05-16 after live Hemma status and microprobe proof passed.
 
 Validation evidence:
 
@@ -298,6 +307,35 @@ Validation evidence:
   -> wrote provider status with `ready=false`; no Qwen llama.cpp container,
   process, listener, expected model, required args, or no-CPU-fallback proof was
   present.
+- `pdm run run-hemma -- git rev-parse HEAD`
+  -> `43929cb1a38a7805601774bf2354959cfe5d3039`.
+- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam launch-llama-provider --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --execute --fail-on-blocked`
+  -> launched persistent localhost-only llama.cpp provider with
+  `-hf unsloth/Qwen3.6-27B-GGUF:default`, `--media-path`, and
+  `--offline`.
+- `pdm run run-hemma -- tail -140 /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/qwen3.6-27b-q6k-llama-server.log`
+  -> server loaded `mmproj-F16.gguf`, listened on
+  `http://127.0.0.1:8082`, loaded the tiny vision probe from the configured
+  `vision-assets` path, and processed the image.
+- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam provider-status --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --timeout-seconds 20 --fail-on-blocked`
+  -> wrote `provider-status.json` with `ready=true`,
+  `localhost_only=true`, `localhost_tcp_listener=true`,
+  `expected_model_present=true`, `llama_process_present=true`,
+  `llama_required_args_present=true`, and `no_cpu_fallback_proved=true`.
+- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam microprobes --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --timeout-seconds 60 --fail-on-blocked`
+  -> wrote `provider-microprobes.json` with `blocked=false`,
+  `provider_ready=true`, and all three probes green:
+  `microprobe-choice-object`, `microprobe-gap-object`, and
+  `microprobe-vision-object` all `ok=true`.
+- `pdm run run-hemma -- shasum -a 256 /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/provider-status.json /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/provider-status.md /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/provider-microprobes.json /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/provider-microprobes.md`
+  -> status JSON
+  `5c02a74930aed94fa686903b2411135911c47a0877ae575486c06bdd4a64f9a5`,
+  status Markdown
+  `26e5f2ae663553397809a6db711f64125cbdc736ef05064adcf1412f7cf617f8`,
+  microprobe JSON
+  `f86a66f8f983668d74875cb12b36934e2f638d585207cc44f4a1f68a3b4ab385`,
+  microprobe Markdown
+  `c66ae421e491cb6e96724cb8d42de40b2ecfa3da4648f8585f45716eba9f0561`.
 
 ## Checklist
 
@@ -305,4 +343,4 @@ Validation evidence:
 - [x] Decision recorded
 - [x] Response recorded
 - [x] Follow-up tasks linked
-- [ ] Review closed
+- [x] Review closed
