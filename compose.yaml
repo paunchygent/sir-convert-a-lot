@@ -35,6 +35,13 @@ services:
       - SIR_CONVERT_A_LOT_DOCLING_LAYOUT_FALLBACK_MODELS=${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_FALLBACK_MODELS:-docling_layout_heron}
       - SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH:-1}
       - SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE:-1}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED:-0}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED:-0}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED:-0}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/vision-assets}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
     command:
       - uvicorn
@@ -54,6 +61,7 @@ services:
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
+      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/vision-assets}
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
     networks:
       - hule-network

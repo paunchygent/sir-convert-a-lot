@@ -143,6 +143,29 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH"] == (
         "/run/secrets/huleedu-gateway-internal-identity-public-key.pem"
     )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED:-0}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON:-}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID:-}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID:-}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED:-0}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED:-0}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
+        "/srv/scratch/sir-convert-a-lot/build/verification/"
+        "task-309-qwen36-27b-q6k-hemma-local/vision-assets}"
+    )
 
     assert service.get("command") == [
         "uvicorn",
@@ -159,6 +182,14 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
             "${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-"
             "/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:"
             "/srv/scratch/sir-convert-a-lot/cache/miopen"
+        ),
+        (
+            "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-"
+            "/srv/scratch/sir-convert-a-lot/build/verification/"
+            "task-309-qwen36-27b-q6k-hemma-local/vision-assets}:"
+            "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
+            "/srv/scratch/sir-convert-a-lot/build/verification/"
+            "task-309-qwen36-27b-q6k-hemma-local/vision-assets}"
         ),
         (
             "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"
