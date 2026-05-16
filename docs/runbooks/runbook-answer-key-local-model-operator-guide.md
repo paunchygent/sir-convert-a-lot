@@ -254,7 +254,7 @@ not wrap it in an SSH tunnel. From a non-Hemma workstation, use
 | `provider-status` | Probe Docker or llama.cpp provider readiness, `/v1/models`, localhost-only exposure, and required runtime flags. | Hemma |
 | `microprobes` | Run redacted structured-output probes against the live provider. The Qwen3.6 vision profile also writes a tiny media-path image and sends one `image_url` probe. | Hemma |
 | `run-advisory-corpus` | Execute the full production in-process advisory path over all 23 `.dxe` files / 317 items. Writes per-file reports. | Hemma |
-| `evaluate-advisory-corpus` | Adjudicate reports against teacher goldens. Emits `correct`, `wrong-but-valid`, `malformed`, `manual-follow-up`, `unknown-id`, `duplicate-id` counts. | Hemma or local (reads artifacts) |
+| `evaluate-advisory-corpus` | Adjudicate reports against teacher goldens and prove manifest-vs-report coverage. Emits `correct`, `wrong-but-valid`, `malformed`, `manual-follow-up`, `unknown-id`, `duplicate-id`, missing-item, and unexpected-report counts. | Hemma or local (reads artifacts) |
 
 Default args target the **demoted Granite/vLLM** provider on `127.0.0.1:8017`.
 For the current guarded Qwen3.6 llama.cpp run, use
@@ -271,6 +271,14 @@ For the eval-only vision slice, the same profile launches llama.cpp with
 are exported below that root, provider requests use `file://` URLs relative to
 the media path, and the normal text-only Granite/non-vision eligibility remains
 unchanged.
+
+For production service jobs, the structured-provider config must use the same
+provider-readable media root through
+`SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH`. When the primary provider
+declares `supports_multimodal_vision=true`, service startup rejects missing or
+relative media paths. Runtime exports each job below that media root and sends
+job-scoped `file://<job-id>/...` image URLs, so the URL resolves under the same
+path that llama.cpp receives through `--media-path`.
 
 ## Evaluation Pipeline
 
@@ -319,10 +327,20 @@ pdm run answer-key-live-validation digiexam evaluate-advisory-corpus \
 
 Key paths:
 
-- Corpus: `inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/` (23 `.dxe` files, 317 items, 42 eligible)
+- Corpus: `inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/` (23 `.dxe` files, 317 items, 42 default text-only eligible items; Qwen3.6 vision eval raises model-facing eligibility to 44)
 - Goldens: `inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/expected-answer-manifest.json`
 - Per-file reports: `<reports-root>/*.answer-key-completion-report.json`
 - Evaluation output: `advisory-golden-evaluation.json` + `.md`
+
+The evaluation output contains `coverage_proof`. Treat
+`all_manifest_items_reported=true` as proof that all 317 corpus items were
+exercised through the report path, including skipped/ineligible rows. Treat
+`all_eligible_items_reported=true` as the narrower proof that every item the
+selected provider profile can send to model-facing advisory validation has a
+report row; this is provider-aware, so Qwen3.6 vision runs use the 44-row
+vision eligibility set.
+Missing and unexpected keys are serialized as item refs so a run cannot hide
+partial coverage behind aggregate counts.
 
 ## Promotion Gates
 
@@ -331,6 +349,8 @@ A model run blocks promotion unless **all** of the following are true:
 - `unknown_id_count == 0`
 - `duplicate_id_count == 0`
 - `malformed_success_count == 0`
+- `coverage_proof.all_manifest_items_reported == true`
+- `coverage_proof.all_eligible_items_reported == true`
 - `wrong_but_valid_count == 0` (primary safety metric; manual follow-up is safer than a plausible wrong key)
 
 Acceptable: `manual_follow_up_required` items, `skipped` items, and `partial_gap_answer` entries that are scored correctly.

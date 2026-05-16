@@ -25,10 +25,16 @@ from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
     load_answer_key_provider_run_metadata_from_report,
     structured_profile_from_answer_key_provider_run_metadata,
 )
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_corpus_coverage import (
+    Task309CorpusCoverageProof,
+    build_task309_corpus_coverage_proof,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
+    Task309AssetEvalPolicy,
+    build_task309_live_validation_manifest,
     write_task309_json,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
@@ -134,6 +140,7 @@ class Task309AdvisoryEvaluationReport:
     reports_root: str
     provider_run_metadata_json: str
     model_settings_json: str
+    coverage_proof: Task309CorpusCoverageProof
     report_count: int
     golden_count: int
     report_item_count: int
@@ -162,6 +169,7 @@ class Task309AdvisoryEvaluationReport:
             "reports_root": self.reports_root,
             "provider_run_metadata_json": self.provider_run_metadata_json,
             "model_settings_json": self.model_settings_json,
+            "coverage_proof": self.coverage_proof.to_payload(),
             "report_count": self.report_count,
             "golden_count": self.golden_count,
             "report_item_count": self.report_item_count,
@@ -199,15 +207,19 @@ def evaluate_task309_advisory_reports(
     validation_manifest_path = (
         expected_answer_manifest_path.parent / "validation-corpus-manifest.json"
     )
-    goldens = _load_goldens(expected_answer_manifest_path)
-    manifest_items = _load_manifest_items(validation_manifest_path)
-    item_contexts = _load_item_contexts(expected_answer_manifest_path.parent)
     provider_run_metadata = load_answer_key_provider_run_metadata_from_report(
         run_report_path=run_report_path
     )
     diagnostic_profile = structured_profile_from_answer_key_provider_run_metadata(
         provider_run_metadata
     )
+    goldens = _load_goldens(expected_answer_manifest_path)
+    manifest_items = _load_effective_manifest_items(
+        corpus_root=expected_answer_manifest_path.parent,
+        fallback_manifest_path=validation_manifest_path,
+        diagnostic_profile=diagnostic_profile,
+    )
+    item_contexts = _load_item_contexts(expected_answer_manifest_path.parent)
     report_paths = tuple(sorted(reports_root.glob("*.answer-key-completion-report.json")))
     seen_report_keys: set[tuple[str, str]] = set()
     findings: list[Task309EvaluationFinding] = []
@@ -426,6 +438,10 @@ def evaluate_task309_advisory_reports(
 
     category_counts = Counter(finding.category for finding in findings)
     provider_run_metadata_json = provider_run_metadata.to_json()
+    coverage_proof = build_task309_corpus_coverage_proof(
+        manifest_items=manifest_items,
+        report_keys=seen_report_keys,
+    )
     return Task309AdvisoryEvaluationReport(
         schema_version=TASK309_ADVISORY_EVALUATION_SCHEMA_VERSION,
         expected_answer_manifest_path=expected_answer_manifest_path.as_posix(),
@@ -433,6 +449,7 @@ def evaluate_task309_advisory_reports(
         reports_root=reports_root.as_posix(),
         provider_run_metadata_json=provider_run_metadata_json,
         model_settings_json=provider_run_metadata_json,
+        coverage_proof=coverage_proof,
         report_count=len(report_paths),
         golden_count=len(goldens),
         report_item_count=report_item_count,
@@ -489,6 +506,32 @@ def _load_manifest_items(path: Path) -> dict[tuple[str, str], dict[str, object]]
         for item in items:
             indexed[(filename, _required_str(item, "item_id"))] = item
     return indexed
+
+
+def _load_effective_manifest_items(
+    *,
+    corpus_root: Path,
+    fallback_manifest_path: Path,
+    diagnostic_profile: StructuredLLMProviderProfile | None,
+) -> dict[tuple[str, str], dict[str, object]]:
+    if diagnostic_profile is None:
+        return _load_manifest_items(fallback_manifest_path)
+    manifest = build_task309_live_validation_manifest(
+        corpus_root,
+        asset_eval_policy=Task309AssetEvalPolicy(
+            allow_supported_embedded_assets=(
+                diagnostic_profile.capabilities.supports_multimodal_vision
+            ),
+        ),
+    )
+    return {
+        (file_entry.filename, item.item_id): {
+            "eligible": item.eligible,
+            "skip_reason": item.skip_reason,
+        }
+        for file_entry in manifest.files
+        for item in file_entry.items
+    }
 
 
 def _load_item_contexts(corpus_root: Path) -> dict[tuple[str, str], DigiExamIrItem]:
@@ -714,6 +757,13 @@ def _markdown(report: Task309AdvisoryEvaluationReport) -> str:
         f"- report_count: `{report.report_count}`",
         f"- golden_count: `{report.golden_count}`",
         f"- report_item_count: `{report.report_item_count}`",
+        f"- manifest_item_count: `{report.coverage_proof.manifest_item_count}`",
+        f"- manifest_eligible_item_count: `{report.coverage_proof.manifest_eligible_item_count}`",
+        f"- all_manifest_items_reported: `{report.coverage_proof.all_manifest_items_reported}`",
+        f"- all_eligible_items_reported: `{report.coverage_proof.all_eligible_items_reported}`",
+        f"- missing_manifest_item_count: `{report.coverage_proof.missing_manifest_item_count}`",
+        f"- missing_eligible_item_count: `{report.coverage_proof.missing_eligible_item_count}`",
+        f"- unexpected_report_item_count: `{report.coverage_proof.unexpected_report_item_count}`",
         f"- suggested_count: `{report.suggested_count}`",
         f"- correct_suggestion_count: `{report.correct_suggestion_count}`",
         f"- wrong_but_valid_count: `{report.wrong_but_valid_count}`",

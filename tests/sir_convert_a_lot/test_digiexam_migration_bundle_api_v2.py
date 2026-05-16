@@ -298,6 +298,7 @@ def test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     provider_image_urls: list[str] = []
+    provider_media_root = tmp_path / "provider-media"
 
     async def advisory_provider_call(
         self: HttpStructuredChatProvider,
@@ -326,7 +327,13 @@ def test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item
         advisory_provider_call,
     )
     identity = _IdentitySigner()
-    client = _client(tmp_path, identity, structured_llm=_qwen36_vision_structured_llm_config())
+    client = _client(
+        tmp_path,
+        identity,
+        structured_llm=_qwen36_vision_structured_llm_config(
+            vision_media_path=provider_media_root,
+        ),
+    )
     response = _post_digiexam_job(
         client=client,
         identity=identity,
@@ -349,8 +356,10 @@ def test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item
     rendered_report = json.dumps(completion_report, ensure_ascii=False, sort_keys=True)
 
     assert len(provider_image_urls) == 1
-    assert provider_image_urls[0].startswith("file://item-001/assets/")
+    assert provider_image_urls[0].startswith(f"file://{job_id}/item-001/assets/")
     assert provider_image_urls[0].endswith(".png")
+    provider_relative_path = provider_image_urls[0].removeprefix("file://")
+    assert (provider_media_root / provider_relative_path).is_file()
     assert completion_report["items"][0]["decision_state"] == "suggested"
     assert completion_report["items"][0]["answer_payload"] == {
         "kind": "gap_fill",
@@ -358,6 +367,56 @@ def test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item
     }
     assert "content_base64" not in rendered_report
     assert "iVBORw0KGgo" not in rendered_report
+
+
+def test_digiexam_migration_vision_provider_without_media_root_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_calls: list[str] = []
+
+    async def advisory_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self
+        del request
+        provider_calls.append(profile.provider_id)
+        return StructuredLLMResponse(content={}, finish_reason="stop")
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        advisory_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, structured_llm=_qwen36_vision_structured_llm_config())
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-vision-advisory",
+        idempotency_key="idem-digiexam-vision-advisory-missing-media-root",
+        wait_seconds=20,
+        payload=_embedded_image_gap_payload(),
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED
+        ).value,
+    )
+
+    assert response.status_code == 200
+    job_id = response.json()["job"]["job_id"]
+    headers = _headers(identity, subject="teacher-vision-advisory", grants=_read_grants())
+    completion_report = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/answer_key_completion_report",
+        headers=headers,
+    ).json()
+    rendered_report = json.dumps(completion_report, ensure_ascii=False, sort_keys=True)
+
+    assert provider_calls == []
+    assert completion_report["items"][0]["decision_state"] == "manual_follow_up_required"
+    assert completion_report["items"][0]["backend_failure_code"] == "unsupported_assets"
     assert "Look at the embedded prompt image" not in rendered_report
 
 
@@ -1432,7 +1491,10 @@ def _structured_llm_config() -> StructuredLLMRuntimeConfig:
     )
 
 
-def _qwen36_vision_structured_llm_config() -> StructuredLLMRuntimeConfig:
+def _qwen36_vision_structured_llm_config(
+    *,
+    vision_media_path: Path | None = None,
+) -> StructuredLLMRuntimeConfig:
     profile = StructuredLLMProviderProfile(
         provider_id="qwen36-local-vision",
         model="qwen3.6-27b-q6k",
@@ -1458,6 +1520,7 @@ def _qwen36_vision_structured_llm_config() -> StructuredLLMRuntimeConfig:
                 base_url="http://127.0.0.1:8123",
             )
         },
+        vision_media_path=vision_media_path,
     )
 
 

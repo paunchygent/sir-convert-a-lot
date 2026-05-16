@@ -51,6 +51,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     STRUCTURED_LLM_PROVIDERS_JSON_ENV,
     STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV,
     STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV,
+    STRUCTURED_LLM_VISION_MEDIA_PATH_ENV,
     structured_llm_runtime_config_from_env,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_di import (
@@ -127,6 +128,16 @@ def test_structured_llm_service_config_loads_multimodal_vision_capability() -> N
     assert config.provider_set.primary.capabilities.supports_multimodal_vision is True
     assert config.provider_set.fallback is not None
     assert config.provider_set.fallback.capabilities.supports_multimodal_vision is False
+    assert config.vision_media_path is not None
+    assert config.vision_media_path.as_posix() == "/srv/scratch/sir-convert-a-lot/vision-media"
+
+
+def test_structured_llm_service_config_requires_media_path_for_vision_primary() -> None:
+    env = _provider_env()
+    env.pop(STRUCTURED_LLM_VISION_MEDIA_PATH_ENV)
+
+    with pytest.raises(ValueError, match=STRUCTURED_LLM_VISION_MEDIA_PATH_ENV):
+        structured_llm_runtime_config_from_env(env)
 
 
 def test_structured_llm_service_config_requires_local_primary() -> None:
@@ -223,6 +234,7 @@ def _provider_env(
         STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV: primary_provider_id,
         STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV: "true",
         STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV: "true",
+        STRUCTURED_LLM_VISION_MEDIA_PATH_ENV: "/srv/scratch/sir-convert-a-lot/vision-media",
         "REMOTE_STRUCTURED_LLM_API_KEY": "remote-secret",
     }
     if fallback_provider_id is not None:

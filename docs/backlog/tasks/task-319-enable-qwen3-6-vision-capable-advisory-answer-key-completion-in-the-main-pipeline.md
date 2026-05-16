@@ -50,8 +50,8 @@ teacher review, and default source-evidence-only behavior.
   - base64 decodes successfully;
   - byte length and SHA-256 match IR metadata;
   - asset references resolve to actual embedded assets.
-- Build provider-facing image files under the job artifact working directory
-  with stable relative paths suitable for llama.cpp `image_url` use.
+- Build provider-facing image files under a provider-readable media root with
+  stable job-scoped relative paths suitable for llama.cpp `image_url` use.
 - Add provider config support for multimodal vision capability and Qwen3.6
   runtime settings needed by the main service path.
 - Wire advisory answer-key completion so image-bearing items are eligible only
@@ -119,8 +119,12 @@ pipeline. Reusable provider profile settings now live in
 with Qwen3.6 carrying a 32k context window, 4k output budget, 0.15
 temperature, and multimodal vision capability. Production DigiExam vision asset
 handling now validates supported PNG/JPEG embedded assets and writes
-provider-facing files under the job artifact working directory without
-retaining raw/base64 payloads in normal reports.
+provider-facing files under the configured structured-provider vision media
+root, scoped by job id, without retaining raw/base64 payloads in normal
+reports. The service config requires
+`SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH` when the primary
+structured provider declares multimodal vision support; image-bearing rows fail
+closed without that media-root bridge.
 
 The source split is explicit: provider-only runtime files keep the
 `answer_key_` prefix, while DigiExam-specific live-validation corpus,
@@ -132,6 +136,7 @@ Validation:
 
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_composition.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_default_artifact_route_does_not_call_structured_llm`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_composition.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_vision_provider_without_media_root_fails_closed`
 - `pdm run format-all`
 - `pdm run lint-fix`
 - `pdm run typecheck-all`

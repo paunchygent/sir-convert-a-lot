@@ -18,7 +18,7 @@ Relationships:
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     DigiExamAnswerKeyCandidatePlannerProtocol,
@@ -73,9 +73,11 @@ def export_digiexam_answer_key_vision_assets(
     *,
     exam: DigiExamIntermediateExam,
     media_path: Path,
+    relative_path_prefix: str = "",
 ) -> dict[str, DigiExamAnswerKeyVisionItemAssets]:
     """Write supported embedded images and return metadata keyed by item id."""
 
+    normalized_prefix = _normalized_relative_path_prefix(relative_path_prefix)
     preparation = prepare_examnet_pdf_assets(exam)
     warnings_by_item = {
         warning.item_id for warning in preparation.warnings if warning.item_id is not None
@@ -96,6 +98,7 @@ def export_digiexam_answer_key_vision_assets(
             item=item,
             asset_files=files,
             media_path=media_path,
+            relative_path_prefix=normalized_prefix,
         )
     return item_assets
 
@@ -162,12 +165,16 @@ def _write_item_assets(
     item: DigiExamIrItem,
     asset_files: tuple[DigiExamExamNetPdfAssetFile, ...],
     media_path: Path,
+    relative_path_prefix: str,
 ) -> DigiExamAnswerKeyVisionItemAssets:
     assets: list[DigiExamAnswerKeyVisionAsset] = []
     item_assets_by_id = {asset.asset_id: asset for asset in item.embedded_assets}
     for asset_file in asset_files:
         source_asset = item_assets_by_id[asset_file.asset_id]
-        relative_path = f"{item.item_id}/assets/{Path(asset_file.relative_path).name}"
+        relative_path = _prefixed_relative_path(
+            relative_path_prefix,
+            f"{item.item_id}/assets/{Path(asset_file.relative_path).name}",
+        )
         destination = media_path / relative_path
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(asset_file.payload)
@@ -185,3 +192,21 @@ def _write_item_assets(
         item_id=item.item_id,
         assets=tuple(assets),
     )
+
+
+def _normalized_relative_path_prefix(value: str) -> str:
+    if value == "":
+        return ""
+    if "\\" in value:
+        raise ValueError("Vision asset relative path prefixes must be POSIX paths.")
+    stripped = value.strip("/")
+    parts = PurePosixPath(stripped).parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise ValueError("Vision asset relative path prefixes must stay within the media root.")
+    return "/".join(parts)
+
+
+def _prefixed_relative_path(prefix: str, relative_path: str) -> str:
+    if prefix == "":
+        return relative_path
+    return f"{prefix}/{relative_path}"

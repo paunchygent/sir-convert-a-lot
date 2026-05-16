@@ -405,6 +405,11 @@ Task 311 owns the strict production service-backed mirror.
   selected provider profile, runtime, output modes, capabilities, request
   settings, max tokens, context, and vision media path without model-specific
   evaluator branches.
+- Added explicit manifest-vs-report coverage proof to
+  `evaluate-advisory-corpus`. Retained evaluation JSON/Markdown now reports
+  whether all manifest items and all provider-aware eligible model-facing items
+  have report rows, plus missing/unexpected item refs, so full-corpus
+  validation cannot rely on aggregate result counts alone.
 
 ## Validation Evidence
 
@@ -445,6 +450,7 @@ Task 311 owns the strict production service-backed mirror.
 - `rg -n "data-image-id|content_base64|base64" build/verification/task-309-vision-eval-support/request-shape-preview.json build/verification/task-309-vision-eval-support/vision-assets || true`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_composition.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_vision_provider_without_media_root_fails_closed`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`
 - `pdm run format-all`
 - `pdm run lint-fix`

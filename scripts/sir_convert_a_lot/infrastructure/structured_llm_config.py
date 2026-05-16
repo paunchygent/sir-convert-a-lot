@@ -20,6 +20,7 @@ import json
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
@@ -43,6 +44,7 @@ STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV = (
 STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV = (
     "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED"
 )
+STRUCTURED_LLM_VISION_MEDIA_PATH_ENV = "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH"
 
 STRUCTURED_LLM_PROVIDER_MODEL_KEY = "model"
 STRUCTURED_LLM_PROVIDER_ENDPOINT_KIND_KEY = "endpoint_kind"
@@ -72,6 +74,7 @@ class StructuredLLMRuntimeConfig:
     enabled: bool = False
     provider_set: StructuredChatProviderSet | None = None
     connections: Mapping[str, StructuredLLMProviderConnection] = field(default_factory=dict)
+    vision_media_path: Path | None = None
     remote_providers_enabled: bool = False
     remote_fallback_policy_authorized: bool = False
 
@@ -110,6 +113,7 @@ def structured_llm_runtime_config_from_env(
         raise ValueError(
             f"{STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV} must reference a local provider profile."
         )
+    vision_media_path = _vision_media_path_from_env(source, primary=primary)
     fallback = None
     if fallback_id is not None:
         fallback = _profile_by_id(
@@ -122,6 +126,7 @@ def structured_llm_runtime_config_from_env(
         enabled=True,
         provider_set=StructuredChatProviderSet(primary=primary, fallback=fallback),
         connections=connections,
+        vision_media_path=vision_media_path,
         remote_providers_enabled=_parse_bool_env(
             source,
             name=STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV,
@@ -171,6 +176,25 @@ def _provider_maps_from_json(
     if not profiles:
         raise ValueError(f"{STRUCTURED_LLM_PROVIDERS_JSON_ENV} must define at least one provider.")
     return profiles, connections
+
+
+def _vision_media_path_from_env(
+    source: Mapping[str, str],
+    *,
+    primary: StructuredLLMProviderProfile,
+) -> Path | None:
+    raw = _optional_env(source, STRUCTURED_LLM_VISION_MEDIA_PATH_ENV)
+    if raw is None:
+        if primary.capabilities.supports_multimodal_vision:
+            raise ValueError(
+                f"{STRUCTURED_LLM_VISION_MEDIA_PATH_ENV} must be configured when the "
+                "primary structured provider supports multimodal vision."
+            )
+        return None
+    path = Path(raw)
+    if not path.is_absolute():
+        raise ValueError(f"{STRUCTURED_LLM_VISION_MEDIA_PATH_ENV} must be an absolute path.")
+    return path
 
 
 def _provider_profile_from_payload(

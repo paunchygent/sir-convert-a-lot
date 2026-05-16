@@ -21,6 +21,9 @@ from scripts.sir_convert_a_lot.devops import run_answer_key_live_validation
 from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
     build_answer_key_provider_run_metadata,
 )
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_corpus_coverage import (
+    build_task309_corpus_coverage_proof,
+)
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_corpus_execution import (
     Task309AdvisoryCorpusRunReport,
 )
@@ -104,6 +107,38 @@ def test_task309_manifest_records_versioned_fixture_corpus() -> None:
         "unsupported_assets": 2,
         "unsupported_item_type": 273,
     }
+
+
+def test_task309_corpus_coverage_proof_reports_missing_eligible_items() -> None:
+    proof = build_task309_corpus_coverage_proof(
+        manifest_items={
+            ("exam-a.dxe", "item-001"): {"eligible": True, "skip_reason": "none"},
+            ("exam-a.dxe", "item-002"): {"eligible": False, "skip_reason": "unsupported"},
+            ("exam-b.dxe", "item-001"): {"eligible": True, "skip_reason": "none"},
+        },
+        report_keys={("exam-a.dxe", "item-001"), ("extra.dxe", "item-999")},
+    )
+    payload = proof.to_payload()
+
+    assert payload["manifest_item_count"] == 3
+    assert payload["manifest_eligible_item_count"] == 2
+    assert payload["report_unique_item_count"] == 2
+    assert payload["reported_manifest_item_count"] == 1
+    assert payload["all_manifest_items_reported"] is False
+    assert payload["all_eligible_items_reported"] is False
+    assert payload["missing_manifest_item_count"] == 2
+    assert payload["missing_eligible_item_count"] == 1
+    assert payload["unexpected_report_item_count"] == 1
+    missing_eligible_items = payload["missing_eligible_items"]
+    assert isinstance(missing_eligible_items, tuple)
+    assert tuple(_object(item) for item in missing_eligible_items) == (
+        {
+            "source_filename": "exam-b.dxe",
+            "item_id": "item-001",
+            "eligible": True,
+            "skip_reason": "none",
+        },
+    )
 
 
 def test_task309_expected_answer_worklist_contains_only_eligible_items() -> None:
@@ -576,8 +611,15 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
         json.loads((output_root / "advisory-golden-evaluation.json").read_text(encoding="utf-8"))
     )
     metadata = _object(json.loads(str(evaluation["provider_run_metadata_json"])))
+    coverage = _object(evaluation["coverage_proof"])
 
     assert exit_code == 0
+    assert coverage["manifest_item_count"] == 317
+    assert coverage["manifest_eligible_item_count"] == 44
+    assert coverage["report_unique_item_count"] == 1
+    assert coverage["all_manifest_items_reported"] is False
+    assert coverage["all_eligible_items_reported"] is False
+    assert coverage["missing_eligible_item_count"] == 43
     assert metadata["available"] is True
     assert metadata["profile_name"] == "qwen36-llama-cpp"
     assert metadata["model"] == "qwen3.6-27b-q6k"

@@ -85,7 +85,6 @@ def write_requested_digiexam_answer_key_completion_report(
         completion_mode=completion_mode.value,
         exam=exam,
         config=config,
-        vision_media_path=artifacts_dir / "answer-key-vision-assets",
     )
     write_json(report_path, report_to_json_payload(report))
     return available_entry(
@@ -101,7 +100,6 @@ def run_digiexam_answer_key_completion_report(
     completion_mode: str,
     exam: DigiExamIntermediateExam,
     config: ServiceConfig,
-    vision_media_path: Path | None = None,
 ) -> DigiExamAnswerKeyCompletionReport:
     """Run the advisory completion service from the synchronous bundle builder."""
 
@@ -111,7 +109,6 @@ def run_digiexam_answer_key_completion_report(
             completion_mode=completion_mode,
             exam=exam,
             config=config,
-            vision_media_path=vision_media_path,
         )
     )
 
@@ -122,7 +119,6 @@ async def _run_digiexam_answer_key_completion_report(
     completion_mode: str,
     exam: DigiExamIntermediateExam,
     config: ServiceConfig,
-    vision_media_path: Path | None,
 ) -> DigiExamAnswerKeyCompletionReport:
     structured_config = config.structured_llm
     if not structured_config.enabled or structured_config.provider_set is None:
@@ -139,9 +135,9 @@ async def _run_digiexam_answer_key_completion_report(
     try:
         provider = await container.get(HttpStructuredChatProvider)
         candidate_planner = _vision_candidate_planner(
+            job_id=job_id,
             exam=exam,
             structured_config=structured_config,
-            vision_media_path=vision_media_path,
         )
         return await build_digiexam_answer_key_completion_report(
             job_id=job_id,
@@ -158,26 +154,31 @@ async def _run_digiexam_answer_key_completion_report(
 
 def _vision_candidate_planner(
     *,
+    job_id: str,
     exam: DigiExamIntermediateExam,
     structured_config: StructuredLLMRuntimeConfig,
-    vision_media_path: Path | None,
 ) -> DigiExamVisionCandidatePlanner | None:
     if structured_config.provider_set is None:
         return None
     primary = structured_config.provider_set.primary
     if not primary.capabilities.supports_multimodal_vision:
         return None
-    if vision_media_path is None:
-        return None
     from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
         answer_key_candidate_planner_for_profile,
     )
 
+    base_planner = answer_key_candidate_planner_for_profile(primary)
+    if structured_config.vision_media_path is None:
+        return DigiExamVisionCandidatePlanner(
+            base_planner=base_planner,
+            item_assets_by_id={},
+        )
     item_assets = export_digiexam_answer_key_vision_assets(
         exam=exam,
-        media_path=vision_media_path,
+        media_path=structured_config.vision_media_path,
+        relative_path_prefix=job_id,
     )
     return DigiExamVisionCandidatePlanner(
-        base_planner=answer_key_candidate_planner_for_profile(primary),
+        base_planner=base_planner,
         item_assets_by_id=item_assets,
     )

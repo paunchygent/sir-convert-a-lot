@@ -555,6 +555,19 @@ def test_image_item_uses_multimodal_request_when_vision_provider_is_enabled(
     assert "Look at the embedded prompt image" not in rendered_report
 
 
+def test_vision_asset_export_can_scope_paths_by_job_id(tmp_path: Path) -> None:
+    item_assets = export_digiexam_answer_key_vision_assets(
+        exam=_embedded_image_gap_exam(),
+        media_path=tmp_path / "provider-media",
+        relative_path_prefix="job-001",
+    )
+
+    image_url = item_assets["item-001"].image_urls[0]
+
+    assert image_url.startswith("file://job-001/item-001/assets/")
+    assert (tmp_path / "provider-media" / image_url.removeprefix("file://")).is_file()
+
+
 def test_invalid_image_asset_does_not_call_vision_provider(tmp_path: Path) -> None:
     provider = _FakeProvider(
         {
