@@ -60,6 +60,16 @@ def _run_wrapper(args: list[str], env: dict[str, str]) -> subprocess.CompletedPr
     )
 
 
+def _env_for_fake_local_hemma() -> dict[str, str]:
+    env = os.environ.copy()
+    env["SIR_CONVERT_A_LOT_HEMMA_ROOT"] = str(REPO_ROOT)
+    env["SIR_CONVERT_A_LOT_HEMMA_LOCAL_HOSTNAME"] = "fake-hemma-host"
+    env["SIR_CONVERT_A_LOT_CURRENT_HOSTNAME"] = "fake-hemma-host"
+    env["SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY"] = "/tmp/fake-skill-repository"
+    env["SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY"] = "/tmp/fake-skill-repository"
+    return env
+
+
 def test_run_hemma_requires_arguments() -> None:
     result = subprocess.run(
         ["bash", str(RUN_HEMMA_SCRIPT)],
@@ -69,6 +79,45 @@ def test_run_hemma_requires_arguments() -> None:
     )
     assert result.returncode == 2
     assert "Usage:" in result.stderr
+
+
+def test_run_hemma_executes_locally_when_already_on_hemma() -> None:
+    env = _env_for_fake_local_hemma()
+
+    result = _run_wrapper(["--", "pwd"], env)
+
+    assert result.returncode == 0
+    assert result.stdout.strip() == str(REPO_ROOT)
+
+
+def test_run_hemma_local_shell_mode_uses_canonical_root() -> None:
+    env = _env_for_fake_local_hemma()
+
+    result = _run_wrapper(["--shell", "pwd; printf '|local|'"], env)
+
+    assert result.returncode == 0
+    assert result.stdout.startswith(f"{REPO_ROOT}\n")
+    assert result.stdout.rstrip().endswith("|local|")
+
+
+def test_run_hemma_force_remote_bypasses_local_hemma_detection(tmp_path: Path) -> None:
+    remote_root = tmp_path / "remote-repo"
+    remote_root.mkdir(parents=True)
+    (remote_root / ".git").mkdir()
+
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_ssh(fake_bin)
+
+    env = _env_for_fake_local_hemma()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["SIR_CONVERT_A_LOT_HEMMA_ROOT"] = str(remote_root)
+    env["SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA"] = "1"
+
+    result = _run_wrapper(["--", "pwd"], env)
+
+    assert result.returncode == 0
+    assert result.stdout.strip() == str(remote_root)
 
 
 def test_run_hemma_executes_command_inside_remote_root(tmp_path: Path) -> None:

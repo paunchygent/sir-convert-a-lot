@@ -29,10 +29,16 @@ from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles impor
     Task309StructuredProviderRuntime,
     build_task309_provider_profile,
 )
+from scripts.sir_convert_a_lot.devops.task309_vision_assets import (
+    Task309VisionCandidatePlanner,
+    export_task309_vision_assets,
+    vision_item_assets_by_id,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
+    Task309AssetEvalPolicy,
     build_task309_live_validation_manifest,
     write_task309_json,
 )
@@ -66,6 +72,9 @@ class Task309RequestShapeItem:
     output_mode: str | None
     output_contract_json: str | None
     raw_item_context_json: str
+    asset_eligible: bool
+    preview_artifact_path: str | None
+    multimodal_request: bool
 
     def to_payload(self) -> dict[str, object]:
         """Return JSON-safe preview item payload."""
@@ -102,12 +111,21 @@ def build_task309_request_shape_preview(
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
+    vision_media_path: Path = Path(
+        "build/verification/task-309-request-shape-preview/vision-assets"
+    ),
 ) -> Task309RequestShapePreview:
     """Build a provider-free preview of the exact live request shape."""
 
     profile = build_task309_provider_profile(runtime=provider_runtime, model=model)
-    planner = answer_key_candidate_planner_for_profile(profile)
-    manifest = build_task309_live_validation_manifest(corpus_root)
+    base_planner = answer_key_candidate_planner_for_profile(profile)
+    vision_policy = Task309AssetEvalPolicy(
+        allow_supported_embedded_assets=profile.capabilities.supports_multimodal_vision
+    )
+    manifest = build_task309_live_validation_manifest(
+        corpus_root,
+        asset_eval_policy=vision_policy,
+    )
     eligible_keys = {
         (file_entry.filename, item.item_id)
         for file_entry in manifest.files
@@ -119,6 +137,19 @@ def build_task309_request_shape_preview(
     item_count = 0
     for source_path in sorted(corpus_root.glob("*.dxe")):
         exam = build_digiexam_intermediate_exam(parser.parse_file(source_path))
+        vision_export = (
+            export_task309_vision_assets(
+                exam=exam,
+                source_filename=source_path.name,
+                media_path=vision_media_path,
+            )
+            if profile.capabilities.supports_multimodal_vision
+            else None
+        )
+        planner = Task309VisionCandidatePlanner(
+            base_planner=base_planner,
+            item_assets_by_id=vision_item_assets_by_id(vision_export) if vision_export else {},
+        )
         item_count += len(exam.items)
         for item in exam.items:
             plan = planner.plan_candidate(
@@ -142,6 +173,9 @@ def build_task309_request_shape_preview(
                             output_mode=None,
                             output_contract_json=None,
                             raw_item_context_json=_raw_item_context_json(item),
+                            asset_eligible=bool(item.embedded_assets),
+                            preview_artifact_path=None,
+                            multimodal_request=False,
                         )
                     )
                 continue
@@ -149,6 +183,16 @@ def build_task309_request_shape_preview(
             provider_payload = build_structured_llm_payload(
                 profile=plan.provider_profile or profile,
                 request=plan.request,
+            )
+            vision_assets = (
+                vision_item_assets_by_id(vision_export).get(item.item_id)
+                if vision_export is not None
+                else None
+            )
+            preview_path = (
+                vision_assets.preview.relative_path
+                if vision_assets is not None and vision_assets.preview is not None
+                else None
             )
             issues = _shape_issues(
                 item=item,
@@ -186,6 +230,9 @@ def build_task309_request_shape_preview(
                     ),
                     output_contract_json=_canonical_json(output_contract),
                     raw_item_context_json=_raw_item_context_json(item),
+                    asset_eligible=bool(item.embedded_assets),
+                    preview_artifact_path=preview_path,
+                    multimodal_request=bool(plan.request.user_content_parts),
                 )
             )
     issue_counts = Counter(issue for row in rows for issue in row.issues)
@@ -341,13 +388,12 @@ def _raw_item_context_json(item: DigiExamIrItem) -> str:
             "sequence": item.sequence,
             "item_type": item.item_type.value,
             "title": item.title,
-            "prompt_html": item.prompt_html or "",
-            "prompt_lines": list(item.prompt_lines),
             "alternatives": [
                 {"alternative_id": alternative.id, "text": alternative.title}
                 for alternative in item.alternatives
             ],
             "gaps": [gap.guid for gap in item.gaps],
+            "embedded_asset_count": len(item.embedded_assets),
             "warning_codes": [warning.code.value for warning in item.warnings],
         }
     )

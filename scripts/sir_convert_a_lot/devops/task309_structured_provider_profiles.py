@@ -13,7 +13,9 @@ Relationships:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMEndpointKind,
@@ -31,15 +33,135 @@ class Task309StructuredProviderRuntime(StrEnum):
     LLAMA_CPP_GBNF = "llama-cpp-gbnf"
 
 
+class Task309ProviderProfileName(StrEnum):
+    """Named Task 309 operator profiles with provider-specific defaults."""
+
+    GRANITE_VLLM = "granite-vllm"
+    QWEN36_LLAMA_CPP = "qwen36-llama-cpp"
+
+
+@dataclass(frozen=True)
+class Task309ProviderDefaults:
+    """Default command values for one Task 309 provider profile."""
+
+    profile_name: Task309ProviderProfileName
+    provider_url: str
+    port: int
+    model: str
+    provider_runtime: Task309StructuredProviderRuntime
+    output_root: Path
+    reports_root: Path
+    container_name: str
+    cache_paths: tuple[str, ...]
+    expected_model_id: str | None
+    permits_vision_assets: bool = False
+
+
 DEFAULT_TASK309_PROVIDER_RUNTIME = Task309StructuredProviderRuntime.GRANITE_VLLM
 GRANITE_VLLM_PROVIDER_ID = "task309-granite-vllm"
 LLAMA_CPP_PROVIDER_ID = "task309-llama-cpp"
+GRANITE_TASK309_OUTPUT_ROOT = Path("build/verification/task-309-granite-answer-key-live")
+GRANITE_TASK309_REPORTS_ROOT = GRANITE_TASK309_OUTPUT_ROOT / "advisory-corpus-reports"
+GRANITE_TASK309_PROVIDER_URL = "http://127.0.0.1:8017"
+GRANITE_TASK309_PROVIDER_PORT = 8017
+GRANITE_TASK309_MODEL = "ibm-granite/granite-4.1-8b-fp8"
+GRANITE_TASK309_CONTAINER_NAME = "sir-convert-task309-granite-vllm"
+GRANITE_TASK309_CACHE_PATHS = (
+    "/srv/scratch/sir-convert-a-lot/cache/huggingface",
+    "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
+)
+QWEN36_LLAMA_CPP_OUTPUT_ROOT = Path(
+    "/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local"
+)
+QWEN36_LLAMA_CPP_REPORTS_ROOT = QWEN36_LLAMA_CPP_OUTPUT_ROOT / "advisory-corpus-reports"
+QWEN36_LLAMA_CPP_PROVIDER_URL = "http://127.0.0.1:8082"
+QWEN36_LLAMA_CPP_PROVIDER_PORT = 8082
+QWEN36_LLAMA_CPP_MODEL = "qwen3.6-27b-q6k"
+QWEN36_LLAMA_CPP_CONTAINER_NAME = "task309-qwen36-llama-cpp-local"
+QWEN36_LLAMA_CPP_CACHE_PATH = "/srv/scratch/sir-convert-a-lot/cache/llama.cpp"
+QWEN36_LLAMA_CPP_SERVER_BINARY = "/srv/scratch/sir-convert-a-lot/bin/llama-server"
+QWEN36_LLAMA_CPP_HF_REPO = "unsloth/Qwen3.6-27B-GGUF"
+QWEN36_LLAMA_CPP_HF_FILE = "Qwen3.6-27B-Q6_K.gguf"
+QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS = (
+    "--host",
+    "127.0.0.1",
+    "--port",
+    str(QWEN36_LLAMA_CPP_PROVIDER_PORT),
+    "--ctx-size",
+    "32768",
+    "--n-gpu-layers",
+    "all",
+    "--fit",
+    "off",
+    "--flash-attn",
+    "on",
+    "--jinja",
+    "--reasoning",
+    "off",
+    "--temp",
+    "0.15",
+    "--offline",
+    "--media-path",
+    (QWEN36_LLAMA_CPP_OUTPUT_ROOT / "vision-assets").as_posix(),
+)
+
+TASK309_PROVIDER_DEFAULTS = {
+    Task309ProviderProfileName.GRANITE_VLLM: Task309ProviderDefaults(
+        profile_name=Task309ProviderProfileName.GRANITE_VLLM,
+        provider_url=GRANITE_TASK309_PROVIDER_URL,
+        port=GRANITE_TASK309_PROVIDER_PORT,
+        model=GRANITE_TASK309_MODEL,
+        provider_runtime=Task309StructuredProviderRuntime.GRANITE_VLLM,
+        output_root=GRANITE_TASK309_OUTPUT_ROOT,
+        reports_root=GRANITE_TASK309_REPORTS_ROOT,
+        container_name=GRANITE_TASK309_CONTAINER_NAME,
+        cache_paths=GRANITE_TASK309_CACHE_PATHS,
+        expected_model_id=None,
+    ),
+    Task309ProviderProfileName.QWEN36_LLAMA_CPP: Task309ProviderDefaults(
+        profile_name=Task309ProviderProfileName.QWEN36_LLAMA_CPP,
+        provider_url=QWEN36_LLAMA_CPP_PROVIDER_URL,
+        port=QWEN36_LLAMA_CPP_PROVIDER_PORT,
+        model=QWEN36_LLAMA_CPP_MODEL,
+        provider_runtime=Task309StructuredProviderRuntime.LLAMA_CPP_JSON_SCHEMA,
+        output_root=QWEN36_LLAMA_CPP_OUTPUT_ROOT,
+        reports_root=QWEN36_LLAMA_CPP_REPORTS_ROOT,
+        container_name=QWEN36_LLAMA_CPP_CONTAINER_NAME,
+        cache_paths=(QWEN36_LLAMA_CPP_CACHE_PATH,),
+        expected_model_id=QWEN36_LLAMA_CPP_MODEL,
+        permits_vision_assets=True,
+    ),
+}
 
 
 def task309_provider_runtime_values() -> tuple[str, ...]:
     """Return CLI-safe runtime values."""
 
     return tuple(runtime.value for runtime in Task309StructuredProviderRuntime)
+
+
+def task309_provider_profile_values() -> tuple[str, ...]:
+    """Return CLI-safe named provider-profile values."""
+
+    return tuple(profile.value for profile in Task309ProviderProfileName)
+
+
+def parse_task309_provider_profile_name(value: str) -> Task309ProviderProfileName:
+    """Parse a Task 309 named provider profile value."""
+
+    try:
+        return Task309ProviderProfileName(value)
+    except ValueError as exc:
+        values = ", ".join(task309_provider_profile_values())
+        message = f"Unsupported Task 309 provider profile {value!r}; expected {values}."
+        raise ValueError(message) from exc
+
+
+def task309_defaults_for_provider_profile(value: str) -> Task309ProviderDefaults:
+    """Return default CLI values for a named Task 309 provider profile."""
+
+    profile_name = parse_task309_provider_profile_name(value)
+    return TASK309_PROVIDER_DEFAULTS[profile_name]
 
 
 def parse_task309_provider_runtime(value: str) -> Task309StructuredProviderRuntime:
@@ -92,6 +214,7 @@ def build_task309_provider_profile(
                 supports_json_schema=True,
                 supports_gbnf=True,
                 supports_vllm_structured_choice=False,
+                supports_multimodal_vision=True,
             ),
         )
     return StructuredLLMProviderProfile(
@@ -107,5 +230,6 @@ def build_task309_provider_profile(
             supports_json_schema=True,
             supports_gbnf=True,
             supports_vllm_structured_choice=False,
+            supports_multimodal_vision=True,
         ),
     )

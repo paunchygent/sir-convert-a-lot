@@ -53,6 +53,8 @@ def build_task309_provider_status(
     container_name: str = DEFAULT_PROVIDER_CONTAINER_NAME,
     port: int = DEFAULT_PROVIDER_PORT,
     timeout_seconds: float = 2.0,
+    expected_model_id: str | None = None,
+    required_process_args: tuple[str, ...] = (),
 ) -> Task309ProviderStatus:
     """Build one persistent provider status report without mutating Docker state."""
 
@@ -74,11 +76,30 @@ def build_task309_provider_status(
         devices = _devices(inspect_payload.payload)
     tcp_reachable = _tcp_reachable("127.0.0.1", port, timeout_seconds=timeout_seconds)
     models_endpoint = _models_endpoint(provider_url, timeout_seconds=timeout_seconds)
-    localhost_only = _localhost_only(port_bindings, port=port)
+    localhost_tcp_listener = _localhost_tcp_listener(port)
+    localhost_only = _localhost_only(port_bindings, port=port) or localhost_tcp_listener
     request_logging_disabled = "--disable-log-requests" in container_command
     rocm_image = container_image is not None and "rocm" in container_image.lower()
     gpu_devices_mounted = _gpu_devices_mounted(devices)
-    no_cpu_fallback_proved = rocm_image and gpu_devices_mounted
+    llama_process_command = _llama_process_command(port)
+    llama_process_present = len(llama_process_command) > 0
+    llama_required_args_present = _required_args_present(
+        process_command=llama_process_command,
+        required_args=required_process_args,
+    )
+    expected_model_present = (
+        len(models_endpoint.model_ids) > 0
+        if expected_model_id is None
+        else expected_model_id in models_endpoint.model_ids
+    )
+    llama_no_cpu_fallback_proved = (
+        llama_process_present
+        and llama_required_args_present
+        and "--n-gpu-layers" in required_process_args
+        and "all" in required_process_args
+        and _command_ok(("rocm-smi",))
+    )
+    no_cpu_fallback_proved = (rocm_image and gpu_devices_mounted) or llama_no_cpu_fallback_proved
     docker_ready = (
         docker_available
         and container_present
@@ -89,7 +110,17 @@ def build_task309_provider_status(
         and request_logging_disabled
         and no_cpu_fallback_proved
     )
-    llama_ready = tcp_reachable and models_endpoint.reachable and len(models_endpoint.model_ids) > 0
+    llama_required_arg_gate = not required_process_args or llama_required_args_present
+    llama_no_cpu_fallback_gate = not required_process_args or no_cpu_fallback_proved
+    llama_ready = (
+        tcp_reachable
+        and models_endpoint.reachable
+        and localhost_tcp_listener
+        and expected_model_present
+        and llama_process_present
+        and llama_required_arg_gate
+        and llama_no_cpu_fallback_gate
+    )
     ready = docker_ready or llama_ready
     return Task309ProviderStatus(
         schema_version=TASK309_PROVIDER_STATUS_SCHEMA_VERSION,
@@ -108,10 +139,17 @@ def build_task309_provider_status(
         tcp_reachable=tcp_reachable,
         models_endpoint=models_endpoint,
         localhost_only=localhost_only,
+        localhost_tcp_listener=localhost_tcp_listener,
         request_logging_disabled=request_logging_disabled,
         rocm_image=rocm_image,
         gpu_devices_mounted=gpu_devices_mounted,
         no_cpu_fallback_proved=no_cpu_fallback_proved,
+        expected_model_id=expected_model_id,
+        expected_model_present=expected_model_present,
+        llama_process_present=llama_process_present,
+        llama_process_command=llama_process_command,
+        llama_required_args_present=llama_required_args_present,
+        llama_required_args=required_process_args,
         ready=ready,
     )
 
@@ -124,6 +162,8 @@ def build_task309_hemma_preflight(
     port: int = DEFAULT_PROVIDER_PORT,
     cache_paths: tuple[str, ...] = DEFAULT_CACHE_PATHS,
     timeout_seconds: float = 2.0,
+    expected_model_id: str | None = None,
+    required_process_args: tuple[str, ...] = (),
 ) -> Task309HemmaPreflight:
     """Build one Hemma preflight report for the Task 309 provider lane."""
 
@@ -137,6 +177,8 @@ def build_task309_hemma_preflight(
         container_name=container_name,
         port=port,
         timeout_seconds=timeout_seconds,
+        expected_model_id=expected_model_id,
+        required_process_args=required_process_args,
     )
     manifest_sha = _sha256_or_none(manifest_path)
     blockers = _preflight_blockers(
@@ -232,6 +274,20 @@ def _text_command(command: tuple[str, ...]) -> str | None:
         return None
     text = result.stdout.strip()
     return text if text else None
+
+
+def _command_ok(command: tuple[str, ...]) -> bool:
+    try:
+        result = subprocess.run(
+            list(command),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=20,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
 
 
 def _path_probe(path: str) -> Task309PathProbe:
@@ -343,6 +399,81 @@ def _tcp_reachable(host: str, port: int, *, timeout_seconds: float) -> bool:
         return False
 
 
+def _localhost_tcp_listener(port: int) -> bool:
+    listeners = _tcp_listeners(port)
+    if not listeners:
+        return False
+    return all(_is_loopback_listener(listener, port=port) for listener in listeners)
+
+
+def _tcp_listeners(port: int) -> tuple[str, ...]:
+    try:
+        result = subprocess.run(
+            ["ss", "-ltn"],
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return ()
+    if result.returncode != 0:
+        return ()
+    suffix = f":{port}"
+    listeners: list[str] = []
+    for line in result.stdout.splitlines()[1:]:
+        columns = line.split()
+        if len(columns) < 4:
+            continue
+        local_address = columns[3]
+        if local_address.endswith(suffix):
+            listeners.append(local_address)
+    return tuple(sorted(listeners))
+
+
+def _is_loopback_listener(listener: str, *, port: int) -> bool:
+    expected_suffix = f":{port}"
+    if not listener.endswith(expected_suffix):
+        return False
+    host = listener[: -len(expected_suffix)]
+    return host in {"127.0.0.1", "[::1]", "::1", "localhost"}
+
+
+def _llama_process_command(port: int) -> tuple[str, ...]:
+    try:
+        result = subprocess.run(
+            ["ps", "-eo", "pid=,args="],
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return ()
+    if result.returncode != 0:
+        return ()
+    port_value = str(port)
+    for line in result.stdout.splitlines():
+        if "llama-server" not in line:
+            continue
+        if f"--port {port_value}" in line or f"--port={port_value}" in line:
+            return tuple(line.split())
+    return ()
+
+
+def _required_args_present(
+    *,
+    process_command: tuple[str, ...],
+    required_args: tuple[str, ...],
+) -> bool:
+    if not required_args:
+        return True
+    process_text = " ".join(process_command)
+    if not process_text:
+        return False
+    return all(arg in process_command or arg in process_text for arg in required_args)
+
+
 def _models_endpoint(provider_url: str, *, timeout_seconds: float) -> Task309ModelsEndpointProbe:
     url = provider_url.rstrip("/") + "/v1/models"
     request = urllib.request.Request(url, method="GET")
@@ -426,7 +557,7 @@ def _preflight_blockers(
     for path_probe in cache_path_probes:
         if not path_probe.exists or not path_probe.is_dir:
             blockers.append(f"cache_path_missing:{path_probe.path}")
-    if not provider_status.container_running:
+    if not provider_status.container_running and not provider_status.llama_process_present:
         blockers.append("provider_container_not_running")
     if not provider_status.tcp_reachable:
         blockers.append("provider_port_unreachable")
@@ -435,9 +566,14 @@ def _preflight_blockers(
     if not provider_status.localhost_only:
         blockers.append("provider_not_localhost_only")
     if not provider_status.request_logging_disabled:
-        blockers.append("provider_request_logging_not_proved_disabled")
+        if not provider_status.llama_process_present:
+            blockers.append("provider_request_logging_not_proved_disabled")
     if not provider_status.no_cpu_fallback_proved:
         blockers.append("provider_no_cpu_fallback_not_proved")
+    if provider_status.expected_model_id and not provider_status.expected_model_present:
+        blockers.append("provider_expected_model_missing")
+    if provider_status.llama_required_args and not provider_status.llama_required_args_present:
+        blockers.append("provider_llama_required_args_missing")
     return tuple(blockers)
 
 

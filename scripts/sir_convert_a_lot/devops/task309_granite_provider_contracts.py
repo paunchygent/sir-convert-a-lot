@@ -20,6 +20,7 @@ from dataclasses import asdict, dataclass
 TASK309_PROVIDER_STATUS_SCHEMA_VERSION = "task309_granite_provider_status_v1"
 TASK309_HEMMA_PREFLIGHT_SCHEMA_VERSION = "task309_granite_hemma_preflight_v1"
 TASK309_PROVIDER_PERSISTENT_POLICY = "leave_running_until_operator_stop"
+TASK309_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION = "task309_llama_provider_launch_v1"
 DEFAULT_PROVIDER_URL = "http://127.0.0.1:8017"
 DEFAULT_PROVIDER_CONTAINER_NAME = "sir-convert-task309-granite-vllm"
 DEFAULT_PROVIDER_PORT = 8017
@@ -96,7 +97,7 @@ class Task309ModelsEndpointProbe:
 
 @dataclass(frozen=True)
 class Task309ProviderStatus:
-    """Persistent Granite/vLLM provider status report."""
+    """Persistent Task 309 provider status report."""
 
     schema_version: str
     checked_at: str
@@ -114,10 +115,17 @@ class Task309ProviderStatus:
     tcp_reachable: bool
     models_endpoint: Task309ModelsEndpointProbe
     localhost_only: bool
+    localhost_tcp_listener: bool
     request_logging_disabled: bool
     rocm_image: bool
     gpu_devices_mounted: bool
     no_cpu_fallback_proved: bool
+    expected_model_id: str | None
+    expected_model_present: bool
+    llama_process_present: bool
+    llama_process_command: tuple[str, ...]
+    llama_required_args_present: bool
+    llama_required_args: tuple[str, ...]
     ready: bool
 
     def to_payload(self) -> dict[str, object]:
@@ -188,6 +196,56 @@ class Task309ProviderLaunchResult:
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload for the provider launch result."""
+
+        return _json_object(asdict(self))
+
+
+@dataclass(frozen=True)
+class Task309LlamaProviderLaunchPlan:
+    """Persistent llama.cpp launch command and policy for Task 309."""
+
+    schema_version: str
+    generated_at: str
+    provider_profile: str
+    provider_url: str
+    model: str
+    host: str
+    port: int
+    server_binary: str
+    hf_repo: str
+    hf_file: str
+    llama_cache_path: str
+    xdg_cache_home: str
+    media_path: str
+    output_root: str
+    log_path: str
+    pid_path: str
+    persistent_policy: str
+    command: tuple[str, ...]
+    dry_run: bool
+
+    def to_payload(self) -> dict[str, object]:
+        """Return deterministic JSON payload for the llama.cpp launch plan."""
+
+        return _json_object(asdict(self))
+
+
+@dataclass(frozen=True)
+class Task309LlamaProviderLaunchResult:
+    """Result of a Task 309 persistent llama.cpp launch attempt."""
+
+    schema_version: str
+    launched_at: str
+    provider_profile: str
+    dry_run: bool
+    exit_code: int | None
+    pid: int | None
+    ok: bool
+    error_kind: str | None
+    plan: Task309LlamaProviderLaunchPlan
+
+    def to_payload(self) -> dict[str, object]:
+        """Return deterministic JSON payload for the llama.cpp launch result."""
 
         return _json_object(asdict(self))
 

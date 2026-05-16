@@ -50,6 +50,7 @@ class Task309ProviderExchange:
     model: str
     endpoint_kind: str
     output_mode: str
+    multimodal_request: bool
     request_payload_json: str
     response_status_code: int | None
     raw_response_text: str | None
@@ -250,6 +251,7 @@ class Task309CapturingStructuredChatProvider:
             model=profile.model,
             endpoint_kind=profile.endpoint_kind.value,
             output_mode=profile.output_mode.value,
+            multimodal_request=bool(request.user_content_parts),
             request_payload_json=request_payload_json,
             response_status_code=response_status_code,
             raw_response_text=raw_response_text,

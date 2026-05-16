@@ -47,7 +47,9 @@ benchmark, and tunnel work.
 ## Global Invariants
 
 - Canonical remote repo: `/home/paunchygent/apps/sir-convert-a-lot`.
-- Canonical local command wrapper: `pdm run run-hemma -- ...`.
+- Canonical Hemma command wrapper: `pdm run run-hemma -- ...`.
+- `run-hemma` SSHes from client machines and runs directly when the current
+  session is already in the canonical Hemma Server checkout.
 - `pdm run run-hemma --shell ...` is for short probes that need shell syntax.
 - Long-running Hemma work uses committed detached runners or supervised remote
   surfaces.

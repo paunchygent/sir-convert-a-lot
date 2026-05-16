@@ -116,6 +116,7 @@ class StructuredLLMProviderCapabilities:
     supports_json_schema: bool
     supports_gbnf: bool
     supports_vllm_structured_choice: bool
+    supports_multimodal_vision: bool = False
 
 
 @dataclass(frozen=True)
@@ -221,6 +222,31 @@ class StructuredLLMPromptPreflightResult:
 
 
 @dataclass(frozen=True)
+class StructuredLLMTextContentPart:
+    """One text part in a multimodal Chat Completions user message."""
+
+    text: str
+
+    def __post_init__(self) -> None:
+        if not self.text.strip():
+            raise ValueError("Structured LLM text content part must be non-empty.")
+
+
+@dataclass(frozen=True)
+class StructuredLLMImageURLContentPart:
+    """One image URL part in a multimodal Chat Completions user message."""
+
+    url: str
+
+    def __post_init__(self) -> None:
+        if not self.url.strip():
+            raise ValueError("Structured LLM image URL content part must be non-empty.")
+
+
+StructuredLLMUserContentPart = StructuredLLMTextContentPart | StructuredLLMImageURLContentPart
+
+
+@dataclass(frozen=True)
 class StructuredLLMRequest:
     """Single-turn item-local structured-output request."""
 
@@ -234,6 +260,7 @@ class StructuredLLMRequest:
     estimated_input_tokens: int
     max_output_tokens: int
     allow_remote_fallback: bool | None
+    user_content_parts: tuple[StructuredLLMUserContentPart, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.job_id.strip():
@@ -252,6 +279,9 @@ class StructuredLLMRequest:
             raise ValueError("Structured LLM estimated_input_tokens cannot be negative.")
         if self.max_output_tokens <= 0:
             raise ValueError("Structured LLM max_output_tokens must be positive.")
+        if self.user_content_parts:
+            if not isinstance(self.user_content_parts[0], StructuredLLMTextContentPart):
+                raise ValueError("Multimodal user content must start with a text part.")
 
 
 @dataclass(frozen=True)

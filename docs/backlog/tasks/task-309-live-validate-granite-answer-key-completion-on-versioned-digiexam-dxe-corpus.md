@@ -383,6 +383,19 @@ Task 311 owns the strict production service-backed mirror.
   2 manual-follow-up, and 273 skipped. Devstral fails Swedish curriculum
   terminology and genetics items that Qwen3.6 answers correctly, so it is
   demoted for this route.
+- Added the eval-only Task 309 vision-asset path for the Qwen3.6 llama.cpp
+  profile. Default Granite and non-vision request planning still skip the two
+  embedded-asset rows as `unsupported_assets`; `qwen36-llama-cpp` now exports
+  supported PNG/JPEG images under `<output-root>/vision-assets`, renders
+  per-item human-review previews with real image paths and visible gap
+  placeholders, sends llama.cpp `messages[].content` arrays with one text part
+  plus `file://` image URL parts, and reports asset eligibility plus
+  multimodal request counts in request-shape/live-run artifacts.
+- Added teacher-verified goldens for the two asset-bearing gap-fill rows:
+  `1776888013-ak7-lag-och-ratt.dxe` `item-003` and
+  `1811577114-ekologiprov-v-49-25d-e.dxe` `item-013`. Golden validation now
+  covers 44 entries; the committed default corpus manifest remains text-only
+  with 42 default eligible advisory items.
 
 ## Validation Evidence
 
@@ -417,6 +430,10 @@ Task 311 owns the strict production service-backed mirror.
   `provider_runtime=llama-cpp-json-schema` and
   `model=devstral-small-24b`: 34 correct, 8 wrong-but-valid,
   2 manual-follow-up, 273 skipped.
+- `pdm run task-309-answer-key-live validate-goldens --output-root build/verification/task-309-vision-eval-support --fail-on-blocked`
+- `pdm run task-309-answer-key-live preview-request-shape --provider-profile qwen36-llama-cpp --output-root build/verification/task-309-vision-eval-support --fail-on-blocked`
+- `jq '{attempted:.attempted_item_count, eligible:.manifest_eligible_item_count, issue:.issue_count, multimodal:([.items[]|select(.multimodal_request==true)]|length), asset_rows:[.items[]|select(.asset_eligible==true)|{source_filename,item_id,preview_artifact_path,multimodal_request,issues}]}' build/verification/task-309-vision-eval-support/request-shape-preview.json`
+- `rg -n "data-image-id|content_base64|base64" build/verification/task-309-vision-eval-support/request-shape-preview.json build/verification/task-309-vision-eval-support/vision-assets || true`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`

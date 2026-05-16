@@ -38,8 +38,16 @@ from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles impor
     Task309StructuredProviderRuntime,
     build_task309_provider_profile,
 )
+from scripts.sir_convert_a_lot.devops.task309_vision_assets import (
+    Task309VisionCandidatePlanner,
+    export_task309_vision_assets,
+    vision_item_assets_by_id,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion import (
     build_digiexam_answer_key_completion_report,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
+    answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
     report_to_json_payload,
@@ -82,6 +90,8 @@ class Task309AdvisoryCorpusRunReport:
     manual_follow_up_count: int
     skipped_count: int
     backend_failure_counts: tuple[dict[str, object], ...]
+    asset_eligible_count: int
+    multimodal_request_count: int
     total_latency_ms: float | None
     report_paths: tuple[str, ...]
 
@@ -149,6 +159,8 @@ async def _run_task309_advisory_corpus(
     report_paths: list[str] = []
     decision_counts: Counter[str] = Counter()
     backend_failures: Counter[str] = Counter()
+    asset_eligible_count = 0
+    multimodal_request_count = 0
     item_count = 0
     started = time.perf_counter()
     profile = build_task309_provider_profile(runtime=provider_runtime, model=model)
@@ -161,6 +173,20 @@ async def _run_task309_advisory_corpus(
         )
         for source_path in files:
             exam = build_digiexam_intermediate_exam(parser.parse_file(source_path))
+            vision_export = (
+                export_task309_vision_assets(
+                    exam=exam,
+                    source_filename=source_path.name,
+                    media_path=reports_root.parent / "vision-assets",
+                )
+                if profile.capabilities.supports_multimodal_vision
+                else None
+            )
+            item_assets_by_id = vision_item_assets_by_id(vision_export) if vision_export else {}
+            candidate_planner = Task309VisionCandidatePlanner(
+                base_planner=answer_key_candidate_planner_for_profile(profile),
+                item_assets_by_id=item_assets_by_id,
+            )
             item_count += len(exam.items)
             report = await build_digiexam_answer_key_completion_report(
                 job_id=f"task309:{source_path.stem}",
@@ -169,6 +195,13 @@ async def _run_task309_advisory_corpus(
                 provider_set=StructuredChatProviderSet(primary=profile),
                 route_policy=_route_policy(),
                 provider=provider,
+                candidate_planner=candidate_planner,
+            )
+            asset_eligible_count += len(item_assets_by_id)
+            multimodal_request_count += sum(
+                1
+                for exchange in provider.exchanges_for_job(f"task309:{source_path.stem}").values()
+                if exchange.multimodal_request
             )
             for item in report.items:
                 decision_counts[item.decision_state.value] += 1
@@ -199,6 +232,8 @@ async def _run_task309_advisory_corpus(
         manual_follow_up_count=decision_counts["manual_follow_up_required"],
         skipped_count=decision_counts["skipped"],
         backend_failure_counts=_counter_payload(backend_failures),
+        asset_eligible_count=asset_eligible_count,
+        multimodal_request_count=multimodal_request_count,
         total_latency_ms=round((time.perf_counter() - started) * 1000, 3),
         report_paths=tuple(report_paths),
     )
@@ -227,6 +262,8 @@ def _blocked_corpus_report(
         manual_follow_up_count=0,
         skipped_count=0,
         backend_failure_counts=(),
+        asset_eligible_count=0,
+        multimodal_request_count=0,
         total_latency_ms=None,
         report_paths=(),
     )

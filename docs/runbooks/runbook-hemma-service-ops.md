@@ -37,12 +37,20 @@ runtime guidance.
 ## Command Surfaces
 
 - Local wrapper: `pdm run run-local-pdm <script> [args]`
-- Remote wrapper: `pdm run run-hemma -- <command> [args]`
+- Hemma wrapper: `pdm run run-hemma -- <command> [args]`
 - Short shell probe: `pdm run run-hemma --shell "<command>"`
 - Deploy and live verify: `pdm run hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
 
-Use the wrapper from the local repo root. It verifies the remote repo root,
-remote cwd, and shell context before running commands.
+Use the wrapper from the local repo root. It is environment-aware: from a
+client machine it SSHes to Hemma; from the canonical Hemma Server checkout it
+runs directly after checking the hostname, repo root, and shared skill
+repository path. Set `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when an
+operator deliberately needs the SSH path despite local Hemma detection.
+
+Direct production and ROCm helpers such as `prod-*`,
+`prod-deps-rocm-build`, and `hemma-sync-prod-env-mirror` are Hemma
+Server-only. They fail before Docker or host env mutation when the session does
+not prove the canonical Hemma hostname, repo root, and shared skill repository.
 
 ## Repo Placement Check
 

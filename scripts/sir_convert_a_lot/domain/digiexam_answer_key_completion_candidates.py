@@ -128,7 +128,7 @@ class JsonSchemaAnswerKeyCandidatePlanner:
     ) -> DigiExamCompletionCandidatePlan | None:
         """Build one JSON Schema-backed provider interaction when eligible."""
 
-        if not _provider_eligible(item):
+        if not _provider_eligible_for_profile(item=item, profile=profile):
             return None
         if item.item_type in _CHOICE_TYPES:
             if not valid_alternative_ids(item):
@@ -170,7 +170,7 @@ class GraniteVllmAnswerKeyCandidatePlanner:
     ) -> DigiExamCompletionCandidatePlan | None:
         """Build one vLLM interaction using choice rows where possible."""
 
-        if not _provider_eligible(item):
+        if not _provider_eligible_for_profile(item=item, profile=profile):
             return None
         if item.item_type in _CHOICE_TYPES:
             values = vllm_choice_values(
@@ -218,9 +218,9 @@ class LlamaCppAnswerKeyCandidatePlanner:
     ) -> DigiExamCompletionCandidatePlan | None:
         """Build one llama.cpp interaction using constrained JSON output only."""
 
-        if not _provider_eligible(item):
-            return None
         llama_profile = _llama_cpp_profile(profile)
+        if not _provider_eligible_for_profile(item=item, profile=llama_profile):
+            return None
         if item.item_type in _CHOICE_TYPES:
             if not valid_alternative_ids(item):
                 return None
@@ -301,11 +301,25 @@ class _VllmChoiceAnswerKeyResponseDecoder:
 
 
 def _provider_eligible(item: DigiExamIrItem) -> bool:
+    return _provider_eligible_for_profile(item=item, profile=None)
+
+
+def _provider_eligible_for_profile(
+    *,
+    item: DigiExamIrItem,
+    profile: StructuredLLMProviderProfile | None,
+) -> bool:
     if item.answer_key.provenance != DigiExamAnswerKeyProvenance.ABSENT:
         return False
     if item.warnings and any(warning.blocking for warning in item.warnings):
         return False
-    return not (item.embedded_asset_references or item.embedded_assets)
+    if not (item.embedded_asset_references or item.embedded_assets):
+        return True
+    return (
+        profile is not None
+        and profile.endpoint_kind == StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS
+        and profile.capabilities.supports_multimodal_vision
+    )
 
 
 def _gap_fill_plan(

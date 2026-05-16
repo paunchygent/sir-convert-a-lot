@@ -29,9 +29,11 @@ reference docs, ADRs, and backlog items rather than expanding this root context.
   Python modules describing purpose and relationships.
 - Use Context7 or primary upstream docs before changing third-party dependency
   usage or complex external workflows.
-- Keep command context explicit: local work uses `pdm run run-local-pdm ...`;
-  Hemma work uses `pdm run run-hemma -- ...` or a committed detached command
-  surface.
+- Keep command context explicit: local development uses
+  `pdm run run-local-pdm ...`; Hemma work uses the environment-aware
+  `pdm run run-hemma -- ...` wrapper or a committed detached command surface.
+  From MacBook/client sessions the wrapper SSHes to Hemma; from the canonical
+  Hemma Server repo it executes locally after host/root/skill-repository checks.
 - Git workflow is merge-only: never rebase, amend, force-push, or hide conflict
   resolution in history.
 - Use BuildKit for Docker builds and Docker Compose v2 (`docker compose`), never
@@ -133,9 +135,11 @@ Default close-out:
 
 Use `pdm run run-hemma -- ...` in argv mode by default. Treat
 `pdm run run-hemma --shell ...` as exception-only for short probes that cannot
-be expressed in argv mode. Promote non-trivial remote workflows to committed
-scripts and run long Hemma jobs through detached surfaces with separately
-observable logs, reports, or status commands.
+be expressed in argv mode. The wrapper is environment-aware: it SSHes from
+client machines and runs directly on Hemma when the current session is already
+the canonical Hemma Server checkout. Promote non-trivial remote workflows to
+committed scripts and run long Hemma jobs through detached surfaces with
+separately observable logs, reports, or status commands.
 
 Long-running dev services, Docker volumes, Hemma jobs, and generated artefact
 trees should not be stopped, reset, pruned, or deleted unless the user asks or a

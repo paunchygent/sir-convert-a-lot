@@ -124,7 +124,6 @@ pdm run run-hemma --shell '
   setsid /srv/scratch/sir-convert-a-lot/bin/llama-server \
     -hf <repo> \
     -hff <file.gguf> \
-    --no-mmproj \
     --no-webui \
     --alias <alias> \
     --host 127.0.0.1 \
@@ -135,6 +134,7 @@ pdm run run-hemma --shell '
     --flash-attn on \
     --jinja \
     --reasoning off \
+    --media-path <output-root>/vision-assets \
     <sampling-settings> \
     > <model>.log 2>&1 < /dev/null &
   echo $! > <model>.pid
@@ -221,67 +221,81 @@ candidate selection.
 
 ## Evaluation Command Surface
 
-The committed CLI is `pdm run task-309-answer-key-live` (local) or `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation` (Hemma).
+The committed CLI is `pdm run task-309-answer-key-live`. When Codex is already
+running directly on Hemma, run that command locally from the Hemma checkout; do
+not wrap it in an SSH tunnel. From a non-Hemma workstation, use
+`pdm run run-hemma -- pdm run task-309-answer-key-live ...`.
 
 | Subcommand | Purpose | Where |
 |---|---|---|
 | `prepare-manifests` | Build corpus manifest + expected-answer worklist from `.dxe` fixtures. | Local |
 | `validate-goldens` | Validate teacher-verified `expected-answer-manifest.json`. | Local |
-| `preview-request-shape` | Build all 42 eligible model requests **without calling the provider**. Proves prompt shape, schema/GBNF contract, and item formatting. | Local |
-| `microprobes` | Run redacted structured-output probes (choice object + gap-fill object) against the live provider. | Hemma |
+| `preview-request-shape` | Build eligible model requests **without calling the provider**. Default text-only profiles keep 42 items; `qwen36-llama-cpp` vision eval attempts 44 and emits two multimodal request shapes. | Local |
+| `launch-llama-provider` | Start or dry-run the persistent Hemma-local llama.cpp provider for the Qwen3.6 profile. Writes pid/log launch artifacts and leaves the provider running. | Hemma |
+| `provider-status` | Probe Docker or llama.cpp provider readiness, `/v1/models`, localhost-only exposure, and required runtime flags. | Hemma |
+| `microprobes` | Run redacted structured-output probes against the live provider. The Qwen3.6 vision profile also writes a tiny media-path image and sends one `image_url` probe. | Hemma |
 | `run-advisory-corpus` | Execute the full production in-process advisory path over all 23 `.dxe` files / 317 items. Writes per-file reports. | Hemma |
 | `evaluate-advisory-corpus` | Adjudicate reports against teacher goldens. Emits `correct`, `wrong-but-valid`, `malformed`, `manual-follow-up`, `unknown-id`, `duplicate-id` counts. | Hemma or local (reads artifacts) |
 
-Default args target the **demoted Granite/vLLM** provider on `127.0.0.1:8017`. For llama.cpp GGUF runs you **must** override:
+Default args target the **demoted Granite/vLLM** provider on `127.0.0.1:8017`.
+For the current guarded Qwen3.6 llama.cpp run, use
+`--provider-profile qwen36-llama-cpp`. That profile sets:
 
-- `--provider-url http://127.0.0.1:8082` (or active llama-server port)
-- `--provider-runtime llama-cpp-json-schema` or `llama-cpp-gbnf`
-- `--model <alias>` (current choice: `qwen3.6-27b-q6k`)
+- `--provider-url http://127.0.0.1:8082`
+- `--port 8082`
+- `--provider-runtime llama-cpp-json-schema`
+- `--model qwen3.6-27b-q6k`
+- `--output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local`
+
+For the eval-only vision slice, the same profile launches llama.cpp with
+`--media-path <output-root>/vision-assets`. Supported embedded PNG/JPEG assets
+are exported below that root, provider requests use `file://` URLs relative to
+the media path, and the normal text-only Granite/non-vision eligibility remains
+unchanged.
 
 ## Evaluation Pipeline
 
-Run in this order. Artifacts go to `build/verification/task-309-<model-id>/` locally and `/srv/scratch/sir-convert-a-lot/build/verification/task-309-<model-id>/` on Hemma.
+Run in this order from the Hemma checkout for the Qwen3.6 lane. Artifacts go to
+`/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/`.
 
 ```bash
-## 1. Local: corpus manifest + golden validation
-pdm run task-309-answer-key-live prepare-manifests \
-  --corpus-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe \
-  --output-root build/verification/task-309-<model-id>
-
+## 1. Goldens and request shape, no provider calls
 pdm run task-309-answer-key-live validate-goldens \
-  --output-root build/verification/task-309-<model-id> \
+  --provider-profile qwen36-llama-cpp \
   --fail-on-blocked
 
-## 2. Local: request-shape smoke (zero provider calls)
 pdm run task-309-answer-key-live preview-request-shape \
-  --provider-url http://127.0.0.1:8082 \
-  --model <alias> \
-  --provider-runtime llama-cpp-json-schema \
-  --corpus-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe \
-  --output-root build/verification/task-309-<model-id>-shape-smoke
+  --provider-profile qwen36-llama-cpp \
+  --fail-on-blocked
 
-## 3. Hemma: microprobes against live llama-server
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation microprobes \
-  --provider-url http://127.0.0.1:8082 \
-  --model <alias> \
-  --provider-runtime llama-cpp-json-schema \
-  --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-<model-id> \
-  --timeout-seconds 60
+## 2. Start persistent localhost-only llama.cpp provider
+pdm run task-309-answer-key-live launch-llama-provider \
+  --provider-profile qwen36-llama-cpp \
+  --execute \
+  --fail-on-blocked
 
-## 4. Hemma: full corpus advisory run
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation run-advisory-corpus \
-  --provider-url http://127.0.0.1:8082 \
-  --model <alias> \
-  --provider-runtime llama-cpp-json-schema \
-  --corpus-root inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe \
-  --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-<model-id> \
-  --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-<model-id>/advisory-corpus-reports \
-  --timeout-seconds 90
+pdm run task-309-answer-key-live provider-status \
+  --provider-profile qwen36-llama-cpp \
+  --timeout-seconds 20 \
+  --fail-on-blocked
 
-## 5. Hemma: golden evaluation
-pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation evaluate-advisory-corpus \
-  --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-<model-id> \
-  --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-<model-id>/advisory-corpus-reports
+## 3. Live probes and full advisory corpus
+pdm run task-309-answer-key-live microprobes \
+  --provider-profile qwen36-llama-cpp \
+  --timeout-seconds 60 \
+  --fail-on-blocked
+
+pdm run task-309-answer-key-live run-advisory-corpus \
+  --provider-profile qwen36-llama-cpp \
+  --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports \
+  --timeout-seconds 90 \
+  --fail-on-blocked
+
+## 4. Golden evaluation. Do not pass --fail-on-blocked for guarded Qwen3.6;
+## wrong-but-valid rows remain review evidence, not auto-promotion proof.
+pdm run task-309-answer-key-live evaluate-advisory-corpus \
+  --provider-profile qwen36-llama-cpp \
+  --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports
 ```
 
 Key paths:

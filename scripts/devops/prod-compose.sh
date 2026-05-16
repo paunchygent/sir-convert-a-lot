@@ -15,6 +15,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
+cd "${REPO_ROOT}"
+# shellcheck source=scripts/devops/require-hemma-server.sh
+source "${SCRIPT_DIR}/require-hemma-server.sh"
+sir_convert_require_hemma_server "prod-compose"
+
 export SIR_CONVERT_A_LOT_COMPOSE_LABEL="prod-compose"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.yaml"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE_DESCRIPTION="production compose file"

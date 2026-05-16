@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import asdict, dataclass, replace
+from pathlib import Path
 
 import httpx
 
@@ -40,11 +41,13 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
 )
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMEndpointKind,
+    StructuredLLMImageURLContentPart,
     StructuredLLMOutputMode,
     StructuredLLMProviderError,
     StructuredLLMProviderProfile,
     StructuredLLMRequest,
     StructuredLLMResponse,
+    StructuredLLMTextContentPart,
     StructuredOutputSpec,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
@@ -96,6 +99,7 @@ def run_task309_microprobes(
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
+    vision_media_path: Path | None = None,
 ) -> Task309MicroprobeReport:
     """Run the Task 309 provider microprobes."""
 
@@ -106,6 +110,7 @@ def run_task309_microprobes(
             provider_runtime=provider_runtime,
             require_provider_ready=require_provider_ready,
             timeout_seconds=timeout_seconds,
+            vision_media_path=vision_media_path,
         )
     )
 
@@ -117,6 +122,7 @@ async def _run_task309_microprobes(
     provider_runtime: Task309StructuredProviderRuntime,
     require_provider_ready: bool,
     timeout_seconds: float,
+    vision_media_path: Path | None,
 ) -> Task309MicroprobeReport:
     from urllib.parse import urlparse
 
@@ -147,7 +153,10 @@ async def _run_task309_microprobes(
         )
         results = [
             await _microprobe(provider, request, profile, expected)
-            for request, profile, expected in _microprobe_requests(profile=profile)
+            for request, profile, expected in _microprobe_requests(
+                profile=profile,
+                vision_media_path=vision_media_path,
+            )
         ]
     return Task309MicroprobeReport(
         schema_version=TASK309_MICROPROBE_REPORT_SCHEMA_VERSION,
@@ -214,10 +223,11 @@ def _provider(
 def _microprobe_requests(
     *,
     profile: StructuredLLMProviderProfile,
+    vision_media_path: Path | None,
 ) -> tuple[tuple[StructuredLLMRequest, StructuredLLMProviderProfile, dict[str, object]], ...]:
     if profile.endpoint_kind == StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS:
         return _vllm_microprobe_requests(profile)
-    return _llama_cpp_microprobe_requests(profile)
+    return _llama_cpp_microprobe_requests(profile, vision_media_path=vision_media_path)
 
 
 def _vllm_microprobe_requests(
@@ -244,13 +254,15 @@ def _vllm_microprobe_requests(
 
 def _llama_cpp_microprobe_requests(
     profile: StructuredLLMProviderProfile,
+    *,
+    vision_media_path: Path | None,
 ) -> tuple[tuple[StructuredLLMRequest, StructuredLLMProviderProfile, dict[str, object]], ...]:
     choice_spec = _choice_object_spec()
     gap_spec = _gap_probe_spec()
     if profile.output_mode == StructuredLLMOutputMode.GBNF:
         choice_spec = replace(choice_spec, gbnf_grammar=choice_answer_key_decision_gbnf())
         gap_spec = replace(gap_spec, gbnf_grammar=gap_fill_answer_key_decision_gbnf())
-    return (
+    probes: list[tuple[StructuredLLMRequest, StructuredLLMProviderProfile, dict[str, object]]] = [
         (
             _request("microprobe-choice-object", choice_spec, '{"answer":2}'),
             profile,
@@ -261,14 +273,39 @@ def _llama_cpp_microprobe_requests(
             profile,
             {"decision_state": "answered", "gap_id": "gap-1"},
         ),
-    )
+    ]
+    if profile.capabilities.supports_multimodal_vision and vision_media_path is not None:
+        image_url = _write_tiny_vision_probe(vision_media_path)
+        probes.append(
+            (
+                _request(
+                    "microprobe-vision-object",
+                    gap_spec,
+                    '{"gap_id":"gap-1","asset":"tiny_probe"}',
+                    image_url=image_url,
+                ),
+                profile,
+                {"decision_state": "answered", "gap_id": "gap-1"},
+            )
+        )
+    return tuple(probes)
 
 
 def _request(
     item_id: str,
     output_spec: StructuredOutputSpec,
     user_payload: str,
+    *,
+    image_url: str | None = None,
 ) -> StructuredLLMRequest:
+    content_parts = (
+        (
+            StructuredLLMTextContentPart(user_payload),
+            StructuredLLMImageURLContentPart(image_url),
+        )
+        if image_url is not None
+        else ()
+    )
     return StructuredLLMRequest(
         job_id="task309-microprobe",
         item_id=item_id,
@@ -280,7 +317,21 @@ def _request(
         estimated_input_tokens=max(1, len(user_payload) // 4),
         max_output_tokens=128,
         allow_remote_fallback=False,
+        user_content_parts=content_parts,
     )
+
+
+def _write_tiny_vision_probe(vision_media_path: Path) -> str:
+    relative_path = Path("microprobes") / "tiny-vision-probe.png"
+    output_path = vision_media_path / relative_path
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+        b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00"
+        b"\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xff\xff?\x00"
+        b"\x05\xfe\x02\xfeA\xfd\xbc3\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    return f"file://{relative_path.as_posix()}"
 
 
 def _choice_probe_spec() -> StructuredOutputSpec:

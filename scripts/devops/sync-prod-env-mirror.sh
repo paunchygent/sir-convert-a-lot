@@ -3,6 +3,13 @@ set -euo pipefail
 
 APPS_ROOT="/home/paunchygent/apps"
 ENV_ROOT="/home/paunchygent/infrastructure/env/prod"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+cd "${REPO_ROOT}"
+# shellcheck source=scripts/devops/require-hemma-server.sh
+source "${SCRIPT_DIR}/require-hemma-server.sh"
+sir_convert_require_hemma_server "sync-prod-env-mirror"
 
 repos=(
   "sir-convert-a-lot"

@@ -73,6 +73,13 @@ class Task309Count:
 
 
 @dataclass(frozen=True)
+class Task309AssetEvalPolicy:
+    """Eval-only embedded-asset eligibility policy for Task 309."""
+
+    allow_supported_embedded_assets: bool = False
+
+
+@dataclass(frozen=True)
 class Task309LiveValidationItem:
     """One item-addressable Task 309 validation manifest row."""
 
@@ -168,6 +175,7 @@ def build_task309_live_validation_manifest(
     corpus_root: Path,
     *,
     source_root_hint: str | None = None,
+    asset_eval_policy: Task309AssetEvalPolicy = Task309AssetEvalPolicy(),
 ) -> Task309LiveValidationManifest:
     """Build the Task 309 corpus manifest from a versioned `.dxe` fixture root."""
 
@@ -178,7 +186,9 @@ def build_task309_live_validation_manifest(
         raise ValueError(f"Task 309 corpus contains no `.dxe` files: {corpus_root}")
 
     parser = DigiExamDxeParser()
-    manifest_files = tuple(_build_file(path, parser=parser) for path in files)
+    manifest_files = tuple(
+        _build_file(path, parser=parser, asset_eval_policy=asset_eval_policy) for path in files
+    )
     return Task309LiveValidationManifest(
         schema_version=TASK309_CORPUS_MANIFEST_SCHEMA_VERSION,
         corpus_id=TASK309_CORPUS_ID,
@@ -229,11 +239,19 @@ def write_task309_json(payload: dict[str, object], output_path: Path) -> None:
     )
 
 
-def _build_file(path: Path, *, parser: DigiExamDxeParser) -> Task309LiveValidationFile:
+def _build_file(
+    path: Path,
+    *,
+    parser: DigiExamDxeParser,
+    asset_eval_policy: Task309AssetEvalPolicy,
+) -> Task309LiveValidationFile:
     source_sha256 = _source_sha256(path)
     parse_result = parser.parse_file(path)
     exam = build_digiexam_intermediate_exam(parse_result)
-    items = tuple(_build_item(path.name, source_sha256, item) for item in exam.items)
+    items = tuple(
+        _build_item(path.name, source_sha256, item, asset_eval_policy=asset_eval_policy)
+        for item in exam.items
+    )
     return Task309LiveValidationFile(
         filename=path.name,
         source_sha256=source_sha256,
@@ -249,8 +267,10 @@ def _build_item(
     source_filename: str,
     source_sha256: str,
     item: DigiExamIrItem,
+    *,
+    asset_eval_policy: Task309AssetEvalPolicy,
 ) -> Task309LiveValidationItem:
-    skip_reason = _skip_reason(item)
+    skip_reason = _skip_reason(item, asset_eval_policy=asset_eval_policy)
     output_mode = _output_mode(item, skip_reason)
     return Task309LiveValidationItem(
         source_filename=source_filename,
@@ -270,7 +290,11 @@ def _build_item(
     )
 
 
-def _skip_reason(item: DigiExamIrItem) -> Task309SkipReason:
+def _skip_reason(
+    item: DigiExamIrItem,
+    *,
+    asset_eval_policy: Task309AssetEvalPolicy,
+) -> Task309SkipReason:
     if item.item_type not in {
         DigiExamItemType.SINGLE_CHOICE,
         DigiExamItemType.MULTIPLE_CHOICE,
@@ -286,7 +310,10 @@ def _skip_reason(item: DigiExamIrItem) -> Task309SkipReason:
     if any(warning.blocking for warning in item.warnings):
         return Task309SkipReason.UNRELIABLE_STRUCTURE
     if item.embedded_assets or item.embedded_asset_references:
-        return Task309SkipReason.UNSUPPORTED_ASSETS
+        if asset_eval_policy.allow_supported_embedded_assets and _supported_asset_item(item):
+            pass
+        else:
+            return Task309SkipReason.UNSUPPORTED_ASSETS
     if item.item_type in {
         DigiExamItemType.SINGLE_CHOICE,
         DigiExamItemType.MULTIPLE_CHOICE,
@@ -301,6 +328,18 @@ def _skip_reason(item: DigiExamIrItem) -> Task309SkipReason:
             return Task309SkipReason.MISSING_CANDIDATE_STRUCTURE
         return Task309SkipReason.NONE
     return Task309SkipReason.UNSUPPORTED_ITEM_TYPE
+
+
+def _supported_asset_item(item: DigiExamIrItem) -> bool:
+    if not item.embedded_assets or not item.embedded_asset_references:
+        return False
+    supported_media = {"image/png", "image/jpeg"}
+    asset_ids = {asset.asset_id for asset in item.embedded_assets}
+    reference_asset_ids = {reference.asset_id for reference in item.embedded_asset_references}
+    return asset_ids == reference_asset_ids and all(
+        asset.media_type in supported_media and asset.content_base64
+        for asset in item.embedded_assets
+    )
 
 
 def _output_mode(item: DigiExamIrItem, skip_reason: Task309SkipReason) -> Task309OutputMode:

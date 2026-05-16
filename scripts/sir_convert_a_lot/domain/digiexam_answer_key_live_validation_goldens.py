@@ -25,6 +25,7 @@ from pydantic import JsonValue
 
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
     TASK309_CORPUS_ID,
+    Task309AssetEvalPolicy,
     Task309LiveValidationFile,
     Task309LiveValidationItem,
     build_task309_live_validation_manifest,
@@ -104,7 +105,10 @@ def validate_task309_expected_answer_manifest(
 ) -> Task309GoldenValidationReport:
     """Validate the committed expected-answer manifest for one Task 309 corpus."""
 
-    corpus_manifest = build_task309_live_validation_manifest(corpus_root)
+    corpus_manifest = build_task309_live_validation_manifest(
+        corpus_root,
+        asset_eval_policy=Task309AssetEvalPolicy(allow_supported_embedded_assets=True),
+    )
     eligible_items = _eligible_items(corpus_manifest.files)
     ir_items = _ir_items(corpus_root)
     payload = _load_object(expected_answer_manifest_path)

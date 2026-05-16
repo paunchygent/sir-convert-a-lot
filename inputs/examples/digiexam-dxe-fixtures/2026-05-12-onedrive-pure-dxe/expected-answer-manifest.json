@@ -92,6 +92,48 @@
     {
       "adjudication_required": false,
       "expected_answer_payload": {
+        "gap_answers": [
+          {
+            "accepted_values": [
+              "häktad"
+            ],
+            "gap_id": "9bc8c11e4fbd450e9f72d8de947541e1"
+          },
+          {
+            "accepted_values": [
+              "åtalad"
+            ],
+            "gap_id": "e7edf0f7c6b048fc9f450cf104d5ba5b"
+          },
+          {
+            "accepted_values": [
+              "rättegång"
+            ],
+            "gap_id": "fd0e360b72f2459f9cbe0f803047fc7a"
+          },
+          {
+            "accepted_values": [
+              "dom"
+            ],
+            "gap_id": "ce45cbcdae5c40b2b0e3631dd8f4b712"
+          }
+        ],
+        "kind": "gap_fill"
+      },
+      "expected_answer_state": "teacher_verified",
+      "item_id": "item-003",
+      "item_type": "gap_fill",
+      "output_mode": "json_schema",
+      "sequence": 3,
+      "source_filename": "1776888013-ak7-lag-och-ratt.dxe",
+      "source_item_fingerprint": "sha256:1472ea69adc2b872bde6fcc0538a48c8d4ddd44d25a48beb3c4e973a66462660",
+      "source_sha256": "sha256:ab39bbee54ec9004ce733e0942caa3c4934c37f87c7d35d59c9a16eca4f3839a",
+      "verification_note": "teacher_verified_task309_vision_asset_eval",
+      "verification_state": "teacher_verified"
+    },
+    {
+      "adjudication_required": false,
+      "expected_answer_payload": {
         "correct_alternative_ids": [
           2,
           3,
@@ -676,6 +718,54 @@
     {
       "adjudication_required": false,
       "expected_answer_payload": {
+        "gap_answers": [
+          {
+            "accepted_values": [
+              "D"
+            ],
+            "gap_id": "c12fe59e-3b5b-4321-9307-0837ec0eb32b"
+          },
+          {
+            "accepted_values": [
+              "A"
+            ],
+            "gap_id": "b4bc8f34-7d82-402a-8295-bd944f74e2da"
+          },
+          {
+            "accepted_values": [
+              "B"
+            ],
+            "gap_id": "dd7fdfac-ec33-4035-85bf-952be9b8b65a"
+          },
+          {
+            "accepted_values": [
+              "E"
+            ],
+            "gap_id": "b1c934e0-3ece-451c-924b-882c85c10aef"
+          },
+          {
+            "accepted_values": [
+              "C"
+            ],
+            "gap_id": "ba6d3055-2424-414a-bc8f-0b1e6deb053b"
+          }
+        ],
+        "kind": "gap_fill"
+      },
+      "expected_answer_state": "teacher_verified",
+      "item_id": "item-013",
+      "item_type": "gap_fill",
+      "output_mode": "json_schema",
+      "sequence": 13,
+      "source_filename": "1811577114-ekologiprov-v-49-25d-e.dxe",
+      "source_item_fingerprint": "sha256:20af208f8ae28bd2b73ae5e27c9f1a83e761578bb23e370c229ea3a6ea0aa591",
+      "source_sha256": "sha256:6653c581672de98c09a501e4247e45faaa61bee309f88409d0b6d0525afaa57b",
+      "verification_note": "teacher_verified_task309_vision_asset_eval",
+      "verification_state": "teacher_verified"
+    },
+    {
+      "adjudication_required": false,
+      "expected_answer_payload": {
         "correct_alternative_ids": [
           1
         ],
@@ -1180,10 +1270,10 @@
   "schema_version": "digiexam_answer_key_live_validation_expected_answers_v1",
   "summary": {
     "adjudication_required_count": 0,
-    "entry_count": 42,
+    "entry_count": 44,
     "item_type_counts": [
       {
-        "count": 11,
+        "count": 13,
         "key": "gap_fill"
       },
       {

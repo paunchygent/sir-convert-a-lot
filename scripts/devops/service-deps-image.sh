@@ -31,9 +31,16 @@ fi
 
 RUNTIME_KIND="$1"
 ACTION="$2"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+cd "${REPO_ROOT}"
 
 case "${RUNTIME_KIND}" in
   rocm)
+    # shellcheck source=scripts/devops/require-hemma-server.sh
+    source "${SCRIPT_DIR}/require-hemma-server.sh"
+    sir_convert_require_hemma_server "service-deps-image rocm"
     TARGET_STAGE="rocm-deps"
     IMAGE_REPOSITORY="${SIR_CONVERT_A_LOT_DEPS_ROCM_IMAGE_REPOSITORY:-sir-convert-a-lot-deps-rocm}"
     ;;
@@ -56,13 +63,9 @@ case "${ACTION}" in
     ;;
 esac
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTRACT_DIR="${REPO_ROOT}/docker/service-deps"
 REQUIREMENTS_PATH="${CONTRACT_DIR}/service-requirements.txt"
 PYTHON_IMAGE="${SIR_CONVERT_A_LOT_DEPS_PYTHON_IMAGE:-python:3.11-slim}"
-
-cd "${REPO_ROOT}"
 
 export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
 

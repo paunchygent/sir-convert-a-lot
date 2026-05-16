@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import socket
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
@@ -27,8 +29,8 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
     DEFAULT_PROVIDER_IMAGE,
     DEFAULT_PROVIDER_MODEL,
     DEFAULT_PROVIDER_PORT,
-    DEFAULT_PROVIDER_URL,
     Task309HemmaPreflight,
+    Task309LlamaProviderLaunchResult,
     Task309ProviderLaunchResult,
     Task309ProviderStatus,
 )
@@ -38,6 +40,7 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_launch import (
 )
 from scripts.sir_convert_a_lot.devops.task309_granite_provider_reporting import (
     write_task309_hemma_preflight_artifacts,
+    write_task309_llama_provider_launch_artifacts,
     write_task309_provider_launch_artifacts,
     write_task309_provider_status_artifacts,
 )
@@ -57,14 +60,26 @@ from scripts.sir_convert_a_lot.devops.task309_live_microprobes import (
     Task309MicroprobeReport,
     run_task309_microprobes,
 )
+from scripts.sir_convert_a_lot.devops.task309_llama_provider_launch import (
+    build_task309_llama_provider_launch_plan,
+    launch_task309_llama_provider,
+    qwen36_llama_required_process_args,
+)
 from scripts.sir_convert_a_lot.devops.task309_request_shape_preview import (
     Task309RequestShapePreview,
     build_task309_request_shape_preview,
     write_task309_request_shape_preview,
 )
 from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
-    DEFAULT_TASK309_PROVIDER_RUNTIME,
+    QWEN36_LLAMA_CPP_CACHE_PATH,
+    QWEN36_LLAMA_CPP_HF_FILE,
+    QWEN36_LLAMA_CPP_HF_REPO,
+    QWEN36_LLAMA_CPP_SERVER_BINARY,
+    Task309ProviderDefaults,
+    Task309ProviderProfileName,
     parse_task309_provider_runtime,
+    task309_defaults_for_provider_profile,
+    task309_provider_profile_values,
     task309_provider_runtime_values,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
@@ -90,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = _build_parser()
     args = parser.parse_args(argv)
+    _apply_provider_defaults(args)
     if args.command == "prepare-manifests":
         _prepare_manifests(
             corpus_root=args.corpus_root,
@@ -113,11 +129,12 @@ def main(argv: list[str] | None = None) -> int:
             provider_url=args.provider_url,
             model=args.model,
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            vision_media_path=args.output_root / "vision-assets",
         )
         _write_request_shape_preview(output_root=args.output_root, preview=preview)
         return _blocked_exit_code(preview.ok, fail_on_blocked=args.fail_on_blocked)
     if args.command == "launch-provider":
-        result = _launch_provider(
+        provider_launch_result = _launch_provider(
             output_root=args.output_root,
             container_name=args.container_name,
             image=args.image,
@@ -126,13 +143,30 @@ def main(argv: list[str] | None = None) -> int:
             host_cache_path=args.host_cache_path,
             execute=args.execute,
         )
-        return _blocked_exit_code(result.ok, fail_on_blocked=args.fail_on_blocked)
+        return _blocked_exit_code(provider_launch_result.ok, fail_on_blocked=args.fail_on_blocked)
+    if args.command == "launch-llama-provider":
+        _require_hemma_server("launch-llama-provider")
+        llama_launch_result = _launch_llama_provider(
+            output_root=args.output_root,
+            provider_profile=args.provider_profile,
+            provider_url=args.provider_url,
+            model=args.model,
+            port=args.port,
+            server_binary=args.server_binary,
+            hf_repo=args.hf_repo,
+            hf_file=args.hf_file,
+            llama_cache_path=args.llama_cache_path,
+            execute=args.execute,
+        )
+        return _blocked_exit_code(llama_launch_result.ok, fail_on_blocked=args.fail_on_blocked)
     if args.command == "provider-status":
         status = build_task309_provider_status(
             provider_url=args.provider_url,
             container_name=args.container_name,
             port=args.port,
             timeout_seconds=args.timeout_seconds,
+            expected_model_id=_expected_model_id(args),
+            required_process_args=_required_process_args(args),
         )
         _write_provider_status(output_root=args.output_root, status=status)
         return _blocked_exit_code(status.ready, fail_on_blocked=args.fail_on_blocked)
@@ -145,6 +179,8 @@ def main(argv: list[str] | None = None) -> int:
             port=args.port,
             cache_paths=cache_paths,
             timeout_seconds=args.timeout_seconds,
+            expected_model_id=_expected_model_id(args),
+            required_process_args=_required_process_args(args),
         )
         _write_hemma_preflight(output_root=args.output_root, preflight=preflight)
         return _blocked_exit_code(preflight.ready, fail_on_blocked=args.fail_on_blocked)
@@ -155,6 +191,7 @@ def main(argv: list[str] | None = None) -> int:
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
             require_provider_ready=not args.skip_provider_ready_check,
             timeout_seconds=args.timeout_seconds,
+            vision_media_path=args.output_root / "vision-assets",
         )
         _write_microprobes(output_root=args.output_root, report=microprobe_report)
         return _blocked_exit_code(
@@ -224,7 +261,8 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_EXPECTED_ANSWER_MANIFEST,
     )
-    goldens.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    _add_provider_profile_arg(goldens)
+    goldens.add_argument("--output-root", type=Path, default=None)
     goldens.add_argument("--fail-on-blocked", action="store_true")
 
     preview = subparsers.add_parser(
@@ -232,10 +270,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Preview model-facing request shape without calling the provider.",
     )
     _add_provider_args(preview)
-    preview.add_argument("--model", default=DEFAULT_PROVIDER_MODEL)
+    preview.add_argument("--model", default=None)
     _add_provider_runtime_arg(preview)
     preview.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
-    preview.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    preview.add_argument("--output-root", type=Path, default=None)
     preview.add_argument("--fail-on-blocked", action="store_true")
 
     launch = subparsers.add_parser(
@@ -251,12 +289,27 @@ def _build_parser() -> argparse.ArgumentParser:
     launch.add_argument("--execute", action="store_true")
     launch.add_argument("--fail-on-blocked", action="store_true")
 
+    llama_launch = subparsers.add_parser(
+        "launch-llama-provider",
+        help="Launch or dry-run the persistent Hemma-local llama.cpp provider.",
+    )
+    _add_provider_args(llama_launch)
+    llama_launch.set_defaults(provider_profile=Task309ProviderProfileName.QWEN36_LLAMA_CPP.value)
+    llama_launch.add_argument("--model", default=None)
+    llama_launch.add_argument("--output-root", type=Path, default=None)
+    llama_launch.add_argument("--server-binary", default=QWEN36_LLAMA_CPP_SERVER_BINARY)
+    llama_launch.add_argument("--hf-repo", default=QWEN36_LLAMA_CPP_HF_REPO)
+    llama_launch.add_argument("--hf-file", default=QWEN36_LLAMA_CPP_HF_FILE)
+    llama_launch.add_argument("--llama-cache-path", default=QWEN36_LLAMA_CPP_CACHE_PATH)
+    llama_launch.add_argument("--execute", action="store_true")
+    llama_launch.add_argument("--fail-on-blocked", action="store_true")
+
     provider = subparsers.add_parser(
         "provider-status",
         help="Write persistent Granite/vLLM provider status without stopping it.",
     )
     _add_provider_args(provider)
-    provider.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    provider.add_argument("--output-root", type=Path, default=None)
     provider.add_argument("--fail-on-blocked", action="store_true")
 
     preflight = subparsers.add_parser(
@@ -265,7 +318,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     _add_provider_args(preflight)
     preflight.add_argument("--manifest-path", type=Path, default=DEFAULT_VALIDATION_CORPUS_MANIFEST)
-    preflight.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    preflight.add_argument("--output-root", type=Path, default=None)
     preflight.add_argument(
         "--cache-path",
         action="append",
@@ -278,9 +331,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run Task 309 provider microprobes and retain redacted reports.",
     )
     _add_provider_args(microprobes)
-    microprobes.add_argument("--model", default=DEFAULT_PROVIDER_MODEL)
+    microprobes.add_argument("--model", default=None)
     _add_provider_runtime_arg(microprobes)
-    microprobes.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    microprobes.add_argument("--output-root", type=Path, default=None)
     microprobes.add_argument("--skip-provider-ready-check", action="store_true")
     microprobes.add_argument("--fail-on-blocked", action="store_true")
 
@@ -289,10 +342,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run the in-process advisory path over the Task 309 DXE corpus.",
     )
     _add_provider_args(corpus)
-    corpus.add_argument("--model", default=DEFAULT_PROVIDER_MODEL)
+    corpus.add_argument("--model", default=None)
     _add_provider_runtime_arg(corpus)
     corpus.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
-    corpus.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    corpus.add_argument("--output-root", type=Path, default=None)
     corpus.add_argument("--reports-root", type=Path, default=None)
     corpus.add_argument("--skip-provider-ready-check", action="store_true")
     corpus.add_argument("--fail-on-blocked", action="store_true")
@@ -306,7 +359,8 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_EXPECTED_ANSWER_MANIFEST,
     )
-    evaluate.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    _add_provider_profile_arg(evaluate)
+    evaluate.add_argument("--output-root", type=Path, default=None)
     evaluate.add_argument("--reports-root", type=Path, default=None)
     evaluate.add_argument("--fail-on-blocked", action="store_true")
 
@@ -314,9 +368,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _add_provider_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--provider-url", default=DEFAULT_PROVIDER_URL)
-    parser.add_argument("--container-name", default=DEFAULT_PROVIDER_CONTAINER_NAME)
-    parser.add_argument("--port", type=int, default=DEFAULT_PROVIDER_PORT)
+    _add_provider_profile_arg(parser)
+    parser.add_argument("--provider-url", default=None)
+    parser.add_argument("--container-name", default=None)
+    parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--timeout-seconds", type=float, default=2.0)
 
 
@@ -324,12 +379,55 @@ def _add_provider_runtime_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--provider-runtime",
         choices=task309_provider_runtime_values(),
-        default=DEFAULT_TASK309_PROVIDER_RUNTIME.value,
+        default=None,
         help=(
             "Structured provider runtime. llama.cpp runtimes are restricted to "
             "JSON Schema response_format or GBNF grammar-constrained JSON."
         ),
     )
+
+
+def _add_provider_profile_arg(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--provider-profile",
+        choices=task309_provider_profile_values(),
+        default=Task309ProviderProfileName.GRANITE_VLLM.value,
+        help="Named provider defaults to apply before explicit CLI overrides.",
+    )
+
+
+def _apply_provider_defaults(args: argparse.Namespace) -> None:
+    defaults = _provider_defaults(args)
+    _set_default(args, "provider_url", defaults.provider_url)
+    _set_default(args, "container_name", defaults.container_name)
+    _set_default(args, "port", defaults.port)
+    _set_default(args, "model", defaults.model)
+    _set_default(args, "provider_runtime", defaults.provider_runtime.value)
+    _set_default(args, "output_root", defaults.output_root)
+    if hasattr(args, "reports_root") and args.reports_root is None:
+        args.reports_root = defaults.reports_root
+
+
+def _provider_defaults(args: argparse.Namespace) -> Task309ProviderDefaults:
+    profile = getattr(args, "provider_profile", Task309ProviderProfileName.GRANITE_VLLM.value)
+    return task309_defaults_for_provider_profile(profile)
+
+
+def _set_default(args: argparse.Namespace, name: str, value: object) -> None:
+    if hasattr(args, name) and getattr(args, name) is None:
+        setattr(args, name, value)
+
+
+def _expected_model_id(args: argparse.Namespace) -> str | None:
+    defaults = _provider_defaults(args)
+    return defaults.expected_model_id
+
+
+def _required_process_args(args: argparse.Namespace) -> tuple[str, ...]:
+    defaults = _provider_defaults(args)
+    if defaults.profile_name == Task309ProviderProfileName.QWEN36_LLAMA_CPP:
+        return qwen36_llama_required_process_args()
+    return ()
 
 
 def _prepare_manifests(
@@ -419,6 +517,43 @@ def _launch_provider(
     )
     result = launch_task309_provider(plan)
     json_path, markdown_path = write_task309_provider_launch_artifacts(
+        output_root=output_root,
+        result=result,
+    )
+    print(f"Wrote {json_path}")
+    print(f"Wrote {markdown_path}")
+    return result
+
+
+def _launch_llama_provider(
+    *,
+    output_root: Path,
+    provider_profile: str,
+    provider_url: str,
+    model: str,
+    port: int,
+    server_binary: str,
+    hf_repo: str,
+    hf_file: str,
+    llama_cache_path: str,
+    execute: bool,
+) -> Task309LlamaProviderLaunchResult:
+    enforce_generated_output_path(output_root, label="output_root")
+    output_root.mkdir(parents=True, exist_ok=True)
+    plan = build_task309_llama_provider_launch_plan(
+        provider_profile=Task309ProviderProfileName(provider_profile),
+        provider_url=provider_url,
+        model=model,
+        port=port,
+        output_root=output_root,
+        server_binary=server_binary,
+        hf_repo=hf_repo,
+        hf_file=hf_file,
+        llama_cache_path=llama_cache_path,
+        dry_run=not execute,
+    )
+    result = launch_task309_llama_provider(plan)
+    json_path, markdown_path = write_task309_llama_provider_launch_artifacts(
         output_root=output_root,
         result=result,
     )
@@ -552,6 +687,8 @@ def _advisory_corpus_markdown(report: Task309AdvisoryCorpusRunReport) -> str:
         f"- suggested_count: `{report.suggested_count}`",
         f"- manual_follow_up_count: `{report.manual_follow_up_count}`",
         f"- skipped_count: `{report.skipped_count}`",
+        f"- asset_eligible_count: `{report.asset_eligible_count}`",
+        f"- multimodal_request_count: `{report.multimodal_request_count}`",
         f"- total_latency_ms: `{report.total_latency_ms}`",
         f"- retained_report_count: `{len(report.report_paths)}`",
     ]
@@ -572,6 +709,51 @@ def _blocked_exit_code(ready: bool, *, fail_on_blocked: bool) -> int:
     if ready or not fail_on_blocked:
         return 0
     return 2
+
+
+def _require_hemma_server(label: str) -> None:
+    required_hostname = os.environ.get(
+        "SIR_CONVERT_A_LOT_HEMMA_LOCAL_HOSTNAME", "paunchygent-server"
+    )
+    required_root = Path(
+        os.environ.get(
+            "SIR_CONVERT_A_LOT_HEMMA_ROOT",
+            "/home/paunchygent/apps/sir-convert-a-lot",
+        )
+    ).resolve()
+    required_skill_repository = Path(
+        os.environ.get(
+            "SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY",
+            "/home/paunchygent/apps/skill-repository",
+        )
+    ).resolve()
+    current_hostname = os.environ.get("SIR_CONVERT_A_LOT_CURRENT_HOSTNAME") or socket.gethostname()
+    current_root = Path.cwd().resolve()
+    current_skill_repository = _current_skill_repository()
+    if (
+        current_hostname == required_hostname
+        and current_root == required_root
+        and current_skill_repository == required_skill_repository
+    ):
+        return
+    message = "\n".join(
+        (
+            f"{label}: this command is Hemma Server-only.",
+            f"  hostname: {current_hostname}",
+            f"  repo root: {current_root}",
+            f"  skill repository: {current_skill_repository}",
+            "",
+            "Use: pdm run run-hemma -- <command> [args...]",
+        )
+    )
+    raise SystemExit(message)
+
+
+def _current_skill_repository() -> Path:
+    override = os.environ.get("SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY")
+    if override:
+        return Path(override).resolve()
+    return (Path.home() / ".codex" / "skill-repository").resolve()
 
 
 def _load_object(path: Path) -> dict[str, object]:

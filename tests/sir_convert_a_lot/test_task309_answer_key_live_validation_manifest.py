@@ -15,6 +15,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation import (
     main as task309_runner_main,
 )
@@ -27,6 +29,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manife
     TASK309_CORPUS_MANIFEST_SCHEMA_VERSION,
     TASK309_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION,
     TASK309_FIXTURE_POLICY,
+    Task309AssetEvalPolicy,
     build_task309_expected_answer_worklist,
     build_task309_live_validation_manifest,
     write_task309_json,
@@ -88,6 +91,33 @@ def test_task309_expected_answer_worklist_contains_only_eligible_items() -> None
     assert {item["output_mode"] for item in items} == {"json_schema", "vllm_choice"}
 
 
+def test_task309_vision_asset_eval_policy_marks_supported_asset_items_eligible() -> None:
+    manifest = build_task309_live_validation_manifest(
+        _CORPUS_ROOT,
+        asset_eval_policy=Task309AssetEvalPolicy(allow_supported_embedded_assets=True),
+    )
+    payload = manifest.to_payload()
+    summary = _object(payload["summary"])
+    asset_items = {
+        (item["source_filename"], item["item_id"]): item
+        for file_entry in _objects(payload["files"])
+        for item in _objects(file_entry["items"])
+        if item["embedded_asset_count"] == 1
+    }
+
+    assert summary["eligible_item_count"] == 44
+    assert _count_map(summary["skip_reason_counts"]) == {
+        "none": 44,
+        "unsupported_item_type": 273,
+    }
+    assert (
+        asset_items[("1776888013-ak7-lag-och-ratt.dxe", "item-003")]["output_mode"] == "json_schema"
+    )
+    assert (
+        asset_items[("1811577114-ekologiprov-v-49-25d-e.dxe", "item-013")]["skip_reason"] == "none"
+    )
+
+
 def test_task309_manifest_outputs_do_not_persist_raw_prompt_or_provider_content(
     tmp_path: Path,
 ) -> None:
@@ -115,9 +145,9 @@ def test_task309_expected_answer_manifest_validates_teacher_verified_goldens() -
 
     assert report.summary.valid is True
     assert report.issues == ()
-    assert summary["eligible_item_count"] == 42
-    assert summary["entry_count"] == 42
-    assert summary["validated_item_count"] == 42
+    assert summary["eligible_item_count"] == 44
+    assert summary["entry_count"] == 44
+    assert summary["validated_item_count"] == 44
     assert summary["adjudication_required_count"] == 0
 
 
@@ -189,6 +219,33 @@ def test_task309_runner_previews_consumer_friendly_request_shape(tmp_path: Path)
     assert (tmp_path / "request-shape-preview.md").exists()
 
 
+def test_task309_runner_applies_qwen36_llama_cpp_profile_defaults(tmp_path: Path) -> None:
+    exit_code = task309_runner_main(
+        [
+            "preview-request-shape",
+            "--provider-profile",
+            "qwen36-llama-cpp",
+            "--corpus-root",
+            _CORPUS_ROOT.as_posix(),
+            "--output-root",
+            tmp_path.as_posix(),
+            "--fail-on-blocked",
+        ]
+    )
+    report_payload = _object(
+        json.loads((tmp_path / "request-shape-preview.json").read_text(encoding="utf-8"))
+    )
+
+    assert exit_code == 0
+    assert report_payload["provider_url"] == "http://127.0.0.1:8082"
+    assert report_payload["model"] == "qwen3.6-27b-q6k"
+    assert report_payload["provider_runtime"] == "llama-cpp-json-schema"
+    assert report_payload["manifest_eligible_item_count"] == 44
+    assert report_payload["attempted_item_count"] == 44
+    assert any(item["multimodal_request"] is True for item in _objects(report_payload["items"]))
+    assert report_payload["ok"] is True
+
+
 def test_task309_provider_status_surface_is_persistent_by_default(tmp_path: Path) -> None:
     exit_code = task309_runner_main(
         [
@@ -245,6 +302,48 @@ def test_task309_provider_launch_surface_dry_runs_persistent_vllm_command(tmp_pa
     assert "--rm" not in command
     assert "--disable-log-requests" in command
     assert "127.0.0.1:8017:8000" in command
+
+
+def test_task309_llama_provider_launch_surface_dry_runs_hemma_local_command(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _pretend_current_process_is_hemma(monkeypatch)
+    exit_code = task309_runner_main(
+        [
+            "launch-llama-provider",
+            "--provider-profile",
+            "qwen36-llama-cpp",
+            "--output-root",
+            tmp_path.as_posix(),
+            "--fail-on-blocked",
+        ]
+    )
+    report_payload = _object(
+        json.loads((tmp_path / "llama-provider-launch.json").read_text(encoding="utf-8"))
+    )
+    plan = _object(report_payload["plan"])
+    command = plan["command"]
+    assert isinstance(command, list)
+
+    assert exit_code == 0
+    assert report_payload["dry_run"] is True
+    assert report_payload["ok"] is True
+    assert plan["provider_profile"] == "qwen36-llama-cpp"
+    assert plan["provider_url"] == "http://127.0.0.1:8082"
+    assert plan["model"] == "qwen3.6-27b-q6k"
+    assert plan["host"] == "127.0.0.1"
+    assert plan["port"] == 8082
+    assert plan["hf_repo"] == "unsloth/Qwen3.6-27B-GGUF"
+    assert plan["hf_file"] == "Qwen3.6-27B-Q6_K.gguf"
+    assert "--n-gpu-layers" in command
+    assert "all" in command
+    assert "--offline" in command
+    assert "--media-path" in command
+    assert "--reasoning" in command
+    assert "off" in command
+    assert "--log-file" in command
+    assert (tmp_path / "llama-provider-launch.md").exists()
 
 
 def test_task309_microprobe_surface_blocks_without_ready_provider(tmp_path: Path) -> None:
@@ -327,3 +426,16 @@ def _count_map(value: object) -> dict[str, int]:
         assert isinstance(amount, int)
         counts[key] = amount
     return counts
+
+
+def _pretend_current_process_is_hemma(monkeypatch: pytest.MonkeyPatch) -> None:
+    repo_root = Path.cwd().resolve()
+    skill_repository = repo_root.parent / "skill-repository"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_HEMMA_LOCAL_HOSTNAME", "fake-hemma-host")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_CURRENT_HOSTNAME", "fake-hemma-host")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_HEMMA_ROOT", repo_root.as_posix())
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY", skill_repository.as_posix())
+    monkeypatch.setenv(
+        "SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY",
+        skill_repository.as_posix(),
+    )

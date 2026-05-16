@@ -18,9 +18,11 @@ from pydantic import JsonValue
 
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMEndpointKind,
+    StructuredLLMImageURLContentPart,
     StructuredLLMOutputMode,
     StructuredLLMProviderProfile,
     StructuredLLMRequest,
+    StructuredLLMTextContentPart,
     StructuredOutputSpec,
 )
 
@@ -57,6 +59,7 @@ def build_chat_completions_payload(
             StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
         ),
     )
+    _require_text_only(request=request, provider_id=profile.provider_id)
     payload: StructuredLLMPayload = {
         "model": profile.model,
         "messages": _chat_messages(request),
@@ -76,6 +79,7 @@ def build_responses_payload(
     """Build a Responses payload using `text.format.json_schema`."""
 
     _require_output_mode(profile=profile, allowed=(StructuredLLMOutputMode.JSON_SCHEMA,))
+    _require_text_only(request=request, provider_id=profile.provider_id)
     payload: StructuredLLMPayload = {
         "model": profile.model,
         "input": [
@@ -132,6 +136,7 @@ def build_vllm_chat_completions_payload(
         "max_tokens": request.max_output_tokens,
         "temperature": profile.temperature,
     }
+    _require_text_only(request=request, provider_id=profile.provider_id)
     if profile.output_mode == StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE:
         if not request.output_spec.choice_values:
             raise ValueError("vLLM structured choice mode requires output_spec.choice_values.")
@@ -181,8 +186,22 @@ def build_llama_cpp_response_format(spec: StructuredOutputSpec) -> dict[str, Jso
 def _chat_messages(request: StructuredLLMRequest) -> list[JsonValue]:
     return [
         {"role": "system", "content": request.system_prompt},
-        {"role": "user", "content": request.user_payload},
+        {"role": "user", "content": _user_content(request)},
     ]
+
+
+def _user_content(request: StructuredLLMRequest) -> JsonValue:
+    if not request.user_content_parts:
+        return request.user_payload
+    parts: list[JsonValue] = []
+    for part in request.user_content_parts:
+        if isinstance(part, StructuredLLMTextContentPart):
+            parts.append({"type": "text", "text": part.text})
+        elif isinstance(part, StructuredLLMImageURLContentPart):
+            parts.append({"type": "image_url", "image_url": {"url": part.url}})
+        else:
+            raise TypeError(f"Unsupported structured LLM content part: {type(part).__name__}")
+    return parts
 
 
 def _require_output_mode(
@@ -195,4 +214,11 @@ def _require_output_mode(
         raise ValueError(
             f"Provider {profile.provider_id} output mode {profile.output_mode.value} "
             f"is not supported here; expected one of {allowed_values}."
+        )
+
+
+def _require_text_only(*, request: StructuredLLMRequest, provider_id: str) -> None:
+    if request.user_content_parts:
+        raise ValueError(
+            f"Provider {provider_id} does not support multimodal structured user content."
         )

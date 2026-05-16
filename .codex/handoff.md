@@ -99,8 +99,13 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   Qwen3.6-27B-Q6_K on `llama.cpp` is the current guarded model choice for the
   next service-backed validation lane, while still blocked from automatic
   promotion by 3 wrong-but-valid suggestions. The Task 309 runner now supports
-  llama.cpp JSON Schema and GBNF-grammar constrained JSON runtimes only. Keyed
-  matching QTI bridging waits for real matching-capable fixtures.
+  llama.cpp JSON Schema and GBNF-grammar constrained JSON runtimes only. A
+  Task 309 eval-only Qwen3.6 vision path now exports supported embedded
+  PNG/JPEG assets under `<output-root>/vision-assets`, renders per-item
+  human-review preview HTML, sends llama.cpp multimodal `image_url` parts, and
+  raises teacher-verified scored goldens from 42 to 44 without changing default
+  Granite/non-vision asset skips. Keyed matching QTI bridging waits for real
+  matching-capable fixtures.
 - Review 17 retained Task 306 as `changes_requested` because Skriptoteket's
   checked-in Sir Convert generated OpenAPI TypeScript surface is stale against
   the Task 306 snapshot. Sir-local reviewed-overlay/effective-IR semantics and
@@ -175,6 +180,10 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 - 2026-05-16 Devstral Small final: **34 correct, 8 wrong-but-valid, 2
   manual-follow-up** out of 44 eligible scored items. Devstral is demoted for
   this Swedish educational route.
+- 2026-05-16 Task 309 vision-eval implementation proof: golden validation
+  passed for 44 entries; `qwen36-llama-cpp` request-shape preview attempted 44
+  items with 2 multimodal requests and 0 issues. Default text-only manifests
+  still expose 42 eligible items and 2 `unsupported_assets` skips.
 - 2026-05-15 Review 17 flagged Skriptoteket OpenAPI type staleness; Sir-local
   overlay/effective-IR semantics passed review.
 

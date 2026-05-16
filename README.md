@@ -67,10 +67,16 @@ Local-runtime rule:
   `pdm run dev-start` / `compose.local.yaml`.
 - The Hemma GPU/prod lane remains the canonical real integration surface.
 
-**Hemma (Remote) Execution:**
+**Hemma Execution:**
 
 - `pdm run run-hemma -- <command> [args]`
 - `pdm run run-local-pdm <script> [args]`
+
+`run-hemma` is environment-aware. From a client machine it uses the configured
+Hemma SSH alias. From the canonical Hemma Server checkout it runs locally after
+checking the hostname, repo root, and shared skill repository path. Set
+`SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when you deliberately need the
+SSH path from an environment that otherwise looks like Hemma.
 
 **Docs-as-code Governance:**
 

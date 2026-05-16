@@ -22,12 +22,14 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
     StructuredLLMCaptureStatus,
     StructuredLLMEndpointKind,
+    StructuredLLMImageURLContentPart,
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderProfile,
     StructuredLLMRequest,
     StructuredLLMRoutePolicy,
     StructuredLLMRouteReason,
+    StructuredLLMTextContentPart,
     StructuredOutputSpec,
     build_structured_llm_capture_metadata,
     decide_structured_llm_route,
@@ -127,6 +129,61 @@ def test_llama_cpp_payload_uses_json_schema_when_capability_selects_schema() -> 
         "name": "choice_decision",
         "schema": CHOICE_DECISION_SCHEMA,
     }
+
+
+def test_llama_cpp_payload_can_use_multimodal_content_parts() -> None:
+    request = _request(
+        user_content_parts=(
+            StructuredLLMTextContentPart('{"item_id":"item-asset"}'),
+            StructuredLLMImageURLContentPart("file://source/item-asset/assets/item-asset-001.png"),
+        )
+    )
+    profile = _profile(
+        endpoint_kind=StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=True,
+            supports_vllm_structured_choice=False,
+            supports_multimodal_vision=True,
+        ),
+    )
+
+    payload = build_llama_cpp_chat_completions_payload(profile=profile, request=request)
+    messages = payload["messages"]
+    assert isinstance(messages, list)
+    user_message = messages[1]
+    assert isinstance(user_message, dict)
+    content = user_message["content"]
+    assert isinstance(content, list)
+
+    assert content == [
+        {"type": "text", "text": '{"item_id":"item-asset"}'},
+        {
+            "type": "image_url",
+            "image_url": {"url": "file://source/item-asset/assets/item-asset-001.png"},
+        },
+    ]
+
+
+def test_vllm_payload_rejects_multimodal_content_parts() -> None:
+    request = _request(
+        user_content_parts=(
+            StructuredLLMTextContentPart('{"item_id":"item-asset"}'),
+            StructuredLLMImageURLContentPart("file://source/item-asset/assets/item-asset-001.png"),
+        )
+    )
+    profile = _profile(
+        endpoint_kind=StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=False,
+            supports_vllm_structured_choice=True,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="does not support multimodal"):
+        build_vllm_chat_completions_payload(profile=profile, request=request)
 
 
 def test_vllm_payload_uses_structured_outputs_choice_for_interim_runtime() -> None:
@@ -327,6 +384,10 @@ def _request(
     output_spec: StructuredOutputSpec | None = None,
     system_prompt: str = "Return a bounded answer-key decision.",
     user_payload: str = '{"item_id":"item-001","choices":["A","B","C"]}',
+    user_content_parts: tuple[
+        StructuredLLMTextContentPart | StructuredLLMImageURLContentPart,
+        ...,
+    ] = (),
     estimated_input_tokens: int = 64,
     max_output_tokens: int = 128,
 ) -> StructuredLLMRequest:
@@ -341,6 +402,7 @@ def _request(
         estimated_input_tokens=estimated_input_tokens,
         max_output_tokens=max_output_tokens,
         allow_remote_fallback=None,
+        user_content_parts=user_content_parts,
     )
 
 
