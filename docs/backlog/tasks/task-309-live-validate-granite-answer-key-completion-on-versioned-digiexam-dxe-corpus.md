@@ -410,6 +410,12 @@ Task 311 owns the strict production service-backed mirror.
   whether all manifest items and all provider-aware eligible model-facing items
   have report rows, plus missing/unexpected item refs, so full-corpus
   validation cannot rely on aggregate result counts alone.
+- Regenerated the Hemma-retained Qwen3.6 evaluation on
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local`.
+  The retained proof reports 23 per-file reports, 317 report rows, 317/317
+  manifest coverage, 44/44 eligible coverage, and zero missing or unexpected
+  refs. The JSON proof SHA-256 is
+  `79a6d3349fe43c1add67b515b1070cbc797184fb5da6cbe18bba633c5cfcf551`.
 
 ## Validation Evidence
 
@@ -451,6 +457,7 @@ Task 311 owns the strict production service-backed mirror.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_composition.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_vision_provider_without_media_root_fails_closed`
+- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam evaluate-advisory-corpus --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`
 - `pdm run format-all`
 - `pdm run lint-fix`

@@ -233,6 +233,10 @@ Structured review artifact for implementation or readiness checks.
   validation-manifest item keys with retained report item keys. This proves
   whether all corpus items and all eligible model-facing items were exercised,
   and serializes missing/unexpected refs when coverage is partial.
+- The Hemma-retained Qwen3.6 evaluation was regenerated with this coverage
+  proof. It reports 23 per-file reports, 317 report rows, 317 manifest items,
+  44 provider-aware eligible items, `all_manifest_items_reported=true`,
+  `all_eligible_items_reported=true`, and zero missing or unexpected item refs.
 - The static launch plan includes the core expected Qwen llama.cpp settings:
   localhost bind, `--ctx-size 32768`, full GPU layers, `--fit off`,
   `--flash-attn on`, `--jinja`, `--reasoning off`, `--temp 0.15`,
@@ -270,16 +274,26 @@ Validation evidence:
   -> 29 passed.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_composition.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_vision_provider_without_media_root_fails_closed`
   -> 32 passed.
-- `pdm run run-hemma -- git rev-parse HEAD`
-  -> `3b39174113ede9b98f3b0d82cddd8af43fdd3c23`, still older than local
-  reviewed Task 319 revision `1ceef5e14ab474866114d22269b9492b6843a56b`.
-- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam provider-status --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --fail-on-blocked`
-  -> failed before provider assessment: `Command 'answer-key-live-validation' is not found in your PATH`, confirming the Hemma checkout is still stale for
-  the Task 319 runner split.
-  -> `3b39174113ede9b98f3b0d82cddd8af43fdd3c23` on the remote checkout.
 - `git rev-parse HEAD`
-  -> `1ceef5e14ab474866114d22269b9492b6843a56b` in the local reviewed
-  checkout before this review artifact was amended.
+  -> `fc965b21326e4cebb7505fb95b02239d9672375c`.
+- `pdm run run-hemma -- git rev-parse HEAD`
+  -> `fc965b21326e4cebb7505fb95b02239d9672375c`.
+- `pdm run run-hemma -- pdm run answer-key-live-validation digiexam evaluate-advisory-corpus --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports`
+  -> regenerated `advisory-golden-evaluation.json` and `.md` with
+  `coverage_proof.all_manifest_items_reported=true`,
+  `coverage_proof.all_eligible_items_reported=true`,
+  `coverage_proof.missing_manifest_item_count=0`,
+  `coverage_proof.missing_eligible_item_count=0`, and
+  `coverage_proof.unexpected_report_item_count=0`.
+- `pdm run run-hemma -- jq '{schema_version, report_count, report_item_count, correct_suggestion_count, wrong_but_valid_count, manual_follow_up_count, skipped_count, coverage_proof}' /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-golden-evaluation.json`
+  -> `report_count=23`, `report_item_count=317`,
+  `correct_suggestion_count=41`, `wrong_but_valid_count=3`,
+  `manual_follow_up_count=0`, `skipped_count=273`, and complete coverage.
+- `pdm run run-hemma -- shasum -a 256 /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-golden-evaluation.json /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-golden-evaluation.md`
+  -> JSON
+  `79a6d3349fe43c1add67b515b1070cbc797184fb5da6cbe18bba633c5cfcf551`,
+  Markdown
+  `fd39ef97525ed31f267849bfe5cdd7a8c063836dfda0e9582de03389a4e78713`.
 - `pdm run run-hemma -- pdm run python -m scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation provider-status --provider-profile qwen36-llama-cpp --output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local --timeout-seconds 2`
   -> wrote provider status with `ready=false`; no Qwen llama.cpp container,
   process, listener, expected model, required args, or no-CPU-fallback proof was

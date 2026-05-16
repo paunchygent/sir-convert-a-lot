@@ -113,8 +113,8 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   no-provider apply/default-route checks passed review; the next implementation
   slice should be a narrow Skriptoteket consumer-sync pass, not new Sir Convert
   feature work.
-- Review 18 for Task 319 has local media-root and corpus-coverage proof, but
-  stays `changes_requested` until Hemma sync plus Qwen3.6 live proof.
+- Review 18 for Task 319 has local media-root and Hemma corpus-coverage proof,
+  but stays `changes_requested` until Qwen3.6 live status/microprobe proof.
 - Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
   a thin router, the former omnibus Hemma runbook is a compact doorway, and
   focused service/GPU/conversion/TTS runbooks carry current operator guidance.
@@ -187,8 +187,8 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   passed for 44 entries; `qwen36-llama-cpp` request-shape preview attempted 44
   items with 2 multimodal requests and 0 issues. Default text-only manifests
   still expose 42 eligible items and 2 `unsupported_assets` skips.
-- 2026-05-16 Task 319 Review 18: format/lint/type/focused tests passed; Hemma
-  remains stale at `3b39174113ede9b98f3b0d82cddd8af43fdd3c23`.
+- 2026-05-16 Task 319 Review 18: Hemma Qwen3.6 evaluation now proves complete
+  317/317 corpus coverage and 44/44 eligible coverage; wrong-but-valid remains 3.
 - 2026-05-15 Review 17 flagged Skriptoteket OpenAPI type staleness; Sir-local
   overlay/effective-IR semantics passed review.
 
