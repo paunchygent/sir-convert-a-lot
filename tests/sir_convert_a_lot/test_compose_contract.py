@@ -185,7 +185,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
         ),
         (
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-"
-            "/srv/scratch/sir-convert-a-lot/build/verification/"
+            "/home/paunchygent/apps/sir-convert-a-lot/build/verification/"
             "task-309-qwen36-27b-q6k-hemma-local/vision-assets}:"
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
             "/srv/scratch/sir-convert-a-lot/build/verification/"
