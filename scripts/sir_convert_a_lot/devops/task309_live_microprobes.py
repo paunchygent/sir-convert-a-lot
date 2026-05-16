@@ -1,13 +1,12 @@
-"""Task 309 Granite/vLLM provider microprobes.
+"""Task 309 structured-provider microprobes.
 
 Purpose:
-    Execute redacted structured-output microprobes against the persistent
-    Granite/vLLM provider before full-corpus answer-key validation.
+    Execute redacted structured-output microprobes against the selected Task
+    309 provider before full-corpus answer-key validation.
 
 Relationships:
     - Uses the generic Task 296 HTTP structured-provider adapter.
-    - Proves the Task 309 required output modes: vLLM choice, vLLM JSON Schema
-      choice object, and vLLM JSON Schema gap-fill object.
+    - Proves vLLM choice/schema modes or llama.cpp JSON Schema/GBNF modes.
     - Produces report rows without raw prompts or raw provider responses.
 """
 
@@ -26,6 +25,15 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
 from scripts.sir_convert_a_lot.devops.task309_granite_provider_status import (
     build_task309_provider_status,
 )
+from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+    DEFAULT_TASK309_PROVIDER_RUNTIME,
+    Task309StructuredProviderRuntime,
+    build_task309_provider_profile,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_gbnf import (
+    choice_answer_key_decision_gbnf,
+    gap_fill_answer_key_decision_gbnf,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
     DIGIEXAM_GAP_FILL_ANSWER_KEY_DECISION_SCHEMA_VERSION,
@@ -33,7 +41,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMEndpointKind,
     StructuredLLMOutputMode,
-    StructuredLLMProviderCapabilities,
     StructuredLLMProviderError,
     StructuredLLMProviderProfile,
     StructuredLLMRequest,
@@ -46,7 +53,6 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
 )
 
 TASK309_MICROPROBE_REPORT_SCHEMA_VERSION = "task309_granite_microprobe_report_v1"
-PROVIDER_ID = "task309-granite-vllm"
 
 
 @dataclass(frozen=True)
@@ -72,6 +78,7 @@ class Task309MicroprobeReport:
     schema_version: str
     provider_url: str
     model: str
+    provider_runtime: str
     provider_ready: bool
     blocked: bool
     results: tuple[Task309MicroprobeResult, ...]
@@ -86,6 +93,7 @@ def run_task309_microprobes(
     *,
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
+    provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
 ) -> Task309MicroprobeReport:
@@ -95,6 +103,7 @@ def run_task309_microprobes(
         _run_task309_microprobes(
             provider_url=provider_url,
             model=model,
+            provider_runtime=provider_runtime,
             require_provider_ready=require_provider_ready,
             timeout_seconds=timeout_seconds,
         )
@@ -105,6 +114,7 @@ async def _run_task309_microprobes(
     *,
     provider_url: str,
     model: str,
+    provider_runtime: Task309StructuredProviderRuntime,
     require_provider_ready: bool,
     timeout_seconds: float,
 ) -> Task309MicroprobeReport:
@@ -117,24 +127,28 @@ async def _run_task309_microprobes(
             schema_version=TASK309_MICROPROBE_REPORT_SCHEMA_VERSION,
             provider_url=provider_url,
             model=model,
+            provider_runtime=provider_runtime.value,
             provider_ready=False,
             blocked=True,
             results=(),
         )
+    profile = build_task309_provider_profile(runtime=provider_runtime, model=model)
     async with httpx.AsyncClient() as client:
         provider = _provider(
             provider_url=provider_url,
             timeout_seconds=timeout_seconds,
             client=client,
+            provider_id=profile.provider_id,
         )
         results = [
             await _microprobe(provider, request, profile, expected)
-            for request, profile, expected in _microprobe_requests(model=model)
+            for request, profile, expected in _microprobe_requests(profile=profile)
         ]
     return Task309MicroprobeReport(
         schema_version=TASK309_MICROPROBE_REPORT_SCHEMA_VERSION,
         provider_url=provider_url,
         model=model,
+        provider_runtime=provider_runtime.value,
         provider_ready=ready,
         blocked=False,
         results=tuple(results),
@@ -182,33 +196,64 @@ def _provider(
     provider_url: str,
     timeout_seconds: float,
     client: httpx.AsyncClient,
+    provider_id: str,
 ) -> HttpStructuredChatProvider:
     connection = StructuredLLMProviderConnection(
-        provider_id=PROVIDER_ID,
+        provider_id=provider_id,
         base_url=provider_url,
         timeout_seconds=timeout_seconds,
     )
-    return HttpStructuredChatProvider(client=client, connections={PROVIDER_ID: connection})
+    return HttpStructuredChatProvider(client=client, connections={provider_id: connection})
 
 
 def _microprobe_requests(
     *,
-    model: str,
+    profile: StructuredLLMProviderProfile,
+) -> tuple[tuple[StructuredLLMRequest, StructuredLLMProviderProfile, dict[str, object]], ...]:
+    if profile.endpoint_kind == StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS:
+        return _vllm_microprobe_requests(profile)
+    return _llama_cpp_microprobe_requests(profile)
+
+
+def _vllm_microprobe_requests(
+    profile: StructuredLLMProviderProfile,
 ) -> tuple[tuple[StructuredLLMRequest, StructuredLLMProviderProfile, dict[str, object]], ...]:
     return (
         (
             _request("microprobe-choice", _choice_probe_spec(), '{"answer":"B"}'),
-            _choice_profile(model),
+            replace(profile, output_mode=StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE),
             {"choice": "B"},
         ),
         (
             _request("microprobe-choice-object", _choice_object_spec(), '{"answer":2}'),
-            _json_profile(model),
+            profile,
             {"decision_state": "answered", "correct_alternative_ids": [2]},
         ),
         (
             _request("microprobe-gap-object", _gap_probe_spec(), '{"gap_id":"gap-1"}'),
-            _json_profile(model),
+            profile,
+            {"decision_state": "answered", "gap_id": "gap-1"},
+        ),
+    )
+
+
+def _llama_cpp_microprobe_requests(
+    profile: StructuredLLMProviderProfile,
+) -> tuple[tuple[StructuredLLMRequest, StructuredLLMProviderProfile, dict[str, object]], ...]:
+    choice_spec = _choice_object_spec()
+    gap_spec = _gap_probe_spec()
+    if profile.output_mode == StructuredLLMOutputMode.GBNF:
+        choice_spec = replace(choice_spec, gbnf_grammar=choice_answer_key_decision_gbnf())
+        gap_spec = replace(gap_spec, gbnf_grammar=gap_fill_answer_key_decision_gbnf())
+    return (
+        (
+            _request("microprobe-choice-object", choice_spec, '{"answer":2}'),
+            profile,
+            {"decision_state": "answered", "correct_alternative_ids": [2]},
+        ),
+        (
+            _request("microprobe-gap-object", gap_spec, '{"gap_id":"gap-1"}'),
+            profile,
             {"decision_state": "answered", "gap_id": "gap-1"},
         ),
     )
@@ -231,31 +276,6 @@ def _request(
         max_output_tokens=128,
         allow_remote_fallback=False,
     )
-
-
-def _base_profile(model: str) -> StructuredLLMProviderProfile:
-    return StructuredLLMProviderProfile(
-        provider_id=PROVIDER_ID,
-        model=model,
-        endpoint_kind=StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS,
-        output_mode=StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
-        is_remote=False,
-        context_window_tokens=4096,
-        max_output_tokens=512,
-        capabilities=StructuredLLMProviderCapabilities(
-            supports_json_schema=True,
-            supports_gbnf=False,
-            supports_vllm_structured_choice=True,
-        ),
-    )
-
-
-def _choice_profile(model: str) -> StructuredLLMProviderProfile:
-    return replace(_base_profile(model), output_mode=StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE)
-
-
-def _json_profile(model: str) -> StructuredLLMProviderProfile:
-    return _base_profile(model)
 
 
 def _choice_probe_spec() -> StructuredOutputSpec:

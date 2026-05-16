@@ -31,8 +31,10 @@ DEFAULT_PROVIDER_IMAGE = (
     "rocm/vllm:rocm7.12.0_gfx120X-all_ubuntu24.04_py3.12_pytorch_2.9.1_vllm_0.16.0"
 )
 DEFAULT_PROVIDER_MODEL = "ibm-granite/granite-4.1-8b-fp8"
-DEFAULT_PROVIDER_HOST_CACHE = "/srv/scratch/sir-convert-a-lot/cache/huggingface"
+DEFAULT_PROVIDER_HOST_CACHE = "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"
 DEFAULT_PROVIDER_CONTAINER_CACHE = "/cache/huggingface"
+DEFAULT_PROVIDER_MAX_MODEL_LEN = 16384
+DEFAULT_PROVIDER_GPU_MEMORY_UTILIZATION = "0.80"
 
 
 @dataclass(frozen=True)

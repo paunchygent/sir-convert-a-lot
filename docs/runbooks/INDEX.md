@@ -3,8 +3,8 @@ type: runbook
 id: RUN-runbook-index
 title: Runbook Index
 status: active
-created: 2026-05-15
-last_updated: 2026-05-15
+created: 2026-05-16
+last_updated: 2026-05-16
 owners:
   - platform
 system: docs
@@ -23,6 +23,7 @@ Generated index for operational runbooks.
 
 | ID | Title | Type | Status |
 |---|---|---|---|
+| RUN-answer-key-local-model-operator-guide | [Answer-Key Local Model Operator Guide](runbook-answer-key-local-model-operator-guide.md) | runbook | active |
 | RUN-chatterbox-multilingual-tuning-on-hemma | [Chatterbox Multilingual Tuning Runbook for Hemma](runbook-chatterbox-multilingual-tuning-on-hemma.md) | runbook | active |
 | RUN-hemma-conversion-benchmarks | [Hemma Conversion Benchmark Runbook for Sir Convert-a-Lot](runbook-hemma-conversion-benchmarks.md) | runbook | active |
 | RUN-hemma-devops-and-gpu | [Hemma DevOps and GPU Runbook for Sir Convert-a-Lot](runbook-hemma-devops-and-gpu.md) | runbook | active |

@@ -22,8 +22,10 @@ from datetime import UTC, datetime
 from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
     DEFAULT_PROVIDER_CONTAINER_CACHE,
     DEFAULT_PROVIDER_CONTAINER_NAME,
+    DEFAULT_PROVIDER_GPU_MEMORY_UTILIZATION,
     DEFAULT_PROVIDER_HOST_CACHE,
     DEFAULT_PROVIDER_IMAGE,
+    DEFAULT_PROVIDER_MAX_MODEL_LEN,
     DEFAULT_PROVIDER_MODEL,
     DEFAULT_PROVIDER_PORT,
     TASK309_PROVIDER_PERSISTENT_POLICY,
@@ -34,6 +36,9 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
 TASK309_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION = "task309_granite_provider_launch_plan_v1"
 TASK309_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION = "task309_granite_provider_launch_result_v1"
 DEFAULT_CONTAINER_PORT = 8000
+DOCKER_COMMAND_PREFIX = ("sudo", "-n", "docker")
+HEMMA_VIDEO_GROUP_ID = "44"
+HEMMA_RENDER_GROUP_ID = "993"
 
 
 def build_task309_provider_launch_plan(
@@ -50,7 +55,7 @@ def build_task309_provider_launch_plan(
     """Build the Docker command for the persistent Task 309 vLLM provider."""
 
     command = (
-        "docker",
+        *DOCKER_COMMAND_PREFIX,
         "run",
         "-d",
         "--name",
@@ -63,9 +68,9 @@ def build_task309_provider_launch_plan(
         "--device",
         "/dev/dri",
         "--group-add",
-        "video",
+        HEMMA_VIDEO_GROUP_ID,
         "--group-add",
-        "render",
+        HEMMA_RENDER_GROUP_ID,
         "-p",
         f"127.0.0.1:{host_port}:{container_port}",
         "-v",
@@ -85,9 +90,9 @@ def build_task309_provider_launch_plan(
         "--port",
         str(container_port),
         "--max-model-len",
-        "4096",
+        str(DEFAULT_PROVIDER_MAX_MODEL_LEN),
         "--gpu-memory-utilization",
-        "0.70",
+        DEFAULT_PROVIDER_GPU_MEMORY_UTILIZATION,
         "--disable-log-requests",
     )
     return Task309ProviderLaunchPlan(
@@ -127,7 +132,7 @@ def launch_task309_provider(plan: Task309ProviderLaunchPlan) -> Task309ProviderL
             capture_output=True,
             check=False,
             text=True,
-            timeout=120,
+            timeout=1800,
         )
     except FileNotFoundError:
         return _failed_launch(plan, error_kind="FileNotFoundError")

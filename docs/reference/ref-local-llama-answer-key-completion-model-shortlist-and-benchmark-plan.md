@@ -4,7 +4,7 @@ id: REF-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan
 title: Local Model Answer-key Completion Runtime And Benchmark Plan
 status: active
 created: 2026-05-14
-updated: 2026-05-15
+updated: 2026-05-16
 owners:
   - platform
 tags:
@@ -31,25 +31,24 @@ links:
 
 ## Purpose
 
-This reference records the first local `llama.cpp` GGUF model shortlist and
-the current vLLM FP8 working model for Sir Convert-a-Lot's machine-marked
-answer-key completion route.
+This reference records the first local `llama.cpp` GGUF model shortlist, the
+Granite/vLLM runtime proof, and the current evidence boundary for Sir
+Convert-a-Lot's machine-marked answer-key completion route.
 
-The current implementation default is **vLLM serving
-`ibm-granite/granite-4.1-8b-fp8`** on Hemma's R9700 ROCm preview lane. That
-choice is an interim engineering default so the feature can be implemented
-against a concrete local structured provider. Task 309 is the first live
-validation of this current Granite/vLLM stack against the production advisory
-path and a versioned pure DigiExam DXE corpus. Task 300 remains the later
-comparative model bake-off and must not start until the full app path is
-working and deployed.
+Task 301 proved that **vLLM serving `ibm-granite/granite-4.1-8b-fp8`** can run
+on Hemma's R9700 ROCm preview lane and satisfy constrained-output protocol
+smokes. Task 309 then live-validated that same stack against the production
+advisory path and a versioned pure DigiExam DXE corpus. The Task 309 evidence
+demotes Granite/vLLM as an interim answer-key provider candidate because
+wrong-but-valid answer quality is unacceptable even though the protocol path
+works. Task 300 remains the later comparative model bake-off and must not
+start until the full app path is working and deployed.
 
-## Current Working Runtime
+## Demoted Granite Runtime Record
 
-Use this runtime for the first Sir Convert implementation of the local
-answer-key completion provider. Task 309 validates this runtime against the
-production advisory route; Task 300 later compares it with the GGUF shortlist
-after the full application path is working and deployed:
+This runtime remains the recorded vLLM/ROCm protocol proof and failure baseline.
+Do not treat it as the current answer-key completion provider candidate after
+the 2026-05-16 demotion:
 
 ```text
 provider_runtime: vllm
@@ -158,20 +157,25 @@ over source-keyed items is reserved for Task 310 and the later service-backed
 mirror follow-up, not for Task 309's initial advisory run. Task 311 owns the
 strict service-backed mirror with auth/public-edge readiness.
 
-The Granite/vLLM provider for Task 309 is persistent by default. Use a named
-localhost-only container on port `8017`, disable request logging, record
-image/model/cache/runtime state, and leave it running until the operator
-explicitly asks for stop or cleanup. Run the existing detached resource-monitor
-pattern alongside the validation so GPU and memory behavior are part of the
-evidence.
+The Granite/vLLM provider for Task 309 was persistent by default during the
+live run. It used a named localhost-only container on port `8017`, disabled
+request logging, recorded image/model/cache/runtime state, and stayed running
+until the operator explicitly asked for cleanup. Run the existing detached
+resource-monitor pattern alongside comparable validation so GPU and memory
+behavior are part of the evidence.
 
 Task 312 is the precondition that makes the preferred Task 309 shape real in
 production code. The advisory answer-key orchestration consumes an injected
-candidate planner instead of branching on Granite/vLLM details. The
-Granite/vLLM planner derives the item-local provider output mode from provider
-capabilities and item type: choice and multiple-response rows use bounded
+candidate planner instead of branching on provider details. The Granite/vLLM
+planner derives the item-local provider output mode from provider capabilities
+and item type: choice and multiple-response rows use bounded
 `structured_outputs.choice` values, while gap-fill rows use vLLM JSON Schema
-objects. Generic providers keep the JSON Schema planner.
+objects. llama.cpp validation uses explicit runtime selection:
+`llama-cpp-json-schema` sends Chat Completions
+`response_format.type=json_schema`, while `llama-cpp-gbnf` sends a
+Skriptoteket-validated Chat Completions `grammar` field with GBNF that emits
+JSON objects for the normal advisory decoder. Normal "return JSON" prompting is
+not an allowed llama.cpp validation mode.
 
 The live run has three phases:
 
@@ -195,6 +199,58 @@ Do not prompt-engineer around a specific difficult item. Persistent failure
 paths should be documented across runs and shaped later into generalized retry
 or failure-handling policy by item type or failure class.
 
+### Task 309 First Live Result
+
+On 2026-05-15, Task 309 launched the persistent Granite/vLLM provider on Hemma
+at `127.0.0.1:8017` and retained redacted reports under:
+
+```text
+/srv/scratch/sir-convert-a-lot/build/verification/task-309-granite-answer-key-live/
+```
+
+Provider preflight passed for ROCm, cache paths, localhost-only exposure,
+disabled request logging, `/v1/models`, and no CPU fallback. The three
+structured-output microprobes all passed. The detached resource monitor showed
+the full-corpus advisory run was GPU-bound, with median GPU busy `100%` and
+median GPU memory used `94%`.
+
+The in-process advisory corpus run completed over 23 files and 317 items in
+`86919.444ms`: 36 suggested, 8 manual follow-up, and 273 skipped. Golden
+evaluation found 12 correct suggestions and 24 wrong-but-valid suggestions,
+with 0 unknown IDs, 0 duplicate IDs, 0 malformed successes, and 0 partial gap
+answers. This blocks promotion. Do not tune prompts against these individual
+items; use this result to classify failure paths and design generalized retry
+or failure-handling policy before a later mirror validation.
+
+Direct follow-up probes using improved consumer-friendly item messages did not
+change the conclusion. A 10-item sample from failed rows covered gap-fill,
+multiple-response, and single-choice items and produced 1 correct result, 3
+wrong-but-valid results, and 6 invalid-output results. A separate temperature
+`0.1` chat experiment on a word-bank gap-fill row reached 7/10 in full-question
+framing and 1/10 when segmented gap-by-gap, with persistent plausible wrong
+keys. On 2026-05-16, Granite/vLLM was therefore demoted for this lane. The
+operator stopped `sir-convert-task309-granite-vllm`,
+`huleedu_rst_parser_service`, `huleedu_essay_embed_offload`, and
+`sir_convert_a_lot_prod`; post-stop Hemma verification showed GPU use `0%`,
+VRAM `0%`, and no KFD PIDs.
+
+The next operator diagnostic is Devstral Small on `llama.cpp` against the same
+failed-question probe set. This is a focused post-demotion probe, not the full
+Task 300 model bake-off or a provider-promotion decision. The Task 309 runner
+can now preview, microprobe, and run advisory corpus validation with
+`--provider-runtime llama-cpp-json-schema` or `--provider-runtime llama-cpp-gbnf`; the GBNF path follows Skriptoteket's validated llama.cpp
+practice of using the `grammar` request field on `/v1/chat/completions`.
+
+On 2026-05-16, the first Devstral Small launch attempt found the active Hemma
+GGUF symlink set to `Devstral-Small-2-24B-Instruct-2512-Q8_0.gguf`, but the
+canonical `llama-server-rocm.service` was inactive and its
+`llama.cpp-rocm:7.2.0` image was missing. A BuildKit image rebuild using the
+current ROCm/llama.cpp `master` commit
+`68717eac3c081eec00bbb961c0e0e3c129a1790f` passed the stale pinned-commit
+failure and entered HIP compilation, after which Hemma stopped responding over
+Tailscale/SSH. No live Devstral model-quality result was produced in that
+attempt.
+
 ## Verified Source Notes
 
 Checked on 2026-05-14 against Hugging Face model cards and `llama.cpp`
@@ -212,13 +268,38 @@ documentation:
 - Nemotron 3 Nano 4B is an edge/agentic candidate, but the card lists English as
   its supported language; it must be treated as a comparison candidate for this
   Swedish/English school-item route, not as the default.
+- Gemma 4 26B-A4B Unsloth guidance lists the model as a 256K-context MoE
+  variant with 3.8B active parameters and text/image support. The operator
+  diagnostic uses the text-only GGUF
+  `gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf` from
+  `unsloth/gemma-4-26B-A4B-it-GGUF`. Recommended sampling follows Google's
+  Gemma 4 defaults: `temperature=1.0`, `top_p=0.95`, and `top_k=64`.
+  Local llama.cpp runs should start at `--ctx-size 32768` for responsiveness,
+  keep repetition and presence penalties disabled (`repeat_penalty=1.0`,
+  `presence_penalty=0.0`), and disable thinking/reasoning for strict JSON
+  answer-key probes. Unsloth notes that disabling reasoning on `llama-server`
+  uses `--chat-template-kwargs '{"enable_thinking":false}'`; the validated
+  Hemma llama.cpp build also supports the newer `--reasoning off` switch. Use
+  `/srv/scratch/sir-convert-a-lot/bin/llama-server` as the default Hemma
+  `llama-server`; it points to the newer HIP build that supports Qwen3.5 and
+  Gemma 4 GGUF architectures.
+- Qwen3.6 27B guidance lists a 262,144-token native context and recommends
+  the following instruct/non-thinking settings: `temperature=0.7`,
+  `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and
+  `repetition_penalty=1.0`. Qwen3.6 thinks by default; for strict answer-key
+  JSON probes, use the newer Hemma llama.cpp `--reasoning off` switch. The
+  immediate Q6_K diagnostic used
+  `unsloth/Qwen3.6-27B-GGUF` / `Qwen3.6-27B-Q6_K.gguf`, `--ctx-size 32768`,
+  and the flat numbered word-bank JSON Schema shape. It produced the first
+  all-correct result on the recurring Swedish law-and-rights gap-fill probe,
+  including the teacher golden `15` for the criminal-liability-age gap.
 
 ## Ranked Candidate Pool
 
-The current working runtime above is the implementation default. All rows below
-remain mandatory first-pass benchmark entries once Task 300, deferred until the
-full app path is working and deployed, compares the settled vLLM Granite FP8
-route against the GGUF local candidates.
+The rows below remain mandatory first-pass benchmark entries once Task 300,
+deferred until the full app path is working and deployed, compares local
+candidates. Granite/vLLM stays in the matrix as a demoted baseline, not as the
+settled route.
 
 | Rank | Model | First quant | Role | Reason to test |
 |---:|---|---|---|---|
@@ -227,6 +308,13 @@ route against the GGUF local candidates.
 | 3 | `unsloth/granite-4.1-8b-GGUF` | `Q6_K` | Tool-call compliance comparator | Explicit tool/function-calling model-card evidence, heavier runtime footprint. |
 | 4 | `unsloth/Qwen3.5-9B-GGUF` | `Q6_K` | Quality fallback candidate | Higher-capacity Qwen candidate if 4B fails on real gap-fill or matching items. |
 | 5 | `unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF` | `UD-Q6_K_XL` | Edge/agentic comparison candidate | Small agentic model; language caveat makes it non-default for this route. |
+
+Operator-requested immediate diagnostic:
+
+- Devstral Small on `llama.cpp`: exact GGUF repository and quant are resolved in
+  the next governed runtime slice. Use the failed Task 309 direct-probe items
+  first, with the same item-type-specific consumer-friendly message shape, so
+  the comparison targets answer quality rather than prompt/report drift.
 
 Watchlist only:
 

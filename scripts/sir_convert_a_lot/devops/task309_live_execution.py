@@ -1,15 +1,15 @@
-"""Task 309 live Granite/vLLM validation execution helpers.
+"""Task 309 live structured-provider validation execution helpers.
 
 Purpose:
-    Run redacted provider microprobes and the in-process DigiExam advisory
-    answer-key path against the persistent Granite/vLLM provider.
+    Run the in-process DigiExam advisory answer-key path against a selected
+    Task 309 structured provider runtime.
 
 Relationships:
     - Uses the Task 296 structured-provider adapter for live HTTP execution.
     - Uses the Task 312 provider-protocol answer-key planner through the normal
       advisory orchestration path.
-    - Writes retained Task 309 JSON/Markdown reports without raw prompts or
-      raw provider responses.
+    - Writes retained Task 309 validation JSON/Markdown reports with raw
+      provider exchanges so failed live reasoning can be adjudicated.
 """
 
 from __future__ import annotations
@@ -29,6 +29,15 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
 from scripts.sir_convert_a_lot.devops.task309_granite_provider_status import (
     build_task309_provider_status,
 )
+from scripts.sir_convert_a_lot.devops.task309_provider_exchange_capture import (
+    Task309CapturingStructuredChatProvider,
+    Task309ProviderExchange,
+)
+from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+    DEFAULT_TASK309_PROVIDER_RUNTIME,
+    Task309StructuredProviderRuntime,
+    build_task309_provider_profile,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion import (
     build_digiexam_answer_key_completion_report,
 )
@@ -44,21 +53,15 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
 )
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
-    StructuredLLMEndpointKind,
-    StructuredLLMOutputMode,
-    StructuredLLMProviderCapabilities,
-    StructuredLLMProviderProfile,
     StructuredLLMRoutePolicy,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
-    HttpStructuredChatProvider,
     StructuredLLMProviderConnection,
 )
 
 TASK309_MICROPROBE_REPORT_SCHEMA_VERSION = "task309_granite_microprobe_report_v1"
 TASK309_ADVISORY_CORPUS_RUN_SCHEMA_VERSION = "task309_granite_advisory_corpus_run_v1"
 COMPLETION_MODE = "local_llm_suggest_missing_machine_marked"
-PROVIDER_ID = "task309-granite-vllm"
 
 
 @dataclass(frozen=True)
@@ -68,6 +71,7 @@ class Task309AdvisoryCorpusRunReport:
     schema_version: str
     provider_url: str
     model: str
+    provider_runtime: str
     corpus_root: str
     provider_ready: bool
     blocked: bool
@@ -93,6 +97,7 @@ def run_task309_advisory_corpus(
     reports_root: Path,
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
+    provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
 ) -> Task309AdvisoryCorpusRunReport:
@@ -104,6 +109,7 @@ def run_task309_advisory_corpus(
             reports_root=reports_root,
             provider_url=provider_url,
             model=model,
+            provider_runtime=provider_runtime,
             require_provider_ready=require_provider_ready,
             timeout_seconds=timeout_seconds,
         )
@@ -116,6 +122,7 @@ async def _run_task309_advisory_corpus(
     reports_root: Path,
     provider_url: str,
     model: str,
+    provider_runtime: Task309StructuredProviderRuntime,
     require_provider_ready: bool,
     timeout_seconds: float,
 ) -> Task309AdvisoryCorpusRunReport:
@@ -129,6 +136,7 @@ async def _run_task309_advisory_corpus(
             corpus_root=corpus_root,
             provider_url=provider_url,
             model=model,
+            provider_runtime=provider_runtime,
             file_count=len(files),
         )
     parser = DigiExamDxeParser()
@@ -138,13 +146,14 @@ async def _run_task309_advisory_corpus(
     backend_failures: Counter[str] = Counter()
     item_count = 0
     started = time.perf_counter()
+    profile = build_task309_provider_profile(runtime=provider_runtime, model=model)
     async with httpx.AsyncClient() as client:
-        provider = _provider(
+        provider = _capturing_provider(
             provider_url=provider_url,
             timeout_seconds=timeout_seconds,
             client=client,
+            provider_id=profile.provider_id,
         )
-        profile = _base_profile(model=model)
         for source_path in files:
             exam = build_digiexam_intermediate_exam(parser.parse_file(source_path))
             item_count += len(exam.items)
@@ -164,12 +173,17 @@ async def _run_task309_advisory_corpus(
             report_payload: dict[str, object] = {
                 key: value for key, value in report_to_json_payload(report).items()
             }
+            _attach_provider_exchanges(
+                report_payload=report_payload,
+                exchanges=provider.exchanges_for_job(f"task309:{source_path.stem}"),
+            )
             write_task309_json(report_payload, report_path)
             report_paths.append(report_path.as_posix())
     return Task309AdvisoryCorpusRunReport(
         schema_version=TASK309_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
         provider_url=provider_url,
         model=model,
+        provider_runtime=provider_runtime.value,
         corpus_root=corpus_root.as_posix(),
         provider_ready=ready,
         blocked=False,
@@ -190,12 +204,14 @@ def _blocked_corpus_report(
     corpus_root: Path,
     provider_url: str,
     model: str,
+    provider_runtime: Task309StructuredProviderRuntime,
     file_count: int,
 ) -> Task309AdvisoryCorpusRunReport:
     return Task309AdvisoryCorpusRunReport(
         schema_version=TASK309_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
         provider_url=provider_url,
         model=model,
+        provider_runtime=provider_runtime.value,
         corpus_root=corpus_root.as_posix(),
         provider_ready=False,
         blocked=True,
@@ -211,35 +227,41 @@ def _blocked_corpus_report(
     )
 
 
-def _provider(
+def _capturing_provider(
     *,
     provider_url: str,
     timeout_seconds: float,
     client: httpx.AsyncClient,
-) -> HttpStructuredChatProvider:
+    provider_id: str,
+) -> Task309CapturingStructuredChatProvider:
     connection = StructuredLLMProviderConnection(
-        provider_id=PROVIDER_ID,
+        provider_id=provider_id,
         base_url=provider_url,
         timeout_seconds=timeout_seconds,
     )
-    return HttpStructuredChatProvider(client=client, connections={PROVIDER_ID: connection})
-
-
-def _base_profile(*, model: str) -> StructuredLLMProviderProfile:
-    return StructuredLLMProviderProfile(
-        provider_id=PROVIDER_ID,
-        model=model,
-        endpoint_kind=StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS,
-        output_mode=StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
-        is_remote=False,
-        context_window_tokens=4096,
-        max_output_tokens=512,
-        capabilities=StructuredLLMProviderCapabilities(
-            supports_json_schema=True,
-            supports_gbnf=False,
-            supports_vllm_structured_choice=True,
-        ),
+    return Task309CapturingStructuredChatProvider(
+        client=client,
+        connections={provider_id: connection},
     )
+
+
+def _attach_provider_exchanges(
+    *,
+    report_payload: dict[str, object],
+    exchanges: dict[str, Task309ProviderExchange],
+) -> None:
+    items = report_payload.get("items")
+    if not isinstance(items, list):
+        raise ValueError("Task 309 advisory report items must be a list.")
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError("Task 309 advisory report item must be an object.")
+        item_id = item.get("item_id")
+        if not isinstance(item_id, str):
+            raise ValueError("Task 309 advisory report item_id must be a string.")
+        exchange = exchanges.get(item_id)
+        if exchange is not None:
+            item["task309_provider_exchange"] = exchange.to_payload()
 
 
 def _route_policy() -> StructuredLLMRoutePolicy:

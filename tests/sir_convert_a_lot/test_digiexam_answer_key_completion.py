@@ -43,6 +43,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMResponse,
     StructuredLLMRoutePolicy,
 )
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
+    build_structured_llm_payload,
+)
 
 
 def test_choice_completion_report_uses_candidate_lineage_not_prompt_text() -> None:
@@ -98,6 +101,16 @@ def test_granite_vllm_choice_rows_use_bounded_choice_values() -> None:
     assert provider.profiles[0].output_mode == StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE
     assert provider.requests[0].output_spec.choice_values == ("1", "2")
     assert provider.requests[0].output_spec.json_schema["required"] == ["choice"]
+    request_payload = json.loads(provider.requests[0].user_payload)
+    assert request_payload["task"]["name"] == "select_teacher_intended_choice_answer_key"
+    assert request_payload["task"]["instruction"].startswith("Read the item")
+    assert request_payload["item"]["stem"] == "Choose the Greek letter."
+    assert request_payload["choices"] == [
+        {"alternative_id": 1, "choice_value": "1", "text": "Alpha"},
+        {"alternative_id": 2, "choice_value": "2", "text": "Beta"},
+    ]
+    assert request_payload["output"]["provider_output_mode"] == "vllm_structured_choice"
+    assert "For choice items" in provider.requests[0].system_prompt
     assert report.items[0].answer_payload == {"kind": "choice", "correct_alternative_ids": [2]}
 
 
@@ -150,9 +163,130 @@ def test_granite_vllm_gap_rows_use_json_schema_object_mode() -> None:
     assert provider.requests[0].output_spec.choice_values == ()
     assert provider.requests[0].output_spec.json_schema["required"] == [
         "decision_state",
-        "gap_answers",
+        "1",
         "manual_follow_up_code",
     ]
+    request_payload = json.loads(provider.requests[0].user_payload)
+    assert request_payload["task"]["name"] == "complete_teacher_intended_gap_fill_answer_key"
+    assert request_payload["task"]["instruction"].startswith("Read the cloze item")
+    assert request_payload["item"]["cloze_text"] == "Växter använder [1]."
+    assert request_payload["gaps"][0]["gap_number"] == 1
+    assert "string keys" in request_payload["output"]["json_shape"]
+    assert request_payload["output"]["provider_output_mode"] == "vllm_json_schema"
+    assert "For gap-fill items" in provider.requests[0].system_prompt
+    assert report.items[0].answer_payload == {
+        "kind": "gap_fill",
+        "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
+    }
+
+
+def test_llama_cpp_choice_rows_use_json_schema_object_mode() -> None:
+    provider = _FakeProvider(
+        {
+            "decision_state": "answered",
+            "correct_alternative_ids": [2],
+            "manual_follow_up_code": None,
+        }
+    )
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_exam(_choice_payload()),
+            provider_set=StructuredChatProviderSet(primary=_llama_cpp_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    assert (
+        provider.profiles[0].endpoint_kind == StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS
+    )
+    assert provider.profiles[0].output_mode == StructuredLLMOutputMode.JSON_SCHEMA
+    assert provider.requests[0].output_spec.choice_values == ()
+    request_payload = json.loads(provider.requests[0].user_payload)
+    assert request_payload["output"]["provider_output_mode"] == "llama_cpp_json_schema"
+    provider_payload = build_structured_llm_payload(
+        profile=provider.profiles[0],
+        request=provider.requests[0],
+    )
+    assert provider_payload["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "digiexam_choice_answer_key_decision_v1",
+            "schema": provider.requests[0].output_spec.json_schema,
+        },
+    }
+    assert "structured_outputs" not in provider_payload
+    assert "grammar" not in provider_payload
+    assert report.items[0].answer_payload == {"kind": "choice", "correct_alternative_ids": [2]}
+
+
+def test_llama_cpp_choice_rows_can_use_gbnf_constrained_json() -> None:
+    provider = _FakeProvider(
+        {
+            "decision_state": "answered",
+            "correct_alternative_ids": [2],
+            "manual_follow_up_code": None,
+        }
+    )
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_exam(_choice_payload()),
+            provider_set=StructuredChatProviderSet(primary=_llama_cpp_gbnf_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    assert provider.profiles[0].output_mode == StructuredLLMOutputMode.GBNF
+    assert provider.requests[0].output_spec.gbnf_grammar is not None
+    assert "choice_decision" in provider.requests[0].output_spec.gbnf_grammar
+    request_payload = json.loads(provider.requests[0].user_payload)
+    assert request_payload["output"]["provider_output_mode"] == "llama_cpp_gbnf_json"
+    provider_payload = build_structured_llm_payload(
+        profile=provider.profiles[0],
+        request=provider.requests[0],
+    )
+    assert provider_payload["grammar"] == provider.requests[0].output_spec.gbnf_grammar
+    assert "response_format" not in provider_payload
+    assert "structured_outputs" not in provider_payload
+    assert report.items[0].answer_payload == {"kind": "choice", "correct_alternative_ids": [2]}
+
+
+def test_llama_cpp_gap_rows_can_use_gbnf_constrained_json() -> None:
+    provider = _FakeProvider(
+        {
+            "decision_state": "answered",
+            "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
+            "manual_follow_up_code": None,
+        }
+    )
+    report = asyncio.run(
+        build_digiexam_answer_key_completion_report(
+            job_id="job-1",
+            completion_mode="local_llm_suggest_missing_machine_marked",
+            exam=_exam(_gap_payload()),
+            provider_set=StructuredChatProviderSet(primary=_llama_cpp_gbnf_profile()),
+            route_policy=_route_policy(),
+            provider=provider,
+        )
+    )
+
+    assert provider.profiles[0].output_mode == StructuredLLMOutputMode.GBNF
+    assert provider.requests[0].output_spec.gbnf_grammar is not None
+    assert "gap_fill_numbered" in provider.requests[0].output_spec.gbnf_grammar
+    request_payload = json.loads(provider.requests[0].user_payload)
+    assert request_payload["output"]["provider_output_mode"] == "llama_cpp_gbnf_json"
+    provider_payload = build_structured_llm_payload(
+        profile=provider.profiles[0],
+        request=provider.requests[0],
+    )
+    assert provider_payload["grammar"] == provider.requests[0].output_spec.gbnf_grammar
+    assert "response_format" not in provider_payload
+    assert "structured_outputs" not in provider_payload
     assert report.items[0].answer_payload == {
         "kind": "gap_fill",
         "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
@@ -423,6 +557,40 @@ def _vllm_profile(*, context_window_tokens: int = 4096) -> StructuredLLMProvider
             supports_json_schema=True,
             supports_gbnf=False,
             supports_vllm_structured_choice=True,
+        ),
+    )
+
+
+def _llama_cpp_profile(*, context_window_tokens: int = 4096) -> StructuredLLMProviderProfile:
+    return StructuredLLMProviderProfile(
+        provider_id="local-llama-cpp",
+        model="mistral-small",
+        endpoint_kind=StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.JSON_SCHEMA,
+        is_remote=False,
+        context_window_tokens=context_window_tokens,
+        max_output_tokens=512,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=True,
+            supports_vllm_structured_choice=False,
+        ),
+    )
+
+
+def _llama_cpp_gbnf_profile(*, context_window_tokens: int = 4096) -> StructuredLLMProviderProfile:
+    return StructuredLLMProviderProfile(
+        provider_id="local-llama-cpp",
+        model="mistral-small",
+        endpoint_kind=StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.GBNF,
+        is_remote=False,
+        context_window_tokens=context_window_tokens,
+        max_output_tokens=512,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=True,
+            supports_vllm_structured_choice=False,
         ),
     )
 

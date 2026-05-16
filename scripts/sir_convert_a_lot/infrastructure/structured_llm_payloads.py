@@ -62,7 +62,7 @@ def build_chat_completions_payload(
         "messages": _chat_messages(request),
         "stream": False,
         "max_tokens": request.max_output_tokens,
-        "temperature": 0,
+        "temperature": profile.temperature,
         "response_format": build_chat_completions_response_format(request.output_spec),
     }
     return payload
@@ -106,7 +106,7 @@ def build_llama_cpp_chat_completions_payload(
         "messages": _chat_messages(request),
         "stream": False,
         "max_tokens": request.max_output_tokens,
-        "temperature": 0,
+        "temperature": profile.temperature,
     }
     if profile.output_mode == StructuredLLMOutputMode.GBNF:
         if request.output_spec.gbnf_grammar is None:
@@ -130,7 +130,7 @@ def build_vllm_chat_completions_payload(
         "messages": _chat_messages(request),
         "stream": False,
         "max_tokens": request.max_output_tokens,
-        "temperature": 0,
+        "temperature": profile.temperature,
     }
     if profile.output_mode == StructuredLLMOutputMode.VLLM_STRUCTURED_CHOICE:
         if not request.output_spec.choice_values:

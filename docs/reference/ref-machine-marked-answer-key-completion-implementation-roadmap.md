@@ -4,7 +4,7 @@ id: REF-machine-marked-answer-key-completion-implementation-roadmap
 title: Machine-marked Answer-key Completion Implementation Roadmap
 status: active
 created: 2026-05-14
-updated: 2026-05-15
+updated: 2026-05-16
 owners:
   - platform
 tags:
@@ -61,7 +61,7 @@ task, reference, report, or retained review surface.
 1. Matching answer-key pair IR contract: Task 298.
 1. Gapped/open-cloze accepted-value IR contract: Task 305.
 1. Structured provider harness: Task 296.
-1. Experimental Granite FP8/vLLM Hemma smoke and interim local provider
+1. Experimental Granite FP8/vLLM Hemma smoke and temporary local provider
    settlement: Task 301.
 1. Advisory completion reports: Task 297.
 1. Reviewed application into effective IR: Task 306.
@@ -78,15 +78,16 @@ Do not collapse these tranches. The sequence protects source-bound parser
 provenance, prevents provider code from leaking into parser/rendering concerns,
 and keeps model choice evidence-driven.
 
-Task 301 is allowed to run before the full benchmark harness because it is a
+Task 301 was allowed to run before the full benchmark harness because it was a
 bounded operator smoke test of a runtime candidate, not a provider integration
-or final model-selection gate. Its evidence settles Granite 4.1 8B FP8 on vLLM
-as the interim local provider while the feature is implemented. Task 309 is the
-first production-path live validation of that interim provider, using the
+or final model-selection gate. Its evidence temporarily settled Granite 4.1 8B
+FP8 on vLLM as the local provider while the feature was implemented. Task 309 is
+the first production-path live validation of that temporary provider, using the
 versioned pure DigiExam DXE corpus and strict golden-backed correctness
-metrics. Task 300 remains the later comparative benchmark authority for a
-GGUF/vLLM bake-off and must not start until the full app path is working and
-deployed.
+metrics. The 2026-05-16 Task 309 evidence demotes Granite/vLLM for answer-key
+completion because wrong-but-valid answer quality is unacceptable. Task 300
+remains the later comparative benchmark authority for a GGUF/vLLM bake-off and
+must not start until the full app path is working and deployed.
 
 Task 310 and Task 311 are follow-up gates after Task 309: Task 310 isolates
 validation-only force-eval so it cannot leak into production advisory behavior,
@@ -571,8 +572,8 @@ Stop conditions:
 Governing task: `task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md`.
 
 Goal: prove whether Granite 4.1 8B FP8 can start on Hemma's AMD R9700/RDNA4
-ROCm vLLM preview lane, satisfy one structured-output MCQ smoke, and serve as
-the interim local provider while the feature is implemented.
+ROCm vLLM preview lane, satisfy one structured-output MCQ smoke, and serve as a
+temporary local provider while the feature is implemented.
 
 Checklist:
 
@@ -590,8 +591,8 @@ Checklist:
   response, and cleanup state in the governed task.
 - [x] Copy the downloaded Granite FP8 snapshot into the canonical
   scratch-backed Hugging Face cache used by the existing local model lanes.
-- [x] Document vLLM Granite FP8 as the interim local provider until Task 300
-  benchmarks it against the remaining candidates.
+- [x] Document vLLM Granite FP8 as the temporary local provider pending
+  production-path validation and later Task 300 benchmarking.
 
 Checkpoint:
 
@@ -601,6 +602,9 @@ Checkpoint:
   benchmark matrix proves correctness and wrong-but-valid behavior.
 - [x] Provider implementation may proceed against this runtime without waiting
   for the comparative benchmark.
+- [x] Task 309 later demoted this runtime for answer-key completion after live
+  corpus and direct-probe evidence showed unacceptable wrong-but-valid answer
+  quality despite successful structured-output protocol behavior.
 
 Stop conditions:
 
@@ -614,21 +618,23 @@ Stop conditions:
 
 Governing task: `task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md`.
 
-Goal: benchmark the settled vLLM Granite FP8 route against the mandatory local
-model matrix on real data after the full app path is working and deployed.
-Task 309 owns the first Granite/vLLM-only live validation and failure-path
-inventory; do not use this tranche for that precursor run.
+Goal: benchmark the mandatory local model matrix on real data after the full
+app path is working and deployed. Granite/vLLM remains only as a demoted
+baseline unless a later governed result overturns the Task 309 evidence. Task
+309 owns the first Granite/vLLM-only live validation and failure-path inventory;
+do not use this tranche for that precursor run.
 
 Mandatory first-pass matrix:
 
 | Model | Quant |
 |---|---|
-| `ibm-granite/granite-4.1-8b-fp8` on vLLM | FP8 |
+| `ibm-granite/granite-4.1-8b-fp8` on vLLM | FP8 demoted baseline |
 | `unsloth/Qwen3.5-4B-GGUF` | `UD-Q6_K_XL` |
 | `unsloth/gemma-4-E4B-it-GGUF` | `Q6_K` |
 | `unsloth/granite-4.1-8b-GGUF` | `Q6_K` |
 | `unsloth/Qwen3.5-9B-GGUF` | `Q6_K` |
 | `unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF` | `UD-Q6_K_XL` |
+| Mistral Small on `llama.cpp` | exact GGUF/quant resolved by the next governed runtime slice |
 
 Checklist:
 
@@ -657,6 +663,8 @@ Checkpoint:
   scores.
 - [ ] The bake-off starts only after Task 309 has completed and the full app
   path is working and deployed.
+- [ ] Granite/vLLM is compared only as a demoted baseline unless a later
+  governed result overturns the Task 309 evidence.
 
 Stop conditions:
 
@@ -777,7 +785,8 @@ Governing task: `task-309-live-validate-granite-answer-key-completion-on-version
 
 Goal: validate the completed structured-provider, advisory report, and reviewed
 apply paths against the real Granite/vLLM stack on Hemma before any model
-bake-off or wider corpus expansion.
+bake-off or wider corpus expansion, then record whether that stack remains a
+candidate or is demoted by live correctness evidence.
 
 Corpus boundary:
 
@@ -837,6 +846,9 @@ Checkpoint:
 - [ ] The initial Task 309 run does not use force-eval over source-keyed items.
 - [ ] The next service-backed mirror gate may use explicit validation-only
   force-eval before production/auth-edge mirror execution.
+- [ ] If Granite/vLLM is demoted, record the stopped-provider state and next
+  governed diagnostic provider lane instead of carrying it forward as the
+  interim provider by default.
 
 Stop conditions:
 
@@ -845,7 +857,7 @@ Stop conditions:
 - Stop if Hemma cannot prove GPU execution without CPU fallback.
 - Stop if request logging or exposure controls cannot be proven.
 - Stop if the implementation would stop the persistent Granite/vLLM provider as
-  ordinary Task 309 closeout.
+  ordinary Task 309 closeout before the operator has explicitly requested it.
 - Stop if force-eval is enabled in the initial Task 309 advisory run.
 - Stop if the strict auth/public-edge service-backed mirror starts before the
   in-process plus service-smoke validation succeeds.
@@ -886,8 +898,9 @@ evidence.
 
 Checklist:
 
-- [ ] Use the persistent Granite/vLLM provider established by Task 309 unless a
-  governed operator decision changes the provider lane.
+- [ ] Use the governed provider lane established after Task 309. Granite/vLLM
+  must not be reused by default after the 2026-05-16 demotion unless a later
+  governed operator decision overturns that evidence.
 - [ ] Run through the deployed service path, not the in-process executor.
 - [ ] Prove authenticated access, public-edge readiness, provider reachability,
   and request logging posture.

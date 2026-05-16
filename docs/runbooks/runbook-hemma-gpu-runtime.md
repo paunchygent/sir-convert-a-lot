@@ -16,6 +16,7 @@ tags:
   - model-cache
 links:
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
+  - docs/runbooks/runbook-answer-key-local-model-operator-guide.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
 ---
@@ -35,8 +36,19 @@ same Hemma storage and evidence contract.
 Canonical Sir Convert scratch roots:
 
 - `/srv/scratch/sir-convert-a-lot/build`
+- `/srv/scratch/sir-convert-a-lot/bin`
 - `/srv/scratch/sir-convert-a-lot/cache`
 - `/srv/scratch/sir-convert-a-lot/cache/huggingface`
+
+Canonical llama.cpp server binary:
+
+```text
+/srv/scratch/sir-convert-a-lot/bin/llama-server
+```
+
+This symlink must point to the current HIP-enabled llama.cpp build for GGUF
+answer-key model probes. Do not use older home-directory builds for Qwen3.5 or
+Gemma 4 validation; they may lack current architecture support.
 
 ## GPU Verification
 
@@ -104,6 +116,10 @@ GGUF shortlist. Keep these GGUF candidates in the first-pass matrix:
 
 The primary promotion metric is wrong-but-valid answer rate on real items, not
 generic benchmark score.
+
+Use `docs/runbooks/runbook-answer-key-local-model-operator-guide.md` for
+operator-specific setup details, model switching, GGUF launch patterns,
+structured-output probe shape, and lessons learned from Task 309 model runs.
 
 ## Docling GPU Validation
 

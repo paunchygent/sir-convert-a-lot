@@ -45,6 +45,10 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_status import (
     build_task309_hemma_preflight,
     build_task309_provider_status,
 )
+from scripts.sir_convert_a_lot.devops.task309_live_evaluation import (
+    evaluate_task309_advisory_reports,
+    write_task309_advisory_evaluation,
+)
 from scripts.sir_convert_a_lot.devops.task309_live_execution import (
     Task309AdvisoryCorpusRunReport,
     run_task309_advisory_corpus,
@@ -52,6 +56,16 @@ from scripts.sir_convert_a_lot.devops.task309_live_execution import (
 from scripts.sir_convert_a_lot.devops.task309_live_microprobes import (
     Task309MicroprobeReport,
     run_task309_microprobes,
+)
+from scripts.sir_convert_a_lot.devops.task309_request_shape_preview import (
+    Task309RequestShapePreview,
+    build_task309_request_shape_preview,
+    write_task309_request_shape_preview,
+)
+from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+    DEFAULT_TASK309_PROVIDER_RUNTIME,
+    parse_task309_provider_runtime,
+    task309_provider_runtime_values,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
     Task309GoldenValidationReport,
@@ -93,6 +107,15 @@ def main(argv: list[str] | None = None) -> int:
             output_root=args.output_root,
         )
         return _blocked_exit_code(report.summary.valid, fail_on_blocked=args.fail_on_blocked)
+    if args.command == "preview-request-shape":
+        preview = build_task309_request_shape_preview(
+            corpus_root=args.corpus_root,
+            provider_url=args.provider_url,
+            model=args.model,
+            provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+        )
+        _write_request_shape_preview(output_root=args.output_root, preview=preview)
+        return _blocked_exit_code(preview.ok, fail_on_blocked=args.fail_on_blocked)
     if args.command == "launch-provider":
         result = _launch_provider(
             output_root=args.output_root,
@@ -129,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         microprobe_report = run_task309_microprobes(
             provider_url=args.provider_url,
             model=args.model,
+            provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
             require_provider_ready=not args.skip_provider_ready_check,
             timeout_seconds=args.timeout_seconds,
         )
@@ -144,12 +168,32 @@ def main(argv: list[str] | None = None) -> int:
             reports_root=reports_root,
             provider_url=args.provider_url,
             model=args.model,
+            provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
             require_provider_ready=not args.skip_provider_ready_check,
             timeout_seconds=args.timeout_seconds,
         )
         _write_advisory_corpus(output_root=args.output_root, report=corpus_report)
         return _blocked_exit_code(
             not corpus_report.blocked,
+            fail_on_blocked=args.fail_on_blocked,
+        )
+    if args.command == "evaluate-advisory-corpus":
+        reports_root = args.reports_root or (args.output_root / "advisory-corpus-reports")
+        evaluation = evaluate_task309_advisory_reports(
+            expected_answer_manifest_path=args.expected_answer_manifest,
+            reports_root=reports_root,
+        )
+        json_path, markdown_path = write_task309_advisory_evaluation(
+            output_root=args.output_root,
+            report=evaluation,
+        )
+        print(f"Wrote {json_path}")
+        print(f"Wrote {markdown_path}")
+        return _blocked_exit_code(
+            evaluation.wrong_but_valid_count == 0
+            and evaluation.unknown_id_count == 0
+            and evaluation.duplicate_id_count == 0
+            and evaluation.malformed_success_count == 0,
             fail_on_blocked=args.fail_on_blocked,
         )
     raise SystemExit(f"Unsupported Task 309 command: {args.command}")
@@ -182,6 +226,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     goldens.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     goldens.add_argument("--fail-on-blocked", action="store_true")
+
+    preview = subparsers.add_parser(
+        "preview-request-shape",
+        help="Preview model-facing request shape without calling the provider.",
+    )
+    _add_provider_args(preview)
+    preview.add_argument("--model", default=DEFAULT_PROVIDER_MODEL)
+    _add_provider_runtime_arg(preview)
+    preview.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
+    preview.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    preview.add_argument("--fail-on-blocked", action="store_true")
 
     launch = subparsers.add_parser(
         "launch-provider",
@@ -224,6 +279,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     _add_provider_args(microprobes)
     microprobes.add_argument("--model", default=DEFAULT_PROVIDER_MODEL)
+    _add_provider_runtime_arg(microprobes)
     microprobes.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     microprobes.add_argument("--skip-provider-ready-check", action="store_true")
     microprobes.add_argument("--fail-on-blocked", action="store_true")
@@ -234,11 +290,25 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     _add_provider_args(corpus)
     corpus.add_argument("--model", default=DEFAULT_PROVIDER_MODEL)
+    _add_provider_runtime_arg(corpus)
     corpus.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
     corpus.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     corpus.add_argument("--reports-root", type=Path, default=None)
     corpus.add_argument("--skip-provider-ready-check", action="store_true")
     corpus.add_argument("--fail-on-blocked", action="store_true")
+
+    evaluate = subparsers.add_parser(
+        "evaluate-advisory-corpus",
+        help="Evaluate retained Task 309 advisory reports against teacher goldens.",
+    )
+    evaluate.add_argument(
+        "--expected-answer-manifest",
+        type=Path,
+        default=DEFAULT_EXPECTED_ANSWER_MANIFEST,
+    )
+    evaluate.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    evaluate.add_argument("--reports-root", type=Path, default=None)
+    evaluate.add_argument("--fail-on-blocked", action="store_true")
 
     return parser
 
@@ -248,6 +318,18 @@ def _add_provider_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--container-name", default=DEFAULT_PROVIDER_CONTAINER_NAME)
     parser.add_argument("--port", type=int, default=DEFAULT_PROVIDER_PORT)
     parser.add_argument("--timeout-seconds", type=float, default=2.0)
+
+
+def _add_provider_runtime_arg(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--provider-runtime",
+        choices=task309_provider_runtime_values(),
+        default=DEFAULT_TASK309_PROVIDER_RUNTIME.value,
+        help=(
+            "Structured provider runtime. llama.cpp runtimes are restricted to "
+            "JSON Schema response_format or GBNF grammar-constrained JSON."
+        ),
+    )
 
 
 def _prepare_manifests(
@@ -393,6 +475,21 @@ def _write_advisory_corpus(
     print(f"Wrote {markdown_path}")
 
 
+def _write_request_shape_preview(
+    *,
+    output_root: Path,
+    preview: Task309RequestShapePreview,
+) -> None:
+    enforce_generated_output_path(output_root, label="output_root")
+    output_root.mkdir(parents=True, exist_ok=True)
+    json_path, markdown_path = write_task309_request_shape_preview(
+        output_root=output_root,
+        preview=preview,
+    )
+    print(f"Wrote {json_path}")
+    print(f"Wrote {markdown_path}")
+
+
 def _golden_validation_markdown(report: Task309GoldenValidationReport) -> str:
     lines = [
         "# Task 309 Expected-Answer Validation",
@@ -424,6 +521,7 @@ def _microprobe_markdown(report: Task309MicroprobeReport) -> str:
         "",
         f"- provider_url: `{report.provider_url}`",
         f"- model: `{report.model}`",
+        f"- provider_runtime: `{report.provider_runtime}`",
         f"- provider_ready: `{report.provider_ready}`",
         f"- blocked: `{report.blocked}`",
         f"- result_count: `{len(report.results)}`",
@@ -444,6 +542,7 @@ def _advisory_corpus_markdown(report: Task309AdvisoryCorpusRunReport) -> str:
         "",
         f"- provider_url: `{report.provider_url}`",
         f"- model: `{report.model}`",
+        f"- provider_runtime: `{report.provider_runtime}`",
         f"- corpus_root: `{report.corpus_root}`",
         f"- provider_ready: `{report.provider_ready}`",
         f"- blocked: `{report.blocked}`",

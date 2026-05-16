@@ -74,6 +74,9 @@ def _validated_gap_payload(
     item: DigiExamIrItem,
     content: dict[str, JsonValue],
 ) -> dict[str, JsonValue] | None:
+    numbered_payload = _validated_numbered_gap_payload(item=item, content=content)
+    if numbered_payload is not None:
+        return numbered_payload
     raw_gap_answers = content.get("gap_answers")
     if not isinstance(raw_gap_answers, list) or not raw_gap_answers:
         return None
@@ -95,6 +98,24 @@ def _validated_gap_payload(
         seen_gap_ids.add(gap_id)
         gap_answers.append({"gap_id": gap_id, "accepted_values": list(normalized_values)})
     if seen_gap_ids != valid_gap_ids:
+        return None
+    return {"kind": "gap_fill", "gap_answers": gap_answers}
+
+
+def _validated_numbered_gap_payload(
+    *,
+    item: DigiExamIrItem,
+    content: dict[str, JsonValue],
+) -> dict[str, JsonValue] | None:
+    if _string(content.get("manual_follow_up_code")) is not None:
+        return None
+    gap_answers: list[JsonValue] = []
+    for index, gap in enumerate(item.gaps, start=1):
+        value = _string(content.get(str(index)))
+        if value is None:
+            return None
+        gap_answers.append({"gap_id": gap.guid, "accepted_values": [value.strip()]})
+    if len(gap_answers) != len(item.gaps):
         return None
     return {"kind": "gap_fill", "gap_answers": gap_answers}
 

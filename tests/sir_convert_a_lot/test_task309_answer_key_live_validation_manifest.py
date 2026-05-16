@@ -164,6 +164,31 @@ def test_task309_runner_validates_goldens_and_writes_retained_report(tmp_path: P
     assert _object(report_payload["summary"])["valid"] is True
 
 
+def test_task309_runner_previews_consumer_friendly_request_shape(tmp_path: Path) -> None:
+    exit_code = task309_runner_main(
+        [
+            "preview-request-shape",
+            "--corpus-root",
+            _CORPUS_ROOT.as_posix(),
+            "--output-root",
+            tmp_path.as_posix(),
+            "--fail-on-blocked",
+        ]
+    )
+    report_payload = _object(
+        json.loads((tmp_path / "request-shape-preview.json").read_text(encoding="utf-8"))
+    )
+    items = _objects(report_payload["items"])
+
+    assert exit_code == 0
+    assert report_payload["ok"] is True
+    assert report_payload["manifest_eligible_item_count"] == 42
+    assert report_payload["attempted_item_count"] == 42
+    assert report_payload["issue_count"] == 0
+    assert {item["ok"] for item in items} == {True}
+    assert (tmp_path / "request-shape-preview.md").exists()
+
+
 def test_task309_provider_status_surface_is_persistent_by_default(tmp_path: Path) -> None:
     exit_code = task309_runner_main(
         [

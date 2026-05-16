@@ -17,6 +17,7 @@ links:
   - .codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md
   - docs/runbooks/runbook-hemma-service-ops.md
   - docs/runbooks/runbook-hemma-gpu-runtime.md
+  - docs/runbooks/runbook-answer-key-local-model-operator-guide.md
   - docs/runbooks/runbook-hemma-conversion-benchmarks.md
   - docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md
   - docs/converters/sir_convert_a_lot.md
@@ -37,6 +38,7 @@ benchmark, and tunnel work.
 |---|---|
 | Service placement, deploys, tunnels, health checks, prod env mirror | `docs/runbooks/runbook-hemma-service-ops.md` |
 | GPU checks, scratch-backed caches, vLLM, llama.cpp, Docling GPU validation | `docs/runbooks/runbook-hemma-gpu-runtime.md` |
+| Answer-key local model setup, GGUF switching, structured probes, lessons learned | `docs/runbooks/runbook-answer-key-local-model-operator-guide.md` |
 | Conversion smoke tests, throughput, bottleneck triage | `docs/runbooks/runbook-hemma-conversion-benchmarks.md` |
 | TTS sidecar and Swedish voice benchmark lanes | `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md` |
 | Public API or CLI contract behavior | `docs/converters/` and `docs/decisions/` |

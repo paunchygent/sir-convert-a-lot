@@ -44,6 +44,8 @@ from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import 
     Task309ProviderStatus,
 )
 
+DOCKER_COMMAND_PREFIX = ("sudo", "-n", "docker")
+
 
 def build_task309_provider_status(
     *,
@@ -166,7 +168,7 @@ class _DockerInspectResult:
 def _docker_inspect(container_name: str) -> _DockerInspectResult:
     try:
         result = subprocess.run(
-            ["docker", "inspect", container_name],
+            [*DOCKER_COMMAND_PREFIX, "inspect", container_name],
             capture_output=True,
             check=False,
             text=True,

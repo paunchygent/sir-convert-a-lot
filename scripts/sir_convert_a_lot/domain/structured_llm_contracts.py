@@ -130,6 +130,7 @@ class StructuredLLMProviderProfile:
     context_window_tokens: int
     max_output_tokens: int
     capabilities: StructuredLLMProviderCapabilities
+    temperature: float = 0.0
 
     def __post_init__(self) -> None:
         if not self.provider_id.strip():
@@ -144,6 +145,8 @@ class StructuredLLMProviderProfile:
             raise ValueError(
                 "Structured provider max_output_tokens must be below context_window_tokens."
             )
+        if self.temperature < 0 or self.temperature > 2:
+            raise ValueError("Structured provider temperature must be between 0 and 2.")
         if self.output_mode == StructuredLLMOutputMode.JSON_SCHEMA:
             if not self.capabilities.supports_json_schema:
                 raise ValueError("Provider profile selects JSON Schema without capability.")

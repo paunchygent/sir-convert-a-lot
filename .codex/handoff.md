@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-05-15'
+last_updated: '2026-05-16'
 ---
 
 ## Purpose
@@ -93,8 +93,12 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   Granite/vLLM provider-protocol planner correction; Story 50/Task 313 now
   track the broader SOLID domain-coupling audit separately from Task 312. Task
   309 remains in progress for live validation, with Tasks 310/311 scaffolded
-  follow-ups. Keyed matching QTI bridging waits for real matching-capable
-  fixtures.
+  follow-ups. Granite/vLLM is demoted after the first live corpus run and
+  direct probes showed unacceptable wrong-but-valid answer quality; the next
+  diagnostic provider lane is Devstral Small on `llama.cpp` against the same
+  failed-question probe set. The Task 309 runner now supports llama.cpp JSON
+  Schema and GBNF-grammar constrained JSON runtimes only. Keyed matching QTI
+  bridging waits for real matching-capable fixtures.
 - Review 17 retained Task 306 as `changes_requested` because Skriptoteket's
   checked-in Sir Convert generated OpenAPI TypeScript surface is stale against
   the Task 306 snapshot. Sir-local reviewed-overlay/effective-IR semantics and
@@ -157,27 +161,31 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 - Older validation evidence lives in linked governed tasks, references, reviews,
   and long-term memory entries.
 - 2026-05-13 through 2026-05-15 validation evidence for pre-release, Task 292,
-  Hemma runbook cleanup, and Tasks 294/295/302 lives in linked governed
-  tasks/reviews.
-- 2026-05-15 Task 296 tranches 1-3 gates passed; detailed evidence lives in
-  the governed task/review docs. The final tranche included structured-provider
-  harness/execution/composition, default artifact-route no-call proof, docs
-  validation after `docs-sync`, `coverage-gate`, and `git diff --check`.
-- 2026-05-15 Review 16 accepted after third remediation: focused ExamAuthoringIR
-  gap/matching tests (`23 passed`), live bypass probes fail closed,
-  `format-all`, `lint-fix`, `typecheck-all`, docs/skills/handoff validation
-  after `docs-sync`, `coverage-gate` (`1250 passed, 5 skipped`, coverage
-  `95.46%`), and `git diff --check`.
-- 2026-05-15 Task 297 focused tests passed: advisory answer-key completion
-  domain tests, DigiExam route mutation/no-call proofs, and OpenAPI contract
-  tests (`12 passed`) after `pdm run openapi-export-v2`; full `coverage-gate`
-  passed (`1248 passed, 5 skipped`, coverage `95.46%`).
-- 2026-05-15 Task 306 gates passed: focused reviewed-completion apply/no-call
-  proof (`26 passed`), `typecheck-all`, docs/skills/handoff validation, full
-  `coverage-gate` (`1257 passed, 5 skipped`, coverage `95.48%`).
+  Hemma runbook cleanup, and Tasks 294-306 lives in linked governed
+  tasks/reviews and long-term memory entries.
 - 2026-05-15 Task 312 and Task 309 surface gates passed:
   provider/structured/live-run focused tests (`48 passed`) plus
   `typecheck-all`.
+- 2026-05-15 Task 309 first Hemma live run completed against persistent
+  Granite/vLLM on `127.0.0.1:8017`: preflight and all 3 microprobes passed,
+  in-process corpus run produced 36 suggestions and 8 manual follow-ups, but
+  golden evaluation found 24 wrong-but-valid suggestions. Do not promote or
+  prompt-tune specific items.
+- 2026-05-16 Granite/vLLM was demoted for answer-key completion after direct
+  failed-row probes and a gap-fill chat experiment still produced plausible
+  wrong keys. Per operator request, Hemma GPU capacity was cleared by stopping
+  `sir-convert-task309-granite-vllm`, `huleedu_rst_parser_service`,
+  `huleedu_essay_embed_offload`, and `sir_convert_a_lot_prod`; `rocm-smi`
+  showed GPU use `0%`, VRAM `0%`, and no KFD PIDs afterward. Next diagnostic:
+  Devstral Small on `llama.cpp` against the same failed-question probe set.
+- 2026-05-16 first Devstral Small launch attempt: Hemma's `active.gguf`
+  resolved to `Devstral-Small-2-24B-Instruct-2512-Q8_0.gguf`, but
+  `llama-server-rocm.service` was inactive and the required
+  `llama.cpp-rocm:7.2.0` image was missing. The canonical BuildKit rebuild
+  bypassed the stale pinned ROCm/llama.cpp commit by using
+  `68717eac3c081eec00bbb961c0e0e3c129a1790f`, reached HIP compilation, then
+  Hemma became unreachable over Tailscale/SSH before any live Devstral request
+  or corpus validation could run.
 - 2026-05-15 Review 17 flagged one downstream consumer-sync blocker:
   Skriptoteket `frontend/apps/skriptoteket/src/api/sirConvertOpenapi.d.ts` is
   stale against Sir Convert's Task 306 OpenAPI snapshot. Review 17 separately
