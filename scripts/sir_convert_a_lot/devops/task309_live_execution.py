@@ -108,6 +108,8 @@ def run_task309_advisory_corpus(
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
+    supports_multimodal_vision: bool = False,
+    vision_media_path: Path | None = None,
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
 ) -> Task309AdvisoryCorpusRunReport:
@@ -120,6 +122,8 @@ def run_task309_advisory_corpus(
             provider_url=provider_url,
             model=model,
             provider_runtime=provider_runtime,
+            supports_multimodal_vision=supports_multimodal_vision,
+            vision_media_path=vision_media_path,
             require_provider_ready=require_provider_ready,
             timeout_seconds=timeout_seconds,
         )
@@ -133,6 +137,8 @@ async def _run_task309_advisory_corpus(
     provider_url: str,
     model: str,
     provider_runtime: Task309StructuredProviderRuntime,
+    supports_multimodal_vision: bool,
+    vision_media_path: Path | None,
     require_provider_ready: bool,
     timeout_seconds: float,
 ) -> Task309AdvisoryCorpusRunReport:
@@ -163,7 +169,15 @@ async def _run_task309_advisory_corpus(
     multimodal_request_count = 0
     item_count = 0
     started = time.perf_counter()
-    profile = build_task309_provider_profile(runtime=provider_runtime, model=model)
+    profile = build_task309_provider_profile(
+        runtime=provider_runtime,
+        model=model,
+        supports_multimodal_vision=supports_multimodal_vision,
+    )
+    resolved_vision_media_path = _resolved_vision_media_path(
+        supports_multimodal_vision=profile.capabilities.supports_multimodal_vision,
+        vision_media_path=vision_media_path,
+    )
     async with httpx.AsyncClient() as client:
         provider = _capturing_provider(
             provider_url=provider_url,
@@ -177,9 +191,9 @@ async def _run_task309_advisory_corpus(
                 export_task309_vision_assets(
                     exam=exam,
                     source_filename=source_path.name,
-                    media_path=reports_root.parent / "vision-assets",
+                    media_path=resolved_vision_media_path,
                 )
-                if profile.capabilities.supports_multimodal_vision
+                if resolved_vision_media_path is not None
                 else None
             )
             item_assets_by_id = vision_item_assets_by_id(vision_export) if vision_export else {}
@@ -312,6 +326,18 @@ def _route_policy() -> StructuredLLMRoutePolicy:
         remote_fallback_policy_authorized=False,
         allow_remote_fallback=False,
     )
+
+
+def _resolved_vision_media_path(
+    *,
+    supports_multimodal_vision: bool,
+    vision_media_path: Path | None,
+) -> Path | None:
+    if not supports_multimodal_vision:
+        return None
+    if vision_media_path is None:
+        raise ValueError("Task 309 multimodal advisory runs require a vision_media_path.")
+    return vision_media_path
 
 
 def _counter_payload(counter: Counter[str]) -> tuple[dict[str, object], ...]:

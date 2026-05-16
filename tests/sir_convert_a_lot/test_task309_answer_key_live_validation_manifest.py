@@ -20,6 +20,12 @@ import pytest
 from scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation import (
     main as task309_runner_main,
 )
+from scripts.sir_convert_a_lot.devops.task309_live_execution import (
+    Task309AdvisoryCorpusRunReport,
+)
+from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+    Task309StructuredProviderRuntime,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
     TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION,
     validate_task309_expected_answer_manifest,
@@ -244,6 +250,96 @@ def test_task309_runner_applies_qwen36_llama_cpp_profile_defaults(tmp_path: Path
     assert report_payload["attempted_item_count"] == 44
     assert any(item["multimodal_request"] is True for item in _objects(report_payload["items"]))
     assert report_payload["ok"] is True
+
+
+def test_task309_raw_llama_runtime_stays_text_only_without_named_vision_profile(
+    tmp_path: Path,
+) -> None:
+    exit_code = task309_runner_main(
+        [
+            "preview-request-shape",
+            "--provider-runtime",
+            "llama-cpp-json-schema",
+            "--corpus-root",
+            _CORPUS_ROOT.as_posix(),
+            "--output-root",
+            tmp_path.as_posix(),
+            "--fail-on-blocked",
+        ]
+    )
+    report_payload = _object(
+        json.loads((tmp_path / "request-shape-preview.json").read_text(encoding="utf-8"))
+    )
+
+    assert exit_code == 0
+    assert report_payload["provider_runtime"] == "llama-cpp-json-schema"
+    assert report_payload["manifest_eligible_item_count"] == 42
+    assert report_payload["attempted_item_count"] == 42
+    assert not any(item["multimodal_request"] is True for item in _objects(report_payload["items"]))
+    assert report_payload["ok"] is True
+
+
+def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_root = tmp_path / "operator-output"
+    reports_root = tmp_path / "custom-reports"
+    captured: dict[str, object] = {}
+
+    def fake_run_task309_advisory_corpus(
+        **kwargs: object,
+    ) -> Task309AdvisoryCorpusRunReport:
+        captured.update(kwargs)
+        provider_runtime = kwargs["provider_runtime"]
+        assert isinstance(provider_runtime, Task309StructuredProviderRuntime)
+        return Task309AdvisoryCorpusRunReport(
+            schema_version="task309_granite_advisory_corpus_run_v1",
+            provider_url=str(kwargs["provider_url"]),
+            model=str(kwargs["model"]),
+            provider_runtime=provider_runtime.value,
+            corpus_root=str(kwargs["corpus_root"]),
+            provider_ready=True,
+            blocked=False,
+            file_count=0,
+            item_count=0,
+            eligible_item_count=0,
+            suggested_count=0,
+            manual_follow_up_count=0,
+            skipped_count=0,
+            backend_failure_counts=(),
+            asset_eligible_count=0,
+            multimodal_request_count=0,
+            total_latency_ms=0.0,
+            report_paths=(),
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_validation"
+        ".run_task309_advisory_corpus",
+        fake_run_task309_advisory_corpus,
+    )
+
+    exit_code = task309_runner_main(
+        [
+            "run-advisory-corpus",
+            "--provider-profile",
+            "qwen36-llama-cpp",
+            "--output-root",
+            output_root.as_posix(),
+            "--reports-root",
+            reports_root.as_posix(),
+            "--corpus-root",
+            _CORPUS_ROOT.as_posix(),
+            "--skip-provider-ready-check",
+            "--fail-on-blocked",
+        ]
+    )
+
+    assert exit_code == 0
+    assert captured["reports_root"] == reports_root
+    assert captured["vision_media_path"] == output_root / "vision-assets"
+    assert captured["supports_multimodal_vision"] is True
 
 
 def test_task309_provider_status_surface_is_persistent_by_default(tmp_path: Path) -> None:

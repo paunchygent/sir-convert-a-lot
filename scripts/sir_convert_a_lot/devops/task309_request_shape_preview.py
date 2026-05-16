@@ -111,13 +111,18 @@ def build_task309_request_shape_preview(
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
+    supports_multimodal_vision: bool = False,
     vision_media_path: Path = Path(
         "build/verification/task-309-request-shape-preview/vision-assets"
     ),
 ) -> Task309RequestShapePreview:
     """Build a provider-free preview of the exact live request shape."""
 
-    profile = build_task309_provider_profile(runtime=provider_runtime, model=model)
+    profile = build_task309_provider_profile(
+        runtime=provider_runtime,
+        model=model,
+        supports_multimodal_vision=supports_multimodal_vision,
+    )
     base_planner = answer_key_candidate_planner_for_profile(profile)
     vision_policy = Task309AssetEvalPolicy(
         allow_supported_embedded_assets=profile.capabilities.supports_multimodal_vision

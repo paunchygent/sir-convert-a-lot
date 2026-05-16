@@ -129,6 +129,7 @@ def main(argv: list[str] | None = None) -> int:
             provider_url=args.provider_url,
             model=args.model,
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            supports_multimodal_vision=_supports_multimodal_vision(args),
             vision_media_path=args.output_root / "vision-assets",
         )
         _write_request_shape_preview(output_root=args.output_root, preview=preview)
@@ -189,6 +190,7 @@ def main(argv: list[str] | None = None) -> int:
             provider_url=args.provider_url,
             model=args.model,
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            supports_multimodal_vision=_supports_multimodal_vision(args),
             require_provider_ready=not args.skip_provider_ready_check,
             timeout_seconds=args.timeout_seconds,
             vision_media_path=args.output_root / "vision-assets",
@@ -206,6 +208,8 @@ def main(argv: list[str] | None = None) -> int:
             provider_url=args.provider_url,
             model=args.model,
             provider_runtime=parse_task309_provider_runtime(args.provider_runtime),
+            supports_multimodal_vision=_supports_multimodal_vision(args),
+            vision_media_path=args.output_root / "vision-assets",
             require_provider_ready=not args.skip_provider_ready_check,
             timeout_seconds=args.timeout_seconds,
         )
@@ -428,6 +432,10 @@ def _required_process_args(args: argparse.Namespace) -> tuple[str, ...]:
     if defaults.profile_name == Task309ProviderProfileName.QWEN36_LLAMA_CPP:
         return qwen36_llama_required_process_args()
     return ()
+
+
+def _supports_multimodal_vision(args: argparse.Namespace) -> bool:
+    return _provider_defaults(args).permits_vision_assets
 
 
 def _prepare_manifests(

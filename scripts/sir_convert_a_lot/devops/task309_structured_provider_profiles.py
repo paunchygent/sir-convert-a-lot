@@ -181,6 +181,7 @@ def build_task309_provider_profile(
     model: str,
     context_window_tokens: int = 4096,
     max_output_tokens: int = 512,
+    supports_multimodal_vision: bool = False,
 ) -> StructuredLLMProviderProfile:
     """Build the structured-provider profile for one Task 309 runtime."""
 
@@ -214,7 +215,7 @@ def build_task309_provider_profile(
                 supports_json_schema=True,
                 supports_gbnf=True,
                 supports_vllm_structured_choice=False,
-                supports_multimodal_vision=True,
+                supports_multimodal_vision=supports_multimodal_vision,
             ),
         )
     return StructuredLLMProviderProfile(
@@ -230,6 +231,6 @@ def build_task309_provider_profile(
             supports_json_schema=True,
             supports_gbnf=True,
             supports_vllm_structured_choice=False,
-            supports_multimodal_vision=True,
+            supports_multimodal_vision=supports_multimodal_vision,
         ),
     )

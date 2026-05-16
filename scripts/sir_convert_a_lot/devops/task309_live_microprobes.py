@@ -97,6 +97,7 @@ def run_task309_microprobes(
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
+    supports_multimodal_vision: bool = False,
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
     vision_media_path: Path | None = None,
@@ -108,6 +109,7 @@ def run_task309_microprobes(
             provider_url=provider_url,
             model=model,
             provider_runtime=provider_runtime,
+            supports_multimodal_vision=supports_multimodal_vision,
             require_provider_ready=require_provider_ready,
             timeout_seconds=timeout_seconds,
             vision_media_path=vision_media_path,
@@ -120,6 +122,7 @@ async def _run_task309_microprobes(
     provider_url: str,
     model: str,
     provider_runtime: Task309StructuredProviderRuntime,
+    supports_multimodal_vision: bool,
     require_provider_ready: bool,
     timeout_seconds: float,
     vision_media_path: Path | None,
@@ -143,7 +146,11 @@ async def _run_task309_microprobes(
             blocked=True,
             results=(),
         )
-    profile = build_task309_provider_profile(runtime=provider_runtime, model=model)
+    profile = build_task309_provider_profile(
+        runtime=provider_runtime,
+        model=model,
+        supports_multimodal_vision=supports_multimodal_vision,
+    )
     async with httpx.AsyncClient() as client:
         provider = _provider(
             provider_url=provider_url,
