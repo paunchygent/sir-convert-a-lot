@@ -337,7 +337,7 @@ def _request(
         user_payload=user_payload,
         output_spec=output_spec,
         estimated_input_tokens=max(1, len(user_payload) // 4),
-        max_output_tokens=128,
+        max_output_tokens=256,
         allow_remote_fallback=False,
         user_content_parts=content_parts,
     )
