@@ -24,6 +24,7 @@ links:
   - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
   - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
   - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
+  - docs/backlog/tasks/task-318-make-task-309-eval-provider-metadata-profile-driven.md
   - docs/backlog/tasks/task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion.md
   - docs/backlog/tasks/task-301-smoke-test-granite-4-1-8b-fp8-on-rocm-vllm-preview.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
@@ -46,6 +47,12 @@ the llama.cpp JSON Schema runtime. It is not promoted for automatic answer-key
 application because the zero wrong-but-valid safety gate is still unmet. Task
 300 remains the later comparative model bake-off and must not start until the
 full app path is working and deployed.
+
+Task 318 owns a metadata correction required before future model comparisons
+are interpreted as final evidence. Evaluation artifacts must derive provider
+profile, runtime, capabilities, output-mode policy, sampling settings, token
+budgets, and vision media path from the selected provider profile/run artifact,
+not from hardcoded Granite or Qwen constants in the evaluator.
 
 ## Demoted Granite Runtime Record
 

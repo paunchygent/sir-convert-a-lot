@@ -41,6 +41,14 @@ class Task309ProviderProfileName(StrEnum):
 
 
 @dataclass(frozen=True)
+class Task309ProviderSetting:
+    """One serializable provider-profile setting retained in eval evidence."""
+
+    key: str
+    value: str | int | float | bool | None
+
+
+@dataclass(frozen=True)
 class Task309ProviderDefaults:
     """Default command values for one Task 309 provider profile."""
 
@@ -55,6 +63,8 @@ class Task309ProviderDefaults:
     cache_paths: tuple[str, ...]
     expected_model_id: str | None
     permits_vision_assets: bool = False
+    request_settings: tuple[Task309ProviderSetting, ...] = ()
+    launch_settings: tuple[Task309ProviderSetting, ...] = ()
 
 
 DEFAULT_TASK309_PROVIDER_RUNTIME = Task309StructuredProviderRuntime.GRANITE_VLLM
@@ -117,6 +127,15 @@ TASK309_PROVIDER_DEFAULTS = {
         container_name=GRANITE_TASK309_CONTAINER_NAME,
         cache_paths=GRANITE_TASK309_CACHE_PATHS,
         expected_model_id=None,
+        request_settings=(
+            Task309ProviderSetting("stream", False),
+            Task309ProviderSetting("temperature", 0.0),
+        ),
+        launch_settings=(
+            Task309ProviderSetting("host_bind", "127.0.0.1"),
+            Task309ProviderSetting("port", GRANITE_TASK309_PROVIDER_PORT),
+            Task309ProviderSetting("request_logging_disabled", True),
+        ),
     ),
     Task309ProviderProfileName.QWEN36_LLAMA_CPP: Task309ProviderDefaults(
         profile_name=Task309ProviderProfileName.QWEN36_LLAMA_CPP,
@@ -130,6 +149,21 @@ TASK309_PROVIDER_DEFAULTS = {
         cache_paths=(QWEN36_LLAMA_CPP_CACHE_PATH,),
         expected_model_id=QWEN36_LLAMA_CPP_MODEL,
         permits_vision_assets=True,
+        request_settings=(
+            Task309ProviderSetting("stream", False),
+            Task309ProviderSetting("temperature", 0.15),
+        ),
+        launch_settings=(
+            Task309ProviderSetting("host_bind", "127.0.0.1"),
+            Task309ProviderSetting("port", QWEN36_LLAMA_CPP_PROVIDER_PORT),
+            Task309ProviderSetting("ctx_size", 32768),
+            Task309ProviderSetting("n_gpu_layers", "all"),
+            Task309ProviderSetting("fit", "off"),
+            Task309ProviderSetting("flash_attn", True),
+            Task309ProviderSetting("jinja", True),
+            Task309ProviderSetting("reasoning", "off"),
+            Task309ProviderSetting("offline", True),
+        ),
     ),
 }
 

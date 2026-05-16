@@ -19,6 +19,7 @@ related:
   - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
   - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
   - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
+  - docs/backlog/tasks/task-318-make-task-309-eval-provider-metadata-profile-driven.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
 labels:
@@ -91,6 +92,13 @@ values when candidate selection is clear and bounded; JSON Schema remains part
 of provider microprobes and gap-fill object validation. Task 310 and Task 311
 then separate validation-only force-eval from the strict service-backed
 auth/public-edge mirror.
+
+Task 318 is the follow-up for eval evidence alignment after the Qwen3.6
+llama.cpp validation exposed that `evaluate-advisory-corpus` still reconstructed
+Granite metadata from defaults. Provider-run metadata must be profile-driven
+from the selected provider/default object so model changes inject runtime,
+sampling, output-mode, capability, and vision media-path settings without
+model-name branches in the evaluator.
 
 ## Acceptance Criteria
 

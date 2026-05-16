@@ -33,10 +33,15 @@ from scripts.sir_convert_a_lot.devops.task309_provider_exchange_capture import (
     Task309CapturingStructuredChatProvider,
     Task309ProviderExchange,
 )
+from scripts.sir_convert_a_lot.devops.task309_provider_run_metadata import (
+    build_task309_provider_run_metadata,
+)
 from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
     DEFAULT_TASK309_PROVIDER_RUNTIME,
+    Task309ProviderProfileName,
     Task309StructuredProviderRuntime,
     build_task309_provider_profile,
+    task309_defaults_for_provider_profile,
 )
 from scripts.sir_convert_a_lot.devops.task309_vision_assets import (
     Task309VisionCandidatePlanner,
@@ -92,6 +97,7 @@ class Task309AdvisoryCorpusRunReport:
     backend_failure_counts: tuple[dict[str, object], ...]
     asset_eligible_count: int
     multimodal_request_count: int
+    provider_run_metadata: dict[str, object]
     total_latency_ms: float | None
     report_paths: tuple[str, ...]
 
@@ -107,6 +113,7 @@ def run_task309_advisory_corpus(
     reports_root: Path,
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
+    provider_profile_name: Task309ProviderProfileName = Task309ProviderProfileName.GRANITE_VLLM,
     provider_runtime: Task309StructuredProviderRuntime = DEFAULT_TASK309_PROVIDER_RUNTIME,
     supports_multimodal_vision: bool = False,
     vision_media_path: Path | None = None,
@@ -121,6 +128,7 @@ def run_task309_advisory_corpus(
             reports_root=reports_root,
             provider_url=provider_url,
             model=model,
+            provider_profile_name=provider_profile_name,
             provider_runtime=provider_runtime,
             supports_multimodal_vision=supports_multimodal_vision,
             vision_media_path=vision_media_path,
@@ -136,6 +144,7 @@ async def _run_task309_advisory_corpus(
     reports_root: Path,
     provider_url: str,
     model: str,
+    provider_profile_name: Task309ProviderProfileName,
     provider_runtime: Task309StructuredProviderRuntime,
     supports_multimodal_vision: bool,
     vision_media_path: Path | None,
@@ -144,6 +153,25 @@ async def _run_task309_advisory_corpus(
 ) -> Task309AdvisoryCorpusRunReport:
     from urllib.parse import urlparse
 
+    profile = build_task309_provider_profile(
+        runtime=provider_runtime,
+        model=model,
+        supports_multimodal_vision=supports_multimodal_vision,
+    )
+    resolved_vision_media_path = _resolved_vision_media_path(
+        supports_multimodal_vision=profile.capabilities.supports_multimodal_vision,
+        vision_media_path=vision_media_path,
+    )
+    defaults = task309_defaults_for_provider_profile(provider_profile_name.value)
+    provider_run_metadata = build_task309_provider_run_metadata(
+        profile_name=provider_profile_name,
+        defaults=defaults,
+        provider_url=provider_url,
+        provider_runtime=provider_runtime,
+        profile=profile,
+        reports_root=reports_root,
+        vision_media_path=resolved_vision_media_path,
+    ).to_payload()
     parsed = urlparse(provider_url)
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
     ready = build_task309_provider_status(
@@ -158,6 +186,7 @@ async def _run_task309_advisory_corpus(
             provider_url=provider_url,
             model=model,
             provider_runtime=provider_runtime,
+            provider_run_metadata=provider_run_metadata,
             file_count=len(files),
         )
     parser = DigiExamDxeParser()
@@ -169,15 +198,6 @@ async def _run_task309_advisory_corpus(
     multimodal_request_count = 0
     item_count = 0
     started = time.perf_counter()
-    profile = build_task309_provider_profile(
-        runtime=provider_runtime,
-        model=model,
-        supports_multimodal_vision=supports_multimodal_vision,
-    )
-    resolved_vision_media_path = _resolved_vision_media_path(
-        supports_multimodal_vision=profile.capabilities.supports_multimodal_vision,
-        vision_media_path=vision_media_path,
-    )
     async with httpx.AsyncClient() as client:
         provider = _capturing_provider(
             provider_url=provider_url,
@@ -248,6 +268,7 @@ async def _run_task309_advisory_corpus(
         backend_failure_counts=_counter_payload(backend_failures),
         asset_eligible_count=asset_eligible_count,
         multimodal_request_count=multimodal_request_count,
+        provider_run_metadata=provider_run_metadata,
         total_latency_ms=round((time.perf_counter() - started) * 1000, 3),
         report_paths=tuple(report_paths),
     )
@@ -259,6 +280,7 @@ def _blocked_corpus_report(
     provider_url: str,
     model: str,
     provider_runtime: Task309StructuredProviderRuntime,
+    provider_run_metadata: dict[str, object],
     file_count: int,
 ) -> Task309AdvisoryCorpusRunReport:
     return Task309AdvisoryCorpusRunReport(
@@ -278,6 +300,7 @@ def _blocked_corpus_report(
         backend_failure_counts=(),
         asset_eligible_count=0,
         multimodal_request_count=0,
+        provider_run_metadata=provider_run_metadata,
         total_latency_ms=None,
         report_paths=(),
     )

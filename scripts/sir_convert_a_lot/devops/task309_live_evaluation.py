@@ -21,10 +21,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.devops.task309_granite_provider_contracts import (
-    DEFAULT_PROVIDER_MAX_MODEL_LEN,
-    DEFAULT_PROVIDER_MODEL,
-    DEFAULT_PROVIDER_URL,
+from scripts.sir_convert_a_lot.devops.task309_provider_run_metadata import (
+    load_task309_provider_run_metadata_from_report,
+    structured_profile_from_task309_provider_run_metadata,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     answer_key_candidate_planner_for_profile,
@@ -37,18 +36,12 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIrItem,
     build_digiexam_intermediate_exam,
 )
-from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
-    StructuredLLMEndpointKind,
-    StructuredLLMOutputMode,
-    StructuredLLMProviderCapabilities,
-    StructuredLLMProviderProfile,
-)
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import StructuredLLMProviderProfile
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
     build_structured_llm_payload,
 )
 
 TASK309_ADVISORY_EVALUATION_SCHEMA_VERSION = "task309_advisory_adjudication_v2"
-PROVIDER_ID = "task309-granite-vllm"
 
 # Gap-fill synonym groups for golden evaluation.
 # Each frozenset contains terms that are considered equivalent for answer-key
@@ -139,6 +132,7 @@ class Task309AdvisoryEvaluationReport:
     expected_answer_manifest_path: str
     validation_manifest_path: str
     reports_root: str
+    provider_run_metadata_json: str
     model_settings_json: str
     report_count: int
     golden_count: int
@@ -166,6 +160,7 @@ class Task309AdvisoryEvaluationReport:
             "expected_answer_manifest_path": self.expected_answer_manifest_path,
             "validation_manifest_path": self.validation_manifest_path,
             "reports_root": self.reports_root,
+            "provider_run_metadata_json": self.provider_run_metadata_json,
             "model_settings_json": self.model_settings_json,
             "report_count": self.report_count,
             "golden_count": self.golden_count,
@@ -197,6 +192,7 @@ def evaluate_task309_advisory_reports(
     *,
     expected_answer_manifest_path: Path,
     reports_root: Path,
+    run_report_path: Path | None = None,
 ) -> Task309AdvisoryEvaluationReport:
     """Evaluate retained advisory reports and build an adjudication packet."""
 
@@ -206,6 +202,12 @@ def evaluate_task309_advisory_reports(
     goldens = _load_goldens(expected_answer_manifest_path)
     manifest_items = _load_manifest_items(validation_manifest_path)
     item_contexts = _load_item_contexts(expected_answer_manifest_path.parent)
+    provider_run_metadata = load_task309_provider_run_metadata_from_report(
+        run_report_path=run_report_path
+    )
+    diagnostic_profile = structured_profile_from_task309_provider_run_metadata(
+        provider_run_metadata
+    )
     report_paths = tuple(sorted(reports_root.glob("*.answer-key-completion-report.json")))
     seen_report_keys: set[tuple[str, str]] = set()
     findings: list[Task309EvaluationFinding] = []
@@ -253,6 +255,7 @@ def evaluate_task309_advisory_reports(
                         manifest_item=manifest_item,
                         context=context,
                         report_item=item,
+                        diagnostic_profile=diagnostic_profile,
                         teacher_answer=None,
                         model_answer=None,
                         detail="Duplicate report item id.",
@@ -286,6 +289,7 @@ def evaluate_task309_advisory_reports(
                         manifest_item=manifest_item,
                         context=context,
                         report_item=item,
+                        diagnostic_profile=diagnostic_profile,
                         teacher_answer=_answer_label_for_golden(golden),
                         model_answer=None,
                         detail=_manual_detail(
@@ -311,6 +315,7 @@ def evaluate_task309_advisory_reports(
                         manifest_item=manifest_item,
                         context=context,
                         report_item=item,
+                        diagnostic_profile=diagnostic_profile,
                         teacher_answer=None,
                         model_answer=_answer_label(_optional_object(item, "answer_payload")),
                         model_output_json=_optional_payload_json(item, "answer_payload"),
@@ -333,6 +338,7 @@ def evaluate_task309_advisory_reports(
                         manifest_item=manifest_item,
                         context=context,
                         report_item=item,
+                        diagnostic_profile=diagnostic_profile,
                         teacher_answer=_answer_label_for_golden(golden),
                         model_answer=_answer_label(_optional_object(item, "answer_payload")),
                         teacher_answer_json=_payload_json(golden, "expected_answer_payload"),
@@ -358,6 +364,7 @@ def evaluate_task309_advisory_reports(
                         manifest_item=manifest_item,
                         context=context,
                         report_item=item,
+                        diagnostic_profile=diagnostic_profile,
                         teacher_answer=_answer_label_for_golden(golden),
                         model_answer=None,
                         teacher_answer_json=_payload_json(golden, "expected_answer_payload"),
@@ -384,6 +391,7 @@ def evaluate_task309_advisory_reports(
                         manifest_item=manifest_item,
                         context=context,
                         report_item=item,
+                        diagnostic_profile=diagnostic_profile,
                         teacher_answer=_answer_label(expected_payload),
                         model_answer=_answer_label(answer_payload),
                         teacher_answer_json=_canonical_json(expected_payload),
@@ -407,6 +415,7 @@ def evaluate_task309_advisory_reports(
                     manifest_item=manifest_item,
                     context=context,
                     report_item=item,
+                    diagnostic_profile=diagnostic_profile,
                     teacher_answer=_answer_label(expected_payload),
                     model_answer=_answer_label(answer_payload),
                     teacher_answer_json=_canonical_json(expected_payload),
@@ -416,12 +425,14 @@ def evaluate_task309_advisory_reports(
             )
 
     category_counts = Counter(finding.category for finding in findings)
+    provider_run_metadata_json = provider_run_metadata.to_json()
     return Task309AdvisoryEvaluationReport(
         schema_version=TASK309_ADVISORY_EVALUATION_SCHEMA_VERSION,
         expected_answer_manifest_path=expected_answer_manifest_path.as_posix(),
         validation_manifest_path=validation_manifest_path.as_posix(),
         reports_root=reports_root.as_posix(),
-        model_settings_json=_model_settings_json(),
+        provider_run_metadata_json=provider_run_metadata_json,
+        model_settings_json=provider_run_metadata_json,
         report_count=len(report_paths),
         golden_count=len(goldens),
         report_item_count=report_item_count,
@@ -502,14 +513,15 @@ def _finding(
     manifest_item: dict[str, object] | None,
     context: DigiExamIrItem | None,
     report_item: dict[str, object] | None,
+    diagnostic_profile: StructuredLLMProviderProfile | None,
     teacher_answer: str | None,
     model_answer: str | None,
     detail: str,
     teacher_answer_json: str | None = None,
     model_output_json: str | None = None,
 ) -> Task309EvaluationFinding:
-    request_payload = _request_diagnostic(context)
     exchange_payload = _provider_exchange_diagnostic(report_item)
+    request_payload = _request_diagnostic(context, diagnostic_profile)
     return Task309EvaluationFinding(
         category=category,
         source_filename=source_filename,
@@ -528,8 +540,14 @@ def _finding(
         item_context_json=_item_context_json(context),
         system_prompt=_optional_mapping_str(request_payload, "system_prompt"),
         user_payload_json=_optional_mapping_str(request_payload, "user_payload_json"),
-        provider_payload_json=_optional_mapping_str(request_payload, "provider_payload_json"),
-        output_mode=_optional_mapping_str(request_payload, "output_mode"),
+        provider_payload_json=_first_present_str(
+            _optional_mapping_str(exchange_payload, "request_payload_json"),
+            _optional_mapping_str(request_payload, "provider_payload_json"),
+        ),
+        output_mode=_first_present_str(
+            _optional_mapping_str(exchange_payload, "output_mode"),
+            _optional_mapping_str(request_payload, "output_mode"),
+        ),
         output_contract_json=_optional_mapping_str(request_payload, "output_contract_json"),
         provider_response_status_code=_optional_mapping_int(
             exchange_payload, "response_status_code"
@@ -544,10 +562,12 @@ def _finding(
     )
 
 
-def _request_diagnostic(item: DigiExamIrItem | None) -> dict[str, object] | None:
-    if item is None:
+def _request_diagnostic(
+    item: DigiExamIrItem | None,
+    profile: StructuredLLMProviderProfile | None,
+) -> dict[str, object] | None:
+    if item is None or profile is None:
         return None
-    profile = _granite_vllm_profile()
     plan = answer_key_candidate_planner_for_profile(profile).plan_candidate(
         job_id="task309-diagnostic",
         item=item,
@@ -613,61 +633,6 @@ def _item_context_json(item: DigiExamIrItem | None) -> str | None:
         "gaps": [{"gap_id": gap.guid, "validations": list(gap.validations)} for gap in item.gaps],
         "embedded_asset_count": len(item.embedded_assets) + len(item.embedded_asset_references),
         "warning_codes": [warning.code for warning in item.warnings],
-    }
-    return _canonical_json(payload)
-
-
-def _granite_vllm_profile() -> StructuredLLMProviderProfile:
-    return StructuredLLMProviderProfile(
-        provider_id=PROVIDER_ID,
-        model=DEFAULT_PROVIDER_MODEL,
-        endpoint_kind=StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS,
-        output_mode=StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
-        is_remote=False,
-        context_window_tokens=DEFAULT_PROVIDER_MAX_MODEL_LEN,
-        max_output_tokens=512,
-        temperature=0.0,
-        capabilities=StructuredLLMProviderCapabilities(
-            supports_json_schema=True,
-            supports_gbnf=False,
-            supports_vllm_structured_choice=True,
-        ),
-    )
-
-
-def _model_settings_json() -> str:
-    profile = _granite_vllm_profile()
-    payload = {
-        "provider_url": DEFAULT_PROVIDER_URL,
-        "provider_id": profile.provider_id,
-        "model": profile.model,
-        "endpoint_kind": profile.endpoint_kind.value,
-        "default_output_mode": profile.output_mode.value,
-        "is_remote": profile.is_remote,
-        "context_window_tokens": profile.context_window_tokens,
-        "max_output_tokens": profile.max_output_tokens,
-        "chat_completions_settings": {
-            "stream": False,
-            "temperature": profile.temperature,
-        },
-        "route_policy": {
-            "remote_providers_enabled": False,
-            "remote_fallback_policy_authorized": False,
-            "allow_remote_fallback": False,
-        },
-        "capabilities": {
-            "supports_json_schema": profile.capabilities.supports_json_schema,
-            "supports_gbnf": profile.capabilities.supports_gbnf,
-            "supports_vllm_structured_choice": (
-                profile.capabilities.supports_vllm_structured_choice
-            ),
-        },
-        "item_type_output_selection": {
-            "single_choice": "vllm_structured_choice",
-            "multiple_choice": "vllm_structured_choice",
-            "multiple_response": "vllm_structured_choice",
-            "gap_fill": "vllm_json_schema",
-        },
     }
     return _canonical_json(payload)
 
@@ -762,10 +727,10 @@ def _markdown(report: Task309AdvisoryEvaluationReport) -> str:
         f"- malformed_success_count: `{report.malformed_success_count}`",
         f"- finding_count: `{report.finding_count}`",
         "",
-        "## Model Settings",
+        "## Provider Run Metadata",
         "",
         "```json",
-        report.model_settings_json,
+        report.provider_run_metadata_json,
         "```",
         "",
         "## Failure Buckets",
@@ -986,6 +951,12 @@ def _optional_mapping_str(payload: Mapping[str, object] | None, key: str) -> str
         return None
     value = payload.get(key)
     return value if isinstance(value, str) else None
+
+
+def _first_present_str(primary: str | None, fallback: str | None) -> str | None:
+    if primary is not None:
+        return primary
+    return fallback
 
 
 def _optional_mapping_int(payload: Mapping[str, object] | None, key: str) -> int | None:

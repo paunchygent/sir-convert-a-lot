@@ -19,6 +19,7 @@ links:
   - docs/runbooks/runbook-hemma-gpu-runtime.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
   - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
+  - docs/backlog/tasks/task-318-make-task-309-eval-provider-metadata-profile-driven.md
 ---
 
 ## Purpose
@@ -111,6 +112,13 @@ settings from one family into another.
 
 For strict answer-key probes, use the provider API request settings as the
 source of truth, not only server defaults.
+
+Task 318 tracks the corresponding artifact contract: provider-run metadata in
+Task 309 reports and evaluations must come from the selected profile/runtime
+settings rather than evaluator-local provider defaults. When switching models,
+the profile/default object must inject the model-specific settings that affect
+comparison evidence, including output mode, capabilities, temperature, max
+output tokens, context window, and vision media path.
 
 ## Launch Pattern
 

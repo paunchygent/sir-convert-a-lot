@@ -20,6 +20,7 @@ related:
   - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
   - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
   - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
+  - docs/backlog/tasks/task-318-make-task-309-eval-provider-metadata-profile-driven.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
   - docs/reference/ref-machine-marked-answer-key-completion-implementation-roadmap.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -396,6 +397,13 @@ Task 311 owns the strict production service-backed mirror.
   `1811577114-ekologiprov-v-49-25d-e.dxe` `item-013`. Golden validation now
   covers 44 entries; the committed default corpus manifest remains text-only
   with 42 default eligible advisory items.
+- Follow-up Task 318 now owns eval metadata alignment after the Qwen3.6 Hemma
+  run showed that `evaluate-advisory-corpus` could score Qwen/llama.cpp reports
+  while still writing Granite/vLLM `model_settings_json`. That follow-up must
+  make provider-run metadata profile-driven and artifact-sourced, including
+  selected provider profile, runtime, output modes, capabilities, request
+  settings, max tokens, context, and vision media path without model-specific
+  evaluator branches.
 
 ## Validation Evidence
 

@@ -220,9 +220,13 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.command == "evaluate-advisory-corpus":
         reports_root = args.reports_root or (args.output_root / "advisory-corpus-reports")
+        run_report_path = args.run_report_path or (
+            args.output_root / "in-process-advisory-corpus-run.json"
+        )
         evaluation = evaluate_task309_advisory_reports(
             expected_answer_manifest_path=args.expected_answer_manifest,
             reports_root=reports_root,
+            run_report_path=run_report_path,
         )
         json_path, markdown_path = write_task309_advisory_evaluation(
             output_root=args.output_root,
@@ -366,6 +370,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_provider_profile_arg(evaluate)
     evaluate.add_argument("--output-root", type=Path, default=None)
     evaluate.add_argument("--reports-root", type=Path, default=None)
+    evaluate.add_argument("--run-report-path", type=Path, default=None)
     evaluate.add_argument("--fail-on-blocked", action="store_true")
 
     return parser

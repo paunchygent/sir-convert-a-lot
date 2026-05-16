@@ -23,8 +23,14 @@ from scripts.sir_convert_a_lot.devops.run_task309_granite_answer_key_live_valida
 from scripts.sir_convert_a_lot.devops.task309_live_execution import (
     Task309AdvisoryCorpusRunReport,
 )
+from scripts.sir_convert_a_lot.devops.task309_provider_run_metadata import (
+    build_task309_provider_run_metadata,
+)
 from scripts.sir_convert_a_lot.devops.task309_structured_provider_profiles import (
+    Task309ProviderProfileName,
     Task309StructuredProviderRuntime,
+    build_task309_provider_profile,
+    task309_defaults_for_provider_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
     TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION,
@@ -310,6 +316,11 @@ def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
             backend_failure_counts=(),
             asset_eligible_count=0,
             multimodal_request_count=0,
+            provider_run_metadata=_provider_run_metadata_payload(
+                profile_name=Task309ProviderProfileName.QWEN36_LLAMA_CPP,
+                reports_root=reports_root,
+                vision_media_path=output_root / "vision-assets",
+            ),
             total_latency_ms=0.0,
             report_paths=(),
         )
@@ -491,6 +502,171 @@ def test_task309_in_process_corpus_surface_blocks_without_ready_provider(tmp_pat
     assert report_payload["provider_ready"] is False
     assert report_payload["file_count"] == 23
     assert report_payload["report_paths"] == []
+    metadata = _object(report_payload["provider_run_metadata"])
+    assert metadata["available"] is True
+    assert metadata["profile_name"] == "granite-vllm"
+    assert metadata["model"] == "ibm-granite/granite-4.1-8b-fp8"
+
+
+def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
+    tmp_path: Path,
+) -> None:
+    output_root = tmp_path / "qwen-eval"
+    reports_root = output_root / "advisory-corpus-reports"
+    reports_root.mkdir(parents=True)
+    write_task309_json(
+        {
+            "schema_version": "digiexam_answer_key_completion_report_v1",
+            "job_id": "task309:1776888013-ak7-lag-och-ratt",
+            "completion_mode": "local_llm_suggest_missing_machine_marked",
+            "items": [
+                {
+                    "item_id": "item-001",
+                    "item_type": "gap_fill",
+                    "sequence": 1,
+                    "decision_state": "skipped",
+                    "backend_failure_code": None,
+                }
+            ],
+        },
+        reports_root / "1776888013-ak7-lag-och-ratt.answer-key-completion-report.json",
+    )
+    write_task309_json(
+        {
+            "schema_version": "task309_granite_advisory_corpus_run_v1",
+            "provider_run_metadata": _provider_run_metadata_payload(
+                profile_name=Task309ProviderProfileName.QWEN36_LLAMA_CPP,
+                reports_root=reports_root,
+                vision_media_path=output_root / "vision-assets",
+            ),
+        },
+        output_root / "in-process-advisory-corpus-run.json",
+    )
+
+    exit_code = task309_runner_main(
+        [
+            "evaluate-advisory-corpus",
+            "--provider-profile",
+            "qwen36-llama-cpp",
+            "--expected-answer-manifest",
+            _EXPECTED_ANSWER_MANIFEST.as_posix(),
+            "--output-root",
+            output_root.as_posix(),
+            "--reports-root",
+            reports_root.as_posix(),
+        ]
+    )
+    evaluation = _object(
+        json.loads((output_root / "advisory-golden-evaluation.json").read_text(encoding="utf-8"))
+    )
+    metadata = _object(json.loads(str(evaluation["provider_run_metadata_json"])))
+
+    assert exit_code == 0
+    assert metadata["available"] is True
+    assert metadata["profile_name"] == "qwen36-llama-cpp"
+    assert metadata["model"] == "qwen3.6-27b-q6k"
+    assert metadata["provider_runtime"] == "llama-cpp-json-schema"
+    assert metadata["default_output_mode"] == "json_schema"
+    assert _object(metadata["capabilities"])["supports_multimodal_vision"] is True
+    assert (
+        _object(metadata["artifact_paths"])["vision_media_path"]
+        == (output_root / "vision-assets").as_posix()
+    )
+    assert "ibm-granite/granite-4.1-8b-fp8" not in str(evaluation["model_settings_json"])
+
+
+def test_task309_evaluation_reports_unavailable_metadata_without_defaulting_to_granite(
+    tmp_path: Path,
+) -> None:
+    output_root = tmp_path / "legacy-eval"
+    reports_root = output_root / "advisory-corpus-reports"
+    reports_root.mkdir(parents=True)
+    write_task309_json(
+        {
+            "schema_version": "digiexam_answer_key_completion_report_v1",
+            "job_id": "task309:1776888013-ak7-lag-och-ratt",
+            "completion_mode": "local_llm_suggest_missing_machine_marked",
+            "items": [],
+        },
+        reports_root / "1776888013-ak7-lag-och-ratt.answer-key-completion-report.json",
+    )
+
+    exit_code = task309_runner_main(
+        [
+            "evaluate-advisory-corpus",
+            "--expected-answer-manifest",
+            _EXPECTED_ANSWER_MANIFEST.as_posix(),
+            "--output-root",
+            output_root.as_posix(),
+            "--reports-root",
+            reports_root.as_posix(),
+        ]
+    )
+    evaluation = _object(
+        json.loads((output_root / "advisory-golden-evaluation.json").read_text(encoding="utf-8"))
+    )
+    metadata = _object(json.loads(str(evaluation["provider_run_metadata_json"])))
+
+    assert exit_code == 0
+    assert metadata["available"] is False
+    assert str(metadata["metadata_source"]).startswith("run_report_missing:")
+    assert "ibm-granite/granite-4.1-8b-fp8" not in str(evaluation["model_settings_json"])
+
+
+def test_task309_evaluation_upgrades_legacy_qwen_run_report_metadata(
+    tmp_path: Path,
+) -> None:
+    output_root = tmp_path / "legacy-qwen-eval"
+    reports_root = output_root / "advisory-corpus-reports"
+    reports_root.mkdir(parents=True)
+    report_path = reports_root / "1776888013-ak7-lag-och-ratt.answer-key-completion-report.json"
+    write_task309_json(
+        {
+            "schema_version": "digiexam_answer_key_completion_report_v1",
+            "job_id": "task309:1776888013-ak7-lag-och-ratt",
+            "completion_mode": "local_llm_suggest_missing_machine_marked",
+            "items": [],
+        },
+        report_path,
+    )
+    write_task309_json(
+        {
+            "schema_version": "task309_granite_advisory_corpus_run_v1",
+            "provider_url": "http://127.0.0.1:8082",
+            "model": "qwen3.6-27b-q6k",
+            "provider_runtime": "llama-cpp-json-schema",
+            "report_paths": [report_path.as_posix()],
+        },
+        output_root / "in-process-advisory-corpus-run.json",
+    )
+
+    exit_code = task309_runner_main(
+        [
+            "evaluate-advisory-corpus",
+            "--provider-profile",
+            "qwen36-llama-cpp",
+            "--expected-answer-manifest",
+            _EXPECTED_ANSWER_MANIFEST.as_posix(),
+            "--output-root",
+            output_root.as_posix(),
+            "--reports-root",
+            reports_root.as_posix(),
+        ]
+    )
+    evaluation = _object(
+        json.loads((output_root / "advisory-golden-evaluation.json").read_text(encoding="utf-8"))
+    )
+    metadata = _object(json.loads(str(evaluation["provider_run_metadata_json"])))
+
+    assert exit_code == 0
+    assert metadata["metadata_source"] == "legacy_task309_run_report_profile_match"
+    assert metadata["profile_name"] == "qwen36-llama-cpp"
+    assert metadata["model"] == "qwen3.6-27b-q6k"
+    assert (
+        _object(metadata["artifact_paths"])["vision_media_path"]
+        == (output_root / "vision-assets").as_posix()
+    )
+    assert "ibm-granite/granite-4.1-8b-fp8" not in str(evaluation["model_settings_json"])
 
 
 def test_task309_expected_answer_manifest_has_committed_schema() -> None:
@@ -522,6 +698,29 @@ def _count_map(value: object) -> dict[str, int]:
         assert isinstance(amount, int)
         counts[key] = amount
     return counts
+
+
+def _provider_run_metadata_payload(
+    *,
+    profile_name: Task309ProviderProfileName,
+    reports_root: Path,
+    vision_media_path: Path | None,
+) -> dict[str, object]:
+    defaults = task309_defaults_for_provider_profile(profile_name.value)
+    profile = build_task309_provider_profile(
+        runtime=defaults.provider_runtime,
+        model=defaults.model,
+        supports_multimodal_vision=defaults.permits_vision_assets,
+    )
+    return build_task309_provider_run_metadata(
+        profile_name=profile_name,
+        defaults=defaults,
+        provider_url=defaults.provider_url,
+        provider_runtime=defaults.provider_runtime,
+        profile=profile,
+        reports_root=reports_root,
+        vision_media_path=vision_media_path,
+    ).to_payload()
 
 
 def _pretend_current_process_is_hemma(monkeypatch: pytest.MonkeyPatch) -> None:
