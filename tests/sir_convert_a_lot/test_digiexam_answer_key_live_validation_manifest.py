@@ -492,7 +492,7 @@ def test_answer_key_llama_provider_launch_surface_dry_runs_hemma_local_command(
     assert plan["model"] == "qwen3.6-27b-q6k"
     assert plan["host"] == "127.0.0.1"
     assert plan["port"] == 8082
-    assert plan["hf_repo"] == "unsloth/Qwen3.6-27B-GGUF"
+    assert plan["hf_repo"] == "unsloth/Qwen3.6-27B-GGUF:default"
     assert plan["hf_file"] == "Qwen3.6-27B-Q6_K.gguf"
     assert "--n-gpu-layers" in command
     assert "all" in command
