@@ -291,7 +291,11 @@ def _llama_cpp_microprobe_requests(
             {"decision_state": "answered", "correct_alternative_ids": [2]},
         ),
         (
-            _request("microprobe-gap-object", gap_spec, '{"gap_id":"gap-1"}'),
+            _request(
+                "microprobe-gap-object",
+                gap_spec,
+                '{"gap_id":"gap-1","accepted_values":["answer"]}',
+            ),
             profile,
             {"decision_state": "answered", "gap_id": "gap-1"},
         ),
@@ -402,14 +406,18 @@ def _gap_probe_spec() -> StructuredOutputSpec:
                         "type": "object",
                         "additionalProperties": False,
                         "properties": {
-                            "gap_id": {"type": "string"},
+                            "gap_id": {"type": "string", "enum": ["gap-1"]},
                             "accepted_values": {
                                 "type": "array",
-                                "items": {"type": "string"},
+                                "minItems": 1,
+                                "maxItems": 1,
+                                "items": {"type": "string", "enum": ["answer"]},
                             },
                         },
                         "required": ["gap_id", "accepted_values"],
                     },
+                    "minItems": 1,
+                    "maxItems": 1,
                 },
                 "manual_follow_up_code": {"type": ["string", "null"]},
             },
