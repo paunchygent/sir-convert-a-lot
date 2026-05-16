@@ -50,6 +50,26 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
 TASK309_ADVISORY_EVALUATION_SCHEMA_VERSION = "task309_advisory_adjudication_v2"
 PROVIDER_ID = "task309-granite-vllm"
 
+# Gap-fill synonym groups for golden evaluation.
+# Each frozenset contains terms that are considered equivalent for answer-key
+# comparison purposes.  The evaluator canonicalises both expected and actual
+# values through these groups before comparing.  Terms that are merely
+# *related* (e.g. "kärnan" for "cellkärna") but not exact synonyms must NOT
+# be included.
+_GAP_SYNONYM_GROUPS: tuple[frozenset[str], ...] = (
+    frozenset({"cellkärna", "cellkärnan", "nukleus"}),
+    frozenset({"baspar", "basparet"}),
+    frozenset({"nervcell", "neuron", "neuronen"}),
+    frozenset({"artär", "artären", "artärer"}),
+    frozenset({"ven", "vener", "venen", "venerna"}),
+    frozenset({"koldioxid", "co2"}),
+    frozenset({"syre", "o2"}),
+    frozenset({"växtcell", "växtcellen"}),
+    frozenset({"djurcell", "djurcellen"}),
+    frozenset({"ribosom", "ribosomen"}),
+    frozenset({"mitokondrie", "mitokondrier"}),
+)
+
 
 @dataclass(frozen=True)
 class Task309EvaluationFinding:
@@ -697,8 +717,8 @@ def _compare_gap_payloads(
     expected_payload: dict[str, object],
     actual_payload: dict[str, object],
 ) -> _Comparison:
-    expected_gaps = _gap_map(expected_payload.get("gap_answers"))
-    actual_gaps = _gap_map(actual_payload.get("gap_answers"))
+    expected_gaps = _canonical_gap_map(expected_payload.get("gap_answers"))
+    actual_gaps = _canonical_gap_map(actual_payload.get("gap_answers"))
     missing_gaps = tuple(sorted(set(expected_gaps) - set(actual_gaps)))
     extra_gaps = tuple(sorted(set(actual_gaps) - set(expected_gaps)))
     if missing_gaps or extra_gaps:
@@ -999,6 +1019,30 @@ def _int_tuple(value: object) -> tuple[int, ...]:
 
 def _normalize(value: str) -> str:
     return " ".join(value.casefold().strip().split())
+
+
+def _canonicalize_gap_value(value: str) -> str:
+    """Return the canonical form of a gap value via synonym groups."""
+
+    normalized = _normalize(value)
+    for group in _GAP_SYNONYM_GROUPS:
+        if normalized in group:
+            return min(group)
+    return normalized
+
+
+def _canonical_gap_map(raw_gaps: object) -> dict[str, set[str]]:
+    """Build a gap map with values canonicalised through synonym groups."""
+
+    gaps = _object_sequence(raw_gaps, label="gap_answers")
+    mapped: dict[str, set[str]] = {}
+    for gap in gaps:
+        gap_id = _required_str(gap, "gap_id")
+        values = gap.get("accepted_values")
+        if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+            raise ValueError(f"Malformed accepted_values for gap_id={gap_id}.")
+        mapped[gap_id] = {_canonicalize_gap_value(value) for value in values}
+    return mapped
 
 
 def _int_label(values: tuple[int, ...]) -> str:

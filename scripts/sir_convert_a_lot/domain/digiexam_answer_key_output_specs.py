@@ -36,14 +36,9 @@ def choice_decision_output_spec() -> StructuredOutputSpec:
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "decision_state": {
-                    "type": "string",
-                    "enum": ["answered", "manual_follow_up_required"],
-                },
                 "correct_alternative_ids": {"type": "array", "items": {"type": "integer"}},
-                "manual_follow_up_code": {"type": ["string", "null"]},
             },
-            "required": ["decision_state", "correct_alternative_ids", "manual_follow_up_code"],
+            "required": ["correct_alternative_ids"],
         },
     )
 
@@ -74,10 +69,6 @@ def gap_fill_output_spec() -> StructuredOutputSpec:
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "decision_state": {
-                    "type": "string",
-                    "enum": ["answered", "manual_follow_up_required"],
-                },
                 "gap_answers": {
                     "type": "array",
                     "items": {
@@ -93,9 +84,8 @@ def gap_fill_output_spec() -> StructuredOutputSpec:
                         "required": ["gap_id", "accepted_values"],
                     },
                 },
-                "manual_follow_up_code": {"type": ["string", "null"]},
             },
-            "required": ["decision_state", "gap_answers", "manual_follow_up_code"],
+            "required": ["gap_answers"],
         },
     )
 
@@ -107,11 +97,6 @@ def numbered_gap_fill_output_spec(gap_count: int) -> StructuredOutputSpec:
         raise ValueError("Numbered gap-fill output spec requires at least one gap.")
     answer_keys = tuple(str(index) for index in range(1, gap_count + 1))
     properties: dict[str, JsonValue] = {key: {"type": "string"} for key in answer_keys}
-    properties["decision_state"] = {
-        "type": "string",
-        "enum": ["answered", "manual_follow_up_required"],
-    }
-    properties["manual_follow_up_code"] = {"type": ["string", "null"]}
     return StructuredOutputSpec(
         schema_name=DIGIEXAM_GAP_FILL_ANSWER_KEY_DECISION_SCHEMA_VERSION,
         schema_version=DIGIEXAM_GAP_FILL_ANSWER_KEY_DECISION_SCHEMA_VERSION,
@@ -119,7 +104,7 @@ def numbered_gap_fill_output_spec(gap_count: int) -> StructuredOutputSpec:
             "type": "object",
             "additionalProperties": False,
             "properties": properties,
-            "required": ["decision_state", *answer_keys, "manual_follow_up_code"],
+            "required": [*answer_keys],
         },
     )
 

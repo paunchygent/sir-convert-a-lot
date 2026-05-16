@@ -29,15 +29,19 @@ BASE_ANSWER_KEY_SYSTEM_PROMPT = (
 CHOICE_ANSWER_KEY_SYSTEM_PROMPT = (
     f"{BASE_ANSWER_KEY_SYSTEM_PROMPT} For choice items, infer the "
     "teacher-intended correct alternative id or ids from the visible item text "
-    "and alternatives. If the item is ambiguous, prefer manual follow-up over "
-    "a plausible wrong key."
+    "and alternatives. Evaluate each alternative independently against the item "
+    "stem. Only select an alternative if you can positively confirm it is correct. "
+    "If the item is ambiguous, prefer manual follow-up over a plausible wrong key."
 )
 
 GAP_FILL_ANSWER_KEY_SYSTEM_PROMPT = (
     f"{BASE_ANSWER_KEY_SYSTEM_PROMPT} For gap-fill items, infer the "
     "teacher-intended accepted value for each visible gap marker from the "
-    "surrounding cloze text and any word bank. If a gap is ambiguous, prefer "
-    "manual follow-up over a plausible wrong key."
+    "surrounding cloze text and any word bank. When a word bank is visible, "
+    "copy one exact word from that bank into each blank. Do not paraphrase, "
+    "substitute synonyms, or shorten the word. When no word bank is visible, "
+    "use the complete formal term as taught in the subject curriculum. "
+    "If a gap is ambiguous, prefer manual follow-up over a plausible wrong key."
 )
 
 
@@ -88,7 +92,7 @@ def choice_answer_key_model_payload(
         "selection_rules": {"min_choices": 1, "max_choices": maximum_answers},
         "output": {
             "provider_output_mode": provider_output_mode,
-            "answer_shape": _choice_answer_shape(provider_output_mode),
+            "answer_shape": _choice_answer_shape(provider_output_mode, item_type=item.item_type),
         },
     }
 
@@ -121,12 +125,13 @@ def gap_fill_answer_key_model_payload(
             "provider_output_mode": provider_output_mode,
             "json_shape": (
                 'Return one JSON object. Use string keys "1" through '
-                f'"{len(gap_entries)}" for the numbered blanks, and set '
-                "manual_follow_up_code to null when all blanks are answered."
+                f'"{len(gap_entries)}" for the numbered blanks.'
             ),
             "accepted_values": (
                 "Each numbered key value must be exactly one short answer "
-                "string. Preserve word-bank spelling when a word bank is visible."
+                "string. When a word bank is visible, the value MUST be one exact "
+                "word from that bank. When no word bank is visible, use the full "
+                "precise technical term with no abbreviations."
             ),
         },
     }
@@ -135,27 +140,35 @@ def gap_fill_answer_key_model_payload(
 def _choice_user_instruction(item_type: DigiExamItemType) -> str:
     if item_type == DigiExamItemType.MULTIPLE_RESPONSE:
         return (
-            "Read the item as a teacher-authored exam question. Select all "
-            "teacher-intended correct choices from the listed choices. Use "
-            "only the provided choice_value values."
+            "Read the item as a teacher-authored exam question. This item type "
+            "allows one or more correct answers. Evaluate each alternative "
+            "independently against the item stem and include only those you can "
+            "confirm as correct. Use only the provided choice_value values."
         )
     return (
-        "Read the item as a teacher-authored exam question. Select exactly one "
-        "teacher-intended correct choice from the listed choices. Use only the "
-        "provided choice_value values."
+        "Read the item as a teacher-authored exam question. This item type has "
+        "exactly one correct answer. Select the single teacher-intended correct "
+        "choice from the listed choices. Use only the provided choice_value values."
     )
 
 
-def _choice_answer_shape(provider_output_mode: str) -> str:
+def _choice_answer_shape(provider_output_mode: str, *, item_type: DigiExamItemType) -> str:
     if provider_output_mode == "vllm_structured_choice":
         return (
             "The provider will force one bounded choice_value. For "
             "multiple-response items, a choice_value may contain "
             "comma-separated alternative ids in ascending order."
         )
+    if item_type == DigiExamItemType.MULTIPLE_RESPONSE:
+        return (
+            "Return a JSON object with a correct_alternative_ids array. "
+            "The array must contain one or more integer ids, in ascending "
+            "order, using only the listed alternative_id values."
+        )
     return (
-        "Return a JSON object with decision_state, correct_alternative_ids, "
-        "and manual_follow_up_code. Use only the listed alternative_id values."
+        "Return a JSON object with a correct_alternative_ids array "
+        "containing exactly one integer id, using only the listed "
+        "alternative_id values."
     )
 
 

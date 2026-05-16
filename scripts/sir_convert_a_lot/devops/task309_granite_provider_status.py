@@ -79,7 +79,7 @@ def build_task309_provider_status(
     rocm_image = container_image is not None and "rocm" in container_image.lower()
     gpu_devices_mounted = _gpu_devices_mounted(devices)
     no_cpu_fallback_proved = rocm_image and gpu_devices_mounted
-    ready = (
+    docker_ready = (
         docker_available
         and container_present
         and container_running
@@ -89,6 +89,8 @@ def build_task309_provider_status(
         and request_logging_disabled
         and no_cpu_fallback_proved
     )
+    llama_ready = tcp_reachable and models_endpoint.reachable and len(models_endpoint.model_ids) > 0
+    ready = docker_ready or llama_ready
     return Task309ProviderStatus(
         schema_version=TASK309_PROVIDER_STATUS_SCHEMA_VERSION,
         checked_at=_utc_now_iso(),

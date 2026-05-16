@@ -27,10 +27,6 @@ def answer_payload_from_model_content(
 ) -> dict[str, JsonValue] | None:
     """Return a validated candidate payload from one provider decision object."""
 
-    decision_state = _string(content.get("decision_state"))
-    manual_code = _string(content.get("manual_follow_up_code"))
-    if decision_state != "answered" or manual_code is not None:
-        return None
     if item.item_type in _CHOICE_ITEM_TYPES:
         return _validated_choice_payload(item=item, content=content)
     if item.item_type == DigiExamItemType.GAP_FILL:
@@ -107,8 +103,6 @@ def _validated_numbered_gap_payload(
     item: DigiExamIrItem,
     content: dict[str, JsonValue],
 ) -> dict[str, JsonValue] | None:
-    if _string(content.get("manual_follow_up_code")) is not None:
-        return None
     gap_answers: list[JsonValue] = []
     for index, gap in enumerate(item.gaps, start=1):
         value = _string(content.get(str(index)))

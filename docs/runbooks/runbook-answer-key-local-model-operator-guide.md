@@ -80,7 +80,8 @@ failed Qwen3.5 with:
 unknown model architecture: 'qwen35'
 ```
 
-For Qwen3.5 and later Gemma 4 runs, use the Scratch default symlink:
+For the current Qwen3.6 answer-key lane and future GGUF diagnostics, use the
+Scratch default symlink:
 
 ```text
 /srv/scratch/sir-convert-a-lot/bin/llama-server
@@ -103,10 +104,10 @@ settings from one family into another.
 | Model family | Recommended answer-key probe settings |
 |---|---|
 | Granite 4.1 on vLLM | IBM Granite 4 guidance favors deterministic inference for most tasks. Use `temperature=0`, disabled request logging, localhost-only bind, and the governed vLLM structured-output path. |
-| Devstral Small on llama.cpp | Use the model-card defaults for deterministic-ish local inference. Prior probes used `temperature=0.15`, `min_p=0.01`, `--jinja`, and JSON Schema or GBNF constraints. |
+| Devstral Small on llama.cpp | Unsloth guidance recommends `temperature~0.15` (probes used `0.1`), `min_p=0.01`, `--jinja`, `--ctx-size 16384`. Use JSON Schema or GBNF constraints. |
 | Qwen3.5 GGUF on llama.cpp | Use non-thinking direct-output mode. Recommended card settings are `temperature=0.7`, `top_p=0.8`, `top_k=20`, `min_p=0.0`. Disable thinking with `--reasoning off` on current llama.cpp. |
-| Qwen3.6 GGUF on llama.cpp | Use instruct/non-thinking mode. The Qwen3.6 card recommends `temperature=0.7`, `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and `repetition_penalty=1.0`. Qwen3.6 thinks by default, so launch with `--reasoning off` for strict JSON answer-key probes. |
-| Gemma 4 GGUF on llama.cpp | Unsloth/Google guidance recommends `temperature=1.0`, `top_p=0.95`, `top_k=64`. Start at `--ctx-size 32768` for responsiveness. Keep repetition and presence penalties disabled unless looping appears. Disable thinking for strict JSON probes. |
+| Qwen3.6 GGUF on llama.cpp | **Current guarded model choice for answer-key completion.** Use instruct/non-thinking mode with `--reasoning off`, `--ctx-size 32768`, and provider requests at `temperature=0.15`. The Qwen3.6 card recommends `temperature=0.7`, `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and `repetition_penalty=1.0`; Task 309 evidence shows `temperature=0.15` produces fewer wrong-but-valid answers than the card-default `0.7`. |
+| Gemma 4 GGUF on llama.cpp | Unsloth/Google guidance recommends `temperature=1.0`, `top_p=0.95`, `top_k=64`. Start at `--ctx-size 32768` for responsiveness. Keep repetition and presence penalties disabled unless looping appears. Disable thinking for strict JSON probes. Future comparison candidate only; Qwen3.6 is the settled local choice unless a new governed task reopens model selection. |
 
 For strict answer-key probes, use the provider API request settings as the
 source of truth, not only server defaults.
@@ -188,8 +189,29 @@ candidate selection.
   Qwen3.5 required a newer build that recognizes `qwen35`.
 - Qwen3.6 27B Q6_K was the first tested local model to answer the Swedish
   criminal-liability-age word-bank gap correctly as `15` with the flat JSON
-  schema and word-bank enum shape. Keep this as a lead candidate for broader
-  corpus validation rather than overfitting prompts to the single item.
+  schema and word-bank enum shape. Full-corpus validation on 2026-05-16
+  produced **39 correct, 3 wrong-but-valid, 2 manual-follow-up** out of 44
+  eligible scored items. The 3 wrong-but-valid items are persistent reasoning
+  failures (Swedish legal-actor confusion, multiple-response select-all bias,
+  biology term abbreviation) that prompt engineering did not resolve. It is the
+  current model of choice for guarded advisory validation, not an automatic
+  answer-key promotion.
+- Devstral-Small-2-24B-Q6_K_XL (`temp=0.1`, `top_p=0.9`, `top_k=40`, `--jinja`,
+  16k context) on 2026-05-16 produced **34 correct, 8 wrong-but-valid, 2
+  manual-follow-up** out of 44 eligible scored items. It fails items Qwen3.6
+  answers correctly (Swedish law word-bank gaps, biology terminology, genetics
+  single-choice), suggesting weaker Swedish curriculum knowledge despite strong
+  coding/agentic benchmarks. Devstral is not a promotion candidate for this
+  Swedish educational route.
+- Schema simplification removed the `decision_state` enum from model-facing
+  output specs. The new rule: schema-valid + parseable output = accepted
+  suggestion. Manual follow-up is exclusively a UI user action, not a
+  model-declared state. This eliminated model over-conservatism that was
+  causing 15 manual-follow-up items despite correct answers.
+- A synonym-aware evaluator canonicalises gap values through synonym groups
+  before golden comparison. Valid equivalents such as `nukleus` for
+  `cellkärna` are accepted; vague shortenings such as `kärnan` for
+  `cellkärna` remain rejected.
 - Cache hygiene matters. Downloads must land on Scratch, and root-owned Docker
   or Hugging Face cache entries may require `sudo -n rm -rf` when the operator
   explicitly asks to clear promoted local model caches.
@@ -214,7 +236,7 @@ Default args target the **demoted Granite/vLLM** provider on `127.0.0.1:8017`. F
 
 - `--provider-url http://127.0.0.1:8082` (or active llama-server port)
 - `--provider-runtime llama-cpp-json-schema` or `llama-cpp-gbnf`
-- `--model <alias>` (e.g. `qwen3.6-27b-q6k`)
+- `--model <alias>` (current choice: `qwen3.6-27b-q6k`)
 
 ## Evaluation Pipeline
 

@@ -118,8 +118,13 @@ async def _run_task309_microprobes(
     require_provider_ready: bool,
     timeout_seconds: float,
 ) -> Task309MicroprobeReport:
+    from urllib.parse import urlparse
+
+    parsed = urlparse(provider_url)
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
     ready = build_task309_provider_status(
         provider_url=provider_url,
+        port=port,
         timeout_seconds=min(timeout_seconds, 2.0),
     ).ready
     if require_provider_ready and not ready:

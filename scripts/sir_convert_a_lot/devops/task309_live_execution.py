@@ -126,8 +126,13 @@ async def _run_task309_advisory_corpus(
     require_provider_ready: bool,
     timeout_seconds: float,
 ) -> Task309AdvisoryCorpusRunReport:
+    from urllib.parse import urlparse
+
+    parsed = urlparse(provider_url)
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
     ready = build_task309_provider_status(
         provider_url=provider_url,
+        port=port,
         timeout_seconds=min(timeout_seconds, 2.0),
     ).ready
     files = tuple(sorted(corpus_root.glob("*.dxe")))

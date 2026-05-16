@@ -51,9 +51,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
 def test_choice_completion_report_uses_candidate_lineage_not_prompt_text() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "correct_alternative_ids": [2],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -143,9 +141,7 @@ def test_granite_vllm_multiple_response_rows_use_bounded_subset_values() -> None
 def test_granite_vllm_gap_rows_use_json_schema_object_mode() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -161,11 +157,7 @@ def test_granite_vllm_gap_rows_use_json_schema_object_mode() -> None:
 
     assert provider.profiles[0].output_mode == StructuredLLMOutputMode.VLLM_JSON_SCHEMA
     assert provider.requests[0].output_spec.choice_values == ()
-    assert provider.requests[0].output_spec.json_schema["required"] == [
-        "decision_state",
-        "1",
-        "manual_follow_up_code",
-    ]
+    assert provider.requests[0].output_spec.json_schema["required"] == ["1"]
     request_payload = json.loads(provider.requests[0].user_payload)
     assert request_payload["task"]["name"] == "complete_teacher_intended_gap_fill_answer_key"
     assert request_payload["task"]["instruction"].startswith("Read the cloze item")
@@ -183,9 +175,7 @@ def test_granite_vllm_gap_rows_use_json_schema_object_mode() -> None:
 def test_llama_cpp_choice_rows_use_json_schema_object_mode() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "correct_alternative_ids": [2],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -225,9 +215,7 @@ def test_llama_cpp_choice_rows_use_json_schema_object_mode() -> None:
 def test_llama_cpp_choice_rows_can_use_gbnf_constrained_json() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "correct_alternative_ids": [2],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -259,9 +247,7 @@ def test_llama_cpp_choice_rows_can_use_gbnf_constrained_json() -> None:
 def test_llama_cpp_gap_rows_can_use_gbnf_constrained_json() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -318,9 +304,7 @@ def test_invalid_granite_vllm_choice_value_becomes_manual_follow_up() -> None:
 def test_invalid_choice_output_becomes_manual_follow_up_without_candidate_digest() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "correct_alternative_ids": [999],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -348,9 +332,7 @@ def test_invalid_choice_output_becomes_manual_follow_up_without_candidate_digest
 def test_duplicate_choice_output_becomes_manual_follow_up_without_candidate_digest() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "correct_alternative_ids": [2, 2],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -378,14 +360,12 @@ def test_duplicate_choice_output_becomes_manual_follow_up_without_candidate_dige
 def test_gap_fill_completion_validates_exact_gap_ids() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "gap_answers": [
                 {
                     "gap_id": "gap-1",
                     "accepted_values": ["fotosyntes"],
                 }
             ],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -408,14 +388,12 @@ def test_gap_fill_completion_validates_exact_gap_ids() -> None:
 def test_gap_fill_completion_rejects_partial_gap_answers() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "gap_answers": [
                 {
                     "gap_id": "gap-1",
                     "accepted_values": ["fotosyntes"],
                 }
             ],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(
@@ -442,9 +420,7 @@ def test_gap_fill_completion_rejects_partial_gap_answers() -> None:
 def test_over_budget_item_does_not_call_provider() -> None:
     provider = _FakeProvider(
         {
-            "decision_state": "answered",
             "correct_alternative_ids": [1],
-            "manual_follow_up_code": None,
         }
     )
     report = asyncio.run(

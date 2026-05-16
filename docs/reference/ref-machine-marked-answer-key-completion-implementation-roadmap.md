@@ -65,8 +65,7 @@ task, reference, report, or retained review surface.
    settlement: Task 301.
 1. Advisory completion reports: Task 297.
 1. Reviewed application into effective IR: Task 306.
-1. Granite/vLLM live validation on the versioned DigiExam DXE corpus: Task
-   309\.
+1. Provider live validation on the versioned DigiExam DXE corpus: Task 309.
 1. Validation-only force-eval over source-keyed live-validation items: Task
    310\.
 1. Strict service-backed auth/public-edge mirror validation: Task 311.
@@ -82,12 +81,16 @@ Task 301 was allowed to run before the full benchmark harness because it was a
 bounded operator smoke test of a runtime candidate, not a provider integration
 or final model-selection gate. Its evidence temporarily settled Granite 4.1 8B
 FP8 on vLLM as the local provider while the feature was implemented. Task 309 is
-the first production-path live validation of that temporary provider, using the
-versioned pure DigiExam DXE corpus and strict golden-backed correctness
-metrics. The 2026-05-16 Task 309 evidence demotes Granite/vLLM for answer-key
-completion because wrong-but-valid answer quality is unacceptable. Task 300
-remains the later comparative benchmark authority for a GGUF/vLLM bake-off and
-must not start until the full app path is working and deployed.
+the first production-path live validation of that temporary provider, plus the
+follow-on GGUF diagnostics needed to select the next guarded local lane, using
+the versioned pure DigiExam DXE corpus and strict golden-backed correctness
+metrics. The 2026-05-16 Task 309 evidence demotes Granite/vLLM and Devstral
+Small for answer-key completion because wrong-but-valid answer quality is
+unacceptable. Qwen3.6-27B-Q6_K is the current guarded model choice, but not an
+automatic answer-key promotion because it still produced 3 wrong-but-valid
+suggestions. Task 300 remains the later comparative benchmark authority for a
+GGUF/vLLM bake-off and must not start until the full app path is working and
+deployed.
 
 Task 310 and Task 311 are follow-up gates after Task 309: Task 310 isolates
 validation-only force-eval so it cannot leak into production advisory behavior,
@@ -629,6 +632,8 @@ Mandatory first-pass matrix:
 | Model | Quant |
 |---|---|
 | `ibm-granite/granite-4.1-8b-fp8` on vLLM | FP8 demoted baseline |
+| `unsloth/Qwen3.6-27B-GGUF` | `Qwen3.6-27B-Q6_K.gguf` current guarded baseline |
+| `unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF` | `UD-Q6_K_XL` demoted comparison |
 | `unsloth/Qwen3.5-4B-GGUF` | `UD-Q6_K_XL` |
 | `unsloth/gemma-4-E4B-it-GGUF` | `Q6_K` |
 | `unsloth/granite-4.1-8b-GGUF` | `Q6_K` |
@@ -784,9 +789,11 @@ Stop conditions:
 Governing task: `task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md`.
 
 Goal: validate the completed structured-provider, advisory report, and reviewed
-apply paths against the real Granite/vLLM stack on Hemma before any model
-bake-off or wider corpus expansion, then record whether that stack remains a
-candidate or is demoted by live correctness evidence.
+apply paths against the real Hemma provider lane before any model bake-off or
+wider corpus expansion, then record whether that stack remains a candidate or
+is demoted by live correctness evidence. Granite/vLLM was the initial provider;
+Qwen3.6 and Devstral GGUF diagnostics now provide the current model-choice
+evidence.
 
 Corpus boundary:
 
@@ -849,6 +856,9 @@ Checkpoint:
 - [ ] If Granite/vLLM is demoted, record the stopped-provider state and next
   governed diagnostic provider lane instead of carrying it forward as the
   interim provider by default.
+- [ ] If a GGUF diagnostic supersedes Granite/vLLM, record whether it is a
+  guarded validation choice or an automatic-promotion candidate. Qwen3.6 is
+  currently the guarded validation choice only.
 
 Stop conditions:
 

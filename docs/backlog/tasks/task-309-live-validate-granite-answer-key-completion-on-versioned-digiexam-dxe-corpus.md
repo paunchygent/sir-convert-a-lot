@@ -164,9 +164,9 @@ Task 311 owns the strict production service-backed mirror.
   Granite/vLLM provider.
 - [ ] Reviewed-apply probe report proving no provider call in apply mode and
   effective-only provenance/lineage changes.
-- [ ] Follow-up gate recorded for a strictly service-backed mirror validation
+- [x] Follow-up gate recorded for a strictly service-backed mirror validation
   with auth/public-edge readiness and validation-only force-eval policy.
-- [ ] Concise docs closeout in this task and the local-model reference with the
+- [x] Concise docs closeout in this task and the local-model reference with the
   result, failure-path summary, and next recommended action.
 
 ## Acceptance Criteria
@@ -191,7 +191,7 @@ Task 311 owns the strict production service-backed mirror.
 - [ ] The full corpus validation runs in-process first, and a small deployed
   service-backed smoke proves the service path without making auth/public-edge
   readiness a first-pass variable.
-- [ ] A successful first pass produces or updates the follow-up plan for a
+- [x] A successful first pass produces or updates the follow-up plan for a
   strict service-backed mirror validation where auth/public-edge readiness is
   intentionally included.
 - [ ] Task 309's initial run does not use force-eval over source-keyed items;
@@ -256,7 +256,7 @@ Task 311 owns the strict production service-backed mirror.
 
 - [ ] Implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated
 
 ## Implementation Notes
 
@@ -370,6 +370,19 @@ Task 311 owns the strict production service-backed mirror.
   Tailscale/SSH before the image loaded and before any live Devstral request or
   corpus validation could run. This is an infrastructure block, not a model
   result.
+- Qwen3.6-27B-Q6_K on `llama.cpp` was live-validated against the full Task 309
+  corpus with `provider_runtime=llama-cpp-json-schema`, `--ctx-size 32768`,
+  `--reasoning off`, and task-optimal `temperature=0.15`. The final scored
+  result was 39 correct, 3 wrong-but-valid, 2 manual-follow-up, and 273 skipped
+  source-bound-key items. The zero wrong-but-valid promotion gate remains
+  unmet, but Qwen3.6 is the current guarded model of choice for the next
+  service-backed validation lane.
+- Devstral-Small-2-24B-Instruct-2512-UD-Q6_K_XL was later live-validated
+  against the same full Task 309 corpus through `llama-server` on
+  `127.0.0.1:8082`. The final scored result was 34 correct, 8 wrong-but-valid,
+  2 manual-follow-up, and 273 skipped. Devstral fails Swedish curriculum
+  terminology and genetics items that Qwen3.6 answers correctly, so it is
+  demoted for this route.
 
 ## Validation Evidence
 
@@ -396,6 +409,14 @@ Task 311 owns the strict production service-backed mirror.
 - `ssh hemma "cd /home/paunchygent/llama.cpp-rocm && sudo docker buildx build --load -t llama.cpp-rocm:7.2.0 --build-arg LLAMA_CPP_COMMIT=68717eac3c081eec00bbb961c0e0e3c129a1790f ."`
 - `ssh -o ConnectTimeout=10 hemma 'echo ping'`
 - `ping -c 1 -W 3000 hemma.tail730aa2.ts.net`
+- Operator-retained Qwen3.6 full-corpus run on `127.0.0.1:8082` with
+  `provider_runtime=llama-cpp-json-schema`, `model=qwen3.6-27b-q6k`,
+  `temperature=0.15`, `--ctx-size 32768`, and `--reasoning off`: 39 correct,
+  3 wrong-but-valid, 2 manual-follow-up, 273 skipped.
+- Operator-retained Devstral-Small full-corpus run on `127.0.0.1:8082` with
+  `provider_runtime=llama-cpp-json-schema` and
+  `model=devstral-small-24b`: 34 correct, 8 wrong-but-valid,
+  2 manual-follow-up, 273 skipped.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_task309_answer_key_live_validation_manifest.py tests/sir_convert_a_lot/test_digiexam_answer_key_completion.py tests/sir_convert_a_lot/test_structured_llm_provider_harness.py tests/sir_convert_a_lot/test_structured_llm_provider_execution.py`

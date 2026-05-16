@@ -23,14 +23,11 @@ def choice_answer_key_decision_gbnf() -> str:
         [
             "root ::= choice_decision",
             "",
-            'choice_decision ::= "{" ws "\\"decision_state\\"" ws ":" ws decision_state "," ws '
-            '"\\"correct_alternative_ids\\"" ws ":" ws integer_array "," ws '
-            '"\\"manual_follow_up_code\\"" ws ":" ws nullable_string "}" ws',
+            'choice_decision ::= "{" ws "\\"correct_alternative_ids\\""'
+            ' ws ":" ws integer_array "}" ws',
             "",
-            'decision_state ::= "\\"answered\\"" | "\\"manual_follow_up_required\\""',
             'integer_array ::= "[" ws (integer ("," ws integer)*)? "]" ws',
             "integer ::= [0-9]+",
-            'nullable_string ::= "null" | string',
             *_JSON_STRING_GBNF_LINES,
         ]
     ).strip()
@@ -43,16 +40,12 @@ def gap_fill_answer_key_decision_gbnf() -> str:
         [
             "root ::= gap_fill_decision",
             "",
-            'gap_fill_decision ::= "{" ws "\\"decision_state\\"" ws ":" ws decision_state "," ws '
-            '"\\"gap_answers\\"" ws ":" ws gap_answer_array "," ws '
-            '"\\"manual_follow_up_code\\"" ws ":" ws nullable_string "}" ws',
+            'gap_fill_decision ::= "{" ws "\\"gap_answers\\"" ws ":" ws gap_answer_array "}" ws',
             "",
-            'decision_state ::= "\\"answered\\"" | "\\"manual_follow_up_required\\""',
             'gap_answer_array ::= "[" ws (gap_answer ("," ws gap_answer)*)? "]" ws',
             'gap_answer ::= "{" ws "\\"gap_id\\"" ws ":" ws string "," ws '
             '"\\"accepted_values\\"" ws ":" ws string_array "}" ws',
             'string_array ::= "[" ws (string ("," ws string)*)? "]" ws',
-            'nullable_string ::= "null" | string',
             *_JSON_STRING_GBNF_LINES,
         ]
     ).strip()
@@ -63,19 +56,14 @@ def numbered_gap_fill_answer_key_gbnf(gap_count: int) -> str:
 
     if gap_count <= 0:
         raise ValueError("Numbered gap-fill grammar requires at least one gap.")
-    answer_fields = [
-        f'"\\"{index}\\"" ws ":" ws string "," ws' for index in range(1, gap_count + 1)
-    ]
+    answer_fields = [f'"\\"{index}\\"" ws ":" ws string' for index in range(1, gap_count + 1)]
     return "\n".join(
         [
             "root ::= gap_fill_numbered",
             "",
-            'gap_fill_numbered ::= "{" ws "\\"decision_state\\"" ws ":" ws decision_state "," ws '
-            + " ".join(answer_fields)
-            + ' "\\"manual_follow_up_code\\"" ws ":" ws nullable_string "}" ws',
+            'gap_fill_numbered ::= "{" ws ' + " ",
+            " ws ".join(answer_fields) + ' "}" ws',
             "",
-            'decision_state ::= "\\"answered\\"" | "\\"manual_follow_up_required\\""',
-            'nullable_string ::= "null" | string',
             *_JSON_STRING_GBNF_LINES,
         ]
     ).strip()

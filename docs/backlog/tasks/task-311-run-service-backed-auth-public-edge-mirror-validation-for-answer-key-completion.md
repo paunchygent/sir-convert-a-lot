@@ -29,7 +29,7 @@ PR-sized execution unit; may be linked to a story or standalone.
 ## Objective
 
 Run the strict service-backed mirror validation for answer-key completion after
-Task 309's initial Hemma in-process plus service-smoke validation succeeds and
+Task 309's Hemma in-process validation settles the guarded provider choice and
 after Task 310 defines any needed validation-only force-eval mode.
 
 Unlike Task 309's first pass, this task intentionally includes deployed service
@@ -40,8 +40,9 @@ to compare model candidates.
 
 ## PR Scope
 
-- Use the persistent Granite/vLLM localhost-only provider established by Task
-  309 unless a governed operator decision changes the provider lane.
+- Use the governed provider lane established by Task 309. As of the 2026-05-16
+  evidence, this means Qwen3.6-27B-Q6_K on llama.cpp with JSON Schema output,
+  not the demoted Granite/vLLM or Devstral lanes.
 - Run the versioned DigiExam DXE fixture corpus through the deployed service
   path rather than the in-process job executor.
 - Include authenticated service access and public-edge readiness checks needed
@@ -60,8 +61,8 @@ to compare model candidates.
 ## Out Of Scope
 
 - Model bake-off or GGUF candidate comparison.
-- Replacing the Task 309 persistent Granite/vLLM provider with a different
-  model or runtime.
+- Reopening model bake-off or replacing the Task 309 governed provider choice
+  without a new governed operator decision.
 - Prompt-engineering around a specific failed item.
 - Weakening auth/public-edge policy to make validation easier.
 
@@ -82,7 +83,7 @@ to compare model candidates.
   executor.
 - [ ] Authenticated access and public-edge readiness are explicitly proven or
   the task records a blocking failure.
-- [ ] The persistent Granite/vLLM provider is reachable only through the
+- [ ] The governed Qwen3.6 llama.cpp provider is reachable only through the
   intended service/local-provider path and is not publicly exposed.
 - [ ] Reports retain zero raw prompts and zero raw provider responses.
 - [ ] Source IR and effective IR mutation semantics match Task 309 and Task

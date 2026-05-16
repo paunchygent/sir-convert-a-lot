@@ -37,12 +37,15 @@ Convert-a-Lot's machine-marked answer-key completion route.
 
 Task 301 proved that **vLLM serving `ibm-granite/granite-4.1-8b-fp8`** can run
 on Hemma's R9700 ROCm preview lane and satisfy constrained-output protocol
-smokes. Task 309 then live-validated that same stack against the production
-advisory path and a versioned pure DigiExam DXE corpus. The Task 309 evidence
-demotes Granite/vLLM as an interim answer-key provider candidate because
-wrong-but-valid answer quality is unacceptable even though the protocol path
-works. Task 300 remains the later comparative model bake-off and must not
-start until the full app path is working and deployed.
+smokes. Task 309 then live-validated Granite/vLLM, Qwen3.6 GGUF, and Devstral
+Small GGUF against the production advisory path and a versioned pure DigiExam
+DXE corpus. The Task 309 evidence demotes Granite/vLLM and Devstral Small for
+answer-key completion quality. Qwen3.6-27B-Q6_K is the current guarded local
+model choice for this route, with `temperature=0.15`, `--reasoning off`, and
+the llama.cpp JSON Schema runtime. It is not promoted for automatic answer-key
+application because the zero wrong-but-valid safety gate is still unmet. Task
+300 remains the later comparative model bake-off and must not start until the
+full app path is working and deployed.
 
 ## Demoted Granite Runtime Record
 
@@ -234,12 +237,14 @@ operator stopped `sir-convert-task309-granite-vllm`,
 `sir_convert_a_lot_prod`; post-stop Hemma verification showed GPU use `0%`,
 VRAM `0%`, and no KFD PIDs.
 
-The next operator diagnostic is Devstral Small on `llama.cpp` against the same
-failed-question probe set. This is a focused post-demotion probe, not the full
-Task 300 model bake-off or a provider-promotion decision. The Task 309 runner
-can now preview, microprobe, and run advisory corpus validation with
-`--provider-runtime llama-cpp-json-schema` or `--provider-runtime llama-cpp-gbnf`; the GBNF path follows Skriptoteket's validated llama.cpp
-practice of using the `grammar` request field on `/v1/chat/completions`.
+After Granite demotion, the operator diagnostics moved to llama.cpp GGUF
+providers against the same corpus and failed-question probe set. This was a
+focused post-demotion provider-choice pass, not the full Task 300 model bake-off
+or an automatic provider-promotion decision. The Task 309 runner can now
+preview, microprobe, and run advisory corpus validation with
+`--provider-runtime llama-cpp-json-schema` or `--provider-runtime llama-cpp-gbnf`;
+the GBNF path follows Skriptoteket's validated llama.cpp practice of using the
+`grammar` request field on `/v1/chat/completions`.
 
 On 2026-05-16, the first Devstral Small launch attempt found the active Hemma
 GGUF symlink set to `Devstral-Small-2-24B-Instruct-2512-Q8_0.gguf`, but the
@@ -249,7 +254,134 @@ current ROCm/llama.cpp `master` commit
 `68717eac3c081eec00bbb961c0e0e3c129a1790f` passed the stale pinned-commit
 failure and entered HIP compilation, after which Hemma stopped responding over
 Tailscale/SSH. No live Devstral model-quality result was produced in that
-attempt.
+attempt; a later successful Devstral corpus run is recorded below.
+
+## Qwen3.6-27B Live Validation Result
+
+On 2026-05-16, Qwen3.6-27B-Q6_K was live-validated locally against the full
+Task 309 DXE corpus via `llama-server` on `127.0.0.1:8082`:
+
+```text
+provider_runtime: llama-cpp-json-schema
+model: qwen3.6-27b-q6k
+llama-server: 59778f019 (HIP, gfx1201)
+context: 32768
+temperature: 0.15          # task-optimal; card-default 0.7 gave worse results
+reasoning: off
+build: /srv/scratch/sir-convert-a-lot/build/llama.cpp-qwen35/build-hip/bin/llama-server
+```
+
+### Schema Simplification
+
+The `decision_state` enum (`answered` vs `manual_follow_up_required`) was
+removed from all model-facing output specs, GBNF grammars, decoder logic,
+prompts, and tests. The new paradigm: **schema-valid + parseable output =
+accepted suggestion**. Manual follow-up is exclusively a UI user action.
+This eliminated model over-conservatism that previously caused 15
+manual-follow-up items despite correct underlying answers.
+
+### Synonym-Aware Evaluation
+
+Gap-fill comparison now canonicalises values through synonym groups before
+golden matching. Example groups: `cellkärna/nukleus`, `nervcell/neuron`,
+`arter/artär`, `koldioxid/co2`. This accepts valid curriculum synonyms while
+rejecting vague shortenings (e.g. `kärnan` ≢ `cellkärna`).
+
+### Corpus Results
+
+| Metric | Count |
+|---|---|
+| Files | 23 |
+| Total items | 317 |
+| Eligible scored items | 44 |
+| Correct suggestions | **39** |
+| Wrong-but-valid | **3** |
+| Manual follow-up | 2 (unsupported assets) |
+| Skipped | 273 (source-bound keys) |
+
+**Primary safety metric:** `wrong_but_valid_count == 3` — **blocks promotion**.
+
+### Persistent Wrong-but-Valid Items
+
+| Item | Type | Root cause | Prompt fixable? |
+|---|---|---|---|
+| `ak7-lag-och-ratt.dxe item-001` | gap_fill (10 blanks) | Confuses Swedish legal roles: åklagare ↔ domare, polis ↔ åklagare | **No** — domain knowledge gap |
+| `ak7-lag-och-ratt.dxe item-002` | multiple_response (9 options) | Selects all 9 options instead of [2,3,5,6,8] | **No** — reasoning bias |
+| `manniskokroppen-prov.dxe item-003` | gap_fill (3 blanks) | Uses colloquial `kärnan` instead of curriculum `cellkärna` | **No** — terminology precision |
+
+Three iterations of prompt engineering (generic guardrails, explicit
+cardinality, anti-select-all language, word-bank copy instructions, formal-term
+requirements) produced **no improvement** on these items. They represent a hard
+knowledge boundary for Qwen3.6-27B on this Swedish educational corpus.
+
+### Temperature Experiment
+
+| Temperature | Correct | Wrong-but-valid |
+|---|---|---|
+| 0.15 (task-optimal) | 39 | 3 |
+| 0.7 (card default) | 38 | 4 |
+
+Higher temperature added an extra biology error (`nukleotider` vs `baspar`)
+without fixing the structural failures. For constrained answer-key completion,
+lower temperature reduces synonym drift and select-all bias.
+
+## Devstral-Small-2-24B Live Validation Result
+
+On 2026-05-16, Devstral-Small-2-24B-Instruct-2512-UD-Q6_K_XL was live-validated
+against the full Task 309 DXE corpus via `llama-server` on `127.0.0.1:8082`:
+
+```bash
+/srv/scratch/sir-convert-a-lot/bin/llama-server \
+  -hf unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF \
+  -hff Devstral-Small-2-24B-Instruct-2512-UD-Q6_K_XL.gguf \
+  --no-mmproj --no-webui --alias devstral-small-24b \
+  --host 127.0.0.1 --port 8082 \
+  --ctx-size 16384 --n-gpu-layers all --fit off --flash-attn on --jinja \
+  --temp 0.1 --top-p 0.9 --top-k 40
+```
+
+Unsloth guidance recommends `temperature~0.15`, `min_p=0.01`, `--jinja`, and a
+minimum 16k context. The probe used `temp=0.1`, `top_p=0.9`, `top_k=40`, and
+JSON Schema constrained output.
+
+| Metric | Value |
+|---|---|
+| Files | 23 |
+| Total items | 317 |
+| Eligible scored items | 44 |
+| Correct suggestions | **34** |
+| Wrong-but-valid | **8** |
+| Manual follow-up | 2 (unsupported assets) |
+| Skipped | 273 (source-bound keys) |
+
+**Primary safety metric:** `wrong_but_valid_count == 8` — **blocks promotion**.
+
+### Devstral Wrong-but-Valid Items
+
+| Item | Type | Root cause | Qwen3.6 result |
+|---|---|---|---|
+| `ak7-lag-och-ratt.dxe item-001` | gap_fill (10 blanks) | Confuses Swedish legal roles | Wrong (same) |
+| `ak7-lag-och-ratt.dxe item-002` | multiple_response | Selects all 9 options | Wrong (same) |
+| `ak7-lag-och-ratt.dxe item-004` | gap_fill (5 blanks) | "rån" vs "misshandel" word-bank | **Correct** |
+| `ak7-lag-och-ratt.dxe item-005` | gap_fill (10 blanks) | "15" vs "18" criminal-liability age | **Correct** |
+| `manniskokroppen-prov.dxe item-003` | gap_fill (3 blanks) | "cellemembran", "kärnan", "mitochondrier" | **Correct** |
+| `25c-manniskokroppen-prov-eca.dxe item-009` | gap_fill (2 blanks) | Number swap 2↔5 | **Correct** |
+| `prov-biologi-genetik-v2.dxe item-005` | single_choice | Wrong genetics choice | **Correct** |
+| `prov-biologi-genetik-v2.dxe item-017` | gap_fill (2 blanks) | "kromatiderna" vs "kromosomer" | **Correct** |
+
+Devstral fails on Swedish curriculum terminology that Qwen3.6 handles
+correctly. Its SOTA coding/agentic benchmarks (SWE-bench, Aider) do not
+translate to Swedish educational content accuracy.
+
+### Promotion Status
+
+**Current guarded choice, not automatic promotion.** Both Qwen3.6-27B
+(3 wrong-but-valid) and Devstral-Small-2-24B (8 wrong-but-valid) violate the
+primary safety gate. Qwen3.6 remains the best-tested local candidate and is the
+operator-selected model of choice for the next service-backed validation lane.
+Do not route its suggestions directly into accepted answer keys without teacher
+review or a later governed decision that changes the wrong-but-valid risk
+posture.
 
 ## Verified Source Notes
 
@@ -270,7 +402,7 @@ documentation:
   Swedish/English school-item route, not as the default.
 - Gemma 4 26B-A4B Unsloth guidance lists the model as a 256K-context MoE
   variant with 3.8B active parameters and text/image support. The operator
-  diagnostic uses the text-only GGUF
+  diagnostic candidate uses the text-only GGUF
   `gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf` from
   `unsloth/gemma-4-26B-A4B-it-GGUF`. Recommended sampling follows Google's
   Gemma 4 defaults: `temperature=1.0`, `top_p=0.95`, and `top_k=64`.
@@ -282,7 +414,10 @@ documentation:
   Hemma llama.cpp build also supports the newer `--reasoning off` switch. Use
   `/srv/scratch/sir-convert-a-lot/bin/llama-server` as the default Hemma
   `llama-server`; it points to the newer HIP build that supports Qwen3.5 and
-  Gemma 4 GGUF architectures.
+  Gemma 4 GGUF architectures. After the completed Qwen3.6 and Devstral Task
+  309 runs, Gemma is no longer the immediate next diagnostic by default; keep
+  it as future Task 300 comparison material unless a new governed operator
+  decision reopens the model search.
 - Qwen3.6 27B guidance lists a 262,144-token native context and recommends
   the following instruct/non-thinking settings: `temperature=0.7`,
   `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and
@@ -309,12 +444,12 @@ settled route.
 | 4 | `unsloth/Qwen3.5-9B-GGUF` | `Q6_K` | Quality fallback candidate | Higher-capacity Qwen candidate if 4B fails on real gap-fill or matching items. |
 | 5 | `unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF` | `UD-Q6_K_XL` | Edge/agentic comparison candidate | Small agentic model; language caveat makes it non-default for this route. |
 
-Operator-requested immediate diagnostic:
+Completed Task 309 diagnostic:
 
-- Devstral Small on `llama.cpp`: exact GGUF repository and quant are resolved in
-  the next governed runtime slice. Use the failed Task 309 direct-probe items
-  first, with the same item-type-specific consumer-friendly message shape, so
-  the comparison targets answer quality rather than prompt/report drift.
+- Devstral Small on `llama.cpp` is demoted for this Swedish educational route:
+  the full-corpus run produced 34 correct and 8 wrong-but-valid scored
+  suggestions, including several Swedish curriculum terminology failures that
+  Qwen3.6 answered correctly.
 
 Watchlist only:
 

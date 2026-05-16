@@ -94,11 +94,13 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   track the broader SOLID domain-coupling audit separately from Task 312. Task
   309 remains in progress for live validation, with Tasks 310/311 scaffolded
   follow-ups. Granite/vLLM is demoted after the first live corpus run and
-  direct probes showed unacceptable wrong-but-valid answer quality; the next
-  diagnostic provider lane is Devstral Small on `llama.cpp` against the same
-  failed-question probe set. The Task 309 runner now supports llama.cpp JSON
-  Schema and GBNF-grammar constrained JSON runtimes only. Keyed matching QTI
-  bridging waits for real matching-capable fixtures.
+  direct probes showed unacceptable wrong-but-valid answer quality. Devstral
+  Small on `llama.cpp` is also demoted after the full Task 309 corpus run.
+  Qwen3.6-27B-Q6_K on `llama.cpp` is the current guarded model choice for the
+  next service-backed validation lane, while still blocked from automatic
+  promotion by 3 wrong-but-valid suggestions. The Task 309 runner now supports
+  llama.cpp JSON Schema and GBNF-grammar constrained JSON runtimes only. Keyed
+  matching QTI bridging waits for real matching-capable fixtures.
 - Review 17 retained Task 306 as `changes_requested` because Skriptoteket's
   checked-in Sir Convert generated OpenAPI TypeScript surface is stale against
   the Task 306 snapshot. Sir-local reviewed-overlay/effective-IR semantics and
@@ -158,39 +160,23 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 
 ## Validation
 
-- Older validation evidence lives in linked governed tasks, references, reviews,
-  and long-term memory entries.
-- 2026-05-13 through 2026-05-15 validation evidence for pre-release, Task 292,
-  Hemma runbook cleanup, and Tasks 294-306 lives in linked governed
-  tasks/reviews and long-term memory entries.
-- 2026-05-15 Task 312 and Task 309 surface gates passed:
-  provider/structured/live-run focused tests (`48 passed`) plus
-  `typecheck-all`.
-- 2026-05-15 Task 309 first Hemma live run completed against persistent
-  Granite/vLLM on `127.0.0.1:8017`: preflight and all 3 microprobes passed,
-  in-process corpus run produced 36 suggestions and 8 manual follow-ups, but
-  golden evaluation found 24 wrong-but-valid suggestions. Do not promote or
-  prompt-tune specific items.
-- 2026-05-16 Granite/vLLM was demoted for answer-key completion after direct
-  failed-row probes and a gap-fill chat experiment still produced plausible
-  wrong keys. Per operator request, Hemma GPU capacity was cleared by stopping
-  `sir-convert-task309-granite-vllm`, `huleedu_rst_parser_service`,
-  `huleedu_essay_embed_offload`, and `sir_convert_a_lot_prod`; `rocm-smi`
-  showed GPU use `0%`, VRAM `0%`, and no KFD PIDs afterward. Next diagnostic:
-  Devstral Small on `llama.cpp` against the same failed-question probe set.
-- 2026-05-16 first Devstral Small launch attempt: Hemma's `active.gguf`
-  resolved to `Devstral-Small-2-24B-Instruct-2512-Q8_0.gguf`, but
-  `llama-server-rocm.service` was inactive and the required
-  `llama.cpp-rocm:7.2.0` image was missing. The canonical BuildKit rebuild
-  bypassed the stale pinned ROCm/llama.cpp commit by using
-  `68717eac3c081eec00bbb961c0e0e3c129a1790f`, reached HIP compilation, then
-  Hemma became unreachable over Tailscale/SSH before any live Devstral request
-  or corpus validation could run.
-- 2026-05-15 Review 17 flagged one downstream consumer-sync blocker:
-  Skriptoteket `frontend/apps/skriptoteket/src/api/sirConvertOpenapi.d.ts` is
-  stale against Sir Convert's Task 306 OpenAPI snapshot. Review 17 separately
-  verified Sir-local overlay/effective-IR semantics and no structured-provider
-  calls for apply/default routes.
+- Older validation evidence (2026-05-13 through 2026-05-15) lives in linked
+  governed tasks, references, reviews, and long-term memory entries.
+- Full Task 309 answer-key validation history (Granite/vLLM demotion, Qwen3.6
+  evaluation, Devstral demotion) is preserved in LTM:
+  `.codex/long-term-memory/entries/session-2026-05-16-answer-key-validation-history.md`.
+- 2026-05-16 Qwen3.6-27B-Q6_K final: **39 correct, 3 wrong-but-valid, 2
+  manual-follow-up** out of 44 eligible scored items. Promotion gate
+  `wrong_but_valid_count == 0` is **not met**. Temperature `0.15` was
+  task-optimal (card-default `0.7` gave 38/4). Prompt engineering hit a hard
+  ceiling on 3 persistent knowledge-boundary failures. Qwen3.6 is the current
+  model of choice for guarded advisory validation, not automatic answer-key
+  application.
+- 2026-05-16 Devstral Small final: **34 correct, 8 wrong-but-valid, 2
+  manual-follow-up** out of 44 eligible scored items. Devstral is demoted for
+  this Swedish educational route.
+- 2026-05-15 Review 17 flagged Skriptoteket OpenAPI type staleness; Sir-local
+  overlay/effective-IR semantics passed review.
 
 ## Stop Conditions
 
