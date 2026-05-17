@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
 from scripts.sir_convert_a_lot.infrastructure.runtime_telemetry_v2 import RuntimeTelemetrySinkV2
 from scripts.sir_convert_a_lot.interfaces.http_app_state import (
     ensure_runtime_state,
+    ensure_runtime_state_v2,
     initialize_service_state,
     resolve_expected_revision,
     resolve_service_revision,
@@ -109,6 +110,7 @@ def create_app(
     @asynccontextmanager
     async def _lifespan(lifespan_app: FastAPI):
         ensure_runtime_state(lifespan_app, utc_now_iso=service_started_at)
+        ensure_runtime_state_v2(lifespan_app, utc_now_iso=service_started_at)
         try:
             yield
         finally:

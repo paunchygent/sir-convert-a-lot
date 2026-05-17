@@ -110,6 +110,24 @@ def test_requires_api_key_with_standard_error_envelope(tmp_path: Path) -> None:
     assert payload["error"]["correlation_id"] == response.headers.get("X-Correlation-ID")
 
 
+def test_lifespan_initializes_v2_runtime_for_supervisor_workers(tmp_path: Path) -> None:
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            enable_supervisor=True,
+            run_jobs_on_submit=False,
+            processing_delay_seconds=0.0,
+        )
+    )
+
+    with TestClient(app) as client:
+        client.get("/healthz")
+        runtime_v2 = app.state.runtime_v2
+
+    assert isinstance(runtime_v2, ServiceRuntimeV2)
+
+
 def test_create_job_idempotency_replay_returns_same_job_id(tmp_path: Path, monkeypatch) -> None:
     def _noop_run_job_async(self: ServiceRuntimeV2, job_id: str) -> None:
         del self, job_id
