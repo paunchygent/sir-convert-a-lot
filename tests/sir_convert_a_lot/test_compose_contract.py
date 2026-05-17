@@ -305,7 +305,7 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
     assert isinstance(command, list)
     joined_command = " ".join(str(item) for item in command)
     assert "/srv/scratch/sir-convert-a-lot/bin/llama-server" in command
-    assert "-hf ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-GGUF-MTP}" in (
+    assert "-hf ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-MTP-GGUF}" in (
         joined_command
     )
     assert "-hff ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-Q6_K.gguf}" in joined_command

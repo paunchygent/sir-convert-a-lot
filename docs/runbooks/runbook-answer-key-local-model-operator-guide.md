@@ -110,7 +110,7 @@ settings from one family into another.
 | Granite 4.1 on vLLM | IBM Granite 4 guidance favors deterministic inference for most tasks. Use `temperature=0`, disabled request logging, localhost-only bind, and the governed vLLM structured-output path. |
 | Devstral Small on llama.cpp | Unsloth guidance recommends `temperature~0.15` (probes used `0.1`), `min_p=0.01`, `--jinja`, `--ctx-size 16384`. Use JSON Schema or GBNF constraints. |
 | Qwen3.5 GGUF on llama.cpp | Use non-thinking direct-output mode. Recommended card settings are `temperature=0.7`, `top_p=0.8`, `top_k=20`, `min_p=0.0`. Disable thinking with `--reasoning off` on current llama.cpp. |
-| Qwen3.6 MTP Q6_K GGUF on llama.cpp | **Current guarded model choice for answer-key completion.** Use `unsloth/Qwen3.6-27B-GGUF-MTP`, `Qwen3.6-27B-Q6_K.gguf`, alias `qwen3.6-27b-q6k-mtp`, instruct/non-thinking mode with `--reasoning off`, `--ctx-size 16384`, `--spec-type draft-mtp`, `--spec-draft-n-max 2`, and provider requests at `temperature=0.15`. The Qwen3.6 card recommends `temperature=0.7`, `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and `repetition_penalty=1.0`; Task 309 evidence shows `temperature=0.15` produces fewer wrong-but-valid answers than the card-default `0.7`. |
+| Qwen3.6 MTP Q6_K GGUF on llama.cpp | **Current guarded model choice for answer-key completion.** Use `unsloth/Qwen3.6-27B-MTP-GGUF`, `Qwen3.6-27B-Q6_K.gguf`, alias `qwen3.6-27b-q6k-mtp`, instruct/non-thinking mode with `--reasoning off`, `--ctx-size 16384`, `--spec-type draft-mtp`, `--spec-draft-n-max 2`, and provider requests at `temperature=0.15`. The Qwen3.6 card recommends `temperature=0.7`, `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and `repetition_penalty=1.0`; Task 309 evidence shows `temperature=0.15` produces fewer wrong-but-valid answers than the card-default `0.7`. |
 | Gemma 4 GGUF on llama.cpp | Unsloth/Google guidance recommends `temperature=1.0`, `top_p=0.95`, `top_k=64`. Start at `--ctx-size 32768` for responsiveness. Keep repetition and presence penalties disabled unless looping appears. Disable thinking for strict JSON probes. Future comparison candidate only; Qwen3.6 is the settled local choice unless a new governed task reopens model selection. |
 
 For strict answer-key probes, use the provider API request settings as the
@@ -265,7 +265,7 @@ For the current guarded Qwen3.6 MTP llama.cpp run, use
 - `--provider-runtime llama-cpp-json-schema`
 - `--model qwen3.6-27b-q6k-mtp`
 - `--output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local`
-- `--hf-repo unsloth/Qwen3.6-27B-GGUF-MTP`
+- `--hf-repo unsloth/Qwen3.6-27B-MTP-GGUF`
 - `--hf-file Qwen3.6-27B-Q6_K.gguf`
 - launch settings include `--ctx-size 16384 --spec-type draft-mtp --spec-draft-n-max 2`
 

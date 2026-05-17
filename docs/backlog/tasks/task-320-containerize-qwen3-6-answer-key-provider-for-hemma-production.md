@@ -51,7 +51,7 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   must not execute jobs synchronously on submit in production.
 - Run the provider through the Task 309/320 Qwen3.6 MTP Q6_K settings:
   `qwen36-llama-cpp-mtp`, alias/model `qwen3.6-27b-q6k-mtp`, GGUF repo
-  `unsloth/Qwen3.6-27B-GGUF-MTP`, file
+  `unsloth/Qwen3.6-27B-MTP-GGUF`, file
   `Qwen3.6-27B-Q6_K.gguf`, `llama.cpp` JSON Schema, context `16384`,
   max output `4096`, temperature `0.15`, `--reasoning off`,
   `--n-gpu-layers all`, `--fit off`, `--flash-attn on`, `--jinja`,

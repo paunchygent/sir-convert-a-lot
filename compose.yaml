@@ -177,7 +177,7 @@ services:
     command:
       - /srv/scratch/sir-convert-a-lot/bin/llama-server
       - -hf
-      - ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-GGUF-MTP}
+      - ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-MTP-GGUF}
       - -hff
       - ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-Q6_K.gguf}
       - --no-webui
