@@ -17,6 +17,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_SCRIPT = REPO_ROOT / "scripts" / "devops" / "qwen-llama-provider-build.sh"
 QWEN_DOCKERFILE = REPO_ROOT / "Dockerfile.qwen-provider"
+SYNC_PROD_ENV_MIRROR = REPO_ROOT / "scripts" / "devops" / "sync-prod-env-mirror.sh"
 
 
 def test_qwen_llama_provider_build_enforces_runbook_jobs_and_niceness() -> None:
@@ -46,3 +47,11 @@ def test_qwen_provider_image_does_not_hide_llama_cpp_build() -> None:
     assert "RUN cmake" not in dockerfile
     assert "RUN ninja" not in dockerfile
     assert "git clone" not in dockerfile
+
+
+def test_prod_env_mirror_creates_qwen_vision_media_host_path() -> None:
+    script = SYNC_PROD_ENV_MIRROR.read_text(encoding="utf-8")
+
+    assert 'provider_env="$(pdm run answer-key-provider-env --lane hemma-prod-compose)"' in script
+    assert "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH" in script
+    assert 'mkdir -p "${key_value}"' in script

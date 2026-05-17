@@ -104,11 +104,15 @@ for repo in "${repos[@]}"; do
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR" "/opt/easyocr-models"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID" "$(group_id_or_default video 44)"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID" "$(group_id_or_default render 993)"
+    provider_env="$(pdm run answer-key-provider-env --lane hemma-prod-compose)"
     while IFS='=' read -r key_name key_value; do
       if [[ -n "${key_name}" ]]; then
         ensure_key "${canonical_env}" "${key_name}" "${key_value}"
+        if [[ "${key_name}" == "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH" ]]; then
+          mkdir -p "${key_value}"
+        fi
       fi
-    done < <(pdm run answer-key-provider-env --lane hemma-prod-compose)
+    done <<<"${provider_env}"
   fi
   if [[ "${repo}" == "projektveckor-portal" ]]; then
     ensure_key "${canonical_env}" "PVP_SIR_CONVERT_A_LOT_V2_API_KEY" "${sir_key_value}"
