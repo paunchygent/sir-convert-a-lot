@@ -471,7 +471,7 @@ def test_answer_key_llama_provider_launch_surface_dry_runs_hemma_local_command(
         [
             "launch-llama-provider",
             "--provider-profile",
-            "qwen36-llama-cpp",
+            "qwen36-llama-cpp-mtp",
             "--output-root",
             tmp_path.as_posix(),
             "--fail-on-blocked",
@@ -487,19 +487,23 @@ def test_answer_key_llama_provider_launch_surface_dry_runs_hemma_local_command(
     assert exit_code == 0
     assert report_payload["dry_run"] is True
     assert report_payload["ok"] is True
-    assert plan["provider_profile"] == "qwen36-llama-cpp"
+    assert plan["provider_profile"] == "qwen36-llama-cpp-mtp"
     assert plan["provider_url"] == "http://127.0.0.1:8082"
-    assert plan["model"] == "qwen3.6-27b-q6k"
+    assert plan["model"] == "qwen3.6-27b-q6k-mtp"
     assert plan["host"] == "127.0.0.1"
     assert plan["port"] == 8082
-    assert plan["hf_repo"] == "unsloth/Qwen3.6-27B-GGUF:default"
-    assert plan["hf_file"] == "Qwen3.6-27B-Q6_K.gguf"
+    assert plan["hf_repo"] == "unsloth/Qwen3.6-27B-MTP-GGUF"
+    assert plan["hf_file"] == "Qwen3.6-27B-UD-Q6_K_XL.gguf"
     assert "--n-gpu-layers" in command
     assert "all" in command
     assert "--offline" in command
     assert "--media-path" in command
     assert "--reasoning" in command
     assert "off" in command
+    assert "--spec-type" in command
+    assert "draft-mtp" in command
+    assert "--spec-draft-n-max" in command
+    assert "2" in command
     assert "--log-file" in command
     assert (tmp_path / "llama-provider-launch.md").exists()
 

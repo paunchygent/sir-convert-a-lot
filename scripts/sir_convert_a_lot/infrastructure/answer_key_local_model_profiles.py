@@ -131,6 +131,13 @@ QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS = (
     "--media-path",
     (QWEN36_LLAMA_CPP_EVAL_OUTPUT_ROOT / "vision-assets").as_posix(),
 )
+QWEN36_LLAMA_CPP_MTP_REQUIRED_PROCESS_ARGS = (
+    *QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS,
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "2",
+)
 
 ANSWER_KEY_PROVIDER_DEFAULTS = {
     AnswerKeyProviderProfileName.GRANITE_VLLM: AnswerKeyProviderDefaults(

@@ -32,7 +32,10 @@ from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_status import 
 )
 from scripts.sir_convert_a_lot.devops.answer_key_llama_provider_launch import (
     build_answer_key_llama_provider_launch_plan,
+    default_hf_file_for_llama_profile,
+    default_hf_repo_for_llama_profile,
     launch_task309_llama_provider,
+    qwen36_llama_mtp_required_process_args,
     qwen36_llama_required_process_args,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
@@ -81,8 +84,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manife
 )
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     QWEN36_LLAMA_CPP_CACHE_PATH,
-    QWEN36_LLAMA_CPP_HF_FILE,
-    QWEN36_LLAMA_CPP_HF_REPO,
     QWEN36_LLAMA_CPP_SERVER_BINARY,
     AnswerKeyProviderDefaults,
     AnswerKeyProviderProfileName,
@@ -316,12 +317,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Launch or dry-run the persistent Hemma-local llama.cpp provider.",
     )
     _add_provider_args(llama_launch)
-    llama_launch.set_defaults(provider_profile=AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP.value)
+    llama_launch.set_defaults(
+        provider_profile=AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP.value
+    )
     llama_launch.add_argument("--model", default=None)
     llama_launch.add_argument("--output-root", type=Path, default=None)
     llama_launch.add_argument("--server-binary", default=QWEN36_LLAMA_CPP_SERVER_BINARY)
-    llama_launch.add_argument("--hf-repo", default=QWEN36_LLAMA_CPP_HF_REPO)
-    llama_launch.add_argument("--hf-file", default=QWEN36_LLAMA_CPP_HF_FILE)
+    llama_launch.add_argument("--hf-repo", default=None)
+    llama_launch.add_argument("--hf-file", default=None)
     llama_launch.add_argument("--llama-cache-path", default=QWEN36_LLAMA_CPP_CACHE_PATH)
     llama_launch.add_argument("--execute", action="store_true")
     llama_launch.add_argument("--fail-on-blocked", action="store_true")
@@ -427,6 +430,10 @@ def _apply_provider_defaults(args: argparse.Namespace) -> None:
     _set_default(args, "model", defaults.model)
     _set_default(args, "provider_runtime", defaults.provider_runtime.value)
     _set_default(args, "output_root", defaults.output_root)
+    if hasattr(args, "hf_repo") and args.hf_repo is None:
+        args.hf_repo = default_hf_repo_for_llama_profile(defaults.profile_name)
+    if hasattr(args, "hf_file") and args.hf_file is None:
+        args.hf_file = default_hf_file_for_llama_profile(defaults.profile_name)
     if hasattr(args, "reports_root") and args.reports_root is None:
         args.reports_root = defaults.reports_root
 
@@ -452,6 +459,8 @@ def _required_process_args(args: argparse.Namespace) -> tuple[str, ...]:
         AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP,
         AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP,
     ):
+        if defaults.profile_name == AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP:
+            return qwen36_llama_mtp_required_process_args()
         return qwen36_llama_required_process_args()
     return ()
 

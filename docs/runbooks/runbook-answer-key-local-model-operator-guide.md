@@ -110,7 +110,7 @@ settings from one family into another.
 | Granite 4.1 on vLLM | IBM Granite 4 guidance favors deterministic inference for most tasks. Use `temperature=0`, disabled request logging, localhost-only bind, and the governed vLLM structured-output path. |
 | Devstral Small on llama.cpp | Unsloth guidance recommends `temperature~0.15` (probes used `0.1`), `min_p=0.01`, `--jinja`, `--ctx-size 16384`. Use JSON Schema or GBNF constraints. |
 | Qwen3.5 GGUF on llama.cpp | Use non-thinking direct-output mode. Recommended card settings are `temperature=0.7`, `top_p=0.8`, `top_k=20`, `min_p=0.0`. Disable thinking with `--reasoning off` on current llama.cpp. |
-| Qwen3.6 GGUF on llama.cpp | **Current guarded model choice for answer-key completion.** Use instruct/non-thinking mode with `--reasoning off`, `--ctx-size 32768`, and provider requests at `temperature=0.15`. The Qwen3.6 card recommends `temperature=0.7`, `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and `repetition_penalty=1.0`; Task 309 evidence shows `temperature=0.15` produces fewer wrong-but-valid answers than the card-default `0.7`. |
+| Qwen3.6 MTP GGUF on llama.cpp | **Current guarded model choice for answer-key completion.** Use `unsloth/Qwen3.6-27B-MTP-GGUF`, `Qwen3.6-27B-UD-Q6_K_XL.gguf`, alias `qwen3.6-27b-q6k-mtp`, instruct/non-thinking mode with `--reasoning off`, `--ctx-size 32768`, `--spec-type draft-mtp`, `--spec-draft-n-max 2`, and provider requests at `temperature=0.15`. The Qwen3.6 card recommends `temperature=0.7`, `top_p=0.80`, `top_k=20`, `min_p=0.0`, `presence_penalty=1.5`, and `repetition_penalty=1.0`; Task 309 evidence shows `temperature=0.15` produces fewer wrong-but-valid answers than the card-default `0.7`. |
 | Gemma 4 GGUF on llama.cpp | Unsloth/Google guidance recommends `temperature=1.0`, `top_p=0.95`, `top_k=64`. Start at `--ctx-size 32768` for responsiveness. Keep repetition and presence penalties disabled unless looping appears. Disable thinking for strict JSON probes. Future comparison candidate only; Qwen3.6 is the settled local choice unless a new governed task reopens model selection. |
 
 For strict answer-key probes, use the provider API request settings as the
@@ -249,7 +249,7 @@ not wrap it in an SSH tunnel. From a non-Hemma workstation, use
 |---|---|---|
 | `prepare-manifests` | Build corpus manifest + expected-answer worklist from `.dxe` fixtures. | Local |
 | `validate-goldens` | Validate teacher-verified `expected-answer-manifest.json`. | Local |
-| `preview-request-shape` | Build eligible model requests **without calling the provider**. Default text-only profiles keep 42 items; `qwen36-llama-cpp` vision eval attempts 44 and emits two multimodal request shapes. | Local |
+| `preview-request-shape` | Build eligible model requests **without calling the provider**. Default text-only profiles keep 42 items; `qwen36-llama-cpp-mtp` vision eval attempts 44 and emits two multimodal request shapes. | Local |
 | `launch-llama-provider` | Start or dry-run the persistent Hemma-local llama.cpp provider for the Qwen3.6 profile. Writes pid/log launch artifacts and leaves the provider running. | Hemma |
 | `provider-status` | Probe Docker or llama.cpp provider readiness, `/v1/models`, localhost-only exposure, and required runtime flags. | Hemma |
 | `microprobes` | Run redacted structured-output probes against the live provider. The Qwen3.6 vision profile also writes a tiny media-path image and sends one `image_url` probe. | Hemma |
@@ -257,14 +257,17 @@ not wrap it in an SSH tunnel. From a non-Hemma workstation, use
 | `evaluate-advisory-corpus` | Adjudicate reports against teacher goldens and prove manifest-vs-report coverage. Emits `correct`, `wrong-but-valid`, `malformed`, `manual-follow-up`, `unknown-id`, `duplicate-id`, missing-item, and unexpected-report counts. | Hemma or local (reads artifacts) |
 
 Default args target the **demoted Granite/vLLM** provider on `127.0.0.1:8017`.
-For the current guarded Qwen3.6 llama.cpp run, use
-`--provider-profile qwen36-llama-cpp`. That profile sets:
+For the current guarded Qwen3.6 MTP llama.cpp run, use
+`--provider-profile qwen36-llama-cpp-mtp`. That profile sets:
 
 - `--provider-url http://127.0.0.1:8082`
 - `--port 8082`
 - `--provider-runtime llama-cpp-json-schema`
-- `--model qwen3.6-27b-q6k`
+- `--model qwen3.6-27b-q6k-mtp`
 - `--output-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local`
+- `--hf-repo unsloth/Qwen3.6-27B-MTP-GGUF`
+- `--hf-file Qwen3.6-27B-UD-Q6_K_XL.gguf`
+- launch settings include `--spec-type draft-mtp --spec-draft-n-max 2`
 
 For the eval-only vision slice, the same profile launches llama.cpp with
 `--media-path <output-root>/vision-assets`. Supported embedded PNG/JPEG assets
@@ -280,6 +283,26 @@ relative media paths. Runtime exports each job below that media root and sends
 job-scoped `file://<job-id>/...` image URLs, so the URL resolves under the same
 path that llama.cpp receives through `--media-path`.
 
+## Hemma Production Provider Service
+
+Task 320 moves the current Qwen3.6 MTP provider behind Docker service DNS for
+production. The production service is `sir_convert_qwen_answer_key` on
+`hule-network`, exposes container port `8082` only to the Docker network, and
+uses `http://sir_convert_qwen_answer_key:8082` in Sir Convert provider config.
+Production structured-provider URLs must not use `127.0.0.1`, `localhost`, or
+`host.docker.internal`.
+
+Build the HIP `llama-server` binary separately with the GPU runtime runbook
+helper before recreating the provider service:
+
+```bash
+pdm run qwen-llama-provider-build
+```
+
+The provider container mounts the runbook-built binary and Task 242
+Docker-visible Scratch-backed build/cache roots. It must not compile
+`llama.cpp` during Compose startup.
+
 ## Evaluation Pipeline
 
 Run in this order from the Hemma checkout for the Qwen3.6 lane. Artifacts go to
@@ -288,32 +311,32 @@ Run in this order from the Hemma checkout for the Qwen3.6 lane. Artifacts go to
 ```bash
 ## 1. Goldens and request shape, no provider calls
 pdm run answer-key-live-validation digiexam validate-goldens \
-  --provider-profile qwen36-llama-cpp \
+  --provider-profile qwen36-llama-cpp-mtp \
   --fail-on-blocked
 
 pdm run answer-key-live-validation digiexam preview-request-shape \
-  --provider-profile qwen36-llama-cpp \
+  --provider-profile qwen36-llama-cpp-mtp \
   --fail-on-blocked
 
 ## 2. Start persistent localhost-only llama.cpp provider
 pdm run answer-key-live-validation digiexam launch-llama-provider \
-  --provider-profile qwen36-llama-cpp \
+  --provider-profile qwen36-llama-cpp-mtp \
   --execute \
   --fail-on-blocked
 
 pdm run answer-key-live-validation digiexam provider-status \
-  --provider-profile qwen36-llama-cpp \
+  --provider-profile qwen36-llama-cpp-mtp \
   --timeout-seconds 20 \
   --fail-on-blocked
 
 ## 3. Live probes and full advisory corpus
 pdm run answer-key-live-validation digiexam microprobes \
-  --provider-profile qwen36-llama-cpp \
+  --provider-profile qwen36-llama-cpp-mtp \
   --timeout-seconds 60 \
   --fail-on-blocked
 
 pdm run answer-key-live-validation digiexam run-advisory-corpus \
-  --provider-profile qwen36-llama-cpp \
+  --provider-profile qwen36-llama-cpp-mtp \
   --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports \
   --timeout-seconds 90 \
   --fail-on-blocked
@@ -321,7 +344,7 @@ pdm run answer-key-live-validation digiexam run-advisory-corpus \
 ## 4. Golden evaluation. Do not pass --fail-on-blocked for guarded Qwen3.6;
 ## wrong-but-valid rows remain review evidence, not auto-promotion proof.
 pdm run answer-key-live-validation digiexam evaluate-advisory-corpus \
-  --provider-profile qwen36-llama-cpp \
+  --provider-profile qwen36-llama-cpp-mtp \
   --reports-root /srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/advisory-corpus-reports
 ```
 

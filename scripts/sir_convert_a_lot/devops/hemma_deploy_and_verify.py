@@ -35,6 +35,11 @@ from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import
     scan_metrics_forbidden_substrings,
     service_url_for_lane,
 )
+from scripts.sir_convert_a_lot.devops.hemma_structured_llm_verification import (
+    record_structured_llm_report,
+    structured_llm_check_defaults,
+    verify_structured_llm_provider,
+)
 from scripts.sir_convert_a_lot.devops.public_edge_verification import (
     PublicEdgeVerificationError,
     initialize_public_edge_artifacts,
@@ -261,6 +266,7 @@ def _remote_recreate_service() -> None:
         "pdm",
         "run",
         "prod-recreate",
+        "sir_convert_qwen_answer_key",
         "sir_convert_a_lot_prod",
         "sir_convert_a_lot_public_reserved",
     ]
@@ -286,6 +292,7 @@ def _remote_recreate_service() -> None:
             REMOTE_PDM,
             "run",
             "prod-recreate",
+            "sir_convert_qwen_answer_key",
             "sir_convert_a_lot_prod",
             "sir_convert_a_lot_public_reserved",
         ],
@@ -314,8 +321,10 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
             "nginx_proxy_public_host_registered": False,
             "default_host_reserved_placeholder_passed": False,
             "metrics_forbidden_substrings": [],
+            **structured_llm_check_defaults(),
         },
         "public_edge": None,
+        "structured_llm": None,
         "failure": None,
     }
 
@@ -360,6 +369,8 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         checks_obj = report["checks"]
         if isinstance(checks_obj, dict):
             checks_obj["service_revision_matches_remote"] = True
+
+        record_structured_llm_report(report, verify_structured_llm_provider(_run_remote))
 
         remote_smoke_output_root = "build/verification/task-76-hemma-deploy-verify/v2-smoke"
         remote_verify_args: list[str] = [
@@ -463,8 +474,10 @@ def main(argv: list[str] | None = None) -> int:
                 "nginx_proxy_public_host_registered": False,
                 "default_host_reserved_placeholder_passed": False,
                 "metrics_forbidden_substrings": [],
+                **structured_llm_check_defaults(),
             },
             "public_edge": None,
+            "structured_llm": None,
             "failure": str(exc),
         }
         initialize_public_edge_artifacts(output_root)

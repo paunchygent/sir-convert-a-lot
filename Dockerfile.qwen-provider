@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+#
+# Purpose:
+#   Build the lightweight production container wrapper for the Qwen3.6
+#   llama.cpp answer-key provider.
+#
+# Relationships:
+#   - Used by compose.yaml for the `sir_convert_qwen_answer_key` service.
+#   - Does not compile llama.cpp; the HIP binary is built through the governed
+#     Hemma runbook surface and mounted from Scratch-backed host storage.
+#   - Creates the canonical in-container paths expected by the answer-key
+#     provider runbooks before Compose bind mounts the runtime artifacts.
+#
+
+ARG QWEN_PROVIDER_BASE_IMAGE=rocm/vllm:rocm7.12.0_gfx120X-all_ubuntu24.04_py3.12_pytorch_2.9.1_vllm_0.16.0
+
+FROM ${QWEN_PROVIDER_BASE_IMAGE} AS qwen-provider-runtime
+
+RUN mkdir -p \
+    /srv/scratch/sir-convert-a-lot/bin \
+    /srv/scratch/sir-convert-a-lot/build \
+    /srv/scratch/sir-convert-a-lot/cache \
+    /srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets
+
+ENV LLAMA_CACHE=/srv/scratch/sir-convert-a-lot/cache/llama.cpp
+ENV XDG_CACHE_HOME=/srv/scratch/sir-convert-a-lot/cache
+ENV LD_LIBRARY_PATH=/opt/rocm-7.2.0/lib:/opt/amdgpu/lib/x86_64-linux-gnu
+
+EXPOSE 8082

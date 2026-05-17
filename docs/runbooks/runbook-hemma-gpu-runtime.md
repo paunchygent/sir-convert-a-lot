@@ -73,6 +73,13 @@ pdm run run-hemma -- rocm-smi --showmeminfo vram --showpids
 Build:
 
 ```bash
+pdm run qwen-llama-provider-build
+```
+
+The helper is the preferred command surface for Task 320 and enforces the
+`nice -n 10` / `-j8` contract. Its expanded command is:
+
+```bash
 cd /srv/scratch/sir-convert-a-lot/build/llama.cpp-qwen35
 cmake -S . -B build-hip -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \

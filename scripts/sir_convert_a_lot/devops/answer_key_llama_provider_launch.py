@@ -29,6 +29,9 @@ from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     QWEN36_LLAMA_CPP_HF_FILE,
     QWEN36_LLAMA_CPP_HF_REPO,
+    QWEN36_LLAMA_CPP_MTP_HF_FILE,
+    QWEN36_LLAMA_CPP_MTP_HF_REPO,
+    QWEN36_LLAMA_CPP_MTP_REQUIRED_PROCESS_ARGS,
     QWEN36_LLAMA_CPP_PROVIDER_URL,
     QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS,
     QWEN36_LLAMA_CPP_SERVER_BINARY,
@@ -48,8 +51,8 @@ def build_answer_key_llama_provider_launch_plan(
     port: int,
     output_root: Path,
     server_binary: str = QWEN36_LLAMA_CPP_SERVER_BINARY,
-    hf_repo: str = QWEN36_LLAMA_CPP_HF_REPO,
-    hf_file: str = QWEN36_LLAMA_CPP_HF_FILE,
+    hf_repo: str | None = None,
+    hf_file: str | None = None,
     llama_cache_path: str,
     dry_run: bool,
 ) -> Task309LlamaProviderLaunchPlan:
@@ -58,36 +61,17 @@ def build_answer_key_llama_provider_launch_plan(
     log_path = output_root / f"{model}-llama-server.log"
     pid_path = output_root / f"{model}-llama-server.pid"
     media_path = output_root / "vision-assets"
-    command = (
-        server_binary,
-        "-hf",
-        hf_repo,
-        "-hff",
-        hf_file,
-        "--alias",
-        model,
-        "--host",
-        LLAMA_PROVIDER_HOST,
-        "--port",
-        str(port),
-        "--ctx-size",
-        LLAMA_PROVIDER_CONTEXT_TOKENS,
-        "--n-gpu-layers",
-        "all",
-        "--fit",
-        "off",
-        "--flash-attn",
-        "on",
-        "--jinja",
-        "--reasoning",
-        "off",
-        "--temp",
-        LLAMA_PROVIDER_TEMPERATURE,
-        "--offline",
-        "--media-path",
-        media_path.as_posix(),
-        "--log-file",
-        log_path.as_posix(),
+    resolved_hf_repo = hf_repo or default_hf_repo_for_llama_profile(provider_profile)
+    resolved_hf_file = hf_file or default_hf_file_for_llama_profile(provider_profile)
+    command = _launch_command(
+        server_binary=server_binary,
+        hf_repo=resolved_hf_repo,
+        hf_file=resolved_hf_file,
+        model=model,
+        port=port,
+        media_path=media_path,
+        log_path=log_path,
+        provider_profile=provider_profile,
     )
     return Task309LlamaProviderLaunchPlan(
         schema_version=ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
@@ -98,8 +82,8 @@ def build_answer_key_llama_provider_launch_plan(
         host=LLAMA_PROVIDER_HOST,
         port=port,
         server_binary=server_binary,
-        hf_repo=hf_repo,
-        hf_file=hf_file,
+        hf_repo=resolved_hf_repo,
+        hf_file=resolved_hf_file,
         llama_cache_path=llama_cache_path,
         xdg_cache_home=llama_cache_path,
         media_path=media_path.as_posix(),
@@ -168,6 +152,73 @@ def qwen36_llama_required_process_args() -> tuple[str, ...]:
     """Return process args required for the Qwen3.6 llama.cpp status gate."""
 
     return QWEN36_LLAMA_CPP_REQUIRED_PROCESS_ARGS
+
+
+def qwen36_llama_mtp_required_process_args() -> tuple[str, ...]:
+    """Return process args required for the Qwen3.6 MTP llama.cpp status gate."""
+
+    return QWEN36_LLAMA_CPP_MTP_REQUIRED_PROCESS_ARGS
+
+
+def default_hf_repo_for_llama_profile(provider_profile: AnswerKeyProviderProfileName) -> str:
+    """Return default Hugging Face repository for a Qwen llama.cpp profile."""
+
+    if provider_profile == AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP:
+        return QWEN36_LLAMA_CPP_MTP_HF_REPO
+    return QWEN36_LLAMA_CPP_HF_REPO
+
+
+def default_hf_file_for_llama_profile(provider_profile: AnswerKeyProviderProfileName) -> str:
+    """Return default GGUF filename for a Qwen llama.cpp profile."""
+
+    if provider_profile == AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP:
+        return QWEN36_LLAMA_CPP_MTP_HF_FILE
+    return QWEN36_LLAMA_CPP_HF_FILE
+
+
+def _launch_command(
+    *,
+    server_binary: str,
+    hf_repo: str,
+    hf_file: str,
+    model: str,
+    port: int,
+    media_path: Path,
+    log_path: Path,
+    provider_profile: AnswerKeyProviderProfileName,
+) -> tuple[str, ...]:
+    command: tuple[str, ...] = (
+        server_binary,
+        "-hf",
+        hf_repo,
+        "-hff",
+        hf_file,
+        "--alias",
+        model,
+        "--host",
+        LLAMA_PROVIDER_HOST,
+        "--port",
+        str(port),
+        "--ctx-size",
+        LLAMA_PROVIDER_CONTEXT_TOKENS,
+        "--n-gpu-layers",
+        "all",
+        "--fit",
+        "off",
+        "--flash-attn",
+        "on",
+        "--jinja",
+        "--reasoning",
+        "off",
+        "--temp",
+        LLAMA_PROVIDER_TEMPERATURE,
+        "--offline",
+        "--media-path",
+        media_path.as_posix(),
+    )
+    if provider_profile == AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP:
+        command = (*command, "--spec-type", "draft-mtp", "--spec-draft-n-max", "2")
+    return (*command, "--log-file", log_path.as_posix())
 
 
 def _result(

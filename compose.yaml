@@ -36,12 +36,14 @@ services:
       - SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH:-1}
       - SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE:-1}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED:-0}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDER_PROFILE=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDER_PROFILE:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_RUNTIME_LANE=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_RUNTIME_LANE:-local-compose}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON:-}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID:-}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID:-}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED:-0}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED:-0}
-      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/vision-assets}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
     command:
       - uvicorn
@@ -61,10 +63,13 @@ services:
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
-      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/apps/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local/vision-assets}
+      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
     networks:
       - hule-network
+    depends_on:
+      sir_convert_qwen_answer_key:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -77,6 +82,83 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+
+  sir_convert_qwen_answer_key:
+    image: sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_QWEN_PROVIDER_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile.qwen-provider
+      args:
+        QWEN_PROVIDER_BASE_IMAGE: ${SIR_CONVERT_A_LOT_QWEN_PROVIDER_BASE_IMAGE:-rocm/vllm:rocm7.12.0_gfx120X-all_ubuntu24.04_py3.12_pytorch_2.9.1_vllm_0.16.0}
+    container_name: sir_convert_qwen_answer_key
+    restart: unless-stopped
+    environment:
+      - LLAMA_CACHE=/srv/scratch/sir-convert-a-lot/cache/llama.cpp
+      - XDG_CACHE_HOME=/srv/scratch/sir-convert-a-lot/cache
+      - LD_LIBRARY_PATH=/opt/rocm-7.2.0/lib:/opt/amdgpu/lib/x86_64-linux-gnu
+    command:
+      - /srv/scratch/sir-convert-a-lot/bin/llama-server
+      - -hf
+      - ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-MTP-GGUF}
+      - -hff
+      - ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-UD-Q6_K_XL.gguf}
+      - --no-webui
+      - --alias
+      - ${SIR_CONVERT_A_LOT_QWEN36_MODEL:-qwen3.6-27b-q6k-mtp}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8082"
+      - --ctx-size
+      - "32768"
+      - --n-gpu-layers
+      - all
+      - --fit
+      - "off"
+      - --flash-attn
+      - "on"
+      - --jinja
+      - --reasoning
+      - "off"
+      - --temp
+      - ${SIR_CONVERT_A_LOT_QWEN36_TEMPERATURE:-0.15}
+      - --offline
+      - --spec-type
+      - draft-mtp
+      - --spec-draft-n-max
+      - "2"
+      - --media-path
+      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - --log-file
+      - /srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/qwen3.6-27b-q6k-mtp-llama-server.log
+    expose:
+      - "8082"
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
+    volumes:
+      - ${SIR_CONVERT_A_LOT_QWEN_LLAMA_SERVER_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/llama.cpp-qwen35/build-hip/bin/llama-server}:/srv/scratch/sir-convert-a-lot/bin/llama-server:ro
+      - ${SIR_CONVERT_A_LOT_QWEN_DOCKER_BUILD_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build}:/srv/scratch/sir-convert-a-lot/build
+      - ${SIR_CONVERT_A_LOT_QWEN_DOCKER_CACHE_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/cache}:/srv/scratch/sir-convert-a-lot/cache
+      - ${SIR_CONVERT_A_LOT_QWEN_ROCM_HOST_PATH:-/opt/rocm-7.2.0}:/opt/rocm-7.2.0:ro
+      - ${SIR_CONVERT_A_LOT_QWEN_AMDGPU_HOST_PATH:-/opt/amdgpu}:/opt/amdgpu:ro
+    networks:
+      - hule-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8082/v1/models')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
 
   sir_convert_a_lot_public_reserved:
     image: nginx:1.27-alpine

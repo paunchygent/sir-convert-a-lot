@@ -90,6 +90,11 @@ for repo in "${repos[@]}"; do
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE" "easyocr"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES" "sv,en"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR" "/opt/easyocr-models"
+    while IFS='=' read -r key_name key_value; do
+      if [[ -n "${key_name}" ]]; then
+        ensure_key "${canonical_env}" "${key_name}" "${key_value}"
+      fi
+    done < <(pdm run answer-key-provider-env --lane hemma-prod-compose)
   fi
   if [[ "${repo}" == "projektveckor-portal" ]]; then
     ensure_key "${canonical_env}" "PVP_SIR_CONVERT_A_LOT_V2_API_KEY" "${sir_key_value}"

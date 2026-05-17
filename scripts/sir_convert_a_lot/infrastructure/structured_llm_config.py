@@ -30,6 +30,11 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMProviderProfile,
     StructuredLLMRoutePolicy,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_provider_runtime_config import (
+    provider_json_from_runtime_profile,
+    runtime_lane_from_env,
+    validate_structured_llm_connections_for_runtime_lane,
+)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
 )
@@ -104,8 +109,14 @@ def structured_llm_runtime_config_from_env(
     if not enabled:
         return disabled_structured_llm_runtime_config()
 
-    providers_json = _required_env(source, STRUCTURED_LLM_PROVIDERS_JSON_ENV)
+    providers_json = _optional_env(source, STRUCTURED_LLM_PROVIDERS_JSON_ENV)
+    if providers_json is None:
+        providers_json = provider_json_from_runtime_profile(source)
     profiles, connections = _provider_maps_from_json(providers_json, environ=source)
+    validate_structured_llm_connections_for_runtime_lane(
+        lane=runtime_lane_from_env(source),
+        connections=connections,
+    )
     primary_id = _required_env(source, STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV)
     fallback_id = _optional_env(source, STRUCTURED_LLM_FALLBACK_PROVIDER_ID_ENV)
     primary = _profile_by_id(profiles, primary_id, env_name=STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV)

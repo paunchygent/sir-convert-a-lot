@@ -79,34 +79,12 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   Next Story 46 tasks: Tasks 288/289.
 - Completed DigiExam route/runtime and public Exam Converter docs: Tasks
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
-- Active answer-key completion lane: Epic 11; Tasks 294/295/302/303/304 built
-  overlay/effective-IR/readiness/OpenAPI and unkeyed-manual QTI foundations.
-  Tasks 298/305/307 completed source-neutral `ExamAuthoringIR v1` matching/gap
-  contracts; Review 16 is accepted after the third remediation. It rejects
-  value-level gap `mixed`, aggregate matching `mixed`, and non-empty matching
-  pairs with `absent`. Task 296 completed the structured-provider harness,
-  Dishka/runtime wiring, and default route no-call proof. Task 297 completed
-  advisory candidate-lineage reports for choice/gap-fill items. Task 306
-  completed reviewed overlay application into effective IR, with parser/source
-  provenance untouched, bounded lineage in `digiexam_effective_exam_v2`, and
-  apply mode making no structured-provider calls. Task 312 completed the
-  Granite/vLLM provider-protocol planner correction; Story 50/Task 313 now
-  track the broader SOLID domain-coupling audit separately from Task 312. Task
-  309 remains in progress for live validation, with Tasks 310/311 scaffolded
-  follow-ups. Granite/vLLM is demoted after the first live corpus run and
-  direct probes showed unacceptable wrong-but-valid answer quality. Devstral
-  Small on `llama.cpp` is also demoted after the full Task 309 corpus run.
-  Qwen3.6-27B-Q6_K on `llama.cpp` is the current local model of choice right
-  now, while still guarded advisory and blocked from automatic promotion by 3
-  wrong-but-valid suggestions. Task 319 is the productionization authority for
-  moving Qwen3.6 vision-capable advisory completion into the main pipeline.
-  The Task 309 runner now supports llama.cpp JSON Schema and GBNF-grammar
-  constrained JSON runtimes only. A Task 309 eval-only Qwen3.6 vision path now exports supported embedded
-  PNG/JPEG assets under `<output-root>/vision-assets`, renders per-item
-  human-review preview HTML, sends llama.cpp multimodal `image_url` parts, and
-  raises teacher-verified scored goldens from 42 to 44 without changing default
-  Granite/non-vision asset skips. Keyed matching QTI bridging waits for real
-  matching-capable fixtures.
+- Active answer-key completion lane: Epic 11. Tasks 294-309/312 and 319 built
+  the provider, advisory report, overlay/effective-IR, unkeyed-manual QTI, and
+  Qwen3.6 vision-capable foundations. Granite/vLLM and Devstral are demoted;
+  Qwen3.6 MTP on `llama.cpp` is the current guarded advisory model, still
+  blocked from automatic promotion by 3 wrong-but-valid suggestions. Keyed
+  matching QTI bridging waits for real matching-capable fixtures.
 - Review 17 retained Task 306 as `changes_requested` because Skriptoteket's
   checked-in Sir Convert generated OpenAPI TypeScript surface is stale against
   the Task 306 snapshot. Sir-local reviewed-overlay/effective-IR semantics and
@@ -191,6 +169,11 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 - 2026-05-16 Task 319 Review 18: Hemma Qwen3.6 evaluation proves complete
   317/317 corpus coverage and 44/44 eligible coverage; live provider-status
   and choice/gap/vision microprobes are green. Wrong-but-valid remains 3.
+- 2026-05-17 Task 320 in progress: production default is Qwen3.6 MTP
+  (`qwen36-llama-cpp-mtp`, alias `qwen3.6-27b-q6k-mtp`) via Docker service DNS
+  `sir_convert_qwen_answer_key:8082`. Local gates passed; live Hemma proof
+  still needs deploy/recreate and authenticated MCQ candidate verification.
+
 ## Stop Conditions
 
 - Stop before deleting durable Qwen, service, or Hemma evidence that is not

@@ -18,6 +18,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 DOCKERFILE = REPO_ROOT / "Dockerfile"
+DOCKERFILE_QWEN_PROVIDER = REPO_ROOT / "Dockerfile.qwen-provider"
 DOCKERFILE_DEPS = REPO_ROOT / "Dockerfile.deps"
 DOCKERIGNORE = REPO_ROOT / ".dockerignore"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
@@ -71,11 +72,12 @@ def _require_service(compose: dict[str, object], service_name: str) -> dict[str,
     return service_obj
 
 
-def test_compose_declares_single_prod_service_only() -> None:
+def test_compose_declares_prod_runtime_and_private_qwen_provider_services() -> None:
     compose = _load_compose()
     services_obj = compose.get("services")
     assert isinstance(services_obj, dict)
     assert "sir_convert_a_lot_prod" in services_obj
+    assert "sir_convert_qwen_answer_key" in services_obj
     assert "sir_convert_a_lot_public_reserved" in services_obj
     assert "sir_convert_a_lot_eval" not in services_obj
 
@@ -146,6 +148,12 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED"] == (
         "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED:-0}"
     )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDER_PROFILE"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDER_PROFILE:-}"
+    )
+    assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_RUNTIME_LANE"] == (
+        "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_RUNTIME_LANE:-local-compose}"
+    )
     assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON"] == (
         "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON:-}"
     )
@@ -164,7 +172,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH"] == (
         "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
         "/srv/scratch/sir-convert-a-lot/build/verification/"
-        "task-309-qwen36-27b-q6k-hemma-local/vision-assets}"
+        "task-320-qwen-provider/vision-assets}"
     )
 
     assert service.get("command") == [
@@ -185,11 +193,11 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
         ),
         (
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-"
-            "/home/paunchygent/apps/sir-convert-a-lot/build/verification/"
-            "task-309-qwen36-27b-q6k-hemma-local/vision-assets}:"
+            "/home/paunchygent/.data/sir-convert-a-lot/build/verification/"
+            "task-320-qwen-provider/vision-assets}:"
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
             "/srv/scratch/sir-convert-a-lot/build/verification/"
-            "task-309-qwen36-27b-q6k-hemma-local/vision-assets}"
+            "task-320-qwen-provider/vision-assets}"
         ),
         (
             "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"
@@ -198,6 +206,82 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
             "/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro"
         ),
     ]
+    assert service.get("depends_on") == {
+        "sir_convert_qwen_answer_key": {"condition": "service_healthy"}
+    }
+
+
+def test_compose_declares_private_qwen_provider_runtime() -> None:
+    compose = _load_compose()
+    service = _require_service(compose, "sir_convert_qwen_answer_key")
+
+    assert service.get("image") == (
+        "sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_QWEN_PROVIDER_IMAGE_TAG:-local}"
+    )
+    assert service.get("container_name") == "sir_convert_qwen_answer_key"
+    assert service.get("restart") == "unless-stopped"
+    assert service.get("ports") is None
+    assert service.get("expose") == ["8082"]
+
+    build_obj = service.get("build")
+    assert isinstance(build_obj, dict)
+    assert build_obj.get("context") == "."
+    assert build_obj.get("dockerfile") == "Dockerfile.qwen-provider"
+
+    command = service.get("command")
+    assert isinstance(command, list)
+    joined_command = " ".join(str(item) for item in command)
+    assert "/srv/scratch/sir-convert-a-lot/bin/llama-server" in command
+    assert "-hf ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-MTP-GGUF}" in (
+        joined_command
+    )
+    assert "-hff ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-UD-Q6_K_XL.gguf}" in joined_command
+    assert "--alias ${SIR_CONVERT_A_LOT_QWEN36_MODEL:-qwen3.6-27b-q6k-mtp}" in joined_command
+    assert "--host 0.0.0.0 --port 8082" in joined_command
+    assert "--ctx-size 32768" in joined_command
+    assert "--n-gpu-layers all" in joined_command
+    assert "--fit off" in joined_command
+    assert "--flash-attn on" in joined_command
+    assert "--jinja" in command
+    assert "--reasoning off" in joined_command
+    assert "--temp ${SIR_CONVERT_A_LOT_QWEN36_TEMPERATURE:-0.15}" in joined_command
+    assert "--offline" in command
+    assert "--spec-type draft-mtp" in joined_command
+    assert "--spec-draft-n-max 2" in joined_command
+    assert "--top-p" not in command
+    assert "--top-k" not in command
+
+    assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+    assert service.get("group_add") == ["video", "render"]
+    assert service.get("networks") == ["hule-network"]
+    assert service.get("volumes") == [
+        (
+            "${SIR_CONVERT_A_LOT_QWEN_LLAMA_SERVER_HOST_PATH:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/build/"
+            "llama.cpp-qwen35/build-hip/bin/llama-server}:"
+            "/srv/scratch/sir-convert-a-lot/bin/llama-server:ro"
+        ),
+        (
+            "${SIR_CONVERT_A_LOT_QWEN_DOCKER_BUILD_HOST_PATH:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/build}:"
+            "/srv/scratch/sir-convert-a-lot/build"
+        ),
+        (
+            "${SIR_CONVERT_A_LOT_QWEN_DOCKER_CACHE_HOST_PATH:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/cache}:"
+            "/srv/scratch/sir-convert-a-lot/cache"
+        ),
+        "${SIR_CONVERT_A_LOT_QWEN_ROCM_HOST_PATH:-/opt/rocm-7.2.0}:/opt/rocm-7.2.0:ro",
+        "${SIR_CONVERT_A_LOT_QWEN_AMDGPU_HOST_PATH:-/opt/amdgpu}:/opt/amdgpu:ro",
+    ]
+
+    health_obj = service.get("healthcheck")
+    assert isinstance(health_obj, dict)
+    assert "http://localhost:8082/v1/models" in " ".join(
+        str(item) for item in health_obj.get("test", [])
+    )
+    assert health_obj.get("retries") == 20
+    assert health_obj.get("start_period") == "120s"
 
 
 def test_compose_routes_public_host_to_reserved_edge_not_app() -> None:
