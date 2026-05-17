@@ -102,6 +102,8 @@ def test_digiexam_consumer_components_are_published() -> None:
         "DigiExamAnswerKeyCompletionReportV1",
         "DigiExamOverlayReviewedCompletionAnswerKey",
         "DigiExamOverlayReviewedCompletionCandidateLineage",
+        "DigiExamOverlayPointCorrection",
+        "DigiExamEffectivePointCorrectionV1",
     ):
         assert component_name in schemas
 
@@ -113,10 +115,22 @@ def test_digiexam_consumer_components_are_published() -> None:
     effective_properties = _mapping(effective_exam["properties"])
     effective_schema_version = _mapping(effective_properties["schema_version"])
     assert effective_schema_version["const"] == DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION
+    effective_item = _mapping(schemas["DigiExamEffectiveItemV1"])
+    effective_item_properties = _mapping(effective_item["properties"])
+    assert _mapping(effective_item_properties["effective_point_correction"])["anyOf"] == [
+        {"$ref": "#/components/schemas/DigiExamEffectivePointCorrectionV1"},
+        {"type": "null"},
+    ]
     ingestion_overlay = _mapping(schemas["DigiExamIngestionOverlay"])
     ingestion_properties = _mapping(ingestion_overlay["properties"])
     ingestion_schema_version = _mapping(ingestion_properties["schema_version"])
     assert ingestion_schema_version["const"] == DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION
+    ingestion_overlay_item = _mapping(schemas["DigiExamIngestionOverlayItem"])
+    ingestion_overlay_item_properties = _mapping(ingestion_overlay_item["properties"])
+    assert _mapping(ingestion_overlay_item_properties["point_correction"])["anyOf"] == [
+        {"$ref": "#/components/schemas/DigiExamOverlayPointCorrection"},
+        {"type": "null"},
+    ]
     completion_report = _mapping(schemas["DigiExamAnswerKeyCompletionReportV1"])
     completion_properties = _mapping(completion_report["properties"])
     completion_schema_version = _mapping(completion_properties["schema_version"])

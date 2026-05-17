@@ -130,6 +130,125 @@ def test_teacher_overlay_patched_choice_content_feeds_pdf_and_qti_renderers() ->
     assert qti_result.items[0].correct_choice_identifiers == ("choice_001",)
 
 
+def test_teacher_overlay_applies_point_correction_to_effective_exam_only() -> None:
+    exam = _source_exam()
+    item = exam.items[0]
+    fingerprint = source_item_fingerprint(item)
+
+    result = parse_and_apply_digiexam_ingestion_overlay(
+        overlay_bytes=_point_correction_overlay_bytes(fingerprint, max_score=5),
+        source_file_sha256="sha256:file",
+        source_ir_sha256="sha256:ir",
+        source_exam=exam,
+    )
+
+    effective_item = result.effective_exam_for_rendering.items[0]
+    report_item = result.effective_exam_report.items[0]
+    assert exam.items[0].max_score == 2
+    assert effective_item.max_score == 5
+    assert source_item_fingerprint(exam.items[0]) == fingerprint
+    assert source_item_fingerprint(effective_item) != fingerprint
+    assert result.renderer_input_changed is True
+    assert result.ingestion_overlay_report.accepted_entries[0].applied_fields == (
+        "point_correction",
+    )
+    assert result.ingestion_overlay_report.rejected_entries == ()
+    assert report_item.source_item_fingerprint == fingerprint
+    assert report_item.effective_point_correction is not None
+    assert report_item.effective_point_correction.kind == "item_points"
+    assert report_item.effective_point_correction.source_max_score == 2
+    assert report_item.effective_point_correction.effective_max_score == 5
+    assert report_item.effective_point_correction.source_item_fingerprint == fingerprint
+
+
+def test_point_correction_can_coexist_with_manual_answer_key_overlay() -> None:
+    exam = _source_exam()
+    item = exam.items[0]
+
+    result = parse_and_apply_digiexam_ingestion_overlay(
+        overlay_bytes=_point_correction_with_manual_key_overlay_bytes(
+            source_item_fingerprint(item)
+        ),
+        source_file_sha256="sha256:file",
+        source_ir_sha256="sha256:ir",
+        source_exam=exam,
+    )
+
+    report_item = result.effective_exam_report.items[0]
+    document = build_digiexam_examnet_pdf_document(result.effective_exam_for_rendering)
+    qti_result = build_examnet_qti_items_from_digiexam_ir(result.effective_exam_for_rendering)
+
+    assert result.effective_exam_for_rendering.items[0].max_score == 4
+    assert result.effective_exam_for_rendering.items[0].answer_key.provenance == (
+        "manual_teacher_key"
+    )
+    assert result.ingestion_overlay_report.accepted_entries[0].applied_fields == (
+        "point_correction",
+        "manual_answer_key",
+    )
+    assert report_item.effective_point_correction is not None
+    assert report_item.effective_answer_key is not None
+    assert report_item.effective_answer_key.provenance == "teacher_provided"
+    assert "Poängvärde: 4" in document.html
+    assert qti_result.manual_follow_ups == ()
+    assert qti_result.items[0].max_score == 4
+
+
+def test_point_correction_can_coexist_with_reviewed_completion_overlay() -> None:
+    exam = _source_exam()
+    item = exam.items[0]
+    answer_payload = _choice_answer_payload(2)
+
+    result = parse_and_apply_digiexam_ingestion_overlay(
+        overlay_bytes=_point_correction_with_reviewed_completion_overlay_bytes(
+            source_fingerprint=source_item_fingerprint(item),
+            answer_payload=answer_payload,
+            review_outcome=DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value,
+            candidate_payload_digest=answer_key_candidate_payload_digest(answer_payload),
+        ),
+        source_file_sha256="sha256:file",
+        source_ir_sha256="sha256:ir",
+        source_exam=exam,
+        allow_reviewed_completion=True,
+    )
+
+    report_item = result.effective_exam_report.items[0]
+    assert result.effective_exam_for_rendering.items[0].max_score == 7
+    assert result.effective_exam_for_rendering.items[0].answer_key.provenance == (
+        "manual_teacher_key"
+    )
+    assert result.ingestion_overlay_report.accepted_entries[0].applied_fields == (
+        "point_correction",
+        "reviewed_completion_answer_key",
+    )
+    assert report_item.effective_point_correction is not None
+    assert report_item.effective_point_correction.source_max_score == 2
+    assert report_item.effective_point_correction.effective_max_score == 7
+    assert report_item.effective_answer_key is not None
+    assert report_item.effective_answer_key.provenance == "reviewed"
+    assert report_item.effective_answer_key.correct_alternative_ids == (2,)
+
+
+@pytest.mark.parametrize("max_score", [0, -1, 1.5, "3", "three"])
+def test_point_correction_rejects_non_positive_or_non_strict_integer_values(
+    max_score: object,
+) -> None:
+    exam = _source_exam()
+
+    with pytest.raises(DigiExamIngestionOverlayError) as error_info:
+        parse_and_apply_digiexam_ingestion_overlay(
+            overlay_bytes=_point_correction_overlay_bytes(
+                source_item_fingerprint(exam.items[0]),
+                max_score=max_score,
+            ),
+            source_file_sha256="sha256:file",
+            source_ir_sha256="sha256:ir",
+            source_exam=exam,
+        )
+
+    assert error_info.value.code == "digiexam_ingestion_overlay_invalid"
+
+
 def test_reviewed_completion_accepts_unchanged_candidate_into_effective_ir_only() -> None:
     exam = _source_exam()
     item = exam.items[0]
@@ -481,6 +600,80 @@ def _choice_patch_with_manual_key_overlay_bytes(source_fingerprint: str) -> byte
                 "manual_answer_key": {
                     "kind": "choice",
                     "correct_alternative_ids": [1],
+                },
+            },
+        ),
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _point_correction_overlay_bytes(source_fingerprint: str, *, max_score: object) -> bytes:
+    return json.dumps(
+        _overlay_payload(
+            source_fingerprint=source_fingerprint,
+            item_fields={
+                "point_correction": {
+                    "kind": "item_points",
+                    "max_score": max_score,
+                },
+            },
+        ),
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _point_correction_with_manual_key_overlay_bytes(source_fingerprint: str) -> bytes:
+    return json.dumps(
+        _overlay_payload(
+            source_fingerprint=source_fingerprint,
+            item_fields={
+                "point_correction": {
+                    "kind": "item_points",
+                    "max_score": 4,
+                },
+                "manual_answer_key": {
+                    "kind": "choice",
+                    "correct_alternative_ids": [2],
+                },
+            },
+        ),
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _point_correction_with_reviewed_completion_overlay_bytes(
+    *,
+    source_fingerprint: str,
+    answer_payload: dict[str, JsonValue],
+    review_outcome: str,
+    candidate_payload_digest: str,
+) -> bytes:
+    kind = answer_payload.get("kind")
+    if not isinstance(kind, str):
+        raise RuntimeError("reviewed completion answer payload kind must be a string")
+    return json.dumps(
+        _overlay_payload(
+            source_fingerprint=source_fingerprint,
+            item_fields={
+                "point_correction": {
+                    "kind": "item_points",
+                    "max_score": 7,
+                },
+                "reviewed_completion_answer_key": {
+                    "kind": kind,
+                    "review_decision_id": "review-decision-001",
+                    "review_outcome": review_outcome,
+                    "candidate_lineage": {
+                        "completion_report_sha256": "sha256:completion-report",
+                        "candidate_id": "candidate-item-001",
+                        "candidate_payload_digest": candidate_payload_digest,
+                        "provider_profile_id": "local-structured",
+                        "schema_name": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+                        "schema_version": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+                        "prompt_template_version": CHOICE_PROMPT_TEMPLATE_VERSION,
+                        "validation_state": DigiExamAnswerKeyCompletionValidationState.VALID.value,
+                    },
+                    "answer_payload": answer_payload,
                 },
             },
         ),

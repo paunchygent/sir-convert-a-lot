@@ -19,6 +19,7 @@ import time
 import zipfile
 from io import BytesIO
 from pathlib import Path
+from xml.etree import ElementTree
 
 import pymupdf
 import pytest
@@ -1183,6 +1184,110 @@ def test_digiexam_migration_applies_source_bound_teacher_overlay(
     }
 
 
+def test_digiexam_migration_applies_point_correction_to_effective_pdf_and_qti(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    headers = _headers(identity, subject="teacher-1", grants=_read_grants())
+    source_payload = _missing_answer_key_payload()
+
+    baseline_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-point-correction-baseline",
+        wait_seconds=20,
+        payload=source_payload,
+    )
+    baseline_job_id = baseline_response.json()["job"]["job_id"]
+    baseline_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
+        headers=headers,
+    ).json()
+    migration_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
+        headers=headers,
+    ).json()
+    item_summary = migration_manifest["item_summaries"][0]
+
+    overlay_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-1",
+        idempotency_key="idem-point-correction-apply",
+        wait_seconds=20,
+        payload=source_payload,
+        digiexam_ingestion_overlay=(
+            "teacher-overlay.json",
+            _point_correction_overlay_bytes(
+                baseline_manifest=baseline_manifest,
+                item_summary=item_summary,
+                correct_id=2,
+                max_score=6,
+            ),
+        ),
+    )
+
+    assert overlay_response.status_code == 200
+    job_id = overlay_response.json()["job"]["job_id"]
+    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
+    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+    assert entries["effective_ir_json"]["availability"] == "available"
+    assert entries["examnet_pdf"]["availability"] == "available"
+    assert entries["qti_package"]["availability"] == "available"
+
+    source_ir = client.get(f"/v2/convert/jobs/{job_id}/artifacts/ir_json", headers=headers).json()
+    effective_ir = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/effective_ir_json",
+        headers=headers,
+    ).json()
+    overlay_report = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/ingestion_overlay_report",
+        headers=headers,
+    ).json()
+    readiness = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
+        headers=headers,
+    ).json()
+    pdf_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
+        headers=headers,
+    )
+    qti_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/qti_package",
+        headers=headers,
+    )
+
+    assert source_ir["items"][0]["max_score"] == 2
+    assert effective_ir["items"][0]["effective_point_correction"] == {
+        "kind": "item_points",
+        "source_max_score": 2,
+        "effective_max_score": 6,
+        "source_item_fingerprint": item_summary["source_item_fingerprint"],
+    }
+    assert effective_ir["items"][0]["effective_answer_key"]["provenance"] == "teacher_provided"
+    assert overlay_report["accepted_entries"][0]["applied_fields"] == [
+        "point_correction",
+        "manual_answer_key",
+    ]
+    assert {row["target"]: row["readiness"] for row in readiness["targets"]} == {
+        "examnet_pdf": "ready",
+        "qti_package": "ready",
+    }
+    assert all(row["item_id"] is None for row in readiness["targets"])
+
+    assert pdf_response.status_code == 200
+    with pymupdf.open(stream=pdf_response.content, filetype="pdf") as document:
+        pdf_text = "\n".join(str(page.get_text("text", sort=True)) for page in document)
+    assert "Poängvärde: 6" in pdf_text
+
+    assert qti_response.status_code == 200
+    with zipfile.ZipFile(BytesIO(qti_response.content)) as archive:
+        item_xml = archive.read("items/item_001.xml").decode("utf-8")
+    assert _qti_maxscore(item_xml) == "6"
+
+
 def test_digiexam_migration_idempotency_includes_ingestion_overlay_digest(
     tmp_path: Path,
 ) -> None:
@@ -1679,6 +1784,46 @@ def _choice_overlay_bytes(
     ).encode("utf-8")
 
 
+def _point_correction_overlay_bytes(
+    *,
+    baseline_manifest: dict[str, object],
+    item_summary: dict[str, object],
+    correct_id: int,
+    max_score: int,
+) -> bytes:
+    source = baseline_manifest["source"]
+    source_binding = baseline_manifest["source_binding"]
+    if not isinstance(source, dict) or not isinstance(source_binding, dict):
+        raise RuntimeError("baseline manifest has no source binding")
+    return json.dumps(
+        {
+            "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
+            "source_binding": {
+                "source_file_sha256": source["sha256"],
+                "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
+                "source_ir_sha256": source_binding["source_ir_sha256"],
+            },
+            "items": [
+                {
+                    "item_id": item_summary["item_id"],
+                    "sequence": item_summary["sequence"],
+                    "item_type": item_summary["item_type"],
+                    "source_item_fingerprint": item_summary["source_item_fingerprint"],
+                    "point_correction": {
+                        "kind": "item_points",
+                        "max_score": max_score,
+                    },
+                    "manual_answer_key": {
+                        "kind": "choice",
+                        "correct_alternative_ids": [correct_id],
+                    },
+                }
+            ],
+        },
+        sort_keys=True,
+    ).encode("utf-8")
+
+
 def _accept_current_state_overlay_bytes(
     *,
     baseline_manifest: dict[str, object],
@@ -1713,6 +1858,17 @@ def _accept_current_state_overlay_bytes(
         },
         sort_keys=True,
     ).encode("utf-8")
+
+
+def _qti_maxscore(item_xml: str) -> str | None:
+    root = ElementTree.fromstring(item_xml)
+    namespace = {"qti": "http://www.imsglobal.org/xsd/imsqti_v2p1"}
+    for outcome in root.findall("qti:outcomeDeclaration", namespace):
+        if outcome.attrib.get("identifier") != "MAXSCORE":
+            continue
+        value = outcome.find("qti:defaultValue/qti:value", namespace)
+        return value.text if value is not None else None
+    return None
 
 
 def _reviewed_completion_overlay_bytes(

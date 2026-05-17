@@ -892,6 +892,17 @@
             ],
             "default": null
           },
+          "effective_point_correction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamEffectivePointCorrectionV1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "item_id": {
             "title": "Item Id",
             "type": "string"
@@ -924,6 +935,45 @@
           "source_item_fingerprint"
         ],
         "title": "DigiExamEffectiveItemV1",
+        "type": "object"
+      },
+      "DigiExamEffectivePointCorrectionV1": {
+        "additionalProperties": false,
+        "description": "Applied item point correction in effective exam artifacts.",
+        "properties": {
+          "effective_max_score": {
+            "exclusiveMinimum": 0,
+            "title": "Effective Max Score",
+            "type": "integer"
+          },
+          "kind": {
+            "const": "item_points",
+            "title": "Kind",
+            "type": "string"
+          },
+          "source_item_fingerprint": {
+            "title": "Source Item Fingerprint",
+            "type": "string"
+          },
+          "source_max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Max Score"
+          }
+        },
+        "required": [
+          "kind",
+          "effective_max_score",
+          "source_item_fingerprint"
+        ],
+        "title": "DigiExamEffectivePointCorrectionV1",
         "type": "object"
       },
       "DigiExamEffectiveReviewDecisionV1": {
@@ -1087,6 +1137,17 @@
             ],
             "default": null,
             "title": "Manual Answer Key"
+          },
+          "point_correction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamOverlayPointCorrection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "review_decision": {
             "anyOf": [
@@ -2148,6 +2209,28 @@
           "gap_answers"
         ],
         "title": "DigiExamOverlayGapFillManualAnswerKey",
+        "type": "object"
+      },
+      "DigiExamOverlayPointCorrection": {
+        "additionalProperties": false,
+        "description": "Bounded item point correction applied only to effective renderer input.",
+        "properties": {
+          "kind": {
+            "const": "item_points",
+            "title": "Kind",
+            "type": "string"
+          },
+          "max_score": {
+            "exclusiveMinimum": 0,
+            "title": "Max Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "max_score"
+        ],
+        "title": "DigiExamOverlayPointCorrection",
         "type": "object"
       },
       "DigiExamOverlayReviewDecision": {

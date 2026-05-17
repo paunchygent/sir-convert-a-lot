@@ -99,11 +99,14 @@ def build_digiexam_target_readiness_report(
     source_ir_sha256: str,
     effective_exam_sha256: str,
     accepted_review_decisions: tuple[tuple[str, ExamMigrationTargetV2], ...] = (),
+    source_item_fingerprints: dict[str, str] | None = None,
 ) -> DigiExamTargetReadinessReport:
     """Build readiness rows for the PDF and QTI migration targets."""
 
     entries_by_key = {entry.artifact_key: entry for entry in entries}
-    fingerprints = {item.item_id: source_item_fingerprint(item) for item in exam.items}
+    fingerprints = source_item_fingerprints or {
+        item.item_id: source_item_fingerprint(item) for item in exam.items
+    }
     missing_answer_key_item_ids = {
         follow_up.item_id
         for follow_up in exam.manual_follow_ups

@@ -253,6 +253,15 @@ class DigiExamOverlayReviewDecision(BaseModel):
     note: str | None = Field(default=None, max_length=500)
 
 
+class DigiExamOverlayPointCorrection(BaseModel):
+    """Bounded item point correction applied only to effective renderer input."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["item_points"]
+    max_score: int = Field(gt=0, strict=True)
+
+
 class DigiExamIngestionOverlayItem(BaseModel):
     """One source-bound overlay entry for a DigiExam item."""
 
@@ -266,6 +275,7 @@ class DigiExamIngestionOverlayItem(BaseModel):
     manual_answer_key: DigiExamOverlayManualAnswerKey | None = None
     reviewed_completion_answer_key: DigiExamOverlayReviewedCompletionAnswerKey | None = None
     review_decision: DigiExamOverlayReviewDecision | None = None
+    point_correction: DigiExamOverlayPointCorrection | None = None
 
     @model_validator(mode="after")
     def _validate_answer_key_source(self) -> Self:
@@ -358,6 +368,16 @@ class DigiExamEffectiveItemPatchSummary:
 
 
 @dataclass(frozen=True)
+class DigiExamEffectivePointCorrection:
+    """Applied item point correction surfaced for producer-state projection."""
+
+    kind: str
+    source_max_score: int | None
+    effective_max_score: int
+    source_item_fingerprint: str
+
+
+@dataclass(frozen=True)
 class DigiExamEffectiveItem:
     """One effective item summary for the current effective-exam schema."""
 
@@ -367,6 +387,7 @@ class DigiExamEffectiveItem:
     source_item_fingerprint: str
     effective_answer_key: DigiExamEffectiveAnswerKey | None
     effective_item_patch: DigiExamEffectiveItemPatchSummary | None
+    effective_point_correction: DigiExamEffectivePointCorrection | None
     applied_overlay_entry_ids: tuple[str, ...]
     review_decisions: tuple[DigiExamEffectiveReviewDecision, ...]
 

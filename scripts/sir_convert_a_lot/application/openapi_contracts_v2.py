@@ -199,6 +199,17 @@ class DigiExamEffectiveItemPatchSummaryV1(BaseModel):
     patched_gap_ids: list[str] = Field(default_factory=list)
 
 
+class DigiExamEffectivePointCorrectionV1(BaseModel):
+    """Applied item point correction in effective exam artifacts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["item_points"]
+    source_max_score: int | None = None
+    effective_max_score: int = Field(gt=0)
+    source_item_fingerprint: str
+
+
 class DigiExamEffectiveReviewDecisionV1(BaseModel):
     """Applied review decision surfaced in effective exam artifacts."""
 
@@ -221,6 +232,7 @@ class DigiExamEffectiveItemV1(BaseModel):
     source_item_fingerprint: str
     effective_answer_key: DigiExamEffectiveAnswerKeyV1 | None = None
     effective_item_patch: DigiExamEffectiveItemPatchSummaryV1 | None = None
+    effective_point_correction: DigiExamEffectivePointCorrectionV1 | None = None
     applied_overlay_entry_ids: list[str] = Field(default_factory=list)
     review_decisions: list[DigiExamEffectiveReviewDecisionV1] = Field(default_factory=list)
 

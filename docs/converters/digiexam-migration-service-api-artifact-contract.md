@@ -509,13 +509,16 @@ Accepted companion files are intentionally narrow:
 
 `digiexam_ingestion_overlay_v2` is accepted only when referenced by
 `digiexam_migration_options.ingestion_overlay_filename`. It is source-bound and
-uses concrete teacher edits, manual answer keys, or review decisions.
+uses concrete teacher edits, item point corrections, manual answer keys, or
+review decisions.
 
 Current runtime note: Task 295 applies manual answer keys and review decisions.
 Task 302 applies supported `effective_item_patch` values to effective renderer
 input only. Task 306 applies reviewed completion keys only when
 `completion_mode=local_llm_apply_missing_machine_marked_with_review`. Source
 IR, source manifest fingerprints, and parser provenance remain unchanged.
+Task 322 applies supported `point_correction` values to effective renderer
+input only.
 
 ```json
 {
@@ -541,11 +544,41 @@ IR, source manifest fingerprints, and parser provenance remain unchanged.
         "kind": "choice",
         "correct_alternative_ids": [2]
       },
+      "point_correction": {
+        "kind": "item_points",
+        "max_score": 3
+      },
       "review_decision": null
     }
   ]
 }
 ```
+
+Point corrections are bounded item-point corrections, not rubric or
+partial-credit policy. The external overlay field is `point_correction`, and
+the corrected value is `max_score`:
+
+```json
+{
+  "item_id": "item-1",
+  "sequence": 1,
+  "item_type": "single_choice",
+  "source_item_fingerprint": "sha256:item-source",
+  "point_correction": {
+    "kind": "item_points",
+    "max_score": 3
+  }
+}
+```
+
+`point_correction.max_score` MUST be a positive integer. Zero, negative,
+fractional, string-coerced, non-numeric, scoring-policy, rubric,
+marking-matrix, and partial-credit payloads fail before target rendering. A
+point correction may be submitted with `manual_answer_key` or
+`reviewed_completion_answer_key` for the same item because it is orthogonal to
+answer-key provenance. Accepted overlay reports list every applied field, such
+as `["point_correction", "manual_answer_key"]`, so Skriptoteket projects
+returned Sir Convert state instead of trusting local UI edits.
 
 Gap-fill overlays use existing source gap IDs:
 
@@ -672,6 +705,12 @@ the exact renderer input.
         "correct_gap_answers": [],
         "lineage": null
       },
+      "effective_point_correction": {
+        "kind": "item_points",
+        "source_max_score": 2,
+        "effective_max_score": 3,
+        "source_item_fingerprint": "sha256:item-source"
+      },
       "applied_overlay_entry_ids": ["item-1"],
       "review_decisions": []
     }
@@ -726,9 +765,10 @@ exposing raw overlay JSON:
 
 Accepted overlay report `applied_fields` may include `effective_item_patch`
 only when a supported visible-content patch changed effective renderer input.
-Rejected patch fields remain item-addressable in `rejected_entries`; manual
-answer keys and review decisions continue through their separate Task 295
-paths.
+It includes `point_correction` when a bounded positive integer point correction
+is applied. Rejected patch fields remain item-addressable in
+`rejected_entries`; manual answer keys and review decisions continue through
+their separate Task 295 paths.
 
 `answer_key_completion_report_v1` records structured local-provider advisory
 candidates and backend validation states, never raw prompts, raw provider
@@ -1218,6 +1258,11 @@ An accepted-current-state decision is represented only as a source-bound
 after Sir Convert validates the overlay, recomputes effective exam and target
 readiness, creates the target bytes, and validates that target. It never creates
 an answer key and never changes source IR provenance.
+
+When effective renderer input changes a source-fingerprint field, such as a
+Task 322 `point_correction.max_score`, `target_readiness_report_v1` rows remain
+bound to the original source item fingerprint. The corrected point value affects
+target bytes and effective report state, not source identity.
 
 Task 303 defines this accepted-current-state path for QTI. Task 308 defines the
 Exam.net PDF counterpart for missing-key machine-marked items. These profiles

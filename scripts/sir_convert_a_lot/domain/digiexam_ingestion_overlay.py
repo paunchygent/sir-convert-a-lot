@@ -31,6 +31,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts impor
     DigiExamEffectiveExam,
     DigiExamEffectiveItem,
     DigiExamEffectiveItemPatchSummary,
+    DigiExamEffectivePointCorrection,
     DigiExamEffectiveReviewDecision,
     DigiExamIngestionOverlay,
     DigiExamIngestionOverlayAcceptedEntry,
@@ -49,6 +50,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIrItem,
     DigiExamIrManualFollowUpReason,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_point_correction import apply_point_correction
 from scripts.sir_convert_a_lot.domain.digiexam_reviewed_completion_application import (
     effective_answer_key_for_item,
     reviewed_completion_replacement,
@@ -196,6 +198,7 @@ def _apply_overlay(
         review_decisions = _review_decisions(entry)
         accepted_reviews.extend((entry.item_id, target) for target in _review_targets(entry))
         patch_summary = None
+        point_correction_summary = None
         patch_result = apply_effective_item_patch(entry=entry, item=item)
         if patch_result.rejection is not None:
             rejected.append(
@@ -210,6 +213,12 @@ def _apply_overlay(
             replacements[item.item_id] = item
             patch_summary = patch_result.application.summary
             applied_fields.append("effective_item_patch")
+        point_correction = apply_point_correction(entry=entry, item=item)
+        if point_correction is not None:
+            item = point_correction.item
+            replacements[item.item_id] = item
+            point_correction_summary = point_correction.summary
+            applied_fields.append("point_correction")
         replacement = _manual_key_replacement(entry=entry, item=item, rejected=rejected)
         if replacement is not None:
             replacements[item.item_id] = replacement
@@ -238,6 +247,7 @@ def _apply_overlay(
                 applied=tuple(applied_fields),
                 source_item_fingerprint=entry.source_item_fingerprint,
                 patch_summary=patch_summary,
+                point_correction_summary=point_correction_summary,
                 review_decisions=review_decisions,
                 effective_answer_key=effective_answer_keys.get(item.item_id),
             )
@@ -390,6 +400,7 @@ def _effective_item(
     applied: tuple[str, ...],
     source_item_fingerprint: str,
     patch_summary: DigiExamEffectiveItemPatchSummary | None,
+    point_correction_summary: DigiExamEffectivePointCorrection | None,
     review_decisions: tuple[DigiExamEffectiveReviewDecision, ...],
     effective_answer_key: DigiExamEffectiveAnswerKey | None,
 ) -> DigiExamEffectiveItem:
@@ -400,6 +411,7 @@ def _effective_item(
         source_item_fingerprint=source_item_fingerprint,
         effective_answer_key=effective_answer_key,
         effective_item_patch=patch_summary,
+        effective_point_correction=point_correction_summary,
         applied_overlay_entry_ids=(item.item_id,) if applied else (),
         review_decisions=review_decisions,
     )

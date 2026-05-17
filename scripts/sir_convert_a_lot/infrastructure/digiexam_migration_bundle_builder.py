@@ -45,6 +45,9 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
     DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
+    source_item_fingerprint,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
     build_digiexam_target_readiness_report,
 )
@@ -119,6 +122,7 @@ def execute_digiexam_migration_bundle_job(
 
     exam = build_digiexam_intermediate_exam(parse_result)
     ir_manifest = build_digiexam_ir_manifest(exam)
+    source_item_fingerprints = {item.item_id: source_item_fingerprint(item) for item in exam.items}
     requested_targets = normalized_exam_migration_targets_v2(job.spec)
     completion_mode = _completion_mode(job)
     reviewed_completion_apply_requested = (
@@ -281,6 +285,7 @@ def execute_digiexam_migration_bundle_job(
                 accepted_review_decisions=(
                     overlay_result.accepted_review_decisions if overlay_result is not None else ()
                 ),
+                source_item_fingerprints=source_item_fingerprints,
             )
         ),
     )

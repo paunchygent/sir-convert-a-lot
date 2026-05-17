@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-05-17'
+last_updated: '2026-05-18'
 ---
 
 ## Purpose
@@ -45,6 +45,12 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   `>=40%` toy improvement gate is withdrawn as a blocker; Task 272 now carries
   the public artifact/retention contract and Task 273 now carries numeric
   promotion/resource thresholds.
+- Task 322 completed and remediated the Sir Convert producer prerequisite for
+  Skriptoteket `PR-0332`: `point_correction.max_score` is strict
+  positive-integer, effective reports expose `effective_point_correction`,
+  source-fingerprint readiness is pinned, reviewed/manual key coexistence is
+  tested, OpenAPI is refreshed, and Skriptoteket generated DTOs/preflight now
+  consume both new fields.
 
 ## Active Pointers
 
@@ -79,20 +85,14 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   Next Story 46 tasks: Tasks 288/289.
 - Completed DigiExam route/runtime and public Exam Converter docs: Tasks
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
-- Active answer-key completion lane: Epic 11. Tasks 294-309/312 and 319 built
-  the provider, advisory report, overlay/effective-IR, unkeyed-manual QTI, and
-  Qwen3.6 vision-capable foundations. Granite/vLLM and Devstral are demoted;
-  Qwen3.6 MTP on `llama.cpp` is the current guarded advisory model, still
-  blocked from automatic promotion by 3 wrong-but-valid suggestions. Task 321
-  completed the PR-0331 Sir Convert cleanup: target-specific QTI/PDF fallbacks
-  must not remove reviewed/source/teacher keys after they reach effective
-  renderer input.
-- Review 17 for Task 306 is closed as `approved`. The original Skriptoteket
-  generated-type drift finding is historical; current 2026-05-17 regeneration
-  from the Sir Convert v2 OpenAPI snapshot produced no diff against
-  Skriptoteket's checked-in `sirConvertOpenapi.d.ts`. Do not use Review 17 as
-  active proof of `PR-0331` staleness; future staleness claims need current
-  producer-contract and consumer-regeneration evidence.
+- Active answer-key completion lane: Epic 11. Tasks 294-309/312/319/321/322
+  built provider, advisory, overlay/effective-IR, unkeyed-manual QTI,
+  Qwen3.6, target-key preservation, and point-correction producer surfaces.
+  Qwen3.6 MTP on `llama.cpp` is the guarded advisory model; automatic
+  promotion remains blocked by 3 wrong-but-valid suggestions.
+- Review 17 for Task 306 is closed as `approved`; future generated-type
+  staleness claims need current producer-contract and consumer-regeneration
+  evidence, not the historical PR-0331 finding.
 - Review 18 for Task 319 is closed as `approved`: Hemma is synced, Qwen3.6
   llama.cpp runs localhost-only with `mmproj-F16.gguf`, `--media-path`, and GPU
   offload, and provider-status plus choice/gap/vision microprobes are green.
@@ -127,6 +127,9 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
+1. Continue Skriptoteket `PR-0332` from the completed Task 322 producer and
+   consumer-contract preflight: implement source-bound correction UI using the
+   returned Sir Convert effective IR/readiness/report state.
 1. Continue PR-0331 from the completed Sir Convert Task 321 cleanup: the next
    answer-key UI/consumer slice must preserve reviewed gap/open-cloze keys in
    QTI and PDF artifacts, must not offer QTI packages when adapter follow-up
@@ -155,23 +158,13 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 - Full Task 309 answer-key validation history (Granite/vLLM demotion, Qwen3.6
   evaluation, Devstral demotion) is preserved in LTM:
   `.codex/long-term-memory/entries/session-2026-05-16-answer-key-validation-history.md`.
-- 2026-05-16 Qwen3.6-27B-Q6_K final: **39 correct, 3 wrong-but-valid, 2
-  manual-follow-up** out of 44 eligible scored items. Promotion gate
-  `wrong_but_valid_count == 0` is **not met**. Temperature `0.15` was
-  task-optimal (card-default `0.7` gave 38/4). Prompt engineering hit a hard
-  ceiling on 3 persistent knowledge-boundary failures. Qwen3.6 is the current
-  local model of choice right now, with guarded advisory output and no
-  automatic answer-key application.
-- 2026-05-16 Devstral Small final: **34 correct, 8 wrong-but-valid, 2
-  manual-follow-up** out of 44 eligible scored items. Devstral is demoted for
-  this Swedish educational route.
-- 2026-05-16 Task 309 vision-eval implementation proof: golden validation
-  passed for 44 entries; `qwen36-llama-cpp` request-shape preview attempted 44
-  items with 2 multimodal requests and 0 issues. Default text-only manifests
-  still expose 42 eligible items and 2 `unsupported_assets` skips.
-- 2026-05-16 Task 319 Review 18: Hemma Qwen3.6 evaluation proves complete
-  317/317 corpus coverage and 44/44 eligible coverage; live provider-status
-  and choice/gap/vision microprobes are green. Wrong-but-valid remains 3.
+- 2026-05-16 Qwen3.6-27B-Q6_K final: 39 correct, 3 wrong-but-valid, 2
+  manual-follow-up out of 44 eligible scored items; promotion gate
+  `wrong_but_valid_count == 0` is not met. Devstral is demoted at 34/8/2.
+- Task 309/319 validation: golden validation covered 44 entries, Qwen3.6
+  request-shape preview covered 44 eligible items with 2 multimodal requests,
+  and Review 18 proved 317/317 Hemma corpus coverage plus green live
+  provider-status/choice/gap/vision microprobes.
 - 2026-05-17 Task 320 in progress: production default is Qwen3.6 MTP
   (`qwen36-llama-cpp-mtp`, alias `qwen3.6-27b-q6k-mtp`) via Docker service DNS
   `sir_convert_qwen_answer_key:8082`. The production runtime now separates
