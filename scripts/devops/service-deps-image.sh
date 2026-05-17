@@ -64,6 +64,7 @@ case "${ACTION}" in
 esac
 
 CONTRACT_DIR="${REPO_ROOT}/docker/service-deps"
+IDENTITY_OUTPUT_DIR="${SIR_CONVERT_A_LOT_DEPS_IDENTITY_OUTPUT_DIR:-${REPO_ROOT}/build/verification/service-deps}"
 REQUIREMENTS_PATH="${CONTRACT_DIR}/service-requirements.txt"
 PYTHON_IMAGE="${SIR_CONVERT_A_LOT_DEPS_PYTHON_IMAGE:-python:3.11-slim}"
 
@@ -77,6 +78,7 @@ IDENTITY_OUTPUT="$(python -m scripts.sir_convert_a_lot.devops.service_dependency
   --project-root "${REPO_ROOT}" \
   --requirements "${REQUIREMENTS_PATH}" \
   --output-dir "${CONTRACT_DIR}" \
+  --identity-output-dir "${IDENTITY_OUTPUT_DIR}" \
   --runtime "${RUNTIME_KIND}" \
   --python-image "${PYTHON_IMAGE}" \
   --format shell)"

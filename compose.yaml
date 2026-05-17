@@ -13,7 +13,9 @@ services:
       - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
-      - SIR_CONVERT_A_LOT_GPU_AVAILABLE=${SIR_CONVERT_A_LOT_GPU_AVAILABLE:-1}
+      - SIR_CONVERT_A_LOT_GPU_AVAILABLE=0
+      - SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR=0
+      - SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT=0
       - SIR_CONVERT_A_LOT_MAX_WORKERS=${SIR_CONVERT_A_LOT_MAX_WORKERS:-1}
       - SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=${SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS:-0}
       - SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS=${SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS:-1}
@@ -54,6 +56,82 @@ services:
       - "8085"
     ports:
       - "${SIR_CONVERT_A_LOT_PROD_PORT:-8085}:8085"
+    volumes:
+      - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
+      - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
+      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
+    networks:
+      - hule-network
+    depends_on:
+      sir_convert_qwen_answer_key:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8085/readyz')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  sir_convert_a_lot_gpu_worker:
+    image: sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DEPS_IMAGE: ${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}
+    container_name: sir_convert_a_lot_gpu_worker
+    restart: unless-stopped
+    environment:
+      - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}
+      - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
+      - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
+      - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
+      - SIR_CONVERT_A_LOT_GPU_AVAILABLE=${SIR_CONVERT_A_LOT_GPU_AVAILABLE:-1}
+      - SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR=1
+      - SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT=0
+      - SIR_CONVERT_A_LOT_MAX_WORKERS=${SIR_CONVERT_A_LOT_MAX_WORKERS:-1}
+      - SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=${SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS:-0}
+      - SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS=${SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS:-1}
+      - SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES=${SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES:-10}
+      - SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM=0
+      - SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_ONBOARDING=0
+      - SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY=0
+      - SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE=easyocr
+      - SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en
+      - SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models
+      - MIOPEN_FIND_MODE=${MIOPEN_FIND_MODE:-FAST}
+      - MIOPEN_USER_DB_PATH=${MIOPEN_USER_DB_PATH:-/srv/scratch/sir-convert-a-lot/cache/miopen/user-db}
+      - MIOPEN_CUSTOM_CACHE_DIR=${MIOPEN_CUSTOM_CACHE_DIR:-/srv/scratch/sir-convert-a-lot/cache/miopen/kernel-cache}
+      - SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL=${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL:-docling_layout_egret_large}
+      - SIR_CONVERT_A_LOT_DOCLING_LAYOUT_FALLBACK_MODELS=${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_FALLBACK_MODELS:-docling_layout_heron}
+      - SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_PATCH:-1}
+      - SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE=${SIR_CONVERT_A_LOT_DOCLING_ORDERING_QUALITY_GATE:-1}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED:-0}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDER_PROFILE=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDER_PROFILE:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_RUNTIME_LANE=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_RUNTIME_LANE:-local-compose}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID:-}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED:-0}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED:-0}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
+    command:
+      - uvicorn
+      - scripts.sir_convert_a_lot.service:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8085"
+    expose:
+      - "8085"
     devices:
       - /dev/kfd:/dev/kfd
       - /dev/dri:/dev/dri

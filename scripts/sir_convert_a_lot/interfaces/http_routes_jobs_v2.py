@@ -338,7 +338,8 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             digiexam_ingestion_overlay_bytes=(prepared_route.digiexam_ingestion_overlay_bytes),
         )
         runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
-        runtime.run_job_async(job.job_id)
+        if runtime.config.run_jobs_on_submit:
+            runtime.run_job_async(job.job_id)
 
         deadline = time.monotonic() + wait_seconds
         current = runtime.get_job(job.job_id)

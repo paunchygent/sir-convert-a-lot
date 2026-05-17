@@ -30,8 +30,10 @@ PR-sized execution unit; may be linked to a story or standalone.
 ## Objective
 
 Make Qwen3.6 a first-class Hemma production provider service for advisory
-answer-key completion, reachable from `sir_convert_a_lot_prod` through Docker
-service DNS instead of container-local loopback.
+answer-key completion, reachable through Docker service DNS instead of
+container-local loopback. At the same time, split production job execution so
+`sir_convert_a_lot_prod` remains the HTTP admission container while the explicit
+`sir_convert_a_lot_gpu_worker` owns current PDF/OCR GPU execution.
 
 The production failure this task fixes is namespace-specific: Task 319 proved
 the guarded Qwen3.6 `llama.cpp` provider on host `127.0.0.1:8082`, while the
@@ -43,6 +45,10 @@ machine-marked MCQ rows even though the host-local provider was healthy.
 
 - Add a production `sir_convert_qwen_answer_key` service on the shared
   `hule-network`, with no public port exposure.
+- Add a private `sir_convert_a_lot_gpu_worker` service on the shared
+  `hule-network` for current PDF/OCR job execution. The public/internal API
+  service must not mount GPU devices, must not start the job supervisor, and
+  must not execute jobs synchronously on submit in production.
 - Run the provider through the Task 309/320 Qwen3.6 MTP Q6_K settings:
   `qwen36-llama-cpp-mtp`, alias/model `qwen3.6-27b-q6k-mtp`, GGUF repo
   `unsloth/Qwen3.6-27B-GGUF-MTP`, file
@@ -66,12 +72,17 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   rejects `127.0.0.1`, `localhost`, and `host.docker.internal` provider URLs.
 - Extend deploy verification to prove provider reachability and a small
   structured MCQ microprobe separately from OCR-heavy conversion smoke.
+- Keep GPU access explicit in Compose: Qwen is the LLM GPU provider, the worker
+  is the PDF/OCR GPU executor, and the API container is CPU/no-device admission
+  only.
 - Keep Qwen3.6 guarded advisory only; this task does not promote automatic
   answer-key application.
 
 ## Deliverables
 
 - [ ] Governed production Qwen provider service in Compose.
+- [ ] Governed private GPU worker service for current PDF/OCR execution, with
+  API admission separated from GPU execution.
 - [ ] Runbook-aligned `llama.cpp` build helper that enforces `nice -n 10` and
   `-j8` maximum build concurrency.
 - [ ] Structured-provider environment renderer/validator for local and Hemma
@@ -86,6 +97,10 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   `localhost`, or `host.docker.internal`.
 - [ ] `sir_convert_a_lot_prod` reaches Qwen through
   `http://sir_convert_qwen_answer_key:8082`.
+- [ ] `sir_convert_a_lot_prod` has no GPU device mounts, has supervisor
+  disabled, and does not execute jobs on submit in Hemma production.
+- [ ] `sir_convert_a_lot_gpu_worker` is private to Docker networking and owns
+  current PDF/OCR GPU execution against the shared production job store.
 - [ ] The production provider service uses Docker `expose`, not host `ports`.
 - [ ] The production provider defaults use the smaller MTP Q6_K profile and
   alias `qwen3.6-27b-q6k-mtp`; the XL MTP quant is not the Hemma production

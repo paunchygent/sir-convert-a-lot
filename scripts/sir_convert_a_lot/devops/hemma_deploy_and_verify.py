@@ -267,6 +267,7 @@ def _remote_recreate_service() -> None:
         "run",
         "prod-recreate",
         "sir_convert_qwen_answer_key",
+        "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
         "sir_convert_a_lot_public_reserved",
     ]
@@ -293,6 +294,7 @@ def _remote_recreate_service() -> None:
             "run",
             "prod-recreate",
             "sir_convert_qwen_answer_key",
+            "sir_convert_a_lot_gpu_worker",
             "sir_convert_a_lot_prod",
             "sir_convert_a_lot_public_reserved",
         ],

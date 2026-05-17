@@ -58,6 +58,7 @@ class ServiceConfig:
     gpu_stage_max_concurrency: int = 1
     supervisor_poll_seconds: float = 0.2
     enable_supervisor: bool = True
+    run_jobs_on_submit: bool = True
     gpu_available: bool = True
     allow_cpu_only: bool = False
     allow_cpu_fallback: bool = False

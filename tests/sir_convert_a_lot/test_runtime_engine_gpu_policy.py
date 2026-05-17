@@ -78,6 +78,8 @@ def test_service_config_from_env_parallel_defaults_remain_serial(monkeypatch) ->
     monkeypatch.delenv("SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS", raising=False)
     monkeypatch.delenv("SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES", raising=False)
     monkeypatch.delenv("SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY", raising=False)
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR", raising=False)
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT", raising=False)
 
     config = service_config_from_env()
     assert config.max_workers == 1
@@ -85,6 +87,8 @@ def test_service_config_from_env_parallel_defaults_remain_serial(monkeypatch) ->
     assert config.max_chunk_workers == 1
     assert config.pdf_chunk_size_pages == 10
     assert config.gpu_stage_max_concurrency == 1
+    assert config.enable_supervisor is True
+    assert config.run_jobs_on_submit is True
 
 
 def test_service_config_from_env_parallel_overrides_are_bounded(monkeypatch) -> None:
@@ -93,6 +97,8 @@ def test_service_config_from_env_parallel_overrides_are_bounded(monkeypatch) -> 
     monkeypatch.setenv("SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS", "3")
     monkeypatch.setenv("SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES", "12")
     monkeypatch.setenv("SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY", "2")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR", "0")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT", "0")
 
     config = service_config_from_env()
     assert config.max_workers == 4
@@ -100,6 +106,8 @@ def test_service_config_from_env_parallel_overrides_are_bounded(monkeypatch) -> 
     assert config.max_chunk_workers == 3
     assert config.pdf_chunk_size_pages == 12
     assert config.gpu_stage_max_concurrency == 2
+    assert config.enable_supervisor is False
+    assert config.run_jobs_on_submit is False
 
 
 def test_service_config_from_env_rejects_invalid_chunk_worker_value(monkeypatch) -> None:

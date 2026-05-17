@@ -23,6 +23,7 @@ DOCKERFILE_DEPS = REPO_ROOT / "Dockerfile.deps"
 DOCKERIGNORE = REPO_ROOT / ".dockerignore"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
 COMPOSE_ACTIONS_SCRIPT = REPO_ROOT / "scripts" / "devops" / "compose-actions.sh"
+SERVICE_DEPS_IMAGE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "service-deps-image.sh"
 PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 
 
@@ -77,6 +78,7 @@ def test_compose_declares_prod_runtime_and_private_qwen_provider_services() -> N
     services_obj = compose.get("services")
     assert isinstance(services_obj, dict)
     assert "sir_convert_a_lot_prod" in services_obj
+    assert "sir_convert_a_lot_gpu_worker" in services_obj
     assert "sir_convert_qwen_answer_key" in services_obj
     assert "sir_convert_a_lot_public_reserved" in services_obj
     assert "sir_convert_a_lot_eval" not in services_obj
@@ -119,6 +121,9 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
         == "${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}"
     )
     assert env_map["SIR_CONVERT_A_LOT_DATA_DIR"] == "/var/lib/sir-convert-a-lot/prod"
+    assert env_map["SIR_CONVERT_A_LOT_GPU_AVAILABLE"] == "0"
+    assert env_map["SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR"] == "0"
+    assert env_map["SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT"] == "0"
     assert "SIR_CONVERT_A_LOT_EVAL_DATA_DIR" not in env_map
     assert "VIRTUAL_HOST" not in env_map
     assert "VIRTUAL_PORT" not in env_map
@@ -209,6 +214,66 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert service.get("depends_on") == {
         "sir_convert_qwen_answer_key": {"condition": "service_healthy"}
     }
+    assert service.get("devices") is None
+    assert service.get("group_add") is None
+
+
+def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
+    compose = _load_compose()
+    service = _require_service(compose, "sir_convert_a_lot_gpu_worker")
+
+    assert service.get("image") == "sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}"
+    assert service.get("container_name") == "sir_convert_a_lot_gpu_worker"
+    assert service.get("restart") == "unless-stopped"
+    assert service.get("ports") is None
+    assert service.get("expose") == ["8085"]
+
+    build_obj = service.get("build")
+    assert isinstance(build_obj, dict)
+    assert build_obj.get("context") == "."
+    assert build_obj.get("dockerfile") == "Dockerfile"
+    assert build_obj.get("args") == {
+        "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}"
+    }
+
+    env_map = _service_env_map(service)
+    assert env_map["SIR_CONVERT_A_LOT_DATA_DIR"] == "/var/lib/sir-convert-a-lot/prod"
+    assert env_map["SIR_CONVERT_A_LOT_GPU_AVAILABLE"] == "${SIR_CONVERT_A_LOT_GPU_AVAILABLE:-1}"
+    assert env_map["SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR"] == "1"
+    assert env_map["SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT"] == "0"
+    assert env_map["SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM"] == "0"
+    assert env_map["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"] == "easyocr"
+
+    assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+    assert service.get("group_add") == [
+        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
+        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
+    ]
+    assert service.get("depends_on") == {
+        "sir_convert_qwen_answer_key": {"condition": "service_healthy"}
+    }
+    assert service.get("volumes") == [
+        "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
+        (
+            "${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:"
+            "/srv/scratch/sir-convert-a-lot/cache/miopen"
+        ),
+        (
+            "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/build/verification/"
+            "task-320-qwen-provider/vision-assets}:"
+            "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
+            "/srv/scratch/sir-convert-a-lot/build/verification/"
+            "task-320-qwen-provider/vision-assets}"
+        ),
+        (
+            "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"
+            "/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/"
+            "gateway-internal-identity-public-key.pem}:"
+            "/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro"
+        ),
+    ]
 
 
 def test_compose_declares_private_qwen_provider_runtime() -> None:
@@ -321,7 +386,7 @@ def test_compose_routes_public_host_to_reserved_edge_not_app() -> None:
     assert "sir-convert-a-lot-public-edge-reserved" in reserved_config
 
 
-def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:
+def test_compose_declares_rocm_build_args_without_api_gpu_passthrough() -> None:
     compose = _load_compose()
     service = _require_service(compose, "sir_convert_a_lot_prod")
 
@@ -335,11 +400,8 @@ def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:
         "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}"
     }
 
-    assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
-    assert service.get("group_add") == [
-        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
-        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
-    ]
+    assert service.get("devices") is None
+    assert service.get("group_add") is None
 
 
 def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None:
@@ -412,6 +474,14 @@ def test_compose_actions_ensures_dependency_image_before_app_builds() -> None:
     assert "service-deps-image.sh" in script_text
     assert 'export SIR_CONVERT_A_LOT_DEPS_IMAGE="${value}"' in script_text
     assert "ensure_dependency_image" in script_text
+
+
+def test_dependency_image_helper_writes_runtime_identity_to_ignored_output() -> None:
+    script_text = SERVICE_DEPS_IMAGE_SCRIPT.read_text(encoding="utf-8")
+    assert 'CONTRACT_DIR="${REPO_ROOT}/docker/service-deps"' in script_text
+    assert "IDENTITY_OUTPUT_DIR=" in script_text
+    assert "--identity-output-dir" in script_text
+    assert "build/verification/service-deps" in script_text
 
 
 def test_dockerfile_consumes_explicit_rocm_dependency_image_for_single_service() -> None:

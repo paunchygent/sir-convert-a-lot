@@ -69,6 +69,23 @@ def _html_to_pdf_spec(filename: str) -> dict[str, object]:
     )
 
 
+def test_create_job_can_defer_execution_to_supervisor_worker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _unexpected_run_job_async(self: ServiceRuntimeV2, job_id: str) -> None:
+        del self, job_id
+        raise AssertionError("API admission container must not execute submitted jobs")
+
+    monkeypatch.setattr(ServiceRuntimeV2, "run_job_async", _unexpected_run_job_async)
+    client, _app = build_client(tmp_path, run_jobs_on_submit=False)
+
+    response = post_create(client, idempotency_key="idem-defer-to-worker")
+
+    assert response.status_code == 202
+    assert response.json()["job"]["status"] == JobStatus.QUEUED.value
+
+
 def test_infer_format_from_filename_returns_none_for_unsupported_suffix() -> None:
     assert http_routes_jobs_v2._infer_format_from_filename("archive.txt") is None
     assert http_routes_jobs_v2._infer_format_from_filename("README") is None

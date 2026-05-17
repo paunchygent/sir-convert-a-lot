@@ -207,7 +207,8 @@ def register_job_resume_routes_v2(*, router: APIRouter, service_started_at: str)
             checkpoint_sha256=seed.checkpoint_sha256,
         )
         runtime.put_idempotency(scope_key, request_fingerprint, resumed_job.job_id)
-        runtime.run_job_async(resumed_job.job_id)
+        if runtime.config.run_jobs_on_submit:
+            runtime.run_job_async(resumed_job.job_id)
 
         payload = _job_record_response(resumed_job).model_dump(mode="json")
         return JSONResponse(status_code=202, content=payload)

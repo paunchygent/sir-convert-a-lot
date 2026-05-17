@@ -10,6 +10,8 @@ Relationships:
       `export_service_requirements.py`.
     - Reads only ROCm/CPU runtime pins from `service_image_build_contract.py`.
     - Writes `docker/service-deps/` artifacts consumed by `Dockerfile.deps`.
+    - Writes runtime dependency-image identity reports under ignored
+      verification output so deploy/build checks never mutate tracked files.
 """
 
 from __future__ import annotations
@@ -319,11 +321,13 @@ def write_dependency_inputs(
     project_root: Path,
     requirements_path: Path,
     output_dir: Path,
+    identity_output_dir: Path,
     runtime_kind: RuntimeKind,
     python_image: str = DEFAULT_PYTHON_IMAGE,
 ) -> DependencyImageIdentity:
-    """Write runtime env files plus dependency identity JSON artifacts."""
+    """Write build inputs plus ignored dependency-image identity artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
+    identity_output_dir.mkdir(parents=True, exist_ok=True)
     requirements_text = requirements_path.read_text(encoding="utf-8")
     rocm_contract = load_rocm_runtime_contract(project_root)
     cpu_contract = load_cpu_runtime_contract(project_root)
@@ -361,7 +365,7 @@ def write_dependency_inputs(
         runtime_kind=runtime_kind,
         python_image=python_image,
     )
-    (output_dir / f"service-dependency-image-identity-{runtime_kind}.json").write_text(
+    (identity_output_dir / f"service-dependency-image-identity-{runtime_kind}.json").write_text(
         _canonical_json(identity_payload),
         encoding="utf-8",
     )
@@ -394,6 +398,12 @@ def _parse_args() -> argparse.Namespace:
         type=Path,
         required=True,
         help="Directory where dependency input artifacts should be written.",
+    )
+    parser.add_argument(
+        "--identity-output-dir",
+        type=Path,
+        required=True,
+        help="Ignored directory where dependency image identity reports should be written.",
     )
     parser.add_argument(
         "--runtime",
@@ -431,6 +441,7 @@ def main() -> None:
         project_root=args.project_root,
         requirements_path=args.requirements,
         output_dir=args.output_dir,
+        identity_output_dir=args.identity_output_dir,
         runtime_kind=_runtime_kind_from_arg(args.runtime),
         python_image=args.python_image,
     )

@@ -310,6 +310,14 @@ def service_config_from_env() -> ServiceConfig:
         minimum=1,
         maximum=64,
     )
+    enable_supervisor = _parse_bool_env(
+        name="SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR",
+        default=True,
+    )
+    run_jobs_on_submit = _parse_bool_env(
+        name="SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT",
+        default=True,
+    )
     enable_sse_stream = os.getenv("SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM", "0") == "1"
     sse_replay_horizon_seconds = int(
         os.getenv("SIR_CONVERT_A_LOT_SSE_REPLAY_HORIZON_SECONDS", str(24 * 3600))
@@ -387,6 +395,8 @@ def service_config_from_env() -> ServiceConfig:
         max_chunk_workers=max_chunk_workers,
         pdf_chunk_size_pages=pdf_chunk_size_pages,
         gpu_stage_max_concurrency=gpu_stage_max_concurrency,
+        enable_supervisor=enable_supervisor,
+        run_jobs_on_submit=run_jobs_on_submit,
         gpu_available=gpu_available,
         enable_sse_stream=enable_sse_stream,
         sse_replay_horizon_seconds=sse_replay_horizon_seconds,

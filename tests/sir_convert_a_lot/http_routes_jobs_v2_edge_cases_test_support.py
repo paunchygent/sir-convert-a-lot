@@ -41,6 +41,7 @@ def build_client(
     tmp_path: Path,
     *,
     max_upload_bytes: int = 50 * 1024 * 1024,
+    run_jobs_on_submit: bool = True,
 ) -> tuple[TestClient, FastAPI]:
     """Build a test client and FastAPI app for v2 route edge-case tests."""
 
@@ -50,6 +51,7 @@ def build_client(
             data_root=tmp_path / "service_data",
             max_upload_bytes=max_upload_bytes,
             enable_supervisor=False,
+            run_jobs_on_submit=run_jobs_on_submit,
             processing_delay_seconds=0.0,
         )
     )

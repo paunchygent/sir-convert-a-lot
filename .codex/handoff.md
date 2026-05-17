@@ -171,8 +171,14 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   and choice/gap/vision microprobes are green. Wrong-but-valid remains 3.
 - 2026-05-17 Task 320 in progress: production default is Qwen3.6 MTP
   (`qwen36-llama-cpp-mtp`, alias `qwen3.6-27b-q6k-mtp`) via Docker service DNS
-  `sir_convert_qwen_answer_key:8082`. Local gates passed; live Hemma proof
-  still needs deploy/recreate and authenticated MCQ candidate verification.
+  `sir_convert_qwen_answer_key:8082`. The production runtime now separates
+  HTTP admission (`sir_convert_a_lot_prod`, no GPU devices, no submit-time job
+  execution) from current PDF/OCR GPU execution
+  (`sir_convert_a_lot_gpu_worker`, private Docker service with supervisor).
+  Generated dependency image identity files now write under ignored
+  `build/verification/service-deps/` instead of dirtying tracked
+  `docker/service-deps/` state. Local gates passed; live Hemma proof still
+  needs deploy/recreate and authenticated MCQ candidate verification.
 
 ## Stop Conditions
 

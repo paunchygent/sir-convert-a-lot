@@ -17,6 +17,7 @@ from scripts.sir_convert_a_lot.devops.service_dependency_inputs import (
     build_project_dependency_image_identity_payload,
     build_project_dependency_input_payload,
     build_recipe_input_payload,
+    write_dependency_inputs,
 )
 
 
@@ -202,6 +203,35 @@ def test_python_base_image_contract_changes_recipe_hash(tmp_path: Path) -> None:
     )
 
     assert after_payload["recipe_hash"] != before_payload["recipe_hash"]
+
+
+def test_dependency_image_identity_is_written_outside_tracked_contract_dir(
+    tmp_path: Path,
+) -> None:
+    requirements_path = tmp_path / "requirements.txt"
+    contract_dir = tmp_path / "docker" / "service-deps"
+    identity_output_dir = tmp_path / "build" / "verification" / "service-deps"
+    _write_pyproject(
+        tmp_path,
+        script_command="python -m scripts.same",
+        torch_version="2.10.0+rocm7.1",
+    )
+    _write_recipe_files(tmp_path)
+    requirements_path.write_text("fastapi==0.135.1\n", encoding="utf-8")
+
+    identity = write_dependency_inputs(
+        project_root=tmp_path,
+        requirements_path=requirements_path,
+        output_dir=contract_dir,
+        identity_output_dir=identity_output_dir,
+        runtime_kind="rocm",
+    )
+
+    assert (contract_dir / "service-dependency-inputs-rocm.json").exists()
+    assert not (contract_dir / "service-dependency-image-identity-rocm.json").exists()
+    identity_path = identity_output_dir / "service-dependency-image-identity-rocm.json"
+    assert identity_path.exists()
+    assert identity.dependency_image_hash in identity_path.read_text(encoding="utf-8")
 
 
 def test_runtime_pin_change_changes_dependency_hash(tmp_path: Path) -> None:

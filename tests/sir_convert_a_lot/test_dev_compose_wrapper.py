@@ -133,6 +133,17 @@ def _run_wrapper(
     )
 
 
+def _with_fake_hemma_env(env: dict[str, str]) -> dict[str, str]:
+    """Return env values that satisfy the production-wrapper Hemma guard."""
+    updated = dict(env)
+    updated["SIR_CONVERT_A_LOT_CURRENT_HOSTNAME"] = "test-hemma"
+    updated["SIR_CONVERT_A_LOT_HEMMA_LOCAL_HOSTNAME"] = "test-hemma"
+    updated["SIR_CONVERT_A_LOT_HEMMA_ROOT"] = str(REPO_ROOT)
+    updated["SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY"] = str(REPO_ROOT / ".test-skills")
+    updated["SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY"] = str(REPO_ROOT / ".test-skills")
+    return updated
+
+
 def _current_rocm_identity() -> dict[str, str]:
     payload = build_project_dependency_image_identity_payload(
         project_root=REPO_ROOT,
@@ -258,6 +269,7 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     env["FAKE_DOCKER_LOG"] = str(log_file)
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
+    env = _with_fake_hemma_env(env)
 
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["recreate", "sir_convert_a_lot_prod"], env)
     assert result.returncode == 0
@@ -286,6 +298,7 @@ def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: P
     env["FAKE_DOCKER_LABEL_DEPENDENCY_IMAGE_HASH"] = identity["dependency_image_hash"]
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
+    env = _with_fake_hemma_env(env)
 
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
     assert result.returncode == 0
@@ -315,6 +328,7 @@ def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
     env["FAKE_DOCKER_LABEL_DEPENDENCY_IMAGE_HASH"] = identity["dependency_image_hash"]
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
+    env = _with_fake_hemma_env(env)
 
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
     assert result.returncode == 0

@@ -47,6 +47,7 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
         "run",
         "prod-recreate",
         "sir_convert_qwen_answer_key",
+        "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
         "sir_convert_a_lot_public_reserved",
     ]
@@ -61,6 +62,7 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
         "run",
         "prod-recreate",
         "sir_convert_qwen_answer_key",
+        "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
         "sir_convert_a_lot_public_reserved",
     ]
@@ -100,6 +102,7 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_erro
         "run",
         "prod-recreate",
         "sir_convert_qwen_answer_key",
+        "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
         "sir_convert_a_lot_public_reserved",
     ]
@@ -131,6 +134,7 @@ def test_remote_recreate_service_raises_on_non_permission_error(
             "run",
             "prod-recreate",
             "sir_convert_qwen_answer_key",
+            "sir_convert_a_lot_gpu_worker",
             "sir_convert_a_lot_prod",
             "sir_convert_a_lot_public_reserved",
         ]
