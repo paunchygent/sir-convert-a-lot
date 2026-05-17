@@ -309,6 +309,12 @@ they exist on the host. Use the ROCm SDK libraries already present in the
 pinned provider image, plus `/dev/kfd`, `/dev/dri`, the runbook-built
 `llama-server`, Docker-visible build/cache roots, and the vision media path.
 
+Compose must add GPU device groups by numeric Hemma GID. Do not use image-local
+`video` or `render` names for the provider: the AMD image does not define
+`render`, and other images can define it with a different GID than the host
+device node. The prod env mirror renders `SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID`
+and `SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID` from Hemma's `getent group` output.
+
 ## Evaluation Pipeline
 
 Run in this order from the Hemma checkout for the Qwen3.6 lane. Artifacts go to

@@ -49,6 +49,18 @@ ensure_key() {
   mv "${tmp_file}" "${file_path}"
 }
 
+group_id_or_default() {
+  local group_name="$1"
+  local default_gid="$2"
+  local group_line
+  group_line="$(getent group "${group_name}" || true)"
+  if [[ -z "${group_line}" ]]; then
+    printf '%s\n' "${default_gid}"
+    return
+  fi
+  printf '%s\n' "${group_line}" | awk -F: '{ print $3 }'
+}
+
 if [[ ! -d "${APPS_ROOT}" ]]; then
   echo "[sync-prod-env] apps root not found: ${APPS_ROOT}" >&2
   exit 1
@@ -90,6 +102,8 @@ for repo in "${repos[@]}"; do
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE" "easyocr"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES" "sv,en"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR" "/opt/easyocr-models"
+    ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID" "$(group_id_or_default video 44)"
+    ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID" "$(group_id_or_default render 993)"
     while IFS='=' read -r key_name key_value; do
       if [[ -n "${key_name}" ]]; then
         ensure_key "${canonical_env}" "${key_name}" "${key_value}"

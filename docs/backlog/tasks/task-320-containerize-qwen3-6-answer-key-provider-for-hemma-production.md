@@ -59,6 +59,9 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   container. Hemma snap Docker cannot reliably bind those host paths; the
   provider image must supply its pinned ROCm runtime libraries while Compose
   maps only GPU device nodes plus Docker-visible build/cache/media roots.
+- Use numeric Hemma GPU group IDs in Compose instead of container-local group
+  names. AMD ROCm images may not define `render`, and images that do define it
+  may use a GID that does not match the host device group.
 - Render and validate the production structured-provider environment so prod
   rejects `127.0.0.1`, `localhost`, and `host.docker.internal` provider URLs.
 - Extend deploy verification to prove provider reachability and a small
@@ -92,6 +95,8 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   Docker-visible roots, not container-local storage or `/`.
 - [ ] Provider containers do not depend on host `/opt/rocm*` or `/opt/amdgpu`
   bind mounts; ROCm runtime libraries come from the pinned provider image.
+- [ ] GPU device group access uses Hemma host numeric GIDs rendered into prod
+  env, not image-local `video` / `render` group names.
 - [ ] Advisory `.dxe` MCQ rows produce valid candidates instead of
   `provider_request_failed`.
 - [ ] Local host-dev can still use `http://127.0.0.1:8082`.

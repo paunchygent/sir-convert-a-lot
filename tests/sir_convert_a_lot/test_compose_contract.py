@@ -260,7 +260,10 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
     assert "--top-k" not in command
 
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
-    assert service.get("group_add") == ["video", "render"]
+    assert service.get("group_add") == [
+        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
+        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
+    ]
     assert service.get("networks") == ["hule-network"]
     volumes = service.get("volumes")
     assert isinstance(volumes, list)
@@ -333,7 +336,10 @@ def test_compose_declares_rocm_build_args_and_gpu_device_passthrough() -> None:
     }
 
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
-    assert service.get("group_add") == ["video", "render"]
+    assert service.get("group_add") == [
+        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
+        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
+    ]
 
 
 def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None:

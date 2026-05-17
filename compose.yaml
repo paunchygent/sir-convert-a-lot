@@ -58,8 +58,8 @@ services:
       - /dev/kfd:/dev/kfd
       - /dev/dri:/dev/dri
     group_add:
-      - video
-      - render
+      - "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}"
+      - "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}"
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
@@ -137,8 +137,8 @@ services:
       - /dev/kfd:/dev/kfd
       - /dev/dri:/dev/dri
     group_add:
-      - video
-      - render
+      - "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}"
+      - "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}"
     volumes:
       - ${SIR_CONVERT_A_LOT_QWEN_LLAMA_SERVER_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/llama.cpp-qwen35/build-hip/bin/llama-server}:/srv/scratch/sir-convert-a-lot/bin/llama-server:ro
       - ${SIR_CONVERT_A_LOT_QWEN_DOCKER_BUILD_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build}:/srv/scratch/sir-convert-a-lot/build
