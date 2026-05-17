@@ -47,6 +47,9 @@ QWEN36_LLAMA_CPP_PRODUCTION_OUTPUT_ROOT = Path(
 QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_PATH = (
     QWEN36_LLAMA_CPP_PRODUCTION_OUTPUT_ROOT / "vision-assets"
 )
+QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_HOST_PATH = Path(
+    "/home/paunchygent/.data/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets"
+)
 
 _PROD_FORBIDDEN_PROVIDER_HOSTS = frozenset({"127.0.0.1", "localhost", "host.docker.internal"})
 
@@ -78,6 +81,9 @@ def render_answer_key_provider_environment(
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED": "0",
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH": (
             QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_PATH.as_posix()
+        ),
+        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH": (
+            QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_HOST_PATH.as_posix()
         ),
     }
 

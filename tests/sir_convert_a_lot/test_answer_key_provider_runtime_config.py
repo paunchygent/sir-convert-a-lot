@@ -44,6 +44,10 @@ def test_rendered_prod_profile_uses_qwen36_mtp_alias_and_service_dns() -> None:
 
     assert env[STRUCTURED_LLM_PROVIDER_PROFILE_ENV] == "qwen36-llama-cpp-mtp"
     assert env[STRUCTURED_LLM_RUNTIME_LANE_ENV] == "hemma-prod-compose"
+    assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH"] == (
+        "/home/paunchygent/.data/sir-convert-a-lot/build/verification/"
+        "task-320-qwen-provider/vision-assets"
+    )
     assert provider_payload["model"] == "qwen3.6-27b-q6k-mtp"
     assert provider_payload["base_url"] == "http://sir_convert_qwen_answer_key:8082"
     assert provider_payload["endpoint_kind"] == "llama_cpp_chat_completions"
