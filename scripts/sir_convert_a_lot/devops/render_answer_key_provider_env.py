@@ -33,7 +33,10 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--profile",
-        choices=[AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP.value],
+        choices=[
+            AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP.value,
+            AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP.value,
+        ],
         default=AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP.value,
     )
     return parser.parse_args(argv)

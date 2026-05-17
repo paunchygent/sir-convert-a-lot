@@ -240,13 +240,13 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
     assert isinstance(command, list)
     joined_command = " ".join(str(item) for item in command)
     assert "/srv/scratch/sir-convert-a-lot/bin/llama-server" in command
-    assert "-hf ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-MTP-GGUF}" in (
+    assert "-hf ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-GGUF-MTP}" in (
         joined_command
     )
-    assert "-hff ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-UD-Q6_K_XL.gguf}" in joined_command
+    assert "-hff ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-Q6_K.gguf}" in joined_command
     assert "--alias ${SIR_CONVERT_A_LOT_QWEN36_MODEL:-qwen3.6-27b-q6k-mtp}" in joined_command
     assert "--host 0.0.0.0 --port 8082" in joined_command
-    assert "--ctx-size 32768" in joined_command
+    assert "--ctx-size 16384" in joined_command
     assert "--n-gpu-layers all" in joined_command
     assert "--fit off" in joined_command
     assert "--flash-attn on" in joined_command

@@ -1,7 +1,7 @@
 """Tests for answer-key provider runtime config rendering.
 
 Purpose:
-    Prove governed Qwen3.6 MTP provider settings render deterministically for
+    Prove governed Qwen3.6 provider settings render deterministically for
     Hemma production while local development can still use host-local Qwen.
 
 Relationships:
@@ -36,7 +36,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
 )
 
 
-def test_rendered_prod_profile_uses_qwen36_mtp_alias_and_service_dns() -> None:
+def test_rendered_prod_profile_uses_qwen36_q6k_mtp_alias_and_service_dns() -> None:
     env = render_answer_key_provider_environment(
         lane=AnswerKeyProviderRuntimeLane.HEMMA_PROD_COMPOSE
     )
@@ -52,7 +52,7 @@ def test_rendered_prod_profile_uses_qwen36_mtp_alias_and_service_dns() -> None:
     assert provider_payload["base_url"] == "http://sir_convert_qwen_answer_key:8082"
     assert provider_payload["endpoint_kind"] == "llama_cpp_chat_completions"
     assert provider_payload["output_mode"] == "json_schema"
-    assert provider_payload["context_window_tokens"] == 32768
+    assert provider_payload["context_window_tokens"] == 16384
     assert provider_payload["max_output_tokens"] == 4096
     assert provider_payload["temperature"] == 0.15
     assert provider_payload["capabilities"] == {

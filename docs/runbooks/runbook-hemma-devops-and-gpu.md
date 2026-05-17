@@ -64,18 +64,18 @@ benchmark, and tunnel work.
 
 ## Current Local LLM Default
 
-Use Qwen3.6-27B-Q6_K through the Hemma-local `llama.cpp` HIP server as the
+Use Qwen3.6-27B MTP Q6_K through the Hemma-local `llama.cpp` HIP server as the
 current guarded answer-key advisory provider. Granite/vLLM and Devstral Small
 are demoted for this route by Task 309 evidence. Qwen3.6 remains advisory-only:
 the zero wrong-but-valid promotion gate is not met, so teacher review or a
 later governed decision is required before automatic answer-key application.
 
 - Runtime: `llama.cpp` HIP `llama-server`
-- Provider profile: `qwen36-llama-cpp`
-- Model: `qwen3.6-27b-q6k`
+- Provider profile: `qwen36-llama-cpp-mtp`
+- Model: `qwen3.6-27b-q6k-mtp`
 - Bind: `127.0.0.1`
 - Port: `8082`
-- Context: `32768`
+- Context: `16384`
 - Temperature: `0.15`
 - Output constraint: llama.cpp JSON Schema or GBNF-constrained JSON only
 - Required mode: `--reasoning off`

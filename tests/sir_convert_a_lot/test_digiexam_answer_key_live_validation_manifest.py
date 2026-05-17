@@ -492,8 +492,8 @@ def test_answer_key_llama_provider_launch_surface_dry_runs_hemma_local_command(
     assert plan["model"] == "qwen3.6-27b-q6k-mtp"
     assert plan["host"] == "127.0.0.1"
     assert plan["port"] == 8082
-    assert plan["hf_repo"] == "unsloth/Qwen3.6-27B-MTP-GGUF"
-    assert plan["hf_file"] == "Qwen3.6-27B-UD-Q6_K_XL.gguf"
+    assert plan["hf_repo"] == "unsloth/Qwen3.6-27B-GGUF-MTP"
+    assert plan["hf_file"] == "Qwen3.6-27B-Q6_K.gguf"
     assert "--n-gpu-layers" in command
     assert "all" in command
     assert "--offline" in command
@@ -629,11 +629,11 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
     assert metadata["model"] == "qwen3.6-27b-q6k"
     assert metadata["provider_runtime"] == "llama-cpp-json-schema"
     assert metadata["default_output_mode"] == "json_schema"
-    assert metadata["context_window_tokens"] == 32768
+    assert metadata["context_window_tokens"] == 16384
     assert metadata["max_output_tokens"] == 4096
     assert metadata["temperature"] == 0.15
     assert _object(metadata["capabilities"])["supports_multimodal_vision"] is True
-    assert _object(metadata["request_settings"])["context_window_tokens"] == 32768
+    assert _object(metadata["request_settings"])["context_window_tokens"] == 16384
     assert _object(metadata["request_settings"])["temperature"] == 0.15
     assert (
         _object(metadata["artifact_paths"])["vision_media_path"]
@@ -729,7 +729,7 @@ def test_task309_evaluation_upgrades_legacy_qwen_run_report_metadata(
     assert metadata["metadata_source"] == "legacy_task309_run_report_profile_match"
     assert metadata["profile_name"] == "qwen36-llama-cpp"
     assert metadata["model"] == "qwen3.6-27b-q6k"
-    assert metadata["context_window_tokens"] == 32768
+    assert metadata["context_window_tokens"] == 16384
     assert metadata["temperature"] == 0.15
     assert (
         _object(metadata["artifact_paths"])["vision_media_path"]

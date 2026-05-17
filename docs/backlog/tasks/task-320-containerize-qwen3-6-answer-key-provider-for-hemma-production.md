@@ -43,10 +43,10 @@ machine-marked MCQ rows even though the host-local provider was healthy.
 
 - Add a production `sir_convert_qwen_answer_key` service on the shared
   `hule-network`, with no public port exposure.
-- Run the provider through the Task 309/319 Qwen3.6 MTP settings:
+- Run the provider through the Task 309/320 Qwen3.6 MTP Q6_K settings:
   `qwen36-llama-cpp-mtp`, alias/model `qwen3.6-27b-q6k-mtp`, GGUF repo
-  `unsloth/Qwen3.6-27B-MTP-GGUF`, file
-  `Qwen3.6-27B-UD-Q6_K_XL.gguf`, `llama.cpp` JSON Schema, context `32768`,
+  `unsloth/Qwen3.6-27B-GGUF-MTP`, file
+  `Qwen3.6-27B-Q6_K.gguf`, `llama.cpp` JSON Schema, context `16384`,
   max output `4096`, temperature `0.15`, `--reasoning off`,
   `--n-gpu-layers all`, `--fit off`, `--flash-attn on`, `--jinja`,
   `--spec-type draft-mtp`, and `--spec-draft-n-max 2`.
@@ -87,8 +87,9 @@ machine-marked MCQ rows even though the host-local provider was healthy.
 - [ ] `sir_convert_a_lot_prod` reaches Qwen through
   `http://sir_convert_qwen_answer_key:8082`.
 - [ ] The production provider service uses Docker `expose`, not host `ports`.
-- [ ] The production provider defaults use the MTP profile and alias
-  `qwen3.6-27b-q6k-mtp`; non-MTP Qwen is not the Hemma production default.
+- [ ] The production provider defaults use the smaller MTP Q6_K profile and
+  alias `qwen3.6-27b-q6k-mtp`; the XL MTP quant is not the Hemma production
+  default.
 - [ ] Provider build guidance and command surfaces preserve the runbook
   `nice -n 10` / `-j8` compile contract.
 - [ ] Active model cache, build, and vision media paths stay on Scratch-backed
