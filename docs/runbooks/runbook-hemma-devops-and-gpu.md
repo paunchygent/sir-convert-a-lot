@@ -4,7 +4,7 @@ id: RUN-hemma-devops-and-gpu
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 status: active
 created: '2026-02-11'
-updated: '2026-05-14'
+updated: '2026-05-17'
 owners:
   - platform
 system: hemma.hule.education
@@ -64,17 +64,31 @@ benchmark, and tunnel work.
 
 ## Current Local LLM Default
 
-Use Granite 4.1 8B FP8 through ROCm vLLM as the interim local structured
-provider until the governed benchmark compares it with the GGUF shortlist.
+Use Qwen3.6-27B-Q6_K through the Hemma-local `llama.cpp` HIP server as the
+current guarded answer-key advisory provider. Granite/vLLM and Devstral Small
+are demoted for this route by Task 309 evidence. Qwen3.6 remains advisory-only:
+the zero wrong-but-valid promotion gate is not met, so teacher review or a
+later governed decision is required before automatic answer-key application.
 
-- Runtime: `vllm`
-- Model: `ibm-granite/granite-4.1-8b-fp8`
+- Runtime: `llama.cpp` HIP `llama-server`
+- Provider profile: `qwen36-llama-cpp`
+- Model: `qwen3.6-27b-q6k`
 - Bind: `127.0.0.1`
-- Default candidate port: `8017` after proving it is free
-- Context: `4096`
-- GPU memory utilization: `0.70`
+- Port: `8082`
+- Context: `32768`
+- Temperature: `0.15`
+- Output constraint: llama.cpp JSON Schema or GBNF-constrained JSON only
+- Required mode: `--reasoning off`
+- Runtime proof: localhost-only provider status, GPU offload, required
+  llama.cpp arguments, and no CPU fallback are proved by Task 319.
 - Cache contract: `docs/runbooks/runbook-hemma-gpu-runtime.md`
-- Decision record and benchmark matrix:
+- Operator details:
+  `docs/runbooks/runbook-answer-key-local-model-operator-guide.md`
+- Evidence and benchmark authority:
+  `docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md`
+- Productionization authority:
+  `docs/backlog/tasks/task-319-enable-qwen3-6-vision-capable-advisory-answer-key-completion-in-the-main-pipeline.md`
+- Model-selection reference:
   `docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md`
 
 ## Closeout
