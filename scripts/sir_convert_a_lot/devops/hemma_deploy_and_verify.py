@@ -53,6 +53,7 @@ REMOTE_DEPLOY_PATH = (
     "/sbin:"
     "/bin"
 )
+REMOTE_HEMMA_SKILL_REPOSITORY = "/home/paunchygent/apps/skill-repository"
 DOCKER_SOCKET_PERMISSION_DENIED_MESSAGES = (
     "permission denied while trying to connect to the Docker daemon socket",
     "permission denied while trying to connect to the docker API",
@@ -280,6 +281,8 @@ def _remote_recreate_service() -> None:
             "-n",
             "env",
             f"PATH={REMOTE_DEPLOY_PATH}",
+            f"SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY={REMOTE_HEMMA_SKILL_REPOSITORY}",
+            f"SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY={REMOTE_HEMMA_SKILL_REPOSITORY}",
             REMOTE_PDM,
             "run",
             "prod-recreate",
