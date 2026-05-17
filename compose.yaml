@@ -189,6 +189,8 @@ services:
       - "8082"
       - --ctx-size
       - "16384"
+      - --parallel
+      - "1"
       - --n-gpu-layers
       - all
       - --fit

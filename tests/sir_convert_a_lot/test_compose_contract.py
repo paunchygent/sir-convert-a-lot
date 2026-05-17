@@ -312,6 +312,7 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
     assert "--alias ${SIR_CONVERT_A_LOT_QWEN36_MODEL:-qwen3.6-27b-q6k-mtp}" in joined_command
     assert "--host 0.0.0.0 --port 8082" in joined_command
     assert "--ctx-size 16384" in joined_command
+    assert "--parallel 1" in joined_command
     assert "--n-gpu-layers all" in joined_command
     assert "--fit off" in joined_command
     assert "--flash-attn on" in joined_command

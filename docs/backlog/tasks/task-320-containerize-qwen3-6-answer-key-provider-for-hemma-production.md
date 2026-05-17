@@ -53,7 +53,8 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   `qwen36-llama-cpp-mtp`, alias/model `qwen3.6-27b-q6k-mtp`, GGUF repo
   `unsloth/Qwen3.6-27B-MTP-GGUF`, file
   `Qwen3.6-27B-Q6_K.gguf`, `llama.cpp` JSON Schema, context `16384`,
-  max output `4096`, temperature `0.15`, `--reasoning off`,
+  one server slot via `--parallel 1`, max output `4096`, temperature `0.15`,
+  `--reasoning off`,
   `--n-gpu-layers all`, `--fit off`, `--flash-attn on`, `--jinja`,
   `--spec-type draft-mtp`, and `--spec-draft-n-max 2`.
 - Preserve the runbook build contract for the HIP `llama-server` artifact:
@@ -105,6 +106,9 @@ machine-marked MCQ rows even though the host-local provider was healthy.
 - [ ] The production provider defaults use the smaller MTP Q6_K profile and
   alias `qwen3.6-27b-q6k-mtp`; the XL MTP quant is not the Hemma production
   default.
+- [ ] The production provider is capped to one `llama-server` slot
+  (`--parallel 1`) so Qwen residency does not silently multiply the 16k KV
+  cache while current OCR GPU work remains part of the stack.
 - [ ] Provider build guidance and command surfaces preserve the runbook
   `nice -n 10` / `-j8` compile contract.
 - [ ] Active model cache, build, and vision media paths stay on Scratch-backed
