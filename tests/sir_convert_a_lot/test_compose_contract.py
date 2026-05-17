@@ -222,6 +222,14 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
     assert service.get("restart") == "unless-stopped"
     assert service.get("ports") is None
     assert service.get("expose") == ["8082"]
+    env_map = _service_env_map(service)
+    assert env_map["LD_LIBRARY_PATH"] == (
+        "${SIR_CONVERT_A_LOT_QWEN_ROCM_LIBRARY_PATH:-"
+        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib:"
+        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_libraries_gfx120X_all/lib:"
+        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_core/lib:"
+        "/usr/lib/x86_64-linux-gnu}"
+    )
 
     build_obj = service.get("build")
     assert isinstance(build_obj, dict)
@@ -254,7 +262,9 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
     assert service.get("group_add") == ["video", "render"]
     assert service.get("networks") == ["hule-network"]
-    assert service.get("volumes") == [
+    volumes = service.get("volumes")
+    assert isinstance(volumes, list)
+    assert volumes == [
         (
             "${SIR_CONVERT_A_LOT_QWEN_LLAMA_SERVER_HOST_PATH:-"
             "/home/paunchygent/.data/sir-convert-a-lot/build/"
@@ -271,9 +281,9 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
             "/home/paunchygent/.data/sir-convert-a-lot/cache}:"
             "/srv/scratch/sir-convert-a-lot/cache"
         ),
-        "${SIR_CONVERT_A_LOT_QWEN_ROCM_HOST_PATH:-/opt/rocm-7.2.0}:/opt/rocm-7.2.0:ro",
-        "${SIR_CONVERT_A_LOT_QWEN_AMDGPU_HOST_PATH:-/opt/amdgpu}:/opt/amdgpu:ro",
     ]
+    assert all("/opt/rocm" not in str(volume) for volume in volumes)
+    assert all("/opt/amdgpu" not in str(volume) for volume in volumes)
 
     health_obj = service.get("healthcheck")
     assert isinstance(health_obj, dict)

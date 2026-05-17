@@ -303,6 +303,12 @@ The provider container mounts the runbook-built binary and Task 242
 Docker-visible Scratch-backed build/cache roots. It must not compile
 `llama.cpp` during Compose startup.
 
+The provider container must not bind host `/opt/rocm*` or `/opt/amdgpu` paths.
+Hemma's snap Docker runtime cannot reliably bind those host paths even when
+they exist on the host. Use the ROCm SDK libraries already present in the
+pinned provider image, plus `/dev/kfd`, `/dev/dri`, the runbook-built
+`llama-server`, Docker-visible build/cache roots, and the vision media path.
+
 ## Evaluation Pipeline
 
 Run in this order from the Hemma checkout for the Qwen3.6 lane. Artifacts go to

@@ -55,6 +55,10 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   `nice -n 10` plus `-j8` unless a stricter lower-concurrency value is chosen.
 - Use Task 242 Docker-visible home-backed bind roots for build/cache mounts
   while preserving `/srv/scratch/...` as the canonical in-container path.
+- Do not bind host `/opt/rocm*` or `/opt/amdgpu` paths into the provider
+  container. Hemma snap Docker cannot reliably bind those host paths; the
+  provider image must supply its pinned ROCm runtime libraries while Compose
+  maps only GPU device nodes plus Docker-visible build/cache/media roots.
 - Render and validate the production structured-provider environment so prod
   rejects `127.0.0.1`, `localhost`, and `host.docker.internal` provider URLs.
 - Extend deploy verification to prove provider reachability and a small
@@ -86,6 +90,8 @@ machine-marked MCQ rows even though the host-local provider was healthy.
   `nice -n 10` / `-j8` compile contract.
 - [ ] Active model cache, build, and vision media paths stay on Scratch-backed
   Docker-visible roots, not container-local storage or `/`.
+- [ ] Provider containers do not depend on host `/opt/rocm*` or `/opt/amdgpu`
+  bind mounts; ROCm runtime libraries come from the pinned provider image.
 - [ ] Advisory `.dxe` MCQ rows produce valid candidates instead of
   `provider_request_failed`.
 - [ ] Local host-dev can still use `http://127.0.0.1:8082`.

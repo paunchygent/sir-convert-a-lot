@@ -8,6 +8,8 @@
 #   - Used by compose.yaml for the `sir_convert_qwen_answer_key` service.
 #   - Does not compile llama.cpp; the HIP binary is built through the governed
 #     Hemma runbook surface and mounted from Scratch-backed host storage.
+#   - Uses the ROCm SDK libraries already present in the pinned provider image;
+#     Hemma snap Docker cannot bind-mount host `/opt/rocm*` paths reliably.
 #   - Creates the canonical in-container paths expected by the answer-key
 #     provider runbooks before Compose bind mounts the runtime artifacts.
 #
@@ -24,6 +26,6 @@ RUN mkdir -p \
 
 ENV LLAMA_CACHE=/srv/scratch/sir-convert-a-lot/cache/llama.cpp
 ENV XDG_CACHE_HOME=/srv/scratch/sir-convert-a-lot/cache
-ENV LD_LIBRARY_PATH=/opt/rocm-7.2.0/lib:/opt/amdgpu/lib/x86_64-linux-gnu
+ENV LD_LIBRARY_PATH=/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib:/opt/python/lib/python3.12/site-packages/_rocm_sdk_libraries_gfx120X_all/lib:/opt/python/lib/python3.12/site-packages/_rocm_sdk_core/lib:/usr/lib/x86_64-linux-gnu
 
 EXPOSE 8082

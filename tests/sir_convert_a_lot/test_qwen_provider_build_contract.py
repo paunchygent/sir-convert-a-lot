@@ -38,6 +38,11 @@ def test_qwen_provider_image_does_not_hide_llama_cpp_build() -> None:
 
     assert "FROM ${QWEN_PROVIDER_BASE_IMAGE} AS qwen-provider-runtime" in dockerfile
     assert "EXPOSE 8082" in dockerfile
+    assert "_rocm_sdk_devel/lib" in dockerfile
+    assert "_rocm_sdk_libraries_gfx120X_all/lib" in dockerfile
+    assert "_rocm_sdk_core/lib" in dockerfile
+    assert "/opt/rocm-7.2.0/lib" not in dockerfile
+    assert "/opt/amdgpu/lib" not in dockerfile
     assert "RUN cmake" not in dockerfile
     assert "RUN ninja" not in dockerfile
     assert "git clone" not in dockerfile

@@ -95,7 +95,7 @@ services:
     environment:
       - LLAMA_CACHE=/srv/scratch/sir-convert-a-lot/cache/llama.cpp
       - XDG_CACHE_HOME=/srv/scratch/sir-convert-a-lot/cache
-      - LD_LIBRARY_PATH=/opt/rocm-7.2.0/lib:/opt/amdgpu/lib/x86_64-linux-gnu
+      - LD_LIBRARY_PATH=${SIR_CONVERT_A_LOT_QWEN_ROCM_LIBRARY_PATH:-/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib:/opt/python/lib/python3.12/site-packages/_rocm_sdk_libraries_gfx120X_all/lib:/opt/python/lib/python3.12/site-packages/_rocm_sdk_core/lib:/usr/lib/x86_64-linux-gnu}
     command:
       - /srv/scratch/sir-convert-a-lot/bin/llama-server
       - -hf
@@ -143,8 +143,6 @@ services:
       - ${SIR_CONVERT_A_LOT_QWEN_LLAMA_SERVER_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/llama.cpp-qwen35/build-hip/bin/llama-server}:/srv/scratch/sir-convert-a-lot/bin/llama-server:ro
       - ${SIR_CONVERT_A_LOT_QWEN_DOCKER_BUILD_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build}:/srv/scratch/sir-convert-a-lot/build
       - ${SIR_CONVERT_A_LOT_QWEN_DOCKER_CACHE_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/cache}:/srv/scratch/sir-convert-a-lot/cache
-      - ${SIR_CONVERT_A_LOT_QWEN_ROCM_HOST_PATH:-/opt/rocm-7.2.0}:/opt/rocm-7.2.0:ro
-      - ${SIR_CONVERT_A_LOT_QWEN_AMDGPU_HOST_PATH:-/opt/amdgpu}:/opt/amdgpu:ro
     networks:
       - hule-network
     healthcheck:
