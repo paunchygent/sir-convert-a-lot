@@ -119,7 +119,7 @@ Initial supported interactions:
 | Free text / essay | `extendedTextInteraction` | Vendor-reported minimum area: free text. |
 | Matching | `matchInteraction` | QTI supports directed-pair matching with association constraints, including many-to-one and distractor choices. Exam.net QTI import is not available yet, so keep live Exam.net readiness behind future import proof. |
 | Short answer | `textEntryInteraction` or equivalent profile | Not part of the vendor-stated minimum; require sample proof. |
-| Gap fill | `textEntryInteraction` in item body | Not promoted; require sample proof. |
+| Gap fill | `textEntryInteraction` in item body with per-gap response declarations | Supported in the local package contract. Exam.net live import remains proof-gated; proof gaps must not remove accepted values from generated QTI. |
 
 Images may be packaged as item resources only when the source IR has
 renderer-neutral image assets and the QTI package manifest references them
@@ -158,16 +158,14 @@ answer key before `qti_package` can be marked exportable as an automatically
 evaluated item. This is a Sir Convert target-readiness rule, not a universal
 QTI schema rule.
 
-Teacher `accept_current_state_for_export` decisions do not currently enable QTI
-for missing machine-marked keys. They can only clear teacher-review blockers
-for targets that Sir Convert can create and validate under an accepted policy.
+Teacher `accept_current_state_for_export` decisions can enable QTI only under
+the Task 303 unkeyed/manual profile after Sir Convert creates and validates the
+package. They cannot add a key, bypass validation, or make a package available
+when an item would be silently omitted.
 
-Task 303 owns the later unkeyed/manual profile. That profile must define the
-exact QTI 2.1 and, if promoted, QTI 3.0 representation for accepted-current
-items that have no machine-marked key. It must prove package/XML/schema
-validation, local semantic smoke where available, target readiness semantics,
-and Exam.net import behavior before QTI export can be enabled by acceptance
-alone.
+Task 303 defines the QTI 2.1 unkeyed/manual representation for accepted-current
+items that have no machine-marked key. Any later QTI 3.0 representation must be
+promoted by a separate compatibility decision.
 
 ### Task 303 Manual/unkeyed Preservation Direction
 
@@ -329,6 +327,7 @@ The sample set is:
 | --- | --- | --- |
 | `single-choice-mcq` | `passed` | `vendor_reported_unproven` |
 | `multiple-response-mcq` | `passed` | `vendor_reported_unproven` |
+| `gap-fill-text-entry` | `passed` | `not_proven` |
 | `free-text` | `passed` | `vendor_reported_unproven` |
 | `image-single-choice-mcq` | `passed` | `vendor_reported_unproven` |
 | `image-free-text` | `passed` | `vendor_reported_unproven` |
@@ -354,6 +353,7 @@ Current package hashes:
 | --- | --- |
 | `single-choice-mcq` | `2f8748685e19a347e2521b49941f6c2bd154b55eacce5bad59f2da8e25e89a46` |
 | `multiple-response-mcq` | `6561073ef7f962f4ad85326e669f9561e89a0d5316eee1a3ae436fa3e5600c65` |
+| `gap-fill-text-entry` | `5a40db19c38aa75a8751574edc9934c598bf94633d99c08f74e1677cb4c1a795` |
 | `free-text` | `0bfcd851d820b8a71c443f97dd7e6f72b1d8b1adfc2bc450bc30dd1c6a90c59c` |
 | `image-single-choice-mcq` | `fda63d3a002003b616e84231767424065d376f3512fc12537e57235ba6210c1d` |
 | `image-free-text` | `917dba37c29e44147826ac508942fafcd536d78cd3fcc552d1106bc0072d13e8` |
@@ -393,8 +393,8 @@ Current Task 303 package hashes:
 | `manual-matching-preserved-as-free-text` | `055f41e4ff11e109af8290037dc48aeebeeec9051ba9e36d6dcef606347e192b` |
 
 The `qti_validation_report` schema version is
-`examnet_qti_validation_report_v1`. Reports include package filename/hash, QTI
-version, generator version, local package/XML preflight, official 1EdTech
+`examnet_qti_validation_report_v1`. Reports include package filename/hash,
+profile ID, QTI version, generator version, local package/XML preflight, official 1EdTech
 validator dependency status, QTIWorks local-smoke status, Exam.net proof status,
 warnings, errors, and item-addressable manual follow-up records.
 

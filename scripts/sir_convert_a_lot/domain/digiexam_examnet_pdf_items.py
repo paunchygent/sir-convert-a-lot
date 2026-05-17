@@ -255,34 +255,25 @@ def _short_answer_item(
     if not item.answer_key.correct_gap_answers and accepted_current_state:
         return _manual_unkeyed_gap_item(item, points, prompt_html)
 
-    if len(item.gaps) != 1:
-        return None, (
-            DigiExamExamNetPdfWarning(
-                code=DigiExamExamNetPdfWarningCode.UNSUPPORTED_ITEM_TYPE,
-                message=(
-                    "Multi-gap DigiExam items have no governed Exam.net "
-                    "PDF-converter target shape yet."
-                ),
-                item_id=item.item_id,
-            ),
-        )
     if not item.answer_key.correct_gap_answers:
         return None, (_missing_answer_key(item),)
+    missing_key_labels = _missing_gap_key_labels(item)
+    if missing_key_labels:
+        return None, (
+            _answer_key_mismatch(item, f"missing accepted values for {missing_key_labels}"),
+        )
 
-    accepted_answers = tuple(answer.value.strip() for answer in item.answer_key.correct_gap_answers)
-    body_html = (
-        '<p class="answer-key">Correct answers: '
-        f"{escape('; '.join(answer for answer in accepted_answers if answer))}</p>"
-    )
+    body_html = _gap_answer_key_html(item)
     return (
         DigiExamExamNetPdfItemRender(
             html=_item_shell(
                 item=item,
                 points=points,
-                item_type_label="Short answer",
+                item_type_label="Fritext",
                 instruction="",
                 prompt_html=prompt_html,
                 body_html=body_html,
+                item_type_marker="Typ",
             )
         ),
         (),
@@ -305,9 +296,7 @@ def _manual_unkeyed_choice_item(
                 item=item,
                 points=points,
                 item_type_label="Fritext",
-                instruction=(
-                    f"Manuell bedömning. Ursprunglig {source_type_label} utan betrott facit."
-                ),
+                instruction=f"Ursprunglig {source_type_label}. Bedöms manuellt efter import.",
                 prompt_html=prompt_html,
                 body_html=_options_html(option_texts),
                 item_type_marker="Typ",
@@ -370,9 +359,7 @@ def _manual_unkeyed_gap_item(
                 item=item,
                 points=points,
                 item_type_label="Fritext",
-                instruction=(
-                    "Manuell bedömning. Ursprunglig lucktext utan betrodda accepterade värden."
-                ),
+                instruction="Ursprunglig lucktext. Bedöms manuellt efter import.",
                 prompt_html=prompt_html,
                 body_html=_gap_order_html(item),
                 item_type_marker="Typ",
@@ -442,6 +429,37 @@ def _gap_order_html(item: DigiExamIrItem) -> str:
         return '<div class="gap-list"><p>Lucktextfrågan bedöms manuellt efter import.</p></div>'
     gap_rows = "".join(f"<p>Lucka {index}</p>" for index, _gap in enumerate(item.gaps, start=1))
     return f'<div class="gap-list">{gap_rows}</div>'
+
+
+def _missing_gap_key_labels(item: DigiExamIrItem) -> str:
+    values_by_gap_id = _gap_values_by_gap_id(item)
+    missing_labels = tuple(
+        f"Lucka {index}"
+        for index, gap in enumerate(item.gaps, start=1)
+        if not values_by_gap_id.get(gap.guid)
+    )
+    return ", ".join(missing_labels)
+
+
+def _gap_answer_key_html(item: DigiExamIrItem) -> str:
+    values_by_gap_id = _gap_values_by_gap_id(item)
+    if len(item.gaps) == 1:
+        values = values_by_gap_id.get(item.gaps[0].guid, ())
+        return f'<p class="answer-key">Correct answers: {escape("; ".join(values))}</p>'
+    rows = "".join(
+        f"<p>Lucka {index}: {escape('; '.join(values_by_gap_id.get(gap.guid, ())))}</p>"
+        for index, gap in enumerate(item.gaps, start=1)
+    )
+    return f'<div class="answer-key"><p>Correct answers:</p>{rows}</div>'
+
+
+def _gap_values_by_gap_id(item: DigiExamIrItem) -> dict[str, tuple[str, ...]]:
+    values_by_gap_id: dict[str, list[str]] = {gap.guid: [] for gap in item.gaps}
+    for answer in item.answer_key.correct_gap_answers:
+        value = answer.value.strip()
+        if value and answer.guid in values_by_gap_id:
+            values_by_gap_id[answer.guid].append(value)
+    return {gap_id: tuple(values) for gap_id, values in values_by_gap_id.items()}
 
 
 def _item_shell(

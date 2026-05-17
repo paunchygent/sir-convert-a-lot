@@ -6,6 +6,7 @@
   "package_filename": "qti-package.zip",
   "package_sha256": "846818e5a2985be23e48077835b8ead3f49f7275182aef2f511ce79ffbca52bc",
   "package_status": "passed",
+  "profile_id": "examnet_qti_2_1_v1",
   "qti_version": "2.1",
   "schema_version": "examnet_qti_validation_report_v1",
   "target_support_status": "proof_gated",

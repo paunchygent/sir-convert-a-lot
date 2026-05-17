@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-05-16'
+last_updated: '2026-05-17'
 ---
 
 ## Purpose
@@ -83,14 +83,16 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   the provider, advisory report, overlay/effective-IR, unkeyed-manual QTI, and
   Qwen3.6 vision-capable foundations. Granite/vLLM and Devstral are demoted;
   Qwen3.6 MTP on `llama.cpp` is the current guarded advisory model, still
-  blocked from automatic promotion by 3 wrong-but-valid suggestions. Keyed
-  matching QTI bridging waits for real matching-capable fixtures.
-- Review 17 retained Task 306 as `changes_requested` because Skriptoteket's
-  checked-in Sir Convert generated OpenAPI TypeScript surface is stale against
-  the Task 306 snapshot. Sir-local reviewed-overlay/effective-IR semantics and
-  no-provider apply/default-route checks passed review; the next implementation
-  slice should be a narrow Skriptoteket consumer-sync pass, not new Sir Convert
-  feature work.
+  blocked from automatic promotion by 3 wrong-but-valid suggestions. Task 321
+  completed the PR-0331 Sir Convert cleanup: target-specific QTI/PDF fallbacks
+  must not remove reviewed/source/teacher keys after they reach effective
+  renderer input.
+- Review 17 for Task 306 is closed as `approved`. The original Skriptoteket
+  generated-type drift finding is historical; current 2026-05-17 regeneration
+  from the Sir Convert v2 OpenAPI snapshot produced no diff against
+  Skriptoteket's checked-in `sirConvertOpenapi.d.ts`. Do not use Review 17 as
+  active proof of `PR-0331` staleness; future staleness claims need current
+  producer-contract and consumer-regeneration evidence.
 - Review 18 for Task 319 is closed as `approved`: Hemma is synced, Qwen3.6
   llama.cpp runs localhost-only with `mmproj-F16.gguf`, `--media-path`, and GPU
   offload, and provider-status plus choice/gap/vision microprobes are green.
@@ -125,12 +127,13 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. Task 308 is implemented: the Exam.net PDF manual/unkeyed
-   accepted-current-state profile now renders missing-key choice items and
-   item-013-style multi-gap items when explicitly requested, using degraded
-   manual/free-text output while native PDF-to-exam import is unproven. The
-   next natural step in this lane is post-implementation review or another
-   remaining Story 48 checklist item, not a second PDF-profile implementation.
+1. Continue PR-0331 from the completed Sir Convert Task 321 cleanup: the next
+   answer-key UI/consumer slice must preserve reviewed gap/open-cloze keys in
+   QTI and PDF artifacts, must not offer QTI packages when adapter follow-up
+   means an item was omitted, and must keep remaining degraded output as
+   explicit accepted-current-state behavior. Local tests are not live-dev proof;
+   live proof needs the auth edge, Sir Convert service, and tunneled LLM
+   container together.
 1. Treat Task 307 as completed but still binding before implementing any new
    Exam.net PDF, teacher-authored DOCX, or teacher-authored Markdown source
    parser: new parsers need source-native parse models plus adapters into
@@ -179,6 +182,11 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   `build/verification/service-deps/` instead of dirtying tracked
   `docker/service-deps/` state. Local gates passed; live Hemma proof still
   needs deploy/recreate and authenticated MCQ candidate verification.
+- 2026-05-17 Task 321 completed: reviewed/source/teacher gap/open-cloze keys
+  now reach QTI/PDF artifacts, QTI blocks omitted-item or missing-gap-key
+  packages, and internal fallback text is absent from user-facing PDFs. Local
+  validation passed per Task 321 evidence. Live dev-container proof was not
+  run; it requires auth edge, Sir Convert, and tunneled LLM together.
 
 ## Stop Conditions
 

@@ -30,8 +30,15 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
     DigiExamMigrationArtifactEntry,
     DigiExamMigrationArtifactKey,
 )
-from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import ExamNetQtiPackageStatus
-from scripts.sir_convert_a_lot.domain.examnet_qti_package import build_examnet_qti_package_plan
+from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
+    ExamNetQtiManualFollowUp,
+    ExamNetQtiManualFollowUpReason,
+    ExamNetQtiPackageStatus,
+)
+from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
+    build_blocked_examnet_qti_package_plan,
+    build_examnet_qti_package_plan,
+)
 from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_examnet_pdf_renderer import (
     render_digiexam_examnet_pdf,
@@ -99,10 +106,19 @@ def build_qti_artifacts(
         exam,
         accepted_current_state_item_ids=accepted_current_state_item_ids,
     )
-    plan = build_examnet_qti_package_plan(
-        package_name=Path(job.source_filename).stem,
-        items=adapter_result.items,
-    )
+    package_name = Path(job.source_filename).stem
+    if adapter_result.manual_follow_ups:
+        plan = build_blocked_examnet_qti_package_plan(
+            package_name=package_name,
+            items=adapter_result.items,
+            manual_follow_ups=adapter_result.manual_follow_ups,
+            warnings=("QTI package generation blocked because not all items mapped.",),
+        )
+    else:
+        plan = build_examnet_qti_package_plan(
+            package_name=package_name,
+            items=adapter_result.items,
+        )
     written = write_examnet_qti_artifacts(
         plan=plan,
         output_dir=artifacts_dir,
@@ -112,6 +128,7 @@ def build_qti_artifacts(
         ].filename,
     )
     entries: dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifactEntry] = {}
+    qti_follow_ups = plan.manual_follow_ups
     if plan.status == ExamNetQtiPackageStatus.PASSED and written.package_path is not None:
         entries[DigiExamMigrationArtifactKey.QTI_PACKAGE] = available_entry(
             job=job,
@@ -119,20 +136,23 @@ def build_qti_artifacts(
             path=written.package_path,
         )
     else:
-        entries[DigiExamMigrationArtifactKey.QTI_PACKAGE] = failed_entry(
+        unavailable_code = _qti_unavailable_code(qti_follow_ups, plan.status)
+        entry_factory = (
+            unavailable_entry
+            if unavailable_code in {"manual_answer_key_required", "unsupported_target_shape"}
+            else failed_entry
+        )
+        entries[DigiExamMigrationArtifactKey.QTI_PACKAGE] = entry_factory(
             job=job,
             key=DigiExamMigrationArtifactKey.QTI_PACKAGE,
-            unavailable_code="qti_validation_failed",
+            unavailable_code=unavailable_code,
         )
     entries[DigiExamMigrationArtifactKey.QTI_VALIDATION_REPORT] = available_entry(
         job=job,
         key=DigiExamMigrationArtifactKey.QTI_VALIDATION_REPORT,
         path=written.report_path,
     )
-    follow_ups = [
-        json_ready(asdict(follow_up))
-        for follow_up in (*adapter_result.manual_follow_ups, *plan.manual_follow_ups)
-    ]
+    follow_ups = [json_ready(asdict(follow_up)) for follow_up in qti_follow_ups]
     return entries, follow_ups, list(plan.warnings)
 
 
@@ -147,6 +167,25 @@ def accepted_current_state_item_ids(
         for item_id, accepted_target in accepted_review_decisions
         if accepted_target == target
     )
+
+
+def _qti_unavailable_code(
+    follow_ups: tuple[ExamNetQtiManualFollowUp, ...],
+    status: ExamNetQtiPackageStatus,
+) -> str:
+    if any(
+        follow_up.reason_code == ExamNetQtiManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED
+        for follow_up in follow_ups
+    ):
+        return "manual_answer_key_required"
+    if any(
+        follow_up.reason_code == ExamNetQtiManualFollowUpReason.NOT_SUPPORTED_BY_EXAMNET
+        for follow_up in follow_ups
+    ):
+        return "unsupported_target_shape"
+    if status == ExamNetQtiPackageStatus.BLOCKED:
+        return "unsupported_target_shape"
+    return "qti_validation_failed"
 
 
 def _pdf_unavailable_code(warnings: tuple[DigiExamExamNetPdfWarning, ...]) -> str:

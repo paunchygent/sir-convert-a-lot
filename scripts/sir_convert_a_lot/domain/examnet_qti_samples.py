@@ -33,6 +33,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiItem,
     ExamNetQtiManualRepresentation,
     ExamNetQtiMatchPair,
+    ExamNetQtiTextEntryGap,
     ExamNetQtiUnsupportedResource,
 )
 
@@ -61,6 +62,7 @@ def examnet_qti_task_280_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
     return (
         _single_choice_sample(),
         _multiple_response_sample(),
+        _gap_fill_sample(),
         _free_text_sample(),
         _image_single_choice_sample(),
         _image_free_text_sample(),
@@ -164,6 +166,27 @@ def _multiple_response_sample() -> ExamNetQtiSamplePackage:
             prompt="Vilka drag stärker ett källkritiskt svar?",
             interaction_type=ExamNetQtiInteractionType.MULTIPLE_RESPONSE,
             correct=("choice_001", "choice_002", "choice_004"),
+        ),
+    )
+
+
+def _gap_fill_sample() -> ExamNetQtiSamplePackage:
+    return _sample(
+        "gap-fill-text-entry",
+        ExamNetQtiItem(
+            item_id="item_001",
+            sequence=1,
+            title="Lucktext",
+            interaction_type=ExamNetQtiInteractionType.GAP_FILL,
+            prompt_lines=("Cellens energivaluta är _____.",),
+            max_score=1,
+            text_entry_gaps=(
+                ExamNetQtiTextEntryGap(
+                    response_identifier="RESPONSE_gap_001",
+                    label="Lucka 1",
+                    accepted_values=("ATP", "atp"),
+                ),
+            ),
         ),
     )
 

@@ -30,6 +30,7 @@ from pydantic import JsonValue
 
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
     CHOICE_PROMPT_TEMPLATE_VERSION,
+    GAP_FILL_PROMPT_TEMPLATE_VERSION,
     DigiExamAnswerKeyCompletionValidationState,
     answer_key_candidate_payload_digest,
 )
@@ -40,6 +41,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DIGIEXAM_IR_S
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION,
     DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+    DIGIEXAM_GAP_FILL_ANSWER_KEY_DECISION_SCHEMA_VERSION,
     DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
     DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
@@ -268,9 +270,15 @@ def test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts
     assert artifact_entries["effective_ir_json"]["availability"] == "not_requested"
     assert artifact_entries["examnet_pdf"]["availability"] == "unavailable"
     assert artifact_entries["examnet_pdf"]["unavailable_code"] == "manual_answer_key_required"
+    assert artifact_entries["qti_package"]["availability"] == "unavailable"
+    assert artifact_entries["qti_package"]["unavailable_code"] == "manual_answer_key_required"
     assert manifest["manual_follow_up"]["required"] is True
 
     source_ir = client.get(f"/v2/convert/jobs/{job_id}/artifacts/ir_json", headers=headers).json()
+    qti_report = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/qti_validation_report",
+        headers=headers,
+    ).json()
     completion_report = client.get(
         f"/v2/convert/jobs/{job_id}/artifacts/answer_key_completion_report",
         headers=headers,
@@ -278,6 +286,9 @@ def test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts
     rendered_report = json.dumps(completion_report, ensure_ascii=False, sort_keys=True)
 
     assert source_ir["items"][0]["answer_key"]["provenance"] == "absent"
+    assert qti_report["package_status"] == "blocked"
+    assert qti_report["package_sha256"] is None
+    assert qti_report["manual_follow_ups"][0]["reason_code"] == "manual_answer_key_required"
     assert completion_report["schema_version"] == ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION
     assert completion_report["items"][0]["decision_state"] == "suggested"
     assert completion_report["items"][0]["answer_payload"] == {
@@ -518,6 +529,107 @@ def test_digiexam_migration_reviewed_completion_apply_uses_overlay_without_provi
     assert effective_answer_key["lineage"]["review_outcome"] == (
         DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value
     )
+
+
+def test_digiexam_migration_reviewed_gap_completion_keeps_keys_in_pdf_and_qti(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def forbidden_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self
+        del profile
+        raise AssertionError(f"Unexpected structured LLM call for {request.item_id}")
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        forbidden_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, structured_llm=_structured_llm_config())
+    headers = _headers(identity, subject="teacher-gap-reviewed", grants=_read_grants())
+    source_payload = _embedded_image_gap_payload()
+
+    baseline_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-gap-reviewed",
+        idempotency_key="idem-reviewed-gap-baseline",
+        wait_seconds=20,
+        payload=source_payload,
+    )
+    baseline_job_id = baseline_response.json()["job"]["job_id"]
+    baseline_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
+        headers=headers,
+    ).json()
+    migration_manifest = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
+        headers=headers,
+    ).json()
+    answer_payload: dict[str, JsonValue] = {
+        "kind": "gap_fill",
+        "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["bild", "foto"]}],
+    }
+
+    overlay_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-gap-reviewed",
+        idempotency_key="idem-reviewed-gap-apply",
+        wait_seconds=20,
+        payload=source_payload,
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
+        ).value,
+        digiexam_ingestion_overlay=(
+            "teacher-overlay.json",
+            _reviewed_completion_overlay_bytes(
+                baseline_manifest=baseline_manifest,
+                item_summary=migration_manifest["item_summaries"][0],
+                answer_payload=answer_payload,
+                review_outcome=DigiExamOverlayReviewedCompletionOutcome.ACCEPTED_UNCHANGED.value,
+                candidate_payload_digest=answer_key_candidate_payload_digest(answer_payload),
+            ),
+        ),
+    )
+
+    assert overlay_response.status_code == 200
+    job_id = overlay_response.json()["job"]["job_id"]
+    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
+    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+    assert entries["examnet_pdf"]["availability"] == "available"
+    assert entries["qti_package"]["availability"] == "available"
+
+    qti_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/qti_package",
+        headers=headers,
+    )
+    assert qti_response.status_code == 200
+    with zipfile.ZipFile(BytesIO(qti_response.content)) as archive:
+        item_xml = archive.read("items/item_001.xml").decode("utf-8")
+    assert "textEntryInteraction" in item_xml
+    assert "correctResponse" in item_xml
+    assert "bild" in item_xml
+    assert "foto" in item_xml
+
+    pdf_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
+        headers=headers,
+    )
+    assert pdf_response.status_code == 200
+    with pymupdf.open(stream=pdf_response.content, filetype="pdf") as document:
+        text = "\n".join(str(page.get_text("text", sort=True)) for page in document)
+    assert "Typ: Fritext" in text
+    assert "Correct answers" in text
+    assert "bild" in text
+    assert "foto" in text
+    assert "Manuell bedömning" not in text
 
 
 def test_digiexam_migration_reviewed_completion_apply_requires_overlay(
@@ -1618,6 +1730,8 @@ def _reviewed_completion_overlay_bytes(
     kind = answer_payload.get("kind")
     if not isinstance(kind, str):
         raise RuntimeError("reviewed completion answer payload kind must be a string")
+    schema_version = _answer_payload_schema_version(kind)
+    prompt_template_version = _answer_payload_prompt_template_version(kind)
     return json.dumps(
         {
             "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
@@ -1641,9 +1755,9 @@ def _reviewed_completion_overlay_bytes(
                             "candidate_id": "candidate-item-001",
                             "candidate_payload_digest": candidate_payload_digest,
                             "provider_profile_id": "local-structured",
-                            "schema_name": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
-                            "schema_version": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
-                            "prompt_template_version": CHOICE_PROMPT_TEMPLATE_VERSION,
+                            "schema_name": schema_version,
+                            "schema_version": schema_version,
+                            "prompt_template_version": prompt_template_version,
                             "validation_state": (
                                 DigiExamAnswerKeyCompletionValidationState.VALID.value
                             ),
@@ -1655,6 +1769,18 @@ def _reviewed_completion_overlay_bytes(
         },
         sort_keys=True,
     ).encode("utf-8")
+
+
+def _answer_payload_schema_version(kind: str) -> str:
+    if kind == "gap_fill":
+        return DIGIEXAM_GAP_FILL_ANSWER_KEY_DECISION_SCHEMA_VERSION
+    return DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION
+
+
+def _answer_payload_prompt_template_version(kind: str) -> str:
+    if kind == "gap_fill":
+        return GAP_FILL_PROMPT_TEMPLATE_VERSION
+    return CHOICE_PROMPT_TEMPLATE_VERSION
 
 
 def _choice_answer_payload(correct_id: int) -> dict[str, JsonValue]:

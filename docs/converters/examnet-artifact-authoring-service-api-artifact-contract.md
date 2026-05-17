@@ -163,10 +163,10 @@ QTI packages must use
 - Images may be packaged when source IR has renderer-neutral assets and the
   manifest references them deterministically.
 - Matching, short answer, and gap fill require explicit target-profile proof
-  before production promotion. Matching IR should remain QTI-permissive, but
-  Exam.net PDF readiness currently allows only one-to-one matched pairs plus
-  unmatched right-side distractors. Exam.net QTI readiness stays
-  vendor-unproven until Exam.net exposes a QTI import test path.
+  before production promotion. Matching IR and Exam.net PDF readiness allow
+  repeated source or target associations when the item-level matching bounds
+  allow them. Exam.net QTI readiness stays vendor-unproven until Exam.net
+  exposes a QTI import test path.
 - Audio files, PDF attachments, GeoGebra, and tool resources are omitted from
   the Exam.net QTI target and reported for manual follow-up.
 
@@ -184,12 +184,12 @@ codes:
 - `qti_validation_failed`
 - `editable_docx_semantic_structure_incomplete`
 
-Matching is supported for Exam.net PDF only when source evidence contains
-source prompts, target options, exact pairings, no source-to-many-target keyed
-pairs, and no target-to-many-source keyed pairs. Unmatched target options may be
-preserved as
-distractors. If the source has matching structure but no correct pairs,
-preserve the structure and emit `manual_answer_key_required`.
+Matching is supported for Exam.net PDF when source evidence contains source
+prompts, target options, exact directed pairings, and valid matching bounds.
+Repeated source or target associations are valid when those bounds allow them.
+Unmatched target options may be preserved as distractors. If the source has
+matching structure but no correct pairs, preserve the structure and emit
+`manual_answer_key_required`.
 
 ## Follow-On Gates
 

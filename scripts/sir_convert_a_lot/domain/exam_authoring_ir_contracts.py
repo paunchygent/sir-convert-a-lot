@@ -55,8 +55,6 @@ class ExamAuthoringMatchingValidationIssueCode(StrEnum):
     ASSOCIATION_COUNT_OUT_OF_BOUNDS = "matching_association_count_out_of_bounds"
     SOURCE_ASSOCIATION_LIMIT_EXCEEDED = "matching_source_association_limit_exceeded"
     TARGET_ASSOCIATION_LIMIT_EXCEEDED = "matching_target_association_limit_exceeded"
-    EXAMNET_PDF_REPEATED_SOURCE_NOT_SUPPORTED = "examnet_pdf_matching_repeated_source_not_supported"
-    EXAMNET_PDF_REPEATED_TARGET_NOT_SUPPORTED = "examnet_pdf_matching_repeated_target_not_supported"
 
 
 @dataclass(frozen=True)
@@ -247,35 +245,9 @@ def validate_exam_authoring_matching_interaction(
 def validate_examnet_pdf_matching_profile(
     interaction: ExamAuthoringMatchingInteraction,
 ) -> ExamAuthoringMatchingValidationResult:
-    """Validate the current Exam.net PDF matching profile constraints."""
+    """Validate matching for the Exam.net PDF target profile."""
 
-    issues = list(validate_exam_authoring_matching_interaction(interaction).issues)
-    source_ids = tuple(pair.source_id for pair in interaction.answer_key.pairs)
-    target_ids = tuple(pair.target_id for pair in interaction.answer_key.pairs)
-    if len(set(source_ids)) != len(source_ids):
-        issues.append(
-            ExamAuthoringMatchingValidationIssue(
-                reason_code=(
-                    ExamAuthoringMatchingValidationIssueCode.EXAMNET_PDF_REPEATED_SOURCE_NOT_SUPPORTED
-                ),
-                message=(
-                    "Exam.net PDF matching does not support one source matched to several targets."
-                ),
-            )
-        )
-    if len(set(target_ids)) != len(target_ids):
-        issues.append(
-            ExamAuthoringMatchingValidationIssue(
-                reason_code=(
-                    ExamAuthoringMatchingValidationIssueCode.EXAMNET_PDF_REPEATED_TARGET_NOT_SUPPORTED
-                ),
-                message=(
-                    "Exam.net PDF matching does not support one target matched "
-                    "from several sources."
-                ),
-            )
-        )
-    return ExamAuthoringMatchingValidationResult(valid=not issues, issues=tuple(issues))
+    return validate_exam_authoring_matching_interaction(interaction)
 
 
 def _duplicate_choice_issues(

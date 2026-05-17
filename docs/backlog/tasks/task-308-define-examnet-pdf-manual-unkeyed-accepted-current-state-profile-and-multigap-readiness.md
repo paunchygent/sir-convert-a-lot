@@ -201,6 +201,11 @@ manual-follow-up state.
 - Kept native multi-gap PDF-to-exam support vendor-unproven; the implemented
   profile is a governed degraded manual/free-text profile, not a native
   auto-evaluation claim.
+- PR-0331 follow-up Task 321 keeps this missing-key fallback separate from
+  reviewed/source/teacher keyed gap/open-cloze output. When accepted values
+  exist, Exam.net PDF renders the gap/open-cloze item as a free-text-style item
+  with the accepted values included; the missing-key degraded profile is not
+  used to drop reviewed keys.
 - Preserved existing public JSON shape. The slice adds specific warning and
   reason-code values through existing string fields, so no OpenAPI snapshot
   regeneration or Skriptoteket generated-type update was required.

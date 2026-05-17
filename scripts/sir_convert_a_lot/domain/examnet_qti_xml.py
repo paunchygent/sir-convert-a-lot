@@ -12,6 +12,8 @@ Relationships:
 
 from __future__ import annotations
 
+import re
+from collections.abc import Iterator
 from xml.etree import ElementTree
 
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
@@ -21,6 +23,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiInteractionType,
     ExamNetQtiItem,
     ExamNetQtiMatchPair,
+    ExamNetQtiTextEntryGap,
 )
 
 QTI_NAMESPACE = "http://www.imsglobal.org/xsd/imsqti_v2p1"
@@ -29,6 +32,7 @@ QTI_SCHEMA_LOCATION = (
     "http://www.imsglobal.org/xsd/imsqti_v2p1 http://www.imsglobal.org/xsd/imsqti_v2p1.xsd"
 )
 MATCH_CORRECT_TEMPLATE = "http://www.imsglobal.org/question/qti_v2p1/rptemplates/match_correct"
+_GAP_MARKER_PATTERN = re.compile(r"(?:\[_+\]|_{3,})")
 
 
 def serialize_qti_assessment_item(
@@ -53,9 +57,13 @@ def serialize_qti_assessment_item(
     _append_response_declaration(root, item)
     _append_score_outcome(root, item)
     item_body = ElementTree.SubElement(root, _qti("itemBody"))
-    _append_prompt(item_body, item.prompt_lines)
-    _append_images(item_body, item.image_resources, image_paths)
-    _append_interaction(item_body, item)
+    if item.interaction_type == ExamNetQtiInteractionType.GAP_FILL:
+        _append_gap_fill_body(item_body, item)
+        _append_images(item_body, item.image_resources, image_paths)
+    else:
+        _append_prompt(item_body, item.prompt_lines)
+        _append_images(item_body, item.image_resources, image_paths)
+        _append_interaction(item_body, item)
     if item.evaluation_mode == ExamNetQtiEvaluationMode.AUTOMATIC and item.interaction_type in {
         ExamNetQtiInteractionType.SINGLE_CHOICE,
         ExamNetQtiInteractionType.MULTIPLE_RESPONSE,
@@ -93,6 +101,11 @@ def _append_response_declaration(
         )
         return
 
+    if item.interaction_type == ExamNetQtiInteractionType.GAP_FILL:
+        for gap in item.text_entry_gaps:
+            _append_gap_response_declaration(root, gap)
+        return
+
     cardinality = "multiple"
     base_type = "identifier"
     values: tuple[str, ...]
@@ -121,6 +134,34 @@ def _append_response_declaration(
         for value in values:
             value_element = ElementTree.SubElement(correct_response, _qti("value"))
             value_element.text = value
+
+
+def _append_gap_response_declaration(
+    root: ElementTree.Element,
+    gap: ExamNetQtiTextEntryGap,
+) -> None:
+    values = tuple(value.strip() for value in gap.accepted_values if value.strip())
+    declaration = ElementTree.SubElement(
+        root,
+        _qti("responseDeclaration"),
+        {
+            "identifier": gap.response_identifier,
+            "cardinality": "single",
+            "baseType": "string",
+        },
+    )
+    if not values:
+        return
+    correct_response = ElementTree.SubElement(declaration, _qti("correctResponse"))
+    value_element = ElementTree.SubElement(correct_response, _qti("value"))
+    value_element.text = values[0]
+    mapping = ElementTree.SubElement(declaration, _qti("mapping"), {"defaultValue": "0"})
+    for value in values:
+        ElementTree.SubElement(
+            mapping,
+            _qti("mapEntry"),
+            {"mapKey": value, "mappedValue": "1", "caseSensitive": "false"},
+        )
 
 
 def _append_score_outcome(root: ElementTree.Element, item: ExamNetQtiItem) -> None:
@@ -193,6 +234,80 @@ def _append_interaction(parent: ElementTree.Element, item: ExamNetQtiItem) -> No
         )
         return
     _append_match_interaction(parent, item.match_pairs)
+
+
+def _append_gap_fill_body(parent: ElementTree.Element, item: ExamNetQtiItem) -> None:
+    gaps = iter(item.text_entry_gaps)
+    used_count = 0
+    for line in _expanded_prompt_lines(item.prompt_lines):
+        used_count += _append_gap_prompt_line(parent, line, gaps)
+    remaining_gaps = item.text_entry_gaps[used_count:]
+    for gap in remaining_gaps:
+        paragraph = ElementTree.SubElement(parent, _qti("p"))
+        paragraph.text = f"{gap.label}: "
+        ElementTree.SubElement(
+            paragraph,
+            _qti("textEntryInteraction"),
+            {
+                "responseIdentifier": gap.response_identifier,
+                "expectedLength": _expected_text_entry_length(gap),
+            },
+        )
+
+
+def _expanded_prompt_lines(prompt_lines: tuple[str, ...]) -> tuple[str, ...]:
+    lines: list[str] = []
+    for prompt_line in prompt_lines:
+        child_lines = tuple(line.strip() for line in prompt_line.splitlines() if line.strip())
+        lines.extend(child_lines or (prompt_line,))
+    return tuple(lines)
+
+
+def _append_gap_prompt_line(
+    parent: ElementTree.Element,
+    line: str,
+    gaps: Iterator[ExamNetQtiTextEntryGap],
+) -> int:
+    paragraph = ElementTree.SubElement(parent, _qti("p"))
+    consumed = 0
+    position = 0
+    tail_target: ElementTree.Element | None = None
+    for match in _GAP_MARKER_PATTERN.finditer(line):
+        text_before_gap = line[position : match.start()]
+        if tail_target is None:
+            paragraph.text = (paragraph.text or "") + text_before_gap
+        else:
+            tail_target.tail = (tail_target.tail or "") + text_before_gap
+        gap = next(gaps, None)
+        if gap is None:
+            if tail_target is None:
+                paragraph.text = (paragraph.text or "") + match.group(0)
+            else:
+                tail_target.tail = (tail_target.tail or "") + match.group(0)
+        else:
+            tail_target = ElementTree.SubElement(
+                paragraph,
+                _qti("textEntryInteraction"),
+                {
+                    "responseIdentifier": gap.response_identifier,
+                    "expectedLength": _expected_text_entry_length(gap),
+                },
+            )
+            consumed += 1
+        position = match.end()
+    remaining_text = line[position:]
+    if tail_target is None:
+        paragraph.text = (paragraph.text or "") + remaining_text
+    else:
+        tail_target.tail = (tail_target.tail or "") + remaining_text
+    return consumed
+
+
+def _expected_text_entry_length(gap: ExamNetQtiTextEntryGap) -> str:
+    values = tuple(value.strip() for value in gap.accepted_values if value.strip())
+    if not values:
+        return "20"
+    return str(max(8, min(max(len(value) for value in values), 80)))
 
 
 def _append_choice_interaction(parent: ElementTree.Element, item: ExamNetQtiItem) -> None:

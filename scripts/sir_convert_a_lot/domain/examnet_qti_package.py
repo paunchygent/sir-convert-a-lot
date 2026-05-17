@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiPackagePlan,
     ExamNetQtiPackageStatus,
     ExamNetQtiTargetSupportStatus,
+    ExamNetQtiTextEntryGap,
     ExamNetQtiUnsupportedResource,
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_xml import serialize_qti_assessment_item
@@ -109,6 +110,23 @@ def build_examnet_qti_package_plan(
     )
 
 
+def build_blocked_examnet_qti_package_plan(
+    *,
+    package_name: str,
+    items: tuple[ExamNetQtiItem, ...],
+    manual_follow_ups: tuple[ExamNetQtiManualFollowUp, ...],
+    warnings: tuple[str, ...],
+) -> ExamNetQtiPackagePlan:
+    """Build a blocked QTI plan when source items cannot all be represented."""
+
+    return _blocked_plan(
+        package_name=package_name,
+        items=items,
+        manual_follow_ups=manual_follow_ups,
+        warnings=warnings,
+    )
+
+
 def _manual_follow_ups(items: tuple[ExamNetQtiItem, ...]) -> tuple[ExamNetQtiManualFollowUp, ...]:
     follow_ups: list[ExamNetQtiManualFollowUp] = []
     for item in items:
@@ -122,6 +140,9 @@ def _manual_follow_ups(items: tuple[ExamNetQtiItem, ...]) -> tuple[ExamNetQtiMan
                 follow_ups.append(_manual_answer_key_follow_up(item))
         if item.interaction_type == ExamNetQtiInteractionType.MULTIPLE_RESPONSE:
             if not item.correct_choice_identifiers:
+                follow_ups.append(_manual_answer_key_follow_up(item))
+        if item.interaction_type == ExamNetQtiInteractionType.GAP_FILL:
+            if any(not _accepted_gap_values(gap) for gap in item.text_entry_gaps):
                 follow_ups.append(_manual_answer_key_follow_up(item))
     return tuple(follow_ups)
 
@@ -144,6 +165,7 @@ def _item_errors(item: ExamNetQtiItem) -> tuple[str, ...]:
     if item.max_score is None and item.evaluation_mode == ExamNetQtiEvaluationMode.AUTOMATIC:
         errors.append(f"Item {item.item_id} has no point value.")
     errors.extend(_choice_errors(item))
+    errors.extend(_gap_fill_errors(item))
     errors.extend(_matching_errors(item))
     errors.extend(_image_errors(item))
     return tuple(errors)
@@ -176,6 +198,30 @@ def _choice_errors(item: ExamNetQtiItem) -> tuple[str, ...]:
     if item.interaction_type == ExamNetQtiInteractionType.MULTIPLE_RESPONSE:
         if not item.correct_choice_identifiers:
             errors.append(f"Item {item.item_id} needs one or more correct choices.")
+    return tuple(errors)
+
+
+def _gap_fill_errors(item: ExamNetQtiItem) -> tuple[str, ...]:
+    if item.interaction_type != ExamNetQtiInteractionType.GAP_FILL:
+        return ()
+    if item.evaluation_mode == ExamNetQtiEvaluationMode.MANUAL_UNKEYED:
+        return ()
+    errors: list[str] = []
+    if not item.text_entry_gaps:
+        errors.append(f"Item {item.item_id} needs one or more text-entry gaps.")
+        return tuple(errors)
+    identifiers = tuple(gap.response_identifier for gap in item.text_entry_gaps)
+    if len(set(identifiers)) != len(identifiers):
+        errors.append(f"Item {item.item_id} has duplicate gap response identifiers.")
+    unsafe_identifiers = tuple(
+        identifier
+        for identifier in identifiers
+        if not _SAFE_IDENTIFIER_PATTERN.fullmatch(identifier)
+    )
+    if unsafe_identifiers:
+        errors.append(f"Item {item.item_id} has unsafe gap response identifiers.")
+    if any(not _accepted_gap_values(gap) for gap in item.text_entry_gaps):
+        errors.append(f"Item {item.item_id} needs accepted values for every gap.")
     return tuple(errors)
 
 
@@ -359,7 +405,11 @@ def _file_sort_key(file: ExamNetQtiPackageFile) -> str:
 def _target_support_status(
     items: tuple[ExamNetQtiItem, ...],
 ) -> ExamNetQtiTargetSupportStatus:
-    if any(item.interaction_type == ExamNetQtiInteractionType.MATCHING for item in items):
+    if any(
+        item.interaction_type
+        in {ExamNetQtiInteractionType.GAP_FILL, ExamNetQtiInteractionType.MATCHING}
+        for item in items
+    ):
         return ExamNetQtiTargetSupportStatus.PROOF_GATED
     return ExamNetQtiTargetSupportStatus.VENDOR_REPORTED_MINIMUM
 
@@ -373,9 +423,17 @@ def _profile_id(
 
 
 def _proof_status(items: tuple[ExamNetQtiItem, ...]) -> ExamNetQtiExamNetProofStatus:
-    if any(item.interaction_type == ExamNetQtiInteractionType.MATCHING for item in items):
+    if any(
+        item.interaction_type
+        in {ExamNetQtiInteractionType.GAP_FILL, ExamNetQtiInteractionType.MATCHING}
+        for item in items
+    ):
         return ExamNetQtiExamNetProofStatus.NOT_PROVEN
     return ExamNetQtiExamNetProofStatus.VENDOR_REPORTED_UNPROVEN
+
+
+def _accepted_gap_values(gap: ExamNetQtiTextEntryGap) -> tuple[str, ...]:
+    return tuple(value.strip() for value in gap.accepted_values if value.strip())
 
 
 def _safe_path_stem(value: str) -> str:

@@ -183,6 +183,14 @@ Checkpoint:
   omitting `correctResponse` and automatic `responseProcessing`.
 - Accepted-current-state gap-fill items are preserved as manual/free-text QTI
   from real tracked DigiExam DXE fixture item `item-007`.
+- PR-0331 follow-up Task 321 keeps this manual/unkeyed profile separate from
+  reviewed/source/teacher keyed gap-fill output. Keyed gap-fill now emits
+  `textEntryInteraction` with accepted values; the manual/free-text fallback is
+  only for explicit accepted-current-state export when no trusted key exists.
+- QTI packages must not be offered when adapter follow-up means an item was
+  omitted from the package. Missing key/manual-follow-up state blocks package
+  availability unless the item is covered by a validated manual/unkeyed
+  accepted-current-state profile.
 - The code path can preserve matching-like contract samples as manual/free-text
   QTI, but canonical DigiExam `.dxe` sources do not carry matching items. The
   Task 303 matching sample is therefore not a DigiExam capability claim and

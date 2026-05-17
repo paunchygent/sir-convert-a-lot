@@ -94,12 +94,13 @@ source parser provenance and not as aggregate `mixed` matching provenance.
 
 ## Target Profiles
 
-Target-profile validators layer stricter target constraints on top of the
-neutral contract.
+Target-profile validators layer target-specific checks on top of the neutral
+contract.
 
-The current Exam.net PDF matching profile allows one-to-one matched pairs plus
-unmatched target distractors. It rejects one source matched to several targets
-and one target matched from several sources.
+The current Exam.net PDF matching profile uses the source-neutral matching
+bounds directly: one-to-one, many-source-to-one-target, one-source-to-many-target,
+and unmatched target distractors are valid when the interaction and per-choice
+`match_min`/`match_max` bounds allow them.
 
 Exam.net QTI import remains vendor-unproven until Exam.net exposes an import
 test path. Sir Convert may validate general QTI shape, but it must not claim
@@ -174,15 +175,17 @@ must appear as separate accepted values from trusted source, teacher/manual, or
 reviewed evidence.
 
 Target validators decide whether a gap/open-cloze interaction can be emitted as
-native Exam.net PDF, degraded manual/free-text, omitted with teacher approval,
-manual recreation guidance, general QTI, future Exam.net QTI, or another target
-shape.
+native Exam.net PDF, free-text-style PDF with accepted values included, manual
+accepted-current-state preservation, omitted with teacher approval, manual
+recreation guidance, general QTI, future Exam.net QTI, or another target shape.
 
-The current Exam.net PDF target profile reports native gap support as unproven
-and rejects native multi-gap export as unsupported target shape. Target
-readiness may still present teacher choices for degraded manual/free-text
-preservation, omission, or manual recreation. That target limitation does not
-remove source-neutral gap/open-cloze semantics from the IR.
+The current Exam.net PDF target profile keeps native gap-field import proof
+separate from artifact correctness. Reviewed/source/teacher accepted values
+must be preserved in the PDF artifact even when the PDF item renders as
+free-text. A missing-key accepted-current-state fallback may preserve visible
+content without accepted values only after an explicit teacher review decision.
+That target limitation does not remove source-neutral gap/open-cloze semantics
+from the IR.
 
 QTI 3 documents `qti-gap-match-interaction`, and QTI 2.1 includes
 `gapMatchInteraction`; these standards prove that gap interactions are QTI

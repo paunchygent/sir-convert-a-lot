@@ -40,6 +40,7 @@ class ExamNetQtiInteractionType(StrEnum):
 
     SINGLE_CHOICE = "single_choice"
     MULTIPLE_RESPONSE = "multiple_response"
+    GAP_FILL = "gap_fill"
     FREE_TEXT = "free_text"
     MATCHING = "matching"
 
@@ -121,6 +122,15 @@ class ExamNetQtiMatchPair:
 
 
 @dataclass(frozen=True)
+class ExamNetQtiTextEntryGap:
+    """One keyed text-entry gap in a QTI gap-fill item."""
+
+    response_identifier: str
+    label: str
+    accepted_values: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class ExamNetQtiImageResource:
     """One renderer-neutral image resource that may be carried in QTI."""
 
@@ -158,6 +168,7 @@ class ExamNetQtiItem:
     source_item_type: str | None = None
     choices: tuple[ExamNetQtiChoice, ...] = ()
     correct_choice_identifiers: tuple[str, ...] = ()
+    text_entry_gaps: tuple[ExamNetQtiTextEntryGap, ...] = ()
     match_pairs: tuple[ExamNetQtiMatchPair, ...] = ()
     image_resources: tuple[ExamNetQtiImageResource, ...] = ()
     unsupported_resources: tuple[ExamNetQtiUnsupportedResource, ...] = ()

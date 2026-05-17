@@ -5,7 +5,7 @@ type: epic
 status: proposed
 priority: high
 created: '2026-05-14'
-last_updated: '2026-05-15'
+last_updated: '2026-05-18'
 related:
   - docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
@@ -19,6 +19,8 @@ related:
   - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/backlog/tasks/task-306-apply-reviewed-answer-key-completion-into-effective-ir.md
+  - docs/backlog/tasks/task-321-purge-reviewed-answer-key-export-fallbacks-for-pr-0331.md
+  - docs/backlog/tasks/task-322-add-points-scoring-correction-producer-dto-before-pr-0332.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
   - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
   - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
@@ -117,6 +119,13 @@ benchmarking, advisory reports, reviewed application, and cross-repo handoff.
 Task 298 matching pair and Task 305 gapped/open-cloze accepted-value contracts
 are completed preconditions before reviewed application may write those
 answer-key shapes into effective IR.
+Task 321 owns the PR-0331 cleanup that prevents reviewed/accepted keys from
+being dropped by target-specific QTI/PDF fallbacks after they have been applied
+to effective renderer input.
+Task 322 is the small Sir Convert producer-owned prerequisite immediately
+before Skriptoteket PR-0332. It adds the source-bound points/scoring correction
+DTO and proof surface needed before Skriptoteket can expose point-editing in the
+full teacher correction workflow.
 Task 301 is an experimental Hemma runtime smoke checkpoint for Granite 4.1 8B
 FP8 on the ROCm vLLM preview image; it can inform provider viability, but it
 does not replace Task 300's `llama.cpp` GGUF benchmark matrix or authorize
@@ -151,6 +160,9 @@ deployed.
 - [x] Advisory completion can be produced without changing renderer input.
 - [ ] Applied completion requires effective provenance, review/report artifacts,
   and tests proving source provenance remains strict.
+- [ ] Reviewed/accepted keys that reach effective renderer input are preserved
+  in QTI/PDF artifacts; target proof gaps may be reported but must not remove
+  accepted key values.
 - [x] Matching answer application waits for Task 298's exact pair contract,
   and gapped/open-cloze application waits for Task 305's accepted-value
   contract.

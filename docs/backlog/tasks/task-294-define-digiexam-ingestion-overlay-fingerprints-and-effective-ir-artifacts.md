@@ -91,9 +91,9 @@ treated as first-class contract inputs rather than later UI-local state.
 - [x] Contract text states that accepting the current state is not an answer
   key, does not satisfy parser provenance, and only enables target artifacts
   that Sir Convert can render/import validly under the accepted-state policy.
-- [x] Contract text states that `Godkänn` / accept-current-state is a
-  `review_decision`, not an answer key, and cannot be treated by Skriptoteket as
-  local PDF/QTI readiness.
+- [x] Contract text states that accepted-current-state is a `review_decision`,
+  not an answer key, and cannot be treated by Skriptoteket as local PDF/QTI
+  readiness.
 - [x] Contract text states that Skriptoteket must use Sir Convert manifest
   source-binding fields when submitting overlays and must use refreshed Sir
   Convert target-readiness results before exposing PDF/QTI export actions.

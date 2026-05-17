@@ -179,9 +179,9 @@ Each effective item MUST include:
 - applied overlay entry identifiers;
 - review decisions applied to the item.
 
-`Godkänn` / accept-current-state review decisions may affect target readiness
-only after Sir Convert recomputes the effective exam and validates the target.
-They do not create answer keys and do not alter source IR provenance.
+Accepted-current-state review decisions may affect target readiness only after
+Sir Convert recomputes the effective exam and validates the target. They do not
+create answer keys and do not alter source IR provenance.
 
 ## Matching Answer-Pair Requirement
 

@@ -376,8 +376,9 @@ Checkpoint:
 - [ ] Matching answer-key pairs are first-class IR/effective-IR data.
 - [ ] Matching remains manual/unkeyed or unavailable for automatic evaluation
   until exact trusted pairs exist.
-- [ ] Exam.net PDF readiness enforces one-to-one matched pairs with optional
-  unmatched right-side distractors, while general IR remains QTI-permissive.
+- [ ] Exam.net PDF readiness follows the source-neutral matching bounds, so
+  one-to-one, many-left-to-one, one-left-to-many, and unmatched right-side
+  distractors remain supported when the item allows them.
 - [ ] Exam.net QTI readiness remains vendor-unproven until Exam.net provides an
   import test path.
 - [ ] Sir Convert and Skriptoteket consumers reference schema-version constants
@@ -459,6 +460,9 @@ data. Missing-key single-choice, missing-key multiple-response, and
 item-013-style multi-gap gap/open-cloze items must render under this explicit
 user request, either as native PDF-to-exam shapes when fixture-proven or as
 degraded manual/free-text PDF shapes when native import is unproven.
+Task 321 adds the reviewed-key correction: when accepted gap/open-cloze values
+exist, the PDF free-text-style artifact must include those values, and this
+missing-key fallback must not be used to drop reviewed keys.
 
 Task 303 is QTI-only. It proves that missing keys can become
 manual/unkeyed QTI when XML/package/profile validation allows it. It does not
@@ -490,6 +494,19 @@ Stop conditions:
 - Stop if neither native nor degraded manual/free-text rendering can preserve
   the item content requested for PDF export.
 - Stop if the profile would invent answers or source provenance.
+
+### PR-0331 reviewed-key target fallback purge
+
+Governing task:
+`task-321-purge-reviewed-answer-key-export-fallbacks-for-pr-0331.md`.
+
+Goal: prevent target-specific QTI/PDF fallbacks from removing reviewed,
+teacher-provided, or source-provided keys after those keys reach effective
+renderer input. QTI package availability must fail closed when items are
+omitted or still missing required accepted values; reviewed gap/open-cloze
+values must be emitted in keyed QTI text-entry responses and in PDF
+free-text-style artifacts.
+
 - Stop if public JSON shape changes without OpenAPI snapshot and same-slice
   consumer impact planning.
 

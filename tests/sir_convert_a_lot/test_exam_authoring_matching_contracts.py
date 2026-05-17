@@ -45,7 +45,7 @@ def test_matching_contract_serializes_with_source_neutral_schema_version() -> No
     assert "digiexam" not in repr(payload).lower()
 
 
-def test_matching_contract_allows_qti_permissive_reused_targets() -> None:
+def test_matching_contract_allows_pdf_reused_targets_when_bounds_allow() -> None:
     interaction = _matching_interaction(
         pairs=(
             ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),
@@ -57,10 +57,25 @@ def test_matching_contract_allows_qti_permissive_reused_targets() -> None:
     examnet_pdf_result = validate_examnet_pdf_matching_profile(interaction)
 
     assert neutral_result.valid is True
-    assert examnet_pdf_result.valid is False
-    assert {issue.reason_code for issue in examnet_pdf_result.issues} == {
-        ExamAuthoringMatchingValidationIssueCode.EXAMNET_PDF_REPEATED_TARGET_NOT_SUPPORTED
-    }
+    assert examnet_pdf_result.valid is True
+    assert examnet_pdf_result.issues == ()
+
+
+def test_matching_contract_allows_pdf_reused_sources_when_bounds_allow() -> None:
+    interaction = _matching_interaction(
+        pairs=(
+            ExamAuthoringMatchingPair(source_id="source-001", target_id="target-001"),
+            ExamAuthoringMatchingPair(source_id="source-001", target_id="target-002"),
+        ),
+        source_choice_bounds=(1, 0),
+    )
+
+    neutral_result = validate_exam_authoring_matching_interaction(interaction)
+    examnet_pdf_result = validate_examnet_pdf_matching_profile(interaction)
+
+    assert neutral_result.valid is True
+    assert examnet_pdf_result.valid is True
+    assert examnet_pdf_result.issues == ()
 
 
 def test_matching_contract_allows_unmatched_target_distractors() -> None:

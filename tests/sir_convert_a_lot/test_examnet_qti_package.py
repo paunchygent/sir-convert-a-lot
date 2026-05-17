@@ -35,6 +35,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiManualFollowUpReason,
     ExamNetQtiPackageStatus,
     ExamNetQtiTargetSupportStatus,
+    ExamNetQtiTextEntryGap,
     ExamNetQtiValidationStatus,
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
@@ -91,6 +92,25 @@ def test_choice_packages_encode_single_and_multiple_cardinality(tmp_path: Path) 
     assert _response_declaration(multiple_item).attrib["cardinality"] == "multiple"
     assert _choice_interaction(multiple_item).attrib["maxChoices"] == "3"
     assert _correct_values(multiple_item) == ["choice_001", "choice_002", "choice_004"]
+
+
+def test_gap_fill_package_encodes_text_entries_and_accepted_values(tmp_path: Path) -> None:
+    sample_dir = _write_sample(_sample("gap-fill-text-entry"), tmp_path)
+    item = _item_root(sample_dir / "qti-package.zip")
+    report = _read_report(sample_dir / "qti-validation-report.json")
+    xml = _item_xml(sample_dir / "qti-package.zip")
+
+    response = _response_declaration(item)
+    assert response.attrib["identifier"] == "RESPONSE_gap_001"
+    assert response.attrib["baseType"] == "string"
+    assert response.attrib["cardinality"] == "single"
+    assert item.find(f".//{{{QTI_NAMESPACE}}}textEntryInteraction") is not None
+    assert _correct_values(item) == ["ATP"]
+    assert 'mapKey="ATP"' in xml
+    assert 'mapKey="atp"' in xml
+    assert _json_string(report, "target_support_status") == (
+        ExamNetQtiTargetSupportStatus.PROOF_GATED
+    )
 
 
 def test_task_303_unkeyed_choice_preserves_options_without_automatic_evaluation(
@@ -273,6 +293,35 @@ def test_manual_unkeyed_choice_plan_passes_where_automatic_choice_blocks() -> No
 
     assert automatic_plan.status == ExamNetQtiPackageStatus.BLOCKED
     assert manual_plan.status == ExamNetQtiPackageStatus.PASSED
+
+
+def test_gap_fill_plan_blocks_when_any_gap_lacks_accepted_values() -> None:
+    plan = build_examnet_qti_package_plan(
+        package_name="missing-gap-key",
+        items=(
+            ExamNetQtiItem(
+                item_id="item_001",
+                sequence=1,
+                title="Lucktext",
+                interaction_type=ExamNetQtiInteractionType.GAP_FILL,
+                prompt_lines=("Fyll i _____.",),
+                max_score=1,
+                text_entry_gaps=(
+                    ExamNetQtiTextEntryGap(
+                        response_identifier="RESPONSE_gap_001",
+                        label="Lucka 1",
+                        accepted_values=(),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    assert plan.status == ExamNetQtiPackageStatus.BLOCKED
+    assert plan.manual_follow_ups[0].reason_code == (
+        ExamNetQtiManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED
+    )
+    assert "accepted values for every gap" in plan.warnings[0]
 
 
 def test_digiexam_ir_adapter_feeds_reusable_qti_package_plan() -> None:

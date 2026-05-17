@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-297-implement-advisory-answer-key-completion-reports-for-choice-and-gap-fill-items.md
   - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
+  - docs/backlog/tasks/task-321-purge-reviewed-answer-key-export-fallbacks-for-pr-0331.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
 labels:
   - effective-ir
@@ -174,6 +175,10 @@ raw advisory prompts/responses.
   report artifact and performs no provider calls for apply mode.
 - Kept DigiExam matching out of the runtime; matching application remains a
   future `ExamAuthoringIR v1` consumer concern for matching-capable sources.
+- PR-0331 follow-up Task 321 tightens the target contract after this task:
+  once reviewed answer keys are applied into effective renderer input, QTI and
+  PDF target-specific proof gaps must not remove those accepted keys from
+  downloadable artifacts.
 
 ## Validation Evidence
 

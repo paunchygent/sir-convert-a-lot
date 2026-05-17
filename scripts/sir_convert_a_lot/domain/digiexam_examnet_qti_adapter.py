@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiManualFollowUp,
     ExamNetQtiManualFollowUpReason,
     ExamNetQtiManualRepresentation,
+    ExamNetQtiTextEntryGap,
 )
 
 
@@ -81,7 +82,9 @@ def _qti_item(item: DigiExamIrItem, *, accepted_current_state: bool) -> ExamNetQ
             ExamNetQtiInteractionType.MULTIPLE_RESPONSE,
             accepted_current_state=accepted_current_state,
         )
-    if item.item_type == DigiExamItemType.GAP_FILL and accepted_current_state:
+    if item.item_type == DigiExamItemType.GAP_FILL:
+        if item.answer_key.correct_gap_answers or not accepted_current_state:
+            return _gap_fill_item(item)
         return _manual_free_text_item(item, _gap_fill_preservation_lines(item))
     return None
 
@@ -161,6 +164,38 @@ def _manual_free_text_item(
     )
 
 
+def _gap_fill_item(item: DigiExamIrItem) -> ExamNetQtiItem:
+    base_item = _base_qti_item(item, ExamNetQtiInteractionType.GAP_FILL)
+    accepted_values_by_gap_id = _accepted_values_by_gap_id(item)
+    return ExamNetQtiItem(
+        item_id=base_item.item_id,
+        sequence=base_item.sequence,
+        title=base_item.title,
+        interaction_type=ExamNetQtiInteractionType.GAP_FILL,
+        prompt_lines=base_item.prompt_lines,
+        max_score=base_item.max_score,
+        source_item_type=item.item_type.value,
+        text_entry_gaps=tuple(
+            ExamNetQtiTextEntryGap(
+                response_identifier=f"RESPONSE_{_gap_identifier(index)}",
+                label=f"Lucka {index}",
+                accepted_values=accepted_values_by_gap_id.get(gap.guid, ()),
+            )
+            for index, gap in enumerate(item.gaps, start=1)
+        ),
+        image_resources=base_item.image_resources,
+    )
+
+
+def _accepted_values_by_gap_id(item: DigiExamIrItem) -> dict[str, tuple[str, ...]]:
+    values_by_gap_id: dict[str, list[str]] = {gap.guid: [] for gap in item.gaps}
+    for answer in item.answer_key.correct_gap_answers:
+        stripped_value = answer.value.strip()
+        if stripped_value and answer.guid in values_by_gap_id:
+            values_by_gap_id[answer.guid].append(stripped_value)
+    return {gap_id: tuple(values) for gap_id, values in values_by_gap_id.items()}
+
+
 def _gap_fill_preservation_lines(item: DigiExamIrItem) -> tuple[str, ...]:
     lines = [*_prompt_lines(item)]
     for index, gap in enumerate(item.gaps, start=1):
@@ -215,6 +250,10 @@ def _safe_item_identifier(value: str) -> str:
 
 def _choice_identifier(value: int) -> str:
     return f"choice_{value:03d}"
+
+
+def _gap_identifier(value: int) -> str:
+    return f"gap_{value:03d}"
 
 
 class _TextExtractor(HTMLParser):

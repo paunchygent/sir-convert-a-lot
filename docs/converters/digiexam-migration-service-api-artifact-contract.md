@@ -605,13 +605,12 @@ item-local ID/value contract. Candidate lineage is audit metadata; it is not
 source/parser provenance and does not authorize cross-job lookup in this
 slice.
 
-Matching overlays are not part of the DigiExam migration overlay contract.
-Canonical DigiExam `.dxe` files do not carry matching items, and the DigiExam
-adapter must not introduce a speculative keyed matching QTI bridge. Task
+Matching overlays are not part of the DigiExam-specific migration overlay
+contract because this source adapter does not receive canonical matching items
+from `.dxe`. That source fact must not define generic target support. Task
 298/307 moves matching semantics into the source-neutral `ExamAuthoringIR v1`
-slice instead. Future matching-capable source adapters must use that neutral
-contract with `source_id`/`target_id` directed pairs and must not accept retired
-`left_id`/`right_id` aliases.
+slice so matching-capable source adapters can use `source_id`/`target_id`
+directed pairs without accepting retired `left_id`/`right_id` aliases.
 
 The implementation must version affected public DigiExam artifacts for removed
 legacy matching overlay fields and update Skriptoteket consumers in the same
@@ -982,7 +981,7 @@ unavailable-artifact error.
 | --- | --- | --- | --- |
 | `bundle_manifest` | `artifact-bundle.json` | `application/json` | Always available for terminal bundles. |
 | `examnet_pdf` | `examnet-import.pdf` | `application/pdf` | Available when the Exam.net PDF renderer carries all required content and assets. Blocked when target shape is unsupported. |
-| `qti_package` | `qti-package.zip` | `application/zip` | Available when the Task 280 QTI package generator passes the governed profile. Blocked when validation fails or the source shape falls outside the proof-gated QTI profile. |
+| `qti_package` | `qti-package.zip` | `application/zip` | Available when the Task 280 QTI package generator passes the governed local profile. Blocked when local validation fails, when adapter mapping cannot represent all source items, or when required accepted values are missing. Live Exam.net import proof state is reported separately. |
 | `qti_validation_report` | `qti-validation-report.json` | `application/json` | Present when QTI generation is requested or defaulted. Task 280 defines `examnet_qti_validation_report_v1`; Task 282 service bundles expose this report as a named artifact. |
 | `ir_json` | `digiexam-ir.json` | `application/json` | Available when `.dxe` parsing reaches IR generation. May include teacher-owned embedded asset payloads required by renderers. |
 | `effective_ir_json` | `digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, or review decision changes renderer input. Uses `digiexam_effective_exam_v2`, not the parser-owned source IR schema. |
@@ -1111,7 +1110,7 @@ entries, target readiness reports, and manual-follow-up reports:
 
 `target_readiness_report_v1` is the consumer authority for enabling target
 actions. Skriptoteket must not derive export availability from `bundle_status`,
-artifact `availability`, manual-follow-up counts, or a local `Godkänn` flag.
+artifact `availability`, manual-follow-up counts, or a local UI state flag.
 
 Each row MUST include:
 
@@ -1176,10 +1175,10 @@ Example:
 }
 ```
 
-Matching readiness rows are reserved for future matching-capable source flows
-that consume `ExamAuthoringIR v1`; DigiExam `.dxe` migration must not emit
-keyed matching readiness rows. Future matching readiness rows must distinguish
-at least:
+Matching readiness rows are owned by matching-capable source flows that consume
+`ExamAuthoringIR v1`; DigiExam `.dxe` migration must not invent keyed matching
+rows from a source dialect that does not carry them. Matching readiness rows
+must distinguish at least:
 
 - `matching_pairs_missing`: the IR/effective item has matching structure but no
   trusted directed pairs.
@@ -1187,44 +1186,44 @@ at least:
   unknown source/left or target/right ID.
 - `matching_association_limits_exceeded`: the directed pair set violates the
   item's intermediary `match_min`/`match_max` or association count limits.
-- `matching_shape_not_supported_by_examnet_pdf`: the item is valid IR or
-  general QTI shape, but the Exam.net PDF target profile rejects it, such as
-  left-to-many or right-to-many keyed matching.
 - `examnet_qti_import_unproven`: a package may be general-QTI valid, but live
   Exam.net QTI import readiness cannot be claimed until Exam.net exposes an
   import test path.
 
 Skriptoteket must display these as Sir Convert-owned readiness states. It must
 not infer exportability from duplicate right IDs, unmatched right IDs, or local
-pair counts.
+pair counts. Repeated source or target associations are supported when the
+source-neutral matching interaction bounds allow them.
 
 Gap/open-cloze readiness rows consume the Task 305
 `ExamAuthoringGapOpenClozeInteraction` semantics. Missing accepted values on
 required gaps mean the item is structurally valid but not automatically
-evaluable. Unsupported native target export, such as unproven multi-gap
-Exam.net PDF import, is reported as a native-target limitation with teacher
-action
-`choose_degraded_manual_free_text_or_omit_or_manual_recreation`. When the user
-explicitly accepts current state for PDF export and Sir Convert can preserve
-visible content, the required fallback is a governed degraded/manual PDF
-representation rather than target unavailability. This preserves the teacher's
-choices: include a degraded/manual/free-text representation, omit the item, or
-use the item as a source for manual recreation in the target authoring UI.
+evaluable. When accepted values exist, target proof gaps must not remove them
+from the generated artifacts. Exam.net PDF may render gap/open-cloze as a
+free-text-style item, but the accepted values must be included. Exam.net QTI may
+remain live-import proof-gated, but the package must still carry the keyed
+text-entry responses when local QTI generation succeeds.
 
-`Godkänn` / accept-current-state is represented only as a source-bound
+Unsupported native target export, such as unproven native multi-gap Exam.net
+PDF import, is reported as a native-target limitation only for the native target
+claim. When the user explicitly accepts current state for PDF export and no
+trusted key exists, the required fallback is a governed manual PDF
+representation rather than target unavailability if visible content can be
+preserved. This preserves the teacher's choices: include a manual/free-text
+representation, omit the item, or use the item as a source for manual
+recreation in the target authoring UI.
+
+An accepted-current-state decision is represented only as a source-bound
 `review_decision` in `digiexam_ingestion_overlay_v2`. It can enable export only
 after Sir Convert validates the overlay, recomputes effective exam and target
 readiness, creates the target bytes, and validates that target. It never creates
 an answer key and never changes source IR provenance.
 
-Task 303 defines this accepted-current-state path for QTI only. Exam.net PDF
-requires a separate governed manual/unkeyed target profile before accepted
-current state can enable PDF for missing-key machine-marked items. Task 308
-owns that profile and must support user-requested PDF rendering for missing-key
-single-choice, missing-key multiple-response, and item-013-style multi-gap
-gap/open-cloze items by preserving visible content without answer-key or
-automatic-evaluation claims. Until that profile is implemented, PDF may remain
-unavailable even when QTI is `ready_after_accepted_current_state`.
+Task 303 defines this accepted-current-state path for QTI. Task 308 defines the
+Exam.net PDF counterpart for missing-key machine-marked items. These profiles
+must remain separate from reviewed/source/teacher key application: reviewed
+keys are artifact data, while accepted current state is an explicit export
+decision without a key.
 
 When an item has multiple material blockers, such as missing accepted values
 and a multi-gap `Lucktext` shape without a promoted native Exam.net PDF target,
@@ -1254,8 +1253,8 @@ The adapter must not:
 - parse `.dxe` or result PDFs;
 - infer answer keys;
 - rewrite target-shape warnings;
-- infer matching target support from pair counts, duplicate IDs, or unmatched
-  right-side options;
+- infer matching target support from pair counts, duplicate IDs, repeated
+  associations, or unmatched right-side options;
 - inspect Sir Convert job directories;
 - choose private artifact paths;
 - hide target readiness, validation-failed, or manual-follow-up states from

@@ -19,6 +19,10 @@ from pathlib import Path
 
 import pymupdf
 
+from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
+    DigiExamAnswerKeyProvenance,
+    DigiExamGapAnswer,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf import (
     build_digiexam_examnet_pdf_document,
@@ -29,6 +33,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_contracts import (
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
+    DigiExamIrAnswerKey,
     build_digiexam_intermediate_exam,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_examnet_pdf_renderer import (
@@ -61,7 +66,8 @@ def test_examnet_pdf_document_uses_promoted_converter_shape_without_option_label
     assert "Type: Multiple response" in document.html
     assert "Choose all correct answers" in document.html
     assert "Correct answers: First; Third" in document.html
-    assert "Type: Short answer" in document.html
+    assert document.html.count("Typ: Fritext") == 2
+    assert "Type: Short answer" not in document.html
     assert "Correct answers: Stockholm; stockholm" in document.html
     assert "A. Alpha" not in document.html
     assert "<li>" not in document.html
@@ -92,7 +98,10 @@ def test_examnet_pdf_document_accepts_current_state_for_missing_key_choice() -> 
 
     assert document.status == DigiExamExamNetPdfStatus.SUCCESS
     assert "Typ: Fritext" in document.html
-    assert "Ursprunglig flervalsfråga med ett svar utan betrott facit" in document.html
+    assert "Ursprunglig flervalsfråga med ett svar. Bedöms manuellt efter import." in (
+        document.html
+    )
+    assert "Manuell bedömning" not in document.html
     assert "<p>Alpha</p>" in document.html
     assert "<p>Beta</p>" in document.html
     assert "Correct answer:" not in document.html
@@ -113,7 +122,8 @@ def test_examnet_pdf_document_accepts_current_state_for_item_013_multigap() -> N
     assert len(document.asset_files) == 1
     assert document.html.count("[____]") == 5
     assert "Typ: Fritext" in document.html
-    assert "Ursprunglig lucktext utan betrodda accepterade värden" in document.html
+    assert "Ursprunglig lucktext. Bedöms manuellt efter import." in document.html
+    assert "Manuell bedömning" not in document.html
     assert "Lucka 1" in document.html
     assert "Lucka 5" in document.html
     assert "Correct answers:" not in document.html
@@ -124,6 +134,37 @@ def test_examnet_pdf_document_accepts_current_state_for_item_013_multigap() -> N
     assert DigiExamExamNetPdfWarningCode.EXAMNET_PDF_MULTI_GAP_OPEN_CLOZE_DEGRADED in (
         nonblocking_codes
     )
+
+
+def test_examnet_pdf_document_keeps_reviewed_multigap_keys_in_free_text_shape() -> None:
+    exam = _item_013_exam()
+    item = exam.items[0]
+    answers = tuple(
+        DigiExamGapAnswer(guid=gap.guid, value=f"facit {index}")
+        for index, gap in enumerate(item.gaps, start=1)
+    )
+    keyed_item = replace(
+        item,
+        answer_key=DigiExamIrAnswerKey(
+            provenance=DigiExamAnswerKeyProvenance.MANUAL_TEACHER_KEY,
+            correct_alternative_ids=(),
+            correct_gap_answers=answers,
+        ),
+    )
+    keyed_exam = replace(exam, items=(keyed_item,))
+
+    document = build_digiexam_examnet_pdf_document(keyed_exam)
+
+    assert document.status == DigiExamExamNetPdfStatus.SUCCESS
+    assert "Typ: Fritext" in document.html
+    assert "Type: Short answer" not in document.html
+    assert "Correct answers:" in document.html
+    assert "Lucka 1: facit 1" in document.html
+    assert "Lucka 5: facit 5" in document.html
+    assert "Manuell bedömning" not in document.html
+    assert DigiExamExamNetPdfWarningCode.UNSUPPORTED_ITEM_TYPE not in {
+        warning.code for warning in document.warnings
+    }
 
 
 def test_examnet_pdf_document_blocks_source_labelled_options() -> None:

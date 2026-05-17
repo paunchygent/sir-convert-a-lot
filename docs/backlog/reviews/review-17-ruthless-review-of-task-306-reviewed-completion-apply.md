@@ -5,7 +5,7 @@ type: review
 status: completed
 priority: high
 created: '2026-05-15'
-last_updated: '2026-05-15'
+last_updated: '2026-05-17'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
@@ -20,7 +20,8 @@ labels:
   - effective-ir
   - openapi
   - skriptoteket-sync
-  - changes-requested
+  - approved
+  - closed
 ---
 
 Structured review artifact for implementation or readiness checks.
@@ -76,7 +77,7 @@ Structured review artifact for implementation or readiness checks.
 
 ## Findings
 
-1. [ ] `high` - Skriptoteket's checked-in Sir Convert generated OpenAPI types
+1. [x] `historical-high` - Skriptoteket's checked-in Sir Convert generated OpenAPI types
    are stale after Task 306 changed the producer snapshot.
 
    Evidence:
@@ -136,6 +137,15 @@ Structured review artifact for implementation or readiness checks.
    `DigiExamEffectiveAnswerKeyV1.lineage`, and
    `DigiExamIngestionOverlayItem.reviewed_completion_answer_key`.
 
+   Closeout:
+   The finding is retained as historical review evidence, but it is no longer
+   active. On 2026-05-17 a fresh regeneration from the current Sir Convert v2
+   OpenAPI snapshot produced no diff against Skriptoteket's checked-in
+   `frontend/apps/skriptoteket/src/api/sirConvertOpenapi.d.ts`, and the
+   checked-in file contains `DigiExamEffectiveAnswerKeyLineageV1`,
+   `DigiExamEffectiveAnswerKeyV1.lineage`, and
+   `DigiExamIngestionOverlayItem.reviewed_completion_answer_key`.
+
 ## Verified Checks
 
 - Task 306 semantics pass locally: reviewed candidates are accepted only through
@@ -161,28 +171,26 @@ Structured review artifact for implementation or readiness checks.
 
 ## Decision
 
-changes_requested
+approved
 
 ## Response
 
-No remediation has been applied in this review pass.
-
 Sir Convert's Task 306 implementation passes the reviewed-overlay/effective-IR
-semantics and no-provider checks reviewed above. Approval is withheld because
-the downstream Skriptoteket generated Sir Convert OpenAPI type surface is stale
-against the Task 306 producer snapshot. The next implementation slice should be
-a narrow Skriptoteket consumer-sync pass.
+semantics and no-provider checks reviewed above. The original downstream
+generated-type drift finding is closed by current regeneration proof and should
+not be used as active evidence for later Skriptoteket `PR-0331` work. Future
+staleness claims must be grounded in current producer contract changes and a
+fresh consumer regeneration/diff, not this historical review state.
 
 ## Follow-up Actions
 
-1. Open or execute a narrow Skriptoteket consumer-sync pass that regenerates
-   `frontend/apps/skriptoteket/src/api/sirConvertOpenapi.d.ts` from Sir
-   Convert's Task 306 OpenAPI snapshot and updates only the necessary derived
-   Sir Convert Gateway types, constants, fixtures, and focused tests.
+None for Task 306. Later Skriptoteket reviewed-key artifact proof remains
+governed by Skriptoteket `PR-0331`, not by this review.
 
 ## Completion
 
-Review retained on 2026-05-15 with `changes_requested`.
+Review retained on 2026-05-15 with `changes_requested`, then closed as
+`approved` on 2026-05-17 after current consumer regeneration proof.
 
 Validation evidence:
 
@@ -193,6 +201,11 @@ Validation evidence:
   written:
   `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_ingestion_overlay.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_default_artifact_route_does_not_call_structured_llm tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_reviewed_completion_apply_uses_overlay_without_provider tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_reviewed_completion_apply_requires_overlay tests/sir_convert_a_lot/test_openapi_contract_v2.py`
   -> 17 passed.
+- Current closeout proof on 2026-05-17:
+  `frontend/apps/skriptoteket/node_modules/.bin/openapi-typescript /Users/olofs_mba/Documents/Repos/sir-convert-a-lot/docs/_generated/openapi/sir-convert-a-lot-v2.openapi.json -o /tmp/sirConvertOpenapi.current.d.ts`
+  followed by
+  `diff -u frontend/apps/skriptoteket/src/api/sirConvertOpenapi.d.ts /tmp/sirConvertOpenapi.current.d.ts`
+  -> no diff.
 
 ## Checklist
 
@@ -200,4 +213,4 @@ Validation evidence:
 - [x] Decision recorded
 - [x] Response recorded
 - [x] Follow-up tasks linked
-- [ ] Review closed
+- [x] Review closed
