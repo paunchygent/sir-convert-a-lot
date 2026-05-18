@@ -274,6 +274,8 @@ def test_execute_workflow_records_public_edge_report(
     assert checks["default_host_reserved_placeholder_passed"] is True
     assert checks["structured_llm_models_reachable"] is True
     assert checks["structured_llm_microprobe_passed"] is True
+    assert checks["live_smoke_required"] is False
+    assert report["live_smoke_failure"] is None
     assert report["public_edge"] is not None
     assert report["structured_llm"] is not None
 
@@ -353,3 +355,86 @@ def test_execute_workflow_records_structured_llm_failure_before_ocr_smoke(
     assert checks["structured_llm_models_reachable"] is False
     assert checks["structured_llm_microprobe_passed"] is False
     assert checks["live_smoke_passed"] is False
+    assert checks["live_smoke_required"] is False
+
+
+def test_execute_workflow_records_live_smoke_failure_without_failing_deploy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run_command(
+        command: list[str],
+        *,
+        label: str,
+        env: dict[str, str] | None = None,
+        redactions: tuple[str, ...] = (),
+    ) -> str:
+        del label, env, redactions
+        if command == ["git", "push", "origin", "HEAD"]:
+            return ""
+        raise AssertionError(f"unexpected local command: {command!r}")
+
+    def fake_run_remote(
+        remote_args: list[str],
+        *,
+        label: str,
+        redactions: tuple[str, ...] = (),
+    ) -> str:
+        del label, redactions
+        if remote_args == ["git", "pull", "--ff-only"]:
+            return ""
+        if remote_args == ["git", "rev-parse", "HEAD"]:
+            return "abc\n"
+        if remote_args[:4] == ["pdm", "run", "python", "-m"]:
+            raise hemma_deploy_and_verify.CommandExecutionError(
+                "remote verify_hemma_v2_conversions failed (exit=1).\n"
+                "stdout:\n\nstderr:\nVerification failed: gpu_not_available"
+            )
+        if remote_args == ["curl", "-fsS", "http://127.0.0.1:28085/metrics"]:
+            return "# safe metrics\n"
+        raise AssertionError(f"unexpected remote command: {remote_args!r}")
+
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", fake_run_command)
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
+    monkeypatch.setattr(hemma_deploy_and_verify, "_remote_recreate_service", lambda: None)
+    monkeypatch.setattr(
+        hemma_deploy_and_verify,
+        "_fetch_readyz_with_retry",
+        lambda service_url: {"ready": True, "service_revision": "abc"},
+    )
+    monkeypatch.setattr(
+        hemma_deploy_and_verify,
+        "verify_structured_llm_provider",
+        lambda run_remote: {
+            "models_reachable": True,
+            "structured_probe_passed": True,
+            "provider_url": "https://api.openai.com",
+        },
+    )
+    monkeypatch.setattr(
+        hemma_deploy_and_verify,
+        "verify_public_edge",
+        lambda **kwargs: {"status": "passed"},
+    )
+
+    settings = hemma_deploy_and_verify.WorkflowSettings(
+        expected_revision="abc",
+        lane="host",
+        service_url="http://127.0.0.1:28085",
+        output_root=tmp_path,
+        api_key="secret",
+        api_key_source="cli",
+        allow_dev_key=False,
+    )
+
+    report = hemma_deploy_and_verify.execute_workflow(settings)
+
+    checks = report["checks"]
+    assert isinstance(checks, dict)
+    assert report["status"] == "passed"
+    assert report["failure"] is None
+    assert checks["live_smoke_passed"] is False
+    assert checks["live_smoke_required"] is False
+    assert "gpu_not_available" in str(report["live_smoke_failure"])
+    report_md = (tmp_path / "report.md").read_text(encoding="utf-8")
+    assert "## Non-Blocking Evidence" in report_md

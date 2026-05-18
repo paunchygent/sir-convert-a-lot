@@ -44,6 +44,7 @@ def build_report_markdown(report: dict[str, object]) -> str:
         f"- structured_llm_models_reachable: `{llm_models}`",
         f"- structured_llm_microprobe_passed: `{llm_probe}`",
         f"- live_smoke_passed: `{checks_obj.get('live_smoke_passed')}`",
+        f"- live_smoke_required: `{checks_obj.get('live_smoke_required')}`",
         f"- metrics_scan_passed: `{checks_obj.get('metrics_scan_passed')}`",
         f"- public_https_reserved_passed: `{checks_obj.get('public_https_reserved_passed')}`",
         f"- public_tls_certificate_passed: `{checks_obj.get('public_tls_certificate_passed')}`",
@@ -52,6 +53,9 @@ def build_report_markdown(report: dict[str, object]) -> str:
         f"- metrics_forbidden_substrings: `{forbidden}`",
         "",
     ]
+    live_smoke_failure = report.get("live_smoke_failure")
+    if isinstance(live_smoke_failure, str) and live_smoke_failure.strip() != "":
+        lines.extend(["## Non-Blocking Evidence", "", live_smoke_failure, ""])
     failure_obj = report.get("failure")
     if isinstance(failure_obj, str) and failure_obj.strip() != "":
         lines.extend(["## Failure", "", failure_obj, ""])

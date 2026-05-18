@@ -74,8 +74,11 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
   - `dev-only-key` is forbidden unless explicitly passed or `--allow-dev-key` is set,
   - API keys must never be written to artifacts or logs.
 - Add canonical one-command deploy+verify workflow:
-  - push -> remote pull -> rebuild/recreate -> readiness parity -> live conversion smoke ->
-    metrics safety assertions.
+  - push -> remote pull -> rebuild/recreate -> readiness parity -> structured LLM
+    provider verification -> metrics/public-edge safety assertions.
+  - The legacy live conversion smoke is retained as non-blocking evidence only;
+    GPU worker unavailability must not fail deploy parity for provider/config
+    deployments.
 - Update runbook guidance and task/docs references with the hardened verification contract.
 
 ## Deliverables
@@ -96,6 +99,9 @@ pre-slice gate for Story 20 execution (`T72`, `T74`).
   - `test_lane_port_mapping_host_and_docker`,
   - `test_metrics_scan_rejects_forbidden_job_id_substrings`.
 - [x] GPU busy sampling false-negative in live verifier fixed and regression-tested.
+- [x] Legacy V2 conversion smoke is non-blocking evidence in
+  `hemma-deploy-and-verify`; deploy pass/fail is gated by revision/readiness
+  parity, structured LLM verification, metrics, and public-edge checks.
 
 ## Acceptance Criteria
 

@@ -41,6 +41,11 @@ runtime guidance.
 - Short shell probe: `pdm run run-hemma --shell "<command>"`
 - Deploy and live verify: `pdm run hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
 
+`hemma-deploy-and-verify` gates deploy success on revision/readiness parity,
+structured LLM provider verification, metrics safety, and public-edge reserved
+state. The legacy V2 conversion smoke is evidence only; `gpu_not_available`
+there is a conversion-worker finding, not a deploy failure.
+
 Use the wrapper from the local repo root. It is environment-aware: from a
 client machine it SSHes to Hemma; from the canonical Hemma Server checkout it
 runs directly after checking the hostname, repo root, and shared skill

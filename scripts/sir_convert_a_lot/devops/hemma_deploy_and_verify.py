@@ -315,6 +315,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
             "expected_revision_matches_remote": False,
             "service_revision_matches_remote": False,
             "live_smoke_passed": False,
+            "live_smoke_required": False,
             "metrics_scan_passed": False,
             "public_https_reserved_passed": False,
             "public_tls_certificate_passed": False,
@@ -325,6 +326,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         },
         "public_edge": None,
         "structured_llm": None,
+        "live_smoke_failure": None,
         "failure": None,
     }
 
@@ -386,14 +388,17 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
             "--output-root",
             remote_smoke_output_root,
         ]
-        _run_remote(
-            remote_verify_args,
-            label="remote verify_hemma_v2_conversions",
-            redactions=(settings.api_key,),
-        )
-        checks_obj = report["checks"]
-        if isinstance(checks_obj, dict):
-            checks_obj["live_smoke_passed"] = True
+        try:
+            _run_remote(
+                remote_verify_args,
+                label="remote verify_hemma_v2_conversions",
+                redactions=(settings.api_key,),
+            )
+            checks_obj = report["checks"]
+            if isinstance(checks_obj, dict):
+                checks_obj["live_smoke_passed"] = True
+        except CommandExecutionError as exc:
+            report["live_smoke_failure"] = str(exc)
 
         metrics_text = _run_remote(
             ["curl", "-fsS", f"{settings.service_url}/metrics"],
@@ -468,6 +473,7 @@ def main(argv: list[str] | None = None) -> int:
                 "expected_revision_matches_remote": False,
                 "service_revision_matches_remote": False,
                 "live_smoke_passed": False,
+                "live_smoke_required": False,
                 "metrics_scan_passed": False,
                 "public_https_reserved_passed": False,
                 "public_tls_certificate_passed": False,
@@ -478,6 +484,7 @@ def main(argv: list[str] | None = None) -> int:
             },
             "public_edge": None,
             "structured_llm": None,
+            "live_smoke_failure": None,
             "failure": str(exc),
         }
         initialize_public_edge_artifacts(output_root)
