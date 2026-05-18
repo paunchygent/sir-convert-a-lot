@@ -51,6 +51,10 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   source-fingerprint readiness is pinned, reviewed/manual key coexistence is
   tested, OpenAPI is refreshed, and Skriptoteket generated DTOs/preflight now
   consume both new fields.
+- Task 323 completed the producer-owned prerequisite before Skriptoteket
+  matching consumer work: source-neutral `ExamAuthoringIR v1` matching DTO,
+  no DigiExam matching overlay, OpenAPI refreshed, and Skriptoteket generated
+  consumer types plus a focused preflight spec now expose the matching DTO.
 
 ## Active Pointers
 
@@ -85,11 +89,14 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   Next Story 46 tasks: Tasks 288/289.
 - Completed DigiExam route/runtime and public Exam Converter docs: Tasks
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
-- Active answer-key completion lane: Epic 11. Tasks 294-309/312/319/321/322
+- Active answer-key completion lane: Epic 11. Tasks 294-309/312/319/321-323
   built provider, advisory, overlay/effective-IR, unkeyed-manual QTI,
-  Qwen3.6, target-key preservation, and point-correction producer surfaces.
-  Qwen3.6 MTP on `llama.cpp` is the guarded advisory model; automatic
-  promotion remains blocked by 3 wrong-but-valid suggestions.
+  Qwen3.6, target-key preservation, point-correction producer surfaces, and
+  the source-neutral matching manual-answer-key producer DTO. Qwen3.6 MTP on
+  `llama.cpp` is the guarded advisory model; automatic promotion remains
+  blocked by 3 wrong-but-valid suggestions.
+- Completed matching producer DTO task:
+  `docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md`.
 - Review 17 for Task 306 is closed as `approved`; future generated-type
   staleness claims need current producer-contract and consumer-regeneration
   evidence, not the historical PR-0331 finding.
@@ -130,6 +137,10 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 1. Continue Skriptoteket `PR-0332` from the completed Task 322 producer and
    consumer-contract preflight: implement source-bound correction UI using the
    returned Sir Convert effective IR/readiness/report state.
+1. Skriptoteket matching manual-answer-key consumer work may now start from
+   Task 323's generated `ExamAuthoringMatchingManualAnswerKey` type, but must
+   keep DigiExam overlays choice/gap-only and must not infer matching pairs
+   locally.
 1. Continue PR-0331 from the completed Sir Convert Task 321 cleanup: the next
    answer-key UI/consumer slice must preserve reviewed gap/open-cloze keys in
    QTI and PDF artifacts, must not offer QTI packages when adapter follow-up

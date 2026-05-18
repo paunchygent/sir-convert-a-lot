@@ -2643,6 +2643,102 @@
         "title": "DigiExamTargetReadinessRowV1",
         "type": "object"
       },
+      "ExamAuthoringMatchingManualAnswerKey": {
+        "additionalProperties": false,
+        "description": "Source-neutral matching manual answer-key submission.",
+        "properties": {
+          "answer_key": {
+            "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyPayload"
+          },
+          "interaction_id": {
+            "minLength": 1,
+            "title": "Interaction Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "matching",
+            "title": "Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "exam_authoring_ir_v1",
+            "default": "exam_authoring_ir_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Item Fingerprint"
+          }
+        },
+        "required": [
+          "kind",
+          "interaction_id",
+          "answer_key"
+        ],
+        "title": "ExamAuthoringMatchingManualAnswerKey",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingManualAnswerKeyPair": {
+        "additionalProperties": false,
+        "description": "One submitted source-to-target matching answer pair.",
+        "properties": {
+          "source_id": {
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "target_id": {
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "target_id"
+        ],
+        "title": "ExamAuthoringMatchingManualAnswerKeyPair",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingManualAnswerKeyPayload": {
+        "additionalProperties": false,
+        "description": "Whole-key matching answer payload with source-neutral provenance.",
+        "properties": {
+          "pairs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyPair"
+            },
+            "title": "Pairs",
+            "type": "array"
+          },
+          "provenance": {
+            "enum": [
+              "absent",
+              "source_provided",
+              "teacher_provided",
+              "reviewed"
+            ],
+            "title": "Provenance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provenance"
+        ],
+        "title": "ExamAuthoringMatchingManualAnswerKeyPayload",
+        "type": "object"
+      },
       "ExamMigrationTargetV2": {
         "description": "Supported target artifacts for exam-migration bundle routes.",
         "enum": [
@@ -3905,6 +4001,7 @@
           "digiexam_ingestion_overlay": "#/components/schemas/DigiExamIngestionOverlay",
           "digiexam_migration_bundle_manifest": "#/components/schemas/DigiExamMigrationBundleManifestV2",
           "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
+          "exam_authoring_matching_manual_answer_key": "#/components/schemas/ExamAuthoringMatchingManualAnswerKey",
           "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
           "job_spec": "#/components/schemas/JobSpecV2",
           "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1"

@@ -4,7 +4,7 @@ id: CONV-exam-authoring-ir-v1-contract
 title: ExamAuthoringIR v1 Contract
 status: active
 created: 2026-05-15
-updated: 2026-05-15
+updated: 2026-05-18
 owners:
   - platform
 tags:
@@ -17,6 +17,7 @@ tags:
 links:
   - docs/backlog/tasks/task-307-define-source-neutral-exam-authoring-ir-v1-and-adapter-boundary.md
   - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
+  - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
 ---
@@ -112,13 +113,57 @@ Runtime value objects and validators live in:
 
 - `scripts/sir_convert_a_lot/domain/exam_authoring_ir_contracts.py`;
 - `scripts/sir_convert_a_lot/domain/exam_authoring_schema_versions.py`.
+- `scripts/sir_convert_a_lot/domain/exam_authoring_matching_manual_answer_key.py`
+  owns the Task 323 producer-ready matching manual-answer-key submission DTO
+  and application boundary.
 
 Focused proof lives in:
 
 - `tests/sir_convert_a_lot/test_exam_authoring_matching_contracts.py`.
+- `tests/sir_convert_a_lot/test_exam_authoring_matching_manual_answer_key.py`.
 
 The DigiExam parser and `DigiExamIntermediateExam` contracts intentionally do
 not contain matching structures or matching answer pairs after this slice.
+
+## Matching Manual Answer-Key Producer DTO
+
+Task 323 exposes a source-neutral matching manual-answer-key producer DTO for
+Skriptoteket and other consumers that need to submit reviewed teacher keys
+against `ExamAuthoringIR v1` matching interactions. The DTO is not a DigiExam
+overlay and must not be represented as `DigiExamOverlayMatchingManualAnswerKey`.
+
+The public DTO shape is:
+
+```json
+{
+  "schema_version": "exam_authoring_ir_v1",
+  "kind": "matching",
+  "interaction_id": "matching-001",
+  "source_item_fingerprint": "sha256:item-source",
+  "answer_key": {
+    "provenance": "teacher_provided",
+    "pairs": [
+      {
+        "source_id": "source-001",
+        "target_id": "target-001"
+      }
+    ]
+  }
+}
+```
+
+The DTO accepts only whole-key `absent`, `source_provided`,
+`teacher_provided`, and `reviewed` provenance. It does not expose `mixed` as a
+valid generated consumer type because matching pairs do not yet carry per-pair
+provenance. Non-empty pairs with `absent` provenance fail closed. Retired
+`left_id`/`right_id` aliases are rejected by schema validation rather than
+translated.
+
+Application validates schema version, interaction ID, optional source item
+fingerprint, exact source/target IDs, duplicate pairs, association bounds, and
+the neutral matching validation rules before returning an updated
+`ExamAuthoringIR v1` interaction. It does not mutate parser-owned source IR or
+source/parser provenance.
 
 ## Gap/Open-Cloze Interaction V1
 

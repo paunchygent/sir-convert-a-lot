@@ -5,12 +5,13 @@ type: story
 status: proposed
 priority: high
 created: '2026-05-14'
-last_updated: '2026-05-15'
+last_updated: '2026-05-18'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
+  - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/src/skriptoteket/protocols/llm/chat.py
   - /Users/olofs_mba/Documents/Repos/huleedu/services/llm_provider_service/README.md
@@ -49,6 +50,10 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
 - Define that `Godkänn` triggers or resubmits a Sir Convert-owned
   `review_decision` flow; it does not locally unlock files until refreshed
   target readiness returns export-enabled rows.
+- Use Sir Convert's generated source-neutral
+  `ExamAuthoringMatchingManualAnswerKey` contract for matching-capable source
+  flows. Skriptoteket must not invent a local matching key shape, submit
+  retired `left_id`/`right_id` aliases, or add matching to DigiExam overlays.
 - Preserve public/authenticated access boundaries from the existing Exam
   Converter grant lane; remote LLM fallback for public jobs requires a future
   signed grant contract.

@@ -52,6 +52,9 @@ def test_create_job_openapi_contract_exposes_typed_multipart_json_parts() -> Non
     assert response_202["schema"] == {"$ref": "#/components/schemas/JobCreateResponseV2"}
     assert create_job["x-sir-convert-contract-components"] == {
         "job_spec": "#/components/schemas/JobSpecV2",
+        "exam_authoring_matching_manual_answer_key": (
+            "#/components/schemas/ExamAuthoringMatchingManualAnswerKey"
+        ),
         "digiexam_ingestion_overlay": "#/components/schemas/DigiExamIngestionOverlay",
         "digiexam_migration_bundle_manifest": (
             "#/components/schemas/DigiExamMigrationBundleManifestV2"
@@ -100,6 +103,9 @@ def test_digiexam_consumer_components_are_published() -> None:
         "DigiExamEffectiveAnswerKeyLineageV1",
         "DigiExamIngestionOverlayReportV1",
         "DigiExamAnswerKeyCompletionReportV1",
+        "ExamAuthoringMatchingManualAnswerKey",
+        "ExamAuthoringMatchingManualAnswerKeyPair",
+        "ExamAuthoringMatchingManualAnswerKeyPayload",
         "DigiExamOverlayReviewedCompletionAnswerKey",
         "DigiExamOverlayReviewedCompletionCandidateLineage",
         "DigiExamOverlayPointCorrection",
@@ -138,6 +144,23 @@ def test_digiexam_consumer_components_are_published() -> None:
     assert "DigiExamOverlayMatchingPair" not in schemas
     assert "DigiExamOverlayMatchingManualAnswerKey" not in schemas
     assert "DigiExamOverlayMatchingItemPatch" not in schemas
+
+    matching_key = _mapping(schemas["ExamAuthoringMatchingManualAnswerKey"])
+    matching_key_properties = _mapping(matching_key["properties"])
+    matching_kind = _mapping(matching_key_properties["kind"])
+    assert matching_kind["const"] == "matching"
+    matching_answer_payload = _mapping(schemas["ExamAuthoringMatchingManualAnswerKeyPayload"])
+    matching_answer_properties = _mapping(matching_answer_payload["properties"])
+    matching_pairs = _mapping(matching_answer_properties["pairs"])
+    assert _mapping(matching_pairs["items"])["$ref"] == (
+        "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyPair"
+    )
+    matching_pair = _mapping(schemas["ExamAuthoringMatchingManualAnswerKeyPair"])
+    matching_pair_properties = _mapping(matching_pair["properties"])
+    assert "source_id" in matching_pair_properties
+    assert "target_id" in matching_pair_properties
+    assert "left_id" not in matching_pair_properties
+    assert "right_id" not in matching_pair_properties
 
     effective_answer_key = _mapping(schemas["DigiExamEffectiveAnswerKeyV1"])
     effective_answer_key_properties = _mapping(effective_answer_key["properties"])

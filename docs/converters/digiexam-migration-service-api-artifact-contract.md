@@ -4,7 +4,7 @@ id: CONV-digiexam-migration-service-api-artifact-contract
 title: DigiExam Migration Service API Artifact Contract
 status: active
 created: 2026-05-11
-updated: 2026-05-15
+updated: 2026-05-18
 owners:
   - platform
 tags:
@@ -22,6 +22,7 @@ links:
   - docs/backlog/tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md
   - docs/backlog/tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md
   - docs/backlog/tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md
+  - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
   - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
   - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
@@ -644,6 +645,13 @@ from `.dxe`. That source fact must not define generic target support. Task
 298/307 moves matching semantics into the source-neutral `ExamAuthoringIR v1`
 slice so matching-capable source adapters can use `source_id`/`target_id`
 directed pairs without accepting retired `left_id`/`right_id` aliases.
+
+Task 323 exposes that source-neutral matching manual-answer-key producer DTO
+through the generated v2 OpenAPI contract without adding a DigiExam matching
+overlay. Skriptoteket must consume the generated
+`ExamAuthoringMatchingManualAnswerKey` type for matching-capable source flows
+and must continue treating DigiExam `manual_answer_key` overlays as
+choice/gap-only.
 
 The implementation must version affected public DigiExam artifacts for removed
 legacy matching overlay fields and update Skriptoteket consumers in the same
