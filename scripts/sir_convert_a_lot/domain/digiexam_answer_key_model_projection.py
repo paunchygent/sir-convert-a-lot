@@ -37,10 +37,10 @@ CHOICE_ANSWER_KEY_SYSTEM_PROMPT = (
 GAP_FILL_ANSWER_KEY_SYSTEM_PROMPT = (
     f"{BASE_ANSWER_KEY_SYSTEM_PROMPT} For gap-fill items, infer the "
     "teacher-intended accepted value for each visible gap marker from the "
-    "surrounding cloze text and any word bank. When a word bank is visible, "
-    "copy one exact word from that bank into each blank. Do not paraphrase, "
-    "substitute synonyms, or shorten the word. When no word bank is visible, "
-    "use the complete formal term as taught in the subject curriculum."
+    "surrounding cloze text and any visible word bank or candidate list. "
+    "Return the exact value a student is expected to put in the blank. When "
+    "a candidate is identified by a short label and longer text, return only "
+    "the label. Do not paraphrase, substitute synonyms, or expand labels."
 )
 
 
@@ -128,9 +128,14 @@ def gap_fill_answer_key_model_payload(
             ),
             "accepted_values": (
                 "Each numbered key value must be exactly one short answer "
-                "string. When a word bank is visible, the value MUST be one exact "
-                "word from that bank. When no word bank is visible, use the full "
-                "precise technical term with no abbreviations."
+                "string matching what the student is expected to place in the "
+                "blank. When a visible word bank or candidate list provides the "
+                "intended answers, use only the exact candidate value from that "
+                "bank or list. If candidates are labeled with short labels such "
+                "as A, B, C, D, E, 1, 2, 3, or similar and the longer text "
+                "explains each label, return only the label, not the explanation. "
+                "Use a full precise term only when no word bank, candidate list, "
+                "or candidate label is visible."
             ),
         },
     }

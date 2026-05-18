@@ -295,6 +295,31 @@ Responses image inputs require a fully qualified URL or a base64 data URL; the
 service runtime must use data URLs for OpenAI/remote Responses profiles and
 preserve `file://...` only for local providers that can read the media root.
 
+After the OpenAI image URL fix, the same item exposed a narrower
+teacher-intent prompt issue: item-013 correctly maps the visible candidate
+definitions to the five gaps, but the student-facing expected answers are the
+candidate labels (`A`-`E`) shown in the embedded image, not the expanded
+definition text. The shared gap-fill prompt projection therefore treats text
+word banks and image-backed candidate lists the same way: when visible
+candidates are labeled with short labels and longer explanatory text, the
+model-facing answer value must be the label exactly, because that is what the
+student is expected to place in the blank. Full precise terms remain allowed
+only when no word bank, candidate list, or candidate label is visible.
+
+Focused OpenAI evidence on 2026-05-18 wrote
+`build/verification/task-325-gap-label-policy-openai-2026-05-18/`. The run used
+the `openai-gpt-5.4-mini-2026-03-17` profile through
+`run-openai-advisory-corpus` and covered every current eval-harness gap-fill row
+whose teacher golden expects only a visible candidate label or number, plus the
+image-backed ecology row that triggered the issue:
+
+| Source / item | Surface | Returned accepted values | Diagnostic |
+| --- | --- | --- | --- |
+| `1811577114-ekologiprov-v-49-25d-e.dxe` / `item-013` | Image-backed `A`-`E` candidate definitions | `D`, `A`, `B`, `E`, `C` | none |
+| `1776888013-ak7-lag-och-ratt.dxe` / `item-006` | Text `T`/`B` candidate labels | `B`, `T`, `T`, `B`, `B`, `B`, `T` | none |
+| `1813537086-25c-manniskokroppen-prov-eca.dxe` / `item-009` | Text numeric labels `1`-`5` | `4`, `3`, `1`, `2`, `5` | none |
+| `1819027155-25d-manniskokroppen-prov-eca.dxe` / `item-006` | Text `A`-`C` candidate labels | `A`, `A`, `B`, `C`, `B` | none |
+
 ## Test Requirements
 
 - Unit tests for OpenAI Responses payload construction and response/refusal
@@ -323,6 +348,9 @@ preserve `file://...` only for local providers that can read the media root.
 - Service-runtime vision tests proving OpenAI/Responses advisory completion
   uses data URL image parts, while local Qwen/llama.cpp vision keeps
   media-root-local file URLs.
+- Gap-fill prompt-policy tests proving labeled candidate banks require the
+  student-entered label rather than the expanded candidate text, and that the
+  same rule reaches vision-capable provider requests.
 - Split large DigiExam migration API tests along bounded behavior surfaces
   instead of adding new answer-key/provider regressions to the 2000-line route
   test module.

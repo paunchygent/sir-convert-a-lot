@@ -185,12 +185,9 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - 2026-05-18 Review 24 completed as `approved`: Task 331 is closed, and
   `manual_matching_answer_key` remains blocked on Task 332 until a
   matching-capable producer emits real matching source state.
-- 2026-05-18 Task 325 diagnostics local validation passed for format/lint/type,
-  docs, handoff, OpenAPI, provider diagnostics tests, and the item-013
-  microprobe: HTTP 200, `decision_state=suggested`,
-  `provider_error_diagnostic=null`, `multimodal_request_count=1`.
-  `coverage-gate` reached 95.56% but exited red on a noisy Story 20 timing
-  assertion; that isolated benchmark passed on immediate rerun.
+- 2026-05-18 Task 325 diagnostics and gap-label policy validation lives in the
+  task doc. Focused local gates passed, OpenAI item-013 returned labels only,
+  and all current label/number gap-fill eval rows returned expected labels.
 
 ## Stop Conditions
 
