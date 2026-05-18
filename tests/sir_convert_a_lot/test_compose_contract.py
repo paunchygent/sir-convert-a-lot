@@ -112,6 +112,9 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert (
         env_map["SIR_CONVERT_A_LOT_V2_API_KEY"] == "${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}"
     )
+    assert env_map["SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET"] == (
+        "${SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET:-}"
+    )
     assert (
         env_map["SIR_CONVERT_A_LOT_SERVICE_REVISION"]
         == "${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}"

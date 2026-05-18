@@ -85,6 +85,7 @@ class ServiceConfig:
     internal_identity_ttl_seconds: int = 60
     internal_identity_allowed_clock_skew_seconds: int = 5
     public_exam_converter_access: PublicExamConverterRuntimeAccessConfig | None = None
+    exam_authoring_source_state_signature_secret: str | None = None
     structured_llm: StructuredLLMRuntimeConfig = field(
         default_factory=disabled_structured_llm_runtime_config
     )

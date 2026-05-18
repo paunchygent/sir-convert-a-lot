@@ -6,17 +6,26 @@ Purpose:
 
 Relationships:
     - Consumes DTOs from `application.exam_authoring_corrections_apply_models`.
-    - Reuses `domain.exam_authoring_matching_manual_answer_key` and
-      `domain.exam_authoring_ir_contracts` for matching-key validation.
+    - Reuses matching and non-matching correction delegates for validation.
     - Called by `interfaces.http_routes_exam_authoring_corrections_v2`.
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Literal
 
+from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_models import (
+    ExamAuthoringCorrectionSourceItemV1,
+    ExamAuthoringMatchingInteractionV1,
+)
+from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_binding import (
+    ExamAuthoringCorrectionsApplyBindingError,
+    validate_correction_request_binding,
+)
+from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_integrity import (
+    matching_answer_key_payload_digest,
+    stable_json_sha256,
+)
 from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_models import (
     ExamAuthoringCorrectionAcceptedEntryV1,
     ExamAuthoringCorrectionArtifactAvailabilityRowV1,
@@ -25,25 +34,26 @@ from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_mode
     ExamAuthoringCorrectionReportV1,
     ExamAuthoringCorrectionsApplyRequestV1,
     ExamAuthoringCorrectionsApplyResultV1,
-    ExamAuthoringCorrectionSourceItemV1,
     ExamAuthoringCorrectionTargetReadinessReportV1,
     ExamAuthoringCorrectionTargetReadinessRowV1,
     ExamAuthoringCorrectionTargetV1,
     ExamAuthoringEffectiveStateV1,
+    ExamAuthoringItemTextPatchCorrectionV1,
+    ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
+    ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
     ExamAuthoringManualMatchingAnswerKeyCorrectionV1,
-    ExamAuthoringMatchingAnswerKeyV1,
-    ExamAuthoringMatchingChoiceV1,
-    ExamAuthoringMatchingInteractionV1,
-    ExamAuthoringMatchingPairV1,
-    ExamAuthoringSourceEvidenceV1,
+    ExamAuthoringPointCorrectionV1,
+)
+from scripts.sir_convert_a_lot.application.exam_authoring_matching_dto_mapping import (
+    from_domain_matching_interaction,
+    to_domain_matching_interaction,
+)
+from scripts.sir_convert_a_lot.application.exam_authoring_non_matching_corrections import (
+    ExamAuthoringNonMatchingCorrectionError,
+    prepare_non_matching_correction,
 )
 from scripts.sir_convert_a_lot.domain.exam_authoring_ir_contracts import (
-    ExamAuthoringAnswerKeyProvenance,
-    ExamAuthoringMatchingAnswerKey,
-    ExamAuthoringMatchingChoice,
     ExamAuthoringMatchingInteraction,
-    ExamAuthoringMatchingPair,
-    ExamAuthoringSourceEvidence,
     validate_examnet_pdf_matching_profile,
 )
 from scripts.sir_convert_a_lot.domain.exam_authoring_matching_manual_answer_key import (
@@ -67,14 +77,24 @@ class ExamAuthoringCorrectionsApplyError(ValueError):
 
 def apply_exam_authoring_corrections_request(
     request_body: ExamAuthoringCorrectionsApplyRequestV1,
+    *,
+    source_state_signature_secret: str | None,
 ) -> ExamAuthoringCorrectionsApplyResultV1:
     """Apply a correction batch and return producer-owned effective state."""
 
-    _validate_request_binding(request_body)
-    effective_items = list(request_body.source_authoring_state.items)
+    try:
+        validate_correction_request_binding(
+            request_body=request_body,
+            source_state_signature_secret=source_state_signature_secret,
+        )
+    except ExamAuthoringCorrectionsApplyBindingError as exc:
+        raise ExamAuthoringCorrectionsApplyError(exc.code, str(exc), exc.details) from exc
+    source_items = list(request_body.source_authoring_state.items)
+    effective_items = list(source_items)
+    prepared_corrections: list[ExamAuthoringCorrectionEntryBaseV1] = []
     accepted_entries: list[ExamAuthoringCorrectionAcceptedEntryV1] = []
+    readiness_rows: dict[_ReadinessKey, ExamAuthoringCorrectionTargetReadinessRowV1] = {}
     rejected_entries: list[ExamAuthoringCorrectionRejectedEntryV1] = []
-    readiness_rows: list[ExamAuthoringCorrectionTargetReadinessRowV1] = []
 
     for correction in request_body.corrections:
         if isinstance(correction, ExamAuthoringManualMatchingAnswerKeyCorrectionV1):
@@ -93,55 +113,101 @@ def apply_exam_authoring_corrections_request(
                 interaction_id=correction.interaction_id,
                 effective_interaction=effective_interaction,
             )
+            prepared_corrections.append(correction)
             accepted_entries.append(_accepted_matching_entry(correction))
-            readiness_rows.extend(
+            _record_readiness(
+                readiness_rows,
                 _target_readiness_rows(
                     targets=request_body.requested_targets,
                     item=effective_items[item_index],
                     interaction=effective_interaction,
-                )
+                ),
             )
+        elif isinstance(
+            correction,
+            (
+                ExamAuthoringItemTextPatchCorrectionV1,
+                ExamAuthoringPointCorrectionV1,
+                ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
+                ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
+            ),
+        ):
+            item_index, item = _bound_item(correction, effective_items)
+            try:
+                prepared = prepare_non_matching_correction(
+                    correction=correction,
+                    item=item,
+                    targets=request_body.requested_targets,
+                )
+            except ExamAuthoringNonMatchingCorrectionError as exc:
+                raise ExamAuthoringCorrectionsApplyError(
+                    exc.code,
+                    str(exc),
+                    exc.details,
+                ) from exc
+            effective_items[item_index] = prepared.effective_item
+            prepared_corrections.append(correction)
+            accepted_entries.append(prepared.accepted_entry)
+            _record_readiness(readiness_rows, prepared.readiness_rows)
         else:
             rejected_entries.append(_unsupported_entry(correction))
 
-    effective_state = _effective_state(effective_items)
-    readiness_report = ExamAuthoringCorrectionTargetReadinessReportV1(
-        targets=tuple(readiness_rows),
+    if rejected_entries:
+        batch_rejections = tuple(
+            _batch_blocked_entry(correction) for correction in prepared_corrections
+        )
+        return _result(
+            request_body=request_body,
+            effective_items=source_items,
+            accepted_entries=(),
+            rejected_entries=(*batch_rejections, *tuple(rejected_entries)),
+            readiness_rows=(),
+        )
+
+    return _result(
+        request_body=request_body,
+        effective_items=effective_items,
+        accepted_entries=tuple(accepted_entries),
+        rejected_entries=(),
+        readiness_rows=tuple(readiness_rows.values()),
     )
+
+
+def _result(
+    *,
+    request_body: ExamAuthoringCorrectionsApplyRequestV1,
+    effective_items: list[ExamAuthoringCorrectionSourceItemV1],
+    accepted_entries: tuple[ExamAuthoringCorrectionAcceptedEntryV1, ...],
+    rejected_entries: tuple[ExamAuthoringCorrectionRejectedEntryV1, ...],
+    readiness_rows: tuple[ExamAuthoringCorrectionTargetReadinessRowV1, ...],
+) -> ExamAuthoringCorrectionsApplyResultV1:
+    """Build the route result after batch validation has settled."""
+
+    effective_state = _effective_state(effective_items)
     return ExamAuthoringCorrectionsApplyResultV1(
         request_id=request_body.request_id,
         source_binding=request_body.source_binding,
         effective_state=effective_state,
         correction_report=ExamAuthoringCorrectionReportV1(
-            accepted_entries=tuple(accepted_entries),
-            rejected_entries=tuple(rejected_entries),
+            accepted_entries=accepted_entries,
+            rejected_entries=rejected_entries,
         ),
-        target_readiness=readiness_report,
+        target_readiness=ExamAuthoringCorrectionTargetReadinessReportV1(
+            targets=readiness_rows,
+        ),
         artifact_availability=tuple(_artifact_availability(row) for row in readiness_rows),
     )
 
 
-def _validate_request_binding(request_body: ExamAuthoringCorrectionsApplyRequestV1) -> None:
-    binding = request_body.source_binding
-    state = request_body.source_authoring_state
-    if binding.source_authoring_schema_version != state.source_authoring_schema_version:
-        raise ExamAuthoringCorrectionsApplyError(
-            "stale_exam_authoring_schema_version",
-            "Correction source binding schema version does not match the source state.",
-            {
-                "submitted_schema_version": binding.source_authoring_schema_version,
-                "expected_schema_version": state.source_authoring_schema_version,
-            },
-        )
-    if binding.source_state_sha256 != state.source_state_sha256:
-        raise ExamAuthoringCorrectionsApplyError(
-            "stale_exam_authoring_source_state",
-            "Correction source binding digest does not match the source state.",
-            {
-                "submitted_source_state_sha256": binding.source_state_sha256,
-                "expected_source_state_sha256": state.source_state_sha256,
-            },
-        )
+def _record_readiness(
+    rows_by_key: dict[_ReadinessKey, ExamAuthoringCorrectionTargetReadinessRowV1],
+    rows: tuple[ExamAuthoringCorrectionTargetReadinessRowV1, ...],
+) -> None:
+    for row in rows:
+        rows_by_key[(row.target, row.item_id, row.sequence)] = row
+
+
+_ReadinessKey = tuple[ExamAuthoringCorrectionTargetV1, str | None, int | None]
 
 
 def _bound_item(
@@ -226,12 +292,12 @@ def _apply_matching_correction(
     try:
         effective_interaction = apply_exam_authoring_matching_manual_answer_key(
             submission=_matching_submission(correction),
-            interaction=_to_domain_interaction(interaction),
+            interaction=to_domain_matching_interaction(interaction),
             expected_source_item_fingerprint=expected_source_item_fingerprint,
         )
     except ExamAuthoringMatchingManualAnswerKeyError as exc:
         raise ExamAuthoringCorrectionsApplyError(exc.code, str(exc), exc.details) from exc
-    return _from_domain_interaction(
+    return from_domain_matching_interaction(
         effective_interaction,
         source_item_fingerprint=expected_source_item_fingerprint,
     )
@@ -240,6 +306,7 @@ def _apply_matching_correction(
 def _matching_submission(
     correction: ExamAuthoringManualMatchingAnswerKeyCorrectionV1,
 ) -> ExamAuthoringMatchingManualAnswerKey:
+    _validate_matching_candidate_digest(correction)
     provenance: Literal["teacher_provided", "reviewed"]
     if correction.submission_origin == "accepted_advisory_candidate":
         provenance = "reviewed"
@@ -257,6 +324,32 @@ def _matching_submission(
             },
         }
     )
+
+
+def _validate_matching_candidate_digest(
+    correction: ExamAuthoringManualMatchingAnswerKeyCorrectionV1,
+) -> None:
+    if correction.submission_origin != "accepted_advisory_candidate":
+        return
+    if correction.candidate_lineage is None:
+        raise ExamAuthoringCorrectionsApplyError(
+            "advisory_candidate_lineage_missing",
+            "Accepted advisory matching correction requires candidate lineage.",
+            {"entry_id": correction.entry_id},
+        )
+    submitted_digest = matching_answer_key_payload_digest(correction)
+    expected_digest = correction.candidate_lineage.candidate_payload_digest
+    if submitted_digest != expected_digest:
+        raise ExamAuthoringCorrectionsApplyError(
+            "advisory_candidate_payload_digest_mismatch",
+            "Accepted advisory matching correction must match the candidate payload digest.",
+            {
+                "entry_id": correction.entry_id,
+                "candidate_id": correction.candidate_lineage.candidate_id,
+                "submitted_candidate_payload_digest": submitted_digest,
+                "expected_candidate_payload_digest": expected_digest,
+            },
+        )
 
 
 def _replace_matching_interaction(
@@ -305,6 +398,21 @@ def _unsupported_entry(
     )
 
 
+def _batch_blocked_entry(
+    correction: ExamAuthoringCorrectionEntryBaseV1,
+) -> ExamAuthoringCorrectionRejectedEntryV1:
+    return ExamAuthoringCorrectionRejectedEntryV1(
+        entry_id=correction.entry_id,
+        kind=correction.kind,
+        item_id=correction.item_id,
+        sequence=correction.sequence,
+        reason_code="correction_batch_contains_rejected_entries",
+        message_key="exam_authoring.corrections.batch_contains_rejected_entries",
+        teacher_action="resolve_rejected_entries_and_retry_batch",
+        retryable=True,
+    )
+
+
 def _effective_state(
     items: list[ExamAuthoringCorrectionSourceItemV1],
 ) -> ExamAuthoringEffectiveStateV1:
@@ -321,8 +429,7 @@ def _effective_state(
 
 
 def _stable_sha256(payload: dict[str, object]) -> str:
-    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return f"sha256:{hashlib.sha256(encoded.encode('utf-8')).hexdigest()}"
+    return stable_json_sha256(payload)
 
 
 def _target_readiness_rows(
@@ -331,7 +438,7 @@ def _target_readiness_rows(
     item: ExamAuthoringCorrectionSourceItemV1,
     interaction: ExamAuthoringMatchingInteractionV1,
 ) -> tuple[ExamAuthoringCorrectionTargetReadinessRowV1, ...]:
-    domain_interaction = _to_domain_interaction(interaction)
+    domain_interaction = to_domain_matching_interaction(interaction)
     return tuple(
         _target_readiness(target=target, item=item, interaction=domain_interaction)
         for target in targets
@@ -389,83 +496,4 @@ def _artifact_availability(
         artifact_key=readiness.target,
         availability="unavailable",
         unavailable_code=readiness.reason_code,
-    )
-
-
-def _to_domain_interaction(
-    interaction: ExamAuthoringMatchingInteractionV1,
-) -> ExamAuthoringMatchingInteraction:
-    return ExamAuthoringMatchingInteraction(
-        schema_version=interaction.schema_version,
-        interaction_id=interaction.interaction_id,
-        source_choices=tuple(_to_domain_choice(choice) for choice in interaction.source_choices),
-        target_choices=tuple(_to_domain_choice(choice) for choice in interaction.target_choices),
-        min_associations=interaction.min_associations,
-        max_associations=interaction.max_associations,
-        answer_key=ExamAuthoringMatchingAnswerKey(
-            provenance=ExamAuthoringAnswerKeyProvenance(interaction.answer_key.provenance),
-            pairs=tuple(
-                ExamAuthoringMatchingPair(source_id=pair.source_id, target_id=pair.target_id)
-                for pair in interaction.answer_key.pairs
-            ),
-        ),
-        evidence=tuple(
-            ExamAuthoringSourceEvidence(
-                source_family=evidence.source_family,
-                source_id=evidence.source_id,
-                locator=evidence.locator,
-            )
-            for evidence in interaction.evidence
-        ),
-    )
-
-
-def _from_domain_interaction(
-    interaction: ExamAuthoringMatchingInteraction,
-    *,
-    source_item_fingerprint: str | None,
-) -> ExamAuthoringMatchingInteractionV1:
-    return ExamAuthoringMatchingInteractionV1(
-        schema_version=interaction.schema_version,
-        interaction_id=interaction.interaction_id,
-        source_item_fingerprint=source_item_fingerprint,
-        source_choices=tuple(_from_domain_choice(choice) for choice in interaction.source_choices),
-        target_choices=tuple(_from_domain_choice(choice) for choice in interaction.target_choices),
-        min_associations=interaction.min_associations,
-        max_associations=interaction.max_associations,
-        answer_key=ExamAuthoringMatchingAnswerKeyV1(
-            provenance=interaction.answer_key.provenance.value,
-            pairs=tuple(
-                ExamAuthoringMatchingPairV1(source_id=pair.source_id, target_id=pair.target_id)
-                for pair in interaction.answer_key.pairs
-            ),
-        ),
-        evidence=tuple(
-            ExamAuthoringSourceEvidenceV1(
-                source_family=evidence.source_family,
-                source_id=evidence.source_id,
-                locator=evidence.locator,
-            )
-            for evidence in interaction.evidence
-        ),
-    )
-
-
-def _to_domain_choice(choice: ExamAuthoringMatchingChoiceV1) -> ExamAuthoringMatchingChoice:
-    return ExamAuthoringMatchingChoice(
-        choice_id=choice.choice_id,
-        order=choice.order,
-        text=choice.text,
-        match_min=choice.match_min,
-        match_max=choice.match_max,
-    )
-
-
-def _from_domain_choice(choice: ExamAuthoringMatchingChoice) -> ExamAuthoringMatchingChoiceV1:
-    return ExamAuthoringMatchingChoiceV1(
-        choice_id=choice.choice_id,
-        order=choice.order,
-        text=choice.text,
-        match_min=choice.match_min,
-        match_max=choice.match_max,
     )

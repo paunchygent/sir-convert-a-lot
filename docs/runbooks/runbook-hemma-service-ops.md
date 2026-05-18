@@ -99,6 +99,12 @@ canonical prod env mirror by key reference only. The OpenAI provider reads
 Sir-prefixed aliases for follow-on provider profiles. Verify presence by key
 name only and redact values in any retained output.
 
+The unified exam-authoring correction route requires
+`SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET` so producer
+source states can be signed and later verified before readiness or artifact
+availability is projected. Verify only that the key is present; never print the
+secret value.
+
 ## Production Env Mirror
 
 Use the committed mirror command:

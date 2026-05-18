@@ -61,6 +61,9 @@ from scripts.sir_convert_a_lot.interfaces.http_routes_templates_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_routes_webhooks_v2 import (
     build_webhook_onboarding_router_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_validation_errors_v2 import (
+    sanitized_request_validation_errors,
+)
 
 
 def _utc_now_iso() -> str:
@@ -178,14 +181,19 @@ def create_app(
             code="validation_error",
             message="Request validation failed.",
             retryable=False,
-            details={"errors": exc.errors()},
+            details={"errors": sanitized_request_validation_errors(exc)},
         )
         return JSONResponse(status_code=422, content=envelope.model_dump(mode="json"))
 
     app.include_router(build_health_router(app=app, service_started_at=service_started_at))
     app.include_router(build_job_router_v2(service_started_at=service_started_at))
     app.include_router(
-        build_exam_authoring_corrections_router_v2(service_started_at=service_started_at)
+        build_exam_authoring_corrections_router_v2(
+            service_started_at=service_started_at,
+            source_state_signature_secret=(
+                runtime_config.exam_authoring_source_state_signature_secret
+            ),
+        )
     )
     app.include_router(
         build_structured_llm_settings_router_v2(service_started_at=service_started_at)

@@ -17,11 +17,13 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from scripts.sir_convert_a_lot.domain.exam_authoring_schema_versions import (
-    EXAM_AUTHORING_IR_SCHEMA_VERSION,
-    ExamAuthoringIrSchemaVersion,
+from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_models import (
+    ExamAuthoringCorrectionSourceBindingV1,
+    ExamAuthoringCorrectionSourceItemV1,
+    ExamAuthoringCorrectionSourceStateV1,
+    ExamAuthoringMatchingPairV1,
 )
 
 ExamAuthoringCorrectionTargetV1 = Literal["examnet_pdf", "qti_package"]
@@ -36,98 +38,6 @@ ExamAuthoringAnswerKeySubmissionOriginV1 = Literal[
     "accepted_advisory_candidate",
     "teacher_edited_advisory_candidate",
 ]
-
-
-class ExamAuthoringCorrectionSourceBindingV1(BaseModel):
-    """Request-level binding to the producer-returned authoring state."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    source_authoring_schema_version: ExamAuthoringIrSchemaVersion
-    source_state_sha256: str = Field(min_length=1)
-    source_bundle_id: str | None = Field(default=None, min_length=1)
-    source_file_sha256: str | None = Field(default=None, min_length=1)
-
-
-class ExamAuthoringSourceEvidenceV1(BaseModel):
-    """Source-neutral evidence reference for an authoring interaction."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    source_family: str = Field(min_length=1)
-    source_id: str | None = Field(default=None, min_length=1)
-    locator: str | None = Field(default=None, min_length=1)
-
-
-class ExamAuthoringMatchingChoiceV1(BaseModel):
-    """One ordered source or target choice in a matching interaction."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    choice_id: str = Field(min_length=1)
-    order: int
-    text: str = Field(min_length=1)
-    match_min: int
-    match_max: int
-
-
-class ExamAuthoringMatchingPairV1(BaseModel):
-    """One directed source-to-target matching pair."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    source_id: str = Field(min_length=1)
-    target_id: str = Field(min_length=1)
-
-
-class ExamAuthoringMatchingAnswerKeyV1(BaseModel):
-    """Source-neutral matching answer key for effective authoring state."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    provenance: Literal["absent", "source_provided", "teacher_provided", "reviewed", "mixed"]
-    pairs: tuple[ExamAuthoringMatchingPairV1, ...] = ()
-
-
-class ExamAuthoringMatchingInteractionV1(BaseModel):
-    """Source-neutral matching interaction carried by a producer state surface."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    schema_version: ExamAuthoringIrSchemaVersion = EXAM_AUTHORING_IR_SCHEMA_VERSION
-    interaction_id: str = Field(min_length=1)
-    source_item_fingerprint: str | None = Field(default=None, min_length=1)
-    source_choices: tuple[ExamAuthoringMatchingChoiceV1, ...]
-    target_choices: tuple[ExamAuthoringMatchingChoiceV1, ...]
-    min_associations: int
-    max_associations: int
-    answer_key: ExamAuthoringMatchingAnswerKeyV1
-    evidence: tuple[ExamAuthoringSourceEvidenceV1, ...] = ()
-
-
-class ExamAuthoringCorrectionSourceItemV1(BaseModel):
-    """One producer-returned source item used for correction binding."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    item_id: str = Field(min_length=1)
-    sequence: int = Field(ge=1)
-    item_type: str = Field(min_length=1)
-    source_item_fingerprint: str | None = Field(default=None, min_length=1)
-    matching_interactions: tuple[ExamAuthoringMatchingInteractionV1, ...] = ()
-
-
-class ExamAuthoringCorrectionSourceStateV1(BaseModel):
-    """Sanitized producer-returned state used for correction validation."""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    schema_version: Literal["exam_authoring_correction_source_state_v1"] = (
-        "exam_authoring_correction_source_state_v1"
-    )
-    source_authoring_schema_version: ExamAuthoringIrSchemaVersion
-    source_state_sha256: str = Field(min_length=1)
-    items: tuple[ExamAuthoringCorrectionSourceItemV1, ...]
 
 
 class ExamAuthoringCandidateLineageV1(BaseModel):
@@ -159,7 +69,7 @@ class ExamAuthoringCorrectionEntryBaseV1(BaseModel):
 
 
 class ExamAuthoringItemTextPatchOperationV1(BaseModel):
-    """One visible text patch operation for future source-neutral correction."""
+    """One visible text patch operation for source-neutral correction."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -167,6 +77,7 @@ class ExamAuthoringItemTextPatchOperationV1(BaseModel):
         "item_title",
         "stem_html",
         "prompt_html",
+        "prompt_lines",
         "body_html",
         "visible_option_text",
         "gap_prompt_text",
@@ -177,27 +88,33 @@ class ExamAuthoringItemTextPatchOperationV1(BaseModel):
 
 
 class ExamAuthoringItemTextPatchCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
-    """Visible item text patch entry reserved for a later implementation slice."""
+    """Visible item text patch entry applied against producer source state."""
 
     kind: Literal["item_text_patch"]
     patches: tuple[ExamAuthoringItemTextPatchOperationV1, ...] = Field(min_length=1)
 
 
 class ExamAuthoringPointCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
-    """Point correction entry reserved for unified runtime migration."""
+    """Point correction entry applied against producer source state."""
 
     kind: Literal["point_correction"]
     max_score: int = Field(gt=0)
 
 
 class ExamAuthoringManualChoiceAnswerKeyCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
-    """Manual choice answer-key entry reserved for unified runtime migration."""
+    """Manual choice answer-key entry applied against producer source state."""
 
     kind: Literal["manual_choice_answer_key"]
     interaction_id: str = Field(min_length=1)
     submission_origin: ExamAuthoringAnswerKeySubmissionOriginV1
     correct_choice_ids: tuple[str, ...] = Field(min_length=1)
     candidate_lineage: ExamAuthoringCandidateLineageV1 | None = None
+
+    @model_validator(mode="after")
+    def _validate_candidate_lineage(self) -> "ExamAuthoringManualChoiceAnswerKeyCorrectionV1":
+        if self.submission_origin != "teacher_authored" and self.candidate_lineage is None:
+            raise ValueError("advisory-origin choice corrections require candidate lineage")
+        return self
 
 
 class ExamAuthoringGapAnswerV1(BaseModel):
@@ -208,15 +125,30 @@ class ExamAuthoringGapAnswerV1(BaseModel):
     gap_id: str = Field(min_length=1)
     accepted_values: tuple[str, ...] = Field(min_length=1)
 
+    @field_validator("accepted_values")
+    @classmethod
+    def _validate_accepted_values(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if any(accepted_value.strip() == "" for accepted_value in value):
+            raise ValueError("gap accepted values must not be blank")
+        return value
+
 
 class ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
-    """Manual gap/open-cloze answer-key entry reserved for unified migration."""
+    """Manual gap/open-cloze answer-key entry applied against source state."""
 
     kind: Literal["manual_gap_open_cloze_answer_key"]
     interaction_id: str = Field(min_length=1)
     submission_origin: ExamAuthoringAnswerKeySubmissionOriginV1
     gap_answers: tuple[ExamAuthoringGapAnswerV1, ...] = Field(min_length=1)
     candidate_lineage: ExamAuthoringCandidateLineageV1 | None = None
+
+    @model_validator(mode="after")
+    def _validate_candidate_lineage(
+        self,
+    ) -> "ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1":
+        if self.submission_origin != "teacher_authored" and self.candidate_lineage is None:
+            raise ValueError("advisory-origin gap corrections require candidate lineage")
+        return self
 
 
 class ExamAuthoringManualMatchingAnswerKeyCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):

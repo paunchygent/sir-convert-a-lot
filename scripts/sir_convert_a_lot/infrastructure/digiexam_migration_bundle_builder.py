@@ -20,6 +20,13 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.application import (
+    exam_authoring_correction_source_state_projection as correction_state_projection,
+)
+from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_issuer import (
+    correction_source_state_artifact_path_for_job,
+    write_exam_authoring_correction_source_state_artifact,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamParseStatus
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay import (
@@ -194,6 +201,12 @@ def execute_digiexam_migration_bundle_job(
         artifacts_dir=artifacts_dir,
         exam=effective_exam,
         config=config,
+    )
+    write_exam_authoring_correction_source_state_artifact(
+        path=correction_source_state_artifact_path_for_job(job),
+        source_state=correction_state_projection.digiexam_exam_to_correction_source_state(
+            effective_exam
+        ),
     )
     migration_manifest_path = artifact_path(
         artifacts_dir, DigiExamMigrationArtifactKey.MIGRATION_MANIFEST

@@ -91,6 +91,24 @@ def test_corrections_apply_openapi_contract_exposes_unified_request_body_route()
     schema = build_openapi_contract_v2()
     paths = _mapping(schema["paths"])
     assert "/v2/exam-authoring/matching/manual-answer-key/apply" not in paths
+    issue_route = _mapping(
+        _mapping(paths["/v2/exam-authoring/corrections/source-state/issue"])["post"]
+    )
+    issue_request_body = _mapping(issue_route["requestBody"])
+    issue_content = _mapping(issue_request_body["content"])
+    issue_json_body = _mapping(issue_content["application/json"])
+
+    assert issue_json_body["schema"] == {
+        "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceStateIssueRequestV1"
+    }
+    issue_responses = _mapping(issue_route["responses"])
+    issue_response_200 = _mapping(
+        _mapping(_mapping(issue_responses["200"])["content"])["application/json"]
+    )
+    assert issue_response_200["schema"] == {
+        "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceStateIssueResultV1"
+    }
+
     route = _mapping(_mapping(paths["/v2/exam-authoring/corrections/apply"])["post"])
     request_body = _mapping(route["requestBody"])
     content = _mapping(request_body["content"])
@@ -122,7 +140,14 @@ def test_digiexam_consumer_components_are_published() -> None:
         "DigiExamAnswerKeyCompletionReportV1",
         "ExamAuthoringCorrectionsApplyRequestV1",
         "ExamAuthoringCorrectionsApplyResultV1",
+        "ExamAuthoringCorrectionSourceStateIssueRequestV1",
+        "ExamAuthoringCorrectionSourceStateIssueResultV1",
         "ExamAuthoringCorrectionReportV1",
+        "ExamAuthoringItemTextPatchCorrectionV1",
+        "ExamAuthoringItemTextPatchOperationV1",
+        "ExamAuthoringPointCorrectionV1",
+        "ExamAuthoringManualChoiceAnswerKeyCorrectionV1",
+        "ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1",
         "ExamAuthoringManualMatchingAnswerKeyCorrectionV1",
         "ExamAuthoringMatchingInteractionV1",
         "ExamAuthoringMatchingPairV1",
@@ -182,6 +207,15 @@ def test_digiexam_consumer_components_are_published() -> None:
     assert "right_id" not in matching_pair_properties
     assert "ExamAuthoringMatchingManualAnswerKeyApplyRequest" not in schemas
     assert "ExamAuthoringMatchingManualAnswerKeyApplyResponse" not in schemas
+    point_correction = _mapping(schemas["ExamAuthoringPointCorrectionV1"])
+    assert _mapping(_mapping(point_correction["properties"])["kind"])["const"] == (
+        "point_correction"
+    )
+    text_operation = _mapping(schemas["ExamAuthoringItemTextPatchOperationV1"])
+    text_operation_field = _mapping(_mapping(text_operation["properties"])["field"])
+    text_operation_field_values = text_operation_field["enum"]
+    assert isinstance(text_operation_field_values, list)
+    assert "prompt_lines" in text_operation_field_values
 
     effective_answer_key = _mapping(schemas["DigiExamEffectiveAnswerKeyV1"])
     effective_answer_key_properties = _mapping(effective_answer_key["properties"])

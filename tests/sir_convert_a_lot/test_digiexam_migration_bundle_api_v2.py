@@ -167,6 +167,253 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
     assert readiness_response.json()["schema_version"] == TARGET_READINESS_REPORT_SCHEMA_VERSION
 
 
+def test_digiexam_migration_job_emits_correction_source_state_for_issuer(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-source-state",
+        idempotency_key="idem-digiexam-correction-source-state",
+        wait_seconds=20,
+    )
+    assert response.status_code == 200
+    assert response.json()["job"]["status"] == JobStatus.SUCCEEDED.value
+    job_id = response.json()["job"]["job_id"]
+
+    headers = _headers(
+        identity,
+        subject="teacher-source-state",
+        grants={"sir-convert:artifacts:read-own"},
+    )
+    issue_response = client.post(
+        "/v2/exam-authoring/corrections/source-state/issue",
+        headers=headers,
+        json={
+            "schema_version": "exam_authoring_correction_source_state_issue_request_v1",
+            "job_id": job_id,
+        },
+    )
+
+    assert issue_response.status_code == 200
+    issued = issue_response.json()
+    issued_binding = issued["source_binding"]
+    issued_state = issued["source_authoring_state"]
+    assert issued_binding["source_bundle_id"] == job_id
+    assert issued_binding["source_state_sha256"] == issued_state["source_state_sha256"]
+    assert issued_binding["source_state_signature"].startswith("hmac-sha256:")
+    assert issued_binding["source_file_sha256"].startswith("sha256:")
+    assert issued_state["items"]
+    first_item = issued_state["items"][0]
+    assert first_item["source_item_fingerprint"].startswith("sha256:")
+    assert first_item["title"] == "Essay"
+    assert first_item["prompt_html"] == "<p>Explain the water cycle.</p>"
+    assert first_item["max_score"] == 3
+    choice_item = next(item for item in issued_state["items"] if item["item_id"] == "item-002")
+    assert choice_item["choice_interactions"] == [
+        {
+            "schema_version": "exam_authoring_ir_v1",
+            "interaction_id": "choice-item-002",
+            "interaction_kind": "single_choice",
+            "choices": [
+                {
+                    "choice_id": "choice-001",
+                    "source_id": "1",
+                    "order": 1,
+                    "text": "Alpha",
+                },
+                {
+                    "choice_id": "choice-002",
+                    "source_id": "2",
+                    "order": 2,
+                    "text": "Beta",
+                },
+            ],
+            "min_correct_choices": 1,
+            "max_correct_choices": 1,
+            "answer_key": {
+                "provenance": "source_provided",
+                "correct_choice_ids": ["choice-002"],
+            },
+            "evidence": [
+                {
+                    "source_family": "digiexam_dxe",
+                    "source_id": "item-002",
+                    "locator": "items[1].alternatives",
+                }
+            ],
+        }
+    ]
+    assert sum(len(item["matching_interactions"]) for item in issued_state["items"]) == 0
+
+    apply_response = client.post(
+        "/v2/exam-authoring/corrections/apply",
+        headers=headers,
+        json={
+            "schema_version": "exam_authoring_corrections_apply_request_v1",
+            "request_id": "correction-request-real-producer-001",
+            "source_binding": issued_binding,
+            "source_authoring_state": issued_state,
+            "corrections": [
+                {
+                    "entry_id": "corr-text-real-producer-001",
+                    "kind": "item_text_patch",
+                    "item_id": first_item["item_id"],
+                    "sequence": first_item["sequence"],
+                    "item_type": first_item["item_type"],
+                    "source_item_fingerprint": first_item["source_item_fingerprint"],
+                    "patches": [
+                        {"field": "item_title", "value": "Essay repaired by teacher"},
+                        {"field": "prompt_html", "value": "<p>Explain evaporation.</p>"},
+                    ],
+                },
+                {
+                    "entry_id": "corr-points-real-producer-001",
+                    "kind": "point_correction",
+                    "item_id": first_item["item_id"],
+                    "sequence": first_item["sequence"],
+                    "item_type": first_item["item_type"],
+                    "source_item_fingerprint": first_item["source_item_fingerprint"],
+                    "max_score": 2,
+                },
+                {
+                    "entry_id": "corr-choice-real-producer-001",
+                    "kind": "manual_choice_answer_key",
+                    "item_id": choice_item["item_id"],
+                    "sequence": choice_item["sequence"],
+                    "item_type": choice_item["item_type"],
+                    "source_item_fingerprint": choice_item["source_item_fingerprint"],
+                    "interaction_id": "choice-item-002",
+                    "submission_origin": "teacher_authored",
+                    "correct_choice_ids": ["choice-001"],
+                },
+            ],
+            "requested_targets": ["examnet_pdf"],
+        },
+    )
+
+    assert apply_response.status_code == 200
+    apply_payload = apply_response.json()
+    assert apply_payload["correction_report"]["rejected_entries"] == []
+    accepted = apply_payload["correction_report"]["accepted_entries"]
+    assert [entry["kind"] for entry in accepted] == [
+        "item_text_patch",
+        "point_correction",
+        "manual_choice_answer_key",
+    ]
+    effective_first = next(
+        item
+        for item in apply_payload["effective_state"]["items"]
+        if item["item_id"] == first_item["item_id"]
+    )
+    assert effective_first["title"] == "Essay repaired by teacher"
+    assert effective_first["prompt_html"] == "<p>Explain evaporation.</p>"
+    assert effective_first["max_score"] == 2
+    effective_choice = next(
+        item
+        for item in apply_payload["effective_state"]["items"]
+        if item["item_id"] == choice_item["item_id"]
+    )
+    assert effective_choice["choice_interactions"][0]["answer_key"] == {
+        "provenance": "teacher_provided",
+        "correct_choice_ids": ["choice-001"],
+    }
+
+
+def test_digiexam_migration_job_emits_gap_correction_source_state_for_issuer(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-gap-source-state",
+        idempotency_key="idem-digiexam-gap-correction-source-state",
+        wait_seconds=20,
+        payload=_embedded_image_gap_payload(),
+    )
+    assert response.status_code == 200
+    assert response.json()["job"]["status"] == JobStatus.SUCCEEDED.value
+    job_id = response.json()["job"]["job_id"]
+
+    headers = _headers(
+        identity,
+        subject="teacher-gap-source-state",
+        grants={"sir-convert:artifacts:read-own"},
+    )
+    issue_response = client.post(
+        "/v2/exam-authoring/corrections/source-state/issue",
+        headers=headers,
+        json={
+            "schema_version": "exam_authoring_correction_source_state_issue_request_v1",
+            "job_id": job_id,
+        },
+    )
+
+    assert issue_response.status_code == 200
+    issued = issue_response.json()
+    issued_binding = issued["source_binding"]
+    issued_state = issued["source_authoring_state"]
+    gap_item = next(
+        item
+        for item in issued_state["items"]
+        if item["item_type"] == "gap_fill" and item["gap_open_cloze_interactions"]
+    )
+    gap_interaction = gap_item["gap_open_cloze_interactions"][0]
+    assert gap_interaction["interaction_id"] == f"gap-{gap_item['item_id']}"
+    assert gap_interaction["normalization_profile"] == "exact_trim_case_sensitive"
+    assert gap_interaction["gaps"]
+    assert gap_interaction["gaps"][0]["gap_id"]
+    assert gap_interaction["gaps"][0]["prompt_binding"]["locator"]
+    assert gap_interaction["answer_key"]["provenance"] in {
+        "absent",
+        "source_provided",
+        "teacher_provided",
+        "reviewed",
+        "mixed",
+    }
+
+    apply_response = client.post(
+        "/v2/exam-authoring/corrections/apply",
+        headers=headers,
+        json={
+            "schema_version": "exam_authoring_corrections_apply_request_v1",
+            "request_id": "correction-request-real-producer-gap-001",
+            "source_binding": issued_binding,
+            "source_authoring_state": issued_state,
+            "corrections": [
+                {
+                    "entry_id": "corr-gap-real-producer-001",
+                    "kind": "manual_gap_open_cloze_answer_key",
+                    "item_id": gap_item["item_id"],
+                    "sequence": gap_item["sequence"],
+                    "item_type": gap_item["item_type"],
+                    "source_item_fingerprint": gap_item["source_item_fingerprint"],
+                    "interaction_id": gap_interaction["interaction_id"],
+                    "submission_origin": "teacher_authored",
+                    "gap_answers": [
+                        {
+                            "gap_id": gap_interaction["gaps"][0]["gap_id"],
+                            "accepted_values": ["bild"],
+                        }
+                    ],
+                }
+            ],
+            "requested_targets": ["examnet_pdf"],
+        },
+    )
+
+    assert apply_response.status_code == 200
+    apply_payload = apply_response.json()
+    assert apply_payload["correction_report"]["rejected_entries"] == []
+    assert apply_payload["correction_report"]["accepted_entries"][0]["kind"] == (
+        "manual_gap_open_cloze_answer_key"
+    )
+
+
 def test_digiexam_migration_default_artifact_route_does_not_call_structured_llm(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1720,6 +1967,7 @@ def _client(
             run_jobs_on_submit=run_jobs_on_submit,
             internal_identity_public_keys={_KEY_ID: identity.public_key_pem},
             structured_llm=structured_llm or StructuredLLMRuntimeConfig(),
+            exam_authoring_source_state_signature_secret="test-source-state-signature-secret",
         )
     )
     return TestClient(app)

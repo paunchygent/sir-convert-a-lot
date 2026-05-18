@@ -88,8 +88,84 @@ exam_authoring_corrections_apply_result_v1
 
 The route accepts one source-bound authoring state plus an ordered list of typed
 correction entries. All entries are validated before effective state, readiness,
-or artifact availability is projected. A batch can return accepted and rejected
-entries, but rejected entries must not partially unlock files.
+or artifact availability is projected. The Task 331 runtime treats any rejected
+entry as batch-blocking: no correction-derived target readiness or artifact
+availability is unlocked until the consumer resubmits a batch whose entries all
+validate. Later item-level partial success requires a separate governed
+contract change.
+
+## Source-State Issuance Route
+
+```text
+POST /v2/exam-authoring/corrections/source-state/issue
+Content-Type: application/json
+```
+
+Initial request schema:
+
+```text
+exam_authoring_correction_source_state_issue_request_v1
+```
+
+Initial response schema:
+
+```text
+exam_authoring_correction_source_state_issue_result_v1
+```
+
+This Sir Convert-owned producer surface resolves a server-owned source-state
+artifact from a succeeded producer job, canonicalizes that persisted
+`source_authoring_state`, recomputes `source_state_sha256`, and returns the
+signed `source_binding` bundle that downstream consumers echo unchanged to
+`POST /v2/exam-authoring/corrections/apply`. Consumers must not know or receive
+`SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET`, must not post
+browser-local state for signing, and must not mint their own signatures.
+The current runtime producer that emits this artifact is the governed DigiExam
+`digiexam_dxe -> examnet_migration_bundle` job path; future authoring producers
+must emit the same source-neutral artifact before consumers can obtain a signed
+correction bundle from their jobs.
+
+Request:
+
+```json
+{
+  "schema_version": "exam_authoring_correction_source_state_issue_request_v1",
+  "job_id": "jobv2_abc123",
+  "expected_source_state_sha256": "sha256:optional-consumer-stale-state-guard"
+}
+```
+
+Response:
+
+```json
+{
+  "schema_version": "exam_authoring_correction_source_state_issue_result_v1",
+  "source_binding": {
+    "source_authoring_schema_version": "exam_authoring_ir_v1",
+    "source_state_sha256": "sha256:canonical-source-state",
+    "source_state_signature": "hmac-sha256:producer-signature",
+    "source_bundle_id": "bundle-123",
+    "source_file_sha256": "sha256:source-file"
+  },
+  "source_authoring_state": {
+    "schema_version": "exam_authoring_correction_source_state_v1",
+    "source_authoring_schema_version": "exam_authoring_ir_v1",
+    "source_state_sha256": "sha256:canonical-source-state",
+    "items": []
+  }
+}
+```
+
+The issuer derives `source_bundle_id` from the resolved producer job and
+`source_file_sha256` from the server-stored upload bytes. If the job is missing,
+not accessible, not succeeded, or lacks a server-owned correction source-state
+artifact, issuance fails closed. A request body that includes
+`source_authoring_state` is invalid; source state is never accepted from the
+consumer path for signing.
+
+The issuance route is not a Task 324 compatibility route, adapter, shim, alias,
+wrapper, or route-preserving layer. It is source-neutral correction contract
+plumbing for the same source-state bundle consumed by the unified apply route.
 
 ## Request Envelope
 
@@ -102,6 +178,7 @@ The request envelope binds the correction batch to producer-returned state:
   "source_binding": {
     "source_authoring_schema_version": "exam_authoring_ir_v1",
     "source_state_sha256": "sha256:source-state",
+    "source_state_signature": "hmac-sha256:producer-signature",
     "source_bundle_id": "bundle-123",
     "source_file_sha256": "sha256:source-file"
   },
@@ -129,7 +206,8 @@ teacher corrections:
 - `sequence`;
 - `item_type`;
 - optional `source_item_fingerprint`;
-- supported visible text fields and option IDs for content patches;
+- supported visible text fields, including item title, prompt HTML, prompt
+  lines, and option IDs/text for content patches;
 - current bounded `max_score`;
 - nested interaction IDs and interaction kind;
 - choice IDs, gap IDs, matching source IDs, and matching target IDs where
@@ -137,11 +215,28 @@ teacher corrections:
 - existing answer-key state and provenance when needed for validation;
 - source or effective-state digests needed for stale-state rejection.
 
+For DigiExam `.dxe` producer state, the signed sidecar exposes only the
+source-owned structures DigiExam actually carries: visible item text,
+`max_score`, choice interactions with stable choice IDs, gap/open-cloze
+interactions with stable gap IDs, and current answer-key provenance where
+available. It intentionally emits no `matching_interactions` because the
+current DigiExam IR has no canonical matching item type. Downstream
+`manual_matching_answer_key` use requires a matching-capable producer governed
+separately; consumers must not infer matching structure from DigiExam unknown
+items, prompt prose, or browser-local drafts.
+
 `source_binding.source_state_sha256` must match
-`source_authoring_state.source_state_sha256`. If a source item or interaction
-carries a fingerprint in producer state, the corresponding correction entry must
-echo it exactly. Missing or mismatched binding fails before rendering or target
-readiness.
+`source_authoring_state.source_state_sha256`. The submitted
+`source_authoring_state.source_state_sha256` must also equal Sir Convert's
+canonical stable digest of the sanitized source-authoring state content,
+computed without the digest field itself. The binding must also carry
+`source_state_signature`, a Sir Convert server signature over the source-state
+digest, source-authoring schema version, source bundle ID, and source file
+digest. A consumer may echo this signature from the producer-returned state but
+must not mint it. If a source item or interaction carries a fingerprint in
+producer state, the corresponding correction entry must echo it exactly.
+Missing, mismatched, non-canonical, or non-authoritative binding fails before
+effective state, rendering, target readiness, or artifact availability.
 
 ## Correction Entry Union
 
@@ -404,9 +499,12 @@ must be submitted as a separate answer-key correction entry.
 Validation order:
 
 1. Validate request schema and reject unknown fields.
-1. Validate request-level source binding and source-state digest.
+1. Validate request-level source binding, canonical source-state digest, and
+   signed producer-state authority.
 1. Validate every entry's item and nested-interaction binding.
 1. Validate entry-specific semantics.
+1. If any entry is rejected, stop before mutating effective state or projecting
+   correction-derived readiness/artifacts.
 1. Apply accepted entries to effective state in request order.
 1. Recompute target readiness from accepted effective state.
 1. Report accepted and rejected entries without leaking raw submitted payloads.
@@ -422,6 +520,7 @@ The route returns producer-owned effective state and reports:
   "source_binding": {
     "source_authoring_schema_version": "exam_authoring_ir_v1",
     "source_state_sha256": "sha256:source-state",
+    "source_state_signature": "hmac-sha256:producer-signature",
     "source_bundle_id": "bundle-123",
     "source_file_sha256": "sha256:source-file"
   },
@@ -498,9 +597,13 @@ contract as follows:
 | `review_decision.kind == "accept_current_state_for_export"` | `review_decision` |
 | Task 324 matching DTO | `manual_matching_answer_key` |
 
-This mapping is semantic, not a runtime compatibility promise. Task 330 performs
-the add/remove hard cut atomically for the initial runtime-supported
-`manual_matching_answer_key` entry.
+This mapping is semantic, not a runtime compatibility promise. Task 330
+performed the route hard cut. Task 333 implements runtime support for the
+DigiExam-backed non-matching entries that HuleEdu/Skriptoteket may consume
+after the HuleEdu unified authenticated edge lands: item text, point, choice,
+and gap/open-cloze corrections. Task 332 owns later
+`manual_matching_answer_key` downstream enablement through a real
+matching-capable producer.
 
 ## Consumer Sequencing
 
@@ -508,10 +611,21 @@ the add/remove hard cut atomically for the initial runtime-supported
 1. Review 23 accepted ADR-0011 as the source-neutral correction/apply decision.
 1. Task 330 adds the unified route and removes the Task 324 matching-specific
    route/dead code in the same governed slice.
-1. HuleEdu proxies the single unified route through authenticated
+1. Task 331 remediates Review 24's contract blockers for producer-state
+   authority, advisory lineage, batch unlock, validation privacy, and DigiExam
+   source-owned text/point/choice/gap state. Downstream matching use remains
+   blocked on Task 332 because DigiExam source state emits no real
+   `matching_interactions`.
+1. Task 333 implemented runtime apply behavior for the DigiExam-backed
+   non-matching families whose producer-issued source state exists:
+   point, choice, gap/open-cloze, and item text corrections.
+1. HuleEdu replaces the abandoned Task 324 matching-specific edge with the
+   single unified source-state issue/apply edge through authenticated
    `/sir-convert`.
 1. Skriptoteket PR-0332 migrates teacher-correction submission to the unified
-   route and treats returned effective state/readiness as authoritative.
+   route only after both the Sir Convert runtime support and HuleEdu product
+   edge exist for that correction family. For `manual_matching_answer_key`, that
+   means Task 332 must first provide a matching-capable producer.
 
 ## Privacy And Provenance
 
@@ -529,6 +643,11 @@ apply contracts. Requests and reports must not contain:
 - wrong selections;
 - free-text student answers;
 - per-student performance history.
+
+Validation-error envelopes must preserve only bounded diagnostic shape such as
+location, error type, and message. They must not echo raw submitted `input`,
+unsafe `ctx` fragments, raw overlay/source values, credentials, student data, or
+identity markers.
 
 Teacher corrections alter effective authoring state or effective renderer input
 only. They never mutate parser-owned source IR, source evidence, parser

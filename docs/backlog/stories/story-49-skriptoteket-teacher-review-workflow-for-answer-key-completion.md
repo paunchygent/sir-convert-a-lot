@@ -14,6 +14,8 @@ related:
   - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
   - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
   - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
+  - docs/backlog/tasks/task-333-implement-non-matching-unified-correction-apply-runtime-for-digiexam-pr-0332.md
+  - docs/backlog/tasks/task-332-implement-matching-capable-source-state-producer-for-unified-corrections.md
   - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/converters/exam-authoring-corrections-apply-contract.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
@@ -68,8 +70,18 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   gap/open-cloze accepted values, manual matching keys, review decisions, and
   candidate suppression.
 - Task 327 published the Sir Convert contract artifact in
-  `docs/converters/exam-authoring-corrections-apply-contract.md`; Task 330 adds
-  the initial runtime/OpenAPI implementation for `manual_matching_answer_key`.
+  `docs/converters/exam-authoring-corrections-apply-contract.md`; Task 330
+  added the unified route/OpenAPI hard cut; Task 331 added signed producer
+  source-state authority and DigiExam-backed text/point/choice/gap source-state
+  surfaces.
+- Task 333 completed the Sir Convert runtime continuation for non-matching
+  unified correction entries. HuleEdu/Skriptoteket may proceed with the
+  implemented non-matching families only after HuleEdu exposes the unified
+  authenticated edge: point, manual choice, manual gap/open-cloze, and item
+  text corrections against producer-issued DigiExam state.
+- Task 332 remains the separate matching-capable producer task. Skriptoteket
+  must not submit `manual_matching_answer_key` until Task 332 emits real
+  matching source state and proves unified-route apply behavior.
 - Skriptoteket must not build new teacher-correction surfaces around the
   abandoned adapter/route-per-item pattern. After the Sir Convert runtime hard
   cut and a governed consumer implementation slice, new consumer work should
@@ -104,8 +116,9 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
 - [ ] The durable teacher-correction API direction is source-neutral and
   producer-owned; the matching-specific transport is superseded and abandoned
   rather than treated as a route-per-item-type architecture, transitional route,
-  or compatibility layer. PR-0332 waits for the Sir Convert runtime hard cut
-  and its own governed implementation slice.
+  or compatibility layer. PR-0332 may consume implemented non-matching unified
+  corrections only after HuleEdu exposes the unified edge, and waits for Task
+  332 before matching correction consumption.
 - [ ] Public Exam Converter jobs remain remote-provider-forbidden unless a
   signed public grant version explicitly opts in.
 - [ ] HuleEdu LLM Provider reuse is treated as a future provider-surface task,

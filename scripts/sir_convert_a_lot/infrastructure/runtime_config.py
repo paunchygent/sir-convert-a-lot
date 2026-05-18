@@ -88,6 +88,16 @@ def _read_public_key_path(value: str, *, field_name: str) -> str:
     return _normalize_pem_text(path.read_text(encoding="utf-8"), field_name=field_name)
 
 
+def _optional_secret_from_env(name: str) -> str | None:
+    raw = os.getenv(name)
+    if raw is None:
+        return None
+    normalized = raw.strip()
+    if normalized == "":
+        return None
+    return normalized
+
+
 def _internal_identity_public_keys_from_env() -> dict[str, str]:
     """Return configured HuleEdu internal-identity public keys by key id."""
 
@@ -421,6 +431,9 @@ def service_config_from_env() -> ServiceConfig:
         internal_identity_allowed_clock_skew_seconds=internal_identity_allowed_clock_skew_seconds,
         public_exam_converter_access=_public_exam_converter_access_from_env(
             allowed_clock_skew_seconds=internal_identity_allowed_clock_skew_seconds,
+        ),
+        exam_authoring_source_state_signature_secret=_optional_secret_from_env(
+            "SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET"
         ),
         structured_llm=structured_llm_runtime_config_from_env(),
     )

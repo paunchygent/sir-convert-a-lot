@@ -110,6 +110,19 @@ def test_service_config_from_env_parallel_overrides_are_bounded(monkeypatch) -> 
     assert config.run_jobs_on_submit is False
 
 
+def test_service_config_from_env_reads_exam_authoring_source_authority_secret(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(
+        "SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET",
+        " signed-source-state-secret ",
+    )
+
+    config = service_config_from_env()
+
+    assert config.exam_authoring_source_state_signature_secret == "signed-source-state-secret"
+
+
 def test_service_config_from_env_rejects_invalid_chunk_worker_value(monkeypatch) -> None:
     monkeypatch.setenv("SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS", "0")
     with pytest.raises(ValueError, match="SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS"):
