@@ -2,7 +2,7 @@
 type: converter
 id: CONV-exam-authoring-corrections-apply-contract
 title: Exam Authoring Corrections Apply Contract
-status: draft
+status: active
 created: 2026-05-18
 updated: 2026-05-18
 owners:
@@ -40,9 +40,11 @@ governed implementation slice. It replaces the route-per-item direction with one
 producer-owned API that validates source-bound corrections, projects effective
 authoring state, recomputes target readiness, and reports artifact availability.
 
-This document remains draft until the follow-up implementation task adds the
-runtime route and generated OpenAPI surface. It is intentionally contract-only:
-it does not claim that the route exists in current OpenAPI or runtime.
+Task 330 adds the runtime route and generated OpenAPI surface for the initial
+`manual_matching_answer_key` implementation. Other entry kinds remain governed
+contract shapes and are rejected explicitly by the initial runtime until later
+implementation slices move those families from their current source-specific
+paths into the unified route.
 
 ## Product Boundary
 
@@ -468,19 +470,20 @@ Task 324 created:
 POST /v2/exam-authoring/matching/manual-answer-key/apply
 ```
 
-That route is historical bridge work only. The unified implementation must not
-preserve it as an adapter, shim, alias, wrapper, or compatibility layer.
+That route is superseded and abandoned as an implementation path. Task 330
+removes it rather than preserving it as an adapter, shim, alias, wrapper, or
+compatibility layer.
 
-The follow-up implementation task must:
+Task 330 implements the hard cut:
 
-- add `POST /v2/exam-authoring/corrections/apply`;
-- move Task 324 matching semantics into `manual_matching_answer_key`;
-- remove the matching-specific route registration and OpenAPI path exposure;
-- remove request/response code that exists only for the matching-specific route;
-- remove or rewrite route-specific tests that assert the old route;
-- keep reusable matching value objects, DTOs, or validators only where they are
+- added `POST /v2/exam-authoring/corrections/apply`;
+- moved Task 324 matching semantics into `manual_matching_answer_key`;
+- removed the matching-specific route registration and OpenAPI path exposure;
+- removed request/response code that existed only for the matching-specific route;
+- rewrote route-specific tests to assert the old route is not accepted;
+- kept reusable matching value objects, DTOs, or validators only where they are
   directly used by the unified correction-entry implementation;
-- prove that requests to the old matching route are not accepted.
+- proved that requests to the old matching route are not accepted.
 
 Existing DigiExam `digiexam_ingestion_overlay_v2` semantics map into the unified
 contract as follows:
@@ -495,16 +498,16 @@ contract as follows:
 | `review_decision.kind == "accept_current_state_for_export"` | `review_decision` |
 | Task 324 matching DTO | `manual_matching_answer_key` |
 
-This mapping is semantic, not a runtime compatibility promise. Task 327 does not
-authorize the runtime route or deletion work. The later unified-route
-implementation must perform the add/remove hard cut atomically.
+This mapping is semantic, not a runtime compatibility promise. Task 330 performs
+the add/remove hard cut atomically for the initial runtime-supported
+`manual_matching_answer_key` entry.
 
 ## Consumer Sequencing
 
 1. Task 327 completed this contract artifact.
 1. Review 23 accepted ADR-0011 as the source-neutral correction/apply decision.
-1. A Sir Convert implementation task adds the unified route and removes the
-   Task 324 matching-specific route/dead code in the same governed slice.
+1. Task 330 adds the unified route and removes the Task 324 matching-specific
+   route/dead code in the same governed slice.
 1. HuleEdu proxies the single unified route through authenticated
    `/sir-convert`.
 1. Skriptoteket PR-0332 migrates teacher-correction submission to the unified

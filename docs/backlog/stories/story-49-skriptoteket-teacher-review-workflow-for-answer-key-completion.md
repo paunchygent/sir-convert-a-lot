@@ -54,32 +54,26 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
 - Define that `Godkänn` triggers or resubmits a Sir Convert-owned
   `review_decision` flow; it does not locally unlock files until refreshed
   target readiness returns export-enabled rows.
-- Use Sir Convert's generated source-neutral
-  `ExamAuthoringMatchingManualAnswerKey` contract for matching-capable source
-  flows. Skriptoteket must not invent a local matching key shape, submit
-  retired `left_id`/`right_id` aliases, or add matching to DigiExam overlays.
-- Treat the Task 324 matching route as historical bridge work only. It exists so
-  already-built source-neutral matching gaps can submit producer-bound keys
-  without inventing a consumer-local shape, but it must not be the path that
-  shapes new `PR-0332` teacher-correction work and must not survive the unified
-  route implementation as an adapter, shim, alias, wrapper, or compatibility
-  layer.
+- Use Sir Convert's unified `manual_matching_answer_key` correction entry for
+  matching-capable source flows. Skriptoteket must not invent a local matching
+  key shape, submit retired `left_id`/`right_id` aliases, or add matching to
+  DigiExam overlays.
+- Treat the Task 324 matching route as superseded and abandoned. It must not be
+  proxied, consumed, or preserved as an adapter, shim, alias, wrapper, temporary
+  bridge, or compatibility layer.
 - ADR-0011 accepts the next Sir Convert producer direction as one
   source-neutral correction/apply contract, expected at
   `POST /v2/exam-authoring/corrections/apply`, with typed entries for item
   text/stem/prompt correction, point correction, manual choice keys, manual
   gap/open-cloze accepted values, manual matching keys, review decisions, and
   candidate suppression.
-- Task 327 publishes the draft Sir Convert contract artifact in
-  `docs/converters/exam-authoring-corrections-apply-contract.md`; Skriptoteket
-  should use that as the producer-owned shape after the Sir Convert runtime hard
-  cut lands under its own governed implementation slice.
-- Task 327 is the producer prerequisite before `PR-0332` continues beyond the
-  Task 324 historical bridge. Skriptoteket must not build new
-  teacher-correction surfaces around the abandoned adapter/route-per-item
-  pattern; after the Sir Convert runtime hard cut and a governed consumer
-  implementation slice, new consumer work should target the unified
-  correction/apply contract.
+- Task 327 published the Sir Convert contract artifact in
+  `docs/converters/exam-authoring-corrections-apply-contract.md`; Task 330 adds
+  the initial runtime/OpenAPI implementation for `manual_matching_answer_key`.
+- Skriptoteket must not build new teacher-correction surfaces around the
+  abandoned adapter/route-per-item pattern. After the Sir Convert runtime hard
+  cut and a governed consumer implementation slice, new consumer work should
+  target the unified correction/apply contract.
 - Keep HuleEdu as the authenticated edge proxy for that one contract and
   Skriptoteket as its teacher-correction consumer. Do not add more
   item-specific HuleEdu Gateway routes unless a future governed task proves
@@ -108,10 +102,10 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   `target_validation_failed` without collapsing them into one generic blocked
   state.
 - [ ] The durable teacher-correction API direction is source-neutral and
-  producer-owned; current matching-specific transport is documented as
-  historical bridge work rather than a route-per-item-type architecture or
-  compatibility layer. PR-0332 work beyond the existing bridge waits for the Sir
-  Convert runtime hard cut and its own governed implementation slice.
+  producer-owned; the matching-specific transport is superseded and abandoned
+  rather than treated as a route-per-item-type architecture, temporary bridge,
+  or compatibility layer. PR-0332 waits for the Sir Convert runtime hard cut
+  and its own governed implementation slice.
 - [ ] Public Exam Converter jobs remain remote-provider-forbidden unless a
   signed public grant version explicitly opts in.
 - [ ] HuleEdu LLM Provider reuse is treated as a future provider-surface task,

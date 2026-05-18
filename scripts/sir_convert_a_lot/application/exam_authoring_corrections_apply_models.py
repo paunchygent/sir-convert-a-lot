@@ -209,9 +209,7 @@ class ExamAuthoringGapAnswerV1(BaseModel):
     accepted_values: tuple[str, ...] = Field(min_length=1)
 
 
-class ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1(
-    ExamAuthoringCorrectionEntryBaseV1
-):
+class ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
     """Manual gap/open-cloze answer-key entry reserved for unified migration."""
 
     kind: Literal["manual_gap_open_cloze_answer_key"]

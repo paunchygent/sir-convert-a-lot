@@ -2734,39 +2734,182 @@
         "title": "DigiExamTargetReadinessRowV1",
         "type": "object"
       },
-      "ExamAuthoringMatchingAnswerKeyV1": {
+      "ExamAuthoringCandidateLineageV1": {
         "additionalProperties": false,
-        "description": "Source-neutral matching answer key for effective authoring state.",
+        "description": "Bounded advisory-candidate lineage without raw provider data.",
         "properties": {
-          "pairs": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/ExamAuthoringMatchingPairV1"
-            },
-            "title": "Pairs",
-            "type": "array"
+          "candidate_id": {
+            "minLength": 1,
+            "title": "Candidate Id",
+            "type": "string"
           },
-          "provenance": {
-            "enum": [
-              "absent",
-              "source_provided",
-              "teacher_provided",
-              "reviewed",
-              "mixed"
-            ],
-            "title": "Provenance",
+          "candidate_payload_digest": {
+            "minLength": 1,
+            "title": "Candidate Payload Digest",
+            "type": "string"
+          },
+          "completion_report_sha256": {
+            "minLength": 1,
+            "title": "Completion Report Sha256",
+            "type": "string"
+          },
+          "prompt_template_version": {
+            "minLength": 1,
+            "title": "Prompt Template Version",
+            "type": "string"
+          },
+          "provider_profile_id": {
+            "minLength": 1,
+            "title": "Provider Profile Id",
+            "type": "string"
+          },
+          "schema_name": {
+            "minLength": 1,
+            "title": "Schema Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "minLength": 1,
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "validation_state": {
+            "const": "valid",
+            "title": "Validation State",
             "type": "string"
           }
         },
         "required": [
-          "provenance"
+          "completion_report_sha256",
+          "candidate_id",
+          "candidate_payload_digest",
+          "provider_profile_id",
+          "schema_name",
+          "schema_version",
+          "prompt_template_version",
+          "validation_state"
         ],
-        "title": "ExamAuthoringMatchingAnswerKeyV1",
+        "title": "ExamAuthoringCandidateLineageV1",
         "type": "object"
       },
-      "ExamAuthoringMatchingArtifactAvailabilityRowV1": {
+      "ExamAuthoringCandidateSuppressionCorrectionV1": {
         "additionalProperties": false,
-        "description": "Artifact availability projection for a corrected matching interaction.",
+        "description": "Candidate suppression entry reserved for unified runtime migration.",
+        "properties": {
+          "candidate_lineage": {
+            "$ref": "#/components/schemas/ExamAuthoringCandidateLineageV1"
+          },
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "minLength": 1,
+            "title": "Item Type",
+            "type": "string"
+          },
+          "kind": {
+            "const": "candidate_suppression",
+            "title": "Kind",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          },
+          "suppression_reason": {
+            "const": "teacher_rejected_candidate",
+            "title": "Suppression Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "entry_id",
+          "item_id",
+          "sequence",
+          "item_type",
+          "candidate_lineage",
+          "suppression_reason"
+        ],
+        "title": "ExamAuthoringCandidateSuppressionCorrectionV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionAcceptedEntryV1": {
+        "additionalProperties": false,
+        "description": "Accepted correction summary without raw submitted payloads.",
+        "properties": {
+          "applied_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Applied Fields",
+            "type": "array"
+          },
+          "effective_provenance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Provenance"
+          },
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "kind": {
+            "minLength": 1,
+            "title": "Kind",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "entry_id",
+          "kind",
+          "item_id",
+          "sequence",
+          "applied_fields"
+        ],
+        "title": "ExamAuthoringCorrectionAcceptedEntryV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionArtifactAvailabilityRowV1": {
+        "additionalProperties": false,
+        "description": "Artifact availability projection for corrected authoring state.",
         "properties": {
           "artifact_key": {
             "enum": [
@@ -2800,7 +2943,914 @@
           "artifact_key",
           "availability"
         ],
-        "title": "ExamAuthoringMatchingArtifactAvailabilityRowV1",
+        "title": "ExamAuthoringCorrectionArtifactAvailabilityRowV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionRejectedEntryV1": {
+        "additionalProperties": false,
+        "description": "Rejected correction summary without raw submitted payloads.",
+        "properties": {
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "kind": {
+            "minLength": 1,
+            "title": "Kind",
+            "type": "string"
+          },
+          "message_key": {
+            "minLength": 1,
+            "title": "Message Key",
+            "type": "string"
+          },
+          "reason_code": {
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "teacher_action": {
+            "minLength": 1,
+            "title": "Teacher Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entry_id",
+          "kind",
+          "item_id",
+          "sequence",
+          "reason_code",
+          "message_key",
+          "teacher_action",
+          "retryable"
+        ],
+        "title": "ExamAuthoringCorrectionRejectedEntryV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionReportV1": {
+        "additionalProperties": false,
+        "description": "Accepted and rejected correction report for consumers.",
+        "properties": {
+          "accepted_entries": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringCorrectionAcceptedEntryV1"
+            },
+            "title": "Accepted Entries",
+            "type": "array"
+          },
+          "rejected_entries": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringCorrectionRejectedEntryV1"
+            },
+            "title": "Rejected Entries",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "exam_authoring_correction_report_v1",
+            "default": "exam_authoring_correction_report_v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accepted_entries",
+          "rejected_entries"
+        ],
+        "title": "ExamAuthoringCorrectionReportV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionSourceBindingV1": {
+        "additionalProperties": false,
+        "description": "Request-level binding to the producer-returned authoring state.",
+        "properties": {
+          "source_authoring_schema_version": {
+            "const": "exam_authoring_ir_v1",
+            "title": "Source Authoring Schema Version",
+            "type": "string"
+          },
+          "source_bundle_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Bundle Id"
+          },
+          "source_file_sha256": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File Sha256"
+          },
+          "source_state_sha256": {
+            "minLength": 1,
+            "title": "Source State Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_authoring_schema_version",
+          "source_state_sha256"
+        ],
+        "title": "ExamAuthoringCorrectionSourceBindingV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionSourceItemV1": {
+        "additionalProperties": false,
+        "description": "One producer-returned source item used for correction binding.",
+        "properties": {
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "minLength": 1,
+            "title": "Item Type",
+            "type": "string"
+          },
+          "matching_interactions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingInteractionV1"
+            },
+            "title": "Matching Interactions",
+            "type": "array"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          }
+        },
+        "required": [
+          "item_id",
+          "sequence",
+          "item_type"
+        ],
+        "title": "ExamAuthoringCorrectionSourceItemV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionSourceStateV1": {
+        "additionalProperties": false,
+        "description": "Sanitized producer-returned state used for correction validation.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceItemV1"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "exam_authoring_correction_source_state_v1",
+            "default": "exam_authoring_correction_source_state_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_authoring_schema_version": {
+            "const": "exam_authoring_ir_v1",
+            "title": "Source Authoring Schema Version",
+            "type": "string"
+          },
+          "source_state_sha256": {
+            "minLength": 1,
+            "title": "Source State Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_authoring_schema_version",
+          "source_state_sha256",
+          "items"
+        ],
+        "title": "ExamAuthoringCorrectionSourceStateV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionTargetReadinessReportV1": {
+        "additionalProperties": false,
+        "description": "Source-neutral target readiness report for a correction batch.",
+        "properties": {
+          "schema_version": {
+            "const": "target_readiness_report_v1",
+            "default": "target_readiness_report_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringCorrectionTargetReadinessRowV1"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "targets"
+        ],
+        "title": "ExamAuthoringCorrectionTargetReadinessReportV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionTargetReadinessRowV1": {
+        "additionalProperties": false,
+        "description": "Target readiness projection for corrected authoring state.",
+        "properties": {
+          "export_enabled": {
+            "title": "Export Enabled",
+            "type": "boolean"
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          },
+          "message_key": {
+            "minLength": 1,
+            "title": "Message Key",
+            "type": "string"
+          },
+          "readiness": {
+            "enum": [
+              "ready",
+              "target_validation_failed",
+              "unsupported_target_shape"
+            ],
+            "title": "Readiness",
+            "type": "string"
+          },
+          "reason_code": {
+            "minLength": 1,
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "sequence": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence"
+          },
+          "target": {
+            "enum": [
+              "examnet_pdf",
+              "qti_package"
+            ],
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "readiness",
+          "export_enabled",
+          "reason_code",
+          "message_key"
+        ],
+        "title": "ExamAuthoringCorrectionTargetReadinessRowV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionsApplyRequestV1": {
+        "additionalProperties": false,
+        "description": "Request body for applying a source-neutral correction batch.",
+        "properties": {
+          "corrections": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "candidate_suppression": "#/components/schemas/ExamAuthoringCandidateSuppressionCorrectionV1",
+                  "item_text_patch": "#/components/schemas/ExamAuthoringItemTextPatchCorrectionV1",
+                  "manual_choice_answer_key": "#/components/schemas/ExamAuthoringManualChoiceAnswerKeyCorrectionV1",
+                  "manual_gap_open_cloze_answer_key": "#/components/schemas/ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1",
+                  "manual_matching_answer_key": "#/components/schemas/ExamAuthoringManualMatchingAnswerKeyCorrectionV1",
+                  "point_correction": "#/components/schemas/ExamAuthoringPointCorrectionV1",
+                  "review_decision": "#/components/schemas/ExamAuthoringReviewDecisionCorrectionV1"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ExamAuthoringItemTextPatchCorrectionV1"
+                },
+                {
+                  "$ref": "#/components/schemas/ExamAuthoringPointCorrectionV1"
+                },
+                {
+                  "$ref": "#/components/schemas/ExamAuthoringManualChoiceAnswerKeyCorrectionV1"
+                },
+                {
+                  "$ref": "#/components/schemas/ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1"
+                },
+                {
+                  "$ref": "#/components/schemas/ExamAuthoringManualMatchingAnswerKeyCorrectionV1"
+                },
+                {
+                  "$ref": "#/components/schemas/ExamAuthoringReviewDecisionCorrectionV1"
+                },
+                {
+                  "$ref": "#/components/schemas/ExamAuthoringCandidateSuppressionCorrectionV1"
+                }
+              ]
+            },
+            "minItems": 1,
+            "title": "Corrections",
+            "type": "array"
+          },
+          "request_id": {
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "requested_targets": {
+            "default": [
+              "examnet_pdf",
+              "qti_package"
+            ],
+            "items": {
+              "enum": [
+                "examnet_pdf",
+                "qti_package"
+              ],
+              "type": "string"
+            },
+            "title": "Requested Targets",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "exam_authoring_corrections_apply_request_v1",
+            "default": "exam_authoring_corrections_apply_request_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_authoring_state": {
+            "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceStateV1"
+          },
+          "source_binding": {
+            "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceBindingV1"
+          }
+        },
+        "required": [
+          "request_id",
+          "source_binding",
+          "source_authoring_state",
+          "corrections"
+        ],
+        "title": "ExamAuthoringCorrectionsApplyRequestV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionsApplyResultV1": {
+        "additionalProperties": false,
+        "description": "Producer-owned result returned after correction application.",
+        "properties": {
+          "artifact_availability": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringCorrectionArtifactAvailabilityRowV1"
+            },
+            "title": "Artifact Availability",
+            "type": "array"
+          },
+          "correction_report": {
+            "$ref": "#/components/schemas/ExamAuthoringCorrectionReportV1"
+          },
+          "effective_state": {
+            "$ref": "#/components/schemas/ExamAuthoringEffectiveStateV1"
+          },
+          "request_id": {
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "exam_authoring_corrections_apply_result_v1",
+            "default": "exam_authoring_corrections_apply_result_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_binding": {
+            "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceBindingV1"
+          },
+          "target_readiness": {
+            "$ref": "#/components/schemas/ExamAuthoringCorrectionTargetReadinessReportV1"
+          }
+        },
+        "required": [
+          "request_id",
+          "source_binding",
+          "effective_state",
+          "correction_report",
+          "target_readiness",
+          "artifact_availability"
+        ],
+        "title": "ExamAuthoringCorrectionsApplyResultV1",
+        "type": "object"
+      },
+      "ExamAuthoringEffectiveStateV1": {
+        "additionalProperties": false,
+        "description": "Effective authoring state projection after accepted corrections.",
+        "properties": {
+          "effective_state_sha256": {
+            "minLength": 1,
+            "title": "Effective State Sha256",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceItemV1"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "exam_authoring_effective_state_v1",
+            "default": "exam_authoring_effective_state_v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "effective_state_sha256",
+          "items"
+        ],
+        "title": "ExamAuthoringEffectiveStateV1",
+        "type": "object"
+      },
+      "ExamAuthoringGapAnswerV1": {
+        "additionalProperties": false,
+        "description": "Accepted values for one source-bound gap.",
+        "properties": {
+          "accepted_values": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Accepted Values",
+            "type": "array"
+          },
+          "gap_id": {
+            "minLength": 1,
+            "title": "Gap Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "gap_id",
+          "accepted_values"
+        ],
+        "title": "ExamAuthoringGapAnswerV1",
+        "type": "object"
+      },
+      "ExamAuthoringItemTextPatchCorrectionV1": {
+        "additionalProperties": false,
+        "description": "Visible item text patch entry reserved for a later implementation slice.",
+        "properties": {
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "minLength": 1,
+            "title": "Item Type",
+            "type": "string"
+          },
+          "kind": {
+            "const": "item_text_patch",
+            "title": "Kind",
+            "type": "string"
+          },
+          "patches": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringItemTextPatchOperationV1"
+            },
+            "minItems": 1,
+            "title": "Patches",
+            "type": "array"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          }
+        },
+        "required": [
+          "kind",
+          "entry_id",
+          "item_id",
+          "sequence",
+          "item_type",
+          "patches"
+        ],
+        "title": "ExamAuthoringItemTextPatchCorrectionV1",
+        "type": "object"
+      },
+      "ExamAuthoringItemTextPatchOperationV1": {
+        "additionalProperties": false,
+        "description": "One visible text patch operation for future source-neutral correction.",
+        "properties": {
+          "choice_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice Id"
+          },
+          "field": {
+            "enum": [
+              "item_title",
+              "stem_html",
+              "prompt_html",
+              "body_html",
+              "visible_option_text",
+              "gap_prompt_text"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "gap_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap Id"
+          },
+          "value": {
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ],
+        "title": "ExamAuthoringItemTextPatchOperationV1",
+        "type": "object"
+      },
+      "ExamAuthoringManualChoiceAnswerKeyCorrectionV1": {
+        "additionalProperties": false,
+        "description": "Manual choice answer-key entry reserved for unified runtime migration.",
+        "properties": {
+          "candidate_lineage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExamAuthoringCandidateLineageV1"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "correct_choice_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Correct Choice Ids",
+            "type": "array"
+          },
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "interaction_id": {
+            "minLength": 1,
+            "title": "Interaction Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "minLength": 1,
+            "title": "Item Type",
+            "type": "string"
+          },
+          "kind": {
+            "const": "manual_choice_answer_key",
+            "title": "Kind",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          },
+          "submission_origin": {
+            "enum": [
+              "teacher_authored",
+              "accepted_advisory_candidate",
+              "teacher_edited_advisory_candidate"
+            ],
+            "title": "Submission Origin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "entry_id",
+          "item_id",
+          "sequence",
+          "item_type",
+          "interaction_id",
+          "submission_origin",
+          "correct_choice_ids"
+        ],
+        "title": "ExamAuthoringManualChoiceAnswerKeyCorrectionV1",
+        "type": "object"
+      },
+      "ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1": {
+        "additionalProperties": false,
+        "description": "Manual gap/open-cloze answer-key entry reserved for unified migration.",
+        "properties": {
+          "candidate_lineage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExamAuthoringCandidateLineageV1"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "gap_answers": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringGapAnswerV1"
+            },
+            "minItems": 1,
+            "title": "Gap Answers",
+            "type": "array"
+          },
+          "interaction_id": {
+            "minLength": 1,
+            "title": "Interaction Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "minLength": 1,
+            "title": "Item Type",
+            "type": "string"
+          },
+          "kind": {
+            "const": "manual_gap_open_cloze_answer_key",
+            "title": "Kind",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          },
+          "submission_origin": {
+            "enum": [
+              "teacher_authored",
+              "accepted_advisory_candidate",
+              "teacher_edited_advisory_candidate"
+            ],
+            "title": "Submission Origin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "entry_id",
+          "item_id",
+          "sequence",
+          "item_type",
+          "interaction_id",
+          "submission_origin",
+          "gap_answers"
+        ],
+        "title": "ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1",
+        "type": "object"
+      },
+      "ExamAuthoringManualMatchingAnswerKeyCorrectionV1": {
+        "additionalProperties": false,
+        "description": "Manual matching answer-key correction implemented by Task 330.",
+        "properties": {
+          "candidate_lineage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExamAuthoringCandidateLineageV1"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "interaction_id": {
+            "minLength": 1,
+            "title": "Interaction Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "const": "matching",
+            "title": "Item Type",
+            "type": "string"
+          },
+          "kind": {
+            "const": "manual_matching_answer_key",
+            "title": "Kind",
+            "type": "string"
+          },
+          "pairs": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingPairV1"
+            },
+            "minItems": 1,
+            "title": "Pairs",
+            "type": "array"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          },
+          "submission_origin": {
+            "enum": [
+              "teacher_authored",
+              "accepted_advisory_candidate",
+              "teacher_edited_advisory_candidate"
+            ],
+            "title": "Submission Origin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "entry_id",
+          "item_id",
+          "sequence",
+          "item_type",
+          "interaction_id",
+          "submission_origin",
+          "pairs"
+        ],
+        "title": "ExamAuthoringManualMatchingAnswerKeyCorrectionV1",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingAnswerKeyV1": {
+        "additionalProperties": false,
+        "description": "Source-neutral matching answer key for effective authoring state.",
+        "properties": {
+          "pairs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingPairV1"
+            },
+            "title": "Pairs",
+            "type": "array"
+          },
+          "provenance": {
+            "enum": [
+              "absent",
+              "source_provided",
+              "teacher_provided",
+              "reviewed",
+              "mixed"
+            ],
+            "title": "Provenance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provenance"
+        ],
+        "title": "ExamAuthoringMatchingAnswerKeyV1",
         "type": "object"
       },
       "ExamAuthoringMatchingChoiceV1": {
@@ -2912,171 +3962,6 @@
         "title": "ExamAuthoringMatchingInteractionV1",
         "type": "object"
       },
-      "ExamAuthoringMatchingManualAnswerKey": {
-        "additionalProperties": false,
-        "description": "Source-neutral matching manual answer-key submission.",
-        "properties": {
-          "answer_key": {
-            "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyPayload"
-          },
-          "interaction_id": {
-            "minLength": 1,
-            "title": "Interaction Id",
-            "type": "string"
-          },
-          "kind": {
-            "const": "matching",
-            "title": "Kind",
-            "type": "string"
-          },
-          "schema_version": {
-            "const": "exam_authoring_ir_v1",
-            "default": "exam_authoring_ir_v1",
-            "title": "Schema Version",
-            "type": "string"
-          },
-          "source_item_fingerprint": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Source Item Fingerprint"
-          }
-        },
-        "required": [
-          "kind",
-          "interaction_id",
-          "answer_key"
-        ],
-        "title": "ExamAuthoringMatchingManualAnswerKey",
-        "type": "object"
-      },
-      "ExamAuthoringMatchingManualAnswerKeyApplyRequest": {
-        "additionalProperties": false,
-        "description": "Request body for applying a matching manual answer key.",
-        "properties": {
-          "exam_authoring_matching_manual_answer_key": {
-            "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKey"
-          },
-          "requested_targets": {
-            "default": [
-              "examnet_pdf",
-              "qti_package"
-            ],
-            "items": {
-              "enum": [
-                "examnet_pdf",
-                "qti_package"
-              ],
-              "type": "string"
-            },
-            "title": "Requested Targets",
-            "type": "array"
-          },
-          "source_interaction": {
-            "$ref": "#/components/schemas/ExamAuthoringMatchingInteractionV1"
-          }
-        },
-        "required": [
-          "source_interaction",
-          "exam_authoring_matching_manual_answer_key"
-        ],
-        "title": "ExamAuthoringMatchingManualAnswerKeyApplyRequest",
-        "type": "object"
-      },
-      "ExamAuthoringMatchingManualAnswerKeyApplyResponse": {
-        "additionalProperties": false,
-        "description": "Producer-owned effective state returned after matching key application.",
-        "properties": {
-          "artifact_availability": {
-            "items": {
-              "$ref": "#/components/schemas/ExamAuthoringMatchingArtifactAvailabilityRowV1"
-            },
-            "title": "Artifact Availability",
-            "type": "array"
-          },
-          "effective_interaction": {
-            "$ref": "#/components/schemas/ExamAuthoringMatchingInteractionV1"
-          },
-          "schema_version": {
-            "const": "exam_authoring_matching_apply_result_v1",
-            "default": "exam_authoring_matching_apply_result_v1",
-            "title": "Schema Version",
-            "type": "string"
-          },
-          "target_readiness": {
-            "items": {
-              "$ref": "#/components/schemas/ExamAuthoringMatchingTargetReadinessRowV1"
-            },
-            "title": "Target Readiness",
-            "type": "array"
-          }
-        },
-        "required": [
-          "effective_interaction",
-          "target_readiness",
-          "artifact_availability"
-        ],
-        "title": "ExamAuthoringMatchingManualAnswerKeyApplyResponse",
-        "type": "object"
-      },
-      "ExamAuthoringMatchingManualAnswerKeyPair": {
-        "additionalProperties": false,
-        "description": "One submitted source-to-target matching answer pair.",
-        "properties": {
-          "source_id": {
-            "minLength": 1,
-            "title": "Source Id",
-            "type": "string"
-          },
-          "target_id": {
-            "minLength": 1,
-            "title": "Target Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "source_id",
-          "target_id"
-        ],
-        "title": "ExamAuthoringMatchingManualAnswerKeyPair",
-        "type": "object"
-      },
-      "ExamAuthoringMatchingManualAnswerKeyPayload": {
-        "additionalProperties": false,
-        "description": "Whole-key matching answer payload with source-neutral provenance.",
-        "properties": {
-          "pairs": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyPair"
-            },
-            "title": "Pairs",
-            "type": "array"
-          },
-          "provenance": {
-            "enum": [
-              "absent",
-              "source_provided",
-              "teacher_provided",
-              "reviewed"
-            ],
-            "title": "Provenance",
-            "type": "string"
-          }
-        },
-        "required": [
-          "provenance"
-        ],
-        "title": "ExamAuthoringMatchingManualAnswerKeyPayload",
-        "type": "object"
-      },
       "ExamAuthoringMatchingPairV1": {
         "additionalProperties": false,
         "description": "One directed source-to-target matching pair.",
@@ -3099,48 +3984,151 @@
         "title": "ExamAuthoringMatchingPairV1",
         "type": "object"
       },
-      "ExamAuthoringMatchingTargetReadinessRowV1": {
+      "ExamAuthoringPointCorrectionV1": {
         "additionalProperties": false,
-        "description": "Target readiness projection for a corrected matching interaction.",
+        "description": "Point correction entry reserved for unified runtime migration.",
         "properties": {
-          "export_enabled": {
-            "title": "Export Enabled",
-            "type": "boolean"
-          },
-          "message_key": {
-            "title": "Message Key",
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
             "type": "string"
           },
-          "readiness": {
-            "enum": [
-              "ready",
-              "target_validation_failed",
-              "unsupported_target_shape"
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "minLength": 1,
+            "title": "Item Type",
+            "type": "string"
+          },
+          "kind": {
+            "const": "point_correction",
+            "title": "Kind",
+            "type": "string"
+          },
+          "max_score": {
+            "exclusiveMinimum": 0.0,
+            "title": "Max Score",
+            "type": "integer"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Readiness",
-            "type": "string"
-          },
-          "reason_code": {
-            "title": "Reason Code",
-            "type": "string"
-          },
-          "target": {
-            "enum": [
-              "examnet_pdf",
-              "qti_package"
-            ],
-            "title": "Target",
-            "type": "string"
+            "title": "Source Item Fingerprint"
           }
         },
         "required": [
-          "target",
-          "readiness",
-          "export_enabled",
-          "reason_code",
-          "message_key"
+          "kind",
+          "entry_id",
+          "item_id",
+          "sequence",
+          "item_type",
+          "max_score"
         ],
-        "title": "ExamAuthoringMatchingTargetReadinessRowV1",
+        "title": "ExamAuthoringPointCorrectionV1",
+        "type": "object"
+      },
+      "ExamAuthoringReviewDecisionCorrectionV1": {
+        "additionalProperties": false,
+        "description": "Review decision entry reserved for unified runtime migration.",
+        "properties": {
+          "accepted_targets": {
+            "items": {
+              "enum": [
+                "examnet_pdf",
+                "qti_package"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Accepted Targets",
+            "type": "array"
+          },
+          "decision": {
+            "const": "accept_current_state_for_export",
+            "title": "Decision",
+            "type": "string"
+          },
+          "decision_id": {
+            "minLength": 1,
+            "title": "Decision Id",
+            "type": "string"
+          },
+          "entry_id": {
+            "minLength": 1,
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "minLength": 1,
+            "title": "Item Type",
+            "type": "string"
+          },
+          "kind": {
+            "const": "review_decision",
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          }
+        },
+        "required": [
+          "kind",
+          "entry_id",
+          "item_id",
+          "sequence",
+          "item_type",
+          "decision",
+          "decision_id",
+          "accepted_targets"
+        ],
+        "title": "ExamAuthoringReviewDecisionCorrectionV1",
         "type": "object"
       },
       "ExamAuthoringSourceEvidenceV1": {
@@ -4659,7 +5647,6 @@
           "digiexam_ingestion_overlay": "#/components/schemas/DigiExamIngestionOverlay",
           "digiexam_migration_bundle_manifest": "#/components/schemas/DigiExamMigrationBundleManifestV2",
           "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
-          "exam_authoring_matching_manual_answer_key": "#/components/schemas/ExamAuthoringMatchingManualAnswerKey",
           "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
           "job_spec": "#/components/schemas/JobSpecV2",
           "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1"
@@ -5181,14 +6168,14 @@
         "summary": "Resume Job"
       }
     },
-    "/v2/exam-authoring/matching/manual-answer-key/apply": {
+    "/v2/exam-authoring/corrections/apply": {
       "post": {
-        "operationId": "apply_matching_manual_answer_key_v2_exam_authoring_matching_manual_answer_key_apply_post",
+        "operationId": "apply_exam_authoring_corrections_v2_exam_authoring_corrections_apply_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyApplyRequest"
+                "$ref": "#/components/schemas/ExamAuthoringCorrectionsApplyRequestV1"
               }
             }
           },
@@ -5199,7 +6186,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyApplyResponse"
+                  "$ref": "#/components/schemas/ExamAuthoringCorrectionsApplyResultV1"
                 }
               }
             },
@@ -5216,7 +6203,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Apply Matching Manual Answer Key"
+        "summary": "Apply Exam Authoring Corrections"
       }
     },
     "/v2/operator/structured-llm/provider-routing": {

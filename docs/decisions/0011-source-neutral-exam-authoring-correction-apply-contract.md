@@ -100,19 +100,18 @@ models, source evidence, fingerprints, and adapter mapping into
 owns correction validation, source-binding checks, effective-state projection,
 target readiness, and artifact availability.
 
-Task 324 remains historical bridge work for the already-built matching gap. It
-must not be used as precedent for adding more item-specific teacher-correction
-routes or for steering new `PR-0332` implementation back into the abandoned
-adapter/route-per-item pattern. The unified-route implementation must hard-cut
-from the Task 324 route to `POST /v2/exam-authoring/corrections/apply`; it must
-not keep the matching-specific route callable through an adapter, shim, alias,
-wrapper, or compatibility layer.
+Task 324 is superseded historical route work for the already-built matching
+gap. It must not be used as precedent for adding more item-specific
+teacher-correction routes or for steering new `PR-0332` implementation back
+into the abandoned adapter/route-per-item pattern. Task 330 hard-cuts from the
+Task 324 route to `POST /v2/exam-authoring/corrections/apply`; it does not keep
+the matching-specific route callable through an adapter, shim, alias, wrapper,
+or compatibility layer.
 
-Task 327 publishes the draft contract artifact at
-`docs/converters/exam-authoring-corrections-apply-contract.md`. That document is
-the implementation-ready contract surface for the future route. It remains draft
-until the follow-up implementation task adds the runtime route and generated
-OpenAPI surface.
+Task 327 published the contract artifact at
+`docs/converters/exam-authoring-corrections-apply-contract.md`. Task 330 adds
+the runtime route and generated OpenAPI surface for the initial
+`manual_matching_answer_key` implementation.
 
 ## 3. Boundary Rules
 
@@ -159,10 +158,10 @@ Skriptoteket should consume the unified route as the teacher-correction API and
 treat returned Sir Convert effective state, target readiness, and artifact
 availability as authoritative. Browser drafts remain non-authoritative until
 Sir Convert applies the correction and returns producer state. Existing Task 324
-matching transport is historical bridge work only; new PR-0332
+matching transport is superseded historical route work only; new PR-0332
 teacher-correction work must not target that path as the product architecture,
-and the unified implementation must remove the matching-specific transport
-rather than preserve it as compatibility.
+and Task 330 removes the matching-specific transport rather than preserving it
+as compatibility.
 
 ADR-0009 remains separate Gateway/public-edge authority. This ADR does not
 accept ADR-0009 or change its proposed status.
@@ -172,7 +171,7 @@ accept ADR-0009 or change its proposed status.
 This ADR closes the product-direction questions for Task 327:
 
 - Current DXE overlay is acceptable for implemented DXE-only conversion.
-- Task 324 is historical bridge work, not a route-proliferation precedent or
+- Task 324 is superseded historical route work, not a route-proliferation precedent or
   compatibility surface.
 - Future teacher correction expansion should converge on one source-neutral
   correction/apply API.
