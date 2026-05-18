@@ -378,8 +378,7 @@ def test_digiexam_migration_admitted_provider_route_does_not_drift_after_hot_swi
     )
     assert settings_response.status_code == 200
 
-    runtime_obj = getattr(client.app.state, "runtime_v2", None)
-    assert isinstance(runtime_obj, ServiceRuntimeV2)
+    runtime_obj = _runtime_from_client(client)
     runtime_obj.run_job_async(job_id)
     _wait_for_terminal_job(runtime_obj, job_id)
 
@@ -1835,6 +1834,13 @@ def _wait_for_terminal_job(runtime: ServiceRuntimeV2, job_id: str) -> None:
         current = runtime.get_job(job_id)
     assert current is not None
     assert current.status == JobStatus.SUCCEEDED
+
+
+def _runtime_from_client(client: TestClient) -> ServiceRuntimeV2:
+    app_state = getattr(getattr(client, "app"), "state", None)
+    runtime_obj = getattr(app_state, "runtime_v2", None)
+    assert isinstance(runtime_obj, ServiceRuntimeV2)
+    return runtime_obj
 
 
 def _structured_llm_config() -> StructuredLLMRuntimeConfig:

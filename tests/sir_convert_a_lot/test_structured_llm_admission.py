@@ -20,6 +20,7 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
     DigiExamAnswerKeyCompletionModeV2,
     DigiExamMigrationOptionsV2,
     JobSpecV2,
+    OutputFormatV2,
     RetentionSpecV2,
     SourceFormatV2,
     SourceKindV2,
@@ -201,7 +202,7 @@ def _spec(*, completion_mode: DigiExamAnswerKeyCompletionModeV2) -> JobSpecV2:
             filename="exam.dxe",
             format=SourceFormatV2.DIGIEXAM_DXE,
         ),
-        conversion=ConversionSpecV2(output_format="examnet_migration_bundle"),
+        conversion=ConversionSpecV2(output_format=OutputFormatV2.EXAMNET_MIGRATION_BUNDLE),
         digiexam_migration_options=DigiExamMigrationOptionsV2(completion_mode=completion_mode),
         retention=RetentionSpecV2(pin=False),
     )

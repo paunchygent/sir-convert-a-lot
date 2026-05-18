@@ -80,7 +80,7 @@ class StoredJobRecordV2:
     failure_message: str | None
     failure_retryable: bool
     failure_details: dict[str, object] | None
-    structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None
+    structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None = None
 
     @property
     def expires_at(self) -> datetime | None:

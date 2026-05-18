@@ -452,6 +452,86 @@
         "title": "DigiExamAnswerKeyCompletionModeV2",
         "type": "string"
       },
+      "DigiExamAnswerKeyCompletionProviderLineageV1": {
+        "additionalProperties": false,
+        "description": "Report-level admitted provider route lineage.",
+        "properties": {
+          "endpoint_kind": {
+            "title": "Endpoint Kind",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "output_mode": {
+            "title": "Output Mode",
+            "type": "string"
+          },
+          "provider_family": {
+            "title": "Provider Family",
+            "type": "string"
+          },
+          "provider_profile_id": {
+            "title": "Provider Profile Id",
+            "type": "string"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reasoning Effort"
+          },
+          "remote_provider_authorized": {
+            "title": "Remote Provider Authorized",
+            "type": "boolean"
+          },
+          "route_class": {
+            "title": "Route Class",
+            "type": "string"
+          },
+          "route_decision": {
+            "title": "Route Decision",
+            "type": "string"
+          },
+          "settings_version": {
+            "exclusiveMinimum": 0,
+            "title": "Settings Version",
+            "type": "integer"
+          },
+          "text_verbosity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Text Verbosity"
+          }
+        },
+        "required": [
+          "provider_family",
+          "provider_profile_id",
+          "model",
+          "endpoint_kind",
+          "output_mode",
+          "settings_version",
+          "route_class",
+          "route_decision",
+          "remote_provider_authorized"
+        ],
+        "title": "DigiExamAnswerKeyCompletionProviderLineageV1",
+        "type": "object"
+      },
       "DigiExamAnswerKeyCompletionReportItemV1": {
         "additionalProperties": false,
         "description": "One advisory answer-key candidate lineage report item.",
@@ -642,6 +722,17 @@
           "job_id": {
             "title": "Job Id",
             "type": "string"
+          },
+          "provider_lineage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DigiExamAnswerKeyCompletionProviderLineageV1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "schema_version": {
             "const": "answer_key_completion_report_v1",

@@ -13,6 +13,7 @@ tags:
   - downstream
   - contract
 links:
+  - docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md
   - docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md

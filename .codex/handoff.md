@@ -53,11 +53,10 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - ADR-0011/Task 327 are proposed for the cleaner producer-contract follow-up:
   Task 324 is bridge work, and the next source-neutral slice should define
   `POST /v2/exam-authoring/corrections/apply` with typed correction entries.
-- Task 328 completed the proposed-ADR audit. Task 329 is now proposed for the
-  ADR-0002 closeout: compare ADR-0002 against active Service API v2 authority,
-  then preferably supersede it with a current-state accepted decision. ADR-0009
-  remains proposed until Task 257; ADR-0011 remains proposed until Task 327 plus
-  a later acceptance step.
+- Task 328 completed the proposed-ADR audit. Task 329 implemented the ADR-0002
+  closeout docs: ADR-0002 is superseded by accepted ADR-0012. Review 22 closed
+  as `changes_requested` because the Task 329 review set is mixed with separate
+  Task 325-B runtime/OpenAPI provider-lineage changes.
 
 ## Active Pointers
 
@@ -93,12 +92,13 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - Completed DigiExam route/runtime and public Exam Converter docs: Tasks
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
 - Active answer-key completion lane: Epic 11. Tasks 294-309/312/319/321-323
-  built provider, advisory, overlay/effective-IR, unkeyed-manual QTI,
-  Qwen3.6, target-key preservation, point correction, and the matching DTO.
+  built provider, advisory, overlay/effective-IR, unkeyed-manual QTI, Qwen3.6,
+  target-key preservation, point correction, and the matching DTO.
   ADR-0011/Task 327 are proposed for the unified source-neutral
   correction/apply contract before adding more item-specific Gateway/service
   routes. Qwen3.6 remains guarded; ADR-0010 is accepted. Task 325 is in
-  progress for OpenAI hot settings; Task 326 is the linked eval/promotion gate.
+  progress for OpenAI hot settings; Task 325-B now pins provider/settings
+  lineage at admission and report level. Task 326 remains the eval gate.
 - Review 17 for Task 306 is closed as `approved`; future generated-type claims
   need current producer/consumer evidence, not the historical PR-0331 finding.
 - Review 18 for Task 319 is closed as `approved`; Hemma/Qwen3.6 live
@@ -122,7 +122,7 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
   `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
 - ADR-0009 readiness review:
   `docs/backlog/reviews/review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness.md`.
-- Proposed ADR-0002 closeout task: `docs/backlog/tasks/task-329-close-out-adr-0002-against-active-service-api-v2-authority.md`.
+- ADR-0002 closeout: Task 329 plus Review 22 `changes_requested`.
 
 ## Next Actions
 
@@ -146,9 +146,9 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
    `/v2/exam-authoring/corrections/apply` contract under proposed ADR-0011,
    then sequence HuleEdu authenticated edge proxying and Skriptoteket
    teacher-correction API migration after acceptance.
-1. Execute Task 329: compare ADR-0002 against active Service API v2 authority,
-   then accept an explicitly amended ADR-0002 or, preferably, supersede it with
-   a current-state accepted decision and separate review record.
+1. Remediate Review 22 by splitting or separately governing the Task 325-B
+   runtime/OpenAPI provider-lineage changes, then re-review Task 329 before
+   marking it completed.
 1. Continue PR-0331 from the completed Sir Convert Task 321 cleanup: the next
    answer-key UI/consumer slice must preserve reviewed gap/open-cloze keys in
    QTI and PDF artifacts, must not offer QTI packages when adapter follow-up
@@ -191,10 +191,10 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - 2026-05-18 Task 324 local closeout passed OpenAPI export, format/lint/type
   gates, focused matching/OpenAPI pytest, coverage-gate, and Skriptoteket
   generated-type/preflight proof.
-- 2026-05-18 Task 329 was scaffolded as the proposed ADR-0002 closeout task; no
-  ADR status changed in this planning slice.
+- 2026-05-18 Review 22 completed as `changes_requested`: ADR-0012 closeout is
+  directionally sound, but Task 329 cannot be approved while bundled with
+  unrelated Task 325-B runtime/OpenAPI provider-lineage changes.
 
 ## Stop Conditions
 
-- Stop before deleting durable Qwen/service/Hemma evidence or changing service
-  runtime, Hemma deploy, artifact retention, or Qwen experiment semantics.
+- Stop before deleting durable Qwen/service/Hemma evidence or changing service runtime, Hemma deploy, artifact retention, or Qwen experiment semantics.

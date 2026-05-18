@@ -101,7 +101,8 @@ User-facing rerun behavior:
 - Normative API: `docs/converters/multi_format_conversion_service_api_v2.md`
 - Downstream integration contract:
   `docs/converters/downstream_integration_contract_v2.md`
-- Decision v2: `docs/decisions/0002-multi-format-service-api-v2.md`
+- Decision v2:
+  `docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md`
 
 ## Task 11 Backend Availability
 

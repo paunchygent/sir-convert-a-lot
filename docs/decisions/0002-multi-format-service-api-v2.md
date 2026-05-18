@@ -2,9 +2,9 @@
 type: decision
 id: ADR-0002
 title: Multi-format Conversion Service API v2
-status: proposed
+status: superseded
 created: 2026-02-18
-updated: 2026-02-18
+updated: 2026-05-18
 owners:
   - platform
 tags:
@@ -13,6 +13,7 @@ tags:
   - v2
   - multi-format
 links:
+  - docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md
@@ -26,8 +27,15 @@ PDF-to-Markdown **service API v1** contract.
 
 ## Status
 
-- Proposed
-- Date: 2026-02-18
+- Superseded
+- Date: 2026-05-18
+- Superseded by:
+  `docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md`
+
+This decision is preserved as the historical proposal that introduced the
+Service API v2 pivot. It is no longer active decision authority because later
+completed v2-only cleanup removed the v1 conversion runtime surface that this
+proposal expected to preserve.
 
 ## Context
 

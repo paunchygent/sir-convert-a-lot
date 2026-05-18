@@ -13,6 +13,7 @@ tags:
   - v2
   - multi-format
 links:
+  - docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md
   - docs/decisions/0002-multi-format-service-api-v2.md
   - docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md
   - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
@@ -58,6 +59,8 @@ contracts. The DigiExam migration extension is defined in
 
 - v1 conversion routes: removed from runtime surface (2026-02-28)
 - v2 contract: active (this document)
+- active decision authority:
+  `docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md`
 
 ## Canonical Surfaces
 

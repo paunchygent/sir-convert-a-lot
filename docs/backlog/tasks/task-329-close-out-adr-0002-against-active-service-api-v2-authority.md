@@ -2,12 +2,13 @@
 id: task-329-close-out-adr-0002-against-active-service-api-v2-authority
 title: Close out ADR-0002 against active Service API v2 authority
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-05-18'
 last_updated: '2026-05-18'
 related:
   - docs/decisions/0002-multi-format-service-api-v2.md
+  - docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/service_api_v1_v2_compatibility_policy.md
@@ -17,6 +18,7 @@ related:
   - docs/backlog/tasks/task-51-purge-conflicting-legacy-docs-and-stale-v1-code-paths.md
   - docs/backlog/tasks/task-328-audit-open-proposed-adr-product-decisions-before-further-architecture-expansion.md
   - docs/backlog/reviews/review-21-ruthless-review-of-task-328-proposed-adr-product-decision-audit.md
+  - docs/backlog/reviews/review-22-ruthless-review-of-task-329-adr-0002-closeout.md
 labels:
   - adr
   - v2
@@ -84,6 +86,30 @@ Out of scope:
 | Has the v2 route surface expanded since ADR-0002? | Active contract includes `pdf -> md`, `pdf -> docx`, template/DOCX paths, async push, partial/checkpoint endpoints, DigiExam migration, and approved-not-implemented TTS route planning. | New decision should summarize extension policy and link accepted follow-on ADRs instead of rewriting them. |
 | Is runtime route truth available without live Hemma work? | Generated OpenAPI and FastAPI route registrations expose current local contract routes. | Use static OpenAPI/router proof for the ADR closeout; stop before live deploy claims unless drift is found. |
 | Do downstream contracts assume v2-only? | Downstream integration contract says conversion integrations are v2-only and `/v1/convert/jobs*` is unsupported. | Closeout should align downstream authority with the accepted decision state. |
+
+## Evidence Comparison
+
+| ADR-0002 claim | Current authority | Closeout result |
+| --- | --- | --- |
+| Service API v2 is the multi-format expansion surface. | Active converter docs identify Service API v2 as the single active conversion contract surface. | Preserved in ADR-0012 as accepted current-state authority. |
+| v1 endpoints and semantics stay unchanged. | Task 44 removed v1 conversion routes and CLI clients; Task 51 validated no active `/v1/convert/jobs*` runtime-route dependency in active docs/interfaces/devops surfaces. | Superseded. ADR-0012 records v2-only conversion authority and keeps v1 docs archival. |
+| v2 exposes `POST /v2/convert/jobs` and a singular artifact endpoint. | OpenAPI/router proof includes `/v2/convert/jobs`, status/result/artifact, named artifacts, partial artifact, checkpoint, resume, events, templates, push, operator, and exam-authoring routes. | Base conversion authority is accepted; non-conversion/operator/exam-authoring routes are explicitly left under their own authority. |
+| Resources bundles support deterministic rendering. | Active v2 contract keeps resources bundle semantics and route constraints. | Preserved as base contract behavior through the active converter contract. |
+| Pandoc/WeasyPrint are service-owned runtime dependencies. | Active v2 contract keeps service-executed Hemma conversion and route-specific runtime dependency expectations. | Preserved as current v2 service ownership. |
+| Follow-up work implements the v2 contract under Epic 04. | Later accepted ADRs 0003-0008 and completed tasks extend/constrain v2. | ADR-0012 links/summarizes follow-on ADR authority rather than folding it into the base ADR. |
+
+Static runtime/contract proof used for this closeout:
+
+- FastAPI router registration in `scripts/sir_convert_a_lot/interfaces/http_api.py`
+  includes v2 jobs, exam-authoring matching, structured LLM settings, job events,
+  webhooks, and templates.
+- Route modules expose `/v2/convert/jobs*`, `/v2/templates/docx*`,
+  `/v2/push/webhooks/subscriptions*`,
+  `/v2/operator/structured-llm/provider-routing`, and
+  `/v2/exam-authoring/matching/manual-answer-key/apply`.
+- Generated OpenAPI snapshot lists the same v2 path families. This task did not
+  regenerate OpenAPI because it is a docs-governance closeout and no runtime
+  code was intentionally changed.
 
 ## Open Questions and Recommendations
 
@@ -160,32 +186,32 @@ Out of scope:
 
 ## Deliverables
 
-- [ ] ADR-0002 comparison table covering original claims, current contract
+- [x] ADR-0002 comparison table covering original claims, current contract
   truth, runtime/OpenAPI route truth, and follow-on ADR authority.
-- [ ] Chosen closeout form recorded with rationale.
-- [ ] Recommended implementation: new accepted current-state Service API v2
+- [x] Chosen closeout form recorded with rationale.
+- [x] Recommended implementation: new accepted current-state Service API v2
   decision created and ADR-0002 marked `superseded`.
-- [ ] Converter/backlog/handoff links updated so Service API v2 decision
+- [x] Converter/backlog/handoff links updated so Service API v2 decision
   authority is no longer split between active runtime docs and proposed ADR
   state.
-- [ ] Review artifact created for the status-changing closeout.
-- [ ] Validation evidence recorded.
+- [x] Review artifact created for the status-changing closeout.
+- [x] Validation evidence recorded.
 
 ## Acceptance Criteria
 
-- [ ] ADR-0002 is no longer silently stale as a proposed ADR.
+- [x] ADR-0002 is no longer silently stale as a proposed ADR.
 - [ ] If ADR-0002 is accepted, every divergence from current runtime/contract
   truth is amended explicitly and linked to evidence.
-- [ ] If ADR-0002 is superseded, the replacement accepted decision names current
+- [x] If ADR-0002 is superseded, the replacement accepted decision names current
   v2 authority, v2-only clean-break state, accepted follow-on ADR boundaries,
   and the route-extension policy.
-- [ ] No runtime, Hemma, Gateway, HuleEdu, Skriptoteket, ADR-0009, or ADR-0011
+- [x] No runtime, Hemma, Gateway, HuleEdu, Skriptoteket, ADR-0009, or ADR-0011
   change is bundled into this task.
-- [ ] OpenAPI/router proof is captured or, if skipped, the task records why
+- [x] OpenAPI/router proof is captured or, if skipped, the task records why
   static docs evidence was sufficient.
 - [ ] A review record approves the ADR status/new-decision closeout before the
   task is marked completed.
-- [ ] Validation passes with:
+- [x] Validation passes with:
   - `pdm run docs-sync`
   - `pdm run docs-validate`
   - `pdm run skills-validate`
@@ -202,8 +228,30 @@ Out of scope:
   or exam-authoring correction APIs as covered by the base v2 conversion ADR
   without explicit linked authority.
 
+## Implementation Outcome
+
+ADR-0002 was marked `superseded` and now points to ADR-0012. ADR-0012 records
+current Service API v2 authority as accepted, v2-only, and governed by additive
+extension. Active converter, downstream, and CLI docs now point to ADR-0012 as
+the v2 decision authority.
+
+Review 22 closed as `changes_requested`. The ADR/status closeout remains
+blocked because the current review set also includes separate Task 325-B
+runtime/OpenAPI provider-lineage changes. Task 329 remains `in_progress` until
+those changes are split or separately governed and the retained review approves
+the narrowed ADR closeout.
+
+## Validation Evidence
+
+- [x] `pdm run docs-sync` refreshed generated indexes.
+- [x] `pdm run docs-validate` passed: `Validated 415 backlog files`,
+  `Validated docs=487 rules=11`.
+- [x] `pdm run skills-validate` passed.
+- [x] `pdm run handoff-validate` passed.
+- [x] `git diff --check` passed.
+
 ## Checklist
 
 - [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Validation complete
+- [x] Docs updated
