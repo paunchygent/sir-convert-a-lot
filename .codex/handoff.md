@@ -80,22 +80,10 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - Completed Gateway cutover profile task: `docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md`.
 - Auth-aware public-edge evidence follow-up: `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active exam artifact conversion/authoring umbrella epic: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-- Completed DigiExam parser/IR docs: Story 38/Task 267, Story 40/Task 274,
-  Story 41/Task 275.
-- Completed DigiExam embedded asset story/task: Story 42 and Task 276.
-- Completed DigiExam Exam.net PDF renderer story/task: Story 43 and Task 277.
-- Completed DigiExam migration API/artifact delivery story:
-  `docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md`.
-- Completed DigiExam migration API/artifact contract task:
-  `docs/backlog/tasks/task-278-define-digiexam-migration-api-artifact-bundle-and-skriptoteket-ownership-contract.md`.
 - Proposed Exam.net artifact authoring bundle story:
   `docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md`.
 - Proposed service/source cleanup tranche before more Exam.net runtime work:
   `docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md`.
-- Completed cleanup tranche docs/source tasks: Tasks 284-287; Review 14 is
-  accepted in
-  `docs/backlog/reviews/review-14-ruthless-review-of-tasks-285-287-service-route-registry-runtime-and-cli-split.md`.
-  Next Story 46 tasks: Tasks 288/289.
 - Completed DigiExam route/runtime and public Exam Converter docs: Tasks
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
 - Active answer-key completion lane: Epic 11. Tasks 294-309/312/319/321-323
@@ -109,10 +97,14 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
   corrections; Task 332 blocks matching-capable producer work before any
   downstream matching use. Qwen3.6 remains guarded; ADR-0010 is
   accepted. Task 325 is in progress for OpenAI hot settings; Task 325-B now
-  pins provider/settings lineage at admission and report level. Task 326 is in
-  progress as the eval gate; after teacher adjudication of the mini failure rows, the fresh
-  2026-05-18 rerun scores mini 43/1/0 and nano 36/8/0 versus the retained
-  Qwen3.6 41/3/0 baseline.
+  pins provider/settings lineage at admission and report level. The 2026-05-18
+  Task 325 diagnostics slice adds redacted upstream OpenAI provider-error
+  diagnostics and a focused item-013 advisory-corpus repro lane for the
+  ekologiprov `.dxe`; commit/push/Hemma deploy remains required before
+  Hemma production can expose the new diagnostic fields. Task 326 is in
+  progress as the eval gate; after teacher adjudication of the mini failure
+  rows, the fresh 2026-05-18 rerun scores mini 43/1/0 and nano 36/8/0 versus
+  the retained Qwen3.6 41/3/0 baseline.
 - Review 17 for Task 306 is closed as `approved`; future generated-type claims
   need current producer/consumer evidence, not the historical PR-0331 finding.
 - Review 18 for Task 319 is closed as `approved`; Hemma/Qwen3.6 live
@@ -193,6 +185,12 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - 2026-05-18 Review 24 completed as `approved`: Task 331 is closed, and
   `manual_matching_answer_key` remains blocked on Task 332 until a
   matching-capable producer emits real matching source state.
+- 2026-05-18 Task 325 diagnostics local validation passed for format/lint/type,
+  docs, handoff, OpenAPI, provider diagnostics tests, and the item-013
+  microprobe: HTTP 200, `decision_state=suggested`,
+  `provider_error_diagnostic=null`, `multimodal_request_count=1`.
+  `coverage-gate` reached 95.56% but exited red on a noisy Story 20 timing
+  assertion; that isolated benchmark passed on immediate rerun.
 
 ## Stop Conditions
 

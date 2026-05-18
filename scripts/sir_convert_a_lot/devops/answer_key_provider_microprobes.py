@@ -45,6 +45,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMTextContentPart,
     StructuredOutputSpec,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_provider_diagnostics import (
+    StructuredLLMProviderErrorDiagnostic,
+)
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     DEFAULT_ANSWER_KEY_CONTEXT_WINDOW_TOKENS,
     DEFAULT_ANSWER_KEY_MAX_OUTPUT_TOKENS,
@@ -75,6 +78,7 @@ class Task309MicroprobeResult:
     completion_tokens: int | None
     total_tokens: int | None
     failure_code: str | None
+    provider_error_diagnostic: StructuredLLMProviderErrorDiagnostic | None = None
 
 
 @dataclass(frozen=True)
@@ -212,6 +216,7 @@ async def _microprobe(
             completion_tokens=None,
             total_tokens=None,
             failure_code=exc.failure_code.value,
+            provider_error_diagnostic=exc.diagnostic,
         )
     return Task309MicroprobeResult(
         probe_id=request.item_id,
@@ -224,6 +229,7 @@ async def _microprobe(
         completion_tokens=response.usage.completion_tokens,
         total_tokens=response.usage.total_tokens,
         failure_code=None,
+        provider_error_diagnostic=None,
     )
 
 

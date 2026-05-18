@@ -284,6 +284,19 @@ class DigiExamIngestionOverlayReportV1(BaseModel):
     rejected_entries: list[DigiExamIngestionOverlayRejectedEntryV1]
 
 
+class StructuredLLMProviderErrorDiagnosticV1(BaseModel):
+    """Redacted upstream provider HTTP error diagnostic."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status_code: int | None = None
+    request_id: str | None = None
+    error_type: str | None = None
+    error_code: str | None = None
+    error_param: str | None = None
+    message_sha256: str | None = None
+
+
 class DigiExamAnswerKeyCompletionReportItemV1(BaseModel):
     """One advisory answer-key candidate lineage report item."""
 
@@ -312,6 +325,7 @@ class DigiExamAnswerKeyCompletionReportItemV1(BaseModel):
     prompt_template_version: str | None = None
     backend_status: str
     backend_failure_code: str | None = None
+    provider_error_diagnostic: StructuredLLMProviderErrorDiagnosticV1 | None = None
 
 
 class DigiExamAnswerKeyCompletionProviderLineageV1(BaseModel):

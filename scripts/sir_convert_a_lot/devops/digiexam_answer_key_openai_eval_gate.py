@@ -45,6 +45,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manife
 )
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
+    DigiExamIntermediateExam,
     DigiExamIrItem,
     build_digiexam_intermediate_exam,
 )
@@ -120,6 +121,8 @@ def run_task326_openai_advisory_corpus(
     api_key_env: str = OPENAI_API_KEY_ENV,
     timeout_seconds: float | None = None,
     vision_media_path: Path | None = None,
+    source_file: Path | None = None,
+    item_id: str | None = None,
 ) -> Task326OpenAIAdvisoryCorpusRunReport:
     """Run the Task 326 OpenAI eval corpus, retaining raw diagnostic reports."""
 
@@ -131,6 +134,8 @@ def run_task326_openai_advisory_corpus(
             api_key_env=api_key_env,
             timeout_seconds=timeout_seconds,
             vision_media_path=vision_media_path,
+            source_file=source_file,
+            item_id=item_id,
         )
     )
 
@@ -156,9 +161,11 @@ async def _run_task326_openai_advisory_corpus(
     api_key_env: str,
     timeout_seconds: float | None,
     vision_media_path: Path | None,
+    source_file: Path | None,
+    item_id: str | None,
 ) -> Task326OpenAIAdvisoryCorpusRunReport:
     defaults = answer_key_openai_defaults_for_provider_profile(provider_profile)
-    profile = build_answer_key_openai_provider_profile(defaults)
+    profile = build_answer_key_openai_provider_profile(defaults, supports_multimodal_vision=True)
     resolved_timeout = timeout_seconds if timeout_seconds is not None else defaults.timeout_seconds
     resolved_vision_media_path = vision_media_path or reports_root.parent / "vision-assets"
     metadata = _provider_run_metadata(
@@ -168,7 +175,11 @@ async def _run_task326_openai_advisory_corpus(
         vision_media_path=resolved_vision_media_path,
         timeout_seconds=resolved_timeout,
     )
-    files = tuple(sorted(corpus_root.glob("*.dxe")))
+    files: tuple[Path, ...]
+    if source_file is not None:
+        files = (source_file,)
+    else:
+        files = tuple(sorted(corpus_root.glob("*.dxe")))
     api_key = os.environ.get(api_key_env, "")
     if not api_key.strip():
         return _blocked_report(
@@ -204,6 +215,8 @@ async def _run_task326_openai_advisory_corpus(
         )
         for source_path in files:
             exam = build_digiexam_intermediate_exam(parser.parse_file(source_path))
+            if item_id is not None:
+                exam = _exam_with_only_item(exam, item_id=item_id, source_path=source_path)
             item_assets_by_id = export_digiexam_answer_key_vision_assets(
                 exam=exam,
                 media_path=resolved_vision_media_path,
@@ -263,6 +276,18 @@ async def _run_task326_openai_advisory_corpus(
         total_latency_ms=round((time.perf_counter() - started) * 1000, 3),
         report_paths=tuple(report_paths),
     )
+
+
+def _exam_with_only_item(
+    exam: DigiExamIntermediateExam,
+    *,
+    item_id: str,
+    source_path: Path,
+) -> DigiExamIntermediateExam:
+    selected_items = tuple(item for item in exam.items if item.item_id == item_id)
+    if not selected_items:
+        raise ValueError(f"{source_path.as_posix()} does not contain item_id {item_id!r}.")
+    return replace(exam, items=selected_items)
 
 
 @dataclass(frozen=True)

@@ -58,6 +58,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     preflight_structured_llm_prompt,
     resolve_structured_llm_token_budget,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_provider_diagnostics import (
+    StructuredLLMProviderErrorDiagnostic,
+)
 
 
 async def build_digiexam_answer_key_completion_report(
@@ -149,6 +152,7 @@ async def _provider_entry(
             request=request,
             profile=profile,
             failure_code=exc.failure_code,
+            provider_error_diagnostic=exc.diagnostic,
         )
     return _response_entry(candidate=candidate, profile=profile, response=response)
 
@@ -217,6 +221,7 @@ def _response_entry(
         prompt_template_version=request.prompt_template_version,
         backend_status=StructuredLLMCaptureStatus.SUCCESS.value,
         backend_failure_code=None,
+        provider_error_diagnostic=None,
     )
 
 
@@ -227,6 +232,7 @@ def _manual_entry(
     profile: StructuredLLMProviderProfile | None,
     failure_code: DigiExamAnswerKeyCompletionFailureCode | StructuredLLMBackendFailureCode,
     backend_status: str = StructuredLLMCaptureStatus.MANUAL_FOLLOW_UP_REQUIRED.value,
+    provider_error_diagnostic: StructuredLLMProviderErrorDiagnostic | None = None,
 ) -> DigiExamAnswerKeyCompletionReportItem:
     return DigiExamAnswerKeyCompletionReportItem(
         item_id=item.item_id,
@@ -244,6 +250,7 @@ def _manual_entry(
         prompt_template_version=request.prompt_template_version,
         backend_status=backend_status,
         backend_failure_code=failure_code.value,
+        provider_error_diagnostic=provider_error_diagnostic,
     )
 
 
@@ -279,6 +286,7 @@ def _non_provider_entry(
         prompt_template_version=None,
         backend_status=state.value,
         backend_failure_code=failure_code.value,
+        provider_error_diagnostic=None,
     )
 
 

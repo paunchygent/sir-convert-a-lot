@@ -415,6 +415,8 @@ def _build_parser() -> argparse.ArgumentParser:
     openai_corpus.add_argument("--reports-root", type=Path, default=None)
     openai_corpus.add_argument("--api-key-env", default=OPENAI_API_KEY_ENV)
     openai_corpus.add_argument("--timeout-seconds", type=float, default=None)
+    openai_corpus.add_argument("--source-file", type=Path, default=None)
+    openai_corpus.add_argument("--item-id", default=None)
     openai_corpus.add_argument("--fail-on-blocked", action="store_true")
 
     return parser
@@ -442,6 +444,8 @@ def _run_openai_advisory_corpus_command(args: argparse.Namespace) -> int:
         api_key_env=args.api_key_env,
         timeout_seconds=args.timeout_seconds,
         vision_media_path=output_root / "vision-assets",
+        source_file=args.source_file,
+        item_id=args.item_id,
     )
     run_report_path = write_task326_openai_advisory_corpus_run(
         output_root=output_root,

@@ -22,6 +22,8 @@ from typing import Literal, Protocol
 
 from pydantic import JsonValue
 
+from scripts.sir_convert_a_lot.domain import structured_llm_provider_diagnostics as llm_diag
+
 StructuredLLMProviderSlot = Literal["primary", "fallback"]
 
 
@@ -335,11 +337,13 @@ class StructuredLLMProviderError(Exception):
         message: str,
         provider_id: str,
         status_code: int | None = None,
+        diagnostic: llm_diag.StructuredLLMProviderErrorDiagnostic | None = None,
     ) -> None:
         super().__init__(message)
         self.failure_code = failure_code
         self.provider_id = provider_id
         self.status_code = status_code
+        self.diagnostic = diagnostic
 
 
 @dataclass(frozen=True)

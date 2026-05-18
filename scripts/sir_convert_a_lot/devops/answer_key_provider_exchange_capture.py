@@ -34,6 +34,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
     _endpoint_url,
     _headers,
+    build_structured_llm_provider_error_diagnostic,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_responses import (
     parse_structured_llm_provider_payload,
@@ -117,6 +118,7 @@ class Task309CapturingStructuredChatProvider:
                 message="Structured provider returned an unsuccessful HTTP status.",
                 provider_id=profile.provider_id,
                 status_code=exc.response.status_code,
+                diagnostic=build_structured_llm_provider_error_diagnostic(exc.response),
             ) from exc
         except httpx.TimeoutException as exc:
             self._record_exchange(

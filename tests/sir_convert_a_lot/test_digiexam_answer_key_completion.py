@@ -50,6 +50,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMResponse,
     StructuredLLMRoutePolicy,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_provider_diagnostics import (
+    StructuredLLMProviderErrorDiagnostic,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
     DigiExamVisionCandidatePlanner,
     export_digiexam_answer_key_vision_assets,
@@ -475,10 +478,25 @@ def test_provider_failure_becomes_manual_follow_up_without_raw_capture() -> None
 
     assert item.decision_state == DigiExamAnswerKeyCompletionDecisionState.MANUAL_FOLLOW_UP_REQUIRED
     assert item.backend_failure_code == StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR.value
+    assert item.provider_error_diagnostic is not None
+    assert item.provider_error_diagnostic.status_code == 500
+    items = payload["items"]
+    assert isinstance(items, list)
+    first_item = items[0]
+    assert isinstance(first_item, dict)
+    assert first_item["provider_error_diagnostic"] == {
+        "status_code": 500,
+        "request_id": "req_failure",
+        "error_type": "server_error",
+        "error_code": "upstream_failed",
+        "error_param": None,
+        "message_sha256": "sha256:test",
+    }
     assert item.candidate_payload_digest is None
     assert "Choose the Greek letter" not in rendered_report
     assert "Alpha" not in rendered_report
     assert "Beta" not in rendered_report
+    assert "raw provider body" not in rendered_report
 
 
 def test_image_item_stays_manual_follow_up_without_vision_provider() -> None:
@@ -662,6 +680,14 @@ class _FailingProvider:
             message="backend failed",
             provider_id=profile.provider_id,
             status_code=500,
+            diagnostic=StructuredLLMProviderErrorDiagnostic(
+                status_code=500,
+                request_id="req_failure",
+                error_type="server_error",
+                error_code="upstream_failed",
+                error_param=None,
+                message_sha256="sha256:test",
+            ),
         )
 
 

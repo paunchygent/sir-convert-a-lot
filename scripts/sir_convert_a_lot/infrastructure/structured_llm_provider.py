@@ -17,6 +17,7 @@ Relationships:
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping
 from dataclasses import dataclass
 
@@ -29,6 +30,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMProviderProfile,
     StructuredLLMRequest,
     StructuredLLMResponse,
+)
+from scripts.sir_convert_a_lot.domain.structured_llm_provider_diagnostics import (
+    StructuredLLMProviderErrorDiagnostic,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
     build_structured_llm_payload,
@@ -102,6 +106,7 @@ class HttpStructuredChatProvider:
                 message="Structured provider returned an unsuccessful HTTP status.",
                 provider_id=profile.provider_id,
                 status_code=exc.response.status_code,
+                diagnostic=build_structured_llm_provider_error_diagnostic(exc.response),
             ) from exc
         except httpx.TimeoutException as exc:
             raise StructuredLLMProviderError(
@@ -159,3 +164,61 @@ def _headers(connection: StructuredLLMProviderConnection) -> dict[str, str]:
     if connection.api_key.strip():
         headers["Authorization"] = f"Bearer {connection.api_key.strip()}"
     return headers
+
+
+def build_structured_llm_provider_error_diagnostic(
+    response: httpx.Response,
+) -> StructuredLLMProviderErrorDiagnostic:
+    error_payload = _provider_error_payload(response)
+    message = _optional_provider_error_string(error_payload.get("message"))
+    return StructuredLLMProviderErrorDiagnostic(
+        status_code=response.status_code,
+        request_id=_optional_header_value(response.headers.get("x-request-id")),
+        error_type=_optional_provider_error_string(error_payload.get("type")),
+        error_code=_optional_provider_error_string(error_payload.get("code")),
+        error_param=_optional_provider_error_string(error_payload.get("param")),
+        message_sha256=_message_sha256(message),
+    )
+
+
+def _provider_error_payload(response: httpx.Response) -> dict[str, object]:
+    try:
+        payload: object = response.json()
+    except ValueError:
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    error = payload.get("error")
+    if isinstance(error, dict):
+        return {str(key): value for key, value in error.items()}
+    if isinstance(error, str):
+        return {"message": error}
+    return {}
+
+
+def _optional_provider_error_string(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    if not stripped or len(stripped) > 256:
+        return None
+    if any(ord(character) < 32 for character in stripped):
+        return None
+    return stripped
+
+
+def _optional_header_value(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped or len(stripped) > 512:
+        return None
+    if not stripped.isascii() or any(ord(character) < 32 for character in stripped):
+        return None
+    return stripped
+
+
+def _message_sha256(message: str | None) -> str | None:
+    if message is None:
+        return None
+    return f"sha256:{hashlib.sha256(message.encode('utf-8')).hexdigest()}"

@@ -130,6 +130,8 @@ def answer_key_openai_defaults_for_provider_profile(
 
 def build_answer_key_openai_provider_profile(
     defaults: AnswerKeyOpenAIProviderDefaults,
+    *,
+    supports_multimodal_vision: bool = True,
 ) -> StructuredLLMProviderProfile:
     """Build a source-neutral structured-provider profile for OpenAI Responses."""
 
@@ -148,7 +150,7 @@ def build_answer_key_openai_provider_profile(
             supports_json_schema=True,
             supports_gbnf=False,
             supports_vllm_structured_choice=False,
-            supports_multimodal_vision=True,
+            supports_multimodal_vision=supports_multimodal_vision,
         ),
     )
 
@@ -157,6 +159,7 @@ def answer_key_openai_provider_json_for_profile(
     profile_name: AnswerKeyOpenAIProviderProfileName,
     *,
     api_key_env: str = OPENAI_API_KEY_ENV,
+    supports_multimodal_vision: bool = True,
 ) -> str:
     """Render compact provider JSON for one pinned OpenAI profile."""
 
@@ -179,7 +182,7 @@ def answer_key_openai_provider_json_for_profile(
                 "supports_json_schema": True,
                 "supports_gbnf": False,
                 "supports_vllm_structured_choice": False,
-                "supports_multimodal_vision": True,
+                "supports_multimodal_vision": supports_multimodal_vision,
             },
         }
     }

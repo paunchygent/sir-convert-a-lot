@@ -630,6 +630,17 @@
             "default": null,
             "title": "Prompt Template Version"
           },
+          "provider_error_diagnostic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StructuredLLMProviderErrorDiagnosticV1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "provider_profile_id": {
             "anyOf": [
               {
@@ -5546,6 +5557,86 @@
         ],
         "title": "StructuredLLMInternalRouteClass",
         "type": "string"
+      },
+      "StructuredLLMProviderErrorDiagnosticV1": {
+        "additionalProperties": false,
+        "description": "Redacted upstream provider HTTP error diagnostic.",
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Code"
+          },
+          "error_param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Param"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Type"
+          },
+          "message_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Sha256"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status Code"
+          }
+        },
+        "title": "StructuredLLMProviderErrorDiagnosticV1",
+        "type": "object"
       },
       "StructuredLLMRoutingSettingsMutationResponseV2": {
         "description": "Response body for successful hot settings replacement.",

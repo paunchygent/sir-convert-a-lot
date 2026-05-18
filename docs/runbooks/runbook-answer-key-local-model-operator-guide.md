@@ -256,6 +256,36 @@ not wrap it in an SSH tunnel. From a non-Hemma workstation, use
 | `run-advisory-corpus` | Execute the full production in-process advisory path over all 23 `.dxe` files / 317 items. Writes per-file reports. | Hemma |
 | `evaluate-advisory-corpus` | Adjudicate reports against teacher goldens and prove manifest-vs-report coverage. Emits `correct`, `wrong-but-valid`, `malformed`, `manual-follow-up`, `unknown-id`, `duplicate-id`, missing-item, and unexpected-report counts. | Hemma or local (reads artifacts) |
 
+### OpenAI Provider Failure Triage
+
+For OpenAI Responses provider failures, inspect the redacted
+`provider_error_diagnostic` fields from the advisory report or focused
+microprobe. Use the status code to choose the next action:
+
+- `400`: fix request shape. Check strict JSON Schema compatibility,
+  `text.format`, image/data URL shape, unsupported field combinations, and
+  payload or token limits.
+- `401` / `403`: fix Hemma credential, project, or model-access configuration.
+- `404`: the configured model/profile is unavailable for the active
+  key/project.
+- `429`: add or tune retry/backoff and check quota/rate limits.
+- `500` / `503`: retry with bounded backoff; mark manual follow-up only after
+  bounded retries fail.
+
+Do not retain raw prompts, item text, raw images or data URLs, raw request
+payloads, raw provider responses, API keys, owner metadata, student data, or
+artifact paths in committed evidence.
+
+Focused item-13 OpenAI repro:
+
+```bash
+pdm run run-local-pdm answer-key-live-validation digiexam run-openai-advisory-corpus \
+  --openai-provider-profile openai-gpt-5.4-mini-2026-03-17 \
+  --api-key-env OPENAI_API_KEY \
+  --source-file inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/1811577114-ekologiprov-v-49-25d-e.dxe \
+  --item-id item-013
+```
+
 Default args target the **demoted Granite/vLLM** provider on `127.0.0.1:8017`.
 For the current guarded Qwen3.6 MTP llama.cpp run, use
 `--provider-profile qwen36-llama-cpp-mtp`. That profile sets:

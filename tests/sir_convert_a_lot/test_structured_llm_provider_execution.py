@@ -15,6 +15,7 @@ Relationships:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from collections.abc import Callable
 
@@ -318,7 +319,20 @@ def test_http_provider_maps_missing_connection_before_request() -> None:
 
 def test_http_provider_maps_http_status_without_raw_response_body() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(503, json={"error": "secret upstream raw body"})
+        del request
+        return httpx.Response(
+            400,
+            headers={"x-request-id": "req_123"},
+            json={
+                "error": {
+                    "message": "short upstream provider detail",
+                    "type": "invalid_request_error",
+                    "code": "invalid_schema",
+                    "param": "text.format.schema",
+                    "raw": "secret upstream raw body",
+                }
+            },
+        )
 
     with pytest.raises(StructuredLLMProviderError) as exc_info:
         asyncio.run(
@@ -326,8 +340,44 @@ def test_http_provider_maps_http_status_without_raw_response_body() -> None:
         )
 
     assert exc_info.value.failure_code == StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR
-    assert exc_info.value.status_code == 503
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.diagnostic is not None
+    assert exc_info.value.diagnostic.status_code == 400
+    assert exc_info.value.diagnostic.request_id == "req_123"
+    assert exc_info.value.diagnostic.error_type == "invalid_request_error"
+    assert exc_info.value.diagnostic.error_code == "invalid_schema"
+    assert exc_info.value.diagnostic.error_param == "text.format.schema"
+    assert exc_info.value.diagnostic.message_sha256 == (
+        "sha256:" + hashlib.sha256("short upstream provider detail".encode("utf-8")).hexdigest()
+    )
     assert "secret upstream raw body" not in str(exc_info.value)
+    assert "short upstream provider detail" not in str(exc_info.value)
+
+
+def test_http_provider_drops_long_error_message_from_diagnostic() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        return httpx.Response(
+            429,
+            json={
+                "error": {
+                    "message": "x" * 300,
+                    "type": "rate_limit_error",
+                    "code": "rate_limit_exceeded",
+                }
+            },
+        )
+
+    with pytest.raises(StructuredLLMProviderError) as exc_info:
+        asyncio.run(
+            _complete_with_transport(handler=handler, profile=_profile(), request=_request())
+        )
+
+    assert exc_info.value.diagnostic is not None
+    assert exc_info.value.diagnostic.status_code == 429
+    assert exc_info.value.diagnostic.error_type == "rate_limit_error"
+    assert exc_info.value.diagnostic.error_code == "rate_limit_exceeded"
+    assert exc_info.value.diagnostic.message_sha256 is None
 
 
 def test_http_provider_maps_request_errors() -> None:

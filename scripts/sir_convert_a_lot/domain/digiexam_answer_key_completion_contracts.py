@@ -27,6 +27,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
     admitted_route_snapshot_to_json,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_provider_diagnostics import (
+    StructuredLLMProviderErrorDiagnostic,
+)
 
 CHOICE_PROMPT_TEMPLATE_VERSION = "digiexam_choice_answer_key_prompt_v1"
 GAP_FILL_PROMPT_TEMPLATE_VERSION = "digiexam_gap_fill_answer_key_prompt_v1"
@@ -88,6 +91,7 @@ class DigiExamAnswerKeyCompletionReportItem:
     prompt_template_version: str | None
     backend_status: str
     backend_failure_code: str | None
+    provider_error_diagnostic: StructuredLLMProviderErrorDiagnostic | None = None
 
 
 @dataclass(frozen=True)

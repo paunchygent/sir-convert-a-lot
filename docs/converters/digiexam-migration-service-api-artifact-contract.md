@@ -810,6 +810,15 @@ payloads, API keys, or artifact paths. Candidate digests are computed from the
 canonical backend-validated candidate payload only, not raw provider responses,
 raw prompts, or pre-validation payloads:
 
+When provider execution fails before a validated candidate exists, report items
+may include a redacted `provider_error_diagnostic` object. The diagnostic is
+operator evidence only: it may contain `status_code`, OpenAI `x-request-id`
+when supplied, provider `error.type`, `error.code`, `error.param`, and
+`message_sha256` for a short sanitized provider message. It must not contain
+prompt text, item text, raw images or data URLs, raw request payloads, raw
+provider response bodies, API keys, owner metadata, student data, or artifact
+paths.
+
 ```json
 {
   "schema_version": "answer_key_completion_report_v1",
@@ -847,9 +856,40 @@ raw prompts, or pre-validation payloads:
       "schema_version": "digiexam_choice_answer_key_decision_v1",
       "prompt_template_version": "digiexam_choice_answer_key_prompt_v1",
       "backend_status": "success",
-      "backend_failure_code": null
+      "backend_failure_code": null,
+      "provider_error_diagnostic": null
     }
   ]
+}
+```
+
+Failed provider rows use the same bounded shape without candidate payloads:
+
+```json
+{
+  "item_id": "item-013",
+  "sequence": 13,
+  "item_type": "gap_fill",
+  "decision_state": "manual_follow_up_required",
+  "validation_state": "manual_follow_up_required",
+  "candidate_id": null,
+  "candidate_payload_digest": null,
+  "answer_payload": null,
+  "provider_profile_id": "openai-gpt-5.4-mini-2026-03-17",
+  "model_profile": "gpt-5.4-mini-2026-03-17",
+  "schema_name": "digiexam_gap_fill_answer_key_decision_v1",
+  "schema_version": "digiexam_gap_fill_answer_key_decision_v1",
+  "prompt_template_version": "digiexam_gap_fill_answer_key_prompt_v1",
+  "backend_status": "manual_follow_up_required",
+  "backend_failure_code": "provider_http_error",
+  "provider_error_diagnostic": {
+    "status_code": 400,
+    "request_id": "req_redacted_example",
+    "error_type": "invalid_request_error",
+    "error_code": "invalid_schema",
+    "error_param": "text.format.schema",
+    "message_sha256": "sha256:5d41402abc4b2a76b9719d911017c5920f3a8c7e0b921b4d55ab11cd22ef3344"
+  }
 }
 ```
 

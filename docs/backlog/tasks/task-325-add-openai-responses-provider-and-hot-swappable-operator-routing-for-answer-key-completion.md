@@ -120,6 +120,11 @@ any other provider selector to the conversion job-spec contract.
   payload/error tests, plus implementation support needed by the separate Task
   326 eval gate. No evidence may expose prompts, item text, raw responses,
   payloads, API keys, owner metadata, student data, or artifact paths.
+- [ ] Redacted provider-error diagnostics for failed OpenAI Responses calls,
+  retaining only `status_code`, OpenAI `x-request-id` when present,
+  `error.type`, `error.code`, `error.param`, and a short-message digest. The
+  diagnostic must not retain prompt text, item text, raw images, API keys, raw
+  request payloads, or raw response bodies.
 
 ## Acceptance Criteria
 
@@ -133,6 +138,10 @@ any other provider selector to the conversion job-spec contract.
 - [ ] OpenAI Responses payload tests prove `text.format` JSON Schema shape,
   strict schema behavior, model/profile metadata, and refusal/failure parsing
   without leaking raw provider responses into production capture.
+- [ ] OpenAI HTTP failures preserve enough redacted upstream diagnostics to
+  distinguish 400 request-shape defects, 401/403 credential or model-access
+  failures, 404 unavailable model/profile, 429 quota/rate limits, and 5xx
+  transient provider failures without storing raw provider bodies.
 - [x] Task 326 is linked as the required model-quality gate and remains the owner
   for running the existing local-model answer-key evaluation harness/corpus
   against both OpenAI profiles.
@@ -230,6 +239,51 @@ Task 325-B implementation landed on 2026-05-18:
 - Focused tests prove a queued job admitted before a hot switch remains pinned
   to local provider lineage, while a second job admitted after the switch uses
   the OpenAI profile and settings version 2.
+
+## Implementation Checkpoint - Redacted Provider Diagnostics
+
+The next implementation slice adds redacted provider-error diagnostics for the
+OpenAI Responses path after the item-13 vision/gap-fill lane collapsed all
+upstream failures to `provider_http_error`.
+
+Diagnostic retention is deliberately narrow:
+
+- Keep: `status_code`, OpenAI `x-request-id` response header when present,
+  provider `error.type`, `error.code`, `error.param`, and a SHA-256 digest of
+  a short sanitized provider message.
+- Exclude: prompt text, item text, raw image bytes or data URLs, raw provider
+  request payloads, raw provider responses, API keys, owner metadata, student
+  data, and artifact paths.
+- Interpret status class operationally: `400` means request shape or payload
+  incompatibility; `401`/`403` means credential, project, or model access;
+  `404` means unavailable model/profile for the configured project; `429`
+  means quota/rate limit; `500`/`503` means bounded retry/backoff before
+  manual follow-up.
+
+The focused repro source is
+`inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/1811577114-ekologiprov-v-49-25d-e.dxe`
+with `item-013`: a gap-fill item with embedded PNG vision input routed through
+the same `gpt-5.4-mini-2026-03-17` Responses profile and structured-output
+schema used by the Task 326 OpenAI eval lane.
+
+The sanctioned focused repro command is:
+
+```bash
+pdm run run-local-pdm answer-key-live-validation digiexam run-openai-advisory-corpus \
+  --openai-provider-profile openai-gpt-5.4-mini-2026-03-17 \
+  --api-key-env OPENAI_API_KEY \
+  --source-file inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/1811577114-ekologiprov-v-49-25d-e.dxe \
+  --item-id item-013
+```
+
+Local focused evidence on 2026-05-18 using the sanctioned `.env` wrapper wrote
+`build/verification/task-325-item-013-openai-diagnostics-2026-05-18/in-process-advisory-corpus-run.json`.
+It proved `blocked=false`, `item_count=1`, `eligible_item_count=1`,
+`suggested_count=1`, `manual_follow_up_count=0`, `backend_failure_counts=[]`,
+`asset_eligible_count=1`, `multimodal_request_count=1`, and HTTP `200` for the
+provider exchange. That result proves the item-013 Responses multimodal
+request shape works with the local `OPENAI_API_KEY` credential source; it does
+not by itself prove Hemma's credential/project/model-access lane.
 
 ## Test Requirements
 
