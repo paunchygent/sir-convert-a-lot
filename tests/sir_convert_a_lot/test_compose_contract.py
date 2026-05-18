@@ -179,6 +179,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
         "/srv/scratch/sir-convert-a-lot/build/verification/"
         "task-320-qwen-provider/vision-assets}"
     )
+    assert env_map["SIR_CONVERT_A_LOT_OPENAI_API_KEY"] == ("${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}")
 
     assert service.get("command") == [
         "uvicorn",
@@ -241,6 +242,7 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
     assert env_map["SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT"] == "0"
     assert env_map["SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM"] == "0"
     assert env_map["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"] == "easyocr"
+    assert env_map["SIR_CONVERT_A_LOT_OPENAI_API_KEY"] == ("${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}")
 
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
     assert service.get("group_add") == [

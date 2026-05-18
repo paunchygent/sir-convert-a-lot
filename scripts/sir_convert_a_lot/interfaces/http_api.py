@@ -7,7 +7,7 @@ Purpose:
 Relationships:
     - Uses runtime/lifecycle helpers from `interfaces.http_app_state`.
     - Includes routers from `interfaces.http_routes_jobs_v2`,
-      `interfaces.http_routes_exam_authoring_matching_v2`, and
+      `interfaces.http_routes_exam_authoring_corrections_v2`, and
       `interfaces.http_routes_health`.
 """
 
@@ -44,8 +44,8 @@ from scripts.sir_convert_a_lot.interfaces.http_app_state import (
 from scripts.sir_convert_a_lot.interfaces.http_openapi_contract_v2 import (
     configure_openapi_contract_v2,
 )
-from scripts.sir_convert_a_lot.interfaces.http_routes_exam_authoring_matching_v2 import (
-    build_exam_authoring_matching_router_v2,
+from scripts.sir_convert_a_lot.interfaces.http_routes_exam_authoring_corrections_v2 import (
+    build_exam_authoring_corrections_router_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_health import build_health_router
 from scripts.sir_convert_a_lot.interfaces.http_routes_job_events_v2 import (
@@ -185,7 +185,7 @@ def create_app(
     app.include_router(build_health_router(app=app, service_started_at=service_started_at))
     app.include_router(build_job_router_v2(service_started_at=service_started_at))
     app.include_router(
-        build_exam_authoring_matching_router_v2(service_started_at=service_started_at)
+        build_exam_authoring_corrections_router_v2(service_started_at=service_started_at)
     )
     app.include_router(
         build_structured_llm_settings_router_v2(service_started_at=service_started_at)

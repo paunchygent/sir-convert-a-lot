@@ -70,9 +70,6 @@ def _patch_create_job_multipart_contract(schema: MutableMapping[str, object]) ->
     post_operation = _path_operation(schema, "/v2/convert/jobs", "post")
     post_operation["x-sir-convert-contract-components"] = {
         "job_spec": "#/components/schemas/JobSpecV2",
-        "exam_authoring_matching_manual_answer_key": (
-            "#/components/schemas/ExamAuthoringMatchingManualAnswerKey"
-        ),
         "digiexam_ingestion_overlay": "#/components/schemas/DigiExamIngestionOverlay",
         "digiexam_migration_bundle_manifest": (
             "#/components/schemas/DigiExamMigrationBundleManifestV2"

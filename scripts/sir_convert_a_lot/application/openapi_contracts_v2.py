@@ -36,9 +36,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     TargetReadinessReportSchemaVersion,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import DigiExamTargetReadiness
-from scripts.sir_convert_a_lot.domain.exam_authoring_matching_manual_answer_key import (
-    ExamAuthoringMatchingManualAnswerKey,
-)
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 
 
@@ -349,7 +346,6 @@ class DigiExamAnswerKeyCompletionReportV1(BaseModel):
 
 OPENAPI_CONTRACT_COMPONENT_MODELS: tuple[type[BaseModel], ...] = (
     JobSpecV2,
-    ExamAuthoringMatchingManualAnswerKey,
     DigiExamIngestionOverlay,
     DigiExamMigrationBundleManifestV2,
     DigiExamTargetReadinessReportV1,
