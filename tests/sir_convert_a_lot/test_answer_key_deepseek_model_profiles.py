@@ -1,7 +1,7 @@
 """Tests for DeepSeek answer-key model profile manifests.
 
 Purpose:
-    Prove the DeepSeek v4 flash provider is represented as a guarded JSON
+    Prove the DeepSeek v4 pro provider is represented as a guarded JSON
     Output profile with thinking disabled for advisory answer-key completion.
 
 Relationships:
@@ -59,16 +59,16 @@ CHOICE_DECISION_SCHEMA: dict[str, JsonValue] = {
 }
 
 
-def test_deepseek_model_manifest_contains_v4_flash_non_thinking_profile() -> None:
-    assert answer_key_deepseek_provider_profile_values() == ("deepseek-v4-flash-non-thinking",)
+def test_deepseek_model_manifest_contains_v4_pro_non_thinking_profile() -> None:
+    assert answer_key_deepseek_provider_profile_values() == ("deepseek-v4-pro-non-thinking",)
 
 
-def test_deepseek_v4_flash_profile_uses_json_object_without_schema_capability() -> None:
-    defaults = answer_key_deepseek_defaults_for_provider_profile("deepseek-v4-flash-non-thinking")
+def test_deepseek_v4_pro_profile_uses_json_object_without_schema_capability() -> None:
+    defaults = answer_key_deepseek_defaults_for_provider_profile("deepseek-v4-pro-non-thinking")
     profile = build_answer_key_deepseek_provider_profile(defaults)
 
-    assert profile.provider_id == "deepseek-v4-flash-non-thinking"
-    assert profile.model == "deepseek-v4-flash"
+    assert profile.provider_id == "deepseek-v4-pro-non-thinking"
+    assert profile.model == "deepseek-v4-pro"
     assert profile.endpoint_kind == StructuredLLMEndpointKind.CHAT_COMPLETIONS
     assert profile.output_mode == StructuredLLMOutputMode.JSON_OBJECT
     assert profile.is_remote is True
@@ -82,14 +82,14 @@ def test_deepseek_v4_flash_profile_uses_json_object_without_schema_capability() 
 
 def test_deepseek_provider_json_uses_secret_indirection_without_raw_key() -> None:
     providers_json = answer_key_deepseek_provider_json_for_profile(
-        AnswerKeyDeepSeekProviderProfileName.V4_FLASH_NON_THINKING
+        AnswerKeyDeepSeekProviderProfileName.V4_PRO_NON_THINKING
     )
     decoded = json.loads(providers_json)
     assert isinstance(decoded, dict)
-    payload = decoded["deepseek-v4-flash-non-thinking"]
+    payload = decoded["deepseek-v4-pro-non-thinking"]
     assert isinstance(payload, dict)
 
-    assert payload["model"] == "deepseek-v4-flash"
+    assert payload["model"] == "deepseek-v4-pro"
     assert payload["endpoint_kind"] == "chat_completions"
     assert payload["output_mode"] == "json_object"
     assert payload["thinking_mode"] == "disabled"
@@ -107,12 +107,12 @@ def test_deepseek_provider_json_uses_secret_indirection_without_raw_key() -> Non
 
 
 def test_deepseek_chat_payload_uses_json_object_and_disables_thinking() -> None:
-    defaults = answer_key_deepseek_defaults_for_provider_profile("deepseek-v4-flash-non-thinking")
+    defaults = answer_key_deepseek_defaults_for_provider_profile("deepseek-v4-pro-non-thinking")
     profile = build_answer_key_deepseek_provider_profile(defaults)
 
     payload = build_chat_completions_payload(profile=profile, request=_request())
 
-    assert payload["model"] == "deepseek-v4-flash"
+    assert payload["model"] == "deepseek-v4-pro"
     assert payload["max_tokens"] == 128
     assert payload["temperature"] == 0.0
     assert payload["response_format"] == {"type": "json_object"}
@@ -122,14 +122,14 @@ def test_deepseek_chat_payload_uses_json_object_and_disables_thinking() -> None:
 
 def test_structured_config_loads_deepseek_manifest_with_sanctioned_secret() -> None:
     providers_json = answer_key_deepseek_provider_json_for_profile(
-        AnswerKeyDeepSeekProviderProfileName.V4_FLASH_NON_THINKING
+        AnswerKeyDeepSeekProviderProfileName.V4_PRO_NON_THINKING
     )
 
     config = structured_llm_runtime_config_from_env(
         {
             STRUCTURED_LLM_ENABLED_ENV: "true",
             STRUCTURED_LLM_PROVIDERS_JSON_ENV: providers_json,
-            STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV: "deepseek-v4-flash-non-thinking",
+            STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV: "deepseek-v4-pro-non-thinking",
             STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV: "true",
             STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV: "true",
             DEEPSEEK_API_KEY_ENV: "test-deepseek-token",
@@ -138,10 +138,10 @@ def test_structured_config_loads_deepseek_manifest_with_sanctioned_secret() -> N
 
     assert config.provider_set is not None
     profile = config.provider_set.primary
-    assert profile.model == "deepseek-v4-flash"
+    assert profile.model == "deepseek-v4-pro"
     assert profile.output_mode == StructuredLLMOutputMode.JSON_OBJECT
     assert profile.thinking_mode == StructuredLLMThinkingMode.DISABLED
-    assert config.connections["deepseek-v4-flash-non-thinking"].api_key == ("test-deepseek-token")
+    assert config.connections["deepseek-v4-pro-non-thinking"].api_key == ("test-deepseek-token")
 
 
 def _request() -> StructuredLLMRequest:

@@ -30,7 +30,7 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
 DEEPSEEK_PROVIDER_BASE_URL = "https://api.deepseek.com"
 DEEPSEEK_API_KEY_ENV = "SIR_CONVERT_A_LOT_DEEPSEEK_API_KEY"
 DEEPSEEK_CHAT_OUTPUT_MODE = StructuredLLMOutputMode.JSON_OBJECT
-DEEPSEEK_V4_FLASH_MODEL = "deepseek-v4-flash"
+DEEPSEEK_V4_PRO_MODEL = "deepseek-v4-pro"
 DEEPSEEK_CONTEXT_WINDOW_TOKENS = 1_000_000
 DEEPSEEK_MAX_OUTPUT_TOKENS = 384_000
 DEEPSEEK_ANSWER_KEY_MAX_OUTPUT_TOKENS = 4_096
@@ -42,7 +42,7 @@ DEEPSEEK_ANSWER_KEY_THINKING_MODE = StructuredLLMThinkingMode.DISABLED
 class AnswerKeyDeepSeekProviderProfileName(StrEnum):
     """Pinned DeepSeek provider profiles for answer-key completion."""
 
-    V4_FLASH_NON_THINKING = "deepseek-v4-flash-non-thinking"
+    V4_PRO_NON_THINKING = "deepseek-v4-pro-non-thinking"
 
 
 @dataclass(frozen=True)
@@ -63,11 +63,11 @@ class AnswerKeyDeepSeekProviderDefaults:
 
 
 ANSWER_KEY_DEEPSEEK_PROVIDER_DEFAULTS = {
-    AnswerKeyDeepSeekProviderProfileName.V4_FLASH_NON_THINKING: (
+    AnswerKeyDeepSeekProviderProfileName.V4_PRO_NON_THINKING: (
         AnswerKeyDeepSeekProviderDefaults(
-            profile_name=AnswerKeyDeepSeekProviderProfileName.V4_FLASH_NON_THINKING,
-            provider_id=AnswerKeyDeepSeekProviderProfileName.V4_FLASH_NON_THINKING.value,
-            model=DEEPSEEK_V4_FLASH_MODEL,
+            profile_name=AnswerKeyDeepSeekProviderProfileName.V4_PRO_NON_THINKING,
+            provider_id=AnswerKeyDeepSeekProviderProfileName.V4_PRO_NON_THINKING.value,
+            model=DEEPSEEK_V4_PRO_MODEL,
             context_window_tokens=DEEPSEEK_CONTEXT_WINDOW_TOKENS,
             max_output_tokens=DEEPSEEK_MAX_OUTPUT_TOKENS,
             answer_key_max_output_tokens=DEEPSEEK_ANSWER_KEY_MAX_OUTPUT_TOKENS,

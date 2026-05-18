@@ -187,13 +187,11 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - 2026-05-18 Task 325 diagnostics and gap-label policy validation lives in the
   task doc. Focused local gates passed, OpenAI item-013 returned labels only,
   and all current label/number gap-fill eval rows returned expected labels.
-- 2026-05-18 Task 334 added a guarded DeepSeek v4 flash non-thinking JSON
-  Output provider profile. Full eval evidence is retained under
-  `build/verification/task-334-deepseek-v4-flash-full-eval-2026-05-18/`: 42
-  supported text suggestions, 39 correct, 3 wrong-but-valid, 2 image/asset
-  manual follow-up skips. Do not promote DeepSeek yet; the DeepSeek API provider
-  surface for this model rejects OpenAI-style `image_url` payloads with HTTP
-  400.
+- 2026-05-18 Tasks 334/335 added the guarded DeepSeek JSON Output provider and
+  replaced the current profile with `deepseek-v4-pro-non-thinking`. Full pro
+  eval retained under `build/verification/task-335-deepseek-v4-pro-full-eval-2026-05-18/`
+  scored 39 correct, 3 wrong-but-valid, and 2 image/asset manual follow-ups;
+  do not promote DeepSeek yet.
 
 ## Stop Conditions
 

@@ -175,16 +175,16 @@ def test_openai_profile_ignores_container_lane_url_selection() -> None:
 def test_deepseek_profile_ignores_container_lane_url_selection() -> None:
     provider_json = answer_key_provider_json_for_profile(
         lane=AnswerKeyProviderRuntimeLane.LOCAL_HOST,
-        profile_name=AnswerKeyDeepSeekProviderProfileName.V4_FLASH_NON_THINKING,
+        profile_name=AnswerKeyDeepSeekProviderProfileName.V4_PRO_NON_THINKING,
     )
 
     provider_payload = _provider_payload(
         provider_json,
-        provider_id="deepseek-v4-flash-non-thinking",
+        provider_id="deepseek-v4-pro-non-thinking",
     )
 
     assert provider_payload["base_url"] == "https://api.deepseek.com"
-    assert provider_payload["model"] == "deepseek-v4-flash"
+    assert provider_payload["model"] == "deepseek-v4-pro"
     assert provider_payload["output_mode"] == "json_object"
     assert provider_payload["thinking_mode"] == "disabled"
 
