@@ -118,6 +118,22 @@ class Task309CapturingStructuredChatProvider:
                 provider_id=profile.provider_id,
                 status_code=exc.response.status_code,
             ) from exc
+        except httpx.TimeoutException as exc:
+            self._record_exchange(
+                request=request,
+                profile=profile,
+                request_payload_json=request_payload_json,
+                response_status_code=response_status_code,
+                raw_response_text=raw_response_text,
+                response_payload_json=None,
+                decoded_content_json=None,
+                failure_code=StructuredLLMBackendFailureCode.PROVIDER_TIMEOUT.value,
+            )
+            raise StructuredLLMProviderError(
+                failure_code=StructuredLLMBackendFailureCode.PROVIDER_TIMEOUT,
+                message="Structured provider request timed out.",
+                provider_id=profile.provider_id,
+            ) from exc
         except httpx.RequestError as exc:
             self._record_request_failure(
                 request=request,

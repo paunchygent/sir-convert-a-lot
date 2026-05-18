@@ -25,12 +25,14 @@ from pydantic import JsonValue
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMBackendFailureCode,
     StructuredLLMEndpointKind,
+    StructuredLLMImageURLContentPart,
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderError,
     StructuredLLMProviderProfile,
     StructuredLLMRequest,
     StructuredLLMResponse,
+    StructuredLLMTextContentPart,
     StructuredOutputSpec,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
@@ -150,6 +152,113 @@ def test_http_provider_executes_responses_endpoint_and_parses_output_object() ->
     assert response.content["selected_choice_ids"] == ["choice-c"]
     assert response.finish_reason == "completed"
     assert captured_urls == ["https://api.example.test/v1/responses"]
+
+
+def test_http_provider_executes_responses_endpoint_with_image_input() -> None:
+    captured_payloads: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content.decode("utf-8"))
+        captured_payloads.append(payload)
+        return httpx.Response(
+            200,
+            json={
+                "status": "completed",
+                "output_text": json.dumps(
+                    {
+                        "selected_choice_ids": ["choice-c"],
+                        "manual_follow_up_required": False,
+                    }
+                ),
+                "usage": {
+                    "input_tokens": 30,
+                    "output_tokens": 8,
+                    "total_tokens": 38,
+                },
+            },
+        )
+
+    response = asyncio.run(
+        _complete_with_transport(
+            handler=handler,
+            profile=_profile(
+                endpoint_kind=StructuredLLMEndpointKind.RESPONSES,
+                is_remote=True,
+                capabilities=StructuredLLMProviderCapabilities(
+                    supports_json_schema=True,
+                    supports_gbnf=False,
+                    supports_vllm_structured_choice=False,
+                    supports_multimodal_vision=True,
+                ),
+            ),
+            request=_request(
+                user_content_parts=(
+                    StructuredLLMTextContentPart("Choose the answer."),
+                    StructuredLLMImageURLContentPart("data:image/png;base64,AAAA"),
+                )
+            ),
+        )
+    )
+
+    input_items = captured_payloads[0]["input"]
+    assert isinstance(input_items, list)
+    first_input = input_items[0]
+    assert isinstance(first_input, dict)
+    content = first_input["content"]
+    assert content == [
+        {"type": "input_text", "text": "Choose the answer."},
+        {"type": "input_image", "image_url": "data:image/png;base64,AAAA"},
+    ]
+    assert response.content["selected_choice_ids"] == ["choice-c"]
+    assert response.usage.prompt_tokens == 30
+    assert response.usage.completion_tokens == 8
+
+
+def test_http_provider_maps_responses_refusal_to_typed_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        return httpx.Response(
+            200,
+            json={
+                "status": "completed",
+                "output": [
+                    {
+                        "type": "message",
+                        "content": [{"type": "refusal", "refusal": "Cannot comply."}],
+                    }
+                ],
+            },
+        )
+
+    with pytest.raises(StructuredLLMProviderError) as exc_info:
+        asyncio.run(
+            _complete_with_transport(
+                handler=handler,
+                profile=_profile(
+                    endpoint_kind=StructuredLLMEndpointKind.RESPONSES,
+                    is_remote=True,
+                ),
+                request=_request(),
+            )
+        )
+
+    assert exc_info.value.failure_code == StructuredLLMBackendFailureCode.PROVIDER_REFUSAL
+
+
+def test_http_provider_maps_timeout_to_typed_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("timed out", request=request)
+
+    with pytest.raises(StructuredLLMProviderError) as exc_info:
+        asyncio.run(
+            _complete_with_transport(
+                handler=handler,
+                profile=_profile(),
+                request=_request(),
+            )
+        )
+
+    assert exc_info.value.failure_code == StructuredLLMBackendFailureCode.PROVIDER_TIMEOUT
 
 
 def test_http_provider_parses_vllm_structured_choice_as_bounded_object() -> None:
@@ -318,6 +427,9 @@ async def _complete_with_transport(
 def _request(
     *,
     output_spec: StructuredOutputSpec | None = None,
+    user_content_parts: tuple[
+        StructuredLLMTextContentPart | StructuredLLMImageURLContentPart, ...
+    ] = (),
 ) -> StructuredLLMRequest:
     return StructuredLLMRequest(
         job_id="job-001",
@@ -335,6 +447,7 @@ def _request(
         estimated_input_tokens=64,
         max_output_tokens=128,
         allow_remote_fallback=None,
+        user_content_parts=user_content_parts,
     )
 
 

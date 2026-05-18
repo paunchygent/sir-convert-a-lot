@@ -373,9 +373,9 @@ Task 311 owns the strict production service-backed mirror.
   result.
 - Qwen3.6-27B-Q6_K on `llama.cpp` was live-validated against the full Task 309
   corpus with `provider_runtime=llama-cpp-json-schema`, `--ctx-size 32768`,
-  `--reasoning off`, and task-optimal `temperature=0.15`. The final scored
-  result was 39 correct, 3 wrong-but-valid, 2 manual-follow-up, and 273 skipped
-  source-bound-key items. Qwen3.6 is the current local model of choice right
+  `--reasoning off`, and task-optimal `temperature=0.15`. The final retained
+  Review 18 baseline is 41 correct, 3 wrong-but-valid, 0 manual-follow-up, and
+  273 skipped source-bound-key items. Qwen3.6 is the current local model of choice right
   now, but the zero wrong-but-valid promotion gate remains unmet; suggestions
   stay guarded advisory until teacher review or a later governed decision
   changes that risk posture.
@@ -452,8 +452,8 @@ Task 311 owns the strict production service-backed mirror.
 - `ping -c 1 -W 3000 hemma.tail730aa2.ts.net`
 - Operator-retained Qwen3.6 full-corpus run on `127.0.0.1:8082` with
   `provider_runtime=llama-cpp-json-schema`, `model=qwen3.6-27b-q6k`,
-  `temperature=0.15`, `--ctx-size 32768`, and `--reasoning off`: 39 correct,
-  3 wrong-but-valid, 2 manual-follow-up, 273 skipped.
+  `temperature=0.15`, `--ctx-size 32768`, and `--reasoning off`: 41 correct,
+  3 wrong-but-valid, 0 manual-follow-up, 273 skipped.
 - Operator-retained Devstral-Small full-corpus run on `127.0.0.1:8082` with
   `provider_runtime=llama-cpp-json-schema` and
   `model=devstral-small-24b`: 34 correct, 8 wrong-but-valid,

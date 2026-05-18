@@ -1,14 +1,14 @@
 """Hemma structured LLM deploy verification.
 
 Purpose:
-    Prove that the production Sir Convert container can reach the container
-    native Qwen3.6 answer-key provider and receive constrained JSON output.
+    Prove that the production Sir Convert container can reach its configured
+    structured answer-key provider and receive constrained JSON output.
 
 Relationships:
     - Called by `hemma_deploy_and_verify` before OCR-heavy smoke tests so
       provider readiness is recorded independently.
     - Executes the network probe from inside `sir_convert_a_lot_prod`, where
-      Docker service DNS for `sir_convert_qwen_answer_key` is valid.
+      production environment variables and provider credentials are present.
 """
 
 from __future__ import annotations
@@ -20,66 +20,93 @@ from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import
     VerificationContractError,
 )
 
-PROVIDER_URL = "http://sir_convert_qwen_answer_key:8082"
-
 RemoteRunner = Callable[..., str]
 
 _PROBE_CODE = r"""
+import asyncio
 import json
-import urllib.request
+import os
 
-base_url = "http://sir_convert_qwen_answer_key:8082"
-report = {
-    "provider_url": base_url,
-    "models_reachable": False,
-    "structured_probe_passed": False,
-    "failure": None,
+import httpx
+
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
+    StructuredLLMRequest,
+    StructuredOutputSpec,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
+    structured_llm_runtime_config_from_env,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
+    HttpStructuredChatProvider,
+)
+
+SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "decision_state": {"type": "string", "enum": ["answered"]},
+        "correct_alternative_ids": {"type": "array", "items": {"type": "integer"}},
+        "manual_follow_up_code": {"type": ["string", "null"]},
+    },
+    "required": ["decision_state", "correct_alternative_ids", "manual_follow_up_code"],
 }
-try:
-    with urllib.request.urlopen(base_url + "/v1/models", timeout=30) as response:
-        json.loads(response.read().decode("utf-8"))
+
+
+async def main():
+    config = structured_llm_runtime_config_from_env(os.environ)
+    profile = None if config.provider_set is None else config.provider_set.primary
+    report = {
+        "provider_profile_id": None if profile is None else profile.provider_id,
+        "provider_model": None if profile is None else profile.model,
+        "provider_endpoint_kind": None if profile is None else profile.endpoint_kind.value,
+        "provider_is_remote": None if profile is None else profile.is_remote,
+        "models_reachable": False,
+        "structured_probe_passed": False,
+        "failure": None,
+    }
+    if profile is None:
+        report["failure"] = "structured provider set is not configured"
+        print(json.dumps(report, sort_keys=True))
+        return
+    request = StructuredLLMRequest(
+        job_id="deploy-structured-llm-probe",
+        item_id="deploy-probe-item",
+        item_type="single_choice",
+        prompt_template_version="deploy_structured_llm_probe_v1",
+        system_prompt="Return only the constrained answer.",
+        user_payload="{\"answer\":2}",
+        output_spec=StructuredOutputSpec(
+            schema_name="deploy_structured_llm_probe",
+            schema_version="deploy_structured_llm_probe_v1",
+            json_schema=SCHEMA,
+        ),
+        estimated_input_tokens=32,
+        max_output_tokens=256,
+        allow_remote_fallback=None,
+    )
+    async with httpx.AsyncClient() as client:
+        provider = HttpStructuredChatProvider(client=client, connections=config.connections)
+        response = await provider.complete_structured_chat(request=request, profile=profile)
     report["models_reachable"] = True
-    schema = {
-        "type": "object",
-        "additionalProperties": False,
-        "properties": {
-            "decision_state": {"type": "string", "enum": ["answered"]},
-            "correct_alternative_ids": {"type": "array", "items": {"type": "integer"}},
-            "manual_follow_up_code": {"type": ["string", "null"]},
-        },
-        "required": ["decision_state", "correct_alternative_ids", "manual_follow_up_code"],
-    }
-    payload = {
-        "model": "qwen3.6-27b-q6k-mtp",
-        "stream": False,
-        "temperature": 0.15,
-        "max_tokens": 256,
-        "messages": [
-            {"role": "system", "content": "Return only the constrained answer."},
-            {"role": "user", "content": "{\"answer\":2}"},
-        ],
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {"name": "task320_choice_probe", "schema": schema},
-        },
-    }
-    request = urllib.request.Request(
-        base_url + "/v1/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        response_payload = json.loads(response.read().decode("utf-8"))
-    content = response_payload["choices"][0]["message"]["content"]
-    parsed = json.loads(content)
     report["structured_probe_passed"] = (
-        parsed.get("decision_state") == "answered"
-        and parsed.get("correct_alternative_ids") == [2]
+        response.content.get("decision_state") == "answered"
+        and response.content.get("correct_alternative_ids") == [2]
     )
+    print(json.dumps(report, sort_keys=True))
+
+try:
+    asyncio.run(main())
 except Exception as exc:
-    report["failure"] = f"{type(exc).__name__}: {exc}"
-print(json.dumps(report, sort_keys=True))
+    report = {
+        "provider_profile_id": None,
+        "provider_model": None,
+        "provider_endpoint_kind": None,
+        "provider_is_remote": None,
+        "models_reachable": False,
+        "structured_probe_passed": False,
+        "failure": f"{type(exc).__name__}: {exc}",
+    }
+    print(json.dumps(report, sort_keys=True))
 """
 
 

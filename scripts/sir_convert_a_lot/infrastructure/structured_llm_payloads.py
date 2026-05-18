@@ -79,7 +79,6 @@ def build_responses_payload(
     """Build a Responses payload using `text.format.json_schema`."""
 
     _require_output_mode(profile=profile, allowed=(StructuredLLMOutputMode.JSON_SCHEMA,))
-    _require_text_only(request=request, provider_id=profile.provider_id)
     text_config: dict[str, JsonValue] = {"format": build_responses_text_format(request.output_spec)}
     if profile.text_verbosity is not None:
         text_config["verbosity"] = profile.text_verbosity.value
@@ -89,7 +88,7 @@ def build_responses_payload(
             {
                 "type": "message",
                 "role": "user",
-                "content": [{"type": "input_text", "text": request.user_payload}],
+                "content": _responses_user_content(request),
             }
         ],
         "instructions": request.system_prompt,
@@ -204,6 +203,20 @@ def _user_content(request: StructuredLLMRequest) -> JsonValue:
             parts.append({"type": "text", "text": part.text})
         elif isinstance(part, StructuredLLMImageURLContentPart):
             parts.append({"type": "image_url", "image_url": {"url": part.url}})
+        else:
+            raise TypeError(f"Unsupported structured LLM content part: {type(part).__name__}")
+    return parts
+
+
+def _responses_user_content(request: StructuredLLMRequest) -> list[JsonValue]:
+    if not request.user_content_parts:
+        return [{"type": "input_text", "text": request.user_payload}]
+    parts: list[JsonValue] = []
+    for part in request.user_content_parts:
+        if isinstance(part, StructuredLLMTextContentPart):
+            parts.append({"type": "input_text", "text": part.text})
+        elif isinstance(part, StructuredLLMImageURLContentPart):
+            parts.append({"type": "input_image", "image_url": part.url})
         else:
             raise TypeError(f"Unsupported structured LLM content part: {type(part).__name__}")
     return parts

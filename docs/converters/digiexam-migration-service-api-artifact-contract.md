@@ -25,6 +25,7 @@ links:
   - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
   - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
   - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
+  - docs/converters/exam-authoring-corrections-apply-contract.md
   - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
   - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
@@ -661,10 +662,22 @@ matching-capable source flows and must continue treating DigiExam
 Task 324 exists because matching had no callable neutral producer route while
 choice/gap, point correction, review decisions, and item patching already had
 reviewed overlay/application paths. That asymmetry is historical, not the
-proposed ADR-0011 product architecture. Task 327 defines the next
-source-neutral correction/apply contract so future teacher correction work can
-converge on one producer-owned route instead of adding more item-specific
-Gateway or service routes.
+accepted ADR-0011 product architecture. Task 327 defines the next
+source-neutral correction/apply contract so future teacher correction work,
+including PR-0332 work beyond already-built historical bridge behavior, can
+converge on one producer-owned route instead of adding more item-specific,
+source-adapter, Gateway, or service routes. The unified-route implementation
+must hard-cut from the Task 324 matching route; it must not preserve
+`POST /v2/exam-authoring/matching/manual-answer-key/apply` as an adapter, shim,
+alias, wrapper, or compatibility layer.
+
+Task 327 publishes the draft unified correction/apply contract in
+`docs/converters/exam-authoring-corrections-apply-contract.md`. That contract
+maps `effective_item_patch`, `point_correction`, choice/gap manual keys,
+reviewed completion keys, review decisions, and Task 324 matching semantics into
+typed source-neutral correction entries. The mapping is semantic and
+implementation-directing; it does not preserve DigiExam overlay field names as
+the long-term teacher-correction API.
 
 The implementation must version affected public DigiExam artifacts for removed
 legacy matching overlay fields and update Skriptoteket consumers in the same

@@ -85,6 +85,7 @@ class StructuredLLMBackendFailureCode(StrEnum):
     """Stable provider/backend failure codes for advisory completion reports."""
 
     PROVIDER_CONFIG_MISSING = "provider_config_missing"
+    PROVIDER_TIMEOUT = "provider_timeout"
     PROVIDER_REQUEST_FAILED = "provider_request_failed"
     PROVIDER_HTTP_ERROR = "provider_http_error"
     PROVIDER_INVALID_JSON = "provider_invalid_json"
@@ -92,6 +93,7 @@ class StructuredLLMBackendFailureCode(StrEnum):
     PROVIDER_EMPTY_CONTENT = "provider_empty_content"
     PROVIDER_CONTENT_NOT_JSON = "provider_content_not_json"
     PROVIDER_SCHEMA_MISMATCH = "provider_schema_mismatch"
+    PROVIDER_REFUSAL = "provider_refusal"
 
 
 class StructuredLLMCaptureStatus(StrEnum):

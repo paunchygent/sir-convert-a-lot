@@ -144,11 +144,24 @@ def test_structured_llm_service_config_requires_media_path_for_vision_primary() 
         structured_llm_runtime_config_from_env(env)
 
 
-def test_structured_llm_service_config_requires_local_primary() -> None:
+def test_structured_llm_service_config_requires_remote_primary_authorization() -> None:
     env = _provider_env(primary_provider_id="remote-openai")
+    env[STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV] = "false"
 
-    with pytest.raises(ValueError, match=STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV):
+    with pytest.raises(ValueError, match=STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV):
         structured_llm_runtime_config_from_env(env)
+
+
+def test_structured_llm_service_config_allows_authorized_remote_primary() -> None:
+    env = _provider_env(primary_provider_id="remote-openai", fallback_provider_id=None)
+
+    config = structured_llm_runtime_config_from_env(env)
+
+    assert config.provider_set is not None
+    assert config.provider_set.primary.provider_id == "remote-openai"
+    assert config.provider_set.primary.is_remote is True
+    assert config.remote_providers_enabled is True
+    assert config.remote_fallback_policy_authorized is True
 
 
 def test_structured_llm_service_config_rejects_missing_api_key_env() -> None:

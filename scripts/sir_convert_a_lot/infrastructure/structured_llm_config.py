@@ -124,10 +124,21 @@ def structured_llm_runtime_config_from_env(
     primary_id = _required_env(source, STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV)
     fallback_id = _optional_env(source, STRUCTURED_LLM_FALLBACK_PROVIDER_ID_ENV)
     primary = _profile_by_id(profiles, primary_id, env_name=STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV)
-    if primary.is_remote:
-        raise ValueError(
-            f"{STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV} must reference a local provider profile."
-        )
+    remote_providers_enabled = _parse_bool_env(
+        source,
+        name=STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV,
+        default=False,
+    )
+    remote_fallback_policy_authorized = _parse_bool_env(
+        source,
+        name=STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV,
+        default=False,
+    )
+    _validate_primary_provider_authorization(
+        primary=primary,
+        remote_providers_enabled=remote_providers_enabled,
+        remote_fallback_policy_authorized=remote_fallback_policy_authorized,
+    )
     vision_media_path = _vision_media_path_from_env(source, primary=primary)
     fallback = None
     if fallback_id is not None:
@@ -142,16 +153,25 @@ def structured_llm_runtime_config_from_env(
         provider_set=StructuredChatProviderSet(primary=primary, fallback=fallback),
         connections=connections,
         vision_media_path=vision_media_path,
-        remote_providers_enabled=_parse_bool_env(
-            source,
-            name=STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV,
-            default=False,
-        ),
-        remote_fallback_policy_authorized=_parse_bool_env(
-            source,
-            name=STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV,
-            default=False,
-        ),
+        remote_providers_enabled=remote_providers_enabled,
+        remote_fallback_policy_authorized=remote_fallback_policy_authorized,
+    )
+
+
+def _validate_primary_provider_authorization(
+    *,
+    primary: StructuredLLMProviderProfile,
+    remote_providers_enabled: bool,
+    remote_fallback_policy_authorized: bool,
+) -> None:
+    if not primary.is_remote:
+        return
+    if remote_providers_enabled and remote_fallback_policy_authorized:
+        return
+    raise ValueError(
+        f"{STRUCTURED_LLM_PRIMARY_PROVIDER_ID_ENV} references a remote provider profile; "
+        f"{STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED_ENV} and "
+        f"{STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV} must both be enabled."
     )
 
 

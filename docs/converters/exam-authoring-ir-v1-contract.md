@@ -21,6 +21,7 @@ links:
   - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
   - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
+  - docs/converters/exam-authoring-corrections-apply-contract.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
 ---
@@ -217,10 +218,13 @@ profile. `qti_package` remains unavailable with
 proof exists. DigiExam ingestion overlays remain choice/gap-fill only and do
 not accept matching keys through `digiexam_ingestion_overlay`.
 
-This route is intentionally bridge work for the first missing matching
-producer path. The proposed ADR-0011 target teacher-correction architecture is
-not one `/exam-authoring/.../apply` route per item type. Task 327 owns the
-contract for one source-neutral correction/apply route:
+This route is historical bridge work for the first missing matching producer
+path. It is not the target path for new `PR-0332` teacher-correction work and it
+must not survive the unified correction route implementation as an adapter,
+shim, alias, wrapper, or compatibility layer. The accepted ADR-0011 target
+teacher-correction architecture is not one `/exam-authoring/.../apply` route per
+item type or source adapter. Task 327 owns the contract for one source-neutral
+correction/apply route:
 
 ```text
 POST /v2/exam-authoring/corrections/apply
@@ -231,7 +235,16 @@ points, manual choice keys, manual gap/open-cloze accepted values, manual
 matching keys, review decisions, and candidate suppression while keeping source
 adapters as ingestion details. Consumers should not need to know whether the
 original item came from DigiExam, Exam.net, CSV, DOCX, Markdown, or another
-source in order to submit teacher corrections.
+source in order to submit teacher corrections. When that unified route is
+implemented, the matching manual-answer-key semantics above must move into a
+typed matching correction entry and the matching-specific route must be removed
+in the same governed implementation slice.
+
+The draft unified correction/apply contract lives in
+`docs/converters/exam-authoring-corrections-apply-contract.md`. It defines
+`manual_matching_answer_key` as the target correction entry for the matching
+semantics above and keeps this IR contract focused on source-neutral authoring
+state rather than teacher-correction transport.
 
 ## Gap/Open-Cloze Interaction V1
 

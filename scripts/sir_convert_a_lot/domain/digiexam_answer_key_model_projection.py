@@ -31,7 +31,7 @@ CHOICE_ANSWER_KEY_SYSTEM_PROMPT = (
     "teacher-intended correct alternative id or ids from the visible item text "
     "and alternatives. Evaluate each alternative independently against the item "
     "stem. Only select an alternative if you can positively confirm it is correct. "
-    "If the item is ambiguous, prefer manual follow-up over a plausible wrong key."
+    "Do not select alternatives that are merely plausible or related."
 )
 
 GAP_FILL_ANSWER_KEY_SYSTEM_PROMPT = (
@@ -40,8 +40,7 @@ GAP_FILL_ANSWER_KEY_SYSTEM_PROMPT = (
     "surrounding cloze text and any word bank. When a word bank is visible, "
     "copy one exact word from that bank into each blank. Do not paraphrase, "
     "substitute synonyms, or shorten the word. When no word bank is visible, "
-    "use the complete formal term as taught in the subject curriculum. "
-    "If a gap is ambiguous, prefer manual follow-up over a plausible wrong key."
+    "use the complete formal term as taught in the subject curriculum."
 )
 
 

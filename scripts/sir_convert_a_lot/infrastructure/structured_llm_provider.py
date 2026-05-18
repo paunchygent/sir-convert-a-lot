@@ -103,6 +103,12 @@ class HttpStructuredChatProvider:
                 provider_id=profile.provider_id,
                 status_code=exc.response.status_code,
             ) from exc
+        except httpx.TimeoutException as exc:
+            raise StructuredLLMProviderError(
+                failure_code=StructuredLLMBackendFailureCode.PROVIDER_TIMEOUT,
+                message="Structured provider request timed out.",
+                provider_id=profile.provider_id,
+            ) from exc
         except httpx.RequestError as exc:
             raise StructuredLLMProviderError(
                 failure_code=StructuredLLMBackendFailureCode.PROVIDER_REQUEST_FAILED,

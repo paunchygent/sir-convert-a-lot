@@ -2,7 +2,7 @@
 id: task-329-close-out-adr-0002-against-active-service-api-v2-authority
 title: Close out ADR-0002 against active Service API v2 authority
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-05-18'
 last_updated: '2026-05-18'
@@ -209,7 +209,7 @@ Static runtime/contract proof used for this closeout:
   change is bundled into this task.
 - [x] OpenAPI/router proof is captured or, if skipped, the task records why
   static docs evidence was sufficient.
-- [ ] A review record approves the ADR status/new-decision closeout before the
+- [x] A review record approves the ADR status/new-decision closeout before the
   task is marked completed.
 - [x] Validation passes with:
   - `pdm run docs-sync`
@@ -235,11 +235,10 @@ current Service API v2 authority as accepted, v2-only, and governed by additive
 extension. Active converter, downstream, and CLI docs now point to ADR-0012 as
 the v2 decision authority.
 
-Review 22 closed as `changes_requested`. The ADR/status closeout remains
-blocked because the current review set also includes separate Task 325-B
-runtime/OpenAPI provider-lineage changes. Task 329 remains `in_progress` until
-those changes are split or separately governed and the retained review approves
-the narrowed ADR closeout.
+Review 22 closed as `approved`. The review explicitly scopes out the already
+published Task 325-B runtime/OpenAPI provider-lineage changes and approves only
+the ADR-0002 supersession, ADR-0012 current-state authority, active-doc links,
+and Task 329 closeout state.
 
 ## Validation Evidence
 
@@ -252,6 +251,6 @@ the narrowed ADR closeout.
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [x] Validation complete
 - [x] Docs updated

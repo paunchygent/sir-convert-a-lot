@@ -63,9 +63,6 @@ services:
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
     networks:
       - hule-network
-    depends_on:
-      sir_convert_qwen_answer_key:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -145,9 +142,6 @@ services:
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
     networks:
       - hule-network
-    depends_on:
-      sir_convert_qwen_answer_key:
-        condition: service_healthy
     healthcheck:
       test:
         [

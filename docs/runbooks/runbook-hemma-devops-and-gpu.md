@@ -62,25 +62,26 @@ benchmark, and tunnel work.
 - Runtime changes need governing backlog/reference/ADR authority before they are
   treated as product behavior.
 
-## Current Local LLM Default
+## Current Answer-Key Provider Default
 
-Use Qwen3.6-27B MTP Q6_K through the Hemma-local `llama.cpp` HIP server as the
-current guarded answer-key advisory provider. Granite/vLLM and Devstral Small
-are demoted for this route by Task 309 evidence. Qwen3.6 remains advisory-only:
-the zero wrong-but-valid promotion gate is not met, so teacher review or a
-later governed decision is required before automatic answer-key application.
+Use OpenAI `gpt-5.4-mini-2026-03-17` as the temporary accepted/default
+structured answer-key provider in development and Hemma production. Task 326
+teacher adjudication leaves mini at 43 correct, 1 wrong-but-valid, and 0 manual
+follow-up on 44 eligible rows, ahead of the retained Qwen3.6 baseline of 41
+correct, 3 wrong-but-valid, and 0 manual follow-up. Qwen3.6 remains the guarded
+local rollback provider and can be stopped in production to free GPU VRAM while
+mini is default.
 
-- Runtime: `llama.cpp` HIP `llama-server`
-- Provider profile: `qwen36-llama-cpp-mtp`
-- Model: `qwen3.6-27b-q6k-mtp`
-- Bind: `127.0.0.1`
-- Port: `8082`
-- Context: `16384`
-- Temperature: `0.15`
-- Output constraint: llama.cpp JSON Schema or GBNF-constrained JSON only
-- Required mode: `--reasoning off`
-- Runtime proof: localhost-only provider status, GPU offload, required
-  llama.cpp arguments, and no CPU fallback are proved by Task 319.
+- Default provider profile: `openai-gpt-5.4-mini-2026-03-17`
+- Default model: `gpt-5.4-mini-2026-03-17`
+- Endpoint kind: OpenAI Responses
+- Output constraint: JSON Schema structured output
+- Remote-provider controls: `SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED=1`
+  and `SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=1`
+  are required when mini is the primary provider.
+- Qwen rollback profile: `qwen36-llama-cpp-mtp`
+- Qwen production container: `sir_convert_qwen_answer_key`; do not recreate it
+  unless explicitly returning to the local provider.
 - Cache contract: `docs/runbooks/runbook-hemma-gpu-runtime.md`
 - Operator details:
   `docs/runbooks/runbook-answer-key-local-model-operator-guide.md`

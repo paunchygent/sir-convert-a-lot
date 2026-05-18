@@ -52,56 +52,54 @@ Structured review artifact for implementation or readiness checks.
 
 ## Findings
 
-1. [x] `blocker` - Task 329 is mixed with unrelated runtime/OpenAPI contract
-   changes despite its stop condition.
+No approval-blocking findings.
+
+1. [x] `low` - The published `main` commit includes Task 325-B runtime/OpenAPI
+   provider-lineage changes alongside the Task 329 ADR closeout.
    - Evidence:
-     - `docs/backlog/tasks/task-329-close-out-adr-0002-against-active-service-api-v2-authority.md:208`
-       marks "No runtime ... change is bundled into this task" as satisfied.
-     - `docs/backlog/tasks/task-329-close-out-adr-0002-against-active-service-api-v2-authority.md:225`
-       explicitly stops before changing service runtime behavior or generated
-       OpenAPI snapshots without separate implementation-task authority.
+     - `git status --short --branch` showed `## main...origin/main` with no
+       local diff before this review update.
+     - `git log --oneline --decorate --max-count=1 --all` showed
+       `40780e5 (HEAD -> main, origin/main, origin/HEAD) Update API v2 documentation, ADR closeout, and related code changes`.
+     - `docs/backlog/tasks/task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md`
+       records Task 325-B as the authority for admission snapshot,
+       report-level provider lineage, and focused provider-lineage tests.
      - `scripts/sir_convert_a_lot/infrastructure/job_store_models_v2.py:83`
-       changes the persisted job record model default for
+       contains the persisted job record model default for
        `structured_llm_admission`.
      - `docs/_generated/openapi/sir-convert-a-lot-v2.openapi.json:455`
-       adds `DigiExamAnswerKeyCompletionProviderLineageV1`, expanding the
+       contains `DigiExamAnswerKeyCompletionProviderLineageV1`, expanding the
        generated OpenAPI contract surface.
-   - Why it matters: Review 22 is only authorized to approve the ADR-0002
-     closeout and ADR-0012 decision-state repair. Bundling provider-lineage
-     runtime/schema changes into the same uncommitted review set makes the
-     closeout evidence inaccurate and risks approving Task 325-B behavior
-     through the Task 329 review gate.
-   - Required fix: Split the Task 325-B runtime/OpenAPI/test changes out of the
-     Task 329 review set or attach them to their own governed closeout/review
-     before this review approves Task 329. After the Task 329 diff is clean,
-     rerun the docs closeout gates and update this review with a narrow
-     re-review.
-   - Proof requirement: show `git diff --name-status` scoped to Task 329 docs
-     only, then rerun `pdm run docs-sync`, `pdm run docs-validate`,
-     `pdm run skills-validate`, `pdm run handoff-validate`, and
-     `git diff --check`.
+   - Why it matters: Review 22 must not accidentally approve Task 325-B runtime
+     behavior while approving the ADR-0002 closeout.
+   - Review disposition: Not a Task 329 approval blocker. The Task 325-B changes
+     are already committed and pushed to `origin/main` under their own Task 325
+     authority. Review 22 approves only the ADR-0002 supersession, ADR-0012
+     current-state decision, active-doc links, and Task 329 closeout state.
+   - Proof requirement: Keep Task 325-B runtime/API validation evidence under
+     Task 325; do not use this Review 22 approval as runtime behavior approval.
 
 ## Decision
 
-Changes requested.
+Approved.
 
 ## Response
 
-The ADR-0002 supersession shape and ADR-0012 current-state authority are
-directionally sound, but Task 329 is not approved while the review set also
-contains unrelated runtime/OpenAPI provider-lineage changes. Task 329 must
-remain `in_progress`.
+The ADR-0002 supersession shape, ADR-0012 current-state authority, active-doc
+links, and Task 329 closeout state are approved. This review does not approve or
+re-review the Task 325-B runtime/OpenAPI provider-lineage behavior that is
+already published on `origin/main` under separate Task 325 authority.
 
 ## Follow-up Actions
 
-1. Keep Task 329 `in_progress`.
-1. Split or separately govern the Task 325-B runtime/OpenAPI/test changes before
-   re-reviewing Task 329.
-1. Rerun the docs closeout gates after the review set is narrowed.
+No blocking follow-up for Task 329.
+
+Task 325-B runtime/API validation remains owned by Task 325 and its later
+closeout/review path.
 
 ## Completion
 
-Completed as `changes_requested` on 2026-05-18.
+Completed as `approved` on 2026-05-18.
 
 ## Checklist
 

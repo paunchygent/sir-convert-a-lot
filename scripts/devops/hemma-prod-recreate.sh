@@ -25,7 +25,7 @@ Usage:
   pdm run hemma-prod-recreate [service...]
 
 Default services:
-  sir_convert_qwen_answer_key sir_convert_a_lot_gpu_worker sir_convert_a_lot_prod sir_convert_a_lot_public_reserved
+  sir_convert_a_lot_gpu_worker sir_convert_a_lot_prod sir_convert_a_lot_public_reserved
 
 Environment:
   SIR_CONVERT_A_LOT_HEMMA_PDM          Remote pdm executable path.
@@ -41,7 +41,6 @@ fi
 services=("$@")
 if [[ "${#services[@]}" -eq 0 ]]; then
   services=(
-    sir_convert_qwen_answer_key
     sir_convert_a_lot_gpu_worker
     sir_convert_a_lot_prod
     sir_convert_a_lot_public_reserved

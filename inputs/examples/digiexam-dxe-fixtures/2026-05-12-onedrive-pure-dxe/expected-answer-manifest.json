@@ -139,7 +139,8 @@
           3,
           5,
           6,
-          8
+          8,
+          9
         ],
         "kind": "choice"
       },
@@ -721,31 +722,41 @@
         "gap_answers": [
           {
             "accepted_values": [
-              "D"
+              "D",
+              "när ämnen cirkulerar mellan naturens olika delar.",
+              "näringscykel"
             ],
             "gap_id": "c12fe59e-3b5b-4321-9307-0837ec0eb32b"
           },
           {
             "accepted_values": [
-              "A"
+              "A",
+              "visar hur flera näringskedjor hänger ihop.",
+              "näringsväv"
             ],
             "gap_id": "b4bc8f34-7d82-402a-8295-bd944f74e2da"
           },
           {
             "accepted_values": [
-              "B"
+              "B",
+              "process där växter tillverkar socker och syre av koldioxid, vatten och solljus.",
+              "fotosyntes"
             ],
             "gap_id": "dd7fdfac-ec33-4035-85bf-952be9b8b65a"
           },
           {
             "accepted_values": [
-              "E"
+              "E",
+              "organism som tillverkar egen näring med hjälp av solen.",
+              "producent"
             ],
             "gap_id": "b1c934e0-3ece-451c-924b-882c85c10aef"
           },
           {
             "accepted_values": [
-              "C"
+              "C",
+              "process där energi frigörs ur socker med hjälp av syre.",
+              "cellandning"
             ],
             "gap_id": "ba6d3055-2424-414a-bc8f-0b1e6deb053b"
           }
@@ -1241,14 +1252,16 @@
           {
             "accepted_values": [
               "kromosomerna",
-              "kromosomer"
+              "kromosomer",
+              "arvsmassan"
             ],
             "gap_id": "bda1f71954db4173aeab0c890e654372"
           },
           {
             "accepted_values": [
               "kromosomerna",
-              "kromosomer"
+              "kromosomer",
+              "arvsmassan"
             ],
             "gap_id": "0a85254536ac4f76ba34b2c77b73ed5b"
           }

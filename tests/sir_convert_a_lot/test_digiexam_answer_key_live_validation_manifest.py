@@ -18,6 +18,9 @@ from pathlib import Path
 import pytest
 
 from scripts.sir_convert_a_lot.devops import run_answer_key_live_validation
+from scripts.sir_convert_a_lot.devops import (
+    run_digiexam_answer_key_live_validation as digiexam_runner,
+)
 from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
     build_answer_key_provider_run_metadata,
 )
@@ -27,8 +30,14 @@ from scripts.sir_convert_a_lot.devops.digiexam_answer_key_corpus_coverage import
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_corpus_execution import (
     Task309AdvisoryCorpusRunReport,
 )
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_openai_eval_gate import (
+    OpenAIDataURLVisionCandidatePlanner,
+)
 from scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation import (
     main as task309_runner_main,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
+    answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
     TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION,
@@ -44,11 +53,25 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manife
     build_task309_live_validation_manifest,
     write_task309_json,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
+from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
+    build_digiexam_intermediate_exam,
+)
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
+    StructuredLLMImageURLContentPart,
+)
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     AnswerKeyProviderProfileName,
     AnswerKeyStructuredProviderRuntime,
     answer_key_defaults_for_provider_profile,
     build_answer_key_provider_profile,
+)
+from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles import (
+    answer_key_openai_defaults_for_provider_profile,
+    build_answer_key_openai_provider_profile,
+)
+from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
+    export_digiexam_answer_key_vision_assets,
 )
 
 _CORPUS_ROOT = Path("inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe")
@@ -307,6 +330,83 @@ def test_task309_runner_applies_qwen36_llama_cpp_profile_defaults(tmp_path: Path
     assert report_payload["attempted_item_count"] == 44
     assert any(item["multimodal_request"] is True for item in _objects(report_payload["items"]))
     assert report_payload["ok"] is True
+
+
+def test_evaluate_advisory_corpus_derives_reports_root_from_output_root(
+    tmp_path: Path,
+) -> None:
+    parser = digiexam_runner._build_parser()
+    args = parser.parse_args(
+        [
+            "evaluate-advisory-corpus",
+            "--output-root",
+            tmp_path.as_posix(),
+        ]
+    )
+
+    digiexam_runner._apply_provider_defaults(args)
+
+    assert args.output_root == tmp_path
+    assert args.reports_root is None
+
+
+def test_task326_openai_vision_planner_uses_data_url_image_parts(tmp_path: Path) -> None:
+    source_path = _CORPUS_ROOT / "1776888013-ak7-lag-och-ratt.dxe"
+    exam = build_digiexam_intermediate_exam(DigiExamDxeParser().parse_file(source_path))
+    item = next(item for item in exam.items if item.item_id == "item-003")
+    media_path = tmp_path / "vision-assets"
+    item_assets = export_digiexam_answer_key_vision_assets(
+        exam=exam,
+        media_path=media_path,
+        relative_path_prefix=source_path.stem,
+    )
+    defaults = answer_key_openai_defaults_for_provider_profile("openai-gpt-5.4-mini-2026-03-17")
+    profile = build_answer_key_openai_provider_profile(defaults)
+    planner = OpenAIDataURLVisionCandidatePlanner(
+        base_planner=answer_key_candidate_planner_for_profile(profile),
+        item_assets_by_id=item_assets,
+        media_path=media_path,
+    )
+
+    plan = planner.plan_candidate(job_id="task326:test", item=item, profile=profile)
+
+    assert plan is not None
+    image_parts = tuple(
+        part
+        for part in plan.request.user_content_parts
+        if isinstance(part, StructuredLLMImageURLContentPart)
+    )
+    assert len(image_parts) == 1
+    assert image_parts[0].url.startswith("data:image/png;base64,")
+
+
+def test_task326_openai_runner_blocks_without_sanctioned_credential(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_OPENAI_API_KEY", raising=False)
+
+    exit_code = task309_runner_main(
+        [
+            "run-openai-advisory-corpus",
+            "--openai-provider-profile",
+            "openai-gpt-5.4-mini-2026-03-17",
+            "--corpus-root",
+            _CORPUS_ROOT.as_posix(),
+            "--output-root",
+            tmp_path.as_posix(),
+            "--fail-on-blocked",
+        ]
+    )
+    report_payload = _object(
+        json.loads((tmp_path / "in-process-advisory-corpus-run.json").read_text(encoding="utf-8"))
+    )
+
+    assert exit_code == 2
+    assert report_payload["blocked"] is True
+    assert report_payload["credential_present"] is False
+    assert report_payload["provider_profile_id"] == "openai-gpt-5.4-mini-2026-03-17"
+    assert report_payload["report_paths"] == []
 
 
 def test_task309_raw_llama_runtime_stays_text_only_without_named_vision_profile(

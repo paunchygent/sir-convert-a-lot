@@ -2,8 +2,8 @@
 
 Purpose:
     Render governed structured-provider environment values for advisory
-    answer-key completion across local host, local Compose, and Hemma
-    production Compose lanes.
+    answer-key completion across OpenAI and local Qwen provider profiles for
+    local host, local Compose, and Hemma production Compose lanes.
 
 Relationships:
     - Used by `structured_llm_config` to load named provider profiles without
@@ -31,6 +31,10 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles im
     QWEN36_LLAMA_CPP_TEMPERATURE,
     AnswerKeyProviderProfileName,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles import (
+    AnswerKeyOpenAIProviderProfileName,
+    answer_key_openai_provider_json_for_profile,
+)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
 )
@@ -52,6 +56,9 @@ QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_HOST_PATH = Path(
 )
 
 _PROD_FORBIDDEN_PROVIDER_HOSTS = frozenset({"127.0.0.1", "localhost", "host.docker.internal"})
+AnswerKeyRuntimeProviderProfileName = (
+    AnswerKeyProviderProfileName | AnswerKeyOpenAIProviderProfileName
+)
 
 
 class AnswerKeyProviderRuntimeLane(StrEnum):
@@ -65,20 +72,25 @@ class AnswerKeyProviderRuntimeLane(StrEnum):
 def render_answer_key_provider_environment(
     *,
     lane: AnswerKeyProviderRuntimeLane,
-    profile_name: AnswerKeyProviderProfileName = AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP,
+    profile_name: AnswerKeyRuntimeProviderProfileName = (
+        AnswerKeyOpenAIProviderProfileName.GPT54_MINI_2026_03_17
+    ),
 ) -> dict[str, str]:
     """Render canonical env keys for one answer-key provider profile."""
 
     providers_json = answer_key_provider_json_for_profile(lane=lane, profile_name=profile_name)
+    is_openai_profile = isinstance(profile_name, AnswerKeyOpenAIProviderProfileName)
+    primary_provider_id = profile_name.value if is_openai_profile else LLAMA_CPP_PROVIDER_ID
+    remote_enabled = "1" if is_openai_profile else "0"
     return {
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED": "1",
         STRUCTURED_LLM_PROVIDER_PROFILE_ENV: profile_name.value,
         STRUCTURED_LLM_RUNTIME_LANE_ENV: lane.value,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON": providers_json,
-        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID": LLAMA_CPP_PROVIDER_ID,
+        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID": primary_provider_id,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID": "",
-        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED": "0",
-        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED": "0",
+        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED": remote_enabled,
+        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED": remote_enabled,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH": (
             QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_PATH.as_posix()
         ),
@@ -91,10 +103,13 @@ def render_answer_key_provider_environment(
 def answer_key_provider_json_for_profile(
     *,
     lane: AnswerKeyProviderRuntimeLane,
-    profile_name: AnswerKeyProviderProfileName,
+    profile_name: AnswerKeyRuntimeProviderProfileName,
 ) -> str:
     """Render compact provider JSON for the selected runtime lane."""
 
+    if isinstance(profile_name, AnswerKeyOpenAIProviderProfileName):
+        del lane
+        return answer_key_openai_provider_json_for_profile(profile_name)
     if profile_name not in {
         AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP,
         AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP,
@@ -126,9 +141,10 @@ def provider_json_from_runtime_profile(source: Mapping[str, str]) -> str:
     """Render provider JSON from profile and lane environment variables."""
 
     raw_profile = _required_env(source, STRUCTURED_LLM_PROVIDER_PROFILE_ENV)
+    profile_name = _runtime_profile_name(raw_profile)
     return answer_key_provider_json_for_profile(
         lane=runtime_lane_from_env(source),
-        profile_name=AnswerKeyProviderProfileName(raw_profile),
+        profile_name=profile_name,
     )
 
 
@@ -166,6 +182,13 @@ def _model_for_profile(profile_name: AnswerKeyProviderProfileName) -> str:
     if profile_name == AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP:
         return QWEN36_LLAMA_CPP_MTP_MODEL
     return QWEN36_LLAMA_CPP_MODEL
+
+
+def _runtime_profile_name(raw_profile: str) -> AnswerKeyRuntimeProviderProfileName:
+    try:
+        return AnswerKeyOpenAIProviderProfileName(raw_profile)
+    except ValueError:
+        return AnswerKeyProviderProfileName(raw_profile)
 
 
 def _reject_production_container_host_alias(raw_url: str) -> None:

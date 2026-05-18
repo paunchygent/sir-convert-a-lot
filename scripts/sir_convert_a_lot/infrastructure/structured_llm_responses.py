@@ -96,8 +96,12 @@ def _extract_responses_content(
     payload: dict[object, object],
     profile: StructuredLLMProviderProfile,
 ) -> dict[str, JsonValue]:
+    if isinstance(payload.get("refusal"), str):
+        raise _refusal_error(profile)
     direct_output = payload.get("output")
     if isinstance(direct_output, dict):
+        if isinstance(direct_output.get("refusal"), str):
+            raise _refusal_error(profile)
         return _string_keyed_content(direct_output, profile=profile)
 
     output_text = payload.get("output_text")
@@ -119,12 +123,16 @@ def _extract_responses_output_item(
 ) -> dict[str, JsonValue] | None:
     if not isinstance(item, dict):
         return None
+    if isinstance(item.get("refusal"), str):
+        raise _refusal_error(profile)
     content_items = item.get("content")
     if not isinstance(content_items, list):
         return None
     for content_item in content_items:
         if not isinstance(content_item, dict):
             continue
+        if isinstance(content_item.get("refusal"), str) or content_item.get("type") == "refusal":
+            raise _refusal_error(profile)
         text = content_item.get("text")
         if isinstance(text, str) and text.strip():
             return _loads_content_object(content=text, profile=profile)
@@ -240,9 +248,15 @@ def _extract_usage(payload: dict[object, object]) -> StructuredLLMUsage:
     usage = payload.get("usage")
     if not isinstance(usage, dict):
         return StructuredLLMUsage()
+    prompt_tokens = _optional_int(usage.get("prompt_tokens"))
+    if prompt_tokens is None:
+        prompt_tokens = _optional_int(usage.get("input_tokens"))
+    completion_tokens = _optional_int(usage.get("completion_tokens"))
+    if completion_tokens is None:
+        completion_tokens = _optional_int(usage.get("output_tokens"))
     return StructuredLLMUsage(
-        prompt_tokens=_optional_int(usage.get("prompt_tokens")),
-        completion_tokens=_optional_int(usage.get("completion_tokens")),
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
         total_tokens=_optional_int(usage.get("total_tokens")),
     )
 
@@ -289,6 +303,14 @@ def _schema_mismatch(
         profile=profile,
         failure_code=StructuredLLMBackendFailureCode.PROVIDER_SCHEMA_MISMATCH,
         message=message,
+    )
+
+
+def _refusal_error(profile: StructuredLLMProviderProfile) -> StructuredLLMProviderError:
+    return _provider_error(
+        profile=profile,
+        failure_code=StructuredLLMBackendFailureCode.PROVIDER_REFUSAL,
+        message="Structured provider returned a refusal instead of schema content.",
     )
 
 

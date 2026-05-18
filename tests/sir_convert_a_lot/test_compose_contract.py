@@ -211,9 +211,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
             "/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro"
         ),
     ]
-    assert service.get("depends_on") == {
-        "sir_convert_qwen_answer_key": {"condition": "service_healthy"}
-    }
+    assert service.get("depends_on") is None
     assert service.get("devices") is None
     assert service.get("group_add") is None
 
@@ -249,9 +247,7 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
         "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
         "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
     ]
-    assert service.get("depends_on") == {
-        "sir_convert_qwen_answer_key": {"condition": "service_healthy"}
-    }
+    assert service.get("depends_on") is None
     assert service.get("volumes") == [
         "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
         (

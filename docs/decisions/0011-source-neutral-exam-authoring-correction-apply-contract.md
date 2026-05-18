@@ -2,7 +2,7 @@
 type: decision
 id: ADR-0011
 title: Source-neutral Exam Authoring Correction Apply Contract
-status: proposed
+status: accepted
 created: 2026-05-18
 updated: 2026-05-18
 owners:
@@ -23,6 +23,7 @@ links:
   - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
   - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/backlog/tasks/task-328-audit-open-proposed-adr-product-decisions-before-further-architecture-expansion.md
+  - docs/converters/exam-authoring-corrections-apply-contract.md
   - docs/converters/exam-authoring-ir-v1-contract.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
 ---
@@ -35,14 +36,16 @@ HuleEdu/Skriptoteket teacher-edit routes.
 
 This decision keeps the current DigiExam `.dxe` conversion overlay acceptable
 for the implemented DXE-only pipeline while preventing the historical
-matching-specific Task 324 route from becoming the product pattern.
+matching-specific Task 324 route from becoming the product pattern or a
+long-lived compatibility surface.
 
 ## Status
 
-- Proposed
+- Accepted
 - Date: 2026-05-18
-- Acceptance gate: a later review or acceptance task must approve this ADR
-  before runtime implementation or downstream migration treats it as accepted.
+- Acceptance evidence:
+  `docs/backlog/reviews/review-23-ruthless-review-of-adr-0011-source-neutral-correction-apply-contract.md`
+  approved this decision after the PR-0332 continuation gate was tightened.
 
 ## 1. Problem and Context
 
@@ -97,8 +100,19 @@ models, source evidence, fingerprints, and adapter mapping into
 owns correction validation, source-binding checks, effective-state projection,
 target readiness, and artifact availability.
 
-Task 324 remains valid bridge work. It must not be used as precedent for adding
-more item-specific teacher-correction routes.
+Task 324 remains historical bridge work for the already-built matching gap. It
+must not be used as precedent for adding more item-specific teacher-correction
+routes or for steering new `PR-0332` implementation back into the abandoned
+adapter/route-per-item pattern. The unified-route implementation must hard-cut
+from the Task 324 route to `POST /v2/exam-authoring/corrections/apply`; it must
+not keep the matching-specific route callable through an adapter, shim, alias,
+wrapper, or compatibility layer.
+
+Task 327 publishes the draft contract artifact at
+`docs/converters/exam-authoring-corrections-apply-contract.md`. That document is
+the implementation-ready contract surface for the future route. It remains draft
+until the follow-up implementation task adds the runtime route and generated
+OpenAPI surface.
 
 ## 3. Boundary Rules
 
@@ -144,7 +158,11 @@ unified contract cannot cover that case.
 Skriptoteket should consume the unified route as the teacher-correction API and
 treat returned Sir Convert effective state, target readiness, and artifact
 availability as authoritative. Browser drafts remain non-authoritative until
-Sir Convert applies the correction and returns producer state.
+Sir Convert applies the correction and returns producer state. Existing Task 324
+matching transport is historical bridge work only; new PR-0332
+teacher-correction work must not target that path as the product architecture,
+and the unified implementation must remove the matching-specific transport
+rather than preserve it as compatibility.
 
 ADR-0009 remains separate Gateway/public-edge authority. This ADR does not
 accept ADR-0009 or change its proposed status.
@@ -154,16 +172,21 @@ accept ADR-0009 or change its proposed status.
 This ADR closes the product-direction questions for Task 327:
 
 - Current DXE overlay is acceptable for implemented DXE-only conversion.
-- Task 324 is bridge work, not a route-proliferation precedent.
+- Task 324 is historical bridge work, not a route-proliferation precedent or
+  compatibility surface.
 - Future teacher correction expansion should converge on one source-neutral
   correction/apply API.
+- PR-0332 continuation may target the unified correction/apply contract after
+  Task 327 completion and this accepted ADR, but runtime or consumer work still
+  requires its own governed implementation slice. It must not target the old
+  adapter/route-per-item path.
 - Sir Convert owns validation, effective projection, target readiness, and
   artifact availability.
 - HuleEdu proxies the unified producer route; Skriptoteket consumes it as the
   teacher correction API.
 
-Repo-wide proposed decisions are not closed here. Task 328 owns the separate
-audit of open proposed ADRs before further architecture expansion.
+Other proposed decisions are not closed here. Task 328 owns the separate audit
+of proposed ADRs before further architecture expansion.
 
 ## 7. Consequences
 
@@ -181,16 +204,18 @@ audit of open proposed ADRs before further architecture expansion.
 
 - Task 327 must design a typed correction union carefully enough to avoid a
   weak generic payload.
-- Existing DXE overlay and Task 324 semantics need an explicit compatibility
-  plan before runtime convergence.
+- Existing DXE overlay and Task 324 semantics need an explicit hard-cut
+  migration plan before runtime convergence.
 - Downstream migration must be sequenced separately after Sir Convert accepts
   and implements the unified contract.
 
 ## 8. Follow-up
 
-- Task 327 defines the contract and compatibility plan.
+- Task 327 defines the contract and hard-cut migration plan in
+  `docs/converters/exam-authoring-corrections-apply-contract.md`.
 - A later implementation task adds the route and OpenAPI/request-validation
-  proof after this ADR is accepted.
+  proof; it must remove the Task 324 matching-specific route/dead code in the
+  same governed hard-cut slice.
 - HuleEdu and Skriptoteket follow-up tasks migrate authenticated edge proxying
   and teacher-correction consumption after the Sir Convert contract exists.
 - Task 328 audits remaining proposed ADR states, especially ADR-0002 and

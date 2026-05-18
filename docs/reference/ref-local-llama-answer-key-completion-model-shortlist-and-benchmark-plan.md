@@ -41,12 +41,15 @@ on Hemma's R9700 ROCm preview lane and satisfy constrained-output protocol
 smokes. Task 309 then live-validated Granite/vLLM, Qwen3.6 GGUF, and Devstral
 Small GGUF against the production advisory path and a versioned pure DigiExam
 DXE corpus. The Task 309 evidence demotes Granite/vLLM and Devstral Small for
-answer-key completion quality. Qwen3.6-27B-Q6_K is the current guarded local
-model choice for this route, with `temperature=0.15`, `--reasoning off`, and
-the llama.cpp JSON Schema runtime. It is not promoted for automatic answer-key
-application because the zero wrong-but-valid safety gate is still unmet. Task
-300 remains the later comparative model bake-off and must not start until the
-full app path is working and deployed.
+answer-key completion quality. Qwen3.6-27B-Q6_K remains the guarded local
+rollback model for this route, with `temperature=0.15`, `--reasoning off`, and
+the llama.cpp JSON Schema runtime. Task 326 later promoted OpenAI
+`gpt-5.4-mini-2026-03-17` as the temporary accepted/default development and
+production provider so the Qwen3.6 container can be stopped to save GPU VRAM.
+This provider-default decision does not promote automatic answer-key
+application; teacher review remains the product contract unless a later
+governed task changes it. Task 300 remains the later comparative model bake-off
+and must not start until the full app path is working and deployed.
 
 Task 318 owns a metadata correction required before future model comparisons
 are interpreted as final evidence. Evaluation artifacts must derive provider
@@ -440,13 +443,15 @@ Launch command used for validation:
 
 ### Promotion Status
 
-**Current local model of choice, guarded advisory only.** Qwen3.6-27B is the
-local model of choice right now. Its final Task 309 evidence is 39 correct, 3
-wrong-but-valid, and 2 manual-follow-up out of 44 scored items, so the primary
-safety gate still blocks automatic answer-key promotion. Devstral-Small-2-24B
-is demoted after 8 wrong-but-valid answers on the same corpus. Do not route
-Qwen3.6 suggestions directly into accepted answer keys without teacher review
-or a later governed decision that changes the wrong-but-valid risk posture.
+**Temporary default provider, guarded advisory only.** OpenAI
+`gpt-5.4-mini-2026-03-17` is the accepted default provider for development and
+Hemma production after Task 326 adjudication: 43 correct, 1 wrong-but-valid, and
+0 manual-follow-up out of 44 scored items. Qwen3.6-27B remains the local
+rollback profile with a retained baseline of 41 correct, 3 wrong-but-valid, and
+0 manual-follow-up. Devstral-Small-2-24B is demoted after 8 wrong-but-valid
+answers on the same corpus. Do not route provider suggestions directly into
+accepted answer keys without teacher review or a later governed decision that
+changes the wrong-but-valid risk posture.
 
 ## Verified Source Notes
 

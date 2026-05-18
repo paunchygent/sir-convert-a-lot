@@ -25,12 +25,14 @@ labels:
 Producer-owned route/application prerequisite before Skriptoteket implements
 the `PR-0332` source-neutral matching correction UI.
 
-Architecture note: this matching-specific route is bridge work for the missing
-producer route that existed during `PR-0332`. It must not set product direction
-toward one exam-authoring correction route per item type. Task 327 owns the
-cleaner next source-neutral correction/apply contract that can cover item text,
-points, manual answer keys, review decisions, and matching through one
-producer-owned API.
+Architecture note: this matching-specific route is historical bridge work for
+the missing producer route that existed during `PR-0332`. It must not set
+product direction toward one exam-authoring correction route per item type, and
+it must not survive the unified correction route implementation as an adapter,
+shim, alias, wrapper, or compatibility layer. Task 327 owns the cleaner next
+source-neutral correction/apply contract that can cover item text, points,
+manual answer keys, review decisions, and matching through one producer-owned
+API.
 
 ## Objective
 

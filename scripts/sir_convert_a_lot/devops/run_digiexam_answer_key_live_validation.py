@@ -68,6 +68,11 @@ from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_evaluation import
     evaluate_task309_advisory_reports,
     write_task309_advisory_evaluation,
 )
+from scripts.sir_convert_a_lot.devops.digiexam_answer_key_openai_eval_gate import (
+    default_task326_openai_output_root,
+    run_task326_openai_advisory_corpus,
+    write_task326_openai_advisory_corpus_run,
+)
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_request_shape_preview import (
     Task309RequestShapePreview,
     build_answer_key_request_shape_preview,
@@ -93,6 +98,10 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles im
     parse_answer_key_provider_profile_name,
     parse_answer_key_provider_runtime,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles import (
+    OPENAI_API_KEY_ENV,
+    answer_key_openai_provider_profile_values,
+)
 
 DEFAULT_CORPUS_ROOT = Path("inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe")
 DEFAULT_OUTPUT_ROOT = Path("build/verification/task-309-granite-answer-key-live")
@@ -107,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = _build_parser()
     args = parser.parse_args(argv)
+    if args.command == "run-openai-advisory-corpus":
+        return _run_openai_advisory_corpus_command(args)
     _apply_provider_defaults(args)
     if args.command == "prepare-manifests":
         _prepare_manifests(
@@ -390,6 +401,22 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--run-report-path", type=Path, default=None)
     evaluate.add_argument("--fail-on-blocked", action="store_true")
 
+    openai_corpus = subparsers.add_parser(
+        "run-openai-advisory-corpus",
+        help="Run the Task 326 raw OpenAI advisory eval corpus.",
+    )
+    openai_corpus.add_argument(
+        "--openai-provider-profile",
+        choices=answer_key_openai_provider_profile_values(),
+        required=True,
+    )
+    openai_corpus.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
+    openai_corpus.add_argument("--output-root", type=Path, default=None)
+    openai_corpus.add_argument("--reports-root", type=Path, default=None)
+    openai_corpus.add_argument("--api-key-env", default=OPENAI_API_KEY_ENV)
+    openai_corpus.add_argument("--timeout-seconds", type=float, default=None)
+    openai_corpus.add_argument("--fail-on-blocked", action="store_true")
+
     return parser
 
 
@@ -399,6 +426,31 @@ def _add_provider_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--container-name", default=None)
     parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--timeout-seconds", type=float, default=2.0)
+
+
+def _run_openai_advisory_corpus_command(args: argparse.Namespace) -> int:
+    output_root = args.output_root or default_task326_openai_output_root(
+        args.openai_provider_profile
+    )
+    reports_root = args.reports_root or (output_root / "advisory-corpus-reports")
+    enforce_generated_output_path(output_root, label="output_root")
+    enforce_generated_output_path(reports_root, label="reports_root")
+    report = run_task326_openai_advisory_corpus(
+        corpus_root=args.corpus_root,
+        reports_root=reports_root,
+        provider_profile=args.openai_provider_profile,
+        api_key_env=args.api_key_env,
+        timeout_seconds=args.timeout_seconds,
+        vision_media_path=output_root / "vision-assets",
+    )
+    run_report_path = write_task326_openai_advisory_corpus_run(
+        output_root=output_root,
+        report=report,
+    )
+    print(f"Wrote {run_report_path}")
+    if report.blocked:
+        print(f"Blocked: missing OpenAI credential env {args.api_key_env}")
+    return _blocked_exit_code(not report.blocked, fail_on_blocked=args.fail_on_blocked)
 
 
 def _add_provider_runtime_arg(parser: argparse.ArgumentParser) -> None:
@@ -434,7 +486,11 @@ def _apply_provider_defaults(args: argparse.Namespace) -> None:
         args.hf_repo = default_hf_repo_for_llama_profile(defaults.profile_name)
     if hasattr(args, "hf_file") and args.hf_file is None:
         args.hf_file = default_hf_file_for_llama_profile(defaults.profile_name)
-    if hasattr(args, "reports_root") and args.reports_root is None:
+    if (
+        hasattr(args, "reports_root")
+        and args.reports_root is None
+        and args.command != "evaluate-advisory-corpus"
+    ):
         args.reports_root = defaults.reports_root
 
 

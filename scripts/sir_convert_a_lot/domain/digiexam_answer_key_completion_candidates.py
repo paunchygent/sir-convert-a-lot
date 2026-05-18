@@ -315,11 +315,7 @@ def _provider_eligible_for_profile(
         return False
     if not (item.embedded_asset_references or item.embedded_assets):
         return True
-    return (
-        profile is not None
-        and profile.endpoint_kind == StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS
-        and profile.capabilities.supports_multimodal_vision
-    )
+    return profile is not None and profile.capabilities.supports_multimodal_vision
 
 
 def _gap_fill_plan(
