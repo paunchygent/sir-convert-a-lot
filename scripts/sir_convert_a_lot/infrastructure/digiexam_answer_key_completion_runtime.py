@@ -47,11 +47,11 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
-from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
-    StructuredLLMRuntimeConfig,
-)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
     provider_set_for_admitted_route,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
+    StructuredLLMRuntimeConfig,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_di import (
     create_structured_llm_async_container,

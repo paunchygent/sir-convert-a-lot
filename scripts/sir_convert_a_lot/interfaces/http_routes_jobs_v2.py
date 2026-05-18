@@ -42,13 +42,13 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
 )
+from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerprint_for_request_v2
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
+from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
     StructuredLLMAdmissionError,
     resolve_structured_llm_admission_snapshot,
 )
-from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerprint_for_request_v2
-from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
-from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
 from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
     auth_context_for_job_access_v2,

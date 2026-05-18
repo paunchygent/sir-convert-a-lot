@@ -18,10 +18,10 @@ from typing import Literal
 from uuid import uuid4
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
+from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
 )
-from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
     graded_result_pdf_path_for_upload,
     ingestion_overlay_path_for_upload,

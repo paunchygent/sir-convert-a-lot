@@ -39,6 +39,9 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
     DigiExamIrItem,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+)
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderProtocol,
     StructuredChatProviderSet,
@@ -54,9 +57,6 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     decide_structured_llm_route,
     preflight_structured_llm_prompt,
     resolve_structured_llm_token_budget,
-)
-from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
-    StructuredLLMAdmittedRouteSnapshot,
 )
 
 
